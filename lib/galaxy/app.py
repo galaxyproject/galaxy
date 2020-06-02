@@ -344,7 +344,7 @@ class StatsdStructuredExecutionTimer(StructuredExecutionTimer):
 
     def to_str(self, **kwd):
         self.galaxy_statsd_client.timing(self.timer_id, self.elapsed * 1000., kwd)
-        return super(StatsdStructuredExecutionTimer, self).to_str()
+        return super(StatsdStructuredExecutionTimer, self).to_str(**kwd)
 
 
 class ExecutionTimerFactory(object):

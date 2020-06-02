@@ -9,9 +9,7 @@ from dogpile.cache.api import (
     CachedValue,
     NO_VALUE,
 )
-from dogpile.cache.backends.file import AbstractFileLock
 from dogpile.cache.proxy import ProxyBackend
-from dogpile.util import ReadWriteMutex
 from lxml import etree
 from sqlalchemy.orm import (
     defer,
@@ -24,12 +22,19 @@ from galaxy.util.hash_util import md5_hash_file
 
 log = logging.getLogger(__name__)
 
+CURRENT_TOOL_CACHE_VERSION = 1
+
 
 class JSONBackend(ProxyBackend):
 
     def set(self, key, value):
         with self.proxied._dbm_file(True) as dbm:
-            dbm[key] = json.dumps({'metadata': value.metadata, 'payload': self.value_encode(value), 'macro_paths': value.payload.macro_paths()})
+            dbm[key] = json.dumps({
+                'metadata': value.metadata,
+                'payload': self.value_encode(value),
+                'macro_paths': value.payload.macro_paths(),
+                'tool_cache_version': CURRENT_TOOL_CACHE_VERSION
+            })
 
     def get(self, key):
         with self.proxied._dbm_file(False) as dbm:
@@ -50,6 +55,8 @@ class JSONBackend(ProxyBackend):
             return NO_VALUE
         # v is returned as bytestring, so we need to `unicodify` on python < 3.6 before we can use json.loads
         v = json.loads(unicodify(v))
+        if v.get('tool_cache_version', 0) != CURRENT_TOOL_CACHE_VERSION:
+            return NO_VALUE
         payload = get_tool_source(
             config_file=k,
             xml_tree=etree.ElementTree(etree.fromstring(v['payload'].encode('utf-8'))),
@@ -61,37 +68,13 @@ class JSONBackend(ProxyBackend):
         return unicodify(v.payload.to_string())
 
 
-class MutexLock(AbstractFileLock):
-    def __init__(self, filename):
-        self.mutex = ReadWriteMutex()
-
-    def acquire_read_lock(self, wait):
-        # No need for read lock. It is supposed to prevent the "dogpile" effect
-        # where multiple functions each create the cached resource, but I don't
-        # think we care.
-        return True
-
-    def acquire_write_lock(self, wait):
-        ret = self.mutex.acquire_write_lock(wait)
-        return wait or ret
-
-    def release_read_lock(self):
-        return True
-
-    def release_write_lock(self):
-        return self.mutex.release_write_lock()
-
-
 def create_cache_region(tool_cache_data_dir):
     if not os.path.exists(tool_cache_data_dir):
         os.makedirs(tool_cache_data_dir)
     region = make_region()
     region.configure(
         'dogpile.cache.dbm',
-        arguments={
-            "filename": os.path.join(tool_cache_data_dir, "cache.dbm"),
-            "lock_factory": MutexLock,
-        },
+        arguments={"filename": os.path.join(tool_cache_data_dir, "cache.dbm")},
         expiration_time=-1,
         wrap=[JSONBackend],
         replace_existing_backend=True,

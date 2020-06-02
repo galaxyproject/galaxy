@@ -236,7 +236,11 @@ class ContainerRegistry(object):
 
     def find_best_container_description(self, enabled_container_types, tool_info, **kwds):
         """Yield best container description of supplied types matching tool info."""
-        resolved_container_description = self.resolve(enabled_container_types, tool_info, **kwds)
+        try:
+            resolved_container_description = self.resolve(enabled_container_types, tool_info, **kwds)
+        except Exception:
+            log.exception("Could not get container description for tool '%s'", tool_info.tool_id)
+            return None
         return None if resolved_container_description is None else resolved_container_description.container_description
 
     def resolve(self, enabled_container_types, tool_info, index=None, resolver_type=None, install=True, resolution_cache=None):

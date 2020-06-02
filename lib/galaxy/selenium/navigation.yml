@@ -31,21 +31,19 @@ masthead:
   selectors:
     _: '#masthead'
 
-    user:
-      type: xpath
-      selector: '//li[@id="user"]'
+    # bootstrap-vue a tag doesn't work as link target, need to hit span inside
+    user: '#user.loggedin-only > a.nav-link.dropdown-toggle > span'
+    register_or_login: '#user.loggedout-only > .nav-link'
 
-    user_menu: 'li#user .dropdown-menu'
-    workflow:
-      type: xpath
-      selector: '//li[@id="workflow"]'
+    user_menu: '#user .dropdown-menu a'
+    workflow: '#workflow .nav-link'
 
     user_email:
       type: xpath
       selector: '//a[contains(text(), "Logged in as")]'
 
-    logged_in_only: 'a.loggedin-only'
-    logged_out_only: 'a.loggedout-only'
+    logged_in_only: '.loggedin-only'
+    logged_out_only: '.loggedout-only'
 
   labels:
     # top-level menus
@@ -74,7 +72,9 @@ preferences:
     change_password: "#edit-preferences-password"
     manage_information: '#edit-preferences-information'
     toolbox_filters: '#edit-preferences-toolbox-filters'
+    manage_api_key: '#edit-preferences-api-key'
     current_email: "#user-preferences-current-email"
+    get_new_key: '#submit'
 
 toolbox_filters:
   selectors:
@@ -293,11 +293,12 @@ tool_form:
   selectors:
     options: '#options [data-toggle="dropdown"]'
     execute: 'button#execute'
+    parameter_div: 'div.ui-form-element[tour_id="${parameter}"]'
     citations: '.citations-formatted'
     reference: '.citations-formatted .formatted-reference'
-    show_bibtex: 'button.citations-to-bibtex'
-    bibtex_area: 'code.citations-bibtex'
-    parameter_div: 'div.ui-form-element[tour_id="${parameter}"]'
+    show_bibtex:
+      type: xpath
+      selector: '//a[@class="nav-link" and text()="BibTeX"]'
 
   labels:
     generate_tour: 'Generate Tour'
@@ -308,6 +309,7 @@ workflows:
     new_button: '#workflow-create'
     import_button: '#workflow-import'
     save_button: '#workflow-save-button'
+    search_box: "#workflow-search"
 
 workflow_run:
 
@@ -330,7 +332,7 @@ workflow_editor:
       output_terminal: "${_} [output-name='${name}']"
       input_terminal: "${_} [input-name='${name}']"
 
-      input_mapping_icon: "${_} [name='${name}'] .multiple"
+      input_mapping_icon: "${_} [input-name='${name}'].multiple"
 
   selectors:
     canvas_body: '#workflow-canvas'
@@ -347,7 +349,7 @@ workflow_editor:
     label_input: "[tour_id='__label'] input"
     annotation_input: "[tour_id='__annotation'] textarea"
 
-    connector_for: "div[handle1-id='${source_id}'][handle2-id='${sink_id}']"
+    connector_for: "div[output-handle-id='${source_id}'][input-handle-id='${sink_id}']"
 
     connector_destroy_callout: '.delete-terminal'
 

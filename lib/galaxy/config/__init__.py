@@ -75,6 +75,10 @@ LOGGING_CONFIG_DEFAULT = {
             'level': 'INFO',
             'qualname': 'amqp',
         },
+        'dogpile': {
+            'level': 'WARN',
+            'qualname': 'dogpile',
+        },
     },
     'filters': {
         'stack': {
@@ -268,19 +272,28 @@ class BaseAppConfiguration(object):
         return os.path.join(_dir, path) if path else None
 
     def _parse_config_file_options(self, defaults, listify_defaults, config_kwargs):
+
+        def root_join(val):
+            try:
+                return os.path.join(self.root, val)
+            except TypeError:
+                template = "Failed to set configuration variable %s, value %s of wrong type %s"
+                message = template % (var, val, type(val))
+                raise ConfigurationError(message)
+
         for var, values in defaults.items():
             if config_kwargs.get(var) is not None:
                 path = config_kwargs.get(var)
                 setattr(self, var + '_set', True)
             else:
                 for value in values:
-                    if os.path.exists(os.path.join(self.root, value)):
+                    if os.path.exists(value):
                         path = value
                         break
                 else:
                     path = values[-1]
                 setattr(self, var + '_set', False)
-            setattr(self, var, os.path.join(self.root, path))
+            setattr(self, var, root_join(path))
 
         for var, values in listify_defaults.items():
             paths = []
@@ -290,7 +303,7 @@ class BaseAppConfiguration(object):
             else:
                 for value in values:
                     for path in listify(value):
-                        if not os.path.exists(os.path.join(self.root, path)):
+                        if not os.path.exists(path):
                             break
                     else:
                         paths = listify(value)
@@ -298,7 +311,7 @@ class BaseAppConfiguration(object):
                 else:
                     paths = listify(values[-1])
                 setattr(self, var + '_set', False)
-            setattr(self, var, [os.path.join(self.root, x) for x in paths])
+            setattr(self, var, [root_join(x) for x in paths])
 
 
 class CommonConfigurationMixin(object):
@@ -475,24 +488,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         activation_email = kwargs.get('activation_email')
         self.email_from = self.email_from or activation_email
 
-        #  Get the disposable email domains blacklist file and its contents
-        self.blacklist_content = None
-        if self.blacklist_file:
-            self.blacklist_file = self._in_root_dir(self.blacklist_file)
-            try:
-                with open(self.blacklist_file) as f:
-                    self.blacklist_content = [line.rstrip() for line in f]
-            except IOError:
-                log.error("CONFIGURATION ERROR: Can't open supplied blacklist file from path: %s", self.blacklist_file)
-
-        #  Create whitelist file to accept only certain email domains
-        self.whitelist_content = None
-        if self.whitelist_file:
-            try:
-                with open(self.whitelist_file) as f:
-                    self.whitelist_content = [line.rstrip() for line in f]
-            except IOError:
-                log.error("CONFIGURATION ERROR: Can't open supplied whitelist file from path: %s", self.whitelist_file)
+        self.blacklist_content = self._load_list_from_file(self._in_config_dir(self.blacklist_file)) if self.blacklist_file else None
+        self.whitelist_content = self._load_list_from_file(self._in_config_dir(self.whitelist_file)) if self.whitelist_file else None
 
         self.persistent_communication_rooms = listify(self.persistent_communication_rooms, do_strip=True)
         # The transfer manager and deferred job queue
@@ -731,6 +728,10 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                 'filename': kwargs['log_destination'],
                 'filters': ['stack']
             }
+
+    def _load_list_from_file(self, filepath):
+        with open(filepath) as f:
+            return [line.strip() for line in f]
 
     def _set_galaxy_infrastructure_url(self, kwargs):
         # indicate if this was not set explicitly, so dependending on the context a better default

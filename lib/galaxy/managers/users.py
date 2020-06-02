@@ -458,7 +458,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             trans.sa_session.flush()
         return activation_token
 
-    def send_reset_email(self, trans, payload={}, **kwd):
+    def send_reset_email(self, trans, payload, **kwd):
         """Reset the user's password. Send an email with token that allows a password change."""
         if self.app.config.smtp_server is None:
             return "Mail is not configured for this Galaxy instance and password reset information cannot be sent. Please contact your local Galaxy administrator."
@@ -592,7 +592,7 @@ class UserDeserializer(base.ModelDeserializer):
         })
 
     def deserialize_username(self, item, key, username, trans=None, **context):
-        # TODO: validate_user_input requires trans and should(?) raise exceptions
+        # TODO: validate_publicname requires trans and should(?) raise exceptions
         # move validation to UserValidator and use self.app, exceptions instead
         validation_error = validate_publicname(trans, username, user=item)
         if validation_error:

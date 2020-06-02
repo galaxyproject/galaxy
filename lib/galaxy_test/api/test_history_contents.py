@@ -538,3 +538,14 @@ class HistoryContentsApiTestCase(ApiTestCase, TestsDatasets):
         self._assert_has_keys(query_hda, "id", "name")
         assert input_hda["name"] == query_hda["name"]
         assert input_hda["id"] == query_hda["id"]
+
+    def test_job_state_summary_field(self):
+        create_response = self.dataset_collection_populator.create_pair_in_history(self.history_id, contents=["123", "456"])
+        self._assert_status_code_is(create_response, 200)
+        contents_response = self._get("histories/%s/contents?v=dev&keys=job_state_summary&view=summary" % self.history_id)
+        self._assert_status_code_is(contents_response, 200)
+        contents = contents_response.json()
+        for c in filter(lambda c: c['history_content_type'] == 'dataset_collection', contents):
+            assert isinstance(c, dict)
+            assert 'job_state_summary' in c
+            assert isinstance(c['job_state_summary'], dict)

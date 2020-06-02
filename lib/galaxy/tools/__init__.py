@@ -16,7 +16,6 @@ try:
 except ImportError:
     # Use backport on python 2
     from pathlib2 import Path
-from xml.etree import ElementTree
 
 import packaging.version
 import webob.exc
@@ -90,9 +89,11 @@ from galaxy.util import (
     in_directory,
     listify,
     Params,
+    parse_xml_string,
     rst_to_html,
     string_as_bool,
     unicodify,
+    XML,
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
@@ -1221,7 +1222,7 @@ class Tool(Dictifiable):
                         case = ConditionalWhen()
                         case.value = case_value
                         if case_inputs:
-                            page_source = XmlPageSource(ElementTree.XML("<when>%s</when>" % case_inputs))
+                            page_source = XmlPageSource(XML("<when>%s</when>" % case_inputs))
                             case.inputs = self.parse_input_elem(page_source, enctypes, context)
                         else:
                             case.inputs = OrderedDict()
@@ -1313,7 +1314,7 @@ class Tool(Dictifiable):
             if resource_xml is not None:
                 inputs = root.find('inputs')
                 if inputs is None:
-                    inputs = ElementTree.fromstring('<inputs/>')
+                    inputs = parse_xml_string('<inputs/>')
                     root.append(inputs)
                 inputs.append(resource_xml)
 
@@ -2412,7 +2413,7 @@ class ExpressionTool(Tool):
             raise Exception("Internal error - param_dict is empty.")
 
         job = {}
-        json_wrap(self.inputs, param_dict, job, handle_files='OBJECT')
+        json_wrap(self.inputs, param_dict, self.profile, job, handle_files='OBJECT')
         expression_inputs = {
             'job': job,
             'script': self._expression,
@@ -2443,7 +2444,7 @@ class DataSourceTool(OutputParameterJSONTool):
     default_tool_action = DataSourceToolAction
 
     def _build_GALAXY_URL_parameter(self):
-        return ToolParameter.build(self, ElementTree.XML('<param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=%s" />' % self.id))
+        return ToolParameter.build(self, XML('<param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=%s" />' % self.id))
 
     def parse_inputs(self, tool_source):
         super(DataSourceTool, self).parse_inputs(tool_source)
@@ -2503,7 +2504,7 @@ class AsyncDataSourceTool(DataSourceTool):
     tool_type = 'data_source_async'
 
     def _build_GALAXY_URL_parameter(self):
-        return ToolParameter.build(self, ElementTree.XML('<param name="GALAXY_URL" type="baseurl" value="/async/%s" />' % self.id))
+        return ToolParameter.build(self, XML('<param name="GALAXY_URL" type="baseurl" value="/async/%s" />' % self.id))
 
 
 class DataDestinationTool(Tool):

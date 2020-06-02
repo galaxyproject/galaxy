@@ -23,7 +23,7 @@ except ImportError:
     irods = None
 
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
-from galaxy.util import directory_hash_id, umask_fix_perms
+from galaxy.util import directory_hash_id, ExecutionTimer, umask_fix_perms
 from galaxy.util.path import safe_relpath
 from ..objectstore import DiskObjectStore
 
@@ -67,6 +67,7 @@ def parse_config_xml(config_xml):
         host = c_xml[0].get('host', None)
         port = int(c_xml[0].get('port', 0))
         timeout = int(c_xml[0].get('timeout', 30))
+        poolsize = int(c_xml[0].get('poolsize', 3))
 
         c_xml = config_xml.findall('cache')
         if not c_xml:
@@ -94,7 +95,8 @@ def parse_config_xml(config_xml):
             'connection': {
                 'host': host,
                 'port': port,
-                'timeout': timeout
+                'timeout': timeout,
+                'poolsize': poolsize
             },
             'cache': {
                 'size': cache_size,
@@ -126,6 +128,7 @@ class CloudConfigMixin(object):
                 'host': self.host,
                 'port': self.port,
                 'timeout': self.timeout,
+                'poolsize': self.poolsize,
             },
             'cache': {
                 'size': self.cache_size,
@@ -143,6 +146,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
     store_type = 'irods'
 
     def __init__(self, config, config_dict):
+        reload_timer = ExecutionTimer()
         super(IRODSObjectStore, self).__init__(config, config_dict)
 
         auth_dict = config_dict.get('auth')
@@ -182,6 +186,9 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         self.timeout = connection_dict.get('timeout')
         if self.timeout is None:
             _config_dict_error('connection->timeout')
+        self.poolsize = connection_dict.get('poolsize')
+        if self.poolsize is None:
+            _config_dict_error('connection->poolsize')
 
         cache_dict = config_dict['cache']
         if cache_dict is None:
@@ -199,29 +206,47 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         self.extra_dirs.update(extra_dirs)
 
         self._initialize()
+        log.debug("irods __init__ %s", reload_timer)
 
-    def __del__(self):
-        self.session.cleanup()
+    def shutdown(self):
+        # This call will cleanup all the connections in the connection pool
+        log.debug("In __shutdown__ Number of active connections: %s, Number of idle connections: %s", len(self.session.pool.active), len(self.session.pool.idle))
+        # OSError sometimes happens on GitHub Actions, after the test has successfully completed. Ignore it if it happens.
+        try:
+            self.session.cleanup()
+        except OSError:
+            pass
 
     def _initialize(self):
+        reload_timer = ExecutionTimer()
         if irods is None:
             raise Exception(IRODS_IMPORT_MESSAGE)
 
         self.home = "/" + self.zone + "/home/" + self.username
 
         self.session = self._configure_connection(host=self.host, port=self.port, user=self.username, password=self.password, zone=self.zone)
+        log.debug("irods _initialize %s", reload_timer)
 
     def _configure_connection(self, host='localhost', port='1247', user='rods', password='rods', zone='tempZone'):
-        with iRODSSession(host=host, port=port, user=user, password=password, zone=zone) as session:
-            # Set connection timeout
-            session.connection_timeout = self.timeout
-            # Throws NetworkException if connection fails
-            try:
-                session.pool.get_connection()
-            except NetworkException as e:
-                log.error('Could not create iRODS session: ' + str(e))
-                raise
-            return session
+        self.connections = []
+        reload_timer_1 = ExecutionTimer()
+        reload_timer_2 = ExecutionTimer()
+        session = iRODSSession(host=host, port=port, user=user, password=password, zone=zone)
+        log.debug("irods _configure_connection, iRODSSession call %s", reload_timer_2)
+        # Set connection timeout
+        session.connection_timeout = self.timeout
+        # Throws NetworkException if connection fails
+        try:
+            # We will create as many conections as poolsize.
+            for idx in range(self.poolsize):
+                reload_timer_2 = ExecutionTimer()
+                self.connections.append(session.pool.get_connection())
+                log.debug("irods _configure_connection, session.pool.get_connection()  %s", reload_timer_2)
+        except NetworkException as e:
+            log.error('Could not create iRODS session: ' + str(e))
+            raise
+        log.debug("irods _configure_connection %s", reload_timer_1)
+        return session
 
     @classmethod
     def parse_xml(cls, config_xml):
@@ -288,6 +313,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         collection_path = self.home + "/" + str(subcollection_name)
         data_object_path = collection_path + "/" + str(data_object_name)
 
+        log.debug("In _get_size_in_irods(): Number of active connections: %s, Number of idle connections: %s", len(self.session.pool.active), len(self.session.pool.idle))
         try:
             data_obj = self.session.data_objects.get(data_object_path)
             return data_obj.__sizeof__()
@@ -304,11 +330,15 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         collection_path = self.home + "/" + str(subcollection_name)
         data_object_path = collection_path + "/" + str(data_object_name)
 
+        log.debug("In _data_object_exists(): Number of active connections: %s, Number of idle connections: %s", len(self.session.pool.active), len(self.session.pool.idle))
         try:
             self.session.data_objects.get(data_object_path)
             return True
         except (DataObjectDoesNotExist, CollectionDoesNotExist):
-            log.warn("Collection or data object (%s) does not exist", data_object_path)
+            log.debug("Collection or data object (%s) does not exist", data_object_path)
+            return False
+        except Exception as e:
+            log.exception(e)
             return False
 
     def _in_cache(self, rel_path):
@@ -337,6 +367,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         data_object_path = collection_path + "/" + str(data_object_name)
         data_obj = None
 
+        log.debug("In _download(): Number of active connections: %s, Number of idle connections: %s", len(self.session.pool.active), len(self.session.pool.idle))
         try:
             data_obj = self.session.data_objects.get(data_object_path)
         except (DataObjectDoesNotExist, CollectionDoesNotExist):
@@ -371,11 +402,16 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         source_file = source_file if source_file else self._get_cache_path(rel_path)
         options = {kw.FORCE_FLAG_KW: ''}
 
+        log.debug("In _push_to_irods(): Number of active connections: %s, Number of idle connections: %s", len(self.session.pool.active), len(self.session.pool.idle))
         if os.path.exists(source_file):
             # Check if the data object exists in iRODS
             collection_path = self.home + "/" + str(subcollection_name)
             data_object_path = collection_path + "/" + str(data_object_name)
-            exists = self.session.data_objects.exists(data_object_path)
+            exists = False
+            try:
+                exists = self.session.data_objects.exists(data_object_path)
+            except NetworkException as e:
+                log.exception(e)
             if os.path.getsize(source_file) == 0 and exists:
                 log.debug("Wanted to push file '%s' to iRODS collection '%s' but its size is 0; skipping.", source_file, rel_path)
                 return True
@@ -504,6 +540,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         base_dir = kwargs.get('base_dir', None)
         dir_only = kwargs.get('dir_only', False)
         obj_dir = kwargs.get('obj_dir', False)
+
+        log.debug("In _delete(): Number of active connections: %s, Number of idle connections: %s", len(self.session.pool.active), len(self.session.pool.idle))
         try:
             # Remove temparory data in JOB_WORK directory
             if base_dir and dir_only and obj_dir:

@@ -75,7 +75,7 @@
 </template>
 
 <script>
-import { getDatatypes, getModule, getVersions, saveWorkflow, loadWorkflow } from "./services";
+import { getDatatypes, getModule, getVersions, saveWorkflow, loadWorkflow } from "./modules/services";
 import {
     showWarnings,
     showUpgradeMessage,
@@ -84,8 +84,8 @@ import {
     showAttributes,
     showForm,
     saveAs,
-} from "./utilities";
-import WorkflowManager from "mvc/workflow/workflow-manager";
+} from "./modules/utilities";
+import WorkflowManager from "./modules/manager";
 import WorkflowOptions from "./Options";
 import MarkdownEditor from "components/Markdown/MarkdownEditor";
 import ToolBoxWorkflow from "components/Panels/ToolBoxWorkflow";
@@ -126,7 +126,7 @@ export default {
         },
         annotation: {
             type: String,
-            required: true,
+            default: "",
         },
         moduleSections: {
             type: Array,
@@ -164,9 +164,6 @@ export default {
                 })
                 .on("onActiveNode", (node) => {
                     showForm(this.manager, node, datatypes);
-                })
-                .on("onNodeChange", () => {
-                    this.parameters = getWorkflowParameters(this.manager.nodes);
                 });
             this.loadCurrent(this.id, this.version);
         });
@@ -177,14 +174,14 @@ export default {
                 this.isCanvas = true;
                 return;
             }
-            var node = this.manager.create_node("tool", tool_name, tool_id);
+            var node = this.manager.createNode("tool", tool_name, tool_id);
             const requestData = {
                 type: "tool",
                 tool_id: tool_id,
                 _: "true",
             };
             getModule(requestData).then((response) => {
-                this.manager.set_node(node, response);
+                this.manager.setNode(node, response);
             });
         },
         onInsertModule(module_id, module_name) {
@@ -192,13 +189,13 @@ export default {
                 this.isCanvas = true;
                 return;
             }
-            var node = this.manager.create_node(module_id, module_name);
+            var node = this.manager.createNode(module_id, module_name);
             const requestData = {
                 type: module_id,
                 _: "true",
             };
             getModule(requestData).then((response) => {
-                this.manager.set_node(node, response);
+                this.manager.setNode(node, response);
             });
         },
         onInsertWorkflow(workflow_id, workflow_name) {
@@ -206,14 +203,14 @@ export default {
                 this.isCanvas = true;
                 return;
             }
-            var node = this.manager.create_node("subworkflow", workflow_name, workflow_id);
+            var node = this.manager.createNode("subworkflow", workflow_name, workflow_id);
             const requestData = {
                 type: "subworkflow",
                 content_id: workflow_id,
                 _: "true",
             };
             getModule(requestData).then((response) => {
-                this.manager.set_node(node, response);
+                this.manager.setNode(node, response);
             });
         },
         onInsertWorkflowSteps(workflow_id, step_count) {
@@ -230,10 +227,11 @@ export default {
             saveAs(this.manager);
         },
         onLayout() {
-            this.manager.layout_auto();
+            this.manager.layoutAuto();
         },
         onAttributes() {
             showAttributes();
+            this.parameters = getWorkflowParameters(this.manager.nodes);
         },
         onEdit() {
             this.isCanvas = true;

@@ -99,7 +99,7 @@ def _normalize_inputs(steps, inputs, inputs_by):
 def _normalize_step_parameters(steps, param_map, legacy=False, already_normalized=False):
     """ Take a complex param_map that can reference parameters by
     step_id in the new flexible way or in the old one-parameter
-    per tep fashion or by tool id and normalize the parameters so
+    per step fashion or by tool id and normalize the parameters so
     everything is referenced by a numeric step id.
     """
     normalized_param_map = {}

@@ -1,6 +1,5 @@
 import string
 import unittest
-from xml.etree.ElementTree import XML
 
 from galaxy import model
 from galaxy.exceptions import UserActivationRequiredException
@@ -10,6 +9,7 @@ from galaxy.tools.actions import (
     determine_output_format,
     on_text_for_names
 )
+from galaxy.util import XML
 from .. import tools_support
 
 
