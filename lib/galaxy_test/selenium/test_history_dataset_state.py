@@ -42,6 +42,7 @@ class HistoryDatasetStateTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
     @selenium_test
     def test_dataset_change_dbkey(self, hid=hid):
         item = self._prepare_dataset(hid)
+        self.assert_item_dbkey_displayed_as(hid, "?")
         item.dbkey.wait_for_and_click()
         self.components.edit_dataset_attributes.database_build_dropdown.wait_for_and_click()
         # choose database option from 'Database/Build' dropdown, that equals to dbkey_text
