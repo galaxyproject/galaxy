@@ -15,6 +15,7 @@ from galaxy import (
 from galaxy.actions.admin import AdminActions
 from galaxy.exceptions import ActionInputError, MessageException
 from galaxy.model import tool_shed_install as install_model
+from galaxy.security.validate_user_input import validate_password
 from galaxy.tool_shed.util.repository_util import get_ids_of_tool_shed_repositories_being_installed
 from galaxy.util import (
     nice_size,
@@ -1387,10 +1388,9 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             else:
                 password = payload.get('password')
                 confirm = payload.get('confirm')
-                if len(password) < 6:
-                    return self.message_exception(trans, 'Use a password of at least 6 characters.')
-                elif password != confirm:
-                    return self.message_exception(trans, 'Passwords do not match.')
+                message = validate_password(trans, password, confirm)
+                if message:
+                    return self.message_exception(trans, message)
                 for user in users.values():
                     user.set_password_cleartext(password)
                     trans.sa_session.add(user)
