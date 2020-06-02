@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import hmgm_utils
+
 import json
 import sys
 import os
@@ -10,9 +12,13 @@ from speech_to_text_schema import SpeechToText, SpeechToTextMedia, SpeechToTextR
 # Convert editor output to standardized json
 def main():
     (editor_output_file, output_json_file, media_file) = sys.argv[1:4]
+
+    hmgm_utils.exit_if_output_not_ready(editor_output_file)
+
     with open(editor_output_file) as json_file:
         d = json.load(json_file)
         data = eval(json.dumps(d))
+
     print("the data in editor output is:",data)
     result = SpeechToTextResult()
     word_type = text = ''
