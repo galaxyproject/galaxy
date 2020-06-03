@@ -64,7 +64,7 @@ New Datatypes
 * Add datatypes for xcms and camera
   (thanks to `@computational-metabolomics <https://github.com/computational-metabolomics>`__).
   `Pull Request 9470`_
-* index with -c flag for large bam (one region larger than 2**29 - 1)
+* Create csi index for bam files where any region is larger than ``2**29 - 1``)
   (thanks to `@FredericBGA <https://github.com/FredericBGA>`__).
   `Pull Request 9570`_
 * Add PAF, GFA1 and odgi datatypes
