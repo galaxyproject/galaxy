@@ -23,6 +23,4 @@ YARN_CACHE_FOLDER=~/.jenkins-yarn-cache
 DOCKER_RUN_EXTRA_ARGS="${DOCKER_RUN_EXTRA_ARGS} --shm-size=2g -v $YARN_CACHE_FOLDER:$YARN_CACHE_FOLDER -e YARN_CACHE_FOLDER=$YARN_CACHE_FOLDER -e USE_SELENIUM=1 -e GALAXY_TEST_SELENIUM_RETRIES=${GALAXY_TEST_SELENIUM_RETRIES} -e GALAXY_TEST_ERRORS_DIRECTORY=${GALAXY_TEST_ERRORS_DIRECTORY} -e GALAXY_TEST_SCREENSHOTS_DIRECTORY=${GALAXY_TEST_SCREENSHOTS_DIRECTORY}"
 export DOCKER_RUN_EXTRA_ARGS
 
-cp lib/galaxy/tools/toolbox/filters/examples.py.sample lib/galaxy/tools/toolbox/filters/examples.py
-
 ./run_tests.sh --dockerize --db postgres --clean_pyc --skip_flakey_fails --selenium "$@"
