@@ -9,7 +9,10 @@ Highlights
 ===========================================================
 
 **Mass-Spec datatypes**
-  @bernt-matthias, can you write a bit about this?
+  Added support for Mass-Spec datatypes used in OpenMS. This includes
+  the SQLite based datatypes PQP, OSW, and Sqmass; 
+  the tabular datatypes MzTab, MzTab2, Kroenik, PepList, PSMS, PEFF, Dta, Dta2d, and Edta; 
+  and the XML based dataypes ParamXml, MascotXML, TrafoXML, XquestXML, XquestSpecXML, and QCML.
 
 **New Interactive tools**
   @astrovsky01, can you write this ?
