@@ -49,7 +49,6 @@ class HistoryPanelTestCase(SeleniumTestCase):
 
     @selenium_test
     def test_history_tags_and_annotations_buttons(self):
-        # TODO: Test actually editing these values.
         self.register()
 
         tag_icon_selector = self.navigation.history_panel.selectors.tag_icon
@@ -81,6 +80,43 @@ class HistoryPanelTestCase(SeleniumTestCase):
 
         self.assert_absent_or_hidden(tag_area_selector)
         self.assert_absent_or_hidden(annotation_area_selector)
+
+    @selenium_test
+    def test_history_annotations_change(self):
+
+        def assert_current_annotation(expected, error_message="History annotation",
+                                      is_equal=True):
+            current_annotation = self.components.history_panel.annotation_editable_text.wait_for_visible()
+            error_message += " given: [%s] expected [%s] "
+            if is_equal:
+                assert current_annotation.text == expected, error_message % (
+                    current_annotation.text, expected)
+            else:
+                assert current_annotation.text != expected, error_message % (
+                    current_annotation.text, expected)
+
+        def set_random_annotation(clear_text=True):
+            random_annotation = self._get_random_name(prefix="expected_annotation_")
+            self.set_history_annotation(random_annotation, clear_text)
+            return random_annotation
+
+        self.register()
+
+        # assert that annotation wasn't set before
+        self.components.history_panel.annotation_area.assert_absent_or_hidden()
+
+        # assign annotation random text
+        initial_annotation = set_random_annotation()
+        assert_current_annotation(initial_annotation)
+
+        # change annotation text
+        changed_annotation = set_random_annotation()
+
+        assert_current_annotation(initial_annotation, error_message="History annotation was not changed!",
+                                  is_equal=False)
+        assert_current_annotation(changed_annotation,
+                                  error_message="History annotation was changed, but annotation text is wrong!",
+                                  is_equal=True)
 
     @selenium_test
     def test_refresh_preserves_state(self):
