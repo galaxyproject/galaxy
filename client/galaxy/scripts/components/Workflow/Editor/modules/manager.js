@@ -92,19 +92,14 @@ class Workflow extends EventEmitter {
 
         // Set initial scroll position
         const $f = $(node.$el);
-        $f.css("left", $(window).scrollLeft() + 20);
-        $f.css("top", $(window).scrollTop() + 20);
+        const el = node.$el;
+        const p = document.getElementById("canvas-viewport");
+        const o = document.getElementById("canvas-container");
+        const left = -o.offsetLeft + (p.offsetWidth - el.offsetWidth) / 2;
+        const top = -o.offsetTop + (p.offsetHeight - el.offsetHeight) / 2;
+        el.style.left = `${left}px`;
+        el.style.top = `${top}px`;
 
-        // Position in container
-        const o = $("#canvas-container").position();
-        const p = $("#canvas-container").parent();
-        const width = $f.outerWidth() + 50;
-        const height = $f.height();
-        $f.css({
-            left: -o.left + p.width() / 2 - width / 2,
-            top: -o.top + p.height() / 2 - height / 2,
-        });
-        $f.css("width", width);
         $f.bind("dragstart", () => {
             self._activateNode(node);
         })
