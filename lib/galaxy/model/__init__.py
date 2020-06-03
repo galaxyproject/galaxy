@@ -52,6 +52,7 @@ import galaxy.security.passwords
 import galaxy.util
 from galaxy.model.item_attrs import get_item_annotation_str, UsesAnnotations
 from galaxy.security import get_permitted_actions
+from galaxy.security.validate_user_input import validate_password_str
 from galaxy.util import (directory_hash_id, ready_name_for_url,
                          unicodify, unique_id)
 from galaxy.util.bunch import Bunch
@@ -388,6 +389,9 @@ class User(Dictifiable, RepresentById):
         """
         Set user password to the digest of `cleartext`.
         """
+        message = validate_password_str(cleartext, cleartext)
+        if message:
+            raise Exception("Invalid password: %s" % message)
         if User.use_pbkdf2:
             self.password = galaxy.security.passwords.hash_password(cleartext)
         else:

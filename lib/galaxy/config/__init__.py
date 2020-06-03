@@ -984,6 +984,16 @@ class ConfiguresGalaxyMixin(object):
         else:
             log.warning('Waiting for toolbox reload timed out after 60 seconds')
 
+    def _configure_tool_config_files(self):
+        if self.config.shed_tool_config_file not in self.config.tool_configs:
+            self.config.tool_configs.append(self.config.shed_tool_config_file)
+        # The value of migrated_tools_config is the file reserved for containing only those tools that have been
+        # eliminated from the distribution and moved to the tool shed. If migration checking is disabled, only add it if
+        # it exists (since this may be an existing deployment where migrations were previously run).
+        if ((self.config.check_migrate_tools or os.path.exists(self.config.migrated_tools_config))
+                and self.config.migrated_tools_config not in self.config.tool_configs):
+            self.config.tool_configs.append(self.config.migrated_tools_config)
+
     def _configure_toolbox(self):
         from galaxy import tools
         from galaxy.managers.citations import CitationsManager
@@ -996,14 +1006,6 @@ class ConfiguresGalaxyMixin(object):
         from galaxy.managers.tools import DynamicToolManager
         self.dynamic_tools_manager = DynamicToolManager(self)
         self._toolbox_lock = threading.RLock()
-        if self.config.shed_tool_config_file not in self.config.tool_configs:
-            self.config.tool_configs.append(self.config.shed_tool_config_file)
-        # The value of migrated_tools_config is the file reserved for containing only those tools that have been
-        # eliminated from the distribution and moved to the tool shed. If migration checking is disabled, only add it if
-        # it exists (since this may be an existing deployment where migrations were previously run).
-        if ((self.config.check_migrate_tools or os.path.exists(self.config.migrated_tools_config))
-                and self.config.migrated_tools_config not in self.config.tool_configs):
-            self.config.tool_configs.append(self.config.migrated_tools_config)
         self.toolbox = tools.ToolBox(self.config.tool_configs, self.config.tool_path, self)
         galaxy_root_dir = os.path.abspath(self.config.root)
         file_path = os.path.abspath(getattr(self.config, "file_path"))

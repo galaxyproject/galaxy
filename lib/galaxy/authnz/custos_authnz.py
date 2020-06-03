@@ -125,7 +125,6 @@ class CustosAuthnz(IdentityProvider):
                         raise exceptions.AuthenticationFailed(message)
                 else:
                     user = trans.app.user_manager.create(email=email, username=username)
-                    user.set_random_password()
                     trans.sa_session.add(user)
                     trans.sa_session.flush()
             custos_authnz_token = CustosAuthnzToken(user=user,
