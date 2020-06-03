@@ -1,4 +1,4 @@
-def restrict_test( context, section ):
+def restrict_test(context, section):
     """
     Disable the Test Section section
 
