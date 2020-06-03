@@ -118,13 +118,6 @@ export default {
             return document.getElementById("galaxy_main");
         },
     },
-    created() {
-        if (this.tab.onbeforeunload) {
-            document.addEventListener("beforeunload", () => {
-                this.tab.onbeforeunload();
-            });
-        }
-    },
     mounted() {
         if (this.galaxyIframe) {
             this.galaxyIframe.addEventListener("load", this.iframeListener);

@@ -1372,26 +1372,11 @@ class JobWrapper(HasResourceParameters):
             log.warning("(%s) Ignoring state change from '%s' to '%s' for job "
                         "that is already terminal", job.id, job.state, state)
             return
-        for dataset_assoc in job.output_datasets + job.output_library_datasets:
-            dataset = dataset_assoc.dataset
-            if not job_supplied:
-                self.sa_session.refresh(dataset)
-            state_changed = dataset.raw_set_dataset_state(state)
-            if state_changed:
-                # Arguably a hack to get state changes to appear in the history panel because
-                # the history panel polls on hda.update_time and ignores hda.dataset.update_time.
-                # For those less pragmatic needing a more theoretically sound reason for the update,
-                # perhaps arguments can be made that the entity that is the HDA
-                # really should be described as updated since its effective state did change and its
-                # RESTful representation in the API does change as a result of the above dataset update.
-                dataset.update()
-            if info:
-                dataset.info = info
-            self.sa_session.add(dataset)
         if info:
             job.info = info
         job.set_state(state)
         self.sa_session.add(job)
+        job.update_output_states()
         if flush:
             self.sa_session.flush()
 
@@ -1729,14 +1714,12 @@ class JobWrapper(HasResourceParameters):
         self.tool.call_hook('exec_after_process', self.app, inp_data=inp_data,
                             out_data=out_data, param_dict=param_dict,
                             tool=self.tool, stdout=job.stdout, stderr=job.stderr)
-        job.command_line = unicodify(self.command_line)
 
         collected_bytes = 0
         # Once datasets are collected, set the total dataset size (includes extra files)
         for dataset_assoc in job.output_datasets:
             if not dataset_assoc.dataset.dataset.purged:
-                dataset_assoc.dataset.dataset.set_total_size()
-                collected_bytes += dataset_assoc.dataset.dataset.get_total_size()
+                collected_bytes += dataset_assoc.dataset.set_total_size()
 
         if job.user:
             job.user.adjust_total_disk_usage(collected_bytes)

@@ -34,6 +34,7 @@
   <tool file="tool_provided_metadata_12.xml" />
   <tool file="empty_datasets.xml" />
   <tool file="inputs_as_json.xml" />
+  <tool file="inputs_as_json_profile.xml" />
   <tool file="inputs_as_json_with_paths.xml" />
   <tool file="filter_static_regexp.xml" />
   <tool file="dbkey_filter_input.xml" />

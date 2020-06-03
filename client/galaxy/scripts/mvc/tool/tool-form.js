@@ -132,7 +132,7 @@ const View = Backbone.View.extend({
         if (Galaxy.config.server_mail_configured && !Galaxy.user.isAnonymous()) {
             inputs.push({
                 name: `send_email_notification`,
-                label: "Email notification",
+                label: _l("Email notification"),
                 type: "boolean",
                 value: "false",
                 ignore: "false",

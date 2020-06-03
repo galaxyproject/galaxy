@@ -7,6 +7,30 @@ from .framework import (
 class ManageInformationTestCase(SeleniumTestCase):
 
     @selenium_test
+    def test_api_key(self):
+        '''
+        This test views and resets the API key. In automated testing scenarios,
+        this means the initial API key will be None, which renders as
+        'Not available.'
+        '''
+        self.login()
+        self.assertEqual(self.get_api_key(), 'Not available.')
+        api_key = self.get_api_key()
+        self.navigate_to_user_preferences()
+        self.components.preferences.manage_api_key.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        new_key_button = self.driver.find_element_by_id('submit')
+        api_key_input = self.driver.find_element_by_css_selector("[data-label='Current API key:'] > input")
+        # Assert that what's rendered on screen is what the API is returning
+        self.assertEqual(api_key_input.get_property('value'), api_key)
+        self.action_chains().move_to_element(new_key_button).click().perform()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        new_api_key = self.get_api_key()
+        api_key_input = self.driver.find_element_by_css_selector("[data-label='Current API key:'] > input")
+        # And assert that this has now changed, and still renders correctly
+        self.assertEqual(new_api_key, api_key_input.get_property('value'))
+
+    @selenium_test
     def test_change_email(self):
         def assert_email(email_to_check):
             self.assertTrue(email_to_check == self.driver.find_element_by_id("user-preferences-current-email").text)

@@ -71,7 +71,9 @@ preferences:
     sign_out: "#edit-preferences-sign-out"
     change_password: "#edit-preferences-password"
     manage_information: '#edit-preferences-information'
+    manage_api_key: '#edit-preferences-api-key'
     current_email: "#user-preferences-current-email"
+    get_new_key: '#submit'
 
 change_user_email:
   selectors:
@@ -286,11 +288,12 @@ tool_form:
   selectors:
     options: '#options [data-toggle="dropdown"]'
     execute: 'button#execute'
+    parameter_div: 'div.ui-form-element[tour_id="${parameter}"]'
     citations: '.citations-formatted'
     reference: '.citations-formatted .formatted-reference'
-    show_bibtex: 'button.citations-to-bibtex'
-    bibtex_area: 'code.citations-bibtex'
-    parameter_div: 'div.ui-form-element[tour_id="${parameter}"]'
+    show_bibtex:
+      type: xpath
+      selector: '//a[@class="nav-link" and text()="BibTeX"]'
 
   labels:
     generate_tour: 'Generate Tour'

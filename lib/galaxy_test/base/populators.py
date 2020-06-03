@@ -111,7 +111,7 @@ def skip_if_site_down(url):
 
     def site_down():
         try:
-            response = requests.get(url)
+            response = requests.get(url, timeout=10)
             return response.status_code != 200
         except Exception:
             return False

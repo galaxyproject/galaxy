@@ -16,7 +16,7 @@
                             {{ parameter.text }}
                         </td>
                         <td v-if="Array.isArray(parameter.value)">
-                            <JobParametersArrayValue v-bind:parameter_value="parameter.value" />
+                            <JobParametersArrayValue :parameter_value="parameter.value" />
                         </td>
                         <td v-else>
                             {{ parameter.value }}
@@ -33,7 +33,7 @@
         </div>
         <div id="single-param" v-if="isSingleParam">
             <div v-if="Array.isArray(singleParam)">
-                <JobParametersArrayValue v-bind:parameter_value="singleParam" />
+                <JobParametersArrayValue :parameter_value="singleParam" />
             </div>
             <td v-else>
                 {{ singleParam }}

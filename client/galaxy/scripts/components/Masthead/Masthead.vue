@@ -21,7 +21,6 @@
                 :appRoot="appRoot"
                 :Galaxy="Galaxy"
                 v-show="!(tab.hidden === undefined ? false : tab.hidden)"
-                @updateScratchbookTab="updateScratchbookTab"
             >
             </masthead-item>
         </b-navbar-nav>
@@ -33,12 +32,17 @@
 <script>
 import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
 import MastheadItem from "./MastheadItem";
-import _ from "underscore";
+import { fetchMenu } from "layout/menu";
+import { loadWebhookMenuItems } from "./_webhooks";
 
 export default {
     name: "Masthead",
     props: {
-        brandTitle: {
+        displayGalaxyBrand: {
+            type: Boolean,
+            default: true,
+        },
+        brand: {
             type: String,
         },
         brandLink: {
@@ -47,22 +51,19 @@ export default {
         brandImage: {
             type: String,
         },
-        quotaMeter: {
-            type: Object,
-        },
         activeTab: {
             type: String,
         },
-        tabs: {
-            type: Array,
-        },
-        frames: {
+        mastheadState: {
             type: Object,
         },
         appRoot: {
             type: String,
         },
         Galaxy: {
+            type: Object,
+        },
+        menuOptions: {
             type: Object,
         },
     },
@@ -73,41 +74,69 @@ export default {
         MastheadItem,
     },
     methods: {
-        updateScratchbookTab(tab) {
-            _.each(this.tabs, (tab, i) => {
-                if (tab.id === "enable-scratchbook") {
-                    tab.active = !tab.active;
-
-                    this.$set(this.tabs, i, {
-                        ...tab,
-                        toggle: tab.active,
-                        show_note: tab.active,
-                        note_cls: tab.active && "fa fa-check",
-                    });
-                }
-            });
+        addItem(item) {
+            this.tabs.push(item);
+        },
+        highlight(activeTab) {
+            this.activeTab = activeTab;
+        },
+        _tabToJson(el) {
+            const defaults = {
+                visible: true,
+                target: "_parent",
+            };
+            let asJson;
+            if (el.toJSON instanceof Function) {
+                asJson = el.toJSON();
+            } else {
+                asJson = el;
+            }
+            return Object.assign({}, defaults, asJson);
+        },
+        _reflectScratchbookFrames() {
+            const frames = this.mastheadState.frame.getFrames();
+            const tab = this.mastheadState.frame.buttonLoad;
+            tab.toggle = frames.visible;
+            tab.icon = (frames.visible && "fa-eye") || "fa-eye-slash";
         },
     },
+    data() {
+        return {
+            baseTabs: [],
+            extensionTabs: [],
+        };
+    },
+    computed: {
+        brandTitle() {
+            let brandTitle = this.displayGalaxyBrand ? "Galaxy " : "";
+            if (this.brand) {
+                brandTitle += this.brand;
+            }
+            return brandTitle;
+        },
+        tabs() {
+            const scratchbookTabs = [this.mastheadState.frame.buttonActive, this.mastheadState.frame.buttonLoad];
+            const tabs = [].concat(this.baseTabs, scratchbookTabs, this.extensionTabs);
+            return tabs.map(this._tabToJson);
+        },
+    },
+    created() {
+        this.baseTabs = fetchMenu(this.menuOptions);
+        loadWebhookMenuItems(this.extensionTabs);
+    },
     mounted() {
-        this.quotaMeter.setElement(this.$refs["quota-meter-container"]);
-        this.quotaMeter.render();
-
-        const idx = _.findIndex(this.tabs, { id: "show-scratchbook" });
-        this.frames
+        this.mastheadState.quotaMeter.setElement(this.$refs["quota-meter-container"]);
+        this.mastheadState.quotaMeter.render();
+        const frames = this.mastheadState.frame.getFrames();
+        frames
             .on("add remove", () => {
-                this.$set(this.tabs, idx, {
-                    ...this.tabs[idx],
-                    note: this.frames.length(),
-                    visible: this.frames.length() > 0,
-                    show_note: this.frames.length() > 0,
-                });
+                const tab = this.mastheadState.frame.buttonLoad;
+                tab.note = String(frames.length());
+                tab.visible = frames.length() > 0;
+                tab.show_note = frames.length() > 0;
             })
             .on("show hide", () => {
-                this.$set(this.tabs, idx, {
-                    ...this.tabs[idx],
-                    toggle: this.frames.visible,
-                    icon: (this.frames.visible && "fa-eye") || "fa-eye-slash",
-                });
+                this._reflectScratchbookFrames();
             });
     },
 };
