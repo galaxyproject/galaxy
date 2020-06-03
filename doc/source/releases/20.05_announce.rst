@@ -21,6 +21,8 @@ Highlights
 **Many new Interactive Tools**
   @astrovsky01 can you write a bit abbout this ?
 
+Also check out the `20.05 user release notes <https://docs.galaxyproject.org/en/release_20.05/releases/20.05_announce_user.html>`__
+
 Get Galaxy
 ==========
 
