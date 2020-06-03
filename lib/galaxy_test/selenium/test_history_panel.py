@@ -138,25 +138,24 @@ class HistoryPanelTestCase(SeleniumTestCase):
             assert expected_tags_size == current_tags_size, "there are more tags than expected! current %s, expected %s" % (
                 current_tags_size, expected_tags_size)
             for close_btn in reversed(close_tag_buttons):
-                self.sleep_for(self.wait_types.UX_RENDER)
                 close_btn.click()
+                self.sleep_for(self.wait_types.UX_RENDER)
 
         tags_size = 5
 
         self.components.history_panel.tag_area.assert_absent_or_hidden()
 
-        # add tags to empty tags area
+        # add new tags to empty tags area
         tags = add_tags(tags_size)
         assert_current_tags(tags)
 
-        # add more tags to non-empty tags list
+        # add more tags to non-empty tags area
         tags += add_tags(tags_size)
         assert_current_tags(tags)
 
         # delete all tags
         expected_tags_len = len(tags)
         clear_tags(expected_tags_len)
-        self.sleep_for(self.wait_types.UX_RENDER)
         self.components.history_panel.tags.assert_absent_or_hidden()
 
     @selenium_test

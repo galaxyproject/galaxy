@@ -160,7 +160,6 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         self.wait_for_and_click_selector(close_link_selector)
         self.sleep_for(self.wait_types.UX_RENDER)
 
-
     def setup_shared_state(self):
         tag1 = self._get_random_name(len=5)
         tag2 = self._get_random_name(len=5)
