@@ -21,8 +21,8 @@ __all__ = ('DataCollectionToolParameter', 'DataToolParameter', 'SelectToolParame
 def visit_input_values(inputs, input_values, callback, name_prefix='', label_prefix='', parent_prefix='', context=None, no_replacement_value=REPLACE_ON_TRUTHY, replace_optional_connections=False):
     """
     Given a tools parameter definition (`inputs`) and a specific set of
-    parameter `values`, call `callback` for each non-grouping parameter,
-    passing the parameter object, value, a constructed unique name,
+    parameter values (`input_alues`), call `callback` for each non-grouping
+    parameter, passing the parameter object, value, a constructed unique name,
     and a display label.
 
     If the callback returns a value, it will replace the old value.
