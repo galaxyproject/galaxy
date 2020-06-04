@@ -362,8 +362,6 @@ class JobHandlerQueue(Monitors):
                 # Some of these states will only happen when using the in-memory job queue
                 if job.copied_from_job_id:
                     copied_from_job = self.sa_session.query(model.Job).get(job.copied_from_job_id)
-                    for jtodca in job.output_dataset_collection_instances:
-                        jtodca.dataset_collection_instance.collection.mark_as_populated()
                     job.numeric_metrics = copied_from_job.numeric_metrics
                     job.text_metrics = copied_from_job.text_metrics
                     job.dependencies = copied_from_job.dependencies
