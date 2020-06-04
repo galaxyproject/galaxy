@@ -27,7 +27,11 @@ from galaxy.datatypes.sniff import (
     iter_headers,
     validate_tabular,
 )
-from galaxy.util import compression_utils
+from galaxy.util import (
+    commands,
+    compression_utils,
+    unicodify
+)
 from . import dataproviders
 
 if sys.version_info > (3,):
@@ -534,8 +538,14 @@ class Sam(Tabular):
         shutil.move(split_files[0], output_file)
 
         if len(split_files) > 1:
-            cmd = ['egrep', '-v', '-h', '^@'] + split_files[1:] + ['>>', output_file]
-            subprocess.check_call(cmd, shell=True)
+            cmd = ['grep', '-E', '-v', '-h', '^@'] + split_files[1:]
+            try:
+                out = commands.execute(cmd)
+            except commands.CommandLineException as e:
+                log.error(unicodify(e))
+                raise
+            with open(output_file, 'a') as oh:
+                oh.write(out)
 
     merge = staticmethod(merge)
 
