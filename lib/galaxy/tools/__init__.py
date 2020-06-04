@@ -187,10 +187,10 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "CONVERTER_fastq_to_fqtoc0": packaging.version.parse("1.0.1"),
     "CONVERTER_tar_to_directory": packaging.version.parse("1.0.1"),
     "tabular_to_dbnsfp": packaging.version.parse("1.0.1"),
-    "cufflinks": packaging.version.parse("2.2.1.2"),
-    "Convert characters1": packaging.version.parse("1.0.0"),
-    "substitutions1": packaging.version.parse("1.0.0"),
-    "winSplitter": packaging.version.parse("1.0.0")
+    "cufflinks": packaging.version.parse("2.2.1.3"),
+    "Convert characters1": packaging.version.parse("1.0.1"),
+    "substitutions1": packaging.version.parse("1.0.1"),
+    "winSplitter": packaging.version.parse("1.0.1"),
 }
 
 
