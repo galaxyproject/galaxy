@@ -3,17 +3,17 @@
     <requirements>
         <requirement type="package" version="8.30">coreutils</requirement>
     </requirements>
-  <command detect_errors="exit_code">$__tool_directory__/kaldi_local.py $input $output_file $text_out;
-                                    $__tool_directory__/../amp_json_schema/kaldi_local_to_schema.py $input $output_file $text_out $output_stt_json
+  <command detect_errors="exit_code">$__tool_directory__/kaldi_local.py $input $kaldi_transcript_json $kaldi_transcript_text;
+                                    $__tool_directory__/../amp_json_schema/kaldi_local_to_schema.py $input $kaldi_transcript_json $kaldi_transcript_text $amp_speech_to_text
   </command>
    <inputs>
    <!-- should be wave data type -->
     <param name="input" type="data" format="audio" label="From dataset" help="An audio file"/>
   </inputs>
   <outputs>
-    <data format="json" name="output_file" />
-    <data format="txt" name="text_out" />
-    <data format="json" name="output_stt_json" />
+    <data format="json" name="kaldi_transcript_json" />
+    <data format="txt" name="kaldi_transcript_text" />
+    <data format="json" name="amp_speech_to_text" />
   </outputs>
   <tests>
   </tests>

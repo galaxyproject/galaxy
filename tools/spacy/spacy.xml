@@ -2,7 +2,7 @@
   <description>Named entity extraction with spaCy</description>
     <requirements>
     </requirements>
-  <command detect_errors="exit_code">$__tool_directory__/spacy_wrapper.py $input $json_out $ignore_categories_csv</command>
+  <command detect_errors="exit_code">$__tool_directory__/spacy_wrapper.py $input $amp_entity_extraction $ignore_categories_csv</command>
    <inputs>
    <!-- should be wave data type -->
     <param name="input" type="data" format="txt" label="From transcript" help="An transcript file"/>
@@ -12,7 +12,7 @@
     </param>
   </inputs>
   <outputs>
-    <data format="json" name="json_out" />
+    <data format="json" name="amp_entity_extraction" />
   </outputs>
   <tests>
   </tests>

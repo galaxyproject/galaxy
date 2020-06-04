@@ -6,11 +6,11 @@
   <command detect_errors="exit_code">$__tool_directory__/adjust_timestamps.py $stt_json $adj_json $output_json</command>
    <inputs>
    <!-- should be wave data type -->
-    <param name="stt_json" type="data" format="json" label="From Speech to Text" help="Speech to text output"/>
-    <param name="adj_json" type="data" format="json" label="From Remove Segments" help="List of kept segments"/>
+    <param name="stt_json" type="data" format="json" label="AMP Speech to Text JSON From Speech to Text" help="Speech to text output"/>
+    <param name="adj_json" type="data" format="json" label="Kept segments JSON From Remove Segments" help="List of kept segments"/>
   </inputs>
   <outputs>
-    <data format="json" name="output_json" />
+    <data format="json" name="amp_speech_to_text" />
   </outputs>
   <tests>
   </tests>
