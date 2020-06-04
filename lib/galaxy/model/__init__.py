@@ -388,7 +388,7 @@ class User(Dictifiable, RepresentById):
         """
         Set user password to the digest of `cleartext`.
         """
-        message = validate_password_str(cleartext, cleartext)
+        message = validate_password_str(cleartext)
         if message:
             raise Exception("Invalid password: %s" % message)
         if User.use_pbkdf2:
@@ -2332,7 +2332,7 @@ class Dataset(StorableObject, RepresentById):
         rel_path = self._extra_files_rel_path
         if rel_path is not None:
             if self.object_store.exists(self, extra_dir=rel_path, dir_only=True):
-                for root, dirs, files in os.walk(self.extra_files_path):
+                for root, _, files in os.walk(self.extra_files_path):
                     self.total_size += sum([os.path.getsize(os.path.join(root, file)) for file in files if os.path.exists(os.path.join(root, file))])
 
     def has_data(self):
@@ -3226,7 +3226,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         if hda.extended_metadata is not None:
             rval['extended_metadata'] = hda.extended_metadata.data
 
-        for name, spec in hda.metadata.spec.items():
+        for name in hda.metadata.spec.keys():
             val = hda.metadata.get(name)
             if isinstance(val, MetadataFile):
                 # only when explicitly set: fetching filepaths can be expensive
@@ -3530,7 +3530,7 @@ class LibraryDataset(RepresentById):
             rval['uuid'] = None
         else:
             rval['uuid'] = str(ldda.dataset.uuid)
-        for name, spec in ldda.metadata.spec.items():
+        for name in ldda.metadata.spec.keys():
             val = ldda.metadata.get(name)
             if isinstance(val, MetadataFile):
                 val = val.file_name
@@ -3677,7 +3677,7 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, RepresentById):
         rval['parent_library_id'] = ldda.library_dataset.folder.parent_library.id
         if ldda.extended_metadata is not None:
             rval['extended_metadata'] = ldda.extended_metadata.data
-        for name, spec in ldda.metadata.spec.items():
+        for name in ldda.metadata.spec.keys():
             val = ldda.metadata.get(name)
             if isinstance(val, MetadataFile):
                 val = val.file_name
@@ -4145,8 +4145,10 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
         visible=True,
         copied_from_history_dataset_collection_association=None,
         implicit_output_name=None,
-        implicit_input_collections=[],
+        implicit_input_collections=None,
     ):
+        if implicit_input_collections is None:
+            implicit_input_collections = []
         super(HistoryDatasetCollectionAssociation, self).__init__(
             collection=collection,
             deleted=deleted,
@@ -5477,7 +5479,9 @@ class FormDefinition(Dictifiable, RepresentById):
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name', 'desc', 'form_definition_current_id', 'fields', 'layout']
 
-    def __init__(self, name=None, desc=None, fields=[], form_definition_current=None, form_type=None, layout=None):
+    def __init__(self, name=None, desc=None, fields=None, form_definition_current=None, form_type=None, layout=None):
+        if fields is None:
+            fields = []
         self.name = name
         self.desc = desc
         self.fields = fields
