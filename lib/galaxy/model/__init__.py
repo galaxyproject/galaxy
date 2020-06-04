@@ -388,7 +388,7 @@ class User(Dictifiable, RepresentById):
         """
         Set user password to the digest of `cleartext`.
         """
-        message = validate_password_str(cleartext, cleartext)
+        message = validate_password_str(cleartext)
         if message:
             raise Exception("Invalid password: %s" % message)
         if User.use_pbkdf2:

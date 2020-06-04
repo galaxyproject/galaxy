@@ -687,6 +687,7 @@ class Admin(object):
                 confirm = kwd.get('confirm', None)
                 message = validate_password(trans, password, confirm)
                 if message:
+                    status = 'error'
                     break
                 else:
                     user.set_password_cleartext(password)

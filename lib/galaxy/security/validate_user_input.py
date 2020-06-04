@@ -36,9 +36,7 @@ def validate_email_str(email):
     return message
 
 
-def validate_password_str(password, confirm):
-    if password != confirm:
-        return "Passwords do not match."
+def validate_password_str(password):
     if not password or len(password) < PASSWORD_MIN_LEN:
         return "Use a password of at least %d characters." % PASSWORD_MIN_LEN
     return ""
@@ -113,4 +111,6 @@ def transform_publicname(publicname):
 
 
 def validate_password(trans, password, confirm):
-    return validate_password_str(password, confirm)
+    if password != confirm:
+        return "Passwords do not match."
+    return validate_password_str(password)

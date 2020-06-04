@@ -68,7 +68,7 @@ class User(Dictifiable):
     total_disk_usage = property(get_disk_usage, set_disk_usage)
 
     def set_password_cleartext(self, cleartext):
-        message = validate_password_str(cleartext, cleartext)
+        message = validate_password_str(cleartext)
         if message:
             raise Exception("Invalid password: %s" % message)
         """Set 'self.password' to the digest of 'cleartext'."""

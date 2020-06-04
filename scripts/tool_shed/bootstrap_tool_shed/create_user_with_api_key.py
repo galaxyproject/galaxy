@@ -85,7 +85,7 @@ def create_user(app):
 
 def validate(email, password, username):
     message = "\n".join([validate_email_str(email),
-                         validate_password_str(password, password),
+                         validate_password_str(password),
                          validate_publicname_str(username)]).rstrip()
     return message
 
