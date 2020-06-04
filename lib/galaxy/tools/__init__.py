@@ -153,15 +153,11 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "CONVERTER_maf_to_interval_0",
     # Tools improperly migrated to the tool shed (devteam)
     "qualityFilter",
-    "winSplitter",
     "pileup_interval",
     "count_gff_features",
-    "Convert characters1",
     "lastz_paired_reads_wrapper",
     "subRate1",
-    "substitutions1",
     "find_diag_hits",
-    "cufflinks",
     # Tools improperly migrated using Galaxy (from shed other)
     "column_join",
     "gd_coverage_distributions",  # Genome Diversity tools from miller-lab
@@ -191,6 +187,10 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "CONVERTER_fastq_to_fqtoc0": packaging.version.parse("1.0.1"),
     "CONVERTER_tar_to_directory": packaging.version.parse("1.0.1"),
     "tabular_to_dbnsfp": packaging.version.parse("1.0.1"),
+    "cufflinks": packaging.version.parse("2.2.1.2"),
+    "Convert characters1": packaging.version.parse("1.0.0"),
+    "substitutions1": packaging.version.parse("1.0.0"),
+    "winSplitter": packaging.version.parse("1.0.0")
 }
 
 
