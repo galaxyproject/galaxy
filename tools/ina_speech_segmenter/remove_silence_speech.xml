@@ -3,15 +3,15 @@
     <requirements>
     </requirements>
   <command detect_errors="exit_code">
-  $__tool_directory__/remove_silence_music_speech.py $input $input_segmentation_json speech $binary_out $kept_segments_json</command>
+  $__tool_directory__/remove_silence_music_speech.py $input $input_segmentation_json speech $segmented_audio_file $kept_segments</command>
    <inputs>
    <!-- should be wave data type -->
     <param name="input" type="data" format="audio" label="From audio file" help="An audio file"/>
     <param name="input_segmentation_json" type="data" format="segments" label="From segmentation" help="Segmentation json file"/>
   </inputs>
   <outputs>
-    <data format="audio" name="binary_out" />
-    <data format="json" name="kept_segments_json" />
+    <data format="audio" name="segmented_audio_file" />
+    <data format="json" name="kept_segments" />
   </outputs>
   <tests>
   </tests>
