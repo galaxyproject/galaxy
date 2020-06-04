@@ -1031,7 +1031,7 @@ class Tool(Dictifiable):
         return test_data
 
     def __walk_test_data(self, dir, filename):
-        for root, dirs, files in os.walk(dir):
+        for root, dirs, _ in os.walk(dir):
             if '.hg' in dirs:
                 dirs.remove('.hg')
             if 'test-data' in dirs:
@@ -1669,13 +1669,15 @@ class Tool(Dictifiable):
                 raise Exception("Unexpected parameter type")
         return args
 
-    def execute(self, trans, incoming={}, set_output_hid=True, history=None, **kwargs):
+    def execute(self, trans, incoming=None, set_output_hid=True, history=None, **kwargs):
         """
         Execute the tool using parameter values in `incoming`. This just
         dispatches to the `ToolAction` instance specified by
         `self.tool_action`. In general this will create a `Job` that
         when run will build the tool's outputs, e.g. `DefaultToolAction`.
         """
+        if incoming is None:
+            incoming = {}
         try:
             return self.tool_action.execute(self, trans, incoming=incoming, set_output_hid=set_output_hid, history=history, **kwargs)
         except exceptions.ToolExecutionError as exc:
@@ -1838,7 +1840,7 @@ class Tool(Dictifiable):
             e.args = ("Error in '%s' hook '%s', original message: %s" % (self.name, hook_name, original_message), )
             raise
 
-    def exec_before_job(self, app, inp_data, out_data, param_dict={}):
+    def exec_before_job(self, app, inp_data, out_data, param_dict=None):
         pass
 
     def exec_after_process(self, app, inp_data, out_data, param_dict, job=None, **kwds):
@@ -1941,7 +1943,7 @@ class Tool(Dictifiable):
                             td_tup = (input_path, os.path.join('test-data', input_filename))
                             tarball_files.append(td_tup)
                 # And add output file tuples to the list.
-                for label, filename, _ in test.outputs:
+                for _, filename, _ in test.outputs:
                     output_filepath = os.path.abspath(os.path.join('test-data', filename))
                     if os.path.exists(output_filepath):
                         td_tup = (output_filepath, os.path.join('test-data', filename))
@@ -2047,10 +2049,12 @@ class Tool(Dictifiable):
 
         return tool_dict
 
-    def to_json(self, trans, kwd={}, job=None, workflow_building_mode=False):
+    def to_json(self, trans, kwd=None, job=None, workflow_building_mode=False):
         """
         Recursively creates a tool dictionary containing repeats, dynamic options and updated states.
         """
+        if kwd is None:
+            kwd = {}
         history_id = kwd.get('history_id', None)
         history = None
         if workflow_building_mode is workflow_building_modes.USE_HISTORY or workflow_building_mode is workflow_building_modes.DISABLED:
@@ -2350,7 +2354,7 @@ class OutputParameterJSONTool(Tool):
         json_params['output_data'] = []
         json_params['job_config'] = dict(GALAXY_DATATYPES_CONF_FILE=param_dict.get('GALAXY_DATATYPES_CONF_FILE'), GALAXY_ROOT_DIR=param_dict.get('GALAXY_ROOT_DIR'), TOOL_PROVIDED_JOB_METADATA_FILE=self.provided_metadata_file)
         json_filename = None
-        for i, (out_name, data) in enumerate(out_data.items()):
+        for out_name, data in out_data.items():
             # use wrapped dataset to access certain values
             wrapped_data = param_dict.get(out_name)
             # allow multiple files to be created
@@ -2398,7 +2402,7 @@ class ExpressionTool(Tool):
         expression_inputs_path = os.path.join(local_working_directory, ExpressionTool.EXPRESSION_INPUTS_NAME)
 
         outputs = []
-        for i, (out_name, data) in enumerate(out_data.items()):
+        for out_name in out_data.keys():
             output_def = self.outputs[out_name]
             wrapped_data = param_dict.get(out_name)
             file_name = str(wrapped_data)
@@ -2467,7 +2471,7 @@ class DataSourceTool(OutputParameterJSONTool):
         json_params['output_data'] = []
         json_params['job_config'] = dict(GALAXY_DATATYPES_CONF_FILE=param_dict.get('GALAXY_DATATYPES_CONF_FILE'), GALAXY_ROOT_DIR=param_dict.get('GALAXY_ROOT_DIR'), TOOL_PROVIDED_JOB_METADATA_FILE=self.provided_metadata_file)
         json_filename = None
-        for i, (out_name, data) in enumerate(out_data.items()):
+        for out_name, data in out_data.items():
             # use wrapped dataset to access certain values
             wrapped_data = param_dict.get(out_name)
             # allow multiple files to be created
@@ -2714,7 +2718,7 @@ class DatabaseOperationTool(Tool):
             check_dataset_instance(input_dataset)
 
         for input_dataset_collection_pairs in input_dataset_collections.values():
-            for input_dataset_collection, is_mapped in input_dataset_collection_pairs:
+            for input_dataset_collection, _ in input_dataset_collection_pairs:
                 if not input_dataset_collection.collection.populated:
                     raise ToolInputsNotReadyException("An input collection is not populated.")
 
@@ -3071,7 +3075,7 @@ class RelabelFromFileTool(DatabaseOperationTool):
             # and the second column is the new element identifier.
             source_new_label = (line.strip().split('\t') for line in new_labels)
             new_labels_dict = {source: new_label for source, new_label in source_new_label}
-            for i, dce in enumerate(hdca.collection.elements):
+            for dce in hdca.collection.elements:
                 dce_object = dce.element_object
                 element_identifier = dce.element_identifier
                 default = None if strict else element_identifier
@@ -3168,7 +3172,7 @@ class TagFromFileTool(DatabaseOperationTool):
         # and the remaining columns represent new tags.
         source_new_tags = (line.strip().split('\t') for line in new_tags)
         new_tags_dict = {item[0]: item[1:] for item in source_new_tags}
-        for i, dce in enumerate(hdca.collection.elements):
+        for dce in hdca.collection.elements:
             add_copied_value_to_new_elements(new_tags_dict, dce)
         self._add_datasets_to_history(history, new_datasets)
         output_collections.create_collection(
@@ -3191,7 +3195,7 @@ class FilterFromFileTool(DatabaseOperationTool):
         filtered_identifiers = [i.strip() for i in filtered_identifiers_raw]
 
         # If filtered_dataset_assoc is not a two-column tabular dataset we label with the current line of the dataset
-        for i, dce in enumerate(hdca.collection.elements):
+        for dce in hdca.collection.elements:
             dce_object = dce.element_object
             element_identifier = dce.element_identifier
             in_filter_file = element_identifier in filtered_identifiers
