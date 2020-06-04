@@ -3,7 +3,7 @@
     <requirements>
     </requirements>
   <command detect_errors="exit_code">
-  $__tool_directory__/remove_silence_music_speech.py $input $input_segmentation_json speech $segmented_audio_file $kept_segments</command>
+  $__tool_directory__/remove_silence_music_speech.py $input $input_segmentation_json speech $segmented_audio_file $amp_kept_segments</command>
    <inputs>
    <!-- should be wave data type -->
     <param name="input" type="data" format="audio" label="From audio file" help="An audio file"/>
@@ -11,7 +11,7 @@
   </inputs>
   <outputs>
     <data format="audio" name="segmented_audio_file" />
-    <data format="json" name="kept_segments" />
+    <data format="json" name="amp_kept_segments" />
   </outputs>
   <tests>
   </tests>
