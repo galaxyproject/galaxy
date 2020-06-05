@@ -25,7 +25,6 @@ class CustosAuthnz(IdentityProvider):
     def __init__(self, provider, oidc_config, oidc_backend_config, idphint=None):
         self.config = {'provider': provider.lower()}
         self.config['verify_ssl'] = oidc_config['VERIFY_SSL']
-        self.config['url'] = oidc_backend_config['url']
         self.config['client_id'] = oidc_backend_config['client_id']
         self.config['client_secret'] = oidc_backend_config['client_secret']
         if oidc_backend_config.get('credential_url'):
@@ -37,17 +36,22 @@ class CustosAuthnz(IdentityProvider):
         self.config['extra_params'] = {
             'kc_idp_hint': oidc_backend_config.get('idphint', 'oidc' if self.config['provider'] == 'custos' else 'cilogon')
         }
+        if (self.config['provider'] == 'cilogon'):
+            self.config['url'] = oidc_backend_config['url']
+            self._load_config_for_cilogon()
+        else:
+            raise Exception("Missing {} config value".format(provider))
+
         # Either get OIDC config from well-known config URI or lookup known urls based on provider name and realm
-        if 'well_known_oidc_config_uri' in oidc_backend_config:
+        if (self.config['provider'] == 'custos') or ('well_known_oidc_config_uri' in oidc_backend_config):
             self.config['well_known_oidc_config_uri'] = oidc_backend_config['well_known_oidc_config_uri']
             well_known_oidc_config = self._load_well_known_oidc_config(
                 self.config['well_known_oidc_config_uri'])
+
             self.config['authorization_endpoint'] = well_known_oidc_config['authorization_endpoint']
             self.config['token_endpoint'] = well_known_oidc_config['token_endpoint']
             self.config['userinfo_endpoint'] = well_known_oidc_config['userinfo_endpoint']
             self.config['end_session_endpoint'] = well_known_oidc_config['end_session_endpoint']
-        elif provider == 'cilogon':
-            self._load_config_for_cilogon()
         elif provider == 'custos':
             self._load_config_for_custos()
         else:
@@ -228,7 +232,7 @@ class CustosAuthnz(IdentityProvider):
     def _load_config_for_custos(self):
         # Set custos endpoints
         clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']
-        eps = requests.get(self.config['url'],
+        eps = requests.get(self.config['well_known_oidc_config_uri'],
                            headers={"Authorization": "Basic %s" % util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))},
                            verify=False, params={'client_id': self.config['client_id']})
         endpoints = eps.json()
@@ -265,8 +269,11 @@ class CustosAuthnz(IdentityProvider):
 
     def _load_well_known_oidc_config(self, well_known_uri):
         try:
-            return requests.get(well_known_uri,
-                                verify=self._get_verify_param()).json()
+            clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']
+            eps = requests.get(well_known_uri,
+                            headers={"Authorization": "Basic %s" % util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))},
+                            verify=self._get_verify_param(), params={'client_id': self.config['client_id']})
+            return eps.json()
         except Exception:
             log.error("Failed to load well-known OIDC config URI: {}".format(well_known_uri))
             raise

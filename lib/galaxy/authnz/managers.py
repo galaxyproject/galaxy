@@ -145,14 +145,16 @@ class AuthnzManager(object):
 
     def _parse_custos_config(self, config_xml):
         rtv = {
-            'url': config_xml.find('url').text,
             'client_id': config_xml.find('client_id').text,
             'client_secret': config_xml.find('client_secret').text,
             'redirect_uri': config_xml.find('redirect_uri').text,
-            'realm': config_xml.find('realm').text,
             'enable_idp_logout': asbool(config_xml.findtext('enable_idp_logout', 'false'))}
+        if config_xml.find('url') is not None:
+            rtv['url'] = config_xml.find('url').text
         if config_xml.find('credential_url') is not None:
             rtv['credential_url'] = config_xml.find('credential_url').text
+        if config_xml.find('realm') is not None:
+            rtv['realm'] = config_xml.find('realm').text
         if config_xml.find('well_known_oidc_config_uri') is not None:
             rtv['well_known_oidc_config_uri'] = config_xml.find('well_known_oidc_config_uri').text
         if config_xml.find('idphint') is not None:
