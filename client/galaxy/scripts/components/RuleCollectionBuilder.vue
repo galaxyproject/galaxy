@@ -1261,6 +1261,12 @@ export default {
                 rules: this.rules,
                 mapping: this.mapping,
             };
+            var arrayOfColumns = this.mapping.flatMap((m) => m.columns);
+            if (arrayOfColumns.some((m) => m >= this.colHeaders.length)) {
+                this.errorMessage = "You have undefined columns in your rules.";
+                this.state = "error";
+                return;
+            }
             this.$refs.savedRulesSelector.saveSession(JSON.stringify(asJson));
             this.state = "wait";
             const name = this.collectionName;
