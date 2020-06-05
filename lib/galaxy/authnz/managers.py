@@ -22,6 +22,7 @@ from galaxy.util import (
     unicodify,
 )
 from .custos_authnz import CustosAuthnz
+from .keycloak_authnz import KeycloakAuthnz
 from .psa_authnz import (
     BACKENDS_NAME,
     on_the_fly_config,
@@ -117,6 +118,10 @@ class AuthnzManager(object):
                     self.oidc_backends_config[idp] = self._parse_custos_config(child)
                     self.oidc_backends_implementation[idp] = 'custos'
                     self.app.config.oidc[idp] = {'icon': self._get_idp_icon(idp)}
+                elif idp == 'keycloak':
+                    self.oidc_backends_config[idp] = self._parse_keycloak_config(child)
+                    self.oidc_backends_implementation[idp] = 'keycloak'
+                    self.app.config.oidc.append(idp)
                 else:
                     raise etree.ParseError("Unknown provider specified")
             if len(self.oidc_backends_config) == 0:
@@ -165,6 +170,22 @@ class AuthnzManager(object):
             rtv['icon'] = config_xml.find('icon').text
         return rtv
 
+    def _parse_keycloak_config(self, config_xml):
+        rtv = {
+            'url': config_xml.find('url').text,
+            'client_id': config_xml.find('client_id').text,
+            'client_secret': config_xml.find('client_secret').text,
+            'redirect_uri': config_xml.find('redirect_uri').text,
+            'realm': config_xml.find('realm').text,
+            'enable_idp_logout': asbool(config_xml.findtext('enable_idp_logout', 'false'))}
+        if config_xml.find('well_known_oidc_config_uri') is not None:
+            rtv['well_known_oidc_config_uri'] = config_xml.find('well_known_oidc_config_uri').text
+        if config_xml.find('idphint') is not None:
+            rtv['idphint'] = config_xml.find('idphint').text
+        if config_xml.find('ca_bundle') is not None:
+            rtv['ca_bundle'] = config_xml.find('ca_bundle').text
+        return rtv
+
     def _unify_provider_name(self, provider):
         if provider.lower() in self.oidc_backends_config:
             return provider.lower()
@@ -197,6 +218,8 @@ class AuthnzManager(object):
             return PSAAuthnz
         elif implementation == 'custos':
             return CustosAuthnz
+        elif implementation == 'keycloak':
+            return KeycloakAuthnz
         else:
             return None
 
