@@ -295,7 +295,6 @@ class JobSearch:
                 else:
                     return []
 
-
         query = self.sa_session.query(model.Job.id, *used_ids).join(subq, model.Job.id == subq.c.id).filter(*data_conditions).group_by(model.Job.id, *used_ids).order_by(model.Job.id.desc())
         for job in query:
             # We found a job that is equal in terms of tool_id, user, state and input datasets,
@@ -350,7 +349,7 @@ class JobSearch:
                 if parameter.name in {'chromInfo', 'dbkey'} or parameter.name.endswith('|__identifier__'):
                     continue
                 n_parameters += 1
-            if not n_parameters == sum(1 for k in param_dump if not k.startswith('__') and not k.endswith('|__identifier__') and not k in {'chromInfo', 'dbkey'}):
+            if not n_parameters == sum(1 for k in param_dump if not k.startswith('__') and not k.endswith('|__identifier__') and k not in {'chromInfo', 'dbkey'}):
                 continue
             log.info("Found equivalent job %s", search_timer)
             return job
