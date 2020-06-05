@@ -408,8 +408,10 @@ class ToolExecutionTracker(ExecutionTracker):
 
     def new_collection_execution_slices(self):
         for job_index, (param_combination, dataset_collection_elements) in enumerate(six.moves.zip(self.param_combinations, self.walk_implicit_collections())):
-            for dataset_collection_element in dataset_collection_elements.values():
-                assert dataset_collection_element.element_object is None
+            completed_job = self.completed_jobs and self.completed_jobs[job_index]
+            if not completed_job:
+                for dataset_collection_element in dataset_collection_elements.values():
+                    assert dataset_collection_element.element_object is None
 
             yield ExecutionSlice(job_index, param_combination, dataset_collection_elements)
 
@@ -429,13 +431,16 @@ class WorkflowStepExecutionTracker(ExecutionTracker):
 
     def new_collection_execution_slices(self):
         for job_index, (param_combination, dataset_collection_elements) in enumerate(six.moves.zip(self.param_combinations, self.walk_implicit_collections())):
-            # found_result = False
-            # for dataset_collection_element in dataset_collection_elements.values():
-            #     if dataset_collection_element.element_object is not None:
-            #         found_result = True
-            #         break
-            # if found_result:
-            #     continue
+            completed_job = self.completed_jobs and self.completed_jobs[job_index]
+            if not completed_job:
+                found_result = False
+                for dataset_collection_element in dataset_collection_elements.values():
+                    if dataset_collection_element.element_object is not None:
+                        found_result = True
+                        break
+                if found_result:
+                    continue
+
             yield ExecutionSlice(job_index, param_combination, dataset_collection_elements)
 
     def ensure_implicit_collections_populated(self, history, params):
