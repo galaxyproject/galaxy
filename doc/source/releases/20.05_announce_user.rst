@@ -28,7 +28,7 @@ Highlights
    :alt: Scrolling works again
 
 **Social Login**
-  The social login system has seen improvements over the past release, from adding support for Okta, adding and disconnecting OIDC accounts, to logging out. Different servers support different authentication providers, so ask your admin today if you want to login with Elixir AAI, Google, or Globus.
+  The social login system has seen improvements over the past release, from adding support for Okta, adding and disconnecting OIDC accounts, to logging out. Through CILogon and Custos, users will be able to use existing institutional log in credentials to log into their Galaxy accounts. Different servers support different authentication providers, so ask your admin today if you want to login with CILogon, Custos, Elixir AAI, Google, or Globus.
 
 
 New Visualizations
