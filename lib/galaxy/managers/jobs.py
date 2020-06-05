@@ -203,7 +203,6 @@ class JobSearch:
         # that this job uses. We keep track of the requested dataset id in `requested_ids`,
         # the type (hda, hdca or lda) in `data_types`
         # and the ids that have been used in the job that has already been run in `used_ids`.
-        query = self.sa_session.query(model.Job.id)
         requested_ids = []
         data_types = []
         used_ids = []
