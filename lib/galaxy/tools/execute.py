@@ -306,30 +306,6 @@ class ExecutionTracker:
             collection_instance.implicit_collection_jobs = implicit_collection_jobs
             collection_instances[output_name] = collection_instance
             trans.sa_session.add(collection_instance)
-            replacement_collections = []
-            completed_elements = []
-            elements = collection_instance.collection.elements
-            element_identifier_to_elements = {e.element_identifier: e for e in elements}
-            # ce = []
-            # if elements:
-            #     for completed_job in self.completed_jobs.values():
-            #         if completed_job is None:
-            #             continue
-            #         else:
-            #             out_data = {da.name for da in completed_job.output_datasets}
-            #             if completed_job.output_dataset_collection_instances and output_name not in out_data:
-            #                 # output_name in out+data: mapped-over output.
-            #                 completed_hdca = next(jtodca.dataset_collection_instance for jtodca in completed_job.output_dataset_collection_instances if jtodca.name == output_name)
-            #                 completed_element_identifiers_to_elements = {e.element_identifier: e for e in completed_hdca.collection.elements}
-            #                 for element_id, element in completed_element_identifiers_to_elements.items():
-            #                     if element.dataset_instances and element_id in element_identifier_to_elements:
-            #                         element_identifier_to_elements[element_id].child_collection_id = element.child_collection_id
-            #                         ce.append(element)
-            #                 # i is the index required by the current job, but elements in a mapped-over output can, and are likely, in a different order.
-            #                 # We can look at the order of the creating_job_associations to check which element needs to be picked out.
-            #                 # completed_element = next(e for e in completed_hdca.collection.elements if e.element_identifier == elements[i].element_identifier)
-            #                 # elements[i].child_collection_id = completed_element.child_collection_id
-            #             # trans.sa_session.add(elements[i])
             if self.completed_jobs and self.completed_jobs[0] is not None and self.job_count == sum(1 for _ in self.completed_jobs.values() if _ is not None):
                 # Collection should be exatly the same, so add elements and finalize
                 implicit_jobs_assoc = self.completed_jobs[0].implicit_collection_jobs_association
