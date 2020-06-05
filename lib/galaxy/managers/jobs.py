@@ -135,8 +135,11 @@ class JobSearch:
                 return key, value
             return key, value
 
-        job_conditions = [and_(model.Job.tool_id == tool_id,
-                           model.Job.user == user)]
+        job_conditions = [and_(
+            model.Job.tool_id == tool_id,
+            model.Job.user == user,
+            model.Job.copied_from_job_id.is_(None)  # Always pick original job
+        )]
 
         if tool_version:
             job_conditions.append(model.Job.tool_version == str(tool_version))
