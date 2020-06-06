@@ -150,7 +150,6 @@ class Workflow extends EventEmitter {
             offset = this.nodeId;
         }
         // First pass, nodes
-        let using_workflow_outputs = false;
         this.workflow_version = data.version;
         this.report = data.report || {};
         Object.values(data.steps).forEach((step) => {
@@ -170,20 +169,6 @@ class Workflow extends EventEmitter {
                     node.element.style.left = step.position.left + "px";
                 }
                 self.nodes[node.id] = node;
-
-                // For older workflows, it's possible to have HideDataset PJAs, but not WorkflowOutputs.
-                // Check for either, and then add outputs in the next pass.
-                if (!using_workflow_outputs) {
-                    if (node.activeOutputs.count() > 0) {
-                        using_workflow_outputs = true;
-                    } else {
-                        Object.values(node.postJobActions).forEach((pja) => {
-                            if (pja.action_type === "HideDatasetAction") {
-                                using_workflow_outputs = true;
-                            }
-                        });
-                    }
-                }
             });
         });
         Vue.nextTick(() => {
@@ -205,15 +190,14 @@ class Workflow extends EventEmitter {
                         });
                     }
                 });
-                if (using_workflow_outputs) {
-                    // Ensure that every output terminal has a WorkflowOutput or HideDatasetAction.
-                    Object.values(node.outputs).forEach((ot) => {
-                        if (node.postJobActions[`HideDatasetAction${ot.name}`] === undefined) {
-                            node.activeOutputs.add(ot.name);
-                            self.has_changes = true;
-                        }
-                    });
-                }
+
+                // Older workflows contain HideDatasetActions only, but no active outputs yet.
+                Object.values(node.outputs).forEach((ot) => {
+                    if (!node.postJobActions[`HideDatasetAction${ot.name}`]) {
+                        node.activeOutputs.add(ot.name);
+                    }
+                });
+
                 self.has_changes = false;
             });
             self.canvas_manager.draw_overview(true);
