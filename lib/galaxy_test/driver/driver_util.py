@@ -53,8 +53,6 @@ GALAXY_TEST_DIRECTORY = os.path.join(galaxy_root, "test")
 GALAXY_TEST_FILE_DIR = "test-data,https://github.com/galaxyproject/galaxy-test-data.git"
 TOOL_SHED_TEST_DATA = os.path.join(galaxy_root, "lib", "tool_shed", "test", "test_data")
 TEST_WEBHOOKS_DIR = os.path.join(galaxy_root, "test", "functional", "webhooks")
-TEST_FILTER_MODULES = 'galaxy.selenium.toolbox,galaxy.tools.filters,galaxy.tools.toolbox.filters'
-TEST_SECTION_FILTERS = 'filters:restrict_test'
 FRAMEWORK_TOOLS_DIR = os.path.join(GALAXY_TEST_DIRECTORY, "functional", "tools")
 FRAMEWORK_UPLOAD_TOOL_CONF = os.path.join(FRAMEWORK_TOOLS_DIR, "upload_tool_conf.xml")
 FRAMEWORK_SAMPLE_TOOLS_CONF = os.path.join(FRAMEWORK_TOOLS_DIR, "samples_tool_conf.xml")
@@ -213,8 +211,6 @@ def setup_galaxy_config(
     shed_tool_data_table_config = default_shed_tool_data_table_config
 
     config = dict(
-        user_tool_section_filters=TEST_SECTION_FILTERS,
-        toolbox_filter_base_modules=TEST_FILTER_MODULES,
         admin_users='test@bx.psu.edu',
         allow_library_path_paste=True,
         allow_user_creation=True,
