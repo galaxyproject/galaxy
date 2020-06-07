@@ -20,7 +20,7 @@ from whoosh.fields import (
     TEXT
 )
 from whoosh.qparser import MultifieldParser, FuzzyTermPlugin, OrGroup
-from whoosh.scoring import BM25F
+from whoosh.scoring import BM25F, MultiWeighting
 from whoosh.writing import AsyncWriter
 from whoosh.query import FuzzyTerm
 
@@ -155,15 +155,15 @@ class ToolBoxSearch:
         """
         # Change field boosts for searcher
         self.searcher = self.index.searcher(
-            weighting=BM25F(
-                field_B={'name_B': float(tool_name_boost),
-                         'id_B': float(tool_id_boost),
-                         'section_B': float(tool_section_boost),
-                         'description_B': float(tool_description_boost),
-                         'labels_B': float(tool_label_boost),
-                         'stub_B': float(tool_stub_boost),
-                         'help_B': float(tool_help_boost)}
-            )
+            weighting=MultiWeighting(BM25F(),
+                                     old_id=BM25F(old_id_B=float(tool_id_boost)),
+                                     name=BM25F(name_B=float(tool_name_boost)),
+                                     section=BM25F(section_B=float(tool_section_boost)),
+                                     description=BM25F(description_B=float(tool_description_boost)),
+                                     labels=BM25F(labels_B=float(tool_label_boost)),
+                                     stub=BM25F(stub_B=float(tool_stub_boost)),
+                                     help=BM25F(help_B=float(tool_help_boost))
+                                     )
         )
         # Use OrGroup to change the default operation for joining multiple terms to logical OR.
         # This means e.g. for search 'bowtie of king arthur' a document that only has 'bowtie' will be a match.
