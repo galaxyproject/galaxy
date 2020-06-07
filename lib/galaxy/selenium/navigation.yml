@@ -163,6 +163,8 @@ history_panel:
     tag_icon: '.actions .history-tag-btn'
     tag_area: '.controls .tags-display'
     tag_area_input: '.controls .tags-display .tags-input input'
+    tag_close_btn: '.tags-display .ti-icon-close'
+    tags: 'li.ti-tag.ti-valid .tag-name'
     annotation_icon: '.actions .history-annotate-btn'
     annotation_area: '.controls .annotation-display'
     annotation_editable_text: '.controls .annotation-display .annotation.editable-text'
