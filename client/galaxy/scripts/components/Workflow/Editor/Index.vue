@@ -34,6 +34,7 @@
                             :key="step.id"
                             :get-manager="getManager"
                             @onAddNode="onAddNode"
+                            @onAddClone="onAddClone"
                         />
                     </div>
                 </div>
@@ -192,11 +193,19 @@ export default {
                 _: "true",
             };
             getModule(requestData).then((response) => {
-                this.manager.setNode(node, response);
+                const newData = Object.assign({}, response, node.step);
+                this.manager.setNode(node, newData);
             });
-
-            // add to nodes list
             this.nodes[node.id] = node;
+        },
+        onAddClone(node) {
+            this.steps.push({
+                ...node.step,
+                id: this.nodeIndex++,
+                annotation: node.annotation,
+                tool_state: node.tool_state,
+                post_job_actions: node.postJobActions,
+            });
         },
         onInsertTool(tool_id, tool_name) {
             if (!this.isCanvas) {

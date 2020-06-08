@@ -244,22 +244,7 @@ export default {
             });
         },
         onClone() {
-            const copiedData = {
-                name: this.name,
-                label: this.label,
-                annotation: this.annotation,
-                post_job_actions: this.postJobActions,
-            };
-            const node = this.manager.createNode(this.type, this.name, this.content_id);
-            const requestData = {
-                type: this.type,
-                tool_id: this.content_id,
-                tool_state: this.tool_state,
-            };
-            getModule(requestData).then((response) => {
-                const newData = Object.assign({}, response, copiedData);
-                this.manager.setNode(node, newData);
-            });
+            this.$emit("onAddClone", this);
         },
         onDestroy() {
             Object.values(this.inputTerminals).forEach((t) => {
