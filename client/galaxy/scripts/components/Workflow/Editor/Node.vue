@@ -105,7 +105,7 @@ export default {
         },
         type: {
             type: String,
-            default: "tool",
+            default: null,
         },
         step: {
             type: Object,
@@ -250,8 +250,6 @@ export default {
             return this;
         },
         setData(data) {
-            this.type = data.type || this.type;
-            this.name = data.name;
             this.config_form = data.config_form;
             this.tool_state = data.tool_state;
             this.errors = data.errors;

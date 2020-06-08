@@ -188,7 +188,7 @@ export default {
         onAddNode(node) {
             const requestData = {
                 type: node.type,
-                tool_id: node.contentId,
+                content_id: node.contentId,
                 _: "true",
             };
             getModule(requestData).then((response) => {
@@ -205,8 +205,8 @@ export default {
             }
             this.steps.push({
                 id: this.nodeIndex++,
-                content_id: tool_id,
                 name: tool_name,
+                content_id: tool_id,
                 type: "tool",
             });
         },
@@ -215,13 +215,10 @@ export default {
                 this.isCanvas = true;
                 return;
             }
-            var node = this.manager.createNode(module_id, module_name);
-            const requestData = {
+            this.steps.push({
+                id: this.nodeIndex++,
+                name: module_name,
                 type: module_id,
-                _: "true",
-            };
-            getModule(requestData).then((response) => {
-                this.manager.setNode(node, response);
             });
         },
         onInsertWorkflow(workflow_id, workflow_name) {
@@ -229,14 +226,11 @@ export default {
                 this.isCanvas = true;
                 return;
             }
-            var node = this.manager.createNode("subworkflow", workflow_name, workflow_id);
-            const requestData = {
-                type: "subworkflow",
+            this.steps.push({
+                id: this.nodeIndex++,
+                name: workflow_name,
                 content_id: workflow_id,
-                _: "true",
-            };
-            getModule(requestData).then((response) => {
-                this.manager.setNode(node, response);
+                type: "subworkflow",
             });
         },
         onInsertWorkflowSteps(workflow_id, step_count) {
