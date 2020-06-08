@@ -36,6 +36,9 @@ export function filterToolSections(layout, results) {
 }
 
 export function filterTools(layout, results) {
+    // don't consider expression tools, unless it's workflow editor
+    layout = layout.filter((section) => section.name !== "Expression Tools");
+
     if (results) {
         var toolsResults = [];
         if (results.length < 1) {
