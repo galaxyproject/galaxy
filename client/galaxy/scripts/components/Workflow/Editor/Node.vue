@@ -80,7 +80,8 @@ import WorkflowRecommendations from "components/Workflow/Editor/Recommendations"
 import NodeInput from "./NodeInput";
 import NodeOutput from "./NodeOutput";
 import { ActiveOutputs } from "./modules/outputs";
-
+import { attachDragging } from "./modules/dragging";
+import $ from "jquery";
 Vue.use(BootstrapVue);
 
 export default {
@@ -134,6 +135,43 @@ export default {
         this.activeOutputs = new ActiveOutputs();
         this.element = this.$el;
         this.content_id = this.contentId;
+
+        // Set initial scroll position
+        const p = document.getElementById("canvas-viewport");
+        const o = document.getElementById("canvas-container");
+        const el = this.$el;
+        const left = -o.offsetLeft + (p.offsetWidth - el.offsetWidth) / 2;
+        const top = -o.offsetTop + (p.offsetHeight - el.offsetHeight) / 2;
+        el.style.left = `${left}px`;
+        el.style.top = `${top}px`;
+
+        // Attach node dragging events
+        attachDragging(this.$el, {
+            dragstart: () => {
+                this.manager._activateNode(this);
+            },
+            dragend: () => {
+                this.manager.nodeChanged(this);
+                this.manager.canvas_manager.draw_overview();
+            },
+            drag: (e, d) => {
+                // Move
+                const po = $(this.$el).offsetParent().offset();
+                // Find relative offset and scale by zoom
+                const x = (d.offsetX - po.left) / this.manager.canvas_manager.canvasZoom;
+                const y = (d.offsetY - po.top) / this.manager.canvas_manager.canvasZoom;
+                $(this.$el).css({ left: x, top: y });
+                // Redraw
+                $(this.$el)
+                    .find(".terminal")
+                    .each(function () {
+                        this.terminal.redraw();
+                    });
+            },
+            dragclickonly: () => {
+                this.manager._activateNode(this);
+            }
+        });
         this.$emit("onAddNode", this);
     },
     computed: {

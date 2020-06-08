@@ -3,6 +3,13 @@ import Terminals from "./terminals";
 import Connector from "./connector";
 import { ariaSelectOutputNode } from "./aria";
 
+export function attachDragging (el, callbacks) {
+    const $el = $(el);
+    Object.entries(callbacks).forEach(([k, v]) => {
+        $el.bind(k, v);
+    });
+}
+
 export class InputDragging {
     constructor(app, options = {}) {
         this.app = app;
