@@ -35,6 +35,7 @@
                             :get-manager="getManager"
                             @onAddNode="onAddNode"
                             @onAddClone="onAddClone"
+                            @onInsertTool="onInsertTool"
                         />
                     </div>
                 </div>

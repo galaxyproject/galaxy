@@ -231,17 +231,9 @@ export default {
             this.activeOutputs.toggle(name);
             this.manager.has_changes = true;
         },
-        onCreate(toolId, event) {
-            const requestData = {
-                tool_id: toolId,
-                type: "tool",
-                _: "true",
-            };
-            getModule(requestData).then((response) => {
-                const node = this.manager.createNode("tool", response.name, toolId);
-                this.manager.setNode(node, response);
-                this.popoverShow = false;
-            });
+        onCreate(contentId) {
+            this.$emit.on("onInsertTool", contentId);
+            this.popoverShow = false;
         },
         onClone() {
             this.$emit("onAddClone", this);
