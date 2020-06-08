@@ -54,6 +54,7 @@ class Workflow extends EventEmitter {
         node.initData(data);
         Vue.nextTick(() => {
             node.updateData(data);
+            this.canvas_manager.draw_overview();
             this._activateNode(node);
         });
     }
@@ -61,12 +62,6 @@ class Workflow extends EventEmitter {
         child = this.ext_to_type[child];
         parent = this.ext_to_type[parent];
         return this.type_to_type[child] && parent in this.type_to_type[child];
-    }
-    createNode(type, name, content_id) {
-        const node = this.buildNode(type, name, content_id);
-        this.canvas_manager.draw_overview();
-        this._activateNode(node);
-        return node;
     }
     buildNode(type, name, content_id) {
         const self = this;
