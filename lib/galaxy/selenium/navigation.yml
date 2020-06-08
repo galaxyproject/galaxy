@@ -172,6 +172,9 @@ history_panel:
     options_button: '#history-options-button'
     options_button_icon: '#history-options-button span.fa-cog'
     options_menu: '#history-options-button-menu'
+    options_show_history_structure:
+      type: xpath
+      selector: '//a[text()="Show Structure"]'
     new_history_button: '#history-new-button'
     multi_view_button: '#history-view-multi-button'
 
@@ -186,6 +189,13 @@ history_panel:
     tooltip_name: 'Click to rename history'
     new_name: 'Unnamed history'
     new_size: '(empty)'
+
+history_structure:
+  selectors:
+    _: '.tool'
+    header: '.tool > .header.clickable'
+    dataset: '.tool div.list-item.dataset.history-content'
+    details: '.tool .details'
 
 tool_panel:
 
