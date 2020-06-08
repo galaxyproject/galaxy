@@ -3,6 +3,7 @@ import logging
 import os
 import string
 import time
+import yaml
 from collections import (
     namedtuple,
     OrderedDict
@@ -82,10 +83,16 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         # The _dynamic_tool_confs list contains dictionaries storing
         # information about the tools defined in each shed-related
         # shed_tool_conf.xml file.
+
+        # self.get_all_toolsets()  # juleen
+        # exit()  # juleen
+
         self._dynamic_tool_confs = []
         self._tools_by_id = {}
         self._tools_by_uuid = {}
         self._integrated_section_by_tool = {}
+        self._toolsets = {}
+        print("\n\nTOOLSETTT EMPTY: ", self._toolsets)
         # Tool lineages can contain chains of related tools with different ids
         # so each will be present once in the above dictionary. The following
         # dictionary can instead hold multiple tools with different versions.
@@ -465,6 +472,52 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 self._integrated_tool_panel.append_section(key, section)
             elif elem.tag == 'label':
                 self._integrated_tool_panel.stub_label(key)
+
+    # BEGIN TOOLSET
+    def get_toolset(self, toolset_path):
+        # BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+        # BASE_TOOLSET_DIR = os.path.join(BASE_DIR, "usegalaxy-eu-tools/")
+        # toolset_path = os.path.join(BASE_TOOLSET_DIR, "bgruening.yaml")
+
+        with open(toolset_path, 'r') as toolset_list:
+            try:
+                toolset = yaml.load(toolset_list)  # needs to be switched to safe_load but for some reason that's empty Juleen
+                log.debug("Reading tools from %s finished", toolset_path)
+                # log.debug(toolset['tools'])
+                # print("\nTOOLSET DUMP: ", yaml.dump(toolset['tools']))  # to delete Juleen
+                return toolset['tools']
+            except yaml.YAMLError as exc:  # to fix later Juleen
+                log.debug("Failed to read toolset list from %s", toolset_path)
+
+    def get_all_toolsets(self):
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+        BASE_TOOLSET_DIR = os.path.join(BASE_DIR, "usegalaxy-eu-tools/")
+        toolsets = {}
+        for filename in os.listdir(BASE_TOOLSET_DIR):
+            if filename.endswith(".yaml"):
+                toolset_path = os.path.join(BASE_TOOLSET_DIR, filename)
+                toolset_name = filename[:-5]
+                toolsets[toolset_name] = self.get_toolset(toolset_path)
+
+                #tool_ids = self.get_toolset_ids(toolset_name, toolsets)
+                #print("TOOL_IDS: ", tool_ids)
+            else:
+                continue
+        self._toolsets = toolsets
+        print("\n\nTOOLSETTT FILLED: ", self._toolsets)
+        return [*toolsets]  # return a list of toolset names (keys)
+
+    # def get_toolset_ids(self, toolset_name, toolsets):  # shouldnt need to pass toolsets when self._toolsets works
+    def get_toolset_ids(self, toolset_name):  # shouldnt need to pass toolsets when self._toolsets works
+        toolset = self._toolsets.get(toolset_name)
+        return [tool['name'] for tool in toolset]
+
+    def get_all_toolsets_ids(self, toolset_name, toolsets):  # shouldnt need to pass toolsets when self._toolsets works
+        # TBD but might not need
+        toolset = toolsets.get(toolset_name)
+        return [tool['name'] for tool in toolset]
+
+    # END TOOLSET
 
     def get_tool(self, tool_id, tool_version=None, get_all_versions=False, exact=False, tool_uuid=None):
         """Attempt to locate a tool in the tool box. Note that `exact` only refers to the `tool_id`, not the `tool_version`."""

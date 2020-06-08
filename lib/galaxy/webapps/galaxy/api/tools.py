@@ -110,6 +110,29 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         tool = self._get_tool(id, user=trans.user, tool_version=tool_version)
         return tool.to_dict(trans, io_details=io_details, link_details=link_details)
 
+    @expose_api_anonymous_and_sessionless
+    def toolset_list(self, trans):
+        """
+        GET /api/tools/toolset_list
+        change to <<GET /api/toolset>> once toolset.py implemented
+
+        Returns list of toolsets
+        """
+        return self.app.toolbox.get_all_toolsets()
+
+    @expose_api_anonymous_and_sessionless
+    def get_toolset(self, toolset_id):
+        """
+        GET /api/tools/toolset/{toolset_id}
+        change to <<GET /api/toolset/{toolset_id}>> once toolset.py implemented
+
+        Returns tool information
+
+            parameters:
+                toolset_id - return the list of tool ids for tools in this toolset
+        """
+        return self.app.toolbox.get_toolset_ids(toolset_id)
+
     @expose_api_anonymous
     def build(self, trans, id, **kwd):
         """

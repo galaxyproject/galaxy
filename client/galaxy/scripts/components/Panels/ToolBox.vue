@@ -9,6 +9,20 @@
                 <div class="panel-header-text">Tools</div>
             </div>
         </div>
+        <div class="toolset" v-if="toolsetEnabled">
+            <!--Only Display if toolsets are configured-->
+            <!--<b-form-group label="Use existing institutional login">-->
+            <select
+                placeholder="Select a Toolset"
+                v-model="selected"
+                :options="toolsets"
+            >
+                <option v-for="toolset in toolsets" v-bind:key="toolset" v-on:click="getToolsetToolIds(toolset)">
+                    {{ toolset }}
+                </option>
+            </select>
+
+        </div>
         <div class="unified-panel-controls">
             <tool-search :query="query" placeholder="search tools" @onQuery="onQuery" @onResults="onResults" />
 
@@ -46,6 +60,7 @@
 </template>
 
 <script>
+import axios from "axios";
 import ToolSection from "./Common/ToolSection";
 import ToolSearch from "./Common/ToolSearch";
 import UploadButton from "./Buttons/UploadButton";
@@ -53,6 +68,7 @@ import FavoritesButton from "./Buttons/FavoritesButton";
 import { filterToolSections, filterTools } from "./utilities";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
+import svc from "./service";
 import _l from "utils/localization";
 
 export default {
@@ -70,6 +86,8 @@ export default {
             queryFilter: null,
             showSections: false,
             buttonText: "",
+            toolsets: ["None"],
+            selected: "None",
         };
     },
     props: {
@@ -117,6 +135,10 @@ export default {
         hasResults() {
             return this.results && this.results.length > 0;
         },
+        toolsetEnabled() {
+            return true;
+            //return getGalaxyInstance().config.enable_toolsets; //make configurable feature?
+        },
     },
     methods: {
         onQuery(query) {
@@ -150,6 +172,41 @@ export default {
         setButtonText() {
             this.buttonText = this.showSections ? "Hide Sections" : "Show Sections";
         },
+        getToolsets() {         
+            svc.getToolsetList()
+                .then((toolsets) => {
+                    this.toolsets = toolsets; //append instead to keep "none"
+                })
+                /*.catch((error) => {
+                    this.messageVariant = "danger";
+                    const message = error.response.data && error.response.data.err_msg;
+                    this.messageText = message || "Unable to load list of toolsets.";
+                })*/;
+        },
+        getToolsetToolIds(toolset_id) {
+            console.log("\nTOOLSET_ID: ", toolset_id);
+
+            if (toolset_id != "None") {
+                svc.getToolsetToolIds(toolset_id)
+                .then((toolIds) => {
+                    console.log("\n\nTOOL_IDS: ", toolIds);
+                    const toolsIds = toolIds;
+                    //this.filterToolsetTools(toolsIds);
+                    //return filterToolSections(this.toolbox, toolsIds);
+                })
+                /*.catch((error) => {
+                    this.messageVariant = "danger";
+                    const message = error.response.data && error.response.data.err_msg;
+                    this.messageText = message || "Unable to load list of toolsets.";
+                })*/;
+            } else {
+                //reset to full toolbox
+            }
+            
+        },
+    },
+    created() {
+        this.getToolsets();
     },
 };
 </script>

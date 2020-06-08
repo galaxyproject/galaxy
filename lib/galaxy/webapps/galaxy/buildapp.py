@@ -364,6 +364,10 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/tools/fetch', action='fetch', controller='tools', conditions=dict(method=["POST"]))
     webapp.mapper.connect('/api/tools/all_requirements', action='all_requirements', controller="tools")
     webapp.mapper.connect('/api/tools/error_stack', action='error_stack', controller="tools")
+
+    webapp.mapper.connect('/api/tools/toolset_list', action='toolset_list', controller="tools")
+    webapp.mapper.connect('/api/toolset/{toolset_id:.+?}', action='get_toolset', controller="tools")
+
     webapp.mapper.connect('/api/tools/{id:.+?}/build', action='build', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/reload', action='reload', controller="tools")
     webapp.mapper.connect('/api/tools/tests_summary', action='tests_summary', controller="tools")
