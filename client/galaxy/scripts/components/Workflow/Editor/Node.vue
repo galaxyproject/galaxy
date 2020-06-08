@@ -155,16 +155,18 @@ export default {
             },
             drag: (e, d) => {
                 const rect = o.getBoundingClientRect();
-                const x = (d.offsetX - rect.left) / this.manager.canvas_manager.canvasZoom;
-                const y = (d.offsetY - rect.top) / this.manager.canvas_manager.canvasZoom;
-                el.style.left = `${x}px`;
-                el.style.top = `${y}px`;
+                const left = (d.offsetX - rect.left) / this.manager.canvas_manager.canvasZoom;
+                const top = (d.offsetY - rect.top) / this.manager.canvas_manager.canvasZoom;
+                el.style.left = `${left}px`;
+                el.style.top = `${top}px`;
                 this.onRedraw();
             },
             dragclickonly: () => {
                 this.manager._activateNode(this);
             }
         });
+
+        // Emit add event
         this.$emit("onAddNode", this);
     },
     computed: {
