@@ -107,6 +107,10 @@ export default {
             type: String,
             default: "tool",
         },
+        step: {
+            type: Object,
+            default: null,
+        },
         getManager: {
             type: Function,
             default: null,
@@ -130,6 +134,7 @@ export default {
         this.activeOutputs = new ActiveOutputs();
         this.element = this.$el;
         this.content_id = this.contentId;
+        this.$emit("onAddNode", this);
     },
     computed: {
         title() {

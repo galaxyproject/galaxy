@@ -24,7 +24,18 @@
             <div id="workflow-canvas" class="unified-panel-body workflow-canvas" v-show="isCanvas">
                 <ZoomControl :zoom-level="zoomLevel" @onZoom="onZoom" />
                 <div id="canvas-viewport">
-                    <div ref="canvas" id="canvas-container" />
+                    <div ref="canvas" id="canvas-container">
+                        <WorkflowNode v-for="step in steps"
+                            :id="step.id"
+                            :name="step.name"
+                            :type="step.type"
+                            :content-id="step.content_id"
+                            :step="step"
+                            :key="step.id"
+                            :get-manager="getManager"
+                            @onAddNode="onAddNode"
+                        />
+                    </div>
                 </div>
                 <div class="workflow-overview" aria-hidden="true">
                     <div class="workflow-overview-body">
@@ -96,6 +107,7 @@ import EditorPanel from "./EditorPanel";
 import { hide_modal, show_message, show_modal } from "layout/modal";
 import WorkflowAttributes from "./Attributes";
 import ZoomControl from "./ZoomControl";
+import WorkflowNode from "./Node";
 
 export default {
     components: {
@@ -106,6 +118,7 @@ export default {
         WorkflowOptions,
         WorkflowAttributes,
         ZoomControl,
+        WorkflowNode,
     },
     props: {
         id: {
@@ -151,6 +164,9 @@ export default {
             versions: [],
             parameters: [],
             zoomLevel: 7,
+            steps: [],
+            nodeIndex: 0,
+            nodes: {},
         };
     },
     created() {
@@ -169,19 +185,29 @@ export default {
         });
     },
     methods: {
+        onAddNode(node) {
+            const requestData = {
+                type: node.type,
+                tool_id: node.contentId,
+                _: "true",
+            };
+            getModule(requestData).then((response) => {
+                this.manager.setNode(node, response);
+            });
+
+            // add to nodes list
+            this.nodes[node.id] = node;
+        },
         onInsertTool(tool_id, tool_name) {
             if (!this.isCanvas) {
                 this.isCanvas = true;
                 return;
             }
-            var node = this.manager.createNode("tool", tool_name, tool_id);
-            const requestData = {
+            this.steps.push({
+                id: this.nodeIndex++,
+                content_id: tool_id,
+                name: tool_name,
                 type: "tool",
-                tool_id: tool_id,
-                _: "true",
-            };
-            getModule(requestData).then((response) => {
-                this.manager.setNode(node, response);
             });
         },
         onInsertModule(module_id, module_name) {
@@ -296,6 +322,9 @@ export default {
                 .catch((response) => {
                     show_modal("Loading workflow failed...", response, { Ok: hide_modal });
                 });
+        },
+        getManager() {
+            return this.manager;
         },
     },
 };
