@@ -73,7 +73,6 @@
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import WorkflowIcons from "components/Workflow/icons";
-import { getModule } from "./modules/services";
 import LoadingSpan from "components/LoadingSpan";
 import { getGalaxyInstance } from "app";
 import WorkflowRecommendations from "components/Workflow/Editor/Recommendations";
@@ -136,13 +135,35 @@ export default {
         this.content_id = this.contentId;
 
         // Set initial scroll position
-        const p = document.getElementById("canvas-viewport");
-        const o = document.getElementById("canvas-container");
+        const step = this.step;
         const el = this.$el;
-        const left = -o.offsetLeft + (p.offsetWidth - el.offsetWidth) / 2;
-        const top = -o.offsetTop + (p.offsetHeight - el.offsetHeight) / 2;
-        el.style.left = `${left}px`;
-        el.style.top = `${top}px`;
+        if (step.position) {
+            el.style.top = step.position.top + "px";
+            el.style.left = step.position.left + "px";
+        } else {
+            const p = document.getElementById("canvas-viewport");
+            const o = document.getElementById("canvas-container");
+            const left = -o.offsetLeft + (p.offsetWidth - el.offsetWidth) / 2;
+            const top = -o.offsetTop + (p.offsetHeight - el.offsetHeight) / 2;
+            el.style.top = `${top}px`;
+            el.style.left = `${left}px`;
+        }
+
+        // Initialize node data
+        this.initData(step);
+        this.updateData(step);
+        /*data.workflow_outputs = data.outputs.map((o) => {
+            return {
+                output_name: o.name,
+                label: o.label,
+            };
+        });
+        node.initData(data);
+        Vue.nextTick(() => {
+            node.updateData(data);
+            this.canvas_manager.draw_overview();
+            this._activateNode(node);
+        });*/
 
         // Attach node dragging events
         attachDragging(this.$el, {
@@ -154,6 +175,8 @@ export default {
                 this.manager.canvas_manager.draw_overview();
             },
             drag: (e, d) => {
+                const o = document.getElementById("canvas-container");
+                const el = this.$el;
                 const rect = o.getBoundingClientRect();
                 const left = (d.offsetX - rect.left) / this.manager.canvas_manager.canvasZoom;
                 const top = (d.offsetY - rect.top) / this.manager.canvas_manager.canvasZoom;
@@ -271,8 +294,8 @@ export default {
         },
         initData(data) {
             this.setData(data);
-            this.inputs = data.inputs.slice();
-            this.outputs = data.outputs.slice();
+            this.inputs = data.inputs ? data.inputs.slice() : [];
+            this.outputs = data.outputs ? data.outputs.slice() : [];
             this.activeOutputs.initialize(this.outputs, data.workflow_outputs);
             Vue.nextTick(() => {
                 this.manager.nodeChanged(this);
@@ -407,7 +430,7 @@ export default {
             })(element.parentNode);
             // Remove active class
             element.classList.remove("node-active");
-        },
+        }
     },
 };
 </script>

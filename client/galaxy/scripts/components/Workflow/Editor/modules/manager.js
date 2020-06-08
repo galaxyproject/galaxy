@@ -11,7 +11,7 @@ class Workflow extends EventEmitter {
         this.ext_to_type = options.datatypes_mapping.ext_to_class_name;
         this.type_to_type = options.datatypes_mapping.class_to_classes;
         this.canvas_container = $(canvas_container);
-        this.nodes = {};
+        this.nodes = options.nodes;
         this.name = null;
         this.has_changes = false;
         this.workflow_version = 0;

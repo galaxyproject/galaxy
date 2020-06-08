@@ -175,7 +175,8 @@ export default {
         getDatatypes().then((response) => {
             const datatypes = response.datatypes;
             const datatypes_mapping = response.datatypes_mapping;
-            this.manager = new WorkflowManager({ datatypes_mapping }, this.$refs.canvas);
+            const nodes = this.nodes;
+            this.manager = new WorkflowManager({ datatypes_mapping, nodes }, this.$refs.canvas);
             this.manager
                 .on("onRemoveNode", () => {
                     showAttributes();
@@ -188,7 +189,7 @@ export default {
     },
     methods: {
         onAddNode(node) {
-            const requestData = {
+            /*const requestData = {
                 type: node.type,
                 content_id: node.contentId,
                 _: "true",
@@ -196,7 +197,7 @@ export default {
             getModule(requestData).then((response) => {
                 const newData = Object.assign({}, response, node.step);
                 this.manager.setNode(node, newData);
-            });
+            });*/
             this.nodes[node.id] = node;
         },
         onAddClone(node) {
@@ -313,11 +314,12 @@ export default {
         },
         loadCurrent(id, version) {
             show_message("Loading workflow...", "progress");
-            loadWorkflow(this.manager, id, version)
+            loadWorkflow(this, id, version)
                 .then((data) => {
                     const report = data.report || {};
                     const markdown = report.markdown || reportDefault;
                     this.$refs["report-editor"].input = markdown;
+                    this.manager.canvas_manager.draw_overview(true);
                     showUpgradeMessage(this.manager, data);
                     getVersions(this.id).then((versions) => {
                         this.versions = versions;

@@ -1,6 +1,7 @@
 import axios from "axios";
 import { rethrowSimple } from "utils/simple-error";
 import { getAppRoot } from "onload/loadConfig";
+import { fromSimple } from "./model";
 
 /** Workflow data request helper **/
 export async function getVersions(id) {
@@ -37,7 +38,7 @@ export async function loadWorkflow(workflow, id, version, appendData) {
     try {
         const versionQuery = version ? `version=${version}` : "";
         const { data } = await axios.get(`${getAppRoot()}workflow/load_workflow?_=true&id=${id}&${versionQuery}`);
-        workflow.fromSimple(data, appendData);
+        fromSimple(workflow, data, appendData);
         return data;
     } catch (e) {
         console.debug(e);
