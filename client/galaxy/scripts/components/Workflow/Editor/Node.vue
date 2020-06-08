@@ -81,7 +81,6 @@ import NodeInput from "./NodeInput";
 import NodeOutput from "./NodeOutput";
 import { ActiveOutputs } from "./modules/outputs";
 import { attachDragging } from "./modules/dragging";
-import $ from "jquery";
 Vue.use(BootstrapVue);
 
 export default {
@@ -155,18 +154,12 @@ export default {
                 this.manager.canvas_manager.draw_overview();
             },
             drag: (e, d) => {
-                // Move
-                const po = $(this.$el).offsetParent().offset();
-                // Find relative offset and scale by zoom
-                const x = (d.offsetX - po.left) / this.manager.canvas_manager.canvasZoom;
-                const y = (d.offsetY - po.top) / this.manager.canvas_manager.canvasZoom;
-                $(this.$el).css({ left: x, top: y });
-                // Redraw
-                $(this.$el)
-                    .find(".terminal")
-                    .each(function () {
-                        this.terminal.redraw();
-                    });
+                const rect = o.getBoundingClientRect();
+                const x = (d.offsetX - rect.left) / this.manager.canvas_manager.canvasZoom;
+                const y = (d.offsetY - rect.top) / this.manager.canvas_manager.canvasZoom;
+                el.style.left = `${x}px`;
+                el.style.top = `${y}px`;
+                this.onRedraw();
             },
             dragclickonly: () => {
                 this.manager._activateNode(this);
