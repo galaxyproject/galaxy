@@ -296,7 +296,7 @@ function usefulToString(arg) {
         } catch (e) {
             // If arg has cyclic reference, return String
             // otherwise rendering stops and we have incomplete page
-            console.error(e)
+            console.error(e);
             return String(arg);
         }
     }
