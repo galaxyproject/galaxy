@@ -33,6 +33,7 @@ class StagingInterace(object):
     _attach_file, _log, etc..) to adapt to bioblend (for Planemo) or using the
     tool test interactor infrastructure.
     """
+    use_fetch_api = True
 
     @abc.abstractmethod
     def _post(self, api_path, payload, files_attached=False):
@@ -47,12 +48,65 @@ class StagingInterace(object):
             self._handle_job(job)
         return tool_response
 
+    def _fetch_post(self, payload, files_attached=False):
+        tool_response = self._post("tools/fetch", payload, files_attached=files_attached)
+        for job in tool_response.get("jobs", []):
+            self._handle_job(job)
+        return tool_response
+
     def _handle_job(self, job_response):
         """Implementer can decide if to wait for job(s) individually or not here."""
 
     def stage(self, tool_or_workflow, history_id, job=None, job_path=None, use_path_paste=LOAD_TOOLS_FROM_PATH):
         files_attached = [False]
 
+        def upload_func_fetch(upload_target):
+
+            def _attach_file(upload_payload, uri, index=0):
+                uri = path_or_uri_to_uri(uri)
+                is_path = uri.startswith("file://")
+                if not is_path or use_path_paste:
+                    return {"src": "url", "url": uri}
+                else:
+                    files_attached[0] = True
+                    path = uri[len("file://"):]
+                    upload_payload["__files"]["files_%s|file_data" % index] = self._attach_file(path)
+                    return {"src": "files"}
+
+            fetch_payload = None
+            if isinstance(upload_target, FileUploadTarget):
+                file_path = upload_target.path
+                fetch_payload = _fetch_payload(
+                    history_id,
+                    file_type=upload_target.properties.get('filetype', None) or "auto",
+                )
+                name = _file_path_to_name(file_path)
+                if file_path is not None:
+                    src = _attach_file(fetch_payload, file_path)
+                    fetch_payload["targets"][0]["elements"][0].update(src)
+                fetch_payload["targets"][0]["elements"][0]["name"] = name
+            elif isinstance(upload_target, FileLiteralTarget):
+                fetch_payload = _fetch_payload(history_id)
+                fetch_payload["targets"][0]["elements"][0].update({
+                    "src": "pasted",
+                    "paste_content": upload_target.contents
+                })
+            elif isinstance(upload_target, DirectoryUploadTarget):
+                fetch_payload = _fetch_payload(history_id, file_type="directory")
+                fetch_payload["targets"][0].pop("elements")
+                tar_path = upload_target.path
+                src = _attach_file(fetch_payload, tar_path)
+                fetch_payload["targets"][0]["elements_from"] = src
+            else:
+                content = json.dumps(upload_target.object)
+                fetch_payload = _fetch_payload(history_id, file_type="expression.json")
+                fetch_payload["targets"][0]["elements"][0].update({
+                    "src": "pasted",
+                    "paste_content": content,
+                })
+            return self._fetch_post(fetch_payload, files_attached=files_attached[0])
+
+        # Save legacy upload_func to target older Galaxy servers
         def upload_func(upload_target):
 
             def _attach_file(upload_payload, uri, index=0):
@@ -143,10 +197,15 @@ class StagingInterace(object):
             # Figure out what "." should be here instead.
             job_dir = "."
 
+        if self.use_fetch_api:
+            upload = upload_func_fetch
+        else:
+            upload = upload_func
+
         job_dict, datasets = galactic_job_json(
             job,
             job_dir,
-            upload_func,
+            upload,
             create_collection_func,
             tool_or_workflow,
         )
@@ -195,4 +254,27 @@ def _upload_payload(history_id, tool_id=UPLOAD_TOOL_ID, file_type="auto", dbkey=
     tool_input["files_0|type"] = "upload_dataset"
     payload["inputs"] = tool_input
     payload["__files"] = {}
+    return payload
+
+
+def _fetch_payload(history_id, file_type="auto", dbkey="?", **kwd):
+    element = {
+        "ext": file_type,
+    }
+    for arg in ['to_posix_lines', 'space_to_tab']:
+        if arg in kwd:
+            element[arg] = kwd[arg]
+    if 'file_name' in kwd:
+        element['name'] = kwd['file_name']
+    target = {
+        "destination": {"type": "hdas"},
+        "elements": [element],
+        "auto_decompress": False,
+    }
+    targets = [target]
+    payload = {
+        "history_id": history_id,
+        "targets": targets,
+        "__files": {}
+    }
     return payload
