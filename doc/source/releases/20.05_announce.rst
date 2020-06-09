@@ -19,7 +19,7 @@ Highlights
   @mvdbeek will fill this
 
 **Many new Interactive Tools**
-Galaxy interactive tools allow a greater depth of analysis via access to GUI-based tools inside an instance. 10 new interactive tools join the standard base toolset on galaxy download. Several tools previously only available on the usegalaxy.eu server, are now able to be run on local instances via configurations in the job_conf.xml and galaxy.yml files, details of which can be found in the documentation under "Galaxy InteractiveTools". Improvements to the Higlass interactive tool also now allow for a more in-depth visualization of multiple datasets in various formats simultaneously (`Pull Request 9559`_).
+Galaxy interactive tools allow a greater depth of analysis via access to GUI-based tools inside an instance. 10 new interactive tools (some previously available only on the UseGalaxy.eu server) join the standard base toolset. Improvements to the Higlass interactive tool also now allow for a more in-depth visualization of multiple datasets in various formats simultaneously (`Pull Request 9559`_).
 
 Also check out the `20.05 user release notes <20.05_announce_user.html>`__
 
