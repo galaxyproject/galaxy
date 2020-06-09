@@ -224,10 +224,19 @@ class JobSearch:
                     e = aliased(model.HistoryDatasetAssociationHistory)
                     stmt = select([model.HistoryDatasetAssociation.id]).where(
                         model.HistoryDatasetAssociation.id == e.history_dataset_association_id
+                    )
+                    name_condition = []
+                    if identifier:
+                        data_conditions.append(and_(model.Job.id == d.job_id,
+                                             d.name.in_({"%s|__identifier__" % _ for _ in k}),
+                                             d.value == json.dumps(identifier)))
+                    else:
+                        stmt = stmt.where(e.name == c.name)
+                        name_condition.append(b.name == c.name)
+                    stmt = stmt.where(
+                        e.extension == c.extension,
                     ).where(
                         a.dataset_version == e.version,
-                    ).where(
-                        e.extension == c.extension,
                     ).where(
                         e._metadata == c._metadata,
                     )
@@ -246,16 +255,14 @@ class JobSearch:
                                      b.update_time < model.Job.create_time),
                                  b.extension == c.extension,
                                  b.metadata == c.metadata,
+                                 *name_condition,
                                  ),
                             b.id.in_(stmt)
                         ),
                         or_(b.deleted == false(), c.deleted == false())
 
                     ))
-                    if identifier:
-                        data_conditions.append(and_(model.Job.id == d.job_id,
-                                             d.name.in_({"%s|__identifier__" % _ for _ in k}),
-                                             d.value == json.dumps(identifier)))
+
                     used_ids.append(a.dataset_id)
                 elif t == 'ldda':
                     a = aliased(model.JobToInputLibraryDatasetAssociation)
@@ -286,10 +293,14 @@ class JobSearch:
                 elif t == 'dce':
                     a = aliased(model.JobToInputDatasetCollectionElementAssociation)
                     b = aliased(model.DatasetCollectionElement)
+                    c = aliased(model.DatasetCollectionElement)
                     data_conditions.append(and_(
                         model.Job.id == a.job_id,
                         a.name.in_(k),
                         a.dataset_collection_element_id == b.id,
+                        b.element_identifier == c.element_identifier,
+                        c.child_collection_id == b.child_collection_id,
+                        c.id == v,
                     ))
                     used_ids.append(a.dataset_collection_element_id)
                 else:
