@@ -1455,9 +1455,11 @@ def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_
     return inputs, label_map, has_uploads
 
 
-def stage_inputs(galaxy_interactor, history_id, job, use_path_paste=True):
+def stage_inputs(galaxy_interactor, history_id, job, use_path_paste=True, use_fetch_api=True):
     """Alternative to load_data_dict that uses production-style workflow inputs."""
-    inputs, datasets = InteractorStaging(galaxy_interactor).stage("workflow", history_id=history_id, job=job, use_path_paste=use_path_paste)
+    inputs, datasets = InteractorStaging(galaxy_interactor, use_fetch_api=use_fetch_api).stage(
+        "workflow", history_id=history_id, job=job, use_path_paste=use_path_paste,
+    )
     return inputs, datasets
 
 
