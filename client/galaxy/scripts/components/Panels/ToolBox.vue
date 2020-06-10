@@ -9,21 +9,20 @@
                 <div class="panel-header-text">Tools</div>
             </div>
         </div>
-        <div class="toolset" v-if="toolsetEnabled">
-            <!--Only Display if toolsets are configured-->
-            <!--<b-form-group label="Use existing institutional login">-->
-            <select
-                placeholder="Select a Toolset"
-                v-model="selected"
-                :options="toolsets"
-            >
-                <option v-for="toolset in toolsets" v-bind:key="toolset" v-on:click="getToolsetToolIds(toolset)">
-                    {{ toolset }}
-                </option>
-            </select>
-
-        </div>
         <div class="unified-panel-controls">
+            <div class="toolset" v-if="toolsetEnabled">
+                <!--Only Display if toolsets are configured-->
+                <select
+                    placeholder="Select a Toolset"
+                    v-model="selected"
+                    :options="toolsets"
+                >
+                    <option v-for="toolset in toolsets" v-bind:key="toolset" v-on:click="getToolsetToolIds(toolset)">
+                        {{ toolset }}
+                    </option>
+                </select>
+
+            </div>
             <tool-search :query="query" placeholder="search tools" @onQuery="onQuery" @onResults="onResults" />
 
             <div class="py-2" v-if="hasResults">
@@ -87,6 +86,7 @@ export default {
             showSections: false,
             buttonText: "",
             toolsets: ["None"],
+            toolsetIds: [],
             selected: "None",
         };
     },
@@ -106,7 +106,12 @@ export default {
     },
     computed: {
         sections() {
-            if (this.showSections) {
+            // what happens when searching a toolset? still just displays selected toolset
+            if (this.toolsetIds.length > 0 && this.selected != "None") {
+                return filterToolSections(this.toolbox, this.toolsetIds);
+                //idea: get list of uninstalled tools that are in toolset and suggest installing them/contact admin
+            }
+            else if (this.showSections) {
                 return filterToolSections(this.toolbox, this.results);
             } else {
                 return filterTools(this.toolbox, this.results);
@@ -175,7 +180,8 @@ export default {
         getToolsets() {         
             svc.getToolsetList()
                 .then((toolsets) => {
-                    this.toolsets = toolsets; //append instead to keep "none"
+                    toolsets.sort();
+                    this.toolsets = this.toolsets.concat(toolsets);
                 })
                 /*.catch((error) => {
                     this.messageVariant = "danger";
@@ -190,9 +196,11 @@ export default {
                 svc.getToolsetToolIds(toolset_id)
                 .then((toolIds) => {
                     console.log("\n\nTOOL_IDS: ", toolIds);
-                    const toolsIds = toolIds;
+                    this.toolsetIds = toolIds;
                     //this.filterToolsetTools(toolsIds);
                     //return filterToolSections(this.toolbox, toolsIds);
+                    /* add option to see other tools in the toolset that are not installed. to have tools installed, contact your Galaxy admin*/
+
                 })
                 /*.catch((error) => {
                     this.messageVariant = "danger";
@@ -200,6 +208,7 @@ export default {
                     this.messageText = message || "Unable to load list of toolsets.";
                 })*/;
             } else {
+                this.toolsetIds = [];
                 //reset to full toolbox
             }
             

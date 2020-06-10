@@ -6,7 +6,7 @@ import yaml
 
 class Toolset():
 
-    def __init__(self, config_filenames, tool_root_dir, app):
+    def __init__(self, app):
         self._toolsets = {}
         self._toolset_name = ""
         self._tools_by_id = {}

@@ -113,7 +113,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
     @expose_api_anonymous_and_sessionless
     def toolset_list(self, trans):
         """
-        GET /api/tools/toolset_list
+        GET /api/toolset
         change to <<GET /api/toolset>> once toolset.py implemented
 
         Returns list of toolsets
@@ -121,9 +121,9 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         return self.app.toolbox.get_all_toolsets()
 
     @expose_api_anonymous_and_sessionless
-    def get_toolset(self, toolset_id):
+    def get_toolset(self, trans, toolset_id):
         """
-        GET /api/tools/toolset/{toolset_id}
+        GET /api/toolset/{toolset_id}
         change to <<GET /api/toolset/{toolset_id}>> once toolset.py implemented
 
         Returns tool information

@@ -92,7 +92,6 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         self._tools_by_uuid = {}
         self._integrated_section_by_tool = {}
         self._toolsets = {}
-        print("\n\nTOOLSETTT EMPTY: ", self._toolsets)
         # Tool lineages can contain chains of related tools with different ids
         # so each will be present once in the above dictionary. The following
         # dictionary can instead hold multiple tools with different versions.
@@ -493,23 +492,20 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
         BASE_TOOLSET_DIR = os.path.join(BASE_DIR, "usegalaxy-eu-tools/")
         toolsets = {}
-        for filename in os.listdir(BASE_TOOLSET_DIR):
+        for filename in os.listdir(BASE_TOOLSET_DIR):  # maybe separate into a separate load_toolset that's called on init?
             if filename.endswith(".yaml"):
                 toolset_path = os.path.join(BASE_TOOLSET_DIR, filename)
                 toolset_name = filename[:-5]
                 toolsets[toolset_name] = self.get_toolset(toolset_path)
-
-                #tool_ids = self.get_toolset_ids(toolset_name, toolsets)
-                #print("TOOL_IDS: ", tool_ids)
             else:
                 continue
         self._toolsets = toolsets
-        print("\n\nTOOLSETTT FILLED: ", self._toolsets)
         return [*toolsets]  # return a list of toolset names (keys)
 
     # def get_toolset_ids(self, toolset_name, toolsets):  # shouldnt need to pass toolsets when self._toolsets works
     def get_toolset_ids(self, toolset_name):  # shouldnt need to pass toolsets when self._toolsets works
         toolset = self._toolsets.get(toolset_name)
+        print("\n\n\nTOOLSET: ", toolset)
         return [tool['name'] for tool in toolset]
 
     def get_all_toolsets_ids(self, toolset_name, toolsets):  # shouldnt need to pass toolsets when self._toolsets works

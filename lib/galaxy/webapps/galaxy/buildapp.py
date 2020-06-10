@@ -365,9 +365,6 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/tools/all_requirements', action='all_requirements', controller="tools")
     webapp.mapper.connect('/api/tools/error_stack', action='error_stack', controller="tools")
 
-    webapp.mapper.connect('/api/tools/toolset_list', action='toolset_list', controller="tools")
-    webapp.mapper.connect('/api/toolset/{toolset_id:.+?}', action='get_toolset', controller="tools")
-
     webapp.mapper.connect('/api/tools/{id:.+?}/build', action='build', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/reload', action='reload', controller="tools")
     webapp.mapper.connect('/api/tools/tests_summary', action='tests_summary', controller="tools")
@@ -389,6 +386,13 @@ def populate_api_routes(webapp, app):
 
     webapp.mapper.connect('/api/entry_points', action='index', controller="tool_entry_points")
     webapp.mapper.connect('/api/entry_points/{id:.+?}/access', action='access_entry_point', controller="tool_entry_points")
+
+    # =======================
+    # ===== TOOLSET API =====
+    # =======================
+
+    webapp.mapper.connect('/api/toolset', action='toolset_list', controller="tools")
+    webapp.mapper.connect('/api/toolset/{toolset_id:.+?}', action='get_toolset', controller="tools")
 
     webapp.mapper.connect('/api/dependency_resolvers/clean', action="clean", controller="tool_dependencies", conditions=dict(method=["POST"]))
     webapp.mapper.connect('/api/dependency_resolvers/dependency', action="manager_dependency", controller="tool_dependencies", conditions=dict(method=["GET"]))

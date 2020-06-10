@@ -1,4 +1,5 @@
 export function filterToolSections(layout, results) {
+    const originalLayout = layout;
     if (results) {
         const filteredLayout = layout.map((section) => {
             var toolRes = [];
@@ -7,8 +8,18 @@ export function filterToolSections(layout, results) {
                     if (!el.text && results.includes(el.id)) {
                         toolRes.push(el);
                     }
+                    else if (el.tool_shed_repository && results.includes(el.tool_shed_repository.name)) {
+                        toolRes.push(el);
+                    }
                 });
             }
+
+            console.log(toolRes);
+            if (toolRes.length == 0) {
+                console.log("ZEROOOO");
+                return originalLayout; //for toolset with no installed tools
+            }
+
             //Sorts tools in section by rank in results
             toolRes.sort((tool1, tool2) => {
                 return results.indexOf(tool1.id) - results.indexOf(tool2.id);
