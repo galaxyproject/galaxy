@@ -189,15 +189,19 @@ export default {
     },
     methods: {
         onAddNode(node) {
-            /*const requestData = {
-                type: node.type,
-                content_id: node.contentId,
-                _: "true",
-            };
-            getModule(requestData).then((response) => {
-                const newData = Object.assign({}, response, node.step);
-                this.manager.setNode(node, newData);
-            });*/
+            if (node.step.uuid) {
+                node.initData(node.step);
+                node.updateData(node.step);
+            } else {
+                getModule({
+                    type: node.type,
+                    content_id: node.contentId,
+                    _: "true",
+                }).then((response) => {
+                    const newData = Object.assign({}, response, node.step);
+                    this.manager.setNode(node, newData);
+                });
+            }
             this.nodes[node.id] = node;
         },
         onAddClone(node) {

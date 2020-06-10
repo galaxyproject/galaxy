@@ -149,22 +149,6 @@ export default {
             el.style.left = `${left}px`;
         }
 
-        // Initialize node data
-        this.initData(step);
-        this.updateData(step);
-        /*data.workflow_outputs = data.outputs.map((o) => {
-            return {
-                output_name: o.name,
-                label: o.label,
-            };
-        });
-        node.initData(data);
-        Vue.nextTick(() => {
-            node.updateData(data);
-            this.canvas_manager.draw_overview();
-            this._activateNode(node);
-        });*/
-
         // Attach node dragging events
         attachDragging(this.$el, {
             dragstart: () => {
