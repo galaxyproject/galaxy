@@ -197,8 +197,12 @@ export default {
                 .get(`${rootUrl}authnz/get_cilogon_idps`)
                 .then((response) => {
                     this.cilogon_idps = response.data;
-                    //List is originally sorted by OrganizationName which can be different from DisplayName
-                    this.cilogon_idps.sort((a, b) => (a.DisplayName > b.DisplayName ? 1 : -1));
+                    if (this.cilogon_idps.length == 1) {
+                        this.selected = this.cilogon_idps[0];
+                    } else {
+                        //List is originally sorted by OrganizationName which can be different from DisplayName
+                        this.cilogon_idps.sort((a, b) => (a.DisplayName > b.DisplayName ? 1 : -1));
+                    }
                 })
                 .then(() => {
                     if (this.login_page) {

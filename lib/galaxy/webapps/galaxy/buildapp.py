@@ -76,6 +76,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     # Returns the provider specific logout url for currently logged in provider
     webapp.add_route('/authnz/logout', controller='authnz', action='get_logout_url')
     webapp.add_route('/authnz/get_cilogon_idps', controller='authnz', action='get_cilogon_idps')
+    webapp.add_route('/authnz/get_allowed_cilogon_idps', controller='authnz', action='get_allowed_cilogon_idps')
 
     # These two routes handle our simple needs at the moment
     webapp.add_route('/async/{tool_id}/{data_id}/{data_secret}', controller='async', action='index', tool_id=None, data_id=None, data_secret=None)

@@ -136,3 +136,10 @@ class OIDC(JSAppLauncher):
             return json.loads(url_get('https://cilogon.org/idplist/', params=dict(kwargs)))
         except Exception as e:
             raise Exception("Invalid server response. %s." % str(e))
+
+    @web.expose
+    @web.json
+    def get_allowed_cilogon_idps(self, trans, **kwargs):
+        allowed_idps = trans.app.authnz_manager.get_allowed_idps()
+        print("\n\n\nALLOWED_IDPS:", allowed_idps)
+        return allowed_idps

@@ -157,11 +157,18 @@ class AuthnzManager:
             rtv['credential_url'] = config_xml.find('credential_url').text
         if config_xml.find('idphint') is not None:
             rtv['idphint'] = config_xml.find('idphint').text
+        # can prob get rid of idphint ^
+        if config_xml.find('allowed_idps') is not None:
+            self.allowed_idps = config_xml.find('allowed_idps').text
         if config_xml.find('ca_bundle') is not None:
             rtv['ca_bundle'] = config_xml.find('ca_bundle').text
         if config_xml.find('icon') is not None:
             rtv['icon'] = config_xml.find('icon').text
         return rtv
+
+    def get_allowed_idps(self):
+        # None is no allowed idp list is set, and a list of idphint if there is one configured
+        return self.allowed_idps
 
     def _unify_provider_name(self, provider):
         if provider.lower() in self.oidc_backends_config:
