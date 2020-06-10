@@ -97,7 +97,7 @@ class DatasetCollectionManager:
     def create(self, trans, parent, name, collection_type, element_identifiers=None,
                elements=None, implicit_collection_info=None, trusted_identifiers=None,
                hide_source_items=False, tags=None, copy_elements=False, history=None,
-               set_hid=True, flush=True):
+               set_hid=True, flush=True, completed_job=None, output_name=None):
         """
         PRECONDITION: security checks on ability to add to parent
         occurred during load.
@@ -109,15 +109,19 @@ class DatasetCollectionManager:
         if element_identifiers and not trusted_identifiers:
             validate_input_element_identifiers(element_identifiers)
 
-        dataset_collection = self.create_dataset_collection(
-            trans=trans,
-            collection_type=collection_type,
-            element_identifiers=element_identifiers,
-            elements=elements,
-            hide_source_items=hide_source_items,
-            copy_elements=copy_elements,
-            history=history,
-        )
+        if completed_job and output_name:
+            jtodca = next(a for a in completed_job.output_dataset_collection_instances if a.name == output_name)
+            dataset_collection = jtodca.dataset_collection_instance.collection
+        else:
+            dataset_collection = self.create_dataset_collection(
+                trans=trans,
+                collection_type=collection_type,
+                element_identifiers=element_identifiers,
+                elements=elements,
+                hide_source_items=hide_source_items,
+                copy_elements=copy_elements,
+                history=history,
+            )
 
         implicit_inputs = []
         if implicit_collection_info:

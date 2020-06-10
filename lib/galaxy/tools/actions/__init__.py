@@ -902,13 +902,10 @@ class OutputCollections:
                 tags=self.tags,
                 set_hid=set_hid,
                 flush=flush,
+                completed_job=completed_job,
+                output_name=name,
                 **element_kwds
             )
-            if completed_job:
-                jtodca = next(a for a in completed_job.output_dataset_collection_instances if a.name == name)
-                hdca.copied_from_history_dataset_collection_association = jtodca.dataset_collection_instance
-                hdca.collection.elements = jtodca.dataset_collection_instance.collection.elements
-                hdca.collection.mark_as_populated()
             # name here is name of the output element - not name
             # of the hdca.
             self.out_collection_instances[name] = hdca
