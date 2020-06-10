@@ -117,8 +117,8 @@ def galactic_job_json(
         upload_response = upload_func(target)
         return response_to_hda(target, upload_response)
 
-    def upload_file_literal(contents):
-        target = FileLiteralTarget(contents)
+    def upload_file_literal(contents, **kwd):
+        target = FileLiteralTarget(contents, **kwd)
         upload_response = upload_func(target)
         return response_to_hda(target, upload_response)
 
@@ -179,6 +179,9 @@ def galactic_job_json(
         # format to match output definitions in tool, where did filetype come from?
         filetype = value.get("filetype", None) or value.get("format", None)
         composite_data_raw = value.get("composite_data", None)
+        kwd = {}
+        if "tags" in value:
+            kwd["tags"] = value.get("tags")
         if composite_data_raw:
             composite_data = []
             for entry in composite_data_raw:
@@ -188,13 +191,13 @@ def galactic_job_json(
                 else:
                     path = entry
                 composite_data.append(path)
-            rval_c = upload_file_with_composite_data(None, composite_data, filetype=filetype)
+            rval_c = upload_file_with_composite_data(None, composite_data, filetype=filetype, **kwd)
             return rval_c
 
         if file_path is None:
             contents = value.get("contents", None)
             if contents is not None:
-                return upload_file_literal(contents)
+                return upload_file_literal(contents, **kwd)
 
             return value
 
@@ -221,7 +224,7 @@ def galactic_job_json(
             tf.close()
             secondary_files_tar_path = tmp.name
 
-        return upload_file(file_path, secondary_files_tar_path, filetype=filetype)
+        return upload_file(file_path, secondary_files_tar_path, filetype=filetype, **kwd)
 
     def replacement_directory(value):
         file_path = value.get("location", None) or value.get("path", None)
@@ -332,6 +335,7 @@ class FileLiteralTarget(object):
 
     def __init__(self, contents, **kwargs):
         self.contents = contents
+        self.properties = kwargs
 
     def __str__(self):
         return "FileLiteralTarget[path=%s] with %s" % (self.path, self.properties)

@@ -23,6 +23,7 @@ log = logging.getLogger(__name__)
 
 UPLOAD_TOOL_ID = "upload1"
 LOAD_TOOLS_FROM_PATH = True
+DEFAULT_USE_FETCH_API = True
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -33,7 +34,6 @@ class StagingInterace(object):
     _attach_file, _log, etc..) to adapt to bioblend (for Planemo) or using the
     tool test interactor infrastructure.
     """
-    use_fetch_api = True
 
     @abc.abstractmethod
     def _post(self, api_path, payload, files_attached=False):
@@ -84,6 +84,20 @@ class StagingInterace(object):
                 if file_path is not None:
                     src = _attach_file(fetch_payload, file_path)
                     fetch_payload["targets"][0]["elements"][0].update(src)
+
+                if upload_target.composite_data:
+                    composite_items = []
+                    for i, composite_data in enumerate(upload_target.composite_data):
+                        composite_item_src = _attach_file(fetch_payload, composite_data, index=i)
+                        composite_items.append(composite_item_src)
+                    fetch_payload["targets"][0]["elements"][0]["src"] = "composite"
+                    fetch_payload["targets"][0]["elements"][0]["composite"] = {
+                        "items": composite_items,
+                    }
+
+                tags = upload_target.properties.get("tags")
+                if tags:
+                    fetch_payload["targets"][0]["elements"][0]["tags"] = tags
                 fetch_payload["targets"][0]["elements"][0]["name"] = name
             elif isinstance(upload_target, FileLiteralTarget):
                 fetch_payload = _fetch_payload(history_id)
@@ -91,6 +105,9 @@ class StagingInterace(object):
                     "src": "pasted",
                     "paste_content": upload_target.contents
                 })
+                tags = upload_target.properties.get("tags")
+                if tags:
+                    fetch_payload["targets"][0]["elements"][0]["tags"] = tags
             elif isinstance(upload_target, DirectoryUploadTarget):
                 fetch_payload = _fetch_payload(history_id, file_type="directory")
                 fetch_payload["targets"][0].pop("elements")
@@ -104,6 +121,8 @@ class StagingInterace(object):
                     "src": "pasted",
                     "paste_content": content,
                 })
+                tags = upload_target.properties.get("tags")
+                fetch_payload["targets"][0]["elements"][0]["tags"] = tags
             return self._fetch_post(fetch_payload, files_attached=files_attached[0])
 
         # Save legacy upload_func to target older Galaxy servers
@@ -215,11 +234,16 @@ class StagingInterace(object):
     def _log(self, message):
         log.debug(message)
 
+    @abc.abstractproperty
+    def use_fetch_api(self):
+        """Return true is this should use (modern) data fetch API."""
+
 
 class InteractorStaging(StagingInterace):
 
-    def __init__(self, galaxy_interactor):
+    def __init__(self, galaxy_interactor, use_fetch_api=DEFAULT_USE_FETCH_API):
         self.galaxy_interactor = galaxy_interactor
+        self._use_fetch_api = use_fetch_api
 
     def _post(self, api_path, payload, files_attached=False):
         response = self.galaxy_interactor._post(api_path, payload, json=True)
@@ -228,6 +252,11 @@ class InteractorStaging(StagingInterace):
 
     def _handle_job(self, job_response):
         self.galaxy_interactor.wait_for_job(job_response["id"])
+
+    @property
+    def use_fetch_api(self):
+        return self._use_fetch_api
+
 
 def _file_path_to_name(file_path):
     if file_path is not None:
