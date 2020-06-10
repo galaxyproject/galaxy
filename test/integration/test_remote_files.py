@@ -1,9 +1,12 @@
+import json
 import operator
 import os
+import shutil
 from tempfile import mkdtemp
 
 from galaxy.exceptions import error_codes
 from galaxy_test.base.api_asserts import assert_error_code_is, assert_error_message_contains
+from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
@@ -28,7 +31,17 @@ class RemoteFilesIntegrationTestCase(integration_util.IntegrationTestCase):
         config["ftp_upload_dir"] = cls.ftp_upload_dir
         config["ftp_upload_site"] = "ftp://cow.com"
 
-        for d in [cls.library_dir, cls.user_library_dir, cls.ftp_upload_dir]:
+        # driver_util sets this to False, though the Galaxy default is True.
+        # Restore default for these tests.
+        config["ftp_upload_purge"] = True
+
+    def setUp(self):
+        super(RemoteFilesIntegrationTestCase, self).setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+
+        for d in [self.library_dir, self.user_library_dir, self.ftp_upload_dir]:
+            if os.path.exists(d):
+                shutil.rmtree(d)
             os.mkdir(d)
 
     def test_index(self):
@@ -56,6 +69,45 @@ class RemoteFilesIntegrationTestCase(integration_util.IntegrationTestCase):
 
         index = self.galaxy_interactor.get("remote_files?target=userdir&format=jstree").json()
         self._assert_index_matches_fixtures_jstree(index)
+
+    def test_fetch_from_import(self):
+        _write_file_fixtures(self.root, self.library_dir)
+        with self.dataset_populator.test_history() as history_id:
+            element = dict(src="url", url="gximport://a")
+            target = {
+                "destination": {"type": "hdas"},
+                "elements": [element],
+            }
+            targets = json.dumps([target])
+            payload = {
+                "history_id": history_id,
+                "targets": targets,
+            }
+            new_dataset = self.dataset_populator.fetch(payload, assert_ok=True).json()["outputs"][0]
+            content = self.dataset_populator.get_history_dataset_content(history_id, dataset=new_dataset)
+            assert content == "a\n", content
+
+        assert os.path.exists(os.path.join(self.library_dir, "a"))
+
+    def test_fetch_from_ftp(self):
+        ftp_dir = os.path.join(self.ftp_upload_dir, USER_EMAIL)
+        _write_file_fixtures(self.root, ftp_dir)
+        with self.dataset_populator.test_history() as history_id:
+            element = dict(src="url", url="gxftp://a")
+            target = {
+                "destination": {"type": "hdas"},
+                "elements": [element],
+            }
+            targets = json.dumps([target])
+            payload = {
+                "history_id": history_id,
+                "targets": targets,
+            }
+            new_dataset = self.dataset_populator.fetch(payload, assert_ok=True).json()["outputs"][0]
+            content = self.dataset_populator.get_history_dataset_content(history_id, dataset=new_dataset)
+            assert content == "a\n", content
+
+        assert not os.path.exists(os.path.join(ftp_dir, "a"))
 
     def _assert_index_empty(self, index):
         assert len(index) == 0

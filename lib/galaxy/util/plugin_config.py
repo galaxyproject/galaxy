@@ -91,6 +91,10 @@ def plugin_source_from_path(path):
         return PluginConfigSource('xml', parse_xml(path, remove_comments=True).getroot())
 
 
+def plugin_source_from_dict(as_dict):
+    return PluginConfigSource('dict', as_dict)
+
+
 def __read_yaml(path):
     if yaml is None:
         raise ImportError("Attempting to read YAML configuration file - but PyYAML dependency unavailable.")

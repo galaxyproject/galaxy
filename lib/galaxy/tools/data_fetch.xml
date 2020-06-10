@@ -26,6 +26,7 @@
   </inputs>
   <configfiles>
     <configfile name="request_path">$request_json</configfile>
+    <file_sources filename="file_sources.json" />
   </configfiles>
   <outputs>
   </outputs>

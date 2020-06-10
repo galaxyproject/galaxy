@@ -13,7 +13,7 @@
         >
             <template v-slot:cell(label)="data">
                 <i v-if="data.item.isLeaf" :class="leafIcon" /> <i v-else class="fa fa-folder" />
-                {{ data.value ? data.value : "-" }}
+                <span :title="data.item.labelTitle">{{ data.value ? data.value : "-" }}</span>
             </template>
             <template v-slot:cell(details)="data">
                 {{ data.value ? data.value : "-" }}
@@ -39,6 +39,10 @@ import BootstrapVue from "bootstrap-vue";
 
 Vue.use(BootstrapVue);
 
+const LABEL_FIELD = { key: "label", sortable: true };
+const DETAILS_FIELD = { key: "details", sortable: true };
+const TIME_FIELD = { key: "time", sortable: true };
+
 export default {
     props: {
         items: {
@@ -57,24 +61,18 @@ export default {
             type: String,
             default: "fa fa-file-o",
         },
+        showDetails: {
+            type: Boolean,
+            default: true,
+        },
+        showTime: {
+            type: Boolean,
+            default: true,
+        },
     },
     data() {
         return {
             currentPage: 1,
-            fields: [
-                {
-                    key: "label",
-                    sortable: true,
-                },
-                {
-                    key: "details",
-                    sortable: true,
-                },
-                {
-                    key: "time",
-                    sortable: true,
-                },
-            ],
             nItems: 0,
             perPage: 100,
         };
@@ -85,6 +83,18 @@ export default {
             handler(items) {
                 this.filtered(items);
             },
+        },
+    },
+    computed: {
+        fields: function () {
+            const fields = [LABEL_FIELD];
+            if (this.showDetails) {
+                fields.push(DETAILS_FIELD);
+            }
+            if (this.showTime) {
+                fields.push(TIME_FIELD);
+            }
+            return fields;
         },
     },
     methods: {

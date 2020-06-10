@@ -77,6 +77,10 @@ export default {
             type: String,
             default: "n/a",
         },
+        fileSourcesConfigured: {
+            type: Boolean,
+            default: false,
+        },
         defaultGenome: {
             type: String,
             default: UploadUtils.DEFAULT_GENOME,
@@ -204,12 +208,19 @@ export default {
                         inputs[`${prefix}to_posix_lines`] = (it.get("to_posix_lines") && "Yes") || null;
                         inputs[`${prefix}dbkey`] = it.get("genome", null);
                         inputs[`${prefix}file_type`] = it.get("extension", null);
+                        let uri;
+                        let how;
                         switch (it.get("file_mode")) {
                             case "new":
                                 inputs[`${prefix}url_paste`] = it.get("url_paste");
                                 break;
                             case "ftp":
-                                inputs[`${prefix}ftp_files`] = it.get("file_path");
+                                uri = it.get("file_path");
+                                how = "ftp_files";
+                                if (uri.indexOf("://") >= 0) {
+                                    how = "url_paste";
+                                }
+                                inputs[`${prefix}${how}`] = uri;
                                 break;
                             case "local":
                                 data.files.push({

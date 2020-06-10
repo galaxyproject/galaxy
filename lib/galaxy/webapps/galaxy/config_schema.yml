@@ -469,6 +469,15 @@ mapping:
           considered deprecated and this option will likely be removed in future versions of
           Galaxy. For more information see https://github.com/galaxyproject/galaxy/issues/6513.
 
+      file_sources_config_file:
+        type: str
+        default: file_sources_conf.yml        
+        required: false
+        desc: |
+          Configured FileSource plugins.
+
+          The value of this option will be resolved with respect to <config_dir>.
+
       enable_mulled_containers:
         type: bool
         default: true

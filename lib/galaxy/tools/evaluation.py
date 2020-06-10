@@ -7,6 +7,7 @@ import tempfile
 from six import string_types
 
 from galaxy import model
+from galaxy.files import ProvidesUserFileSourcesUserContext
 from galaxy.job_execution.setup import ensure_configs_directory
 from galaxy.model.none_like import NoneDataset
 from galaxy.tools import global_tool_errors
@@ -73,6 +74,7 @@ class ToolEvaluator(object):
 
         # Full parameter validation
         request_context = WorkRequestContext(app=self.app, user=self._user, history=self._history)
+        self.request_context = request_context
 
         def validate_inputs(input, value, context, **kwargs):
             value = input.from_json(value, request_context, context)
@@ -600,12 +602,21 @@ class ToolEvaluator(object):
         if isinstance(content, string_types):
             return content, True
 
-        content_format = content["format"]
-        handle_files = content["handle_files"]
-        if content_format != "json":
-            template = "Galaxy can only currently convert inputs to json, format [%s] is unhandled"
-            message = template % content_format
-            raise Exception(message)
+        config_type = content.get("type", "inputs")
+        if config_type == "inputs":
+            content_format = content["format"]
+            handle_files = content["handle_files"]
+            if content_format != "json":
+                template = "Galaxy can only currently convert inputs to json, format [%s] is unhandled"
+                message = template % content_format
+                raise Exception(message)
+        elif config_type == "files":
+            user_context = ProvidesUserFileSourcesUserContext(self.request_context)
+            file_sources_dict = self.app.file_sources.to_dict(for_serialization=True, user_context=user_context)
+            rval = json.dumps(file_sources_dict)
+            return rval, False
+        else:
+            raise Exception("Unknown config file type %s" % config_type)
 
         return json.dumps(wrapped_json.json_wrap(self.tool.inputs,
                                                  self.param_dict,
