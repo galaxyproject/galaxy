@@ -506,7 +506,7 @@ class XmlToolSource(ToolSource):
 
     def paths_and_modtimes(self):
         if not self._paths_and_modtimes:
-            self._paths_and_modtimes = {p: os.path.getmtime(p) for p in self._macro_paths}
+            self._paths_and_modtimes = {p: os.path.getmtime(p) for p in self.macro_paths()}
             if self._source_path:
                 self._paths_and_modtimes[self._source_path] = os.path.getmtime(self._source_path)
         return self._paths_and_modtimes
