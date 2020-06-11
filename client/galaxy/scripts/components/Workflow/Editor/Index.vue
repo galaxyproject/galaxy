@@ -33,6 +33,7 @@
                             :content-id="step.content_id"
                             :step="step"
                             :key="step.id"
+                            :datatypes-mapping="datatypesMapping"
                             :get-manager="getManager"
                             @onAddNode="onAddNode"
                             @onAddClone="onAddClone"
@@ -172,14 +173,15 @@ export default {
             hasChanges: false,
             nodeIndex: 0,
             nodes: {},
+            datatypesMapping: {},
         };
     },
     created() {
         getDatatypes().then((response) => {
+            this.datatypesMapping = response.datatypes_mapping;
             const datatypes = response.datatypes;
-            const datatypes_mapping = response.datatypes_mapping;
             const nodes = this.nodes;
-            this.manager = new WorkflowManager({ datatypes_mapping, nodes }, this.$refs.canvas);
+            this.manager = new WorkflowManager({ nodes }, this.$refs.canvas);
             this.manager
                 .on("onRemoveNode", () => {
                     showAttributes();

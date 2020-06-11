@@ -6,8 +6,6 @@ import Vue from "vue";
 class Workflow extends EventEmitter {
     constructor(options, canvas_container) {
         super();
-        this.ext_to_type = options.datatypes_mapping.ext_to_class_name;
-        this.type_to_type = options.datatypes_mapping.class_to_classes;
         this.canvas_container = $(canvas_container);
         this.nodes = options.nodes;
         this.name = null;
@@ -48,11 +46,6 @@ class Workflow extends EventEmitter {
             this.canvas_manager.draw_overview();
             this._activateNode(node);
         });
-    }
-    isSubType(child, parent) {
-        child = this.ext_to_type[child];
-        parent = this.ext_to_type[parent];
-        return this.type_to_type[child] && parent in this.type_to_type[child];
     }
     removeNode(node) {
         if (this.activeNode == node) {

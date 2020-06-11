@@ -51,6 +51,7 @@
                 :input="input"
                 :get-node="getNode"
                 :get-manager="getManager"
+                :datatypes-mapping="datatypesMapping"
                 @onAdd="onAddInput"
                 @onChange="onChange"
             />
@@ -112,6 +113,10 @@ export default {
         },
         getManager: {
             type: Function,
+            default: null,
+        },
+        datatypesMapping: {
+            type: Object,
             default: null,
         },
     },
