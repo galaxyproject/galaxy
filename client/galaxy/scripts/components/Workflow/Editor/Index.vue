@@ -104,8 +104,8 @@ import {
     showForm,
     saveAs,
 } from "./modules/utilities";
+import { autoLayout } from "./modules/layout";
 import WorkflowCanvas from "./modules/canvas";
-import WorkflowManager from "./modules/manager";
 import WorkflowOptions from "./Options";
 import MarkdownEditor from "components/Markdown/MarkdownEditor";
 import ToolBoxWorkflow from "components/Panels/ToolBoxWorkflow";
@@ -187,10 +187,8 @@ export default {
         getDatatypes().then((response) => {
             this.datatypesMapping = response.datatypes_mapping;
             this.datatypes = response.datatypes;
-            const nodes = this.nodes;
-            this.manager = new WorkflowManager({ nodes }, this.$refs.canvas);
 
-            // Canvas overview management
+            // canvas overview management
             this.canvasManager = new WorkflowCanvas(this, this.$refs.canvas);
             this.loadCurrent(this.id, this.version);
         });
@@ -301,7 +299,7 @@ export default {
         },
         onLayout() {
             this.canvasManager.draw_overview(true);
-            this.manager.layout();
+            autoLayout(this);
         },
         onAttributes() {
             showAttributes();
@@ -373,11 +371,11 @@ export default {
                 });
         },
         getManager() {
-            return this.manager;
+            return this;
         },
         getCanvasManager() {
             return this.canvasManager;
-        }
+        },
     },
 };
 </script>

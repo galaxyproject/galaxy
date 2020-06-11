@@ -41,7 +41,7 @@ export function fromSimple(workflow, data, appendData = false) {
                     v.forEach((x) => {
                         const otherNodeIndex = parseInt(x.id) + offset;
                         const otherNode = workflow.nodes[otherNodeIndex];
-                        const c = new Connector(workflow.manager.canvasManager);
+                        const c = new Connector(workflow.canvasManager);
                         c.connect(otherNode.outputTerminals[x.output_name], node.inputTerminals[k]);
                         c.redraw();
                     });
