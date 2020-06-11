@@ -397,7 +397,7 @@ admin:
       groups: '#admin-link-groups'
       roles: '#admin-link-roles'
       impersonate: '#admin-link-impersonate'
-      whitelist: '#admin-link-whitelist'
+      allowlist: '#admin-link-allowlist'
 
   selectors:
     # TODO: place betters IDS or something on this in these grids in the DOM

@@ -81,7 +81,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         # A lot of postfork initialization depends on the server name, ensure it is set immediately after forking before other postfork functions
         self.application_stack = application_stack_instance(app=self)
         self.application_stack.register_postfork_function(self.application_stack.set_postfork_server_name, self)
-        self.config.reload_sanitize_whitelist(explicit='sanitize_whitelist_file' in kwargs)
+        self.config.reload_sanitize_allowlist(explicit='sanitize_allowlist_file' in kwargs)
         self.amqp_internal_connection_obj = galaxy.queues.connection_from_config(self.config)
         # queue_worker *can* be initialized with a queue, but here we don't
         # want to and we'll allow postfork to bind and start it.

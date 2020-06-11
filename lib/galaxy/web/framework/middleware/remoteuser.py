@@ -169,7 +169,7 @@ class RemoteUser(object):
             )
 
             if not path_info.startswith('/user'):
-                # shortcut the following whitelist for non-user-controller
+                # shortcut the following allowlist for non-user-controller
                 # requests.
                 pass
             elif environ[self.remote_user_header] in self.admin_users and \
