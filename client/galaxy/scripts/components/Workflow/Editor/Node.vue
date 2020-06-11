@@ -157,7 +157,7 @@ export default {
         // Attach node dragging events
         attachDragging(this.$el, {
             dragstart: () => {
-                this.manager._activateNode(this);
+                this.$emit("onActivate", this);
             },
             dragend: () => {
                 this.$emit("onChange");
@@ -174,7 +174,7 @@ export default {
                 this.onRedraw();
             },
             dragclickonly: () => {
-                this.manager._activateNode(this);
+                this.$emit("onActivate", this);
             },
         });
 

@@ -39,6 +39,7 @@
                             @onAddClone="onAddClone"
                             @onInsertTool="onInsertTool"
                             @onChange="onChange"
+                            @onActivate="onActivate"
                         />
                     </div>
                 </div>
@@ -175,6 +176,7 @@ export default {
             nodes: {},
             datatypesMapping: {},
             report: {},
+            activeNode: null,
         };
     },
     created() {
@@ -202,6 +204,17 @@ export default {
         };
     },
     methods: {
+        onActivate(node) {
+            if (this.activeNode != node) {
+                if (this.activeNode) {
+                    this.activeNode.makeInactive();
+                }
+                document.activeElement.blur();
+                node.makeActive();
+                this.activeNode = node;
+            }
+            this.emit("onActiveNode", node);
+        },
         onChange() {
             this.hasChanges = true;
         },

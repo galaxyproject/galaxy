@@ -33,13 +33,6 @@ class Workflow extends EventEmitter {
         this.canvas_manager.draw_overview();
         this.emit("onRemoveNode");
     }
-    _reloadActiveNode() {
-        if (this.activeNode) {
-            const node = this.activeNode;
-            this._clearActiveNode();
-            this._activateNode(node);
-        }
-    }
     _clearActiveNode() {
         if (this.activeNode) {
             this.activeNode.makeInactive();
