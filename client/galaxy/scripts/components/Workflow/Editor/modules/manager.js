@@ -34,13 +34,6 @@ class Workflow extends EventEmitter {
             const new_size = Math.max(op.width() - (d.offsetX - opo.left), op.height() - (d.offsetY - opo.top));
             localStorage.setItem("overview-size", `${new_size}px`);
         });
-
-        // Unload handler
-        window.onbeforeunload = () => {
-            if (this.has_changes) {
-                return "There are unsaved changes to your workflow which will be lost.";
-            }
-        };
     }
     setNode(node, data) {
         data.workflow_outputs = data.outputs.map((o) => {

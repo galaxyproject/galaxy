@@ -190,6 +190,13 @@ export default {
                 });
             this.loadCurrent(this.id, this.version);
         });
+
+        // Notify user if workflow has not been saved yet
+        window.onbeforeunload = () => {
+            if (this.hasChanges) {
+                return "There are unsaved changes to your workflow which will be lost.";
+            }
+        };
     },
     methods: {
         onChange() {
