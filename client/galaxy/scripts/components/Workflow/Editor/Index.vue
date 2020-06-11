@@ -36,6 +36,7 @@
                             @onAddNode="onAddNode"
                             @onAddClone="onAddClone"
                             @onInsertTool="onInsertTool"
+                            @onChange="onChange"
                         />
                     </div>
                 </div>
@@ -167,6 +168,7 @@ export default {
             parameters: [],
             zoomLevel: 7,
             steps: [],
+            hasChanges: false,
             nodeIndex: 0,
             nodes: {},
         };
@@ -188,6 +190,9 @@ export default {
         });
     },
     methods: {
+        onChange() {
+            this.hasChanges = true;
+        },
         onAddNode(node) {
             if (node.step.uuid) {
                 node.initData(node.step);

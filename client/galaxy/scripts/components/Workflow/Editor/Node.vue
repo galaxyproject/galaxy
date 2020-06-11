@@ -155,7 +155,7 @@ export default {
                 this.manager._activateNode(this);
             },
             dragend: () => {
-                this.manager.nodeChanged(this);
+                this.$emit("onChange");
                 this.manager.canvas_manager.draw_overview();
             },
             drag: (e, d) => {
@@ -214,7 +214,7 @@ export default {
     },
     methods: {
         onChange() {
-            this.manager.nodeChanged(this);
+            this.$emit("onChange");
         },
         onAddInput(input, terminal) {
             const existingTerminal = this.inputTerminals[input.name];
@@ -281,9 +281,7 @@ export default {
             this.inputs = data.inputs ? data.inputs.slice() : [];
             this.outputs = data.outputs ? data.outputs.slice() : [];
             this.activeOutputs.initialize(this.outputs, data.workflow_outputs);
-            Vue.nextTick(() => {
-                this.manager.nodeChanged(this);
-            });
+            this.$emit("onChange");
         },
         updateData(data) {
             this.setData(data);
@@ -374,9 +372,11 @@ export default {
 
             // trigger legacy events
             Vue.nextTick(() => {
-                this.manager.nodeChanged(this);
                 this.onRedraw();
             });
+
+            // emit change completion event
+            this.$emit("onChange");
         },
         labelOutput(output, label) {
             return this.activeOutputs.labelOutput(output, label);
@@ -398,8 +398,8 @@ export default {
             } else {
                 delete this.postJobActions["ChangeDatatypeAction" + outputName];
             }
-            this.onChange();
             outputTerminal.destroyInvalidConnections();
+            this.$emit("onChange");
         },
         makeActive() {
             this.element.classList.add("node-active");

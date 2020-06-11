@@ -93,9 +93,6 @@ class Workflow extends EventEmitter {
         }
         this.emit("onActiveNode", node);
     }
-    nodeChanged() {
-        this.has_changes = true;
-    }
     layoutAuto() {
         this.layout();
         this.canvas_manager.draw_overview(true);
