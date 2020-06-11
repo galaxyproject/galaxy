@@ -114,6 +114,7 @@ class BaseAppConfiguration(object):
     deprecated_dirs = None
 
     def __init__(self, **kwargs):
+        self._process_renamed_options(kwargs)
         self.config_dict = kwargs
         self.root = find_root(kwargs)
         self._set_config_base(kwargs)
@@ -122,6 +123,16 @@ class BaseAppConfiguration(object):
         self._update_raw_config_from_kwargs(kwargs)  # Overwrite raw_config with values passed in kwargs
         self._create_attributes_from_raw_config()  # Create attributes based on raw_config
         self._resolve_paths()  # Overwrite attribute values with resolved paths
+
+    def _process_renamed_options(self, kwargs):
+        """Update kwargs to set any unset renamed options to values of old-named options, if set.
+
+        Does not remove the old options from kwargs so that deprecated option usage can be logged.
+        """
+        if self.renamed_options is not None:
+            for old, new in self.renamed_options.items():
+                if new not in kwargs and old in kwargs:
+                    kwargs[new] = kwargs[old]
 
     def resolve_path(self, path):
         """Resolve a path relative to Galaxy's root."""
@@ -313,13 +324,6 @@ class BaseAppConfiguration(object):
                     paths = listify(values[-1])
                 setattr(self, var + '_set', False)
             setattr(self, var, [root_join(x) for x in paths])
-
-        # update kwargs to set unset renamed options
-        if self.renamed_options is not None:
-            for old, new in self.renamed_options.items():
-                if new not in config_kwargs and old in config_kwargs:
-                    # don't pop so that if the old option is deprecated, that can be logged
-                    config_kwargs[new] = config_kwargs[old]
 
 
 class CommonConfigurationMixin(object):
