@@ -1,3 +1,4 @@
+import os
 from abc import (
     ABCMeta,
     abstractmethod
@@ -229,17 +230,25 @@ class ToolSource(object):
         Return minimum python version that the tool template has been developed against.
         """
 
+    @property
     def macro_paths(self):
         return []
 
+    @property
+    def source_path(self):
+        return None
+
     def paths_and_modtimes(self):
-        return []
+        paths_and_modtimes = {p: os.path.getmtime(p) for p in self.macro_paths}
+        if self.source_path:
+            paths_and_modtimes[self.source_path] = os.path.getmtime(self.source_path)
+        return paths_and_modtimes
 
     def parse_tests_to_dict(self):
         return {'tests': []}
 
     def __str__(self):
-        source_path = getattr(self, "_source_path", None)
+        source_path = self.source_path
         if source_path:
             as_str = u'%s[%s]' % (self.__class__.__name__, source_path)
         else:

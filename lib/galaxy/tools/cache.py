@@ -32,7 +32,7 @@ class JSONBackend(ProxyBackend):
             dbm[key] = json.dumps({
                 'metadata': value.metadata,
                 'payload': self.value_encode(value),
-                'macro_paths': value.payload.macro_paths(),
+                'macro_paths': value.payload.macro_paths,
                 'paths_and_modtimes': value.payload.paths_and_modtimes(),
                 'tool_cache_version': CURRENT_TOOL_CACHE_VERSION
             })

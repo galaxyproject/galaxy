@@ -1,5 +1,4 @@
 import logging
-import os
 import re
 import sys
 import traceback
@@ -500,14 +499,13 @@ class XmlToolSource(ToolSource):
         help_elem = self.root.find('help')
         return help_elem.text if help_elem is not None else None
 
+    @property
     def macro_paths(self):
         return self._macro_paths
 
-    def paths_and_modtimes(self):
-        paths_and_modtimes = {p: os.path.getmtime(p) for p in self.macro_paths()}
-        if self._source_path:
-            paths_and_modtimes[self._source_path] = os.path.getmtime(self._source_path)
-        return paths_and_modtimes
+    @property
+    def source_path(self):
+        return self._source_path
 
     def parse_tests_to_dict(self):
         tests_elem = self.root.find("tests")
