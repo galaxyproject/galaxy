@@ -84,13 +84,13 @@ class ScrollPanel {
 }
 
 class CanvasManager {
-    constructor(app, canvas_viewport, overview) {
+    constructor(app) {
         this.app = app;
-        this.cv = canvas_viewport;
+        this.cv = $("#canvas-viewport");
         this.cc = this.cv.find("#canvas-container");
-        this.overview = overview;
-        this.oc = overview.find("#overview-canvas");
-        this.ov = overview.find("#overview-viewport");
+        this.overview = $("#overview-container");
+        this.oc = this.overview.find("#overview-canvas");
+        this.ov = this.overview.find("#overview-viewport");
         // Initialize zooming
         this.zoomLevel = defaultZoomLevel;
         this.canvasZoom = zoomLevels[defaultZoomLevel];

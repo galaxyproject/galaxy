@@ -2,8 +2,7 @@ import $ from "jquery";
 import WorkflowCanvas from "./canvas";
 
 class Workflow {
-    constructor(options, canvas_container) {
-        this.canvas_container = $(canvas_container);
+    constructor(options) {
         this.nodes = options.nodes;
         this.name = null;
         this.has_changes = false;
@@ -11,7 +10,7 @@ class Workflow {
         this.nodeId = 0;
 
         // Canvas overview management
-        this.canvas_manager = new WorkflowCanvas(this, $("#canvas-viewport"), $("#overview-container"));
+        this.canvas_manager = new WorkflowCanvas(this);
     }
     layout() {
         this.has_changes = true;
