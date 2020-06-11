@@ -134,10 +134,8 @@ function _rectifyOutputs(workflow) {
     if (using_workflow_outputs !== false || has_existing_pjas !== false) {
         // Using workflow outputs, or has existing pjas.  Remove all PJAs and recreate based on outputs.
         Object.values(workflow.nodes).forEach((node) => {
-            let nodeChanged = false;
             if (node.postJobActions === null) {
                 node.postJobActions = {};
-                nodeChanged = true;
             }
             const pjas_to_rem = [];
             Object.entries(node.postJobActions).forEach(([pja_id, pja]) => {
@@ -147,7 +145,6 @@ function _rectifyOutputs(workflow) {
             });
             if (pjas_to_rem.length > 0) {
                 pjas_to_rem.forEach((pja_name) => {
-                    nodeChanged = true;
                     delete node.postJobActions[pja_name];
                 });
             }
@@ -155,7 +152,6 @@ function _rectifyOutputs(workflow) {
                 Object.values(node.outputs).forEach((ot) => {
                     const create_pja = !node.activeOutputs.exists(ot.name);
                     if (create_pja === true) {
-                        nodeChanged = true;
                         const pja = {
                             action_type: "HideDatasetAction",
                             output_name: ot.name,
@@ -165,10 +161,6 @@ function _rectifyOutputs(workflow) {
                         node.postJobActions[`HideDatasetAction${ot.name}`] = pja;
                     }
                 });
-            }
-            // lastly, if this is the active node, and we made changes, reload the display at right.
-            if (workflow.activeNode == node && nodeChanged === true) {
-                workflow._reloadActiveNode();
             }
         });
     }
