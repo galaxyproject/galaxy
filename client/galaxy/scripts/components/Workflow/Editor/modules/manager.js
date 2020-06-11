@@ -17,12 +17,6 @@ class Workflow extends EventEmitter {
         this.canvas_manager = new WorkflowCanvas(this, $("#canvas-viewport"), $("#overview-container"));
     }
     setNode(node, data) {
-        data.workflow_outputs = data.outputs.map((o) => {
-            return {
-                output_name: o.name,
-                label: o.label,
-            };
-        });
         node.initData(data);
         Vue.nextTick(() => {
             node.updateData(data);

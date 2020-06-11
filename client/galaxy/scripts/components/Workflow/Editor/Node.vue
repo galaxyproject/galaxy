@@ -280,6 +280,14 @@ export default {
             this.postJobActions = data.post_job_actions || {};
             this.label = data.label;
             this.uuid = data.uuid;
+            if (!data.uuid) {
+                data.workflow_outputs = data.outputs.map((o) => {
+                    return {
+                        output_name: o.name,
+                        label: o.label,
+                    };
+                });
+            }
         },
         initData(data) {
             this.setData(data);
