@@ -47,19 +47,19 @@ export async function loadWorkflow(workflow, id, version, appendData) {
 }
 
 export async function saveWorkflow(workflow) {
-    //if (workflow.has_changes) {
+    if (workflow.hasChanges) {
         try {
             const requestData = { workflow: toSimple(workflow), from_tool_form: true };
             const { data } = await axios.put(`${getAppRoot()}api/workflows/${workflow.id}`, requestData);
             workflow.name = data.name;
-            workflow.has_changes = false;
+            workflow.hasChanges = false;
             workflow.stored = true;
             workflow.workflow_version = data.version;
             return data;
         } catch (e) {
             rethrowSimple(e);
         }
-    //}
+    }
     return {};
 }
 

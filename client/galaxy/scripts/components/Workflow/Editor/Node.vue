@@ -170,7 +170,7 @@ export default {
             },
             dragclickonly: () => {
                 this.manager._activateNode(this);
-            }
+            },
         });
 
         // Emit add event
@@ -236,7 +236,7 @@ export default {
         },
         onToggleOutput(name) {
             this.activeOutputs.toggle(name);
-            this.manager.has_changes = true;
+            this.$emit("onChange");
         },
         onCreate(contentId) {
             this.$emit.on("onInsertTool", contentId);
@@ -414,7 +414,7 @@ export default {
             })(element.parentNode);
             // Remove active class
             element.classList.remove("node-active");
-        }
+        },
     },
 };
 </script>

@@ -12,7 +12,6 @@ export function fromSimple(workflow, data, appendData = false) {
     }
     workflow.workflow_version = data.version;
     workflow.report = data.report || {};
-    workflow.has_changes = false;
     Object.values(data.steps).forEach((step) => {
         workflow.steps.push({
             ...step,
@@ -56,6 +55,7 @@ export function fromSimple(workflow, data, appendData = false) {
                 }
             });
         });
+        workflow.hasChanges = false;
     });
 }
 

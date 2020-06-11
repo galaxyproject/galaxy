@@ -25,7 +25,8 @@
                 <ZoomControl :zoom-level="zoomLevel" @onZoom="onZoom" />
                 <div id="canvas-viewport">
                     <div ref="canvas" id="canvas-container">
-                        <WorkflowNode v-for="step in steps"
+                        <WorkflowNode
+                            v-for="step in steps"
                             :id="step.id"
                             :name="step.name"
                             :type="step.type"
@@ -182,6 +183,7 @@ export default {
             this.manager
                 .on("onRemoveNode", () => {
                     showAttributes();
+                    this.hasChanges = true;
                 })
                 .on("onActiveNode", (node) => {
                     showForm(this.manager, node, datatypes);
@@ -283,7 +285,7 @@ export default {
             this.name = name;
         },
         onReportUpdate(markdown) {
-            this.manager.has_changes = true;
+            this.hasChanges = true;
             this.manager.report.markdown = markdown;
         },
         onRun() {
@@ -308,7 +310,7 @@ export default {
         },
         onVersion(version) {
             if (version != this.manager.workflow_version) {
-                if (this.manager.has_changes) {
+                if (this.hasChanges) {
                     const r = window.confirm(
                         "There are unsaved changes to your workflow which will be lost. Continue ?"
                     );
