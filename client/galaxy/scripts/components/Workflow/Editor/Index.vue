@@ -40,6 +40,7 @@
                             @onInsertTool="onInsertTool"
                             @onChange="onChange"
                             @onActivate="onActivate"
+                            @onRemove="onRemove"
                         />
                     </div>
                 </div>
@@ -175,6 +176,7 @@ export default {
             nodeIndex: 0,
             nodes: {},
             datatypesMapping: {},
+            datatypes: [],
             report: {},
             activeNode: null,
         };
@@ -182,17 +184,9 @@ export default {
     created() {
         getDatatypes().then((response) => {
             this.datatypesMapping = response.datatypes_mapping;
-            const datatypes = response.datatypes;
+            this.datatypes = response.datatypes;
             const nodes = this.nodes;
             this.manager = new WorkflowManager({ nodes }, this.$refs.canvas);
-            this.manager
-                .on("onRemoveNode", () => {
-                    showAttributes();
-                    this.hasChanges = true;
-                })
-                .on("onActiveNode", (node) => {
-                    showForm(this.manager, node, datatypes);
-                });
             this.loadCurrent(this.id, this.version);
         });
 
@@ -204,6 +198,14 @@ export default {
         };
     },
     methods: {
+        onRemove(node) {
+            this.activeNode = null;
+            delete this.nodes[node.id];
+            this.has_changes = true;
+            this.manager.canvas_manager.draw_overview();
+            this.hasChanges = true;
+            showAttributes();
+        },
         onActivate(node) {
             if (this.activeNode != node) {
                 if (this.activeNode) {
@@ -213,7 +215,7 @@ export default {
                 node.makeActive();
                 this.activeNode = node;
             }
-            this.emit("onActiveNode", node);
+            showForm(this, node, this.datatypes);
         },
         onChange() {
             this.hasChanges = true;

@@ -8,7 +8,7 @@
                 aria-label="destroy node"
                 v-b-tooltip.hover
                 title="Remove"
-                @click="onDestroy"
+                @click="onRemove"
             >
                 <i class="fa fa-times" />
             </b-button>
@@ -250,15 +250,15 @@ export default {
         onClone() {
             this.$emit("onAddClone", this);
         },
-        onDestroy() {
+        onRemove() {
             Object.values(this.inputTerminals).forEach((t) => {
                 t.destroy();
             });
             Object.values(this.outputTerminals).forEach((t) => {
                 t.destroy();
             });
-            this.manager.removeNode(this);
             this.element.remove();
+            this.$emit("onRemove", this);
         },
         onRedraw() {
             Object.values(this.inputTerminals).forEach((t) => {
