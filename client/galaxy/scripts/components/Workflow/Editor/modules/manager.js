@@ -24,31 +24,6 @@ class Workflow extends EventEmitter {
             this._activateNode(node);
         });
     }
-    removeNode(node) {
-        if (this.activeNode == node) {
-            this._clearActiveNode();
-        }
-        delete this.nodes[node.id];
-        this.has_changes = true;
-        this.canvas_manager.draw_overview();
-        this.emit("onRemoveNode");
-    }
-    _clearActiveNode() {
-        if (this.activeNode) {
-            this.activeNode.makeInactive();
-            this.activeNode = null;
-        }
-        document.activeElement.blur();
-        this.emit("onClearActiveNode");
-    }
-    _activateNode(node) {
-        if (this.activeNode != node) {
-            this._clearActiveNode();
-            node.makeActive();
-            this.activeNode = node;
-        }
-        this.emit("onActiveNode", node);
-    }
     layoutAuto() {
         this.layout();
         this.canvas_manager.draw_overview(true);
