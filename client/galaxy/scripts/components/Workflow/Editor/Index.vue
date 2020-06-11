@@ -289,7 +289,7 @@ export default {
         },
         onSave() {
             show_message("Saving workflow...", "progress");
-            saveWorkflow(this.manager, this.id)
+            saveWorkflow(this)
                 .then((data) => {
                     showWarnings(data);
                     getVersions(this.id).then((versions) => {
