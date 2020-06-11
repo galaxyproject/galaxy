@@ -15,23 +15,6 @@ class Workflow extends EventEmitter {
 
         // Canvas overview management
         this.canvas_manager = new WorkflowCanvas(this, $("#canvas-viewport"), $("#overview-container"));
-
-        // On load, set the size to the pref stored in local storage if it exists
-        const overview_size = localStorage.getItem("overview-size");
-        if (overview_size !== undefined) {
-            $(".workflow-overview").css({
-                width: overview_size,
-                height: overview_size,
-            });
-        }
-
-        // Stores the size of the overview into local storage when it's resized
-        $(".workflow-overview").bind("dragend", function (e, d) {
-            const op = $(this).offsetParent();
-            const opo = op.offset();
-            const new_size = Math.max(op.width() - (d.offsetX - opo.left), op.height() - (d.offsetY - opo.top));
-            localStorage.setItem("overview-size", `${new_size}px`);
-        });
     }
     setNode(node, data) {
         data.workflow_outputs = data.outputs.map((o) => {
