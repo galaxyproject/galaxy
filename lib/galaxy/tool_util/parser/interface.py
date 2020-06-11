@@ -239,7 +239,7 @@ class ToolSource(object):
         return {'tests': []}
 
     def __str__(self):
-        source_path = getattr(self, "_soure_path", None)
+        source_path = getattr(self, "_source_path", None)
         if source_path:
             as_str = u'%s[%s]' % (self.__class__.__name__, source_path)
         else:
