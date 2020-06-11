@@ -26,17 +26,17 @@
                 <div id="canvas-viewport">
                     <div ref="canvas" id="canvas-container">
                         <WorkflowNode
-                            v-for="step in steps"
-                            :id="step.id"
+                            v-for="(step, key) in steps"
+                            :id="key"
                             :name="step.name"
                             :type="step.type"
                             :content-id="step.content_id"
                             :step="step"
-                            :key="step.id"
+                            :key="key"
                             :datatypes-mapping="datatypesMapping"
                             :get-manager="getManager"
                             :get-canvas-manager="getCanvasManager"
-                            @onAddNode="onAddNode"
+                            @onAdd="onAdd"
                             @onAddClone="onAddClone"
                             @onInsertTool="onInsertTool"
                             @onChange="onChange"
@@ -117,6 +117,7 @@ import { hide_modal, show_message, show_modal } from "layout/modal";
 import WorkflowAttributes from "./Attributes";
 import ZoomControl from "./ZoomControl";
 import WorkflowNode from "./Node";
+import Vue from "vue";
 
 export default {
     components: {
@@ -173,7 +174,7 @@ export default {
             versions: [],
             parameters: [],
             zoomLevel: 7,
-            steps: [],
+            steps: {},
             hasChanges: false,
             nodeIndex: 0,
             nodes: {},
@@ -201,14 +202,6 @@ export default {
         };
     },
     methods: {
-        onRemove(node) {
-            this.activeNode = null;
-            delete this.nodes[node.id];
-            this.has_changes = true;
-            this.canvasManager.draw_overview();
-            this.hasChanges = true;
-            showAttributes();
-        },
         onActivate(node) {
             if (this.activeNode != node) {
                 if (this.activeNode) {
@@ -221,10 +214,7 @@ export default {
             showForm(this, node, this.datatypes);
             this.canvasManager.draw_overview();
         },
-        onChange() {
-            this.hasChanges = true;
-        },
-        onAddNode(node) {
+        onAdd(node) {
             if (node.step.uuid) {
                 node.initData(node.step);
                 node.updateData(node.step);
@@ -240,10 +230,20 @@ export default {
             }
             this.nodes[node.id] = node;
         },
+        onChange() {
+            this.hasChanges = true;
+        },
+        onRemove(node) {
+            delete this.nodes[node.id];
+            delete this.steps[node.id];
+            this.canvasManager.draw_overview();
+            this.activeNode = null;
+            this.hasChanges = true;
+            showAttributes();
+        },
         onAddClone(node) {
-            this.steps.push({
+            Vue.set(this.steps, this.nodeIndex++, {
                 ...node.step,
-                id: this.nodeIndex++,
                 annotation: node.annotation,
                 tool_state: node.tool_state,
                 post_job_actions: node.postJobActions,
@@ -254,8 +254,7 @@ export default {
                 this.isCanvas = true;
                 return;
             }
-            this.steps.push({
-                id: this.nodeIndex++,
+            Vue.set(this.steps, this.nodeIndex++, {
                 name: tool_name,
                 content_id: tool_id,
                 type: "tool",
@@ -266,8 +265,7 @@ export default {
                 this.isCanvas = true;
                 return;
             }
-            this.steps.push({
-                id: this.nodeIndex++,
+            Vue.set(this.steps, this.nodeIndex++, {
                 name: module_name,
                 type: module_id,
             });
@@ -277,8 +275,7 @@ export default {
                 this.isCanvas = true;
                 return;
             }
-            this.steps.push({
-                id: this.nodeIndex++,
+            Vue.set(this.steps, this.nodeIndex++, {
                 name: workflow_name,
                 content_id: workflow_id,
                 type: "subworkflow",

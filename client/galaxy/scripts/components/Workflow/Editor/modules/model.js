@@ -7,16 +7,15 @@ export function fromSimple(workflow, data, appendData = false) {
         offset = workflow.nodeIndex;
     } else {
         workflow.name = data.name;
-        workflow.steps.splice();
+        workflow.steps = {};
         workflow.nodeIndex = 0;
     }
     workflow.workflow_version = data.version;
     workflow.report = data.report || {};
     Object.values(data.steps).forEach((step) => {
-        workflow.steps.push({
+        workflow.steps[workflow.nodeIndex++] = {
             ...step,
-            id: workflow.nodeIndex++,
-        });
+        };
     });
     // If workflow being copied into another, wipe UUID and let
     // Galaxy assign new ones.

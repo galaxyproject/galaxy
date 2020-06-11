@@ -92,8 +92,8 @@ export default {
     },
     props: {
         id: {
-            type: Number,
-            default: -1,
+            type: String,
+            default: "",
         },
         contentId: {
             type: String,
@@ -183,7 +183,7 @@ export default {
         });
 
         // Emit add event
-        this.$emit("onAddNode", this);
+        this.$emit("onAdd", this);
     },
     computed: {
         title() {
