@@ -39,15 +39,6 @@ class CustosAuthnz(IdentityProvider):
         self.config['extra_params'] = {
             'kc_idp_hint': oidc_backend_config.get('idphint', 'oidc' if self.config['provider'] in ['custos', 'keycloak'] else 'cilogon')
         }
-        # Either get OIDC config from well-known config URI or lookup known urls based on provider name and realm
-        # if 'well_known_oidc_config_uri' in oidc_backend_config:
-        #     self.config['well_known_oidc_config_uri'] = oidc_backend_config['well_known_oidc_config_uri']
-        #     well_known_oidc_config = self._load_well_known_oidc_config(
-        #         self.config['well_known_oidc_config_uri'])
-        #     self.config['authorization_endpoint'] = well_known_oidc_config['authorization_endpoint']
-        #     self.config['token_endpoint'] = well_known_oidc_config['token_endpoint']
-        #     self.config['userinfo_endpoint'] = well_known_oidc_config['userinfo_endpoint']
-        #     self.config['end_session_endpoint'] = well_known_oidc_config['end_session_endpoint']
         if provider == 'cilogon':
             self._load_config_for_cilogon()
         elif provider == 'custos':

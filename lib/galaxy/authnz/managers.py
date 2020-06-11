@@ -152,8 +152,6 @@ class AuthnzManager(object):
             'enable_idp_logout': asbool(config_xml.findtext('enable_idp_logout', 'false'))}
         if config_xml.find('credential_url') is not None:
             rtv['credential_url'] = config_xml.find('credential_url').text
-        # if config_xml.find('well_known_oidc_config_uri') is not None:
-        #     rtv['well_known_oidc_config_uri'] = config_xml.find('well_known_oidc_config_uri').text
         if config_xml.find('idphint') is not None:
             rtv['idphint'] = config_xml.find('idphint').text
         if config_xml.find('ca_bundle') is not None:
