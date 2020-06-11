@@ -115,6 +115,10 @@ export default {
             type: Function,
             default: null,
         },
+        getCanvasManager: {
+            type: Function,
+            default: null,
+        },
         datatypesMapping: {
             type: Object,
             default: null,
@@ -134,7 +138,7 @@ export default {
         };
     },
     mounted() {
-        this.manager = this.getManager();
+        this.canvasManager = this.getCanvasManager();
         this.activeOutputs = new ActiveOutputs();
         this.element = this.$el;
         this.content_id = this.contentId;
@@ -161,14 +165,14 @@ export default {
             },
             dragend: () => {
                 this.$emit("onChange");
-                this.manager.canvas_manager.draw_overview();
+                this.canvasManager.draw_overview();
             },
             drag: (e, d) => {
                 const o = document.getElementById("canvas-container");
                 const el = this.$el;
                 const rect = o.getBoundingClientRect();
-                const left = (d.offsetX - rect.left) / this.manager.canvas_manager.canvasZoom;
-                const top = (d.offsetY - rect.top) / this.manager.canvas_manager.canvasZoom;
+                const left = (d.offsetX - rect.left) / this.canvasManager.canvasZoom;
+                const top = (d.offsetY - rect.top) / this.canvasManager.canvasZoom;
                 el.style.left = `${left}px`;
                 el.style.top = `${top}px`;
                 this.onRedraw();

@@ -35,6 +35,7 @@
                             :key="step.id"
                             :datatypes-mapping="datatypesMapping"
                             :get-manager="getManager"
+                            :get-canvas-manager="getCanvasManager"
                             @onAddNode="onAddNode"
                             @onAddClone="onAddClone"
                             @onInsertTool="onInsertTool"
@@ -103,6 +104,7 @@ import {
     showForm,
     saveAs,
 } from "./modules/utilities";
+import WorkflowCanvas from "./modules/canvas";
 import WorkflowManager from "./modules/manager";
 import WorkflowOptions from "./Options";
 import MarkdownEditor from "components/Markdown/MarkdownEditor";
@@ -187,6 +189,9 @@ export default {
             this.datatypes = response.datatypes;
             const nodes = this.nodes;
             this.manager = new WorkflowManager({ nodes }, this.$refs.canvas);
+
+            // Canvas overview management
+            this.canvasManager = new WorkflowCanvas(this, this.$refs.canvas);
             this.loadCurrent(this.id, this.version);
         });
 
@@ -202,7 +207,7 @@ export default {
             this.activeNode = null;
             delete this.nodes[node.id];
             this.has_changes = true;
-            this.manager.canvas_manager.draw_overview();
+            this.canvasManager.draw_overview();
             this.hasChanges = true;
             showAttributes();
         },
@@ -216,7 +221,7 @@ export default {
                 this.activeNode = node;
             }
             showForm(this, node, this.datatypes);
-            this.manager.canvas_manager.draw_overview();
+            this.canvasManager.draw_overview();
         },
         onChange() {
             this.hasChanges = true;
@@ -295,7 +300,7 @@ export default {
             saveAs(this.manager);
         },
         onLayout() {
-            this.manager.canvas_manager.draw_overview(true);
+            this.canvasManager.draw_overview(true);
             this.manager.layout();
         },
         onAttributes() {
@@ -319,7 +324,7 @@ export default {
             window.location = `${getAppRoot()}workflows/run?id=${this.id}`;
         },
         onZoom(zoomLevel) {
-            this.zoomLevel = this.manager.canvas_manager.setZoom(zoomLevel);
+            this.zoomLevel = this.canvasManager.setZoom(zoomLevel);
         },
         onSave() {
             show_message("Saving workflow...", "progress");
@@ -357,7 +362,7 @@ export default {
                     const report = data.report || {};
                     const markdown = report.markdown || reportDefault;
                     this.$refs["report-editor"].input = markdown;
-                    this.manager.canvas_manager.draw_overview(true);
+                    this.canvasManager.draw_overview(true);
                     showUpgradeMessage(this.manager, data);
                     getVersions(this.id).then((versions) => {
                         this.versions = versions;
@@ -370,6 +375,9 @@ export default {
         getManager() {
             return this.manager;
         },
+        getCanvasManager() {
+            return this.canvasManager;
+        }
     },
 };
 </script>

@@ -1,5 +1,4 @@
 import $ from "jquery";
-import WorkflowCanvas from "./canvas";
 
 class Workflow {
     constructor(options) {
@@ -8,9 +7,6 @@ class Workflow {
         this.has_changes = false;
         this.workflow_version = 0;
         this.nodeId = 0;
-
-        // Canvas overview management
-        this.canvas_manager = new WorkflowCanvas(this);
     }
     layout() {
         this.has_changes = true;
