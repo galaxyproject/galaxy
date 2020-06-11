@@ -22,7 +22,7 @@ from galaxy.util.hash_util import md5_hash_file
 
 log = logging.getLogger(__name__)
 
-CURRENT_TOOL_CACHE_VERSION = 1
+CURRENT_TOOL_CACHE_VERSION = 2
 
 
 class JSONBackend(ProxyBackend):
@@ -33,6 +33,7 @@ class JSONBackend(ProxyBackend):
                 'metadata': value.metadata,
                 'payload': self.value_encode(value),
                 'macro_paths': value.payload.macro_paths(),
+                'paths_and_modtimes': value.payload.paths_and_modtimes(),
                 'tool_cache_version': CURRENT_TOOL_CACHE_VERSION
             })
 
@@ -57,6 +58,9 @@ class JSONBackend(ProxyBackend):
         v = json.loads(unicodify(v))
         if v.get('tool_cache_version', 0) != CURRENT_TOOL_CACHE_VERSION:
             return NO_VALUE
+        for path, modtime in v['paths_and_modtimes'].items():
+            if os.path.getmtime(path) != modtime:
+                return NO_VALUE
         payload = get_tool_source(
             config_file=k,
             xml_tree=etree.ElementTree(etree.fromstring(v['payload'].encode('utf-8'))),

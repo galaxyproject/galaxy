@@ -1,4 +1,5 @@
 import logging
+import os
 import re
 import sys
 import traceback
@@ -51,6 +52,7 @@ class XmlToolSource(ToolSource):
         self.root = xml_tree.getroot()
         self._source_path = source_path
         self._macro_paths = macro_paths or []
+        self._paths_and_modtimes = {}
         self.legacy_defaults = self.parse_profile() == "16.01"
 
     def to_string(self):
@@ -501,6 +503,13 @@ class XmlToolSource(ToolSource):
 
     def macro_paths(self):
         return self._macro_paths
+
+    def paths_and_modtimes(self):
+        if not self._paths_and_modtimes:
+            self._paths_and_modtimes = {p: os.path.getmtime(p) for p in self._macro_paths}
+            if self._source_path:
+                self._paths_and_modtimes[self._source_path] = os.path.getmtime(self._source_path)
+        return self._paths_and_modtimes
 
     def parse_tests_to_dict(self):
         tests_elem = self.root.find("tests")

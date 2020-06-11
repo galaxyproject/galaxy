@@ -232,6 +232,9 @@ class ToolSource(object):
     def macro_paths(self):
         return []
 
+    def paths_and_modtimes(self):
+        return []
+
     def parse_tests_to_dict(self):
         return {'tests': []}
 
