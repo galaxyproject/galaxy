@@ -174,6 +174,7 @@ export default {
             nodeIndex: 0,
             nodes: {},
             datatypesMapping: {},
+            report: {},
         };
     },
     created() {
@@ -295,7 +296,7 @@ export default {
         },
         onReportUpdate(markdown) {
             this.hasChanges = true;
-            this.manager.report.markdown = markdown;
+            this.report.markdown = markdown;
         },
         onRun() {
             window.location = `${getAppRoot()}workflows/run?id=${this.id}`;
