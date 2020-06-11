@@ -271,6 +271,13 @@ export default {
         getNode() {
             return this;
         },
+        setNode(data) {
+            this.initData(data);
+            Vue.nextTick(() => {
+                this.updateData(data);
+                this.$emit("onActivate", this);
+            });
+        },
         setData(data) {
             this.config_form = data.config_form;
             this.tool_state = data.tool_state;

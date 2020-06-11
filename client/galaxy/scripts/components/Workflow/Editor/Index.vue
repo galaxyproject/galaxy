@@ -216,6 +216,7 @@ export default {
                 this.activeNode = node;
             }
             showForm(this, node, this.datatypes);
+            this.manager.canvas_manager.draw_overview();
         },
         onChange() {
             this.hasChanges = true;
@@ -231,7 +232,7 @@ export default {
                     _: "true",
                 }).then((response) => {
                     const newData = Object.assign({}, response, node.step);
-                    this.manager.setNode(node, newData);
+                    node.setNode(newData);
                 });
             }
             this.nodes[node.id] = node;
@@ -294,7 +295,8 @@ export default {
             saveAs(this.manager);
         },
         onLayout() {
-            this.manager.layoutAuto();
+            this.manager.canvas_manager.draw_overview(true);
+            this.manager.layout();
         },
         onAttributes() {
             showAttributes();

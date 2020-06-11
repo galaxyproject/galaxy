@@ -1,11 +1,8 @@
 import $ from "jquery";
 import WorkflowCanvas from "./canvas";
-import EventEmitter from "events";
-import Vue from "vue";
 
-class Workflow extends EventEmitter {
+class Workflow {
     constructor(options, canvas_container) {
-        super();
         this.canvas_container = $(canvas_container);
         this.nodes = options.nodes;
         this.name = null;
@@ -15,18 +12,6 @@ class Workflow extends EventEmitter {
 
         // Canvas overview management
         this.canvas_manager = new WorkflowCanvas(this, $("#canvas-viewport"), $("#overview-container"));
-    }
-    setNode(node, data) {
-        node.initData(data);
-        Vue.nextTick(() => {
-            node.updateData(data);
-            this.canvas_manager.draw_overview();
-            this._activateNode(node);
-        });
-    }
-    layoutAuto() {
-        this.layout();
-        this.canvas_manager.draw_overview(true);
     }
     layout() {
         this.has_changes = true;
