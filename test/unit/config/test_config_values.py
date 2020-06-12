@@ -41,7 +41,7 @@ class ExpectedValues:
             'tool_section_filters': listify_strip,
             'toolbox_filter_base_modules': listify_strip,
             'use_remote_user': None,  # TODO: should be False (config logic incorrect)
-            'user_library_import_symlink_whitelist': listify_strip,
+            'user_library_import_symlink_allowlist': listify_strip,
             'user_tool_filters': listify_strip,
             'user_tool_label_filters': listify_strip,
             'user_tool_section_filters': listify_strip,
@@ -87,7 +87,7 @@ class ExpectedValues:
             'oidc_backends_config_file': self._in_config_dir('oidc_backends_config.xml'),
             'oidc_config_file': self._in_config_dir('oidc_config.xml'),
             'openid_consumer_cache_path': self._in_data_dir('openid_consumer_cache'),
-            'sanitize_whitelist_file': self._in_managed_config_dir('sanitize_whitelist.txt'),
+            'sanitize_allowlist_file': self._in_managed_config_dir('sanitize_allowlist.txt'),
             'shed_data_manager_config_file': self._in_managed_config_dir('shed_data_manager_conf.xml'),
             'shed_tool_config_file': self._in_managed_config_dir('shed_tool_conf.xml'),
             'shed_tool_data_path': self._in_root_dir('tool-data'),

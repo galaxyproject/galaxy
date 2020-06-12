@@ -46,7 +46,7 @@ AUTH_PIPELINE = (
     'social_core.pipeline.social_auth.social_uid',
 
     # Verifies that the current auth process is valid within the current
-    # project, this is where emails and domains whitelists are applied (if
+    # project, this is where emails and domains allowlists are applied (if
     # defined).
     'social_core.pipeline.social_auth.auth_allowed',
 

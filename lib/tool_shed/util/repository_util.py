@@ -424,7 +424,7 @@ def update_repository(app, trans, id, **kwds):
         message = "You are not the owner of this repository, so you cannot administer it."
         return None, message
 
-    # Whitelist properties that can be changed via this method
+    # Allowlist properties that can be changed via this method
     for key in ('type', 'description', 'long_description', 'remote_repository_url', 'homepage_url'):
         # If that key is available, not None and different than what's in the model
         if key in kwds and kwds[key] is not None and kwds[key] != getattr(repository, key):

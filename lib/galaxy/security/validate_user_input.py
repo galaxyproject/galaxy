@@ -55,7 +55,7 @@ def validate_publicname_str(publicname):
 
 def validate_email(trans, email, user=None, check_dup=True, allow_empty=False):
     """
-    Validates the email format, also checks whether the domain is blacklisted in the disposable domains configuration.
+    Validates the email format, also checks whether the domain is blocklisted in the disposable domains configuration.
     """
     if (user and user.email == email) or (email == "" and allow_empty):
         return ''
@@ -64,19 +64,19 @@ def validate_email(trans, email, user=None, check_dup=True, allow_empty=False):
         pass
     elif check_dup and trans.sa_session.query(trans.app.model.User).filter(func.lower(trans.app.model.User.table.c.email) == email.lower()).first():
         message = "User with email '%s' already exists." % email
-    #  If the whitelist is not empty filter out any domain not in the list and ignore blacklist.
-    elif trans.app.config.whitelist_content is not None:
+    #  If the allowlist is not empty filter out any domain not in the list and ignore blocklist.
+    elif trans.app.config.email_domain_allowlist_content is not None:
         domain = email.split('@')[1]
         if len(domain.split('.')) > 2:
             domain = ('.').join(domain.split('.')[-2:])
-        if domain not in trans.app.config.whitelist_content:
+        if domain not in trans.app.config.email_domain_allowlist_content:
             message = "Please enter an allowed domain email address for this server."
-    #  If the blacklist is not empty filter out the disposable domains.
-    elif trans.app.config.blacklist_content is not None:
+    #  If the blocklist is not empty filter out the disposable domains.
+    elif trans.app.config.email_domain_blocklist_content is not None:
         domain = email.split('@')[1]
         if len(domain.split('.')) > 2:
             domain = ('.').join(domain.split('.')[-2:])
-        if domain in trans.app.config.blacklist_content:
+        if domain in trans.app.config.email_domain_blocklist_content:
             message = "Please enter your permanent email address."
     return message
 

@@ -4,7 +4,7 @@ from ast import (
     walk,
 )
 
-AST_NODE_TYPE_WHITELIST = [
+AST_NODE_TYPE_ALLOWLIST = [
     'Expr', 'Load', 'Str', 'Num', 'BoolOp', 'Compare', 'And', 'Eq', 'NotEq',
     'Or', 'GtE', 'LtE', 'Lt', 'Gt', 'BinOp', 'Add', 'Div', 'Sub', 'Mult', 'Mod',
     'Pow', 'LShift', 'GShift', 'BitAnd', 'BitOr', 'BitXor', 'UnaryOp', 'Invert',
@@ -104,7 +104,7 @@ def _check_expression(text, allowed_variables=None):
 
         # Toss out everything that is not a "simple" expression,
         # imports, error handling, etc...
-        if ast_node_class not in AST_NODE_TYPE_WHITELIST:
+        if ast_node_class not in AST_NODE_TYPE_ALLOWLIST:
             return False
 
         # White-list more potentially dangerous types AST elements.
