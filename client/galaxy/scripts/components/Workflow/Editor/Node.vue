@@ -253,7 +253,6 @@ export default {
             Object.values(this.outputTerminals).forEach((t) => {
                 t.destroy();
             });
-            this.element.remove();
             this.$emit("onRemove", this);
         },
         onRedraw() {

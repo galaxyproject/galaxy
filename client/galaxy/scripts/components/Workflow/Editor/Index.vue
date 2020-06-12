@@ -235,7 +235,7 @@ export default {
         },
         onRemove(node) {
             delete this.nodes[node.id];
-            delete this.steps[node.id];
+            Vue.delete(this.steps, node.id);
             this.canvasManager.draw_overview();
             this.activeNode = null;
             this.hasChanges = true;
