@@ -4120,7 +4120,7 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
         error_message = "Dataset collection has no %s with key %s." % (get_by_attribute, key)
         raise KeyError(error_message)
 
-    def copy(self, destination=None, element_destination=None):
+    def copy(self, destination=None, element_destination=None, force_flush=True):
         new_collection = DatasetCollection(
             collection_type=self.collection_type,
             element_count=self.element_count
@@ -4130,6 +4130,7 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
                 new_collection,
                 destination=destination,
                 element_destination=element_destination,
+                force_flush=force_flush
             )
         object_session(self).add(new_collection)
         object_session(self).flush()
@@ -4537,13 +4538,14 @@ class DatasetCollectionElement(Dictifiable, RepresentById):
         else:
             return [element_object]
 
-    def copy_to_collection(self, collection, destination=None, element_destination=None):
+    def copy_to_collection(self, collection, destination=None, element_destination=None, force_flush=True):
         element_object = self.element_object
         if element_destination:
             if self.is_collection:
                 element_object = element_object.copy(
                     destination=destination,
-                    element_destination=element_destination
+                    element_destination=element_destination,
+                    force_flush=force_flush
                 )
             else:
                 new_element_object = element_object.copy()
