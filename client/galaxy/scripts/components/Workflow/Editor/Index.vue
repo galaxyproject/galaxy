@@ -215,7 +215,7 @@ export default {
             this.canvasManager.draw_overview();
         },
         onAdd(node) {
-            if (node.step.uuid) {
+            if (node.step._complete) {
                 node.initData(node.step);
                 node.updateData(node.step);
             } else {
@@ -292,7 +292,7 @@ export default {
             window.location = `${getAppRoot()}api/workflows/${this.id}/download?format=json-download`;
         },
         onSaveAs() {
-            saveAs(this.manager);
+            saveAs(this);
         },
         onLayout() {
             this.canvasManager.draw_overview(true);
@@ -300,7 +300,7 @@ export default {
         },
         onAttributes() {
             showAttributes();
-            this.parameters = getWorkflowParameters(this.manager.nodes);
+            this.parameters = getWorkflowParameters(this.nodes);
         },
         onEdit() {
             this.isCanvas = true;
@@ -336,13 +336,12 @@ export default {
                 });
         },
         onVersion(version) {
-            if (version != this.manager.workflow_version) {
+            if (version != this.version) {
                 if (this.hasChanges) {
                     const r = window.confirm(
                         "There are unsaved changes to your workflow which will be lost. Continue ?"
                     );
                     if (r == false) {
-                        this.version = this.manager.workflow_version;
                         return;
                     }
                 }
@@ -358,7 +357,7 @@ export default {
                     const markdown = report.markdown || reportDefault;
                     this.$refs["report-editor"].input = markdown;
                     this.canvasManager.draw_overview(true);
-                    showUpgradeMessage(this.manager, data);
+                    showUpgradeMessage(data);
                     getVersions(this.id).then((versions) => {
                         this.versions = versions;
                     });

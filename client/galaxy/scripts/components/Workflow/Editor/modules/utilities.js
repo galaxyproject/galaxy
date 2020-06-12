@@ -97,7 +97,7 @@ export function showForm(workflow, node, datatypes) {
     }
 }
 
-export function showUpgradeMessage(workflow, data) {
+export function showUpgradeMessage(data) {
     // Determine if any parameters were 'upgraded' and provide message
     var upgrade_message = "";
     _.each(data.steps, (step, step_id) => {
@@ -110,7 +110,7 @@ export function showUpgradeMessage(workflow, data) {
         });
         if (details) {
             upgrade_message += `<li>Step ${parseInt(step_id, 10) + 1}: ${
-                workflow.nodes[step_id].name
+                step.name
             }<ul>${details}</ul></li>`;
         }
     });

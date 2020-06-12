@@ -10,23 +10,19 @@ export function fromSimple(workflow, data, appendData = false) {
         workflow.steps = {};
         workflow.nodeIndex = 0;
     }
-    workflow.workflow_version = data.version;
+    workflow.version = data.version;
     workflow.report = data.report || {};
     Object.values(data.steps).forEach((step) => {
+        // If workflow being copied into another, wipe UUID and let
+        // Galaxy assign new ones.
+        if (appendData) {
+            step.uuid = null;
+        }
         Vue.set(workflow.steps, workflow.nodeIndex++, {
             ...step,
+            _complete: true,
         });
     });
-    // If workflow being copied into another, wipe UUID and let
-    // Galaxy assign new ones.
-    if (appendData) {
-        Object.values(data.steps).forEach((step) => {
-            step.uuid = null;
-            step.workflow_outputs.forEach((workflow_output) => {
-                workflow_output.uuid = null;
-            });
-        });
-    }
     Vue.nextTick(() => {
         // Second pass, connections
         Object.entries(data.steps).forEach(([id, step]) => {
