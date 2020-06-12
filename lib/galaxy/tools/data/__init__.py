@@ -20,10 +20,9 @@ from tempfile import NamedTemporaryFile
 
 import refgenconf
 import requests
-from sqlalchemy import case, cast, func, String, Integer
-from sqlalchemy.sql import alias
+from sqlalchemy import case, cast, func, Integer, String
 
-from galaxy import util, model
+from galaxy import model, util
 from galaxy.util import RW_R__R__
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
@@ -1001,8 +1000,8 @@ class DatabaseToolDataTable(ToolDataTable, Dictifiable):
         return False
 
     def get_data_table_from_database(self):
-        return self.sa_session.query(model.DataTable).enable_eagerloads(False) \
-                .filter(model.DataTable.name == self.datatable_name).all()
+        return self.sa_session.query(model.DataTable).enable_eagerloads(False)\
+            .filter(model.DataTable.name == self.datatable_name).all()
 
     def set_db_column(self, column, idx):
         if 'db_columns' not in dir(self):
@@ -1098,7 +1097,7 @@ class DatabaseToolDataTable(ToolDataTable, Dictifiable):
             dt_columnid = colinfo.get('db_idx', None)
             if dt_columnid is not False:
                 dtrow_value = model.DataTableField(value=entryvalue, data_table_row_id=dtrow.id,
-                                                      data_table_column_id=dt_columnid)
+                                                   data_table_column_id=dt_columnid)
                 self.sa_session.add(dtrow_value)
         self.sa_session.flush()
 

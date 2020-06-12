@@ -5,21 +5,9 @@ from __future__ import print_function
 
 import logging
 
-from sqlalchemy import (
-    Column,
-    DateTime,
-    Integer,
-    MetaData,
-    String,
-    Table,
-    UniqueConstraint,
-    ForeignKey
-)
+from sqlalchemy import (Column, DateTime, ForeignKey, Integer, MetaData, String, Table, UniqueConstraint)
 
-from galaxy.model.migrate.versions.util import (
-    create_table,
-    drop_table
-)
+from galaxy.model.migrate.versions.util import (create_table, drop_table)
 from galaxy.model.orm.now import now
 
 log = logging.getLogger(__name__)

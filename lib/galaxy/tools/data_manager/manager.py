@@ -7,7 +7,7 @@ from collections import OrderedDict
 from six import string_types
 
 from galaxy import util
-from galaxy.tools.data import TabularToolDataTable, DatabaseToolDataTable
+from galaxy.tools.data import DatabaseToolDataTable, TabularToolDataTable
 from galaxy.util.template import fill_template
 
 log = logging.getLogger(__name__)
