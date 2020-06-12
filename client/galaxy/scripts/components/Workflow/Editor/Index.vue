@@ -286,7 +286,7 @@ export default {
                 this.isCanvas = true;
                 return;
             }
-            copyIntoWorkflow(this.manager, workflow_id, step_count);
+            copyIntoWorkflow(this, workflow_id, step_count);
         },
         onDownload() {
             window.location = `${getAppRoot()}api/workflows/${this.id}/download?format=json-download`;

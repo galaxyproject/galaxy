@@ -13,9 +13,9 @@ export function fromSimple(workflow, data, appendData = false) {
     workflow.workflow_version = data.version;
     workflow.report = data.report || {};
     Object.values(data.steps).forEach((step) => {
-        workflow.steps[workflow.nodeIndex++] = {
+        Vue.set(workflow.steps, workflow.nodeIndex++, {
             ...step,
-        };
+        });
     });
     // If workflow being copied into another, wipe UUID and let
     // Galaxy assign new ones.
