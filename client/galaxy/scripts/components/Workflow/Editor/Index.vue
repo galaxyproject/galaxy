@@ -37,8 +37,9 @@
                             :get-manager="getManager"
                             :get-canvas-manager="getCanvasManager"
                             @onAdd="onAdd"
-                            @onAddClone="onAddClone"
-                            @onInsertTool="onInsertTool"
+                            @onUpdate="onUpdate"
+                            @onClone="onClone"
+                            @onCreate="onInsertTool"
                             @onChange="onChange"
                             @onActivate="onActivate"
                             @onRemove="onRemove"
@@ -215,20 +216,17 @@ export default {
             this.canvasManager.draw_overview();
         },
         onAdd(node) {
-            if (node.step._complete) {
-                node.initData(node.step);
-                node.updateData(node.step);
-            } else {
-                getModule({
-                    type: node.type,
-                    content_id: node.contentId,
-                    _: "true",
-                }).then((response) => {
-                    const newData = Object.assign({}, response, node.step);
-                    node.setNode(newData);
-                });
-            }
             this.nodes[node.id] = node;
+        },
+        onUpdate(node) {
+            getModule({
+                type: node.type,
+                content_id: node.contentId,
+                _: "true",
+            }).then((response) => {
+                const newData = Object.assign({}, response, node.step);
+                node.setNode(newData);
+            });
         },
         onChange() {
             this.hasChanges = true;
@@ -241,7 +239,7 @@ export default {
             this.hasChanges = true;
             showAttributes();
         },
-        onAddClone(node) {
+        onClone(node) {
             Vue.set(this.steps, this.nodeIndex++, {
                 ...node.step,
                 annotation: node.annotation,

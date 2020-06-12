@@ -110,6 +110,7 @@ class CanvasManager {
         this.cv.css("height", `${100 / this.canvasZoom}%`);
         // Update canvas size
         this._fitCanvasToNodes();
+        this.draw_overview();
         return this.zoomLevel;
     }
 
@@ -218,18 +219,17 @@ class CanvasManager {
             // If it appears that the user is trying to copy/paste text, we
             // pass that through.
             if (window.getSelection().toString() === "") {
-                if (this.app.active_node && this.app.active_node.type !== "subworkflow") {
+                if (this.app.activeNode && this.app.activeNode.type !== "subworkflow") {
                     e.clipboardData.setData(
                         "application/json",
                         JSON.stringify({
-                            nodeId: this.app.active_node.id,
+                            nodeId: this.app.activeNode.id,
                         })
                     );
                 }
                 e.preventDefault();
             }
         });
-
         document.addEventListener("paste", (e) => {
             // If it appears that the user is trying to paste into a text box,
             // pass that through and skip the workflow copy/paste logic.
@@ -238,14 +238,14 @@ class CanvasManager {
                 document.activeElement.type !== "textarea" &&
                 document.activeElement.type !== "text"
             ) {
-                var nodeId;
+                let nodeId;
                 try {
                     nodeId = JSON.parse(e.clipboardData.getData("application/json")).nodeId;
                 } catch (error) {
                     console.debug(error);
                 }
-                if (nodeId && Object.prototype.hasOwnProperty.call(this.app.nodes, nodeId)) {
-                    this.app.nodes[nodeId].clone();
+                if (nodeId && this.app.nodes[nodeId]) {
+                    this.app.nodes[nodeId].onClone();
                 }
                 e.preventDefault();
             }

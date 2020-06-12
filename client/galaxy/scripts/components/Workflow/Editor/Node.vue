@@ -183,8 +183,14 @@ export default {
             },
         });
 
-        // Emit add event
+        // initialize node data
         this.$emit("onAdd", this);
+        if (this.step._complete) {
+            this.initData(this.step);
+            this.updateData(this.step);
+        } else {
+            this.$emit("onUpdate", this);
+        }
     },
     computed: {
         title() {
@@ -240,11 +246,11 @@ export default {
             this.$emit("onChange");
         },
         onCreate(contentId) {
-            this.$emit.on("onInsertTool", contentId);
+            this.$emit.on("onCreate", contentId);
             this.popoverShow = false;
         },
         onClone() {
-            this.$emit("onAddClone", this);
+            this.$emit("onClone", this);
         },
         onRemove() {
             Object.values(this.inputTerminals).forEach((t) => {
