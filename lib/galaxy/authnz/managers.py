@@ -155,9 +155,8 @@ class AuthnzManager:
             'enable_idp_logout': asbool(config_xml.findtext('enable_idp_logout', 'false'))}
         if config_xml.find('credential_url') is not None:
             rtv['credential_url'] = config_xml.find('credential_url').text
-        if config_xml.find('idphint') is not None:
-            rtv['idphint'] = config_xml.find('idphint').text
-        # can prob get rid of idphint ^
+        if config_xml.find('well_known_oidc_config_uri') is not None:
+            rtv['well_known_oidc_config_uri'] = config_xml.find('well_known_oidc_config_uri').text
         if config_xml.find('allowed_idps') is not None:
             self.allowed_idps = config_xml.find('allowed_idps').text
         if config_xml.find('ca_bundle') is not None:
@@ -167,7 +166,7 @@ class AuthnzManager:
         return rtv
 
     def get_allowed_idps(self):
-        # None is no allowed idp list is set, and a list of idphint if there is one configured
+        # None, if no allowed idp list is set, and a list of EntityIDs if configured (in oidc_backend)
         return self.allowed_idps
 
     def _unify_provider_name(self, provider):
