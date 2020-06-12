@@ -73,7 +73,8 @@ def get_missing_containers(quay_list, singularity_list, blocklist_file=None):
     """
     blocklist = []
     if blocklist_file:
-        blocklist = open(blocklist_file).read().split('\n')
+        with open(blocklist_file) as fh:
+            blocklist = fh.read().split('\n')
     return [n for n in quay_list if n not in singularity_list and n not in blocklist]
 
 
@@ -83,7 +84,8 @@ def get_missing_envs(quay_list, conda_list, blocklist_file=None):
     """
     blocklist = []
     if blocklist_file:
-        blocklist = open(blocklist_file).read().split('\n')
+        with open(blocklist_file) as fh:
+            blocklist = fh.read().split('\n')
 
     return [n for n in quay_list if n.split('--')[0] not in conda_list and n.split('--')[0] not in blocklist]
 

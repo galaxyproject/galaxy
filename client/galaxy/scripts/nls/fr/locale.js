@@ -220,7 +220,7 @@ define({
     "Reload a tool's configuration": "Recharger une configuration d'outils",
     "Review tool migration stages": "Vérifier les étapes de migration d'outils",
     "View Tool Error Logs": "Voir les logs d'erreur d'outils",
-    "Manage Allowlist": "Gérer la liste blanche d'outils graphiques",
+    "Manage Allowlist": "Gérer la liste autorisée d'outils graphiques",
     "Manage Tool Dependencies": "Gérer les dépendances d'outils",
     Users: false,
     Groups: false,

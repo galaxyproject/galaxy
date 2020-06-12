@@ -131,7 +131,7 @@ class BaseAppConfiguration(object):
         """
         if self.renamed_options is not None:
             for old, new in self.renamed_options.items():
-                if new not in kwargs and old in kwargs:
+                if old in kwargs and new not in kwargs:
                     kwargs[new] = kwargs[old]
 
     def resolve_path(self, path):
