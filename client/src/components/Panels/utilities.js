@@ -1,10 +1,12 @@
 export function filterToolSections(layout, results) {
     if (results) {
+        results = normalize_results(results);
         const filteredLayout = layout.map((section) => {
             var toolRes = [];
             if (section.elems) {
                 section.elems.forEach((el) => {
-                    if (!el.text && results.includes(el.id)) {
+                    if ((!el.text && results.includes(el.id)) ||
+                        (el.tool_shed_repository && results.includes(el.tool_shed_repository.name))) {
                         toolRes.push(el);
                     }
                 });
@@ -41,6 +43,7 @@ export function filterTools(layout, results) {
     // do not consider expression tools, unless requested by the workflow editor
     layout = layout.filter((section) => section.name !== "Expression Tools");
     if (results) {
+        results = normalize_results(results);
         var toolsResults = [];
         if (results.length < 1) {
             return toolsResults;
@@ -50,7 +53,8 @@ export function filterTools(layout, results) {
         layout.map((section) => {
             if (section.elems) {
                 section.elems.forEach((el) => {
-                    if (!el.text && results.includes(el.id)) {
+                    if ((!el.text && results.includes(el.id)) ||
+                        (el.tool_shed_repository && results.includes(el.tool_shed_repository.name))) {
                         toolsResults.push(el);
                     }
                 });
@@ -62,4 +66,14 @@ export function filterTools(layout, results) {
     } else {
         return layout;
     }
+}
+
+function normalize_results(results) {
+    var norm_results = [];
+    results.forEach((result) => {
+        if (result.includes("/repos/")) {
+            norm_results.push(result.split('/')[3]);
+        }
+    });
+    return norm_results;
 }
