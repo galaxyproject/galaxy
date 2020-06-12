@@ -135,6 +135,7 @@ export default {
             errors: null,
             label: null,
             config_form: {},
+            showLoading: true,
         };
     },
     mounted() {
@@ -192,17 +193,8 @@ export default {
         idString() {
             return `wf-node-step-${this.id}`;
         },
-        hasInputs() {
-            return Object.keys(this.inputs).length > 0;
-        },
-        hasOutputs() {
-            return Object.keys(this.outputs).length > 0;
-        },
         showRule() {
-            return this.hasInputs && this.hasOutputs;
-        },
-        showLoading() {
-            return !this.hasInputs && !this.hasOutputs;
+            return this.inputs.length > 0 && this.outputs.length > 0;
         },
         iconClass() {
             const iconType = WorkflowIcons[this.type];
@@ -400,6 +392,7 @@ export default {
             });
 
             // emit change completion event
+            this.showLoading = false;
             this.$emit("onChange");
         },
         labelOutput(output, label) {
