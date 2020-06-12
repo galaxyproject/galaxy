@@ -101,9 +101,7 @@ class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         # Galaxy flavor Docker Image
         self.user_activation_on = None
         self.registration_warning_message = kwargs.get('registration_warning_message')
-        self.email_domain_blocklist_location = kwargs.get('email_domain_blocklist_file')
         self.email_domain_blocklist_content = None
-        self.email_domain_allowlist_location = kwargs.get('email_domain_allowlist_file')
         self.email_domain_allowlist_content = None
         self.template_path = templates_path
         self.template_cache_path = self._in_root_dir(kwargs.get('template_cache_path', 'database/compiled_templates/community'))
