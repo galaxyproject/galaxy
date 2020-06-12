@@ -7,7 +7,9 @@ export function fromSimple(workflow, data, appendData = false) {
         offset = workflow.nodeIndex;
     } else {
         workflow.name = data.name;
-        workflow.steps = {};
+        Object.values(workflow.nodes).forEach((node) => {
+            node.onRemove();
+        });
         workflow.nodeIndex = 0;
     }
     workflow.version = data.version;

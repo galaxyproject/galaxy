@@ -5,6 +5,7 @@ import _l from "utils/localization";
 import Utils from "utils/utils";
 import { DefaultForm, ToolForm } from "./forms";
 import { loadWorkflow } from "./services";
+import { toSimple } from "./model";
 import { hide_modal, show_message, show_modal } from "layout/modal";
 
 export function copyIntoWorkflow(workflow, id = null, stepCount = null) {
@@ -186,7 +187,7 @@ export function saveAs(workflow) {
                     workflow_annotation: rename_annotation,
                     from_tool_form: true,
                     workflow_data: function () {
-                        return JSON.stringify(workflow.to_simple());
+                        return JSON.stringify(toSimple(workflow));
                     },
                 },
             })
