@@ -28,16 +28,19 @@ class IdEncodingHelper(object):
         per_kind_id_secret_base = config.get('per_kind_id_secret_base', self.id_secret)
         self.id_ciphers_for_kind = _cipher_cache(per_kind_id_secret_base)
 
-    def encode_id(self, obj_id, kind=None):
-        if obj_id is None:
-            raise galaxy.exceptions.MalformedId("Attempted to encode None id")
+    def encode_str(self, data, kind=None):
         id_cipher = self.__id_cipher(kind)
         # Convert to bytes
-        s = smart_str(obj_id)
+        s = smart_str(data or "")
         # Pad to a multiple of 8 with leading "!"
         s = (b"!" * (8 - len(s) % 8)) + s
         # Encrypt
         return unicodify(codecs.encode(id_cipher.encrypt(s), 'hex'))
+
+    def encode_id(self, obj_id, kind=None):
+        if obj_id is None:
+            raise galaxy.exceptions.MalformedId("Attempted to encode None id")
+        return self.encode_str(obj_id, kind)
 
     def encode_dict_ids(self, a_dict, kind=None, skip_startswith=None):
         """
@@ -79,9 +82,12 @@ class IdEncodingHelper(object):
                     rval[k] = [self.encode_all_ids(el, True) for el in v]
         return rval
 
-    def decode_id(self, obj_id, kind=None):
+    def decode_str(self, data, kind=None):
         id_cipher = self.__id_cipher(kind)
-        return int(unicodify(id_cipher.decrypt(codecs.decode(obj_id, 'hex'))).lstrip("!"))
+        return unicodify(id_cipher.decrypt(codecs.decode(data, 'hex'))).lstrip("!")
+
+    def decode_id(self, obj_id, kind=None):
+        return int(self.decode_str(obj_id, kind))
 
     def encode_guid(self, session_key):
         # Session keys are strings

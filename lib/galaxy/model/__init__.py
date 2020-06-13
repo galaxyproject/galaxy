@@ -372,16 +372,25 @@ class User(Dictifiable, RepresentById):
         self.credentials = []
         # ? self.roles = []
 
-    @property
-    def extra_preferences(self):
+    def get_extra_preferences(self, security):
         data = {}
         extra_user_preferences = self.preferences.get('extra_user_preferences')
         if extra_user_preferences:
             try:
-                data = json.loads(extra_user_preferences)
+                decoded_user_prefs = security.decode_str(
+                    extra_user_preferences, kind="prefs")
+                data = json.loads(decoded_user_prefs)
             except Exception:
-                pass
+                try:
+                    # backward compatibility with unencrypted preferences
+                    data = json.loads(extra_user_preferences)
+                except Exception:
+                    pass
         return data
+
+    def set_extra_preferences(self, security, value):
+        self.preferences["extra_user_preferences"] = security.encode_str(
+            json.dumps(value), kind="prefs")
 
     def set_password_cleartext(self, cleartext):
         """

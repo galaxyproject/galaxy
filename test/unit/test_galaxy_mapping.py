@@ -9,6 +9,7 @@ from sqlalchemy import inspect
 import galaxy.datatypes.registry
 import galaxy.model
 import galaxy.model.mapping as mapping
+from galaxy.security import idencoding
 
 datatypes_registry = galaxy.datatypes.registry.Registry()
 datatypes_registry.load_datatypes()
@@ -553,6 +554,23 @@ class MappingTests(unittest.TestCase):
         u2 = loaded_invocation.update_time
 
         assert u1 != u2
+
+    def test_user_preferences(self):
+        model = self.model
+
+        security = idencoding.IdEncodingHelper(id_secret='supersecure')
+
+        u = model.User(email="prefs@example.com", password="password")
+        u.preferences['test'] = 'hello'
+        u.set_extra_preferences(security, {'hello': 'world'})
+        self.persist(u)
+
+        stored_user = self.query(model.User).filter(model.User.email == "prefs@example.com").all()[0]
+        decrypted_prefs = stored_user.get_extra_preferences(security)
+        assert stored_user.preferences['test'] == 'hello'
+        assert "hello" not in stored_user.preferences['extra_user_preferences']
+        assert stored_user.preferences['extra_user_preferences'] != decrypted_prefs
+        assert dict(decrypted_prefs) == {'hello': 'world'}
 
     def new_hda(self, history, **kwds):
         return history.add_dataset(self.model.HistoryDatasetAssociation(create_dataset=True, sa_session=self.model.session, **kwds))

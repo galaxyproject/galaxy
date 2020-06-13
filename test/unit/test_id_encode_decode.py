@@ -131,3 +131,10 @@ def test_encode_decode_guid():
     encoded_key = test_helper_1.encode_guid(session_key)
     decoded_key = test_helper_1.decode_guid(encoded_key)
     assert session_key == decoded_key, "%s != %s" % (session_key, decoded_key)
+
+
+def test_encode_decode_str():
+    assert test_helper_1.encode_id("hello") != "hello"
+    assert test_helper_1.encode_id("hello") != test_helper_1.encode_id("world")
+    # But decoding an encoded string brings back to original string
+    assert "hello" == test_helper_1.decode_id(test_helper_1.encode_id("hello"))

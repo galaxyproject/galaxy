@@ -1,6 +1,7 @@
 """
 Manager and Serializer for Users.
 """
+import json
 import logging
 import random
 import socket
@@ -315,7 +316,9 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
 
     # ---- preferences
     def preferences(self, user):
-        return dict((key, value) for key, value in user.preferences.items())
+        return dict((key, value) if key != 'extra_user_preferences' else
+                    (key, json.dumps(user.get_extra_preferences(self.app.security)))
+                    for key, value in user.preferences.items())
 
     # ---- roles and permissions
     def private_role(self, user):
