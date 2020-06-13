@@ -14,8 +14,8 @@
                 v-for="session in savedRules"
                 :key="session.dateTime"
                 @click="$emit('update-rules', session.rule)"
-                >Saved Rule: {{ session.dateTime }}</a
-            >
+                >Saved rule from {{ formatDate(session.dateTime) }}
+            </a>
         </div>
     </div>
 </template>
@@ -24,6 +24,7 @@
 import Vue from "vue";
 import _l from "utils/localization";
 import BootstrapVue from "bootstrap-vue";
+import moment from "moment";
 Vue.use(BootstrapVue);
 export default {
     data: function () {
@@ -40,7 +41,7 @@ export default {
                 if (savedSession) {
                     var key = localStorage.key(i);
                     this.savedRules.push({
-                        dateTime: key.substring(this.prefix.length - 1),
+                        dateTime: key.substring(this.prefix.length),
                         rule: savedSession,
                     });
                 }
@@ -66,6 +67,9 @@ export default {
         },
     },
     methods: {
+        formatDate(dateTime) {
+            return moment.utc(dateTime).from(moment().utc());
+        },
         saveSession(jsonRulesString) {
             var dateTimeString = new Date().toISOString();
             var key = this.prefix + dateTimeString;
