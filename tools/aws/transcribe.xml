@@ -6,7 +6,7 @@
         <requirement type="package" version="1.5">jq</requirement>
     </requirements>
   <command detect_errors="exit_code">$__tool_directory__/transcribe.sh $__root_dir__/../galaxy_logs/aws/transcribe $input_file $aws_transcribe_transcript $audio_format $s3_bucket $s3_directory;
-                                    $__tool_directory__/../amp_json_schema/aws_transcribe_to_schema.py $input_file $aws_transcribe_transcript $amp_speech_to_text $amp_segmentation
+                                    $__tool_directory__/../amp_json_schema/aws_transcribe_to_schema.py $input_file $aws_transcribe_transcript $amp_transcript $amp_segmentation
   </command>
   <inputs>
     <param name="input_file" type="data" format="audio" label="Input File Path" help="Audio file to transcribe"/>
@@ -29,7 +29,7 @@
   </inputs>
   <outputs>
     <data format="json" name="aws_transcribe_transcript" />
-    <data format="json" name="amp_speech_to_text" />
+    <data format="json" name="amp_transcript" />
     <data format="json" name="amp_segmentation" />
   </outputs>
   <tests>
