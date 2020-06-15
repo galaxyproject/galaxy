@@ -22,7 +22,7 @@ _.extend(window.bundleEntries || {}, {
                 options.process.resolve();
             } );
         } catch(e) {
-            options.chart.state('failed', 'Could not load PDB file.');
+            options.chart.state('failed', 'Could not load file.');
             options.process.resolve();
         }
         stage.setQuality(settings.get('quality' ) );
