@@ -1376,6 +1376,7 @@ class DatasetCollectionPopulator(BaseDatasetCollectionPopulator):
 
 
 def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_populator):
+    """Load a dictionary as inputs to a workflow (test data focused)."""
 
     def open_test_data(test_dict, mode="rb"):
         test_data_resolver = TestDataResolver()
@@ -1458,6 +1459,15 @@ def stage_inputs(galaxy_interactor, history_id, job, use_path_paste=True):
     """Alternative to load_data_dict that uses production-style workflow inputs."""
     inputs, datasets = InteractorStaging(galaxy_interactor).stage("workflow", history_id=history_id, job=job, use_path_paste=use_path_paste)
     return inputs, datasets
+
+
+def stage_rules_test_data(galaxy_interactor, history_id, example):
+    """Wrapper around stage_inputs for staging collections defined by rules spec DSL."""
+    input_dict = example["test_data"].copy()
+    input_dict["collection_type"] = input_dict.pop("type")
+    input_dict["class"] = "Collection"
+    inputs, _ = stage_inputs(galaxy_interactor, history_id=history_id, job={"input": input_dict})
+    return inputs
 
 
 def wait_on_state(state_func, desc="state", skip_states=None, assert_ok=False, timeout=DEFAULT_TIMEOUT):
