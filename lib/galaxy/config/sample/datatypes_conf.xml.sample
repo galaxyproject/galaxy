@@ -792,7 +792,6 @@
     <datatype extension="dada2_uniques" type="galaxy.datatypes.tabular:Tabular" mimetype="application/text" subclass="true" display_in_upload="true" />
     <datatype extension="ckpt" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true" />
     <datatype extension="lastdb" type="galaxy.datatypes.last:LastDb" mimetype="text/html" display_in_upload="false"/>
-</datatypes>
   </registration>
   <sniffers>
     <!--
