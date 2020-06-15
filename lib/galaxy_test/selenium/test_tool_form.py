@@ -2,7 +2,11 @@ import json
 
 from galaxy.selenium.navigates_galaxy import retry_call_during_transitions
 from galaxy_test.base import rules_test_data
-from galaxy_test.base.populators import flakey, load_data_dict, skip_if_github_down
+from galaxy_test.base.populators import (
+    flakey,
+    skip_if_github_down,
+    stage_rules_test_data,
+)
 from .framework import (
     managed_history,
     retry_assertion_during_transitions,
@@ -344,7 +348,7 @@ https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-da
 
         self.home()
         history_id = self.current_history_id()
-        inputs, _, _ = load_data_dict(history_id, {"input": example["test_data"]}, self.dataset_populator, self.dataset_collection_populator)
+        stage_rules_test_data(self.galaxy_interactor, history_id, example)
         self.dataset_populator.wait_for_history(history_id)
         self.home()
         self._tool_open_apply_rules()
