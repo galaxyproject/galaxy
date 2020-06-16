@@ -12,6 +12,7 @@ describe("SavedRulesSelector", () => {
             propsData: {
                 // Add a unique prefix for this test run so the test is not affected by local storage values
                 prefix: "test_prefix_" + new Date().toISOString() + "_",
+                user: "test_user",
             },
             attachTo: getNewAttachNode(),
         });
