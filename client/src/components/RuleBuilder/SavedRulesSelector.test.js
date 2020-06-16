@@ -30,7 +30,7 @@ describe("SavedRulesSelector", () => {
     });
 
     it("should emit a click event when a session is clicked", async () => {
-        wrapper.setProps({user: "test_user"})
+        wrapper.setProps({ user: "test_user" });
         const testRules = {
             rules: [
                 {
