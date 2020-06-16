@@ -10,49 +10,50 @@ export function fromSimple(workflow, data, appendData = false) {
         Object.values(workflow.nodes).forEach((node) => {
             node.onRemove();
         });
-        workflow.nodeIndex = 0;
     }
-    workflow.version = data.version;
-    workflow.report = data.report || {};
-    Object.values(data.steps).forEach((step) => {
-        // If workflow being copied into another, wipe UUID and let
-        // Galaxy assign new ones.
-        if (appendData) {
-            step.uuid = null;
-        }
-        Vue.set(workflow.steps, workflow.nodeIndex++, {
-            ...step,
-            _complete: true,
-        });
-    });
     Vue.nextTick(() => {
-        // Second pass, connections
-        Object.entries(data.steps).forEach(([id, step]) => {
-            const nodeIndex = parseInt(id) + offset;
-            const node = workflow.nodes[nodeIndex];
-            Object.entries(step.input_connections).forEach(([k, v]) => {
-                if (v) {
-                    if (!Array.isArray(v)) {
-                        v = [v];
-                    }
-                    v.forEach((x) => {
-                        const otherNodeIndex = parseInt(x.id) + offset;
-                        const otherNode = workflow.nodes[otherNodeIndex];
-                        const c = new Connector(workflow.canvasManager);
-                        c.connect(otherNode.outputTerminals[x.output_name], node.inputTerminals[k]);
-                        c.redraw();
-                    });
-                }
-            });
-
-            // Older workflows contain HideDatasetActions only, but no active outputs yet.
-            Object.values(node.outputs).forEach((ot) => {
-                if (!node.postJobActions[`HideDatasetAction${ot.name}`]) {
-                    node.activeOutputs.add(ot.name);
-                }
+        workflow.version = data.version;
+        workflow.report = data.report || {};
+        Object.values(data.steps).forEach((step) => {
+            // If workflow being copied into another, wipe UUID and let
+            // Galaxy assign new ones.
+            if (appendData) {
+                step.uuid = null;
+            }
+            Vue.set(workflow.steps, workflow.nodeIndex++, {
+                ...step,
+                _complete: true,
             });
         });
-        workflow.hasChanges = false;
+        Vue.nextTick(() => {
+            // Second pass, connections
+            Object.entries(data.steps).forEach(([id, step]) => {
+                const nodeIndex = parseInt(id) + offset;
+                const node = workflow.nodes[nodeIndex];
+
+                Object.entries(step.input_connections).forEach(([k, v]) => {
+                    if (v) {
+                        if (!Array.isArray(v)) {
+                            v = [v];
+                        }
+                        v.forEach((x) => {
+                            const otherNodeIndex = parseInt(x.id) + offset;
+                            const otherNode = workflow.nodes[otherNodeIndex];
+                            const c = new Connector(workflow.canvasManager);
+                            c.connect(otherNode.outputTerminals[x.output_name], node.inputTerminals[k]);
+                            c.redraw();
+                        });
+                    }
+                });
+
+                // Older workflows contain HideDatasetActions only, but no active outputs yet.
+                Object.values(node.outputs).forEach((ot) => {
+                    if (!node.postJobActions[`HideDatasetAction${ot.name}`]) {
+                        node.activeOutputs.add(ot.name);
+                    }
+                });
+            });
+        });
     });
 }
 

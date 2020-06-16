@@ -23,7 +23,7 @@
                 <i class="fa fa-arrow-right" />
             </b-button>
             <b-popover :target="popoverId" triggers="hover" placement="bottom" :show.sync="popoverShow">
-                <WorkflowRecommendations :node="node" @onCreate="onCreate" />
+                <Recommendations :node="node" @onCreate="onCreate" />
             </b-popover>
             <b-button
                 v-if="canClone"
@@ -76,7 +76,7 @@ import BootstrapVue from "bootstrap-vue";
 import WorkflowIcons from "components/Workflow/icons";
 import LoadingSpan from "components/LoadingSpan";
 import { getGalaxyInstance } from "app";
-import WorkflowRecommendations from "components/Workflow/Editor/Recommendations";
+import Recommendations from "components/Workflow/Editor/Recommendations";
 import NodeInput from "./NodeInput";
 import NodeOutput from "./NodeOutput";
 import { ActiveOutputs } from "./modules/outputs";
@@ -86,7 +86,7 @@ Vue.use(BootstrapVue);
 export default {
     components: {
         LoadingSpan,
-        WorkflowRecommendations,
+        Recommendations,
         NodeInput,
         NodeOutput,
     },
@@ -153,10 +153,12 @@ export default {
         } else {
             const p = document.getElementById("canvas-viewport");
             const o = document.getElementById("canvas-container");
-            const left = -o.offsetLeft + (p.offsetWidth - el.offsetWidth) / 2;
-            const top = -o.offsetTop + (p.offsetHeight - el.offsetHeight) / 2;
-            el.style.top = `${top}px`;
-            el.style.left = `${left}px`;
+            if (p && o) {
+                const left = -o.offsetLeft + (p.offsetWidth - el.offsetWidth) / 2;
+                const top = -o.offsetTop + (p.offsetHeight - el.offsetHeight) / 2;
+                el.style.top = `${top}px`;
+                el.style.left = `${left}px`;
+            }
         }
 
         // Attach node dragging events
@@ -166,7 +168,7 @@ export default {
             },
             dragend: () => {
                 this.$emit("onChange");
-                this.canvasManager.draw_overview();
+                this.canvasManager.drawOverview();
             },
             drag: (e, d) => {
                 const o = document.getElementById("canvas-container");

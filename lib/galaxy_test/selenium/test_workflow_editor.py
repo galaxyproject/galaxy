@@ -103,6 +103,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         assert annotation == "my cool annotation"
         data_input_node.destroy.wait_for_and_click()
         data_input_node.wait_for_absent()
+        self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_data_collection_input_deleted")
 
     @selenium_test
@@ -128,6 +129,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         assert annotation == "my cool annotation"
         data_input_node.destroy.wait_for_and_click()
         data_input_node.wait_for_absent()
+        self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_parameter_input_deleted")
 
     @selenium_test

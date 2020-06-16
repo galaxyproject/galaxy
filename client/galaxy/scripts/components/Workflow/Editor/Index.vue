@@ -192,7 +192,7 @@ export default {
 
             // canvas overview management
             this.canvasManager = new WorkflowCanvas(this, this.$refs.canvas);
-            this.loadCurrent(this.id, this.version);
+            this._loadCurrent(this.id, this.version);
         });
 
         // Notify user if workflow has not been saved yet
@@ -213,7 +213,7 @@ export default {
                 this.activeNode = node;
             }
             showForm(this, node, this.datatypes);
-            this.canvasManager.draw_overview();
+            this.canvasManager.drawOverview();
         },
         onAdd(node) {
             this.nodes[node.id] = node;
@@ -234,7 +234,7 @@ export default {
         onRemove(node) {
             delete this.nodes[node.id];
             Vue.delete(this.steps, node.id);
-            this.canvasManager.draw_overview();
+            this.canvasManager.drawOverview();
             this.activeNode = null;
             this.hasChanges = true;
             showAttributes();
@@ -242,42 +242,20 @@ export default {
         onClone(node) {
             Vue.set(this.steps, this.nodeIndex++, {
                 ...node.step,
+                uuid: null,
                 annotation: node.annotation,
                 tool_state: node.tool_state,
                 post_job_actions: node.postJobActions,
             });
         },
         onInsertTool(tool_id, tool_name) {
-            if (!this.isCanvas) {
-                this.isCanvas = true;
-                return;
-            }
-            Vue.set(this.steps, this.nodeIndex++, {
-                name: tool_name,
-                content_id: tool_id,
-                type: "tool",
-            });
+            this._insertStep(tool_id, tool_name, "tool");
         },
         onInsertModule(module_id, module_name) {
-            if (!this.isCanvas) {
-                this.isCanvas = true;
-                return;
-            }
-            Vue.set(this.steps, this.nodeIndex++, {
-                name: module_name,
-                type: module_id,
-            });
+            this._insertStep(null, module_name, module_id);
         },
         onInsertWorkflow(workflow_id, workflow_name) {
-            if (!this.isCanvas) {
-                this.isCanvas = true;
-                return;
-            }
-            Vue.set(this.steps, this.nodeIndex++, {
-                name: workflow_name,
-                content_id: workflow_id,
-                type: "subworkflow",
-            });
+            this._insertStep(workflow_id, workflow_name, "subworkflow");
         },
         onInsertWorkflowSteps(workflow_id, step_count) {
             if (!this.isCanvas) {
@@ -293,7 +271,8 @@ export default {
             saveAs(this);
         },
         onLayout() {
-            this.canvasManager.draw_overview(true);
+            this.canvasManager.drawOverview();
+            this.canvasManager.scrollToNodes();
             autoLayout(this);
         },
         onAttributes() {
@@ -344,20 +323,35 @@ export default {
                     }
                 }
                 this.version = version;
-                this.loadCurrent(this.id, version);
+                this._loadCurrent(this.id, version);
             }
         },
-        loadCurrent(id, version) {
+        _insertStep(conentId, name, type) {
+            if (!this.isCanvas) {
+                this.isCanvas = true;
+                return;
+            }
+            Vue.set(this.steps, this.nodeIndex++, {
+                name: name,
+                content_id: conentId,
+                type: type,
+            });
+        },
+        _loadCurrent(id, version) {
             show_message("Loading workflow...", "progress");
             loadWorkflow(this, id, version)
                 .then((data) => {
                     const report = data.report || {};
                     const markdown = report.markdown || reportDefault;
                     this.$refs["report-editor"].input = markdown;
-                    this.canvasManager.draw_overview(true);
                     showUpgradeMessage(data);
                     getVersions(this.id).then((versions) => {
                         this.versions = versions;
+                    });
+                    Vue.nextTick(() => {
+                        this.canvasManager.drawOverview();
+                        this.canvasManager.scrollToNodes();
+                        this.hasChanges = false;
                     });
                 })
                 .catch((response) => {

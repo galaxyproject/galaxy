@@ -16,7 +16,7 @@ export function copyIntoWorkflow(workflow, id = null, stepCount = null) {
             // Determine if any parameters were 'upgraded' and provide message
             var upgrade_message = "";
             $.each(data.upgrade_messages, (k, v) => {
-                upgrade_message += `<li>Step ${parseInt(k, 10) + 1}: ${workflow.nodes[k].name}<ul>`;
+                upgrade_message += `<li>Step ${parseInt(k, 10) + 1}: ${workflow.steps[k].name}<ul>`;
                 $.each(v, (i, vv) => {
                     upgrade_message += `<li>${vv}</li>`;
                 });
@@ -110,9 +110,7 @@ export function showUpgradeMessage(data) {
             details += `<li>${m}</li>`;
         });
         if (details) {
-            upgrade_message += `<li>Step ${parseInt(step_id, 10) + 1}: ${
-                step.name
-            }<ul>${details}</ul></li>`;
+            upgrade_message += `<li>Step ${parseInt(step_id, 10) + 1}: ${step.name}<ul>${details}</ul></li>`;
         }
     });
     if (upgrade_message) {

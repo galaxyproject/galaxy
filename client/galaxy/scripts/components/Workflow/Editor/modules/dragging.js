@@ -104,7 +104,7 @@ export class OutputDragging {
             var y = d.offsetY - po.top;
             $(d.proxy).css({ left: x / canvasZoom, top: y / canvasZoom });
             d.proxy.terminal.redraw();
-            this.app.canvasManager.update_viewport_overlay();
+            this.app.canvasManager.updateViewportOverlay();
         };
         onmove();
         $("#canvas-container").get(0).scroll_panel.test(e, onmove);
