@@ -28,17 +28,17 @@ Enhancements
   `Pull Request 9471`_
 * Make Toolshed Python 3 compatible & tests
   `Pull Request 9528`_
-* It migrate from EU
+* Migrate interactive tools from EU server
   (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
   `Pull Request 9559`_
-* Allow Tool Data Tables to be backed by refgenie.
+* Allow Tool Data Tables to be backed by refgenie
   `Pull Request 9600`_
 * Startup speedups (XML doc cache, delay non-essential tool param parsing & indexing)
   `Pull Request 9610`_
 
 .. feature
 
-* Enable admin resend activation email
+* Enable admin to resend activation email
   `Pull Request 9154`_
 * Create Python3 virtualenv by default
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
@@ -49,6 +49,9 @@ Enhancements
 * Tool recommendation
   (thanks to `@anuprulez <https://github.com/anuprulez>`__).
   `Pull Request 9440`_
+* Tool recommendations in workflow editor
+  (thanks to `@anuprulez <https://github.com/anuprulez>`__).
+  `Pull Request 9569`_
 * Added whitelisting option for user registration
   (thanks to `@MiguelJulia <https://github.com/MiguelJulia>`__).
   `Pull Request 9501`_
@@ -58,9 +61,6 @@ Enhancements
 * Chira visualization for Chimeras
   (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
   `Pull Request 9562`_
-* Tool recommendations in workflow editor
-  (thanks to `@anuprulez <https://github.com/anuprulez>`__).
-  `Pull Request 9569`_
 * Datasource tool for SRA manifest
   `Pull Request 9613`_
 .. enhancement_tag_viz
@@ -153,7 +153,7 @@ Enhancements
   `Pull Request 9060`_
 * Disable the admin_toolshed controller (except for tests).
   `Pull Request 9072`_
-* Fontawesome5
+* Upgrade to Fontawesome 5
   `Pull Request 9101`_
 * Add a test for a tool with `from_working_dir`, `outputs_to_working_directory` and `pulsar`
   (thanks to `@bgruening <https://github.com/bgruening>`__).
