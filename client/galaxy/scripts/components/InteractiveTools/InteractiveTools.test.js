@@ -53,10 +53,9 @@ describe("ToolsView/ToolsView.vue", () => {
         assert(tool.marked === undefined || false, "tool was marked before click!");
         // mark & delete tool
         const checkbox = wrapper.find("#checkbox-" + toolId);
-        checkbox.trigger("click");
+        checkbox.setChecked();
         await Vue.nextTick();
-        // ensure that the tool is marked
-        assert(tool.marked === true, "clicking on checkbox did not mark corresponding tool!");
+        assert(tool.marked === true, "Clicking on checkbox did not select corresponding tool");
 
         const stopBtn = wrapper.find("#stopInteractiveTool");
         stopBtn.trigger("click");
