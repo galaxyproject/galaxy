@@ -65,7 +65,7 @@ export default {
         },
         user: {
             type: String,
-            default: getGalaxyInstance().user.id,
+            default: getGalaxyInstance() ? getGalaxyInstance().user.id : "",
         },
     },
     computed: {
