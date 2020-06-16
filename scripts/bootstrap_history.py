@@ -100,6 +100,8 @@ Highlights
 **Feature3**
   Feature description.
 
+Also check out the `${release} user release notes <${release}_announce_user.html>`__
+
 Get Galaxy
 ==========
 
