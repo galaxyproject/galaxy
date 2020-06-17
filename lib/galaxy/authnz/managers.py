@@ -21,7 +21,7 @@ from galaxy.util import (
     string_as_bool,
     unicodify,
 )
-from .custos_authnz import CustosAuthnz
+from .custos_authnz import CustosAuthnz, KEYCLOAK_BACKENDS
 from .psa_authnz import (
     BACKENDS_NAME,
     on_the_fly_config,
@@ -113,7 +113,7 @@ class AuthnzManager(object):
                     self.oidc_backends_config[idp] = self._parse_idp_config(child)
                     self.oidc_backends_implementation[idp] = 'psa'
                     self.app.config.oidc[idp] = {'icon': self._get_idp_icon(idp)}
-                elif idp == 'custos' or idp == 'cilogon' or idp == 'keycloak':
+                elif idp in KEYCLOAK_BACKENDS:
                     self.oidc_backends_config[idp] = self._parse_custos_config(child)
                     self.oidc_backends_implementation[idp] = 'custos'
                     self.app.config.oidc[idp] = {'icon': self._get_idp_icon(idp)}
@@ -174,7 +174,7 @@ class AuthnzManager(object):
             provider = unified_provider_name
             identity_provider_class = self._get_identity_provider_class(self.oidc_backends_implementation[provider])
             try:
-                if (provider == 'cilogon' or provider == 'custos' or provider == 'keycloak'):
+                if provider in KEYCLOAK_BACKENDS:
                     return True, "", identity_provider_class(unified_provider_name, self.oidc_config, self.oidc_backends_config[unified_provider_name], idphint=idphint)
                 else:
                     return True, "", identity_provider_class(unified_provider_name, self.oidc_config, self.oidc_backends_config[unified_provider_name])
@@ -270,7 +270,7 @@ class AuthnzManager(object):
             success, message, backend = self._get_authnz_backend(provider, idphint=idphint)
             if success is False:
                 return False, message, None
-            elif (provider == 'cilogon' or provider == 'custos' or provider == 'keycloak'):
+            elif provider in KEYCLOAK_BACKENDS:
                 return True, "Redirecting to the `{}` identity provider for authentication".format(provider), backend.authenticate(trans, idphint)
             return True, "Redirecting to the `{}` identity provider for authentication".format(provider), backend.authenticate(trans)
         except Exception:

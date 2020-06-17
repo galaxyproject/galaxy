@@ -19,6 +19,7 @@ from ..authnz import IdentityProvider
 log = logging.getLogger(__name__)
 STATE_COOKIE_NAME = 'custos-state'
 NONCE_COOKIE_NAME = 'custos-nonce'
+KEYCLOAK_BACKENDS = {'custos', 'cilogon', 'keycloak'}
 
 
 class CustosAuthnz(IdentityProvider):
