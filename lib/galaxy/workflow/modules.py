@@ -661,7 +661,7 @@ class InputModule(WorkflowModule):
         if "format" in state:
             formats = state["format"]
             if formats:
-                formats = ",".join(formats)
+                formats = ",".join(listify(formats))
                 state["format"] = formats
         state = json.dumps(state)
         return state
