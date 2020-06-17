@@ -21,7 +21,10 @@ from galaxy.util import (
     string_as_bool,
     unicodify,
 )
-from .custos_authnz import CustosAuthnz, KEYCLOAK_BACKENDS
+from .custos_authnz import (
+    CustosAuthnz,
+    KEYCLOAK_BACKENDS,
+)
 from .psa_authnz import (
     BACKENDS_NAME,
     on_the_fly_config,
