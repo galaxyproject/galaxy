@@ -219,8 +219,7 @@ class CustosAuthnz(IdentityProvider):
         self.config['userinfo_endpoint'] = "https://cilogon.org/oauth2/userinfo"
 
     def _load_config_for_custos(self):
-        well_known_uri = self._get_well_known_uri_from_url(self.config['provider'])
-        self.config['well_known_oidc_config_uri'] = well_known_uri
+        self.config['well_known_oidc_config_uri'] = self._get_well_known_uri_from_url(self.config['provider'])
         # Set custos endpoints
         clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']
         eps = requests.get(self.config['url'],
