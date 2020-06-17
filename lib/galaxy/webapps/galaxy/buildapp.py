@@ -165,6 +165,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     # webapp.add_client_route('/workflows/invocations/view_bco')
     webapp.add_client_route('/custom_builds')
     webapp.add_client_route('/interactivetool_entry_points/list')
+    webapp.add_client_route('/library/folders/{folder_id}')
 
     # ==== Done
     # Indicate that all configuration settings have been provided
