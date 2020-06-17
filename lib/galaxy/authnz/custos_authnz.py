@@ -227,18 +227,12 @@ class CustosAuthnz(IdentityProvider):
                            headers={"Authorization": "Basic %s" % util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))},
                            verify=False, params={'client_id': self.config['client_id']})
         well_known_oidc_config = eps.json()
-        self.config['authorization_endpoint'] = well_known_oidc_config['authorization_endpoint']
-        self.config['token_endpoint'] = well_known_oidc_config['token_endpoint']
-        self.config['userinfo_endpoint'] = well_known_oidc_config['userinfo_endpoint']
-        self.config['end_session_endpoint'] = well_known_oidc_config['end_session_endpoint']
+        self._load_well_known_oidc_config(well_known_oidc_config)
 
     def _load_config_for_keycloak(self):
         self.config['well_known_oidc_config_uri'] = self._get_well_known_uri_from_url(self.config['provider'])
-        well_known_oidc_config = self._load_well_known_oidc_config(self.config['well_known_oidc_config_uri'])
-        self.config['authorization_endpoint'] = well_known_oidc_config['authorization_endpoint']
-        self.config['token_endpoint'] = well_known_oidc_config['token_endpoint']
-        self.config['userinfo_endpoint'] = well_known_oidc_config['userinfo_endpoint']
-        self.config['end_session_endpoint'] = well_known_oidc_config['end_session_endpoint']
+        well_known_oidc_config = self._fetch_well_known_oidc_config(self.config['well_known_oidc_config_uri'])
+        self._load_well_known_oidc_config(well_known_oidc_config)
 
     def _get_custos_credentials(self):
         clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']
@@ -258,13 +252,19 @@ class CustosAuthnz(IdentityProvider):
         else:
             raise Exception("Unknown Custos provider name: {}".format(provider))
 
-    def _load_well_known_oidc_config(self, well_known_uri):
+    def _fetch_well_known_oidc_config(self, well_known_uri):
         try:
             return requests.get(well_known_uri,
                                 verify=self._get_verify_param()).json()
         except Exception:
             log.error("Failed to load well-known OIDC config URI: {}".format(well_known_uri))
             raise
+
+    def _load_well_known_oidc_config(self, well_known_oidc_config):
+        self.config['authorization_endpoint'] = well_known_oidc_config['authorization_endpoint']
+        self.config['token_endpoint'] = well_known_oidc_config['token_endpoint']
+        self.config['userinfo_endpoint'] = well_known_oidc_config['userinfo_endpoint']
+        self.config['end_session_endpoint'] = well_known_oidc_config['end_session_endpoint']
 
     def _get_verify_param(self):
         """Return 'ca_bundle' if 'verify_ssl' is true and 'ca_bundle' is configured."""
