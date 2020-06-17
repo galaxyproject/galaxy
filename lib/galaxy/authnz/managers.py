@@ -276,6 +276,11 @@ class AuthnzManager:
         :return: an identity provider specific authentication redirect URI.
         """
         try:
+            if (self.allowed_idps and not self.allowed_idps.includes(idphint)):
+                msg = 'An error occurred when authenticating a user. Invalid EntityID: `{}`'.format(idphint)
+                log.exception(msg)
+                return False, msg, None
+
             success, message, backend = self._get_authnz_backend(provider, idphint=idphint)
             if success is False:
                 return False, message, None
