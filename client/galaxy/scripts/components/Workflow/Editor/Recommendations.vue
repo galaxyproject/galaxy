@@ -7,13 +7,17 @@
         <div v-if="compatibleTools.length > 0 && !isDeprecated">
             <div v-for="tool in compatibleTools" :key="tool.id">
                 <i class="fa mr-1 fa-wrench"></i>
-                <a href="#" title="Open tool" :id="tool.id" @click="$emit('onCreate', tool.id, $event)">{{
-                    tool.name
-                }}</a>
+                <a href="#" title="Open tool" :id="tool.id" @click="$emit('onCreate', tool.id, $event)">
+                    {{ tool.name }}
+                </a>
             </div>
         </div>
-        <div v-else-if="isDeprecated">{{ deprecatedMessage }}</div>
-        <div v-if="compatibleTools.length === 0 && !showLoading">{{ noRecommendationsMessage }}</div>
+        <div v-else-if="isDeprecated">
+            {{ deprecatedMessage }}
+        </div>
+        <div v-if="compatibleTools.length === 0 && !showLoading">
+            {{ noRecommendationsMessage }}
+        </div>
     </div>
 </template>
 

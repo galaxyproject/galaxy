@@ -40,7 +40,9 @@
             <i :class="iconClass" />
             <span class="node-title">{{ title }}</span>
         </div>
-        <b-alert v-if="!!errors" variant="danger" show class="node-error">{{ errors }}</b-alert>
+        <b-alert v-if="!!errors" variant="danger" show class="node-error">
+            {{ errors }}
+        </b-alert>
         <div v-else class="node-body">
             <loading-span v-if="showLoading" message="Loading details" />
             <node-input
