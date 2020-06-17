@@ -20,13 +20,10 @@ class CustosAuthnzTestCase(unittest.TestCase):
     _get_userinfo_called = False
     _raw_token = None
 
-    def _get_base_idp_url(self):
+    def _get_idp_url(self):
         # it would be ideal is we can use a URI as the following:
         # https://test_base_uri/auth
         return 'https://iam.scigap.org/auth'
-
-    def _get_idp_url(self):
-        return "{}/realms/test-realm/.well-known/openid-configuration".format(self._get_base_idp_url())
 
     def setUp(self):
         self.orig_requests_get = requests.get
@@ -39,7 +36,7 @@ class CustosAuthnzTestCase(unittest.TestCase):
         self.custos_authnz = custos_authnz.CustosAuthnz('Custos', {
             'VERIFY_SSL': True
         }, {
-            'url': self._get_base_idp_url(),
+            'url': self._get_idp_url(),
             'client_id': 'test-client-id',
             'client_secret': 'test-client-secret',
             'redirect_uri': 'https://test-redirect-uri',
@@ -203,7 +200,6 @@ class CustosAuthnzTestCase(unittest.TestCase):
         self.assertEqual(self.custos_authnz.config['client_id'], 'test-client-id')
         self.assertEqual(self.custos_authnz.config['client_secret'], 'test-client-secret')
         self.assertEqual(self.custos_authnz.config['redirect_uri'], 'https://test-redirect-uri')
-        self.assertEqual(self.custos_authnz.config['well_known_oidc_config_uri'], self._get_idp_url())
         self.assertEqual(self.custos_authnz.config['authorization_endpoint'], 'https://test-auth-endpoint')
         self.assertEqual(self.custos_authnz.config['token_endpoint'], 'https://test-token-endpoint')
         self.assertEqual(self.custos_authnz.config['userinfo_endpoint'], 'https://test-userinfo-endpoint')
@@ -236,7 +232,7 @@ class CustosAuthnzTestCase(unittest.TestCase):
         self.custos_authnz = custos_authnz.CustosAuthnz('Custos', {
             'VERIFY_SSL': True
         }, {
-            'url': self._get_base_idp_url(),
+            'url': self._get_idp_url(),
             'client_id': 'test-client-id',
             'client_secret': 'test-client-secret',
             'redirect_uri': 'http://localhost/auth/callback',
