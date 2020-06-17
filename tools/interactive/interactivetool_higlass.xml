@@ -1,6 +1,7 @@
 <tool id="interactive_tool_higlass" tool_type="interactive" name="HiGlass" version="1.8.0">
     <description>an interactive Hi-C data visualizer.</description>
     <requirements>
+        <!--<container type="docker">galaxy/higlass-it</container>-->
         <container type="docker">galaxy/higlass-it</container>
     </requirements>
     <entry_points>
@@ -8,6 +9,13 @@
             <port>80</port>
         </entry_point>
     </entry_points>
+    <environment_variables>
+        <environment_variable name="HISTORY_ID">$__history_id__</environment_variable>
+        <environment_variable name="REMOTE_HOST">$__galaxy_url__</environment_variable>
+        <environment_variable name="GALAXY_WEB_PORT">8080</environment_variable>
+        <environment_variable name="GALAXY_URL">$__galaxy_url__</environment_variable>
+        <environment_variable name="API_KEY" inject="api_key" />
+    </environment_variables>
     <macros>
         <xml name="chromimport">
             <param name="files" label="Chromosome size files" type="data" format="txt,tsv,tabular" help="If you are analyzing data not from one of the species/assemblies listed in the help section, please upload a 2-column file of chromosome names and sizes."/>
@@ -19,6 +27,15 @@
         mkdir -p data/log/ &&
         supervisord &&
        	sleep 5 &&
+
+        apt-get install curl && ##
+        curl -sL https://deb.nodesource.com/setup_4.x | bash && ##
+        apt-get install nodejs && ##
+        apt-get install nano &&
+        npm install file-saver --save &&
+        pip install jsbeautifier &&
+        js-beautify higlass-app/hglib.min.js > higlass-app/hglib.min.js.pretty &&
+
 
         ## Generate coordSystems ahead of time from build in files
 
