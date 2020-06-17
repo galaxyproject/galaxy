@@ -295,7 +295,10 @@ class ToolBox(BaseGalaxyToolBox):
 
     def create_tool(self, config_file, tool_cache_data_dir=None, **kwds):
         cache = self.get_cache_region(tool_cache_data_dir or self.app.config.tool_cache_data_dir)
-        tool_source = cache.get_or_create(config_file, creator=self.get_expanded_tool_source, expiration_time=-1, creator_args=((config_file,), {}))
+        if config_file.endswith('.xml'):
+            tool_source = cache.get_or_create(config_file, creator=self.get_expanded_tool_source, expiration_time=-1, creator_args=((config_file,), {}))
+        else:
+            tool_source = self.get_expanded_tool_source(config_file)
         tool = self._create_tool_from_source(tool_source, config_file=config_file, **kwds)
         if not self.app.config.delay_tool_initialization:
             tool.assert_finalized(raise_if_invalid=True)
