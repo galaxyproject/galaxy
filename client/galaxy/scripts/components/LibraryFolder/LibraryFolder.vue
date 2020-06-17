@@ -1,9 +1,9 @@
 <template>
     <div>
-        <div v-if="folderContents.length <= 0" class="d-flex justify-content-center m-5">
+        <div v-if="!hasLoaded" class="d-flex justify-content-center m-5">
             <font-awesome-icon icon="spinner" spin size="9x"/>
         </div>
-        <div v-else>
+        <div v-else-if="folderContents.length !== 0">
             <b-table
                     id="folder-table"
                     striped
@@ -16,6 +16,9 @@
                 <b-thead>
                     <button>test</button>
                 </b-thead>
+                <template v-slot:cell(name)="row">
+                    <a :href="createContentLink(row.item)">{{row.item.name}}</a>
+                </template>
                 <template v-slot:cell(type_icon)="row">
                     <font-awesome-icon v-if="row.item.type === 'folder'" :icon="['far','folder']" title="Folder"/>
                     <font-awesome-icon v-else-if="row.item.type === 'file'" title="Dataset" :icon="['far','file']"/>
@@ -76,8 +79,13 @@
                     </b-col>
                 </b-row>
             </b-container>
-
-
+        </div>
+        <div v-else class="empty-folder-text">
+            This folder is either empty or you do not have proper access permissions to see the contents.
+            If you expected something to show up please consult the
+            <a href="https://galaxyproject.org/data-libraries/#permissions" target="_blank">
+                library security wikipage
+            </a>
         </div>
     </div>
 </template>
@@ -165,7 +173,8 @@
                     },
                 ],
                 folderContents: [],
-                perPage: 2
+                hasLoaded: false,
+                perPage: 15
             };
         },
         computed: {
@@ -181,6 +190,7 @@
                 .then((response) => {
                     response.folder_contents.forEach(content => content.update_time = new Date(content.update_time).toISOString())
                     this.folderContents = response.folder_contents;
+                    this.hasLoaded = true
                     console.log(this.folderContents)
                 })
                 .catch((error) => {
@@ -190,6 +200,12 @@
         methods: {
             bytesToString(raw_size) {
                 return Utils.bytesToString(raw_size)
+            },
+            createContentLink(element) {
+                if (element.type === "file")
+                    return `${this.root}library/list#folders/${this.folder_id}/datasets/${element.id}`
+                else if (element.type === "folder")
+                    return `${this.root}library/folders/${element.id}`
             }
         }
 
@@ -203,6 +219,10 @@
 
     .pagination-total-pages-text {
         margin-left: .25rem;
+    }
+
+    .empty-folder-text {
+        text-align: center;
     }
 </style>
 
