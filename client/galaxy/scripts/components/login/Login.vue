@@ -49,13 +49,13 @@
                                         v-if="Object.prototype.hasOwnProperty.call(oidc_idps, 'custos')"
                                         @click="submitCILogon('custos')"
                                         :disabled="selected === null"
-                                        >Sign in with Custos*</b-button
+                                        >Sign in with Custos *</b-button
                                     >
 
                                     <p class="mt-3">
                                         <small class="text-muted">
-                                            *Galaxy uses CILogon to enable you to Log In from this organization. By
-                                            clicking 'Sign In', you agree to the
+                                            * Galaxy uses CILogon via Custos to enable you to Log In from this
+                                            organization. By clicking 'Sign In', you agree to the
                                             <a href="https://ca.cilogon.org/policy/privacy">CILogon privacy policy</a>
                                             and you agree to share your username, email address, and affiliation with
                                             CILogon and Galaxy. You also agree for CILogon to issue a certificate that
