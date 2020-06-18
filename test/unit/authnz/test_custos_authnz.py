@@ -25,13 +25,24 @@ class CustosAuthnzTestCase(unittest.TestCase):
         # https://test_base_uri/auth
         return 'https://iam.scigap.org/auth'
 
+    def _get_credential_url(self):
+        return '/'.join([self._get_idp_url(), 'credentials'])
+
+    def _get_well_known_url(self):
+        return '/'.join([self._get_idp_url(), '.well-known/openid-configuration'])
+
     def setUp(self):
         self.orig_requests_get = requests.get
-        requests.get = self.mockRequest(self._get_idp_url(), {
-            "authorization_endpoint": "https://test-auth-endpoint",
-            "token_endpoint": "https://test-token-endpoint",
-            "userinfo_endpoint": "https://test-userinfo-endpoint",
-            "end_session_endpoint": "https://test-end-session-endpoint"
+        requests.get = self.mockRequest({
+            self._get_well_known_url(): {
+                "authorization_endpoint": "https://test-auth-endpoint",
+                "token_endpoint": "https://test-token-endpoint",
+                "userinfo_endpoint": "https://test-userinfo-endpoint",
+                "end_session_endpoint": "https://test-end-session-endpoint"
+            },
+            self._get_credential_url(): {
+                "iam_client_secret": "TESTSECRET"
+            }
         })
         self.custos_authnz = custos_authnz.CustosAuthnz('Custos', {
             'VERIFY_SSL': True
@@ -103,14 +114,17 @@ class CustosAuthnzTestCase(unittest.TestCase):
             }
         custos_authnz._get_userinfo = get_userinfo
 
-    def mockRequest(self, url, resp):
+    def mockRequest(self, request_dict):
         def get(x, **kwargs):
-            assert x == url
-            return Response()
+            assert(x in request_dict)
+            return Response(request_dict[x])
 
         class Response(object):
+            def __init__(self, resp):
+                self.response = resp
+
             def json(self):
-                return resp
+                return self.response
 
         return get
 
