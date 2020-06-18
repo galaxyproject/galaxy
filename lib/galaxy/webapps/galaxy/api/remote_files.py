@@ -32,17 +32,18 @@ class RemoteFilesAPIController(BaseAPIController):
 
         Displays remote files.
 
-        :param  target:      target to load available datasets from, defaults to ftp
-            possible values: ftp, userdir, importdir
+        :param  target:      target to load available datasets from, defaults to ftpdir
+            possible values: ftpdir, userdir, importdir
         :type   target:      str
 
         :param  format:      requested format of data, defaults to flat
-            possible values: flat, jstree, ajax
+            possible values: flat, jstree
 
         :returns:   list of available files
         :rtype:     list
         """
-        target = kwd.get('target', None)
+        # If set, target must be one of 'ftpdir' (default), 'userdir', 'importdir'
+        target = kwd.get('target', 'ftpdir')
         format = kwd.get('format', None)
 
         if target == 'userdir':
@@ -94,7 +95,7 @@ class RemoteFilesAPIController(BaseAPIController):
                 except Exception:
                     log.exception('Could not get user import files')
                     raise exceptions.InternalServerError('Could not get the files from your import directory folder.')
-        else:
+        elif target == 'ftpdir':
             user_ftp_base_dir = trans.app.config.ftp_upload_dir
             if user_ftp_base_dir is None:
                 raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow upload from FTP directories.')
@@ -108,6 +109,8 @@ class RemoteFilesAPIController(BaseAPIController):
             except Exception:
                 log.warning('Could not get ftp files', exc_info=True)
                 return None
+        else:
+            raise exceptions.RequestParameterInvalidException("Invalid target parameter supplied [%s]" % target)
         return response
 
     def __load_all_filenames(self, directory, allowlist=None):
