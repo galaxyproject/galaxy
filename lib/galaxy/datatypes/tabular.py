@@ -42,6 +42,7 @@ class TabularData(data.Text):
     edam_format = "format_3475"
     # All tabular data is chunkable.
     CHUNKABLE = True
+    data_line_offset = 0
 
     """Add metadata elements"""
     MetadataElement(name="comment_lines", default=0, desc="Number of comment lines", readonly=False, optional=True, no_value=0)
@@ -80,7 +81,9 @@ class TabularData(data.Text):
                     cursor = f.read(1)
             last_read = f.tell()
         return dumps({'ck_data': util.unicodify(ck_data),
-                      'offset': last_read})
+                      'offset': last_read,
+                      'data_line_offset': self.data_line_offset,
+                      })
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
         preview = util.string_as_bool(preview)
@@ -199,22 +202,23 @@ class TabularData(data.Text):
             columns = dataset.metadata.columns
             if columns is None:
                 columns = dataset.metadata.spec.columns.no_value
-            for line in peek.splitlines():
-                if line.startswith(tuple(skipchars)):
-                    out.append('<tr><td colspan="100%%">%s</td></tr>' % escape(line))
-                elif line:
-                    elems = line.split(dataset.metadata.delimiter)
-                    # pad shortened elems, since lines could have been truncated by width
-                    if len(elems) < columns:
-                        elems.extend([''] * (columns - len(elems)))
-                    # we may have an invalid comment line or invalid data
-                    if len(elems) != columns:
+            for i, line in enumerate(peek.splitlines()):
+                if i >= self.data_line_offset:
+                    if line.startswith(tuple(skipchars)):
                         out.append('<tr><td colspan="100%%">%s</td></tr>' % escape(line))
-                    else:
-                        out.append('<tr>')
-                        for elem in elems:
-                            out.append('<td>%s</td>' % escape(elem))
-                        out.append('</tr>')
+                    elif line:
+                        elems = line.split(dataset.metadata.delimiter)
+                        # pad shortened elems, since lines could have been truncated by width
+                        if len(elems) < columns:
+                            elems.extend([''] * (columns - len(elems)))
+                        # we may have an invalid comment line or invalid data
+                        if len(elems) != columns:
+                            out.append('<tr><td colspan="100%%">%s</td></tr>' % escape(line))
+                        else:
+                            out.append('<tr>')
+                            for elem in elems:
+                                out.append('<td>%s</td>' % escape(elem))
+                            out.append('</tr>')
         except Exception as exc:
             log.exception('make_html_peek_rows failed on HDA %s', dataset.id)
             raise Exception("Can't create peek rows: %s" % util.unicodify(exc))
