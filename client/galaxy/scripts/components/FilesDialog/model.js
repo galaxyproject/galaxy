@@ -38,8 +38,7 @@ export class Model {
     finalize() {
         let results = [];
         Object.values(this.values).forEach((v) => {
-            let value = v;
-            results.push(value);
+            results.push(v);
         });
         if (results.length > 0 && !this.multiple) {
             results = results[0];

@@ -21,6 +21,9 @@
             <template v-slot:cell(time)="data">
                 {{ data.value ? data.value : "-" }}
             </template>
+            <template v-slot:cell(navigate)="data">
+                <i v-if="!data.item.isLeaf" class="fa fa-caret-square-o-right" @click.stop="open(data.item)" />
+            </template>
         </b-table>
         <div v-if="nItems === 0">
             <div v-if="filter">
@@ -42,6 +45,7 @@ Vue.use(BootstrapVue);
 const LABEL_FIELD = { key: "label", sortable: true };
 const DETAILS_FIELD = { key: "details", sortable: true };
 const TIME_FIELD = { key: "time", sortable: true };
+const NAVIGATE_FIELD = { key: "navigate", label: "", sortable: false };
 
 export default {
     props: {
@@ -69,6 +73,10 @@ export default {
             type: Boolean,
             default: true,
         },
+        showNavigate: {
+            type: Boolean,
+            default: false,
+        },
     },
     data() {
         return {
@@ -94,6 +102,9 @@ export default {
             if (this.showTime) {
                 fields.push(TIME_FIELD);
             }
+            if (this.showNavigate) {
+                fields.push(NAVIGATE_FIELD);
+            }
             return fields;
         },
     },
@@ -106,6 +117,9 @@ export default {
         /** Collects selected datasets in value array **/
         clicked: function (record) {
             this.$emit("clicked", record);
+        },
+        open: function (record) {
+            this.$emit("open", record);
         },
     },
 };

@@ -183,14 +183,14 @@ const RULES = {
                     newRow.push(tags.join(","));
                     return newRow;
                 };
-            } else if (ruleValue == "hid" || ruleValue == "name" || ruleValue == "path") {
+            } else if (ruleValue == "hid" || ruleValue == "name" || ruleValue == "path" || ruleValue == "uri") {
                 newRow = (row, index) => {
                     const newRow = row.slice();
                     newRow.push(sources[index][ruleValue]);
                     return newRow;
                 };
             } else {
-                return { error: `Unknown metadata type [${ruleValue}}]` };
+                return { error: `Unknown metadata type [${ruleValue}]` };
             }
             data = data.map(newRow);
             columns.push(NEW_COLUMN);

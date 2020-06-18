@@ -16,7 +16,9 @@
                 :filter="filter"
                 :showDetails="showDetails"
                 :showTime="showTime"
+                :showNavigate="mode == 'directory'"
                 @clicked="clicked"
+                @open="open"
                 @load="load"
             />
         </template>
@@ -53,6 +55,11 @@ export default {
             type: Boolean,
             default: false,
         },
+        mode: {
+            type: String,
+            default: "file",
+            validator: (prop) => ["file", "directory"].includes(prop),
+        },
     },
     data() {
         return {
@@ -73,12 +80,17 @@ export default {
         this.model = new Model({ multiple: this.multiple });
         this.load();
     },
+    computed: {
+        fileMode() {
+            return this.mode == "file";
+        },
+    },
     methods: {
         /** Add highlighting for record variations, i.e. datasets vs. libraries/collections **/
         formatRows() {
             for (const item of this.items) {
                 let _rowVariant = "active";
-                if (item.isLeaf) {
+                if (item.isLeaf || !this.fileMode) {
                     _rowVariant = this.model.exists(item.id) ? "success" : "default";
                 }
                 Vue.set(item, "_rowVariant", _rowVariant);
@@ -86,7 +98,7 @@ export default {
         },
         /** Collects selected datasets in value array **/
         clicked: function (record) {
-            if (record.isLeaf) {
+            if (record.isLeaf || !this.fileMode) {
                 this.model.add(record);
                 this.hasValue = this.model.count() > 0;
                 if (this.multiple) {
@@ -95,8 +107,11 @@ export default {
                     this.finalize();
                 }
             } else {
-                this.load(record.url);
+                this.open(record);
             }
+        },
+        open: function (record) {
+            this.load(record.url);
         },
         /** Called when selection is complete, values are formatted and parsed to external callback **/
         finalize: function () {
@@ -136,18 +151,35 @@ export default {
                 this.services
                     .list(url)
                     .then((items) => {
-                        this.items = items.map((item) => {
-                            const itemClass = item.class;
-                            return {
-                                id: item.uri,
-                                label: item.name,
-                                time: item.ctime,
-                                isLeaf: itemClass == "File",
-                                size: item.size,
-                                url: item.uri,
-                                labelTitle: item.uri,
-                            };
-                        });
+                        if (this.fileMode) {
+                            items = items.map((item) => {
+                                const itemClass = item.class;
+                                return {
+                                    id: item.uri,
+                                    label: item.name,
+                                    time: item.ctime,
+                                    isLeaf: itemClass == "File",
+                                    size: item.size,
+                                    url: item.uri,
+                                    labelTitle: item.uri,
+                                };
+                            });
+                        } else {
+                            items = items
+                                .filter((item) => item.class == "Directory")
+                                .map((item) => {
+                                    return {
+                                        id: item.uri,
+                                        label: item.name,
+                                        time: item.ctime,
+                                        isLeaf: false,
+                                        size: item.size,
+                                        url: item.uri,
+                                        labelTitle: item.uri,
+                                    };
+                                });
+                        }
+                        this.items = items;
                         this.formatRows();
                         this.optionsShow = true;
                         this.showTime = true;
