@@ -157,8 +157,8 @@ class AuthnzManager:
             rtv['credential_url'] = config_xml.find('credential_url').text
         if config_xml.find('well_known_oidc_config_uri') is not None:
             rtv['well_known_oidc_config_uri'] = config_xml.find('well_known_oidc_config_uri').text
-        if config_xml.find('allowed_idps') is not None:
-            self.allowed_idps = config_xml.find('allowed_idps').text
+        if config_xml.findall('allowed_idp') is not None:
+            self.allowed_idps = list(map(lambda idp: idp.text, config_xml.findall('allowed_idp')))
         if config_xml.find('ca_bundle') is not None:
             rtv['ca_bundle'] = config_xml.find('ca_bundle').text
         if config_xml.find('icon') is not None:
@@ -276,15 +276,14 @@ class AuthnzManager:
         :return: an identity provider specific authentication redirect URI.
         """
         try:
-            if (self.allowed_idps and not self.allowed_idps.includes(idphint)):
-                msg = 'An error occurred when authenticating a user. Invalid EntityID: `{}`'.format(idphint)
-                log.exception(msg)
-                return False, msg, None
-
             success, message, backend = self._get_authnz_backend(provider, idphint=idphint)
             if success is False:
                 return False, message, None
             elif provider in KEYCLOAK_BACKENDS:
+                if (self.allowed_idps and not self.allowed_idps.includes(idphint)):
+                    msg = 'An error occurred when authenticating a user. Invalid EntityID: `{}`'.format(idphint)
+                    log.exception(msg)
+                    return False, msg, None
                 return True, "Redirecting to the `{}` identity provider for authentication".format(provider), backend.authenticate(trans, idphint)
             return True, "Redirecting to the `{}` identity provider for authentication".format(provider), backend.authenticate(trans)
         except Exception:
