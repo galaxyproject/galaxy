@@ -65,8 +65,6 @@ class RemoteFilesAPIController(BaseAPIController):
                         raise exceptions.InternalServerError('Could not create tree representation of the given folder: %s' % full_import_dir)
                     if not response:
                         raise exceptions.ObjectNotFound('You do not have any files in your user directory. Use FTP to upload there.')
-                elif format == 'ajax':
-                    raise exceptions.NotImplemented('Not implemented yet. Sorry.')
                 else:
                     try:
                         response = self.__load_all_filenames(full_import_dir, allowlist=trans.app.config.user_library_import_symlink_allowlist)
@@ -87,8 +85,6 @@ class RemoteFilesAPIController(BaseAPIController):
                 except Exception as e:
                     log.debug(unicodify(e))
                     raise exceptions.InternalServerError('Could not create tree representation of the given folder: %s' % base_dir)
-            elif format == 'ajax':
-                raise exceptions.NotImplemented('Not implemented yet. Sorry.')
             else:
                 try:
                     response = self.__load_all_filenames(base_dir, trans.app.config.user_library_import_symlink_allowlist)
