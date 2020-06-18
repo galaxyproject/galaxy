@@ -21,7 +21,7 @@
     </outputs>
     <tests>
         <test>
-            <param name="input" value="" ftype="shp" >
+            <param name="input" value="__MOCKENTRY__" ftype="shp" >
                 <composite_data value="shapefile/shapefile.shp"/>
                 <composite_data value="shapefile/shapefile.shx"/>
                 <composite_data value="shapefile/shapefile.dbf"/>
