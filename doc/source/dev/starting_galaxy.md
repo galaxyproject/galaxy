@@ -28,7 +28,7 @@ Galaxy is started by running ./run.sh script. The following call graph documents
     * Call loadapp() method in ./galaxy/lib/galaxy/util/pastescript/loadwsgi.py
       * Calls loadobj()  -> calls LoaderContext's create() -> calls _App's invoke() -> calls fix_call() on app_factory (in ./galaxy/lib/galaxy/webapps/galaxy/buildapp.py)
       * app_factory:
-        1. Create UniverseApplication  (in ./galaxy/lib/galaxy/webapps/galaxy/buildapp.py)
+        * Create UniverseApplication  (in ./galaxy/lib/galaxy/webapps/galaxy/buildapp.py)
           * Create GalaxyAppConfiguration instance from config file specified on the command line, then check for errors
           * Configure logging (in ./galaxy/lib/galaxy/config/__init__.py)
           * Create ExecutionTimerFactory
@@ -85,7 +85,7 @@ Galaxy is started by running ./run.sh script. The following call graph documents
           * Configure InteractiveToolManager
           * Create database heartbeat instance
             * App registers post fork functions to start application DB heartbeat thread   
-        2. Create CommunityWebApplication (in ./galaxy/lib/galaxy/webapps/galaxy/buildapp.py)
+        * Create CommunityWebApplication (in ./galaxy/lib/galaxy/webapps/galaxy/buildapp.py)
           * CommunityWebApplication: A WSGI application that maps requests to objects using routes and to methods on those objects
           * Map all requests to controllers/actions
           * Wrap web app in some middleware and return webapp
