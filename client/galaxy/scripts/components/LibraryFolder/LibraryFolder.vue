@@ -17,8 +17,8 @@
                     @row-selected="onRowSelected"
                     ref="folder_content_table"
             >
-                <template v-slot:head(selected)="scope">
-                    <span @click="selectAllRows" aria-hidden="true">&check;</span>
+                <template  v-slot:head(selected)="scope">
+                    <span class="select-all-symbl" @click="toggleSelect">&check;</span>
                 </template>
                 <template v-slot:cell(selected)="{ rowSelected }">
                     <template v-if="rowSelected">
@@ -243,6 +243,13 @@
             clearSelected() {
                 this.$refs.folder_content_table.clearSelected()
             },
+            toggleSelect() {
+                if (this.selected.length !== this.rows) {
+                    this.selectAllRows()
+                } else {
+                    this.clearSelected()
+                }
+            },
             onRowSelected(items) {
                 this.selected = items
             },
@@ -277,6 +284,9 @@
 
     .empty-folder-text {
         text-align: center;
+    }
+    .select-all-symbl {
+        cursor: pointer;
     }
 </style>
 
