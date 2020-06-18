@@ -37,7 +37,6 @@ Galaxy is started by running ./run.sh script. The following call graph documents
           * Create the application stack (uWSGi, Paste, or Webless)
             * App registers post fork functions to start application stack threads   
           * Create GalaxyQueueWorker instance (a worker for Galaxy's queues, used for dispatching control tasks. Sqlite instance)
-            * App registers post fork function to start queue worker threads
           * Configure tool shed registery
           * Configure object store. build_object_store_from_config() (in ./galaxy/lib/galaxy/objectstore/__init__.py) calls objectstore_class.from_xml(), calls clazz.parse_xml()
           * Configure models in _configure_models() 
@@ -65,7 +64,7 @@ Galaxy is started by running ./run.sh script. The following call graph documents
           * Setup a tool cache
           * Watch various config files for immediate reload
           * Configure Data Manager
-          * Configure UpdateREspositoyManager
+          * Configure UpdateRespositoyManager
           * Load proprietary datatype convertors and display applications
           * Configure VisualizationRegistry, ToursRegistry, and WebHookRegistry
           * Load security policy and quota management
@@ -74,17 +73,17 @@ Galaxy is started by running ./run.sh script. The following call graph documents
             * App registers post fork functions to start Sentry client thread
           * Create JobManager
             * App registers post fork functions to start application job manager thread  
-              * Job manager thread starts monitor threads for JobHandlerQueue and JobHandlerStopQueue 
+              * Job manager thread starts monitor threads for JobHandlerQueue and JobHandlerStopQueue (2 threads) 
             * JobManager has a JobHandler field, which manages the preparation, running, tracking, and finishing of jobs
               * JobHandler has a job dispatcher, which launches underlying job runners
                 * DefaultJobDispatcher calls app's JobConfiguration's get_job_runner_plugins() to create LocalJobRunner instances
-                  * The default number of LocalJobRuner instances is 4
+                  * The default number of LocalJobRuner instances is 4 (4 threads)
               * JobHandler also has queues for starting and stopping jobs (unless track_jobs_in_database is True)
           * Create WorkflowSchedulingManager
-            * Starts workflow request monitor thread
+            * Starts workflow request monitor thread in __start_request_monitor() method (1 thread)
           * Configure InteractiveToolManager
           * Create database heartbeat instance
-            * App registers post fork functions to start application DB heartbeat thread   
+            * App registers post fork functions to start application DB heartbeat thread (1 thread)  
         * Create CommunityWebApplication (in ./galaxy/lib/galaxy/webapps/galaxy/buildapp.py)
           * CommunityWebApplication: A WSGI application that maps requests to objects using routes and to methods on those objects
           * Map all requests to controllers/actions
