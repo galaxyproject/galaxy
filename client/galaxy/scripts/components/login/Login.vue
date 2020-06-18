@@ -58,8 +58,7 @@
                                             organization. By clicking 'Sign In', you agree to the
                                             <a href="https://ca.cilogon.org/policy/privacy">CILogon privacy policy</a>
                                             and you agree to share your username, email address, and affiliation with
-                                            CILogon and Galaxy. You also agree for CILogon to issue a certificate that
-                                            allows Galaxy to act on your behalf.
+                                            CILogon, Custos, and Galaxy.
                                         </small>
                                     </p>
                                 </div>
