@@ -222,7 +222,7 @@ class CustosAuthnz(IdentityProvider):
         self.config['well_known_oidc_config_uri'] = self._get_well_known_uri_from_url(self.config['provider'])
         # Set custos endpoints
         clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']
-        eps = requests.get(self.config['url'],
+        eps = requests.get(self.config['well_known_oidc_config_uri'],
                            headers={"Authorization": "Basic %s" % util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))},
                            verify=False, params={'client_id': self.config['client_id']})
         well_known_oidc_config = eps.json()
