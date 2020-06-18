@@ -86,7 +86,7 @@ Please mind `http` and `https`.
     </provider>
 
     <provider name="Custos">
-        <url> ... </url>
+        <url>https://custos.scigap.org/apiserver/identity-management/v1.0.0/</url>
         <client_id> ... </client_id>
         <client_secret> ... </client_secret>
         <redirect_uri>http://localhost:8000/authnz/custos/callback</redirect_uri>
