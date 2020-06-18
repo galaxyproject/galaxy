@@ -30,11 +30,6 @@ class CustosAuthnz(IdentityProvider):
         self.config['url'] = oidc_backend_config['url']
         self.config['client_id'] = oidc_backend_config['client_id']
         self.config['client_secret'] = oidc_backend_config['client_secret']
-        if oidc_backend_config.get('credential_url'):
-            # Keycloak client secret used to get token for custos
-            self.config['credential_url'] = oidc_backend_config['credential_url']
-            if provider == 'custos':
-                self._get_custos_credentials()
         self.config['redirect_uri'] = oidc_backend_config['redirect_uri']
         self.config['ca_bundle'] = oidc_backend_config.get('ca_bundle', None)
         self.config['extra_params'] = {
@@ -220,6 +215,8 @@ class CustosAuthnz(IdentityProvider):
 
     def _load_config_for_custos(self):
         self.config['well_known_oidc_config_uri'] = self._get_well_known_uri_from_url(self.config['provider'])
+        self.config['credential_url'] = '/'.join([self.config['url'].rstrip('/'), 'credentials'])
+        self._get_custos_credentials()
         # Set custos endpoints
         clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']
         eps = requests.get(self.config['well_known_oidc_config_uri'],
