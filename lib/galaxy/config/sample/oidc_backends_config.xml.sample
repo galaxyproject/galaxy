@@ -98,7 +98,7 @@ Please mind `http` and `https`.
         <!-- (Optional) Override the default idp hint -->
         <!-- <idphint>cilogon</idphint> -->
         <!-- (Optional) Enable logging out of the IDP when user logs out of Galaxy -->
-        <!-- <enable_idp_logout>true</enable_idp_logout> -->
+        <!-- <enable_idp_logout>false</enable_idp_logout> -->
         <!-- <icon>https://path/to/icon</icon>  -->
     </provider>
 
@@ -116,7 +116,7 @@ Please mind `http` and `https`.
         <!-- (Optional) Override the default idp hint -->
         <!-- <idphint>cilogon</idphint> -->
         <!-- (Optional) Enable logging out of the IDP when user logs out of Galaxy -->
-        <!-- <enable_idp_logout>true</enable_idp_logout> -->
+        <!-- <enable_idp_logout>false</enable_idp_logout> -->
         <!-- <icon>https://path/to/icon</icon>  -->
     </provider>
 
