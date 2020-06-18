@@ -41,8 +41,17 @@
 
                     <font-awesome-icon v-else-if="row.item.is_private" title="Private dataset"
                                        icon="key"/>
-                    <font-awesome-icon v-else title="Restricted dataset"
+                    <font-awesome-icon v-else-if="row.item.is_private === false && row.item.is_unrestricted === false" title="Restricted dataset"
                                        icon="shield-alt"/>
+                </template>
+                <template v-slot:cell(buttons)="row">
+                    <a v-if="row.item.can_manage" :href="createPermissionLink(row.item)">
+                        <button data-toggle="tooltip" data-placement="top"
+                                class="primary-button btn-sm permission_folder_btn"
+                                :title="'Permissions of ' + row.item.name">
+                            <span class="fa fa-group"></span> Manage
+                        </button>
+                    </a>
                 </template>
 
             </b-table>
@@ -137,6 +146,10 @@
                         key: "type_icon",
                     },
                     {
+                        label: "",
+                        key: "type_icon",
+                    },
+                    {
                         label: "Name",
                         key: "name",
                         sortable: true,
@@ -169,6 +182,11 @@
                     {
                         label: "",
                         key: "is_unrestricted",
+                        sortable: false,
+                    },
+                    {
+                        label: "",
+                        key: "buttons",
                         sortable: false,
                     },
                 ],
@@ -206,6 +224,12 @@
                     return `${this.root}library/list#folders/${this.folder_id}/datasets/${element.id}`
                 else if (element.type === "folder")
                     return `${this.root}library/folders/${element.id}`
+            },
+            createPermissionLink(element) {
+                if (element.type === "file")
+                    return `${this.createContentLink(element)}/permissions`
+                else if (element.type === "folder")
+                    return `${this.root}library/list#folders/${element.id}/permissions`
             }
         }
 
