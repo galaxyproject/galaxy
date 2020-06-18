@@ -34,11 +34,16 @@ class CustosAuthnzTestCase(unittest.TestCase):
     def setUp(self):
         self.orig_requests_get = requests.get
         requests.get = self.mockRequest({
-            self._get_well_known_url(): {"authorization_endpoint": "https://test-auth-endpoint",
-                     "token_endpoint": "https://test-token-endpoint",
-                     "userinfo_endpoint": "https://test-userinfo-endpoint",
-                     "end_session_endpoint": "https://test-end-session-endpoint"},
-            self._get_credential_url(): {"iam_client_secret": "TESTSECRET"}})
+            self._get_well_known_url(): {
+                "authorization_endpoint": "https://test-auth-endpoint",
+                "token_endpoint": "https://test-token-endpoint",
+                "userinfo_endpoint": "https://test-userinfo-endpoint",
+                "end_session_endpoint": "https://test-end-session-endpoint"
+            },
+            self._get_credential_url(): {
+                "iam_client_secret": "TESTSECRET"
+            }
+        })
         self.custos_authnz = custos_authnz.CustosAuthnz('Custos', {
             'VERIFY_SSL': True
         }, {
