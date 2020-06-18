@@ -261,6 +261,9 @@ class TabularData(data.Text):
 class Tabular(TabularData):
     """Tab delimited data"""
 
+    def get_column_names(self, first_line=None):
+        return None
+
     def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=100000, max_guess_type_data_lines=None, **kwd):
         """
         Tries to determine the number of columns as well as those columns that
@@ -343,6 +346,7 @@ class Tabular(TabularData):
             return None
         data_lines = 0
         comment_lines = 0
+        column_names = None
         column_types = []
         first_line_column_types = [default_column_type]  # default value is one column of type str
         if dataset.has_data():
@@ -354,6 +358,8 @@ class Tabular(TabularData):
                     if not line:
                         break
                     line = line.rstrip('\r\n')
+                    if i == 0:
+                        column_names = self.get_column_names(first_line=line)
                     if i < skip or not line or line.startswith('#'):
                         # We'll call blank lines comments
                         comment_lines += 1
@@ -408,12 +414,23 @@ class Tabular(TabularData):
         dataset.metadata.column_types = column_types
         dataset.metadata.columns = len(column_types)
         dataset.metadata.delimiter = '\t'
+        if column_names is not None:
+            dataset.metadata.column_names = column_names
 
     def as_gbrowse_display_file(self, dataset, **kwd):
         return open(dataset.file_name, 'rb')
 
     def as_ucsc_display_file(self, dataset, **kwd):
         return open(dataset.file_name, 'rb')
+
+
+class SraManifest(Tabular):
+    """A manifest received from the sra_source tool."""
+    ext = 'sra_manifest.tabular'
+    data_line_offset = 1
+
+    def get_column_names(self, first_line):
+        return first_line.strip().split('\t')
 
 
 class Taxonomy(Tabular):
