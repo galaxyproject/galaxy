@@ -12,10 +12,22 @@
                     :items="folderContents"
                     :per-page="perPage"
                     :current-page="currentPage"
+                    selectable
+                    :select-mode="selectMode"
+                    @row-selected="onRowSelected"
+                    ref="folder_content_table"
             >
-                <b-thead>
-                    <button>test</button>
-                </b-thead>
+                <template v-slot:head(selected)="scope">
+                    <span @click="selectAllRows" aria-hidden="true">&check;</span>
+                </template>
+                <template v-slot:cell(selected)="{ rowSelected }">
+                    <template v-if="rowSelected">
+                        <span aria-hidden="true">&check;</span>
+                    </template>
+                    <template v-else>
+                        <span aria-hidden="true">&nbsp;</span>
+                    </template>
+                </template>
                 <template v-slot:cell(name)="row">
                     <a :href="createContentLink(row.item)">{{row.item.name}}</a>
                 </template>
@@ -41,7 +53,8 @@
 
                     <font-awesome-icon v-else-if="row.item.is_private" title="Private dataset"
                                        icon="key"/>
-                    <font-awesome-icon v-else-if="row.item.is_private === false && row.item.is_unrestricted === false" title="Restricted dataset"
+                    <font-awesome-icon v-else-if="row.item.is_private === false && row.item.is_unrestricted === false"
+                                       title="Restricted dataset"
                                        icon="shield-alt"/>
                 </template>
                 <template v-slot:cell(buttons)="row">
@@ -146,6 +159,12 @@
                         key: "type_icon",
                     },
                     {
+                        label: "&check;",
+                        key: "selected",
+                        sortable: false,
+
+                    },
+                    {
                         label: "",
                         key: "type_icon",
                     },
@@ -190,6 +209,8 @@
                         sortable: false,
                     },
                 ],
+                selectMode: 'multi',
+                selected: [],
                 folderContents: [],
                 hasLoaded: false,
                 perPage: 15
@@ -216,6 +237,15 @@
                 });
         },
         methods: {
+            selectAllRows() {
+                this.$refs.folder_content_table.selectAllRows()
+            },
+            clearSelected() {
+                this.$refs.folder_content_table.clearSelected()
+            },
+            onRowSelected(items) {
+                this.selected = items
+            },
             bytesToString(raw_size) {
                 return Utils.bytesToString(raw_size)
             },
