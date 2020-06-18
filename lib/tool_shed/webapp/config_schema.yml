@@ -469,26 +469,24 @@ mapping:
           path where the nginx_upload_module has been configured to intercept upload
           requests.
 
-      blacklist_file:
+      email_domain_blocklist_file:
         type: str
-        default: config/disposable_email_blacklist.conf
         required: false
         desc: |
-          E-mail domains blacklist is used for filtering out users that are using
-          disposable email address during the registration.  If their address domain
-          matches any domain in the blacklist, they are refused the registration.
+          E-mail domains blocklist is used for filtering out users that are using
+          disposable email addresses at registration.  If their address domain matches any
+          domain on the list, they are refused registration.
 
-      whitelist_file:
+      email_domain_allowlist_file:
         type: str
-        default: disposable_email_whitelist.conf
-        path_resolves_to: config_dir
         required: false
         desc: |
-          E-mail domains whitelist is used to specify allowed email address domains.
+          E-mail domains allowlist is used to specify allowed email address domains.
           If the list is non-empty and a user attempts registration using an email
           address belonging to a domain that is not on the list, registration will be
-          enied. This is a more restrictive option than <blacklist_file>, and therefore,
-          in case <whitelist_file> is defined, <blacklist_file> will be ignored.
+          denied. This is a more restrictive option than <email_domain_blocklist_file>, and
+          therefore, in case <email_domain_allowlist_file> is set and is not empty,
+          <email_domain_blocklist_file> will be ignored.
 
       brand:
         type: str

@@ -496,9 +496,9 @@ class Data(object):
         """This method is responsible for sanitizing the HTML if needed."""
         if trans.app.config.sanitize_all_html and trans.response.get_content_type() == "text/html":
             # Sanitize anytime we respond with plain text/html content.
-            # Check to see if this dataset's parent job is whitelisted
+            # Check to see if this dataset's parent job is allowlisted
             # We cannot currently trust imported datasets for rendering.
-            if not from_dataset.creating_job.imported and from_dataset.creating_job.tool_id in trans.app.config.sanitize_whitelist:
+            if not from_dataset.creating_job.imported and from_dataset.creating_job.tool_id in trans.app.config.sanitize_allowlist:
                 return open(filename, mode='rb')
 
             # This is returning to the browser, it needs to be encoded.

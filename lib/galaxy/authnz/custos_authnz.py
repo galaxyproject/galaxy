@@ -19,11 +19,13 @@ from ..authnz import IdentityProvider
 log = logging.getLogger(__name__)
 STATE_COOKIE_NAME = 'custos-state'
 NONCE_COOKIE_NAME = 'custos-nonce'
+KEYCLOAK_BACKENDS = {'custos', 'cilogon', 'keycloak'}
 
 
 class CustosAuthnz(IdentityProvider):
     def __init__(self, provider, oidc_config, oidc_backend_config, idphint=None):
-        self.config = {'provider': provider.lower()}
+        provider = provider.lower()
+        self.config = {'provider': provider}
         self.config['verify_ssl'] = oidc_config['VERIFY_SSL']
         self.config['url'] = oidc_backend_config['url']
         self.config['client_id'] = oidc_backend_config['client_id']
@@ -31,28 +33,19 @@ class CustosAuthnz(IdentityProvider):
         if oidc_backend_config.get('credential_url'):
             # Keycloak client secret used to get token for custos
             self.config['credential_url'] = oidc_backend_config['credential_url']
-            self._get_custos_credentials()
+            if provider == 'custos':
+                self._get_custos_credentials()
         self.config['redirect_uri'] = oidc_backend_config['redirect_uri']
         self.config['ca_bundle'] = oidc_backend_config.get('ca_bundle', None)
         self.config['extra_params'] = {
-            'kc_idp_hint': oidc_backend_config.get('idphint', 'oidc' if self.config['provider'] == 'custos' else 'cilogon')
+            'kc_idp_hint': oidc_backend_config.get('idphint', 'oidc' if self.config['provider'] in ['custos', 'keycloak'] else 'cilogon')
         }
-        # Either get OIDC config from well-known config URI or lookup known urls based on provider name and realm
-        if 'well_known_oidc_config_uri' in oidc_backend_config:
-            self.config['well_known_oidc_config_uri'] = oidc_backend_config['well_known_oidc_config_uri']
-            well_known_oidc_config = self._load_well_known_oidc_config(
-                self.config['well_known_oidc_config_uri'])
-            self.config['authorization_endpoint'] = well_known_oidc_config['authorization_endpoint']
-            self.config['token_endpoint'] = well_known_oidc_config['token_endpoint']
-            self.config['userinfo_endpoint'] = well_known_oidc_config['userinfo_endpoint']
-            self.config['end_session_endpoint'] = well_known_oidc_config['end_session_endpoint']
-        elif provider == 'cilogon':
+        if provider == 'cilogon':
             self._load_config_for_cilogon()
         elif provider == 'custos':
             self._load_config_for_custos()
-        else:
-            realm = oidc_backend_config['realm']
-            self._load_config_for_provider_and_realm(self.config['provider'], realm)
+        elif provider == 'keycloak':
+            self._load_config_for_keycloak()
 
     def authenticate(self, trans, idphint=None):
         base_authorize_url = self.config['authorization_endpoint']
@@ -226,16 +219,19 @@ class CustosAuthnz(IdentityProvider):
         self.config['userinfo_endpoint'] = "https://cilogon.org/oauth2/userinfo"
 
     def _load_config_for_custos(self):
+        self.config['well_known_oidc_config_uri'] = self._get_well_known_uri_from_url(self.config['provider'])
         # Set custos endpoints
         clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']
         eps = requests.get(self.config['url'],
                            headers={"Authorization": "Basic %s" % util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))},
                            verify=False, params={'client_id': self.config['client_id']})
-        endpoints = eps.json()
-        self.config['authorization_endpoint'] = endpoints['authorization_endpoint']
-        self.config['token_endpoint'] = endpoints['token_endpoint']
-        self.config['userinfo_endpoint'] = endpoints['userinfo_endpoint']
-        self.config['end_session_endpoint'] = endpoints['end_session_endpoint']
+        well_known_oidc_config = eps.json()
+        self._load_well_known_oidc_config(well_known_oidc_config)
+
+    def _load_config_for_keycloak(self):
+        self.config['well_known_oidc_config_uri'] = self._get_well_known_uri_from_url(self.config['provider'])
+        well_known_oidc_config = self._fetch_well_known_oidc_config(self.config['well_known_oidc_config_uri'])
+        self._load_well_known_oidc_config(well_known_oidc_config)
 
     def _get_custos_credentials(self):
         clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']
@@ -245,31 +241,29 @@ class CustosAuthnz(IdentityProvider):
         credentials = creds.json()
         self.config['iam_client_secret'] = credentials['iam_client_secret']
 
-    def _load_config_for_provider_and_realm(self, provider, realm):
-        self.config['well_known_oidc_config_uri'] = self._get_well_known_uri_for_provider_and_realm(provider, realm)
-        well_known_oidc_config = self._load_well_known_oidc_config(self.config['well_known_oidc_config_uri'])
-        self.config['authorization_endpoint'] = well_known_oidc_config['authorization_endpoint']
-        self.config['token_endpoint'] = well_known_oidc_config['token_endpoint']
-        self.config['userinfo_endpoint'] = well_known_oidc_config['userinfo_endpoint']
-        self.config['end_session_endpoint'] = well_known_oidc_config['end_session_endpoint']
-
-    def _get_well_known_uri_for_provider_and_realm(self, provider, realm):
+    def _get_well_known_uri_from_url(self, provider):
         # TODO: Look up this URL from a Python library
-        if provider == 'custos':
+        if provider in ['custos', 'keycloak']:
             base_url = self.config["url"]
             # Remove potential trailing slash to avoid "//realms"
             base_url = base_url if base_url[-1] != "/" else base_url[:-1]
-            return "{}/realms/{}/.well-known/openid-configuration".format(base_url, realm)
+            return "{}/.well-known/openid-configuration".format(base_url)
         else:
             raise Exception("Unknown Custos provider name: {}".format(provider))
 
-    def _load_well_known_oidc_config(self, well_known_uri):
+    def _fetch_well_known_oidc_config(self, well_known_uri):
         try:
             return requests.get(well_known_uri,
                                 verify=self._get_verify_param()).json()
         except Exception:
             log.error("Failed to load well-known OIDC config URI: {}".format(well_known_uri))
             raise
+
+    def _load_well_known_oidc_config(self, well_known_oidc_config):
+        self.config['authorization_endpoint'] = well_known_oidc_config['authorization_endpoint']
+        self.config['token_endpoint'] = well_known_oidc_config['token_endpoint']
+        self.config['userinfo_endpoint'] = well_known_oidc_config['userinfo_endpoint']
+        self.config['end_session_endpoint'] = well_known_oidc_config['end_session_endpoint']
 
     def _get_verify_param(self):
         """Return 'ca_bundle' if 'verify_ssl' is true and 'ca_bundle' is configured."""
