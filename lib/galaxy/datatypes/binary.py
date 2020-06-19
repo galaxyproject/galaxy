@@ -1542,15 +1542,7 @@ class ChiraSQLite(SQlite):
 
     def sniff(self, filename):
         if super(ChiraSQLite, self).sniff(filename):
-            try:
-                conn = sqlite.connect(filename)
-                c = conn.cursor()
-                tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
-                result = c.execute(tables_query).fetchall()
-                result = [_[0] for _ in result]
-                return True
-            except Exception as e:
-                log.warning('%s, sniff Exception: %s', self, e)
+            self.sniff_table_names(filename, ['Chimeras'])
         return False
 
 
@@ -1614,7 +1606,7 @@ class CuffDiffSQlite(SQlite):
         try:
             return dataset.peek
         except Exception:
-            return "CuffDiff SQLite Database, version %s" % (dataset.metadata.gemini_version or 'unknown')
+            return "CuffDiff SQLite Database, version %s" % (dataset.metadata.cuffdiff_version or 'unknown')
 
 
 class MzSQlite(SQlite):
@@ -1884,10 +1876,64 @@ class GAFASQLite(SQlite):
             log.warning("%s, set_meta Exception: %s", self, e)
 
     def sniff(self, filename):
-        if super(IdpDB, self).sniff(filename):
+        if super(GAFASQLite, self).sniff(filename):
             table_names = frozenset({'gene', 'gene_family', 'gene_family_member', 'meta', 'transcript'})
             return self.sniff_table_names(filename, table_names)
         return False
+
+
+class NcbiTaxonomySQlite(SQlite):
+    """Class describing the NCBI Taxonomy database stored in SQLite as done by rust-ncbitaxonomy"""
+    MetadataElement(name='ncbitaxonomy_schema_version', default='20200501095116', param=MetadataParameter, desc='ncbitaxonomy schema version',
+                    readonly=True, visible=True, no_value='20200501095116')
+    MetadataElement(name="taxon_count", default=[], param=MetadataParameter, desc="Count of taxa in the taxonomy",
+                    readonly=True, visible=True, no_value=[])
+
+    file_ext = 'ncbitaxonomy.sqlite'
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super(NcbiTaxonomySQlite, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        try:
+            conn = sqlite.connect(dataset.file_name)
+            c = conn.cursor()
+            version_query = 'SELECT version FROM __diesel_schema_migrations ORDER BY run_on DESC LIMIT 1'
+            results = c.execute(version_query).fetchall()
+            if len(results) == 0:
+                raise Exception('version not found in __diesel_schema_migrations table')
+            dataset.metadata.ncbitaxonomy_schema_version = results[0][0]
+            taxons_query = 'SELECT count(name) FROM taxonomy'
+            results = c.execute(taxons_query).fetchall()
+            if len(results) == 0:
+                raise Exception('could not count size of taxonomy table')
+            dataset.metadata.taxon_count = results[0][0]
+        except Exception as e:
+            log.warning("%s, set_meta Exception: %s", self, e)
+
+    def sniff(self, filename):
+        if super(NcbiTaxonomySQlite, self).sniff(filename):
+            table_names = frozenset({'__diesel_schema_migrations', 'taxonomy'})
+            return self.sniff_table_names(filename, table_names)
+        return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "NCBI Taxonomy SQLite Database, version {} ({} taxons)".format(
+                getattr(dataset.metadata, "ncbitaxonomy_schema_version", "unknown"),
+                getattr(dataset.metadata, "taxon_count", "unknown")
+            )
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "NCBI Taxonomy SQLite Database, version {} ({} taxons)".format(
+                getattr(dataset.metadata, "ncbitaxonomy_schema_version", "unknown"),
+                getattr(dataset.metadata, "taxon_count", "unknown")
+            )
 
 
 class Xlsx(Binary):
