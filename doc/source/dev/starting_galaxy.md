@@ -2,7 +2,7 @@
 
 ## What happens when you start Galaxy?
 
-Galaxy is started by running ./run.sh script. The following call graph documents what happens during Galaxy startup process. 
+Galaxy is started by running ./run.sh script. The following call graph documents what happens during Galaxy startup process.  Please note, Galaxy is a WSGI app, so in principle all python WSGI servers can run the Galaxy app (paster, gunicorn and uwsgi are known to work and have some level of support). This doc is specific to Paste (This is also not the typical way Galaxy starts if you start it via run.sh which uses uwsgi by default).
 
 * ./galaxy/scripts/paster.py
   * Add ./galaxy/lib to system path
