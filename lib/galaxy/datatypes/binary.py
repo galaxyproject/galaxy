@@ -1542,15 +1542,7 @@ class ChiraSQLite(SQlite):
 
     def sniff(self, filename):
         if super(ChiraSQLite, self).sniff(filename):
-            try:
-                conn = sqlite.connect(filename)
-                c = conn.cursor()
-                tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
-                result = c.execute(tables_query).fetchall()
-                result = [_[0] for _ in result]
-                return True
-            except Exception as e:
-                log.warning('%s, sniff Exception: %s', self, e)
+            self.sniff_table_names(filename, ['Chimeras'])
         return False
 
 
