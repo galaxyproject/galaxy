@@ -91,6 +91,47 @@
                 </element>
             </output_collection>
         </test>
+        <test>
+            <param name="input">
+                <collection type="list:paired">
+                    <element name="def456">
+                        <collection type="paired">
+                            <element name="forward" value="simple_line.txt" />
+                            <element name="reverse" value="simple_line_alternative.txt" />
+                        </collection>
+                    </element>
+                    <element name="abc789">
+                        <collection type="paired">
+                            <element name="forward" value="simple_line.txt" />
+                            <element name="reverse" value="simple_line_alternative.txt" />
+                        </collection>
+                    </element>
+                </collection>
+            </param>
+            <param name="sort_type" value="alpha" />
+            <output_collection name="output" type="list:paired">
+                <element name="abc789_forward">
+                <assert_contents>
+                  <has_text_matching expression="^This is a line of text.\n$" />
+                </assert_contents>
+              </element>
+              <element name="abc789_reverse">
+                <assert_contents>
+                  <has_text_matching expression="^This is a different line of text.\n$" />
+                </assert_contents>
+              </element>
+              <element name="def456_forward">
+                <assert_contents>
+                  <has_text_matching expression="^This is a line of text.\n$" />
+                </assert_contents>
+              </element>
+              <element name="def456_reverse">
+                <assert_contents>
+                  <has_text_matching expression="^This is a different line of text.\n$" />
+                </assert_contents>
+              </element>
+            </output_collection>
+        </test>
     </tests>
     <help><![CDATA[
 
