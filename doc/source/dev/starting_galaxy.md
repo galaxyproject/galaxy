@@ -54,7 +54,7 @@ Galaxy is started by running ./run.sh script. The following call graph documents
             * Handles CRUD operations related to workflows
           * Configure DependencyResolverView (a RESTful interface to galaxy.tool_util.deps.DependencyResolver)
           * Configure TestDataResolver
-          * Configure LibraryManager (Data libraries under Shared Data on use galaxy.org)
+          * Configure LibraryManager (Data libraries under Shared Data)
           * Configure FolderManager (Folders are folders in a data library)
           * Configure DynamicToolManager (Tools that are loaded from DB instead of disk files)
           * Configure DataProviderRegistry
