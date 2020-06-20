@@ -2381,6 +2381,10 @@ class Dataset(StorableObject, RepresentById):
         return self.object_store.exists(self, extra_dir=self._extra_files_rel_path, dir_only=True)
 
     @property
+    def job_source_id(self):
+        return self.job_id  # TODO decide how to set this (dataset can be created BEFORE job)
+
+    @property
     def store_by(self):
         store_by = self.object_store.get_store_by(self)
         return store_by

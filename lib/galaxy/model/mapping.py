@@ -263,6 +263,7 @@ model.HistoryDatasetAssociationHistory.table = Table(
 model.Dataset.table = Table(
     "dataset", metadata,
     Column("id", Integer, primary_key=True),
+    Column('job_id', Integer, ForeignKey('job.id'), index=True),
     Column("create_time", DateTime, default=now),
     Column("update_time", DateTime, index=True, default=now, onupdate=now),
     Column("state", TrimmedString(64), index=True),
