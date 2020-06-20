@@ -111,8 +111,8 @@
             <param name="sort_type" value="alpha" />
             <output_collection name="output" type="list:paired">
                 <element name="abc789">
-                    <collection type = "paired">
-                        <element name= "forward">
+                    <collection type="paired">
+                        <element name="forward">
                             <assert_contents>
                                 <has_text_matching expression="^This is a line of text.\n$" />
                             </assert_contents>
@@ -125,8 +125,8 @@
                     </collection>
                 </element>
                 <element name="def456">
-                    <collection type = "paired">
-                        <element name= "forward">
+                    <collection type="paired">
+                        <element name="forward">
                             <assert_contents>
                                 <has_text_matching expression="^This is a line of text.\n$" />
                             </assert_contents>
