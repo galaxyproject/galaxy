@@ -11,7 +11,10 @@ import "scss/base.scss";
 // prefix (e.g.  `<server>/galaxy/`), this must happen before any dynamic
 // bundle imports load, otherwise they will fail.
 import { getRootFromIndexLink } from "./getRootFromIndexLink";
-__webpack_public_path__ = `${getRootFromIndexLink().replace(/\/+$/,"")}/${__webpack_public_path__.replace(/^\/+/,"")}`;
+__webpack_public_path__ = `${getRootFromIndexLink().replace(/\/+$/, "")}/${__webpack_public_path__.replace(
+    /^\/+/,
+    ""
+)}`;
 
 // Module exports appear as objects on window.config in the browser
 export { standardInit } from "./standardInit";
