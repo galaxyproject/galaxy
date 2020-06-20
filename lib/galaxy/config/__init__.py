@@ -1031,7 +1031,7 @@ class ConfiguresGalaxyMixin(object):
         self._toolbox_lock = threading.RLock()
         self.toolbox = tools.ToolBox(self.config.tool_configs, self.config.tool_path, self)
         galaxy_root_dir = os.path.abspath(self.config.root)
-        file_path = os.path.abspath(getattr(self.config, "file_path"))
+        file_path = os.path.abspath(self.config.file_path)
         app_info = AppInfo(
             galaxy_root_dir=galaxy_root_dir,
             default_file_path=file_path,

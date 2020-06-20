@@ -41,13 +41,14 @@ def check_archive(repository, archive):
             undesirable_files.append(member)
             continue
         head = tail = member.name
-        try:
-            while tail:
-                head, tail = os.path.split(head)
-                if tail in UNDESIRABLE_DIRS:
-                    undesirable_dirs.append(member)
-                    assert False
-        except AssertionError:
+        found_undesirable_dir = False
+        while tail:
+            head, tail = os.path.split(head)
+            if tail in UNDESIRABLE_DIRS:
+                undesirable_dirs.append(member)
+                found_undesirable_dir = True
+                break
+        if found_undesirable_dir:
             continue
         if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION and member.name != rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
             errors.append('Repositories of type <b>Repository suite definition</b> can contain only a single file named <b>repository_dependencies.xml</b>.')

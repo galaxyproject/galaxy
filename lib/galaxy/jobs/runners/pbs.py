@@ -182,7 +182,7 @@ class PBSJobRunner(AsynchronousJobRunner):
         for arg, value in args.items():
             if arg == 'l':
                 resource_attrs = value.split(',')
-                for j, (res, val) in enumerate([a.split('=', 1) for a in resource_attrs]):
+                for res, val in [a.split('=', 1) for a in resource_attrs]:
                     rval.append(dict(name=pbs.ATTR_l, value=val, resource=res))
             else:
                 try:
