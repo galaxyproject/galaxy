@@ -77,7 +77,7 @@ class ApplicationStackMessage(dict):
 
     def _validate_items(self, obj, items, name):
         for item in items:
-            assert item in obj, "Missing '%s' message %" % (item, name)
+            assert item in obj, "Missing '%s' message %s" % (item, name)
 
     def validate(self):
         self._validate_items(self, self.validate_kwargs, 'argument')
