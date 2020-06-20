@@ -111,32 +111,28 @@
             <param name="sort_type" value="alpha" />
             <output_collection name="output" type="list:paired">
                 <element name="abc789">
-                    <collection type="paired">
-                        <element name="forward">
-                            <assert_contents>
-                                <has_text_matching expression="^This is a line of text.\n$" />
-                            </assert_contents>
-                        </element>
-                        <element name="reverse">
-                            <assert_contents>
-                                <has_text_matching expression="^This is a different line of text.\n$" />
-                            </assert_contents>
-                        </element>
-                    </collection>
+                    <element name="forward">
+                        <assert_contents>
+                            <has_text_matching expression="^This is a line of text.\n$" />
+                        </assert_contents>
+                    </element>
+                    <element name="reverse">
+                        <assert_contents>
+                            <has_text_matching expression="^This is a different line of text.\n$" />
+                        </assert_contents>
+                    </element>
                 </element>
                 <element name="def456">
-                    <collection type="paired">
-                        <element name="forward">
-                            <assert_contents>
-                                <has_text_matching expression="^This is a line of text.\n$" />
-                            </assert_contents>
-                        </element>
-                        <element name="reverse">
-                            <assert_contents>
-                                <has_text_matching expression="^This is a different line of text.\n$" />
-                            </assert_contents>
-                        </element>
-                    </collection>
+                    <element name="forward">
+                        <assert_contents>
+                            <has_text_matching expression="^This is a line of text.\n$" />
+                        </assert_contents>
+                    </element>
+                    <element name="reverse">
+                        <assert_contents>
+                            <has_text_matching expression="^This is a different line of text.\n$" />
+                        </assert_contents>
+                    </element>
                 </element>
             </output_collection>
         </test>
