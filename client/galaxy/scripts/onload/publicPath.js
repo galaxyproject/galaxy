@@ -4,9 +4,9 @@
  * a prefix (e.g.  `<server>/galaxy/`), this must be accounted for before any
  * dynamic bundle imports load, otherwise they will fail.
  */
+
+/* global __webpack_public_path__:writable */
+
 import { getRootFromIndexLink } from "./getRootFromIndexLink";
 
-__webpack_public_path__ = `${getRootFromIndexLink().replace(/\/+$/, "")}/${__webpack_public_path__.replace(
-    /^\/+/,
-    ""
-)}`;
+__webpack_public_path__ = `${getRootFromIndexLink().replace(/\/+$/, "")}/static/dist/`;
