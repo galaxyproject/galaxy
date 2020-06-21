@@ -37,7 +37,7 @@ Galaxy is started by running ./run.sh script. The following call graph documents
           * Create the application stack (uWSGi, Paste, or Webless)
             * App registers post fork functions to start application stack threads   
           * Create GalaxyQueueWorker instance (a worker for Galaxy's queues, used for dispatching control tasks. Sqlite instance)
-          * Configure tool shed registery
+          * Configure tool shed registry
           * Configure object store. build_object_store_from_config() (in ./galaxy/lib/galaxy/objectstore/__init__.py) calls objectstore_class.from_xml(), calls clazz.parse_xml()
           * Configure models in _configure_models() 
             * Calls create_or_verify_database() in ./galaxy/libl/galaxy/model/migrate/check.py
