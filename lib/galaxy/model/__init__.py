@@ -1852,7 +1852,7 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
             hdas = self.active_datasets
         for hda in hdas:
             # Copy HDA.
-            new_hda = hda.copy(force_flush=False)
+            new_hda = hda.copy(flush=False)
             new_history.add_dataset(new_hda, set_hid=False, quota=applies_to_quota)
 
             if target_user:
@@ -3110,7 +3110,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             self.version = self.version + 1 if self.version else 1
             session.add(past_hda)
 
-    def copy(self, parent_id=None, copy_tags=None, force_flush=True, copy_hid=True, new_name=None):
+    def copy(self, parent_id=None, copy_tags=None, flush=True, copy_hid=True, new_name=None):
         """
         Create a copy of this HDA.
         """
@@ -3147,7 +3147,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                 object_session(self).flush([self])
 
             hda.set_peek()
-        if force_flush:
+        if flush:
             object_session(self).flush()
         return hda
 
@@ -4120,7 +4120,7 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
         error_message = "Dataset collection has no %s with key %s." % (get_by_attribute, key)
         raise KeyError(error_message)
 
-    def copy(self, destination=None, element_destination=None):
+    def copy(self, destination=None, element_destination=None, flush=True):
         new_collection = DatasetCollection(
             collection_type=self.collection_type,
             element_count=self.element_count
@@ -4130,6 +4130,7 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
                 new_collection,
                 destination=destination,
                 element_destination=element_destination,
+                flush=flush
             )
         object_session(self).add(new_collection)
         object_session(self).flush()
@@ -4537,16 +4538,17 @@ class DatasetCollectionElement(Dictifiable, RepresentById):
         else:
             return [element_object]
 
-    def copy_to_collection(self, collection, destination=None, element_destination=None):
+    def copy_to_collection(self, collection, destination=None, element_destination=None, flush=True):
         element_object = self.element_object
         if element_destination:
             if self.is_collection:
                 element_object = element_object.copy(
                     destination=destination,
-                    element_destination=element_destination
+                    element_destination=element_destination,
+                    flush=flush
                 )
             else:
-                new_element_object = element_object.copy()
+                new_element_object = element_object.copy(flush=flush)
                 if destination is not None and element_object.hidden_beneath_collection_instance:
                     new_element_object.hidden_beneath_collection_instance = destination
                 # Ideally we would not need to give the following
