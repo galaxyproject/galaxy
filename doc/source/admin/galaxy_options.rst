@@ -1254,35 +1254,35 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~
-``blacklist_file``
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``email_domain_blocklist_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    E-mail domains blacklist is used for filtering out users that are
+    E-mail domains blocklist is used for filtering out users that are
     using disposable email addresses at registration.  If their
     address domain matches any domain on the list, they are refused
     registration.
-    Example value 'email_blacklist.conf'
+    Example value 'email_blocklist.conf'
     The value of this option will be resolved with respect to
     <config_dir>.
 :Default: ``None``
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~
-``whitelist_file``
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``email_domain_allowlist_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    E-mail domains whitelist is used to specify allowed email address
+    E-mail domains allowlist is used to specify allowed email address
     domains. If the list is non-empty and a user attempts registration
     using an email address belonging to a domain that is not on the
     list, registration will be denied. This is a more restrictive
-    option than <blacklist_file>, and therefore, in case
-    <whitelist_file> is set and is not empty, <blacklist_file> will be
-    ignored.
-    Example value 'email_whitelist.conf'
+    option than <email_domain_blocklist_file>, and therefore, in case
+    <email_domain_allowlist_file> is set and is not empty,
+    <email_domain_blocklist_file> will be ignored.
+    Example value 'email_allowlist.conf'
     The value of this option will be resolved with respect to
     <config_dir>.
 :Default: ``None``
@@ -2231,17 +2231,17 @@
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``sanitize_whitelist_file``
+``sanitize_allowlist_file``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Whitelist sanitization file. Datasets created by tools listed in
-    this file are trusted and will not have their HTML sanitized on
-    display.  This can be manually edited or manipulated through the
-    Admin control panel -- see "Manage Display Whitelist"
+    Datasets created by tools listed in this file are trusted and will
+    not have their HTML sanitized on display.  This can be manually
+    edited or manipulated through the Admin control panel -- see
+    "Manage Display Allowlist"
     The value of this option will be resolved with respect to
     <mutable_config_dir>.
-:Default: ``sanitize_whitelist.txt``
+:Default: ``sanitize_allowlist.txt``
 :Type: str
 
 
@@ -2512,7 +2512,7 @@
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``user_library_import_symlink_whitelist``
+``user_library_import_symlink_allowlist``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
@@ -2976,11 +2976,11 @@
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~
-``fetch_url_whitelist``
+``fetch_url_allowlist``
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Whitelist for local network addresses for "Upload from URL"
+    List of allowed local network addresses for "Upload from URL"
     dialog. By default, Galaxy will deny access to the local network
     address space, to prevent users making requests to services which
     the administrator did not intend to expose. Previously, you could

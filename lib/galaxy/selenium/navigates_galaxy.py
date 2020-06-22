@@ -1466,6 +1466,27 @@ class NavigatesGalaxy(HasDriver):
         element.click()
         return element
 
+    def set_history_annotation(self, annotation, clear_text=False):
+        self.ensure_history_annotation_area_displayed()
+
+        self.wait_for_and_click(self.navigation.history_panel.selectors.annotation_editable_text)
+
+        annon_area_editable = self.wait_for_and_click(self.navigation.history_panel.selectors.annotation_edit)
+        anno_done_button = self.wait_for_clickable(self.navigation.history_panel.selectors.annotation_done)
+
+        if clear_text:
+            annon_area_editable.clear()
+
+        annon_area_editable.send_keys(annotation)
+        anno_done_button.click()
+
+    def ensure_history_annotation_area_displayed(self):
+        annotation_area_selector = self.navigation.history_panel.selectors.annotation_area
+        annotation_icon_selector = self.navigation.history_panel.selectors.annotation_icon
+
+        if not self.is_displayed(annotation_area_selector):
+            self.wait_for_and_click(annotation_icon_selector)
+
     def select2_set_value(self, container_selector_or_elem, value, with_click=True, clear_value=False):
         # There are two hacky was to select things from the select2 widget -
         #   with_click=True: This simulates the mouse click after the suggestion contains

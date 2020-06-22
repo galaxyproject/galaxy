@@ -10,25 +10,25 @@
     in your galaxy configuration file.  This prevents Galaxy from sanitizing
     tool outputs, which is an important security feature.  For improved
     security, we recommend you disable the old-style blanket sanitization and
-    manage it via this whitelist instead.</p></div>
+    manage it via this allowlist instead.</p></div>
 %else:
     <div><p>This interface will allow you to mark particular tools as 'trusted'
     after which Galaxy will no longer attempt to sanitize any HTML contents of
     datasets created by these tools upon display.  Please be aware of the
     potential security implications of doing this -- bypassing sanitization
-    using this whitelist disables Galaxy's security feature (for the indicated
+    using this allowlist disables Galaxy's security feature (for the indicated
     tools) that prevents Galaxy from displaying potentially malicious
     Javascript.<br/>
     Note that datasets originating from an archive import are still sanitized
-    even when their creating tool is whitelisted since it isn't possible to
+    even when their creating tool is allowlisted since it isn't possible to
     validate the information supplied in the archive.</p></div>
-    <form name="sanitize_whitelist" method="post" action="${h.url_for( controller='admin', action='sanitize_whitelist' )}">
+    <form name="sanitize_allowlist" method="post" action="${h.url_for( controller='admin', action='sanitize_allowlist' )}">
     <div class="card mb-3">
-        <div class="card-header">Tool Sanitization Whitelist</div>
+        <div class="card-header">Tool Sanitization Allowlist</div>
         <div class="card-body overflow-auto">
             <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
                 <tr>
-                    <th>Whitelist</th>
+                    <th>Allowlist</th>
                     <th>Name</th>
                     <th>ID</th>
                 </tr>
@@ -40,10 +40,10 @@
                         <tr class="tr">
                     %endif
                         <td>
-                            %if tool.id in trans.app.config.sanitize_whitelist:
-                                <input type="checkbox" name="tools_to_whitelist" value="${tool.id}" checked="checked"/>
+                            %if tool.id in trans.app.config.sanitize_allowlist:
+                                <input type="checkbox" name="tools_to_allowlist" value="${tool.id}" checked="checked"/>
                             %else:
-                                <input type="checkbox" name="tools_to_whitelist" value="${tool.id}"/>
+                                <input type="checkbox" name="tools_to_allowlist" value="${tool.id}"/>
                             %endif
                         </td>
                         <td>${ tool.name | h }</td>
@@ -54,6 +54,6 @@
             </table>
         </div>
     </div>
-    <input type="submit" name="submit_whitelist" value="Submit new whitelist"/>
+    <input type="submit" name="submit_allowlist" value="Submit new allowlist"/>
     </form>
 %endif

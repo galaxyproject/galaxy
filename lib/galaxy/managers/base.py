@@ -914,7 +914,7 @@ class ModelFilterParser(HasAModelManager):
         self.date_string_re = re.compile(r'^(\d{4}\-\d{2}\-\d{2})[T| ]{0,1}(\d{2}:\d{2}:\d{2}(?:\.\d{1,6}){0,1}){0,1}Z{0,1}$')
 
         # dictionary containing parsing data for ORM/SQLAlchemy-based filters
-        # ..note: although kind of a pain in the ass and verbose, opt-in/whitelisting allows more control
+        # ..note: although kind of a pain in the ass and verbose, opt-in/allowlisting allows more control
         #   over potentially expensive queries
         self.orm_filter_parsers = {}
 
@@ -1013,11 +1013,11 @@ class ModelFilterParser(HasAModelManager):
         # orm_filter_list is a dict: orm_filter_list[ attr ] = <list of allowed ops>
         column_map = self.orm_filter_parsers.get(attr, None)
         if not column_map:
-            # no column mapping (not whitelisted)
+            # no column mapping (not allowlisted)
             return None
         if callable(column_map):
             return self.parsed_filter(filter_type="orm_function", filter=column_map(attr, op, val))
-        # attr must be a whitelisted column by attr name or by key passed in column_map
+        # attr must be an allowlisted column by attr name or by key passed in column_map
         # note: column_map[ 'column' ] takes precedence
         if 'column' in column_map:
             attr = column_map['column']
@@ -1029,7 +1029,7 @@ class ModelFilterParser(HasAModelManager):
             # no orm column
             return None
 
-        # op must be whitelisted: contained in the list orm_filter_list[ attr ][ 'op' ]
+        # op must be allowlisted: contained in the list orm_filter_list[ attr ][ 'op' ]
         allowed_ops = column_map.get('op')
         if op not in allowed_ops:
             return None
