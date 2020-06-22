@@ -30,7 +30,7 @@ def docker_to_singularity(container, installation, filepath, no_sudo=False):
             check_output(cmd.insert(0, 'sudo'), stderr=subprocess.STDOUT)
             check_output(['sudo', 'rm', '-rf', '/root/.singularity/docker/'], stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
-        raise Exception("Docker to Singularity conversion failed.\nOutput was:\n%" % unicodify(e.output))
+        raise Exception("Docker to Singularity conversion failed.\nOutput was:\n%s" % unicodify(e.output))
 
 
 def singularity_container_test(tests, installation, filepath):

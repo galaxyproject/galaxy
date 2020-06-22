@@ -940,7 +940,7 @@ class SffFlow(Tabular):
     MetadataElement(name="flow_order", default="TACG", no_value="TACG", desc="Total number of flow values", readonly=False)
     file_ext = 'mothur.sff.flow'
     """
-        http://www.mothur.org/wiki/Flow_file
+        https://mothur.org/wiki/flow_file/
         The first line is the total number of flow values - 800 for Titanium data. For GS FLX it would be 400.
         Following lines contain:
         - SequenceName
@@ -966,18 +966,20 @@ class SffFlow(Tabular):
         except Exception as e:
             log.warning("SffFlow set_meta %s" % e)
 
-    def make_html_table(self, dataset, skipchars=[]):
+    def make_html_table(self, dataset, skipchars=None):
         """Create HTML table, used for displaying peek"""
+        if skipchars is None:
+            skipchars = []
         try:
             out = '<table cellspacing="0" cellpadding="3">'
 
             # Generate column header
             out += '<tr>'
-            out += '<th>%d. Name</th>' % 1
-            out += '<th>%d. Flows</th>' % 2
+            out += '<th>1. Name</th>'
+            out += '<th>2. Flows</th>'
             for i in range(3, dataset.metadata.columns + 1):
                 base = dataset.metadata.flow_order[(i + 1) % 4]
-                out += '<th>%d. %d %s</th>' % (i - 2, base)
+                out += '<th>%d. %s</th>' % (i - 2, base)
             out += '</tr>'
             out += self.make_html_peek_rows(dataset, skipchars=skipchars)
             out += '</table>'
