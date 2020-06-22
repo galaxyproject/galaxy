@@ -307,7 +307,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             return None
         except Exception:
             # so we don't kill the monitor thread
-            log.exception("(%s/%s) unable to check job status: %s" % (galaxy_id_tag, external_job_id))
+            log.exception("(%s/%s) unable to check job status" % (galaxy_id_tag, external_job_id))
             log.warning("(%s/%s) job will now be errored" % (galaxy_id_tag, external_job_id))
             ajs.fail_message = "Cluster could not complete job"
             self.work_queue.put((self.fail_job, ajs))
@@ -412,8 +412,8 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         log.info("Running command %s" % cmd)
         try:
             stdoutdata = commands.execute(cmd).strip()
-        except commands.CommandLineException as e:
-            log.exception("External_runjob failed %s" % unicodify(e))
+        except commands.CommandLineException:
+            log.exception("External_runjob failed")
             return None
         # The expected output is a single line containing a single numeric value:
         # the DRMAA job-ID. If not the case, will throw an error.
