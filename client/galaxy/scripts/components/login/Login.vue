@@ -54,12 +54,11 @@
 
                                     <p class="mt-3">
                                         <small class="text-muted">
-                                            * Galaxy uses CILogon via Custos to enable you to Log In from this
+                                            * Galaxy uses CILogon via Custos to enable you to log in from this
                                             organization. By clicking 'Sign In', you agree to the
-                                            <a href="https://ca.cilogon.org/policy/privacy">CILogon privacy policy</a>
+                                            <a href="https://ca.cilogon.org/policy/privacy">CILogon</a> privacy policy
                                             and you agree to share your username, email address, and affiliation with
-                                            CILogon and Galaxy. You also agree for CILogon to issue a certificate that
-                                            allows Galaxy to act on your behalf.
+                                            CILogon, Custos, and Galaxy.
                                         </small>
                                     </p>
                                 </div>
