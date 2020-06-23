@@ -101,8 +101,6 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
         else:
             execute_single_job(execution_slice, completed_jobs[i])
 
-    execution_tracker.record_invocation_step_jobs()
-
     if has_remaining_jobs:
         raise PartialJobExecution(execution_tracker)
     else:
@@ -366,9 +364,6 @@ class ExecutionTracker(object):
             job_assoc.job_id = job.id
             self.trans.sa_session.add(job_assoc)
 
-    def record_invocation_step_jobs(self):
-        pass
-
 
 # Seperate these because workflows need to track their jobs belong to the invocation
 # in the database immediately and they can be recovered.
@@ -414,10 +409,6 @@ class WorkflowStepExecutionTracker(ExecutionTracker):
             self.invocation_step.job = job
         self.job_callback(job)
 
-    def record_invocation_step_jobs(self):
-        if self.collection_info:
-            self.invocation_step.implicit_collection_jobs = self.implicit_collection_jobs
-
     def new_collection_execution_slices(self):
         for job_index, (param_combination, dataset_collection_elements) in enumerate(six.moves.zip(self.param_combinations, self.walk_implicit_collections())):
             found_result = False
@@ -443,6 +434,7 @@ class WorkflowStepExecutionTracker(ExecutionTracker):
                 assert hasattr(implicit_collection, "history_content_type")  # make sure it is an HDCA and not a DC
                 collections[output_assoc.output_name] = output_assoc.dataset_collection
             self.implicit_collections = collections
+        self.invocation_step.implicit_collection_jobs = self.implicit_collection_jobs
 
 
 __all__ = ('execute', )
