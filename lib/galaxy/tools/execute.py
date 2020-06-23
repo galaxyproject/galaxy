@@ -422,9 +422,7 @@ class WorkflowStepExecutionTracker(ExecutionTracker):
 
     def record_success(self, execution_slice, job, outputs):
         super(WorkflowStepExecutionTracker, self).record_success(execution_slice, job, outputs)
-        if self.collection_info:
-            self.invocation_step.implicit_collection_jobs = self.implicit_collection_jobs
-        else:
+        if not self.collection_info:
             self.invocation_step.job = job
         self.job_callback(job)
 
@@ -453,6 +451,7 @@ class WorkflowStepExecutionTracker(ExecutionTracker):
                 assert hasattr(implicit_collection, "history_content_type")  # make sure it is an HDCA and not a DC
                 collections[output_assoc.output_name] = output_assoc.dataset_collection
             self.implicit_collections = collections
+        self.invocation_step.implicit_collection_jobs = self.implicit_collection_jobs
 
 
 __all__ = ('execute', )
