@@ -429,6 +429,10 @@ class SraManifest(Tabular):
     ext = 'sra_manifest.tabular'
     data_line_offset = 1
 
+    def set_meta(self, dataset, **kwds):
+        super(SraManifest, self).set_meta(dataset, **kwds)
+        dataset.metadata.comment_lines = 1
+
     def get_column_names(self, first_line):
         return first_line.strip().split('\t')
 
