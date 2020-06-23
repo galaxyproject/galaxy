@@ -71,9 +71,14 @@ preferences:
     sign_out: "#edit-preferences-sign-out"
     change_password: "#edit-preferences-password"
     manage_information: '#edit-preferences-information'
+    toolbox_filters: '#edit-preferences-toolbox-filters'
     manage_api_key: '#edit-preferences-api-key'
     current_email: "#user-preferences-current-email"
     get_new_key: '#submit'
+
+toolbox_filters:
+  selectors:
+    submit: '#submit'
 
 change_user_email:
   selectors:

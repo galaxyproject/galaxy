@@ -138,13 +138,22 @@ class English(Base):
 
     This is the default Inflector for the Inflector obj
     """
+    uncountable_words = ('equipment', 'information', 'rice', 'money', 'species', 'series', 'fish', 'sheep', 'sms')
+
+    irregular_words = {
+        'person': 'people',
+        'man': 'men',
+        'child': 'children',
+        'sex': 'sexes',
+        'move': 'moves'
+    }
 
     def pluralize(self, word):
         '''Pluralizes English nouns.'''
 
         rules = [
             ['(?i)(quiz)$', '\\1zes'],
-            ['^(?i)(ox)$', '\\1en'],
+            ['(?i)^(ox)$', '\\1en'],
             ['(?i)([m|l])ouse$', '\\1ice'],
             ['(?i)(matr|vert|ind)ix|ex$', '\\1ices'],
             ['(?i)(x|ch|ss|sh)$', '\\1es'],
@@ -163,36 +172,26 @@ class English(Base):
             ['(?i)$', 's']
         ]
 
-        uncountable_words = ['equipment', 'information', 'rice', 'money', 'species', 'series', 'fish', 'sheep']
-
-        irregular_words = {
-            'person': 'people',
-            'man': 'men',
-            'child': 'children',
-            'sex': 'sexes',
-            'move': 'moves'
-        }
-
         lower_cased_word = word.lower()
 
-        for uncountable_word in uncountable_words:
+        for uncountable_word in self.uncountable_words:
             if lower_cased_word[-1 * len(uncountable_word):] == uncountable_word:
                 return word
 
-        for irregular in irregular_words.keys():
-            match = re.search('(' + irregular + ')$', word, re.IGNORECASE)
+        for irregular_singular, irregular_plural in self.irregular_words.items():
+            match = re.search('(' + irregular_singular + ')$', word, re.IGNORECASE)
             if match:
-                return re.sub('(?i)' + irregular + '$', match.expand('\\1')[0] + irregular_words[irregular][1:], word)
+                return re.sub('(?i)' + irregular_singular + '$', match.expand('\\1')[0] + irregular_plural[1:], word)
 
-        for rule in range(len(rules)):
-            match = re.search(rules[rule][0], word, re.IGNORECASE)
+        for rule in rules:
+            match = re.search(rule[0], word, re.IGNORECASE)
             if match:
                 groups = match.groups()
-                for k in range(0, len(groups)):
-                    if groups[k] is None:
-                        rules[rule][1] = rules[rule][1].replace('\\' + str(k + 1), '')
+                for k, group in enumerate(groups):
+                    if group is None:
+                        rule[1] = rule[1].replace('\\' + str(k + 1), '')
 
-                return re.sub(rules[rule][0], rules[rule][1], word)
+                return re.sub(rule[0], rule[1], word)
 
         return word
 
@@ -226,35 +225,25 @@ class English(Base):
             ['(?i)s$', ''],
         ]
 
-        uncountable_words = ['equipment', 'information', 'rice', 'money', 'species', 'series', 'fish', 'sheep', 'sms']
-
-        irregular_words = {
-            'people': 'person',
-            'men': 'man',
-            'children': 'child',
-            'sexes': 'sex',
-            'moves': 'move'
-        }
-
         lower_cased_word = word.lower()
-        for uncountable_word in uncountable_words:
+        for uncountable_word in self.uncountable_words:
             if lower_cased_word[-1 * len(uncountable_word):] == uncountable_word:
                 return word
 
-        for irregular in irregular_words.keys():
-            match = re.search('(' + irregular + ')$', word, re.IGNORECASE)
+        for irregular_singular, irregular_plural in self.irregular_words.items():
+            match = re.search('(' + irregular_plural + ')$', word, re.IGNORECASE)
             if match:
-                return re.sub('(?i)' + irregular + '$', match.expand('\\1')[0] + irregular_words[irregular][1:], word)
+                return re.sub('(?i)' + irregular_plural + '$', match.expand('\\1')[0] + irregular_singular[1:], word)
 
-        for rule in range(len(rules)):
-            match = re.search(rules[rule][0], word, re.IGNORECASE)
+        for rule in rules:
+            match = re.search(rule[0], word, re.IGNORECASE)
             if match:
                 groups = match.groups()
-                for k in range(0, len(groups)):
-                    if groups[k] is None:
-                        rules[rule][1] = rules[rule][1].replace('\\' + str(k + 1), '')
+                for k, group in enumerate(groups):
+                    if group is None:
+                        rule[1] = rule[1].replace('\\' + str(k + 1), '')
 
-                return re.sub(rules[rule][0], rules[rule][1], word)
+                return re.sub(rule[0], rule[1], word)
 
         return word
 

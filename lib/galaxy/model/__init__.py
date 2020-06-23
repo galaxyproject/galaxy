@@ -712,6 +712,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         self.input_datasets = []
         self.output_datasets = []
         self.input_dataset_collections = []
+        self.input_dataset_collection_elements = []
         self.output_dataset_collection_instances = []
         self.output_dataset_collections = []
         self.input_library_datasets = []
@@ -933,6 +934,9 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
     def add_input_dataset_collection(self, name, dataset_collection):
         self.input_dataset_collections.append(JobToInputDatasetCollectionAssociation(name, dataset_collection))
 
+    def add_input_dataset_collection_element(self, name, dataset_collection_element):
+        self.input_dataset_collection_elements.append(JobToInputDatasetCollectionElementAssociation(name, dataset_collection_element))
+
     def add_output_dataset_collection(self, name, dataset_collection_instance):
         self.output_dataset_collection_instances.append(JobToOutputDatasetCollectionAssociation(name, dataset_collection_instance))
 
@@ -1066,7 +1070,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             params_objects[key] = safe_loads(param_dict[key])
 
         def remap_objects(p, k, obj):
-            if isinstance(obj, dict) and "src" in obj and obj["src"] in ["hda", "hdca"]:
+            if isinstance(obj, dict) and "src" in obj and obj["src"] in ["hda", "hdca", "dce"]:
                 new_id = serialization_options.get_identifier_for_id(id_encoder, obj["id"])
                 new_obj = obj.copy()
                 new_obj["id"] = new_id
@@ -1431,6 +1435,12 @@ class JobToInputDatasetCollectionAssociation(RepresentById):
     def __init__(self, name, dataset_collection):
         self.name = name
         self.dataset_collection = dataset_collection
+
+
+class JobToInputDatasetCollectionElementAssociation(RepresentById):
+    def __init__(self, name, dataset_collection_element):
+        self.name = name
+        self.dataset_collection_element = dataset_collection_element
 
 
 # Many jobs may map to one HistoryDatasetCollection using these for a given

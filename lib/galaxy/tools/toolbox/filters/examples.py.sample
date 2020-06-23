@@ -1,6 +1,25 @@
 import logging
 log = logging.getLogger( __name__ )
 
+def restrict_encode( context, tool ):
+    """
+    Disable the random interval ENCODE tool
+
+    This tool filter will disable all the ENCODE tool when enabled.
+    """
+    if tool.id == 'random_intervals1':
+        return False
+    return True
+
+def restrict_text( context, section ):
+    """
+    Disable the Text Manipulation section
+
+    This tool filter will disable the Text Manipulation section.
+    """
+    if section.name == 'Text Manipulation':
+        return False
+    return True
 
 def restrict_upload_to_admins( context, tool ):
     """

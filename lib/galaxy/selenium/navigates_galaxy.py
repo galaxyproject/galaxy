@@ -849,6 +849,11 @@ class NavigatesGalaxy(HasDriver):
         self.wait_for_and_click_selector("#workflow-save-button")
         self.sleep_for(self.wait_types.DATABASE_OPERATION)
 
+    def navigate_to_user_preferences(self):
+        self.home()
+        self.click_masthead_user()
+        self.components.masthead.preferences.wait_for_and_click()
+
     def admin_open(self):
         self.components.masthead.admin.wait_for_and_click()
 
