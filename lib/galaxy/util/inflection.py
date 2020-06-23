@@ -83,23 +83,20 @@ class Inflector(object):
 
     def pluralize(self, word):
         '''Pluralizes nouns.'''
-        return self._handle_nonchanging(word) or \
-            self._handle_irregular(word) or \
-            self._apply_rule(self.PLURALIZE_RULES, word) or \
-            word
+        return self._transform(self.PLURALIZE_RULES, word)
 
     def singularize(self, word):
         '''Singularizes nouns.'''
-        return self._handle_nonchanging(word) or \
-            self._handle_irregular(word, pluralize=False) or \
-            self._apply_rule(self.SINGULARIZE_RULES, word) or \
-            word
+        return self._transform(self.SINGULARIZE_RULES, word, pluralize=False)
 
     def cond_plural(self, number_of_records, word):
         '''Returns the plural form of a word if first parameter is greater than 1'''
         if number_of_records != 1:
             return self.pluralize(word)
         return word
+
+    def _transform(self, rules, word, pluralize=True):
+        return self._handle_nonchanging(word) or self._handle_irregular(word, pluralize=pluralize) or self._apply_rule(rules, word) or word
 
     def _handle_nonchanging(self, word):
         if word.lower() in self.NONCHANGING_WORDS:
