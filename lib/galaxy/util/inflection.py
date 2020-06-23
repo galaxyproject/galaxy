@@ -96,7 +96,7 @@ class Inflector(object):
         return word
 
     def _transform(self, rules, word, pluralize=True):
-        return self._handle_nonchanging(word) or self._handle_irregular(word, pluralize=pluralize) or self._apply_rule(rules, word) or word
+        return self._handle_nonchanging(word) or self._handle_irregular(word, pluralize=pluralize) or self._apply_rules(rules, word) or word
 
     def _handle_nonchanging(self, word):
         lower_cased_word = word.lower()
