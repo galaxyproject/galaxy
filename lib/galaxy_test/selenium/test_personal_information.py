@@ -118,11 +118,6 @@ class ManageInformationTestCase(SeleniumTestCase):
             input_field = self.get_address_input_field(get_address_form(), input_field_label)
             self.assertTrue(input_field.get_attribute('value') == address_fields[input_field_label])
 
-    def navigate_to_user_preferences(self):
-        self.home()
-        self.click_masthead_user()
-        self.components.masthead.preferences.wait_for_and_click()
-
     def navigate_to_manage_information(self):
         self.navigate_to_user_preferences()
         self.components.preferences.manage_information.wait_for_and_click()

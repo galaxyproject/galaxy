@@ -1,6 +1,12 @@
 <?xml version="1.0"?>
 <toolbox tool_path="${tool_conf_dir}" is_shed_conf="false">
   <tool file="upload.xml"/>
+  <section id="test" name="Test Section">
+    <tool file="multi_data_optional.xml" />
+    <tool file="paths_as_file.xml" />
+    <tool file="param_text_option.xml" />
+    <tool file="column_param.xml" />
+  </section>
   <tool file="test_data_source.xml"/>
   <tool file="simple_constructs.xml" />
   <tool file="color_param.xml" />
