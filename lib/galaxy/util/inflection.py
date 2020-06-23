@@ -102,7 +102,7 @@ class Inflector(object):
         lower_cased_word = word.lower()
         # Check if word is an item or the suffix of any item in NONCHANGING_WORDS
         for nonchanging_word in self.NONCHANGING_WORDS:
-            if lower_cased_word.endswith(uncountable_word):
+            if lower_cased_word.endswith(nonchanging_word):
                 return word
 
     def _handle_irregular(self, word, pluralize=True):
