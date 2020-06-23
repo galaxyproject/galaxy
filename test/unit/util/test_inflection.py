@@ -1,4 +1,5 @@
 import pytest
+
 from galaxy.util.inflection import Inflector
 
 
