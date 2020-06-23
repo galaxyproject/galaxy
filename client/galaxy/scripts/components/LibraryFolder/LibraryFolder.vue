@@ -17,7 +17,7 @@
                     @row-selected="onRowSelected"
                     ref="folder_content_table"
             >
-                <template  v-slot:head(selected)="scope">
+                <template v-slot:head(selected)="scope">
                     <span class="select-all-symbl" @click="toggleSelect">&check;</span>
                 </template>
                 <template v-slot:cell(selected)="{ rowSelected }">
@@ -57,7 +57,16 @@
                                        title="Restricted dataset"
                                        icon="shield-alt"/>
                 </template>
+
                 <template v-slot:cell(buttons)="row">
+                                        <a v-if="row.item.can_manage && !row.item.deleted && row.item.type==='folder'"
+                       :href="createPermissionLink(row.item)">
+                        <button data-toggle="tooltip" data-placement="top"
+                                class="primary-button btn-sm permission_folder_btn"
+                                :title="'Permissions of ' + row.item.name">
+                            <span class="fa fa-pencil"></span> Edit
+                        </button>
+                    </a>
                     <a v-if="row.item.can_manage" :href="createPermissionLink(row.item)">
                         <button data-toggle="tooltip" data-placement="top"
                                 class="primary-button btn-sm permission_folder_btn"
@@ -208,6 +217,7 @@
                         key: "buttons",
                         sortable: false,
                     },
+
                 ],
                 selectMode: 'multi',
                 selected: [],
@@ -285,6 +295,7 @@
     .empty-folder-text {
         text-align: center;
     }
+
     .select-all-symbl {
         cursor: pointer;
     }
