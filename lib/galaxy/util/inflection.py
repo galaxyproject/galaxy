@@ -99,8 +99,11 @@ class Inflector(object):
         return self._handle_nonchanging(word) or self._handle_irregular(word, pluralize=pluralize) or self._apply_rule(rules, word) or word
 
     def _handle_nonchanging(self, word):
-        if word.lower() in self.NONCHANGING_WORDS:
-            return word
+        lower_cased_word = word.lower()
+        # Check if word is an item or the suffix of any item in NONCHANGING_WORDS
+        for nonchanging_word in self.NONCHANGING_WORDS:
+            if lower_cased_word[-len(nonchanging_word):] == nonchanging_word:
+                return word
 
     def _handle_irregular(self, word, pluralize=True):
         for form_a, form_b in self.IRREGULAR_WORDS.items():
