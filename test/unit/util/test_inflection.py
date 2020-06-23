@@ -1,5 +1,5 @@
 import pytest
-from galaxy.util.inflection import Inflector, English
+from galaxy.util.inflection import Inflector
 
 
 SINGULAR_TO_PLURAL = {
@@ -75,7 +75,7 @@ SINGULAR_TO_PLURAL = {
 
 @pytest.fixture
 def inflector():
-    return Inflector(English)
+    return Inflector()
 
 
 @pytest.mark.parametrize('test_data', SINGULAR_TO_PLURAL.items())

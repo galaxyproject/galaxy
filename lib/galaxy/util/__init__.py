@@ -68,10 +68,10 @@ except ImportError:
     uwsgi = None
 
 from .custom_logging import get_logger
-from .inflection import English, Inflector
+from .inflection import Inflector
 from .path import safe_contains, safe_makedirs, safe_relpath  # noqa: F401
 
-inflector = Inflector(English)
+inflector = Inflector()
 
 log = get_logger(__name__)
 _lock = threading.RLock()
