@@ -4,6 +4,8 @@
 #
 # bermi a-t bermilabs - com
 # See the end of this file for the free software, open source license (BSD-style).
+#
+# Modified by Galaxy team.
 
 import re
 
@@ -138,114 +140,103 @@ class English(Base):
 
     This is the default Inflector for the Inflector obj
     """
-    uncountable_words = ('equipment', 'information', 'rice', 'money', 'species', 'series', 'fish', 'sheep', 'sms')
+    # This is a small subset of words that either have the same singular and plural form, or have no singular form
+    NONCHANGING_WORDS = {
+        'equipment',
+        'information',
+        'rice',
+        'money',
+        'species',
+        'series',
+        'sheep',
+        'sms',
+    }
 
-    irregular_words = {
+    IRREGULAR_WORDS = {
         'person': 'people',
         'man': 'men',
         'child': 'children',
         'sex': 'sexes',
-        'move': 'moves'
+        'move': 'moves',
+        'octopus': 'octopi',
     }
+
+    PLURALIZE_RULES = (
+        ('(?i)(quiz)$', '\\1zes'),
+        ('(?i)^(ox)$', '\\1en'),
+        ('(?i)([m|l])ouse$', '\\1ice'),
+        ('(?i)(matr|vert|ind)ix|ex$', '\\1ices'),
+        ('(?i)(x|ch|ss|sh)$', '\\1es'),
+        ('(?i)([^aeiouy]|qu)ies$', '\\1y'),
+        ('(?i)([^aeiouy]|qu)y$', '\\1ies'),
+        ('(?i)(hive)$', '\\1s'),
+        ('(?i)(?:([^f])fe|([lr])f)$', '\\1\\2ves'),
+        ('(?i)sis$', 'ses'),
+        ('(?i)([ti])um$', '\\1a'),
+        ('(?i)(buffal|tomat)o$', '\\1oes'),
+        ('(?i)(bu)s$', '\\1ses'),
+        ('(?i)(alias|status|virus)', '\\1es'),
+        ('(?i)(ax|test)is$', '\\1es'),
+        ('(?i)s$', 's'),
+        ('(?i)$', 's')
+    )
+
+    SINGULARIZE_RULES = (
+        ('(?i)(quiz)zes$', '\\1'),
+        ('(?i)(matr)ices$', '\\1ix'),
+        ('(?i)(vert|ind)ices$', '\\1ex'),
+        ('(?i)^(ox)en', '\\1'),
+        ('(?i)(alias|status|virus)es$', '\\1'),
+        ('(?i)(cris|ax|test)es$', '\\1is'),
+        ('(?i)(shoe)s$', '\\1'),
+        ('(?i)(o)es$', '\\1'),
+        ('(?i)(bus)es$', '\\1'),
+        ('(?i)([m|l])ice$', '\\1ouse'),
+        ('(?i)(x|ch|ss|sh)es$', '\\1'),
+        ('(?i)(m)ovies$', '\\1ovie'),
+        ('(?i)(s)eries$', '\\1eries'),
+        ('(?i)([^aeiouy]|qu)ies$', '\\1y'),
+        ('(?i)([lr])ves$', '\\1f'),
+        ('(?i)(tive)s$', '\\1'),
+        ('(?i)(hive)s$', '\\1'),
+        ('(?i)([^f])ves$', '\\1fe'),
+        ('(?i)(^analy)ses$', '\\1sis'),
+        ('(?i)((a)naly|(b)a|(d)iagno|(p)arenthe|(p)rogno|(s)ynop|(t)he)ses$', '\\1\\2sis'),
+        ('(?i)([ti])a$', '\\1um'),
+        ('(?i)(n)ews$', '\\1ews'),
+        ('(?i)s$', ''),
+    )
 
     def pluralize(self, word):
         '''Pluralizes English nouns.'''
-
-        rules = [
-            ['(?i)(quiz)$', '\\1zes'],
-            ['(?i)^(ox)$', '\\1en'],
-            ['(?i)([m|l])ouse$', '\\1ice'],
-            ['(?i)(matr|vert|ind)ix|ex$', '\\1ices'],
-            ['(?i)(x|ch|ss|sh)$', '\\1es'],
-            ['(?i)([^aeiouy]|qu)ies$', '\\1y'],
-            ['(?i)([^aeiouy]|qu)y$', '\\1ies'],
-            ['(?i)(hive)$', '\\1s'],
-            ['(?i)(?:([^f])fe|([lr])f)$', '\\1\\2ves'],
-            ['(?i)sis$', 'ses'],
-            ['(?i)([ti])um$', '\\1a'],
-            ['(?i)(buffal|tomat)o$', '\\1oes'],
-            ['(?i)(bu)s$', '\\1ses'],
-            ['(?i)(alias|status)', '\\1es'],
-            ['(?i)(octop|vir)us$', '\\1i'],
-            ['(?i)(ax|test)is$', '\\1es'],
-            ['(?i)s$', 's'],
-            ['(?i)$', 's']
-        ]
-
-        lower_cased_word = word.lower()
-
-        for uncountable_word in self.uncountable_words:
-            if lower_cased_word[-1 * len(uncountable_word):] == uncountable_word:
-                return word
-
-        for irregular_singular, irregular_plural in self.irregular_words.items():
-            match = re.search('(' + irregular_singular + ')$', word, re.IGNORECASE)
-            if match:
-                return re.sub('(?i)' + irregular_singular + '$', match.expand('\\1')[0] + irregular_plural[1:], word)
-
-        for rule in rules:
-            match = re.search(rule[0], word, re.IGNORECASE)
-            if match:
-                groups = match.groups()
-                for k, group in enumerate(groups):
-                    if group is None:
-                        rule[1] = rule[1].replace('\\' + str(k + 1), '')
-
-                return re.sub(rule[0], rule[1], word)
-
-        return word
+        return self._handle_nonchanging(word) or \
+            self._handle_irregular(word) or \
+            self._apply_rule(self.PLURALIZE_RULES, word) or \
+            word
 
     def singularize(self, word):
         '''Singularizes English nouns.'''
+        return self._handle_nonchanging(word) or \
+            self._handle_irregular(word, pluralize=False) or \
+            self._apply_rule(self.SINGULARIZE_RULES, word) or \
+            word
 
-        rules = [
-            ['(?i)(quiz)zes$', '\\1'],
-            ['(?i)(matr)ices$', '\\1ix'],
-            ['(?i)(vert|ind)ices$', '\\1ex'],
-            ['(?i)^(ox)en', '\\1'],
-            ['(?i)(alias|status)es$', '\\1'],
-            ['(?i)([octop|vir])i$', '\\1us'],
-            ['(?i)(cris|ax|test)es$', '\\1is'],
-            ['(?i)(shoe)s$', '\\1'],
-            ['(?i)(o)es$', '\\1'],
-            ['(?i)(bus)es$', '\\1'],
-            ['(?i)([m|l])ice$', '\\1ouse'],
-            ['(?i)(x|ch|ss|sh)es$', '\\1'],
-            ['(?i)(m)ovies$', '\\1ovie'],
-            ['(?i)(s)eries$', '\\1eries'],
-            ['(?i)([^aeiouy]|qu)ies$', '\\1y'],
-            ['(?i)([lr])ves$', '\\1f'],
-            ['(?i)(tive)s$', '\\1'],
-            ['(?i)(hive)s$', '\\1'],
-            ['(?i)([^f])ves$', '\\1fe'],
-            ['(?i)(^analy)ses$', '\\1sis'],
-            ['(?i)((a)naly|(b)a|(d)iagno|(p)arenthe|(p)rogno|(s)ynop|(t)he)ses$', '\\1\\2sis'],
-            ['(?i)([ti])a$', '\\1um'],
-            ['(?i)(n)ews$', '\\1ews'],
-            ['(?i)s$', ''],
-        ]
+    def _handle_nonchanging(self, word):
+        if word.lower() in self.NONCHANGING_WORDS:
+            return word
 
-        lower_cased_word = word.lower()
-        for uncountable_word in self.uncountable_words:
-            if lower_cased_word[-1 * len(uncountable_word):] == uncountable_word:
-                return word
-
-        for irregular_singular, irregular_plural in self.irregular_words.items():
-            match = re.search('(' + irregular_plural + ')$', word, re.IGNORECASE)
+    def _handle_irregular(self, word, pluralize=True):
+        for form_a, form_b in self.IRREGULAR_WORDS.items():
+            if not pluralize:
+                form_a, form_b = form_b, form_a
+            match = re.search('(' + form_a + ')$', word, re.IGNORECASE)
             if match:
-                return re.sub('(?i)' + irregular_plural + '$', match.expand('\\1')[0] + irregular_singular[1:], word)
+                return re.sub('(?i)' + form_a + '$', match.expand('\\1')[0] + form_b[1:], word)
 
-        for rule in rules:
-            match = re.search(rule[0], word, re.IGNORECASE)
-            if match:
-                groups = match.groups()
-                for k, group in enumerate(groups):
-                    if group is None:
-                        rule[1] = rule[1].replace('\\' + str(k + 1), '')
-
-                return re.sub(rule[0], rule[1], word)
-
-        return word
+    def _apply_rule(self, rules, word):
+        for pattern, replacement in rules:
+            if re.search(pattern, word):
+                return re.sub(pattern, replacement, word)
 
 
 class Inflector(object):
