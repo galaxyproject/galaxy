@@ -113,7 +113,7 @@ class Inflector(object):
             if match:
                 return re.sub('(?i)' + form_a + '$', match.expand('\\1')[0] + form_b[1:], word)
 
-    def _apply_rule(self, rules, word):
+    def _apply_rules(self, rules, word):
         for pattern, replacement in rules:
             if re.search(pattern, word):
                 return re.sub(pattern, replacement, word)
