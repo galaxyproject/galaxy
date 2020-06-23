@@ -88,4 +88,4 @@ gxformat2 = "*"
 refgenconf = ">=0.7.0"
 
 [requires]
-python_version = "2.7"
+python_version = "3.5"
