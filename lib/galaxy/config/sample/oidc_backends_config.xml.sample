@@ -96,7 +96,26 @@ Please mind `http` and `https`.
         <!-- (Optional) Override the default Custos well-known URL to point to a different instance -->
         <!-- <well_known_oidc_config_uri>https://.../.well-known/openid-configuration</well_known_oidc_config_uri> -->
         <!-- (Optional) Restrict the list of options available for login using CILogon or Custos by including the EntityID for each institution
-             in a separate <allowed_idp> tag. Find the EntityID(s) for your desired institution(s) at https://cilogon.org/idplist/ -->
+             in a separate <allowed_idp> tag. Find the EntityID(s) for your desired institution(s) at https://cilogon.org/idplist/ 
+             Note: the <allowed_idp>'s for Custos should match those for CILogon if both are enabled.-->
+        <!-- <allowed_idp>https://github.com/login/oauth/authorize</allowed_idp> -->
+        <!-- (Optional) Enable logging out of the IDP when user logs out of Galaxy -->
+        <!-- <enable_idp_logout>false</enable_idp_logout> -->
+    </provider>
+
+    <provider name="CILogon">
+        <url>https://cilogon.org/authorize</url>
+        <client_id> ... </client_id>
+        <client_secret> ... </client_secret>
+        <redirect_uri>http://localhost:8080/authnz/cilogon/callback</redirect_uri>
+        <!-- (Optional) Trusted CA certificate file or directory to use when verify Custos authorization server.
+             See http://docs.python-requests.org/en/master/user/advanced/#ssl-cert-verification for more information. -->
+        <!-- <ca_bundle>/path/to/ca_bundle</ca_bundle> -->
+        <!-- (Optional) Override the default Custos well-known URL to point to a different instance -->
+        <!-- <well_known_oidc_config_uri>https://.../.well-known/openid-configuration</well_known_oidc_config_uri> -->
+        <!-- (Optional) Restrict the list of options available for login using CILogon or Custos by including the EntityID for each institution
+             in a separate <allowed_idp> tag. Find the EntityID(s) for your desired institution(s) at https://cilogon.org/idplist/ 
+             Note: the <allowed_idp>'s for CILogon should match those for Custos if both are enabled.-->
         <!-- <allowed_idp>https://github.com/login/oauth/authorize</allowed_idp> -->
         <!-- (Optional) Enable logging out of the IDP when user logs out of Galaxy -->
         <!-- <enable_idp_logout>false</enable_idp_logout> -->
