@@ -521,7 +521,7 @@ class ToolsUploadTestCase(ApiTestCase):
         terminal_validated_state = self.dataset_populator.validate_dataset_and_wait(history_id, dataset_id)
         assert terminal_validated_state == 'ok', terminal_validated_state
 
-    def test_upload_of_randomly_generated_file(self):
+    def test_upload_download_delete_of_randomly_generated_file(self):
         # There is a random delay between the steps below
         # 1) Create a temporary file of random bytes, of size 10 to 30 MB
         # 2) Upload the file to Galaxy
