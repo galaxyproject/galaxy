@@ -588,7 +588,8 @@ class ToolsUploadTestCase(ApiTestCase):
         # Delete file
         os.remove(file_name)
 
-        # TODO Must also purge history
+        # Delete the history
+        self._delete("histories/%s" % history_id)
 
     def _velvet_upload(self, history_id, extra_inputs):
         payload = self.dataset_populator.upload_payload(
