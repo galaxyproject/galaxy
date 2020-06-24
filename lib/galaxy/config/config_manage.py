@@ -167,7 +167,7 @@ UWSGI_OPTIONS = OrderedDict([
         'type': 'bool',
     }),
     ('umask', {
-        'desc': """uWSGI default umask. On some systems uWSGI has a default umask of 000, for Galaxy a somewhat safer default is chosen. If Galaxy submits jobs as real user then all users needs to be able to read the files, i.e. the the umask needs to be '022' or the Galaxy users need to be in the same group as the Galaxy system user""",
+        'desc': """uWSGI default umask. On some systems uWSGI has a default umask of 000, for Galaxy a somewhat safer default is chosen. If Galaxy submits jobs as real user then all users needs to be able to read the files, i.e. the umask needs to be '022' or the Galaxy users need to be in the same group as the Galaxy system user""",
         'default': '027',
         'type': 'str',
     }),
