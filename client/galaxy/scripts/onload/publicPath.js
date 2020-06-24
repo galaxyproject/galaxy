@@ -9,4 +9,4 @@
 
 import { getRootFromIndexLink } from "./getRootFromIndexLink";
 
-__webpack_public_path__ = `${getRootFromIndexLink().replace(/\/+$/, "")}/static/dist/`;
+__webpack_public_path__ = `${getRootFromIndexLink().replace(/\/+$/, "")}/static/scripts/bundled/`;
