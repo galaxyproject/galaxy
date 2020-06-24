@@ -10,6 +10,7 @@ from galaxy_test.base.populators import (
     DatasetPopulator,
     skip_if_site_down,
     skip_without_datatype,
+    stage_inputs,
     uses_test_history,
 )
 from ._framework import ApiTestCase
@@ -209,6 +210,24 @@ class ToolsUploadTestCase(ApiTestCase):
             assert roadmaps_content.strip() == "roadmaps content", roadmaps_content
 
     @skip_without_datatype("velvet")
+    @uses_test_history(require_new=False)
+    def test_composite_datatype_stage(self, history_id):
+        job = {
+            "input1": {
+                "class": "File",
+                "format": "velvet",
+                "composite_data": [
+                    "test-data/simple_line.txt",
+                    "test-data/simple_line_alternative.txt",
+                    "test-data/simple_line_x2.txt",
+                ]
+            }
+        }
+        print(history_id)
+        inputs, datsets = stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False)
+
+    @skip_without_datatype("velvet")
+    @uses_test_history(require_new=False)
     def test_composite_datatype_space_to_tab(self):
         # Like previous test but set one upload with space_to_tab to True to
         # verify that works.
