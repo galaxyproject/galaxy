@@ -138,13 +138,16 @@ class OIDC(JSAppLauncher):
         except Exception as e:
             raise Exception("Invalid server response. %s." % str(e))
 
-        validated_idps = list(filter(lambda idp: idp['EntityID'] in allowed_idps, cilogon_idps))
+        if (allowed_idps):
+            validated_idps = list(filter(lambda idp: idp['EntityID'] in allowed_idps, cilogon_idps))
 
-        if not (len(validated_idps) == len(allowed_idps)):
-            validated_entity_ids = [entity['EntityID'] for entity in validated_idps]
+            if not (len(validated_idps) == len(allowed_idps)):
+                validated_entity_ids = [entity['EntityID'] for entity in validated_idps]
 
-            for idp in allowed_idps:
-                if (idp not in validated_entity_ids):
-                    log.debug("Invalid EntityID entered: %s. Use https://cilogon.org/idplist/ to find desired institution's EntityID.", idp)
+                for idp in allowed_idps:
+                    if (idp not in validated_entity_ids):
+                        log.debug("Invalid EntityID entered: %s. Use https://cilogon.org/idplist/ to find desired institution's EntityID.", idp)
 
-        return validated_idps
+            return validated_idps
+        else:
+            return cilogon_idps

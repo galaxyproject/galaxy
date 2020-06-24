@@ -280,7 +280,7 @@ class AuthnzManager:
             if success is False:
                 return False, message, None
             elif provider in KEYCLOAK_BACKENDS:
-                if (self.allowed_idps and not self.allowed_idps.includes(idphint)):
+                if (self.allowed_idps and (idphint not in self.allowed_idps)):
                     msg = 'An error occurred when authenticating a user. Invalid EntityID: `{}`'.format(idphint)
                     log.exception(msg)
                     return False, msg, None
