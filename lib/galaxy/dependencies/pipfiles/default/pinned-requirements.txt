@@ -124,7 +124,7 @@ pbr==5.4.5
 prettytable==0.7.2
 prov==1.5.1
 psutil==5.7.0
-pulsar-galaxy-lib==0.14.0.dev3
+pulsar-galaxy-lib==0.14.0.dev4
 pyasn1-modules==0.2.8
 pyasn1==0.4.8
 pycparser==2.20
