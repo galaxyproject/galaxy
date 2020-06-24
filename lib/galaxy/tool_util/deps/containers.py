@@ -204,7 +204,7 @@ class ContainerRegistry(object):
             log.debug("Unable to find config file '%s'", conf_file)
             return self.__default_containers_resolvers()
         plugin_source = plugin_config.plugin_source_from_path(conf_file)
-        return self.__parse_resolver_conf(plugin_source)
+        return self._parse_resolver_conf(plugin_source)
 
     def __parse_resolver_conf(self, plugin_source):
         extra_kwds = {
