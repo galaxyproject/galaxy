@@ -206,7 +206,7 @@ class ContainerRegistry(object):
         plugin_source = plugin_config.plugin_source_from_path(conf_file)
         return self._parse_resolver_conf(plugin_source)
 
-    def __parse_resolver_conf(self, plugin_source):
+    def _parse_resolver_conf(self, plugin_source):
         extra_kwds = {
             'app_info': self.app_info
         }
