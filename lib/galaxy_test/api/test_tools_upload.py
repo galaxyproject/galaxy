@@ -522,21 +522,23 @@ class ToolsUploadTestCase(ApiTestCase):
         assert terminal_validated_state == 'ok', terminal_validated_state
 
     def test_upload_of_randomly_generated_file(self):
-        # There is a random delay (1 to 3 seconds) between the steps below
+        # There is a random delay between the steps below
         # 1) Create a temporary file of random bytes, of size 10 to 30 MB
         # 2) Upload the file to Galaxy
         # 3) Download the file from Galaxy
         # 4) Delete the file on Galaxy (and locally)
 
+        min_file_size_in_mb = 10
+        max_file_size_in_mb = 30
+        min_delay_between_steps = 1
+        max_delay_between_steps = 3
+
         # Step 1
         # File name
         file_name = tempfile.NamedTemporaryFile().name
-        print('Random file name: ', file_name)
 
         # File size
-        # file_size = random.randint(10, 30) * 1024 * 1024
-        file_size = random.randint(10, 30) * 1024
-        print('Random file size: ', file_size)
+        file_size = random.randint(min_file_size_in_mb, max_file_size_in_mb) * 1024 * 1024
 
         # File contents. Random byte array
         file_content = os.urandom(file_size)
@@ -546,49 +548,40 @@ class ToolsUploadTestCase(ApiTestCase):
             fw.write(file_content)
 
         # Random sleep
-        time.sleep(random.randint(1, 3))
+        time.sleep(random.randint(min_delay_between_steps, max_delay_between_steps))
 
         # Step 2
         # Read the file content. Need the handle to pas to _upload_and_get_details()
         with open(file_name, "rb") as fr:
             details = self._upload_and_get_details(fr, file_type="auto")
-            print('details: ', details)
+        assert details["state"] == "ok"
 
-        # Extract dataset ID and history ID
-        dataset_id = details["dataset_id"]
+        # Extract history ID and content ID
         history_id = details["history_id"]
         id = details["id"]
 
-        print('dataset_id: ', dataset_id)
-        print('history_id: ', history_id)
-        print('id: ', id)
-
         # Random sleep
-        time.sleep(random.randint(1, 3))
+        time.sleep(random.randint(min_delay_between_steps, max_delay_between_steps))
 
         # Step 3
         # Use dataset ID and history ID to get the file
         suffix = "/" + id + "/display"
-        print('suffix1: ', suffix)
         response = self.dataset_populator._get_contents_request(history_id, suffix, {})
-        print('response.text: ', response.text)
-
         assert response.status_code == 200, response.text
+
         content = response.content
         content_len = len(content)
-        print('Fetched file size: ', content_len)
         assert content_len == file_size
 
         # Random sleep
-        time.sleep(random.randint(1, 3))
+        time.sleep(random.randint(min_delay_between_steps, max_delay_between_steps))
 
-        # Step 4
+        # Step 4 (Cleanup)
         # Delete file on Galaxy
         self.dataset_populator.delete_dataset(history_id, id)
-        # Delete file
+        # Delete file locally
         os.remove(file_name)
-
-        # Delete the history
+        # Delete Galaxy history
         self._delete("histories/%s" % history_id)
 
     def _velvet_upload(self, history_id, extra_inputs):
