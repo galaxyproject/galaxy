@@ -16,9 +16,11 @@ import webob.compat
 import webob.exc
 import webob.exc as httpexceptions  # noqa: F401
 # We will use some very basic HTTP/wsgi utilities from the paste library
-from paste.request import get_cookies
 from paste.response import HeaderDict
-from six.moves.http_cookies import SimpleCookie
+from six.moves.http_cookies import (
+    CookieError,
+    SimpleCookie
+)
 
 from galaxy.util import smart_str
 
