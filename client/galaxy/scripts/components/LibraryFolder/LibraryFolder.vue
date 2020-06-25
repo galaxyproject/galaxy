@@ -59,7 +59,7 @@
                 </template>
 
                 <template v-slot:cell(buttons)="row">
-                                        <a v-if="row.item.can_manage && !row.item.deleted && row.item.type==='folder'"
+                    <a v-if="row.item.can_manage && !row.item.deleted && row.item.type==='folder'"
                        :href="createPermissionLink(row.item)">
                         <button data-toggle="tooltip" data-placement="top"
                                 class="primary-button btn-sm permission_folder_btn"
@@ -284,20 +284,6 @@
 </script>
 
 <style scoped>
-    .pagination-input-field {
-        max-width: 60px
-    }
-
-    .pagination-total-pages-text {
-        margin-left: .25rem;
-    }
-
-    .empty-folder-text {
-        text-align: center;
-    }
-
-    .select-all-symbl {
-        cursor: pointer;
-    }
+    @import "library-folder-table.css";
 </style>
 

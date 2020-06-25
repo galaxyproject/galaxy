@@ -1,0 +1,15 @@
+.pagination-input-field {
+    max-width: 60px
+}
+
+.pagination-total-pages-text {
+    margin-left: .25rem;
+}
+
+.empty-folder-text {
+    text-align: center;
+}
+
+.select-all-symbl {
+    cursor: pointer;
+}
