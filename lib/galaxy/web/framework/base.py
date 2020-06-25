@@ -388,7 +388,7 @@ class Request(webob.Request):
 
     @lazy_property
     def cookies(self):
-        return get_cookies(self.environ)
+        return get_cookies({"HTTP_COOKIE": "; ".join([x.strip() for x in self.environ.get("HTTP_COOKIE").split('; ') if x.startswith('galaxy')])})
 
     @lazy_property
     def base(self):
