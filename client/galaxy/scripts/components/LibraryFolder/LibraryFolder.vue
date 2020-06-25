@@ -35,12 +35,10 @@
                 <template v-slot:cell(message)="row">
                     <div class="description-field" v-if="getMessage(row.item)">
                         <div v-if="getMessage(row.item).length > 40 && !expandedMessage.includes(row.item.id)">
-                            <span :title="getMessage(row.item)">{{ getMessage(row.item).substring(0,40) }}.. </span> <a
+                            <span :title="getMessage(row.item)" v-html="linkify(getMessage(row.item).substring(0,40))">.. </span> <a
                                 class="more-text-btn" @click="expandMessage(row.item)" href="javascript:void(0)">(more)</a>
                         </div>
-                        <div v-else>
-                            {{ getMessage(row.item) }}
-                        </div>
+                        <div v-else v-html="linkify(getMessage(row.item))" ></div>
                     </div>
                 </template>
                 <template v-slot:cell(type_icon)="row">
@@ -148,6 +146,7 @@
     import BootstrapVue from "bootstrap-vue";
     import {Services} from "./services";
     import Utils from "utils/utils";
+    import linkify from "linkifyjs/html";
 
     library.add(faFile);
     library.add(faFolder);
@@ -298,6 +297,9 @@
             },
             expandMessage(element) {
                 this.expandedMessage.push(element.id)
+            },
+            linkify(raw_text) {
+                return linkify(raw_text)
             }
         }
 
