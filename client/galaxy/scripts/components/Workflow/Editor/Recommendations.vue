@@ -20,7 +20,7 @@
 <script>
 import { getToolPredictions } from "./modules/services";
 import LoadingSpan from "components/LoadingSpan";
-import { toSimple } from "module/model";
+import { toSimple } from "./modules/model";
 import _l from "utils/localization";
 
 export default {
@@ -29,6 +29,10 @@ export default {
     },
     props: {
         getNode: {
+            type: Function,
+            required: true,
+        },
+        getManager: {
             type: Function,
             required: true,
         },
@@ -105,7 +109,8 @@ export default {
         },
         loadRecommendations() {
             const node = this.getNode();
-            const workflowSimple = toSimple();
+            const workflow = this.getManager();
+            const workflowSimple = toSimple(workflow);
             const toolSequence = this.getWorkflowPath(workflowSimple, node.id);
             const requestData = { tool_sequence: toolSequence };
             getToolPredictions(requestData).then((responsePred) => {

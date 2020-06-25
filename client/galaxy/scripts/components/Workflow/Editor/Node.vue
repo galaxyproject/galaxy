@@ -23,7 +23,12 @@
                 <i class="fa fa-arrow-right" />
             </b-button>
             <b-popover :target="popoverId" triggers="hover" placement="bottom" :show.sync="popoverShow">
-                <Recommendations :get-node="getNode" :datatypes-mapping="datatypesMapping" @onCreate="onCreate" />
+                <Recommendations
+                    :get-node="getNode"
+                    :get-manager="getManager"
+                    :datatypes-mapping="datatypesMapping"
+                    @onCreate="onCreate"
+                />
             </b-popover>
             <b-button
                 v-if="canClone"
