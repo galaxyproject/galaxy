@@ -3,6 +3,13 @@ import Terminals from "./terminals";
 import Connector from "./connector";
 import { ariaSelectOutputNode } from "./aria";
 
+export function attachDragging(el, callbacks) {
+    const $el = $(el);
+    Object.entries(callbacks).forEach(([k, v]) => {
+        $el.bind(k, v);
+    });
+}
+
 export class InputDragging {
     constructor(app, options = {}) {
         this.app = app;
@@ -57,7 +64,7 @@ export class InputDragging {
         d.proxy.dropTooltip = "";
         if (this.$el.hasClass("can-accept")) {
             const terminal = this.terminal;
-            const c = new Connector(this.app.canvas_manager, d.drag.terminal, terminal);
+            const c = new Connector(this.app.canvasManager, d.drag.terminal, terminal);
             c.redraw();
         }
     }
@@ -90,14 +97,14 @@ export class OutputDragging {
     }
     onDrag(e, d = {}) {
         var onmove = () => {
-            var canvasZoom = this.app.canvas_manager.canvasZoom;
+            var canvasZoom = this.app.canvasManager.canvasZoom;
             var po = $(d.proxy).offsetParent().offset();
 
             var x = d.offsetX - po.left;
             var y = d.offsetY - po.top;
             $(d.proxy).css({ left: x / canvasZoom, top: y / canvasZoom });
             d.proxy.terminal.redraw();
-            this.app.canvas_manager.update_viewport_overlay();
+            this.app.canvasManager.updateViewportOverlay();
         };
         onmove();
         $("#canvas-container").get(0).scroll_panel.test(e, onmove);
@@ -114,7 +121,7 @@ export class OutputDragging {
             },
         });
         h.terminal = new Terminals.Terminal({ element: h, node: {} });
-        const c = new Connector(this.app.canvas_manager);
+        const c = new Connector(this.app.canvasManager);
         c.dragging = true;
         c.connect(this.terminal, h.terminal);
         return h;

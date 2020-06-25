@@ -8,7 +8,7 @@
                 aria-label="destroy node"
                 v-b-tooltip.hover
                 title="Remove"
-                @click="onDestroy"
+                @click="onRemove"
             >
                 <i class="fa fa-times" />
             </b-button>
@@ -23,7 +23,7 @@
                 <i class="fa fa-arrow-right" />
             </b-button>
             <b-popover :target="popoverId" triggers="hover" placement="bottom" :show.sync="popoverShow">
-                <WorkflowRecommendations :node="node" @onCreate="onCreate" />
+                <Recommendations :node="node" @onCreate="onCreate" />
             </b-popover>
             <b-button
                 v-if="canClone"
@@ -51,6 +51,7 @@
                 :input="input"
                 :get-node="getNode"
                 :get-manager="getManager"
+                :datatypes-mapping="datatypesMapping"
                 @onAdd="onAddInput"
                 @onChange="onChange"
             />
@@ -73,27 +74,26 @@
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import WorkflowIcons from "components/Workflow/icons";
-import { getModule } from "./modules/services";
 import LoadingSpan from "components/LoadingSpan";
 import { getGalaxyInstance } from "app";
-import WorkflowRecommendations from "components/Workflow/Editor/Recommendations";
+import Recommendations from "components/Workflow/Editor/Recommendations";
 import NodeInput from "./NodeInput";
 import NodeOutput from "./NodeOutput";
 import { ActiveOutputs } from "./modules/outputs";
-
+import { attachDragging } from "./modules/dragging";
 Vue.use(BootstrapVue);
 
 export default {
     components: {
         LoadingSpan,
-        WorkflowRecommendations,
+        Recommendations,
         NodeInput,
         NodeOutput,
     },
     props: {
         id: {
-            type: Number,
-            default: -1,
+            type: String,
+            default: "",
         },
         contentId: {
             type: String,
@@ -105,10 +105,22 @@ export default {
         },
         type: {
             type: String,
-            default: "tool",
+            default: null,
+        },
+        step: {
+            type: Object,
+            default: null,
         },
         getManager: {
             type: Function,
+            default: null,
+        },
+        getCanvasManager: {
+            type: Function,
+            default: null,
+        },
+        datatypesMapping: {
+            type: Object,
             default: null,
         },
     },
@@ -123,13 +135,64 @@ export default {
             errors: null,
             label: null,
             config_form: {},
+            showLoading: true,
         };
     },
     mounted() {
-        this.manager = this.getManager();
+        this.canvasManager = this.getCanvasManager();
         this.activeOutputs = new ActiveOutputs();
         this.element = this.$el;
         this.content_id = this.contentId;
+
+        // Set initial scroll position
+        const step = this.step;
+        const el = this.$el;
+        if (step.position) {
+            el.style.top = step.position.top + "px";
+            el.style.left = step.position.left + "px";
+        } else {
+            const p = document.getElementById("canvas-viewport");
+            const o = document.getElementById("canvas-container");
+            if (p && o) {
+                const left = -o.offsetLeft + (p.offsetWidth - el.offsetWidth) / 2;
+                const top = -o.offsetTop + (p.offsetHeight - el.offsetHeight) / 2;
+                el.style.top = `${top}px`;
+                el.style.left = `${left}px`;
+            }
+        }
+
+        // Attach node dragging events
+        attachDragging(this.$el, {
+            dragstart: () => {
+                this.$emit("onActivate", this);
+            },
+            dragend: () => {
+                this.$emit("onChange");
+                this.canvasManager.drawOverview();
+            },
+            drag: (e, d) => {
+                const o = document.getElementById("canvas-container");
+                const el = this.$el;
+                const rect = o.getBoundingClientRect();
+                const left = (d.offsetX - rect.left) / this.canvasManager.canvasZoom;
+                const top = (d.offsetY - rect.top) / this.canvasManager.canvasZoom;
+                el.style.left = `${left}px`;
+                el.style.top = `${top}px`;
+                this.onRedraw();
+            },
+            dragclickonly: () => {
+                this.$emit("onActivate", this);
+            },
+        });
+
+        // initialize node data
+        this.$emit("onAdd", this);
+        if (this.step._complete) {
+            this.initData(this.step);
+            this.updateData(this.step);
+        } else {
+            this.$emit("onUpdate", this);
+        }
     },
     computed: {
         title() {
@@ -138,17 +201,8 @@ export default {
         idString() {
             return `wf-node-step-${this.id}`;
         },
-        hasInputs() {
-            return Object.keys(this.inputs).length > 0;
-        },
-        hasOutputs() {
-            return Object.keys(this.outputs).length > 0;
-        },
         showRule() {
-            return this.hasInputs && this.hasOutputs;
-        },
-        showLoading() {
-            return !this.hasInputs && !this.hasOutputs;
+            return this.inputs.length > 0 && this.outputs.length > 0;
         },
         iconClass() {
             const iconType = WorkflowIcons[this.type];
@@ -169,7 +223,7 @@ export default {
     },
     methods: {
         onChange() {
-            this.manager.nodeChanged(this);
+            this.$emit("onChange");
         },
         onAddInput(input, terminal) {
             const existingTerminal = this.inputTerminals[input.name];
@@ -191,47 +245,23 @@ export default {
         },
         onToggleOutput(name) {
             this.activeOutputs.toggle(name);
-            this.manager.has_changes = true;
+            this.$emit("onChange");
         },
-        onCreate(toolId, event) {
-            const requestData = {
-                tool_id: toolId,
-                type: "tool",
-                _: "true",
-            };
-            getModule(requestData).then((response) => {
-                const node = this.manager.createNode("tool", response.name, toolId);
-                this.manager.setNode(node, response);
-                this.popoverShow = false;
-            });
+        onCreate(contentId) {
+            this.$emit.on("onCreate", contentId);
+            this.popoverShow = false;
         },
         onClone() {
-            const copiedData = {
-                name: this.name,
-                label: this.label,
-                annotation: this.annotation,
-                post_job_actions: this.postJobActions,
-            };
-            const node = this.manager.createNode(this.type, this.name, this.content_id);
-            const requestData = {
-                type: this.type,
-                tool_id: this.content_id,
-                tool_state: this.tool_state,
-            };
-            getModule(requestData).then((response) => {
-                const newData = Object.assign({}, response, copiedData);
-                this.manager.setNode(node, newData);
-            });
+            this.$emit("onClone", this);
         },
-        onDestroy() {
+        onRemove() {
             Object.values(this.inputTerminals).forEach((t) => {
                 t.destroy();
             });
             Object.values(this.outputTerminals).forEach((t) => {
                 t.destroy();
             });
-            this.manager.removeNode(this);
-            this.element.remove();
+            this.$emit("onRemove", this);
         },
         onRedraw() {
             Object.values(this.inputTerminals).forEach((t) => {
@@ -244,9 +274,20 @@ export default {
         getNode() {
             return this;
         },
+        setNode(data) {
+            data.workflow_outputs = data.outputs.map((o) => {
+                return {
+                    output_name: o.name,
+                    label: o.label,
+                };
+            });
+            this.initData(data);
+            Vue.nextTick(() => {
+                this.updateData(data);
+                this.$emit("onActivate", this);
+            });
+        },
         setData(data) {
-            this.type = data.type || this.type;
-            this.name = data.name;
             this.config_form = data.config_form;
             this.tool_state = data.tool_state;
             this.errors = data.errors;
@@ -258,12 +299,10 @@ export default {
         },
         initData(data) {
             this.setData(data);
-            this.inputs = data.inputs.slice();
-            this.outputs = data.outputs.slice();
+            this.inputs = data.inputs ? data.inputs.slice() : [];
+            this.outputs = data.outputs ? data.outputs.slice() : [];
             this.activeOutputs.initialize(this.outputs, data.workflow_outputs);
-            Vue.nextTick(() => {
-                this.manager.nodeChanged(this);
-            });
+            this.$emit("onChange");
         },
         updateData(data) {
             this.setData(data);
@@ -354,9 +393,12 @@ export default {
 
             // trigger legacy events
             Vue.nextTick(() => {
-                this.manager.nodeChanged(this);
                 this.onRedraw();
             });
+
+            // emit change completion event
+            this.showLoading = false;
+            this.$emit("onChange");
         },
         labelOutput(output, label) {
             return this.activeOutputs.labelOutput(output, label);
@@ -378,8 +420,8 @@ export default {
             } else {
                 delete this.postJobActions["ChangeDatatypeAction" + outputName];
             }
-            this.onChange();
             outputTerminal.destroyInvalidConnections();
+            this.$emit("onChange");
         },
         makeActive() {
             this.element.classList.add("node-active");
