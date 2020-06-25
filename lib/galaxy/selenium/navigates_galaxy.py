@@ -369,6 +369,10 @@ class NavigatesGalaxy(HasDriver):
     def get_logged_in_user(self):
         return self.api_get("users/current")
 
+    def get_api_key(self):
+        user = self.get_logged_in_user()
+        return self.api_get("users/%s/api_key/inputs" % user["id"])["inputs"][0]["value"]
+
     def is_logged_in(self):
         return "email" in self.get_logged_in_user()
 
@@ -844,6 +848,11 @@ class NavigatesGalaxy(HasDriver):
     def workflow_editor_click_save(self):
         self.wait_for_and_click_selector("#workflow-save-button")
         self.sleep_for(self.wait_types.DATABASE_OPERATION)
+
+    def navigate_to_user_preferences(self):
+        self.home()
+        self.click_masthead_user()
+        self.components.masthead.preferences.wait_for_and_click()
 
     def admin_open(self):
         self.components.masthead.admin.wait_for_and_click()
@@ -1461,6 +1470,27 @@ class NavigatesGalaxy(HasDriver):
         element = self.wait_for_clickable(selector_template)
         element.click()
         return element
+
+    def set_history_annotation(self, annotation, clear_text=False):
+        self.ensure_history_annotation_area_displayed()
+
+        self.wait_for_and_click(self.navigation.history_panel.selectors.annotation_editable_text)
+
+        annon_area_editable = self.wait_for_and_click(self.navigation.history_panel.selectors.annotation_edit)
+        anno_done_button = self.wait_for_clickable(self.navigation.history_panel.selectors.annotation_done)
+
+        if clear_text:
+            annon_area_editable.clear()
+
+        annon_area_editable.send_keys(annotation)
+        anno_done_button.click()
+
+    def ensure_history_annotation_area_displayed(self):
+        annotation_area_selector = self.navigation.history_panel.selectors.annotation_area
+        annotation_icon_selector = self.navigation.history_panel.selectors.annotation_icon
+
+        if not self.is_displayed(annotation_area_selector):
+            self.wait_for_and_click(annotation_icon_selector)
 
     def select2_set_value(self, container_selector_or_elem, value, with_click=True, clear_value=False):
         # There are two hacky was to select things from the select2 widget -

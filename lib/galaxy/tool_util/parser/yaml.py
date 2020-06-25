@@ -30,6 +30,10 @@ class YamlToolSource(ToolSource):
         self._source_path = source_path
         self._macro_paths = []
 
+    @property
+    def source_path(self):
+        return self._source_path
+
     def parse_id(self):
         return self.root_dict.get("id")
 

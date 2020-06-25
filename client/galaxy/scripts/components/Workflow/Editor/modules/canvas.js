@@ -84,13 +84,13 @@ class ScrollPanel {
 }
 
 class CanvasManager {
-    constructor(app, canvas_viewport, overview) {
+    constructor(app) {
         this.app = app;
-        this.cv = canvas_viewport;
+        this.cv = $("#canvas-viewport");
         this.cc = this.cv.find("#canvas-container");
-        this.overview = overview;
-        this.oc = overview.find("#overview-canvas");
-        this.ov = overview.find("#overview-viewport");
+        this.overview = $("#overview-container");
+        this.oc = this.overview.find("#overview-canvas");
+        this.ov = this.overview.find("#overview-viewport");
         // Initialize zooming
         this.zoomLevel = defaultZoomLevel;
         this.canvasZoom = zoomLevels[defaultZoomLevel];
@@ -110,6 +110,7 @@ class CanvasManager {
         this.cv.css("height", `${100 / this.canvasZoom}%`);
         // Update canvas size
         this._fitCanvasToNodes();
+        this.drawOverview();
         return this.zoomLevel;
     }
 
@@ -128,7 +129,7 @@ class CanvasManager {
                 "background-position-x": x,
                 "background-position-y": y,
             });
-            self.update_viewport_overlay();
+            self.updateViewportOverlay();
         };
         // Dragging within canvas background
         this.cc.each(function () {
@@ -150,7 +151,7 @@ class CanvasManager {
                 move((d.offsetX + x_adjust) / this.canvasZoom, (d.offsetY + y_adjust) / this.canvasZoom);
             })
             .bind("dragend", () => {
-                self.draw_overview();
+                self.drawOverview();
             });
         this.overview.click((e) => {
             if (self.overview.hasClass("blockaclick")) {
@@ -163,7 +164,7 @@ class CanvasManager {
                 var new_x_offset = e.pageX - self.oc.offset().left - self.ov.width() / 2;
                 var new_y_offset = e.pageY - self.oc.offset().top - self.ov.height() / 2;
                 move(-((new_x_offset / o_w) * in_w), -((new_y_offset / o_h) * in_h));
-                self.draw_overview();
+                self.drawOverview();
             }
         });
         // Dragging for overview pane
@@ -179,7 +180,7 @@ class CanvasManager {
             })
             .bind("dragend", () => {
                 self.overview.addClass("blockaclick");
-                self.draw_overview();
+                self.drawOverview();
             });
         // Dragging for overview border (resize)
         $(".workflow-overview").bind("drag", function (e, d) {
@@ -190,29 +191,45 @@ class CanvasManager {
                 width: new_size,
                 height: new_size,
             });
-            self.draw_overview();
+            self.drawOverview();
         });
         /*  Disable dragging for child element of the panel so that resizing can
                 only be done by dragging the borders */
         $(".workflow-overview div").bind("drag", () => {});
+
+        // Stores the size of the overview into local storage when it's resized
+        $(".workflow-overview").bind("dragend", function (e, d) {
+            const op = $(this).offsetParent();
+            const opo = op.offset();
+            const new_size = Math.max(op.width() - (d.offsetX - opo.left), op.height() - (d.offsetY - opo.top));
+            localStorage.setItem("overview-size", `${new_size}px`);
+        });
+
+        // On load, set the size to the pref stored in local storage if it exists
+        const overview_size = localStorage.getItem("overview-size");
+        if (overview_size !== undefined) {
+            $(".workflow-overview").css({
+                width: overview_size,
+                height: overview_size,
+            });
+        }
     }
     init_copy_paste() {
         document.addEventListener("copy", (e) => {
             // If it appears that the user is trying to copy/paste text, we
             // pass that through.
             if (window.getSelection().toString() === "") {
-                if (this.app.active_node && this.app.active_node.type !== "subworkflow") {
+                if (this.app.activeNode && this.app.activeNode.type !== "subworkflow") {
                     e.clipboardData.setData(
                         "application/json",
                         JSON.stringify({
-                            nodeId: this.app.active_node.id,
+                            nodeId: this.app.activeNode.id,
                         })
                     );
                 }
                 e.preventDefault();
             }
         });
-
         document.addEventListener("paste", (e) => {
             // If it appears that the user is trying to paste into a text box,
             // pass that through and skip the workflow copy/paste logic.
@@ -221,20 +238,20 @@ class CanvasManager {
                 document.activeElement.type !== "textarea" &&
                 document.activeElement.type !== "text"
             ) {
-                var nodeId;
+                let nodeId;
                 try {
                     nodeId = JSON.parse(e.clipboardData.getData("application/json")).nodeId;
                 } catch (error) {
                     console.debug(error);
                 }
-                if (nodeId && Object.prototype.hasOwnProperty.call(this.app.nodes, nodeId)) {
-                    this.app.nodes[nodeId].clone();
+                if (nodeId && this.app.nodes[nodeId]) {
+                    this.app.nodes[nodeId].onClone();
                 }
                 e.preventDefault();
             }
         });
     }
-    update_viewport_overlay() {
+    updateViewportOverlay() {
         var cc = this.cc;
         var cv = this.cv;
         var oc = this.oc;
@@ -252,11 +269,8 @@ class CanvasManager {
             height: (cv.height() / in_h) * o_h - 2,
         });
     }
-    draw_overview(scrollTo) {
+    drawOverview() {
         this._fitCanvasToNodes();
-        if (scrollTo) {
-            this._scrollToNodes();
-        }
         var canvas_el = $("#overview-canvas");
         var size = canvas_el.parent().parent().width();
         var c = canvas_el.get(0).getContext("2d");
@@ -310,7 +324,7 @@ class CanvasManager {
             }
             c.fillRect(x, y, w, h);
         });
-        this.update_viewport_overlay();
+        this.updateViewportOverlay();
     }
     _fitCanvasToNodes() {
         // Math utils
@@ -372,7 +386,7 @@ class CanvasManager {
         });
         return { xmin: xmin, xmax: xmax, ymin: ymin, ymax: ymax };
     }
-    _scrollToNodes() {
+    scrollToNodes() {
         const cv = $("#canvas-viewport");
         const cc = $("#canvas-container");
         let top;

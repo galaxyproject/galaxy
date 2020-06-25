@@ -217,7 +217,7 @@ define({
     "Reload a tool's configuration": "重新加载工具的配置",
     "Review tool migration stages": "查看工具迁移状态",
     "View Tool Error Logs": "查看工具错误日志",
-    "Manage Display Whitelist": "管理显示白名单",
+    "Manage Allowlist": "管理显示白名单",
     "Manage Tool Dependencies": "管理工具依赖",
     Users: "用户",
     Groups: "组别",

@@ -111,7 +111,7 @@ def skip_if_site_down(url):
 
     def site_down():
         try:
-            response = requests.get(url)
+            response = requests.get(url, timeout=10)
             return response.status_code != 200
         except Exception:
             return False
@@ -1456,7 +1456,7 @@ def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_
             label_map[key] = dataset_populator.ds_entry(hda)
             inputs[key] = hda
         else:
-            raise ValueError("Invalid test_data def %" % test_data)
+            raise ValueError("Invalid test_data def %s" % test_data)
 
     return inputs, label_map, has_uploads
 

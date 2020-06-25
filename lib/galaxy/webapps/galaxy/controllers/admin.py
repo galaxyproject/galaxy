@@ -15,6 +15,7 @@ from galaxy import (
 from galaxy.actions.admin import AdminActions
 from galaxy.exceptions import ActionInputError, MessageException
 from galaxy.model import tool_shed_install as install_model
+from galaxy.security.validate_user_input import validate_password
 from galaxy.tool_shed.util.repository_util import get_ids_of_tool_shed_repositories_being_installed
 from galaxy.util import (
     nice_size,
@@ -1387,10 +1388,9 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             else:
                 password = payload.get('password')
                 confirm = payload.get('confirm')
-                if len(password) < 6:
-                    return self.message_exception(trans, 'Use a password of at least 6 characters.')
-                elif password != confirm:
-                    return self.message_exception(trans, 'Passwords do not match.')
+                message = validate_password(trans, password, confirm)
+                if message:
+                    return self.message_exception(trans, message)
                 for user in users.values():
                     user.set_password_cleartext(password)
                     trans.sa_session.add(user)
@@ -1620,19 +1620,19 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
 
     @web.expose
     @web.require_admin
-    def sanitize_whitelist(self, trans, submit_whitelist=False, tools_to_whitelist=[]):
-        if submit_whitelist:
-            # write the configured sanitize_whitelist_file with new whitelist
+    def sanitize_allowlist(self, trans, submit_allowlist=False, tools_to_allowlist=[]):
+        if submit_allowlist:
+            # write the configured sanitize_allowlist_file with new allowlist
             # and update in-memory list.
-            with open(trans.app.config.sanitize_whitelist_file, 'wt') as f:
-                if isinstance(tools_to_whitelist, six.string_types):
-                    tools_to_whitelist = [tools_to_whitelist]
-                new_whitelist = sorted([tid for tid in tools_to_whitelist if tid in trans.app.toolbox.tools_by_id])
-                f.write("\n".join(new_whitelist))
-            trans.app.config.sanitize_whitelist = new_whitelist
-            trans.app.queue_worker.send_control_task('reload_sanitize_whitelist', noop_self=True)
+            with open(trans.app.config.sanitize_allowlist_file, 'wt') as f:
+                if isinstance(tools_to_allowlist, six.string_types):
+                    tools_to_allowlist = [tools_to_allowlist]
+                new_allowlist = sorted([tid for tid in tools_to_allowlist if tid in trans.app.toolbox.tools_by_id])
+                f.write("\n".join(new_allowlist))
+            trans.app.config.sanitize_allowlist = new_allowlist
+            trans.app.queue_worker.send_control_task('reload_sanitize_allowlist', noop_self=True)
             # dispatch a message to reload list for other processes
-        return trans.fill_template('/webapps/galaxy/admin/sanitize_whitelist.mako',
+        return trans.fill_template('/webapps/galaxy/admin/sanitize_allowlist.mako',
                                    sanitize_all=trans.app.config.sanitize_all_html,
                                    tools=trans.app.toolbox.tools_by_id)
 

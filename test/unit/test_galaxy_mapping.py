@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import time
 import unittest
 import uuid
 
@@ -544,15 +543,6 @@ class MappingTests(unittest.TestCase):
         assert isinstance(subworkflow_invocation_assoc.parent_workflow_invocation, model.WorkflowInvocation)
 
         assert subworkflow_invocation_assoc.subworkflow_invocation.history.id == history_id
-
-        u1 = loaded_invocation.update_time
-        time.sleep(1)
-        loaded_invocation.steps[0].update()
-        self.expunge()
-        loaded_invocation = self.query(model.WorkflowInvocation).get(workflow_invocation.id)
-        u2 = loaded_invocation.update_time
-
-        assert u1 != u2
 
     def new_hda(self, history, **kwds):
         return history.add_dataset(self.model.HistoryDatasetAssociation(create_dataset=True, sa_session=self.model.session, **kwds))

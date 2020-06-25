@@ -53,7 +53,7 @@ export function ariaSelectOutputNode(options) {
                     }
                 });
                 if (!foundConnection) {
-                    new Connector(manager.canvas_manager, outputTerminal, inputTerminal).redraw();
+                    new Connector(manager.canvasManager, outputTerminal, inputTerminal).redraw();
                     ariaAlert("Node connected");
                 }
                 break;

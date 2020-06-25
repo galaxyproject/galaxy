@@ -18,7 +18,11 @@
                 this has not already happened automatically.
             </p>
         </div>
-        <workflow-invocation-state v-for="invocation in invocations" :key="invocation.id" :invocationId="invocation.id">
+        <workflow-invocation-state
+            v-for="invocation in invocations"
+            :key="invocation.id"
+            :invocation-id="invocation.id"
+        >
         </workflow-invocation-state>
         <div id="webhook-view"></div>
     </div>

@@ -5,6 +5,7 @@ import _l from "utils/localization";
 import Utils from "utils/utils";
 import { DefaultForm, ToolForm } from "./forms";
 import { loadWorkflow } from "./services";
+import { toSimple } from "./model";
 import { hide_modal, show_message, show_modal } from "layout/modal";
 
 export function copyIntoWorkflow(workflow, id = null, stepCount = null) {
@@ -15,7 +16,7 @@ export function copyIntoWorkflow(workflow, id = null, stepCount = null) {
             // Determine if any parameters were 'upgraded' and provide message
             var upgrade_message = "";
             $.each(data.upgrade_messages, (k, v) => {
-                upgrade_message += `<li>Step ${parseInt(k, 10) + 1}: ${workflow.nodes[k].name}<ul>`;
+                upgrade_message += `<li>Step ${parseInt(k, 10) + 1}: ${workflow.steps[k].name}<ul>`;
                 $.each(v, (i, vv) => {
                     upgrade_message += `<li>${vv}</li>`;
                 });
@@ -97,7 +98,7 @@ export function showForm(workflow, node, datatypes) {
     }
 }
 
-export function showUpgradeMessage(workflow, data) {
+export function showUpgradeMessage(data) {
     // Determine if any parameters were 'upgraded' and provide message
     var upgrade_message = "";
     _.each(data.steps, (step, step_id) => {
@@ -109,9 +110,7 @@ export function showUpgradeMessage(workflow, data) {
             details += `<li>${m}</li>`;
         });
         if (details) {
-            upgrade_message += `<li>Step ${parseInt(step_id, 10) + 1}: ${
-                workflow.nodes[step_id].name
-            }<ul>${details}</ul></li>`;
+            upgrade_message += `<li>Step ${parseInt(step_id, 10) + 1}: ${step.name}<ul>${details}</ul></li>`;
         }
     });
     if (upgrade_message) {
@@ -186,7 +185,7 @@ export function saveAs(workflow) {
                     workflow_annotation: rename_annotation,
                     from_tool_form: true,
                     workflow_data: function () {
-                        return JSON.stringify(workflow.to_simple());
+                        return JSON.stringify(toSimple(workflow));
                     },
                 },
             })

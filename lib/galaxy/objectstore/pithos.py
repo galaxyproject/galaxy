@@ -392,7 +392,7 @@ class PithosObjectStore(ConcreteObjectStore):
                 return cache_path
         raise ObjectNotFound(
             'objectstore.get_filename, no cache_path: {obj}, '
-            'kwargs: {kwargs}'.format(obj, kwargs))
+            'kwargs: {kwargs}'.format(obj=obj, kwargs=kwargs))
 
     def _update_from_file(self, obj, **kwargs):
         """Update the store when a file is updated"""
@@ -401,7 +401,7 @@ class PithosObjectStore(ConcreteObjectStore):
         if not self._exists(obj, **kwargs):
             raise ObjectNotFound(
                 'objectstore.update_from_file, object does not exist: {obj}, '
-                'kwargs: {kwargs}'.format(obj, kwargs))
+                'kwargs: {kwargs}'.format(obj=obj, kwargs=kwargs))
 
         path = self._construct_path(obj, **kwargs)
         cache_path = self._get_cache_path(path)

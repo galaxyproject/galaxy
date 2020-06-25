@@ -253,7 +253,7 @@ define({
     "Reload a tool's configuration": "ツールのコンフィグのリロード",
     "Review tool migration stages": "ツール移行ステージのレビュー",
     "View Tool Error Logs": "ツールのエラーログ",
-    "Manage Display Whitelist": "表示ホワイトリストの管理",
+    "Manage Allowlist": "表示ホワイトリストの管理",
     "Manage Tool Dependencies": "ツール依存関係の管理",
     Users: "ユーザー",
     Groups: "グループ",

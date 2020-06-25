@@ -83,8 +83,8 @@ uwsgi:
   # uWSGI default umask. On some systems uWSGI has a default umask of
   # 000, for Galaxy a somewhat safer default is chosen. If Galaxy
   # submits jobs as real user then all users needs to be able to read
-  # the files, i.e. the the umask needs to be '022' or the Galaxy users
-  # need to be in the same group as the Galaxy system user
+  # the files, i.e. the umask needs to be '022' or the Galaxy users need
+  # to be in the same group as the Galaxy system user
   umask: 027
 
   # Task for rebuilding Toolshed search indexes using the uWSGI
@@ -340,19 +340,20 @@ tool_shed:
   # intercept upload requests.
   #nginx_upload_path: null
 
-  # E-mail domains blacklist is used for filtering out users that are
-  # using disposable email address during the registration.  If their
-  # address domain matches any domain in the blacklist, they are refused
-  # the registration.
-  #blacklist_file: config/disposable_email_blacklist.conf
+  # E-mail domains blocklist is used for filtering out users that are
+  # using disposable email addresses at registration.  If their address
+  # domain matches any domain on the list, they are refused
+  # registration.
+  #email_domain_blocklist_file: null
 
-  # E-mail domains whitelist is used to specify allowed email address
+  # E-mail domains allowlist is used to specify allowed email address
   # domains. If the list is non-empty and a user attempts registration
   # using an email address belonging to a domain that is not on the
-  # list, registration will be enied. This is a more restrictive option
-  # than <blacklist_file>, and therefore, in case <whitelist_file> is
-  # defined, <blacklist_file> will be ignored.
-  #whitelist_file: disposable_email_whitelist.conf
+  # list, registration will be denied. This is a more restrictive option
+  # than <email_domain_blocklist_file>, and therefore, in case
+  # <email_domain_allowlist_file> is set and is not empty,
+  # <email_domain_blocklist_file> will be ignored.
+  #email_domain_allowlist_file: null
 
   # Append "/{brand}" to the "Galaxy" text in the masthead.
   #brand: null

@@ -219,7 +219,7 @@ class Terminal extends EventEmitter {
 class BaseInputTerminal extends Terminal {
     constructor(attr) {
         super(attr);
-        this.app = attr.app;
+        this.datatypesMapping = attr.datatypesMapping;
         this.update(attr.input); // subclasses should implement this...
     }
     canAccept(other) {
@@ -336,7 +336,7 @@ class BaseInputTerminal extends Terminal {
                 if (
                     other_datatype == "input" ||
                     other_datatype == "_sniff_" ||
-                    this.app.isSubType(cat_outputs[other_datatype_i], thisDatatype)
+                    this._isSubType(cat_outputs[other_datatype_i], thisDatatype)
                 ) {
                     return new ConnectionAcceptable(true, null);
                 }
@@ -346,6 +346,12 @@ class BaseInputTerminal extends Terminal {
             false,
             `Effective output data type(s) [${cat_outputs}] do not appear to match input type(s) [${this.datatypes}].`
         );
+    }
+    _isSubType(child, parent) {
+        const mapping = this.datatypesMapping;
+        child = mapping.ext_to_class_name[child];
+        parent = mapping.ext_to_class_name[parent];
+        return mapping.class_to_classes[child] && parent in mapping.class_to_classes[child];
     }
     _producesAcceptableDatatypeAndOptionalness(other) {
         if (!this.optional && !this.multiple && other.optional) {

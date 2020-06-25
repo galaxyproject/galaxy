@@ -4,7 +4,6 @@ from __future__ import print_function
 import logging
 import optparse
 import os
-import re
 import sys
 
 from six.moves.configparser import ConfigParser
@@ -14,14 +13,15 @@ sys.path.insert(1, os.path.join(os.path.dirname(__file__)))
 
 import tool_shed.webapp.config as tool_shed_config
 from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.security.validate_user_input import (
+    validate_email_str,
+    validate_password_str,
+    validate_publicname_str
+)
 from tool_shed.webapp.model import mapping
 from bootstrap_util import admin_user_info  # noqa: I100,I201
 
 log = logging.getLogger(__name__)
-
-
-VALID_PUBLICNAME_RE = re.compile(r"^[a-z0-9\-]+$")
-VALID_EMAIL_RE = re.compile(r"[^@]+@[^@]+\.[^@]+")
 
 
 class BootstrapApplication(object):
@@ -84,44 +84,15 @@ def create_user(app):
 
 
 def validate(email, password, username):
-    message = validate_email(email)
-    if not message:
-        message = validate_password(password)
-    if not message:
-        message = validate_publicname(username)
+    message = "\n".join([validate_email_str(email),
+                         validate_password_str(password),
+                         validate_publicname_str(username)]).rstrip()
     return message
-
-
-def validate_email(email):
-    """Validates the email format."""
-    message = ''
-    if not(VALID_EMAIL_RE.match(email)):
-        message = "Please enter a real email address."
-    elif len(email) > 255:
-        message = "Email address exceeds maximum allowable length."
-    return message
-
-
-def validate_password(password):
-    if len(password) < 6:
-        return "Use a password of at least 6 characters"
-    return ''
-
-
-def validate_publicname(username):
-    """Validates the public username."""
-    if len(username) < 3:
-        return "Public name must be at least 3 characters in length"
-    if len(username) > 255:
-        return "Public name cannot be more than 255 characters in length"
-    if not(VALID_PUBLICNAME_RE.match(username)):
-        return "Public name must contain only lower-case letters, numbers and '-'"
-    return ''
 
 
 if __name__ == "__main__":
     parser = optparse.OptionParser(description='Create a user with API key.')
-    parser.add_option('-c', dest='config', action='store', help='.ini file to retried toolshed configuration from')
+    parser.add_option('-c', dest='config', action='store', help='.ini file to retrieve toolshed configuration from')
     (args, options) = parser.parse_args()
     ini_file = args.config
     config_parser = ConfigParser({'here': os.getcwd()})

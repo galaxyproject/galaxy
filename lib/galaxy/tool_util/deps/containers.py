@@ -204,9 +204,9 @@ class ContainerRegistry(object):
             log.debug("Unable to find config file '%s'", conf_file)
             return self.__default_containers_resolvers()
         plugin_source = plugin_config.plugin_source_from_path(conf_file)
-        return self.__parse_resolver_conf_xml(plugin_source)
+        return self._parse_resolver_conf(plugin_source)
 
-    def __parse_resolver_conf_xml(self, plugin_source):
+    def _parse_resolver_conf(self, plugin_source):
         extra_kwds = {
             'app_info': self.app_info
         }
@@ -236,7 +236,11 @@ class ContainerRegistry(object):
 
     def find_best_container_description(self, enabled_container_types, tool_info, **kwds):
         """Yield best container description of supplied types matching tool info."""
-        resolved_container_description = self.resolve(enabled_container_types, tool_info, **kwds)
+        try:
+            resolved_container_description = self.resolve(enabled_container_types, tool_info, **kwds)
+        except Exception:
+            log.exception("Could not get container description for tool '%s'", tool_info.tool_id)
+            return None
         return None if resolved_container_description is None else resolved_container_description.container_description
 
     def resolve(self, enabled_container_types, tool_info, index=None, resolver_type=None, install=True, resolution_cache=None):

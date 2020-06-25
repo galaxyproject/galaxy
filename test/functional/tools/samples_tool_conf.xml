@@ -1,6 +1,12 @@
 <?xml version="1.0"?>
 <toolbox tool_path="${tool_conf_dir}" is_shed_conf="false">
   <tool file="upload.xml"/>
+  <section id="test" name="Test Section">
+    <tool file="multi_data_optional.xml" />
+    <tool file="paths_as_file.xml" />
+    <tool file="param_text_option.xml" />
+    <tool file="column_param.xml" />
+  </section>
   <tool file="test_data_source.xml"/>
   <tool file="simple_constructs.xml" />
   <tool file="color_param.xml" />
@@ -34,6 +40,7 @@
   <tool file="tool_provided_metadata_12.xml" />
   <tool file="empty_datasets.xml" />
   <tool file="inputs_as_json.xml" />
+  <tool file="inputs_as_json_profile.xml" />
   <tool file="inputs_as_json_with_paths.xml" />
   <tool file="filter_static_regexp.xml" />
   <tool file="dbkey_filter_input.xml" />

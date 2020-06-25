@@ -1,9 +1,9 @@
+import bz2
 import gzip
 import json
 import logging
 import os
 import shutil
-import sys
 import tempfile
 from collections import namedtuple
 
@@ -14,11 +14,6 @@ from galaxy.util import checkers
 from galaxy.util.path import safe_relpath
 from tool_shed.tools.data_table_manager import ShedToolDataTableManager
 from tool_shed.util import basic_util, hg_util, shed_util_common as suc
-
-if sys.version_info < (3, 3):
-    import bz2file as bz2
-else:
-    import bz2
 
 log = logging.getLogger(__name__)
 

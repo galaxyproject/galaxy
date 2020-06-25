@@ -27,7 +27,6 @@ const paths = {
         // not be necessary.
         backbone: ["backbone.js", "backbone.js"],
         "bootstrap-tour": ["build/js/bootstrap-tour.js", "bootstrap-tour.js"],
-        "bibtex-parse-js": ["bibtexParse.js", "bibtexParse.js"],
         jquery: ["dist/jquery.js", "jquery/jquery.js"],
         "jquery.complexify": ["jquery.complexify.js", "jquery/jquery.complexify.js"],
         "jquery.cookie": ["jquery.cookie.js", "jquery/jquery.cookie.js"],
