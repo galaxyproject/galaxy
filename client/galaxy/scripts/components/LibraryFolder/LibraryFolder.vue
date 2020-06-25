@@ -4,7 +4,7 @@
             <font-awesome-icon icon="spinner" spin size="9x"/>
         </div>
         <div v-else-if="folderContents.length !== 0">
-            <b-table
+        <b-table
                     id="folder-table"
                     striped
                     hover
@@ -30,6 +30,18 @@
                 </template>
                 <template v-slot:cell(name)="row">
                     <a :href="createContentLink(row.item)">{{row.item.name}}</a>
+                </template>
+
+                <template v-slot:cell(message)="row">
+                    <div class="description-field" v-if="getMessage(row.item)">
+                        <div v-if="getMessage(row.item).length > 40 && !expandedMessage.includes(row.item.id)">
+                            <span :title="getMessage(row.item)">{{ getMessage(row.item).substring(0,40) }}.. </span> <a
+                                class="more-text-btn" @click="expandMessage(row.item)" href="javascript:void(0)">(more)</a>
+                        </div>
+                        <div v-else>
+                            {{ getMessage(row.item) }}
+                        </div>
+                    </div>
                 </template>
                 <template v-slot:cell(type_icon)="row">
                     <font-awesome-icon v-if="row.item.type === 'folder'" :icon="['far','folder']" title="Folder"/>
@@ -59,11 +71,10 @@
                 </template>
 
                 <template v-slot:cell(buttons)="row">
-                    <a v-if="row.item.can_manage && !row.item.deleted && row.item.type==='folder'"
-                       :href="createPermissionLink(row.item)">
+                    <a v-if="row.item.can_manage && !row.item.deleted && row.item.type==='folder'">
                         <button data-toggle="tooltip" data-placement="top"
                                 class="primary-button btn-sm permission_folder_btn"
-                                :title="'Permissions of ' + row.item.name">
+                                :title="'Edit ' + row.item.name">
                             <span class="fa fa-pencil"></span> Edit
                         </button>
                     </a>
@@ -166,16 +177,14 @@
                     {
                         label: "",
                         key: "type_icon",
+                        narrowed_width: true
                     },
                     {
                         label: "&check;",
                         key: "selected",
                         sortable: false,
+                        narrowed_width: true
 
-                    },
-                    {
-                        label: "",
-                        key: "type_icon",
                     },
                     {
                         label: "Name",
@@ -200,6 +209,7 @@
                     {
                         label: "State",
                         key: "state",
+                        narrowed_width: true,
                         sortable: true,
                     },
                     {
@@ -210,6 +220,7 @@
                     {
                         label: "",
                         key: "is_unrestricted",
+                        narrowed_width: true,
                         sortable: false,
                     },
                     {
@@ -221,9 +232,10 @@
                 ],
                 selectMode: 'multi',
                 selected: [],
+                expandedMessage: [],
                 folderContents: [],
                 hasLoaded: false,
-                perPage: 15
+                perPage: 15,
             };
         },
         computed: {
@@ -277,6 +289,15 @@
                     return `${this.createContentLink(element)}/permissions`
                 else if (element.type === "folder")
                     return `${this.root}library/list#folders/${element.id}/permissions`
+            },
+            getMessage(element) {
+                if (element.type === "file")
+                    return element.message
+                else if (element.type === "folder")
+                    return element.description
+            },
+            expandMessage(element) {
+                this.expandedMessage.push(element.id)
             }
         }
 

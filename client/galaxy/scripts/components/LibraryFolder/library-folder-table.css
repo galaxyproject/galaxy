@@ -6,10 +6,25 @@
     margin-left: .25rem;
 }
 
+.more-text-btn {
+    margin-left: .25rem;
+    font-size: 60%;
+    color: grey;
+}
+
+.description-field {
+    width: 40rem;
+}
+
+
 .empty-folder-text {
     text-align: center;
 }
 
 .select-all-symbl {
     cursor: pointer;
+    -webkit-user-select: none; /* Chrome all / Safari all */
+    -moz-user-select: none; /* Firefox all */
+    -ms-user-select: none; /* IE 10+ */
+    user-select: none; /* Likely future */
 }
