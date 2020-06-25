@@ -14,4 +14,3 @@ Development Documentation
   debugging_tests
   debugging_galaxy
   starting_galaxy
-

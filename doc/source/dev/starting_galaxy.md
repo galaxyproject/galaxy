@@ -22,16 +22,16 @@ Galaxy is started by running ./run.sh script. The following call graph documents
   * Command.run()
     * Setup default options, validate command line arguments, then call ServeCommand's command() method
   * ServeCommand.command()
-    * Conditionally, stop the daemon 
+    * Conditionally, stop the daemon
     * If a config file is required, make sure a config file is provided on the command line arguments.
     * Possible subcommands: start, stop, restart, status (or None)
     * Call loadserver() method in ./galaxy/lib/galaxy/util/pastescript/loadwsgi.py
-      * Calls loadobj()  -> calls LoaderContext's create() -> calls _Server's invoke()  
+      * Calls loadobj()  -> calls LoaderContext's create() -> calls _Server's invoke()
     * Call loadapp() method in ./galaxy/lib/galaxy/util/pastescript/loadwsgi.py
       * Calls loadobj()  -> calls LoaderContext's create() -> calls _App's invoke() -> calls fix_call() on app_factory (in ./galaxy/lib/galaxy/webapps/galaxy/buildapp.py)
 
-## Galaxy 
-      
+## Galaxy
+
 * app_factory:
   * Create UniverseApplication  (in ./galaxy/lib/galaxy/webapps/galaxy/buildapp.py)
     * Create GalaxyAppConfiguration instance from config file specified on the command line, then check for errors
@@ -40,11 +40,11 @@ Galaxy is started by running ./run.sh script. The following call graph documents
       * Which has a GalaxyStatsdClient field
     * Configure FluentTraceLogger
     * Create the application stack (uWSGi, Paste, or Webless)
-      * App registers post fork functions to start application stack threads   
+      * App registers post fork functions to start application stack threads
     * Create GalaxyQueueWorker instance (a worker for Galaxy's queues, used for dispatching control tasks. Sqlite instance)
     * Configure tool shed registry
     * Configure object store. build_object_store_from_config() (in ./galaxy/lib/galaxy/objectstore/__init__.py) calls objectstore_class.from_xml(), calls clazz.parse_xml()
-    * Configure models in _configure_models() 
+    * Configure models in _configure_models()
       * Calls create_or_verify_database() in ./galaxy/libl/galaxy/model/migrate/check.py
         * If a new database, calls migrate_from_scratch() in  ./galaxy/libl/galaxy/model/migrate/check.py
           * Calls mapping.init() in ./galaxy/libl/galaxy/model/mapping.py (Details of how data objects are mapped to relational DB tables).
@@ -52,7 +52,7 @@ Galaxy is started by running ./run.sh script. The following call graph documents
     * Configure security
     * Set GalaxyTagHandler (in ./galaxy/lib/galaxy/model/tags.py)
       * Handles CRUD operations for tagging datasets, workflows, visualizations, etc
-    * Set DatasetCollectionManager (in ./galaxy/lib/galaxy/managers/collections.py) 
+    * Set DatasetCollectionManager (in ./galaxy/lib/galaxy/managers/collections.py)
     * Configure HistoryManager
     * Configure HistoryDatasetAssociation (HDA) Manager
     * Create WorkflowsManager
@@ -77,8 +77,8 @@ Galaxy is started by running ./run.sh script. The following call graph documents
     * If configured, create Sentry client
       * App registers post fork functions to start Sentry client thread
     * Create JobManager
-      * App registers post fork functions to start application job manager thread  
-        * Job manager thread starts monitor threads for JobHandlerQueue and JobHandlerStopQueue (2 threads) 
+      * App registers post fork functions to start application job manager thread
+        * Job manager thread starts monitor threads for JobHandlerQueue and JobHandlerStopQueue (2 threads)
       * JobManager has a JobHandler field, which manages the preparation, running, tracking, and finishing of jobs
         * JobHandler has a job dispatcher, which launches underlying job runners
           * DefaultJobDispatcher calls app's JobConfiguration's get_job_runner_plugins() to create LocalJobRunner instances
@@ -88,7 +88,7 @@ Galaxy is started by running ./run.sh script. The following call graph documents
       * Starts workflow request monitor thread in __start_request_monitor() method (1 thread)
     * Configure InteractiveToolManager
     * Create database heartbeat instance
-      * App registers post fork functions to start application DB heartbeat thread (1 thread)  
+      * App registers post fork functions to start application DB heartbeat thread (1 thread)
   * Create CommunityWebApplication (in ./galaxy/lib/galaxy/webapps/galaxy/buildapp.py)
     * CommunityWebApplication: A WSGI application that maps requests to objects using routes and to methods on those objects
     * Map all requests to controllers/actions
