@@ -1,3 +1,7 @@
+th:focus {
+    outline: none !important;
+}
+
 .pagination-input-field {
     max-width: 60px
 }
