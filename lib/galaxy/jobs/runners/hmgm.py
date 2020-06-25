@@ -233,8 +233,8 @@ class HmgmRunner(AsynchronousJobRunner):
         job_destination = job_wrapper.job_destination
         job_state = JobState(job_wrapper, job_destination)
         job_state.fail_message = message
-        job_state.stop_job = True
-        self.fail_job(job_state, exception=False)
+        job_state.stop_job = False
+        self.fail_job(job_state, exception=True)
 
     # Copied from runners/local.py
     def __command_line(self, job_wrapper):
