@@ -7,23 +7,20 @@
         <div v-if="compatibleTools.length > 0 && !isDeprecated">
             <div v-for="tool in compatibleTools" :key="tool.id">
                 <i class="fa mr-1 fa-wrench"></i>
-                <a href="#" title="Open tool" :id="tool.id" @click="$emit('onCreate', tool.id, $event)">
-                    {{ tool.name }}
-                </a>
+                <a href="#" title="Open tool" :id="tool.id" @click="$emit('onCreate', tool.id, $event)">{{
+                    tool.name
+                }}</a>
             </div>
         </div>
-        <div v-else-if="isDeprecated">
-            {{ deprecatedMessage }}
-        </div>
-        <div v-if="compatibleTools.length === 0 && !showLoading">
-            {{ noRecommendationsMessage }}
-        </div>
+        <div v-else-if="isDeprecated">{{ deprecatedMessage }}</div>
+        <div v-if="compatibleTools.length === 0 && !showLoading">{{ noRecommendationsMessage }}</div>
     </div>
 </template>
 
 <script>
 import { getToolPredictions } from "./modules/services";
 import LoadingSpan from "components/LoadingSpan";
+import { toSimple } from "module/model";
 import _l from "utils/localization";
 
 export default {
@@ -31,7 +28,11 @@ export default {
         LoadingSpan,
     },
     props: {
-        node: {
+        getNode: {
+            type: Function,
+            required: true,
+        },
+        datatypesMapping: {
             type: Object,
             required: true,
         },
@@ -103,16 +104,14 @@ export default {
             return stepNameList.join(",");
         },
         loadRecommendations() {
-            const node = this.node;
-            const manager = node.getManager();
-            const workflowSimple = manager.toSimple();
+            const node = this.getNode();
+            const workflowSimple = toSimple();
             const toolSequence = this.getWorkflowPath(workflowSimple, node.id);
             const requestData = { tool_sequence: toolSequence };
             getToolPredictions(requestData).then((responsePred) => {
                 const predictedData = responsePred.predicted_data;
                 const outputDatatypes = predictedData.o_extensions;
                 const predictedDataChildren = predictedData.children;
-                const app = manager;
                 this.isDeprecated = predictedData.is_deprecated;
                 this.deprecatedMessage = predictedData.message;
                 if (predictedDataChildren.length > 0) {
@@ -123,7 +122,7 @@ export default {
                         for (const outT of outputDatatypes.entries()) {
                             for (const inTool of inputDatatypes.entries()) {
                                 if (
-                                    app.isSubType(outT[1], inTool[1]) === true ||
+                                    this._isSubType(outT[1], inTool[1]) ||
                                     outT[1] === "input" ||
                                     outT[1] === "_sniff_" ||
                                     outT[1] === "input_collection"
@@ -140,6 +139,12 @@ export default {
                 }
                 this.showLoading = false;
             });
+        },
+        _isSubType(child, parent) {
+            const mapping = this.datatypesMapping;
+            child = mapping.ext_to_class_name[child];
+            parent = mapping.ext_to_class_name[parent];
+            return mapping.class_to_classes[child] && parent in mapping.class_to_classes[child];
         },
     },
 };
