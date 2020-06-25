@@ -1,21 +1,21 @@
 <template>
     <div>
         <div v-if="!hasLoaded" class="d-flex justify-content-center m-5">
-            <font-awesome-icon icon="spinner" spin size="9x"/>
+            <font-awesome-icon icon="spinner" spin size="9x" />
         </div>
         <div v-else-if="folderContents.length !== 0">
-        <b-table
-                    id="folder-table"
-                    striped
-                    hover
-                    :fields="fields"
-                    :items="folderContents"
-                    :per-page="perPage"
-                    :current-page="currentPage"
-                    selectable
-                    :select-mode="selectMode"
-                    @row-selected="onRowSelected"
-                    ref="folder_content_table"
+            <b-table
+                id="folder-table"
+                striped
+                hover
+                :fields="fields"
+                :items="folderContents"
+                :per-page="perPage"
+                :current-page="currentPage"
+                selectable
+                :select-mode="selectMode"
+                @row-selected="onRowSelected"
+                ref="folder_content_table"
             >
                 <template v-slot:head(selected)="scope">
                     <span class="select-all-symbl" @click="toggleSelect">&check;</span>
@@ -29,21 +29,25 @@
                     </template>
                 </template>
                 <template v-slot:cell(name)="row">
-                    <a :href="createContentLink(row.item)">{{row.item.name}}</a>
+                    <a :href="createContentLink(row.item)">{{ row.item.name }}</a>
                 </template>
 
                 <template v-slot:cell(message)="row">
                     <div class="description-field" v-if="getMessage(row.item)">
                         <div v-if="getMessage(row.item).length > 40 && !expandedMessage.includes(row.item.id)">
-                            <span :title="getMessage(row.item)" v-html="linkify(getMessage(row.item).substring(0,40))">.. </span> <a
-                                class="more-text-btn" @click="expandMessage(row.item)" href="javascript:void(0)">(more)</a>
+                            <span :title="getMessage(row.item)" v-html="linkify(getMessage(row.item).substring(0, 40))"
+                                >..
+                            </span>
+                            <a class="more-text-btn" @click="expandMessage(row.item)" href="javascript:void(0)"
+                                >(more)</a
+                            >
                         </div>
-                        <div v-else v-html="linkify(getMessage(row.item))" ></div>
+                        <div v-else v-html="linkify(getMessage(row.item))"></div>
                     </div>
                 </template>
                 <template v-slot:cell(type_icon)="row">
-                    <font-awesome-icon v-if="row.item.type === 'folder'" :icon="['far','folder']" title="Folder"/>
-                    <font-awesome-icon v-else-if="row.item.type === 'file'" title="Dataset" :icon="['far','file']"/>
+                    <font-awesome-icon v-if="row.item.type === 'folder'" :icon="['far', 'folder']" title="Folder" />
+                    <font-awesome-icon v-else-if="row.item.type === 'file'" title="Dataset" :icon="['far', 'file']" />
                 </template>
                 <template v-slot:cell(raw_size)="row">
                     <div v-if="row.item.type === 'file'" v-html="bytesToString(row.item.raw_size)"></div>
@@ -54,49 +58,51 @@
                     </div>
                 </template>
                 <template v-slot:cell(update_time)="row">
-                    <UtcDate :date="row.item.update_time" mode="elapsed"/>
+                    <UtcDate :date="row.item.update_time" mode="elapsed" />
                 </template>
                 <template v-slot:cell(is_unrestricted)="row">
-                    <font-awesome-icon v-if="row.item.is_unrestricted"
-                                       title="Unrestricted dataset"
-                                       icon="globe"/>
+                    <font-awesome-icon v-if="row.item.is_unrestricted" title="Unrestricted dataset" icon="globe" />
 
-                    <font-awesome-icon v-else-if="row.item.is_private" title="Private dataset"
-                                       icon="key"/>
-                    <font-awesome-icon v-else-if="row.item.is_private === false && row.item.is_unrestricted === false"
-                                       title="Restricted dataset"
-                                       icon="shield-alt"/>
+                    <font-awesome-icon v-else-if="row.item.is_private" title="Private dataset" icon="key" />
+                    <font-awesome-icon
+                        v-else-if="row.item.is_private === false && row.item.is_unrestricted === false"
+                        title="Restricted dataset"
+                        icon="shield-alt"
+                    />
                 </template>
 
                 <template v-slot:cell(buttons)="row">
-                    <a v-if="row.item.can_manage && !row.item.deleted && row.item.type==='folder'">
-                        <button data-toggle="tooltip" data-placement="top"
-                                class="primary-button btn-sm permission_folder_btn"
-                                :title="'Edit ' + row.item.name">
+                    <a v-if="row.item.can_manage && !row.item.deleted && row.item.type === 'folder'">
+                        <button
+                            data-toggle="tooltip"
+                            data-placement="top"
+                            class="primary-button btn-sm permission_folder_btn"
+                            :title="'Edit ' + row.item.name"
+                        >
                             <span class="fa fa-pencil"></span> Edit
                         </button>
                     </a>
                     <a v-if="row.item.can_manage" :href="createPermissionLink(row.item)">
-                        <button data-toggle="tooltip" data-placement="top"
-                                class="primary-button btn-sm permission_folder_btn"
-                                :title="'Permissions of ' + row.item.name">
+                        <button
+                            data-toggle="tooltip"
+                            data-placement="top"
+                            class="primary-button btn-sm permission_folder_btn"
+                            :title="'Permissions of ' + row.item.name"
+                        >
                             <span class="fa fa-group"></span> Manage
                         </button>
                     </a>
                 </template>
-
             </b-table>
             <b-container>
-
                 <b-row class="justify-content-md-center">
                     <b-col md="auto">
                         <b-pagination
-                                v-model="currentPage"
-                                :total-rows="rows"
-                                :per-page="perPage"
-                                aria-controls="folder-table"
+                            v-model="currentPage"
+                            :total-rows="rows"
+                            :per-page="perPage"
+                            aria-controls="folder-table"
                         >
-
                         </b-pagination>
                     </b-col>
                     <b-col cols="1.5">
@@ -104,15 +110,15 @@
                             <tr>
                                 <td class="m-0 p-0">
                                     <b-form-input
-                                            class="pagination-input-field"
-                                            id="paginationPerPage"
-                                            autocomplete="off"
-                                            type="number"
-                                            v-model="perPage"
+                                        class="pagination-input-field"
+                                        id="paginationPerPage"
+                                        autocomplete="off"
+                                        type="number"
+                                        v-model="perPage"
                                     />
                                 </td>
                                 <td class="text-muted ml-1 paginator-text">
-                                    <span class="pagination-total-pages-text">per page, {{rows}} total</span>
+                                    <span class="pagination-total-pages-text">per page, {{ rows }} total</span>
                                 </td>
                             </tr>
                         </table>
@@ -121,8 +127,8 @@
             </b-container>
         </div>
         <div v-else class="empty-folder-text">
-            This folder is either empty or you do not have proper access permissions to see the contents.
-            If you expected something to show up please consult the
+            This folder is either empty or you do not have proper access permissions to see the contents. If you
+            expected something to show up please consult the
             <a href="https://galaxyproject.org/data-libraries/#permissions" target="_blank">
                 library security wikipage
             </a>
@@ -131,182 +137,175 @@
 </template>
 
 <script>
-    import Vue from "vue";
-    import {getAppRoot} from "onload/loadConfig";
-    import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome";
-    import {library} from "@fortawesome/fontawesome-svg-core";
-    import {faFile} from "@fortawesome/free-regular-svg-icons";
-    import {faFolder} from "@fortawesome/free-regular-svg-icons";
-    import {faSpinner} from "@fortawesome/free-solid-svg-icons";
-    import {faShieldAlt} from "@fortawesome/free-solid-svg-icons";
-    import {faGlobe} from "@fortawesome/free-solid-svg-icons";
-    import {faKey} from "@fortawesome/free-solid-svg-icons";
+import Vue from "vue";
+import { getAppRoot } from "onload/loadConfig";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faFile } from "@fortawesome/free-regular-svg-icons";
+import { faFolder } from "@fortawesome/free-regular-svg-icons";
+import { faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faShieldAlt } from "@fortawesome/free-solid-svg-icons";
+import { faGlobe } from "@fortawesome/free-solid-svg-icons";
+import { faKey } from "@fortawesome/free-solid-svg-icons";
 
-    import UtcDate from "components/UtcDate";
-    import BootstrapVue from "bootstrap-vue";
-    import {Services} from "./services";
-    import Utils from "utils/utils";
-    import linkify from "linkifyjs/html";
+import UtcDate from "components/UtcDate";
+import BootstrapVue from "bootstrap-vue";
+import { Services } from "./services";
+import Utils from "utils/utils";
+import linkify from "linkifyjs/html";
 
-    library.add(faFile);
-    library.add(faFolder);
-    library.add(faSpinner);
-    library.add(faShieldAlt);
-    library.add(faKey);
-    library.add(faGlobe);
+library.add(faFile);
+library.add(faFolder);
+library.add(faSpinner);
+library.add(faShieldAlt);
+library.add(faKey);
+library.add(faGlobe);
 
-    Vue.use(BootstrapVue);
+Vue.use(BootstrapVue);
 
-    export default {
-        props: {
-            folder_id: {
-                type: String,
-                required: true,
-            },
+export default {
+    props: {
+        folder_id: {
+            type: String,
+            required: true,
         },
-        components: {
-            UtcDate,
-            FontAwesomeIcon
+    },
+    components: {
+        UtcDate,
+        FontAwesomeIcon,
+    },
+    data() {
+        return {
+            error: null,
+            currentPage: 1,
+            fields: [
+                {
+                    label: "",
+                    key: "type_icon",
+                    narrowed_width: true,
+                },
+                {
+                    label: "&check;",
+                    key: "selected",
+                    sortable: false,
+                    narrowed_width: true,
+                },
+                {
+                    label: "Name",
+                    key: "name",
+                    sortable: true,
+                },
+                {
+                    label: "Description",
+                    key: "message",
+                    sortable: false,
+                },
+                {
+                    label: "Data Type",
+                    key: "type",
+                    sortable: true,
+                },
+                {
+                    label: "Size",
+                    key: "raw_size",
+                    sortable: true,
+                },
+                {
+                    label: "State",
+                    key: "state",
+                    narrowed_width: true,
+                    sortable: true,
+                },
+                {
+                    label: "Date Updated (UTC)",
+                    key: "update_time",
+                    sortable: true,
+                },
+                {
+                    label: "",
+                    key: "is_unrestricted",
+                    narrowed_width: true,
+                    sortable: false,
+                },
+                {
+                    label: "",
+                    key: "buttons",
+                    sortable: false,
+                },
+            ],
+            selectMode: "multi",
+            selected: [],
+            expandedMessage: [],
+            folderContents: [],
+            hasLoaded: false,
+            perPage: 15,
+        };
+    },
+    computed: {
+        rows() {
+            return this.folderContents.length;
         },
-        data() {
-            return {
-                error: null,
-                currentPage: 1,
-                fields: [
-                    {
-                        label: "",
-                        key: "type_icon",
-                        narrowed_width: true
-                    },
-                    {
-                        label: "&check;",
-                        key: "selected",
-                        sortable: false,
-                        narrowed_width: true
-
-                    },
-                    {
-                        label: "Name",
-                        key: "name",
-                        sortable: true,
-                    },
-                    {
-                        label: "Description",
-                        key: "message",
-                        sortable: false,
-                    },
-                    {
-                        label: "Data Type",
-                        key: "type",
-                        sortable: true,
-                    },
-                    {
-                        label: "Size",
-                        key: "raw_size",
-                        sortable: true,
-                    },
-                    {
-                        label: "State",
-                        key: "state",
-                        narrowed_width: true,
-                        sortable: true,
-                    },
-                    {
-                        label: "Date Updated (UTC)",
-                        key: "update_time",
-                        sortable: true,
-                    },
-                    {
-                        label: "",
-                        key: "is_unrestricted",
-                        narrowed_width: true,
-                        sortable: false,
-                    },
-                    {
-                        label: "",
-                        key: "buttons",
-                        sortable: false,
-                    },
-
-                ],
-                selectMode: 'multi',
-                selected: [],
-                expandedMessage: [],
-                folderContents: [],
-                hasLoaded: false,
-                perPage: 15,
-            };
+    },
+    created() {
+        this.root = getAppRoot();
+        this.services = new Services({ root: this.root });
+        this.services
+            .getFolderContents(this.folder_id)
+            .then((response) => {
+                response.folder_contents.forEach(
+                    (content) => (content.update_time = new Date(content.update_time).toISOString())
+                );
+                this.folderContents = response.folder_contents;
+                this.hasLoaded = true;
+                console.log(this.folderContents);
+            })
+            .catch((error) => {
+                this.error = error;
+            });
+    },
+    methods: {
+        selectAllRows() {
+            this.$refs.folder_content_table.selectAllRows();
         },
-        computed: {
-            rows() {
-                return this.folderContents.length
+        clearSelected() {
+            this.$refs.folder_content_table.clearSelected();
+        },
+        toggleSelect() {
+            if (this.selected.length !== this.rows) {
+                this.selectAllRows();
+            } else {
+                this.clearSelected();
             }
         },
-        created() {
-            this.root = getAppRoot();
-            this.services = new Services({root: this.root});
-            this.services
-                .getFolderContents(this.folder_id)
-                .then((response) => {
-                    response.folder_contents.forEach(content => content.update_time = new Date(content.update_time).toISOString())
-                    this.folderContents = response.folder_contents;
-                    this.hasLoaded = true
-                    console.log(this.folderContents)
-                })
-                .catch((error) => {
-                    this.error = error;
-                });
+        onRowSelected(items) {
+            this.selected = items;
         },
-        methods: {
-            selectAllRows() {
-                this.$refs.folder_content_table.selectAllRows()
-            },
-            clearSelected() {
-                this.$refs.folder_content_table.clearSelected()
-            },
-            toggleSelect() {
-                if (this.selected.length !== this.rows) {
-                    this.selectAllRows()
-                } else {
-                    this.clearSelected()
-                }
-            },
-            onRowSelected(items) {
-                this.selected = items
-            },
-            bytesToString(raw_size) {
-                return Utils.bytesToString(raw_size)
-            },
-            createContentLink(element) {
-                if (element.type === "file")
-                    return `${this.root}library/list#folders/${this.folder_id}/datasets/${element.id}`
-                else if (element.type === "folder")
-                    return `${this.root}library/folders/${element.id}`
-            },
-            createPermissionLink(element) {
-                if (element.type === "file")
-                    return `${this.createContentLink(element)}/permissions`
-                else if (element.type === "folder")
-                    return `${this.root}library/list#folders/${element.id}/permissions`
-            },
-            getMessage(element) {
-                if (element.type === "file")
-                    return element.message
-                else if (element.type === "folder")
-                    return element.description
-            },
-            expandMessage(element) {
-                this.expandedMessage.push(element.id)
-            },
-            linkify(raw_text) {
-                return linkify(raw_text)
-            }
-        }
-
-    };
+        bytesToString(raw_size) {
+            return Utils.bytesToString(raw_size);
+        },
+        createContentLink(element) {
+            if (element.type === "file")
+                return `${this.root}library/list#folders/${this.folder_id}/datasets/${element.id}`;
+            else if (element.type === "folder") return `${this.root}library/folders/${element.id}`;
+        },
+        createPermissionLink(element) {
+            if (element.type === "file") return `${this.createContentLink(element)}/permissions`;
+            else if (element.type === "folder") return `${this.root}library/list#folders/${element.id}/permissions`;
+        },
+        getMessage(element) {
+            if (element.type === "file") return element.message;
+            else if (element.type === "folder") return element.description;
+        },
+        expandMessage(element) {
+            this.expandedMessage.push(element.id);
+        },
+        linkify(raw_text) {
+            return linkify(raw_text);
+        },
+    },
+};
 </script>
 
 <style scoped>
-    @import "library-folder-table.css";
+@import "library-folder-table.css";
 </style>
-

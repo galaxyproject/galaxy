@@ -144,7 +144,7 @@ export const getAnalysisRouter = (Galaxy) =>
         show_library_folder: function (folder_id) {
             this.page.toolPanel.getVueComponent().hide();
             this.page.panels.right.hide();
-            this._display_vue_helper(LibraryFolder, {folder_id: folder_id});
+            this._display_vue_helper(LibraryFolder, { folder_id: folder_id });
         },
 
         show_cloud_auth: function () {
