@@ -343,6 +343,7 @@ class BaseJobRunner(object):
             log.debug('execution of external set_meta for job %d finished' % job_wrapper.job_id)
 
     def get_job_file(self, job_wrapper, **kwds):
+        print(job_wrapper)
         job_metrics = job_wrapper.app.job_metrics
         job_instrumenter = job_metrics.job_instrumenters[job_wrapper.job_destination.id]
 

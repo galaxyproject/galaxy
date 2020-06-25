@@ -53,8 +53,17 @@ class HmgmRunner(AsynchronousJobRunner):
 
     # This is the main logic to determine what to do with thread.  Should it re-queue, be killed, or complete
     def check_watched_item(self, job_state):
+        if job_state.job_wrapper.get_state() == model.Job.states.DELETED:
+            job_state.running = False
+            log.info("Job deleted by user before it entered the queue")
+            if job_state.job_wrapper.cleanup_job in ("always", "onsuccess"):
+                job_state.job_wrapper.cleanup()
+            return None
+
         exit_code = self._run_job(job_state.job_wrapper)
+        log.debug("EXIT CODE: " + str(exit_code))
         # This is a success code: The HMGM is complete
+        
         if exit_code==0:
             job_state.running = False
             job_state.job_wrapper.change_state(model.Job.states.OK)
@@ -123,6 +132,7 @@ class HmgmRunner(AsynchronousJobRunner):
         pid = int(pid)
         if not self._check_pid(pid):
             log.warning("stop_job(): %s: PID %d was already dead or can't be signaled" % (job.id, pid))
+            job_wrapper.change_state(model.Job.states.DELETED)
             return
         for sig in [15, 9]:
             try:
@@ -204,13 +214,24 @@ class HmgmRunner(AsynchronousJobRunner):
         return exit_code
         # End change
 
+    def recover(self, job, job_wrapper):
+        """Recovers jobs stuck in the queued/running state when Galaxy started"""
+        job_id = job.get_job_runner_external_id()
+        if job_id is None:
+            self.put(job_wrapper)
+            return
+        self.prepare_job(job_wrapper)
+        job_destination = job_wrapper.job_destination
+        ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper, job_id=job_id, job_destination=job_destination)
+        self.monitor_queue.put(ajs)
+
     # Copied from runners/local.py
     def _fail_job_local(self, job_wrapper, message):
         job_destination = job_wrapper.job_destination
         job_state = JobState(job_wrapper, job_destination)
         job_state.fail_message = message
-        job_state.stop_job = False
-        self.fail_job(job_state, exception=True)
+        job_state.stop_job = True
+        self.fail_job(job_state, exception=False)
 
     # Copied from runners/local.py
     def __command_line(self, job_wrapper):
