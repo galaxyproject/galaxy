@@ -53,6 +53,7 @@ class HmgmRunner(AsynchronousJobRunner):
 
     # This is the main logic to determine what to do with thread.  Should it re-queue, be killed, or complete
     def check_watched_item(self, job_state):
+        # If this job has been deleted, don't execute again.  Exit. 
         if job_state.job_wrapper.get_state() == model.Job.states.DELETED:
             job_state.running = False
             log.info("Job deleted by user before it entered the queue")
@@ -61,7 +62,7 @@ class HmgmRunner(AsynchronousJobRunner):
             return None
 
         exit_code = self._run_job(job_state.job_wrapper)
-        log.debug("EXIT CODE: " + str(exit_code))
+        log.debug("Hmgm Exit Code: " + str(exit_code))
         # This is a success code: The HMGM is complete
         
         if exit_code==0:
@@ -132,6 +133,8 @@ class HmgmRunner(AsynchronousJobRunner):
         pid = int(pid)
         if not self._check_pid(pid):
             log.warning("stop_job(): %s: PID %d was already dead or can't be signaled" % (job.id, pid))
+            # Kill works fine in cases where the job is actully running.  But int he case of HMGMs, this often isn't the case.  
+            # Instead, mark the job as deleted and handle appropriately before we run it next time.  
             job_wrapper.change_state(model.Job.states.DELETED)
             return
         for sig in [15, 9]:
