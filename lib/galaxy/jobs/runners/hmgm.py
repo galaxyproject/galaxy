@@ -133,7 +133,7 @@ class HmgmRunner(AsynchronousJobRunner):
         pid = int(pid)
         if not self._check_pid(pid):
             log.warning("stop_job(): %s: PID %d was already dead or can't be signaled" % (job.id, pid))
-            # Kill works fine in cases where the job is actully running.  But int he case of HMGMs, this often isn't the case.  
+            # Kill works fine in cases where the job is actully running.  But in the case of HMGMs, this often isn't the case.  
             # Instead, mark the job as deleted and handle appropriately before we run it next time.  
             job_wrapper.change_state(model.Job.states.DELETED)
             return
