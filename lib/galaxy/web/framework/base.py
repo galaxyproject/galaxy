@@ -393,7 +393,7 @@ class Request(webob.Request):
         cookies = SimpleCookie()
         cookie_header = self.environ.get("HTTP_COOKIE")
         if cookie_header:
-            galaxy_cookies = "; ".join([x.strip() for x in cookie_header.split('; ') if x.startswith('galaxy')])
+            galaxy_cookies = "; ".join(x.strip() for x in cookie_header.split('; ') if x.startswith('galaxy'))
             if galaxy_cookies:
                 try:
                     cookies.load(galaxy_cookies)
