@@ -5,20 +5,15 @@ File format detector
 import bz2
 import codecs
 import gzip
+import io
 import logging
 import os
 import re
 import shutil
 import sys
 import tempfile
+import urllib
 import zipfile
-
-from six import (
-    PY3,
-    StringIO,
-    text_type,
-)
-from six.moves.urllib.request import urlopen
 
 from galaxy import util
 from galaxy.util import compression_utils
@@ -44,7 +39,7 @@ def get_test_fname(fname):
 
 
 def stream_url_to_file(path):
-    page = urlopen(path)  # page will be .close()ed in stream_to_file
+    page = urllib.request.urlopen(path)  # page will be .close()ed in stream_to_file
     temp_name = stream_to_file(page, prefix='url_paste', source_encoding=util.get_charset_from_http_headers(page.headers))
     return temp_name
 
@@ -545,7 +540,7 @@ class FilePrefix:
     def string_io(self):
         if self.non_utf8_error is not None:
             raise self.non_utf8_error
-        rval = StringIO(self.contents_header)
+        rval = io.StringIO(self.contents_header)
         return rval
 
     def startswith(self, prefix):
