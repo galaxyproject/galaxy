@@ -4,7 +4,6 @@ import socket
 from collections import MutableMapping
 
 
-
 class Facts(MutableMapping):
     """A dict-like object that evaluates values at access time."""
 

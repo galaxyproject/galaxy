@@ -7,7 +7,6 @@ from abc import (
 )
 
 
-
 class ToolLocationResolver(metaclass=ABCMeta):
     """Parse a URI-like string and return a ToolSource object."""
 

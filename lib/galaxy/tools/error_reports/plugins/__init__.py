@@ -8,7 +8,6 @@ from abc import (
 )
 
 
-
 class ErrorPlugin(metaclass=ABCMeta):
     """Describes how to send bug reports to various locations."""
 

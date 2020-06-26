@@ -107,6 +107,8 @@ CHARACTER_MAP = {'>': '__gt__',
 INVALID_CHARACTER = "X"
 
 # __coerce__ doesn't do anything under Python anyway.
+
+
 def coerce(x, y):
     return x
 

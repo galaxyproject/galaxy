@@ -8,7 +8,6 @@ from abc import (
 )
 
 
-
 def dataset_path_rewrites(dataset_paths):
     dataset_paths_with_rewrites = [path for path in dataset_paths if getattr(path, "false_path", None)]
     return {dp.real_path: dp for dp in dataset_paths_with_rewrites}

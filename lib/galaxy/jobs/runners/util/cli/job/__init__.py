@@ -7,7 +7,6 @@ from abc import (
 )
 
 
-
 class BaseJobExec(metaclass=ABCMeta):
 
     @abstractmethod

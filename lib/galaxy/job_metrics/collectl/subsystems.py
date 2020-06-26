@@ -8,7 +8,6 @@ from abc import (
 )
 
 
-
 class CollectlSubsystem(metaclass=ABCMeta):
     """ Class providing an abstraction of collectl subsytems.
     """

@@ -8,7 +8,6 @@ from abc import (
 )
 
 
-
 class WorkflowSchedulingPlugin(metaclass=ABCMeta):
     """ A plugin defining how Galaxy should schedule plugins. By default
     plugins are passive and should monitor Galaxy's work queue for

@@ -5,7 +5,6 @@ import time
 import traceback
 
 
-
 def get_current_thread_object_dict():
     """
     Get a dictionary of all 'Thread' objects created via the threading

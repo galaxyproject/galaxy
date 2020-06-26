@@ -7,7 +7,6 @@ from abc import (
 )
 
 
-
 class BaseShellExec(metaclass=ABCMeta):
 
     @abstractmethod
