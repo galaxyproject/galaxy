@@ -23,7 +23,7 @@ SECURE_COOKIE = "galaxysession"
 # Randomly generate a password every launch
 
 
-class ProxyManager(object):
+class ProxyManager:
 
     valid_update_keys = (
         'host',
@@ -115,13 +115,13 @@ class ProxyManager(object):
             raise Exception("Unknown proxy type")
 
 
-class ProxyLauncher(object):
+class ProxyLauncher:
 
     def launch_proxy_command(self, config):
         raise NotImplementedError()
 
 
-class NodeProxyLauncher(object):
+class NodeProxyLauncher:
 
     def launch_proxy_command(self, config):
         args = [
@@ -139,7 +139,7 @@ class NodeProxyLauncher(object):
         return command
 
 
-class GolangProxyLauncher(object):
+class GolangProxyLauncher:
 
     def launch_proxy_command(self, config):
         args = [
@@ -164,14 +164,14 @@ class GolangProxyLauncher(object):
         return args
 
 
-class AuthenticationToken(object):
+class AuthenticationToken:
 
     def __init__(self, trans):
         self.cookie_name = SECURE_COOKIE
         self.cookie_value = trans.get_cookie(self.cookie_name)
 
 
-class ProxyRequests(object):
+class ProxyRequests:
 
     def __init__(self, host=None, port=None):
         if host is None:
@@ -194,7 +194,7 @@ def proxy_ipc(config):
         return RestGolangProxyIpc(config)
 
 
-class ProxyIpc(object):
+class ProxyIpc:
 
     def handle_requests(self, authentication, proxy_requests, route_name, container_ids, container_interface):
         raise NotImplementedError()
@@ -203,7 +203,7 @@ class ProxyIpc(object):
         raise NotImplementedError()
 
 
-class JsonFileProxyIpc(object):
+class JsonFileProxyIpc:
 
     def __init__(self, proxy_session_map):
         self.proxy_session_map = proxy_session_map
@@ -213,7 +213,7 @@ class JsonFileProxyIpc(object):
         with FileLock(self.proxy_session_map):
             if not os.path.exists(self.proxy_session_map):
                 open(self.proxy_session_map, "w").write("{}")
-            json_data = open(self.proxy_session_map, "r").read()
+            json_data = open(self.proxy_session_map).read()
             session_map = json.loads(json_data)
             session_map[key] = {
                 'host': proxy_requests.host,
@@ -250,7 +250,7 @@ class JsonFileProxyIpc(object):
             return None
 
 
-class SqliteProxyIpc(object):
+class SqliteProxyIpc:
 
     def __init__(self, proxy_session_map):
         self.proxy_session_map = proxy_session_map
@@ -324,7 +324,7 @@ class SqliteProxyIpc(object):
                 conn.close()
 
 
-class RestGolangProxyIpc(object):
+class RestGolangProxyIpc:
 
     def __init__(self, config):
         self.config = config

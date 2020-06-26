@@ -49,7 +49,7 @@ from galaxy.work.context import WorkRequestContext
 log = logging.getLogger(__name__)
 
 
-class ToolEvaluator(object):
+class ToolEvaluator:
     """ An abstraction linking together a tool and a job runtime to evaluate
     tool inputs in an isolated, testable manner.
     """
@@ -88,7 +88,7 @@ class ToolEvaluator(object):
             # uses a Dataset rather than an HDA or LDA, it's necessary to set up a
             # fake dataset association that provides the needed attributes for
             # preparing a job.
-            class FakeDatasetAssociation (object):
+            class FakeDatasetAssociation :
                 fake_dataset_association = True
 
                 def __init__(self, dataset=None):
@@ -597,7 +597,7 @@ class ToolEvaluator(object):
             return None
 
     def __build_config_file_text(self, content):
-        if isinstance(content, string_types):
+        if isinstance(content, str):
             return content, True
 
         content_format = content["format"]
@@ -622,7 +622,7 @@ class ToolEvaluator(object):
             value = unicodify(content)
         if strip:
             value = value.strip()
-        with io.open(config_filename, "w", encoding='utf-8') as f:
+        with open(config_filename, "w", encoding='utf-8') as f:
             f.write(value)
         # For running jobs as the actual user, ensure the config file is globally readable
         os.chmod(config_filename, RW_R__R__)

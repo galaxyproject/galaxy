@@ -94,7 +94,7 @@ def build_dependency_manager(app_config_dict=None, resolution_config_dict=None, 
     return dependency_manager
 
 
-class DependencyManager(object):
+class DependencyManager:
     """
     A DependencyManager attempts to resolve named and versioned dependencies by
     searching for them under a list of directories. Directories should be
@@ -347,7 +347,7 @@ class CachedDependencyManager(DependencyManager):
     cached = True
 
     def __init__(self, default_base_path, **kwd):
-        super(CachedDependencyManager, self).__init__(default_base_path=default_base_path, **kwd)
+        super().__init__(default_base_path=default_base_path, **kwd)
         self.tool_dependency_cache_dir = self.get_app_option("tool_dependency_cache_dir") or os.path.join(default_base_path, "_cache")
 
     def build_cache(self, requirements, **kwds):

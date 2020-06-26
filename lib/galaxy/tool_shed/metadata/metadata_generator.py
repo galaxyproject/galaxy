@@ -36,7 +36,7 @@ from galaxy.web import url_for
 log = logging.getLogger(__name__)
 
 
-class MetadataGenerator(object):
+class MetadataGenerator:
 
     def __init__(self, app, repository=None, changeset_revision=None, repository_clone_url=None,
                  shed_config_dict=None, relative_install_dir=None, repository_files_dir=None,
@@ -727,7 +727,7 @@ class MetadataGenerator(object):
             return metadata_dict, error_message
         root = tree.getroot()
 
-        class RecurserValueStore(object):
+        class RecurserValueStore:
             pass
         rvs = RecurserValueStore()
         rvs.valid_tool_dependencies_dict = {}

@@ -10,7 +10,7 @@ from galaxy.util.template import fill_template
 DEFAULT_DATASET_NAME = 'dataset'
 
 
-class DisplayApplicationParameter(object):
+class DisplayApplicationParameter:
     """ Abstract Class for Display Application Parameters """
 
     type = None
@@ -159,7 +159,7 @@ parameter_type_to_class = {DisplayApplicationDataParameter.type: DisplayApplicat
                            DisplayApplicationTemplateParameter.type: DisplayApplicationTemplateParameter}
 
 
-class DisplayParameterValueWrapper(object):
+class DisplayParameterValueWrapper:
     ACTION_NAME = 'param'
 
     def __init__(self, value, parameter, other_values, dataset_hash, user_hash, trans):

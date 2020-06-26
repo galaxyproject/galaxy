@@ -45,7 +45,7 @@ except ImportError:
 class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesExtendedMetadataMixin):
 
     def __init__(self, app):
-        super(DatasetInterface, self).__init__(app)
+        super().__init__(app)
         self.history_manager = managers.histories.HistoryManager(app)
         self.hda_manager = managers.hdas.HDAManager(app)
 
@@ -153,7 +153,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         """ Primarily used for the S3ObjectStore - get the status of data transfer
         if the file is not in cache """
         data = self._check_dataset(trans, dataset_id)
-        if isinstance(data, string_types):
+        if isinstance(data, str):
             return data
         log.debug("Checking transfer status for dataset %s..." % data.dataset.id)
 
@@ -598,7 +598,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         if not dataset:
             web.httpexceptions.HTTPNotFound()
         annotation = self.get_item_annotation_str(trans.sa_session, trans.user, dataset)
-        if annotation and isinstance(annotation, text_type):
+        if annotation and isinstance(annotation, str):
             annotation = annotation.encode('ascii', 'replace')  # paste needs ascii here
         return annotation
 

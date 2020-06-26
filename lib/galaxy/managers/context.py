@@ -10,7 +10,7 @@ from galaxy.exceptions import UserActivationRequiredException
 from galaxy.util import bunch
 
 
-class ProvidesAppContext(object):
+class ProvidesAppContext:
     """ For transaction-like objects to provide Galaxy convience layer for
     database and event handling.
 
@@ -22,7 +22,7 @@ class ProvidesAppContext(object):
         Application-level logging of user actions.
         """
         if self.app.config.log_actions:
-            action = self.app.model.UserAction(action=action, context=context, params=text_type(dumps(params)))
+            action = self.app.model.UserAction(action=action, context=context, params=str(dumps(params)))
             try:
                 if user:
                     action.user = user
@@ -100,7 +100,7 @@ class ProvidesAppContext(object):
         return self.app.install_model
 
 
-class ProvidesUserContext(object):
+class ProvidesUserContext:
     """ For transaction-like objects to provide Galaxy convience layer for
     reasoning about users.
 
@@ -160,7 +160,7 @@ class ProvidesUserContext(object):
             return path
 
 
-class ProvidesHistoryContext(object):
+class ProvidesHistoryContext:
     """ For transaction-like objects to provide Galaxy convience layer for
     reasoning about histories.
 

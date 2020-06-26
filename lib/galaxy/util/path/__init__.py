@@ -1,6 +1,5 @@
 """Path manipulation functions.
 """
-from __future__ import absolute_import
 
 import errno
 import imp
@@ -38,7 +37,6 @@ except ImportError:
     getpwuid = None
 
 from six import iteritems, string_types
-from six.moves import filter, map, zip
 
 import galaxy.util
 
@@ -86,7 +84,7 @@ def safe_contains(prefix, path, allowlist=None, real=None):
     return any(__contains(prefix, path, allowlist=allowlist, real=real))
 
 
-class _SafeContainsDirectoryChecker(object):
+class _SafeContainsDirectoryChecker:
 
     def __init__(self, dirpath, prefix, allowlist=None):
         self.allowlist = allowlist
@@ -325,7 +323,7 @@ class Extensions(dict):
     The first item in the sequence should match the key and is the "canonicalization".
     """
     def __missing__(self, key):
-        for k, v in iteritems(self):
+        for k, v in self.items():
             if key in v:
                 self[key] = v
                 return v
@@ -410,7 +408,7 @@ def _build_self(target, path_module):
 def __copy_self(names=__name__, parent=None):
     """Returns a copy of this module that can be modified without modifying `galaxy.util.path`` in ``sys.modules``.
     """
-    if isinstance(names, string_types):
+    if isinstance(names, str):
         names = iter(names.split('.'))
     try:
         name = next(names)

@@ -153,7 +153,7 @@ class SlurmJobRunner(DRMAAJobRunner):
                     self.work_queue.put((self.fail_job, ajs))
                     return
             if drmaa_state == self.drmaa_job_states.DONE:
-                with open(ajs.error_file, 'r') as rfh:
+                with open(ajs.error_file) as rfh:
                     _remove_spurious_top_lines(rfh, ajs)
                 with open(ajs.error_file, 'r+') as f:
                     if os.path.getsize(ajs.error_file) > SLURM_MEMORY_LIMIT_SCAN_SIZE:
@@ -172,7 +172,7 @@ class SlurmJobRunner(DRMAAJobRunner):
         except Exception:
             log.exception('(%s/%s) Failure in SLURM _complete_terminal_job(), job final state will be: %s', ajs.job_wrapper.get_id_tag(), ajs.job_id, drmaa_state)
         # by default, finish the job with the state from drmaa
-        return super(SlurmJobRunner, self)._complete_terminal_job(ajs, drmaa_state=drmaa_state)
+        return super()._complete_terminal_job(ajs, drmaa_state=drmaa_state)
 
     def __check_memory_limit(self, efile_path):
         """

@@ -5,14 +5,14 @@ Galaxy Security
 from galaxy.util.bunch import Bunch
 
 
-class Action(object):
+class Action:
     def __init__(self, action, description, model):
         self.action = action
         self.description = description
         self.model = model
 
 
-class RBACAgent(object):
+class RBACAgent:
     """Class that handles galaxy security"""
     permitted_actions = Bunch(
         DATASET_MANAGE_PERMISSIONS=Action("manage permissions", "Users having associated role can manage the roles associated with permissions on this dataset.", "grant"),

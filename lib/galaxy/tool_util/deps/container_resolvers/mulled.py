@@ -330,7 +330,6 @@ def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None)
     return name
 
 
-@six.python_2_unicode_compatible
 class CachedMulledDockerContainerResolver(ContainerResolver):
 
     resolver_type = "cached_mulled"
@@ -338,7 +337,7 @@ class CachedMulledDockerContainerResolver(ContainerResolver):
     shell = '/bin/bash'
 
     def __init__(self, app_info=None, namespace="biocontainers", hash_func="v2", **kwds):
-        super(CachedMulledDockerContainerResolver, self).__init__(app_info)
+        super().__init__(app_info)
         self.namespace = namespace
         self.hash_func = hash_func
 
@@ -354,7 +353,6 @@ class CachedMulledDockerContainerResolver(ContainerResolver):
         return "CachedMulledDockerContainerResolver[namespace=%s]" % self.namespace
 
 
-@six.python_2_unicode_compatible
 class CachedMulledSingularityContainerResolver(ContainerResolver):
 
     resolver_type = "cached_mulled_singularity"
@@ -362,7 +360,7 @@ class CachedMulledSingularityContainerResolver(ContainerResolver):
     shell = '/bin/bash'
 
     def __init__(self, app_info=None, hash_func="v2", **kwds):
-        super(CachedMulledSingularityContainerResolver, self).__init__(app_info)
+        super().__init__(app_info)
         self.cache_directory = kwds.get("cache_directory", os.path.join(app_info.container_image_cache_path, "singularity", "mulled"))
         self.hash_func = hash_func
 
@@ -377,7 +375,6 @@ class CachedMulledSingularityContainerResolver(ContainerResolver):
         return "CachedMulledSingularityContainerResolver[cache_directory=%s]" % self.cache_directory
 
 
-@six.python_2_unicode_compatible
 class MulledDockerContainerResolver(ContainerResolver):
     """Look for mulled images matching tool dependencies."""
 
@@ -387,7 +384,7 @@ class MulledDockerContainerResolver(ContainerResolver):
     protocol = None
 
     def __init__(self, app_info=None, namespace="biocontainers", hash_func="v2", auto_install=True, **kwds):
-        super(MulledDockerContainerResolver, self).__init__(app_info)
+        super().__init__(app_info)
         self.namespace = namespace
         self.hash_func = hash_func
         self.auto_install = string_as_bool(auto_install)
@@ -445,7 +442,6 @@ class MulledDockerContainerResolver(ContainerResolver):
         return "MulledDockerContainerResolver[namespace=%s]" % self.namespace
 
 
-@six.python_2_unicode_compatible
 class MulledSingularityContainerResolver(MulledDockerContainerResolver):
 
     resolver_type = "mulled_singularity"
@@ -453,7 +449,7 @@ class MulledSingularityContainerResolver(MulledDockerContainerResolver):
     protocol = 'docker://'
 
     def __init__(self, app_info=None, namespace="biocontainers", hash_func="v2", auto_install=True, **kwds):
-        super(MulledSingularityContainerResolver, self).__init__(app_info)
+        super().__init__(app_info)
         self.cache_directory = kwds.get("cache_directory", os.path.join(app_info.container_image_cache_path, "singularity", "mulled"))
         self.namespace = namespace
         self.hash_func = hash_func
@@ -472,7 +468,6 @@ class MulledSingularityContainerResolver(MulledDockerContainerResolver):
         return "MulledSingularityContainerResolver[namespace=%s]" % self.namespace
 
 
-@six.python_2_unicode_compatible
 class BuildMulledDockerContainerResolver(ContainerResolver):
     """Build for Docker mulled images matching tool dependencies."""
 
@@ -482,7 +477,7 @@ class BuildMulledDockerContainerResolver(ContainerResolver):
     builds_on_resolution = True
 
     def __init__(self, app_info=None, namespace="local", hash_func="v2", auto_install=True, **kwds):
-        super(BuildMulledDockerContainerResolver, self).__init__(app_info)
+        super().__init__(app_info)
         self._involucro_context_kwds = {
             'involucro_bin': self._get_config_option("involucro_path", None)
         }
@@ -521,7 +516,6 @@ class BuildMulledDockerContainerResolver(ContainerResolver):
         return "BuildDockerContainerResolver[namespace=%s]" % self.namespace
 
 
-@six.python_2_unicode_compatible
 class BuildMulledSingularityContainerResolver(ContainerResolver):
     """Build for Singularity mulled images matching tool dependencies."""
 
@@ -531,7 +525,7 @@ class BuildMulledSingularityContainerResolver(ContainerResolver):
     builds_on_resolution = True
 
     def __init__(self, app_info=None, hash_func="v2", auto_install=True, **kwds):
-        super(BuildMulledSingularityContainerResolver, self).__init__(app_info)
+        super().__init__(app_info)
         self._involucro_context_kwds = {
             'involucro_bin': self._get_config_option("involucro_path", None)
         }

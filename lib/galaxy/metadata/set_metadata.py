@@ -92,9 +92,9 @@ def set_metadata_portable():
 
     metadata_params_path = os.path.join("metadata", "params.json")
     try:
-        with open(metadata_params_path, "r") as f:
+        with open(metadata_params_path) as f:
             metadata_params = json.load(f)
-    except IOError:
+    except OSError:
         raise Exception("Failed to find metadata/params.json from cwd [%s]" % tool_job_working_directory)
     datatypes_config = metadata_params["datatypes_config"]
     job_metadata = metadata_params["job_metadata"]
@@ -123,7 +123,7 @@ def set_metadata_portable():
         stdio_exit_codes = list(map(ToolStdioExitCode, stdio_exit_code_dicts))
         stdio_regexes = list(map(ToolStdioRegex, stdio_regex_dicts))
 
-        with open(object_store_conf_path, "r") as f:
+        with open(object_store_conf_path) as f:
             config_dict = json.load(f)
         from galaxy.objectstore import build_object_store_from_config
         assert config_dict is not None

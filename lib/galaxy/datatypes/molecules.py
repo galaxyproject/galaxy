@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import logging
 import os
 import re
@@ -500,7 +499,7 @@ class PDB(GenericMolFile):
         """
         try:
             chain_ids = set()
-            with open(dataset.file_name, 'r') as fh:
+            with open(dataset.file_name) as fh:
                 for line in fh:
                     if line.startswith('ATOM  ') or line.startswith('HETATM'):
                         if line[21] != ' ':
@@ -651,7 +650,7 @@ class PQR(GenericMolFile):
         try:
             prog = self.get_matcher()
             chain_ids = set()
-            with open(dataset.file_name, 'r') as fh:
+            with open(dataset.file_name) as fh:
                 for line in fh:
                     if line.startswith('REMARK'):
                         continue

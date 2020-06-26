@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import gzip
 import io
 import logging
@@ -58,7 +56,7 @@ def get_fileobj_raw(filename, mode="r", compressed_formats=None):
     elif 'b' in mode:
         return compressed_format, open(filename, mode)
     else:
-        return compressed_format, io.open(filename, mode, encoding='utf-8')
+        return compressed_format, open(filename, mode, encoding='utf-8')
     if 'b' not in mode:
         return compressed_format, io.TextIOWrapper(fh, encoding='utf-8')
     else:
@@ -81,7 +79,7 @@ def file_iter(fname, sep=None):
                 yield line.split(sep)
 
 
-class CompressedFile(object):
+class CompressedFile:
 
     @staticmethod
     def can_decompress(file_path):

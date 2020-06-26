@@ -16,7 +16,7 @@ from galaxy.util.custom_logging import get_logger
 log = get_logger(__name__)
 
 
-class DefaultJobAction(object):
+class DefaultJobAction:
     """
     Base job action.
     """
@@ -452,7 +452,7 @@ class RemoveTagDatasetAction(TagDatasetAction):
         app.tag_handler.remove_tags_from_list(user, output, tags)
 
 
-class ActionBox(object):
+class ActionBox:
 
     actions = {"RenameDatasetAction": RenameDatasetAction,
                "HideDatasetAction": HideDatasetAction,

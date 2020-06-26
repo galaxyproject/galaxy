@@ -21,8 +21,7 @@ def tool_tag_manager(app):
         return NullToolTagManager()
 
 
-@six.add_metaclass(ABCMeta)
-class AbstractToolTagManager(object):
+class AbstractToolTagManager(metaclass=ABCMeta):
 
     @abstractmethod
     def reset_tags(self):

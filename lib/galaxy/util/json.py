@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import collections
 import copy
 import json
@@ -24,13 +22,13 @@ def swap_inf_nan(val):
     """
     This takes an arbitrary object and preps it for jsonifying safely, templating Inf/NaN.
     """
-    if isinstance(val, string_types):
+    if isinstance(val, str):
         # basestring first, because it's a sequence and would otherwise get caught below.
         return val
     elif isinstance(val, collections.Sequence):
         return [swap_inf_nan(v) for v in val]
     elif isinstance(val, collections.Mapping):
-        return {swap_inf_nan(k): swap_inf_nan(v) for (k, v) in iteritems(val)}
+        return {swap_inf_nan(k): swap_inf_nan(v) for (k, v) in val.items()}
     elif isinstance(val, float):
         if math.isnan(val):
             return "__NaN__"

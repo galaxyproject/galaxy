@@ -45,7 +45,7 @@ def get_path_key(path_tuple):
     return path_key
 
 
-class JobManager(object):
+class JobManager:
 
     def __init__(self, app):
         self.app = app
@@ -76,7 +76,7 @@ class JobManager(object):
             return False
 
 
-class JobSearch(object):
+class JobSearch:
     """Search for jobs using tool inputs or other jobs"""
     def __init__(self, app):
         self.app = app
@@ -151,7 +151,7 @@ class JobSearch(object):
                                      model.Job.states.OK])
             )
         else:
-            if isinstance(job_state, string_types):
+            if isinstance(job_state, str):
                 conditions.append(model.Job.state == job_state)
             elif isinstance(job_state, list):
                 o = []

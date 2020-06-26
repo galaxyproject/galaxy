@@ -10,8 +10,7 @@ from abc import (
 import six
 
 
-@six.add_metaclass(ABCMeta)
-class CollectlSubsystem(object):
+class CollectlSubsystem(metaclass=ABCMeta):
     """ Class providing an abstraction of collectl subsytems.
     """
 

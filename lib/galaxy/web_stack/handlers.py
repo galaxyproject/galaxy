@@ -3,7 +3,6 @@
 A 'handler' is a named Python process running the Galaxy application responsible
 for some activity such as queuing up jobs or scheduling workflows.
 """
-from __future__ import absolute_import
 
 import logging
 import os
@@ -34,7 +33,7 @@ class HandlerAssignmentSkip(Exception):
     pass
 
 
-class ConfiguresHandlers(object):
+class ConfiguresHandlers:
     DEFAULT_HANDLER_TAG = '_default_'
     DEFAULT_BASE_HANDLER_POOLS = ()
     UNSUPPORTED_HANDLER_ASSIGNMENT_METHODS = ()

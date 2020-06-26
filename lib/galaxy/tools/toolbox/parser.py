@@ -13,8 +13,7 @@ from galaxy.util import parse_xml, string_as_bool
 DEFAULT_MONITOR = False
 
 
-@six.add_metaclass(ABCMeta)
-class ToolConfSource(object):
+class ToolConfSource(metaclass=ABCMeta):
     """Interface represents a container of tool references."""
 
     @abstractmethod
@@ -61,7 +60,7 @@ class XmlToolConfSource(ToolConfSource):
 class YamlToolConfSource(ToolConfSource):
 
     def __init__(self, config_filename):
-        with open(config_filename, "r") as f:
+        with open(config_filename) as f:
             as_dict = yaml.safe_load(f)
         self.as_dict = as_dict
 
@@ -81,7 +80,7 @@ class YamlToolConfSource(ToolConfSource):
         return False
 
 
-class ToolConfItem(object):
+class ToolConfItem:
     """Abstract description of a tool conf item.
 
     These may include tools, labels, sections, and workflows.
@@ -130,7 +129,7 @@ class ToolConfItem(object):
 class ToolConfSection(ToolConfItem):
 
     def __init__(self, attributes, items, elem=None):
-        super(ToolConfSection, self).__init__('section', attributes, elem)
+        super().__init__('section', attributes, elem)
         self.items = items
 
 

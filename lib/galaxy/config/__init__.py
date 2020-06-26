@@ -2,7 +2,6 @@
 Universe configuration builder.
 """
 # absolute_import needed for tool_shed package.
-from __future__ import absolute_import
 
 import collections
 import errno
@@ -107,7 +106,7 @@ def find_root(kwargs):
     return os.path.abspath(kwargs.get('root_dir', '.'))
 
 
-class BaseAppConfiguration(object):
+class BaseAppConfiguration:
     # Override in subclasses (optional): {KEY: config option, VALUE: deprecated directory name}
     # If VALUE == first directory in a user-supplied path that resolves to KEY, it will be stripped from that path
     renamed_options = None
@@ -152,7 +151,7 @@ class BaseAppConfiguration(object):
             else:
                 try:
                     self.global_conf_parser.read(self.config_file)
-                except (IOError, OSError):
+                except OSError:
                     raise
                 except Exception:
                     pass  # Not an INI file
@@ -326,7 +325,7 @@ class BaseAppConfiguration(object):
             setattr(self, var, [root_join(x) for x in paths])
 
 
-class CommonConfigurationMixin(object):
+class CommonConfigurationMixin:
     """Shared configuration settings code for Galaxy and ToolShed."""
 
     @property
@@ -387,7 +386,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     deprecated_dirs = {'config_dir': 'config', 'data_dir': 'database'}
 
     def __init__(self, **kwargs):
-        super(GalaxyAppConfiguration, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self._override_tempdir(kwargs)
         self._process_config(kwargs)
 
@@ -458,7 +457,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             self.shed_tool_data_path = self.tool_data_path
 
         self.running_functional_tests = string_as_bool(kwargs.get('running_functional_tests', False))
-        if isinstance(self.hours_between_check, string_types):
+        if isinstance(self.hours_between_check, str):
             self.hours_between_check = float(self.hours_between_check)
         try:
             if isinstance(self.hours_between_check, int):
@@ -664,7 +663,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             self.amqp_internal_connection = "sqlalchemy+sqlite:///%s?isolation_level=IMMEDIATE" % self._in_data_dir("control.sqlite")
         self.pretty_datetime_format = expand_pretty_datetime_format(self.pretty_datetime_format)
         try:
-            with open(self.user_preferences_extra_conf_path, 'r') as stream:
+            with open(self.user_preferences_extra_conf_path) as stream:
                 self.user_preferences_extra = yaml.safe_load(stream)
         except Exception:
             if self.user_preferences_extra_conf_path_set:
@@ -824,11 +823,11 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     def reload_sanitize_allowlist(self, explicit=True):
         self.sanitize_allowlist = []
         try:
-            with open(self.sanitize_allowlist_file, 'rt') as f:
+            with open(self.sanitize_allowlist_file) as f:
                 for line in f.readlines():
                     if not line.startswith("#"):
                         self.sanitize_allowlist.append(line.strip())
-        except IOError:
+        except OSError:
             if explicit:
                 log.warning("Sanitize log file explicitly specified as '%s' but does not exist, continuing with no tools allowlisted.", self.sanitize_allowlist_file)
 
@@ -989,7 +988,7 @@ def configure_logging(config):
         register_postfork_function(root.addHandler, sentry_handler)
 
 
-class ConfiguresGalaxyMixin(object):
+class ConfiguresGalaxyMixin:
     """Shared code for configuring Galaxy-like app objects."""
 
     def _configure_genome_builds(self, data_table_name="__dbkeys__", load_old_style=True):
@@ -1086,7 +1085,7 @@ class ConfiguresGalaxyMixin(object):
             self.tool_data_tables.load_from_config_file(config_filename=self.config.shed_tool_data_table_config,
                                                         tool_data_path=self.tool_data_tables.tool_data_path,
                                                         from_shed_config=from_shed_config)
-        except (OSError, IOError) as exc:
+        except OSError as exc:
             # Missing shed_tool_data_table_config is okay if it's the default
             if exc.errno != errno.ENOENT or self.config.shed_tool_data_table_config_set:
                 raise

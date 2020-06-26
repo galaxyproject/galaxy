@@ -122,7 +122,7 @@ def read_properties_from_file(config_file, config_section=None):
 
 
 def _read_from_yaml_file(path):
-    with open(path, "r") as f:
+    with open(path) as f:
         return yaml.safe_load(f)
 
 
@@ -151,7 +151,7 @@ class NicerConfigParser(ConfigParser):
         Mainly to support defaults using values such as %(here)s
         """
         defaults = ConfigParser.defaults(self).copy()
-        for key, val in iteritems(defaults):
+        for key, val in defaults.items():
             defaults[key] = self.get('DEFAULT', key) or val
         return defaults
 
@@ -168,7 +168,7 @@ class NicerConfigParser(ConfigParser):
             e.message = args[0]
             raise
 
-    class InterpolateWrapper(object):
+    class InterpolateWrapper:
         # Python >= 3.2
         def __init__(self, original):
             self._original = original
@@ -214,7 +214,7 @@ def __get_all_configs(dirs, names):
 
 def __find_config_files(names, exts=None, dirs=None, include_samples=False):
     sample_names = []
-    if isinstance(names, string_types):
+    if isinstance(names, str):
         names = [names]
     if not dirs:
         dirs = [os.getcwd()]

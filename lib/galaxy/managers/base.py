@@ -149,7 +149,7 @@ def munge_lists(listA, listB):
 
 
 # -----------------------------------------------------------------------------
-class ModelManager(object):
+class ModelManager:
     """
     Base class for all model/resource managers.
 
@@ -473,7 +473,7 @@ class ModelManager(object):
 
 # ---- code for classes that use one *main* model manager
 # TODO: this may become unecessary if we can access managers some other way (class var, app, etc.)
-class HasAModelManager(object):
+class HasAModelManager:
     """
     Mixin used where serializers, deserializers, filter parsers, etc.
     need some functionality around the model they're mainly concerned with
@@ -544,7 +544,7 @@ class ModelSerializer(HasAModelManager):
         """
         Set up serializer map, any additional serializable keys, and views here.
         """
-        super(ModelSerializer, self).__init__(app, **kwargs)
+        super().__init__(app, **kwargs)
         self.app = app
 
         # a list of valid serializable keys that can use the default (string) serializer
@@ -715,7 +715,7 @@ class ModelDeserializer(HasAModelManager):
         """
         Set up deserializers and validator.
         """
-        super(ModelDeserializer, self).__init__(app, **kwargs)
+        super().__init__(app, **kwargs)
         self.app = app
 
         self.deserializers = {}
@@ -797,7 +797,7 @@ class ModelValidator(HasAModelManager):
     """
 
     def __init__(self, app, *args, **kwargs):
-        super(ModelValidator, self).__init__(app, **kwargs)
+        super().__init__(app, **kwargs)
         self.app = app
 
     def type(self, key, val, types):
@@ -813,7 +813,7 @@ class ModelValidator(HasAModelManager):
 
     # validators for primitives and compounds of primitives
     def basestring(self, key, val):
-        return self.type(key, val, string_types)
+        return self.type(key, val, (str,))
 
     def bool(self, key, val):
         return self.type(key, val, bool)
@@ -825,7 +825,7 @@ class ModelValidator(HasAModelManager):
         """
         Must be a basestring or None.
         """
-        return self.type(key, val, (string_types, type(None)))
+        return self.type(key, val, ((str,), type(None)))
 
     def int_range(self, key, val, min=None, max=None):
         """
@@ -907,7 +907,7 @@ class ModelFilterParser(HasAModelManager):
         """
         Set up serializer map, any additional serializable keys, and views here.
         """
-        super(ModelFilterParser, self).__init__(app, **kwargs)
+        super().__init__(app, **kwargs)
         self.app = app
 
         #: regex for testing/dicing iso8601 date strings, with optional time and ms, but allowing only UTC timezone

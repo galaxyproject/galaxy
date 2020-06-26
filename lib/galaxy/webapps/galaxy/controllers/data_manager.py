@@ -169,7 +169,7 @@ class DataManager(BaseUIController):
     @web.json
     @web.require_admin
     def reload_tool_data_tables(self, trans, table_name=None, **kwd):
-        if table_name and isinstance(table_name, string_types):
+        if table_name and isinstance(table_name, str):
             table_name = table_name.split(",")
         # Reload the tool data tables
         table_names = self.app.tool_data_tables.reload_tables(table_names=table_name)

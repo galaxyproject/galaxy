@@ -18,8 +18,7 @@ from galaxy.util.filelock import (
 log = logging.getLogger(__name__)
 
 
-@six.add_metaclass(ABCMeta)
-class InstallableContext(object):
+class InstallableContext(metaclass=ABCMeta):
     """Represent a directory/configuration of something that can be installed."""
 
     @abstractmethod

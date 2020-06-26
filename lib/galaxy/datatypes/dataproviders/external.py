@@ -41,7 +41,7 @@ class SubprocessDataProvider(base.DataProvider):
         command_list = args
         self.popen = self.subprocess(*command_list, **kwargs)
         # TODO:?? not communicate()?
-        super(SubprocessDataProvider, self).__init__(self.popen.stdout)
+        super().__init__(self.popen.stdout)
         self.exit_code = self.popen.poll()
 
     # NOTE: there's little protection here v. sending a ';' and a dangerous command here
@@ -66,7 +66,7 @@ class SubprocessDataProvider(base.DataProvider):
         # poll the subrocess for an exit code
         self.exit_code = self.popen.poll()
         log.info('{}.__exit__, exit_code: {}'.format(str(self), str(self.exit_code)))
-        return super(SubprocessDataProvider, self).__exit__(*args)
+        return super().__exit__(*args)
 
     def __str__(self):
         # provide the pid and current return code
@@ -85,7 +85,7 @@ class RegexSubprocessDataProvider(line.RegexLineDataProvider):
     def __init__(self, *args, **kwargs):
         # using subprocess as proxy data source in filtered line prov.
         subproc_provider = SubprocessDataProvider(*args)
-        super(RegexSubprocessDataProvider, self).__init__(subproc_provider, **kwargs)
+        super().__init__(subproc_provider, **kwargs)
 
 
 # ----------------------------------------------------------------------------- other apis
@@ -123,7 +123,7 @@ class URLDataProvider(base.DataProvider):
         else:
             raise ValueError('Not a valid method: %s' % (method))
 
-        super(URLDataProvider, self).__init__(opened, **kwargs)
+        super().__init__(opened, **kwargs)
         # NOTE: the request object is now accessible as self.source
 
     def __enter__(self):
@@ -143,7 +143,7 @@ class GzipDataProvider(base.DataProvider):
 
     def __init__(self, source, **kwargs):
         unzipped = gzip.GzipFile(source, 'rb')
-        super(GzipDataProvider, self).__init__(unzipped, **kwargs)
+        super().__init__(unzipped, **kwargs)
         # NOTE: the GzipFile is now accessible in self.source
 
 
@@ -167,7 +167,7 @@ class TempfileDataProvider(base.DataProvider):
         return self.tmp_file
 
     def write_to_file(self):
-        parent_gen = super(TempfileDataProvider, self).__iter__()
+        parent_gen = super().__iter__()
         with open(self.tmp_file, 'w') as open_file:
             for datum in parent_gen:
                 open_file.write(datum + '\n')

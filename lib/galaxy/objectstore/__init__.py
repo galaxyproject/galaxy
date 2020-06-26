@@ -39,7 +39,7 @@ NO_SESSION_ERROR_MESSAGE = "Attempted to 'create' object store entity in configu
 log = logging.getLogger(__name__)
 
 
-class ObjectStore(object, metaclass=abc.ABCMeta):
+class ObjectStore(metaclass=abc.ABCMeta):
 
     """ObjectStore interface.
 
@@ -325,11 +325,11 @@ class ConcreteObjectStore(BaseObjectStore):
         """
         if config_dict is None:
             config_dict = {}
-        super(ConcreteObjectStore, self).__init__(config=config, config_dict=config_dict, **kwargs)
+        super().__init__(config=config, config_dict=config_dict, **kwargs)
         self.store_by = config_dict.get("store_by", None) or getattr(config, "object_store_store_by", "id")
 
     def to_dict(self):
-        rval = super(ConcreteObjectStore, self).to_dict()
+        rval = super().to_dict()
         rval["store_by"] = self.store_by
         return rval
 
@@ -371,7 +371,7 @@ class DiskObjectStore(ConcreteObjectStore):
         :type extra_dirs: dict
         :param extra_dirs: Keys are string, values are directory paths.
         """
-        super(DiskObjectStore, self).__init__(config, config_dict)
+        super().__init__(config, config_dict)
         self.file_path = config_dict.get("files_dir") or config.file_path
 
     @classmethod
@@ -392,7 +392,7 @@ class DiskObjectStore(ConcreteObjectStore):
         return config_dict
 
     def to_dict(self):
-        as_dict = super(DiskObjectStore, self).to_dict()
+        as_dict = super().to_dict()
         as_dict["files_dir"] = self.file_path
         return as_dict
 
@@ -543,7 +543,7 @@ class DiskObjectStore(ConcreteObjectStore):
 
     def _get_data(self, obj, start=0, count=-1, **kwargs):
         """Override `ObjectStore`'s stub; retrieve data directly from disk."""
-        data_file = open(self._get_filename(obj, **kwargs), 'r')  # Should be rb?
+        data_file = open(self._get_filename(obj, **kwargs))  # Should be rb?
         data_file.seek(start)
         content = data_file.read(count)
         data_file.close()
@@ -583,7 +583,7 @@ class DiskObjectStore(ConcreteObjectStore):
                     path = self._get_filename(obj, **kwargs)
                     shutil.copy(file_name, path)
                     umask_fix_perms(path, self.config.umask, 0o666)
-            except IOError as ex:
+            except OSError as ex:
                 log.critical('Error copying {} to {}: {}'.format(file_name, self.__get_filename(obj, **kwargs), ex))
                 raise ex
 
@@ -611,14 +611,14 @@ class NestedObjectStore(BaseObjectStore):
 
     def __init__(self, config, config_xml=None):
         """Extend `ObjectStore`'s constructor."""
-        super(NestedObjectStore, self).__init__(config)
+        super().__init__(config)
         self.backends = {}
 
     def shutdown(self):
         """For each backend, shuts them down."""
         for store in self.backends.values():
             store.shutdown()
-        super(NestedObjectStore, self).shutdown()
+        super().shutdown()
 
     def _exists(self, obj, **kwargs):
         """Determine if the `obj` exists in any of the backends."""
@@ -713,7 +713,7 @@ class DistributedObjectStore(NestedObjectStore):
         :param fsmon: If True, monitor the file system for free space,
             removing backends when they get too full.
         """
-        super(DistributedObjectStore, self).__init__(config, config_dict)
+        super().__init__(config, config_dict)
 
         self.backends = {}
         self.weighted_backend_ids = []
@@ -800,7 +800,7 @@ class DistributedObjectStore(NestedObjectStore):
         return clazz(config, config_dict, fsmon=fsmon)
 
     def to_dict(self):
-        as_dict = super(DistributedObjectStore, self).to_dict()
+        as_dict = super().to_dict()
         as_dict["global_max_percent_full"] = self.global_max_percent_full
         backends = []
         for backend_id, backend in self.backends.items():
@@ -814,7 +814,7 @@ class DistributedObjectStore(NestedObjectStore):
 
     def shutdown(self):
         """Shut down. Kill the free space monitor if there is one."""
-        super(DistributedObjectStore, self).shutdown()
+        super().shutdown()
         if self.sleeper is not None:
             self.sleeper.wake()
 
@@ -889,7 +889,7 @@ class HierarchicalObjectStore(NestedObjectStore):
 
     def __init__(self, config, config_dict, fsmon=False):
         """The default contructor. Extends `NestedObjectStore`."""
-        super(HierarchicalObjectStore, self).__init__(config, config_dict)
+        super().__init__(config, config_dict)
 
         backends = OrderedDict()
         for order, backend_def in enumerate(config_dict["backends"]):
@@ -910,7 +910,7 @@ class HierarchicalObjectStore(NestedObjectStore):
         return {"backends": backends_list}
 
     def to_dict(self):
-        as_dict = super(HierarchicalObjectStore, self).to_dict()
+        as_dict = super().to_dict()
         backends = []
         for backend in self.backends.values():
             backend_as_dict = backend.to_dict()
@@ -996,7 +996,7 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None, config_
                 config_xml = parse_xml(config.object_store_config_file).getroot()
                 store = config_xml.get('type')
             else:
-                with open(config_file, "rt") as f:
+                with open(config_file) as f:
                     config_dict = yaml.safe_load(f)
                 from_object = 'dict'
                 store = config_dict.get('type')
@@ -1080,7 +1080,7 @@ def _create_object_in_session(obj):
         raise Exception(NO_SESSION_ERROR_MESSAGE)
 
 
-class ObjectStorePopulator(object):
+class ObjectStorePopulator:
     """ Small helper for interacting with the object store and making sure all
     datasets from a job end up with the same object_store_id.
     """

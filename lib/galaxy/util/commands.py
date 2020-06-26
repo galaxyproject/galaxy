@@ -39,13 +39,11 @@ def redirect_aware_commmunicate(p, sys=_sys):
         if out:
             # We don't unicodify in Python2 because sys.stdout may be a
             # cStringIO.StringIO object, which does not accept Unicode strings
-            if not six.PY2:
-                out = unicodify(out)
+            out = unicodify(out)
             sys.stdout.write(out)
             out = None
         if err:
-            if not six.PY2:
-                err = unicodify(err)
+            err = unicodify(err)
             sys.stderr.write(err)
             err = None
     return out, err
@@ -72,7 +70,7 @@ def shell_process(cmds, env=None, **kwds):
     """
     sys = kwds.get("sys", _sys)
     popen_kwds = dict()
-    if isinstance(cmds, six.string_types):
+    if isinstance(cmds, str):
         log.warning("Passing program arguments as a string may be a security hazard if combined with untrusted input")
         popen_kwds['shell'] = True
     if kwds.get("stdout", None) is None and redirecting_io(sys=sys):

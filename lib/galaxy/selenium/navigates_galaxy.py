@@ -2,7 +2,6 @@
 
 Implementer must provide a self.build_url method to target Galaxy.
 """
-from __future__ import print_function
 
 import collections
 import contextlib
@@ -60,7 +59,7 @@ WAIT_TYPES = Bunch(
 DEFAULT_WAIT_TYPE = WAIT_TYPES.DATABASE_OPERATION
 
 
-class NullTourCallback(object):
+class NullTourCallback:
 
     def handle_step(self, step, step_index):
         pass
@@ -1331,7 +1330,7 @@ class NavigatesGalaxy(HasDriver):
 
         self.home()
 
-        with open(path, "r") as f:
+        with open(path) as f:
             tour_dict = yaml.safe_load(f)
         steps = tour_dict["steps"]
         for i, step in enumerate(steps):
@@ -1534,7 +1533,7 @@ class NotLoggedInException(TimeoutException):
     def __init__(self, timeout_exception, user_info, dom_message):
         template = "Waiting for UI to reflect user logged in but it did not occur. API indicates no user is currently logged in. %s API response was [%s]. %s"
         msg = template % (dom_message, user_info, timeout_exception.msg)
-        super(NotLoggedInException, self).__init__(
+        super().__init__(
             msg=msg,
             screen=timeout_exception.screen,
             stacktrace=timeout_exception.stacktrace

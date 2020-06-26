@@ -29,7 +29,7 @@ def get_resource_mapper_function(app):
         return functools.partial(raw_function, workflow_resource_params=workflow_resource_params)
     else:
         workflow_resource_params = _read_defined_parameter_definitions(config)
-        with open(mapper, "r") as f:
+        with open(mapper) as f:
             mapper_definition = yaml.safe_load(f)
 
         if "by_group" in mapper_definition:

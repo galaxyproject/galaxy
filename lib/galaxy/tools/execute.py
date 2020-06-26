@@ -110,7 +110,7 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
     return execution_tracker
 
 
-class ExecutionSlice(object):
+class ExecutionSlice:
 
     def __init__(self, job_index, param_combination, dataset_collection_elements=None):
         self.job_index = job_index
@@ -118,7 +118,7 @@ class ExecutionSlice(object):
         self.dataset_collection_elements = dataset_collection_elements
 
 
-class ExecutionTracker(object):
+class ExecutionTracker:
 
     def __init__(self, trans, tool, mapping_params, collection_info):
         # Known ahead of time...
@@ -296,7 +296,7 @@ class ExecutionTracker(object):
     def implicit_collection_jobs(self):
         # TODO: refactor to track this properly maybe?
         if self.implicit_collections:
-            return six.next(six.itervalues(self.implicit_collections)).implicit_collection_jobs
+            return next(self.implicit_collections.values()).implicit_collection_jobs
         else:
             return None
 
@@ -342,8 +342,7 @@ class ExecutionTracker(object):
             for job_index, param_combination in enumerate(self.param_combinations):
                 yield ExecutionSlice(job_index, param_combination)
         else:
-            for execution_slice in self.new_collection_execution_slices():
-                yield execution_slice
+            yield from self.new_collection_execution_slices()
 
     def record_success(self, execution_slice, job, outputs):
         # TODO: successful_jobs need to be inserted in the correct place...
@@ -370,7 +369,7 @@ class ExecutionTracker(object):
 class ToolExecutionTracker(ExecutionTracker):
 
     def __init__(self, trans, tool, mapping_params, collection_info):
-        super(ToolExecutionTracker, self).__init__(trans, tool, mapping_params, collection_info)
+        super().__init__(trans, tool, mapping_params, collection_info)
 
         # New to track these things for tool output API response in the tool case,
         # in the workflow case we just write stuff to the database and forget about
@@ -378,7 +377,7 @@ class ToolExecutionTracker(ExecutionTracker):
         self.outputs_by_output_name = collections.defaultdict(list)
 
     def record_success(self, execution_slice, job, outputs):
-        super(ToolExecutionTracker, self).record_success(execution_slice, job, outputs)
+        super().record_success(execution_slice, job, outputs)
         for output_name, output_dataset in outputs:
             if ToolOutputCollectionPart.is_named_collection_part_name(output_name):
                 # Skip known collection outputs, these will be covered by
@@ -399,12 +398,12 @@ class ToolExecutionTracker(ExecutionTracker):
 class WorkflowStepExecutionTracker(ExecutionTracker):
 
     def __init__(self, trans, tool, mapping_params, collection_info, invocation_step, job_callback):
-        super(WorkflowStepExecutionTracker, self).__init__(trans, tool, mapping_params, collection_info)
+        super().__init__(trans, tool, mapping_params, collection_info)
         self.invocation_step = invocation_step
         self.job_callback = job_callback
 
     def record_success(self, execution_slice, job, outputs):
-        super(WorkflowStepExecutionTracker, self).record_success(execution_slice, job, outputs)
+        super().record_success(execution_slice, job, outputs)
         if self.collection_info:
             self.invocation_step.implicit_collection_jobs = self.implicit_collection_jobs
         else:

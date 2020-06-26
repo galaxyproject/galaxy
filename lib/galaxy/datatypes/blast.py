@@ -197,7 +197,7 @@ class _BlastDb(Data):
         If preview is `False` triggers download.
         """
         if not preview:
-            return super(_BlastDb, self).display_data(trans,
+            return super().display_data(trans,
                                                       data=data,
                                                       preview=preview,
                                                       filename=filename,
@@ -217,7 +217,7 @@ class _BlastDb(Data):
         msg = ""
         try:
             # Try to use any text recorded in the dummy index file:
-            with io.open(data.file_name, "rU", encoding='utf-8') as handle:
+            with open(data.file_name, "rU", encoding='utf-8') as handle:
                 msg = handle.read().strip()
         except Exception:
             pass

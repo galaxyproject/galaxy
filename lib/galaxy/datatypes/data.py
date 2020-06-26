@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import abc
 import logging
 import mimetypes
@@ -49,7 +47,7 @@ DOWNLOAD_FILENAME_PATTERN_COLLECTION_ELEMENT = "Galaxy${hdca_hid}-[${hdca_name}_
 DEFAULT_MAX_PEEK_SIZE = 1000000  # 1 MB
 
 
-class DatatypeValidation(object):
+class DatatypeValidation:
 
     def __init__(self, state, message):
         self.state = state
@@ -91,9 +89,8 @@ class DataMeta(abc.ABCMeta):
         metadata.Statement.process(cls)
 
 
-@six.add_metaclass(DataMeta)
 @dataproviders.decorators.has_dataproviders
-class Data(object):
+class Data(metaclass=DataMeta):
     """
     Base class for all datatypes.  Implements basic interfaces as well
     as class methods for metadata.
@@ -257,7 +254,7 @@ class Data(object):
         archname = '%s.html' % display_name  # fake the real nature of the html file
         try:
             archive.add(data_filename, archname)
-        except IOError:
+        except OSError:
             error = True
             log.exception("Unable to add composite parent %s to temporary library download archive", data_filename)
             msg = "Unable to create archive for download, please report this error"
@@ -320,7 +317,7 @@ class Data(object):
                     for fpath, rpath in self.__archive_extra_files_path(extra_files_path=efp):
                         try:
                             archive.add(fpath, rpath)
-                        except IOError:
+                        except OSError:
                             error = True
                             log.exception("Unable to add %s to temporary library download archive", rpath)
                             msg = "Unable to create archive for download, please report this error"
@@ -399,7 +396,7 @@ class Data(object):
         # Prevent IE8 from sniffing content type since we're explicit about it.  This prevents intentionally text/plain
         # content from being rendered in the browser
         trans.response.headers['X-Content-Type-Options'] = 'nosniff'
-        if isinstance(data, six.string_types):
+        if isinstance(data, str):
             return smart_str(data)
         if filename and filename != "index":
             # For files in extra_files_path
@@ -486,7 +483,7 @@ class Data(object):
         if self.is_binary:
             result = "*cannot display binary content*\n"
         else:
-            contents = open(dataset_instance.file_name, "r").read(DEFAULT_MAX_PEEK_SIZE)
+            contents = open(dataset_instance.file_name).read(DEFAULT_MAX_PEEK_SIZE)
             result = markdown_format_helpers.literal_via_fence(contents)
             if len(contents) == DEFAULT_MAX_PEEK_SIZE:
                 result += markdown_format_helpers.indicate_data_truncated()
@@ -504,7 +501,7 @@ class Data(object):
             # This is returning to the browser, it needs to be encoded.
             # TODO Ideally this happens a layer higher, but this is a bad
             # issue affecting many tools
-            return sanitize_html(open(filename, 'r').read()).encode('utf-8')
+            return sanitize_html(open(filename).read()).encode('utf-8')
 
         return open(filename, mode='rb')
 
@@ -941,7 +938,7 @@ class Text(Data):
         else:
             raise Exception('Unsupported split mode %s' % split_params['split_mode'])
 
-        f = open(input_files[0], 'r')
+        f = open(input_files[0])
         try:
             chunk_idx = 0
             file_done = False

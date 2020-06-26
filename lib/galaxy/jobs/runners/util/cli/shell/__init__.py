@@ -9,8 +9,7 @@ from abc import (
 import six
 
 
-@six.add_metaclass(ABCMeta)
-class BaseShellExec(object):
+class BaseShellExec(metaclass=ABCMeta):
 
     @abstractmethod
     def __init__(self, *args, **kwargs):

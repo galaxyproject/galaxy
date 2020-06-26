@@ -1,6 +1,5 @@
 # converter for ldreduced rgenetics datatype
 # used for grr and eigenstrat - shellfish if we get around to it
-from __future__ import print_function
 
 import os
 import subprocess
@@ -43,7 +42,7 @@ def pruneLD(plinktasks=[], cd='./', vclbase=[]):
         with open(plog, 'w') as sto:
             subprocess.check_call(vcl, stdout=sto, stderr=sto, cwd=cd)
         try:
-            lplog = open(plog, 'r').readlines()
+            lplog = open(plog).readlines()
             lplog = [elem for elem in lplog if elem.find('Pruning SNP') == -1]
             alog += lplog
             alog.append('\n')

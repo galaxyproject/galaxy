@@ -53,7 +53,7 @@ log = logging.getLogger(__name__)
 SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
 
 
-class BaseController(object):
+class BaseController:
     """
     Base class for Galaxy web application controllers.
     """
@@ -226,7 +226,7 @@ class BaseAPIController(BaseController):
     def _parse_serialization_params(self, kwd, default_view):
         view = kwd.get('view', None)
         keys = kwd.get('keys')
-        if isinstance(keys, string_types):
+        if isinstance(keys, str):
             keys = keys.split(',')
         return dict(view=view, keys=keys, default_view=default_view)
 
@@ -251,7 +251,7 @@ class JSAppLauncher(BaseUIController):
                            'total_disk_usage', 'nice_total_disk_usage', 'quota_percent', 'preferences')
 
     def __init__(self, app):
-        super(JSAppLauncher, self).__init__(app)
+        super().__init__(app)
         self.user_manager = users.UserManager(app)
         self.user_serializer = users.CurrentUserSerializer(app)
         self.config_serializer = configuration.ConfigSerializer(app)
@@ -364,7 +364,7 @@ class JSAppLauncher(BaseUIController):
         )
 
 
-class Datatype(object):
+class Datatype:
     """Used for storing in-memory list of datatypes currently in the datatypes registry."""
 
     def __init__(self, extension, dtype, type_extension, mimetype, display_in_upload):
@@ -379,7 +379,7 @@ class Datatype(object):
 #
 
 
-class CreatesApiKeysMixin(object):
+class CreatesApiKeysMixin:
     """
     Mixing centralizing logic for creating API keys for user objects.
 
@@ -390,7 +390,7 @@ class CreatesApiKeysMixin(object):
         return api_keys.ApiKeyManager(trans.app).create_api_key(user)
 
 
-class SharableItemSecurityMixin(object):
+class SharableItemSecurityMixin:
     """ Mixin for handling security for sharable items. """
 
     def security_check(self, trans, item, check_ownership=False, check_accessible=False):
@@ -398,7 +398,7 @@ class SharableItemSecurityMixin(object):
         return managers_base.security_check(trans, item, check_ownership=check_ownership, check_accessible=check_accessible)
 
 
-class ExportsHistoryMixin(object):
+class ExportsHistoryMixin:
 
     def serve_ready_history_export(self, trans, jeha):
         assert jeha.ready
@@ -413,11 +413,11 @@ class ExportsHistoryMixin(object):
 
     def queue_history_export(self, trans, history, gzip=True, include_hidden=False, include_deleted=False):
         # Convert options to booleans.
-        if isinstance(gzip, string_types):
+        if isinstance(gzip, str):
             gzip = (gzip in ['True', 'true', 'T', 't'])
-        if isinstance(include_hidden, string_types):
+        if isinstance(include_hidden, str):
             include_hidden = (include_hidden in ['True', 'true', 'T', 't'])
-        if isinstance(include_deleted, string_types):
+        if isinstance(include_deleted, str):
             include_deleted = (include_deleted in ['True', 'true', 'T', 't'])
 
         # Run job to do export.
@@ -432,7 +432,7 @@ class ExportsHistoryMixin(object):
         history_exp_tool.execute(trans, incoming=params, history=history, set_output_hid=True)
 
 
-class ImportsHistoryMixin(object):
+class ImportsHistoryMixin:
 
     def queue_history_import(self, trans, archive_type, archive_source):
         # Run job to do import.
@@ -441,7 +441,7 @@ class ImportsHistoryMixin(object):
         history_imp_tool.execute(trans, incoming=incoming)
 
 
-class UsesLibraryMixin(object):
+class UsesLibraryMixin:
 
     def get_library(self, trans, id, check_ownership=False, check_accessible=True):
         l = self.get_object(trans, id, 'Library')
@@ -1283,7 +1283,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
         )
 
 
-class UsesFormDefinitionsMixin(object):
+class UsesFormDefinitionsMixin:
     """Mixin for controllers that use Galaxy form objects."""
 
     def get_all_forms(self, trans, all_versions=False, filter=None, form_type='All'):
@@ -1351,7 +1351,7 @@ class UsesFormDefinitionsMixin(object):
         return values
 
 
-class SharableMixin(object):
+class SharableMixin:
     """ Mixin for a controller that manages an item that can be shared. """
 
     manager = None
@@ -1515,7 +1515,7 @@ class SharableMixin(object):
         raise NotImplementedError()
 
 
-class UsesQuotaMixin(object):
+class UsesQuotaMixin:
 
     def get_quota(self, trans, id, check_ownership=False, check_accessible=False, deleted=None):
         return self.get_object(trans, id, 'Quota', check_ownership=False, check_accessible=False, deleted=deleted)
@@ -1669,12 +1669,10 @@ class UsesExtendedMetadataMixin(SharableItemSecurityMixin):
         """
         if isinstance(meta, dict):
             for a in meta:
-                for path, value in self._scan_json_block(meta[a], prefix + "/" + a):
-                    yield path, value
+                yield from self._scan_json_block(meta[a], prefix + "/" + a)
         elif isinstance(meta, list):
             for i, a in enumerate(meta):
-                for path, value in self._scan_json_block(a, prefix + "[%d]" % (i)):
-                    yield path, value
+                yield from self._scan_json_block(a, prefix + "[%d]" % (i))
         else:
             # BUG: Everything is cast to string, which can lead to false positives
             # for cross type comparisions, ie "True" == True

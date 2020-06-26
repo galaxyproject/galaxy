@@ -90,7 +90,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
     store_type = 'azure_blob'
 
     def __init__(self, config, config_dict):
-        super(AzureBlobObjectStore, self).__init__(config, config_dict)
+        super().__init__(config, config_dict)
 
         self.transfer_progress = 0
 
@@ -126,7 +126,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
             log.info("Cache cleaner manager started")
 
     def to_dict(self):
-        as_dict = super(AzureBlobObjectStore, self).to_dict()
+        as_dict = super().to_dict()
         as_dict.update({
             'auth': {
                 'account_name': self.account_name,
@@ -454,7 +454,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         if not self._in_cache(rel_path):
             self._pull_into_cache(rel_path)
         # Read the file content from cache
-        data_file = open(self._get_cache_path(rel_path), 'r')
+        data_file = open(self._get_cache_path(rel_path))
         data_file.seek(start)
         content = data_file.read(count)
         data_file.close()

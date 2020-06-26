@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 class ContainerResolutionAPIController(BaseAPIController):
 
     def __init__(self, app):
-        super(ContainerResolutionAPIController, self).__init__(app)
+        super().__init__(app)
         self._view = views.ContainerResolutionView(app)
 
     @expose_api

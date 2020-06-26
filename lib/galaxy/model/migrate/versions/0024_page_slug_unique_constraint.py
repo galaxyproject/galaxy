@@ -2,7 +2,6 @@
 Remove unique constraint from page slugs to allow creating a page with
 the same slug as a deleted page.
 """
-from __future__ import print_function
 
 import logging
 

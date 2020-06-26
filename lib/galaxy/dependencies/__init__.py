@@ -1,7 +1,6 @@
 """
 Determine what optional dependencies are needed.
 """
-from __future__ import print_function
 
 import sys
 from os.path import dirname, join
@@ -22,7 +21,7 @@ from galaxy.util.properties import (
 )
 
 
-class ConditionalDependencies(object):
+class ConditionalDependencies:
     def __init__(self, config_file):
         self.config_file = config_file
         self.config = None
@@ -62,21 +61,21 @@ class ConditionalDependencies(object):
                         for plugin in parse_xml(job_conf_path).find('plugins').findall('plugin'):
                             if 'load' in plugin.attrib:
                                 self.job_runners.append(plugin.attrib['load'])
-                    except (OSError, IOError):
+                    except OSError:
                         pass
                     try:
                         for plugin in parse_xml(job_conf_path).findall('.//destination/param[@id="rules_module"]'):
                             self.job_rule_modules.append(plugin.text)
-                    except (OSError, IOError):
+                    except OSError:
                         pass
                 except etree.ParseError:
                     pass
             else:
                 try:
-                    with open("job_conf_path", "r") as f:
+                    with open("job_conf_path") as f:
                         job_conf_dict = yaml.safe_load(f)
                     load_job_config_dict(job_conf_dict)
-                except (OSError, IOError):
+                except OSError:
                     pass
 
         object_store_conf_xml = self.config.get(
@@ -86,7 +85,7 @@ class ConditionalDependencies(object):
             for store in parse_xml(object_store_conf_xml).iter('object_store'):
                 if 'type' in store.attrib:
                     self.object_stores.append(store.attrib['type'])
-        except (OSError, IOError):
+        except OSError:
             pass
 
         # Parse auth conf
@@ -98,7 +97,7 @@ class ConditionalDependencies(object):
                 auth_type = auth.find('type')
                 if auth_type is not None:
                     self.authenticators.append(auth_type.text)
-        except (OSError, IOError):
+        except OSError:
             pass
 
         # Parse containers config
@@ -113,10 +112,10 @@ class ConditionalDependencies(object):
             "error_report_file",
             join(dirname(self.config_file), 'error_report.yml'))
         try:
-            with open(error_report_yml, "r") as f:
+            with open(error_report_yml) as f:
                 error_reporters = yaml.safe_load(f)
                 self.error_report_modules = [er.get('type', None) for er in error_reporters]
-        except (OSError, IOError):
+        except OSError:
             pass
 
     def get_conditional_requirements(self):

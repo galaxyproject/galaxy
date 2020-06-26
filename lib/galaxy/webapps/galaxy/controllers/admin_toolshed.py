@@ -917,7 +917,7 @@ class AdminToolshed(AdminGalaxy):
         repo_info_dicts = []
         repo_info_dict = kwd.get('repo_info_dict', None)
         if repo_info_dict:
-            if isinstance(repo_info_dict, string_types):
+            if isinstance(repo_info_dict, str):
                 repo_info_dict = encoding_util.tool_shed_decode(repo_info_dict)
         else:
             # Entering this else block occurs only if the tool_shed_repository does not include any valid tools.

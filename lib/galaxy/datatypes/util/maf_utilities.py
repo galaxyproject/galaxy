@@ -3,7 +3,6 @@
 Provides wrappers and utilities for working with MAF files and alignments.
 """
 # Dan Blankenberg
-from __future__ import print_function
 
 import functools
 import logging
@@ -59,7 +58,7 @@ def tool_fail(msg="Unknown Error"):
     sys.exit("Fatal Error: %s" % msg)
 
 
-class TempFileHandler(object):
+class TempFileHandler:
     '''
     Handles creating, opening, closing, and deleting of Temp files, with a
     maximum number of files open at one time.
@@ -104,7 +103,7 @@ class TempFileHandler(object):
             else:
                 while True:
                     try:
-                        self.files[index] = open(self.files[index].name, 'r')
+                        self.files[index] = open(self.files[index].name)
                         break
                     except OSError as e:
                         if self.open_file_indexes and e.errno == EMFILE:
@@ -137,7 +136,7 @@ class TempFileHandler(object):
 
 
 # an object corresponding to a reference layered alignment
-class RegionAlignment(object):
+class RegionAlignment:
 
     DNA_COMPLEMENT = maketrans("ACGTacgt", "TGCAtgca")
     MAX_SEQUENCE_SIZE = sys.maxsize  # Maximum length of sequence allowed
@@ -221,7 +220,7 @@ class GenomicRegionAlignment(RegionAlignment):
         self.end = end
 
 
-class SplicedAlignment(object):
+class SplicedAlignment:
 
     DNA_COMPLEMENT = maketrans("ACGTacgt", "TGCAtgca")
 
@@ -457,8 +456,7 @@ def iter_blocks_split_by_species(block, species=None):
             for c in spec_comps:
                 newer_block = deepcopy(new_block)
                 newer_block.add_component(deepcopy(c))
-                for value in __split_components_by_species(components_by_species, newer_block):
-                    yield value
+                yield from __split_components_by_species(components_by_species, newer_block)
         else:
             # no more components to add, yield this block
             yield new_block
@@ -728,7 +726,7 @@ def get_attributes_from_fasta_header(header):
 
 
 def iter_fasta_alignment(filename):
-    class fastaComponent(object):
+    class fastaComponent:
         def __init__(self, species, text=""):
             self.species = species
             self.text = text

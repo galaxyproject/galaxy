@@ -79,7 +79,7 @@ class MzTab(Text):
     _version_re = r"(1)(\.[0-9])?(\.[0-9])?"
 
     def __init__(self, **kwd):
-        super(MzTab, self).__init__(**kwd)
+        super().__init__(**kwd)
 
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
@@ -127,7 +127,7 @@ class MzTab2(MzTab):
     _man_mtd = {"mzTab-ID": None}
 
     def __init__(self, **kwd):
-        super(MzTab2, self).__init__(**kwd)
+        super().__init__(**kwd)
 
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
@@ -155,7 +155,7 @@ class Kroenik(Tabular):
     file_ext = "kroenik"
 
     def __init__(self, **kwd):
-        super(Kroenik, self).__init__(**kwd)
+        super().__init__(**kwd)
         self.column_names = ["File", "First Scan", "Last Scan", "Num of Scans", "Charge", "Monoisotopic Mass", "Base Isotope Peak", "Best Intensity", "Summed Intensity", "First RTime", "Last RTime", "Best RTime", "Best Correlation", "Modifications"]
 
     def display_peek(self, dataset):
@@ -193,7 +193,7 @@ class PepList(Tabular):
     file_ext = "peplist"
 
     def __init__(self, **kwd):
-        super(PepList, self).__init__(**kwd)
+        super().__init__(**kwd)
         self.column_names = ["m/z", "rt(min)", "snr", "charge", "intensity"]
 
     def display_peek(self, dataset):
@@ -229,7 +229,7 @@ class PSMS(Tabular):
     file_ext = "psms"
 
     def __init__(self, **kwd):
-        super(PSMS, self).__init__(**kwd)
+        super().__init__(**kwd)
         self.column_names = ["PSMId", "score", "q-value", "posterior_error_prob", "peptide", "proteinIds"]
 
     def display_peek(self, dataset):
@@ -275,7 +275,7 @@ class PepXmlReport(Tabular):
     file_ext = "pepxml.tsv"
 
     def __init__(self, **kwd):
-        super(PepXmlReport, self).__init__(**kwd)
+        super().__init__(**kwd)
         self.column_names = ['Protein', 'Peptide', 'Assumed Charge', 'Neutral Pep Mass (calculated)', 'Neutral Mass', 'Retention Time', 'Start Scan', 'End Scan', 'Search Engine', 'PeptideProphet Probability', 'Interprophet Probability']
 
     def display_peek(self, dataset):
@@ -290,7 +290,7 @@ class ProtXmlReport(Tabular):
     comment_lines = 1
 
     def __init__(self, **kwd):
-        super(ProtXmlReport, self).__init__(**kwd)
+        super().__init__(**kwd)
         self.column_names = [
             "Entry Number", "Group Probability",
             "Protein", "Protein Link", "Protein Probability",
@@ -322,7 +322,7 @@ class Dta(TabularData):
         data_row = []
         data_lines = 0
         if dataset.has_data():
-            with open(dataset.file_name, 'r') as dtafile:
+            with open(dataset.file_name) as dtafile:
                 for line in dtafile:
                     data_lines += 1
 
@@ -393,7 +393,7 @@ class Dta2d(TabularData):
         data_lines = 0
         delim = None
         if dataset.has_data():
-            with open(dataset.file_name, 'r') as dtafile:
+            with open(dataset.file_name) as dtafile:
                 for line in dtafile:
                     if delim is None:
                         delim = self._parse_delimiter(line)
@@ -528,7 +528,7 @@ class Edta(TabularData):
         data_lines = 0
         delim = None
         if dataset.has_data():
-            with open(dataset.file_name, 'r') as dtafile:
+            with open(dataset.file_name) as dtafile:
                 for idx, line in enumerate(dtafile):
                     if idx == 0:
                         delim = self._parse_delimiter(line)

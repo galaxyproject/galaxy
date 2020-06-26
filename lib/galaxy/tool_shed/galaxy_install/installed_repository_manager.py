@@ -24,7 +24,7 @@ from galaxy.util.tool_shed.xml_util import parse_xml
 log = logging.getLogger(__name__)
 
 
-class InstalledRepositoryManager(object):
+class InstalledRepositoryManager:
 
     def __init__(self, app):
         """
@@ -615,7 +615,7 @@ class InstalledRepositoryManager(object):
                     env_shell_file_path = td.get_env_shell_file_path(self.app)
                     if env_shell_file_path is not None:
                         try:
-                            contents = open(env_shell_file_path, 'r').read()
+                            contents = open(env_shell_file_path).read()
                         except Exception as e:
                             contents = None
                             log.debug('Error reading file %s, so cannot determine if package %s requires package %s at run time: %s' %

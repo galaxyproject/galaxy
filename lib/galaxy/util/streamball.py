@@ -1,7 +1,6 @@
 """
 A simple wrapper for writing tarballs as a stream.
 """
-from __future__ import absolute_import
 
 import logging
 import os
@@ -13,7 +12,7 @@ from .path import safe_walk
 log = logging.getLogger(__name__)
 
 
-class StreamBall(object):
+class StreamBall:
     def __init__(self, mode, members=None):
         self.members = members
         if members is None:
@@ -34,7 +33,7 @@ class StreamBall(object):
     def stream(self, environ, start_response):
         response_write = start_response(self.wsgi_status, self.wsgi_headeritems)
 
-        class tarfileobj(object):
+        class tarfileobj:
             def write(self, *args, **kwargs):
                 response_write(*args, **kwargs)
         tf = tarfile.open(mode=self.mode, fileobj=tarfileobj())
@@ -44,7 +43,7 @@ class StreamBall(object):
         return []
 
 
-class ZipBall(object):
+class ZipBall:
     def __init__(self, tmpf, tmpd):
         self._tmpf = tmpf
         self._tmpd = tmpd

@@ -112,7 +112,7 @@ class UnivaJobRunner(DRMAAJobRunner):
             log.error("DRMAAUniva: job {job_id} determined unknown state {state}".format(job_id=ajs.job_id, state=state))
             drmaa_state = self.drmaa_job_states.FAILED
         # by default, finish the job with the state from drmaa
-        return super(UnivaJobRunner, self)._complete_terminal_job(ajs, drmaa_state=drmaa_state)
+        return super()._complete_terminal_job(ajs, drmaa_state=drmaa_state)
 
     def _drmaa_state_is_refined(self, statep, staten):
         """

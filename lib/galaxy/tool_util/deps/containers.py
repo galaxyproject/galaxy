@@ -38,7 +38,7 @@ ALL_CONTAINER_TYPES = [DOCKER_CONTAINER_TYPE, SINGULARITY_CONTAINER_TYPE]
 ResolvedContainerDescription = collections.namedtuple('ResolvedContainerDescription', ['container_resolver', 'container_description'])
 
 
-class ContainerFinder(object):
+class ContainerFinder:
 
     def __init__(self, app_info, mulled_resolution_cache=None):
         self.app_info = app_info
@@ -180,13 +180,13 @@ class ContainerFinder(object):
         return asbool(destination_info.get("%s_enabled" % container_type, False))
 
 
-class NullContainerFinder(object):
+class NullContainerFinder:
 
     def find_container(self, tool_info, destination_info, job_info):
         return []
 
 
-class ContainerRegistry(object):
+class ContainerRegistry:
     """Loop through enabled ContainerResolver plugins and find first match."""
 
     def __init__(self, app_info, mulled_resolution_cache=None):

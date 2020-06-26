@@ -261,7 +261,7 @@ def _arg_parser():
     return parser
 
 
-class UploadConfig(object):
+class UploadConfig:
 
     def __init__(self, request, registry):
         self.registry = registry

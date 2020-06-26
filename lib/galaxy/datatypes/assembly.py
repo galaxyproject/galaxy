@@ -3,7 +3,6 @@ velvet datatypes
 James E Johnson - University of Minnesota
 for velvet assembler tool in galaxy
 """
-from __future__ import absolute_import
 
 import logging
 import os
@@ -172,7 +171,7 @@ class Velvet(Html):
         try:
             efp = dataset.extra_files_path
             log_path = os.path.join(efp, 'Log')
-            with open(log_path, 'r') as f:
+            with open(log_path) as f:
                 log_content = f.read(1000)
             log_msg = re.sub(r'/\S*/', '', log_content)
             log.debug("Velveth log info  %s" % log_msg)

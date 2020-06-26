@@ -40,7 +40,7 @@ class HDCAManager(
         """
         Set up and initialize other managers needed by hdcas.
         """
-        super(HDCAManager, self).__init__(app)
+        super().__init__(app)
 
     def map_datasets(self, content, fn, *parents):
         """
@@ -74,7 +74,7 @@ class DCESerializer(base.ModelSerializer):
     """
 
     def __init__(self, app):
-        super(DCESerializer, self).__init__(app)
+        super().__init__(app)
         self.hda_serializer = hdas.HDASerializer(app)
         self.dc_serializer = DCSerializer(app, dce_serializer=self)
 
@@ -88,7 +88,7 @@ class DCESerializer(base.ModelSerializer):
         ])
 
     def add_serializers(self):
-        super(DCESerializer, self).add_serializers()
+        super().add_serializers()
         self.serializers.update({
             'model_class'   : lambda *a, **c: 'DatasetCollectionElement',
             'object'        : self.serialize_object
@@ -108,7 +108,7 @@ class DCSerializer(base.ModelSerializer):
     """
 
     def __init__(self, app, dce_serializer=None):
-        super(DCSerializer, self).__init__(app)
+        super().__init__(app)
         self.dce_serializer = dce_serializer or DCESerializer(app)
 
         self.default_view = 'summary'
@@ -127,7 +127,7 @@ class DCSerializer(base.ModelSerializer):
         ], include_keys_from='summary')
 
     def add_serializers(self):
-        super(DCSerializer, self).add_serializers()
+        super().add_serializers()
         self.serializers.update({
             'model_class'   : lambda *a, **c: 'DatasetCollection',
             'elements'      : self.serialize_elements,
@@ -147,7 +147,7 @@ class DCASerializer(base.ModelSerializer):
     """
 
     def __init__(self, app, dce_serializer=None):
-        super(DCASerializer, self).__init__(app)
+        super().__init__(app)
         self.dce_serializer = dce_serializer or DCESerializer(app)
 
         self.default_view = 'summary'
@@ -165,7 +165,7 @@ class DCASerializer(base.ModelSerializer):
         ], include_keys_from='summary')
 
     def add_serializers(self):
-        super(DCASerializer, self).add_serializers()
+        super().add_serializers()
         # most attributes are (kinda) proxied from DCs - we need a serializer to proxy to
         self.dc_serializer = DCSerializer(self.app)
         # then set the serializers to point to it for those attrs
@@ -202,7 +202,7 @@ class HDCASerializer(
     """
 
     def __init__(self, app):
-        super(HDCASerializer, self).__init__(app)
+        super().__init__(app)
         self.hdca_manager = HDCAManager(app)
 
         self.default_view = 'summary'
@@ -237,7 +237,7 @@ class HDCASerializer(
         ], include_keys_from='summary')
 
     def add_serializers(self):
-        super(HDCASerializer, self).add_serializers()
+        super().add_serializers()
         taggable.TaggableSerializerMixin.add_serializers(self)
         annotatable.AnnotatableSerializerMixin.add_serializers(self)
 

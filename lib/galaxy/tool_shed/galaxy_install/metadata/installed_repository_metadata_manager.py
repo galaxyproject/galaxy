@@ -22,7 +22,7 @@ class InstalledRepositoryMetadataManager(MetadataGenerator):
                  shed_config_dict=None, relative_install_dir=None, repository_files_dir=None,
                  resetting_all_metadata_on_repository=False, updating_installed_repository=False,
                  persist=False, metadata_dict=None):
-        super(InstalledRepositoryMetadataManager, self).__init__(app, repository, changeset_revision,
+        super().__init__(app, repository, changeset_revision,
                                                                  repository_clone_url, shed_config_dict,
                                                                  relative_install_dir, repository_files_dir,
                                                                  resetting_all_metadata_on_repository,
@@ -143,7 +143,7 @@ class InstalledRepositoryMetadataManager(MetadataGenerator):
         return message, status
 
     def set_repository(self, repository):
-        super(InstalledRepositoryMetadataManager, self).set_repository(repository)
+        super().set_repository(repository)
         self.repository_clone_url = common_util.generate_clone_url_for_installed_repository(self.app, repository)
 
     def tool_shed_from_repository_clone_url(self):

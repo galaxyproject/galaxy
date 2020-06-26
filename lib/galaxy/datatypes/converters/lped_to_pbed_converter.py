@@ -4,7 +4,6 @@
 # eg lped/eigen/fbat/snpmatrix all to pbed
 # and pbed to lped/eigen/fbat/snpmatrix ?
 # that's a lot of converters
-from __future__ import print_function
 
 import os
 import subprocess
@@ -41,7 +40,7 @@ def getMissval(inped=''):
     """
     commonmissvals = {'N': 'N', '0': '0', 'n': 'n', '9': '9', '-': '-', '.': '.'}
     try:
-        f = open(inped, 'r')
+        f = open(inped)
     except Exception:
         return None  # signal no in file
     missval = None

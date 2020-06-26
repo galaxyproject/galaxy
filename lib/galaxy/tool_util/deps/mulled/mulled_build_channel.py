@@ -16,7 +16,6 @@ See recent changes that would be built with:
     mulled-build-channel list
 
 """
-from __future__ import print_function
 
 import os
 import subprocess

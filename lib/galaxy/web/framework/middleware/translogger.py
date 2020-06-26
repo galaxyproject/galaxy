@@ -10,7 +10,7 @@ from six import string_types
 from six.moves.urllib.parse import quote
 
 
-class TransLogger(object):
+class TransLogger:
     """
     This logging middleware will log all requests as they go through.
     They are, by default, sent to a logger named ``'wsgi'`` at the
@@ -105,9 +105,9 @@ def make_filter(
         setup_console_handler=True,
         set_logger_level=logging.DEBUG):
     from paste.util.converters import asbool
-    if isinstance(logging_level, string_types):
+    if isinstance(logging_level, str):
         logging_level = logging._levelNames[logging_level]
-    if isinstance(set_logger_level, string_types):
+    if isinstance(set_logger_level, str):
         set_logger_level = logging._levelNames[set_logger_level]
     return TransLogger(
         app,

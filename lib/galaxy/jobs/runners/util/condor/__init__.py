@@ -105,7 +105,7 @@ def summarize_condor_log(log_file, external_id):
     """
     log_job_id = external_id.zfill(3)
     s1 = s4 = s7 = s5 = s9 = False
-    with open(log_file, 'r') as log_handle:
+    with open(log_file) as log_handle:
         for line in log_handle:
             if '001 (' + log_job_id + '.' in line:
                 s1 = True

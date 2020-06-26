@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 
 import argparse
 import json
@@ -39,7 +38,7 @@ def main(argv=None):
     test_results = []
 
     if args.append:
-        with open(args.output_json, "r") as f:
+        with open(args.output_json) as f:
             previous_results = json.load(f)
             test_results = previous_results["tests"]
 

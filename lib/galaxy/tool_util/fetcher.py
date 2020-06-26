@@ -1,7 +1,7 @@
 from galaxy.util import plugin_config
 
 
-class ToolLocationFetcher(object):
+class ToolLocationFetcher:
 
     def __init__(self):
         self.resolver_classes = self.__resolvers_dict()

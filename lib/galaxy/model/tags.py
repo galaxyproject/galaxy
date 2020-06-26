@@ -15,14 +15,14 @@ log = logging.getLogger(__name__)
 
 
 # Item-specific information needed to perform tagging.
-class ItemTagAssocInfo(object):
+class ItemTagAssocInfo:
     def __init__(self, item_class, tag_assoc_class, item_id_col):
         self.item_class = item_class
         self.tag_assoc_class = tag_assoc_class
         self.item_id_col = item_id_col
 
 
-class TagHandler(object):
+class TagHandler:
     """
     Manages CRUD operations related to tagging objects.
     """
@@ -134,7 +134,7 @@ class TagHandler(object):
     def item_has_tag(self, user, item, tag):
         """Returns true if item is has a given tag."""
         # Get tag name.
-        if isinstance(tag, string_types):
+        if isinstance(tag, str):
             tag_name = tag
         elif isinstance(tag, galaxy.model.Tag):
             tag_name = tag.name

@@ -1,7 +1,6 @@
 """
 Migration script to update the deferred job parameters for liftover transfer jobs.
 """
-from __future__ import print_function
 
 import datetime
 import logging
@@ -29,7 +28,7 @@ metadata = MetaData()
 context = scoped_session(sessionmaker(autoflush=False, autocommit=True))
 
 
-class DeferredJob(object):
+class DeferredJob:
     states = Bunch(NEW='new',
                    WAITING='waiting',
                    QUEUED='queued',

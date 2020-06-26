@@ -36,7 +36,7 @@ from galaxy.util import (
 log = logging.getLogger(__name__)
 
 
-class BatchMiddleware(object):
+class BatchMiddleware:
     """
     Adds a URL endpoint for processing batch API calls formatted as a JSON
     array of JSON dictionaries. These dictionaries are in the form:
@@ -144,7 +144,7 @@ class BatchMiddleware(object):
         request_environ['PATH_INFO'] = parsed.path
         request_environ['QUERY_STRING'] = parsed.query
 
-        request_body = request.get('body', u'')
+        request_body = request.get('body', '')
         request_body = request_body.encode('utf8')
         request_environ['CONTENT_LENGTH'] = len(request_body)
         request_body = io.BytesIO(request_body)

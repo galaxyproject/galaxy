@@ -147,7 +147,7 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
     source_command = ""
     if container:
         source_command = container.source_environment
-    script_contents = u"#!{}\n{}{}{}{}".format(
+    script_contents = "#!{}\n{}{}{}{}".format(
         shell,
         integrity_injection,
         set_e,
@@ -246,13 +246,13 @@ def __copy_if_exists_command(work_dir_output):
     return "if [ -f {} ] ; then cp {} {} ; fi".format(source_file, source_file, destination)
 
 
-class CommandsBuilder(object):
+class CommandsBuilder:
 
-    def __init__(self, initial_command=u''):
+    def __init__(self, initial_command=''):
         # Remove trailing semi-colon so we can start hacking up this command.
         # TODO: Refactor to compose a list and join with ';', would be more clean.
         initial_command = util.unicodify(initial_command)
-        commands = initial_command.rstrip(u"; ")
+        commands = initial_command.rstrip("; ")
         self.commands = commands
 
         # Coping work dir outputs or setting metadata will mask return code of
@@ -262,23 +262,23 @@ class CommandsBuilder(object):
 
     def prepend_command(self, command, sep=";"):
         if command:
-            self.commands = u"{}{} {}".format(command,
+            self.commands = "{}{} {}".format(command,
                                          sep,
                                          self.commands)
         return self
 
     def prepend_commands(self, commands):
-        return self.prepend_command(u"; ".join(c for c in commands if c))
+        return self.prepend_command("; ".join(c for c in commands if c))
 
     def append_command(self, command, sep=';'):
         if command:
-            self.commands = u"{}{} {}".format(self.commands,
+            self.commands = "{}{} {}".format(self.commands,
                                           sep,
                                           command)
         return self
 
     def append_commands(self, commands):
-        self.append_command(u"; ".join(c for c in commands if c))
+        self.append_command("; ".join(c for c in commands if c))
 
     def capture_stdout_stderr(self, stdout_file, stderr_file):
         self.prepend_command("""out="${TMPDIR:-/tmp}/out.$$" err="${TMPDIR:-/tmp}/err.$$"

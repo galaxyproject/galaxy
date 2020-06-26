@@ -94,7 +94,7 @@ class ModuleDependencyResolver(DependencyResolver, MappableDependencyResolver):
         return self.module_checker.has_module(name, version)
 
 
-class DirectoryModuleChecker(object):
+class DirectoryModuleChecker:
     """Finds module by path.
 
     Searches the paths listed in modulepath to for a file or directory matching the module name.
@@ -122,7 +122,7 @@ class DirectoryModuleChecker(object):
         return has_module
 
 
-class AvailModuleChecker(object):
+class AvailModuleChecker:
     """Finds modules by searching output of 'module avail'.
 
     Parses the Environment Modules 'module avail' output, splitting

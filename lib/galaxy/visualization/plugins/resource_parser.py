@@ -17,7 +17,7 @@ from galaxy.util import bunch
 log = logging.getLogger(__name__)
 
 
-class ResourceParser(object):
+class ResourceParser:
     """
     Given a parameter dictionary (often a converted query string) and a
     configuration dictionary (curr. only VisualizationsRegistry uses this),

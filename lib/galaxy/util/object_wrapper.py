@@ -1,7 +1,6 @@
 """
 Classes for wrapping Objects and Sanitizing string output.
 """
-from __future__ import absolute_import
 
 import collections
 import inspect
@@ -108,10 +107,9 @@ CHARACTER_MAP = {'>': '__gt__',
 
 INVALID_CHARACTER = "X"
 
-if sys.version_info > (3, 0):
-    # __coerce__ doesn't do anything under Python anyway.
-    def coerce(x, y):
-        return x
+# __coerce__ doesn't do anything under Python anyway.
+def coerce(x, y):
+    return x
 
 
 def cmp(x, y):
@@ -201,7 +199,7 @@ def wrap_with_safe_string(value, no_wrap_classes=None):
 # N.B. refer to e.g. https://docs.python.org/2/reference/datamodel.html for information on Python's Data Model.
 
 
-class SafeStringWrapper(object):
+class SafeStringWrapper:
     """
     Class that wraps and sanitizes any provided value's attributes
     that will attempt to be cast into a string.
@@ -224,11 +222,11 @@ class SafeStringWrapper(object):
         # that will be used when other + this (this + other is handled by __add__)
         try:
             sanitized_value = sanitize_lists_to_string(arg[0], valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP)
-            return super(SafeStringWrapper, cls).__new__(cls, sanitized_value)
+            return super().__new__(cls, sanitized_value)
         except TypeError:
             # Class to be wrapped takes no parameters.
             # This is pefectly normal for mutable types.
-            return super(SafeStringWrapper, cls).__new__(cls)
+            return super().__new__(cls)
 
     def __init__(self, value, safe_string_wrapper_function=wrap_with_safe_string):
         self.unsanitized = value

@@ -1,7 +1,6 @@
 """
 Tool Input Translation.
 """
-from __future__ import print_function
 
 import logging
 
@@ -10,7 +9,7 @@ from galaxy.util.bunch import Bunch
 log = logging.getLogger(__name__)
 
 
-class ToolInputTranslator(object):
+class ToolInputTranslator:
     """
     Handles Tool input translation.
     This is used for data source tools

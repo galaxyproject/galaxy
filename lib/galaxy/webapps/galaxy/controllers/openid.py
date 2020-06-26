@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 class OpenID(BaseUIController):
 
     def __init__(self, app):
-        super(OpenID, self).__init__(app)
+        super().__init__(app)
         if app.config.enable_openid:
             self.openid_manager = OpenIDManager(app.config.openid_consumer_cache_path)
             self.openid_providers = OpenIDProviders.from_file('lib/galaxy/openid/openid_conf.xml')

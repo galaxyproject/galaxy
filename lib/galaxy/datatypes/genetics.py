@@ -62,7 +62,7 @@ class GenomeGraphs(Tabular):
     def set_meta(self, dataset, **kwd):
         Tabular.set_meta(self, dataset, **kwd)
         dataset.metadata.markerCol = 1
-        header = open(dataset.file_name, 'r').readlines()[0].strip().split('\t')
+        header = open(dataset.file_name).readlines()[0].strip().split('\t')
         dataset.metadata.columns = len(header)
         t = ['numeric' for x in header]
         t[0] = 'string'
@@ -127,7 +127,7 @@ class GenomeGraphs(Tabular):
         """
         out = ['<table cellspacing="0" cellpadding="3">']
         try:
-            with open(dataset.file_name, 'r') as f:
+            with open(dataset.file_name) as f:
                 d = f.readlines()[:5]
             if len(d) == 0:
                 out = "Cannot find anything to parse in %s" % dataset.name
@@ -158,7 +158,7 @@ class GenomeGraphs(Tabular):
         """
         Validate a gg file - all numeric after header row
         """
-        with open(dataset.file_name, "r") as infile:
+        with open(dataset.file_name) as infile:
             next(infile)  # header
             for i, row in enumerate(infile):
                 ll = row.strip().split('\t')[1:]  # first is alpha feature identifier
@@ -693,7 +693,7 @@ class RexpBase(Html):
         A file can be written as
         write.table(file='foo.pheno',pData(foo),sep='\t',quote=F,row.names=F)
         """
-        p = open(dataset.metadata.pheno_path, 'r').readlines()
+        p = open(dataset.metadata.pheno_path).readlines()
         if len(p) > 0:  # should only need to fix an R pheno file once
             head = p[0].strip().split('\t')
             line1 = p[1].strip().split('\t')
@@ -712,7 +712,7 @@ class RexpBase(Html):
         if not dataset.dataset.purged:
             pp = os.path.join(dataset.extra_files_path, '%s.pheno' % dataset.metadata.base_name)
             try:
-                p = open(pp, 'r').readlines()
+                p = open(pp).readlines()
             except Exception:
                 p = ['##failed to find %s' % pp, ]
             dataset.peek = ''.join(p[:5])
@@ -727,7 +727,7 @@ class RexpBase(Html):
         """
         pp = os.path.join(dataset.extra_files_path, '%s.pheno' % dataset.metadata.base_name)
         try:
-            p = open(pp, 'r').readlines()
+            p = open(pp).readlines()
         except Exception:
             p = ['##failed to find %s' % pp]
         return ''.join(p[:5])
@@ -738,7 +738,7 @@ class RexpBase(Html):
         """
         h = '## rexpression get_file_peek: no file found'
         try:
-            h = open(filename, 'r').readlines()
+            h = open(filename).readlines()
         except Exception:
             pass
         return ''.join(h[:5])
@@ -788,7 +788,7 @@ class RexpBase(Html):
         pp = os.path.join(dataset.extra_files_path, pn)
         dataset.metadata.pheno_path = pp
         try:
-            pf = open(pp, 'r').readlines()  # read the basename.phenodata in the extra_files_path
+            pf = open(pp).readlines()  # read the basename.phenodata in the extra_files_path
         except Exception:
             pf = None
         if pf:
@@ -908,7 +908,7 @@ class GenotypeMatrix(LinkageStudies):
     file_ext = "alohomora_gts"
 
     def __init__(self, **kwd):
-        super(GenotypeMatrix, self).__init__(**kwd)
+        super().__init__(**kwd)
 
     def header_check(self, fio):
         header_elems = fio.readline().split('\t')
@@ -1037,7 +1037,7 @@ class DataIn(LinkageStudies):
     file_ext = "linkage_datain"
 
     def __init__(self, **kwd):
-        super(DataIn, self).__init__(**kwd)
+        super().__init__(**kwd)
 
     def sniff_prefix(self, file_prefix):
         """

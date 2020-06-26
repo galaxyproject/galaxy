@@ -8,7 +8,7 @@ import galaxy.util
 log = logging.getLogger(__name__)
 
 
-class NoQuotaAgent(object):
+class NoQuotaAgent:
     """Base quota agent, always returns no quota"""
 
     def __init__(self, model):

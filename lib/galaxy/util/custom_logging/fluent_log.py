@@ -16,7 +16,7 @@ FLUENT_IMPORT_MESSAGE = ('The Python fluent package is required to use this '
                          'feature, please install it')
 
 
-class FluentTraceLogger(object):
+class FluentTraceLogger:
     def __init__(self, name, host='localhost', port=24224):
         assert FluentSender is not None, FLUENT_IMPORT_MESSAGE
         self.lock = threading.Lock()

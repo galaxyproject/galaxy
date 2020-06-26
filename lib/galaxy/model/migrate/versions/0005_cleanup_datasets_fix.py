@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import datetime
 import errno
 import logging
@@ -61,7 +59,7 @@ def directory_hash_id(id):
     return [padded[i * 3:(i + 1) * 3] for i in range(len(padded) // 3)]
 
 
-class Dataset(object):
+class Dataset:
     states = Bunch(NEW='new',
                    UPLOAD='upload',
                    QUEUED='queued',
@@ -160,7 +158,7 @@ class Dataset(object):
             log.critical('{} delete error {}'.format(self.__class__.__name__, e))
 
 
-class DatasetInstance(object):
+class DatasetInstance:
     """A base class for all 'dataset instances', HDAs, LDAs, etc"""
     states = Dataset.states
     permitted_actions = Dataset.permitted_actions
@@ -506,7 +504,7 @@ class LibraryDatasetDatasetAssociation(DatasetInstance):
         return template_list
 
 
-class LibraryDataset(object):
+class LibraryDataset:
     # This class acts as a proxy to the currently selected LDDA
     def __init__(self, folder=None, order_id=None, name=None, info=None, library_dataset_dataset_association=None, **kwd):
         self.folder = folder

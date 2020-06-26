@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # Dan Blankenberg
-from __future__ import print_function
 
 import sys
 
@@ -16,7 +15,7 @@ def __main__():
     input_name = sys.argv.pop(1)
     count = 0
     with open(output_name, 'w') as out:
-        for count, block in enumerate(bx.align.maf.Reader(open(input_name, 'r'))):
+        for count, block in enumerate(bx.align.maf.Reader(open(input_name))):
             spec_counts = {}
             for c in block.components:
                 spec, chrom = maf_utilities.src_split(c.src)

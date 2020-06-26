@@ -6,8 +6,7 @@ from galaxy import util
 from . import InstrumentPlugin
 from .. import formatting
 
-if sys.version_info > (3,):
-    long = int
+long = int
 
 
 MEMINFO_LINE = re.compile(r"(\w+)\s*\:\s*(\d+) kB")

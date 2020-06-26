@@ -39,7 +39,7 @@ log = logging.getLogger(__name__)
 class JobController(BaseAPIController, UsesVisualizationMixin):
 
     def __init__(self, app):
-        super(JobController, self).__init__(app)
+        super().__init__(app)
         self.job_manager = JobManager(app)
         self.job_search = JobSearch(app)
         self.hda_manager = hdas.HDAManager(app)
@@ -88,7 +88,7 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
 
         def build_and_apply_filters(query, objects, filter_func):
             if objects is not None:
-                if isinstance(objects, string_types):
+                if isinstance(objects, str):
                     query = query.filter(filter_func(objects))
                 elif isinstance(objects, list):
                     t = []

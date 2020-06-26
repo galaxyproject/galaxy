@@ -17,7 +17,7 @@ class GeneTrack(binary.Binary):
     file_ext = "genetrack"
 
     def __init__(self, **kwargs):
-        super(GeneTrack, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         # self.add_display_app( 'genetrack', 'View in', '', 'genetrack_link' )
     # def get_display_links( self, dataset, type, app, base_url, target_frame='galaxy_main', **kwd ): #Force target_frame to be 'galaxy_main'
     #     return binary.Binary.get_display_links( self, dataset, type, app, base_url, target_frame=target_frame, **kwd )

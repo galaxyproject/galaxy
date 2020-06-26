@@ -7,7 +7,7 @@ from galaxy.util import listify
 log = logging.getLogger(__name__)
 
 
-class FilterFactory(object):
+class FilterFactory:
     """
     An instance of this class is responsible for filtering the list
     of tools presented to a given user in a given context.

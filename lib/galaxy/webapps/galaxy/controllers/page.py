@@ -265,7 +265,7 @@ class PageController(BaseUIController, SharableMixin,
     _visualization_selection_grid = VisualizationSelectionGrid()
 
     def __init__(self, app):
-        super(PageController, self).__init__(app)
+        super().__init__(app)
         self.page_manager = PageManager(app)
         self.history_manager = HistoryManager(app)
         self.history_serializer = HistorySerializer(self.app)

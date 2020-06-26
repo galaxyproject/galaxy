@@ -1,6 +1,3 @@
-from __future__ import absolute_import
-from __future__ import print_function
-
 import os
 import re
 import shutil
@@ -97,7 +94,7 @@ def stage_data_in_history(galaxy_interactor, tool_id, all_test_data, history=Non
             upload_wait()
 
 
-class GalaxyInteractorApi(object):
+class GalaxyInteractorApi:
 
     def __init__(self, **kwds):
         self.api_url = "%s/api" % kwds["galaxy_url"].rstrip("/")
@@ -235,14 +232,14 @@ class GalaxyInteractorApi(object):
                     dataset_value = dataset.get(key, None)
 
                     def compare(val, expected):
-                        if text_type(val) != text_type(expected):
+                        if str(val) != str(expected):
                             msg = "Dataset metadata verification for [%s] failed, expected [%s] but found [%s]. Dataset API value was [%s]."
                             msg_params = (key, value, dataset_value, dataset)
                             msg = msg % msg_params
                             raise Exception(msg)
 
                     if isinstance(dataset_value, list):
-                        value = text_type(value).split(",")
+                        value = str(value).split(",")
                         if len(value) != len(dataset_value):
                             msg = "Dataset metadata verification for [%s] failed, expected [%s] but found [%s], lists differ in length. Dataset API value was [%s]."
                             msg_params = (key, value, dataset_value, dataset)
@@ -665,7 +662,7 @@ class GalaxyInteractorApi(object):
 class RunToolException(Exception):
 
     def __init__(self, message, inputs=None):
-        super(RunToolException, self).__init__(message)
+        super().__init__(message)
         self.inputs = inputs
 
 
@@ -1040,12 +1037,12 @@ class JobOutputsError(AssertionError):
 
     def __init__(self, output_exceptions, job_stdio):
         big_message = "\n".join(map(util.unicodify, output_exceptions))
-        super(JobOutputsError, self).__init__(big_message)
+        super().__init__(big_message)
         self.job_stdio = job_stdio
         self.output_exceptions = output_exceptions
 
 
-class ToolTestDescription(object):
+class ToolTestDescription:
     """
     Encapsulates information about a tool test, and allows creation of a
     dynamic TestCase class (the unittest framework is very class oriented,

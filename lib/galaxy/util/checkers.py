@@ -5,7 +5,6 @@ import tarfile
 import zipfile
 
 from six import BytesIO
-from six.moves import filter
 
 from galaxy import util
 from galaxy.util.image_util import image_type

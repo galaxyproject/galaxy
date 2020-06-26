@@ -85,7 +85,7 @@ class Heartbeat(threading.Thread):
             self.file.write("Traceback dump for all threads at %s:\n\n" % time.asctime())
             # Print the thread states
             threads = get_current_thread_object_dict()
-            for thread_id, frame in iteritems(sys._current_frames()):
+            for thread_id, frame in sys._current_frames().items():
                 if thread_id in threads:
                     object = repr(threads[thread_id])
                 else:
@@ -162,7 +162,7 @@ class Heartbeat(threading.Thread):
         self.file_nonsleeping.write("Non-Sleeping threads at %s:\n\n" % time.asctime())
         all_threads_are_sleeping = True
         threads = get_current_thread_object_dict()
-        for thread_id, frame in iteritems(sys._current_frames()):
+        for thread_id, frame in sys._current_frames().items():
             if thread_id in threads:
                 object = repr(threads[thread_id])
             else:

@@ -14,7 +14,7 @@ from galaxy import (
 log = logging.getLogger(__name__)
 
 
-class Validator(object):
+class Validator:
     """
     A validator checks that a value meets some conditions OR raises ValueError
     """
@@ -443,7 +443,7 @@ class ValueInDataTableColumnValidator(Validator):
         self.valid_values = []
         self._data_table_content_version = None
         self._tool_data_table = tool_data_table
-        if isinstance(column, string_types):
+        if isinstance(column, str):
             column = tool_data_table.columns[column]
         self._column = column
         self._load_values()
@@ -472,7 +472,7 @@ class ValueNotInDataTableColumnValidator(ValueInDataTableColumnValidator):
     """
 
     def __init__(self, tool_data_table, metadata_column, message="Value already present.", line_startswith=None):
-        super(ValueNotInDataTableColumnValidator, self).__init__(tool_data_table, metadata_column, message, line_startswith)
+        super().__init__(tool_data_table, metadata_column, message, line_startswith)
 
     def validate(self, value, trans=None):
         try:
@@ -514,7 +514,7 @@ class MetadataInDataTableColumnValidator(Validator):
         self.valid_values = []
         self._data_table_content_version = None
         self._tool_data_table = tool_data_table
-        if isinstance(metadata_column, string_types):
+        if isinstance(metadata_column, str):
             metadata_column = tool_data_table.columns[metadata_column]
         self._metadata_column = metadata_column
         self._load_values()
@@ -574,7 +574,7 @@ class MetadataInRangeValidator(InRangeValidator):
 
     def __init__(self, metadata_name, message, range_min, range_max, exclude_min=False, exclude_max=False):
         self.metadata_name = metadata_name
-        super(MetadataInRangeValidator, self).__init__(message, range_min, range_max, exclude_min, exclude_max)
+        super().__init__(message, range_min, range_max, exclude_min, exclude_max)
 
     def validate(self, value, trans=None):
         if value:
@@ -586,7 +586,7 @@ class MetadataInRangeValidator(InRangeValidator):
                 raise ValueError('{} Metadata missing'.format(self.metadata_name))
             except ValueError:
                 raise ValueError('{} must be a float or an integer'.format(self.metadata_name))
-            super(MetadataInRangeValidator, self).validate(value_to_check, trans)
+            super().validate(value_to_check, trans)
 
 
 validator_types = dict(

@@ -39,7 +39,7 @@ class CondorJobState(AsynchronousJobState):
         Encapsulates state related to a job that is being run via the DRM and
         that we need to monitor.
         """
-        super(CondorJobState, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.failed = False
         self.user_log = None
         self.user_log_size = 0
@@ -53,7 +53,7 @@ class CondorJobRunner(AsynchronousJobRunner):
 
     def __init__(self, app, nworkers):
         """Initialize this job runner and start the monitor thread"""
-        super(CondorJobRunner, self).__init__(app, nworkers)
+        super().__init__(app, nworkers)
         self._init_monitor_thread()
         self._init_worker_threads()
 

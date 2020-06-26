@@ -1,7 +1,6 @@
 """
 Interfaces to containerization software
 """
-from __future__ import absolute_import
 
 import errno
 import inspect
@@ -45,7 +44,7 @@ class ContainerPort(namedtuple('ContainerPort', ('port', 'protocol', 'hostaddr',
     """
 
 
-class ContainerVolume(with_metaclass(ABCMeta, object)):
+class ContainerVolume(metaclass=ABCMeta):
 
     valid_modes = frozenset({"ro", "rw"})
 
@@ -79,7 +78,7 @@ class ContainerVolume(with_metaclass(ABCMeta, object)):
         return self.mode in self.valid_modes
 
 
-class Container(with_metaclass(ABCMeta, object)):
+class Container(metaclass=ABCMeta):
 
     def __init__(self, interface, id, name=None, **kwargs):
         """:param   interface:  Container interface for the given container type
@@ -167,7 +166,7 @@ class Container(with_metaclass(ABCMeta, object)):
         return None
 
 
-class ContainerInterface(with_metaclass(ABCMeta, object)):
+class ContainerInterface(metaclass=ABCMeta):
 
     container_type = None
     container_class = None
@@ -191,7 +190,7 @@ class ContainerInterface(with_metaclass(ABCMeta, object)):
         self.validate_config()
 
     def _normalize_command(self, command):
-        if isinstance(command, string_types):
+        if isinstance(command, str):
             command = shlex.split(command)
         return command
 
@@ -241,7 +240,7 @@ class ContainerInterface(with_metaclass(ABCMeta, object)):
     def _stringify_kwopt_list(self, flag, val):
         """
         """
-        if isinstance(val, string_types):
+        if isinstance(val, str):
             return self._stringify_kwopt_string(flag, val)
         return ' '.join('{flag} {value}'.format(flag=flag, value=shlex_quote(str(v))) for v in val)
 
@@ -261,7 +260,7 @@ class ContainerInterface(with_metaclass(ABCMeta, object)):
     def _stringify_kwopt_list_of_kovtrips(self, flag, val):
         """
         """
-        if isinstance(val, string_types):
+        if isinstance(val, str):
             return self._stringify_kwopt_string(flag, val)
         l = []
         for k, o, v in val:
@@ -370,7 +369,7 @@ def parse_containers_config(containers_config_file):
         with open(containers_config_file) as fh:
             c = yaml.safe_load(fh)
             conf.update(c.get('containers', {}))
-    except (OSError, IOError) as exc:
+    except OSError as exc:
         if exc.errno == errno.ENOENT:
             log.debug("config file '%s' does not exist, running with default config", containers_config_file)
         else:

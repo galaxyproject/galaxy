@@ -32,8 +32,7 @@ def get_metadata_compute_strategy(config, job_id, metadata_strategy_override=Non
         return PortableDirectoryMetadataGenerator(job_id)
 
 
-@six.add_metaclass(abc.ABCMeta)
-class MetadataCollectionStrategy(object):
+class MetadataCollectionStrategy(metaclass=abc.ABCMeta):
     """Interface describing the abstract process of writing out and collecting output metadata.
     """
     extended = False
@@ -90,9 +89,9 @@ class MetadataCollectionStrategy(object):
 
     def _metadata_results_from_file(self, dataset, filename_results_code):
         try:
-            with open(filename_results_code, "r") as f:
+            with open(filename_results_code) as f:
                 rval, rstring = json.load(f)
-        except (OSError, IOError):
+        except OSError:
             rval = False
             rstring = "Metadata results could not be read from '%s'" % filename_results_code
 
@@ -228,7 +227,7 @@ class ExtendedDirectoryMetadataGenerator(PortableDirectoryMetadataGenerator):
         self.job_id = job_id
 
     def setup_external_metadata(self, datasets_dict, out_collections, sa_session, **kwd):
-        command = super(ExtendedDirectoryMetadataGenerator, self).setup_external_metadata(datasets_dict, out_collections, sa_session, **kwd)
+        command = super().setup_external_metadata(datasets_dict, out_collections, sa_session, **kwd)
         return command
 
     def load_metadata(self, dataset, name, sa_session, working_directory, remote_metadata_directory=None):

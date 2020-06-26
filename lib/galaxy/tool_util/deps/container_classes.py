@@ -72,8 +72,7 @@ fi
 """
 
 
-@six.add_metaclass(ABCMeta)
-class Container(object):
+class Container(metaclass=ABCMeta):
 
     def __init__(self, container_id, app_info, tool_info, destination_info, job_info, container_description, container_name=None):
         self.container_id = container_id
@@ -165,7 +164,7 @@ def preprocess_volumes(volumes_raw_str, container_type):
     return [":".join(v) for v in volumes]
 
 
-class HasDockerLikeVolumes(object):
+class HasDockerLikeVolumes:
     """Mixin to share functionality related to Docker volume handling.
 
     Singularity seems to have a fairly compatible syntax for volume handling.
@@ -275,7 +274,7 @@ class DockerContainer(Container, HasDockerLikeVolumes):
         # Allow destinations to explicitly set environment variables just for
         # docker container. Better approach is to set for destination and then
         # pass through only what tool needs however. (See todo in ToolInfo.)
-        for key, value in six.iteritems(self.destination_info):
+        for key, value in self.destination_info.items():
             if key.startswith("docker_env_"):
                 env = key[len("docker_env_"):]
                 env_directives.append('"{}={}"'.format(env, value))
@@ -394,7 +393,7 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
         # Allow destinations to explicitly set environment variables just for
         # docker container. Better approach is to set for destination and then
         # pass through only what tool needs however. (See todo in ToolInfo.)
-        for key, value in six.iteritems(self.destination_info):
+        for key, value in self.destination_info.items():
             if key.startswith("singularity_env_"):
                 real_key = key[len("singularity_env_"):]
                 env.append((real_key, value))
@@ -427,7 +426,7 @@ CONTAINER_CLASSES = dict(
 )
 
 
-class NullContainer(object):
+class NullContainer:
 
     def __init__(self):
         pass

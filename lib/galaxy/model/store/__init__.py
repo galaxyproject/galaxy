@@ -33,7 +33,7 @@ ATTRS_FILENAME_LIBRARIES = 'libraries_attrs.txt'
 GALAXY_EXPORT_VERSION = "2"
 
 
-class ImportOptions(object):
+class ImportOptions:
 
     def __init__(self, allow_edit=False, allow_library_creation=False, allow_dataset_object_edit=None):
         self.allow_edit = allow_edit
@@ -43,7 +43,7 @@ class ImportOptions(object):
         self.allow_dataset_object_edit = allow_dataset_object_edit
 
 
-class SessionlessContext(object):
+class SessionlessContext:
 
     def __init__(self):
         self.objects = []
@@ -65,8 +65,7 @@ class SessionlessContext(object):
         return Bunch(find=find)
 
 
-@six.add_metaclass(abc.ABCMeta)
-class ModelImportStore(object):
+class ModelImportStore(metaclass=abc.ABCMeta):
 
     def __init__(self, import_options=None, app=None, user=None, object_store=None):
         if object_store is None:
@@ -741,7 +740,7 @@ def _copied_from_object_key(copied_from_chain, objects_by_key):
     return copied_from_object_key
 
 
-class ObjectImportTracker(object):
+class ObjectImportTracker:
     """Keep track of new and existing imported objects.
 
     Needed to re-establish connections and such in multiple passes.
@@ -826,7 +825,7 @@ class DirectoryImportModelStore1901(BaseDirectoryImportModelStore):
     object_key = 'hid'
 
     def __init__(self, archive_dir, **kwd):
-        super(DirectoryImportModelStore1901, self).__init__(**kwd)
+        super().__init__(**kwd)
         archive_dir = os.path.realpath(archive_dir)
 
         # Bioblend previous to 17.01 exported histories with an extra subdir.
@@ -875,7 +874,7 @@ class DirectoryImportModelStoreLatest(BaseDirectoryImportModelStore):
     object_key = 'encoded_id'
 
     def __init__(self, archive_dir, **kwd):
-        super(DirectoryImportModelStoreLatest, self).__init__(**kwd)
+        super().__init__(**kwd)
         archive_dir = os.path.realpath(archive_dir)
         self.archive_dir = archive_dir
         if self.defines_new_history():
@@ -973,11 +972,10 @@ class BagArchiveImportModelStore(DirectoryImportModelStoreLatest):
         # Why this line though...?
         archive_dir = os.path.join(archive_dir, os.listdir(archive_dir)[0])
         bdb.revert_bag(archive_dir)
-        super(BagArchiveImportModelStore, self).__init__(archive_dir, **kwd)
+        super().__init__(archive_dir, **kwd)
 
 
-@six.add_metaclass(abc.ABCMeta)
-class ModelExportStore(object):
+class ModelExportStore(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def export_history(self, history, include_hidden=False, include_deleted=False):
@@ -1394,10 +1392,10 @@ class TarModelExportStore(DirectoryModelExportStore):
         self.gzip = gzip
         self.out_file = out_file
         temp_output_dir = tempfile.mkdtemp()
-        super(TarModelExportStore, self).__init__(temp_output_dir, **kwds)
+        super().__init__(temp_output_dir, **kwds)
 
     def _finalize(self):
-        super(TarModelExportStore, self)._finalize()
+        super()._finalize()
         tar_export_directory(self.export_directory, self.out_file, self.gzip)
         shutil.rmtree(self.export_directory)
 
@@ -1406,10 +1404,10 @@ class BagDirectoryModelExportStore(DirectoryModelExportStore):
 
     def __init__(self, out_directory, **kwds):
         self.out_directory = out_directory
-        super(BagDirectoryModelExportStore, self).__init__(out_directory, **kwds)
+        super().__init__(out_directory, **kwds)
 
     def _finalize(self):
-        super(BagDirectoryModelExportStore, self)._finalize()
+        super()._finalize()
         bdb.make_bag(self.out_directory)
 
 
@@ -1420,10 +1418,10 @@ class BagArchiveModelExportStore(BagDirectoryModelExportStore):
         self.bag_archiver = bag_archiver
         self.out_file = out_file
         temp_output_dir = tempfile.mkdtemp()
-        super(BagArchiveModelExportStore, self).__init__(temp_output_dir, **kwds)
+        super().__init__(temp_output_dir, **kwds)
 
     def _finalize(self):
-        super(BagArchiveModelExportStore, self)._finalize()
+        super()._finalize()
         rval = bdb.archive_bag(self.export_directory, self.bag_archiver)
         shutil.move(rval, self.out_file)
         shutil.rmtree(self.export_directory)

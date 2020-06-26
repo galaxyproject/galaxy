@@ -87,7 +87,7 @@ class PithosObjectStore(ConcreteObjectStore):
     store_type = 'pithos'
 
     def __init__(self, config, config_dict):
-        super(PithosObjectStore, self).__init__(config, config_dict)
+        super().__init__(config, config_dict)
         self.staging_path = self.config.file_path
         log.info('Parse config_xml for pithos object store')
         self.config_dict = config_dict
@@ -109,7 +109,7 @@ class PithosObjectStore(ConcreteObjectStore):
         return parse_config_xml(config_xml)
 
     def to_dict(self):
-        as_dict = super(PithosObjectStore, self).to_dict()
+        as_dict = super().to_dict()
         as_dict.update(self.config_dict)
         return as_dict
 
@@ -363,7 +363,7 @@ class PithosObjectStore(ConcreteObjectStore):
             cache_path = self._pull_into_cache(path)
         else:
             cache_path = self._get_cache_path(path)
-        data_file = open(cache_path, 'r')
+        data_file = open(cache_path)
         data_file.seek(start)
         content = data_file.read(count)
         data_file.close()

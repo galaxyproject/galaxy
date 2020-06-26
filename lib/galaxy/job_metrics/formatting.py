@@ -1,7 +1,7 @@
 """Utilities related to formatting job metrics for human consumption."""
 
 
-class JobMetricFormatter(object):
+class JobMetricFormatter:
     """Format job metric key-value pairs for human consumption in Web UI."""
 
     def format(self, key, value):

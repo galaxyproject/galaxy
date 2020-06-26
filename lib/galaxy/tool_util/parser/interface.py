@@ -11,9 +11,7 @@ from .util import _parse_name
 NOT_IMPLEMENTED_MESSAGE = "Galaxy tool format does not yet support this tool feature."
 
 
-@six.python_2_unicode_compatible
-@six.add_metaclass(ABCMeta)
-class ToolSource(object):
+class ToolSource(metaclass=ABCMeta):
     """ This interface represents an abstract source to parse tool
     information from.
     """
@@ -250,13 +248,13 @@ class ToolSource(object):
     def __str__(self):
         source_path = self.source_path
         if source_path:
-            as_str = u'{}[{}]'.format(self.__class__.__name__, source_path)
+            as_str = '{}[{}]'.format(self.__class__.__name__, source_path)
         else:
-            as_str = u'%s[In-memory]' % (self.__class__.__name__)
+            as_str = '%s[In-memory]' % (self.__class__.__name__)
         return as_str
 
 
-class PagesSource(object):
+class PagesSource:
     """ Contains a list of Pages - each a list of InputSources -
     each item in the outer list representing a page of inputs.
     Pages are deprecated so ideally this outer list will always
@@ -271,8 +269,7 @@ class PagesSource(object):
         return True
 
 
-@six.add_metaclass(ABCMeta)
-class PageSource(object):
+class PageSource(metaclass=ABCMeta):
 
     def parse_display(self):
         return None
@@ -282,8 +279,7 @@ class PageSource(object):
         """ Return a list of InputSource objects. """
 
 
-@six.add_metaclass(ABCMeta)
-class InputSource(object):
+class InputSource(metaclass=ABCMeta):
     default_optional = False
 
     def elem(self):
@@ -366,7 +362,7 @@ class InputSource(object):
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
 
-class TestCollectionDef(object):
+class TestCollectionDef:
 
     def __init__(self, attrib, name, collection_type, elements):
         self.attrib = attrib
@@ -445,7 +441,7 @@ class TestCollectionDef(object):
         return inputs
 
 
-class TestCollectionOutputDef(object):
+class TestCollectionOutputDef:
 
     def __init__(self, name, attrib, element_tests):
         self.name = name

@@ -357,8 +357,7 @@ def installed_conda_targets(conda_context):
             yield CondaTarget(unversioned_match.group(1))
 
 
-@six.python_2_unicode_compatible
-class CondaTarget(object):
+class CondaTarget:
 
     def __init__(self, package, version=None, channel=None):
         if SHELL_UNSAFE_PATTERN.search(package) is not None:

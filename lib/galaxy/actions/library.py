@@ -65,7 +65,7 @@ def validate_path_upload(trans):
         raise AdminRequiredException('Uploading files via filesystem paths can only be performed by administrators')
 
 
-class LibraryActions(object):
+class LibraryActions:
     """
     Mixin for controllers that provide library functionality.
     """

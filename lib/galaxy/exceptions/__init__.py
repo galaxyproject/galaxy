@@ -51,7 +51,7 @@ class ActionInputError(MessageException):
     err_code = error_codes.USER_REQUEST_INVALID_PARAMETER
 
     def __init__(self, err_msg, type="error"):
-        super(ActionInputError, self).__init__(err_msg, type)
+        super().__init__(err_msg, type)
 
 
 class DuplicatedSlugException(MessageException):
@@ -104,7 +104,7 @@ class ToolMissingException(MessageException):
     err_code = error_codes.USER_TOOL_MISSING_PROBLEM
 
     def __init__(self, err_msg=None, type="info", tool_id=None, **extra_error_info):
-        super(ToolMissingException, self).__init__(err_msg, type, **extra_error_info)
+        super().__init__(err_msg, type, **extra_error_info)
         self.tool_id = tool_id
 
 
@@ -194,7 +194,7 @@ class ToolExecutionError(MessageException):
     err_code = error_codes.TOOL_EXECUTION_ERROR
 
     def __init__(self, err_msg, type="error", job=None):
-        super(ToolExecutionError, self).__init__(err_msg, type)
+        super().__init__(err_msg, type)
         self.job = job
 
 
@@ -213,7 +213,7 @@ class InvalidFileFormatError(MessageException):
 class ContainerCLIError(Exception):
     def __init__(self, msg=None, stdout=None, stderr=None, returncode=None,
                  command=None, subprocess_command=None, **kwargs):
-        super(ContainerCLIError, self).__init__(msg, **kwargs)
+        super().__init__(msg, **kwargs)
         self.stdout = stdout
         self.stderr = stderr
         self.returncode = returncode
@@ -223,24 +223,24 @@ class ContainerCLIError(Exception):
 
 class ContainerNotFound(Exception):
     def __init__(self, msg=None, container_id=None, **kwargs):
-        super(ContainerNotFound, self).__init__(msg, **kwargs)
+        super().__init__(msg, **kwargs)
         self.container_id = container_id
 
 
 class ContainerImageNotFound(Exception):
     def __init__(self, msg=None, image=None, **kwargs):
-        super(ContainerImageNotFound, self).__init__(msg, **kwargs)
+        super().__init__(msg, **kwargs)
         self.image = image
 
 
 class ContainerRunError(Exception):
     def __init__(self, msg=None, image=None, command=None, **kwargs):
-        super(ContainerRunError, self).__init__(msg, **kwargs)
+        super().__init__(msg, **kwargs)
         self.image = image
         self.command = command
 
 
 class HandlerAssignmentError(Exception):
     def __init__(self, msg=None, obj=None, **kwargs):
-        super(HandlerAssignmentError, self).__init__(msg, **kwargs)
+        super().__init__(msg, **kwargs)
         self.obj = obj

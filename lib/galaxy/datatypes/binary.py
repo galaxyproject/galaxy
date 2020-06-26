@@ -1,5 +1,4 @@
 """Binary classes"""
-from __future__ import print_function
 
 import binascii
 import gzip
@@ -423,7 +422,7 @@ class BamNative(CompressedArchive):
         if offset is not None:
             return self.get_chunk(trans, dataset, offset, ck_size)
         elif to_ext or not preview:
-            return super(BamNative, self).display_data(trans, dataset, preview, filename, to_ext, **kwd)
+            return super().display_data(trans, dataset, preview, filename, to_ext, **kwd)
         else:
             column_names = dataset.metadata.column_names
             if not column_names:
@@ -505,7 +504,7 @@ class Bam(BamNative):
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         # These metadata values are not accessible by users, always overwrite
-        super(Bam, self).set_meta(dataset=dataset, overwrite=overwrite, **kwd)
+        super().set_meta(dataset=dataset, overwrite=overwrite, **kwd)
         index_flag = self.get_index_flag(dataset.file_name)
         if index_flag == '-b':
             spec_key = 'bam_index'
@@ -523,7 +522,7 @@ class Bam(BamNative):
         dataset.metadata.bam_index = index_file
 
     def sniff(self, file_name):
-        return super(Bam, self).sniff(file_name) and not self.dataset_content_needs_grooming(file_name)
+        return super().sniff(file_name) and not self.dataset_content_needs_grooming(file_name)
 
     # ------------- Dataproviders
     # pipe through samtools view
@@ -864,7 +863,7 @@ class Loom(H5):
     MetadataElement(name="row_graphs_names", desc="row_graphs_names", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
 
     def sniff(self, filename):
-        if super(Loom, self).sniff(filename):
+        if super().sniff(filename):
             with h5py.File(filename, 'r') as loom_file:
                 # Check the optional but distinctive LOOM_SPEC_VERSION attribute
                 if bool(loom_file.attrs.get('LOOM_SPEC_VERSION')):
@@ -892,7 +891,7 @@ class Loom(H5):
             return "Binary Loom file (%s)" % (nice_size(dataset.get_size()))
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-        super(Loom, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             with h5py.File(dataset.file_name, 'r') as loom_file:
                 dataset.metadata.title = util.unicodify(loom_file.attrs.get('title'))
@@ -942,7 +941,7 @@ class Anndata(H5):
     file_ext = 'h5ad'
 
     def sniff(self, filename):
-        if super(Anndata, self).sniff(filename):
+        if super().sniff(filename):
             try:
                 with h5py.File(filename, 'r') as f:
                     return all(attr in f for attr in ['X', 'obs', 'var'])
@@ -1082,14 +1081,14 @@ class Biom2(H5):
         >>> Biom2().sniff(fname)
         False
         """
-        if super(Biom2, self).sniff(filename):
+        if super().sniff(filename):
             with h5py.File(filename, 'r') as f:
                 required_fields = {'id', 'format-url', 'type', 'generated-by', 'creation-date', 'nnz', 'shape'}
                 return required_fields.issubset(f.attrs.keys())
         return False
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-        super(Biom2, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             with h5py.File(dataset.file_name, 'r') as f:
                 attributes = f.attrs
@@ -1157,7 +1156,7 @@ class Cool(H5):
         MAGIC = "HDF5::Cooler"
         URL = "https://github.com/mirnylab/cooler"
 
-        if super(Cool, self).sniff(filename):
+        if super().sniff(filename):
             keys = ['chroms', 'bins', 'pixels', 'indexes']
             with h5py.File(filename, 'r') as handle:
                 fmt = util.unicodify(handle.attrs.get('format'))
@@ -1213,7 +1212,7 @@ class MCool(H5):
         MAGIC = "HDF5::Cooler"
         URL = "https://github.com/mirnylab/cooler"
 
-        if super(MCool, self).sniff(filename):
+        if super().sniff(filename):
             keys0 = ['resolutions']
             with h5py.File(filename, 'r') as handle:
                 if not all(name in handle.keys() for name in keys0):
@@ -1366,7 +1365,7 @@ class TwoBit(Binary):
             magic = struct.unpack(">L", header)[0]
             if magic == TWOBIT_MAGIC_NUMBER or magic == TWOBIT_MAGIC_NUMBER_SWAP:
                 return True
-        except IOError:
+        except OSError:
             return False
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -1374,7 +1373,7 @@ class TwoBit(Binary):
             dataset.peek = "Binary TwoBit format nucleotide file"
             dataset.blurb = nice_size(dataset.get_size())
         else:
-            return super(TwoBit, self).set_peek(dataset)
+            return super().set_peek(dataset)
 
     def display_peek(self, dataset):
         try:
@@ -1499,7 +1498,7 @@ class GeminiSQLite(SQlite):
     edam_data = "data_3498"
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-        super(GeminiSQLite, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             conn = sqlite.connect(dataset.file_name)
             c = conn.cursor()
@@ -1512,7 +1511,7 @@ class GeminiSQLite(SQlite):
             log.warning('%s, set_meta Exception: %s', self, e)
 
     def sniff(self, filename):
-        if super(GeminiSQLite, self).sniff(filename):
+        if super().sniff(filename):
             table_names = ["gene_detailed", "gene_summary", "resources", "sample_genotype_counts",
                            "sample_genotypes", "samples", "variant_impacts", "variants", "version"]
             return self.sniff_table_names(filename, table_names)
@@ -1538,10 +1537,10 @@ class ChiraSQLite(SQlite):
     file_ext = "chira.sqlite"
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-        super(ChiraSQLite, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
 
     def sniff(self, filename):
-        if super(ChiraSQLite, self).sniff(filename):
+        if super().sniff(filename):
             self.sniff_table_names(filename, ['Chimeras'])
         return False
 
@@ -1559,7 +1558,7 @@ class CuffDiffSQlite(SQlite):
     edam_format = "format_3621"
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-        super(CuffDiffSQlite, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             genes = []
             samples = []
@@ -1588,7 +1587,7 @@ class CuffDiffSQlite(SQlite):
             log.warning('%s, set_meta Exception: %s', self, e)
 
     def sniff(self, filename):
-        if super(CuffDiffSQlite, self).sniff(filename):
+        if super().sniff(filename):
             # These tables should be in any CuffDiff SQLite output.
             table_names = ['CDS', 'genes', 'isoforms', 'replicates', 'runInfo', 'samples', 'TSS']
             return self.sniff_table_names(filename, table_names)
@@ -1614,10 +1613,10 @@ class MzSQlite(SQlite):
     file_ext = "mz.sqlite"
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-        super(MzSQlite, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
 
     def sniff(self, filename):
-        if super(MzSQlite, self).sniff(filename):
+        if super().sniff(filename):
             table_names = ["DBSequence", "Modification", "Peaks", "Peptide", "PeptideEvidence",
                            "Score", "SearchDatabase", "Source", "SpectraData", "Spectrum", "SpectrumIdentification"]
             return self.sniff_table_names(filename, table_names)
@@ -1639,7 +1638,7 @@ class PQP(SQlite):
     file_ext = "pqp"
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-        super(PQP, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
 
     def sniff(self, filename):
         """
@@ -1647,7 +1646,7 @@ class PQP(SQlite):
         for now VERSION GENE PEPTIDE_GENE_MAPPING are excluded, since
         there is test data wo these tables, see also here https://github.com/OpenMS/OpenMS/issues/4365
         """
-        if not super(PQP, self).sniff(filename):
+        if not super().sniff(filename):
             return False
         table_names = ['COMPOUND', 'PEPTIDE', 'PEPTIDE_PROTEIN_MAPPING', 'PRECURSOR',
                        'PRECURSOR_COMPOUND_MAPPING', 'PRECURSOR_PEPTIDE_MAPPING', 'PROTEIN',
@@ -1671,12 +1670,12 @@ class OSW(SQlite):
     file_ext = "osw"
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-        super(OSW, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
 
     def sniff(self, filename):
         # osw seems to be an extension of pqp (few tables are added)
         # see also here https://github.com/OpenMS/OpenMS/issues/4365
-        if not super(OSW, self).sniff(filename):
+        if not super().sniff(filename):
             return False
         table_names = ['COMPOUND', 'PEPTIDE', 'PEPTIDE_PROTEIN_MAPPING', 'PRECURSOR',
                        'PRECURSOR_COMPOUND_MAPPING', 'PRECURSOR_PEPTIDE_MAPPING', 'PROTEIN',
@@ -1700,10 +1699,10 @@ class SQmass(SQlite):
     file_ext = "sqmass"
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-        super(SQmass, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
 
     def sniff(self, filename):
-        if super(SQmass, self).sniff(filename):
+        if super().sniff(filename):
             table_names = ["CHROMATOGRAM", "PRECURSOR", "RUN", "SPECTRUM", "DATA", "PRODUCT", "RUN_EXTRA"]
             return self.sniff_table_names(filename, table_names)
         return False
@@ -1716,7 +1715,7 @@ class BlibSQlite(SQlite):
     file_ext = "blib"
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-        super(BlibSQlite, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             conn = sqlite.connect(dataset.file_name)
             c = conn.cursor()
@@ -1727,7 +1726,7 @@ class BlibSQlite(SQlite):
             log.warning('%s, set_meta Exception: %s', self, e)
 
     def sniff(self, filename):
-        if super(BlibSQlite, self).sniff(filename):
+        if super().sniff(filename):
             table_names = ['IonMobilityTypes', 'LibInfo', 'Modifications', 'RefSpectra',
                            'RefSpectraPeakAnnotations', 'RefSpectraPeaks', 'ScoreTypes', 'SpectrumSourceFiles']
             return self.sniff_table_names(filename, table_names)
@@ -1753,7 +1752,7 @@ class DlibSQlite(SQlite):
     file_ext = "dlib"
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-        super(DlibSQlite, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             conn = sqlite.connect(dataset.file_name)
             c = conn.cursor()
@@ -1764,7 +1763,7 @@ class DlibSQlite(SQlite):
             log.warning('%s, set_meta Exception: %s', self, e)
 
     def sniff(self, filename):
-        if super(DlibSQlite, self).sniff(filename):
+        if super().sniff(filename):
             table_names = ['entries', 'metadata', 'peptidetoprotein']
             return self.sniff_table_names(filename, table_names)
         return False
@@ -1789,7 +1788,7 @@ class ElibSQlite(SQlite):
     file_ext = "elib"
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-        super(ElibSQlite, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             conn = sqlite.connect(dataset.file_name)
             c = conn.cursor()
@@ -1800,7 +1799,7 @@ class ElibSQlite(SQlite):
             log.warning('%s, set_meta Exception: %s', self, e)
 
     def sniff(self, filename):
-        if super(ElibSQlite, self).sniff(filename):
+        if super().sniff(filename):
             table_names = ['entries', 'fragmentquants', 'metadata', 'peptidelocalizations', 'peptidequants',
                            'peptidescores', 'peptidetoprotein', 'proteinscores', 'retentiontimes']
             if self.sniff_table_names(filename, table_names):
@@ -1830,10 +1829,10 @@ class IdpDB(SQlite):
     file_ext = "idpdb"
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-        super(IdpDB, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
 
     def sniff(self, filename):
-        if super(IdpDB, self).sniff(filename):
+        if super().sniff(filename):
             table_names = ["About", "Analysis", "AnalysisParameter", "PeptideSpectrumMatch",
                            "Spectrum", "SpectrumSource"]
             return self.sniff_table_names(filename, table_names)
@@ -1861,7 +1860,7 @@ class GAFASQLite(SQlite):
     file_ext = 'gafa.sqlite'
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-        super(GAFASQLite, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             conn = sqlite.connect(dataset.file_name)
             c = conn.cursor()
@@ -1876,7 +1875,7 @@ class GAFASQLite(SQlite):
             log.warning("%s, set_meta Exception: %s", self, e)
 
     def sniff(self, filename):
-        if super(GAFASQLite, self).sniff(filename):
+        if super().sniff(filename):
             table_names = frozenset({'gene', 'gene_family', 'gene_family_member', 'meta', 'transcript'})
             return self.sniff_table_names(filename, table_names)
         return False
@@ -1892,7 +1891,7 @@ class NcbiTaxonomySQlite(SQlite):
     file_ext = 'ncbitaxonomy.sqlite'
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-        super(NcbiTaxonomySQlite, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             conn = sqlite.connect(dataset.file_name)
             c = conn.cursor()
@@ -1910,7 +1909,7 @@ class NcbiTaxonomySQlite(SQlite):
             log.warning("%s, set_meta Exception: %s", self, e)
 
     def sniff(self, filename):
-        if super(NcbiTaxonomySQlite, self).sniff(filename):
+        if super().sniff(filename):
             table_names = frozenset({'__diesel_schema_migrations', 'taxonomy'})
             return self.sniff_table_names(filename, table_names)
         return False
@@ -2044,7 +2043,7 @@ class OxliBinary(Binary):
                     if binascii.hexlify(ftype) == oxlitype:
                         return True
             return False
-        except IOError:
+        except OSError:
             return False
 
 
@@ -2215,7 +2214,7 @@ class PostgresqlArchive(CompressedArchive):
     file_ext = "postgresql"
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-        super(PostgresqlArchive, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             if dataset and tarfile.is_tarfile(dataset.file_name):
                 with tarfile.open(dataset.file_name, 'r') as temptar:
@@ -2259,7 +2258,7 @@ class Fast5Archive(CompressedArchive):
     file_ext = "fast5.tar"
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-        super(Fast5Archive, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             if dataset and tarfile.is_tarfile(dataset.file_name):
                 with tarfile.open(dataset.file_name, 'r') as temptar:
@@ -2354,7 +2353,7 @@ class SearchGuiArchive(CompressedArchive):
     file_ext = "searchgui_archive"
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-        super(SearchGuiArchive, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             if dataset and zipfile.is_zipfile(dataset.file_name):
                 with zipfile.ZipFile(dataset.file_name) as tempzip:

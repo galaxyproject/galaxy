@@ -76,7 +76,7 @@ def virtual_display_if_enabled(enabled):
         return NoopDisplay()
 
 
-class NoopDisplay(object):
+class NoopDisplay:
 
     def stop(self):
         """No-op stop for consistent use with pyvirtualdisplay Display class."""

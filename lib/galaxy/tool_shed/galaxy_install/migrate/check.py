@@ -145,7 +145,7 @@ def migrate_to_current_version(engine, schema):
         log.info('Installing tools from version {} -> {}... '.format(ver, nextver))
         old_stdout = sys.stdout
 
-        class FakeStdout(object):
+        class FakeStdout:
             def __init__(self):
                 self.buffer = []
 

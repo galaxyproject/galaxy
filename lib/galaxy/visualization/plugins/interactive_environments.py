@@ -38,7 +38,7 @@ ENV_OVERRIDE_CAPITALIZE = frozenset({
 log = logging.getLogger(__name__)
 
 
-class InteractiveEnvironmentRequest(object):
+class InteractiveEnvironmentRequest:
 
     def __init__(self, trans, plugin):
         self.trans = trans
@@ -123,7 +123,7 @@ class InteractiveEnvironmentRequest(object):
             except AttributeError:
                 raise Exception("[{0}] Could not find allowed_images.yml, or image tag in {0}.ini file for ".format(self.attr.viz_id))
 
-        with open(fn, 'r') as handle:
+        with open(fn) as handle:
             self.allowed_images = [x['image'] for x in yaml.safe_load(handle)]
 
             if len(self.allowed_images) == 0:

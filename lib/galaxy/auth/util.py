@@ -35,7 +35,7 @@ def get_authenticators(auth_config_file, auth_config_file_set):
     try:
         ct = parse_xml(auth_config_file)
         conf_root = ct.getroot()
-    except (OSError, IOError) as exc:
+    except OSError as exc:
         if exc.errno == errno.ENOENT and not auth_config_file_set:
             conf_root = parse_xml_string(AUTH_CONF_XML)
         else:

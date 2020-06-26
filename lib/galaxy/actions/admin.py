@@ -9,7 +9,7 @@ from galaxy.exceptions import ActionInputError
 log = logging.getLogger(__name__)
 
 
-class AdminActions(object):
+class AdminActions:
     """
     Mixin for controllers that provide administrative functionality.
     """

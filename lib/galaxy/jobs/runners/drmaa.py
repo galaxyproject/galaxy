@@ -1,7 +1,6 @@
 """
 Job control via the DRMAA API.
 """
-from __future__ import absolute_import
 
 import json
 import logging
@@ -53,7 +52,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             kwargs['runner_param_specs'] = dict()
         kwargs['runner_param_specs'].update(runner_param_specs)
 
-        super(DRMAAJobRunner, self).__init__(app, nworkers, **kwargs)
+        super().__init__(app, nworkers, **kwargs)
 
         # This allows multiple drmaa runners (although only one per handler) in the same job config file
         if 'drmaa_library_path' in kwargs:

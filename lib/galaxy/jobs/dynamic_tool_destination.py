@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import argparse
 import collections
 import copy
@@ -76,7 +74,7 @@ def get_keys_from_dict(dl, keys_list):
             get_keys_from_dict(x, keys_list)
 
 
-class RuleValidator(object):
+class RuleValidator:
     """
     This class is the primary facility for validating configs. It's always
     called in map_tool_to_destination and it's called for validating config
@@ -743,7 +741,7 @@ def parse_yaml(path="/config/tool_destinations.yml",
             else:
                 opt_file = path
 
-            with open(opt_file, 'r') as stream:
+            with open(opt_file) as stream:
                 config = yaml.safe_load(stream)
 
         # Test imported file
@@ -1290,7 +1288,7 @@ def importer(test):
     global JobDestination
     global JobMappingException
     if test:
-        class JobDestination(object):
+        class JobDestination:
             def __init__(self, *kwd):
                 self.id = kwd.get('id')
                 self.nativeSpec = kwd.get('params')['nativeSpecification']

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """ Clearing house for generic text datatypes that are not XML or tabular.
 """
 
@@ -167,7 +166,7 @@ class Ipynb(Json):
         if trust:
             return self._display_data_trusted(trans, dataset, preview=preview, filename=filename, to_ext=to_ext, **kwd)
         else:
-            return super(Ipynb, self).display_data(trans, dataset, preview=preview, filename=filename, to_ext=to_ext, **kwd)
+            return super().display_data(trans, dataset, preview=preview, filename=filename, to_ext=to_ext, **kwd)
 
     def _display_data_trusted(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
         preview = string_as_bool(preview)
@@ -215,7 +214,7 @@ class Biom1(Json):
     MetadataElement(name="table_column_metadata_headers", default=[], desc="table_column_metadata_headers", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value=[])
 
     def set_peek(self, dataset, is_multi_byte=False):
-        super(Biom1, self).set_peek(dataset)
+        super().set_peek(dataset)
         if not dataset.dataset.purged:
             dataset.blurb = "Biological Observation Matrix v1"
 
@@ -234,7 +233,7 @@ class Biom1(Json):
         is_biom = False
         segment_size = int(load_size / 2)
         try:
-            with open(file_prefix.filename, "r") as fh:
+            with open(file_prefix.filename) as fh:
                 prev_str = ""
                 segment_str = fh.read(segment_size)
                 if segment_str.strip().startswith('{'):
@@ -311,7 +310,7 @@ class ImgtJson(Json):
     """
 
     def set_peek(self, dataset, is_multi_byte=False):
-        super(ImgtJson, self).set_peek(dataset)
+        super().set_peek(dataset)
         if not dataset.dataset.purged:
             dataset.blurb = "IMGT Library"
 
@@ -340,7 +339,7 @@ class ImgtJson(Json):
         """
         is_imgt = False
         try:
-            with open(file_prefix.filename, "r") as fh:
+            with open(file_prefix.filename) as fh:
                 segment_str = fh.read(load_size)
                 if segment_str.strip().startswith('['):
                     if '"taxonId"' in segment_str and '"anchorPoints"' in segment_str:
@@ -376,7 +375,7 @@ class GeoJson(Json):
     file_ext = "geojson"
 
     def set_peek(self, dataset, is_multi_byte=False):
-        super(GeoJson, self).set_peek(dataset)
+        super().set_peek(dataset)
         if not dataset.dataset.purged:
             dataset.blurb = "GeoJSON"
 
@@ -404,7 +403,7 @@ class GeoJson(Json):
         """
         is_geojson = False
         try:
-            with open(file_prefix.filename, "r") as fh:
+            with open(file_prefix.filename) as fh:
                 segment_str = fh.read(load_size)
                 if any(x in segment_str for x in ["Point", "MultiPoint", "LineString", "MultiLineString", "Polygon", "MultiPolygon", "GeometryCollection"]):
                     if all(x in segment_str for x in ["type", "geometry", "coordinates"]):

@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 VALID_JOB_HASH_STRATEGIES = ["job", "user", "history", "workflow_invocation"]
 
 
-class RuleHelper(object):
+class RuleHelper:
     """ Utility to allow job rules to interface cleanly with the rest of
     Galaxy and shield them from low-level details of models, metrics, etc....
 

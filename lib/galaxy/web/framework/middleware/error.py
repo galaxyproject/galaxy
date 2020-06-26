@@ -24,7 +24,7 @@ from six.moves import cStringIO as StringIO
 __all__ = ('ErrorMiddleware', 'handle_exception')
 
 
-class _NoDefault(object):
+class _NoDefault:
     def __repr__(self):
         return '<NoDefault>'
 
@@ -32,7 +32,7 @@ class _NoDefault(object):
 NoDefault = _NoDefault()
 
 
-class ErrorMiddleware(object):
+class ErrorMiddleware:
 
     """
     Error handling middleware
@@ -199,7 +199,7 @@ class ErrorMiddleware(object):
             environ=environ)
 
 
-class ResponseStartChecker(object):
+class ResponseStartChecker:
     def __init__(self, start_response):
         self.start_response = start_response
         self.response_started = False
@@ -211,7 +211,7 @@ class ResponseStartChecker(object):
         return self.start_response(*args)
 
 
-class CatchingIter(six.Iterator):
+class CatchingIter:
 
     """
     A wrapper around the application iterator that will catch
@@ -281,7 +281,7 @@ class CatchingIter(six.Iterator):
             return close_response
 
 
-class Supplement(object):
+class Supplement:
 
     """
     This is a supplement used to display standard WSGI information in

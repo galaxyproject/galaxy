@@ -15,8 +15,7 @@ from .. import formatting
 INSTRUMENT_FILE_PREFIX = "__instrument"
 
 
-@six.add_metaclass(ABCMeta)
-class InstrumentPlugin(object):
+class InstrumentPlugin(metaclass=ABCMeta):
     """Describes how to instrument job scripts and retrieve collected metrics."""
     formatter = formatting.JobMetricFormatter()
 

@@ -1597,7 +1597,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         if not selected_environments_to_uninstall:
             selected_environments_to_uninstall = []
         tools_by_id = trans.app.toolbox.tools_by_id.copy()
-        view = six.next(six.itervalues(trans.app.toolbox.tools_by_id))._view
+        view = next(trans.app.toolbox.tools_by_id.values())._view
         if selected_tool_ids:
             # install the dependencies for the tools in the selected_tool_ids list
             if not isinstance(selected_tool_ids, list):
@@ -1625,7 +1625,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             # write the configured sanitize_allowlist_file with new allowlist
             # and update in-memory list.
             with open(trans.app.config.sanitize_allowlist_file, 'wt') as f:
-                if isinstance(tools_to_allowlist, six.string_types):
+                if isinstance(tools_to_allowlist, str):
                     tools_to_allowlist = [tools_to_allowlist]
                 new_allowlist = sorted([tid for tid in tools_to_allowlist if tid in trans.app.toolbox.tools_by_id])
                 f.write("\n".join(new_allowlist))

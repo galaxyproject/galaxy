@@ -110,7 +110,7 @@ def parse_config_xml(config_xml):
         raise
 
 
-class CloudConfigMixin(object):
+class CloudConfigMixin:
 
     def _config_to_dict(self):
         return {
@@ -147,7 +147,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
     def __init__(self, config, config_dict):
         reload_timer = ExecutionTimer()
-        super(IRODSObjectStore, self).__init__(config, config_dict)
+        super().__init__(config, config_dict)
 
         auth_dict = config_dict.get('auth')
         if auth_dict is None:
@@ -253,7 +253,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         return parse_config_xml(config_xml)
 
     def to_dict(self):
-        as_dict = super(IRODSObjectStore, self).to_dict()
+        as_dict = super().to_dict()
         as_dict.update(self._config_to_dict())
         return as_dict
 
@@ -605,7 +605,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         if not self._in_cache(rel_path):
             self._pull_into_cache(rel_path)
         # Read the file content from cache
-        data_file = open(self._get_cache_path(rel_path), 'r')
+        data_file = open(self._get_cache_path(rel_path))
         data_file.seek(start)
         content = data_file.read(count)
         data_file.close()

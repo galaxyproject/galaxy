@@ -17,7 +17,7 @@ COLOR_OPTS = ['COLOR_SCALARS', 'red', 'green', 'blue']
 
 
 @build_sniff_from_prefix
-class Ply(object):
+class Ply:
     """
     The PLY format describes an object as a collection of vertices,
     faces and other elements, along with properties such as color and
@@ -132,7 +132,7 @@ class PlyBinary(Ply, Binary):
 
 
 @build_sniff_from_prefix
-class Vtk(object):
+class Vtk:
     r"""
     The Visualization Toolkit provides a number of source and writer objects to
     read and write popular data file formats. The Visualization Toolkit also

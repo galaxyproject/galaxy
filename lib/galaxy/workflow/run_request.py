@@ -15,7 +15,7 @@ INPUT_STEP_TYPES = ['data_input', 'data_collection_input', 'parameter_input']
 log = logging.getLogger(__name__)
 
 
-class WorkflowRunConfig(object):
+class WorkflowRunConfig:
     """ Wrapper around all the ways a workflow execution can be parameterized.
 
     :param target_history: History to execute workflow in.

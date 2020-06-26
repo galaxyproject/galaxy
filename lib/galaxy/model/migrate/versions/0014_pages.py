@@ -3,7 +3,6 @@ Migration script to add support for "Pages".
   1) Creates Page and PageRevision tables
   2) Adds username column to User table
 """
-from __future__ import print_function
 
 import datetime
 import logging

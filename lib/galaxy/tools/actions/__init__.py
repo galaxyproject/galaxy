@@ -24,7 +24,7 @@ from galaxy.web import url_for
 log = logging.getLogger(__name__)
 
 
-class ToolExecutionCache(object):
+class ToolExecutionCache:
     """ An object mean to cache calculation caused by repeatedly evaluting
     the same tool by the same user with slightly different parameters.
     """
@@ -47,7 +47,7 @@ class ToolExecutionCache(object):
         return chrom_info_pair
 
 
-class ToolAction(object):
+class ToolAction:
     """
     The actions to be taken when a tool is run (after parameters have
     been converted and validated).
@@ -58,7 +58,7 @@ class ToolAction(object):
         raise TypeError("Abstract method")
 
 
-class DefaultToolAction(object):
+class DefaultToolAction:
     """Default tool action is to run an external command"""
     produces_real_jobs = True
 
@@ -424,7 +424,7 @@ class DefaultToolAction(object):
             # or an actual object to copy.
             metadata_source = output.metadata_source
             if metadata_source:
-                if isinstance(metadata_source, string_types):
+                if isinstance(metadata_source, str):
                     metadata_source = inp_data.get(metadata_source)
 
             if metadata_source is not None:
@@ -781,7 +781,7 @@ class DefaultToolAction(object):
         return name
 
 
-class OutputCollections(object):
+class OutputCollections:
     """ Keeps track of collections (DC or HDCA) created by actions.
 
     Actions do fairly different things depending on whether we are creating

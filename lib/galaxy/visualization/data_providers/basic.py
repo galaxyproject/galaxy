@@ -4,7 +4,7 @@ from json import loads
 from galaxy.datatypes.tabular import Tabular
 
 
-class BaseDataProvider(object):
+class BaseDataProvider:
     """
     Base class for data providers. Data providers (a) read and package data from datasets;
     and (b) write subsets of data to new datasets.

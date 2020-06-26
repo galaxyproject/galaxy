@@ -30,7 +30,7 @@ class ShellJobRunner(AsynchronousJobRunner):
 
     def __init__(self, app, nworkers):
         """Start the job runner """
-        super(ShellJobRunner, self).__init__(app, nworkers)
+        super().__init__(app, nworkers)
 
         self.cli_interface = CliInterface()
         self._init_monitor_thread()

@@ -106,12 +106,12 @@ class GalaxyPackageDependencyResolver(BaseGalaxyPackageDependencyResolver, Lista
     resolver_type = "galaxy_packages"
 
     def __init__(self, dependency_manager, **kwds):
-        super(GalaxyPackageDependencyResolver, self).__init__(dependency_manager, **kwds)
+        super().__init__(dependency_manager, **kwds)
         self._setup_mapping(dependency_manager, **kwds)
 
     def resolve(self, requirement, **kwds):
         requirement = self._expand_mappings(requirement)
-        return super(GalaxyPackageDependencyResolver, self).resolve(requirement, **kwds)
+        return super().resolve(requirement, **kwds)
 
     def list_dependencies(self):
         base_path = self.base_path

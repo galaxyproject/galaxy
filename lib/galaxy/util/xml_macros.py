@@ -273,7 +273,7 @@ def _xml_replace(query, targets, parent_map):
     parent_el.remove(query)
 
 
-class XmlMacroDef(object):
+class XmlMacroDef:
 
     def __init__(self, el):
         self.elements = list(el)

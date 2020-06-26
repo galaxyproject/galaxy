@@ -76,8 +76,7 @@ def ready_galaxy_markdown_for_import(trans, external_galaxy_markdown):
     return internal_markdown
 
 
-@six.add_metaclass(abc.ABCMeta)
-class GalaxyInternalMarkdownDirectiveHandler(object):
+class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
 
     def walk(self, trans, internal_galaxy_markdown):
         hda_manager = trans.app.hda_manager
@@ -395,7 +394,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         return (markdown, True)
 
 
-class MarkdownFormatHelpers(object):
+class MarkdownFormatHelpers:
     """Inject common markdown formatting helpers for per-datatype rendering."""
 
     @staticmethod
@@ -437,7 +436,7 @@ def to_pdf(trans, basic_markdown, css_paths=[]):
         html = weasyprint.HTML(filename=index)
         stylesheets = [weasyprint.CSS(string=pkg_resources.resource_string(__name__, 'markdown_export_base.css'))]
         for css_path in css_paths:
-            with open(css_path, "r") as f:
+            with open(css_path) as f:
                 css_content = f.read()
             css = weasyprint.CSS(string=css_content)
             stylesheets.append(css)

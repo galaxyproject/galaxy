@@ -33,7 +33,7 @@ class SafeJsonEncoder(json.JSONEncoder):
             return int(obj)
         elif isinstance(obj, numpy.float_):
             return float(obj)
-        elif isinstance(obj, six.binary_type):
+        elif isinstance(obj, bytes):
             return unicodify(obj)
         # Let the base class default method raise the TypeError
         return json.JSONEncoder.default(self, obj)
@@ -67,16 +67,15 @@ class GalaxyLargeBinary(LargeBinary):
     # does not specify an encoding in the `bytes` call ,
     # likely because `result` should be binary.
     # This doesn't seem to be the case in galaxy.
-    if six.PY3:
-        def result_processor(self, dialect, coltype):
-            def process(value):
-                if value is not None:
-                    if isinstance(value, str):
-                        value = bytes(value, encoding='utf-8')
-                    else:
-                        value = bytes(value)
-                return value
-            return process
+    def result_processor(self, dialect, coltype):
+        def process(value):
+            if value is not None:
+                if isinstance(value, str):
+                    value = bytes(value, encoding='utf-8')
+                else:
+                    value = bytes(value)
+            return value
+        return process
 
 
 class JSONType(sqlalchemy.types.TypeDecorator):

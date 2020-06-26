@@ -16,7 +16,7 @@ NO_PROVIDER_ID = 'None'
 RESERVED_PROVIDER_IDS = [NO_PROVIDER_ID]
 
 
-class OpenIDProvider(object):
+class OpenIDProvider:
     '''An OpenID Provider object.'''
     @classmethod
     def from_file(cls, filename):
@@ -101,7 +101,7 @@ class OpenIDProvider(object):
         return bool(self.store_user_preference)
 
 
-class OpenIDProviders(object):
+class OpenIDProviders:
     '''Collection of OpenID Providers'''
     NO_PROVIDER_ID = NO_PROVIDER_ID
 
@@ -134,8 +134,7 @@ class OpenIDProviders(object):
         self._banned_identifiers = [provider.op_endpoint_url for provider in self.providers.values() if provider.never_associate_with_user]
 
     def __iter__(self):
-        for provider in six.itervalues(self.providers):
-            yield provider
+        yield from self.providers.values()
 
     def get(self, name, default=None):
         if name in self.providers:

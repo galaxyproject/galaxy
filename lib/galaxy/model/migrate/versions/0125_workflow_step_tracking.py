@@ -1,7 +1,6 @@
 """
 Migration script to enhance workflow step usability by adding labels and UUIDs.
 """
-from __future__ import print_function
 
 import logging
 

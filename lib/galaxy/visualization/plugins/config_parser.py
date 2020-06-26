@@ -16,7 +16,7 @@ class ParsingException(ValueError):
     pass
 
 
-class VisualizationsConfigParser(object):
+class VisualizationsConfigParser:
     """
     Class that parses a visualizations configuration XML file.
 
@@ -199,7 +199,7 @@ class VisualizationsConfigParser(object):
 
 
 # -------------------------------------------------------------------
-class DataSourceParser(object):
+class DataSourceParser:
     """
     Component class of VisualizationsConfigParser that parses data_source elements
     within visualization elements.
@@ -308,7 +308,7 @@ class DataSourceParser(object):
             # TODO: too dangerous - constrain these to some allowed list
             # TODO: does this err if no test_attr - it should...
             test_attr = test_elem.get('test_attr')
-            test_attr = test_attr.split(self.ATTRIBUTE_SPLIT_CHAR) if isinstance(test_attr, string_types) else []
+            test_attr = test_attr.split(self.ATTRIBUTE_SPLIT_CHAR) if isinstance(test_attr, str) else []
             # log.debug( 'test_type: %s, test_attr: %s, test_result: %s', test_type, test_attr, test_result )
 
             # build a lambda function that gets the desired attribute to test
@@ -436,7 +436,7 @@ class DictParser(dict):
                 self.update({element.tag: element.text})
 
 
-class ParamParser(object):
+class ParamParser:
     """
     Component class of VisualizationsConfigParser that parses param elements
     within visualization elements.
@@ -515,5 +515,5 @@ class ParamModifierParser(ParamParser):
         modifies = element.get('modifies')
         if not modifies:
             raise ParsingException('param_modifier entry requires a target param key (attribute "modifies")')
-        returned = super(ParamModifierParser, self).parse(element)
+        returned = super().parse(element)
         return returned

@@ -1,7 +1,6 @@
 """
 Contains the main interface in the Universe class
 """
-from __future__ import absolute_import
 
 import logging
 import os
@@ -36,7 +35,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
     """
 
     def __init__(self, app):
-        super(RootController, self).__init__(app)
+        super().__init__(app)
         self.history_manager = managers.histories.HistoryManager(app)
         self.history_serializer = managers.histories.HistorySerializer(app)
 

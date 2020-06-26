@@ -40,7 +40,7 @@ JOB_WAIT, JOB_ERROR, JOB_INPUT_ERROR, JOB_INPUT_DELETED, JOB_READY, JOB_DELETED,
 DEFAULT_JOB_PUT_FAILURE_MESSAGE = 'Unable to run job due to a misconfiguration of the Galaxy job running system.  Please contact a site administrator.'
 
 
-class JobHandler(object):
+class JobHandler:
     """
     Handle the preparation, running, tracking, and finishing of jobs
     """
@@ -945,7 +945,7 @@ class JobHandlerStopQueue(Monitors):
             log.info("job handler stop queue stopped")
 
 
-class DefaultJobDispatcher(object):
+class DefaultJobDispatcher:
 
     def __init__(self, app):
         self.app = app

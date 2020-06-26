@@ -4,7 +4,6 @@ entries in the 'datatx_info' column in the 'request_type' table. It also deletes
 column in the 'request_type' table and adds a foreign key to the 'sequencer' table. The
 actual contents of the datatx_info column are stored as form_values.
 """
-from __future__ import print_function
 
 import logging
 from json import dumps, loads

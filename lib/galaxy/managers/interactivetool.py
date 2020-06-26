@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 DATABASE_TABLE_NAME = 'gxitproxy'
 
 
-class InteractiveToolSqlite(object):
+class InteractiveToolSqlite:
 
     def __init__(self, sqlite_filename, encode_id):
         self.sqlite_filename = sqlite_filename
@@ -128,7 +128,7 @@ class InteractiveToolSqlite(object):
         return self.remove(key=self.encode_id(entry_point.id), key_type=entry_point.__class__.__name__.lower())
 
 
-class InteractiveToolManager(object):
+class InteractiveToolManager:
     """
     Manager for dealing with InteractiveTools
     """
@@ -194,7 +194,7 @@ class InteractiveToolManager(object):
 
         def build_and_apply_filters(query, objects, filter_func):
             if objects is not None:
-                if isinstance(objects, string_types):
+                if isinstance(objects, str):
                     query = query.filter(filter_func(objects))
                 elif isinstance(objects, list):
                     t = []

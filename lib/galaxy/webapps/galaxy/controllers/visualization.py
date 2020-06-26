@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import logging
 import os
 from json import loads
@@ -236,7 +234,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
     _tracks_grid = TracksterSelectionGrid()
 
     def __init__(self, app):
-        super(VisualizationController, self).__init__(app)
+        super().__init__(app)
         self.hda_manager = managers.hdas.HDAManager(app)
 
     #
@@ -673,7 +671,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         # post to saved in order to save a visualization
         if type is None or config is None:
             return HTTPBadRequest('A visualization type and config are required to save a visualization')
-        if isinstance(config, string_types):
+        if isinstance(config, str):
             config = loads(config)
         title = title or DEFAULT_VISUALIZATION_NAME
 
@@ -796,7 +794,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
             dataset = self.get_hda_or_ldda(trans, dataset_dict['hda_ldda'], dataset_dict['id'])
 
             genome_data = self._get_genome_data(trans, dataset, dbkey)
-            if not isinstance(genome_data, string_types):
+            if not isinstance(genome_data, str):
                 track['preloaded_data'] = genome_data
 
         # define app configuration for generic mako template
@@ -903,7 +901,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                     else:
                         continue
 
-                    with open(image_file, 'r') as handle:
+                    with open(image_file) as handle:
                         self.gie_image_map[gie] = yaml.safe_load(handle)
 
         return trans.fill_template_mako(

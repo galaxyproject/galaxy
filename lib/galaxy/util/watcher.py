@@ -1,13 +1,11 @@
 # TODO: this is largely copied from galaxy.tools.toolbox.galaxy and generalized, the tool-oriented watchers in that
 # module should probably be updated to use this where possible
 
-from __future__ import absolute_import
 
 import logging
 import os.path
 import time
 
-from six.moves import filter
 
 try:
     from watchdog.events import FileSystemEventHandler
@@ -65,7 +63,7 @@ def get_watcher(config, config_name, default="False", monitor_what_str=None, wat
         return NullWatcher()
 
 
-class BaseWatcher(object):
+class BaseWatcher:
 
     def __init__(self, observer_class, even_handler_class, **kwargs):
         self.observer = None
@@ -98,7 +96,7 @@ class BaseWatcher(object):
 class Watcher(BaseWatcher):
 
     def __init__(self, observer_class, event_handler_class, **kwargs):
-        super(Watcher, self).__init__(observer_class, event_handler_class, **kwargs)
+        super().__init__(observer_class, event_handler_class, **kwargs)
         self.path_hash = {}
         self.file_callbacks = {}
         self.dir_callbacks = {}
@@ -175,7 +173,7 @@ class EventHandler(FileSystemEventHandler):
                 callback(path=path)
 
 
-class NullWatcher(object):
+class NullWatcher:
 
     def start(self):
         pass

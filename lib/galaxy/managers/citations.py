@@ -8,7 +8,7 @@ from beaker.util import parse_cache_config_options
 log = logging.getLogger(__name__)
 
 
-class CitationsManager(object):
+class CitationsManager:
 
     def __init__(self, app):
         self.app = app
@@ -33,7 +33,7 @@ class CitationsManager(object):
         return tool
 
 
-class DoiCache(object):
+class DoiCache:
 
     def __init__(self, config):
         cache_opts = {
@@ -71,7 +71,7 @@ def parse_citation(elem, citation_manager):
     return citation
 
 
-class CitationCollection(object):
+class CitationCollection:
 
     def __init__(self):
         self.citations = []
@@ -93,7 +93,7 @@ class CitationCollection(object):
         return True
 
 
-class BaseCitation(object):
+class BaseCitation:
 
     def to_dict(self, citation_format):
         if citation_format == "bibtex":

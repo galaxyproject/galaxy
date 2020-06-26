@@ -3,7 +3,6 @@ ISA datatype
 
 See https://github.com/ISA-tools
 """
-from __future__ import print_function
 
 import io
 import json
@@ -54,7 +53,7 @@ def utf8_text_file_open(path):
     if sys.version_info[0] < 3:
         fp = open(path, 'rb')
     else:
-        fp = open(path, 'r', newline='', encoding='utf8')
+        fp = open(path, newline='', encoding='utf8')
     return fp
 
 
@@ -78,7 +77,7 @@ class _Isa(data.Data):
     ################################################################
 
     def __init__(self, main_file_regex, **kwd):
-        super(_Isa, self).__init__(**kwd)
+        super().__init__(**kwd)
         self._main_file_regex = main_file_regex
 
         # Add the archive file as the only composite file
@@ -162,7 +161,7 @@ class _Isa(data.Data):
             raise RuntimeError("Unable to find the main file within the 'files_path' folder")
 
         # Read first lines of main file
-        with io.open(main_file, encoding='utf-8') as f:
+        with open(main_file, encoding='utf-8') as f:
             data = []
             for line in f:
                 if len(data) < _MAX_LINES_HISTORY_PEEK:
@@ -264,7 +263,7 @@ class _Isa(data.Data):
 
         # if it is not required a preview use the default behaviour of `display_data`
         if not preview:
-            return super(_Isa, self).display_data(trans, dataset, preview, filename, to_ext, **kwd)
+            return super().display_data(trans, dataset, preview, filename, to_ext, **kwd)
 
         # prepare the preview of the ISA dataset
         investigation = self._get_investigation(dataset)
@@ -322,7 +321,7 @@ class IsaTab(_Isa):
     ################################################################
 
     def __init__(self, **kwd):
-        super(IsaTab, self).__init__(main_file_regex=INVESTIGATION_FILE_REGEX, **kwd)
+        super().__init__(main_file_regex=INVESTIGATION_FILE_REGEX, **kwd)
 
     # Make investigation instance {{{2
     ################################################################
@@ -355,7 +354,7 @@ class IsaJson(_Isa):
     ################################################################
 
     def __init__(self, **kwd):
-        super(IsaJson, self).__init__(main_file_regex=JSON_FILE_REGEX, **kwd)
+        super().__init__(main_file_regex=JSON_FILE_REGEX, **kwd)
 
     # Make investigation instance {{{2
     ################################################################

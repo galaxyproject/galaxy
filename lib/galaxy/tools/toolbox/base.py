@@ -178,7 +178,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         log.info("Parsing the tool configuration %s" % config_filename)
         try:
             tool_conf_source = get_toolbox_parser(config_filename)
-        except (OSError, IOError) as exc:
+        except OSError as exc:
             dynamic_confs = (self.app.config.shed_tool_config_file, self.app.config.migrated_tools_config)
             if config_filename in dynamic_confs and exc.errno == errno.ENOENT:
                 log.info("Shed-enabled tool configuration file does not exist, but will be created on demand: %s",
@@ -636,7 +636,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             concrete_path = os.path.join(tool_path, path)
             if not os.path.exists(concrete_path):
                 # This is a lot faster than attempting to load a non-existing tool
-                raise IOError(ENOENT, os.strerror(ENOENT))
+                raise OSError(ENOENT, os.strerror(ENOENT))
             tool_shed_repository = None
             can_load_into_panel_dict = True
 
@@ -678,7 +678,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             labels = item.labels
             if labels is not None:
                 tool.labels = labels
-        except (IOError, OSError) as exc:
+        except OSError as exc:
             msg = "Error reading tool configuration file from path '%s': %s", path, unicodify(exc)
             if exc.errno == ENOENT:
                 log.error(msg)
@@ -1193,7 +1193,7 @@ class BaseGalaxyToolBox(AbstractToolBox):
     """
 
     def __init__(self, config_filenames, tool_root_dir, app, save_integrated_tool_panel=True):
-        super(BaseGalaxyToolBox, self).__init__(config_filenames, tool_root_dir, app, save_integrated_tool_panel)
+        super().__init__(config_filenames, tool_root_dir, app, save_integrated_tool_panel)
         old_toolbox = getattr(app, 'toolbox', None)
         if old_toolbox:
             self.dependency_manager = old_toolbox.dependency_manager

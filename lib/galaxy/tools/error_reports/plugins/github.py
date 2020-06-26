@@ -1,5 +1,4 @@
 """The module describes the ``github`` error plugin plugin."""
-from __future__ import absolute_import
 
 import logging
 import sys

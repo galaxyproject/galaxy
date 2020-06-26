@@ -4,7 +4,6 @@
 # eg lped/eigen/fbat/snpmatrix all to pbed
 # and pbed to lped/eigen/fbat/snpmatrix ?
 # that's a lot of converters
-from __future__ import print_function
 
 import os
 import subprocess

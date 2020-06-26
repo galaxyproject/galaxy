@@ -33,7 +33,7 @@ from galaxy.util.tool_shed import common_util, encoding_util, xml_util
 log = logging.getLogger(__name__)
 
 
-class InstallToolDependencyManager(object):
+class InstallToolDependencyManager:
 
     def __init__(self, app):
         self.app = app
@@ -426,7 +426,7 @@ class InstallToolDependencyManager(object):
         return tool_dependency
 
 
-class InstallRepositoryManager(object):
+class InstallRepositoryManager:
 
     def __init__(self, app, tpm=None):
         self.app = app
@@ -869,7 +869,7 @@ class InstallRepositoryManager(object):
                           str(tool_panel_section_key))
         else:
             tool_section = None
-        if isinstance(repo_info_dict, string_types):
+        if isinstance(repo_info_dict, str):
             repo_info_dict = encoding_util.tool_shed_decode(repo_info_dict)
         repo_info_tuple = repo_info_dict[tool_shed_repository.name]
         description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = repo_info_tuple
@@ -1135,4 +1135,4 @@ class InstallRepositoryManager(object):
 class RepositoriesInstalledException(exceptions.RequestParameterInvalidException):
 
     def __init__(self):
-        super(RepositoriesInstalledException, self).__init__('All repositories that you are attempting to install have been previously installed.')
+        super().__init__('All repositories that you are attempting to install have been previously installed.')

@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import logging
 
 from galaxy.util.tool_shed.common_util import remove_protocol_from_tool_shed_url

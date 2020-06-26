@@ -7,8 +7,7 @@ import six
 log = logging.getLogger(__name__)
 
 
-@six.python_2_unicode_compatible
-class Leaf(object):
+class Leaf:
     children_known = True
 
     def __len__(self):
@@ -34,13 +33,12 @@ class Leaf(object):
 leaf = Leaf()
 
 
-class BaseTree(object):
+class BaseTree:
 
     def __init__(self, collection_type_description):
         self.collection_type_description = collection_type_description
 
 
-@six.python_2_unicode_compatible
 class UninitializedTree(BaseTree):
     children_known = False
 
@@ -65,12 +63,11 @@ class UninitializedTree(BaseTree):
         return "UninitializedTree[collection_type=%s]" % self.collection_type_description
 
 
-@six.python_2_unicode_compatible
 class Tree(BaseTree):
     children_known = True
 
     def __init__(self, children, collection_type_description):
-        super(Tree, self).__init__(collection_type_description)
+        super().__init__(collection_type_description)
         self.children = children
 
     @staticmethod

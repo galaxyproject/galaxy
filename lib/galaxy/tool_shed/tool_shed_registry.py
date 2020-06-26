@@ -19,7 +19,7 @@ DEFAULT_TOOL_SHEDS_CONF_XML = """<?xml version="1.0"?>
 AUTH_TUPLE = namedtuple('AuthSetting', 'username password')
 
 
-class Registry(object):
+class Registry:
 
     def __init__(self, config=None):
         self.tool_sheds = OrderedDict()

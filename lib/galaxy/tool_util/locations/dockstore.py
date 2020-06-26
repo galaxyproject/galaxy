@@ -28,7 +28,7 @@ class DockStoreResolver(ToolLocationResolver):
         return tmp_path
 
 
-class _Ga4ghToolClient(object):
+class _Ga4ghToolClient:
 
     def __init__(self, base_url="https://www.dockstore.org:8443/api"):
         self.base_url = base_url

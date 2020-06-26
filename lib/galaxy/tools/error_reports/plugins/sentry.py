@@ -7,7 +7,7 @@ from . import ErrorPlugin
 
 log = logging.getLogger(__name__)
 
-ERROR_TEMPLATE = u"""Galaxy Job Error: {tool_id} v{tool_version}
+ERROR_TEMPLATE = """Galaxy Job Error: {tool_id} v{tool_version}
 
 Command Line:
 {command_line}

@@ -43,7 +43,7 @@ log = logging.getLogger(__name__)
 class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems, UsesTagsMixin):
 
     def __init__(self, app):
-        super(HistoryContentsController, self).__init__(app)
+        super().__init__(app)
         self.hda_manager = hdas.HDAManager(app)
         self.history_manager = histories.HistoryManager(app)
         self.history_contents_manager = history_contents.HistoryContentsManager(app)
@@ -955,9 +955,9 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         # roughly from: http://stackoverflow.com/a/31976060 (windows, linux)
         invalid_filename_char_regex = re.compile(r'[:<>|\\\/\?\* "]')
         # path format string - dot separator between id and name
-        id_name_format = u'{}.{}'
+        id_name_format = '{}.{}'
 
-        def name_to_filename(name, max_length=150, replace_with=u'_'):
+        def name_to_filename(name, max_length=150, replace_with='_'):
             # TODO: seems like shortening unicode with [:] would cause unpredictable display strings
             return invalid_filename_char_regex.sub(replace_with, name)[0:max_length]
 

@@ -19,9 +19,7 @@ class ResolutionCache(Bunch):
     """
 
 
-@six.python_2_unicode_compatible
-@six.add_metaclass(ABCMeta)
-class ContainerResolver(Dictifiable):
+class ContainerResolver(Dictifiable, metaclass=ABCMeta):
     """Description of a technique for resolving container images for tool execution."""
 
     # Keys for dictification.

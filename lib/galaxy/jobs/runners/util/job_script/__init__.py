@@ -115,7 +115,7 @@ def write_script(path, contents, config, mode=RWXR_XR_X):
     if not os.path.exists(dir):
         os.makedirs(dir)
 
-    with io.open(path, 'w', encoding='utf-8') as f:
+    with open(path, 'w', encoding='utf-8') as f:
         f.write(unicodify(contents))
     os.chmod(path, mode)
     _handle_script_integrity(path, config)

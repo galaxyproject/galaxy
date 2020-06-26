@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import json
 import logging
 import os
@@ -50,7 +48,7 @@ from .executables import artifact_class
 log = logging.getLogger(__name__)
 
 
-class WorkflowsManager(object):
+class WorkflowsManager:
     """ Handle CRUD type operations related to workflows. More interesting
     stuff regarding workflow execution, step sorting, etc... can be found in
     the galaxy.workflow module.
@@ -395,7 +393,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def _workflow_from_raw_description(self, trans, raw_workflow_description, name, **kwds):
         data = raw_workflow_description.as_dict
-        if isinstance(data, string_types):
+        if isinstance(data, str):
             data = json.loads(data)
 
         # Create new workflow from source data
@@ -1238,7 +1236,7 @@ class MissingToolsException(exceptions.MessageException):
         self.errors = errors
 
 
-class RawWorkflowDescription(object):
+class RawWorkflowDescription:
 
     def __init__(self, as_dict, workflow_path=None):
         self.as_dict = as_dict

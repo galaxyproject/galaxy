@@ -35,7 +35,7 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
     """
 
     def __init__(self, app):
-        super(VisualizationsController, self).__init__(app)
+        super().__init__(app)
         self.manager = VisualizationManager(app)
         self.serializer = VisualizationSerializer(app)
 
@@ -183,7 +183,7 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
         for key, val in payload.items():
             # TODO: validate types in VALID_TYPES/registry names at the mixin/model level?
             if key == 'type':
-                if not isinstance(val, string_types):
+                if not isinstance(val, str):
                     raise ValidationError('{} must be a string or unicode: {}'.format(key, str(type(val))))
                 val = util.sanitize_html.sanitize_html(val)
             elif key == 'config':
@@ -191,22 +191,22 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
                     raise ValidationError('{} must be a dictionary: {}'.format(key, str(type(val))))
 
             elif key == 'annotation':
-                if not isinstance(val, string_types):
+                if not isinstance(val, str):
                     raise ValidationError('{} must be a string or unicode: {}'.format(key, str(type(val))))
                 val = util.sanitize_html.sanitize_html(val)
 
             # these are keys that actually only be *updated* at the revision level and not here
             #   (they are still valid for create, tho)
             elif key == 'title':
-                if not isinstance(val, string_types):
+                if not isinstance(val, str):
                     raise ValidationError('{} must be a string or unicode: {}'.format(key, str(type(val))))
                 val = util.sanitize_html.sanitize_html(val)
             elif key == 'slug':
-                if not isinstance(val, string_types):
+                if not isinstance(val, str):
                     raise ValidationError('{} must be a string: {}'.format(key, str(type(val))))
                 val = util.sanitize_html.sanitize_html(val)
             elif key == 'dbkey':
-                if not isinstance(val, string_types):
+                if not isinstance(val, str):
                     raise ValidationError('{} must be a string or unicode: {}'.format(key, str(type(val))))
                 val = util.sanitize_html.sanitize_html(val)
 

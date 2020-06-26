@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import calendar
 import logging
 import re
@@ -23,7 +21,7 @@ from galaxy.webapps.reports.framework import grids
 log = logging.getLogger(__name__)
 
 
-class Timer(object):
+class Timer:
     def __init__(self):
         self.start()
         self.stop()

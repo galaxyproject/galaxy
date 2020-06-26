@@ -251,7 +251,7 @@ class Forms(BaseUIController):
                 field_dict = {attr: payload.get('{}{}'.format(prefix, attr)) for attr in field_attributes}
                 field_dict['visible'] = True
                 field_dict['required'] = field_dict['required'] == 'true'
-                if isinstance(field_dict['selectlist'], six.string_types):
+                if isinstance(field_dict['selectlist'], str):
                     field_dict['selectlist'] = field_dict['selectlist'].split(',')
                 else:
                     field_dict['selectlist'] = []

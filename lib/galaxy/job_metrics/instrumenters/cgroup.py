@@ -83,7 +83,7 @@ class CgroupPlugin(InstrumentPlugin):
     def __read_metrics(self, path):
         metrics = {}
         prev_metric = None
-        with open(path, "r") as infile:
+        with open(path) as infile:
             for line in infile:
                 try:
                     metric, prev_metric = self.__read_key_value(line, prev_metric)

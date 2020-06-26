@@ -65,7 +65,7 @@ def generate_targets(target_source):
         # If no headers are defined we use the 4 default fields in the order
         # that has been used in galaxy-tool-util / galaxy-lib < 20.01
         line_tuple = FALLBACK_LINE_TUPLE
-        with open(target_source_file, "r") as f:
+        with open(target_source_file) as f:
             for line in f.readlines():
                 if line:
                     line = line.strip()

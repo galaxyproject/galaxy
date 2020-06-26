@@ -1,7 +1,7 @@
 from .registry import DATASET_COLLECTION_TYPES_REGISTRY
 
 
-class CollectionTypeDescriptionFactory(object):
+class CollectionTypeDescriptionFactory:
 
     def __init__(self, type_registry=DATASET_COLLECTION_TYPES_REGISTRY):
         # taking in type_registry though not using it, because we will someday
@@ -13,7 +13,7 @@ class CollectionTypeDescriptionFactory(object):
         return CollectionTypeDescription(collection_type, self)
 
 
-class CollectionTypeDescription(object):
+class CollectionTypeDescription:
     """ Abstraction over dataset collection type that ties together string
     reprentation in database/model with type registry.
 

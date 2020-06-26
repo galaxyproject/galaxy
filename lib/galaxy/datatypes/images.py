@@ -32,7 +32,7 @@ class Image(data.Data):
     file_ext = ''
 
     def __init__(self, **kwd):
-        super(Image, self).__init__(**kwd)
+        super().__init__(**kwd)
         self.image_formats = [self.file_ext.upper()]
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -60,7 +60,7 @@ class Jpg(Image):
     file_ext = "jpg"
 
     def __init__(self, **kwd):
-        super(Jpg, self).__init__(**kwd)
+        super().__init__(**kwd)
         self.image_formats = ['JPEG']
 
 

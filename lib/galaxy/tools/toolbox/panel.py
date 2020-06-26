@@ -16,7 +16,7 @@ panel_item_types = bunch.Bunch(
 )
 
 
-class HasPanelItems(object):
+class HasPanelItems:
     """
     """
 
@@ -30,7 +30,7 @@ class HasPanelItems(object):
         """ Iterate through panel items each represented as a tuple of
         (panel_key, panel_type, panel_content).
         """
-        for panel_key, panel_value in iteritems(self.panel_items()):
+        for panel_key, panel_value in self.panel_items().items():
             if panel_value is None:
                 continue
             panel_type = panel_item_types.SECTION
@@ -72,7 +72,7 @@ class ToolSection(Dictifiable, HasPanelItems):
     def to_dict(self, trans, link_details=False, tool_help=False, toolbox=None):
         """ Return a dict that includes section's attributes. """
 
-        section_dict = super(ToolSection, self).to_dict()
+        section_dict = super().to_dict()
         section_elts = []
         kwargs = dict(
             trans=trans,
@@ -109,7 +109,7 @@ class ToolSectionLabel(Dictifiable):
         self.version = item.get("version") or ''
 
     def to_dict(self, **kwds):
-        return super(ToolSectionLabel, self).to_dict()
+        return super().to_dict()
 
 
 class ToolPanelElements(odict, HasPanelItems):

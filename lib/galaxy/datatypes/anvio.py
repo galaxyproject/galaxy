@@ -86,7 +86,7 @@ class AnvioDB(AnvioComposite):
     allow_datatype_change = False
 
     def __init__(self, *args, **kwd):
-        super(AnvioDB, self).__init__(*args, **kwd)
+        super().__init__(*args, **kwd)
         if self._anvio_basename is not None:
             self.add_composite_file(self._anvio_basename, is_binary=True, optional=False)
 
@@ -94,7 +94,7 @@ class AnvioDB(AnvioComposite):
         """
         Set the anvio_basename based upon actual extra_files_path contents.
         """
-        super(AnvioDB, self).set_meta(dataset, **kwd)
+        super().set_meta(dataset, **kwd)
         if dataset.metadata.anvio_basename is not None and os.path.exists(os.path.join(dataset.extra_files_path, dataset.metadata.anvio_basename)):
             return
         found = False
@@ -135,7 +135,7 @@ class AnvioContigsDB(AnvioDB):
     allow_datatype_change = False
 
     def __init__(self, *args, **kwd):
-        super(AnvioContigsDB, self).__init__(*args, **kwd)
+        super().__init__(*args, **kwd)
         self.add_composite_file('CONTIGS.h5', is_binary=True, optional=True)
 
 
@@ -148,7 +148,7 @@ class AnvioProfileDB(AnvioDB):
     allow_datatype_change = False
 
     def __init__(self, *args, **kwd):
-        super(AnvioProfileDB, self).__init__(*args, **kwd)
+        super().__init__(*args, **kwd)
         self.add_composite_file('RUNINFO.cp', is_binary=True, optional=True)
         self.add_composite_file('RUNINFO.mcp', is_binary=True, optional=True)
         self.add_composite_file('AUXILIARY_DATA.db', is_binary=True, optional=True)

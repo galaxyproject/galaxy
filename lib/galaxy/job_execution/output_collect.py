@@ -43,7 +43,7 @@ log = logging.getLogger(__name__)
 
 # PermissionProvider and MetadataSourceProvider are abstractions over input data used to
 # collect and produce dynamic outputs.
-class PermissionProvider(object):
+class PermissionProvider:
 
     def __init__(self, inp_data, security_agent, job):
         self._job = job
@@ -75,7 +75,7 @@ class PermissionProvider(object):
         self._security_agent.copy_dataset_permissions(init_from.dataset, primary_data.dataset)
 
 
-class MetadataSourceProvider(object):
+class MetadataSourceProvider:
 
     def __init__(self, inp_data):
         self._inp_data = inp_data
@@ -162,7 +162,7 @@ def collect_dynamic_outputs(
         job_context.add_dataset_collection(has_collection)
 
 
-class BaseJobContext(object):
+class BaseJobContext:
 
     def add_dataset_collection(self, collection):
         pass
@@ -302,7 +302,7 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
         # TODO: use a metadata source provider... (pop from inputs and add parameter)
         # TODO: handle input_dbkey...
         input_dbkey = "?"
-        super(SessionlessJobContext, self).__init__(object_store, export_store, working_directory)
+        super().__init__(object_store, export_store, working_directory)
         self.metadata_params = metadata_params
         self.tool_provided_metadata = tool_provided_metadata
         self.import_store = import_store
@@ -508,7 +508,7 @@ def dataset_collector(dataset_collection_description):
             return ToolMetadataDatasetCollector(dataset_collection_description)
 
 
-class ToolMetadataDatasetCollector(object):
+class ToolMetadataDatasetCollector:
 
     def __init__(self, dataset_collection_description):
         self.discover_via = dataset_collection_description.discover_via
@@ -519,7 +519,7 @@ class ToolMetadataDatasetCollector(object):
         self.assign_primary_output = dataset_collection_description.assign_primary_output
 
 
-class DatasetCollector(object):
+class DatasetCollector:
 
     def __init__(self, dataset_collection_description):
         self.discover_via = dataset_collection_description.discover_via
@@ -575,7 +575,7 @@ def read_exit_code_from(exit_code_file, id_tag):
     """Read exit code reported for a Galaxy job."""
     try:
         # This should be an 8-bit exit code, but read ahead anyway:
-        exit_code_str = open(exit_code_file, "r").read(32)
+        exit_code_str = open(exit_code_file).read(32)
     except Exception:
         # By default, the exit code is 0, which typically indicates success.
         exit_code_str = "0"

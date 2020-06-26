@@ -153,7 +153,7 @@ def _handle_resubmit_definitions(resubmit_definitions, app, job_runner, job_stat
         return
 
 
-class _ExpressionContext(object):
+class _ExpressionContext:
 
     def __init__(self, job_state):
         self._job_state = job_state

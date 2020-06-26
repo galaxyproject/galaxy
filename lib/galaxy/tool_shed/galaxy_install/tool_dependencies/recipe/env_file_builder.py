@@ -7,7 +7,7 @@ from six import string_types
 log = logging.getLogger(__name__)
 
 
-class EnvFileBuilder(object):
+class EnvFileBuilder:
 
     def __init__(self, install_dir):
         self.install_dir = install_dir
@@ -56,7 +56,7 @@ class EnvFileBuilder(object):
         if os.path.exists(file_path):
             try:
                 new_env_file_contents = []
-                env_file_contents = open(file_path, 'r').readlines()
+                env_file_contents = open(file_path).readlines()
                 # Clean out blank lines from the env.sh file.
                 for line in env_file_contents:
                     line = line.rstrip()
@@ -78,7 +78,7 @@ class EnvFileBuilder(object):
                 log.exception(str(e))
                 return 1
         # Convert the received text to a list, in order to support adding one or more lines to the file.
-        if isinstance(text, string_types):
+        if isinstance(text, str):
             text = [text]
         for line in text:
             line = line.rstrip()

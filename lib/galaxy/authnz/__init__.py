@@ -10,7 +10,7 @@ credentials for cloud-based resource providers (e.g., Amazon AWS, Microsoft Azur
 """
 
 
-class IdentityProvider(object):
+class IdentityProvider:
     """
     OpenID Connect Identity Provider abstract interface.
     """

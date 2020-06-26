@@ -11,7 +11,7 @@ import galaxy.util
 log = logging.getLogger(__name__)
 
 
-class ToolParameterSanitizer(object):
+class ToolParameterSanitizer:
     """
     Handles tool parameter specific sanitizing.
 
@@ -157,7 +157,7 @@ class ToolParameterSanitizer(object):
         """Clean incoming parameters (strings or lists)"""
         if not self.sanitize:
             return value
-        if isinstance(value, string_types):
+        if isinstance(value, str):
             return self.sanitize_text(value)
         elif isinstance(value, list):
             return list(map(self.sanitize_text, value))

@@ -10,7 +10,7 @@ from galaxy.model.orm.now import now
 log = logging.getLogger(__name__)
 
 
-class DatabaseHeartbeat(object):
+class DatabaseHeartbeat:
 
     def __init__(self, application_stack, heartbeat_interval=60):
         self.application_stack = application_stack

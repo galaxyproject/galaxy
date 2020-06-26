@@ -427,7 +427,7 @@ class HistoryContentsSerializer(base.ModelSerializer, deletable.PurgableSerializ
     model_manager_class = HistoryContentsManager
 
     def __init__(self, app, **kwargs):
-        super(HistoryContentsSerializer, self).__init__(app, **kwargs)
+        super().__init__(app, **kwargs)
 
         self.default_view = 'summary'
         self.add_view('summary', [
@@ -449,7 +449,7 @@ class HistoryContentsSerializer(base.ModelSerializer, deletable.PurgableSerializ
 
     # assumes: outgoing to json.dumps and sanitized
     def add_serializers(self):
-        super(HistoryContentsSerializer, self).add_serializers()
+        super().add_serializers()
         deletable.PurgableSerializerMixin.add_serializers(self)
 
         self.serializers.update({
@@ -523,7 +523,7 @@ class HistoryContentsFilters(base.ModelFilterParser,
         column_filter = get_filter(attr, op, val)
         if column_filter is not None:
             return self.parsed_filter(filter_type='orm', filter=column_filter)
-        return super(HistoryContentsFilters, self)._parse_orm_filter(attr, op, val)
+        return super()._parse_orm_filter(attr, op, val)
 
     def decode_type_id(self, type_id):
         TYPE_ID_SEP = '-'
@@ -537,7 +537,7 @@ class HistoryContentsFilters(base.ModelFilterParser,
         return [self.decode_type_id(type_id) for type_id in type_id_list_string.split(sep)]
 
     def _add_parsers(self):
-        super(HistoryContentsFilters, self)._add_parsers()
+        super()._add_parsers()
         annotatable.AnnotatableFilterMixin._add_parsers(self)
         deletable.PurgableFiltersMixin._add_parsers(self)
         taggable.TaggableFilterMixin._add_parsers(self)

@@ -154,7 +154,7 @@ def get_non_shed_tool_panel_configs(app):
         # <toolbox tool_path="database/shed_tools">
         try:
             tree, error_message = xml_util.parse_xml(config_filename)
-        except (OSError, IOError) as exc:
+        except OSError as exc:
             if (config_filename == app.config.shed_tool_conf and not
                     app.config.shed_tool_conf_set and
                     exc.errno == errno.ENOENT):

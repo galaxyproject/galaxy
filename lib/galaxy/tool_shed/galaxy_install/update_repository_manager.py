@@ -15,7 +15,7 @@ from galaxy.util.tool_shed.encoding_util import tool_shed_decode
 log = logging.getLogger(__name__)
 
 
-class UpdateRepositoryManager(object):
+class UpdateRepositoryManager:
 
     def __init__(self, app):
         self.app = app
@@ -127,7 +127,7 @@ class UpdateRepositoryManager(object):
         return repository
 
 
-class Sleeper(object):
+class Sleeper:
     """
     Provides a 'sleep' method that sleeps for a number of seconds *unless* the notify method
     is called (from a different thread).

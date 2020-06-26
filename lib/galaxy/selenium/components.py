@@ -11,8 +11,7 @@ from selenium.webdriver.common.by import By
 from galaxy.util.bunch import Bunch
 
 
-@six.add_metaclass(ABCMeta)
-class Target(object):
+class Target(metaclass=ABCMeta):
 
     @abstractproperty
     def description(self):
@@ -131,7 +130,7 @@ class Text(Target):
         return (By.PARTIAL_LINK_TEXT, self.text)
 
 
-class Component(object):
+class Component:
 
     def __init__(self, name, sub_components, selectors, labels, text):
         self._name = name

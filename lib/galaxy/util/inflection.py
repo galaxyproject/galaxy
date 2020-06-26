@@ -10,7 +10,7 @@
 import re
 
 
-class Inflector(object):
+class Inflector:
     """
     Inflector for pluralizing and singularizing English nouns.
     """

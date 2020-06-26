@@ -143,7 +143,7 @@ def to_html_string(text):
             text = unicodify(text)
         except UnicodeDecodeError as e:
             return "Error decoding string: %s" % str(e)
-        text = text_type(markupsafe.escape(text))
+        text = str(markupsafe.escape(text))
         text = text.replace('\n', '<br/>')
         text = text.replace('    ', '&nbsp;&nbsp;&nbsp;&nbsp;')
         text = text.replace(' ', '&nbsp;')

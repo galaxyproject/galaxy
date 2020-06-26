@@ -17,7 +17,7 @@ VALUE_TRANSLATION_FUNCTIONS = dict(abspath=os.path.abspath)
 DEFAULT_VALUE_TRANSLATION_TYPE = 'template'
 
 
-class DataManagers(object):
+class DataManagers:
     def __init__(self, app, xml_filename=None):
         self.app = app
         self.data_managers = OrderedDict()
@@ -32,14 +32,14 @@ class DataManagers(object):
         if self.app.config.shed_data_manager_config_file:
             try:
                 self.load_from_xml(self.app.config.shed_data_manager_config_file, store_tool_path=True)
-            except (OSError, IOError) as exc:
+            except OSError as exc:
                 if exc.errno != errno.ENOENT or self.app.config.shed_data_manager_config_file_set:
                     raise
 
     def load_from_xml(self, xml_filename, store_tool_path=True):
         try:
             tree = util.parse_xml(xml_filename)
-        except (IOError, OSError) as e:
+        except OSError as e:
             if e.errno != errno.ENOENT or self.app.config.data_manager_config_file_set:
                 raise
             return  # default config option and it doesn't exist, which is fine
@@ -67,7 +67,7 @@ class DataManagers(object):
     def load_manager_from_elem(self, data_manager_elem, tool_path=None, add_manager=True):
         try:
             data_manager = DataManager(self, data_manager_elem, tool_path=tool_path)
-        except IOError as e:
+        except OSError as e:
             if e.errno == errno.ENOENT:
                 # File does not exist
                 return None
@@ -112,7 +112,7 @@ class DataManagers(object):
                         del self.managed_data_tables[data_table_name]
 
 
-class DataManager(object):
+class DataManager:
     GUID_TYPE = 'data_manager'
     DEFAULT_VERSION = "0.0.1"
 
@@ -381,7 +381,7 @@ class DataManager(object):
         value = kwd.get(column_name)
         if data_table_name in self.value_translation_by_data_table_column and column_name in self.value_translation_by_data_table_column[data_table_name]:
             for value_translation in self.value_translation_by_data_table_column[data_table_name][column_name]:
-                if isinstance(value_translation, string_types):
+                if isinstance(value_translation, str):
                     value = fill_template(value_translation, GALAXY_DATA_MANAGER_DATA_PATH=self.data_managers.app.config.galaxy_data_manager_data_path, **kwd).strip()
                 else:
                     value = value_translation(value)

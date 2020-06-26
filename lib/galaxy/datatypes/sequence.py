@@ -36,8 +36,7 @@ from galaxy.util.checkers import (
 from galaxy.util.image_util import check_image_type
 from . import data
 
-if sys.version_info > (3,):
-    long = int
+long = int
 
 log = logging.getLogger(__name__)
 
@@ -427,7 +426,7 @@ class Fasta(Sequence):
         start of a new FASTQ sequence record.
         """
         log.debug("Attemping to split FASTA file %s into chunks of %i bytes" % (input_file, chunk_size))
-        f = open(input_file, "rU")
+        f = open(input_file)
         part_file = None
         try:
             # Note if the input FASTA file has no sequences, we will
@@ -463,7 +462,7 @@ class Fasta(Sequence):
     def _count_split(cls, input_file, chunk_size, subdir_generator_function):
         """Split a FASTA file into chunks based on counting records."""
         log.debug("Attemping to split FASTA file %s into chunks of %i sequences" % (input_file, chunk_size))
-        f = open(input_file, "rU")
+        f = open(input_file)
         part_file = None
         try:
             # Note if the input FASTA file has no sequences, we will
@@ -780,7 +779,7 @@ class BaseFastq(Sequence):
         sequence_count = long(args['num_sequences'])
 
         if 'toc_file' in args:
-            toc_file = json.load(open(args['toc_file'], 'r'))
+            toc_file = json.load(open(args['toc_file']))
             commands = Sequence.get_split_commands_with_toc(input_name, output_name, toc_file, start_sequence, sequence_count)
         else:
             commands = Sequence.get_split_commands_sequential(is_gzip(input_name), input_name, output_name, start_sequence, sequence_count)

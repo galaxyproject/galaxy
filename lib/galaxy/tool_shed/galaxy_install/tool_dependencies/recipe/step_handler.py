@@ -26,7 +26,7 @@ log = logging.getLogger(__name__)
 VIRTUALENV_URL = 'https://pypi.python.org/packages/d4/0c/9840c08189e030873387a73b90ada981885010dd9aea134d6de30cd24cb8/virtualenv-15.1.0.tar.gz'
 
 
-class Download(object):
+class Download:
 
     def url_download(self, install_dir, downloaded_file_name, download_url, extract=True, checksums={}):
         """
@@ -97,7 +97,7 @@ class Download(object):
         return dict(i for i in dct.items() if i[0] in ['md5sum', 'sha256sum'])
 
 
-class RecipeStep(object):
+class RecipeStep:
     """Abstract class that defines a standard format for handling recipe steps when installing packages."""
 
     def execute_step(self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
@@ -809,7 +809,7 @@ class RegexReplace(RecipeStep):
         temp_fh = tempfile.NamedTemporaryFile(dir=current_dir)
         ofh = temp_fh.file
         total_replacements = 0
-        with open(filename, 'r') as haystack:
+        with open(filename) as haystack:
             for line in haystack:
                 altered_text, replacement_count = re.subn(regex, replacement, line)
                 if replacement_count > 0:

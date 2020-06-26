@@ -12,7 +12,7 @@ MODE_RECORD = "record"
 MODE_PLAYBACK = "playback"
 
 
-class CollectlCli(object):
+class CollectlCli:
     """
     Abstraction over (some of) the command-line arguments of collectl.
     Ideally this will be useful for building up command line arguments for

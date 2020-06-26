@@ -74,7 +74,7 @@ class LmodDependencyResolver(DependencyResolver, MappableDependencyResolver):
         return self.module_checker.has_module(name, version)
 
 
-class AvailModuleChecker(object):
+class AvailModuleChecker:
     """Parses the output of Lmod 'module avail' command to get the list of available modules."""
 
     def __init__(self, lmod_dependency_resolver, modulepath):

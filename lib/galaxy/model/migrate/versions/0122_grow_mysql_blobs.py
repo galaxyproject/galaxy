@@ -1,7 +1,6 @@
 """
 Migration script to grow MySQL blobs.
 """
-from __future__ import print_function
 
 import logging
 

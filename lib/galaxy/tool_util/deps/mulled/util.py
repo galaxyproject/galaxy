@@ -1,5 +1,4 @@
 """Utilities for working with mulled abstractions outside the mulled package."""
-from __future__ import print_function
 
 import collections
 import hashlib
@@ -299,7 +298,7 @@ def split_container_name(name):
     return name.replace('--', ':').split(':')
 
 
-class PrintProgress(object):
+class PrintProgress:
     def __init__(self):
         self.thread = threading.Thread(target=self.progress)
         self.stop = threading.Event()

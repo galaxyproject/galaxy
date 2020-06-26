@@ -1,9 +1,7 @@
-# -*- coding: utf-8 -*-
 """
 Utility functions used systemwide.
 
 """
-from __future__ import absolute_import
 
 import binascii
 import collections
@@ -50,8 +48,7 @@ from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from six import binary_type, iteritems, PY2, string_types, text_type
 from six.moves import (
-    xrange,
-    zip
+    xrange
 )
 from six.moves.urllib import parse as urlparse
 
@@ -200,8 +197,7 @@ def iter_start_of_line(fh, chunk_size=None):
     """
     Iterate over fh and call readline(chunk_size)
     """
-    for line in iter(partial(fh.readline, chunk_size), ""):
-        yield line
+    yield from iter(partial(fh.readline, chunk_size), "")
 
 
 def file_reader(fp, chunk_size=CHUNK_SIZE):
@@ -222,7 +218,7 @@ def unique_id(KEY_SIZE=128):
     >>> len(set(ids))
     1000
     """
-    random_bits = text_type(random.getrandbits(KEY_SIZE)).encode("UTF-8")
+    random_bits = str(random.getrandbits(KEY_SIZE)).encode("UTF-8")
     return md5(random_bits).hexdigest()
 
 
@@ -242,7 +238,7 @@ def parse_xml(fname, strip_whitespace=True, remove_comments=True):
                     elem.text = elem.text.strip()
                 if elem.tail is not None:
                     elem.tail = elem.tail.strip()
-    except IOError as e:
+    except OSError as e:
         if e.errno is None and not os.path.exists(fname):
             # lxml doesn't set errno
             e.errno = errno.ENOENT
@@ -276,16 +272,13 @@ def xml_to_string(elem, pretty=False):
     """
     try:
         if elem is not None:
-            if PY2:
-                xml_str = etree.tostring(elem, encoding='utf-8')
-            else:
-                xml_str = etree.tostring(elem, encoding='unicode')
+            xml_str = etree.tostring(elem, encoding='unicode')
         else:
             xml_str = ''
     except TypeError as e:
         # we assume this is a comment
         if hasattr(elem, 'text'):
-            return u"<!-- %s -->\n" % elem.text
+            return "<!-- %s -->\n" % elem.text
         else:
             raise e
     if xml_str and pretty:
@@ -317,17 +310,17 @@ def xml_element_to_dict(elem):
     if sub_elems:
         sub_elem_dict = dict()
         for sub_sub_elem_dict in map(xml_element_to_dict, sub_elems):
-            for key, value in iteritems(sub_sub_elem_dict):
+            for key, value in sub_sub_elem_dict.items():
                 if key not in sub_elem_dict:
                     sub_elem_dict[key] = []
                 sub_elem_dict[key].append(value)
-        for key, value in iteritems(sub_elem_dict):
+        for key, value in sub_elem_dict.items():
             if len(value) == 1:
                 rval[elem.tag][key] = value[0]
             else:
                 rval[elem.tag][key] = value
     if elem.attrib:
-        for key, value in iteritems(elem.attrib):
+        for key, value in elem.attrib.items():
             rval[elem.tag]["@%s" % key] = value
 
     if elem.text:
@@ -422,7 +415,7 @@ def shrink_stream_by_size(value, size, join_by=b"..", left_larger=True, beginnin
 
 
 def shrink_and_unicodify(stream):
-    stream = unicodify(stream, strip_null=True) or u''
+    stream = unicodify(stream, strip_null=True) or ''
     if (len(stream) > DATABASE_MAX_STRING_SIZE):
         stream = shrink_string_by_size(stream,
                                        DATABASE_MAX_STRING_SIZE,
@@ -467,7 +460,7 @@ def pretty_print_time_interval(time=False, precise=False, utc=False):
         diff = now - datetime.fromtimestamp(time)
     elif isinstance(time, datetime):
         diff = now - time
-    elif isinstance(time, string_types):
+    elif isinstance(time, str):
         try:
             time = datetime.strptime(time, "%Y-%m-%dT%H:%M:%S.%f")
         except ValueError:
@@ -560,7 +553,7 @@ def sanitize_text(text, valid_characters=valid_chars, character_map=mapped_chars
     """
     if isinstance(text, list):
         return [sanitize_text(x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character) for x in text]
-    if not isinstance(text, string_types):
+    if not isinstance(text, str):
         text = smart_str(text)
     return _sanitize_text_helper(text, valid_characters=valid_characters, character_map=character_map)
 
@@ -595,7 +588,7 @@ def sanitize_lists_to_string(values, valid_characters=valid_chars, character_map
 
 def sanitize_param(value, valid_characters=valid_chars, character_map=mapped_chars, invalid_character='X'):
     """Clean incoming parameters (strings or lists)"""
-    if isinstance(value, string_types):
+    if isinstance(value, str):
         return sanitize_text(value, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character)
     elif isinstance(value, list):
         return [sanitize_text(x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character) for x in value]
@@ -677,7 +670,7 @@ def mask_password_from_url(url):
 
 
 def ready_name_for_url(raw_name):
-    u""" General method to convert a string (i.e. object name) to a URL-ready
+    """ General method to convert a string (i.e. object name) to a URL-ready
     slug.
 
     >>> ready_name_for_url( "My Cool Object" )
@@ -754,15 +747,13 @@ def merge_sorted_iterables(operator, *iterables):
     """
     first_iterable = iterables[0]
     if len(iterables) == 1:
-        for el in first_iterable:
-            yield el
+        yield from first_iterable
     else:
-        for el in __merge_two_sorted_iterables(
+        yield from __merge_two_sorted_iterables(
             operator,
             iter(first_iterable),
             merge_sorted_iterables(operator, *iterables[1:])
-        ):
-            yield el
+        )
 
 
 def __merge_two_sorted_iterables(operator, iterable1, iterable2):
@@ -788,13 +779,11 @@ def __merge_two_sorted_iterables(operator, iterable1, iterable2):
         yield next_1
     if next_2 is not unset:
         yield next_2
-    for el in iterable1:
-        yield el
-    for el in iterable2:
-        yield el
+    yield from iterable1
+    yield from iterable2
 
 
-class Params(object):
+class Params:
     """
     Stores and 'sanitizes' parameters. Alphanumeric characters and the
     non-alphanumeric ones that are deemed safe are let to pass through (see L{valid_chars}).
@@ -877,7 +866,7 @@ def rst_to_html(s, error=False):
     if docutils_core is None:
         raise Exception("Attempted to use rst_to_html but docutils unavailable.")
 
-    class FakeStream(object):
+    class FakeStream:
         def write(self, str):
             if len(str) > 0 and not str.isspace():
                 if error:
@@ -937,7 +926,7 @@ falsy = frozenset({'false', 'no', 'off', 'n', 'f', '0'})
 
 
 def asbool(obj):
-    if isinstance(obj, string_types):
+    if isinstance(obj, str):
         obj = obj.strip().lower()
         if obj in truthy:
             return True
@@ -997,7 +986,7 @@ def listify(item, do_strip=False):
         return item
     elif isinstance(item, tuple):
         return list(item)
-    elif isinstance(item, string_types) and item.count(','):
+    elif isinstance(item, str) and item.count(','):
         if do_strip:
             return [token.strip() for token in item.split(',')]
         else:
@@ -1026,7 +1015,7 @@ def roundify(amount, sfs=2):
 
 
 def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', strip_null=False):
-    u"""
+    """
     Returns a Unicode string or None.
 
     >>> assert unicodify(None) is None
@@ -1046,17 +1035,17 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', strip_null=Fals
     try:
         if isinstance(value, bytearray):
             value = bytes(value)
-        elif not isinstance(value, string_types) and not isinstance(value, binary_type):
+        elif not isinstance(value, str) and not isinstance(value, bytes):
             # In Python 2, value is not an instance of basestring (i.e. str or unicode)
             # In Python 3, value is not an instance of bytes or str
             try:
-                value = text_type(value)
+                value = str(value)
             except Exception:
                 value = str(value)
         # Now in Python 2, value is an instance of basestring, but may be not unicode
         # Now in Python 3, value is an instance of bytes or str
-        if not isinstance(value, text_type):
-            value = text_type(value, encoding, error)
+        if not isinstance(value, str):
+            value = str(value, encoding, error)
     except Exception:
         msg = "Value '%s' could not be coerced to Unicode" % value
         log.exception(msg)
@@ -1067,7 +1056,7 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', strip_null=Fals
 
 
 def smart_str(s, encoding=DEFAULT_ENCODING, strings_only=False, errors='strict'):
-    u"""
+    """
     Returns a bytestring version of 's', encoded as specified in 'encoding'.
 
     If strings_only is True, don't convert (some) non-string-like objects.
@@ -1087,13 +1076,13 @@ def smart_str(s, encoding=DEFAULT_ENCODING, strings_only=False, errors='strict')
     """
     if strings_only and isinstance(s, (type(None), int)):
         return s
-    if not isinstance(s, string_types) and not isinstance(s, (binary_type, bytearray)):
+    if not isinstance(s, str) and not isinstance(s, (bytes, bytearray)):
         # In Python 2, s is not an instance of basestring or bytearray
         # In Python 3, s is not an instance of str, bytes or bytearray
         s = str(s)
     # Now in Python 2, value is an instance of basestring or bytearray
     # Now in Python 3, value is an instance of str, bytes or bytearray
-    if not isinstance(s, (binary_type, bytearray)):
+    if not isinstance(s, (bytes, bytearray)):
         return s.encode(encoding, errors)
     elif s and encoding != DEFAULT_ENCODING:
         return s.decode(DEFAULT_ENCODING, errors).encode(encoding, errors)
@@ -1110,9 +1099,9 @@ def strip_control_characters_nested(item):
     """Recursively strips control characters from lists, dicts, tuples."""
 
     def visit(path, key, value):
-        if isinstance(key, string_types):
+        if isinstance(key, str):
             key = strip_control_characters(key)
-        if isinstance(value, string_types):
+        if isinstance(value, str):
             value = strip_control_characters(value)
         return key, value
 
@@ -1280,7 +1269,7 @@ def stringify_dictionary_keys(in_dict):
     # changes unicode keys into strings, only works on top level (does not recurse)
     # unicode keys are not valid for expansion into keyword arguments on method calls
     out_dict = {}
-    for key, value in iteritems(in_dict):
+    for key, value in in_dict.items():
         out_dict[str(key)] = value
     return out_dict
 
@@ -1303,7 +1292,7 @@ def mkstemp_ln(src, prefix='mkstemp_ln_'):
             if e.errno == errno.EEXIST:
                 continue  # try again
             raise
-    raise IOError(errno.EEXIST, "No usable temporary file name found")
+    raise OSError(errno.EEXIST, "No usable temporary file name found")
 
 
 def umask_fix_perms(path, umask, unmasked_perms, gid=None):
@@ -1715,7 +1704,7 @@ def get_executable():
     return exe
 
 
-class ExecutionTimer(object):
+class ExecutionTimer:
 
     def __init__(self):
         self.begin = time.time()
@@ -1728,7 +1717,7 @@ class ExecutionTimer(object):
         return (time.time() - self.begin)
 
 
-class StructuredExecutionTimer(object):
+class StructuredExecutionTimer:
 
     def __init__(self, timer_id, template, **tags):
         self.begin = time.time()

@@ -19,7 +19,6 @@
 # htslib@1.1
 # % brew vdeps samtools 0.1.19
 
-from __future__ import print_function
 
 import argparse
 import contextlib
@@ -47,7 +46,7 @@ RELAXED = False
 BREW_ARGS = []
 
 
-class BrewContext(object):
+class BrewContext:
 
     def __init__(self, args=None):
         ensure_brew_on_path(args)
@@ -61,7 +60,7 @@ class BrewContext(object):
         self.homebrew_cellar = homebrew_cellar
 
 
-class RecipeContext(object):
+class RecipeContext:
 
     @staticmethod
     def from_args(args, brew_context=None):
@@ -267,8 +266,8 @@ def load_versioned_deps(cellar_path, relaxed=None):
         if RELAXED:
             return []
         else:
-            raise IOError("Could not locate versioned receipt file: {}".format(v_metadata_path))
-    with open(v_metadata_path, "r") as f:
+            raise OSError("Could not locate versioned receipt file: {}".format(v_metadata_path))
+    with open(v_metadata_path) as f:
         metadata = json.load(f)
     return metadata['deps']
 
@@ -333,7 +332,7 @@ def build_env_actions(deps, cellar_root, cellar_path, relaxed=None, custom_only=
             ld_path_appends.append(lib_path)
         env_path = os.path.join(cellar_path, "platform_environment.json")
         if os.path.exists(env_path):
-            with open(env_path, "r") as f:
+            with open(env_path) as f:
                 env_metadata = json.load(f)
                 if "actions" in env_metadata:
                     def to_action(desc):
@@ -355,7 +354,7 @@ def build_env_actions(deps, cellar_root, cellar_path, relaxed=None, custom_only=
     return actions
 
 
-class EnvAction(object):
+class EnvAction:
 
     def __init__(self, keg_root, action_description):
         self.variable = action_description["variable"]

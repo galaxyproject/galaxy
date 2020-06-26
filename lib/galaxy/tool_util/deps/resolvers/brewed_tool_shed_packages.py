@@ -85,7 +85,7 @@ class HomebrewToolShedDependencyResolver(
         return dep
 
 
-class RawDependencies(object):
+class RawDependencies:
 
     def __init__(self, dependencies_file):
         self.root = parse_xml(dependencies_file).getroot()
@@ -109,7 +109,7 @@ class RawDependencies(object):
         return target_dependency
 
 
-class RawDependency(object):
+class RawDependency:
 
     def __init__(self, dependencies, package_el, repository_el):
         self.dependencies = dependencies

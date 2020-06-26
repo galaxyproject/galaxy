@@ -37,7 +37,7 @@ TOOL_DATA_TABLE_CONF_XML = """<?xml version="1.0"?>
 """
 
 
-class ToolDataPathFiles(object):
+class ToolDataPathFiles:
 
     def __init__(self, tool_data_path):
         self.tool_data_path = os.path.abspath(tool_data_path)
@@ -66,7 +66,7 @@ class ToolDataPathFiles(object):
             return os.path.exists(path)
 
 
-class ToolDataTableManager(object):
+class ToolDataTableManager:
     """Manages a collection of tool data tables"""
 
     def __init__(self, tool_data_path, config_filename=None, tool_data_table_config_path_set=None, other_config_dict=None):
@@ -184,7 +184,7 @@ class ToolDataTableManager(object):
         try:
             try:
                 tree = util.parse_xml(full_path)
-            except (OSError, IOError) as e:
+            except OSError as e:
                 if e.errno == errno.ENOENT:
                     with open(full_path, 'w') as fh:
                         fh.write(TOOL_DATA_TABLE_CONF_XML)
@@ -239,7 +239,7 @@ class ToolDataTableManager(object):
         return list(table_names)
 
 
-class ToolDataTable(object):
+class ToolDataTable:
 
     @classmethod
     def from_elem(cls, table_elem, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=None):
@@ -327,7 +327,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
     type_key = 'tabular'
 
     def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None, other_config_dict=None):
-        super(TabularToolDataTable, self).__init__(config_element, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=other_config_dict)
+        super().__init__(config_element, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=other_config_dict)
         self.config_element = config_element
         self.data = []
         self.configure_and_load(config_element, tool_data_path, from_shed_config)
@@ -649,7 +649,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                 log.debug("Persisting changes to file: %s", filename)
                 try:
                     data_table_fh = open(filename, 'r+b')
-                except IOError as e:
+                except OSError as e:
                     log.warning('Error opening data table file (%s) with r+b, assuming file does not exist and will open as wb: %s', filename, e)
                     data_table_fh = open(filename, 'wb')
                 if os.stat(filename).st_size != 0:
@@ -734,7 +734,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
         return util.xml_to_string(self.config_element)
 
     def to_dict(self, view='collection'):
-        rval = super(TabularToolDataTable, self).to_dict()
+        rval = super().to_dict()
         if view == 'element':
             rval['columns'] = sorted(self.columns.keys(), key=lambda x: self.columns[x])
             rval['fields'] = self.get_fields()
@@ -784,7 +784,7 @@ class TabularToolDataField(Dictifiable):
         return sha1.hexdigest()
 
     def to_dict(self):
-        rval = super(TabularToolDataField, self).to_dict()
+        rval = super().to_dict()
         rval['name'] = self.data['value']
         rval['fields'] = self.data
         rval['base_dir'] = self.get_base_dir(),
@@ -809,7 +809,7 @@ class RefgenieToolDataTable(TabularToolDataTable):
     type_key = 'refgenie'
 
     def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None, other_config_dict=None):
-        super(RefgenieToolDataTable, self).__init__(config_element, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=other_config_dict)
+        super().__init__(config_element, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=other_config_dict)
         self.config_element = config_element
         self.data = []
         self.configure_and_load(config_element, tool_data_path, from_shed_config)
@@ -817,7 +817,7 @@ class RefgenieToolDataTable(TabularToolDataTable):
     def configure_and_load(self, config_element, tool_data_path, from_shed_config=False, url_timeout=10):
         self.rg_asset = config_element.get('asset', None)
         assert self.rg_asset, ValueError('You must specify an asset attribute.')
-        super(RefgenieToolDataTable, self).configure_and_load(config_element, tool_data_path, from_shed_config=from_shed_config, url_timeout=url_timeout)
+        super().configure_and_load(config_element, tool_data_path, from_shed_config=from_shed_config, url_timeout=url_timeout)
 
     def parse_column_spec(self, config_element):
         self.columns = {}

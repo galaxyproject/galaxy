@@ -68,7 +68,7 @@ RUNTIME_STEP_META_STATE_KEY = "__STEP_META_STATE__"
 RUNTIME_POST_JOB_ACTIONS_KEY = "__POST_JOB_ACTIONS__"
 
 
-class NoReplacement(object):
+class NoReplacement:
 
     def __str__(self):
         return "NO_REPLACEMENT singleton"
@@ -77,7 +77,7 @@ class NoReplacement(object):
 NO_REPLACEMENT = NoReplacement()
 
 
-class WorkflowModule(object):
+class WorkflowModule:
 
     def __init__(self, trans, content_id=None, **kwds):
         self.trans = trans
@@ -400,7 +400,7 @@ class SubWorkflowModule(WorkflowModule):
 
     @classmethod
     def from_dict(Class, trans, d, **kwds):
-        module = super(SubWorkflowModule, Class).from_dict(trans, d, **kwds)
+        module = super().from_dict(trans, d, **kwds)
         if "subworkflow" in d:
             module.subworkflow = d["subworkflow"]
         elif "content_id" in d:
@@ -412,7 +412,7 @@ class SubWorkflowModule(WorkflowModule):
 
     @classmethod
     def from_workflow_step(Class, trans, step, **kwds):
-        module = super(SubWorkflowModule, Class).from_workflow_step(trans, step, **kwds)
+        module = super().from_workflow_step(trans, step, **kwds)
         module.subworkflow = step.subworkflow
         return module
 
@@ -559,7 +559,7 @@ class SubWorkflowModule(WorkflowModule):
         return list(replacement_parameters)
 
 
-class InputProxy(object):
+class InputProxy:
     """Provide InputParameter-interfaces over inputs but renamed for workflow context."""
 
     def __init__(self, input, prefixed_name):
@@ -770,7 +770,7 @@ class InputDataCollectionModule(InputModule):
         ]
 
     def _parse_state_into_dict(self):
-        state_as_dict = super(InputDataCollectionModule, self)._parse_state_into_dict()
+        state_as_dict = super()._parse_state_into_dict()
         inputs = self.state.inputs
         if "collection_type" in inputs:
             collection_type = inputs["collection_type"]
@@ -1246,7 +1246,7 @@ class ToolModule(WorkflowModule):
     name = "Tool"
 
     def __init__(self, trans, tool_id, tool_version=None, exact_tools=True, tool_uuid=None, **kwds):
-        super(ToolModule, self).__init__(trans, content_id=tool_id, **kwds)
+        super().__init__(trans, content_id=tool_id, **kwds)
         self.tool_id = tool_id
         self.tool_version = tool_version
         self.tool_uuid = tool_uuid
@@ -1283,7 +1283,7 @@ class ToolModule(WorkflowModule):
                 tool_uuid = dynamic_tool.uuid
         if tool_id is None and tool_uuid is None:
             raise exceptions.RequestParameterInvalidException("No content id could be located for for step [%s]" % d)
-        module = super(ToolModule, Class).from_dict(trans, d, tool_id=tool_id, tool_version=tool_version, tool_uuid=tool_uuid, **kwds)
+        module = super().from_dict(trans, d, tool_id=tool_id, tool_version=tool_version, tool_uuid=tool_uuid, **kwds)
         module.post_job_actions = d.get('post_job_actions', {})
         module.workflow_outputs = d.get('workflow_outputs', [])
         if module.tool:
@@ -1305,7 +1305,7 @@ class ToolModule(WorkflowModule):
             tool_id = None
         tool_version = step.tool_version
         tool_uuid = step.tool_uuid
-        module = super(ToolModule, Class).from_workflow_step(trans, step, tool_id=tool_id, tool_version=tool_version, tool_uuid=tool_uuid, **kwds)
+        module = super().from_workflow_step(trans, step, tool_id=tool_id, tool_version=tool_version, tool_uuid=tool_uuid, **kwds)
         module.workflow_outputs = step.workflow_outputs
         module.post_job_actions = {}
         for pja in step.post_job_actions:
@@ -1335,7 +1335,7 @@ class ToolModule(WorkflowModule):
     # ---- Saving in various forms ------------------------------------------
 
     def save_to_step(self, step):
-        super(ToolModule, self).save_to_step(step)
+        super().save_to_step(step)
         step.tool_id = self.tool_id
         if self.tool:
             step.tool_version = self.get_version()
@@ -1538,7 +1538,7 @@ class ToolModule(WorkflowModule):
         Sub-classes should supply a `default_state` method which contains the
         initial state `dict` with key, value pairs for all available attributes.
         """
-        super(ToolModule, self).recover_state(state, **kwds)
+        super().recover_state(state, **kwds)
         if kwds.get("fill_defaults", False) and self.tool:
             self.compute_runtime_state(self.trans, step=None, step_updates=None)
             self.augment_tool_state_for_input_connections(**kwds)
@@ -1616,7 +1616,7 @@ class ToolModule(WorkflowModule):
             step_errors = {}
             state = self.state
             self.runtime_post_job_actions = {}
-            state, step_errors = super(ToolModule, self).compute_runtime_state(trans, step, step_updates)
+            state, step_errors = super().compute_runtime_state(trans, step, step_updates)
             if step_updates:
                 self.runtime_post_job_actions = step_updates.get(RUNTIME_POST_JOB_ACTIONS_KEY, {})
                 step_metadata_runtime_state = self.__step_meta_runtime_state()
@@ -1632,7 +1632,7 @@ class ToolModule(WorkflowModule):
         into a DefaultToolState object for use during workflow invocation.
         """
         if self.tool:
-            state = super(ToolModule, self).decode_runtime_state(runtime_state)
+            state = super().decode_runtime_state(runtime_state)
             if RUNTIME_STEP_META_STATE_KEY in runtime_state:
                 self.__restore_step_meta_runtime_state(json.loads(runtime_state[RUNTIME_STEP_META_STATE_KEY]))
             return state
@@ -1686,7 +1686,7 @@ class ToolModule(WorkflowModule):
                         # Pull out dataset instance (=HDA) from element and set a temporary element_identifier attribute
                         # See https://github.com/galaxyproject/galaxy/pull/1693 for context.
                         replacement = dataset_instance
-                        if hasattr(iteration_elements[prefixed_name], u'element_identifier') and iteration_elements[prefixed_name].element_identifier:
+                        if hasattr(iteration_elements[prefixed_name], 'element_identifier') and iteration_elements[prefixed_name].element_identifier:
                             replacement.element_identifier = iteration_elements[prefixed_name].element_identifier
                     else:
                         # If collection - just use element model object.
@@ -1699,7 +1699,7 @@ class ToolModule(WorkflowModule):
                         # Probably a parameter that can be replaced
                         dataset = dataset_instance or replacement
                         if getattr(dataset, 'extension', None) == 'expression.json':
-                            with open(dataset.file_name, 'r') as f:
+                            with open(dataset.file_name) as f:
                                 replacement = json.load(f)
                     found_replacement_keys.add(prefixed_name)
 
@@ -1847,7 +1847,7 @@ class ToolModule(WorkflowModule):
         return list(replacement_parameters)
 
 
-class WorkflowModuleFactory(object):
+class WorkflowModuleFactory:
 
     def __init__(self, module_types):
         self.module_types = module_types
@@ -1936,7 +1936,7 @@ class CancelWorkflowEvaluation(Exception):
     pass
 
 
-class WorkflowModuleInjector(object):
+class WorkflowModuleInjector:
     """ Injects workflow step objects from the ORM with appropriate module and
     module generated/influenced state. """
 

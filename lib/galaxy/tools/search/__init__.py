@@ -43,7 +43,7 @@ def get_or_create_index(index_dir, schema):
     return index.create_in(index_dir, schema=schema)
 
 
-class ToolBoxSearch(object):
+class ToolBoxSearch:
     """
     Support searching tools in a toolbox. This implementation uses
     the Whoosh search library.

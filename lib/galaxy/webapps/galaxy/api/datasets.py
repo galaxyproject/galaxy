@@ -34,7 +34,7 @@ log = logging.getLogger(__name__)
 class DatasetsController(BaseAPIController, UsesVisualizationMixin):
 
     def __init__(self, app):
-        super(DatasetsController, self).__init__(app)
+        super().__init__(app)
         self.history_manager = managers.histories.HistoryManager(app)
         self.hda_manager = managers.hdas.HDAManager(app)
         self.hda_serializer = managers.hdas.HDASerializer(app)
@@ -47,7 +47,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
     def _parse_serialization_params(self, kwd, default_view):
         view = kwd.get('view', None)
         keys = kwd.get('keys')
-        if isinstance(keys, string_types):
+        if isinstance(keys, str):
             keys = keys.split(',')
         return dict(view=view, keys=keys, default_view=default_view)
 

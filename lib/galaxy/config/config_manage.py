@@ -1,5 +1,3 @@
-from __future__ import absolute_import, print_function
-
 import argparse
 import os
 import shutil
@@ -200,7 +198,7 @@ SHED_ONLY_UWSGI_OPTIONS = [('cron', {
 DROP_OPTION_VALUE = object()
 
 
-class _OptionAction(object):
+class _OptionAction:
 
     def converted(self, args, app_desc, key, value):
         pass
@@ -543,14 +541,14 @@ def _validate(args, app_desc):
     c.validate()
 
 
-class PrefixFilter(object):
+class PrefixFilter:
 
     def __init__(self, name, prefix):
         self.name = name
         self.prefix = prefix
 
 
-class GzipFilter(object):
+class GzipFilter:
 
     def __init__(self, name):
         self.name = name
@@ -669,7 +667,7 @@ def _build_sample_yaml(args, app_desc):
             if field not in value:
                 continue
             field_value = value[field]
-            if not isinstance(field_value, six.string_types):
+            if not isinstance(field_value, str):
                 continue
 
             new_field_value = string.Template(field_value).safe_substitute(**{
@@ -707,7 +705,7 @@ def _write_to_file(args, f, path):
 
 def _order_load_path(path):
     """Load (with ``_ordered_load``) on specified path (a YAML file)."""
-    with open(path, "r") as f:
+    with open(path) as f:
         # Allow empty mapping (not allowed by pykwalify)
         raw_config = ordered_load(f, merge_duplicate_keys=True)
         return raw_config

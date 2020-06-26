@@ -295,9 +295,9 @@ def files_re_match(file1, file2, attributes=None):
     join_char = ''
     to_strip = os.linesep
     try:
-        with io.open(file2, encoding='utf-8') as fh:
+        with open(file2, encoding='utf-8') as fh:
             history_data = fh.readlines()
-        with io.open(file1, encoding='utf-8') as fh:
+        with open(file1, encoding='utf-8') as fh:
             local_file = fh.readlines()
     except UnicodeDecodeError:
         join_char = b''
@@ -328,9 +328,9 @@ def files_re_match_multiline(file1, file2, attributes=None):
     """Check the contents of 2 files for differences using re.match in multiline mode."""
     join_char = ''
     try:
-        with io.open(file2, encoding='utf-8') as fh:
+        with open(file2, encoding='utf-8') as fh:
             history_data = fh.readlines()
-        with io.open(file1, encoding='utf-8') as fh:
+        with open(file1, encoding='utf-8') as fh:
             local_file = fh.read()
     except UnicodeDecodeError:
         join_char = b''
@@ -352,9 +352,9 @@ def files_contains(file1, file2, attributes=None):
     # TODO: allow forcing ordering of contains
     to_strip = os.linesep
     try:
-        with io.open(file2, encoding='utf-8') as fh:
+        with open(file2, encoding='utf-8') as fh:
             history_data = fh.read()
-        with io.open(file1, encoding='utf-8') as fh:
+        with open(file1, encoding='utf-8') as fh:
             local_file = fh.readlines()
     except UnicodeDecodeError:
         to_strip = os.linesep.encode('utf-8')

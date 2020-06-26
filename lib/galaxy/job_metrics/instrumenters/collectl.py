@@ -96,7 +96,7 @@ class CollectlPlugin(InstrumentPlugin):
         return commands
 
     def job_properties(self, job_id, job_directory):
-        pid = open(self.__pid_file(job_directory), "r").read().strip()
+        pid = open(self.__pid_file(job_directory)).read().strip()
         contents = os.listdir(job_directory)
         try:
             rel_path = filter(self._is_instrumented_collectl_log, contents)[0]

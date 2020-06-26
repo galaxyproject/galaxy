@@ -194,7 +194,7 @@ GALAXY_LIB_TOOLS_VERSIONED = {
 }
 
 
-class ToolErrorLog(object):
+class ToolErrorLog:
     def __init__(self):
         self.error_stack = []
         self.max_errors = 100
@@ -255,7 +255,7 @@ class ToolBox(BaseGalaxyToolBox):
         # FIXME: ./
         if tool_root_dir == './tools':
             tool_root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'bundled'))
-        super(ToolBox, self).__init__(
+        super().__init__(
             config_filenames=config_filenames,
             tool_root_dir=tool_root_dir,
             app=app,
@@ -393,7 +393,7 @@ class ToolBox(BaseGalaxyToolBox):
         return select_field
 
 
-class DefaultToolState(object):
+class DefaultToolState:
     """
     Keeps track of the state of a users interaction with a tool between
     requests.
@@ -1612,7 +1612,7 @@ class Tool(Dictifiable):
         if isinstance(out_data, OrderedDict):
             return job, list(out_data.items())
         else:
-            if isinstance(out_data, string_types):
+            if isinstance(out_data, str):
                 message = out_data
             else:
                 message = "Failure executing tool with id '%s' (invalid data returned from tool execution)" % self.id
@@ -1893,7 +1893,7 @@ class Tool(Dictifiable):
         tool = self
         tarball_files = []
         temp_files = []
-        with open(os.path.abspath(tool.config_file), 'r') as fh:
+        with open(os.path.abspath(tool.config_file)) as fh:
             tool_xml = fh.read()
         # Retrieve tool help images and rewrite the tool's xml into a temporary file with the path
         # modified to be relative to the repository root.
@@ -1997,7 +1997,7 @@ class Tool(Dictifiable):
         """ Returns dict of tool. """
 
         # Basic information
-        tool_dict = super(Tool, self).to_dict()
+        tool_dict = super().to_dict()
 
         tool_dict["edam_operations"] = self.edam_operations
         tool_dict["edam_topics"] = self.edam_topics
@@ -2389,7 +2389,7 @@ class ExpressionTool(Tool):
 
     def parse_outputs(self, tool_source):
         # Setup self.outputs and self.output_collections
-        super(ExpressionTool, self).parse_outputs(tool_source)
+        super().parse_outputs(tool_source)
 
         # Validate these outputs for expression tools.
         if len(self.output_collections) != 0:
@@ -2401,7 +2401,7 @@ class ExpressionTool(Tool):
                 raise Exception(message)
 
     def exec_before_job(self, app, inp_data, out_data, param_dict=None):
-        super(ExpressionTool, self).exec_before_job(app, inp_data, out_data, param_dict=param_dict)
+        super().exec_before_job(app, inp_data, out_data, param_dict=param_dict)
         local_working_directory = param_dict["__local_working_directory__"]
         expression_inputs_path = os.path.join(local_working_directory, ExpressionTool.EXPRESSION_INPUTS_NAME)
 
@@ -2434,7 +2434,7 @@ class ExpressionTool(Tool):
     def parse_environment_variables(self, tool_source):
         """ Setup environment variable for inputs file.
         """
-        environmnt_variables_raw = super(ExpressionTool, self).parse_environment_variables(tool_source)
+        environmnt_variables_raw = super().parse_environment_variables(tool_source)
         expression_script_inputs = dict(
             name="GALAXY_EXPRESSION_INPUTS",
             template=ExpressionTool.EXPRESSION_INPUTS_NAME,
@@ -2455,7 +2455,7 @@ class DataSourceTool(OutputParameterJSONTool):
         return ToolParameter.build(self, XML('<param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=%s" />' % self.id))
 
     def parse_inputs(self, tool_source):
-        super(DataSourceTool, self).parse_inputs(tool_source)
+        super().parse_inputs(tool_source)
         # Open all data_source tools in _top.
         self.target = '_top'
         if 'GALAXY_URL' not in self.inputs:
@@ -2596,7 +2596,7 @@ class InteractiveTool(Tool):
 
     def __init__(self, config_file, tool_source, app, **kwd):
         assert app.config.interactivetools_enable, ValueError('Trying to load an InteractiveTool, but InteractiveTools are not enabled.')
-        super(InteractiveTool, self).__init__(config_file, tool_source, app, **kwd)
+        super().__init__(config_file, tool_source, app, **kwd)
         for port in self.ports:
             assert port.get('requires_domain', None), ValueError('InteractiveTools currently only work when requires_domain is True for each entry_point.')
 
@@ -2610,11 +2610,11 @@ class InteractiveTool(Tool):
 
     def exec_after_process(self, app, inp_data, out_data, param_dict, job=None, **kwds):
         # run original exec_after_process
-        super(InteractiveTool, self).exec_after_process(app, inp_data, out_data, param_dict, job=job, **kwds)
+        super().exec_after_process(app, inp_data, out_data, param_dict, job=job, **kwds)
         self.__remove_interactivetool_by_job(job)
 
     def job_failed(self, job_wrapper, message, exception=False):
-        super(InteractiveTool, self).job_failed(job_wrapper, message, exception=exception)
+        super().job_failed(job_wrapper, message, exception=exception)
         job = job_wrapper.sa_session.query(model.Job).get(job_wrapper.job_id)
         self.__remove_interactivetool_by_job(job)
 
@@ -2625,7 +2625,7 @@ class DataManagerTool(OutputParameterJSONTool):
 
     def __init__(self, config_file, root, app, guid=None, data_manager_id=None, **kwds):
         self.data_manager_id = data_manager_id
-        super(DataManagerTool, self).__init__(config_file, root, app, guid=guid, **kwds)
+        super().__init__(config_file, root, app, guid=guid, **kwds)
         if self.data_manager_id is None:
             self.data_manager_id = self.id
 
@@ -2634,7 +2634,7 @@ class DataManagerTool(OutputParameterJSONTool):
         if final_job_state != DETECTED_JOB_STATE.OK:
             return
         # run original exec_after_process
-        super(DataManagerTool, self).exec_after_process(app, inp_data, out_data, param_dict, job=job, **kwds)
+        super().exec_after_process(app, inp_data, out_data, param_dict, job=job, **kwds)
         # process results of tool
         data_manager_id = job.data_manager_association.data_manager_id
         data_manager = self.app.data_managers.get_manager(data_manager_id, None)
@@ -2682,7 +2682,7 @@ class DataManagerTool(OutputParameterJSONTool):
         :returns: bool -- Whether the user is allowed to access the tool.
         Data Manager tools are only accessible to admins.
         """
-        if super(DataManagerTool, self).allow_user_access(user) and self.app.config.is_admin_user(user):
+        if super().allow_user_access(user) and self.app.config.is_admin_user(user):
             return True
         # If this is just an incidental check - do not log the scary message
         # about users attempting to do something problematic.
@@ -2793,7 +2793,7 @@ class BuildListCollectionTool(DatabaseOperationTool):
             new_dataset = incoming_repeat["input"].copy(copy_tags=tags)
             new_elements["%d" % i] = new_dataset
 
-        self._add_datasets_to_history(history, itervalues(new_elements))
+        self._add_datasets_to_history(history, new_elements.values())
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", elements=new_elements
         )
@@ -2907,7 +2907,7 @@ class MergeCollectionTool(DatabaseOperationTool):
                 copied_value = value.copy()
             new_elements[key] = copied_value
 
-        self._add_datasets_to_history(history, itervalues(new_elements))
+        self._add_datasets_to_history(history, new_elements.values())
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", elements=new_elements
         )
@@ -2954,7 +2954,7 @@ class FilterDatasetsTool(DatabaseOperationTool):
                     elements_to_copy.append(element)
 
         new_elements = self._get_new_elements(history=history, elements_to_copy=elements_to_copy)
-        self._add_datasets_to_history(history, itervalues(new_elements))
+        self._add_datasets_to_history(history, new_elements.values())
         output_collections.create_collection(
             next(iter(self.outputs.values())),
             "output",
@@ -3044,7 +3044,7 @@ class SortTool(DatabaseOperationTool):
             copied_dataset = dce_object.copy(flush=False)
             new_elements[dce.element_identifier] = copied_dataset
 
-        self._add_datasets_to_history(history, itervalues(new_elements))
+        self._add_datasets_to_history(history, new_elements.values())
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", elements=new_elements
         )
@@ -3071,7 +3071,7 @@ class RelabelFromFileTool(DatabaseOperationTool):
             new_elements[new_label] = copied_value
 
         new_labels_path = new_labels_dataset_assoc.file_name
-        with open(new_labels_path, "r") as fh:
+        with open(new_labels_path) as fh:
             new_labels = fh.readlines(1024 * 1000000)
         if strict and len(hdca.collection.elements) != len(new_labels):
             raise Exception("Relabel mapping file contains incorrect number of identifiers")
@@ -3096,7 +3096,7 @@ class RelabelFromFileTool(DatabaseOperationTool):
         for key in new_elements.keys():
             if not re.match(r"^[\w\- \.,]+$", key):
                 raise Exception("Invalid new colleciton identifier [%s]" % key)
-        self._add_datasets_to_history(history, itervalues(new_elements))
+        self._add_datasets_to_history(history, new_elements.values())
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", elements=new_elements
         )
@@ -3172,7 +3172,7 @@ class TagFromFileTool(DatabaseOperationTool):
             new_elements[dce.element_identifier] = copied_value
 
         new_tags_path = new_tags_dataset_assoc.file_name
-        with open(new_tags_path, "r") as fh:
+        with open(new_tags_path) as fh:
             new_tags = fh.readlines(1024 * 1000000)
         # We have a tabular file, where the first column is an existing element identifier,
         # and the remaining columns represent new tags.
@@ -3197,7 +3197,7 @@ class FilterFromFileTool(DatabaseOperationTool):
         discarded_elements = OrderedDict()
 
         filtered_path = filter_dataset_assoc.file_name
-        with open(filtered_path, "r") as fh:
+        with open(filtered_path) as fh:
             filtered_identifiers = [i.strip() for i in fh.readlines(1024 * 1000000)]
 
         # If filtered_dataset_assoc is not a two-column tabular dataset we label with the current line of the dataset
@@ -3217,8 +3217,8 @@ class FilterFromFileTool(DatabaseOperationTool):
             else:
                 discarded_elements[element_identifier] = copied_value
 
-        self._add_datasets_to_history(history, itervalues(filtered_elements))
-        self._add_datasets_to_history(history, itervalues(discarded_elements))
+        self._add_datasets_to_history(history, filtered_elements.values())
+        self._add_datasets_to_history(history, discarded_elements.values())
         output_collections.create_collection(
             self.outputs["output_filtered"], "output_filtered", elements=filtered_elements
         )
@@ -3238,7 +3238,7 @@ for tool_class in [Tool, SetMetadataTool, OutputParameterJSONTool, ExpressionToo
 
 
 # ---- Utility classes to be factored out -----------------------------------
-class TracksterConfig(object):
+class TracksterConfig:
     """ Trackster configuration encapsulation. """
 
     def __init__(self, actions):
@@ -3252,7 +3252,7 @@ class TracksterConfig(object):
         return TracksterConfig(actions)
 
 
-class SetParamAction(object):
+class SetParamAction:
     """ Set parameter action. """
 
     def __init__(self, name, output_name):
@@ -3265,7 +3265,7 @@ class SetParamAction(object):
         return SetParamAction(elt.get("name"), elt.get("output_name"))
 
 
-class BadValue(object):
+class BadValue:
     def __init__(self, value):
         self.value = value
 

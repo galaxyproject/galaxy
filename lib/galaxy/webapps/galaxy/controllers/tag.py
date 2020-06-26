@@ -46,7 +46,7 @@ class TagsController(BaseUIController, UsesTagsMixin):
         trans.sa_session.flush()
         # Log.
         params = dict(item_id=item.id, item_class=item_class, tag=new_tag)
-        trans.log_action(user, text_type("tag"), context, params)
+        trans.log_action(user, "tag", context, params)
 
     @web.expose
     @web.require_login("remove tag from an item")
@@ -61,7 +61,7 @@ class TagsController(BaseUIController, UsesTagsMixin):
         trans.sa_session.flush()
         # Log.
         params = dict(item_id=item.id, item_class=item_class, tag=tag_name)
-        trans.log_action(user, text_type("untag"), context, params)
+        trans.log_action(user, "untag", context, params)
 
     # Retag an item. All previous tags are deleted and new tags are applied.
     @web.expose

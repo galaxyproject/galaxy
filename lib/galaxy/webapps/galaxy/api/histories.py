@@ -47,7 +47,7 @@ log = logging.getLogger(__name__)
 class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistoryMixin, SharableMixin):
 
     def __init__(self, app):
-        super(HistoriesController, self).__init__(app)
+        super().__init__(app)
         self.citations_manager = citations.CitationsManager(app)
         self.user_manager = users.UserManager(app)
         self.workflow_manager = workflows.WorkflowsManager(app)

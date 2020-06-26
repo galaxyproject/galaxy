@@ -33,7 +33,7 @@ class CloudAuthzController(BaseAPIController):
     """
 
     def __init__(self, app):
-        super(CloudAuthzController, self).__init__(app)
+        super().__init__(app)
         self.cloudauthz_manager = cloudauthzs.CloudAuthzManager(app)
         self.cloudauthz_serializer = cloudauthzs.CloudAuthzsSerializer(app)
         self.cloudauthz_deserializer = cloudauthzs.CloudAuthzsDeserializer(app)

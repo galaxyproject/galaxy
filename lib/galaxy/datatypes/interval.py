@@ -597,7 +597,7 @@ class Bed12(BedStrict):
     file_ext = "bed12"
 
 
-class _RemoteCallMixin(object):
+class _RemoteCallMixin:
     def _get_remote_call_url(self, redirect_url, site_name, dataset, type, app, base_url):
         """Retrieve the URL to call out to an external site and retrieve data.
         This routes our external URL through a local galaxy instance which makes

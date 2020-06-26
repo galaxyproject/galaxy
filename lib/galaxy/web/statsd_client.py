@@ -5,7 +5,7 @@ except ImportError:
 
 
 # TODO: optimize with two separate implementations around statsd_influxdb?
-class GalaxyStatsdClient(object):
+class GalaxyStatsdClient:
 
     def __init__(self,
                  statsd_host,

@@ -1,7 +1,6 @@
 """
 File format detector
 """
-from __future__ import absolute_import
 
 import bz2
 import codecs
@@ -20,7 +19,6 @@ from six import (
     StringIO,
     text_type,
 )
-from six.moves import filter
 from six.moves.urllib.request import urlopen
 
 from galaxy import util
@@ -68,7 +66,7 @@ def stream_to_open_named_file(stream, fd, filename, source_encoding=None, source
         if use_source_encoding:
             # If a source encoding is given we use it to convert to the target encoding
             try:
-                if not isinstance(chunk, text_type):
+                if not isinstance(chunk, str):
                     chunk = chunk.decode(source_encoding, source_error)
                 os.write(fd, chunk.encode(target_encoding, target_error))
             except UnicodeDecodeError:
@@ -77,7 +75,7 @@ def stream_to_open_named_file(stream, fd, filename, source_encoding=None, source
         else:
             # Compressed files must be encoded after they are uncompressed in the upload utility,
             # while binary files should not be encoded at all.
-            if isinstance(chunk, text_type):
+            if isinstance(chunk, str):
                 chunk = chunk.encode(target_encoding, target_error)
             os.write(fd, chunk)
     os.close(fd)
@@ -97,13 +95,9 @@ def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload", 
     """
     fd, temp_name = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
     i = 0
-    if PY3:
-        NEWLINE_BYTE = 10
-        CR_BYTE = 13
-    else:
-        NEWLINE_BYTE = "\n"
-        CR_BYTE = "\r"
-    with io.open(fd, mode="wb") as fp, io.open(fname, mode="rb") as fi:
+    NEWLINE_BYTE = 10
+    CR_BYTE = 13
+    with open(fd, mode="wb") as fp, open(fname, mode="rb") as fi:
         last_char = None
         block = fi.read(block_size)
         last_block = b""
@@ -510,7 +504,7 @@ def zip_single_fileobj(path):
             return z.open(name)
 
 
-class FilePrefix(object):
+class FilePrefix:
 
     def __init__(self, filename):
         non_utf8_error = None
@@ -661,11 +655,11 @@ def handle_compressed_file(
         while True:
             try:
                 chunk = compressed_file.read(CHUNK_SIZE)
-            except IOError as e:
+            except OSError as e:
                 os.close(fd)
                 os.remove(uncompressed)
                 compressed_file.close()
-                raise IOError('Problem uncompressing {} data, please try retrieving the data uncompressed: {}'.format(compressed_type, util.unicodify(e)))
+                raise OSError('Problem uncompressing {} data, please try retrieving the data uncompressed: {}'.format(compressed_type, util.unicodify(e)))
             if not chunk:
                 break
             os.write(fd, chunk)

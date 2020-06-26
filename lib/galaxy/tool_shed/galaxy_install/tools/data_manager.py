@@ -20,7 +20,7 @@ SHED_DATA_MANAGER_CONF_XML = """<?xml version="1.0"?>
 """
 
 
-class DataManagerHandler(object):
+class DataManagerHandler:
 
     def __init__(self, app):
         self.app = app
@@ -63,7 +63,7 @@ class DataManagerHandler(object):
             # Load existing data managers.
             try:
                 tree, error_message = parse_xml(shed_data_manager_conf_filename, check_exists=False)
-            except (OSError, IOError) as exc:
+            except OSError as exc:
                 if exc.errno == errno.ENOENT:
                     with open(shed_data_manager_conf_filename, 'w') as fh:
                         fh.write(SHED_DATA_MANAGER_CONF_XML)

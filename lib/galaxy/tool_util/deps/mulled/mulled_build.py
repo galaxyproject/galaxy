@@ -8,7 +8,6 @@ Build a mulled image with:
     mulled-build build 'samtools=1.3.1--4,bedtools=2.22'
 
 """
-from __future__ import print_function
 
 import json
 import logging
@@ -297,7 +296,7 @@ def context_from_args(args):
     return InvolucroContext(involucro_bin=args.involucro_path, verbose=verbose)
 
 
-class CondaInDockerContext(object):
+class CondaInDockerContext:
 
     @property
     def conda_exec(self):

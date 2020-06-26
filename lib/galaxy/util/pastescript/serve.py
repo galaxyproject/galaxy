@@ -16,8 +16,6 @@
 # code here, stripping out uneeded functionality.
 
 # All top level imports from each package moved here and organized
-from __future__ import absolute_import
-from __future__ import print_function
 
 import atexit
 import errno
@@ -135,12 +133,12 @@ class BadCommand(Exception):
     message = property(_get_message, _set_message)
 
 
-class NoDefault(object):
+class NoDefault:
     pass
 
 
 # run and invoke methods moved below ServeCommand
-class Command(object):
+class Command:
 
     def __init__(self, name):
         self.command_name = name
@@ -597,7 +595,7 @@ class ServeCommand(Command):
         if self.options.log_file:
             try:
                 writeable_log_file = open(self.options.log_file, 'a')
-            except IOError as ioe:
+            except OSError as ioe:
                 msg = 'Error: Unable to write to log file: %s' % ioe
                 raise BadCommand(msg)
             writeable_log_file.close()
@@ -606,7 +604,7 @@ class ServeCommand(Command):
         if self.options.pid_file:
             try:
                 writeable_pid_file = open(self.options.pid_file, 'a')
-            except IOError as ioe:
+            except OSError as ioe:
                 msg = 'Error: Unable to write to pid file: %s' % ioe
                 raise BadCommand(msg)
             writeable_pid_file.close()
@@ -666,7 +664,7 @@ class ServeCommand(Command):
             except AttributeError as e:
                 # Capturing bad error response from paste
                 if str(e) == "'WSGIThreadPoolServer' object has no attribute 'thread_pool'":
-                    raise socket.error(98, 'Address already in use')
+                    raise OSError(98, 'Address already in use')
                 else:
                     raise AttributeError(e)
 
@@ -744,7 +742,7 @@ class ServeCommand(Command):
             print("PID in %s is not valid (deleting)" % pid_file)
             try:
                 os.unlink(pid_file)
-            except (OSError, IOError) as e:
+            except OSError as e:
                 print("Could not delete: %s" % e)
                 return 2
             return 1
@@ -808,7 +806,7 @@ class ServeCommand(Command):
                 if proc is not None and hasattr(os, 'kill'):
                     try:
                         os.kill(proc.pid, signal.SIGTERM)
-                    except (OSError, IOError):
+                    except OSError:
                         pass
 
             if reloader:
@@ -860,7 +858,7 @@ class ServeCommand(Command):
             os.setuid(uid)
 
 
-class LazyWriter(object):
+class LazyWriter:
 
     """
     File-like object that opens a file lazily when it is first written
@@ -921,7 +919,7 @@ def read_pidfile(filename):
             content = f.read()
             f.close()
             return int(content.strip())
-        except (ValueError, IOError):
+        except (ValueError, OSError):
             return None
     else:
         return None
@@ -987,7 +985,7 @@ def _cleanup_ports(bound_addresses, maxtries=30, sleeptime=2):
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             try:
                 sock.connect(bound_address)
-            except socket.error as e:
+            except OSError as e:
                 if e.errno != errno.ECONNREFUSED:
                     raise
                 break

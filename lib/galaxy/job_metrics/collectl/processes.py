@@ -10,8 +10,7 @@ import tempfile
 from galaxy import util
 from ..collectl import stats
 
-if sys.version_info > (3,):
-    long = int
+long = int
 
 log = logging.getLogger(__name__)
 
@@ -111,7 +110,7 @@ def generate_process_statistics(collectl_playback_cli, pid, statistics=DEFAULT_S
     """
     with tempfile.NamedTemporaryFile() as tmp_tsv:
         collectl_playback_cli.run(stdout=tmp_tsv)
-        with open(tmp_tsv.name, "r") as tsv_file:
+        with open(tmp_tsv.name) as tsv_file:
             return _read_process_statistics(tsv_file, pid, statistics)
 
 
@@ -142,7 +141,7 @@ def _read_process_statistics(tsv_file, pid, statistics):
     return process_summarizer.get_statistics()
 
 
-class CollectlProcessSummarizer(object):
+class CollectlProcessSummarizer:
 
     def __init__(self, pid, statistics):
         self.pid = pid
@@ -226,7 +225,7 @@ class CollectlProcessSummarizer(object):
         return seconds
 
 
-class CollectlProcessInterval(object):
+class CollectlProcessInterval:
     """ Represent all rows in collectl playback file for given time slice with
     ability to filter out just rows corresponding to the process tree
     corresponding to a given pid.

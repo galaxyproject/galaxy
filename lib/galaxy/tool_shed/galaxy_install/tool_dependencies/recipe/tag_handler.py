@@ -17,7 +17,7 @@ from galaxy.util.tool_shed.xml_util import parse_xml
 log = logging.getLogger(__name__)
 
 
-class RecipeTag(object):
+class RecipeTag:
     """Abstract class that defines a standard format for handling recipe tags when installing packages."""
 
     def process_tag_set(self, tool_shed_repository, tool_dependency, package_elem, package_name, package_version,
@@ -25,7 +25,7 @@ class RecipeTag(object):
         raise Exception("Unimplemented Method")
 
 
-class SyncDatabase(object):
+class SyncDatabase:
 
     def sync_database_with_file_system(self, app, tool_shed_repository, tool_dependency_name, tool_dependency_version,
                                        tool_dependency_install_dir, tool_dependency_type='package'):

@@ -20,7 +20,7 @@ class ConfigSerializer(base.ModelSerializer):
     """Configuration (galaxy.ini) settings viewable by all users"""
 
     def __init__(self, app):
-        super(ConfigSerializer, self).__init__(app)
+        super().__init__(app)
 
         self.default_view = 'all'
         self.add_view('all', list(self.serializers.keys()))
@@ -111,7 +111,7 @@ class AdminConfigSerializer(ConfigSerializer):
     """Configuration attributes viewable only by admin users"""
 
     def add_serializers(self):
-        super(AdminConfigSerializer, self).add_serializers()
+        super().add_serializers()
 
         def _defaults_to(default):
             return lambda config, key, **context: getattr(config, key, default)

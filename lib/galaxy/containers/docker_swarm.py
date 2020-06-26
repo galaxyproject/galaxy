@@ -1,7 +1,6 @@
 """
 Docker Swarm mode interface
 """
-from __future__ import absolute_import
 
 import logging
 import os.path
@@ -64,7 +63,7 @@ class DockerSwarmInterface(DockerInterface):
     supports_volumes = False
 
     def validate_config(self):
-        super(DockerSwarmInterface, self).validate_config()
+        super().validate_config()
         self._node_prefix = self._conf.node_prefix
 
     def run_in_container(self, command, image=None, **kwopts):

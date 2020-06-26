@@ -1,7 +1,6 @@
 """
 Classes encapsulating Galaxy tool parameters.
 """
-from __future__ import print_function
 
 from json import dumps
 

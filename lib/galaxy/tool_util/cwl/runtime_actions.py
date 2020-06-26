@@ -27,11 +27,11 @@ def file_dict_to_description(file_dict):
         return PathDirectoryDescription(_possible_uri_to_path(location))
 
 
-class FileDescription(object):
+class FileDescription:
     pass
 
 
-class PathFileDescription(object):
+class PathFileDescription:
 
     def __init__(self, path):
         self.path = path
@@ -41,7 +41,7 @@ class PathFileDescription(object):
         shutil.copy(self.path, destination)
 
 
-class PathDirectoryDescription(object):
+class PathDirectoryDescription:
 
     def __init__(self, path):
         self.path = path
@@ -50,7 +50,7 @@ class PathDirectoryDescription(object):
         shutil.copytree(self.path, destination)
 
 
-class LiteralFileDescription(object):
+class LiteralFileDescription:
 
     def __init__(self, content):
         self.content = content
@@ -76,9 +76,9 @@ def handle_outputs(job_directory=None):
     metadata_directory = os.path.join(job_directory, "metadata")
     metadata_params_path = os.path.join(metadata_directory, "params.json")
     try:
-        with open(metadata_params_path, "r") as f:
+        with open(metadata_params_path) as f:
             metadata_params = json.load(f)
-    except IOError:
+    except OSError:
         raise Exception("Failed to find params.json from metadata directory [%s]" % metadata_directory)
 
     cwl_job_file = os.path.join(job_directory, JOB_JSON_FILE)

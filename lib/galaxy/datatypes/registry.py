@@ -1,7 +1,6 @@
 """
 Provides mapping between extensions and datatypes, mime-types, etc.
 """
-from __future__ import absolute_import
 
 import imp
 import logging
@@ -34,7 +33,7 @@ class ConfigurationError(Exception):
     pass
 
 
-class Registry(object):
+class Registry:
 
     def __init__(self, config=None):
         self.log = logging.getLogger(__name__)
@@ -435,7 +434,7 @@ class Registry(object):
         else:
             build_sites_config_file = getattr(self.config, "build_sites_config_file", None)
             if build_sites_config_file and os.path.exists(build_sites_config_file):
-                with open(build_sites_config_file, "r") as f:
+                with open(build_sites_config_file) as f:
                     build_sites_config = yaml.safe_load(f)
                 if not isinstance(build_sites_config, list):
                     self.log.exception("Build sites configuration YAML file does not declare list of sites.")

@@ -92,7 +92,7 @@ class HistoryListGrid(grids.Grid):
 
     def build_initial_query(self, trans, **kwargs):
         # Override to preload sharing information used when fetching data for grid.
-        query = super(HistoryListGrid, self).build_initial_query(trans, **kwargs)
+        query = super().build_initial_query(trans, **kwargs)
         query = query.options(undefer("users_shared_with_count"))
         return query
 
@@ -242,7 +242,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                         ExportsHistoryMixin, ImportsHistoryMixin):
 
     def __init__(self, app):
-        super(HistoryController, self).__init__(app)
+        super().__init__(app)
         self.history_manager = managers.histories.HistoryManager(app)
         self.history_serializer = managers.histories.HistorySerializer(self.app)
 
@@ -1195,7 +1195,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 cur_name = h.get_display_name()
                 new_name = payload.get('name_%i' % i)
                 # validate name is empty
-                if not isinstance(new_name, string_types) or not new_name.strip():
+                if not isinstance(new_name, str) or not new_name.strip():
                     messages.append('You must specify a valid name for History \'%s\'.' % cur_name)
                 # skip if not the owner
                 elif h.user_id != user.id:

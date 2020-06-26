@@ -21,7 +21,7 @@ from galaxy.util.json import jsonrpc_request, validate_jsonrpc_response
 log = logging.getLogger(__name__)
 
 
-class TransferManager(object):
+class TransferManager:
     """
     Manage simple data transfers from URLs to temporary locations.
     """

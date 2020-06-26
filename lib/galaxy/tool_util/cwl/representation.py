@@ -130,7 +130,7 @@ def type_descriptions_for_field_types(field_types):
 
 def dataset_wrapper_to_file_json(inputs_dir, dataset_wrapper):
     if dataset_wrapper.ext == "expression.json":
-        with open(dataset_wrapper.file_name, "r") as f:
+        with open(dataset_wrapper.file_name) as f:
             return json.load(f)
 
     if dataset_wrapper.ext == "directory":
@@ -358,7 +358,7 @@ def to_galaxy_parameters(tool, as_dict):
                 type_representation_name = "float"
             elif isinstance(as_dict_value, (int, float)) and "double" in case_strings:
                 type_representation_name = "double"
-            elif isinstance(as_dict_value, string_types) and "string" in case_strings:
+            elif isinstance(as_dict_value, str) and "string" in case_strings:
                 type_representation_name = "string"
             elif isinstance(as_dict_value, dict) and "src" in as_dict_value and "id" in as_dict_value and "file" in case_strings:
                 type_representation_name = "file"

@@ -13,8 +13,7 @@ DEFAULT_REQUIREMENT_TYPE = "package"
 DEFAULT_REQUIREMENT_VERSION = None
 
 
-@six.python_2_unicode_compatible
-class ToolRequirement(object):
+class ToolRequirement:
     """
     Represents an external requirement that must be available for the tool to
     run (for example, a program, package, or library).  Requirements can
@@ -57,7 +56,7 @@ class ToolRequirement(object):
     __repr__ = __str__
 
 
-class RequirementSpecification(object):
+class RequirementSpecification:
     """Refine a requirement using a URI."""
 
     def __init__(self, uri, version=None):
@@ -91,7 +90,7 @@ class RequirementSpecification(object):
         return hash((self.uri, self.version))
 
 
-class ToolRequirements(object):
+class ToolRequirements:
     """
     Represents all requirements (packages, env vars) needed to run a tool.
     """
@@ -131,8 +130,7 @@ class ToolRequirements(object):
         return not self.__eq__(other)
 
     def __iter__(self):
-        for r in self.tool_requirements:
-            yield r
+        yield from self.tool_requirements
 
     def __getitem__(self, ii):
         return list(self.tool_requirements)[ii]
@@ -156,8 +154,7 @@ DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES = False
 DEFAULT_CONTAINER_SHELL = "/bin/sh"  # Galaxy assumes bash, but containers are usually thinner.
 
 
-@six.python_2_unicode_compatible
-class ContainerDescription(object):
+class ContainerDescription:
 
     def __init__(
         self,

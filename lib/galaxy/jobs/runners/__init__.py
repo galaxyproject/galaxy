@@ -67,7 +67,7 @@ class RunnerParams(ParamsWithSpecs):
         raise Exception(JOB_RUNNER_PARAMETER_VALIDATION_FAILED_MESSAGE % name)
 
 
-class BaseJobRunner(object):
+class BaseJobRunner:
     DEFAULT_SPECS = dict(recheck_missing_job_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=0))
 
     def __init__(self, app, nworkers, **kwargs):
@@ -543,7 +543,7 @@ class BaseJobRunner(object):
             job_wrapper.fail("Unable to finish job", exception=True)
 
 
-class JobState(object):
+class JobState:
     """
     Encapsulate state of jobs.
     """
@@ -612,7 +612,7 @@ class AsynchronousJobState(JobState):
     """
 
     def __init__(self, files_dir=None, job_wrapper=None, job_id=None, job_file=None, output_file=None, error_file=None, exit_code_file=None, job_name=None, job_destination=None):
-        super(AsynchronousJobState, self).__init__(job_wrapper, job_destination)
+        super().__init__(job_wrapper, job_destination)
         self.old_state = None
         self._running = False
         self.check_count = 0
@@ -669,7 +669,7 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
     """
 
     def __init__(self, app, nworkers, **kwargs):
-        super(AsynchronousJobRunner, self).__init__(app, nworkers, **kwargs)
+        super().__init__(app, nworkers, **kwargs)
         # 'watched' and 'queue' are both used to keep track of jobs to watch.
         # 'queue' is used to add new watched jobs, and can be called from
         # any thread (usually by the 'queue_job' method). 'watched' must only
@@ -680,7 +680,7 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
 
     def _init_monitor_thread(self):
         name = "%s.monitor_thread" % self.runner_name
-        super(AsynchronousJobRunner, self)._init_monitor_thread(name=name, target=self.monitor, start=True, config=self.app.config)
+        super()._init_monitor_thread(name=name, target=self.monitor, start=True, config=self.app.config)
 
     def handle_stop(self):
         # DRMAA and SGE runners should override this and disconnect.
@@ -720,7 +720,7 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
         self.monitor_queue.put(STOP_SIGNAL)
         # Call the parent's shutdown method to stop workers
         self.shutdown_monitor()
-        super(AsynchronousJobRunner, self).shutdown()
+        super().shutdown()
 
     def check_watched_items(self):
         """

@@ -1,7 +1,6 @@
 """
 Migration script for job metric plugins.
 """
-from __future__ import print_function
 
 import logging
 

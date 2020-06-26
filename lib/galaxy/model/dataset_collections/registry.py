@@ -7,7 +7,7 @@ from .types import (
 PLUGIN_CLASSES = [list.ListDatasetCollectionType, paired.PairedDatasetCollectionType]
 
 
-class DatasetCollectionTypesRegistry(object):
+class DatasetCollectionTypesRegistry:
 
     def __init__(self):
         self.__plugins = {p.collection_type: p() for p in PLUGIN_CLASSES}

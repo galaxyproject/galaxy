@@ -22,7 +22,7 @@ class CloudController(BaseAPIController):
     """
 
     def __init__(self, app):
-        super(CloudController, self).__init__(app)
+        super().__init__(app)
         self.cloud_manager = cloud.CloudManager(app)
         self.datasets_serializer = datasets.DatasetSerializer(app)
 

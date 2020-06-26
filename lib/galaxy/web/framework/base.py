@@ -51,7 +51,7 @@ def __resource_with_deleted(self, member_name, collection_name, **kwargs):
 routes.Mapper.resource_with_deleted = __resource_with_deleted
 
 
-class WebApplication(object):
+class WebApplication:
     """
     A simple web application which maps requests to objects using routes,
     and to methods on those objects in the CherryPy style. Thus simple
@@ -265,7 +265,7 @@ class WebApplication(object):
         return False
 
 
-class WSGIEnvironmentProperty(object):
+class WSGIEnvironmentProperty:
     """
     Descriptor that delegates a property to a key in the environ member of the
     associated object (provides property style access to keys in the WSGI
@@ -282,7 +282,7 @@ class WSGIEnvironmentProperty(object):
         return obj.environ.get(self.key, self.default)
 
 
-class LazyProperty(object):
+class LazyProperty:
     """
     Property that replaces itself with a calculated value the first time
     it is used.
@@ -302,7 +302,7 @@ class LazyProperty(object):
 lazy_property = LazyProperty
 
 
-class DefaultWebTransaction(object):
+class DefaultWebTransaction:
     """
     Wraps the state of a single web transaction (request/response cycle).
 
@@ -376,14 +376,14 @@ class Request(webob.Request):
     def remote_host(self):
         try:
             return socket.gethostbyname(self.remote_addr)
-        except socket.error:
+        except OSError:
             return self.remote_addr
 
     @lazy_property
     def remote_hostname(self):
         try:
             return socket.gethostbyaddr(self.remote_addr)[0]
-        except socket.error:
+        except OSError:
             return self.remote_addr
 
     @lazy_property
@@ -422,7 +422,7 @@ class Request(webob.Request):
     # path_info = WSGIEnvironmentProperty( 'PATH_INFO' )
 
 
-class Response(object):
+class Response:
     """
     Describes an HTTP response. Currently very simple since the actual body
     of the request is handled separately.

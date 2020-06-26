@@ -107,7 +107,7 @@ class JobDestination(Bunch):
             self['id'] = kwds['from_job'].destination_id
             self['params'] = kwds['from_job'].destination_params
 
-        super(JobDestination, self).__init__(**kwds)
+        super().__init__(**kwds)
 
 
 class JobToolConfiguration(Bunch):
@@ -122,7 +122,7 @@ class JobToolConfiguration(Bunch):
         self['handler'] = None
         self['destination'] = None
         self['params'] = dict()
-        super(JobToolConfiguration, self).__init__(**kwds)
+        super().__init__(**kwds)
 
     def get_resource_group(self):
         return self.get("resources", None)
@@ -342,7 +342,7 @@ class JobConfiguration(ConfiguresHandlers):
                     tree = load(job_config_file)
                     job_config_dict = self.__parse_job_conf_xml(tree)
                 else:
-                    with open(job_config_file, "r") as f:
+                    with open(job_config_file) as f:
                         job_config_dict = yaml.safe_load(f)
 
             # Load tasks if configured
@@ -353,7 +353,7 @@ class JobConfiguration(ConfiguresHandlers):
 
             log.debug('Done loading job configuration')
 
-        except IOError:
+        except OSError:
             log.warning('Job configuration "%s" does not exist, using default job configuration',
                         self.app.config.job_config_file)
             self.__set_default_job_conf()
@@ -850,7 +850,7 @@ class JobConfiguration(ConfiguresHandlers):
                     log.warning("Legacy destination with id '{}' could not be converted: Unknown runner plugin: {}".format(id, destination.runner))
 
 
-class HasResourceParameters(object):
+class HasResourceParameters:
 
     def get_resource_parameters(self, job=None):
         # Find the dymically inserted resource parameters and give them
@@ -1066,7 +1066,7 @@ class JobWrapper(HasResourceParameters):
         new = os.path.join(self.working_directory, 'upload_params.json')
         try:
             shutil.move(tool_evaluator.param_dict['paramfile'], new)
-        except (OSError, IOError) as exc:
+        except OSError as exc:
             # It won't exist at the old path if setup was interrupted and tried again later
             if exc.errno != errno.ENOENT or not os.path.exists(new):
                 raise
@@ -1273,7 +1273,7 @@ class JobWrapper(HasResourceParameters):
                     try:
                         shutil.move(dataset_path.false_path, dataset_path.real_path)
                         log.debug("fail(): Moved %s to %s", dataset_path.false_path, dataset_path.real_path)
-                    except (IOError, OSError) as e:
+                    except OSError as e:
                         log.error("fail(): Missing output file in working directory: %s", unicodify(e))
             for dataset_assoc in job.output_datasets + job.output_library_datasets:
                 dataset = dataset_assoc.dataset
@@ -1628,7 +1628,7 @@ class JobWrapper(HasResourceParameters):
                 try:
                     shutil.move(dataset_path.false_path, dataset_path.real_path)
                     log.debug("finish(): Moved {} to {}".format(dataset_path.false_path, dataset_path.real_path))
-                except (IOError, OSError):
+                except OSError:
                     # this can happen if Galaxy is restarted during the job's
                     # finish method - the false_path file has already moved,
                     # and when the job is recovered, it won't be found.
@@ -1808,7 +1808,7 @@ class JobWrapper(HasResourceParameters):
                 for fname in self.extra_filenames:
                     try:
                         os.remove(fname)
-                    except EnvironmentError as e:
+                    except OSError as e:
                         if e.errno != errno.ENOENT:
                             raise
                 self.external_output_metadata.cleanup_external_metadata(self.sa_session)
@@ -2102,7 +2102,7 @@ class JobWrapper(HasResourceParameters):
         working_directory = self.working_directory
         container_runtime_path = os.path.join(working_directory, "container_runtime.json")
         if os.path.exists(container_runtime_path):
-            with open(container_runtime_path, "r") as f:
+            with open(container_runtime_path) as f:
                 try:
                     container_runtime = json.load(f)
                 except ValueError:
@@ -2274,7 +2274,7 @@ class TaskWrapper(JobWrapper):
 
     def __init__(self, task, queue):
         self.task_id = task.id
-        super(TaskWrapper, self).__init__(task.job, queue)
+        super().__init__(task.job, queue)
         if task.prepare_input_files_cmd is not None:
             self.prepare_input_files_cmds = [task.prepare_input_files_cmd]
         else:
@@ -2455,8 +2455,7 @@ class TaskWrapper(JobWrapper):
         return working_directory
 
 
-@six.add_metaclass(ABCMeta)
-class ComputeEnvironment(object):
+class ComputeEnvironment(metaclass=ABCMeta):
     """ Definition of the job as it will be run on the (potentially) remote
     compute server.
     """
@@ -2527,7 +2526,7 @@ class ComputeEnvironment(object):
         """URL to access Galaxy API from for this compute environment."""
 
 
-class SimpleComputeEnvironment(object):
+class SimpleComputeEnvironment:
 
     def config_directory(self):
         return os.path.join(self.working_directory(), "configs")
@@ -2600,7 +2599,7 @@ class SharedComputeEnvironment(SimpleComputeEnvironment):
         return self.job_wrapper.get_destination_configuration("galaxy_infrastructure_url")
 
 
-class NoopQueue(object):
+class NoopQueue:
     """
     Implements the JobQueue / JobStopQueue interface but does nothing
     """

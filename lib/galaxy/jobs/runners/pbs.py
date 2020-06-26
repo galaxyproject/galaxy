@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import logging
 import os
 import time
@@ -103,7 +101,7 @@ class PBSJobRunner(AsynchronousJobRunner):
         self.default_pbs_server     # this is a method with a property decorator, so this causes the default server to be set
 
         # Proceed with general initialization
-        super(PBSJobRunner, self).__init__(app, nworkers)
+        super().__init__(app, nworkers)
         self._init_monitor_thread()
         self._init_worker_threads()
 

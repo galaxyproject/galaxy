@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import logging
 from collections import OrderedDict
 
@@ -32,7 +30,7 @@ ERROR_INVALID_ELEMENTS_SPECIFICATION = "Create called with invalid parameters, m
 ERROR_NO_COLLECTION_TYPE = "Create called without specifying a collection type."
 
 
-class DatasetCollectionManager(object):
+class DatasetCollectionManager:
     """
     Abstraction for interfacing with dataset collections instance - ideally abstracts
     out model and plugin details.

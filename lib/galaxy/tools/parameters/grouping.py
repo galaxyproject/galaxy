@@ -60,7 +60,7 @@ class Group(Dictifiable):
         raise TypeError("Not implemented")
 
     def to_dict(self, trans):
-        group_dict = super(Group, self).to_dict()
+        group_dict = super().to_dict()
         return group_dict
 
 
@@ -131,7 +131,7 @@ class Repeat(Group):
         return rval
 
     def to_dict(self, trans):
-        repeat_dict = super(Repeat, self).to_dict(trans)
+        repeat_dict = super().to_dict(trans)
 
         def input_to_dict(input):
             return input.to_dict(trans)
@@ -185,7 +185,7 @@ class Section(Group):
         return rval
 
     def to_dict(self, trans):
-        section_dict = super(Section, self).to_dict(trans)
+        section_dict = super().to_dict(trans)
 
         def input_to_dict(input):
             return input.to_dict(trans)
@@ -349,7 +349,7 @@ class UploadDataset(Group):
         def get_url_paste_urls_or_filename(group_incoming, override_name=None, override_info=None):
             url_paste_file = group_incoming.get('url_paste', None)
             if url_paste_file is not None:
-                url_paste = open(url_paste_file, 'r').read()
+                url_paste = open(url_paste_file).read()
 
                 def start_of_url(content):
                     start_of_url_paste = content.lstrip()[0:8].lower()
@@ -500,7 +500,7 @@ class UploadDataset(Group):
             if ftp_files is not None:
                 # Normalize input paths to ensure utf-8 encoding is normal form c.
                 # This allows for comparison when the filesystem uses a different encoding than the browser.
-                ftp_files = [unicodedata.normalize('NFC', f) for f in ftp_files if isinstance(f, text_type)]
+                ftp_files = [unicodedata.normalize('NFC', f) for f in ftp_files if isinstance(f, str)]
                 if trans.user is None:
                     log.warning('Anonymous user passed values in ftp_files: %s' % ftp_files)
                     ftp_files = []
@@ -513,7 +513,7 @@ class UploadDataset(Group):
                             path = relpath(os.path.join(dirpath, filename), user_ftp_dir)
                             if not os.path.islink(os.path.join(dirpath, filename)):
                                 # Normalize filesystem paths
-                                if isinstance(path, text_type):
+                                if isinstance(path, str):
                                     valid_files.append(unicodedata.normalize('NFC', path))
                                 else:
                                     valid_files.append(path)
@@ -703,7 +703,7 @@ class Conditional(Group):
         return rval
 
     def to_dict(self, trans):
-        cond_dict = super(Conditional, self).to_dict(trans)
+        cond_dict = super().to_dict(trans)
 
         def nested_to_dict(input):
             return input.to_dict(trans)
@@ -721,7 +721,7 @@ class ConditionalWhen(Dictifiable):
         self.inputs = None
 
     def to_dict(self, trans):
-        when_dict = super(ConditionalWhen, self).to_dict()
+        when_dict = super().to_dict()
 
         def input_to_dict(input):
             return input.to_dict(trans)

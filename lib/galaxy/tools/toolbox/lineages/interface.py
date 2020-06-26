@@ -6,7 +6,7 @@ from sortedcontainers import SortedSet
 from galaxy.util.tool_version import remove_version_from_guid
 
 
-class ToolLineageVersion(object):
+class ToolLineageVersion:
     """ Represents a single tool in a lineage. If lineage is based
     around GUIDs that somehow encode the version (either using GUID
     or a simple tool id and a version). """
@@ -31,7 +31,7 @@ class ToolLineageVersion(object):
         )
 
 
-class ToolLineage(object):
+class ToolLineage:
     """ Simple tool's loaded directly from file system with lineage
     determined solely by PEP 440 versioning scheme.
     """

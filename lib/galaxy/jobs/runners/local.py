@@ -51,7 +51,7 @@ class LocalJobRunner(BaseJobRunner):
         if not ('TMPDIR' in self._environ or 'TEMP' in self._environ or 'TMP' in self._environ):
             self._environ['TEMP'] = os.path.abspath(tempfile.gettempdir())
 
-        super(LocalJobRunner, self).__init__(app, nworkers)
+        super().__init__(app, nworkers)
         self._init_worker_threads()
 
     def __command_line(self, job_wrapper):
@@ -177,7 +177,7 @@ class LocalJobRunner(BaseJobRunner):
         job_wrapper.change_state(model.Job.states.ERROR, info="This job was killed when Galaxy was restarted.  Please retry the job.")
 
     def shutdown(self):
-        super(LocalJobRunner, self).shutdown()
+        super().shutdown()
         with self._proc_lock:
             for proc in self._procs:
                 proc.terminated_by_shutdown = True

@@ -245,7 +245,7 @@ def _add_uploaded_dataset(name, value, extra, input_parameter, required_files):
 
 
 def _split_if_str(value):
-    split = isinstance(value, string_types)
+    split = isinstance(value, str)
     if split:
         value = value.split(",")
     return value
@@ -282,7 +282,7 @@ def require_file(name, value, extra, required_files):
     return value
 
 
-class ParamContext(object):
+class ParamContext:
 
     def __init__(self, name, index=None, parent_context=None):
         self.parent_context = parent_context
@@ -331,7 +331,7 @@ class ParamContext(object):
             return None
 
 
-class RootParamContext(object):
+class RootParamContext:
 
     def __init__(self):
         pass

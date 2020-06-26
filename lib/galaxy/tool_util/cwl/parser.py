@@ -3,7 +3,6 @@ workflow language reference implementation library cwltool. These proxies
 adapt cwltool to Galaxy features and abstract the library away from the rest
 of the framework.
 """
-from __future__ import absolute_import
 
 import base64
 import copy
@@ -116,7 +115,7 @@ def workflow_proxy(workflow_path, strict_cwl_validation=True):
 def load_job_proxy(job_directory, strict_cwl_validation=True):
     ensure_cwltool_available()
     job_objects_path = os.path.join(job_directory, JOB_JSON_FILE)
-    job_objects = json.load(open(job_objects_path, "r"))
+    job_objects = json.load(open(job_objects_path))
     job_inputs = job_objects["job_inputs"]
     output_dict = job_objects["output_dict"]
     # Any reason to retain older tool_path variant of this? Probably not?
@@ -239,8 +238,7 @@ def check_requirements(rec, tool=True):
             check_requirements(d, tool=tool)
 
 
-@six.add_metaclass(ABCMeta)
-class ToolProxy(object):
+class ToolProxy(metaclass=ABCMeta):
 
     def __init__(self, tool, uuid, raw_process_reference=None, tool_path=None):
         self._tool = tool
@@ -424,7 +422,7 @@ class ExpressionToolProxy(CommandLineToolProxy):
     _class = "ExpressionTool"
 
 
-class JobProxy(object):
+class JobProxy:
 
     def __init__(self, tool_proxy, input_dict, output_dict, job_directory):
         self._tool_proxy = tool_proxy
@@ -664,7 +662,7 @@ class JobProxy(object):
         return os.path.join(job_directory, JOB_JSON_FILE)
 
 
-class WorkflowProxy(object):
+class WorkflowProxy:
 
     def __init__(self, workflow, workflow_path=None):
         self._workflow = workflow
@@ -902,7 +900,7 @@ def build_step_proxy(workflow_proxy, step, index):
         return ToolStepProxy(workflow_proxy, step, index)
 
 
-class BaseStepProxy(object):
+class BaseStepProxy:
 
     def __init__(self, workflow_proxy, step, index):
         self._workflow_proxy = workflow_proxy
@@ -960,7 +958,7 @@ class BaseStepProxy(object):
         return inputs_as_dicts
 
 
-class InputProxy(object):
+class InputProxy:
 
     def __init__(self, step_proxy, cwl_input):
         self._cwl_input = cwl_input
@@ -1013,7 +1011,7 @@ class InputProxy(object):
 class ToolStepProxy(BaseStepProxy):
 
     def __init__(self, workflow_proxy, step, index):
-        super(ToolStepProxy, self).__init__(workflow_proxy, step, index)
+        super().__init__(workflow_proxy, step, index)
         self._tool_proxy = None
 
     @property
@@ -1052,7 +1050,7 @@ class ToolStepProxy(BaseStepProxy):
 class SubworkflowStepProxy(BaseStepProxy):
 
     def __init__(self, workflow_proxy, step, index):
-        super(SubworkflowStepProxy, self).__init__(workflow_proxy, step, index)
+        super().__init__(workflow_proxy, step, index)
         self._subworkflow_proxy = None
 
     def to_dict(self, input_connections):
@@ -1097,8 +1095,7 @@ def remove_pickle_problems(obj):
     return obj
 
 
-@six.add_metaclass(ABCMeta)
-class WorkflowToolReference(object):
+class WorkflowToolReference(metaclass=ABCMeta):
     pass
 
 
@@ -1199,7 +1196,7 @@ def _simple_field_to_output(field):
     return output_instance
 
 
-class ConditionalInstance(object):
+class ConditionalInstance:
 
     def __init__(self, name, case, whens):
         self.input_type = INPUT_TYPE.CONDITIONAL
@@ -1221,7 +1218,7 @@ class ConditionalInstance(object):
         return as_dict
 
 
-class SelectInputInstance(object):
+class SelectInputInstance:
 
     def __init__(self, name, label, description, options):
         self.input_type = INPUT_TYPE.SELECT
@@ -1242,7 +1239,7 @@ class SelectInputInstance(object):
         return as_dict
 
 
-class InputInstance(object):
+class InputInstance:
 
     def __init__(self, name, label, description, input_type, array=False, area=False, collection_type=None):
         self.input_type = input_type
@@ -1292,7 +1289,7 @@ OUTPUT_TYPE = Bunch(
 
 
 # TODO: Different subclasses - this is representing different types of things.
-class OutputInstance(object):
+class OutputInstance:
 
     def __init__(self, name, output_data_type, output_type, path=None, fields=None):
         self.name = name

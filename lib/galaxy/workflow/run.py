@@ -114,7 +114,7 @@ def queue_invoke(trans, workflow, workflow_run_config, request_params={}, popula
     return trans.app.workflow_scheduling_manager.queue(workflow_invocation, request_params)
 
 
-class WorkflowInvoker(object):
+class WorkflowInvoker:
 
     def __init__(self, trans, workflow, workflow_run_config, workflow_invocation=None, progress=None):
         self.trans = trans
@@ -270,7 +270,7 @@ class WorkflowInvoker(object):
 STEP_OUTPUT_DELAYED = object()
 
 
-class WorkflowProgress(object):
+class WorkflowProgress:
 
     def __init__(self, workflow_invocation, inputs_by_step_id, module_injector, param_map, jobs_per_scheduling_iteration=-1):
         self.outputs = OrderedDict()
