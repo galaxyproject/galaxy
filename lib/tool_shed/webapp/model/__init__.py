@@ -26,7 +26,7 @@ log = logging.getLogger(__name__)
 WEAK_HG_REPO_CACHE = weakref.WeakKeyDictionary()
 
 
-class APIKeys(object):
+class APIKeys:
     pass
 
 
@@ -75,7 +75,7 @@ class User(Dictifiable):
         self.password = new_secure_hash(text_type=cleartext)
 
 
-class PasswordResetToken(object):
+class PasswordResetToken:
     def __init__(self, user, token=None):
         if token:
             self.token = token
@@ -120,31 +120,31 @@ class Role(Dictifiable):
         return False
 
 
-class UserGroupAssociation(object):
+class UserGroupAssociation:
     def __init__(self, user, group):
         self.user = user
         self.group = group
 
 
-class UserRoleAssociation(object):
+class UserRoleAssociation:
     def __init__(self, user, role):
         self.user = user
         self.role = role
 
 
-class GroupRoleAssociation(object):
+class GroupRoleAssociation:
     def __init__(self, group, role):
         self.group = group
         self.role = role
 
 
-class RepositoryRoleAssociation(object):
+class RepositoryRoleAssociation:
     def __init__(self, repository, role):
         self.repository = repository
         self.role = role
 
 
-class GalaxySession(object):
+class GalaxySession:
 
     def __init__(self,
                  id=None,
@@ -221,7 +221,7 @@ class Repository(Dictifiable):
 
     def allow_push(self):
         hgrc_file = hg_util.get_hgrc_path(self.repo_path())
-        with open(hgrc_file, 'r') as fh:
+        with open(hgrc_file) as fh:
             for line in fh.read().splitlines():
                 if line.startswith('allow_push = '):
                     return line[len('allow_push = '):]
@@ -308,7 +308,7 @@ class Repository(Dictifiable):
         # repo.ui.setconfig('web', 'allow_push', allow_push)
         repo_dir = self.repo_path()
         hgrc_file = hg_util.get_hgrc_path(repo_dir)
-        with open(hgrc_file, 'r') as fh:
+        with open(hgrc_file) as fh:
             lines = fh.readlines()
         with open(hgrc_file, 'w') as fh:
             for line in lines:
@@ -322,7 +322,7 @@ class Repository(Dictifiable):
         return str(repo[repo.changelog.tip()])
 
     def to_dict(self, view='collection', value_mapper=None):
-        rval = super(Repository, self).to_dict(view=view, value_mapper=value_mapper)
+        rval = super().to_dict(view=view, value_mapper=value_mapper)
         if 'user_id' in rval:
             rval['owner'] = self.user.username
         return rval
@@ -400,14 +400,14 @@ class ComponentReview(Dictifiable):
         self.deleted = deleted
 
 
-class Component(object):
+class Component:
 
     def __init__(self, name=None, description=None):
         self.name = name
         self.description = description
 
 
-class ItemRatingAssociation(object):
+class ItemRatingAssociation:
 
     def __init__(self, id=None, user=None, item=None, rating=0, comment=''):
         self.id = id
@@ -437,14 +437,14 @@ class Category(Dictifiable):
         self.deleted = deleted
 
 
-class RepositoryCategoryAssociation(object):
+class RepositoryCategoryAssociation:
 
     def __init__(self, repository=None, category=None):
         self.repository = repository
         self.category = category
 
 
-class Tag(object):
+class Tag:
 
     def __init__(self, id=None, type=None, parent_id=None, name=None):
         self.id = id
@@ -456,7 +456,7 @@ class Tag(object):
         return "Tag(id=%s, type=%i, parent_id=%s, name=%s)" % (self.id, self.type, self.parent_id, self.name)
 
 
-class ItemTagAssociation(object):
+class ItemTagAssociation:
 
     def __init__(self, id=None, user=None, item_id=None, tag_id=None, user_tname=None, value=None):
         self.id = id
@@ -468,7 +468,7 @@ class ItemTagAssociation(object):
         self.user_value = None
 
 
-class PostJobAction(object):
+class PostJobAction:
 
     def __init__(self, action_type, workflow_step, output_name=None, action_arguments=None):
         self.action_type = action_type
@@ -477,15 +477,15 @@ class PostJobAction(object):
         self.workflow_step = workflow_step
 
 
-class StoredWorkflowAnnotationAssociation(object):
+class StoredWorkflowAnnotationAssociation:
     pass
 
 
-class WorkflowStepAnnotationAssociation(object):
+class WorkflowStepAnnotationAssociation:
     pass
 
 
-class Workflow(object):
+class Workflow:
 
     def __init__(self):
         self.user = None
@@ -495,7 +495,7 @@ class Workflow(object):
         self.steps = []
 
 
-class WorkflowStep(object):
+class WorkflowStep:
 
     def __init__(self):
         self.id = None
@@ -526,7 +526,7 @@ class WorkflowStep(object):
         return connections
 
 
-class WorkflowStepInput(object):
+class WorkflowStepInput:
 
     def __init__(self):
         self.id = None
@@ -534,7 +534,7 @@ class WorkflowStepInput(object):
         self.connections = []
 
 
-class WorkflowStepConnection(object):
+class WorkflowStepConnection:
 
     def __init__(self):
         self.output_step = None

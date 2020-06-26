@@ -44,7 +44,7 @@ MINIMAL_TOOL_NO_ID = {
 }
 
 
-class TestsTools(object):
+class TestsTools:
 
     def _build_pair(self, history_id, contents):
         create_response = self.dataset_collection_populator.create_pair_in_history(history_id, contents=contents, direct_upload=True)
@@ -100,7 +100,7 @@ class TestsTools(object):
 class ToolsTestCase(ApiTestCase, TestsTools):
 
     def setUp(self):
-        super(ToolsTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
 
@@ -521,11 +521,11 @@ class ToolsTestCase(ApiTestCase, TestsTools):
                 return dce["object"]["state"]
 
             mixed_states = [get_state(_) for _ in mixed_hdca["elements"]]
-            assert mixed_states == [u"ok", u"error", u"ok", u"error"], mixed_states
+            assert mixed_states == ["ok", "error", "ok", "error"], mixed_states
 
             filtered_hdca = self._run_filter(history_id=history_id, failed_hdca_id=mixed_hdca['id'])
             filtered_states = [get_state(_) for _ in filtered_hdca["elements"]]
-            assert filtered_states == [u"ok", u"ok"], filtered_states
+            assert filtered_states == ["ok", "ok"], filtered_states
 
     @skip_without_tool('__FILTER_FAILED_DATASETS__')
     def test_filter_failed_list_paired(self):
@@ -544,11 +544,11 @@ class ToolsTestCase(ApiTestCase, TestsTools):
                 return dce["object"]["state"]
 
             mixed_states = [get_state(element) for _ in mixed_hdca["elements"] for element in _['object']['elements']]
-            assert mixed_states == [u"ok", u"ok", u"ok", u"error"], mixed_states
+            assert mixed_states == ["ok", "ok", "ok", "error"], mixed_states
 
             filtered_hdca = self._run_filter(history_id=history_id, failed_hdca_id=mixed_hdca['id'])
             filtered_states = [get_state(element) for _ in filtered_hdca["elements"] for element in _['object']['elements']]
-            assert filtered_states == [u"ok", u"ok"], filtered_states
+            assert filtered_states == ["ok", "ok"], filtered_states
 
             # Also try list:list:paired
             llp = self.dataset_collection_populator.create_nested_collection(history_id=history_id,
@@ -557,7 +557,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
 
             filtered_nested_hdca = self._run_filter(history_id=history_id, failed_hdca_id=llp['id'], batch=True)
             filtered_states = [get_state(element) for _ in filtered_nested_hdca["elements"] for parent_element in _['object']['elements'] for element in parent_element['object']['elements']]
-            assert filtered_states == [u"ok", u"ok"], filtered_states
+            assert filtered_states == ["ok", "ok"], filtered_states
 
     def _run_filter(self, history_id, failed_hdca_id, batch=False):
         if batch:
@@ -1420,8 +1420,8 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         self.assertEqual(hdca['elements'][0]['object']['elements'][0]['object']['elements'][0]['element_identifier'], 'forward')
 
     def _bed_list(self, history_id):
-        bed1_contents = open(self.get_filename("1.bed"), "r").read()
-        bed2_contents = open(self.get_filename("2.bed"), "r").read()
+        bed1_contents = open(self.get_filename("1.bed")).read()
+        bed2_contents = open(self.get_filename("2.bed")).read()
         contents = [bed1_contents, bed2_contents]
         hdca = self.dataset_collection_populator.create_list_in_history(history_id, contents=contents).json()
         return hdca["id"]
@@ -2053,7 +2053,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
 
     def _run_implicit_collection_and_reduce(self, history_id, param):
         fasta_path = self.test_data_resolver.get_filename("1.fasta")
-        with open(fasta_path, "r") as fasta_fh:
+        with open(fasta_path) as fasta_fh:
             fasta_content = fasta_fh.read()
             response = self.dataset_collection_populator.upload_collection(history_id, "list", elements=[
                 {

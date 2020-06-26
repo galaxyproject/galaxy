@@ -5,7 +5,7 @@ from ._framework import ApiTestCase
 class TestProvenance(ApiTestCase):
 
     def setUp(self):
-        super(TestProvenance, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
     def test_show_prov(self):

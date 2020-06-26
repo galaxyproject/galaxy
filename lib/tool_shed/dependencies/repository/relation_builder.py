@@ -12,7 +12,7 @@ from tool_shed.util import (
 log = logging.getLogger(__name__)
 
 
-class RelationBuilder(object):
+class RelationBuilder:
 
     def __init__(self, app, repository, repository_metadata, tool_shed_url):
         self.all_repository_dependencies = {}

@@ -3,7 +3,6 @@
 
 Launch this script by running ``run_tests.sh -t`` from GALAXY_ROOT.
 """
-from __future__ import absolute_import, print_function
 
 import os
 import string

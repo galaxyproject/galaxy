@@ -2,7 +2,6 @@
 Migration script to add the includes_datatypes, has_repository_dependencies, includes_tools, includes_tool_dependencies and includes_workflows
 columns to the repository_metadata table.
 """
-from __future__ import print_function
 
 import logging
 import sys

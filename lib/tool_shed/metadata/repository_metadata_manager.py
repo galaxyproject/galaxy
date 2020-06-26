@@ -21,7 +21,7 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                  shed_config_dict=None, relative_install_dir=None, repository_files_dir=None,
                  resetting_all_metadata_on_repository=False, updating_installed_repository=False,
                  persist=False, metadata_dict=None):
-        super(RepositoryMetadataManager, self).__init__(app, repository, changeset_revision,
+        super().__init__(app, repository, changeset_revision,
                                                         repository_clone_url, shed_config_dict,
                                                         relative_install_dir, repository_files_dir,
                                                         resetting_all_metadata_on_repository,
@@ -893,7 +893,7 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
         return message, status
 
     def set_repository(self, repository):
-        super(RepositoryMetadataManager, self).set_repository(repository)
+        super().set_repository(repository)
         self.repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed(self.user, repository)
 
     def set_repository_metadata(self, host, content_alert_str='', **kwd):

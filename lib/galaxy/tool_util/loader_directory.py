@@ -171,7 +171,7 @@ def looks_like_xml(path, regex=TOOL_REGEX):
        checkers.is_zip(full_path)):
         return False
 
-    with open(path, "r", encoding='utf-8') as f:
+    with open(path, encoding='utf-8') as f:
         try:
             start_contents = f.read(5 * 1024)
         except UnicodeDecodeError:

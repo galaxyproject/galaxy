@@ -489,7 +489,7 @@ def wait_for_http_server(host, port, sleep_amount=0.1, sleep_tries=150):
             response = conn.getresponse()
             if response.status == 200:
                 break
-        except socket.error as e:
+        except OSError as e:
             if e.errno not in [61, 111]:
                 raise
         time.sleep(sleep_amount)
@@ -523,7 +523,7 @@ def serve_webapp(webapp, port=None, host=None):
         try:
             server = httpserver.serve(webapp, host=host, port=port, start_loop=False)
             break
-        except socket.error as e:
+        except OSError as e:
             if e.errno == 98:
                 continue
             raise
@@ -614,7 +614,7 @@ def build_shed_app(simple_kwargs):
     return app
 
 
-class classproperty(object):
+class classproperty:
 
     def __init__(self, f):
         self.f = f
@@ -662,7 +662,7 @@ def set_and_wait_for_http_target(prefix, host, port, sleep_amount=0.1, sleep_tri
     wait_for_http_server(host, port, sleep_amount=sleep_amount, sleep_tries=sleep_tries)
 
 
-class ServerWrapper(object):
+class ServerWrapper:
 
     def __init__(self, name, host, port):
         self.name = name
@@ -680,7 +680,7 @@ class ServerWrapper(object):
 class PasteServerWrapper(ServerWrapper):
 
     def __init__(self, app, server, name, host, port):
-        super(PasteServerWrapper, self).__init__(name, host, port)
+        super().__init__(name, host, port)
         self._app = app
         self._server = server
 
@@ -703,7 +703,7 @@ class PasteServerWrapper(ServerWrapper):
 class UwsgiServerWrapper(ServerWrapper):
 
     def __init__(self, p, name, host, port):
-        super(UwsgiServerWrapper, self).__init__(name, host, port)
+        super().__init__(name, host, port)
         self._p = p
         self._r = None
         self._t = threading.Thread(target=self.wait)
@@ -754,7 +754,7 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
     if enable_realtime_mapping:
         # Avoid YAML.dump configuration since uwsgi doesn't like real YAML :( -
         # though maybe it would work?
-        with open(yaml_config_path, "r") as f:
+        with open(yaml_config_path) as f:
             old_contents = f.read()
         with open(yaml_config_path, "w") as f:
             test_port = str(port) if port else r"[0-9]+"
@@ -835,7 +835,7 @@ def launch_server(app, webapp_factory, kwargs, prefix=DEFAULT_CONFIG_PREFIX, con
     )
 
 
-class TestDriver(object):
+class TestDriver:
     """Responsible for the life-cycle of a Galaxy-style functional test.
 
     Sets up servers, configures tests, runs nose, and tears things

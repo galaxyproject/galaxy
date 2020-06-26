@@ -27,7 +27,7 @@ TEST_KEYS_FOR_ADMIN_ONLY = [
 class ConfigurationApiTestCase(ApiTestCase):
 
     def setUp(self):
-        super(ConfigurationApiTestCase, self).setUp()
+        super().setUp()
         self.library_populator = LibraryPopulator(self.galaxy_interactor)
 
     def test_normal_user_configuration(self):

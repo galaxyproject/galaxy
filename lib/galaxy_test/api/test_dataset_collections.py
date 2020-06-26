@@ -10,7 +10,7 @@ from ._framework import ApiTestCase
 class DatasetCollectionApiTestCase(ApiTestCase):
 
     def setUp(self):
-        super(DatasetCollectionApiTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
         self.history_id = self.dataset_populator.new_history()

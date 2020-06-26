@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 compliance_log = logging.getLogger('COMPLIANCE')
 
 
-class Admin(object):
+class Admin:
     # Override these
     user_list_grid = None
     role_list_grid = None

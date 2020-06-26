@@ -5,7 +5,7 @@ from galaxy.util.bunch import Bunch
 log = logging.getLogger(__name__)
 
 
-class RepositoryGridFilterManager(object):
+class RepositoryGridFilterManager:
     """Provides filtered views of the many Tool SHed repository grids."""
 
     filters = Bunch(CERTIFIED_LEVEL_ONE='certified_level_one',

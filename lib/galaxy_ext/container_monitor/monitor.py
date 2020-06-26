@@ -33,7 +33,7 @@ def main():
         # on Pulsar and in tool working directory instead of job directory
         os.chdir("..")
 
-    with open("configs/container_config.json", "r") as f:
+    with open("configs/container_config.json") as f:
         container_config = json.load(f)
 
     container_type = container_config["container_type"]

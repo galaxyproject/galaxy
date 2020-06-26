@@ -21,7 +21,7 @@ from galaxy_test.base.interactor import TestCaseGalaxyInteractor as BaseInteract
 from .testcase import FunctionalTestCase
 
 
-class UsesApiTestCaseMixin(object):
+class UsesApiTestCaseMixin:
 
     def tearDown(self):
         if os.environ.get('GALAXY_TEST_EXTERNAL') is None:
@@ -114,7 +114,7 @@ class UsesApiTestCaseMixin(object):
 class ApiTestCase(FunctionalTestCase, UsesApiTestCaseMixin):
 
     def setUp(self):
-        super(ApiTestCase, self).setUp()
+        super().setUp()
         self._setup_interactor()
 
 
@@ -126,7 +126,7 @@ class ApiTestInteractor(BaseInteractor):
     def __init__(self, test_case):
         admin = getattr(test_case, "require_admin_user", False)
         test_user = TEST_USER if not admin else ADMIN_TEST_USER
-        super(ApiTestInteractor, self).__init__(test_case, test_user=test_user)
+        super().__init__(test_case, test_user=test_user)
 
     # This variant the lower level get and post methods are meant to be used
     # directly to test API - instead of relying on higher-level constructs for

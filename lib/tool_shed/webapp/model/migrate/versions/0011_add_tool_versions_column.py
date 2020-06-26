@@ -1,7 +1,6 @@
 """
 Migration script to add the tool_versions column to the repository_metadata table.
 """
-from __future__ import print_function
 
 import datetime
 import logging

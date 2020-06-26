@@ -1,6 +1,4 @@
 """Basis for Selenium test framework."""
-from __future__ import absolute_import
-from __future__ import print_function
 
 import datetime
 import json
@@ -167,7 +165,7 @@ def selenium_test(f):
 retry_assertion_during_transitions = partial(retry_during_transitions, exception_check=lambda e: isinstance(e, AssertionError))
 
 
-class TestSnapshot(object):
+class TestSnapshot:
 
     def __init__(self, driver, index, description):
         self.screenshot_binary = driver.get_screenshot_as_png()
@@ -400,7 +398,7 @@ class TestWithSeleniumMixin(NavigatesGalaxy, UsesApiTestCaseMixin):
 class SeleniumTestCase(FunctionalTestCase, TestWithSeleniumMixin):
 
     def setUp(self):
-        super(SeleniumTestCase, self).setUp()
+        super().setUp()
         self.setup_selenium()
 
     def tearDown(self):
@@ -411,7 +409,7 @@ class SeleniumTestCase(FunctionalTestCase, TestWithSeleniumMixin):
             exception = e
 
         try:
-            super(SeleniumTestCase, self).tearDown()
+            super().tearDown()
         except Exception as e:
             exception = e
 
@@ -450,7 +448,7 @@ class SharedStateSeleniumTestCase(SeleniumTestCase):
         """Override this to setup shared data for tests that gets initialized only once."""
 
 
-class UsesHistoryItemAssertions(object):
+class UsesHistoryItemAssertions:
 
     def assert_item_peek_includes(self, hid, expected):
         item_body = self.history_panel_item_component(hid=hid)
@@ -489,7 +487,7 @@ def default_web_host_for_selenium_tests():
         try:
             dev_ip = get_ip_address('docker0')
             return dev_ip
-        except IOError:
+        except OSError:
             return DEFAULT_WEB_HOST
     else:
         return DEFAULT_WEB_HOST
@@ -543,7 +541,7 @@ def get_remote_driver():
     )
 
 
-class SeleniumSessionGetPostMixin(object):
+class SeleniumSessionGetPostMixin:
     """Mixin for adapting Galaxy testing populators helpers to Selenium session backed bioblend."""
 
     def _get(self, route, data={}):

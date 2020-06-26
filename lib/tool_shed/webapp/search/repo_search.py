@@ -12,8 +12,7 @@ from whoosh.query import And, Every, Term
 from galaxy import exceptions
 from galaxy.exceptions import ObjectNotFound
 
-if sys.version_info > (3,):
-    long = int
+long = int
 
 log = logging.getLogger(__name__)
 
@@ -62,7 +61,7 @@ class RepoWeighting(scoring.BM25F):
         return final_score
 
 
-class RepoSearch(object):
+class RepoSearch:
 
     def search(self, trans, search_term, page, page_size, boosts):
         """

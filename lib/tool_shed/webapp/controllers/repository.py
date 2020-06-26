@@ -744,7 +744,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             opened_file = open(docker_file_path, "w")
             opened_file.write(docker_image_string)
             opened_file.close()
-            opened_file = open(docker_file_path, "r")
+            opened_file = open(docker_file_path)
             # Make sure the file is removed from disk after the contents have been downloaded.
             os.unlink(docker_file_path)
             docker_file_path, docker_file_name = os.path.split(docker_file_path)

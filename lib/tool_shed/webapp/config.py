@@ -35,7 +35,7 @@ class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         return AppSchema(TOOLSHED_CONFIG_SCHEMA_PATH, TOOLSHED_APP_NAME)
 
     def __init__(self, **kwargs):
-        super(ToolShedAppConfiguration, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self._process_config(kwargs)
 
     @property

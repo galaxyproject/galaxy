@@ -1,7 +1,6 @@
 """
 Migration script to add the repository_review, component_review and component tables and the Repository Reviewer group and role.
 """
-from __future__ import print_function
 
 import datetime
 import logging

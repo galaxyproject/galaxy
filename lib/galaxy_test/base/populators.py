@@ -167,7 +167,7 @@ def _raise_skip_if(check, *args):
 
 # Deprecated mixin, use dataset populator instead.
 # TODO: Rework existing tests to target DatasetPopulator in a setup method instead.
-class TestsDatasets(object):
+class TestsDatasets:
 
     def _new_dataset(self, history_id, content='TestData123', **kwds):
         return DatasetPopulator(self.galaxy_interactor).new_dataset(history_id, content=content, **kwds)
@@ -185,7 +185,7 @@ class TestsDatasets(object):
         return DatasetPopulator(self.galaxy_interactor).run_tool_payload(tool_id, inputs, history_id, **kwds)
 
 
-class BaseDatasetPopulator(object):
+class BaseDatasetPopulator:
     """ Abstract description of API operations optimized for testing
     Galaxy - implementations must implement _get, _post and _delete.
     """
@@ -725,7 +725,7 @@ class DatasetPopulator(BaseDatasetPopulator):
         return wait_on_state(lambda: self._get("histories/{}/contents/{}".format(history_id, dataset_id)), desc="dataset state", assert_ok=assert_ok, timeout=timeout)
 
 
-class BaseWorkflowPopulator(object):
+class BaseWorkflowPopulator:
 
     def load_workflow(self, name, content=workflow_str, add_pja=False):
         workflow = json.loads(content)
@@ -985,7 +985,7 @@ class WorkflowPopulator(BaseWorkflowPopulator, ImporterGalaxyInterface):
         return upload_response
 
 
-class LibraryPopulator(object):
+class LibraryPopulator:
 
     def __init__(self, galaxy_interactor):
         self.galaxy_interactor = galaxy_interactor
@@ -1116,7 +1116,7 @@ class LibraryPopulator(object):
         return history_id, library, destination
 
 
-class BaseDatasetCollectionPopulator(object):
+class BaseDatasetCollectionPopulator:
 
     def create_list_from_pairs(self, history_id, pairs, name="Dataset Collection from pairs"):
         return self.create_nested_collection(history_id=history_id,
@@ -1482,7 +1482,7 @@ def wait_on_state(state_func, desc="state", skip_states=None, assert_ok=False, t
         raise TimeoutAssertionError("{} Current response containing state [{}].".format(e, response.json()))
 
 
-class GiPostGetMixin(object):
+class GiPostGetMixin:
     """Mixin for adapting Galaxy testing populators helpers to bioblend."""
 
     @property
@@ -1579,4 +1579,4 @@ def wait_on(function, desc, timeout=DEFAULT_TIMEOUT):
 class TimeoutAssertionError(AssertionError):
 
     def __init__(self, message):
-        super(TimeoutAssertionError, self).__init__(message)
+        super().__init__(message)

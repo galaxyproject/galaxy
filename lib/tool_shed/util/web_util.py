@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from markupsafe import escape as raw_escape
 from six import text_type
 
@@ -15,7 +14,7 @@ def escape(string):
 
     >>> assert escape(u"A <b>cómplǐcḁtëd strĩñg</b>") == u'A <b>cómplǐcḁtëd strĩñg</b>'
     """
-    escaped = text_type(raw_escape(string))
+    escaped = str(raw_escape(string))
     # Unescape few selected tags.
     for key, value in ALLOWED_MAP.items():
         escaped = escaped.replace(value, key)

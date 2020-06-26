@@ -217,7 +217,7 @@ class _BlastDb(Data):
         msg = ""
         try:
             # Try to use any text recorded in the dummy index file:
-            with open(data.file_name, "rU", encoding='utf-8') as handle:
+            with open(data.file_name, encoding='utf-8') as handle:
                 msg = handle.read().strip()
         except Exception:
             pass

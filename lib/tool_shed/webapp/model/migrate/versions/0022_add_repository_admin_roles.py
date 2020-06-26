@@ -3,7 +3,6 @@ Migration script to create the repository_role_association table, insert name-sp
 repository administrative roles into the role table and associate each repository and
 owner with the appropriate name-spaced role.
 """
-from __future__ import print_function
 
 import datetime
 import logging

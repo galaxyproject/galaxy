@@ -16,7 +16,7 @@ new_hgweb_config_template = """
 """
 
 
-class HgWebConfigManager(object):
+class HgWebConfigManager:
     def __init__(self):
         self.hgweb_config_dir = None
         self.in_memory_config = None

@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import functools
 import operator
 from collections import namedtuple
@@ -12,7 +10,7 @@ from .test_workflows import BaseWorkflowsApiTestCase
 class WorkflowExtractionApiTestCase(BaseWorkflowsApiTestCase):
 
     def setUp(self):
-        super(WorkflowExtractionApiTestCase, self).setUp()
+        super().setUp()
         self.history_id = self.dataset_populator.new_history()
 
     @skip_without_tool("cat1")

@@ -93,7 +93,7 @@ class WebhooksRegistry:
         # single file
         try:
             script_file = os.path.join(webhook_dir, 'script.js')
-            with open(script_file, 'r', encoding='utf-8') as fh:
+            with open(script_file, encoding='utf-8') as fh:
                 webhook.script = fh.read()
         except OSError:
             pass

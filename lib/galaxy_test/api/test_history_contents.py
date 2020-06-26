@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import json
 
 from requests import delete, put
@@ -18,7 +16,7 @@ from ._framework import ApiTestCase
 class HistoryContentsApiTestCase(ApiTestCase, TestsDatasets):
 
     def setUp(self):
-        super(HistoryContentsApiTestCase, self).setUp()
+        super().setUp()
         self.history_id = self._new_history()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
@@ -193,7 +191,7 @@ class HistoryContentsApiTestCase(ApiTestCase, TestsDatasets):
         update_response = self._raw_update(hda1["id"], dict(name="Updated Name"))
         assert self.__show(hda1).json()["name"] == "Updated Name"
 
-        unicode_name = u'ржевский сапоги'
+        unicode_name = 'ржевский сапоги'
         update_response = self._raw_update(hda1["id"], dict(name=unicode_name))
         updated_hda = self.__show(hda1).json()
         assert updated_hda["name"] == unicode_name, updated_hda

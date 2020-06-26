@@ -9,7 +9,7 @@ from galaxy.util.bunch import Bunch
 log = logging.getLogger(__name__)
 
 
-class Action(object):
+class Action:
 
     def __init__(self, action, description, model):
         self.action = action
@@ -17,7 +17,7 @@ class Action(object):
         self.model = model
 
 
-class RBACAgent(object):
+class RBACAgent:
     """Handle Galaxy Tool Shed security"""
     permitted_actions = Bunch()
 

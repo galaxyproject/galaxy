@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import json
 import time
 from json import dumps
@@ -84,7 +82,7 @@ class BaseWorkflowsApiTestCase(ApiTestCase):
     # TODO: Find a new file for this class.
 
     def setUp(self):
-        super(BaseWorkflowsApiTestCase, self).setUp()
+        super().setUp()
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)

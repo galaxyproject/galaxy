@@ -15,7 +15,7 @@ from tool_shed.util import xml_util
 log = logging.getLogger(__name__)
 
 
-class RepositoryDependencyAttributeHandler(object):
+class RepositoryDependencyAttributeHandler:
 
     def __init__(self, app, unpopulate):
         self.app = app
@@ -175,7 +175,7 @@ class RepositoryDependencyAttributeHandler(object):
         return root_altered, new_root, error_message
 
 
-class ToolDependencyAttributeHandler(object):
+class ToolDependencyAttributeHandler:
 
     def __init__(self, app, unpopulate):
         self.app = app

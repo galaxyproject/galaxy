@@ -18,7 +18,7 @@ from ._framework import ApiTestCase
 class ToolsUploadTestCase(ApiTestCase):
 
     def setUp(self):
-        super(ToolsUploadTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
     def test_upload1_paste(self):

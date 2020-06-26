@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import textwrap
 
 from galaxy_test.base.populators import (
@@ -12,7 +10,7 @@ from ._framework import ApiTestCase
 class DatasetsApiTestCase(ApiTestCase):
 
     def setUp(self):
-        super(DatasetsApiTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
         self.history_id = self.dataset_populator.new_history()

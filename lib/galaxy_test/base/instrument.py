@@ -38,7 +38,7 @@ class StructuredTestDataPlugin(Plugin):
     name = 'structureddata'
 
     def options(self, parser, env):
-        super(StructuredTestDataPlugin, self).options(parser, env=env)
+        super().options(parser, env=env)
         parser.add_option(
             '--structured-data-file', action='store',
             dest='structured_data_file', metavar="FILE",
@@ -48,7 +48,7 @@ class StructuredTestDataPlugin(Plugin):
                   "[NOSE_STRUCTURED_DATA]"))
 
     def configure(self, options, conf):
-        super(StructuredTestDataPlugin, self).configure(options, conf)
+        super().configure(options, conf)
         self.conf = conf
         if not self.enabled:
             return
