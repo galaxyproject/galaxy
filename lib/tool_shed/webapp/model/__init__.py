@@ -418,7 +418,6 @@ class ItemRatingAssociation:
 
     def set_item(self, item):
         """ Set association's item. """
-        pass
 
 
 class RepositoryRatingAssociation(ItemRatingAssociation):

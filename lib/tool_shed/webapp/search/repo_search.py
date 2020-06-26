@@ -1,7 +1,6 @@
 """Module for searching the toolshed repositories"""
 import logging
 import re
-import sys
 
 import whoosh.index
 from whoosh import scoring
