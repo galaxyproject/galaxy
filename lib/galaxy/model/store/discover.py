@@ -123,9 +123,11 @@ class ModelPersistenceContext(object):
         if created_from_basename is not None:
             primary_data.created_from_basename = created_from_basename
 
-        self.flush()
-
         if tag_list:
+            # If we have a tag we need a primary id, so need to flush here
+            # TODO: eliminate creating tag associations within create dataset
+            # We can do this incrementally by not passing in a tag list.
+            self.flush()
             self.tag_handler.add_tags_from_list(self.job.user, primary_data, tag_list)
 
         # Move data from temp location to dataset location
@@ -196,7 +198,7 @@ class ModelPersistenceContext(object):
         if name is None:
             name = "unnamed output"
 
-        element_datasets = []
+        element_datasets = {'element_identifiers': [], 'datasets': [], 'tag_lists': []}
         for filename, discovered_file in filenames.items():
             create_dataset_timer = ExecutionTimer()
             fields_match = discovered_file.match
@@ -215,7 +217,6 @@ class ModelPersistenceContext(object):
             dataset_name = fields_match.name or designation
 
             link_data = discovered_file.match.link_data
-            tag_list = discovered_file.match.tag_list
 
             sources = discovered_file.match.sources
             hashes = discovered_file.match.hashes
@@ -230,7 +231,6 @@ class ModelPersistenceContext(object):
                 filename=filename,
                 metadata_source_name=metadata_source_name,
                 link_data=link_data,
-                tag_list=tag_list,
                 sources=sources,
                 hashes=hashes,
                 created_from_basename=created_from_basename,
@@ -244,10 +244,13 @@ class ModelPersistenceContext(object):
                 name,
                 create_dataset_timer,
             )
-            element_datasets.append((element_identifiers, dataset))
+            element_datasets['element_identifiers'].append(element_identifiers)
+            element_datasets['datasets'].append(dataset)
+            element_datasets['tag_lists'].append(discovered_file.match.tag_list)
 
         add_datasets_timer = ExecutionTimer()
-        self.add_datasets_to_history([d for (ei, d) in element_datasets])
+        self.add_datasets_to_history(element_datasets['datasets'])
+        self.add_tags_to_datasets(datasets=element_datasets['datasets'], tag_lists=element_datasets['tag_lists'])
         log.debug(
             "(%s) Add dynamic collection datasets to history for output [%s] %s",
             self.job_id(),
@@ -255,7 +258,7 @@ class ModelPersistenceContext(object):
             add_datasets_timer,
         )
 
-        for (element_identifiers, dataset) in element_datasets:
+        for (element_identifiers, dataset) in zip(element_datasets['element_identifiers'], element_datasets['datasets']):
             current_builder = root_collection_builder
             for element_identifier in element_identifiers[:-1]:
                 current_builder = current_builder.get_level(element_identifier)
@@ -267,6 +270,11 @@ class ModelPersistenceContext(object):
             self.add_output_dataset_association(association_name, dataset)
 
         self.flush()
+
+    def add_tags_to_datasets(self, datasets, tag_lists):
+        tag_session = self.tag_handler.create_tag_handler_session()
+        for dataset, tags in zip(datasets, tag_lists):
+            tag_session.add_tags_from_list(self.job.user, dataset, tags, flush=False)
 
     @abc.abstractproperty
     def tag_handler(self):
