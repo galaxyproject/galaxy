@@ -1219,7 +1219,7 @@ def bytes_to_str(size, unit="YB"):
 
     try:
         return_str = "{:.2f} {}".format(size_changer, units[i])
-    except TypeError:
+    except (ValueError, TypeError):
         return_str = "%s" % (size_changer)
 
     return return_str
