@@ -9,16 +9,15 @@ import tarfile
 import tempfile
 import time
 import types
+from http.cookies import SimpleCookie
 
 import routes
-import six
 import webob.compat
 import webob.exc
 import webob.exc as httpexceptions  # noqa: F401
 # We will use some very basic HTTP/wsgi utilities from the paste library
 from paste.request import get_cookies
 from paste.response import HeaderDict
-from six.moves.http_cookies import SimpleCookie
 
 from galaxy.util import smart_str
 
@@ -334,8 +333,6 @@ def _make_file(self, binary=None):
     # tempfiles.  Necessary for externalizing the upload tool.  It's a little hacky
     # but for performance reasons it's way better to use Paste's tempfile than to
     # create a new one and copy.
-    if six.PY2:
-        return tempfile.NamedTemporaryFile(delete=False)
     if self._binary_file or self.length >= 0:
         return tempfile.NamedTemporaryFile("wb+", delete=False)
     else:
