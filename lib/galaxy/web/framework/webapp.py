@@ -16,7 +16,6 @@ import mako.runtime
 from babel import Locale
 from babel.support import Translations
 from Cheetah.Template import Template
-from six import string_types
 from six.moves.http_cookies import CookieError
 from six.moves.urllib.parse import urlparse
 from sqlalchemy import and_, true

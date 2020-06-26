@@ -8,7 +8,6 @@ import tempfile
 from logging import getLogger
 from os.path import abspath
 
-import six
 from six.moves import cPickle
 
 import galaxy.model

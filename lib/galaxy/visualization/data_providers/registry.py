@@ -1,4 +1,3 @@
-from six import string_types
 
 from galaxy.datatypes.data import Newick, Nexus
 from galaxy.datatypes.interval import (

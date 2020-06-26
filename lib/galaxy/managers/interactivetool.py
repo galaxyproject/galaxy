@@ -2,7 +2,6 @@ import logging
 import sqlite3
 
 
-from six import string_types
 from sqlalchemy import or_
 
 

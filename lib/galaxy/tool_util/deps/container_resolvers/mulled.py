@@ -5,7 +5,6 @@ import logging
 import os
 import subprocess
 
-import six
 
 from galaxy.util import (
     string_as_bool,

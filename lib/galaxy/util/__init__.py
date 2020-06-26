@@ -46,7 +46,6 @@ except ImportError:
     import xml.etree.ElementTree as etree
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
-from six import binary_type, iteritems, PY2, string_types, text_type
 from six.moves import (
     xrange
 )

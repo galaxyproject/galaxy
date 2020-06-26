@@ -4,7 +4,6 @@ Classes related to parameter validation.
 import logging
 import re
 
-from six import string_types
 
 from galaxy import (
     model,

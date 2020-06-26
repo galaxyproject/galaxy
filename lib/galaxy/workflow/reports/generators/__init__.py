@@ -5,7 +5,6 @@ from abc import (
     abstractmethod
 )
 
-import six
 
 from galaxy.managers.markdown_util import (
     internal_galaxy_markdown_to_pdf,

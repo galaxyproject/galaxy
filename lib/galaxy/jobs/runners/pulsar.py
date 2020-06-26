@@ -11,7 +11,6 @@ from time import sleep
 
 import packaging.version
 import pulsar.core
-import six
 import yaml
 from pulsar.client import (
     build_client_manager,

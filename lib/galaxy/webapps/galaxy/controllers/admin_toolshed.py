@@ -3,7 +3,6 @@ import logging
 import os
 from functools import wraps
 
-from six import string_types
 from sqlalchemy import or_
 
 import tool_shed.repository_types.util as rt_util

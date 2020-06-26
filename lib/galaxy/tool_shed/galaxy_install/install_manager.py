@@ -6,7 +6,6 @@ import tempfile
 import traceback
 
 from fabric.api import lcd
-from six import string_types
 from sqlalchemy import or_
 
 from galaxy import exceptions, util

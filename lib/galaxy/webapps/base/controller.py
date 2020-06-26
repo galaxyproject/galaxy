@@ -3,7 +3,6 @@ Contains functionality needed in every web interface
 """
 import logging
 
-from six import string_types
 from sqlalchemy import true
 from webob.exc import (
     HTTPBadRequest,

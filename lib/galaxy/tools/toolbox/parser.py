@@ -5,7 +5,6 @@ Galaxy tool panel.
 """
 from abc import ABCMeta, abstractmethod
 
-import six
 import yaml
 
 from galaxy.util import parse_xml, string_as_bool

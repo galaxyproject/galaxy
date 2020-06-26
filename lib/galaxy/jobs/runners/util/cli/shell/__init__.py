@@ -6,7 +6,6 @@ from abc import (
     abstractmethod
 )
 
-import six
 
 
 class BaseShellExec(metaclass=ABCMeta):

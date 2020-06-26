@@ -11,7 +11,6 @@ from collections import (
 from textwrap import TextWrapper
 
 import requests
-import six
 import yaml
 from boltons.iterutils import remap
 from six import StringIO

@@ -8,7 +8,6 @@ from abc import (
     abstractmethod
 )
 
-import six
 
 from .. import formatting
 

@@ -4,7 +4,6 @@ from collections import OrderedDict
 from json import dumps, loads
 
 from markupsafe import escape
-from six import string_types, text_type
 from sqlalchemy.sql.expression import and_, false, func, null, or_, true
 
 from galaxy.model.item_attrs import get_foreign_key, UsesAnnotations, UsesItemRatings

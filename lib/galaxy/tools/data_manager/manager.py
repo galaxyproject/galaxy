@@ -4,7 +4,6 @@ import logging
 import os
 from collections import OrderedDict
 
-from six import string_types
 
 from galaxy import util
 from galaxy.tools.data import TabularToolDataTable

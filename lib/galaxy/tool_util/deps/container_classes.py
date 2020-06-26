@@ -7,7 +7,6 @@ from abc import (
 from logging import getLogger
 from uuid import uuid4
 
-import six
 
 from galaxy.containers.docker_model import DockerVolume
 from galaxy.util import (

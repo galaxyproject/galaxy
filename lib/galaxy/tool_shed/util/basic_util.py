@@ -5,7 +5,6 @@ import sys
 from string import Template
 
 import markupsafe
-from six import text_type
 
 from galaxy.util import nice_size, unicodify
 

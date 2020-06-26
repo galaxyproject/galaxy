@@ -1,6 +1,5 @@
 from abc import abstractmethod
 
-from six import iteritems
 
 from galaxy.util import bunch
 from galaxy.util.dictifiable import Dictifiable

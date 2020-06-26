@@ -13,7 +13,6 @@ import weakref
 from collections import OrderedDict
 from os.path import abspath
 
-from six import string_types
 from sqlalchemy.orm import object_session
 
 import galaxy.model

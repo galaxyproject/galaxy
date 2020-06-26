@@ -17,7 +17,6 @@ from abc import (
 from collections import namedtuple
 
 import yaml
-from six import string_types, with_metaclass
 from six.moves import shlex_quote
 
 from galaxy.exceptions import ContainerCLIError

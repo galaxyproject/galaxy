@@ -6,7 +6,6 @@ import math
 import random
 import string
 
-from six import iteritems, string_types
 
 from ..util import unicodify
 

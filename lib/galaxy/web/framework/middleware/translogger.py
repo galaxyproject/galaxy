@@ -6,7 +6,6 @@ Middleware for logging requests, using Apache combined log format
 import logging
 import time
 
-from six import string_types
 from six.moves.urllib.parse import quote
 
 

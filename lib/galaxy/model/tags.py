@@ -1,7 +1,6 @@
 import logging
 import re
 
-from six import string_types
 from sqlalchemy.sql import select
 from sqlalchemy.sql.expression import func
 

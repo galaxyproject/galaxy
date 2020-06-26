@@ -1,6 +1,5 @@
 import copy
 
-import six
 
 from galaxy.util import (
     asbool,

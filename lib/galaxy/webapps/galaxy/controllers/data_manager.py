@@ -2,7 +2,6 @@ import logging
 from json import loads
 
 import paste.httpexceptions
-from six import string_types
 
 from galaxy import web
 from galaxy.util import nice_size, unicodify

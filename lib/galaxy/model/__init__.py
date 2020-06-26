@@ -20,7 +20,6 @@ from string import Template
 from uuid import UUID, uuid4
 
 from boltons.iterutils import remap
-from six import string_types
 from social_core.storage import AssociationMixin, CodeMixin, NonceMixin, PartialMixin, UserMixin
 from sqlalchemy import (
     alias,

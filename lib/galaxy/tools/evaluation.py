@@ -3,7 +3,6 @@ import logging
 import os
 import tempfile
 
-from six import string_types
 
 from galaxy import model
 from galaxy.job_execution.setup import ensure_configs_directory

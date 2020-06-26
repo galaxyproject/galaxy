@@ -7,7 +7,6 @@ import logging
 import re
 from collections import OrderedDict
 
-import six
 from markupsafe import escape
 from sqlalchemy import (
     false,

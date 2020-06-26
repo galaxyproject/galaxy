@@ -13,7 +13,6 @@ from collections import (
     OrderedDict
 )
 
-import six
 
 import galaxy.model
 from galaxy import util

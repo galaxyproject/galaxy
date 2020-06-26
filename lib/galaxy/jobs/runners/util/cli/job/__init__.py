@@ -6,7 +6,6 @@ from abc import (
     abstractmethod
 )
 
-import six
 
 
 class BaseJobExec(metaclass=ABCMeta):

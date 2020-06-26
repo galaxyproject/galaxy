@@ -9,7 +9,6 @@ import sys
 import tempfile
 
 import packaging.version
-import six
 from six.moves import shlex_quote
 
 from galaxy.util import (

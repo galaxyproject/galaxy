@@ -4,7 +4,6 @@ and provides autocomplete support.
 """
 import logging
 
-from six import text_type
 from sqlalchemy.sql import select
 from sqlalchemy.sql.expression import and_, func
 

@@ -7,7 +7,6 @@ may change often.
 import json
 import logging
 
-from six import string_types
 
 from galaxy import (
     exceptions,

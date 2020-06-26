@@ -5,7 +5,6 @@ import logging
 import os
 from collections import OrderedDict
 
-import six
 
 from galaxy.util import parse_xml, string_as_bool
 

@@ -4,7 +4,6 @@ Tool Parameter specific sanitizing.
 import logging
 import string
 
-from six import string_types
 
 import galaxy.util
 

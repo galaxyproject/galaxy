@@ -2,7 +2,6 @@ import copy
 import logging
 import re
 
-import six
 from markupsafe import escape
 
 from galaxy import model, util

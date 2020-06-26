@@ -2,7 +2,6 @@
 
 TODO: Refactor BaseController references to similar methods to use this module.
 """
-from six import string_types
 
 from galaxy import exceptions
 from galaxy.util.sanitize_html import sanitize_html

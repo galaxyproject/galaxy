@@ -5,7 +5,6 @@ Created on 15/07/2014
 """
 import abc
 
-import six
 
 
 class AuthProvider(metaclass=abc.ABCMeta):

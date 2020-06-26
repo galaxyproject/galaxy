@@ -7,7 +7,6 @@ from subprocess import (
 from tempfile import TemporaryFile
 from time import sleep
 
-import six
 
 from galaxy.util.bunch import Bunch
 from . import BaseShellExec

@@ -31,7 +31,6 @@ import re
 
 import routes
 import sqlalchemy
-from six import string_types
 
 from galaxy import exceptions
 from galaxy import model

@@ -7,7 +7,6 @@ from abc import (
     abstractmethod
 )
 
-import six
 
 
 def dataset_path_rewrites(dataset_paths):

@@ -5,7 +5,6 @@ import re
 from collections import OrderedDict
 from json import dumps
 
-from six import string_types
 
 from galaxy import model
 from galaxy.exceptions import ItemAccessibilityException

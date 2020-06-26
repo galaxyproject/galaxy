@@ -5,7 +5,6 @@ from abc import (
     abstractproperty,
 )
 
-import six
 
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable

@@ -6,7 +6,6 @@ import json
 import logging
 import os
 
-from six import string_types
 
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.util import safe_makedirs, string_as_bool

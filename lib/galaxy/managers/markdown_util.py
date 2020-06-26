@@ -22,7 +22,6 @@ from collections import OrderedDict
 
 import markdown
 import pkg_resources
-import six
 try:
     import weasyprint
 except Exception:

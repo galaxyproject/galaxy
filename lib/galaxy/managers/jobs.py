@@ -2,7 +2,6 @@ import json
 import logging
 
 from boltons.iterutils import remap
-from six import string_types
 from sqlalchemy import and_, false, func, or_
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql import select

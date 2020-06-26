@@ -7,7 +7,6 @@ from abc import (
     abstractmethod
 )
 
-import six
 
 
 class WorkflowSchedulingPlugin(metaclass=ABCMeta):

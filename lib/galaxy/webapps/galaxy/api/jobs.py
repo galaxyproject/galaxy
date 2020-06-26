@@ -6,7 +6,6 @@ API operations on a jobs.
 
 import logging
 
-from six import string_types
 from sqlalchemy import or_
 
 from galaxy import (

@@ -8,7 +8,6 @@ from abc import (
     abstractproperty,
 )
 
-import six
 
 from galaxy.util.filelock import (
     FileLock,

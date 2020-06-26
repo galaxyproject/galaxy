@@ -6,7 +6,6 @@ from abc import (
     abstractproperty,
 )
 
-import six
 import yaml
 
 from galaxy.util import listify

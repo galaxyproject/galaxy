@@ -9,7 +9,6 @@ import zipfile
 from collections import OrderedDict
 from inspect import isclass
 
-import six
 import webob.exc
 from markupsafe import escape
 

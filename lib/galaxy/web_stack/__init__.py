@@ -14,7 +14,6 @@ except ImportError:
     uwsgi = None
 
 import yaml
-from six import string_types
 
 from galaxy.util import unicodify
 from galaxy.util.facts import get_facts

@@ -4,7 +4,6 @@ import os
 from collections import OrderedDict
 from datetime import datetime, timedelta
 
-import six
 from sqlalchemy import and_, false, or_
 
 from galaxy import (

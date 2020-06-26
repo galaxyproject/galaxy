@@ -36,7 +36,6 @@ try:
 except ImportError:
     getpwuid = None
 
-from six import iteritems, string_types
 
 import galaxy.util
 

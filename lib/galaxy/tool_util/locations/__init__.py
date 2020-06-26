@@ -6,7 +6,6 @@ from abc import (
     abstractproperty,
 )
 
-import six
 
 
 class ToolLocationResolver(metaclass=ABCMeta):

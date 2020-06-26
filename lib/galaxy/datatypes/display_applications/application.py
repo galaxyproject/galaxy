@@ -3,7 +3,6 @@ import logging
 from collections import OrderedDict
 from copy import deepcopy
 
-from six import string_types
 from six.moves.urllib.parse import quote_plus
 
 from galaxy.util import (

@@ -8,7 +8,6 @@ from paste.httpexceptions import (
     HTTPBadRequest,
     HTTPNotFound
 )
-from six import string_types
 from sqlalchemy import (
     and_,
     desc,

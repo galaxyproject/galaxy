@@ -4,7 +4,6 @@ API operations on the contents of a history dataset.
 import logging
 import os
 
-from six import string_types
 
 from galaxy import (
     exceptions as galaxy_exceptions,

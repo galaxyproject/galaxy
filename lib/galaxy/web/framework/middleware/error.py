@@ -13,7 +13,6 @@ import sys
 import traceback
 
 import markupsafe
-import six
 from paste import (
     request,
     wsgilib

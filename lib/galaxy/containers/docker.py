@@ -18,7 +18,6 @@ try:
 except ImportError:
     ConnectionError = None
     ReadTimeout = None
-from six import string_types
 from six.moves import shlex_quote
 
 from galaxy.containers import ContainerInterface

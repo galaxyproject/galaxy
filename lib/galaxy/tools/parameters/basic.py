@@ -8,7 +8,6 @@ import os
 import os.path
 import re
 
-from six import string_types
 from webob.compat import cgi_FieldStorage
 
 import galaxy.model

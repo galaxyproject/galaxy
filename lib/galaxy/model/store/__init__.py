@@ -8,7 +8,6 @@ import tempfile
 from json import dump, dumps, load
 from uuid import uuid4
 
-import six
 from bdbag import bdbag_api as bdb
 from boltons.iterutils import remap
 from sqlalchemy.orm import eagerload_all

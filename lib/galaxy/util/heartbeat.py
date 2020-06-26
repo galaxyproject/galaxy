@@ -4,7 +4,6 @@ import threading
 import time
 import traceback
 
-from six import iteritems
 
 
 def get_current_thread_object_dict():

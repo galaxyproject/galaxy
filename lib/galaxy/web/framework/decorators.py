@@ -4,7 +4,6 @@ from json import loads
 from traceback import format_exc
 
 import paste.httpexceptions
-from six import string_types
 
 from galaxy.exceptions import error_codes, MessageException
 from galaxy.util import (

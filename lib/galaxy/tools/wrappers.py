@@ -3,7 +3,6 @@ import tempfile
 from collections import OrderedDict
 from functools import total_ordering
 
-from six import string_types, text_type
 from six.moves import shlex_quote
 
 from galaxy import exceptions

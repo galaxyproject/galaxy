@@ -2,7 +2,6 @@ import abc
 import itertools
 import re
 
-import six
 
 from galaxy.util import strip_control_characters_nested
 

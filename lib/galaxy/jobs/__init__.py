@@ -21,7 +21,6 @@ from abc import (
 from json import loads
 
 import packaging.version
-import six
 import yaml
 from pulsar.client.staging import COMMAND_VERSION_FILENAME
 

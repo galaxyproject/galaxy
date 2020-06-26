@@ -3,7 +3,6 @@ import os
 
 import paste.httpexceptions
 from markupsafe import escape
-from six import string_types, text_type
 from six.moves.urllib.parse import (
     quote_plus,
     unquote_plus

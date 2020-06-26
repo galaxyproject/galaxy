@@ -5,7 +5,6 @@ from abc import (
     abstractproperty,
 )
 
-import six
 from selenium.webdriver.common.by import By
 
 from galaxy.util.bunch import Bunch

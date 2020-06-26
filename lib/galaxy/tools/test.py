@@ -2,7 +2,6 @@ import logging
 import os
 import os.path
 
-from six import string_types
 
 import galaxy.tools.parameters.basic
 import galaxy.tools.parameters.grouping

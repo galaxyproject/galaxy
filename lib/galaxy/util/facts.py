@@ -3,7 +3,6 @@
 import socket
 from collections import MutableMapping
 
-from six import string_types
 
 
 class Facts(MutableMapping):

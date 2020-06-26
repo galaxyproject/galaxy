@@ -8,7 +8,6 @@ from itertools import chain
 from sys import getsizeof
 
 import numpy
-import six
 import sqlalchemy
 from sqlalchemy.ext.mutable import Mutable
 from sqlalchemy.types import (

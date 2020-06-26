@@ -9,7 +9,6 @@ from functools import partial
 from itertools import product, starmap
 
 import yaml
-from six import iteritems, string_types
 from six.moves.configparser import ConfigParser
 
 from galaxy.exceptions import InvalidFileFormatError

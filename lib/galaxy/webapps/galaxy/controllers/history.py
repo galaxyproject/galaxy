@@ -2,7 +2,6 @@ import logging
 from collections import OrderedDict
 
 from markupsafe import escape
-from six import string_types
 from sqlalchemy import (
     and_,
     false,

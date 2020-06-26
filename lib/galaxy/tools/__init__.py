@@ -20,7 +20,6 @@ except ImportError:
 import packaging.version
 import webob.exc
 from mako.template import Template
-from six import itervalues, string_types
 from six.moves.urllib.parse import unquote_plus
 from webob.compat import cgi_FieldStorage
 

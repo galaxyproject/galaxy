@@ -10,7 +10,6 @@ Base class(es) for all DataProviders.
 import logging
 from collections import deque
 
-import six
 
 from . import exceptions
 

@@ -10,7 +10,6 @@ from gxformat2 import (
     ImportOptions,
     python_to_workflow,
 )
-from six import string_types
 from sqlalchemy import and_
 from sqlalchemy.orm import joinedload, subqueryload
 

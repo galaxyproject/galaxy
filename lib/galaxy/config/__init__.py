@@ -22,7 +22,6 @@ from datetime import timedelta
 import yaml
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
-from six import string_types
 from six.moves import configparser
 
 from galaxy.config.schema import AppSchema

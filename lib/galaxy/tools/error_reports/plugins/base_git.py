@@ -10,7 +10,6 @@ from abc import (
 )
 
 import requests
-import six
 if sys.version_info[0] < 3:
     import urllib as urllib
     import urlparse as urlparse

@@ -6,7 +6,6 @@ from abc import (
     abstractmethod
 )
 
-import six
 
 log = logging.getLogger(__name__)
 

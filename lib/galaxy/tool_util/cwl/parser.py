@@ -14,7 +14,6 @@ from abc import ABCMeta, abstractmethod
 from collections import OrderedDict
 from uuid import uuid4
 
-import six
 
 from galaxy.exceptions import MessageException
 from galaxy.util import (

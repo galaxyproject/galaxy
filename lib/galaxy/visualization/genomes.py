@@ -4,7 +4,6 @@ import re
 import sys
 from json import loads
 
-import six
 from bx.seq.twobit import TwoBitFile
 
 from galaxy.util.bunch import Bunch

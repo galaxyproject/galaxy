@@ -4,7 +4,6 @@ Mixins for transaction-like objects.
 import string
 from json import dumps
 
-from six import text_type
 
 from galaxy.exceptions import UserActivationRequiredException
 from galaxy.util import bunch

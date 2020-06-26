@@ -2,7 +2,6 @@ import logging
 import os
 import stat
 
-from six import string_types
 
 log = logging.getLogger(__name__)
 

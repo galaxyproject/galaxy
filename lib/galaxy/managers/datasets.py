@@ -5,7 +5,6 @@ import glob
 import logging
 import os
 
-from six import string_types
 
 import galaxy.datatypes.metadata
 from galaxy import (

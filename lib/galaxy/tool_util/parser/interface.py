@@ -4,7 +4,6 @@ from abc import (
     abstractmethod
 )
 
-import six
 
 from .util import _parse_name
 
