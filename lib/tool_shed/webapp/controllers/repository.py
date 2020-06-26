@@ -61,7 +61,7 @@ def get_mercurial_default_options_dict(command):
         possible = possible[0]
     if len(possible) != 1:
         raise Exception('unable to find mercurial command "%s"' % command)
-    return dict((r[1].replace(b'-', b'_'), r[2]) for r in next(iter(possible.values()))[1][1])
+    return {r[1].replace(b'-', b'_'): r[2] for r in next(iter(possible.values()))[1][1]}
 
 
 class RepositoryController(BaseUIController, ratings_util.ItemRatings):

@@ -3,7 +3,7 @@ from markupsafe import escape as raw_escape
 from six import text_type
 
 ALLOWED_ELEMENTS = ["<b>", "</b>", "<br/>"]
-ALLOWED_MAP = dict((x, raw_escape(x)) for x in ALLOWED_ELEMENTS)
+ALLOWED_MAP = {x: raw_escape(x) for x in ALLOWED_ELEMENTS}
 
 
 def escape(string):

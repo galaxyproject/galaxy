@@ -487,7 +487,7 @@ test_data:
             other_id = other_import_response.json()["id"]
             imported_workflow = self._show_workflow(other_id)
             assert imported_workflow["annotation"] == "simple workflow"
-            step_annotations = set(step["annotation"] for step in imported_workflow["steps"].values())
+            step_annotations = {step["annotation"] for step in imported_workflow["steps"].values()}
             assert "input1 description" in step_annotations
 
     def test_import_subworkflows(self):
@@ -3321,7 +3321,7 @@ steps:
       input1: the_pause
 """, round_trip_format_conversion=True)
         downloaded_workflow = self._download_workflow(workflow_id)
-        uuid_dict = dict((int(index), step["uuid"]) for index, step in downloaded_workflow["steps"].items())
+        uuid_dict = {int(index): step["uuid"] for index, step in downloaded_workflow["steps"].items()}
         with self.dataset_populator.test_history() as history_id:
             hda = self.dataset_populator.new_dataset(history_id, content="1 2 3")
             self.dataset_populator.wait_for_history(history_id)

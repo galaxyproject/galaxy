@@ -615,7 +615,7 @@ class BaseDatasetPopulator(object):
 
     def import_history_and_wait_for_name(self, import_data, history_name):
         def history_names():
-            return dict((h["name"], h) for h in self.get_histories())
+            return {h["name"]: h for h in self.get_histories()}
 
         import_name = "imported from archive: %s" % history_name
         assert import_name not in history_names()
