@@ -1,4 +1,3 @@
-
 from galaxy.datatypes.data import Newick, Nexus
 from galaxy.datatypes.interval import (
     Bed,
