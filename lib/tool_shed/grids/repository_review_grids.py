@@ -299,7 +299,7 @@ class RepositoryReviewsByUserGrid(grids.Grid):
                                                         review.changeset_revision,
                                                         include_date=True,
                                                         include_hash=False)
-            rval += '?id=%s">%s</a>' % (encoded_review_id, revision_label)
+            rval += '?id={}">{}</a>'.format(encoded_review_id, revision_label)
             return rval
 
     class RatingColumn(grids.TextColumn):

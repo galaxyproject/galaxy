@@ -91,7 +91,7 @@ class BaseWorkflowsApiTestCase(ApiTestCase):
 
     def _assert_user_has_workflow_with_name(self, name):
         names = self._workflow_names()
-        assert name in names, "No workflows with name %s in users workflows <%s>" % (name, names)
+        assert name in names, "No workflows with name {} in users workflows <{}>".format(name, names)
 
     def _workflow_names(self):
         index_response = self._get("workflows")
@@ -164,7 +164,7 @@ class BaseWorkflowsApiTestCase(ApiTestCase):
         return workflow_inputs
 
     def _invocation_details(self, workflow_id, invocation_id, **kwds):
-        invocation_details_response = self._get("workflows/%s/usage/%s" % (workflow_id, invocation_id), data=kwds)
+        invocation_details_response = self._get("workflows/{}/usage/{}".format(workflow_id, invocation_id), data=kwds)
         self._assert_status_code_is(invocation_details_response, 200)
         invocation_details = invocation_details_response.json()
         return invocation_details
@@ -1431,7 +1431,7 @@ steps:
 """, test_data={"input1": "hello world"}, history_id=history_id)
             workflow_id = summary.workflow_id
             invocation_id = summary.invocation_id
-            invocation_response = self._get("workflows/%s/invocations/%s" % (workflow_id, invocation_id))
+            invocation_response = self._get("workflows/{}/invocations/{}".format(workflow_id, invocation_id))
             self._assert_status_code_is(invocation_response, 200)
             invocation = invocation_response.json()
             self._assert_has_keys(invocation , "id", "outputs", "output_collections")
@@ -1468,7 +1468,7 @@ input1:
 """, history_id=history_id, round_trip_format_conversion=True)
             workflow_id = summary.workflow_id
             invocation_id = summary.invocation_id
-            invocation_response = self._get("workflows/%s/invocations/%s" % (workflow_id, invocation_id))
+            invocation_response = self._get("workflows/{}/invocations/{}".format(workflow_id, invocation_id))
             self._assert_status_code_is(invocation_response, 200)
             invocation = invocation_response.json()
             self._assert_has_keys(invocation , "id", "outputs", "output_collections")
@@ -1498,7 +1498,7 @@ steps: []
 """, test_data={"input1": "hello world", "text_input": {"value": "A text variable", "type": "raw"}}, history_id=history_id)
             workflow_id = summary.workflow_id
             invocation_id = summary.invocation_id
-            invocation_response = self._get("workflows/%s/invocations/%s" % (workflow_id, invocation_id))
+            invocation_response = self._get("workflows/{}/invocations/{}".format(workflow_id, invocation_id))
             self._assert_status_code_is(invocation_response, 200)
             invocation = invocation_response.json()
             self._assert_has_keys(invocation , "id", "outputs", "output_collections")
@@ -1539,7 +1539,7 @@ input1:
 """, history_id=history_id)
             workflow_id = summary.workflow_id
             invocation_id = summary.invocation_id
-            invocation_response = self._get("workflows/%s/invocations/%s" % (workflow_id, invocation_id))
+            invocation_response = self._get("workflows/{}/invocations/{}".format(workflow_id, invocation_id))
             self._assert_status_code_is(invocation_response, 200)
             invocation = invocation_response.json()
             self._assert_has_keys(invocation , "id", "outputs", "output_collections")
@@ -1581,7 +1581,7 @@ text_input:
 """, history_id=history_id)
             workflow_id = summary.workflow_id
             invocation_id = summary.invocation_id
-            invocation_response = self._get("workflows/%s/invocations/%s" % (workflow_id, invocation_id))
+            invocation_response = self._get("workflows/{}/invocations/{}".format(workflow_id, invocation_id))
             self._assert_status_code_is(invocation_response, 200)
             invocation = invocation_response.json()
             self._assert_has_keys(invocation , "id", "outputs", "output_collections")
@@ -1597,7 +1597,7 @@ text_input:
 
             self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
 
-            jobs_summary_response = self._get("workflows/%s/invocations/%s/jobs_summary" % (workflow_id, invocation_id))
+            jobs_summary_response = self._get("workflows/{}/invocations/{}/jobs_summary".format(workflow_id, invocation_id))
             self._assert_status_code_is(jobs_summary_response, 200)
             jobs_summary = jobs_summary_response.json()
             assert 'states' in jobs_summary
@@ -1607,7 +1607,7 @@ text_input:
             assert invocation_states['ok'] == 2, jobs_summary
             assert jobs_summary['model'] == 'WorkflowInvocation', jobs_summary
 
-            jobs_summary_response = self._get("workflows/%s/invocations/%s/step_jobs_summary" % (workflow_id, invocation_id))
+            jobs_summary_response = self._get("workflows/{}/invocations/{}/step_jobs_summary".format(workflow_id, invocation_id))
             self._assert_status_code_is(jobs_summary_response, 200)
             jobs_summary = jobs_summary_response.json()
             assert len(jobs_summary) == 1
@@ -1636,9 +1636,9 @@ outer_input:
             summary = self._run_jobs(WORKFLOW_NESTED_SIMPLE, test_data=test_data, history_id=history_id)
             workflow_id = summary.workflow_id
             invocation_id = summary.invocation_id
-            invocation_response = self._get("workflows/%s/invocations/%s" % (workflow_id, invocation_id))
+            invocation_response = self._get("workflows/{}/invocations/{}".format(workflow_id, invocation_id))
             self._assert_status_code_is(invocation_response, 200)
-            invocation_response = self._get("workflows/%s/invocations/%s" % (workflow_id, invocation_id))
+            invocation_response = self._get("workflows/{}/invocations/{}".format(workflow_id, invocation_id))
             self._assert_status_code_is(invocation_response, 200)
             invocation = invocation_response.json()
             self._assert_has_keys(invocation , "id", "outputs", "output_collections")
@@ -2075,7 +2075,7 @@ input1:
             # are at the pause step in this case then.
             self._assert_invocation_non_terminal(uploaded_workflow_id, invocation_id)
 
-            invocation_url = self._api_url("workflows/%s/usage/%s" % (uploaded_workflow_id, invocation_id), use_key=True)
+            invocation_url = self._api_url("workflows/{}/usage/{}".format(uploaded_workflow_id, invocation_id), use_key=True)
             delete_response = delete(invocation_url)
             self._assert_status_code_is(delete_response, 200)
 
@@ -2116,7 +2116,7 @@ steps:
                                                                              contents=[("sample1-1", "1 2 3")]).json()
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             deleted_id = hdca1['elements'][DELETED]['object']['id']
-            r = self._delete("histories/%s/contents/%s?purge=%s" % (history_id, deleted_id, purge))
+            r = self._delete("histories/{}/contents/{}?purge={}".format(history_id, deleted_id, purge))
             label_map = {"input1": self._ds_entry(hdca1)}
             workflow_request = dict(
                 history="hist_id=%s" % history_id,
@@ -2439,7 +2439,7 @@ test_data:
             first_wf_output = self._get("datasets/%s" % run_workflow_response['outputs'][0]).json()
             second_wf_output = self._get("datasets/%s" % new_workflow_response['outputs'][0]).json()
             assert first_wf_output['file_name'] == second_wf_output['file_name'], \
-                "first output:\n%s\nsecond output:\n%s" % (first_wf_output, second_wf_output)
+                "first output:\n{}\nsecond output:\n{}".format(first_wf_output, second_wf_output)
 
     @skip_without_tool('cat1')
     def test_nested_workflow_rerun_with_use_cached_job(self):
@@ -3700,7 +3700,7 @@ input:
     def test_only_own_invocations_indexed_and_accessible(self):
         workflow_id, usage = self._run_workflow_once_get_invocation("test_usage")
         with self._different_user():
-            usage_details_response = self._get("workflows/%s/usage/%s" % (workflow_id, usage["id"]))
+            usage_details_response = self._get("workflows/{}/usage/{}".format(workflow_id, usage["id"]))
             self._assert_status_code_is(usage_details_response, 403)
             index_response = self._get("workflows/%s/invocations" % workflow_id)
             self._assert_status_code_is(index_response, 200)
@@ -3752,7 +3752,7 @@ input:
         assert job_id is not None
 
         invocation_tool_step_id = invocation_tool_step["id"]
-        invocation_tool_step_response = self._get("workflows/%s/invocations/%s/steps/%s" % (workflow_id, invocation_id, invocation_tool_step_id))
+        invocation_tool_step_response = self._get("workflows/{}/invocations/{}/steps/{}".format(workflow_id, invocation_id, invocation_tool_step_id))
         self._assert_status_code_is(invocation_tool_step_response, 200)
         self._assert_has_keys(invocation_tool_step_response.json(), "id", "order_index", "job_id")
 
@@ -3842,7 +3842,7 @@ input_c:
             self._assert_status_code_is(run_workflow_response, 200)
             run_workflow_response = run_workflow_response.json()
             invocation_id = run_workflow_response['id']
-            usage_details_response = self._get("workflows/%s/usage/%s" % (other_id, invocation_id))
+            usage_details_response = self._get("workflows/{}/usage/{}".format(other_id, invocation_id))
             self._assert_status_code_is(usage_details_response, 200)
 
     @skip_without_tool("cat1")
@@ -3858,7 +3858,7 @@ input_c:
             self._assert_status_code_is(run_workflow_response, 200)
             run_workflow_response = run_workflow_response.json()
             invocation_id = run_workflow_response['id']
-            usage_details_response = self._get("workflows/%s/usage/%s" % (workflow_id, invocation_id))
+            usage_details_response = self._get("workflows/{}/usage/{}".format(workflow_id, invocation_id))
             self._assert_status_code_is(usage_details_response, 200)
 
     @skip_without_tool("cat1")
@@ -3874,7 +3874,7 @@ input_c:
         run_workflow_response = run_workflow_response.json()
         invocation_id = run_workflow_response['id']
         with self._different_user():
-            usage_details_response = self._get("workflows/%s/usage/%s" % (workflow_id, invocation_id))
+            usage_details_response = self._get("workflows/{}/usage/{}".format(workflow_id, invocation_id))
             self._assert_status_code_is(usage_details_response, 403)
 
     def _invoke_paused_workflow(self, history_id):
@@ -3923,13 +3923,13 @@ input_c:
         return self.workflow_populator.update_workflow(workflow_id, workflow_object)
 
     def _invocation_step_details(self, workflow_id, invocation_id, step_id):
-        invocation_step_response = self._get("workflows/%s/usage/%s/steps/%s" % (workflow_id, invocation_id, step_id))
+        invocation_step_response = self._get("workflows/{}/usage/{}/steps/{}".format(workflow_id, invocation_id, step_id))
         self._assert_status_code_is(invocation_step_response, 200)
         invocation_step_details = invocation_step_response.json()
         return invocation_step_details
 
     def _execute_invocation_step_action(self, workflow_id, invocation_id, step_id, action):
-        raw_url = "workflows/%s/usage/%s/steps/%s" % (workflow_id, invocation_id, step_id)
+        raw_url = "workflows/{}/usage/{}/steps/{}".format(workflow_id, invocation_id, step_id)
         url = self._api_url(raw_url, use_key=True)
         payload = dumps(dict(action=action))
         action_response = put(url, data=payload)
@@ -3994,7 +3994,7 @@ input_c:
         contents_url = "histories/%s/contents" % history
         history_contents = self.__history_contents(history)
         hda_summary = next(hc for hc in history_contents if hc["hid"] == hid)
-        hda_info_response = self._get("%s/%s" % (contents_url, hda_summary["id"]))
+        hda_info_response = self._get("{}/{}".format(contents_url, hda_summary["id"]))
         self._assert_status_code_is(hda_info_response, 200)
         self.assertEqual(hda_info_response.json()["metadata_data_lines"], lines)
 

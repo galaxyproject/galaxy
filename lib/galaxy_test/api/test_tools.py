@@ -811,7 +811,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         private_element_id = first_element_dataset_id(private_output_response.json()["output_collections"][0])
 
         def _dataset_accessible(dataset_id):
-            contents_response = self._get("histories/%s/contents/%s" % (history_id, dataset_id)).json()
+            contents_response = self._get("histories/{}/contents/{}".format(history_id, dataset_id)).json()
             return "name" in contents_response
 
         with self._different_user():
@@ -1416,7 +1416,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         self.assertEqual(implicit_collections[0]['collection_type'], 'list:list:paired')
         self.assertEqual(implicit_collections[0]['elements'][0]['object']['element_count'], None)
         self.dataset_populator.wait_for_job(create["jobs"][0]["id"], assert_ok=True)
-        hdca = self._get("histories/%s/contents/dataset_collections/%s" % (history_id, implicit_collections[0]['id'])).json()
+        hdca = self._get("histories/{}/contents/dataset_collections/{}".format(history_id, implicit_collections[0]['id'])).json()
         self.assertEqual(hdca['elements'][0]['object']['elements'][0]['object']['elements'][0]['element_identifier'], 'forward')
 
     def _bed_list(self, history_id):

@@ -211,7 +211,7 @@ class Repository(Dictifiable):
 
     @property
     def admin_role(self):
-        admin_role_name = '%s_%s_admin' % (str(self.name), str(self.user.username))
+        admin_role_name = '{}_{}_admin'.format(str(self.name), str(self.user.username))
         for rra in self.roles:
             role = rra.role
             if str(role.name) == admin_role_name:
@@ -293,7 +293,7 @@ class Repository(Dictifiable):
     def revision(self):
         repo = self.hg_repo
         tip_ctx = repo[repo.changelog.tip()]
-        return "%s:%s" % (str(tip_ctx.rev()), str(tip_ctx))
+        return "{}:{}".format(str(tip_ctx.rev()), str(tip_ctx))
 
     def set_allow_push(self, usernames, remove_auth=''):
         allow_push = util.listify(self.allow_push())

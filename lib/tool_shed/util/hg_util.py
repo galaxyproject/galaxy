@@ -29,7 +29,7 @@ def add_changeset(repo_path, path_to_filename_in_archive):
     try:
         subprocess.check_output(['hg', 'add', path_to_filename_in_archive], stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
-        error_message = "Error adding '%s' to repository: %s" % (path_to_filename_in_archive, unicodify(e))
+        error_message = "Error adding '{}' to repository: {}".format(path_to_filename_in_archive, unicodify(e))
         if isinstance(e, subprocess.CalledProcessError):
             error_message += "\nOutput was:\n%s" % unicodify(e.output)
         raise Exception(error_message)
@@ -41,7 +41,7 @@ def archive_repository_revision(app, repository, archive_dir, changeset_revision
     try:
         subprocess.check_output(['hg', 'archive', '-r', changeset_revision, archive_dir], stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
-        error_message = "Error attempting to archive revision '%s' of repository '%s': %s" % (changeset_revision, repository.name, unicodify(e))
+        error_message = "Error attempting to archive revision '{}' of repository '{}': {}".format(changeset_revision, repository.name, unicodify(e))
         if isinstance(e, subprocess.CalledProcessError):
             error_message += "\nOutput was:\n%s" % unicodify(e.output)
         log.exception(error_message)
@@ -52,7 +52,7 @@ def commit_changeset(repo_path, full_path_to_changeset, username, message):
     try:
         subprocess.check_output(['hg', 'commit', '-u', username, '-m', message, full_path_to_changeset], stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
-        error_message = "Error committing '%s' to repository: %s" % (full_path_to_changeset, unicodify(e))
+        error_message = "Error committing '{}' to repository: {}".format(full_path_to_changeset, unicodify(e))
         if isinstance(e, subprocess.CalledProcessError):
             if e.returncode == 1 and 'nothing changed' in unicodify(e.output):
                 return
@@ -162,12 +162,12 @@ def get_rev_label_changeset_revision_from_repository_metadata(app, repository_me
         if include_date:
             changeset_revision_date = get_readable_ctx_date(ctx)
             if include_hash:
-                label = "%s:%s (%s)" % (str(ctx.rev()), changeset_revision, changeset_revision_date)
+                label = "{}:{} ({})".format(str(ctx.rev()), changeset_revision, changeset_revision_date)
             else:
-                label = "%s (%s)" % (str(ctx.rev()), changeset_revision_date)
+                label = "{} ({})".format(str(ctx.rev()), changeset_revision_date)
         else:
             if include_hash:
-                label = "%s:%s" % (str(ctx.rev()), changeset_revision)
+                label = "{}:{}".format(str(ctx.rev()), changeset_revision)
             else:
                 label = "%s" % str(ctx.rev())
     else:
@@ -189,7 +189,7 @@ def get_revision_label_from_ctx(ctx, include_date=True, include_hash=True):
                 (str(ctx.rev()), str(get_readable_ctx_date(ctx)))
     else:
         if include_hash:
-            return '%s:%s' % (str(ctx.rev()), str(ctx))
+            return '{}:{}'.format(str(ctx.rev()), str(ctx))
         else:
             return str(ctx.rev())
 
@@ -217,7 +217,7 @@ def remove_file(repo_path, selected_file, force=True):
     try:
         subprocess.check_output(cmd, stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
-        error_message = "Error removing file '%s': %s" % (selected_file, unicodify(e))
+        error_message = "Error removing file '{}': {}".format(selected_file, unicodify(e))
         if isinstance(e, subprocess.CalledProcessError):
             error_message += "\nOutput was:\n%s" % unicodify(e.output)
         raise Exception(error_message)
@@ -243,7 +243,7 @@ def changeset2rev(repo_path, changeset_revision):
     try:
         rev = subprocess.check_output(['hg', 'id', '-r', changeset_revision, '-n'], stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
-        error_message = "Error looking for changeset '%s': %s" % (changeset_revision, unicodify(e))
+        error_message = "Error looking for changeset '{}': {}".format(changeset_revision, unicodify(e))
         if isinstance(e, subprocess.CalledProcessError):
             error_message += "\nOutput was:\n%s" % unicodify(e.output)
         raise Exception(error_message)

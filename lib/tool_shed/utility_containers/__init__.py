@@ -159,7 +159,7 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
                                                                                          changeset_revision,
                                                                                          prior_installation_required,
                                                                                          only_if_compiling_contained_td)
-                label = "Repository <b>%s</b> revision <b>%s</b> owned by <b>%s</b>" % (name, changeset_revision, owner)
+                label = "Repository <b>{}</b> revision <b>{}</b> owned by <b>{}</b>".format(name, changeset_revision, owner)
                 folder = utility_container_manager.Folder(id=folder_id,
                                                           key=key,
                                                           label=label,
@@ -209,7 +209,7 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
                     version = 'unknown'
                     error = str(e)
                 key = self.generate_tool_dependencies_key(name, version, type)
-                label = "Version <b>%s</b> of the <b>%s</b> <b>%s</b>" % (version, name, type)
+                label = "Version <b>{}</b> of the <b>{}</b> <b>{}</b>".format(version, name, type)
                 folder = utility_container_manager.Folder(id=folder_id,
                                                           key=key,
                                                           label=label,
@@ -357,4 +357,4 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
         return containers_dict
 
     def generate_tool_dependencies_key(self, name, version, type):
-        return '%s%s%s%s%s' % (str(name), container_util.STRSEP, str(version), container_util.STRSEP, str(type))
+        return '{}{}{}{}{}'.format(str(name), container_util.STRSEP, str(version), container_util.STRSEP, str(type))

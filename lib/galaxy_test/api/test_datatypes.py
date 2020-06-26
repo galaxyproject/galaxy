@@ -12,7 +12,7 @@ class DatatypesApiTestCase(ApiTestCase):
     def test_index(self):
         datatypes = self._index_datatypes()
         for common_type in ["tabular", "fasta"]:
-            assert common_type in datatypes, "%s not in %s" % (common_type, datatypes)
+            assert common_type in datatypes, "{} not in {}".format(common_type, datatypes)
 
     def test_index_upload_only(self):
         # fli is not displayed in upload - so only show it if upload_only

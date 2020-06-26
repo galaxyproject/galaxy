@@ -115,7 +115,7 @@ class DatasetsApiTestCase(ApiTestCase):
         """)
         hda1 = self.dataset_populator.new_dataset(self.history_id, content=contents)
         self.dataset_populator.wait_for_history(self.history_id)
-        display_response = self._get("histories/%s/contents/%s/display" % (self.history_id, hda1["id"]), {
+        display_response = self._get("histories/{}/contents/{}/display".format(self.history_id, hda1["id"]), {
             'raw': 'True'
         })
         self._assert_status_code_is(display_response, 200)

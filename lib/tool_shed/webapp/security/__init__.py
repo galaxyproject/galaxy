@@ -52,7 +52,7 @@ class RBACAgent(object):
         return list(self.permitted_actions.__dict__.values())
 
     def get_item_actions(self, action, item):
-        raise Exception('No valid method of retrieving action (%s) for item %s.' % (action, item))
+        raise Exception('No valid method of retrieving action ({}) for item {}.'.format(action, item))
 
     def get_private_user_role(self, user):
         raise Exception("Unimplemented Method")

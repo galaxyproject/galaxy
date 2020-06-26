@@ -471,7 +471,7 @@ class UtilityContainerManager(object):
                         except Exception as e:
                             requirement_name = str(e)
                             requirement_type = 'unknown'
-                        requirements_str += '%s (%s), ' % (requirement_name, requirement_type)
+                        requirements_str += '{} ({}), '.format(requirement_name, requirement_type)
                     requirements_str = requirements_str.rstrip(', ')
                 else:
                     requirements_str = 'none'

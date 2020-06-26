@@ -116,7 +116,7 @@ class ToolShedTestDriver(driver_util.TestDriver):
         self.server_wrappers.append(tool_shed_server_wrapper)
         tool_shed_test_host = tool_shed_server_wrapper.host
         tool_shed_test_port = tool_shed_server_wrapper.port
-        log.info("Functional tests will be run against %s:%s" % (tool_shed_test_host, tool_shed_test_port))
+        log.info("Functional tests will be run against {}:{}".format(tool_shed_test_host, tool_shed_test_port))
 
         # ---- Optionally start up a Galaxy instance ------------------------------------------------------
         if 'TOOL_SHED_TEST_OMIT_GALAXY' not in os.environ:
@@ -165,7 +165,7 @@ class ToolShedTestDriver(driver_util.TestDriver):
                 galaxybuildapp.app_factory,
                 kwargs,
             )
-            log.info("Galaxy tests will be run against %s:%s" % (galaxy_server_wrapper.host, galaxy_server_wrapper.port))
+            log.info("Galaxy tests will be run against {}:{}".format(galaxy_server_wrapper.host, galaxy_server_wrapper.port))
             self.server_wrappers.append(galaxy_server_wrapper)
 
 

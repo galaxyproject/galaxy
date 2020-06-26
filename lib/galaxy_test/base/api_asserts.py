@@ -28,12 +28,12 @@ def _report_status_code_error(response, expected_status_code):
 
 def assert_has_keys(response, *keys):
     for key in keys:
-        assert key in response, "Response [%s] does not contain key [%s]" % (response, key)
+        assert key in response, "Response [{}] does not contain key [{}]".format(response, key)
 
 
 def assert_not_has_keys(response, *keys):
     for key in keys:
-        assert key not in response, "Response [%s] contains invalid key [%s]" % (response, key)
+        assert key not in response, "Response [{}] contains invalid key [{}]".format(response, key)
 
 
 def assert_error_code_is(response, error_code):

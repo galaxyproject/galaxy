@@ -32,7 +32,7 @@ class HistoryContentsApiTestCase(ApiTestCase, TestsDatasets):
 
     def test_make_private_and_public(self):
         hda1 = self._wait_for_new_hda()
-        update_url = "histories/%s/contents/%s/permissions" % (self.history_id, hda1["id"])
+        update_url = "histories/{}/contents/{}/permissions".format(self.history_id, hda1["id"])
 
         role_id = self.dataset_populator.user_private_role_id()
         # Give manage permission to the user.
@@ -69,7 +69,7 @@ class HistoryContentsApiTestCase(ApiTestCase, TestsDatasets):
         hda1 = self._wait_for_new_hda()
         hda_id = hda1["id"]
         if api_endpoint == "history_contents":
-            update_url = "histories/%s/contents/%s/permissions" % (self.history_id, hda_id)
+            update_url = "histories/{}/contents/{}/permissions".format(self.history_id, hda_id)
         else:
             update_url = "datasets/%s/permissions" % hda_id
 
@@ -96,7 +96,7 @@ class HistoryContentsApiTestCase(ApiTestCase, TestsDatasets):
         self._assert_other_user_cannot_access(hda_id)
 
         # But they do for the original user.
-        contents_response = self._get("histories/%s/contents/%s" % (self.history_id, hda_id)).json()
+        contents_response = self._get("histories/{}/contents/{}".format(self.history_id, hda_id)).json()
         assert "name" in contents_response
 
         update_response = self._update_permissions(update_url, payload)
@@ -130,12 +130,12 @@ class HistoryContentsApiTestCase(ApiTestCase, TestsDatasets):
 
     def _assert_other_user_cannot_access(self, history_content_id):
         with self._different_user():
-            contents_response = self._get("histories/%s/contents/%s" % (self.history_id, history_content_id)).json()
+            contents_response = self._get("histories/{}/contents/{}".format(self.history_id, history_content_id)).json()
             assert "name" not in contents_response
 
     def _assert_other_user_can_access(self, history_content_id):
         with self._different_user():
-            contents_response = self._get("histories/%s/contents/%s" % (self.history_id, history_content_id)).json()
+            contents_response = self._get("histories/{}/contents/{}".format(self.history_id, history_content_id)).json()
             assert "name" in contents_response
 
     def test_index_hda_all_details(self):
@@ -146,7 +146,7 @@ class HistoryContentsApiTestCase(ApiTestCase, TestsDatasets):
 
     def test_index_hda_detail_by_id(self):
         hda1 = self._new_dataset(self.history_id)
-        contents_response = self._get("histories/%s/contents?details=%s" % (self.history_id, hda1["id"]))
+        contents_response = self._get("histories/{}/contents?details={}".format(self.history_id, hda1["id"]))
         hda_details = self.__check_for_hda(contents_response, hda1)
         self.__assert_hda_has_full_details(hda_details)
 
@@ -244,7 +244,7 @@ class HistoryContentsApiTestCase(ApiTestCase, TestsDatasets):
     def _raw_update(self, item_id, data, admin=False, history_id=None):
         history_id = history_id or self.history_id
         key_param = "use_admin_key" if admin else "use_key"
-        update_url = self._api_url("histories/%s/contents/%s" % (history_id, item_id), **{key_param: True})
+        update_url = self._api_url("histories/{}/contents/{}".format(history_id, item_id), **{key_param: True})
         update_response = put(update_url, json=data)
         return update_response
 
@@ -263,7 +263,7 @@ class HistoryContentsApiTestCase(ApiTestCase, TestsDatasets):
         hda1 = self._new_dataset(self.history_id)
         self._wait_for_history(self.history_id)
         assert str(self.__show(hda1).json()["deleted"]).lower() == "false"
-        delete_response = self._delete("histories/%s/contents/%s" % (self.history_id, hda1["id"]))
+        delete_response = self._delete("histories/{}/contents/{}".format(self.history_id, hda1["id"]))
         assert delete_response.status_code < 300  # Something in the 200s :).
         assert str(self.__show(hda1).json()["deleted"]).lower() == "true"
 
@@ -273,7 +273,7 @@ class HistoryContentsApiTestCase(ApiTestCase, TestsDatasets):
         assert str(self.__show(hda1).json()["deleted"]).lower() == "false"
         assert str(self.__show(hda1).json()["purged"]).lower() == "false"
         data = {'purge': True}
-        delete_response = self._delete("histories/%s/contents/%s" % (self.history_id, hda1["id"]), data=data)
+        delete_response = self._delete("histories/{}/contents/{}".format(self.history_id, hda1["id"]), data=data)
         assert delete_response.status_code < 300  # Something in the 200s :).
         assert str(self.__show(hda1).json()["deleted"]).lower() == "true"
         assert str(self.__show(hda1).json()["purged"]).lower() == "true"
@@ -341,7 +341,7 @@ class HistoryContentsApiTestCase(ApiTestCase, TestsDatasets):
         assert pre_dataset_count == post_dataset_count
 
         # Test show dataset colleciton.
-        collection_url = "histories/%s/contents/dataset_collections/%s" % (self.history_id, dataset_collection["id"])
+        collection_url = "histories/{}/contents/dataset_collections/{}".format(self.history_id, dataset_collection["id"])
         show_response = self._get(collection_url)
         self._assert_status_code_is(show_response, 200)
         dataset_collection = show_response.json()
@@ -363,7 +363,7 @@ class HistoryContentsApiTestCase(ApiTestCase, TestsDatasets):
         run = self.dataset_populator.run_collection_creates_list(self.history_id, hdca_id)
         collections = run['output_collections']
         collection = collections[0]
-        jobs_summary_url = "histories/%s/contents/dataset_collections/%s/jobs_summary" % (self.history_id, collection["id"])
+        jobs_summary_url = "histories/{}/contents/dataset_collections/{}/jobs_summary".format(self.history_id, collection["id"])
         jobs_summary_response = self._get(jobs_summary_url)
         self._assert_status_code_is(jobs_summary_response, 200)
         jobs_summary = jobs_summary_response.json()
@@ -380,7 +380,7 @@ class HistoryContentsApiTestCase(ApiTestCase, TestsDatasets):
         self.dataset_populator.wait_for_history_jobs(self.history_id)
         collections = run['implicit_collections']
         collection = collections[0]
-        jobs_summary_url = "histories/%s/contents/dataset_collections/%s/jobs_summary" % (self.history_id, collection["id"])
+        jobs_summary_url = "histories/{}/contents/dataset_collections/{}/jobs_summary".format(self.history_id, collection["id"])
         jobs_summary_response = self._get(jobs_summary_url)
         self._assert_status_code_is(jobs_summary_response, 200)
         jobs_summary = jobs_summary_response.json()
@@ -413,7 +413,7 @@ class HistoryContentsApiTestCase(ApiTestCase, TestsDatasets):
         dataset_collection_response = self._post("histories/%s/contents" % self.history_id, payload)
         self._assert_status_code_is(dataset_collection_response, 200)
         hdca = dataset_collection_response.json()
-        update_url = self._api_url("histories/%s/contents/dataset_collections/%s" % (self.history_id, hdca["id"]), use_key=True)
+        update_url = self._api_url("histories/{}/contents/dataset_collections/{}".format(self.history_id, hdca["id"]), use_key=True)
         # Awkward json.dumps required here because of https://trello.com/c/CQwmCeG6
         body = json.dumps(dict(name="newnameforpair"))
         update_response = put(update_url, data=body)
@@ -514,7 +514,7 @@ class HistoryContentsApiTestCase(ApiTestCase, TestsDatasets):
         return dataset_collection
 
     def __show(self, contents):
-        show_response = self._get("histories/%s/contents/%ss/%s" % (self.history_id, contents["history_content_type"], contents["id"]))
+        show_response = self._get("histories/{}/contents/{}s/{}".format(self.history_id, contents["history_content_type"], contents["id"]))
         return show_response
 
     def __count_contents(self, history_id=None, **kwds):

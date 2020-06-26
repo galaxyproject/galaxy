@@ -538,7 +538,7 @@ test_data:
         return sorted(steps, key=operator.itemgetter("id"))
 
     def __job_id(self, history_id, dataset_id):
-        url = "histories/%s/contents/%s/provenance" % (history_id, dataset_id)
+        url = "histories/{}/contents/{}/provenance".format(history_id, dataset_id)
         prov_response = self._get(url, data=dict(follow=False))
         self._assert_status_code_is(prov_response, 200)
         return prov_response.json()["job_id"]
