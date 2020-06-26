@@ -4,7 +4,6 @@ ISA datatype
 See https://github.com/ISA-tools
 """
 
-import io
 import json
 import logging
 import os

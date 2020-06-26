@@ -1,7 +1,6 @@
 """
 This module manages loading of Galaxy webhooks.
 """
-import io
 import logging
 import os
 

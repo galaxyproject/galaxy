@@ -205,7 +205,6 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         if ids is None:
             assert types is None
             # TODO: ...
-            pass
         else:
             ids = [self.app.security.decode_id(i) for i in util.listify(ids)]
             types = util.listify(types)

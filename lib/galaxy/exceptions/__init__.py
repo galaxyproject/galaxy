@@ -41,7 +41,6 @@ class ItemDeletionException(MessageException):
 
 class ObjectInvalid(Exception):
     """ Accessed object store ID is invalid """
-    pass
 
 # Please keep the exceptions ordered by status code
 

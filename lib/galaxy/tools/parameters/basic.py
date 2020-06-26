@@ -2376,11 +2376,9 @@ class RuntimeValue:
     """
     Wrapper to note a value that is not yet set, but will be required at runtime.
     """
-    pass
 
 
 class ConnectedValue(RuntimeValue):
     """
     Wrapper to note a value that is not yet set, but will be inferred from a connection.
     """
-    pass

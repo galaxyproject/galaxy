@@ -13,7 +13,6 @@ class ParsingException(ValueError):
     An exception class for errors that occur during parsing of the visualizations
     framework configuration XML file.
     """
-    pass
 
 
 class VisualizationsConfigParser:

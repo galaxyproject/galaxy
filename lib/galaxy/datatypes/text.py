@@ -188,7 +188,6 @@ class Ipynb(Json):
         """
         Set the number of models in dataset.
         """
-        pass
 
 
 @build_sniff_from_prefix
@@ -294,7 +293,6 @@ class Biom1(Json):
                         setattr(dataset.metadata, m_name, metadata_value)
                     except Exception:
                         log.exception("Something in the metadata detection for biom1 went wrong.")
-                        pass
 
 
 @build_sniff_from_prefix

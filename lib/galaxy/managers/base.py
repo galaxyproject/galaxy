@@ -502,14 +502,12 @@ class HasAModelManager:
 # ==== SERIALIZERS/to_dict,from_dict
 class ModelSerializingError(exceptions.InternalServerError):
     """Thrown when request model values can't be serialized"""
-    pass
 
 
 class ModelDeserializingError(exceptions.ObjectAttributeInvalidException):
     """Thrown when an incoming value isn't usable by the model
     (bad type, out of range, etc.)
     """
-    pass
 
 
 class SkipAttribute(Exception):
@@ -517,7 +515,6 @@ class SkipAttribute(Exception):
     Raise this inside a serializer to prevent the returned dictionary from having
     a the associated key or value for this attribute.
     """
-    pass
 
 
 class ModelSerializer(HasAModelManager):
@@ -730,7 +727,6 @@ class ModelDeserializer(HasAModelManager):
         into attributes to be assigned to the item.
         """
         # to be overridden in subclasses
-        pass
 
     def deserialize(self, item, data, flush=True, **context):
         """

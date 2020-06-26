@@ -30,7 +30,6 @@
 
 Covers the ``blastxml`` format and the BLAST databases.
 """
-import io
 import logging
 import os
 from time import sleep

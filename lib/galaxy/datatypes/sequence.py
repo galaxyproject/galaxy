@@ -8,7 +8,6 @@ import os
 import re
 import string
 import subprocess
-import sys
 from itertools import islice
 
 import bx.align.maf

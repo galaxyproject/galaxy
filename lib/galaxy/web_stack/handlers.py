@@ -30,7 +30,6 @@ HANDLER_ASSIGNMENT_METHODS = namedtuple('JOB_HANDLER_ASSIGNMENT_METHODS', _handl
 class HandlerAssignmentSkip(Exception):
     """Exception for handler assignment methods to raise if the next method should be tried.
     """
-    pass
 
 
 class ConfiguresHandlers:

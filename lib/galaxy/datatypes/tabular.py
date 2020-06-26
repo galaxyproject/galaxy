@@ -10,7 +10,6 @@ import os
 import re
 import shutil
 import subprocess
-import sys
 import tempfile
 from json import dumps
 
@@ -931,7 +930,6 @@ class Eland(Tabular):
                         tiles[line_pieces[3]] = 1
                         barcodes[line_pieces[6]] = 1
                         reads[line_pieces[7]] = 1
-                    pass
                 dataset.metadata.data_lines = i + 1
             dataset.metadata.comment_lines = 0
             dataset.metadata.columns = 21

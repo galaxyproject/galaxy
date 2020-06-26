@@ -345,7 +345,6 @@ def populate_state(request_context, inputs, incoming, state, errors={}, prefix='
                     group_state['__current_case__'] = current_case
                 except Exception:
                     errors[test_param_key] = 'The selected case is unavailable/invalid.'
-                    pass
             group_state[input.test_param.name] = value
         elif input.type == 'section':
             populate_state(request_context, input.inputs, incoming, group_state, errors, prefix=group_prefix, context=context, check=check)

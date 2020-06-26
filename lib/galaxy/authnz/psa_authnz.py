@@ -388,7 +388,6 @@ def allowed_to_disconnect(name=None, user=None, user_storage=None, strategy=None
     :type details: dict
     :return: empty dict
     """
-    pass
 
 
 def disconnect(name=None, user=None, user_storage=None, strategy=None,

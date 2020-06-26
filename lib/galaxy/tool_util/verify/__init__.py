@@ -3,7 +3,6 @@
 import difflib
 import filecmp
 import hashlib
-import io
 import logging
 import os
 import os.path

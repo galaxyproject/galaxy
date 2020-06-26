@@ -47,13 +47,11 @@ def get_commands_from_yaml(yaml_content):
             package_tests['commands'] = meta_yaml['test']['commands']
     except (KeyError, TypeError):
         logging.info('Error reading commands')
-        pass
     try:
         if meta_yaml['test']['imports'] != [None] and meta_yaml['test']['imports'] is not None:
             package_tests['imports'] = meta_yaml['test']['imports']
     except (KeyError, TypeError):
         logging.info('Error reading imports')
-        pass
 
     if len(package_tests.get('commands', []) + package_tests.get('imports', [])) == 0:
         return None
@@ -63,7 +61,6 @@ def get_commands_from_yaml(yaml_content):
         requirements = list(meta_yaml['requirements']['run'])
     except (KeyError, TypeError):
         logging.info('Error reading requirements', exc_info=True)
-        pass
     else:
         for requirement in requirements:
             if requirement.split()[0] == 'perl':

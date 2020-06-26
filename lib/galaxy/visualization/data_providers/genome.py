@@ -447,7 +447,6 @@ class IntervalTabixDataProvider(TabixDataProvider, IntervalDataProvider):
     """
     Provides data from a BED file indexed via tabix.
     """
-    pass
 
 
 #
@@ -547,7 +546,6 @@ class BedTabixDataProvider(TabixDataProvider, BedDataProvider):
     """
     Provides data from a BED file indexed via tabix.
     """
-    pass
 
 
 class RawBedDataProvider(BedDataProvider):

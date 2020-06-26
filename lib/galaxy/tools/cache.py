@@ -140,7 +140,6 @@ class ToolCache:
             log.debug("Exception while checking tools to remove from cache: %s", unicodify(e))
             # If by chance the file is being removed while calculating the hash or modtime
             # we don't want the thread to die.
-            pass
         if removed_tool_ids:
             log.debug("Removed the following tools from cache: %s" % removed_tool_ids)
         return removed_tool_ids

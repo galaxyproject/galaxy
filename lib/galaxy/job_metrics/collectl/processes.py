@@ -4,7 +4,6 @@ statistics for a given pid's process and process ancestors.
 import collections
 import csv
 import logging
-import sys
 import tempfile
 
 from galaxy import util

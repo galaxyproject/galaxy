@@ -6,7 +6,6 @@ import collections
 import inspect
 import logging
 import string
-import sys
 from numbers import Number
 from types import (
     BuiltinFunctionType,

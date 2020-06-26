@@ -277,7 +277,6 @@ class MetadataParameter:
         """
         Throw an exception if the value is invalid.
         """
-        pass
 
     def unwrap(self, form_value):
         """

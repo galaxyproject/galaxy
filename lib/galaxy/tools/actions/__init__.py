@@ -983,7 +983,6 @@ def determine_output_format(output, parameter_context, input_datasets, input_dat
                 ext = get_ext_or_implicit_ext(input_dataset)
             except Exception as e:
                 log.debug("Exception while trying to determine format_source: %s", e)
-                pass
 
     # process change_format tags
     if output.change_format is not None:

@@ -770,4 +770,3 @@ class AttrDict(dict):
     """
     A dictionary that can be assigned to.
     """
-    pass

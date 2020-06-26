@@ -76,7 +76,6 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
     def copy(self, trans, page, user, **kwargs):
         """
         """
-        pass
 
     def create(self, trans, payload):
         user = trans.get_user()

@@ -153,7 +153,6 @@ def validate_by_group_workflow_parameters_mapper(by_group, workflow_resource_par
     except Exception as e:
         log.exception(e)
         valid = False
-        pass
 
     return valid
 

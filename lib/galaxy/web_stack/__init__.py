@@ -76,7 +76,6 @@ class ApplicationStack:
 
         Called once per job_config.
         """
-        pass
 
     def _init_job_handler_assignment_methods(self, job_config, base_pool):
         if not job_config.handler_assignment_methods_configured:

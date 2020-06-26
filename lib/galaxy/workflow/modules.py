@@ -205,11 +205,9 @@ class WorkflowModule:
         If the state is not in sync with the current implementation of the
         module, try to update. Returns a list of messages to be displayed
         """
-        pass
 
     def add_dummy_datasets(self, connections=None, steps=None):
         """ Replace connected inputs with placeholder/dummy values. """
-        pass
 
     def get_config_form(self, step=None):
         """ Serializes input parameters of a module into input dictionaries. """

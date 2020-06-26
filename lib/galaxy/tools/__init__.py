@@ -1853,7 +1853,6 @@ class Tool(Dictifiable):
         """
         Called when a job has failed
         """
-        pass
 
     def discover_outputs(self, out_data, out_collections, tool_provided_metadata, tool_working_directory, job, input_ext, input_dbkey, inp_data=None, final_job_state='ok'):
         """
@@ -2208,7 +2207,6 @@ class Tool(Dictifiable):
                         return 'job_produced_collection_elements'
                 except Exception as exception:
                     log.error(str(exception))
-                    pass
         return False
 
     def _map_source_to_history(self, trans, tool_inputs, params):

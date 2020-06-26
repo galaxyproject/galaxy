@@ -434,7 +434,6 @@ class User(Dictifiable, RepresentById):
             except KeyError:
                 log.warning("invalid configuration of real_system_username")
                 system_user_pwent = None
-                pass
         return system_user_pwent
 
     def all_roles(self):
@@ -2849,7 +2848,6 @@ class DatasetInstance:
         """
         Copies attributes to a new datasets, used for implicit conversions
         """
-        pass
 
     def get_metadata_dataset(self, dataset_ext):
         """
@@ -6212,7 +6210,6 @@ class ItemRatingAssociation:
 
     def set_item(self, item):
         """ Set association's item. """
-        pass
 
 
 class HistoryRatingAssociation(ItemRatingAssociation, RepresentById):

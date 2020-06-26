@@ -1683,7 +1683,6 @@ class ControllerUnavailable(Exception):
     """
     Deprecated: `BaseController` used to be available under the name `Root`
     """
-    pass
 
 # ---- Utility methods -------------------------------------------------------
 

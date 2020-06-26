@@ -5,7 +5,6 @@ File format detector
 import bz2
 import codecs
 import gzip
-import io
 import logging
 import os
 import re

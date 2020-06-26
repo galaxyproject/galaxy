@@ -43,12 +43,10 @@ class Binary(data.Data):
     @staticmethod
     def register_sniffable_binary_format(data_type, ext, type_class):
         """Deprecated method."""
-        pass
 
     @staticmethod
     def register_unsniffable_binary_ext(ext):
         """Deprecated method."""
-        pass
 
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""

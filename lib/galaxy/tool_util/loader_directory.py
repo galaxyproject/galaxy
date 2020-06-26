@@ -1,7 +1,6 @@
 """Utilities for loading and reasoning about unparsed tools in directories."""
 import fnmatch
 import glob
-import io
 import logging
 import os
 import re

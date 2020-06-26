@@ -160,7 +160,6 @@ class Data(metaclass=DataMeta):
 
     def groom_dataset_content(self, file_name):
         """This function is called on an output dataset file if dataset_content_needs_grooming returns True."""
-        pass
 
     def init_meta(self, dataset, copy_from=None):
         # Metadata should be left mostly uninitialized.  Dataset will
@@ -1007,7 +1006,6 @@ class LineCount(Text):
     Dataset contains a single line with a single integer that denotes the
     line count for a related dataset. Used for custom builds.
     """
-    pass
 
 
 class Newick(Text):
