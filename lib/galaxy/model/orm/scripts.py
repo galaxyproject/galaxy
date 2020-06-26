@@ -29,7 +29,7 @@ DATABASE = {
         },
     "tools":
         {
-            'repo': 'galaxy/model/tool_shed_install/migrate',
+            'repo': 'tool_shed/galaxy_install/migrate',
             'default_sqlite_file': 'universe.sqlite',
             'config_override': 'GALAXY_CONFIG_',
         },

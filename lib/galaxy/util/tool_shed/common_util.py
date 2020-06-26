@@ -175,7 +175,7 @@ def get_repository_dependencies(app, tool_shed_url, repository_name, repository_
     params = dict(name=repository_name, owner=repository_owner, changeset_revision=changeset_revision)
     pathspec = ['repository', 'get_repository_dependencies']
     try:
-        raw_text = util.url_get(tool_shed_url, auth=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+        raw_text = util.url_get(tool_shed_url, password_mgr=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
         tool_shed_accessible = True
     except Exception as e:
         tool_shed_accessible = False
@@ -207,7 +207,7 @@ def get_tool_dependencies(app, tool_shed_url, repository_name, repository_owner,
     params = dict(name=repository_name, owner=repository_owner, changeset_revision=changeset_revision)
     pathspec = ['repository', 'get_tool_dependencies']
     try:
-        text = util.url_get(tool_shed_url, auth=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+        text = util.url_get(tool_shed_url, password_mgr=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
         tool_shed_accessible = True
     except Exception as e:
         tool_shed_accessible = False

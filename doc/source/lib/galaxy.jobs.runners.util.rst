@@ -42,14 +42,6 @@ galaxy.jobs.runners.util.kill module
     :undoc-members:
     :show-inheritance:
 
-galaxy.jobs.runners.util.process\_groups module
------------------------------------------------
-
-.. automodule:: galaxy.jobs.runners.util.process_groups
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 galaxy.jobs.runners.util.pykube\_util module
 --------------------------------------------
 

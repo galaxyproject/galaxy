@@ -5,7 +5,6 @@ import time
 from json import dumps
 from uuid import uuid4
 
-import pytest
 from requests import delete, get, put
 
 from galaxy.exceptions import error_codes
@@ -232,7 +231,7 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase):
         self._assert_status_code_is(show_response, 400)
 
     def test_cannot_show_private_workflow(self):
-        workflow_id = self.workflow_populator.simple_workflow("test_not_importable")
+        workflow_id = self.workflow_populator.simple_workflow("test_not_importportable")
         with self._different_user():
             show_response = self._get("workflows/%s" % workflow_id)
             self._assert_status_code_is(show_response, 403)
@@ -240,22 +239,6 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase):
             # Try as anonymous user
             workflows_url = self._api_url("workflows/%s" % workflow_id)
             assert get(workflows_url).status_code == 403
-
-    def test_cannot_download_private_workflow(self):
-        workflow_id = self.workflow_populator.simple_workflow("test_not_downloadable")
-        with self._different_user():
-            with pytest.raises(AssertionError) as excinfo:
-                self._download_workflow(workflow_id)
-            assert '403' in str(excinfo.value)
-        workflows_url = self._api_url("workflows/%s/download" % workflow_id)
-        assert get(workflows_url).status_code == 403
-
-    def test_anon_can_download_public_workflow(self):
-        workflow_id = self.workflow_populator.simple_workflow("test_downloadable", publish=True)
-        workflows_url = self._api_url("workflows/%s/download" % workflow_id)
-        response = get(workflows_url)
-        response.raise_for_status()
-        assert response.json()['a_galaxy_workflow'] == 'true'
 
     def test_delete(self):
         workflow_id = self.workflow_populator.simple_workflow("test_delete")

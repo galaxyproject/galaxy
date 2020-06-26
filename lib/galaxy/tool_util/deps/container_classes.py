@@ -25,6 +25,11 @@ from .requirements import (
 
 log = getLogger(__name__)
 
+import pynvml as nvml
+nvml.nvmlInit()
+gpu_count = nvml.nvmlDeviceGetCount()
+
+
 DOCKER_CONTAINER_TYPE = "docker"
 SINGULARITY_CONTAINER_TYPE = "singularity"
 
@@ -269,6 +274,19 @@ class DockerContainer(Container, HasDockerLikeVolumes):
 
     def containerize_command(self, command):
         env_directives = []
+        if self.tool_info:
+            reqmnts = self.tool_info.requirements
+            for req in reqmnts:
+                if req.type == "compute" and req.name == "gpu":
+                    flag = 1
+            if gpu_count > 0 and flag == 1:
+                log.info("**************************GPU ENABLED DOCKER**********************************************")
+                os.environ['GALAXY_GPU_ENABLED'] = "true"
+            else:
+                log.info("**************************GPU DISABLED DOCKER*********************************************")
+                os.environ['GALAXY_GPU_ENABLED'] = "false"
+
+
         for pass_through_var in self.tool_info.env_pass_through:
             env_directives.append('"%s=$%s"' % (pass_through_var, pass_through_var))
 
@@ -279,6 +297,10 @@ class DockerContainer(Container, HasDockerLikeVolumes):
             if key.startswith("docker_env_"):
                 env = key[len("docker_env_"):]
                 env_directives.append('"%s=%s"' % (env, value))
+
+        env_directives.append("GALAXY_GPU_ENABLED='%s'" % os.environ['GALAXY_GPU_ENABLED'])
+        # for en in env_directives:
+        #     log.debug('HELOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO "%s"' % en)
 
         working_directory = self.job_info.working_directory
         if not working_directory:
@@ -303,6 +325,7 @@ class DockerContainer(Container, HasDockerLikeVolumes):
             cache_command = docker_util.build_docker_cache_command(self.container_id, **docker_host_props)
         else:
             cache_command = self.__cache_from_file_command(cached_image_file, docker_host_props)
+
         run_command = docker_util.build_docker_run_command(
             command,
             self.container_id,
@@ -388,6 +411,19 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
     def containerize_command(self, command):
 
         env = []
+        if self.tool_info:
+            reqmnts = self.tool_info.requirements
+            for req in reqmnts:
+                if req.type == "compute" and req.name == "gpu":
+                    flag = 1
+            if gpu_count > 0 and flag == 1:
+                log.info("**************************GPU ENABLED SINGULARITY**********************************************")
+                os.environ['GALAXY_GPU_ENABLED'] = "true"
+            else:
+                log.info("**************************GPU DISABLED SINGULARITY*********************************************")
+                os.environ['GALAXY_GPU_ENABLED'] = "false"
+
+
         for pass_through_var in self.tool_info.env_pass_through:
             env.append((pass_through_var, "$%s" % pass_through_var))
 
@@ -398,8 +434,12 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
             if key.startswith("singularity_env_"):
                 real_key = key[len("singularity_env_"):]
                 env.append((real_key, value))
+        
+        env.append("GALAXY_GPU_ENABLED='%s'" % os.environ['GALAXY_GPU_ENABLED'])
 
         working_directory = self.job_info.working_directory
+        
+
         if not working_directory:
             raise Exception("Cannot containerize command [%s] without defined working directory." % working_directory)
 

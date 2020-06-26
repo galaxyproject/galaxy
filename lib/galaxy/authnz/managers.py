@@ -4,6 +4,8 @@ import logging
 import os
 import random
 import string
+import xml.etree.ElementTree as ET
+from xml.etree.ElementTree import ParseError
 
 import requests
 from cloudauthz import CloudAuthz
@@ -14,17 +16,9 @@ from six.moves import builtins
 
 from galaxy import exceptions
 from galaxy import model
-from galaxy.util import (
-    asbool,
-    etree,
-    parse_xml,
-    string_as_bool,
-    unicodify,
-)
-from .custos_authnz import (
-    CustosAuthnz,
-    KEYCLOAK_BACKENDS,
-)
+from galaxy.util import asbool, string_as_bool
+from galaxy.util import unicodify
+from .custos_authnz import CustosAuthnz
 from .psa_authnz import (
     BACKENDS_NAME,
     on_the_fly_config,
@@ -35,13 +29,6 @@ from .psa_authnz import (
 
 
 log = logging.getLogger(__name__)
-
-# Note: This if for backward compatibility. Icons can be specified in oidc_backends_config.xml.
-DEFAULT_OIDC_IDP_ICONS = {
-    'google': 'https://developers.google.com/identity/images/btn_google_signin_light_normal_web.png',
-    'elixir': 'https://elixir-europe.org/sites/default/files/images/login-button-orange.png',
-    'okta': 'https://www.okta.com/sites/all/themes/Okta/images/blog/Logos/Okta_Logo_BrightBlue_Medium.png'
-}
 
 
 class AuthnzManager(object):
@@ -62,10 +49,10 @@ class AuthnzManager(object):
     def _parse_oidc_config(self, config_file):
         self.oidc_config = {}
         try:
-            tree = parse_xml(config_file)
+            tree = ET.parse(config_file)
             root = tree.getroot()
             if root.tag != 'OIDC':
-                raise etree.ParseError("The root element in OIDC_Config xml file is expected to be `OIDC`, "
+                raise ParseError("The root element in OIDC_Config xml file is expected to be `OIDC`, "
                                  "found `{}` instead -- unable to continue.".format(root.tag))
             for child in root:
                 if child.tag != 'Setter':
@@ -88,20 +75,17 @@ class AuthnzManager(object):
                 self.oidc_config[child.get('Property')] = func(child.get('Value'))
         except ImportError:
             raise
-        except etree.ParseError as e:
-            raise etree.ParseError("Invalid configuration at `{}`: {} -- unable to continue.".format(config_file, e))
-
-    def _get_idp_icon(self, idp):
-        return self.oidc_backends_config[idp].get('icon') or DEFAULT_OIDC_IDP_ICONS.get(idp)
+        except ParseError as e:
+            raise ParseError("Invalid configuration at `{}`: {} -- unable to continue.".format(config_file, e))
 
     def _parse_oidc_backends_config(self, config_file):
         self.oidc_backends_config = {}
         self.oidc_backends_implementation = {}
         try:
-            tree = parse_xml(config_file)
+            tree = ET.parse(config_file)
             root = tree.getroot()
             if root.tag != 'OIDC':
-                raise etree.ParseError("The root element in OIDC config xml file is expected to be `OIDC`, "
+                raise ParseError("The root element in OIDC config xml file is expected to be `OIDC`, "
                                  "found `{}` instead -- unable to continue.".format(root.tag))
             for child in root:
                 if child.tag != 'provider':
@@ -115,19 +99,19 @@ class AuthnzManager(object):
                 if idp in BACKENDS_NAME:
                     self.oidc_backends_config[idp] = self._parse_idp_config(child)
                     self.oidc_backends_implementation[idp] = 'psa'
-                    self.app.config.oidc[idp] = {'icon': self._get_idp_icon(idp)}
-                elif idp in KEYCLOAK_BACKENDS:
+                    self.app.config.oidc.append(idp)
+                elif idp == 'custos':
                     self.oidc_backends_config[idp] = self._parse_custos_config(child)
                     self.oidc_backends_implementation[idp] = 'custos'
-                    self.app.config.oidc[idp] = {'icon': self._get_idp_icon(idp)}
+                    self.app.config.oidc.append(idp)
                 else:
-                    raise etree.ParseError("Unknown provider specified")
+                    raise ParseError("Unknown provider specified")
             if len(self.oidc_backends_config) == 0:
-                raise etree.ParseError("No valid provider configuration parsed.")
+                raise ParseError("No valid provider configuration parsed.")
         except ImportError:
             raise
-        except etree.ParseError as e:
-            raise etree.ParseError("Invalid configuration at `{}`: {} -- unable to continue.".format(config_file, e))
+        except ParseError as e:
+            raise ParseError("Invalid configuration at `{}`: {} -- unable to continue.".format(config_file, e))
 
     def _parse_idp_config(self, config_xml):
         rtv = {
@@ -141,8 +125,6 @@ class AuthnzManager(object):
             rtv['api_url'] = config_xml.find('api_url').text
         if config_xml.find('url') is not None:
             rtv['url'] = config_xml.find('url').text
-        if config_xml.find('icon') is not None:
-            rtv['icon'] = config_xml.find('icon').text
 
         return rtv
 
@@ -152,15 +134,14 @@ class AuthnzManager(object):
             'client_id': config_xml.find('client_id').text,
             'client_secret': config_xml.find('client_secret').text,
             'redirect_uri': config_xml.find('redirect_uri').text,
+            'realm': config_xml.find('realm').text,
             'enable_idp_logout': asbool(config_xml.findtext('enable_idp_logout', 'false'))}
-        if config_xml.find('credential_url') is not None:
-            rtv['credential_url'] = config_xml.find('credential_url').text
+        if config_xml.find('well_known_oidc_config_uri') is not None:
+            rtv['well_known_oidc_config_uri'] = config_xml.find('well_known_oidc_config_uri').text
         if config_xml.find('idphint') is not None:
             rtv['idphint'] = config_xml.find('idphint').text
         if config_xml.find('ca_bundle') is not None:
             rtv['ca_bundle'] = config_xml.find('ca_bundle').text
-        if config_xml.find('icon') is not None:
-            rtv['icon'] = config_xml.find('icon').text
         return rtv
 
     def _unify_provider_name(self, provider):
@@ -171,16 +152,13 @@ class AuthnzManager(object):
                 return k.lower()
         return None
 
-    def _get_authnz_backend(self, provider, idphint=None):
+    def _get_authnz_backend(self, provider):
         unified_provider_name = self._unify_provider_name(provider)
         if unified_provider_name in self.oidc_backends_config:
             provider = unified_provider_name
             identity_provider_class = self._get_identity_provider_class(self.oidc_backends_implementation[provider])
             try:
-                if provider in KEYCLOAK_BACKENDS:
-                    return True, "", identity_provider_class(unified_provider_name, self.oidc_config, self.oidc_backends_config[unified_provider_name], idphint=idphint)
-                else:
-                    return True, "", identity_provider_class(unified_provider_name, self.oidc_config, self.oidc_backends_config[unified_provider_name])
+                return True, "", identity_provider_class(unified_provider_name, self.oidc_config, self.oidc_backends_config[unified_provider_name])
             except Exception as e:
                 log.exception('An error occurred when loading {}'.format(identity_provider_class.__name__))
                 return False, unicodify(e), None
@@ -260,7 +238,7 @@ class AuthnzManager(object):
             raise exceptions.ItemAccessibilityException(msg)
         return qres
 
-    def authenticate(self, provider, trans, idphint=None):
+    def authenticate(self, provider, trans):
         """
         :type provider: string
         :param provider: set the name of the identity provider to be
@@ -270,26 +248,21 @@ class AuthnzManager(object):
         :return: an identity provider specific authentication redirect URI.
         """
         try:
-            success, message, backend = self._get_authnz_backend(provider, idphint=idphint)
+            success, message, backend = self._get_authnz_backend(provider)
             if success is False:
                 return False, message, None
-            elif provider in KEYCLOAK_BACKENDS:
-                return True, "Redirecting to the `{}` identity provider for authentication".format(provider), backend.authenticate(trans, idphint)
             return True, "Redirecting to the `{}` identity provider for authentication".format(provider), backend.authenticate(trans)
         except Exception:
             msg = 'An error occurred when authenticating a user on `{}` identity provider'.format(provider)
             log.exception(msg)
             return False, msg, None
 
-    def callback(self, provider, state_token, authz_code, trans, login_redirect_url, idphint=None):
+    def callback(self, provider, state_token, authz_code, trans, login_redirect_url):
         try:
-            success, message, backend = self._get_authnz_backend(provider, idphint=idphint)
+            success, message, backend = self._get_authnz_backend(provider)
             if success is False:
                 return False, message, (None, None)
-            return success, message, backend.callback(state_token, authz_code, trans, login_redirect_url)
-        except exceptions.AuthenticationFailed as e:
-            log.exception(e.message)
-            raise exceptions.AuthenticationFailed(e.message)
+            return True, message, backend.callback(state_token, authz_code, trans, login_redirect_url)
         except Exception as e:
             msg = 'The following error occurred when handling callback from `{}` identity provider: ' \
                   '{}'.format(provider, e.message)
@@ -325,9 +298,9 @@ class AuthnzManager(object):
             log.exception(msg)
             return False, msg, None
 
-    def disconnect(self, provider, trans, disconnect_redirect_url=None, idphint=None):
+    def disconnect(self, provider, trans, disconnect_redirect_url=None):
         try:
-            success, message, backend = self._get_authnz_backend(provider, idphint=idphint)
+            success, message, backend = self._get_authnz_backend(provider)
             if success is False:
                 return False, message, None
             return backend.disconnect(provider, trans, disconnect_redirect_url)

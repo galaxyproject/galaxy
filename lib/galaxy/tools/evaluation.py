@@ -4,6 +4,14 @@ import logging
 import os
 import tempfile
 
+####
+import logging
+import pynvml as nvml
+log = logging.getLogger(__name__)
+nvml.nvmlInit()
+gpu_count = nvml.nvmlDeviceGetCount()
+
+
 from six import string_types
 
 from galaxy import model
@@ -141,6 +149,23 @@ class ToolEvaluator(object):
         if self._history:
             param_dict['__history_id__'] = self.app.security.encode_id(self._history.id)
         param_dict['__galaxy_url__'] = self.compute_environment.galaxy_url()
+
+        os.environ['GALAXY_GPU_ENABLED'] = "false"
+        flag = 0
+        if self.tool:
+            reqmnts = self.tool.requirements
+            for req in reqmnts:
+                if req.type == "compute" and req.name == "gpu":
+                    flag = 1
+            if gpu_count > 0 and flag == 1:
+                log.info("**************************GPU ENABLED!!!!!**********************************************")
+                os.environ['GALAXY_GPU_ENABLED'] = "true"
+            else:
+                log.info("**************************GPU DISABLED!!!!!*********************************************")
+                os.environ['GALAXY_GPU_ENABLED'] = "false"
+
+
+        param_dict['__galaxy_gpu_enabled__'] = os.environ['GALAXY_GPU_ENABLED']
         param_dict.update(self.tool.template_macro_params)
         # All parameters go into the param_dict
         param_dict.update(incoming)
@@ -318,7 +343,6 @@ class ToolEvaluator(object):
             wrapper_kwds = dict(
                 datatypes_registry=self.app.datatypes_registry,
                 compute_environment=self.compute_environment,
-                io_type='output',
                 tool=tool,
                 name=name
             )
@@ -607,10 +631,7 @@ class ToolEvaluator(object):
             message = template % content_format
             raise Exception(message)
 
-        return json.dumps(wrapped_json.json_wrap(self.tool.inputs,
-                                                 self.param_dict,
-                                                 self.tool.profile,
-                                                 handle_files=handle_files)), False
+        return json.dumps(wrapped_json.json_wrap(self.tool.inputs, self.param_dict, handle_files=handle_files)), False
 
     def __write_workdir_file(self, config_filename, content, context, is_template=True, strip=False):
         parent_dir = os.path.dirname(config_filename)

@@ -12,12 +12,15 @@ import packaging.version
 import six
 from six.moves import shlex_quote
 
+from galaxy.tool_util.deps.commands import CommandLineException
 from galaxy.util import (
-    commands,
     smart_str,
     unicodify
 )
-from . import installable
+from . import (
+    commands,
+    installable
+)
 
 log = logging.getLogger(__name__)
 
@@ -530,7 +533,7 @@ def best_search_result(conda_target, conda_context, channels_override=None, offl
         hits = json.loads(res).get(conda_target.package, [])[::-1]
         hits = sorted(hits, key=lambda hit: hit['build_number'], reverse=True)
         hits = sorted(hits, key=lambda hit: packaging.version.parse(hit['version']), reverse=True)
-    except commands.CommandLineException:
+    except CommandLineException:
         log.error("Could not execute: '%s'", search_cmd)
         hits = []
 

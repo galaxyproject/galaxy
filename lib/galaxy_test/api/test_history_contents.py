@@ -473,15 +473,14 @@ class HistoryContentsApiTestCase(ApiTestCase, TestsDatasets):
         ld = self.library_populator.new_library_dataset("el1")
         ldda_id = ld["ldda_id"]
         element_identifiers = [{"name": "el1", "src": "ldda", "id": ldda_id}]
-        history_id = self._new_history()
         create_data = dict(
-            history_id=history_id,
+            history_id=self.history_id,
             type="dataset_collection",
             name="Test From Library",
             element_identifiers=json.dumps(element_identifiers),
             collection_type="list",
         )
-        create_response = self._post("histories/%s/contents/dataset_collections" % history_id, create_data)
+        create_response = self._post("histories/%s/contents/dataset_collections" % self.history_id, create_data)
         hdca = self.__check_create_collection_response(create_response)
         elements = hdca["elements"]
         assert len(elements) == 1
@@ -489,7 +488,6 @@ class HistoryContentsApiTestCase(ApiTestCase, TestsDatasets):
         assert hda["hda_ldda"] == "hda"
         assert hda["history_content_type"] == "dataset"
         assert hda["copied_from_ldda_id"] == ldda_id
-        assert hda['history_id'] == history_id
 
     def test_hdca_from_inaccessible_library_datasets(self):
         library, library_dataset = self.library_populator.new_library_dataset_in_private_library("HDCACreateInaccesibleLibrary")
@@ -538,14 +536,3 @@ class HistoryContentsApiTestCase(ApiTestCase, TestsDatasets):
         self._assert_has_keys(query_hda, "id", "name")
         assert input_hda["name"] == query_hda["name"]
         assert input_hda["id"] == query_hda["id"]
-
-    def test_job_state_summary_field(self):
-        create_response = self.dataset_collection_populator.create_pair_in_history(self.history_id, contents=["123", "456"])
-        self._assert_status_code_is(create_response, 200)
-        contents_response = self._get("histories/%s/contents?v=dev&keys=job_state_summary&view=summary" % self.history_id)
-        self._assert_status_code_is(contents_response, 200)
-        contents = contents_response.json()
-        for c in filter(lambda c: c['history_content_type'] == 'dataset_collection', contents):
-            assert isinstance(c, dict)
-            assert 'job_state_summary' in c
-            assert isinstance(c['job_state_summary'], dict)

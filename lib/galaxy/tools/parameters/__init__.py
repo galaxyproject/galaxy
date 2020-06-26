@@ -13,6 +13,10 @@ from galaxy.util.json import safe_loads
 from .basic import DataCollectionToolParameter, DataToolParameter, is_runtime_value, runtime_to_json, SelectToolParameter
 from .grouping import Conditional, Repeat, Section, UploadDataset
 
+import logging
+log = logging.getLogger(__name__)
+
+
 REPLACE_ON_TRUTHY = object()
 
 # Some tools use the code tag and access the code base, expecting certain tool parameters to be available here.
@@ -29,7 +33,7 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     If the callback returns a value, it will be replace the old value.
 
     >>> from collections import OrderedDict
-    >>> from galaxy.util import XML
+    >>> from xml.etree.ElementTree import XML
     >>> from galaxy.util.bunch import Bunch
     >>> from galaxy.tools.parameters.basic import TextToolParameter, BooleanToolParameter
     >>> from galaxy.tools.parameters.grouping import Repeat
@@ -136,7 +140,7 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
             replace = new_value != no_replacement_value
         if replace:
             input_values[input.name] = new_value
-        elif replace_optional_connections and is_runtime_value(value) and hasattr(input, 'value'):
+        elif replace_optional_connections and is_runtime_value(value):
             input_values[input.name] = input.value
 
     def get_current_case(input, input_values):
@@ -192,7 +196,7 @@ def check_param(trans, param, incoming_value, param_values):
     return value, error
 
 
-def params_to_strings(params, param_values, app, nested=False, use_security=False):
+def params_to_strings(params, param_values, app, nested=False):
     """
     Convert a dictionary of parameter values to a dictionary of strings
     suitable for persisting. The `value_to_basic` method of each parameter
@@ -203,7 +207,7 @@ def params_to_strings(params, param_values, app, nested=False, use_security=Fals
     rval = dict()
     for key, value in param_values.items():
         if key in params:
-            value = params[key].value_to_basic(value, app, use_security=use_security)
+            value = params[key].value_to_basic(value, app)
         rval[key] = value if nested else str(dumps(value, sort_keys=True))
     return rval
 
@@ -273,7 +277,7 @@ def populate_state(request_context, inputs, incoming, state, errors={}, prefix='
     """
     Populates nested state dict from incoming parameter values.
     >>> from collections import OrderedDict
-    >>> from galaxy.util import XML
+    >>> from xml.etree.ElementTree import XML
     >>> from galaxy.util.bunch import Bunch
     >>> from galaxy.tools.parameters.basic import TextToolParameter, BooleanToolParameter
     >>> from galaxy.tools.parameters.grouping import Repeat

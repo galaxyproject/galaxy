@@ -2,6 +2,7 @@ import { mount } from "@vue/test-utils";
 import Repositories from "./Repositories";
 import { __RewireAPI__ as rewire } from "./Repositories";
 import Vue from "vue";
+import flushPromises from "flush-promises";
 
 describe("Repositories", () => {
     beforeEach(() => {

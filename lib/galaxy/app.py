@@ -24,10 +24,7 @@ from galaxy.managers.users import UserManager
 from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model.database_heartbeat import DatabaseHeartbeat
 from galaxy.model.tags import GalaxyTagHandler
-from galaxy.queue_worker import (
-    GalaxyQueueWorker,
-    send_local_control_task,
-)
+from galaxy.queue_worker import GalaxyQueueWorker
 from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from galaxy.tool_shed.galaxy_install.update_repository_manager import UpdateRepositoryManager
 from galaxy.tool_util.deps.views import DependencyResolversView
@@ -68,8 +65,6 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
             logging.basicConfig(level=logging.DEBUG)
         log.debug("python path is: %s", ", ".join(sys.path))
         self.name = 'galaxy'
-        # is_webapp will be set to true when building WSGI app
-        self.is_webapp = False
         self.startup_timer = ExecutionTimer()
         self.new_installation = False
         # Read config file and check for errors
@@ -81,7 +76,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         # A lot of postfork initialization depends on the server name, ensure it is set immediately after forking before other postfork functions
         self.application_stack = application_stack_instance(app=self)
         self.application_stack.register_postfork_function(self.application_stack.set_postfork_server_name, self)
-        self.config.reload_sanitize_allowlist(explicit='sanitize_allowlist_file' in kwargs)
+        self.config.reload_sanitize_whitelist(explicit='sanitize_whitelist_file' in kwargs)
         self.amqp_internal_connection_obj = galaxy.queues.connection_from_config(self.config)
         # queue_worker *can* be initialized with a queue, but here we don't
         # want to and we'll allow postfork to bind and start it.
@@ -95,6 +90,10 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
             log.debug('Using "galaxy.ini" config file: %s', config_file)
         check_migrate_tools = self.config.check_migrate_tools
         self._configure_models(check_migrate_databases=self.config.check_migrate_databases, check_migrate_tools=check_migrate_tools, config_file=config_file)
+
+        self.installed_repository_manager = InstalledRepositoryManager(self)
+        self._configure_datatypes_registry(self.installed_repository_manager)
+        galaxy.model.set_datatypes_registry(self.datatypes_registry)
 
         # Security helper
         self._configure_security()
@@ -135,11 +134,6 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self.tool_shed_repository_cache = ToolShedRepositoryCache(self)
         # Watch various config files for immediate reload
         self.watchers = ConfigWatchers(self)
-        self._configure_tool_config_files()
-        self.installed_repository_manager = InstalledRepositoryManager(self)
-        self._configure_datatypes_registry(self.installed_repository_manager)
-        galaxy.model.set_datatypes_registry(self.datatypes_registry)
-
         self._configure_toolbox()
 
         # Load Data Manager
@@ -250,9 +244,6 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
 
         # Start web stack message handling
         self.application_stack.register_postfork_function(self.application_stack.start)
-        self.application_stack.register_postfork_function(self.queue_worker.bind_and_start)
-        # Delay toolbox index until after startup
-        self.application_stack.register_postfork_function(lambda: send_local_control_task(self, 'rebuild_toolbox_search_index'))
 
         self.model.engine.dispose()
 
@@ -327,7 +318,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
 
     def configure_fluent_log(self):
         if self.config.fluent_log:
-            from galaxy.util.custom_logging.fluent_log import FluentTraceLogger
+            from galaxy.util.logging.fluent_log import FluentTraceLogger
             self.trace_logger = FluentTraceLogger('galaxy', self.config.fluent_host, self.config.fluent_port)
         else:
             self.trace_logger = None
@@ -345,7 +336,7 @@ class StatsdStructuredExecutionTimer(StructuredExecutionTimer):
 
     def to_str(self, **kwd):
         self.galaxy_statsd_client.timing(self.timer_id, self.elapsed * 1000., kwd)
-        return super(StatsdStructuredExecutionTimer, self).to_str(**kwd)
+        return super(StatsdStructuredExecutionTimer, self).to_str()
 
 
 class ExecutionTimerFactory(object):

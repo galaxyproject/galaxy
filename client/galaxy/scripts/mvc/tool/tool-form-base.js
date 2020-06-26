@@ -164,7 +164,6 @@ export default FormBase.extend({
                             // here we update the tool version (some tools encode the version also in the id)
                             self.model.set("id", options.id.replace(options.version, this.version));
                             self.model.set("version", this.version);
-                            self.model.get("onchange")();
                             self._update();
                         },
                     });

@@ -1,7 +1,7 @@
-tool\_shed.webapp.api package
-=============================
+galaxy.webapps.tool\_shed.api package
+=====================================
 
-.. automodule:: tool_shed.webapp.api
+.. automodule:: galaxy.webapps.tool_shed.api
     :members:
     :undoc-members:
     :show-inheritance:
@@ -9,66 +9,66 @@ tool\_shed.webapp.api package
 Submodules
 ----------
 
-tool\_shed.webapp.api.authenticate module
------------------------------------------
+galaxy.webapps.tool\_shed.api.authenticate module
+-------------------------------------------------
 
-.. automodule:: tool_shed.webapp.api.authenticate
+.. automodule:: galaxy.webapps.tool_shed.api.authenticate
     :members:
     :undoc-members:
     :show-inheritance:
 
-tool\_shed.webapp.api.categories module
----------------------------------------
+galaxy.webapps.tool\_shed.api.categories module
+-----------------------------------------------
 
-.. automodule:: tool_shed.webapp.api.categories
+.. automodule:: galaxy.webapps.tool_shed.api.categories
     :members:
     :undoc-members:
     :show-inheritance:
 
-tool\_shed.webapp.api.configuration module
-------------------------------------------
-
-.. automodule:: tool_shed.webapp.api.configuration
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-tool\_shed.webapp.api.groups module
------------------------------------
-
-.. automodule:: tool_shed.webapp.api.groups
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-tool\_shed.webapp.api.repositories module
------------------------------------------
-
-.. automodule:: tool_shed.webapp.api.repositories
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-tool\_shed.webapp.api.repository\_revisions module
+galaxy.webapps.tool\_shed.api.configuration module
 --------------------------------------------------
 
-.. automodule:: tool_shed.webapp.api.repository_revisions
+.. automodule:: galaxy.webapps.tool_shed.api.configuration
     :members:
     :undoc-members:
     :show-inheritance:
 
-tool\_shed.webapp.api.tools module
-----------------------------------
+galaxy.webapps.tool\_shed.api.groups module
+-------------------------------------------
 
-.. automodule:: tool_shed.webapp.api.tools
+.. automodule:: galaxy.webapps.tool_shed.api.groups
     :members:
     :undoc-members:
     :show-inheritance:
 
-tool\_shed.webapp.api.users module
-----------------------------------
+galaxy.webapps.tool\_shed.api.repositories module
+-------------------------------------------------
 
-.. automodule:: tool_shed.webapp.api.users
+.. automodule:: galaxy.webapps.tool_shed.api.repositories
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.webapps.tool\_shed.api.repository\_revisions module
+----------------------------------------------------------
+
+.. automodule:: galaxy.webapps.tool_shed.api.repository_revisions
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.webapps.tool\_shed.api.tools module
+------------------------------------------
+
+.. automodule:: galaxy.webapps.tool_shed.api.tools
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.webapps.tool\_shed.api.users module
+------------------------------------------
+
+.. automodule:: galaxy.webapps.tool_shed.api.users
     :members:
     :undoc-members:
     :show-inheritance:

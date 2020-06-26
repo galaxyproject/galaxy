@@ -41,7 +41,12 @@ class InstalledRepositoryManager(object):
         self.context = self.install_model.context
         self.tool_configs = self.app.config.tool_configs
 
-        self._tool_paths = []
+        self.tool_trees = []
+        for tool_config in self.tool_configs:
+            tree, error_message = parse_xml(tool_config)
+            if error_message:
+                log.error(error_message)
+            self.tool_trees.append(tree)
 
         self.installed_repository_dicts = []
         # Keep an in-memory dictionary whose keys are tuples defining tool_shed_repository objects (whose status is 'Installed')
@@ -74,24 +79,6 @@ class InstalledRepositoryManager(object):
         # whose values are a list of tuples defining tool_dependency objects (whose status is 'Installed') that require the key
         # at runtime.  The value defines the entire tool dependency tree.
         self.installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies = {}
-
-    @property
-    def tool_paths(self):
-        """Return all possible tool_path attributes of all tool config files."""
-        if len(self._tool_paths) != len(self.tool_configs):
-            # This could be happen at startup or after the creation of a new shed_tool_conf.xml file
-            # before the installation of the first repository
-            tool_paths = []
-            for tool_config in self.tool_configs:
-                tree, error_message = parse_xml(tool_config)
-                if error_message:
-                    log.error(error_message)
-                else:
-                    tool_path = tree.getroot().get('tool_path')
-                    if tool_path:
-                        tool_paths.append(tool_path)
-            self._tool_paths = tool_paths
-        return self._tool_paths
 
     def activate_repository(self, repository):
         """Activate an installed tool shed repository that has been marked as deactivated."""
@@ -588,16 +575,21 @@ class InstalledRepositoryManager(object):
                 str(repository.installed_changeset_revision))
 
     def get_repository_install_dir(self, tool_shed_repository):
-        for tool_path in self.tool_paths:
-            ts = common_util.remove_port_from_tool_shed_url(str(tool_shed_repository.tool_shed))
-            relative_path = os.path.join(tool_path,
-                                         ts,
-                                         'repos',
-                                         str(tool_shed_repository.owner),
-                                         str(tool_shed_repository.name),
-                                         str(tool_shed_repository.installed_changeset_revision))
-            if os.path.exists(relative_path):
-                return relative_path
+        for tree in self.tool_trees:
+            if tree is None:
+                return None
+            root = tree.getroot()
+            tool_path = root.get('tool_path', None)
+            if tool_path:
+                ts = common_util.remove_port_from_tool_shed_url(str(tool_shed_repository.tool_shed))
+                relative_path = os.path.join(tool_path,
+                                             ts,
+                                             'repos',
+                                             str(tool_shed_repository.owner),
+                                             str(tool_shed_repository.name),
+                                             str(tool_shed_repository.installed_changeset_revision))
+                if os.path.exists(relative_path):
+                    return relative_path
         return None
 
     def get_runtime_dependent_tool_dependency_tuples(self, tool_dependency, status=None):

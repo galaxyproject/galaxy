@@ -1,5 +1,4 @@
-- doc: add_column_basename functions properly on absolute and relative paths
-  rules:
+- rules:
     - type: add_column_basename
       target_column: 0
   initial:
@@ -9,8 +8,7 @@
     data:
       - [/path/to/moo.txt, moo.txt]
       - [moo.txt, moo.txt]
-- doc: add_column_regex works with simple captures by default
-  rules:
+- rules:
     - type: add_column_regex
       target_column: 0
       expression: '(o)+'
@@ -19,8 +17,7 @@
     sources: [1,2]
   final:
     data: [[foo, oo], [cow, o]]
-- doc: add_column_regex works with replacements if supplied
-  rules:
+- rules: 
     - type: add_column_regex
       target_column: 0
       expression: '(o+)'
@@ -30,8 +27,7 @@
     sources: [1,2]
   final:
     data: [["foo", "the os oo"], ["cow", "the os o"]]
-- doc: add_column_regex works with multiple groups when group_count specified
-  rules:
+- rules: 
     - type: add_column_regex
       target_column: 0
       expression: '.*(o)(o)'
@@ -41,8 +37,7 @@
     sources: [1,2]
   final:
     data: [["foo", "o", "o"], ["boo", "o", "o"]]
-- doc: add_column_substr works for keeping a fixed length prefix
-  rules:
+- rules:
     - type: add_column_substr
       target_column: 0
       substr_type: keep_prefix
@@ -52,8 +47,7 @@
     sources: [1, 2]
   final:
     data: [[foo, fo], [cow, co], [ba, ba], [d, d]]
-- doc: add_column_substr works for keeping a fixed length suffix
-  rules:
+- rules:
     - type: add_column_substr
       target_column: 0
       substr_type: keep_suffix
@@ -63,8 +57,7 @@
     sources: [1, 2]
   final:
     data: [[foo, oo], [cow, ow], [ba, ba], [d, d]]
-- doc: add_column_substr works for dropping a fixed length prefix
-  rules:
+- rules:
     - type: add_column_substr
       target_column: 0
       substr_type: drop_prefix
@@ -74,8 +67,7 @@
     sources: [1, 2]
   final:
     data: [[foo, o], [cow, w], [ba, ""], [d, ""]]
-- doc: add_column_substr works for dropping a fixed length suffix
-  rules:
+- rules:
     - type: add_column_substr
       target_column: 0
       substr_type: drop_suffix
@@ -429,7 +421,7 @@
   final:
     data: [["moo", "farm"], ["meow", "house"], ["bark", "house"]]
 
-- doc: add_column_group_tag_value uses default value
+- doc: Test add_column_group_tag_value default value.
   rules:
     - type: add_column_group_tag_value
       value: where
@@ -440,7 +432,7 @@
   final:
     data: [["moo", "barn"], ["meow", "house"], ["bark", "firestation"]]
 
-- doc: add_column_group_tag_value sorts and grabs first tag value if multiple present
+- doc: Test add_column_group_tag_value sorts and grabs first tag value if multiple present.
   rules:
     - type: add_column_group_tag_value
       value: where

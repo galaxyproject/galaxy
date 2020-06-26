@@ -31,7 +31,6 @@ from galaxy.tools.parameters import (
 from galaxy.tools.parameters.basic import (
     BaseDataToolParameter,
     BooleanToolParameter,
-    ColorToolParameter,
     ConnectedValue,
     DataCollectionToolParameter,
     DataToolParameter,
@@ -540,7 +539,7 @@ class SubWorkflowModule(WorkflowModule):
                     if input.type in ['data', 'data_collection']:
                         return
 
-                    if is_runtime_value(value) and runtime_to_json(value)["__class__"] != "ConnectedValue":
+                    if is_runtime_value(value):
                         input_name = "%d|%s" % (step.order_index, prefixed_name)
                         inputs[input_name] = InputProxy(input, input_name)
 
@@ -661,7 +660,7 @@ class InputModule(WorkflowModule):
         if "format" in state:
             formats = state["format"]
             if formats:
-                formats = ",".join(listify(formats))
+                formats = ",".join(formats)
                 state["format"] = formats
         state = json.dumps(state)
         return state
@@ -816,8 +815,8 @@ class InputParameterModule(WorkflowModule):
         parameter_type_cond.test_param = input_parameter_type
         cases = []
 
-        for param_type in ["text", "integer", "float", "boolean", "color"]:
-            default_source = dict(name="default", label="Default Value", type=param_type)
+        for param_type in ["text", "integer", "float"]:
+            default_source = dict(name="default", label="Default Value", type=parameter_type)
             if param_type == "text":
                 if parameter_type == "text":
                     default = parameter_def.get("default") or ""
@@ -839,22 +838,7 @@ class InputParameterModule(WorkflowModule):
                     default = 0.0
                 default_source["value"] = default
                 input_default_value = FloatToolParameter(None, default_source)
-            elif param_type == "boolean":
-                if parameter_type == "boolean":
-                    default = parameter_def.get("default") or False
-                else:
-                    default = False
-                default_source["value"] = default
-                default_source["checked"] = default
-                input_default_value = BooleanToolParameter(None, default_source)
-            elif param_type == "color":
-                if parameter_type == 'color':
-                    default = parameter_def.get('default') or '#000000'
-                else:
-                    default = '#000000'
-                default_source["value"] = default
-                input_default_value = ColorToolParameter(None, default_source)
-
+            # color parameter defaults?
             optional_value = optional_param(optional)
             optional_cond = Conditional()
             optional_cond.name = "optional"
@@ -998,7 +982,7 @@ class InputParameterModule(WorkflowModule):
                     intxn_vals = set.intersection(*({option[1] for option in options} for options in static_options))
                     intxn_opts = {option for options in static_options for option in options if option[1] in intxn_vals}
                     d = defaultdict(set)  # Collapse labels with same values
-                    for label, value, _ in intxn_opts:
+                    for label, value, selected in intxn_opts:
                         d[value].add(label)
                     options = [{"label": ', '.join(label), "value": value, "selected": False} for value, label in d.items()]
 
@@ -1039,8 +1023,6 @@ class InputParameterModule(WorkflowModule):
         if optional:
             default_value = parameter_def.get("default", self.default_default_value)
             parameter_kwds["value"] = default_value
-            if parameter_type == 'boolean':
-                parameter_kwds['checked'] = default_value
 
         if "value" not in parameter_kwds and parameter_type in ["integer", "float"]:
             parameter_kwds["value"] = str(0)
@@ -1251,10 +1233,9 @@ class ToolModule(WorkflowModule):
         self.tool_version = tool_version
         self.tool_uuid = tool_uuid
         self.tool = trans.app.toolbox.get_tool(tool_id, tool_version=tool_version, exact=exact_tools, tool_uuid=tool_uuid)
-        if self.tool:
-            if tool_version and exact_tools and str(self.tool.version) != str(tool_version):
-                log.info("Exact tool specified during workflow module creation for [%s] but couldn't find correct version [%s]." % (tool_id, tool_version))
-                self.tool = None
+        if self.tool and tool_version and exact_tools and str(self.tool.version) != str(tool_version):
+            log.info("Exact tool specified during workflow module creation for [%s] but couldn't find correct version [%s]." % (tool_id, tool_version))
+            self.tool = None
         self.post_job_actions = {}
         self.runtime_post_job_actions = {}
         self.workflow_outputs = []
@@ -1710,7 +1691,7 @@ class ToolModule(WorkflowModule):
                 visit_input_values(tool.inputs, execution_state.inputs, callback, no_replacement_value=NO_REPLACEMENT, replace_optional_connections=True)
             except KeyError as k:
                 message_template = "Error due to input mapping of '%s' in '%s'.  A common cause of this is conditional outputs that cannot be determined until runtime, please review your workflow."
-                message = message_template % (tool.name, unicodify(k))
+                message = message_template % (tool.name, k.message)
                 raise exceptions.MessageException(message)
 
             unmatched_input_connections = expected_replacement_keys - found_replacement_keys

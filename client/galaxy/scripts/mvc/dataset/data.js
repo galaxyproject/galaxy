@@ -316,7 +316,7 @@ var TabularDatasetChunkedView = Backbone.View.extend({
         _.each(
             chunk.ck_data.split("\n"),
             function (line, index) {
-                if (line !== "" && index >= chunk.data_line_offset) {
+                if (line !== "") {
                     data_table.append(this._renderRow(line));
                 }
             },

@@ -1,4 +1,5 @@
-from galaxy.util import parse_xml
+from xml.etree import ElementTree
+
 from .baseparser import (
     Base_Parser,
     Node,
@@ -22,7 +23,9 @@ class Phyloxml_Parser(Base_Parser):
 
     def parseFile(self, filePath):
         """passes a file and extracts its Phylogeny Tree content."""
-        xmlTree = parse_xml(filePath)
+        phyloXmlFile = open(filePath, "r")
+
+        xmlTree = ElementTree.parse(phyloXmlFile)
         xmlRoot = xmlTree.getroot()[0]
         self.nameSpaceIndex = xmlRoot.tag.rfind("}") + 1  # used later by the clean tag method to remove the name space in every element.tag
 

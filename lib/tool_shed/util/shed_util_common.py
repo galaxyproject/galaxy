@@ -153,7 +153,7 @@ def get_tool_shed_repo_requirements(app, tool_shed_url, repositories=None, repo_
     tools = []
     for params in repository_params:
         response = util.url_get(tool_shed_url,
-                                auth=app.tool_shed_registry.url_auth(tool_shed_url),
+                                password_mgr=app.tool_shed_registry.url_auth(tool_shed_url),
                                 pathspec=pathspec,
                                 params=params
                                 )
@@ -264,7 +264,7 @@ def get_repository_type_from_tool_shed(app, tool_shed_url, name, owner):
     tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(app, tool_shed_url)
     params = dict(name=name, owner=owner)
     pathspec = ['repository', 'get_repository_type']
-    repository_type = util.url_get(tool_shed_url, auth=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+    repository_type = util.url_get(tool_shed_url, password_mgr=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
     return repository_type
 
 
@@ -277,7 +277,7 @@ def get_tool_dependency_definition_metadata_from_tool_shed(app, tool_shed_url, n
     tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(app, tool_shed_url)
     params = dict(name=name, owner=owner)
     pathspec = ['repository', 'get_tool_dependency_definition_metadata']
-    metadata = util.url_get(tool_shed_url, auth=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+    metadata = util.url_get(tool_shed_url, password_mgr=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
     return metadata
 
 

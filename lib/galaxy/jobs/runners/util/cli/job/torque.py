@@ -1,4 +1,8 @@
 from logging import getLogger
+try:
+    import xml.etree.cElementTree as et
+except ImportError:
+    import xml.etree.ElementTree as et
 
 try:
     from galaxy.model import Job
@@ -8,7 +12,6 @@ except ImportError:
     from pulsar.util import enum
     job_states = enum(RUNNING='running', OK='complete', QUEUED='queued')
 
-from galaxy.util import parse_xml_string
 from ..job import BaseJobExec
 
 log = getLogger(__name__)
@@ -80,7 +83,7 @@ class Torque(BaseJobExec):
         rval = {}
         for line in status.strip().splitlines():
             try:
-                tree = parse_xml_string(line.strip())
+                tree = et.fromstring(line.strip())
                 assert tree.tag == 'Data'
                 break
             except Exception:

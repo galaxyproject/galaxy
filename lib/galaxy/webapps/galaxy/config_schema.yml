@@ -589,12 +589,6 @@ mapping:
           will use a less efficient monitoring scheme that may work in wider range of scenarios than
           the watchdog default.
 
-      refgenie_config_file:
-        type: str
-        required: false
-        desc: |
-          File containing refgenie configuration, e.g. /path/to/genome_config.yaml. Can be used by refgenie backed tool data tables.
-
       build_sites_config_file:
         type: str
         default: build_sites.yml
@@ -755,33 +749,6 @@ mapping:
           should be disabled. Containerized jobs always use /bin/sh - so more maximum
           portability tool authors should assume generated commands run in sh.
 
-      tool_cache_data_dir:
-        type: str
-        default: tool_cache
-        path_resolves_to: data_dir
-        required: false
-        desc: |
-          Tool related caching. Fully expanded tools and metadata will be stored at this path.
-          Per tool_conf cache locations can be configured in (shed_)tool_conf.xml files using
-          the tool_cache_data_dir attribute.
-
-      tool_search_index_dir:
-        type: str
-        default: tool_search_index
-        path_resolves_to: data_dir
-        required: false
-        desc:
-          Directory in which the toolbox search index is stored.
-
-      delay_tool_initialization:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Set this to true to delay parsing of tool inputs and outputs until they are needed.
-          This results in faster startup times but uses more memory when using forked Galaxy
-          processes.
-
       citation_cache_type:
         type: str
         default: file
@@ -925,32 +892,27 @@ mapping:
 
           Example value 'https://galaxyproject.org/'
 
-      email_domain_blocklist_file:
+      blacklist_file:
         type: str
         required: false
         desc: |
-          E-mail domains blocklist is used for filtering out users that are using
-          disposable email addresses at registration.  If their address domain matches any
-          domain on the list, they are refused registration.
+          E-mail domains blacklist is used for filtering out users that are using
+          disposable email address during the registration.  If their address domain
+          matches any domain in the blacklist, they are refused the registration.
 
-          Example value 'email_blocklist.conf'
+          Example value 'config/disposable_email_blacklist.conf'
 
-          The value of this option will be resolved with respect to <config_dir>.
-
-      email_domain_allowlist_file:
+      whitelist_file:
         type: str
+        default: disposable_email_whitelist.conf
+        path_resolves_to: config_dir
         required: false
         desc: |
-          E-mail domains allowlist is used to specify allowed email address domains.
+          E-mail domains whitelist is used to specify allowed email address domains.
           If the list is non-empty and a user attempts registration using an email
           address belonging to a domain that is not on the list, registration will be
-          denied. This is a more restrictive option than <email_domain_blocklist_file>, and
-          therefore, in case <email_domain_allowlist_file> is set and is not empty,
-          <email_domain_blocklist_file> will be ignored.
-
-          Example value 'email_allowlist.conf'
-
-          The value of this option will be resolved with respect to <config_dir>.
+          enied. This is a more restrictive option than <blacklist_file>, and therefore,
+          in case <whitelist_file> is defined, <blacklist_file> will be ignored.
 
       registration_warning_message:
         type: str
@@ -1640,14 +1602,15 @@ mapping:
           special tools that require unaltered output.  WARNING: disabling this does
           make the Galaxy instance susceptible to XSS attacks initiated by your users.
 
-      sanitize_allowlist_file:
+      sanitize_whitelist_file:
         type: str
-        default: sanitize_allowlist.txt
+        default: sanitize_whitelist.txt
         required: false
         desc: |
+          Whitelist sanitization file.
           Datasets created by tools listed in this file are trusted and will not have
           their HTML sanitized on display.  This can be manually edited or manipulated
-          through the Admin control panel -- see "Manage Allowlist"
+          through the Admin control panel -- see "Manage Display Whitelist"
 
           The value of this option will be resolved with respect to <mutable_config_dir>.
 
@@ -1844,7 +1807,7 @@ mapping:
           If user_library_import_dir is set, this option will auto create a library
           import directory for every user (based on their email) upon login.
 
-      user_library_import_symlink_allowlist:
+      user_library_import_symlink_whitelist:
         type: str
         required: false
         desc: |
@@ -2195,11 +2158,11 @@ mapping:
           If enable_beta_gdpr is set to true, then this option will be
           overridden and set to false.
 
-      fetch_url_allowlist:
+      fetch_url_whitelist:
         type: str
         required: false
         desc: |
-          List of allowed local network addresses for "Upload from URL" dialog.
+          Whitelist for local network addresses for "Upload from URL" dialog.
           By default, Galaxy will deny access to the local network address space, to
           prevent users making requests to services which the administrator did not
           intend to expose. Previously, you could request any network service that
@@ -3058,7 +3021,7 @@ mapping:
 
       topk_recommendations:
         type: int
-        default: 10
+        default: 20
         required: false
         desc: |
           Set the number of predictions/recommendations to be made by the model

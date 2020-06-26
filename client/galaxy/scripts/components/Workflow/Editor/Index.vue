@@ -24,27 +24,7 @@
             <div id="workflow-canvas" class="unified-panel-body workflow-canvas" v-show="isCanvas">
                 <ZoomControl :zoom-level="zoomLevel" @onZoom="onZoom" />
                 <div id="canvas-viewport">
-                    <div ref="canvas" id="canvas-container">
-                        <WorkflowNode
-                            v-for="(step, key) in steps"
-                            :id="key"
-                            :name="step.name"
-                            :type="step.type"
-                            :content-id="step.content_id"
-                            :step="step"
-                            :key="key"
-                            :datatypes-mapping="datatypesMapping"
-                            :get-manager="getManager"
-                            :get-canvas-manager="getCanvasManager"
-                            @onAdd="onAdd"
-                            @onUpdate="onUpdate"
-                            @onClone="onClone"
-                            @onCreate="onInsertTool"
-                            @onChange="onChange"
-                            @onActivate="onActivate"
-                            @onRemove="onRemove"
-                        />
-                    </div>
+                    <div ref="canvas" id="canvas-container" />
                 </div>
                 <div class="workflow-overview" aria-hidden="true">
                     <div class="workflow-overview-body">
@@ -95,7 +75,7 @@
 </template>
 
 <script>
-import { getDatatypes, getModule, getVersions, saveWorkflow, loadWorkflow } from "./modules/services";
+import { getDatatypes, getModule, getVersions, saveWorkflow, loadWorkflow } from "./services";
 import {
     showWarnings,
     showUpgradeMessage,
@@ -104,9 +84,8 @@ import {
     showAttributes,
     showForm,
     saveAs,
-} from "./modules/utilities";
-import { autoLayout } from "./modules/layout";
-import WorkflowCanvas from "./modules/canvas";
+} from "./utilities";
+import WorkflowManager from "mvc/workflow/workflow-manager";
 import WorkflowOptions from "./Options";
 import MarkdownEditor from "components/Markdown/MarkdownEditor";
 import ToolBoxWorkflow from "components/Panels/ToolBoxWorkflow";
@@ -117,8 +96,6 @@ import EditorPanel from "./EditorPanel";
 import { hide_modal, show_message, show_modal } from "layout/modal";
 import WorkflowAttributes from "./Attributes";
 import ZoomControl from "./ZoomControl";
-import WorkflowNode from "./Node";
-import Vue from "vue";
 
 export default {
     components: {
@@ -129,7 +106,6 @@ export default {
         WorkflowOptions,
         WorkflowAttributes,
         ZoomControl,
-        WorkflowNode,
     },
     props: {
         id: {
@@ -150,7 +126,7 @@ export default {
         },
         annotation: {
             type: String,
-            default: "",
+            required: true,
         },
         moduleSections: {
             type: Array,
@@ -175,109 +151,89 @@ export default {
             versions: [],
             parameters: [],
             zoomLevel: 7,
-            steps: {},
-            hasChanges: false,
-            nodeIndex: 0,
-            nodes: {},
-            datatypesMapping: {},
-            datatypes: [],
-            report: {},
-            activeNode: null,
         };
     },
     created() {
         getDatatypes().then((response) => {
-            this.datatypesMapping = response.datatypes_mapping;
-            this.datatypes = response.datatypes;
-
-            // canvas overview management
-            this.canvasManager = new WorkflowCanvas(this, this.$refs.canvas);
-            this._loadCurrent(this.id, this.version);
+            const datatypes = response.datatypes;
+            const datatypes_mapping = response.datatypes_mapping;
+            this.manager = new WorkflowManager({ datatypes_mapping }, this.$refs.canvas);
+            this.manager
+                .on("onRemoveNode", () => {
+                    showAttributes();
+                })
+                .on("onActiveNode", (node) => {
+                    showForm(this.manager, node, datatypes);
+                })
+                .on("onNodeChange", () => {
+                    this.parameters = getWorkflowParameters(this.manager.nodes);
+                });
+            this.loadCurrent(this.id, this.version);
         });
-
-        // Notify user if workflow has not been saved yet
-        window.onbeforeunload = () => {
-            if (this.hasChanges) {
-                return "There are unsaved changes to your workflow which will be lost.";
-            }
-        };
     },
     methods: {
-        onActivate(node) {
-            if (this.activeNode != node) {
-                if (this.activeNode) {
-                    this.activeNode.makeInactive();
-                }
-                document.activeElement.blur();
-                node.makeActive();
-                this.activeNode = node;
-            }
-            showForm(this, node, this.datatypes);
-            this.canvasManager.drawOverview();
-        },
-        onAdd(node) {
-            this.nodes[node.id] = node;
-        },
-        onUpdate(node) {
-            getModule({
-                type: node.type,
-                content_id: node.contentId,
-                _: "true",
-            }).then((response) => {
-                const newData = Object.assign({}, response, node.step);
-                node.setNode(newData);
-            });
-        },
-        onChange() {
-            this.hasChanges = true;
-        },
-        onRemove(node) {
-            delete this.nodes[node.id];
-            Vue.delete(this.steps, node.id);
-            this.canvasManager.drawOverview();
-            this.activeNode = null;
-            this.hasChanges = true;
-            showAttributes();
-        },
-        onClone(node) {
-            Vue.set(this.steps, this.nodeIndex++, {
-                ...node.step,
-                uuid: null,
-                annotation: node.annotation,
-                tool_state: node.tool_state,
-                post_job_actions: node.postJobActions,
-            });
-        },
         onInsertTool(tool_id, tool_name) {
-            this._insertStep(tool_id, tool_name, "tool");
+            if (!this.isCanvas) {
+                this.isCanvas = true;
+                return;
+            }
+            var node = this.manager.create_node("tool", tool_name, tool_id);
+            const requestData = {
+                type: "tool",
+                tool_id: tool_id,
+                _: "true",
+            };
+            getModule(requestData).then((response) => {
+                this.manager.set_node(node, response);
+            });
         },
         onInsertModule(module_id, module_name) {
-            this._insertStep(null, module_name, module_id);
+            if (!this.isCanvas) {
+                this.isCanvas = true;
+                return;
+            }
+            var node = this.manager.create_node(module_id, module_name);
+            const requestData = {
+                type: module_id,
+                _: "true",
+            };
+            getModule(requestData).then((response) => {
+                this.manager.set_node(node, response);
+            });
         },
         onInsertWorkflow(workflow_id, workflow_name) {
-            this._insertStep(workflow_id, workflow_name, "subworkflow");
+            if (!this.isCanvas) {
+                this.isCanvas = true;
+                return;
+            }
+            var node = this.manager.create_node("subworkflow", workflow_name, workflow_id);
+            const requestData = {
+                type: "subworkflow",
+                content_id: workflow_id,
+                _: "true",
+            };
+            getModule(requestData).then((response) => {
+                this.manager.set_node(node, response);
+            });
         },
         onInsertWorkflowSteps(workflow_id, step_count) {
             if (!this.isCanvas) {
                 this.isCanvas = true;
                 return;
             }
-            copyIntoWorkflow(this, workflow_id, step_count);
+            copyIntoWorkflow(this.manager, workflow_id, step_count);
         },
         onDownload() {
             window.location = `${getAppRoot()}api/workflows/${this.id}/download?format=json-download`;
         },
         onSaveAs() {
-            saveAs(this);
+            saveAs(this.manager);
         },
         onLayout() {
-            this.canvasManager.drawOverview();
-            this.canvasManager.scrollToNodes();
-            autoLayout(this);
+            this.manager.layout_auto();
         },
         onAttributes() {
             showAttributes();
-            this.parameters = getWorkflowParameters(this.nodes);
         },
         onEdit() {
             this.isCanvas = true;
@@ -289,18 +245,18 @@ export default {
             this.name = name;
         },
         onReportUpdate(markdown) {
-            this.hasChanges = true;
-            this.report.markdown = markdown;
+            this.manager.has_changes = true;
+            this.manager.report.markdown = markdown;
         },
         onRun() {
             window.location = `${getAppRoot()}workflows/run?id=${this.id}`;
         },
         onZoom(zoomLevel) {
-            this.zoomLevel = this.canvasManager.setZoom(zoomLevel);
+            this.zoomLevel = this.manager.canvas_manager.setZoom(zoomLevel);
         },
         onSave() {
             show_message("Saving workflow...", "progress");
-            saveWorkflow(this)
+            saveWorkflow(this.manager, this.id)
                 .then((data) => {
                     showWarnings(data);
                     getVersions(this.id).then((versions) => {
@@ -313,56 +269,35 @@ export default {
                 });
         },
         onVersion(version) {
-            if (version != this.version) {
-                if (this.hasChanges) {
+            if (version != this.manager.workflow_version) {
+                if (this.manager.has_changes) {
                     const r = window.confirm(
                         "There are unsaved changes to your workflow which will be lost. Continue ?"
                     );
                     if (r == false) {
+                        this.version = this.manager.workflow_version;
                         return;
                     }
                 }
                 this.version = version;
-                this._loadCurrent(this.id, version);
+                this.loadCurrent(this.id, version);
             }
         },
-        _insertStep(conentId, name, type) {
-            if (!this.isCanvas) {
-                this.isCanvas = true;
-                return;
-            }
-            Vue.set(this.steps, this.nodeIndex++, {
-                name: name,
-                content_id: conentId,
-                type: type,
-            });
-        },
-        _loadCurrent(id, version) {
+        loadCurrent(id, version) {
             show_message("Loading workflow...", "progress");
-            loadWorkflow(this, id, version)
+            loadWorkflow(this.manager, id, version)
                 .then((data) => {
                     const report = data.report || {};
                     const markdown = report.markdown || reportDefault;
                     this.$refs["report-editor"].input = markdown;
-                    showUpgradeMessage(data);
+                    showUpgradeMessage(this.manager, data);
                     getVersions(this.id).then((versions) => {
                         this.versions = versions;
-                    });
-                    Vue.nextTick(() => {
-                        this.canvasManager.drawOverview();
-                        this.canvasManager.scrollToNodes();
-                        this.hasChanges = false;
                     });
                 })
                 .catch((response) => {
                     show_modal("Loading workflow failed...", response, { Ok: hide_modal });
                 });
-        },
-        getManager() {
-            return this;
-        },
-        getCanvasManager() {
-            return this.canvasManager;
         },
     },
 };

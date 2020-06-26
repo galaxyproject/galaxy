@@ -1,11 +1,9 @@
 from unittest import TestCase
+from xml.etree.ElementTree import XML
 
 from galaxy import model
 from galaxy.tools.parameters import basic
-from galaxy.util import (
-    bunch,
-    XML,
-)
+from galaxy.util import bunch
 from ..tools_support import UsesApp
 
 

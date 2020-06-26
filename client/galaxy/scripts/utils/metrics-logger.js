@@ -291,14 +291,7 @@ MetricsLogger.prototype._delayPost = function _delayPost() {
 function usefulToString(arg) {
     var asStr = String(arg);
     if (asStr == "[object Object]") {
-        try {
-            asStr = JSON.stringify(arg);
-        } catch (e) {
-            // If arg has cyclic reference, return String
-            // otherwise rendering stops and we have incomplete page
-            console.error(e);
-            return String(arg);
-        }
+        asStr = JSON.stringify(arg);
     }
     return asStr;
 }

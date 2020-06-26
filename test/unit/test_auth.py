@@ -10,16 +10,9 @@ def test_alwaysreject():
 
 def test_localdb():
     user = User(email='testmail', username='tester')
-    user.set_password_cleartext('test123')
+    user.set_password_cleartext('test')
     t = LocalDB()
     reject = t.authenticate_user(user, 'wrong', {'redact_username_in_logs': False})
-    accept = t.authenticate_user(user, 'test123', {'redact_username_in_logs': False})
+    accept = t.authenticate_user(user, 'test', {'redact_username_in_logs': False})
     assert reject is False
     assert accept is True
-    # Password must conform to policy (length etc)
-    try:
-        user.set_password_cleartext('test')
-    except Exception:
-        pass
-    else:
-        raise Exception("Password policy validation failed")

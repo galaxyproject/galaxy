@@ -166,8 +166,7 @@ class ContainerDescription(object):
         resolve_dependencies=DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES,
         shell=DEFAULT_CONTAINER_SHELL,
     ):
-        # Force to lowercase because container image names must be lowercase
-        self.identifier = identifier.lower() if identifier else None
+        self.identifier = identifier
         self.type = type
         self.resolve_dependencies = resolve_dependencies
         self.shell = shell
@@ -207,11 +206,11 @@ def parse_requirements_from_dict(root_dict):
 def parse_requirements_from_xml(xml_root):
     """
 
-    >>> from galaxy.util import parse_xml_string
-    >>> def load_requirements(contents):
+    >>> from xml.etree import ElementTree
+    >>> def load_requirements( contents ):
     ...     contents_document = '''<tool><requirements>%s</requirements></tool>'''
-    ...     root = parse_xml_string(contents_document % contents)
-    ...     return parse_requirements_from_xml(root)
+    ...     root = ElementTree.fromstring( contents_document % contents )
+    ...     return parse_requirements_from_xml( root )
     >>> reqs, containers = load_requirements('''<requirement>bwa</requirement>''')
     >>> reqs[0].name
     'bwa'

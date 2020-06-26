@@ -1,4 +1,3 @@
 export default {
-    name: "unit testing configs",
-    testBuild: true,
-};
+    name: "unit testing configs"
+}

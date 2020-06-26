@@ -783,18 +783,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~
-``refgenie_config_file``
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    File containing refgenie configuration, e.g.
-    /path/to/genome_config.yaml. Can be used by refgenie backed tool
-    data tables.
-:Default: ``None``
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``build_sites_config_file``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1015,41 +1003,6 @@
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~
-``tool_cache_data_dir``
-~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Tool related caching. Fully expanded tools and metadata will be
-    stored at this path. Per tool_conf cache locations can be
-    configured in (shed_)tool_conf.xml files using the
-    tool_cache_data_dir attribute.
-:Default: ``tool_cache``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~
-``tool_search_index_dir``
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Directory in which the toolbox search index is stored.
-:Default: ``tool_search_index``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``delay_tool_initialization``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Set this to true to delay parsing of tool inputs and outputs until
-    they are needed. This results in faster startup times but uses
-    more memory when using forked Galaxy processes.
-:Default: ``false``
-:Type: bool
-
-
-~~~~~~~~~~~~~~~~~~~~~~~
 ``citation_cache_type``
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1254,38 +1207,32 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``email_domain_blocklist_file``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
+``blacklist_file``
+~~~~~~~~~~~~~~~~~~
 
 :Description:
-    E-mail domains blocklist is used for filtering out users that are
-    using disposable email addresses at registration.  If their
-    address domain matches any domain on the list, they are refused
-    registration.
-    Example value 'email_blocklist.conf'
-    The value of this option will be resolved with respect to
-    <config_dir>.
+    E-mail domains blacklist is used for filtering out users that are
+    using disposable email address during the registration.  If their
+    address domain matches any domain in the blacklist, they are
+    refused the registration.
+    Example value 'config/disposable_email_blacklist.conf'
 :Default: ``None``
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``email_domain_allowlist_file``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
+``whitelist_file``
+~~~~~~~~~~~~~~~~~~
 
 :Description:
-    E-mail domains allowlist is used to specify allowed email address
+    E-mail domains whitelist is used to specify allowed email address
     domains. If the list is non-empty and a user attempts registration
     using an email address belonging to a domain that is not on the
-    list, registration will be denied. This is a more restrictive
-    option than <email_domain_blocklist_file>, and therefore, in case
-    <email_domain_allowlist_file> is set and is not empty,
-    <email_domain_blocklist_file> will be ignored.
-    Example value 'email_allowlist.conf'
-    The value of this option will be resolved with respect to
-    <config_dir>.
-:Default: ``None``
+    list, registration will be enied. This is a more restrictive
+    option than <blacklist_file>, and therefore, in case
+    <whitelist_file> is defined, <blacklist_file> will be ignored.
+:Default: ``disposable_email_whitelist.conf``
 :Type: str
 
 
@@ -2231,17 +2178,17 @@
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``sanitize_allowlist_file``
+``sanitize_whitelist_file``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Datasets created by tools listed in this file are trusted and will
-    not have their HTML sanitized on display.  This can be manually
-    edited or manipulated through the Admin control panel -- see
-    "Manage Allowlist"
+    Whitelist sanitization file. Datasets created by tools listed in
+    this file are trusted and will not have their HTML sanitized on
+    display.  This can be manually edited or manipulated through the
+    Admin control panel -- see "Manage Display Whitelist"
     The value of this option will be resolved with respect to
     <mutable_config_dir>.
-:Default: ``sanitize_allowlist.txt``
+:Default: ``sanitize_whitelist.txt``
 :Type: str
 
 
@@ -2512,7 +2459,7 @@
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``user_library_import_symlink_allowlist``
+``user_library_import_symlink_whitelist``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
@@ -2976,11 +2923,11 @@
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~
-``fetch_url_allowlist``
+``fetch_url_whitelist``
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    List of allowed local network addresses for "Upload from URL"
+    Whitelist for local network addresses for "Upload from URL"
     dialog. By default, Galaxy will deny access to the local network
     address space, to prevent users making requests to services which
     the administrator did not intend to expose. Previously, you could
@@ -4160,7 +4107,7 @@
 :Description:
     Set the number of predictions/recommendations to be made by the
     model
-:Default: ``10``
+:Default: ``20``
 :Type: int
 
 

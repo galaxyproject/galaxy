@@ -195,7 +195,7 @@ find_server() {
 set_conda_exe() {
     [ -n "$CONDA_EXE" ] || [ -n "$_CONDA_EXE_SET" ] && return 0
     if python -V 2>&1 | grep -q -e 'Anaconda' -e 'Continuum Analytics' || \
-            python -c 'import sys; print(sys.version.replace("\n", " "))' 2>/dev/null | grep -q -e 'packaged by conda-forge' ; then
+            python -c 'import sys; print(sys.version.replace("\n", " "))' | grep -q -e 'packaged by conda-forge' ; then
         CONDA_EXE=$(command -v conda)
         if [ -z "$CONDA_EXE" ]; then
             echo "WARNING: \`python\` is from conda, but the \`conda\` command cannot be found."

@@ -4,13 +4,14 @@ SLURM job control via the DRMAA API.
 import os
 import re
 import shutil
+import subprocess
 import tempfile
 import time
 
 from galaxy import model
 from galaxy.jobs.runners.drmaa import DRMAAJobRunner
-from galaxy.util import commands
-from galaxy.util.custom_logging import get_logger
+from galaxy.util import unicodify
+from galaxy.util.logging import get_logger
 
 log = get_logger(__name__)
 
@@ -48,17 +49,18 @@ class SlurmJobRunner(DRMAAJobRunner):
             if cluster:
                 cmd.extend(['-M', cluster])
             cmd.extend(['-j', job_id])
-            try:
-                stdout = commands.execute(cmd)
-            except commands.CommandLineException as e:
-                if e.stderr.strip() == 'SLURM accounting storage is disabled':
+            p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout, stderr = p.communicate()
+            if p.returncode != 0:
+                stderr = unicodify(stderr).strip()
+                if stderr == 'SLURM accounting storage is disabled':
                     log.warning('SLURM accounting storage is not properly configured, unable to run sacct')
                     return
-                raise e
+                raise Exception('`%s` returned %s, stderr: %s' % (' '.join(cmd), p.returncode, stderr))
             # First line is for 'job_id'
             # Second line is for 'job_id.batch' (only available after the batch job is complete)
             # Following lines are for the steps 'job_id.0', 'job_id.1', ... (but Galaxy does not use steps)
-            first_line = stdout.splitlines()[0]
+            first_line = unicodify(stdout).splitlines()[0]
             # Strip whitespaces and the final '+' (if present), only return the first word
             return first_line.strip().rstrip('+').split()[0]
 
@@ -72,16 +74,19 @@ class SlurmJobRunner(DRMAAJobRunner):
                 job_id = ajs.job_id
                 cluster = None
             cmd.extend(['show', 'job', job_id])
-            try:
-                stdout = commands.execute(cmd).strip()
-            except commands.CommandLineException as e:
-                if e.stderr == 'slurm_load_jobs error: Invalid job id specified\n':
+            p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout, stderr = p.communicate()
+            if p.returncode != 0:
+                # Will need to be more clever here if this message is not consistent
+                stderr = unicodify(stderr)
+                if stderr == 'slurm_load_jobs error: Invalid job id specified\n':
                     # The job may be old, try to get its state with sacct
                     job_state = _get_slurm_state_with_sacct(job_id, cluster)
                     if job_state:
                         return job_state
                     return 'NOT_FOUND'
-                raise e
+                raise Exception('`%s` returned %s, stderr: %s' % (' '.join(cmd), p.returncode, stderr))
+            stdout = unicodify(stdout).strip()
             # stdout is a single line in format "key1=value1 key2=value2 ..."
             job_info_keys = []
             job_info_values = []

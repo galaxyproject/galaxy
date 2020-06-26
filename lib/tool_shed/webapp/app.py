@@ -8,6 +8,7 @@ import galaxy.tools.data
 import tool_shed.repository_registry
 import tool_shed.repository_types.registry
 import tool_shed.webapp.model
+from galaxy import tools
 from galaxy.config import configure_logging
 from galaxy.model.tags import CommunityTagHandler
 from galaxy.security import idencoding
@@ -26,8 +27,6 @@ class UniverseApplication(object):
     def __init__(self, **kwd):
         log.debug("python path is: %s", ", ".join(sys.path))
         self.name = "tool_shed"
-        # will be overwritten when building WSGI app
-        self.is_webapp = False
         # Read the tool_shed.ini configuration file and check for errors.
         self.config = config.Configuration(**kwd)
         self.config.check()
@@ -65,7 +64,9 @@ class UniverseApplication(object):
         # Citation manager needed to load tools.
         from galaxy.managers.citations import CitationsManager
         self.citations_manager = CitationsManager(self)
+        # The Tool Shed makes no use of a Galaxy toolbox, but this attribute is still required.
         self.use_tool_dependency_resolution = False
+        self.toolbox = tools.ToolBox([], self.config.tool_path, self)
         # Initialize the Tool Shed security agent.
         self.security_agent = self.model.security_agent
         # The Tool Shed makes no use of a quota, but this attribute is still required.

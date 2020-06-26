@@ -8,6 +8,7 @@ import logging
 import os
 import shlex
 import string
+import subprocess
 import time
 
 from galaxy import model
@@ -19,8 +20,7 @@ from galaxy.jobs.runners import (
 )
 from galaxy.util import (
     asbool,
-    commands,
-    unicodify
+    unicodify,
 )
 
 drmaa = None
@@ -222,7 +222,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         log.info("(%s) queued as %s" % (galaxy_id_tag, external_job_id))
 
         # store runner information for tracking if Galaxy restarts
-        job_wrapper.set_external_id(external_job_id)
+        job_wrapper.set_job_destination(job_destination, external_job_id)
 
         # Store DRM related state information for job
         ajs.job_id = external_job_id
@@ -307,7 +307,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             return None
         except Exception:
             # so we don't kill the monitor thread
-            log.exception("(%s/%s) unable to check job status" % (galaxy_id_tag, external_job_id))
+            log.exception("(%s/%s) unable to check job status: %s" % (galaxy_id_tag, external_job_id))
             log.warning("(%s/%s) job will now be errored" % (galaxy_id_tag, external_job_id))
             ajs.fail_message = "Cluster could not complete job"
             self.work_queue.put((self.fail_job, ajs))
@@ -359,14 +359,12 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             if kill_script is None:
                 self.ds.kill(ext_id)
             else:
-                cmd = shlex.split(kill_script)
-                cmd.extend([str(ext_id), str(self.userid)])
-                commands.execute(cmd)
+                command = shlex.split(kill_script)
+                command.extend([str(ext_id), str(self.userid)])
+                subprocess.Popen(command, shell=False)
             log.info("(%s/%s) Removed from DRM queue at user's request" % (job.id, ext_id))
         except drmaa.InvalidJobException:
             log.exception("(%s/%s) User killed running job, but it was already dead" % (job.id, ext_id))
-        except commands.CommandLineException as e:
-            log.error("(%s/%s) User killed running job, but command execution failed: %s" % (job.id, ext_id, unicodify(e)))
         except Exception:
             log.exception("(%s/%s) User killed running job, but error encountered removing from DRM queue" % (job.id, ext_id))
 
@@ -407,16 +405,22 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         The external script needs to be run with sudo, and will setuid() to the specified user.
         Effectively, will QSUB as a different user (than the one used by Galaxy).
         """
-        cmd = shlex.split(external_runjob_script)
-        cmd.extend([str(username), jobtemplate_filename])
-        log.info("Running command %s" % cmd)
-        try:
-            stdoutdata = commands.execute(cmd).strip()
-        except commands.CommandLineException:
-            log.exception("External_runjob failed")
+        command = shlex.split(external_runjob_script)
+        command.extend([str(username), jobtemplate_filename])
+        log.info("Running command %s" % command)
+        p = subprocess.Popen(command,
+                             shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdoutdata, stderrdata = p.communicate()
+        stdoutdata, stderrdata = unicodify(stdoutdata).strip(), unicodify(stderrdata).strip()
+        exitcode = p.returncode
+        # os.unlink(jobtemplate_filename)
+        if exitcode != 0:
+            # There was an error in the child process
+            log.exception("External_runjob failed (exit code %s). Child process reported error: %s" % (str(exitcode), stderrdata))
             return None
         # The expected output is a single line containing a single numeric value:
         # the DRMAA job-ID. If not the case, will throw an error.
+        stdoutdata = stdoutdata.strip()
         if not stdoutdata:
             log.exception("External_runjob did not returned nothing instead of the job id")
             return None

@@ -522,7 +522,6 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             dataset_collection_instance = service.create(
                 trans,
                 parent=history,
-                history=history,
                 **create_params
             )
         elif source == "hdca":
@@ -904,12 +903,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         view = serialization_params.pop('view')
 
         contents = self.history_contents_manager.contents(history,
-            filters=filters,
-            limit=limit,
-            offset=offset,
-            order_by=order_by,
-            serialization_params=serialization_params)
-
+            filters=filters, limit=limit, offset=offset, order_by=order_by)
         for content in contents:
 
             # TODO: remove split

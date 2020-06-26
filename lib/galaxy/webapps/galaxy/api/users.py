@@ -1,7 +1,6 @@
 """
 API operations on User objects.
 """
-import copy
 import json
 import logging
 import re
@@ -293,8 +292,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         # Build sections for different categories of inputs
         for item, value in preferences.items():
             if value is not None:
-                input_fields = copy.deepcopy(value["inputs"])
-                for input in input_fields:
+                for input in value["inputs"]:
                     help = input.get('help', '')
                     required = 'Required' if util.string_as_bool(input.get('required')) else ''
                     if help:
@@ -305,7 +303,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
                     for data_item in user.extra_preferences:
                         if field in data_item:
                             input['value'] = user.extra_preferences[data_item]
-                extra_pref_inputs.append({'type': 'section', 'title': value['description'], 'name': item, 'expanded': True, 'inputs': input_fields})
+                extra_pref_inputs.append({'type': 'section', 'title': value['description'], 'name': item, 'expanded': True, 'inputs': value['inputs']})
         return extra_pref_inputs
 
     @expose_api

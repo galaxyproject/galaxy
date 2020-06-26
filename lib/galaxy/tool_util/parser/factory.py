@@ -14,14 +14,14 @@ from ..fetcher import ToolLocationFetcher
 log = logging.getLogger(__name__)
 
 
-def get_tool_source(config_file=None, xml_tree=None, enable_beta_formats=True, tool_location_fetcher=None, macro_paths=None):
+def get_tool_source(config_file=None, xml_tree=None, enable_beta_formats=True, tool_location_fetcher=None):
     """Return a ToolSource object corresponding to supplied source.
 
     The supplied source may be specified as a file path (using the config_file
     parameter) or as an XML object loaded with load_tool_with_refereces.
     """
     if xml_tree is not None:
-        return XmlToolSource(xml_tree, source_path=config_file, macro_paths=macro_paths)
+        return XmlToolSource(xml_tree, source_path=config_file)
     elif config_file is None:
         raise ValueError("get_tool_source called with invalid config_file None.")
 

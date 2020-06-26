@@ -2,11 +2,11 @@ import logging
 import os
 
 from mercurial import hg, ui
+from whoosh import index
 from whoosh.writing import AsyncWriter
 
 import tool_shed.webapp.model.mapping as ts_mapping
 from galaxy.tool_util.loader_directory import load_tool_elements_from_path
-from galaxy.tools.search import get_or_create_index
 from galaxy.util import (
     directory_hash_id,
     ExecutionTimer,
@@ -21,13 +21,24 @@ from tool_shed.webapp.search.tool_search import schema as tool_schema
 log = logging.getLogger(__name__)
 
 
-def _get_or_create_index(whoosh_index_dir):
+def get_or_create_index(whoosh_index_dir):
     tool_index_dir = os.path.join(whoosh_index_dir, 'tools')
     if not os.path.exists(whoosh_index_dir):
         os.makedirs(whoosh_index_dir)
     if not os.path.exists(tool_index_dir):
         os.makedirs(tool_index_dir)
-    return get_or_create_index(whoosh_index_dir, repo_schema), get_or_create_index(tool_index_dir, tool_schema)
+    return _get_or_create_index(whoosh_index_dir, repo_schema), _get_or_create_index(tool_index_dir, tool_schema)
+
+
+def _get_or_create_index(index_dir, schema):
+    if index.exists_in(index_dir):
+        idx = index.open_dir(index_dir)
+        try:
+            assert idx.schema == schema
+            return idx
+        except AssertionError:
+            log.warning("Index at '%s' uses outdated schema, creating new index", index_dir)
+    return index.create_in(index_dir, schema=schema)
 
 
 def build_index(whoosh_index_dir, file_path, hgweb_config_dir, dburi, **kwargs):
@@ -39,7 +50,7 @@ def build_index(whoosh_index_dir, file_path, hgweb_config_dir, dburi, **kwargs):
     """
     model = ts_mapping.init(file_path, dburi, engine_options={}, create_tables=False)
     sa_session = model.context.current
-    repo_index, tool_index = _get_or_create_index(whoosh_index_dir)
+    repo_index, tool_index = get_or_create_index(whoosh_index_dir)
 
     repo_index_writer = AsyncWriter(repo_index)
     tool_index_writer = AsyncWriter(tool_index)

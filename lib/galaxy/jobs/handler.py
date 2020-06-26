@@ -28,7 +28,7 @@ from galaxy.jobs import (
 )
 from galaxy.jobs.mapper import JobNotReadyException
 from galaxy.util import unicodify
-from galaxy.util.custom_logging import get_logger
+from galaxy.util.logging import get_logger
 from galaxy.util.monitors import Monitors
 from galaxy.web_stack.handlers import HANDLER_ASSIGNMENT_METHODS
 from galaxy.web_stack.message import JobHandlerMessage

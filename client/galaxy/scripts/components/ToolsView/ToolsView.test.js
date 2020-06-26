@@ -1,7 +1,8 @@
+/* global expect */
 import ToolsView from "./ToolsView";
-import { mount, createLocalVue } from "@vue/test-utils";
+import { shallowMount, mount, createLocalVue } from "@vue/test-utils";
 import _l from "utils/localization";
-import flushPromises from "flush-promises";
+import Vue from "vue";
 
 // test response
 import testToolsListResponse from "./testData/toolsList";
@@ -12,15 +13,16 @@ import axios from "axios";
 describe("ToolsView/ToolsView.vue", () => {
     const localVue = createLocalVue();
     localVue.filter("localize", (value) => _l(value));
-    let wrapper;
-    let axiosMock;
+    let wrapper, emitted, axiosMock;
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
         wrapper = mount(ToolsView);
+        emitted = wrapper.emitted();
         axiosMock.onGet("/api/tools?tool_help=True").reply(200, testToolsListResponse);
         axiosMock.onGet(new RegExp(`./*/citations`)).reply(200, testCitation);
-        await flushPromises();
+        await Vue.nextTick();
+        await Vue.nextTick();
     });
 
     afterEach(() => {
@@ -36,14 +38,14 @@ describe("ToolsView/ToolsView.vue", () => {
     });
 
     it("should render only specific number of tools, equal to current buffer", async () => {
-        const buttons = wrapper.findAll('[type="button"]').filter((button) => button.text() === "Info");
+        let buttons = wrapper.findAll('[type="button"]').filter((button) => button.text() === "Info");
         // one 'info' button per tool
         assert(wrapper.vm.buffer.length === buttons.length, "Number of 'info' buttons do not equal the buffer size!");
     });
 
     it("should open modal on button click", async () => {
         // findAll() returns WrapperArray, thus regular array.find() won't work
-        const infoButton = wrapper
+        let infoButton = wrapper
             .findAll('[type="button"]')
             .filter((button) => button.text() === "Info")
             .at(0);
@@ -52,13 +54,17 @@ describe("ToolsView/ToolsView.vue", () => {
         assert(modal.isVisible() === false, "modal is visible before the click!");
 
         infoButton.trigger("click");
-        await flushPromises();
+        await Vue.nextTick();
 
         assert(modal.isVisible(), "'Info' button didn't open a modal!");
     });
 
     it("citation should open on click", async () => {
-        const infoButton = wrapper
+        await Vue.nextTick();
+        await Vue.nextTick();
+        await Vue.nextTick();
+
+        let infoButton = wrapper
             .findAll('[type="button"]')
             .filter((button) => button.text() === "Citations")
             .at(0);
@@ -68,7 +74,7 @@ describe("ToolsView/ToolsView.vue", () => {
         assert(infoButton.attributes("aria-expanded") === "false", "citation is expanded before being triggered!");
 
         infoButton.trigger("click");
-        await flushPromises();
+        await Vue.nextTick();
 
         assert(infoButton.attributes("aria-expanded") === "true", "citation field did not expand!");
         assert(citation.isVisible(), "citation is not visible, after being triggered!");

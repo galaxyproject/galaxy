@@ -1,7 +1,7 @@
-galaxy.util.custom_logging package
+galaxy.util.logging package
 ===========================
 
-.. automodule:: galaxy.util.custom_logging
+.. automodule:: galaxy.util.logging
     :members:
     :undoc-members:
     :show-inheritance:
@@ -9,10 +9,10 @@ galaxy.util.custom_logging package
 Submodules
 ----------
 
-galaxy.util.custom_logging.fluent\_log module
+galaxy.util.logging.fluent\_log module
 --------------------------------------
 
-.. automodule:: galaxy.util.custom_logging.fluent_log
+.. automodule:: galaxy.util.logging.fluent_log
     :members:
     :undoc-members:
     :show-inheritance:

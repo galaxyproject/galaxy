@@ -4,8 +4,25 @@
 <job_conf>
     <plugins>
         <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="4"/>
+        <plugin id="gpu" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" />
+        <plugin id="dynamic" type="runner">
+            <param id="rules_module">galaxy.jobs.rules</param>
+        </plugin>
     </plugins>
-    <destinations>
-        <destination id="local" runner="local"/>
+    <destinations default="docker_local">
+            <destination id="local_cpu" runner="local"/>
+            <destination id="local_gpu" runner="gpu"/>
+	<destination id="gpu_cpu_decision" runner="dynamic">
+            <param id="type">python</param>
+            <param id="function">dynamic_fun</param>
+    </destination>
+    <destination id="docker_local" runner="local">
+            <param id="docker_enabled">true</param>
+            <param id="docker_set_user"></param>
+            <param id="docker_sudo">true</param>
+        </destination>
     </destinations>
+    <tools>
+        <tool id="racon" destination="docker_local"/>
+    </tools>
 </job_conf>

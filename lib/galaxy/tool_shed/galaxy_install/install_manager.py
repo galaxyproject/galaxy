@@ -460,7 +460,7 @@ class InstallRepositoryManager(object):
                       changeset_revision=changeset_revision)
         pathspec = ['api', 'repositories', 'get_repository_revision_install_info']
         try:
-            raw_text = util.url_get(tool_shed_url, auth=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+            raw_text = util.url_get(tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
         except Exception:
             message = "Error attempting to retrieve installation information from tool shed "
             message += "%s for revision %s of repository %s owned by %s" % \

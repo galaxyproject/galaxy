@@ -17,15 +17,14 @@ import time
 from collections import OrderedDict
 from glob import glob
 from tempfile import NamedTemporaryFile
+from xml.etree import ElementTree
 
-import refgenconf
 import requests
 
 from galaxy import util
 from galaxy.util import RW_R__R__
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
-from galaxy.util.template import fill_template
 
 log = logging.getLogger(__name__)
 
@@ -69,14 +68,13 @@ class ToolDataPathFiles(object):
 class ToolDataTableManager(object):
     """Manages a collection of tool data tables"""
 
-    def __init__(self, tool_data_path, config_filename=None, tool_data_table_config_path_set=None, other_config_dict=None):
+    def __init__(self, tool_data_path, config_filename=None, tool_data_table_config_path_set=None):
         self.tool_data_path = tool_data_path
         # This stores all defined data table entries from both the tool_data_table_conf.xml file and the shed_tool_data_table_conf.xml file
         # at server startup. If tool shed repositories are installed that contain a valid file named tool_data_table_conf.xml.sample, entries
         # from that file are inserted into this dict at the time of installation.
         self.data_tables = {}
         self.tool_data_path_files = ToolDataPathFiles(self.tool_data_path)
-        self.other_config_dict = other_config_dict or {}
         for single_config_filename in util.listify(config_filename):
             if not single_config_filename:
                 continue
@@ -120,7 +118,7 @@ class ToolDataTableManager(object):
             tree = util.parse_xml(filename)
             root = tree.getroot()
             for table_elem in root.findall('table'):
-                table = ToolDataTable.from_elem(table_elem, tool_data_path, from_shed_config, filename=filename, tool_data_path_files=self.tool_data_path_files, other_config_dict=self.other_config_dict)
+                table = ToolDataTable.from_elem(table_elem, tool_data_path, from_shed_config, filename=filename, tool_data_path_files=self.tool_data_path_files)
                 table_elems.append(table_elem)
                 if table.name not in self.data_tables:
                     self.data_tables[table.name] = table
@@ -204,7 +202,7 @@ class ToolDataTableManager(object):
         out_elems.extend(new_elems)
         out_path_is_new = not os.path.exists(full_path)
 
-        root = util.parse_xml_string('<?xml version="1.0"?>\n<tables></tables>')
+        root = ElementTree.fromstring('<?xml version="1.0"?>\n<tables></tables>')
         for elem in out_elems:
             root.append(elem)
         with RenamedTemporaryFile(full_path, mode='w') as out:
@@ -242,12 +240,12 @@ class ToolDataTableManager(object):
 class ToolDataTable(object):
 
     @classmethod
-    def from_elem(cls, table_elem, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=None):
+    def from_elem(cls, table_elem, tool_data_path, from_shed_config, filename, tool_data_path_files):
         table_type = table_elem.get('type', 'tabular')
-        assert table_type in tool_data_table_types, "Unknown data table type '%s'" % table_type
-        return tool_data_table_types[table_type](table_elem, tool_data_path, from_shed_config=from_shed_config, filename=filename, tool_data_path_files=tool_data_path_files, other_config_dict=other_config_dict)
+        assert table_type in tool_data_table_types, "Unknown data table type '%s'" % type
+        return tool_data_table_types[table_type](table_elem, tool_data_path, from_shed_config=from_shed_config, filename=filename, tool_data_path_files=tool_data_path_files)
 
-    def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None, other_config_dict=None):
+    def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None):
         self.name = config_element.get('name')
         self.comment_char = config_element.get('comment_char')
         self.empty_field_value = config_element.get('empty_field_value', '')
@@ -257,12 +255,11 @@ class ToolDataTable(object):
         self.filenames = OrderedDict()
         self.tool_data_path = tool_data_path
         self.tool_data_path_files = tool_data_path_files
-        self.other_config_dict = other_config_dict or {}
         self.missing_index_file = None
         # increment this variable any time a new entry is added, or when the table is totally reloaded
         # This value has no external meaning, and does not represent an abstract version of the underlying data
         self._loaded_content_version = 1
-        self._load_info = ([config_element, tool_data_path], {'from_shed_config': from_shed_config, 'tool_data_path_files': self.tool_data_path_files, 'other_config_dict': other_config_dict})
+        self._load_info = ([config_element, tool_data_path], {'from_shed_config': from_shed_config, 'tool_data_path_files': self.tool_data_path_files})
         self._merged_load_info = []
 
     def _update_version(self, version=None):
@@ -326,8 +323,8 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
 
     type_key = 'tabular'
 
-    def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None, other_config_dict=None):
-        super(TabularToolDataTable, self).__init__(config_element, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=other_config_dict)
+    def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None):
+        super(TabularToolDataTable, self).__init__(config_element, tool_data_path, from_shed_config, filename, tool_data_path_files)
         self.config_element = config_element
         self.data = []
         self.configure_and_load(config_element, tool_data_path, from_shed_config)
@@ -365,11 +362,6 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                     log.debug('Loading Data Table URL "%s" as filename "%s".', filename, tmp_file.name)
                     filename = tmp_file.name
                     tmp_file.flush()
-                else:
-                    # Pull the filename from a global config
-                    filename = file_element.get('from_config', None) or None
-                    if filename:
-                        filename = self.other_config_dict.get(filename, None)
             filename = file_path = expand_here_template(filename, here=self.here)
             found = False
             if file_path is None:
@@ -514,34 +506,35 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
 
     def extend_data_with(self, filename, errors=None):
         here = os.path.dirname(os.path.abspath(filename))
-        self.data.extend(self.parse_file_fields(filename, errors=errors, here=here))
+        self.data.extend(self.parse_file_fields(open(filename), errors=errors, here=here))
         if not self.allow_duplicate_entries:
             self._deduplicate_data()
 
-    def parse_file_fields(self, filename, errors=None, here="__HERE__"):
+    def parse_file_fields(self, reader, errors=None, here="__HERE__"):
         """
         Parse separated lines from file and return a list of tuples.
 
         TODO: Allow named access to fields using the column names.
         """
         separator_char = "<TAB>" if self.separator == "\t" else self.separator
+
         rval = []
-        with open(filename) as fh:
-            for i, line in enumerate(fh):
-                if line.lstrip().startswith(self.comment_char):
-                    continue
-                line = line.rstrip("\n\r")
-                if line:
-                    line = expand_here_template(line, here=here)
-                    fields = line.split(self.separator)
-                    if self.largest_index < len(fields):
-                        rval.append(fields)
-                    else:
-                        line_error = "Line %i in tool data table '%s' is invalid (HINT: '%s' characters must be used to separate fields):\n%s" % ((i + 1), self.name, separator_char, line)
-                        if errors is not None:
-                            errors.append(line_error)
-                        log.warning(line_error)
-        log.debug("Loaded %i lines from '%s' for '%s'", len(rval), filename, self.name)
+        for i, line in enumerate(reader):
+            if line.lstrip().startswith(self.comment_char):
+                continue
+            line = line.rstrip("\n\r")
+            if line:
+                line = expand_here_template(line, here=here)
+                fields = line.split(self.separator)
+                if self.largest_index < len(fields):
+                    rval.append(fields)
+                else:
+                    line_error = "Line %i in tool data table '%s' is invalid (HINT: '%s' characters must be used to separate fields):\n%s" % ((i + 1), self.name, separator_char, line)
+                    if errors is not None:
+                        errors.append(line_error)
+                    log.warning(line_error)
+        if hasattr(reader, "name"):
+            log.debug("Loaded %i lines from '%s' for '%s'", len(rval), reader.name, self.name)
         return rval
 
     def get_column_name_list(self):
@@ -793,103 +786,6 @@ class TabularToolDataField(Dictifiable):
         return rval
 
 
-class RefgenieToolDataTable(TabularToolDataTable):
-    """
-    Data stored in refgenie
-    <table name="all_fasta" type="refgenie" asset="fasta" >
-        <file path="refgenie.yml" />
-        <field name="value" template="true">${__REFGENIE_UUID__}</field>
-        <field name="dbkey" template="true">${__REFGENIE_GENOME__}</field>
-        <field name="name" template="true">${__REFGENIE_DISPLAY_NAME__}</field>
-        <field name="path" template="true">${__REFGENIE_ASSET__}</field>
-    </table>
-    """
-    dict_collection_visible_keys = ['name']
-
-    type_key = 'refgenie'
-
-    def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None, other_config_dict=None):
-        super(RefgenieToolDataTable, self).__init__(config_element, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=other_config_dict)
-        self.config_element = config_element
-        self.data = []
-        self.configure_and_load(config_element, tool_data_path, from_shed_config)
-
-    def configure_and_load(self, config_element, tool_data_path, from_shed_config=False, url_timeout=10):
-        self.rg_asset = config_element.get('asset', None)
-        assert self.rg_asset, ValueError('You must specify an asset attribute.')
-        super(RefgenieToolDataTable, self).configure_and_load(config_element, tool_data_path, from_shed_config=from_shed_config, url_timeout=url_timeout)
-
-    def parse_column_spec(self, config_element):
-        self.columns = {}
-        self.key_map = {}
-        self.template_for_column = {}
-        self.strip_for_column = {}
-        self.largest_index = 0
-        for i, elem in enumerate(config_element.findall('field')):
-            name = elem.get('name', None)
-            assert name, ValueError('You must provide a name refgenie field element.')
-            value = elem.text
-            self.key_map[name] = value
-            column_index = int(elem.get('column_index', i))
-
-            empty_field_value = elem.get('empty_field_value', None)
-            if empty_field_value is not None:
-                self.empty_field_values[name] = empty_field_value
-
-            self.template_for_column[name] = util.asbool(elem.get('template', False))
-            self.strip_for_column[name] = util.asbool(elem.get('strip', False))
-
-            self.columns[name] = column_index
-            self.largest_index = max(self.largest_index, column_index)
-        if 'name' not in self.columns:
-            self.columns['name'] = self.columns['value']
-
-    def parse_file_fields(self, filename, errors=None, here="__HERE__"):
-        rgc = refgenconf.RefGenConf(filename)
-        rval = []
-        for genome in rgc.list_genomes_by_asset(self.rg_asset):
-            genome_attributes = rgc.get_genome_attributes(genome)
-            description = genome_attributes.get('description', None)
-            asset_list = rgc.list(genome, include_tags=True)[genome]
-            for tagged_asset in asset_list:
-                asset, tag = tagged_asset.rsplit(':', 1)
-                if asset != self.rg_asset:
-                    continue
-                digest = rgc.id(genome, asset, tag=tag)
-                uuid = 'refgenie:%s/%s:%s@%s' % (genome, self.rg_asset, tag, digest)
-                display_name = description or '%s/%s' % (genome, tagged_asset)
-
-                def _seek_key(key):
-                    return rgc.seek(genome, asset, tag_name=tag, seek_key=key)
-                template_dict = {
-                    '__REFGENIE_UUID__': uuid,
-                    '__REFGENIE_GENOME__': genome,
-                    '__REFGENIE_TAG__': tag,
-                    '__REFGENIE_DISPLAY_NAME__': display_name,
-                    '__REFGENIE_ASSET__': rgc.seek(genome, asset, tag_name=tag),
-                    '__REFGENIE_ASSET_NAME__': asset,
-                    '__REFGENIE_DIGEST__': digest,
-                    '__REFGENIE_GENOME_ATTRIBUTES__': genome_attributes,
-                    '__REFGENIE__': rgc,
-                    '__REFGENIE_SEEK_KEY__': _seek_key,
-                }
-                fields = [''] * (self.largest_index + 1)
-                for name, index in self.columns.items():
-                    rg_value = self.key_map[name]
-                    # Default is hard-coded value
-                    if self.template_for_column.get(name, False):
-                        rg_value = fill_template(rg_value, template_dict)
-                    if self.strip_for_column.get(name, False):
-                        rg_value = rg_value.strip()
-                    fields[index] = rg_value
-                rval.append(fields)
-        log.debug("Loaded %i entries from refgenie '%s' asset '%s' for '%s'", len(rval), filename, self.rg_asset, self.name)
-        return rval
-
-    def _remove_entry(self, values):
-        raise NotImplementedError("Not supported")
-
-
 def expand_here_template(content, here=None):
     if here and content:
         content = string.Template(content).safe_substitute({"__HERE__": here})
@@ -897,4 +793,4 @@ def expand_here_template(content, here=None):
 
 
 # Registry of tool data types by type_key
-tool_data_table_types = dict([(cls.type_key, cls) for cls in [TabularToolDataTable, RefgenieToolDataTable]])
+tool_data_table_types = dict([(cls.type_key, cls) for cls in [TabularToolDataTable]])

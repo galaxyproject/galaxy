@@ -5,6 +5,7 @@ from __future__ import print_function
 
 import sys
 from os.path import dirname, join
+from xml.etree import ElementTree
 
 import pkg_resources
 import yaml
@@ -12,8 +13,6 @@ import yaml
 from galaxy.containers import parse_containers_config
 from galaxy.util import (
     asbool,
-    etree,
-    parse_xml,
     which,
 )
 from galaxy.util.properties import (
@@ -59,17 +58,17 @@ class ConditionalDependencies(object):
             if '.xml' in job_conf_path:
                 try:
                     try:
-                        for plugin in parse_xml(job_conf_path).find('plugins').findall('plugin'):
+                        for plugin in ElementTree.parse(job_conf_path).find('plugins').findall('plugin'):
                             if 'load' in plugin.attrib:
                                 self.job_runners.append(plugin.attrib['load'])
                     except (OSError, IOError):
                         pass
                     try:
-                        for plugin in parse_xml(job_conf_path).findall('.//destination/param[@id="rules_module"]'):
+                        for plugin in ElementTree.parse(job_conf_path).findall('.//destination/param[@id="rules_module"]'):
                             self.job_rule_modules.append(plugin.text)
                     except (OSError, IOError):
                         pass
-                except etree.ParseError:
+                except ElementTree.ParseError:
                     pass
             else:
                 try:
@@ -83,7 +82,7 @@ class ConditionalDependencies(object):
             "object_store_config_file",
             join(dirname(self.config_file), 'object_store_conf.xml'))
         try:
-            for store in parse_xml(object_store_conf_xml).iter('object_store'):
+            for store in ElementTree.parse(object_store_conf_xml).iter('object_store'):
                 if 'type' in store.attrib:
                     self.object_stores.append(store.attrib['type'])
         except (OSError, IOError):
@@ -94,7 +93,7 @@ class ConditionalDependencies(object):
             "auth_config_file",
             join(dirname(self.config_file), 'auth_conf.xml'))
         try:
-            for auth in parse_xml(auth_conf_xml).findall('authenticator'):
+            for auth in ElementTree.parse(auth_conf_xml).findall('authenticator'):
                 auth_type = auth.find('type')
                 if auth_type is not None:
                     self.authenticators.append(auth_type.text)

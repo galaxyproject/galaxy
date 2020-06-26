@@ -25,14 +25,6 @@ galaxy.tool\_util.verify.asserts.hdf5 module
     :undoc-members:
     :show-inheritance:
 
-galaxy.tool\_util.verify.asserts.size module
---------------------------------------------
-
-.. automodule:: galaxy.tool_util.verify.asserts.size
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 galaxy.tool\_util.verify.asserts.tabular module
 -----------------------------------------------
 

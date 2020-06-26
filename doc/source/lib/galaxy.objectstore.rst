@@ -25,14 +25,6 @@ galaxy.objectstore.cloud module
     :undoc-members:
     :show-inheritance:
 
-galaxy.objectstore.irods module
--------------------------------
-
-.. automodule:: galaxy.objectstore.irods
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 galaxy.objectstore.pithos module
 --------------------------------
 
@@ -45,6 +37,14 @@ galaxy.objectstore.pulsar module
 --------------------------------
 
 .. automodule:: galaxy.objectstore.pulsar
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.objectstore.rods module
+------------------------------
+
+.. automodule:: galaxy.objectstore.rods
     :members:
     :undoc-members:
     :show-inheritance:

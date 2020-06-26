@@ -11,7 +11,7 @@ Subpackages
 
 .. toctree::
 
-    galaxy.util.custom_logging
+    galaxy.util.logging
     galaxy.util.pastescript
     galaxy.util.path
     galaxy.util.tool_shed
@@ -47,14 +47,6 @@ galaxy.util.checkers module
 ---------------------------
 
 .. automodule:: galaxy.util.checkers
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-galaxy.util.commands module
----------------------------
-
-.. automodule:: galaxy.util.commands
     :members:
     :undoc-members:
     :show-inheritance:
@@ -383,14 +375,6 @@ galaxy.util.xml\_macros module
 ------------------------------
 
 .. automodule:: galaxy.util.xml_macros
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-galaxy.util.yaml\_util module
------------------------------
-
-.. automodule:: galaxy.util.yaml_util
     :members:
     :undoc-members:
     :show-inheritance:
