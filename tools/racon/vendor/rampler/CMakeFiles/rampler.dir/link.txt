@@ -1,0 +1,1 @@
+/usr/bin/c++   -Wall -Wextra -pedantic -Wall -Wextra -pedantic -O3 -DNDEBUG  -rdynamic CMakeFiles/rampler.dir/src/main.cpp.o CMakeFiles/rampler.dir/src/sequence.cpp.o CMakeFiles/rampler.dir/src/sampler.cpp.o  -o bin/rampler ../bioparser/lib/libz.a 

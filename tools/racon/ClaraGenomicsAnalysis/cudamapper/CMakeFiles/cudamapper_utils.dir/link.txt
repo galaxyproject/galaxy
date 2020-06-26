@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../lib/libcudamapper_utils.a  CMakeFiles/cudamapper_utils.dir/src/cudamapper_utils.cpp.o
+/usr/bin/ranlib ../../lib/libcudamapper_utils.a

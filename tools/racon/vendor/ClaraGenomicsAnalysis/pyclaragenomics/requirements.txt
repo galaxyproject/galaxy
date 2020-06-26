@@ -1,0 +1,19 @@
+#
+# Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+#
+# NVIDIA CORPORATION and its licensors retain all intellectual property
+# and proprietary rights in and to this software, related documentation
+# and any modifications thereto.  Any use, reproduction, disclosure or
+# distribution of this software and related documentation without an express
+# license agreement from NVIDIA CORPORATION is strictly prohibited.
+#
+
+Cython==0.29.12
+flake8==3.7.8
+matplotlib==3.0.3
+networkx==2.4
+numpy==1.16.3
+pytest==4.4.1
+quast==5.0.2
+sortedcollections==1.1.2
+tqdm==4.31.1

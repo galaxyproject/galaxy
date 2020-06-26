@@ -1,0 +1,9 @@
+If you want to disable registration for users that are using disposable email address
+rename this file to disposable_email_blacklist.conf and fill it with the disposable domains
+that you want to have blacklisted. Each on its own line without the '@' character as shown below.
+Users using emails from these domains will get an error during the registration.
+
+mailinator.com
+sogetthis.com
+spamgourmet.com
+trashmail.net

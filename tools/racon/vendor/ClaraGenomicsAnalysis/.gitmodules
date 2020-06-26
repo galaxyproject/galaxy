@@ -1,0 +1,28 @@
+#
+# Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+#
+# NVIDIA CORPORATION and its licensors retain all intellectual property
+# and proprietary rights in and to this software, related documentation
+# and any modifications thereto.  Any use, reproduction, disclosure or
+# distribution of this software and related documentation without an express
+# license agreement from NVIDIA CORPORATION is strictly prohibited.
+#
+
+[submodule "3rdparty/bioparser"]
+	path = 3rdparty/bioparser
+	url = https://github.com/rvaser/bioparser.git
+[submodule "3rdparty/googletest"]
+	path = 3rdparty/googletest
+	url = https://github.com/google/googletest.git
+[submodule "3rdparty/spdlog"]
+	path = 3rdparty/spdlog
+	url = https://github.com/gabime/spdlog.git
+[submodule "3rdparty/benchmark"]
+	path = 3rdparty/benchmark
+	url = https://github.com/google/benchmark.git
+[submodule "3rdparty/spoa"]
+	path = 3rdparty/spoa
+	url = https://github.com/rvaser/spoa.git
+[submodule "3rdparty/cub"]
+	path = 3rdparty/cub
+	url = https://github.com/NVlabs/cub.git

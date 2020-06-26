@@ -1,0 +1,3 @@
+recursive-include edlib/include *
+include *.pxd
+include *.pyx

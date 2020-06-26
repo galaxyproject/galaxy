@@ -1,0 +1,1 @@
+/usr/bin/cc -O3 -DNDEBUG  -rdynamic CMakeFiles/minigzip64.dir/test/minigzip.o  -o ../../bin/minigzip64 -Wl,-rpath,/home/gulsum/galaxy/tools/racon/vendor/bioparser/lib ../../lib/libz.so.1.2.11 

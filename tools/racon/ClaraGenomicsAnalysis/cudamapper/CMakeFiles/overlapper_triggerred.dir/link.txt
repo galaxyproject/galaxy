@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../lib/liboverlapper_triggerred.a  CMakeFiles/overlapper_triggerred.dir/src/overlapper_triggerred_generated_overlapper_triggered.cu.o
+/usr/bin/ranlib ../../lib/liboverlapper_triggerred.a

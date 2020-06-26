@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../lib/libmatcher_gpu.a  CMakeFiles/matcher_gpu.dir/src/matcher_gpu_generated_matcher_gpu.cu.o
+/usr/bin/ranlib ../../lib/libmatcher_gpu.a
