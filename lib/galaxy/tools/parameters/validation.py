@@ -79,8 +79,11 @@ class RegexValidator(Validator):
         self.expression = expression
 
     def validate(self, value, trans=None):
-        if re.match(self.expression, value or '') is None:
-            raise ValueError(self.message)
+        if not isinstance(value, list):
+            value = [value]
+        for val in value:
+            if re.match(self.expression, val or '') is None:
+                raise ValueError(self.message)
 
 
 class ExpressionValidator(Validator):
