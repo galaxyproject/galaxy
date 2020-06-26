@@ -1,3 +1,4 @@
+import io
 import os
 import re
 import shutil
@@ -19,11 +20,6 @@ try:
     import requests
 except ImportError:
     requests = None
-from six import (
-    BytesIO,
-    StringIO,
-    text_type,
-)
 
 from galaxy import util
 from galaxy.tool_util.parser.interface import TestCollectionDef, TestCollectionOutputDef
@@ -303,7 +299,7 @@ class GalaxyInteractorApi:
             elif mode == 'directory':
                 prefix = os.path.basename(filename)
                 path = tempfile.mkdtemp(prefix=prefix)
-                with tarfile.open(fileobj=BytesIO(response.content)) as tar_contents:
+                with tarfile.open(fileobj=io.BytesIO(response.content)) as tar_contents:
                     tar_contents.extractall(path=path)
                 return path
         else:
@@ -554,7 +550,7 @@ class GalaxyInteractorApi:
             print(ERROR_MESSAGE_DATASET_SEP)
 
     def format_for_summary(self, blob, empty_message, prefix="|  "):
-        contents = "\n".join("{}{}".format(prefix, line.strip()) for line in StringIO(blob).readlines() if line.rstrip("\n\r"))
+        contents = "\n".join("{}{}".format(prefix, line.strip()) for line in io.StringIO(blob).readlines() if line.rstrip("\n\r"))
         return contents or "{}*{}*".format(prefix, empty_message)
 
     def _dataset_provenance(self, history_id, id):

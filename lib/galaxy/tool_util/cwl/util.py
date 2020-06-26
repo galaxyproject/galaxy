@@ -3,6 +3,7 @@
 Used to share code between the Galaxy test framework
 and other Galaxy CWL clients (e.g. Planemo)."""
 import hashlib
+import io
 import json
 import os
 import tarfile
@@ -10,11 +11,6 @@ import tempfile
 from collections import namedtuple
 
 import yaml
-from six import (
-    BytesIO,
-    iteritems,
-    python_2_unicode_compatible
-)
 
 from galaxy.util import unicodify
 
@@ -38,7 +34,7 @@ def output_properties(path=None, content=None, basename=None, pseduo_location=Fa
         properties["path"] = path
         f = open(path, "rb")
     else:
-        f = BytesIO(content)
+        f = io.BytesIO(content)
 
     try:
         contents = f.read(1024 * 1024)
