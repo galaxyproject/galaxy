@@ -1,0 +1,1 @@
+/usr/bin/c++   -Wall -Wextra -pedantic -O3 -DNDEBUG   CMakeFiles/sample_cudaaligner.dir/sample_cudaaligner.cpp.o  -o ../../../bin/sample_cudaaligner ../../../lib/libcudaaligner.a /usr/local/cuda/lib64/libcudart_static.a -pthread -ldl /usr/lib/x86_64-linux-gnu/librt.so ../../../lib/liblogging.a ../../../lib/liblogging.a -lpthread 

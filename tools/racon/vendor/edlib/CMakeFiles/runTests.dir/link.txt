@@ -1,0 +1,1 @@
+/usr/bin/c++   -Wall -Wextra -pedantic -Wall -Wextra -pedantic -O3 -DNDEBUG  -rdynamic CMakeFiles/runTests.dir/test/runTests.cpp.o  -o ../../bin/runTests ../../lib/libedlib_static.a 

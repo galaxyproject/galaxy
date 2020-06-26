@@ -1,16 +1,12 @@
 import errno
 import logging
+import xml.etree.ElementTree
 from collections import namedtuple
 
 import galaxy.auth.providers
 from galaxy.exceptions import Conflict
 from galaxy.security.validate_user_input import validate_publicname
-from galaxy.util import (
-    parse_xml,
-    parse_xml_string,
-    plugin_config,
-    string_as_bool,
-)
+from galaxy.util import plugin_config, string_as_bool
 
 
 log = logging.getLogger(__name__)
@@ -33,22 +29,19 @@ def get_authenticators(auth_config_file, auth_config_file_set):
     __plugins_dict = plugin_config.plugins_dict(galaxy.auth.providers, 'plugin_type')
     # parse XML
     try:
-        ct = parse_xml(auth_config_file)
+        ct = xml.etree.ElementTree.parse(auth_config_file)
         conf_root = ct.getroot()
     except (OSError, IOError) as exc:
         if exc.errno == errno.ENOENT and not auth_config_file_set:
-            conf_root = parse_xml_string(AUTH_CONF_XML)
+            conf_root = xml.etree.ElementTree.fromstring(AUTH_CONF_XML)
         else:
             raise
 
     authenticators = []
     # process authenticators
     for auth_elem in conf_root:
-        type_elem_text = auth_elem.find('type').text
-        plugin_class = __plugins_dict.get(type_elem_text)
-        if not plugin_class:
-            raise Exception("Authenticator type '%s' not recognized, should be one of %s" % (type_elem_text, ', '.join(__plugins_dict)))
-        plugin = plugin_class()
+        type_elem = auth_elem.find('type')
+        plugin = __plugins_dict.get(type_elem.text)()
 
         # check filterelem
         filter_elem = auth_elem.find('filter')

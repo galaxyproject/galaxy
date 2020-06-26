@@ -22,9 +22,11 @@ from .util.process_groups import (
     check_pg,
     kill_pg
 )
+import pynvml as nvml
 
 log = logging.getLogger(__name__)
-
+nvml.nvmlInit()
+gpu_count = nvml.nvmlDeviceGetCount()
 __all__ = ('LocalJobRunner', )
 
 DEFAULT_POOL_SLEEP_TIME = 1
@@ -58,14 +60,25 @@ class LocalJobRunner(BaseJobRunner):
         """
         """
         command_line = job_wrapper.runner_command_line
-
+        # if self.tool_info:
+        #     reqmnts = self.tool_info.requirements
+        #     for req in reqmnts:
+        #         if req.type == "compute" and req.name == "gpu":
+        #             flag = 1
+        #     if gpu_count > 0 and flag == 1:
+        #         log.info("**************************GPU ENABLED!!!!!**********************************************")
+        #         os.environ['GALAXY_GPU_ENABLED'] = "true"
+        #     else:
+        #         log.info("**************************GPU DISABLED!!!!!*********************************************")
+        #         os.environ['GALAXY_GPU_ENABLED'] = "false"
+        
         # slots would be cleaner name, but don't want deployers to see examples and think it
         # is going to work with other job runners.
         slots = job_wrapper.job_destination.params.get("local_slots", None) or os.environ.get("GALAXY_SLOTS", None)
         if slots:
-            slots_statement = 'GALAXY_SLOTS="%d"; export GALAXY_SLOTS; GALAXY_SLOTS_CONFIGURED="1"; export GALAXY_SLOTS_CONFIGURED;' % (int(slots))
+            slots_statement = 'GALAXY_SLOTS="%d"; export GALAXY_SLOTS; GALAXY_SLOTS_CONFIGURED="1"; export GALAXY_SLOTS_CONFIGURED; export GALAXY_GPU_ENABLED;' % (int(slots))
         else:
-            slots_statement = 'GALAXY_SLOTS="1"; export GALAXY_SLOTS;'
+            slots_statement = 'GALAXY_SLOTS="1"; export GALAXY_SLOTS; export GALAXY_GPU_ENABLED;'
 
         job_id = job_wrapper.get_id_tag()
         job_file = JobState.default_job_file(job_wrapper.working_directory, job_id)
@@ -112,10 +125,9 @@ class LocalJobRunner(BaseJobRunner):
                 self._procs.append(proc)
 
             try:
-                job = job_wrapper.get_job()
-                # Flush job with change_state.
-                job_wrapper.set_external_id(proc.pid, job=job, flush=False)
-                job_wrapper.change_state(model.Job.states.RUNNING, job=job)
+                job_wrapper.set_job_destination(job_wrapper.job_destination, proc.pid)
+                job_wrapper.change_state(model.Job.states.RUNNING)
+
                 self._handle_container(job_wrapper, proc)
 
                 terminated = self.__poll_if_needed(proc, job_wrapper, job_id)

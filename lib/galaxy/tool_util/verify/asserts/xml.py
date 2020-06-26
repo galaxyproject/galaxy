@@ -1,16 +1,14 @@
 from __future__ import absolute_import
 
 import re
+import xml.etree
 
-from galaxy.util import (
-    parse_xml_string,
-    unicodify,
-)
+from galaxy.util import unicodify
 
 
 # Helper functions used to work with XML output.
 def to_xml(output):
-    return parse_xml_string(output)
+    return xml.etree.ElementTree.fromstring(output)
 
 
 def xml_find_text(output, path):
@@ -37,7 +35,7 @@ def assert_is_valid_xml(output):
 def assert_has_element_with_path(output, path):
     """ Asserts the specified output has at least one XML element with a
     path matching the specified path argument. Valid paths are the
-    simplified subsets of XPath implemented by lxml.etree;
+    simplified subsets of XPath implemented by xml.etree;
     http://effbot.org/zone/element-xpath.htm for more information."""
     if xml_find(output, path) is None:
         errmsg = "Expected to find XML element matching expression %s, not such match was found." % path

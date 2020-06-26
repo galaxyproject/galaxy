@@ -1,6 +1,6 @@
-import bz2
 import gzip
 import re
+import sys
 import tarfile
 import zipfile
 
@@ -9,6 +9,16 @@ from six.moves import filter
 
 from galaxy import util
 from galaxy.util.image_util import image_type
+
+if sys.version_info < (3, 3):
+    gzip.GzipFile.read1 = gzip.GzipFile.read  # workaround for https://bugs.python.org/issue12591
+    try:
+        import bz2file as bz2
+    except ImportError:
+        # If bz2file is unavailable, just fallback to not having pbzip2 support.
+        import bz2
+else:
+    import bz2
 
 HTML_CHECK_LINES = 100
 

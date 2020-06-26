@@ -9,11 +9,10 @@ import os
 import re
 import sys
 from functools import reduce
+from xml.etree import ElementTree as ET
 
 import numpy as np
 import yaml
-
-from galaxy.util import parse_xml
 
 __version__ = '1.1.0'
 
@@ -1678,7 +1677,7 @@ def get_destination_list_from_job_config(job_config_location):
             log.debug(message)
 
     if job_config_location:
-        job_conf = parse_xml(job_config_location, strip_whitespace=False)
+        job_conf = ET.parse(job_config_location)
 
         # Add all destination IDs from the job configuration xml file
         for destination in job_conf.getroot().iter("destination"):

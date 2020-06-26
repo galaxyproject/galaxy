@@ -362,25 +362,19 @@ class NavigatesGalaxy(HasDriver):
 
     def published_grid_search_for(self, search_term=None):
         return self._inline_search_for(
-            self.navigation.grids.free_text_search,
+            '#input-free-text-search-filter',
             search_term,
         )
 
     def get_logged_in_user(self):
         return self.api_get("users/current")
 
-    def get_api_key(self):
-        user = self.get_logged_in_user()
-        return self.api_get("users/%s/api_key/inputs" % user["id"])["inputs"][0]["value"]
-
     def is_logged_in(self):
         return "email" in self.get_logged_in_user()
 
     @retry_during_transitions
     def _inline_search_for(self, selector, search_term=None):
-        # Clear tooltip resulting from clicking on the masthead to get here.
-        self.clear_tooltips()
-        search_box = self.wait_for_and_click(selector)
+        search_box = self.wait_for_and_click_selector(selector)
         search_box.clear()
         if search_term is not None:
             search_box.send_keys(search_term)
@@ -412,7 +406,7 @@ class NavigatesGalaxy(HasDriver):
             'login': email,
             'password': password,
         }
-        self.components.masthead.register_or_login.wait_for_and_click()
+        self.click_masthead_user()
         self.sleep_for(WAIT_TYPES.UX_RENDER)
         form = self.wait_for_visible(self.navigation.login.selectors.form)
         self.fill(form, login_info)
@@ -441,7 +435,7 @@ class NavigatesGalaxy(HasDriver):
             username = email.split("@")[0]
 
         self.home()
-        self.components.masthead.register_or_login.wait_for_and_click()
+        self.click_masthead_user()
         self.wait_for_and_click(self.navigation.registration.selectors.toggle)
         form = self.wait_for_visible(self.navigation.registration.selectors.form)
         self.fill(form, dict(
@@ -476,8 +470,8 @@ class NavigatesGalaxy(HasDriver):
             assert email in text
             assert self.get_logged_in_user()["email"] == email
 
-            # clicking away no longer closes menu post Masthead -> VueJS
-            self.click_masthead_user()
+            # Hide masthead menu click
+            self.click_center()
 
     def wait_for_logged_in(self):
         try:
@@ -849,11 +843,6 @@ class NavigatesGalaxy(HasDriver):
         self.wait_for_and_click_selector("#workflow-save-button")
         self.sleep_for(self.wait_types.DATABASE_OPERATION)
 
-    def navigate_to_user_preferences(self):
-        self.home()
-        self.click_masthead_user()
-        self.components.masthead.preferences.wait_for_and_click()
-
     def admin_open(self):
         self.components.masthead.admin.wait_for_and_click()
 
@@ -965,12 +954,6 @@ class NavigatesGalaxy(HasDriver):
         self.wait_for_selector_absent_or_hidden(".ui-modal", wait_type=WAIT_TYPES.UX_POPUP)
         self.wait_for_selector_absent_or_hidden(".toast", wait_type=WAIT_TYPES.UX_POPUP)
 
-    def clear_tooltips(self):
-        action_chains = self.action_chains()
-        center_element = self.driver.find_element_by_css_selector("#center")
-        action_chains.move_to_element(center_element).perform()
-        self.wait_for_selector_absent_or_hidden(".b-tooltip", wait_type=WAIT_TYPES.UX_POPUP)
-
     def workflow_index_open(self):
         self.home()
         self.click_masthead_workflow()
@@ -994,7 +977,7 @@ class NavigatesGalaxy(HasDriver):
 
     def workflow_index_search_for(self, search_term=None):
         return self._inline_search_for(
-            self.navigation.workflows.search_box,
+            "#workflow-search",
             search_term,
         )
 
@@ -1470,27 +1453,6 @@ class NavigatesGalaxy(HasDriver):
         element = self.wait_for_clickable(selector_template)
         element.click()
         return element
-
-    def set_history_annotation(self, annotation, clear_text=False):
-        self.ensure_history_annotation_area_displayed()
-
-        self.wait_for_and_click(self.navigation.history_panel.selectors.annotation_editable_text)
-
-        annon_area_editable = self.wait_for_and_click(self.navigation.history_panel.selectors.annotation_edit)
-        anno_done_button = self.wait_for_clickable(self.navigation.history_panel.selectors.annotation_done)
-
-        if clear_text:
-            annon_area_editable.clear()
-
-        annon_area_editable.send_keys(annotation)
-        anno_done_button.click()
-
-    def ensure_history_annotation_area_displayed(self):
-        annotation_area_selector = self.navigation.history_panel.selectors.annotation_area
-        annotation_icon_selector = self.navigation.history_panel.selectors.annotation_icon
-
-        if not self.is_displayed(annotation_area_selector):
-            self.wait_for_and_click(annotation_icon_selector)
 
     def select2_set_value(self, container_selector_or_elem, value, with_click=True, clear_value=False):
         # There are two hacky was to select things from the select2 widget -

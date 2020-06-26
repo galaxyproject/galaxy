@@ -236,8 +236,7 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
         contained_ids = id_map[self.contained_class_type_name]
         id_map[self.contained_class_type_name] = self._contained_id_map(contained_ids)
         subcontainer_ids = id_map[self.subcontainer_class_type_name]
-        serialization_params = kwargs.get('serialization_params', None)
-        id_map[self.subcontainer_class_type_name] = self._subcontainer_id_map(subcontainer_ids, serialization_params=serialization_params)
+        id_map[self.subcontainer_class_type_name] = self._subcontainer_id_map(subcontainer_ids)
 
         # cycle back over the union query to create an ordered list of the objects returned in queries 2 & 3 above
         contents = []
@@ -295,11 +294,12 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
             if orm_filter.filter_type == "orm_function":
                 contained_query = contained_query.filter(orm_filter.filter(self.contained_class))
                 subcontainer_query = subcontainer_query.filter(orm_filter.filter(self.subcontainer_class))
-            elif orm_filter.filter_type == "orm":
-                contained_query = self._apply_orm_filter(contained_query, orm_filter.filter)
-                subcontainer_query = self._apply_orm_filter(subcontainer_query, orm_filter.filter)
+        contents_query = contained_query.union(subcontainer_query)
 
-        contents_query = contained_query.union_all(subcontainer_query)
+        for orm_filter in filters:
+            if orm_filter.filter_type == "orm":
+                contents_query = contents_query.filter(orm_filter.filter)
+
         contents_query = contents_query.order_by(*order_by)
 
         if limit is not None:
@@ -307,15 +307,6 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
         if offset is not None:
             contents_query = contents_query.offset(offset)
         return contents_query
-
-    def _apply_orm_filter(self, qry, orm_filter):
-        if isinstance(orm_filter, sql.elements.BinaryExpression):
-            for match in filter(lambda col: col['name'] == orm_filter.left.name, qry.column_descriptions):
-                column = match['expr']
-                new_filter = orm_filter._clone()
-                new_filter.left = column
-                qry = qry.filter(new_filter)
-        return qry
 
     def _contents_common_columns(self, component_class, **kwargs):
         columns = []
@@ -399,7 +390,7 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
             .options(eagerload('annotations')))
         return dict((row.id, row) for row in query.all())
 
-    def _subcontainer_id_map(self, id_list, serialization_params=None):
+    def _subcontainer_id_map(self, id_list):
         """Return an id to model map of all subcontainer-type models in the id_list."""
         if not id_list:
             return []
@@ -409,14 +400,6 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
             .options(eagerload('collection'))
             .options(eagerload('tags'))
             .options(eagerload('annotations')))
-
-        # This will conditionally join a potentially costly job_state summary
-        # All the paranoia if-checking makes me wonder if serialization_params
-        # should really be a property of the manager class instance
-        if serialization_params and serialization_params['keys']:
-            if 'job_state_summary' in serialization_params['keys']:
-                query = query.options(eagerload('job_state_summary'))
-
         return dict((row.id, row) for row in query.all())
 
 

@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../../lib/libcgaio.a  CMakeFiles/cgaio.dir/src/fasta_parser.cpp.o CMakeFiles/cgaio.dir/src/hts_fasta_parser.cpp.o
+/usr/bin/ranlib ../../../lib/libcgaio.a

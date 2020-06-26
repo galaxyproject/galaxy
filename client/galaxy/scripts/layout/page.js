@@ -3,7 +3,7 @@ import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
-import { MastheadState, mountMasthead } from "layout/masthead";
+import Masthead from "layout/masthead";
 import Panel from "layout/panel";
 import Modal from "mvc/ui/ui-modal";
 import Utils from "utils/utils";
@@ -14,6 +14,7 @@ const View = Backbone.View.extend({
     _panelids: ["left", "right"],
 
     initialize: function (options) {
+        const self = this;
         this.config = _.defaults(options.config || {}, {
             message_box_visible: false,
             message_box_content: "",
@@ -27,8 +28,8 @@ const View = Backbone.View.extend({
         // attach global objects, build mastheads
         const Galaxy = getGalaxyInstance();
         Galaxy.modal = this.modal = new Modal.View();
-        Galaxy.router = this.router = options.Router && new options.Router(this, options);
-        const mastheadState = new MastheadState();
+        Galaxy.router = this.router = options.Router && new options.Router(self, options);
+        this.masthead = new Masthead.View(this.config);
         this.center = new Panel.CenterPanel();
 
         // display helper
@@ -41,9 +42,9 @@ const View = Backbone.View.extend({
                 view.allow_title_display = true;
             }
             if (view.active_tab) {
-                this.masthead.highlight(view.active_tab);
+                self.masthead.highlight(view.active_tab);
             }
-            this.center.display(view);
+            self.center.display(view);
         };
 
         // build page template
@@ -59,10 +60,10 @@ const View = Backbone.View.extend({
             this.$masthead.remove();
             this.$center.css("top", 0);
         } else {
-            this.masthead = mountMasthead(this.$masthead[0], this.config, mastheadState);
+            this.$masthead.replaceWith(this.masthead.$el);
         }
         this.$center.append(this.center.$el);
-        this.$el.append(mastheadState.frame.$el);
+        this.$el.append(this.masthead.frame.$el);
         this.$el.append(this.modal.$el);
 
         // build panels
@@ -72,10 +73,10 @@ const View = Backbone.View.extend({
                 const panel_class_name = panel_id.charAt(0).toUpperCase() + panel_id.slice(1);
                 const panel_class = options[panel_class_name];
                 if (panel_class) {
-                    const panel_instance = new panel_class(this, options);
-                    const panel_el = this.$(`#${panel_id}`);
-                    this[panel_instance.toString()] = panel_instance;
-                    this.panels[panel_id] = new Panel.SidePanel({
+                    const panel_instance = new panel_class(self, options);
+                    const panel_el = self.$(`#${panel_id}`);
+                    self[panel_instance.toString()] = panel_instance;
+                    self.panels[panel_id] = new Panel.SidePanel({
                         id: panel_id,
                         el: panel_el,
                         view: panel_instance,
@@ -101,6 +102,7 @@ const View = Backbone.View.extend({
         // TODO: Remove this line after select2 update
         $(".select2-hidden-accessible").remove();
         if (!this.config.hide_masthead) {
+            this.masthead.render();
             this.renderMessageBox();
             this.renderInactivityBox();
         }
@@ -141,13 +143,14 @@ const View = Backbone.View.extend({
 
     /** Render panels */
     renderPanels: function () {
+        const self = this;
         _.each(this._panelids, (panel_id) => {
-            const panel = this.panels[panel_id];
+            const panel = self.panels[panel_id];
             if (panel) {
                 panel.render();
             } else {
-                this.$center.css(panel_id, 0);
-                this.$(`#${panel_id}`).hide();
+                self.$center.css(panel_id, 0);
+                self.$(`#${panel_id}`).hide();
             }
         });
         return this;

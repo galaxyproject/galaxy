@@ -9,12 +9,9 @@ import logging
 from six import string_types
 from sqlalchemy import or_
 
-from galaxy import (
-    exceptions,
-    model,
-    util,
-)
-from galaxy.managers import hdas
+from galaxy import exceptions
+from galaxy import model
+from galaxy import util
 from galaxy.managers.jobs import (
     JobManager,
     JobSearch,
@@ -42,7 +39,6 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
         super(JobController, self).__init__(app)
         self.job_manager = JobManager(app)
         self.job_search = JobSearch(app)
-        self.hda_manager = hdas.HDAManager(app)
 
     @expose_api
     def index(self, trans, **kwd):
@@ -378,7 +374,10 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
 
     def __get_job(self, trans, job_id=None, dataset_id=None, **kwd):
         if job_id is not None:
-            decoded_job_id = self.decode_id(job_id)
+            try:
+                decoded_job_id = self.decode_id(job_id)
+            except Exception:
+                raise exceptions.MalformedId()
             return self.job_manager.get_accessible_job(trans, decoded_job_id)
         else:
             hda_ldda = kwd.get("hda_ldda", "hda")
@@ -411,12 +410,12 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
         """
         tool_id = payload.get('tool_id')
         if tool_id is None:
-            raise exceptions.RequestParameterMissingException("No tool id")
+            raise exceptions.ObjectAttributeMissingException("No tool id")
         tool = trans.app.toolbox.get_tool(tool_id)
         if tool is None:
             raise exceptions.ObjectNotFound("Requested tool not found")
         if 'inputs' not in payload:
-            raise exceptions.RequestParameterMissingException("No inputs defined")
+            raise exceptions.ObjectAttributeMissingException("No inputs defined")
         inputs = payload.get('inputs', {})
         # Find files coming in as multipart file data and add to inputs.
         for k, v in payload.items():
@@ -440,7 +439,7 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
         return [self.encode_all_ids(trans, single_job.to_dict('element'), True) for single_job in jobs]
 
     @expose_api_anonymous
-    def error(self, trans, id, payload, **kwd):
+    def error(self, trans, id, **kwd):
         """
         error( trans, id )
         * POST /api/jobs/{id}/error
@@ -453,18 +452,16 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
         :returns:   dictionary containing information regarding where the error report was sent.
         """
         # Get dataset on which this error was triggered
-        dataset_id = payload.get('dataset_id')
-        if not dataset_id:
-            raise exceptions.RequestParameterMissingException('No dataset_id')
-        decoded_dataset_id = self.decode_id(dataset_id)
-        dataset = self.hda_manager.get_accessible(decoded_dataset_id, trans.user)
+        try:
+            decoded_dataset_id = self.decode_id(kwd['dataset_id'])
+        except Exception:
+            raise exceptions.MalformedId()
+        dataset = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(decoded_dataset_id)
 
         # Get job
         job = self.__get_job(trans, id)
-        if dataset.creating_job.id != job.id:
-            raise exceptions.RequestParameterInvalidException('dataset_id was not created by job_id')
         tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version) or None
-        email = payload.get('email')
+        email = kwd.get('email')
         if not email and not trans.anonymous:
             email = trans.user.email
         messages = trans.app.error_reports.default_error_plugin.submit_report(
@@ -474,7 +471,7 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
             user_submission=True,
             user=trans.user,
             email=email,
-            message=payload.get('message')
+            message=kwd.get('message')
         )
 
         return {'messages': messages}

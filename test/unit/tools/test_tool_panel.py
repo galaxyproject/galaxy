@@ -1,9 +1,10 @@
+from xml.etree import ElementTree as ET
+
 from galaxy.tools.toolbox import ToolSection
-from galaxy.util import etree
 
 
 def test_tool_section():
-    elem = etree.Element('section')
+    elem = ET.Element('section')
     elem.attrib['name'] = "Cool Tools"
     elem.attrib['id'] = "cool1"
 

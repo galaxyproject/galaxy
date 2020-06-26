@@ -2,20 +2,15 @@
  * Temporary function used to mount the masthead inside the current application.
  * This function is exposed with the rest of the page-globals in bundledEntries.
  */
-import { MastheadState, mountMasthead } from "../../layout/masthead";
-import $ from "jquery";
+import Vue from "vue";
+import Masthead from "components/Masthead";
 
 export function initMasthead(config, container) {
     console.log("initMasthead");
-
-    const $masthead = $("#masthead");
-
-    if (config.hide_masthead) {
-        $masthead.remove();
-    } else {
-        if (container) {
-            const mastheadState = new MastheadState();
-            mountMasthead(container, config, mastheadState);
-        }
-    }
+    const Component = Vue.extend(Masthead);
+    return new Component({
+        props: Object.keys(config),
+        propsData: config,
+        el: container,
+    });
 }

@@ -1,0 +1,1 @@
+/usr/bin/c++   -Wall -Wextra -pedantic -O3 -DNDEBUG   CMakeFiles/sample_cudapoa.dir/sample_cudapoa.cpp.o  -o ../../../bin/sample_cudapoa ../../../lib/libcudapoa.a /usr/local/cuda/lib64/libcudart_static.a -pthread -ldl /usr/lib/x86_64-linux-gnu/librt.so ../../../lib/liblogging.a ../../../lib/liblogging.a -lpthread 

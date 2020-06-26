@@ -1,0 +1,26 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/gulsum/galaxy/tools/racon/vendor/edlib/edlib/src/edlib.cpp
+edlib.h
+/home/gulsum/galaxy/tools/racon/vendor/edlib/edlib/src/edlib.h
+stdint.h
+-
+cstdlib
+-
+algorithm
+-
+vector
+-
+cstring
+-
+string
+-
+
+vendor/edlib/edlib/include/edlib.h
+

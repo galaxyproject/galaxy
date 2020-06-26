@@ -6,5 +6,4 @@ lib
 
    galaxy
    galaxy_ext
-   galaxy_test
    tool_shed

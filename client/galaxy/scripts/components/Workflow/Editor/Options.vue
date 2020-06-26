@@ -2,17 +2,6 @@
     <div class="panel-header-buttons">
         <span v-if="canvas">
             <b-button
-                id="workflow-home-button"
-                role="button"
-                title="Edit Attributes"
-                variant="link"
-                aria-label="Edit Attributes"
-                v-b-tooltip.hover
-                @click="$emit('onAttributes')"
-            >
-                <span class="fa fa-pencil-alt" />
-            </b-button>
-            <b-button
                 id="workflow-save-button"
                 role="button"
                 title="Save Workflow"
@@ -47,15 +36,10 @@
                 <template v-slot:button-content>
                     <span class="fa fa-cog" />
                 </template>
-                <b-dropdown-item href="#" @click="$emit('onSaveAs')"
-                    ><span class="fa fa-floppy-o mr-1" />Save As...</b-dropdown-item
-                >
-                <b-dropdown-item href="#" @click="$emit('onLayout')"
-                    ><span class="fa fa-align-left mr-1" />Auto Layout</b-dropdown-item
-                >
-                <b-dropdown-item href="#" @click="$emit('onDownload')"
-                    ><span class="fa fa-download mr-1" />Download</b-dropdown-item
-                >
+                <b-dropdown-item href="#" @click="$emit('onSaveAs')">Save As</b-dropdown-item>
+                <b-dropdown-item href="#" @click="$emit('onAttributes')">Edit Attributes</b-dropdown-item>
+                <b-dropdown-item href="#" @click="$emit('onLayout')">Auto Layout</b-dropdown-item>
+                <b-dropdown-item href="#" @click="$emit('onDownload')">Download</b-dropdown-item>
             </b-dropdown>
             <b-button
                 id="workflow-run-button"

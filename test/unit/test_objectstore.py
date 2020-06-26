@@ -4,6 +4,7 @@ from shutil import rmtree
 from string import Template
 from tempfile import mkdtemp
 from uuid import uuid4
+from xml.etree import ElementTree
 
 import yaml
 from six import StringIO
@@ -14,10 +15,7 @@ from galaxy.objectstore.azure_blob import AzureBlobObjectStore
 from galaxy.objectstore.cloud import Cloud
 from galaxy.objectstore.pithos import PithosObjectStore
 from galaxy.objectstore.s3 import S3ObjectStore
-from galaxy.util import (
-    directory_hash_id,
-    XML,
-)
+from galaxy.util import directory_hash_id
 
 
 DISK_TEST_CONFIG = """<?xml version="1.0"?>
@@ -776,7 +774,7 @@ class TestConfig(object):
         if clazz is None:
             self.object_store = objectstore.build_object_store_from_config(config)
         elif config_file == "store.xml":
-            self.object_store = clazz.from_xml(config, XML(config_str))
+            self.object_store = clazz.from_xml(config, ElementTree.fromstring(config_str))
         else:
             self.object_store = clazz(config, yaml.safe_load(StringIO(config_str)))
 

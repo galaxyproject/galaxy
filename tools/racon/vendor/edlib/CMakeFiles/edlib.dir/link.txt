@@ -1,0 +1,1 @@
+/usr/bin/c++ -fPIC  -Wall -Wextra -pedantic -Wall -Wextra -pedantic -O3 -DNDEBUG  -shared -Wl,-soname,libedlib.so -o ../../lib/libedlib.so CMakeFiles/edlib.dir/edlib/src/edlib.cpp.o 

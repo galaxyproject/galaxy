@@ -1,0 +1,160 @@
+#!/usr/bin/env python3
+
+#
+# Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+#
+# NVIDIA CORPORATION and its licensors retain all intellectual property
+# and proprietary rights in and to this software, related documentation
+# and any modifications thereto.  Any use, reproduction, disclosure or
+# distribution of this software and related documentation without an express
+# license agreement from NVIDIA CORPORATION is strictly prohibited.
+#
+"""Functions and tools for calculating the accuracy of overlap detection"""
+
+import argparse
+from collections import defaultdict
+
+from claragenomics.io import pafio
+
+
+def match_overlaps(query_0, query_1, target_0, target_1, pos_tolerance):
+    """Given two sets of query and target ranges, check if the query and target ranges
+    fall within a specified tolerance of each other.
+
+    Args:
+        query_0 (int, int) : Start/end locations for query_0
+        query_1 (int, int) : Start/end locations of query_1
+        target_0 (int, int): Start/end location of target_0
+        target_1 (int, int): Start/end locations of target_1
+
+    Returns: Boolean indicating query and target match.
+    """
+    return abs(query_0[0] - query_1[0]) < pos_tolerance and \
+        abs(query_0[1] - query_1[1]) < pos_tolerance and \
+        abs(target_0[0] - target_1[0]) < pos_tolerance and \
+        abs(target_0[1] - target_1[1]) < pos_tolerance
+
+def generate_key(name_1, name_2):
+    """Given two read names, return key for indexing overlaps.
+
+    Args:
+        name_1 (str) : Name of first read
+        name_2 (str): Name of second read
+
+    Returns: a key of concatenated names.
+    """
+    return "{}_{}".format(name_1, name_2)
+
+def evaluate_paf(truth_paf_filepath, test_paf_filepath, pos_tolerance=400, skip_self_mappings=True):
+    """Given a truth and test set PAF file, count number of in/correctly detected, and non-detected overlaps
+    Args:
+       truth_paf_filepath (str): Path to truth set PAF file
+       test_paf_filepath (str): Path to test set PAF file
+       pos_tolerance (int): query and referennce positions within this range will be connsidered to be a matched overlap
+       skip_self_mappings (bool: Skip overlaps where query and target ID are the same
+
+    Returns: 3-tupe consisting of (rue_positive_count, false_positive_count, false_negative_count).
+    """
+
+    # Put the truth paf into a dictionary:
+    truth_overlaps = defaultdict(list)
+
+    num_true_overlaps = 0
+    for truth_overlap in pafio.read_paf(truth_paf_filepath):
+        if skip_self_mappings and \
+                (truth_overlap.query_sequence_name == truth_overlap.target_sequence_name):
+            continue
+
+        key = generate_key(truth_overlap.query_sequence_name, truth_overlap.target_sequence_name)
+
+        truth_overlaps[key].append(truth_overlap)
+        num_true_overlaps += 1
+
+    true_positive_count = 0
+    false_positive_count = 0
+    false_negative_count = 0
+
+    print("Counted {} true overlaps".format(num_true_overlaps))
+
+    seen_test_overlap_keys = set()
+
+    for test_overlap in pafio.read_paf(test_paf_filepath):
+        if skip_self_mappings and \
+                (test_overlap.query_sequence_name == test_overlap.target_sequence_name):
+            continue
+
+        query_0 = (test_overlap.query_start, test_overlap.query_end)
+        target_0 = (test_overlap.target_start, test_overlap.target_end)
+
+        key = generate_key(test_overlap.query_sequence_name, test_overlap.target_sequence_name)
+        key_reversed = generate_key(test_overlap.target_sequence_name, test_overlap.query_sequence_name)
+
+        if (key in seen_test_overlap_keys) or (key_reversed in seen_test_overlap_keys):
+            continue
+
+        seen_test_overlap_keys.add(key)
+        seen_test_overlap_keys.add(key_reversed)
+
+        found_match = False
+        if key in truth_overlaps:
+            for truth_overlap in truth_overlaps[key]:
+                query_1 = (truth_overlap.query_start, truth_overlap.query_end)
+                target_1 = (truth_overlap.target_start, truth_overlap.target_end)
+
+                matched = match_overlaps(query_0, query_1, target_0, target_1, pos_tolerance)
+
+                if matched:
+                    true_positive_count += 1
+                    found_match = True
+                    break
+
+        elif key_reversed in truth_overlaps:
+            for truth_overlap in truth_overlaps[key_reversed]:
+                query_1 = (truth_overlap.target_start, truth_overlap.target_end)
+                target_1 = (truth_overlap.query_start, truth_overlap.query_end)
+
+                matched = match_overlaps(query_0, query_1, target_0, target_1, pos_tolerance)
+
+                if matched:
+                    true_positive_count += 1
+                    found_match = True
+                    break
+
+        if not found_match:
+            false_positive_count += 1
+
+    #  Now count the false negatives:
+    false_negative_count = num_true_overlaps - true_positive_count
+    return(true_positive_count, false_positive_count, false_negative_count)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Given a truth (reference) and test set of overlaps in PAF format,\
+         calculate precision and recall")
+    parser.add_argument('--truth_paf',
+                        type=str,
+                        default='truth.paf')
+    parser.add_argument('--test_paf',
+                        type=str,
+                        default='test.paf')
+    parser.add_argument('--pos_tolerance',
+                        type=int,
+                        default=400,
+                        help="Position tolerance around truth set interval to count as successful match.")
+    parser.add_argument('--skip_self_mapping',
+                        action="store_true",
+                        help="Skip checking overlaps where query/target name are same")
+
+    args = parser.parse_args()
+
+    true_positives, false_positives, false_negatives = evaluate_paf(args.truth_paf, args.test_paf,
+                                                                    args.pos_tolerance, args.skip_self_mapping)
+
+    print("True positives: ", true_positives)
+    print("False positives: ", false_positives)
+    print("False negatives: ", false_negatives)
+
+    precision = true_positives / (true_positives + false_positives)
+    recall = true_positives / (true_positives + false_negatives)
+
+    print("Precision = {}, Recall = {}".format(precision, recall))

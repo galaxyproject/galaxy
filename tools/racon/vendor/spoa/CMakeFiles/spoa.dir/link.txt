@@ -1,0 +1,2 @@
+/usr/bin/ar qc lib/libspoa.a  CMakeFiles/spoa.dir/src/alignment_engine.cpp.o CMakeFiles/spoa.dir/src/graph.cpp.o CMakeFiles/spoa.dir/src/simd_alignment_engine.cpp.o CMakeFiles/spoa.dir/src/sisd_alignment_engine.cpp.o
+/usr/bin/ranlib lib/libspoa.a

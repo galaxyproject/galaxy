@@ -20,34 +20,26 @@ class CustosAuthnzTestCase(unittest.TestCase):
     _get_userinfo_called = False
     _raw_token = None
 
-    def _get_idp_url(self):
+    def _get_base_idp_url(self):
         # it would be ideal is we can use a URI as the following:
         # https://test_base_uri/auth
         return 'https://iam.scigap.org/auth'
 
-    def _get_credential_url(self):
-        return '/'.join([self._get_idp_url(), 'credentials'])
-
-    def _get_well_known_url(self):
-        return '/'.join([self._get_idp_url(), '.well-known/openid-configuration'])
+    def _get_idp_url(self):
+        return "{}/realms/test-realm/.well-known/openid-configuration".format(self._get_base_idp_url())
 
     def setUp(self):
         self.orig_requests_get = requests.get
-        requests.get = self.mockRequest({
-            self._get_well_known_url(): {
-                "authorization_endpoint": "https://test-auth-endpoint",
-                "token_endpoint": "https://test-token-endpoint",
-                "userinfo_endpoint": "https://test-userinfo-endpoint",
-                "end_session_endpoint": "https://test-end-session-endpoint"
-            },
-            self._get_credential_url(): {
-                "iam_client_secret": "TESTSECRET"
-            }
+        requests.get = self.mockRequest(self._get_idp_url(), {
+            "authorization_endpoint": "https://test-auth-endpoint",
+            "token_endpoint": "https://test-token-endpoint",
+            "userinfo_endpoint": "https://test-userinfo-endpoint",
+            "end_session_endpoint": "https://test-end-session-endpoint"
         })
         self.custos_authnz = custos_authnz.CustosAuthnz('Custos', {
             'VERIFY_SSL': True
         }, {
-            'url': self._get_idp_url(),
+            'url': self._get_base_idp_url(),
             'client_id': 'test-client-id',
             'client_secret': 'test-client-secret',
             'redirect_uri': 'https://test-redirect-uri',
@@ -114,17 +106,14 @@ class CustosAuthnzTestCase(unittest.TestCase):
             }
         custos_authnz._get_userinfo = get_userinfo
 
-    def mockRequest(self, request_dict):
+    def mockRequest(self, url, resp):
         def get(x, **kwargs):
-            assert(x in request_dict)
-            return Response(request_dict[x])
+            assert x == url
+            return Response()
 
         class Response(object):
-            def __init__(self, resp):
-                self.response = resp
-
             def json(self):
-                return self.response
+                return resp
 
         return get
 
@@ -159,13 +148,9 @@ class CustosAuthnzTestCase(unittest.TestCase):
             provider = None
             custos_authnz_token = None
 
-            def filter_by(self, email=None, external_user_id=None, provider=None, username=None):
+            def filter_by(self, email=None, external_user_id=None, provider=None):
                 self.external_user_id = external_user_id
                 self.provider = provider
-                if username:
-                    # This is only called with a specific username to check if it
-                    # already exists in the database.  Say no, for testing.
-                    return QueryResult()
                 if self.custos_authnz_token:
                     return QueryResult([self.custos_authnz_token])
                 else:
@@ -214,6 +199,7 @@ class CustosAuthnzTestCase(unittest.TestCase):
         self.assertEqual(self.custos_authnz.config['client_id'], 'test-client-id')
         self.assertEqual(self.custos_authnz.config['client_secret'], 'test-client-secret')
         self.assertEqual(self.custos_authnz.config['redirect_uri'], 'https://test-redirect-uri')
+        self.assertEqual(self.custos_authnz.config['well_known_oidc_config_uri'], self._get_idp_url())
         self.assertEqual(self.custos_authnz.config['authorization_endpoint'], 'https://test-auth-endpoint')
         self.assertEqual(self.custos_authnz.config['token_endpoint'], 'https://test-token-endpoint')
         self.assertEqual(self.custos_authnz.config['userinfo_endpoint'], 'https://test-userinfo-endpoint')
@@ -239,14 +225,14 @@ class CustosAuthnzTestCase(unittest.TestCase):
         authorization_url = self.custos_authnz.authenticate(self.trans)
         parsed = urlparse(authorization_url)
         param1_value = parse_qs(parsed.query)['kc_idp_hint'][0]
-        self.assertEqual(param1_value, 'oidc')
+        self.assertEqual(param1_value, 'cilogon')
 
     def test_authenticate_sets_env_var_when_localhost_redirect(self):
         """Verify that OAUTHLIB_INSECURE_TRANSPORT var is set with localhost redirect."""
         self.custos_authnz = custos_authnz.CustosAuthnz('Custos', {
             'VERIFY_SSL': True
         }, {
-            'url': self._get_idp_url(),
+            'url': self._get_base_idp_url(),
             'client_id': 'test-client-id',
             'client_secret': 'test-client-secret',
             'redirect_uri': 'http://localhost/auth/callback',

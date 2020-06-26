@@ -8,7 +8,6 @@ from json import dumps
 from six import string_types
 
 from galaxy import model
-from galaxy.exceptions import ItemAccessibilityException
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model import LibraryDatasetDatasetAssociation, WorkflowRequestInputParameter
 from galaxy.model.dataset_collections.builder import CollectionBuilder
@@ -101,12 +100,12 @@ class DefaultToolAction(object):
                 if collection_info and collection_info.is_mapped_over(input_name):
                     action_tuples = collection_info.map_over_action_tuples(input_name)
                     if not trans.app.security_agent.can_access_datasets(current_user_roles, action_tuples):
-                        raise ItemAccessibilityException("User does not have permission to use a dataset provided for input.")
+                        raise Exception("User does not have permission to use a dataset provided for input.")
                     for action, role_id in action_tuples:
                         record_permission(action, role_id)
                 else:
                     if not trans.app.security_agent.can_access_dataset(current_user_roles, data.dataset):
-                        raise ItemAccessibilityException("User does not have permission to use a dataset (%s) provided for input." % data.id)
+                        raise Exception("User does not have permission to use a dataset (%s) provided for input." % data.id)
                     permissions = trans.app.security_agent.get_permissions(data.dataset)
                     for action, roles in permissions.items():
                         for role in roles:
@@ -173,7 +172,7 @@ class DefaultToolAction(object):
 
                 action_tuples = collection.dataset_action_tuples
                 if not trans.app.security_agent.can_access_datasets(current_user_roles, action_tuples):
-                    raise ItemAccessibilityException("User does not have permission to use a dataset provided for input.")
+                    raise Exception("User does not have permission to use a dataset provided for input.")
                 for action, role_id in action_tuples:
                     record_permission(action, role_id)
 
@@ -707,9 +706,10 @@ class DefaultToolAction(object):
 
                 # TODO: verify can have multiple with same name, don't want to lose traceability
                 if isinstance(dataset_collection, model.HistoryDatasetCollectionAssociation):
+                    # FIXME: when recording inputs for special tools (e.g. ModelOperationToolAction),
+                    # dataset_collection is actually a DatasetCollectionElement, which can't be added
+                    # to a jobs' input_dataset_collection relation, which expects HDCA instances
                     job.add_input_dataset_collection(name, dataset_collection)
-                elif isinstance(dataset_collection, model.DatasetCollectionElement):
-                    job.add_input_dataset_collection_element(name, dataset_collection)
 
         # If this an input collection is a reduction, we expanded it for dataset security, type
         # checking, and such, but the persisted input must be the original collection

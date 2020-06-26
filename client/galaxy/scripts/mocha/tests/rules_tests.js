@@ -15,11 +15,7 @@ function applyRules(rules, data, sources) {
 }
 
 function itShouldConform(specTestCase, i) {
-    let doc = "";
-    if (specTestCase.doc) {
-        doc = " - " + specTestCase.doc;
-    }
-    it("should pass conformance test case " + i + " (from rules_dsl_spec.yml)" + doc, function () {
+    it("should pass conformance test case " + i, function () {
         chai.assert.property(specTestCase, "rules");
         if (specTestCase.initial) {
             chai.assert.property(specTestCase, "final");
@@ -42,6 +38,6 @@ function itShouldConform(specTestCase, i) {
     });
 }
 
-describe("Rules DSL", function () {
+describe("Rules DSL Spec", function () {
     SPEC_TEST_CASES.forEach(itShouldConform);
 });

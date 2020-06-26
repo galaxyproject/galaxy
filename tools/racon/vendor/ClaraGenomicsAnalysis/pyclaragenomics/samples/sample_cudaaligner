@@ -1,0 +1,86 @@
+#!/usr/bin/env python
+
+#
+# Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+#
+# NVIDIA CORPORATION and its licensors retain all intellectual property
+# and proprietary rights in and to this software, related documentation
+# and any modifications thereto.  Any use, reproduction, disclosure or
+# distribution of this software and related documentation without an express
+# license agreement from NVIDIA CORPORATION is strictly prohibited.
+#
+
+import argparse
+
+from claragenomics.bindings import cudaaligner
+from claragenomics.simulators.genomesim import PoissonGenomeSimulator
+
+"""
+Sample program for using CUDA Aligner Python API for pairwise alignment.
+"""
+
+def generate_data(max_query_len, max_target_len, num_alignments):
+    genome_sim = PoissonGenomeSimulator()
+
+    print("Generating data...")
+    data = []
+    for _ in range(num_alignments):
+        query = genome_sim.build_reference(max_query_len)
+        target = genome_sim.build_reference(max_target_len)
+        data.append((query, target))
+    print("Data generation complete.")
+
+    return data
+
+def run_cudaaligner(print_output):
+    max_query_len = 100
+    max_target_len = 150
+    max_alignments_per_batch = 100
+
+    sequence_pairs = generate_data(max_query_len, max_target_len, 1000)
+
+    batch = cudaaligner.CudaAlignerBatch(max_query_len,
+                                         max_target_len,
+                                         max_alignments_per_batch,
+                                         device_id=0)
+
+    pair_id = 0
+    while(pair_id != len(sequence_pairs)):
+        pair = sequence_pairs[pair_id]
+        status = batch.add_alignment(pair[0], pair[1])
+
+        # Exceeded max alignments or end of list
+        if status == 2 or pair_id == len(sequence_pairs) - 1:
+            batch.align_all()
+            alignments = batch.get_alignments()
+            if print_output:
+                for a in alignments:
+                    print("{}\n".format(a))
+            batch.reset()
+            print("Aligned sequences till {}".format(pair_id - 1))
+        elif status != 0:
+            print(status)
+            raise RuntimeError("Unexpected error occurred : {}".format(cudaaligner.status_to_str(status)))
+
+        # If alignment was added successfully, increment counter.
+        if status == 0:
+            pair_id = pair_id + 1
+
+def parse_args():
+    """
+    Parse command line arguments.
+    """
+    parser = argparse.ArgumentParser(
+        description="CUDA Aligner Python API sample program.")
+    parser.add_argument('-p',
+                        help="Print output alignment each pair os sequences.",
+                        action='store_true')
+    return parser.parse_args()
+
+
+if __name__ == "__main__":
+
+    # Read cmd line args.
+    args = parse_args()
+
+    run_cudaaligner(args.p)

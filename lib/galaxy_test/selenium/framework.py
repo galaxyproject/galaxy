@@ -183,7 +183,7 @@ class TestSnapshot(object):
         write_file_func("%s-stack.txt" % prefix, str(self.stack))
 
 
-class TestWithSeleniumMixin(NavigatesGalaxy, UsesApiTestCaseMixin):
+class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin):
     # If run one-off via nosetests, the next line ensures test
     # tools and datatypes are used instead of configured tools.
     framework_tool_and_types = True
@@ -193,24 +193,16 @@ class TestWithSeleniumMixin(NavigatesGalaxy, UsesApiTestCaseMixin):
     # GALAXY_TEST_SELENIUM_USER_PASSWORD are set these values
     # will be used to login.
     ensure_registered = False
-
-    # Override this in subclasses to annotate that an admin user
-    # is required for the test to run properly. Override admin user
-    # login info with GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL /
-    # GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD
     requires_admin = False
 
-    def _target_url_from_selenium(self):
+    def setUp(self):
+        super(SeleniumTestCase, self).setUp()
         # Deal with the case when Galaxy has a different URL when being accessed by Selenium
         # then when being accessed by local API calls.
         if GALAXY_TEST_EXTERNAL_FROM_SELENIUM is not None:
-            target_url_from_selenium = GALAXY_TEST_EXTERNAL_FROM_SELENIUM
+            self.target_url_from_selenium = GALAXY_TEST_EXTERNAL_FROM_SELENIUM
         else:
-            target_url_from_selenium = self.url
-        return target_url_from_selenium
-
-    def setup_selenium(self):
-        self.target_url_from_selenium = self._target_url_from_selenium()
+            self.target_url_from_selenium = self.url
         self.snapshots = []
         self.setup_driver_and_session()
         if self.requires_admin and GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL == DEFAULT_ADMIN_USER:
@@ -234,8 +226,20 @@ class TestWithSeleniumMixin(NavigatesGalaxy, UsesApiTestCaseMixin):
         if self.ensure_registered:
             self.login()
 
-    def tear_down_selenium(self):
-        self.tear_down_driver()
+    def tearDown(self):
+        exception = None
+        try:
+            super(SeleniumTestCase, self).tearDown()
+        except Exception as e:
+            exception = e
+
+        try:
+            self.tear_down_driver()
+        except Exception as e:
+            exception = e
+
+        if exception is not None:
+            raise exception
 
     def snapshot(self, description):
         """Create a debug snapshot (DOM, screenshot, etc...) that is written out on tool failure.
@@ -395,28 +399,6 @@ class TestWithSeleniumMixin(NavigatesGalaxy, UsesApiTestCaseMixin):
         visualization_names = self.history_panel_item_available_visualizations(hid)
         if visualization_name not in visualization_names:
             raise unittest.SkipTest("Skipping test, visualization [%s] doesn't appear to be configured." % visualization_name)
-
-
-class SeleniumTestCase(FunctionalTestCase, TestWithSeleniumMixin):
-
-    def setUp(self):
-        super(SeleniumTestCase, self).setUp()
-        self.setup_selenium()
-
-    def tearDown(self):
-        exception = None
-        try:
-            self.tear_down_selenium()
-        except Exception as e:
-            exception = e
-
-        try:
-            super(SeleniumTestCase, self).tearDown()
-        except Exception as e:
-            exception = e
-
-        if exception is not None:
-            raise exception
 
 
 class SharedStateSeleniumTestCase(SeleniumTestCase):

@@ -122,7 +122,7 @@ const Configurations = {
     ],
 };
 
-/** View for hda and dce content selector ui elements */
+/** View for hda and hdca content selector ui elements */
 const View = Backbone.View.extend({
     initialize: function (options) {
         const self = this;
@@ -223,10 +223,7 @@ const View = Backbone.View.extend({
     /** Return the currently selected dataset values */
     value: function (new_value) {
         const galaxy = getGalaxyInstance();
-        if (new_value) {
-            this._patchValue(new_value);
-            this.model.set("value", new_value);
-        }
+        new_value !== undefined && this.model.set("value", new_value);
         const current = this.model.get("current");
         if (this.config[current]) {
             let id_list = this.fields[current].value();
@@ -259,11 +256,12 @@ const View = Backbone.View.extend({
 
     /** Change of current select field */
     _changeCurrent: function () {
+        const self = this;
         _.each(this.fields, (field, i) => {
-            const cnf = this.config[i];
-            if (this.model.get("current") == i) {
+            const cnf = self.config[i];
+            if (self.model.get("current") == i) {
                 field.$el.show();
-                _.each(this.$batch, ($batchfield, batchmode) => {
+                _.each(self.$batch, ($batchfield, batchmode) => {
                     if (cnf.batch == batchmode) {
                         $batchfield.show();
                     } else {
@@ -271,11 +269,11 @@ const View = Backbone.View.extend({
                     }
                 });
                 if (cnf.src == "hda") {
-                    this.button_dialog.show();
+                    self.button_dialog.show();
                 } else {
-                    this.button_dialog.hide();
+                    self.button_dialog.hide();
                 }
-                this.button_type.value(i);
+                self.button_type.value(i);
             } else {
                 field.$el.hide();
             }
@@ -393,20 +391,19 @@ const View = Backbone.View.extend({
     _changeData: function () {
         const options = this.model.get("data");
         const self = this;
-        const select_options = { hda: [], hdca: [] };
+        const select_options = {};
         _.each(options, (items, src) => {
+            select_options[src] = [];
             _.each(items, (item) => {
-                self._patchValue(item);
-                const current_src = item.src || src;
-                select_options[current_src].push({
+                select_options[src].push({
                     hid: item.hid,
                     keep: item.keep,
-                    label: `${item.hid || "Selected"}: ${item.name}`,
+                    label: `${item.hid}: ${item.name}`,
                     value: item.id,
                     origin: item.origin,
                     tags: item.tags,
                 });
-                self.cache[`${item.id}_${current_src}`] = item;
+                self.cache[`${item.id}_${src}`] = item;
             });
         });
         _.each(this.config, (c, i) => {
@@ -447,17 +444,11 @@ const View = Backbone.View.extend({
         return v.history_content_type == "dataset_collection" ? "hdca" : "hda";
     },
 
-    /** Library datasets are displayed and selected together with history datasets,
-        Dataset collection elements are displayed together with history dataset collections **/
+    /** Library datasets are displayed and selected together with history datasets **/
     _patchValue: function (v) {
-        const patchTo = { ldda: "hda", dce: "hdca" };
-        if (v.values) {
-            _.each(v.values, (v) => {
-                this._patchValue(v);
-            });
-        } else if (patchTo[v.src]) {
-            v.origin = v.src;
-            v.src = patchTo[v.src];
+        if (v.src == "ldda") {
+            v.src = "hda";
+            v.origin = "ldda";
             v.id = `${v.origin}${v.id}`;
         }
     },
@@ -543,9 +534,9 @@ const View = Backbone.View.extend({
         result["batch"] = false;
         const current = this.model.get("current");
         const config = this.config[current];
-        if (config.src == "dce" || config.src == "hdca") {
-            const element = this.cache[`${this.fields[current].value()}_${config.src}`];
-            if (element && element.map_over_type) {
+        if (config.src == "hdca") {
+            const hdca = this.cache[`${this.fields[current].value()}_hdca`];
+            if (hdca && hdca.map_over_type) {
                 result["batch"] = true;
             }
         }

@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../../lib/liblogging.a  CMakeFiles/logging.dir/src/logging.cpp.o
+/usr/bin/ranlib ../../../lib/liblogging.a

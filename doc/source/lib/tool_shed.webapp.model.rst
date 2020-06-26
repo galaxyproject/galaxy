@@ -1,7 +1,7 @@
-tool\_shed.webapp.model package
-===============================
+galaxy.webapps.tool\_shed.model package
+=======================================
 
-.. automodule:: tool_shed.webapp.model
+.. automodule:: galaxy.webapps.tool_shed.model
     :members:
     :undoc-members:
     :show-inheritance:
@@ -11,15 +11,15 @@ Subpackages
 
 .. toctree::
 
-    tool_shed.webapp.model.migrate
+    galaxy.webapps.tool_shed.model.migrate
 
 Submodules
 ----------
 
-tool\_shed.webapp.model.mapping module
---------------------------------------
+galaxy.webapps.tool\_shed.model.mapping module
+----------------------------------------------
 
-.. automodule:: tool_shed.webapp.model.mapping
+.. automodule:: galaxy.webapps.tool_shed.model.mapping
     :members:
     :undoc-members:
     :show-inheritance:

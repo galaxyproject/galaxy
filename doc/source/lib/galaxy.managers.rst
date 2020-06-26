@@ -113,14 +113,6 @@ galaxy.managers.deletable module
     :undoc-members:
     :show-inheritance:
 
-galaxy.managers.executables module
-----------------------------------
-
-.. automodule:: galaxy.managers.executables
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 galaxy.managers.folders module
 ------------------------------
 
@@ -161,14 +153,6 @@ galaxy.managers.history\_contents module
     :undoc-members:
     :show-inheritance:
 
-galaxy.managers.interactivetool module
---------------------------------------
-
-.. automodule:: galaxy.managers.interactivetool
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 galaxy.managers.jobs module
 ---------------------------
 
@@ -197,22 +181,6 @@ galaxy.managers.library\_datasets module
 ----------------------------------------
 
 .. automodule:: galaxy.managers.library_datasets
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-galaxy.managers.markdown\_parse module
---------------------------------------
-
-.. automodule:: galaxy.managers.markdown_parse
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-galaxy.managers.markdown\_util module
--------------------------------------
-
-.. automodule:: galaxy.managers.markdown_util
     :members:
     :undoc-members:
     :show-inheritance:

@@ -30,10 +30,6 @@ class CwlToolSource(ToolSource):
         self._strict_cwl_validation = strict_cwl_validation
 
     @property
-    def source_path(self):
-        return self._source_path
-
-    @property
     def tool_proxy(self):
         if self._tool_proxy is None:
             self._tool_proxy = tool_proxy(self._source_path, strict_cwl_validation=self._strict_cwl_validation)

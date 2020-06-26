@@ -17,7 +17,6 @@ SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 IRODS_OBJECT_STORE_HOST = os.environ.get('GALAXY_INTEGRATION_IRODS_OBJECT_STORE_HOST', 'localhost')
 IRODS_OBJECT_STORE_PORT = int(os.environ.get('GALAXY_INTEGRATION_IRODS_OBJECT_STORE_PORT', 1247))
 IRODS_OBJECT_STORE_TIMEOUT = int(os.environ.get('GALAXY_INTEGRATION_IRODS_OBJECT_STORE_TIMEOUT', 30))
-IRODS_OBJECT_STORE_POOLSIZE = int(os.environ.get('GALAXY_INTEGRATION_IRODS_OBJECT_STORE_POOLSIZE', 3))
 IRODS_OBJECT_STORE_USERNAME = os.environ.get('GALAXY_INTEGRATION_IRODS_OBJECT_STORE_USERNAME', 'rods')
 IRODS_OBJECT_STORE_PASSWORD = os.environ.get('GALAXY_INTEGRATION_IRODS_OBJECT_STORE_PASSWORD', 'rods')
 IRODS_OBJECT_STORE_RESOURCE = os.environ.get('GALAXY_INTEGRATION_IRODS_OBJECT_STORE_RESOURCE', 'demoResc')
@@ -52,7 +51,7 @@ DISTRIBUTED_IRODS_OBJECT_STORE_CONFIG = string.Template("""
             <auth username="${username}" password="${password}"/>
             <resource name="${resource}"/>
             <zone name="${zone}"/>
-            <connection host="${host}" port="${port}" timeout="${timeout}" poolsize="${poolsize}"/>
+            <connection host="${host}" port="${port}" timeout="${timeout}"/>
             <cache path="${temp_directory}/object_store_cache" size="1000"/>
             <extra_dir type="job_work" path="${temp_directory}/job_working_directory_irods"/>
             <extra_dir type="temp" path="${temp_directory}/tmp_irods"/>
@@ -64,7 +63,7 @@ IRODS_OBJECT_STORE_CONFIG = string.Template("""<object_store type="irods">
     <auth username="${username}" password="${password}"/>
     <resource name="${resource}"/>
     <zone name="${zone}"/>
-    <connection host="${host}" port="${port}" timeout="${timeout}" poolsize="${poolsize}"/>
+    <connection host="${host}" port="${port}" timeout="${timeout}"/>
     <cache path="${temp_directory}/object_store_cache" size="1000"/>
     <extra_dir type="job_work" path="${temp_directory}/job_working_directory_irods"/>
     <extra_dir type="temp" path="${temp_directory}/tmp_irods"/>
@@ -120,7 +119,6 @@ class BaseObjectstoreUploadTest(UploadTestDatatypeDataTestCase):
         config["object_store_store_by"] = "uuid"
         with open(cls.object_store_config_path, "w") as f:
             f.write(cls.object_store_template.safe_substitute(**cls.get_object_store_kwargs()))
-        config["object_store_config_file"] = cls.object_store_config_path
 
     @classmethod
     def get_object_store_kwargs(cls):
@@ -149,7 +147,6 @@ class IrodsUploadTestDatatypeDataTestCase(BaseObjectstoreUploadTest):
             "host": IRODS_OBJECT_STORE_HOST,
             "port": IRODS_OBJECT_STORE_PORT,
             "timeout": IRODS_OBJECT_STORE_TIMEOUT,
-            "poolsize": IRODS_OBJECT_STORE_POOLSIZE,
             "username": IRODS_OBJECT_STORE_USERNAME,
             "password": IRODS_OBJECT_STORE_PASSWORD,
             "resource": IRODS_OBJECT_STORE_RESOURCE,

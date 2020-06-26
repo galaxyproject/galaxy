@@ -12,7 +12,7 @@
         <template v-slot:modal-header>
             <h4 class="title" tabindex="0">{{ title }}</h4>
         </template>
-        <b-tabs v-if="ready">
+        <b-tabs v-if="historyAvailable">
             <b-tab title="Regular" id="regular" button-id="tab-title-link-regular">
                 <default :app="this" :lazy-load-max="50" />
             </b-tab>
@@ -27,7 +27,7 @@
             </b-tab>
         </b-tabs>
         <div v-else>
-            <loading-span message="Loading required information from Galaxy server." />
+            Loading required information from Galaxy server.
         </div>
     </b-modal>
 </template>
@@ -44,7 +44,6 @@ import Composite from "./Composite";
 import Collection from "./Collection";
 import Default from "./Default";
 import RulesInput from "./RulesInput";
-import LoadingSpan from "components/LoadingSpan";
 
 Vue.use(BootstrapVue);
 
@@ -54,7 +53,6 @@ export default {
         Composite,
         Default,
         RulesInput,
-        LoadingSpan,
     },
     props: {
         modalStatic: {
@@ -103,8 +101,6 @@ export default {
             currentUser: null,
             listGenomes: [],
             listExtensions: [],
-            genomesSet: false,
-            extensionsSet: false,
         };
     },
     created: function () {
@@ -120,25 +116,18 @@ export default {
         // load extensions
         UploadUtils.getUploadDatatypes(
             (listExtensions) => {
-                this.extensionsSet = true;
                 this.listExtensions = listExtensions;
             },
-            this.datatypesDisableAuto,
+            this.datatypesDisableSuto,
             this.auto
         );
 
         // load genomes
         UploadUtils.getUploadGenomes((listGenomes) => {
-            this.genomesSet = true;
             this.listGenomes = listGenomes;
         }, this.defaultGenome);
 
         this.initStateWhenHistoryReady();
-    },
-    computed: {
-        ready() {
-            return this.genomesSet && this.extensionsSet && this.historyAvailable;
-        },
     },
     methods: {
         show() {

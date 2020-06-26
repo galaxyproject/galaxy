@@ -8,6 +8,7 @@ import logging
 import os
 from collections import OrderedDict
 from string import Template
+from xml.etree.ElementTree import Element
 
 import yaml
 
@@ -107,7 +108,7 @@ class Registry(object):
             #           type="galaxy.datatypes.blast:BlastXml" />
             compressed_sniffers = {}
             handling_proprietary_datatypes = False
-            if isinstance(config, str):
+            if not isinstance(config, Element):
                 # Parse datatypes_conf.xml
                 tree = galaxy.util.parse_xml(config)
                 root = tree.getroot()
@@ -925,6 +926,21 @@ class Registry(object):
         if 'auto' not in rval and 'txt' in rval:  # need to manually add 'auto' datatype
             rval['auto'] = rval['txt']
         return rval
+
+    def get_gpu_val(self, context, group, tool):
+        self.log.debug("Hello from tool %s" % (tool.id))
+        rval = {}
+        inputs = []
+        if os.environ['GALAXY_GPU_ENABLED'] == "true":
+            inputs.append('<param argument="-c" type="integer" name="c" value="1" label="Number of batches for CUDA accelerated polishing" />')
+            inputs.append('<param argument="-b" type="boolean" name="b" value="" truevalue="-b" falsevalue="" label="Use banding approximation for polishing on GPU." />')
+        rval['true'] = "\n".join(inputs)
+        rval['false'] = ['']
+
+        self.log.debug("RACON PARAM for %s is %s" % ('true',rval['true']))
+
+        return rval
+        
 
     @property
     def edam_formats(self):

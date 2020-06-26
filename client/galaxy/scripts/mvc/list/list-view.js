@@ -666,7 +666,6 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
                 onfirstsearch: _.bind(this._firstSearch, this),
                 onsearch: _.bind(this.searchItems, this),
                 onclear: _.bind(this.clearSearch, this),
-                advsearchlink: true,
             });
             return $where;
         },

@@ -1,5 +1,3 @@
-@import "~@fortawesome/fontawesome-free/scss/_variables";
-
 // ======================================================================== all types
 .collection-creator {
     height: 100%;
@@ -265,9 +263,9 @@
                     border-right: 1px solid grey;
                     padding-right: 8px;
                     &:after {
-                        @extend .fas;
                         margin-left: 8px;
-                        content: fa-content($fa-var-arrow-right);
+                        font-family: FontAwesome;
+                        content: "\f061";
                     }
                 }
                 .pair-name-column {
@@ -280,9 +278,9 @@
                     border-left: 1px solid grey;
                     padding-left: 8px;
                     &:before {
-                        @extend .fas;
                         margin-right: 8px;
-                        content: fa-content($fa-var-arrow-left);
+                        font-family: FontAwesome;
+                        content: "\f060";
                     }
                 }
             }
@@ -395,11 +393,11 @@
         margin: 2px 0px 0px 14px;
         background: black;
         &:before {
-            @extend .fas;
             float: left;
             font-size: 120%;
             margin: -9px 0px 0px -8px;
-            content: fa-content($fa-var-caret-right);
+            font-family: FontAwesome;
+            content: "\f0da";
         }
         &:last-child {
             margin-bottom: 8px;

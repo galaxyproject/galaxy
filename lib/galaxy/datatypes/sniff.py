@@ -3,7 +3,6 @@ File format detector
 """
 from __future__ import absolute_import
 
-import bz2
 import codecs
 import gzip
 import io
@@ -33,6 +32,11 @@ from galaxy.util.checkers import (
     check_zip,
     is_tar,
 )
+
+if sys.version_info < (3, 3):
+    import bz2file as bz2
+else:
+    import bz2
 
 log = logging.getLogger(__name__)
 

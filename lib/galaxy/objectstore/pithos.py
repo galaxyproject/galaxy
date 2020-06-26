@@ -38,7 +38,7 @@ log = logging.getLogger(__name__)
 
 def parse_config_xml(config_xml):
     """Parse and validate config_xml, return dict for convenience
-    :param config_xml: (lxml.etree.Element) root of XML subtree
+    :param config_xml: (xml.etree.ElementTree.Element) root of XML subtree
     :returns: (dict) according to syntax
     :raises: various XML parse errors
     """
@@ -392,7 +392,7 @@ class PithosObjectStore(ConcreteObjectStore):
                 return cache_path
         raise ObjectNotFound(
             'objectstore.get_filename, no cache_path: {obj}, '
-            'kwargs: {kwargs}'.format(obj=obj, kwargs=kwargs))
+            'kwargs: {kwargs}'.format(obj, kwargs))
 
     def _update_from_file(self, obj, **kwargs):
         """Update the store when a file is updated"""
@@ -401,7 +401,7 @@ class PithosObjectStore(ConcreteObjectStore):
         if not self._exists(obj, **kwargs):
             raise ObjectNotFound(
                 'objectstore.update_from_file, object does not exist: {obj}, '
-                'kwargs: {kwargs}'.format(obj=obj, kwargs=kwargs))
+                'kwargs: {kwargs}'.format(obj, kwargs))
 
         path = self._construct_path(obj, **kwargs)
         cache_path = self._get_cache_path(path)

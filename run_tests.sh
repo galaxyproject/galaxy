@@ -276,13 +276,7 @@ report_file="run_functional_tests.html"
 coverage_arg=""
 xunit_report_file=""
 structured_data_report_file=""
-SKIP_CLIENT_BUILD=${GALAXY_SKIP_CLIENT_BUILD:-1}
-if [ "$SKIP_CLIENT_BUILD" = "1" ];
-then
-    skip_client_build="--skip-client-build"
-else
-    skip_client_build=""
-fi
+skip_client_build="--skip-client-build"
 
 if [ "$1" = "--dockerize" ];
 then

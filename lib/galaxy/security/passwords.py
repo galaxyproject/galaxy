@@ -18,8 +18,6 @@ def hash_password(password):
     """
     Hash a password, currently will use the PBKDF2 scheme.
     """
-    if password is None:
-        raise Exception("password cannot be None")
     return hash_password_PBKDF2(password)
 
 

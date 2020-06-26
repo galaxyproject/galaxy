@@ -3,10 +3,12 @@
 ...using common defaults and configuration mechanisms.
 """
 import os
+import logging
+log = logging.getLogger(__name__)
 
 from six.moves import shlex_quote
 
-from galaxy.util.commands import argv_to_str
+from .commands import argv_to_str
 
 DEFAULT_DOCKER_COMMAND = "docker"
 DEFAULT_SUDO = False
@@ -164,6 +166,8 @@ def build_docker_run_command(
         command_parts.append("--rm")
     if run_extra_arguments:
         command_parts.append(run_extra_arguments)
+    if os.environ['GALAXY_GPU_ENABLED'] == "true":
+        command_parts.append("--gpus all")
     if set_user:
         user = set_user
         if set_user == DEFAULT_SET_USER:
@@ -179,6 +183,10 @@ def build_docker_run_command(
         full_image = "%s:%s" % (full_image, tag)
     command_parts.append(shlex_quote(full_image))
     command_parts.append(container_command)
+
+    for c in command_parts:
+        log.debug("COMMAND_PARTS: %s",c)
+
     return " ".join(command_parts)
 
 

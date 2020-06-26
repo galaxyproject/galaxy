@@ -1,0 +1,16 @@
+<macros>
+    <xml name="requirements">
+        <requirements>
+            <container type="docker">gulsumgudukbay/racon_dockerfile</container>
+	        <requirement type="compute">gpu</requirement>
+            <yield/>
+        </requirements>
+    </xml>
+    <token name="@VERSION@">1.4.13</token>
+    <xml name="citations">
+        <citations>
+            <citation type="doi">10.1101/gr.214270.116</citation>
+            <yield />
+        </citations>
+    </xml>
+</macros>

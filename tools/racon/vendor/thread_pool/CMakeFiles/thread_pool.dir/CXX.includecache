@@ -1,0 +1,38 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/gulsum/galaxy/tools/racon/vendor/thread_pool/src/thread_pool.cpp
+exception
+-
+thread_pool/thread_pool.hpp
+/home/gulsum/galaxy/tools/racon/vendor/thread_pool/src/thread_pool/thread_pool.hpp
+
+vendor/thread_pool/include/thread_pool/thread_pool.hpp
+cstdint
+-
+memory
+-
+vector
+-
+string
+-
+queue
+-
+mutex
+-
+thread
+-
+future
+-
+atomic
+-
+functional
+-
+condition_variable
+-
+

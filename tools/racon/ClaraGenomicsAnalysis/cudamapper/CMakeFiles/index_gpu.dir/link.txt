@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../lib/libindex_gpu.a  CMakeFiles/index_gpu.dir/src/index_gpu_generated_index.cu.o CMakeFiles/index_gpu.dir/src/index_gpu_generated_index_gpu.cu.o CMakeFiles/index_gpu.dir/src/index_gpu_generated_minimizer.cu.o
+/usr/bin/ranlib ../../lib/libindex_gpu.a

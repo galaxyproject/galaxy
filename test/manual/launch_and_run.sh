@@ -75,4 +75,4 @@ for i in {1..40}; do curl --silent --fail ${GALAXY_URL}/api/version && break || 
 
 ${GALAXY_VIRTUAL_ENV}/bin/python test/manual/$manual_test_script.py --api_key ${GALAXY_MASTER_API_KEY} --host ${GALAXY_URL} $manual_test_script_args
 docker exec -i -t $docker_image_id /bin/bash -c "cp /home/galaxy/*log /galaxy_logs"
-docker kill $docker_image_id
+#docker kill $docker_image_id

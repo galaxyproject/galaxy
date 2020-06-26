@@ -27,7 +27,6 @@ var ControlledFetchCollection = Backbone.Collection.extend({
      */
     fetch: function (options) {
         options = this._buildFetchOptions(options);
-        this.trigger("fetch:started");
         return Backbone.Collection.prototype.fetch.call(this, options);
     },
 

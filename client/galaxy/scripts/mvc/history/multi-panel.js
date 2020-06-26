@@ -865,7 +865,6 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
                 this.filters = [];
                 this.renderColumns(0);
             },
-            advsearchlink: true,
         });
 
         // input to search datasets
@@ -902,7 +901,6 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
                     column.panel.clearSearch();
                 });
             },
-            advsearchlink: true,
         });
 
         // resize first (fixed position) column on page resize

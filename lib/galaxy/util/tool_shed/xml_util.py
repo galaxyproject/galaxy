@@ -2,15 +2,34 @@ import io
 import logging
 import os
 import tempfile
+from xml.etree import ElementTree as XmlET
 
 from galaxy.util import (
-    etree,
-    parse_xml as galaxy_parse_xml,
-    unicodify,
-    xml_to_string,
+    xml_to_string
 )
 
 log = logging.getLogger(__name__)
+
+
+class CommentedTreeBuilder(XmlET.TreeBuilder):
+
+    non_comment_seen = False
+
+    def doctype(*args):
+        # handle deprecation warning for XMLParsing a file with DOCTYPE
+        pass
+
+    def start(self, tag, attrib):
+        if tag is not XmlET.Comment:
+            self.non_comment_seen = True
+        super(CommentedTreeBuilder, self).start(tag, attrib)
+
+    def comment(self, data):
+        if self.non_comment_seen:
+            # Cannot start XML file with comment
+            self.start(XmlET.Comment, {})
+            self.data(data)
+            self.end(XmlET.Comment)
 
 
 def create_and_write_tmp_file(elem):
@@ -28,7 +47,7 @@ def create_element(tag, attributes=None, sub_elements=None):
     key / value pairs in the received attributes and sub_elements.
     """
     if tag:
-        elem = etree.Element(tag)
+        elem = XmlET.Element(tag)
         if attributes:
             # The received attributes is an odict to preserve ordering.
             for k, v in attributes.items():
@@ -43,12 +62,12 @@ def create_element(tag, attributes=None, sub_elements=None):
                         # The received sub_elements is an odict whose key is 'packages' and whose
                         # value is a list of ( name, version ) tuples.
                         for v_tuple in v:
-                            sub_elem = etree.SubElement(elem, 'package')
+                            sub_elem = XmlET.SubElement(elem, 'package')
                             sub_elem_name, sub_elem_version = v_tuple
                             sub_elem.set('name', sub_elem_name)
                             sub_elem.set('version', sub_elem_version)
                     elif isinstance(v, list):
-                        sub_elem = etree.SubElement(elem, k)
+                        sub_elem = XmlET.SubElement(elem, k)
                         # If v is a list, then it must be a list of tuples where the first
                         # item is the tag and the second item is the text value.
                         for v_tuple in v:
@@ -57,10 +76,10 @@ def create_element(tag, attributes=None, sub_elements=None):
                                 v_text = v_tuple[1]
                                 # Don't include fields that are blank.
                                 if v_text:
-                                    v_elem = etree.SubElement(sub_elem, v_tag)
+                                    v_elem = XmlET.SubElement(sub_elem, v_tag)
                                     v_elem.text = v_text
                     else:
-                        sub_elem = etree.SubElement(elem, k)
+                        sub_elem = XmlET.SubElement(elem, k)
                         sub_elem.text = v
         return elem
     return None
@@ -71,12 +90,12 @@ def parse_xml(file_name, check_exists=True):
     error_message = ''
     if check_exists and not os.path.exists(file_name):
         return None, "File does not exist %s" % str(file_name)
-    try:
-        tree = galaxy_parse_xml(file_name, remove_comments=False, strip_whitespace=False)
-    except (IOError, OSError):
-        raise
-    except Exception as e:
-        error_message = "Exception attempting to parse %s: %s" % (str(file_name), unicodify(e))
-        log.exception(error_message)
-        return None, error_message
+
+    with open(file_name, 'r') as fobj:
+        try:
+            tree = XmlET.parse(fobj, parser=XmlET.XMLParser(target=CommentedTreeBuilder()))
+        except Exception as e:
+            error_message = "Exception attempting to parse %s: %s" % (str(file_name), str(e))
+            log.exception(error_message)
+            return None, error_message
     return tree, error_message

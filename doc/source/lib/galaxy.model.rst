@@ -100,10 +100,10 @@ galaxy.model.tags module
     :undoc-members:
     :show-inheritance:
 
-galaxy.model.triggers module
-----------------------------
+galaxy.model.util module
+------------------------
 
-.. automodule:: galaxy.model.triggers
+.. automodule:: galaxy.model.util
     :members:
     :undoc-members:
     :show-inheritance:

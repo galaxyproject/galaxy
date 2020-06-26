@@ -74,14 +74,6 @@ galaxy.tools.execute module
     :undoc-members:
     :show-inheritance:
 
-galaxy.tools.recommendations module
------------------------------------
-
-.. automodule:: galaxy.tools.recommendations
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 galaxy.tools.repositories module
 --------------------------------
 

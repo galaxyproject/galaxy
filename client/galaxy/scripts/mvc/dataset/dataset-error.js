@@ -127,7 +127,7 @@ var View = Backbone.View.extend({
         if (job_messages) {
             message += "<p>Execution resulted in the following messages:</p>";
             for (const job_message of job_messages) {
-                message += `<p><pre class="rounded code">${_.escape(job_message["desc"])}</pre></p>`;
+                message += `<p><pre>${_.escape(job_message["desc"])}</pre></p>`;
             }
         }
         if (tool_stderr) {

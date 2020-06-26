@@ -20,13 +20,14 @@ const paths = {
     //    "../config/plugins/{visualizations,interactive_environments}/*/package.json",
     //    "../config/plugins/{visualizations,interactive_environments}/*/*/package.json"
     //],
-    plugin_build_dirs: ["../config/plugins/visualizations/{annotate_image,hyphyvision,openlayers,chiraviz,editor}/package.json"],
+    plugin_build_dirs: ["../config/plugins/visualizations/{annotate_image,hyphyvision,openlayers,editor}/package.json"],
     lib_locs: {
         // This is a stepping stone towards having all this staged
         // automatically.  Eventually, this dictionary and staging step will
         // not be necessary.
         backbone: ["backbone.js", "backbone.js"],
         "bootstrap-tour": ["build/js/bootstrap-tour.js", "bootstrap-tour.js"],
+        "bibtex-parse-js": ["bibtexParse.js", "bibtexParse.js"],
         jquery: ["dist/jquery.js", "jquery/jquery.js"],
         "jquery.complexify": ["jquery.complexify.js", "jquery/jquery.complexify.js"],
         "jquery.cookie": ["jquery.cookie.js", "jquery/jquery.cookie.js"],
@@ -103,7 +104,7 @@ function buildPlugins(callback) {
                     );
                     console.log(`Building ${plugin_name}`);
                     child_process.spawnSync("yarn", ["build"], { cwd: f, stdio: "inherit", shell: true });
-                    child_process.exec(`(git rev-parse HEAD 2>/dev/null || echo \`\`) > ${hash_file_path}`);
+                    child_process.exec(`"(git rev-parse HEAD 2>/dev/null || echo \`\`) > ${hash_file_path} "`);
                 }
             });
         });

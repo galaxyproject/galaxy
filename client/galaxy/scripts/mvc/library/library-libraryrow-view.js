@@ -3,7 +3,6 @@ import $ from "jquery";
 import Backbone from "backbone";
 import { Toast } from "ui/toast";
 import { getGalaxyInstance } from "app";
-import { linkifyHtmlElements } from "mvc/library/library-util";
 
 // galaxy library row view
 var LibraryRowView = Backbone.View.extend({
@@ -63,9 +62,6 @@ var LibraryRowView = Backbone.View.extend({
         old_element.replaceWith(this.$el);
         /* now we attach new tooltips to the newly created row element */
         this.$el.find('[data-toggle="tooltip"]').tooltip({ trigger: "hover" });
-
-        // linkify new description, after its change
-        linkifyHtmlElements("[data-linkify=true]");
     },
 
     /**
@@ -248,12 +244,12 @@ var LibraryRowView = Backbone.View.extend({
                     <% } %>
                     <% if(library.get("description")) { %>
                         <% if( (library.get("description")).length> 40 ) { %>
-                            <td data-linkify=true data-toggle="tooltip" data-placement="bottom"
+                            <td data-toggle="tooltip" data-placement="bottom"
                                 title="<%= _.escape(library.get("description")) %>">
                                 <%= _.escape(library.get("description")).substring(0, 40) + "..." %>
                             </td>
                         <% } else { %>
-                            <td data-linkify=true><%= _.escape(library.get("description"))%></td>
+                            <td><%= _.escape(library.get("description"))%></td>
                         <% } %>
                     <% } else { %>
                         <td></td>
