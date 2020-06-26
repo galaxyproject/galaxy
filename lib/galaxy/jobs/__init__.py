@@ -1040,7 +1040,7 @@ class JobWrapper(HasResourceParameters):
         Restore the dictionary of parameters from the database.
         """
         job = _job or self.get_job()
-        param_dict = dict([(p.name, p.value) for p in job.parameters])
+        param_dict = {p.name: p.value for p in job.parameters}
         param_dict = self.tool.params_from_strings(param_dict, self.app)
         return param_dict
 
@@ -1955,7 +1955,7 @@ class JobWrapper(HasResourceParameters):
             results.append((da.name, da.dataset, dataset_path))
 
         self.output_paths = [t[2] for t in results]
-        self.output_hdas_and_paths = dict([(t[0], t[1:]) for t in results])
+        self.output_hdas_and_paths = {t[0]: t[1:] for t in results}
         if special:
             false_path = dataset_path_rewriter.rewrite_dataset_path(special, 'output')
             dsp = DatasetPath(special.dataset.id, special.dataset.file_name, false_path)

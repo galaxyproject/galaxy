@@ -68,7 +68,7 @@ class ToolEvaluator(object):
         self.compute_environment = compute_environment
 
         job = self.job
-        incoming = dict([(p.name, p.value) for p in job.parameters])
+        incoming = {p.name: p.value for p in job.parameters}
         incoming = self.tool.params_from_strings(incoming, self.app)
 
         # Full parameter validation

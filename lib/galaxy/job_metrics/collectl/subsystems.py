@@ -66,7 +66,7 @@ SUBSYSTEMS = [
     EnvironmentSubsystem(),
     MemorySubsystem(),
 ]
-SUBSYSTEM_DICT = dict([(s.name, s) for s in SUBSYSTEMS])
+SUBSYSTEM_DICT = {s.name: s for s in SUBSYSTEMS}
 
 
 def get_subsystem(name):

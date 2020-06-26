@@ -59,7 +59,7 @@ def parse_config_xml(config_xml):
             msg = 'No {tag} element in XML tree'.format(tag=tag)
             log.error(msg)
             raise Exception(msg)
-        extra_dirs = [dict(((k, e.get(k)) for k in attrs)) for e in extra_dirs]
+        extra_dirs = [{k: e.get(k) for k in attrs} for e in extra_dirs]
         return {
             'auth': {
                 'account_name': account_name,

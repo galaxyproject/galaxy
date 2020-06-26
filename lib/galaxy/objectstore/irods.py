@@ -79,7 +79,7 @@ def parse_config_xml(config_xml):
         e_xml = config_xml.findall('extra_dir')
         if not e_xml:
             _config_xml_error('extra_dir')
-        extra_dirs = [dict(((k, e.get(k)) for k in attrs)) for e in e_xml]
+        extra_dirs = [{k: e.get(k) for k in attrs} for e in e_xml]
 
         return {
             'auth': {
@@ -200,7 +200,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         if self.staging_path is None:
             _config_dict_error('cache->path')
 
-        extra_dirs = dict((e['type'], e['path']) for e in config_dict.get('extra_dirs', []))
+        extra_dirs = {e['type']: e['path'] for e in config_dict.get('extra_dirs', [])}
         if not extra_dirs:
             _config_dict_error('extra_dirs')
         self.extra_dirs.update(extra_dirs)

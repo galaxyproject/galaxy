@@ -1756,11 +1756,11 @@ simple_mapping(model.HistoryDatasetAssociation,
         order_by=model.HistoryDatasetAssociationRatingAssociation.table.c.id,
         backref="hdas"),
     extended_metadata=relation(model.ExtendedMetadata,
-        primaryjoin=((model.HistoryDatasetAssociation.table.c.extended_metadata_id ==
-                      model.ExtendedMetadata.table.c.id))),
+        primaryjoin=(model.HistoryDatasetAssociation.table.c.extended_metadata_id ==
+                      model.ExtendedMetadata.table.c.id)),
     hidden_beneath_collection_instance=relation(model.HistoryDatasetCollectionAssociation,
-        primaryjoin=((model.HistoryDatasetAssociation.table.c.hidden_beneath_collection_instance_id ==
-                      model.HistoryDatasetCollectionAssociation.table.c.id)),
+        primaryjoin=(model.HistoryDatasetAssociation.table.c.hidden_beneath_collection_instance_id ==
+                      model.HistoryDatasetCollectionAssociation.table.c.id),
         uselist=False,
         backref="hidden_dataset_instances"),
     _metadata=deferred(model.HistoryDatasetAssociation.table.c._metadata)
@@ -2044,7 +2044,7 @@ mapper(model.ExtendedMetadata, model.ExtendedMetadata.table, properties=dict(
 
 mapper(model.ExtendedMetadataIndex, model.ExtendedMetadataIndex.table, properties=dict(
     extended_metadata=relation(model.ExtendedMetadata,
-        primaryjoin=((model.ExtendedMetadataIndex.table.c.extended_metadata_id == model.ExtendedMetadata.table.c.id)))
+        primaryjoin=(model.ExtendedMetadataIndex.table.c.extended_metadata_id == model.ExtendedMetadata.table.c.id))
 ))
 
 
@@ -2080,7 +2080,7 @@ mapper(model.LibraryFolder, model.LibraryFolder.table, properties=dict(
         lazy=True,
         viewonly=True),
     datasets=relation(model.LibraryDataset,
-        primaryjoin=((model.LibraryDataset.table.c.folder_id == model.LibraryFolder.table.c.id)),
+        primaryjoin=(model.LibraryDataset.table.c.folder_id == model.LibraryFolder.table.c.id),
         order_by=asc(model.LibraryDataset.table.c._name),
         lazy=True,
         viewonly=True),
@@ -2151,7 +2151,7 @@ mapper(model.LibraryDatasetDatasetAssociation, model.LibraryDatasetDatasetAssoci
                   order_by=model.LibraryDatasetDatasetAssociationTagAssociation.table.c.id,
                   backref='history_tag_associations'),
     extended_metadata=relation(model.ExtendedMetadata,
-        primaryjoin=((model.LibraryDatasetDatasetAssociation.table.c.extended_metadata_id == model.ExtendedMetadata.table.c.id))
+        primaryjoin=(model.LibraryDatasetDatasetAssociation.table.c.extended_metadata_id == model.ExtendedMetadata.table.c.id)
     ),
     _metadata=deferred(model.LibraryDatasetDatasetAssociation.table.c._metadata)
 ))
@@ -2238,8 +2238,8 @@ simple_mapping(model.TaskMetricNumeric,
 
 simple_mapping(model.ImplicitlyCreatedDatasetCollectionInput,
     input_dataset_collection=relation(model.HistoryDatasetCollectionAssociation,
-        primaryjoin=((model.HistoryDatasetCollectionAssociation.table.c.id ==
-                      model.ImplicitlyCreatedDatasetCollectionInput.table.c.input_dataset_collection_id)),
+        primaryjoin=(model.HistoryDatasetCollectionAssociation.table.c.id ==
+                      model.ImplicitlyCreatedDatasetCollectionInput.table.c.input_dataset_collection_id),
         # backref="implicitly_created_dataset_collections",
     ),
 )
@@ -2379,8 +2379,8 @@ simple_mapping(model.HistoryDatasetCollectionAssociation,
         primaryjoin=(model.HistoryDatasetCollectionAssociation.table.c.copied_from_history_dataset_collection_association_id ==
                      model.HistoryDatasetCollectionAssociation.table.c.id)),
     implicit_input_collections=relation(model.ImplicitlyCreatedDatasetCollectionInput,
-        primaryjoin=((model.HistoryDatasetCollectionAssociation.table.c.id ==
-                      model.ImplicitlyCreatedDatasetCollectionInput.table.c.dataset_collection_id)),
+        primaryjoin=(model.HistoryDatasetCollectionAssociation.table.c.id ==
+                      model.ImplicitlyCreatedDatasetCollectionInput.table.c.dataset_collection_id),
         backref="dataset_collection",
     ),
     implicit_collection_jobs=relation(
@@ -2394,7 +2394,7 @@ simple_mapping(model.HistoryDatasetCollectionAssociation,
         uselist=False,
     ),
     job_state_summary=relation(HistoryDatasetCollectionJobStateSummary,
-        primaryjoin=((model.HistoryDatasetCollectionAssociation.table.c.id == HistoryDatasetCollectionJobStateSummary.__table__.c.hdca_id)),
+        primaryjoin=(model.HistoryDatasetCollectionAssociation.table.c.id == HistoryDatasetCollectionJobStateSummary.__table__.c.hdca_id),
         foreign_keys=HistoryDatasetCollectionJobStateSummary.__table__.c.hdca_id,
         uselist=False
     ),
@@ -2453,7 +2453,7 @@ mapper(model.GalaxySessionToHistoryAssociation, model.GalaxySessionToHistoryAsso
 mapper(model.Workflow, model.Workflow.table, properties=dict(
     steps=relation(model.WorkflowStep,
         backref='workflow',
-        primaryjoin=((model.Workflow.table.c.id == model.WorkflowStep.table.c.workflow_id)),
+        primaryjoin=(model.Workflow.table.c.id == model.WorkflowStep.table.c.workflow_id),
         order_by=asc(model.WorkflowStep.table.c.order_index),
         cascade="all, delete-orphan",
         lazy=False),
@@ -2566,7 +2566,7 @@ mapper(model.WorkflowInvocation, model.WorkflowInvocation.table, properties=dict
     input_datasets=relation(model.WorkflowRequestToInputDatasetAssociation),
     input_dataset_collections=relation(model.WorkflowRequestToInputDatasetCollectionAssociation),
     subworkflow_invocations=relation(model.WorkflowInvocationToSubworkflowInvocationAssociation,
-        primaryjoin=((model.WorkflowInvocationToSubworkflowInvocationAssociation.table.c.workflow_invocation_id == model.WorkflowInvocation.table.c.id)),
+        primaryjoin=(model.WorkflowInvocationToSubworkflowInvocationAssociation.table.c.workflow_invocation_id == model.WorkflowInvocation.table.c.id),
         backref=backref("parent_workflow_invocation", uselist=False),
         uselist=True,
     ),
@@ -2577,7 +2577,7 @@ mapper(model.WorkflowInvocation, model.WorkflowInvocation.table, properties=dict
 
 mapper(model.WorkflowInvocationToSubworkflowInvocationAssociation, model.WorkflowInvocationToSubworkflowInvocationAssociation.table, properties=dict(
     subworkflow_invocation=relation(model.WorkflowInvocation,
-        primaryjoin=((model.WorkflowInvocationToSubworkflowInvocationAssociation.table.c.subworkflow_invocation_id == model.WorkflowInvocation.table.c.id)),
+        primaryjoin=(model.WorkflowInvocationToSubworkflowInvocationAssociation.table.c.subworkflow_invocation_id == model.WorkflowInvocation.table.c.id),
         backref="parent_workflow_invocation_association",
         uselist=False,
     ),
@@ -2758,7 +2758,7 @@ tag_mapping(model.ToolTagAssociation, "tagged_tools")
 
 # Annotation tables.
 def annotation_mapping(annotation_class, **kwds):
-    kwds = dict((key, relation(value)) for key, value in kwds.items())
+    kwds = {key: relation(value) for key, value in kwds.items()}
     simple_mapping(annotation_class, **dict(user=relation(model.User), **kwds))
 
 
@@ -2776,7 +2776,7 @@ annotation_mapping(model.LibraryDatasetCollectionAnnotationAssociation,
 
 # Rating tables.
 def rating_mapping(rating_class, **kwds):
-    kwds = dict((key, relation(value)) for key, value in kwds.items())
+    kwds = {key: relation(value) for key, value in kwds.items()}
     simple_mapping(rating_class, **dict(user=relation(model.User), **kwds))
 
 

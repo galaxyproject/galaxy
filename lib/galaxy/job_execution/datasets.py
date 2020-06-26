@@ -12,7 +12,7 @@ import six
 
 def dataset_path_rewrites(dataset_paths):
     dataset_paths_with_rewrites = [path for path in dataset_paths if getattr(path, "false_path", None)]
-    return dict((dp.real_path, dp) for dp in dataset_paths_with_rewrites)
+    return {dp.real_path: dp for dp in dataset_paths_with_rewrites}
 
 
 class DatasetPath(object):

@@ -318,7 +318,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
 
     # ---- preferences
     def preferences(self, user):
-        return dict((key, value) for key, value in user.preferences.items())
+        return {key: value for key, value in user.preferences.items()}
 
     # ---- roles and permissions
     def private_role(self, user):

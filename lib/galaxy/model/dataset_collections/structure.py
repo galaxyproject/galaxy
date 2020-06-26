@@ -177,7 +177,7 @@ def tool_output_to_structure(get_sliced_input_collection_structure, tool_output,
 
 
 def dict_map(func, input_dict):
-    return dict((k, func(v)) for k, v in input_dict.items())
+    return {k: func(v) for k, v in input_dict.items()}
 
 
 def get_structure(dataset_collection_instance, collection_type_description, leaf_subcollection_type=None):

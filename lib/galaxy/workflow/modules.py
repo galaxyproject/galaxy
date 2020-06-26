@@ -1498,7 +1498,7 @@ class ToolModule(WorkflowModule):
         if self.tool:
             if connections:
                 # Store connections by input name
-                input_connections_by_name = dict((conn.input_name, conn) for conn in connections)
+                input_connections_by_name = {conn.input_name: conn for conn in connections}
             else:
                 input_connections_by_name = {}
 

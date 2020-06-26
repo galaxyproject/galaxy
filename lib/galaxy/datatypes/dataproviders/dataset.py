@@ -787,6 +787,6 @@ class SQliteDataDictProvider(base.DataProvider):
         if (self.query is not None) and sqlite.is_read_only_query(self.query):
             cur = self.connection.cursor()
             for row in cur.execute(self.query):
-                yield [dict((cur.description[i][0], value) for i, value in enumerate(row))]
+                yield [{cur.description[i][0]: value for i, value in enumerate(row)}]
         else:
             yield

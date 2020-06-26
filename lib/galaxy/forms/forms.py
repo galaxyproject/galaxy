@@ -9,7 +9,7 @@ from galaxy.model import (
 )
 from galaxy.util import string_as_bool
 
-FORM_TYPES = dict([(f_type.lower(), f_descript) for f_type, f_descript in FormDefinition.types.items()])
+FORM_TYPES = {f_type.lower(): f_descript for f_type, f_descript in FormDefinition.types.items()}
 
 
 class FormDefinitionFactory(object):
@@ -315,12 +315,12 @@ class FormDefinitionSelectFieldFactory(FormDefinitionFieldFactory):
         return rval
 
 
-field_type_factories = dict([(field.type, field()) for field in (FormDefinitionTextFieldFactory,
+field_type_factories = {field.type: field() for field in (FormDefinitionTextFieldFactory,
                                                                  FormDefinitionPasswordFieldFactory,
                                                                  FormDefinitionAddressFieldFactory,
                                                                  FormDefinitionSelectFieldFactory,
                                                                  FormDefinitionWorkflowFieldFactory,
                                                                  FormDefinitionWorkflowMappingFieldFactory,
-                                                                 FormDefinitionHistoryFieldFactory)])
+                                                                 FormDefinitionHistoryFieldFactory)}
 
 form_factory = FormDefinitionFactory(FORM_TYPES, field_type_factories)

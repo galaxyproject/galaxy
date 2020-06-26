@@ -75,6 +75,6 @@ class CliInterface(object):
 
 
 def split_params(params):
-    shell_params = dict((k.replace('shell_', '', 1), v) for k, v in params.items() if k.startswith('shell_'))
-    job_params = dict((k.replace('job_', '', 1), v) for k, v in params.items() if k.startswith('job_'))
+    shell_params = {k.replace('shell_', '', 1): v for k, v in params.items() if k.startswith('shell_')}
+    job_params = {k.replace('job_', '', 1): v for k, v in params.items() if k.startswith('job_')}
     return shell_params, job_params

@@ -341,7 +341,7 @@ class DefaultToolAction(object):
         wrapped_params = self._wrapped_params(trans, tool, incoming, inp_data)
 
         out_data = OrderedDict()
-        input_collections = dict((k, v[0][0]) for k, v in inp_dataset_collections.items())
+        input_collections = {k: v[0][0] for k, v in inp_dataset_collections.items()}
         output_collections = OutputCollections(
             trans,
             history,
@@ -472,7 +472,7 @@ class DefaultToolAction(object):
                         for parent_id in (output_part_def.parent_ids or []):
                             # TODO: replace following line with formal abstractions for doing this.
                             current_collection_type = ":".join(current_collection_type.split(":")[1:])
-                            name_to_index = dict((value["name"], index) for (index, value) in enumerate(current_element_identifiers))
+                            name_to_index = {value["name"]: index for (index, value) in enumerate(current_element_identifiers)}
                             if parent_id not in name_to_index:
                                 if parent_id not in current_element_identifiers:
                                     index = len(current_element_identifiers)
@@ -648,7 +648,7 @@ class DefaultToolAction(object):
         return remapped_hdas
 
     def __remap_parameters(self, job_to_remap, jtid, jtod, out_data):
-        input_values = dict([(p.name, json.loads(p.value)) for p in job_to_remap.parameters])
+        input_values = {p.name: json.loads(p.value) for p in job_to_remap.parameters}
         old_dataset_id = jtod.dataset_id
         new_dataset_id = out_data[jtod.name].id
         input_values = update_dataset_ids(input_values, {old_dataset_id: new_dataset_id}, src='hda')

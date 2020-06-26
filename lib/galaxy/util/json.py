@@ -30,7 +30,7 @@ def swap_inf_nan(val):
     elif isinstance(val, collections.Sequence):
         return [swap_inf_nan(v) for v in val]
     elif isinstance(val, collections.Mapping):
-        return dict([(swap_inf_nan(k), swap_inf_nan(v)) for (k, v) in iteritems(val)])
+        return {swap_inf_nan(k): swap_inf_nan(v) for (k, v) in iteritems(val)}
     elif isinstance(val, float):
         if math.isnan(val):
             return "__NaN__"

@@ -826,11 +826,11 @@ class SelectToolParameter(ToolParameter):
 
     def get_legal_values(self, trans, other_values):
         if self.options:
-            return set(v for _, v, _ in self.options.get_options(trans, other_values))
+            return {v for _, v, _ in self.options.get_options(trans, other_values)}
         elif self.dynamic_options:
             try:
                 call_other_values = self._get_dynamic_options_call_other_values(trans, other_values)
-                return set(v for _, v, _ in eval(self.dynamic_options, self.tool.code_namespace, call_other_values))
+                return {v for _, v, _ in eval(self.dynamic_options, self.tool.code_namespace, call_other_values)}
             except Exception as e:
                 log.debug("Determining legal values failed for '%s': %s", self.name, unicodify(e))
                 return set()
@@ -999,7 +999,7 @@ class GenomeBuildParameter(SelectToolParameter):
             yield build_name, dbkey, (dbkey == last_used_build)
 
     def get_legal_values(self, trans, other_values):
-        return set(dbkey for dbkey, _ in self._get_dbkey_names(trans=trans))
+        return {dbkey for dbkey, _ in self._get_dbkey_names(trans=trans)}
 
     def to_dict(self, trans, other_values={}):
         # skip SelectToolParameter (the immediate parent) bc we need to get options in a different way here

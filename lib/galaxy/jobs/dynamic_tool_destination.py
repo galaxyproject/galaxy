@@ -1021,7 +1021,7 @@ def validate_config(obj, app=None, return_bool=False,):
                                     (tool, curr['default_destination']))
                                 if is_valid:
                                     new_config['tools'][tool]['default_destination'] = (
-                                        (curr['default_destination']))
+                                        curr['default_destination'])
                                     tool_has_default = True
                                 else:
                                     valid_config = False
@@ -1341,7 +1341,7 @@ def map_tool_to_destination(
         raise JobMappingException(e)
 
     # Get all inputs from tool and databases
-    inp_data = dict([(da.name, da.dataset) for da in job.input_datasets])
+    inp_data = {da.name: da.dataset for da in job.input_datasets}
     inp_data.update([(da.name, da.dataset) for da in job.input_library_datasets])
 
     if config is not None and str(tool.old_id) in config['tools']:

@@ -43,8 +43,8 @@ class ShellJobRunner(AsynchronousJobRunner):
         params = {}
         shell_params, job_params = url.split('/')[2:4]
         # split 'foo=bar&baz=quux' into { 'foo' : 'bar', 'baz' : 'quux' }
-        shell_params = dict([('shell_' + k, v) for k, v in [kv.split('=', 1) for kv in shell_params.split('&')]])
-        job_params = dict([('job_' + k, v) for k, v in [kv.split('=', 1) for kv in job_params.split('&')]])
+        shell_params = {'shell_' + k: v for k, v in [kv.split('=', 1) for kv in shell_params.split('&')]}
+        job_params = {'job_' + k: v for k, v in [kv.split('=', 1) for kv in job_params.split('&')]}
         params.update(shell_params)
         params.update(job_params)
         log.debug("Converted URL '%s' to destination runner=cli, params=%s" % (url, params))

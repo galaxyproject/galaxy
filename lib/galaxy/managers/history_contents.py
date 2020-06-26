@@ -397,7 +397,7 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
             .options(eagerload('dataset.actions'))
             .options(eagerload('tags'))
             .options(eagerload('annotations')))
-        return dict((row.id, row) for row in query.all())
+        return {row.id: row for row in query.all()}
 
     def _subcontainer_id_map(self, id_list, serialization_params=None):
         """Return an id to model map of all subcontainer-type models in the id_list."""
@@ -417,7 +417,7 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
             if 'job_state_summary' in serialization_params['keys']:
                 query = query.options(eagerload('job_state_summary'))
 
-        return dict((row.id, row) for row in query.all())
+        return {row.id: row for row in query.all()}
 
 
 class HistoryContentsSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):

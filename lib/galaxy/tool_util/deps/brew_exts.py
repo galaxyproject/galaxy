@@ -53,7 +53,7 @@ class BrewContext(object):
         ensure_brew_on_path(args)
         raw_config = brew_execute(["config"])
         config_lines = [l.strip().split(":", 1) for l in raw_config.split("\n") if l]
-        config = dict([(p[0].strip(), p[1].strip()) for p in config_lines])
+        config = {p[0].strip(): p[1].strip() for p in config_lines}
         # unset if "/usr/local" -> https://github.com/Homebrew/homebrew/blob/master/Library/Homebrew/cmd/config.rb
         homebrew_prefix = config.get("HOMEBREW_PREFIX", "/usr/local")
         homebrew_cellar = config.get("HOMEBREW_CELLAR", os.path.join(homebrew_prefix, "Cellar"))

@@ -321,7 +321,7 @@ class Grid(object):
             grid_config['async_ops'].append(operation.label.lower())
         for column in self.columns:
             if column.filterable is not None and not isinstance(column, TextColumn):
-                grid_config['categorical_filters'][column.key] = dict([(filter.label, filter.args) for filter in column.get_accepted_filters()])
+                grid_config['categorical_filters'][column.key] = {filter.label: filter.args for filter in column.get_accepted_filters()}
         for i, item in enumerate(query):
             item_dict = {
                 'id'                    : item.id,

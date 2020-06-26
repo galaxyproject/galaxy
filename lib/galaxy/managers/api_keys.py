@@ -1,5 +1,3 @@
-
-
 class ApiKeyManager(object):
 
     def __init__(self, app):

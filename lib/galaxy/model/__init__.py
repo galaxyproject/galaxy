@@ -747,13 +747,13 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         ]
 
     def io_dicts(self, exclude_implicit_outputs=False):
-        inp_data = dict([(da.name, da.dataset) for da in self.input_datasets])
-        out_data = dict([(da.name, da.dataset) for da in self.output_datasets])
+        inp_data = {da.name: da.dataset for da in self.input_datasets}
+        out_data = {da.name: da.dataset for da in self.output_datasets}
         inp_data.update([(da.name, da.dataset) for da in self.input_library_datasets])
         out_data.update([(da.name, da.dataset) for da in self.output_library_datasets])
 
         if not exclude_implicit_outputs:
-            out_collections = dict([(obj.name, obj.dataset_collection_instance) for obj in self.output_dataset_collection_instances])
+            out_collections = {obj.name: obj.dataset_collection_instance for obj in self.output_dataset_collection_instances}
         else:
             out_collections = {}
             for obj in self.output_dataset_collection_instances:
@@ -978,7 +978,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         return param_dict
 
     def raw_param_dict(self):
-        param_dict = dict([(p.name, p.value) for p in self.parameters])
+        param_dict = {p.name: p.value for p in self.parameters}
         return param_dict
 
     def check_if_output_datasets_deleted(self):
@@ -1095,7 +1095,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             rval['command_line'] = self.command_line
 
         if view == 'element':
-            param_dict = dict([(p.name, p.value) for p in self.parameters])
+            param_dict = {p.name: p.value for p in self.parameters}
             rval['params'] = param_dict
 
             input_dict = {}
@@ -1293,7 +1293,7 @@ class Task(JobLike, RepresentById):
         Read encoded parameter values from the database and turn back into a
         dict of tool parameter values.
         """
-        param_dict = dict([(p.name, p.value) for p in self.job.parameters])
+        param_dict = {p.name: p.value for p in self.job.parameters}
         tool = app.toolbox.get_tool(self.job.tool_id, tool_version=self.job.tool_version)
         param_dict = tool.params_from_strings(param_dict, app)
         return param_dict
@@ -2794,7 +2794,7 @@ class DatasetInstance(object):
             depends_list = trans.app.datatypes_registry.converter_deps[self.extension][target_ext]
         except KeyError:
             depends_list = []
-        return dict([(dep, self.get_converted_dataset(trans, dep)) for dep in depends_list])
+        return {dep: self.get_converted_dataset(trans, dep) for dep in depends_list}
 
     def get_converted_dataset(self, trans, target_ext, target_context=None, history=None):
         """
@@ -3823,7 +3823,7 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, RepresentById):
             ''').execution_options(autocommit=True)
         ret = object_session(self).execute(sql, {'library_dataset_id': ldda.library_dataset_id, 'ldda_id': ldda.id})
         if ret.rowcount < 1:
-            log.warn('Attempt to updated parent folder times failed: {0} records updated.'.format(ret.rowcount))
+            log.warn('Attempt to updated parent folder times failed: {} records updated.'.format(ret.rowcount))
 
 
 class ExtendedMetadata(RepresentById):
@@ -4776,7 +4776,7 @@ class Workflow(Dictifiable, RepresentById):
         top_level_workflow = self
         if self.stored_workflow is None:
             # TODO: enforce this at creation...
-            assert len(set(w.uuid for w in self.parent_workflow_steps)) == 1
+            assert len({w.uuid for w in self.parent_workflow_steps}) == 1
             return self.parent_workflow_steps[0].workflow.top_level_workflow
         return top_level_workflow
 

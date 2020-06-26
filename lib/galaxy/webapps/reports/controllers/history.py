@@ -90,10 +90,10 @@ class History(BaseUIController):
         # execute requests, replace None fields by "Unknown"
         # transform lists to dict with email as key and
         # number of (history/dataset)/size of history as value
-        histories = dict([(_.email if _.email is not None else "Unknown", int(_.history))
-                          for _ in histories.execute()])
-        datasets = dict([(_.email if _.email is not None else "Unknown", (int(_.dataset), int(_.size)))
-                         for _ in datasets.execute()])
+        histories = {_.email if _.email is not None else "Unknown": int(_.history)
+                          for _ in histories.execute()}
+        datasets = {_.email if _.email is not None else "Unknown": (int(_.dataset), int(_.size))
+                         for _ in datasets.execute()}
 
         sort_keys = (
             lambda v: v[0].lower(),

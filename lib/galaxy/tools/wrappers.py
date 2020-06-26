@@ -530,7 +530,7 @@ class ElementIdentifierMapper(object):
 
     def __init__(self, input_datasets=None):
         if input_datasets is not None:
-            self.identifier_key_dict = dict((v, "%s|__identifier__" % k) for k, v in input_datasets.items())
+            self.identifier_key_dict = {v: "%s|__identifier__" % k for k, v in input_datasets.items()}
         else:
             self.identifier_key_dict = {}
 

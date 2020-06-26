@@ -1,4 +1,3 @@
-
 from markupsafe import escape
 from sqlalchemy import (
     and_,

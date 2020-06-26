@@ -1101,7 +1101,7 @@ class Biom2(H5):
                 elif 'format' in attributes:  # biom 2.0
                     dataset.metadata.format = util.unicodify(attributes['format'])
                 dataset.metadata.type = util.unicodify(attributes['type'])
-                dataset.metadata.shape = tuple((int(_) for _ in attributes['shape']))
+                dataset.metadata.shape = tuple(int(_) for _ in attributes['shape'])
                 dataset.metadata.generated_by = util.unicodify(attributes['generated-by'])
                 dataset.metadata.creation_date = util.unicodify(attributes['creation-date'])
                 dataset.metadata.nnz = int(attributes['nnz'])

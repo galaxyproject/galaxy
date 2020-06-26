@@ -242,7 +242,7 @@ class BlockDataProvider(base.LimitedOffsetDataProvider):
         Called per block (just before providing).
         """
         # empty block_lines and assemble block
-        return list((self.block_lines.popleft() for i in range(len(self.block_lines))))
+        return list(self.block_lines.popleft() for i in range(len(self.block_lines)))
 
     def filter_block(self, block):
         """

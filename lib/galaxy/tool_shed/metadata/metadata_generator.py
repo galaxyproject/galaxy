@@ -643,7 +643,7 @@ class MetadataGenerator(object):
                 required_files = []
                 for required_file in ttb.required_files:
                     value, extra = required_file
-                    required_files.append((value))
+                    required_files.append(value)
                 inputs = []
                 for param_name, values in ttb.inputs.items():
                     # Handle improperly defined or strange test parameters and values.

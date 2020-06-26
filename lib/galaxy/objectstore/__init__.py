@@ -218,8 +218,8 @@ class BaseObjectStore(ObjectStore):
         extra_dirs = {}
         extra_dirs['job_work'] = config.jobs_directory
         extra_dirs['temp'] = config.new_file_path
-        extra_dirs.update(dict(
-            (e['type'], e['path']) for e in config_dict.get('extra_dirs', [])))
+        extra_dirs.update({
+            e['type']: e['path'] for e in config_dict.get('extra_dirs', [])})
         self.extra_dirs = extra_dirs
 
     def shutdown(self):
@@ -1010,7 +1010,7 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None, config_
 
     objectstore_class, objectstore_constructor_kwds = type_to_object_store_class(store, fsmon=fsmon)
     if objectstore_class is None:
-        log.error("Unrecognized object store definition: {0}".format(store))
+        log.error("Unrecognized object store definition: {}".format(store))
 
     if from_object == 'xml':
         return objectstore_class.from_xml(config=config, config_xml=config_xml, **objectstore_constructor_kwds)

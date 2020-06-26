@@ -388,7 +388,7 @@ class Registry(object):
         self.set_default_values()
 
         def append_to_sniff_order():
-            sniff_order_classes = set(type(_) for _ in self.sniff_order)
+            sniff_order_classes = {type(_) for _ in self.sniff_order}
             for datatype in self.datatypes_by_extension.values():
                 # Add a datatype only if it is not already in sniff_order, it
                 # has a sniff() method and was not defined with subclass="true".
@@ -931,7 +931,7 @@ class Registry(object):
         """
         """
         if not self._edam_formats_mapping:
-            self._edam_formats_mapping = dict((k, v.edam_format) for k, v in self.datatypes_by_extension.items())
+            self._edam_formats_mapping = {k: v.edam_format for k, v in self.datatypes_by_extension.items()}
         return self._edam_formats_mapping
 
     @property
@@ -939,7 +939,7 @@ class Registry(object):
         """
         """
         if not self._edam_data_mapping:
-            self._edam_data_mapping = dict((k, v.edam_data) for k, v in self.datatypes_by_extension.items())
+            self._edam_data_mapping = {k: v.edam_data for k, v in self.datatypes_by_extension.items()}
         return self._edam_data_mapping
 
     def to_xml_file(self, path):
@@ -956,8 +956,8 @@ class Registry(object):
             """)
             converters_path = self.converters_path_attr or ''
             display_path = self.display_path_attr or ''
-            datatype_elems = "".join((galaxy.util.xml_to_string(elem) for elem in self.datatype_elems))
-            sniffer_elems = "".join((galaxy.util.xml_to_string(elem) for elem in self.sniffer_elems))
+            datatype_elems = "".join(galaxy.util.xml_to_string(elem) for elem in self.datatype_elems)
+            sniffer_elems = "".join(galaxy.util.xml_to_string(elem) for elem in self.sniffer_elems)
             self._registry_xml_string = registry_string_template.substitute(converters_path=converters_path,
                                                                             display_path=display_path,
                                                                             datatype_elems=datatype_elems,

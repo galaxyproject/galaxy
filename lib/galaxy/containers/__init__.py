@@ -386,4 +386,4 @@ def _get_interface_modules():
         classes = [_ for _ in module_names if inspect.isclass(_) and
             not _ == ContainerInterface and issubclass(_, ContainerInterface)]
         interfaces.extend(classes)
-    return dict((x.container_type, x) for x in interfaces)
+    return {x.container_type: x for x in interfaces}

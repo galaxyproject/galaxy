@@ -207,7 +207,7 @@ class MutationList(MutationObj, list):
     @classmethod
     def coerce(cls, key, value):
         """Convert plain list to MutationList"""
-        self = MutationList((MutationObj.coerce(key, v) for v in value))
+        self = MutationList(MutationObj.coerce(key, v) for v in value)
         self._key = key
         return self
 

@@ -68,7 +68,7 @@ PROCESS_COLUMNS = [
 # Types of statistics this module can summarize
 STATISTIC_TYPES = ["max", "min", "sum", "count", "avg"]
 
-COLUMN_INDICES = dict([(col, i) for i, col in enumerate(PROCESS_COLUMNS)])
+COLUMN_INDICES = {col: i for i, col in enumerate(PROCESS_COLUMNS)}
 PID_INDEX = COLUMN_INDICES["PID"]
 PARENT_PID_INDEX = COLUMN_INDICES["PPID"]
 
