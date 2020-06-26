@@ -197,13 +197,13 @@ class _BlastDb(Data):
         """
         if not preview:
             return super().display_data(trans,
-                                                      data=data,
-                                                      preview=preview,
-                                                      filename=filename,
-                                                      to_ext=to_ext,
-                                                      size=size,
-                                                      offset=offset,
-                                                      **kwd)
+                                        data=data,
+                                        preview=preview,
+                                        filename=filename,
+                                        to_ext=to_ext,
+                                        size=size,
+                                        offset=offset,
+                                        **kwd)
         if self.file_ext == "blastdbn":
             title = "This is a nucleotide BLAST database"
         elif self.file_ext == "blastdbp":

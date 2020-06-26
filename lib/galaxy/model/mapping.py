@@ -1757,10 +1757,10 @@ simple_mapping(model.HistoryDatasetAssociation,
         backref="hdas"),
     extended_metadata=relation(model.ExtendedMetadata,
         primaryjoin=(model.HistoryDatasetAssociation.table.c.extended_metadata_id ==
-                      model.ExtendedMetadata.table.c.id)),
+                     model.ExtendedMetadata.table.c.id)),
     hidden_beneath_collection_instance=relation(model.HistoryDatasetCollectionAssociation,
         primaryjoin=(model.HistoryDatasetAssociation.table.c.hidden_beneath_collection_instance_id ==
-                      model.HistoryDatasetCollectionAssociation.table.c.id),
+                     model.HistoryDatasetCollectionAssociation.table.c.id),
         uselist=False,
         backref="hidden_dataset_instances"),
     _metadata=deferred(model.HistoryDatasetAssociation.table.c._metadata)
@@ -2239,7 +2239,7 @@ simple_mapping(model.TaskMetricNumeric,
 simple_mapping(model.ImplicitlyCreatedDatasetCollectionInput,
     input_dataset_collection=relation(model.HistoryDatasetCollectionAssociation,
         primaryjoin=(model.HistoryDatasetCollectionAssociation.table.c.id ==
-                      model.ImplicitlyCreatedDatasetCollectionInput.table.c.input_dataset_collection_id),
+                     model.ImplicitlyCreatedDatasetCollectionInput.table.c.input_dataset_collection_id),
         # backref="implicitly_created_dataset_collections",
     ),
 )
@@ -2380,7 +2380,7 @@ simple_mapping(model.HistoryDatasetCollectionAssociation,
                      model.HistoryDatasetCollectionAssociation.table.c.id)),
     implicit_input_collections=relation(model.ImplicitlyCreatedDatasetCollectionInput,
         primaryjoin=(model.HistoryDatasetCollectionAssociation.table.c.id ==
-                      model.ImplicitlyCreatedDatasetCollectionInput.table.c.dataset_collection_id),
+                     model.ImplicitlyCreatedDatasetCollectionInput.table.c.dataset_collection_id),
         backref="dataset_collection",
     ),
     implicit_collection_jobs=relation(

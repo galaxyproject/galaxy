@@ -22,11 +22,11 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                  resetting_all_metadata_on_repository=False, updating_installed_repository=False,
                  persist=False, metadata_dict=None):
         super().__init__(app, repository, changeset_revision,
-                                                        repository_clone_url, shed_config_dict,
-                                                        relative_install_dir, repository_files_dir,
-                                                        resetting_all_metadata_on_repository,
-                                                        updating_installed_repository, persist,
-                                                        metadata_dict=metadata_dict, user=user)
+                         repository_clone_url, shed_config_dict,
+                         relative_install_dir, repository_files_dir,
+                         resetting_all_metadata_on_repository,
+                         updating_installed_repository, persist,
+                         metadata_dict=metadata_dict, user=user)
         self.app = app
         self.user = user
         # Repository metadata comparisons for changeset revisions.

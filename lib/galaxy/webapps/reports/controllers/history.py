@@ -91,9 +91,9 @@ class History(BaseUIController):
         # transform lists to dict with email as key and
         # number of (history/dataset)/size of history as value
         histories = {_.email if _.email is not None else "Unknown": int(_.history)
-                          for _ in histories.execute()}
+                     for _ in histories.execute()}
         datasets = {_.email if _.email is not None else "Unknown": (int(_.dataset), int(_.size))
-                         for _ in datasets.execute()}
+                    for _ in datasets.execute()}
 
         sort_keys = (
             lambda v: v[0].lower(),

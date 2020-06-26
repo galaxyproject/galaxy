@@ -140,9 +140,9 @@ class GenomeDataProvider(BaseDataProvider):
     def __init__(self, converted_dataset=None, original_dataset=None, dependencies=None,
                  error_max_vals="Only the first %i %s in this region are displayed."):
         super().__init__(converted_dataset=converted_dataset,
-                                                 original_dataset=original_dataset,
-                                                 dependencies=dependencies,
-                                                 error_max_vals=error_max_vals)
+                         original_dataset=original_dataset,
+                         dependencies=dependencies,
+                         error_max_vals=error_max_vals)
 
     def write_data_to_file(self, regions, filename):
         """
@@ -1098,8 +1098,8 @@ class SamDataProvider(BamDataProvider):
     def __init__(self, converted_dataset=None, original_dataset=None, dependencies=None):
         """ Create SamDataProvider. """
         super().__init__(converted_dataset=converted_dataset,
-                                              original_dataset=original_dataset,
-                                              dependencies=dependencies)
+                         original_dataset=original_dataset,
+                         dependencies=dependencies)
 
         # To use BamDataProvider, original dataset must be BAM and
         # converted dataset must be BAI. Use BAI from BAM metadata.

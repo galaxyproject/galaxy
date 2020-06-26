@@ -138,8 +138,8 @@ class BatchMiddleware:
         request_environ['CONTENT_TYPE'] = request.get('contentType', 'application/json')
         request_environ['REQUEST_METHOD'] = request.get('method', request.get('type', 'GET'))
         url = '{}://{}{}'.format(request_environ.get('wsgi.url_scheme'),
-                                    request_environ.get('HTTP_HOST'),
-                                    request['url'])
+                                 request_environ.get('HTTP_HOST'),
+                                 request['url'])
         parsed = urlparse(url)
         request_environ['PATH_INFO'] = parsed.path
         request_environ['QUERY_STRING'] = parsed.query
