@@ -554,9 +554,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 self.__cleanup_k8s_job(job_to_delete)
             # TODO assert whether job parallelism == 0
             # assert not job_to_delete.exists(), "Could not delete job,"+job.job_runner_external_id+" it still exists"
-            log.debug("(%s/%s) Terminated at user's request" % (job.id, job.job_runner_external_id))
+            log.debug("({}/{}) Terminated at user's request".format(job.id, job.job_runner_external_id))
         except Exception as e:
-            log.exception("(%s/%s) User killed running job, but error encountered during termination: %s" % (
+            log.exception("({}/{}) User killed running job, but error encountered during termination: {}".format(
                 job.id, job.job_runner_external_id, e))
 
     def recover(self, job, job_wrapper):
@@ -572,13 +572,13 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         ajs.job_wrapper = job_wrapper
         ajs.job_destination = job_wrapper.job_destination
         if job.state == model.Job.states.RUNNING:
-            log.debug("(%s/%s) is still in running state, adding to the runner monitor queue" % (
+            log.debug("({}/{}) is still in running state, adding to the runner monitor queue".format(
                 job.id, job.job_runner_external_id))
             ajs.old_state = model.Job.states.RUNNING
             ajs.running = True
             self.monitor_queue.put(ajs)
         elif job.state == model.Job.states.QUEUED:
-            log.debug("(%s/%s) is still in queued state, adding to the runner monitor queue" % (
+            log.debug("({}/{}) is still in queued state, adding to the runner monitor queue".format(
                 job.id, job.job_runner_external_id))
             ajs.old_state = model.Job.states.QUEUED
             ajs.running = False

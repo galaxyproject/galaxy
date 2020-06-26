@@ -394,10 +394,10 @@ class DockerServiceConstraint(object):
         return hash((self._name, self._op, self._value))
 
     def __repr__(self):
-        return '%s(%s%s%s)' % (self.__class__.__name__, self._name, self._op, self._value)
+        return '{}({}{}{})'.format(self.__class__.__name__, self._name, self._op, self._value)
 
     def __str__(self):
-        return '%s%s%s' % (self._name, self._op, self._value)
+        return '{}{}{}'.format(self._name, self._op, self._value)
 
     @staticmethod
     def split_constraint_string(constraint_str):
@@ -509,7 +509,7 @@ class DockerNode(object):
 
     @property
     def state(self):
-        return ('%s-%s' % (self._status, self._availability)).lower()
+        return ('{}-{}'.format(self._status, self._availability)).lower()
 
     @property
     def cpus(self):
@@ -598,10 +598,10 @@ class DockerNodeLabel(object):
         return hash((self._name, self._value))
 
     def __repr__(self):
-        return '%s(%s: %s)' % (self.__class__.__name__, self._name, self._value)
+        return '{}({}: {})'.format(self.__class__.__name__, self._name, self._value)
 
     def __str__(self):
-        return '%s: %s' % (self._name, self._value)
+        return '{}: {}'.format(self._name, self._value)
 
     @property
     def name(self):
@@ -745,7 +745,7 @@ class DockerTask(object):
 
     @property
     def state(self):
-        return ('%s-%s' % (self._desired_state, self._state)).lower()
+        return ('{}-{}'.format(self._desired_state, self._state)).lower()
 
     @property
     def current_state(self):

@@ -157,11 +157,11 @@ class MetadataCollection(object):
     def from_JSON_dict(self, filename=None, path_rewriter=None, json_dict=None):
         dataset = self.parent
         if filename is not None:
-            log.debug('loading metadata from file for: %s %s' % (dataset.__class__.__name__, dataset.id))
+            log.debug('loading metadata from file for: {} {}'.format(dataset.__class__.__name__, dataset.id))
             with open(filename) as fh:
                 JSONified_dict = json.load(fh)
         elif json_dict is not None:
-            log.debug('loading metadata from dict for: %s %s' % (dataset.__class__.__name__, dataset.id))
+            log.debug('loading metadata from dict for: {} {}'.format(dataset.__class__.__name__, dataset.id))
             if isinstance(json_dict, string_types):
                 JSONified_dict = json.loads(json_dict)
             elif isinstance(json_dict, dict):

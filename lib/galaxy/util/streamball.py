@@ -74,7 +74,7 @@ def stream_archive(trans, path, upstream_gzip=False):
             p = os.path.join(root, filename)
             relpath = os.path.relpath(p, os.path.join(path, os.pardir))
             archive.add(file=os.path.join(path, p), relpath=relpath)
-    archive_name = "%s.%s" % (os.path.basename(path), archive_ext)
+    archive_name = "{}.{}".format(os.path.basename(path), archive_ext)
     trans.response.set_content_type("application/x-tar")
     trans.response.headers["Content-Disposition"] = 'attachment; filename="{}"'.format(archive_name)
     archive.wsgi_status = trans.response.wsgi_status()

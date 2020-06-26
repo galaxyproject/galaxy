@@ -42,10 +42,10 @@ def send_local_control_task(app, task, get_response=False, kwargs=None):
     """
     if kwargs is None:
         kwargs = {}
-    log.info("Queuing %s task %s for %s." % ("sync" if get_response else "async", task, app.config.server_name))
+    log.info("Queuing {} task {} for {}.".format("sync" if get_response else "async", task, app.config.server_name))
     payload = {'task': task,
                'kwargs': kwargs}
-    routing_key = 'control.%s@%s' % (app.config.server_name, socket.gethostname())
+    routing_key = 'control.{}@{}'.format(app.config.server_name, socket.gethostname())
     control_task = ControlTask(app.queue_worker)
     return control_task.send_task(payload, routing_key, local=True, get_response=get_response)
 

@@ -147,19 +147,19 @@ class Velvet(Html):
         self.add_composite_file('Log', mimetype='text/html', description='Log', optional='True', substitute_name_with_metadata=None, is_binary=False)
 
     def generate_primary_file(self, dataset=None):
-        log.debug("Velvet log info  %s %s" % ('JJ generate_primary_file', dataset))
+        log.debug("Velvet log info  {} {}".format('JJ generate_primary_file', dataset))
         rval = ['<html><head><title>Velvet Galaxy Composite Dataset </title></head><p/>']
         rval.append('<div>This composite dataset is composed of the following files:<p/><ul>')
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
             fn = composite_name
-            log.debug("Velvet log info  %s %s %s" % ('JJ generate_primary_file', fn, composite_file))
+            log.debug("Velvet log info  {} {} {}".format('JJ generate_primary_file', fn, composite_file))
             opt_text = ''
             if composite_file.optional:
                 opt_text = ' (optional)'
             if composite_file.get('description'):
-                rval.append('<li><a href="%s" type="text/plain">%s (%s)</a>%s</li>' % (fn, fn, composite_file.get('description'), opt_text))
+                rval.append('<li><a href="{}" type="text/plain">{} ({})</a>{}</li>'.format(fn, fn, composite_file.get('description'), opt_text))
             else:
-                rval.append('<li><a href="%s" type="text/plain">%s</a>%s</li>' % (fn, fn, opt_text))
+                rval.append('<li><a href="{}" type="text/plain">{}</a>{}</li>'.format(fn, fn, opt_text))
         rval.append('</ul></div></html>')
         return "\n".join(rval)
 
@@ -198,15 +198,15 @@ class Velvet(Html):
         rval.append('<div>Velveth dataset:<p/><ul>')
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
             fn = composite_name
-            log.debug("Velvet log info  %s %s %s" % ('JJ regenerate_primary_file', fn, composite_file))
+            log.debug("Velvet log info  {} {} {}".format('JJ regenerate_primary_file', fn, composite_file))
             if re.search('Log', fn) is None:
                 opt_text = ''
                 if composite_file.optional:
                     opt_text = ' (optional)'
                 if composite_file.get('description'):
-                    rval.append('<li><a href="%s" type="text/plain">%s (%s)</a>%s</li>' % (fn, fn, composite_file.get('description'), opt_text))
+                    rval.append('<li><a href="{}" type="text/plain">{} ({})</a>{}</li>'.format(fn, fn, composite_file.get('description'), opt_text))
                 else:
-                    rval.append('<li><a href="%s" type="text/plain">%s</a>%s</li>' % (fn, fn, opt_text))
+                    rval.append('<li><a href="{}" type="text/plain">{}</a>{}</li>'.format(fn, fn, opt_text))
         rval.append('</ul></div></html>')
         with open(dataset.file_name, 'w') as f:
             f.write("\n".join(rval))

@@ -100,7 +100,7 @@ class InstallEnvironment(object):
                 for env_setting in open(env_shell_file_path):
                     cmds.append(env_setting.strip('\n'))
             else:
-                log.debug('Invalid file %s specified, ignoring %s action.' % (str(env_shell_file_path), str(action_type)))
+                log.debug('Invalid file {} specified, ignoring {} action.'.format(str(env_shell_file_path), str(action_type)))
         return cmds
 
     def environment_dict(self, action_type='template_command'):

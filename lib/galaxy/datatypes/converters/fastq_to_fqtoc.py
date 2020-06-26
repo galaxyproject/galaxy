@@ -34,11 +34,11 @@ def main():
             current_line += 1
             if 0 == current_line % lines_per_chunk:
                 chunk_end = in_file.tell()
-                out_file.write('{"start":"%s","end":"%s","sequences":"%s"},' % (chunk_begin, chunk_end, sequences))
+                out_file.write('{{"start":"{}","end":"{}","sequences":"{}"}},'.format(chunk_begin, chunk_end, sequences))
                 chunk_begin = chunk_end
 
         chunk_end = in_file.tell()
-        out_file.write('{"start":"%s","end":"%s","sequences":"%s"}' % (chunk_begin, chunk_end, (current_line % lines_per_chunk) / 4))
+        out_file.write('{{"start":"{}","end":"{}","sequences":"{}"}}'.format(chunk_begin, chunk_end, (current_line % lines_per_chunk) / 4))
         out_file.write(']}\n')
 
 

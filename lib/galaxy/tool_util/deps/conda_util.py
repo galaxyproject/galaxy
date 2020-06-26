@@ -374,7 +374,7 @@ class CondaTarget(object):
     def __str__(self):
         attributes = "package=%s" % self.package
         if self.version is not None:
-            attributes = "%s,version=%s" % (self.package, self.version)
+            attributes = "{},version={}".format(self.package, self.version)
         else:
             attributes = "%s,unversioned" % self.package
 
@@ -390,7 +390,7 @@ class CondaTarget(object):
         """ Return a package specifier as consumed by conda install/create.
         """
         if self.version:
-            return "%s=%s" % (self.package, self.version)
+            return "{}={}".format(self.package, self.version)
         else:
             return self.package
 
@@ -401,7 +401,7 @@ class CondaTarget(object):
         a fixed and predictable name given package and version.
         """
         if self.version:
-            return "__%s@%s" % (self.package, self.version)
+            return "__{}@{}".format(self.package, self.version)
         else:
             return "__%s@_uv_" % (self.package)
 

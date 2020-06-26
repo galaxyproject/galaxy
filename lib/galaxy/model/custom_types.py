@@ -317,7 +317,7 @@ class MetadataType(JSONType):
                     sz = total_size(v)
                     if sz > MAX_METADATA_VALUE_SIZE:
                         del value[k]
-                        log.warning('Refusing to bind metadata key %s due to size (%s)' % (k, sz))
+                        log.warning('Refusing to bind metadata key {} due to size ({})'.format(k, sz))
             value = json_encoder.encode(value).encode()
         return value
 

@@ -152,7 +152,7 @@ def validate_jsonrpc_response(response, id=None):
         try:
             assert 'id' in response and response['id'] == id
         except Exception:
-            log.error('The response id "%s" does not match the request id "%s"' % (response['id'], id))
+            log.error('The response id "{}" does not match the request id "{}"'.format(response['id'], id))
             return False, response
     return True, response
 

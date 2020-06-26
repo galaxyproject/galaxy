@@ -11,16 +11,16 @@ from galaxy.util import strip_control_characters_nested
 def _ensure_rule_contains_keys(rule, keys):
     for key, instance_class in keys.items():
         if key not in rule:
-            raise ValueError("Rule of type [%s] does not contain key [%s]." % (rule["type"], key))
+            raise ValueError("Rule of type [{}] does not contain key [{}].".format(rule["type"], key))
         value = rule[key]
         if not isinstance(value, instance_class):
-            raise ValueError("Rule of type [%s] does not contain correct value type for key [%s]." % (rule["type"], key))
+            raise ValueError("Rule of type [{}] does not contain correct value type for key [{}].".format(rule["type"], key))
 
 
 def _ensure_key_value_in(rule, key, values):
     value = rule[key]
     if value not in values:
-        raise ValueError("Invalid value [%s] for [%s] encountered." % (value, key))
+        raise ValueError("Invalid value [{}] for [{}] encountered.".format(value, key))
 
 
 def _ensure_valid_pattern(expression):
@@ -35,7 +35,7 @@ def apply_regex(regex, target, data, replacement=None, group_count=None):
         if replacement is None:
             match = pattern.search(source)
             if not match:
-                raise Exception("Problem applying regular expression [%s] to [%s]." % (regex, source))
+                raise Exception("Problem applying regular expression [{}] to [{}].".format(regex, source))
 
             if group_count:
                 if len(match.groups()) != group_count:

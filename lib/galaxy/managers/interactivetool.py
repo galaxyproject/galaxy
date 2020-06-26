@@ -265,10 +265,10 @@ class InteractiveToolManager(object):
             entry_point_class = entry_point.__class__.__name__.lower()
             entry_point_prefix = self.app.config.interactivetools_prefix
             interactivetools_proxy_host = self.app.config.interactivetools_proxy_host or request_host
-            rval = '%s//%s-%s.%s.%s.%s/' % (protocol, entry_point_encoded_id,
+            rval = '{}//{}-{}.{}.{}.{}/'.format(protocol, entry_point_encoded_id,
                     entry_point.token, entry_point_class, entry_point_prefix, interactivetools_proxy_host)
             if entry_point.entry_url:
-                rval = '%s/%s' % (rval.rstrip('/'), entry_point.entry_url.lstrip('/'))
+                rval = '{}/{}'.format(rval.rstrip('/'), entry_point.entry_url.lstrip('/'))
             return rval
 
     def access_entry_point_target(self, trans, entry_point_id):

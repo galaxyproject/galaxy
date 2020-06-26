@@ -76,7 +76,7 @@ def parse_xml(file_name, check_exists=True):
     except (IOError, OSError):
         raise
     except Exception as e:
-        error_message = "Exception attempting to parse %s: %s" % (str(file_name), unicodify(e))
+        error_message = "Exception attempting to parse {}: {}".format(str(file_name), unicodify(e))
         log.exception(error_message)
         return None, error_message
     return tree, error_message

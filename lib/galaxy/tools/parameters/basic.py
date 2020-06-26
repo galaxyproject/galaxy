@@ -251,7 +251,7 @@ class ToolParameter(Dictifiable):
         if not param_type:
             raise ValueError("parameter '%s' requires a 'type'" % (param_name))
         elif param_type not in parameter_types:
-            raise ValueError("parameter '%s' uses an unknown type '%s'" % (param_name, param_type))
+            raise ValueError("parameter '{}' uses an unknown type '{}'".format(param_name, param_type))
         else:
             return parameter_types[param_type](tool, input_source)
 
@@ -541,7 +541,7 @@ class FileToolParameter(ToolParameter):
                 upload_store = trans.app.config.nginx_upload_store
                 assert upload_store, "Request appears to have been processed by nginx_upload_module but Galaxy is not configured to recognize it."
                 local_filename = os.path.abspath(value['path'])
-                assert local_filename.startswith(upload_store), "Filename provided by nginx (%s) is not in correct directory (%s)." % (local_filename, upload_store)
+                assert local_filename.startswith(upload_store), "Filename provided by nginx ({}) is not in correct directory ({}).".format(local_filename, upload_store)
             value = dict(filename=value["name"], local_filename=local_filename)
         return value
 
@@ -610,7 +610,7 @@ class FTPFileToolParameter(ToolParameter):
     def to_param_dict_string(self, value, other_values={}):
         if value == '':
             return 'None'
-        lst = ['%s%s' % (self.user_ftp_dir, dataset) for dataset in value]
+        lst = ['{}{}'.format(self.user_ftp_dir, dataset) for dataset in value]
         if self.multiple:
             return lst
         else:
@@ -873,7 +873,7 @@ class SelectToolParameter(ToolParameter):
             rval = []
             for v in value:
                 if v not in legal_values:
-                    raise ValueError("parameter '%s': an invalid option (%r) was selected (valid options: %s)" % (self.name, v, ",".join(legal_values)))
+                    raise ValueError("parameter '{}': an invalid option ({!r}) was selected (valid options: {})".format(self.name, v, ",".join(legal_values)))
                 rval.append(v)
             return rval
         else:
@@ -887,7 +887,7 @@ class SelectToolParameter(ToolParameter):
             if is_runtime_value(value):
                 return None
             if value not in legal_values and require_legal_value:
-                raise ValueError("parameter '%s': an invalid option (%r) was selected (valid options: %s)" % (self.name, value, ",".join(legal_values)))
+                raise ValueError("parameter '{}': an invalid option ({!r}) was selected (valid options: {})".format(self.name, value, ",".join(legal_values)))
             return value
 
     def to_param_dict_string(self, value, other_values={}):
@@ -1432,7 +1432,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         elif value is None:
             if self.optional:
                 return None
-            raise ValueError("parameter '%s': an invalid option (%r) was selected" % (self.name, value))
+            raise ValueError("parameter '{}': an invalid option ({!r}) was selected".format(self.name, value))
         elif not legal_values:
             raise ValueError("parameter '%s': requires a value, but no legal values defined" % (self.name))
         if not isinstance(value, list):
@@ -1442,7 +1442,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         rval = []
         for val in value:
             if val not in legal_values:
-                raise ValueError("parameter '%s': an invalid option (%r) was selected (valid options: %s)" % (self.name, val, ",".join(legal_values)))
+                raise ValueError("parameter '{}': an invalid option ({!r}) was selected (valid options: {})".format(self.name, val, ",".join(legal_values)))
             rval.append(val)
         return rval
 
@@ -1580,7 +1580,7 @@ class BaseDataToolParameter(ToolParameter):
                 if datatype is not None:
                     formats.append(datatype)
                 else:
-                    log.warning("Datatype class not found for extension '%s', which is used in the 'format' attribute of parameter '%s'" % (extension, self.name))
+                    log.warning("Datatype class not found for extension '{}', which is used in the 'format' attribute of parameter '{}'".format(extension, self.name))
         self.formats = formats
 
     def _parse_options(self, input_source):
@@ -1724,11 +1724,11 @@ class DataToolParameter(BaseDataToolParameter):
         # Load conversions required for the dataset input
         self.conversions = []
         for name, conv_extension in input_source.parse_conversion_tuples():
-            assert None not in [name, conv_extension], 'A name (%s) and type (%s) are required for explicit conversion' % (name, conv_extension)
+            assert None not in [name, conv_extension], 'A name ({}) and type ({}) are required for explicit conversion'.format(name, conv_extension)
             if self.datatypes_registry:
                 conv_type = self.datatypes_registry.get_datatype_by_extension(conv_extension.lower())
                 if conv_type is None:
-                    raise ValueError("parameter '%s': datatype class not found for extension '%s', which is used as 'type' attribute in conversion of data parameter" % (self.name, conv_type))
+                    raise ValueError("parameter '{}': datatype class not found for extension '{}', which is used as 'type' attribute in conversion of data parameter".format(self.name, conv_type))
                 self.conversions.append((name, conv_extension, [conv_type]))
 
     def from_json(self, value, trans, other_values={}):
@@ -1832,7 +1832,7 @@ class DataToolParameter(BaseDataToolParameter):
             value = [value]
         if value:
             try:
-                return ", ".join("%s: %s" % (item.hid, item.name) for item in value)
+                return ", ".join("{}: {}".format(item.hid, item.name) for item in value)
             except Exception:
                 pass
         return "No dataset."
@@ -1949,7 +1949,7 @@ class DataToolParameter(BaseDataToolParameter):
                 'id'   : trans.security.encode_id(hda.id),
                 'hid'  : hda.hid if hda.hid is not None else -1,
                 'name' : name,
-                'tags' : [t.user_tname if not t.value else "%s:%s" % (t.user_tname, t.value) for t in hda.tags],
+                'tags' : [t.user_tname if not t.value else "{}:{}".format(t.user_tname, t.value) for t in hda.tags],
                 'src'  : src,
                 'keep' : keep
             }
@@ -1965,7 +1965,7 @@ class DataToolParameter(BaseDataToolParameter):
             if match:
                 m = match.hda
                 hda_list = [h for h in hda_list if h != m and h != hda]
-                m_name = '%s (as %s)' % (match.original_hda.name, match.target_ext) if match.implicit_conversion else m.name
+                m_name = '{} (as {})'.format(match.original_hda.name, match.target_ext) if match.implicit_conversion else m.name
                 append(d['options']['hda'], m, m_name, 'hda')
         for hda in hda_list:
             if hasattr(hda, 'hid'):
@@ -1975,7 +1975,7 @@ class DataToolParameter(BaseDataToolParameter):
                     hda_state = 'hidden'
                 else:
                     hda_state = 'unavailable'
-                append(d['options']['hda'], hda, '(%s) %s' % (hda_state, hda.name), 'hda', True)
+                append(d['options']['hda'], hda, '({}) {}'.format(hda_state, hda.name), 'hda', True)
 
         # add dataset collections
         dataset_collection_matcher = dataset_matcher_factory.dataset_collection_matcher(dataset_matcher)
@@ -2098,7 +2098,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
     def to_text(self, value):
         try:
             if isinstance(value, galaxy.model.HistoryDatasetCollectionAssociation):
-                display_text = "%s: %s" % (value.hid, value.name)
+                display_text = "{}: {}".format(value.hid, value.name)
             else:
                 display_text = "Element %d:%s" % (value.identifier_index, value.identifier_name)
         except AttributeError:
@@ -2147,7 +2147,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
                 'hid'  : hdca.hid,
                 'name' : name,
                 'src'  : 'hdca',
-                'tags' : [t.user_tname if not t.value else "%s:%s" % (t.user_tname, t.value) for t in hdca.tags]
+                'tags' : [t.user_tname if not t.value else "{}:{}".format(t.user_tname, t.value) for t in hdca.tags]
             })
 
         # append matching subcollections
@@ -2161,7 +2161,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
                 'hid'  : hdca.hid,
                 'name' : name,
                 'src'  : 'hdca',
-                'tags' : [t.user_tname if not t.value else "%s:%s" % (t.user_tname, t.value) for t in hdca.tags],
+                'tags' : [t.user_tname if not t.value else "{}:{}".format(t.user_tname, t.value) for t in hdca.tags],
                 'map_over_type': subcollection_type
             })
 

@@ -167,7 +167,7 @@ class BaseUIController(BaseController):
             raise       # handled in the caller
         except Exception:
             log.exception("Exception in get_object check for %s %s:", class_name, str(id))
-            raise Exception('Server error retrieving %s id ( %s ).' % (class_name, str(id)))
+            raise Exception('Server error retrieving {} id ( {} ).'.format(class_name, str(id)))
 
     def message_exception(self, trans, message, sanitize=True):
         trans.response.status = 400
@@ -182,7 +182,7 @@ class BaseAPIController(BaseController):
                                              check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted)
 
         except exceptions.ItemDeletionException as e:
-            raise HTTPBadRequest(detail="Invalid %s id ( %s ) specified: %s" % (class_name, str(id), util.unicodify(e)))
+            raise HTTPBadRequest(detail="Invalid {} id ( {} ) specified: {}".format(class_name, str(id), util.unicodify(e)))
         except exceptions.MessageException as e:
             raise HTTPBadRequest(detail=e.err_msg)
         except Exception as e:
@@ -1011,7 +1011,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
                 encoded_dbkey = dbkey
                 user = visualization.user
                 if 'dbkeys' in user.preferences and str(dbkey) in user.preferences['dbkeys']:
-                    encoded_dbkey = "%s:%s" % (user.username, dbkey)
+                    encoded_dbkey = "{}:{}".format(user.username, dbkey)
                 return encoded_dbkey
 
             # Set tracks.

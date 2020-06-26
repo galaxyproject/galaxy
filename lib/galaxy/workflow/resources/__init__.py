@@ -169,7 +169,7 @@ def _import_resource_mapping_function(qualified_function_path):
     if hasattr(module, function_name):
         return getattr(module, function_name)
     else:
-        raise Exception("Failed to find workflow resource mapper function %s.%s" % (full_module_name, function_name))
+        raise Exception("Failed to find workflow resource mapper function {}.{}".format(full_module_name, function_name))
 
 
 def _null_mapper_function(*args, **kwds):

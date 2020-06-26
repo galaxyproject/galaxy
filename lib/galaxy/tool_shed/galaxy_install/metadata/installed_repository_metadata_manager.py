@@ -39,7 +39,7 @@ class InstalledRepositoryMetadataManager(MetadataGenerator):
         query = self.get_query_for_setting_metadata_on_repositories(order=True)
         for repository in query:
             owner = str(repository.owner)
-            option_label = '%s (%s)' % (str(repository.name), owner)
+            option_label = '{} ({})'.format(str(repository.name), owner)
             option_value = '%s' % self.app.security.encode_id(repository.id)
             repositories_select_field.add_option(option_label, option_value)
         return repositories_select_field

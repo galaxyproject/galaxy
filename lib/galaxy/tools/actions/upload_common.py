@@ -328,7 +328,7 @@ def create_paramfile(trans, uploaded_datasets):
         except Exception as e:
             log.debug('Failed to construct command to change ownership %s' %
                       unicodify(e))
-        log.debug('Changing ownership of %s with: %s' % (path, ' '.join(cmd)))
+        log.debug('Changing ownership of {} with: {}'.format(path, ' '.join(cmd)))
         try:
             commands.execute(cmd)
         except commands.CommandLineException as e:

@@ -97,7 +97,7 @@ def upgrade(migrate_engine):
         sequencer_id = row[1]
         if not sequencer_id:
             sequencer_id = 'null'
-        cmd = "INSERT INTO request_type_external_service_association VALUES ( %s, %s, %s )" % (
+        cmd = "INSERT INTO request_type_external_service_association VALUES ( {}, {}, {} )".format(
             nextval(migrate_engine, 'request_type_external_service_association'),
             request_type_id,
             sequencer_id)

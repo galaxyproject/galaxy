@@ -158,7 +158,7 @@ class WorkflowInvoker(object):
         config = self.trans.app.config
         maximum_duration = getattr(config, "maximum_workflow_invocation_duration", -1)
         if maximum_duration > 0 and workflow_invocation.seconds_since_created > maximum_duration:
-            log.debug("Workflow invocation [%s] exceeded maximum number of seconds allowed for scheduling [%s], failing." % (workflow_invocation.id, maximum_duration))
+            log.debug("Workflow invocation [{}] exceeded maximum number of seconds allowed for scheduling [{}], failing.".format(workflow_invocation.id, maximum_duration))
             workflow_invocation.state = model.WorkflowInvocation.states.FAILED
             # All jobs ran successfully, so we can save now
             self.trans.sa_session.add(workflow_invocation)
@@ -206,7 +206,7 @@ class WorkflowInvoker(object):
                 raise
 
             if not step_delayed:
-                log.debug("Workflow step %s of invocation %s invoked %s" % (step.id, workflow_invocation.id, step_timer))
+                log.debug("Workflow step {} of invocation {} invoked {}".format(step.id, workflow_invocation.id, step_timer))
 
         if delayed_steps:
             state = model.WorkflowInvocation.states.READY
@@ -442,7 +442,7 @@ class WorkflowProgress(object):
             for workflow_output in step.workflow_outputs:
                 output_name = workflow_output.output_name
                 if output_name not in outputs:
-                    message = "Failed to find expected workflow output [%s] in step outputs [%s]" % (output_name, outputs)
+                    message = "Failed to find expected workflow output [{}] in step outputs [{}]".format(output_name, outputs)
                     # raise KeyError(message)
                     # Pre-18.01 we would have never even detected this output wasn't configured
                     # and even in 18.01 we don't have a way to tell the user something bad is
@@ -463,7 +463,7 @@ class WorkflowProgress(object):
 
     def mark_step_outputs_delayed(self, step, why=None):
         if why:
-            message = "Marking step %s outputs of invocation %s delayed (%s)" % (step.id, self.workflow_invocation.id, why)
+            message = "Marking step {} outputs of invocation {} delayed ({})".format(step.id, self.workflow_invocation.id, why)
             log.debug(message)
         self.outputs[step.id] = STEP_OUTPUT_DELAYED
 

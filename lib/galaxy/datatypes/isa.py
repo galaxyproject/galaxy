@@ -210,7 +210,7 @@ class _Isa(data.Data):
             if hasattr(dataset, "extra_files_path"):
                 rval.append('<div>ISA Dataset composed of the following files:<p/><ul>')
                 for cmp_file in os.listdir(dataset.extra_files_path):
-                    rval.append('<li><a href="%s" type="text/plain">%s</a></li>' % (cmp_file, escape(cmp_file)))
+                    rval.append('<li><a href="{}" type="text/plain">{}</a></li>'.format(cmp_file, escape(cmp_file)))
                 rval.append('</ul></div></html>')
             else:
                 rval.append('<div>ISA Dataset is empty!<p/><ul>')

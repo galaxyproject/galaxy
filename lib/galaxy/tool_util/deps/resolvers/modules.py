@@ -208,8 +208,8 @@ class ModuleDependency(Dependency):
     def shell_commands(self):
         module_to_load = self.module_name
         if self.module_version:
-            module_to_load = '%s/%s' % (self.module_name, self.module_version)
-        command = 'MODULEPATH=%s; export MODULEPATH; eval `%s sh load %s`' % (self.module_dependency_resolver.modulepath,
+            module_to_load = '{}/{}'.format(self.module_name, self.module_version)
+        command = 'MODULEPATH={}; export MODULEPATH; eval `{} sh load {}`'.format(self.module_dependency_resolver.modulepath,
                                                                               self.module_dependency_resolver.modulecmd,
                                                                               module_to_load)
         return command

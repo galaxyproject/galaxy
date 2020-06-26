@@ -439,7 +439,7 @@ class SubWorkflowModule(WorkflowModule):
                 name = step.label
                 if not name:
                     step_module = module_factory.from_workflow_step(self.trans, step)
-                    name = "%s:%s" % (step.order_index, step_module.get_name())
+                    name = "{}:{}".format(step.order_index, step_module.get_name())
                 step_type = step.type
                 assert step_type in step_to_input_type
                 input = dict(
@@ -483,7 +483,7 @@ class SubWorkflowModule(WorkflowModule):
                 for workflow_output in step['workflow_outputs']:
                     label = workflow_output['label']
                     if not label:
-                        label = "%s:%s" % (order_index, workflow_output['output_name'])
+                        label = "{}:{}".format(order_index, workflow_output['output_name'])
                     workflow_output_uuid = workflow_output.get('uuid') or object()
                     for data_output in data_outputs:
                         data_output_uuid = data_output.get('uuid') or object()
@@ -516,7 +516,7 @@ class SubWorkflowModule(WorkflowModule):
         subworkflow_progress = subworkflow_invoker.progress
         outputs = {}
         for workflow_output in subworkflow.workflow_outputs:
-            workflow_output_label = workflow_output.label or "%s:%s" % (workflow_output.workflow_step.order_index, workflow_output.output_name)
+            workflow_output_label = workflow_output.label or "{}:{}".format(workflow_output.workflow_step.order_index, workflow_output.output_name)
             replacement = subworkflow_progress.get_replacement_workflow_output(workflow_output)
             outputs[workflow_output_label] = replacement
         progress.set_step_outputs(invocation_step, outputs)
@@ -906,7 +906,7 @@ class InputParameterModule(WorkflowModule):
                     restrict_how_value = "staticSuggestions"
                 else:
                     restrict_how_value = "none"
-                log.info("parameter_def [%s], how [%s]" % (parameter_def, restrict_how_value))
+                log.info("parameter_def [{}], how [{}]".format(parameter_def, restrict_how_value))
                 restrict_how_source["options"] = [
                     {"value": "none", "label": "Do not specify restrictions (default).", "selected": restrict_how_value == "none"},
                     {"value": "onConnections", "label": "Attempt restriction based on connections.", "selected": restrict_how_value == "onConnections"},
@@ -1126,7 +1126,7 @@ class InputParameterModule(WorkflowModule):
         return state
 
     def _parameter_option_def_to_tool_form_str(self, parameter_def):
-        return ",".join("%s:%s" % (o["value"], o["label"]) if isinstance(o, dict) else o for o in parameter_def)
+        return ",".join("{}:{}".format(o["value"], o["label"]) if isinstance(o, dict) else o for o in parameter_def)
 
     def get_export_state(self):
         export_state = self._parse_state_into_dict()
@@ -1253,7 +1253,7 @@ class ToolModule(WorkflowModule):
         self.tool = trans.app.toolbox.get_tool(tool_id, tool_version=tool_version, exact=exact_tools, tool_uuid=tool_uuid)
         if self.tool:
             if tool_version and exact_tools and str(self.tool.version) != str(tool_version):
-                log.info("Exact tool specified during workflow module creation for [%s] but couldn't find correct version [%s]." % (tool_id, tool_version))
+                log.info("Exact tool specified during workflow module creation for [{}] but couldn't find correct version [{}].".format(tool_id, tool_version))
                 self.tool = None
         self.post_job_actions = {}
         self.runtime_post_job_actions = {}
@@ -1289,9 +1289,9 @@ class ToolModule(WorkflowModule):
         if module.tool:
             message = ""
             if tool_id != module.tool_id:
-                message += "The tool (id '%s') specified in this step is not available. Using the tool with id %s instead." % (tool_id, module.tool_id)
+                message += "The tool (id '{}') specified in this step is not available. Using the tool with id {} instead.".format(tool_id, module.tool_id)
             if d.get('tool_version', 'Unspecified') != module.get_version():
-                message += "%s: using version '%s' instead of version '%s' specified in this workflow." % (tool_id, module.get_version(), d.get('tool_version', 'Unspecified'))
+                message += "{}: using version '{}' instead of version '{}' specified in this workflow.".format(tool_id, module.get_version(), d.get('tool_version', 'Unspecified'))
             if message:
                 log.debug(message)
                 module.version_changes.append(message)
@@ -1318,13 +1318,13 @@ class ToolModule(WorkflowModule):
                     old_tool_shed_url = get_tool_shed_url_from_tool_shed_registry(trans.app, old_tool_shed)
                     if not old_tool_shed_url:  # a tool from a different tool_shed has been found, but the original tool shed has been deactivated
                         old_tool_shed_url = "http://" + old_tool_shed  # let's just assume it's either http, or a http is forwarded to https.
-                    old_url = old_tool_shed_url + "/view/%s/%s/" % (module.tool.repository_owner, module.tool.repository_name)
+                    old_url = old_tool_shed_url + "/view/{}/{}/".format(module.tool.repository_owner, module.tool.repository_name)
                     new_url = module.tool.sharable_url + '/%s/' % module.tool.changeset_revision
                     new_tool_shed_url = new_url.split("/view")[0]
-                    message += "The tool \'%s\', version %s by the owner %s installed from <a href=\"%s\" target=\"_blank\">%s</a> is not available. " % (module.tool.name, tool_version, module.tool.repository_owner, old_url, old_tool_shed_url)
-                    message += "A derivation of this tool installed from <a href=\"%s\" target=\"_blank\">%s</a> will be used instead. " % (new_url, new_tool_shed_url)
+                    message += "The tool \'{}\', version {} by the owner {} installed from <a href=\"{}\" target=\"_blank\">{}</a> is not available. ".format(module.tool.name, tool_version, module.tool.repository_owner, old_url, old_tool_shed_url)
+                    message += "A derivation of this tool installed from <a href=\"{}\" target=\"_blank\">{}</a> will be used instead. ".format(new_url, new_tool_shed_url)
             if step.tool_version and (step.tool_version != module.tool.version):
-                message += "<span title=\"tool id '%s'\">Using version '%s' instead of version '%s' specified in this workflow. " % (tool_id, module.tool.version, step.tool_version)
+                message += "<span title=\"tool id '{}'\">Using version '{}' instead of version '{}' specified in this workflow. ".format(tool_id, module.tool.version, step.tool_version)
             if message:
                 log.debug(message)
                 module.version_changes.append(message)
@@ -1857,7 +1857,7 @@ class WorkflowModuleFactory(object):
         Return module initialized from the data in dictionary `d`.
         """
         type = d['type']
-        assert type in self.module_types, "Unexpected workflow step type [%s] not found in [%s]" % (type, self.module_types.keys())
+        assert type in self.module_types, "Unexpected workflow step type [{}] not found in [{}]".format(type, self.module_types.keys())
         return self.module_types[type].from_dict(trans, d, **kwargs)
 
     def from_workflow_step(self, trans, step, **kwargs):

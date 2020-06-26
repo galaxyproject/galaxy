@@ -370,7 +370,7 @@ class CommonConfigurationMixin(object):
             try:
                 os.makedirs(path)
             except Exception as e:
-                raise ConfigurationError("Unable to create missing directory: %s\n%s" % (path, unicodify(e)))
+                raise ConfigurationError("Unable to create missing directory: {}\n{}".format(path, unicodify(e)))
 
 
 class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):

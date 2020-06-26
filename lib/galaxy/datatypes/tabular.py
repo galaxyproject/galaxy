@@ -59,7 +59,7 @@ class TabularData(data.Text):
     def set_peek(self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None):
         super(TabularData, self).set_peek(dataset, line_count=line_count, WIDTH=WIDTH, skipchars=skipchars, line_wrap=False)
         if dataset.metadata.comment_lines:
-            dataset.blurb = "%s, %s comments" % (dataset.blurb, util.commaify(str(dataset.metadata.comment_lines)))
+            dataset.blurb = "{}, {} comments".format(dataset.blurb, util.commaify(str(dataset.metadata.comment_lines)))
 
     def displayable(self, dataset):
         try:
@@ -181,7 +181,7 @@ class TabularData(data.Text):
                 if header is None:
                     out.append(column_number_format % str(i + 1))
                 else:
-                    out.append('%s.%s' % (str(i + 1), escape(header)))
+                    out.append('{}.{}'.format(str(i + 1), escape(header)))
                 out.append('</th>')
             out.append('</tr>')
         except Exception as exc:
@@ -309,7 +309,7 @@ class Tabular(TabularData):
                 if column_type2 == column_type:
                     return False
             # neither column type was found in our ordered list, this cannot happen
-            raise ValueError("Tried to compare unknown column types: %s and %s" % (column_type1, column_type2))
+            raise ValueError("Tried to compare unknown column types: {} and {}".format(column_type1, column_type2))
 
         def is_int(column_text):
             try:
@@ -859,7 +859,7 @@ class Eland(Tabular):
             # Generate column header
             out.append('<tr>')
             for i, name in enumerate(self.column_names):
-                out.append('<th>%s.%s</th>' % (str(i + 1), name))
+                out.append('<th>{}.{}</th>'.format(str(i + 1), name))
             # This data type requires at least 11 columns in the data
             if dataset.metadata.columns - len(self.column_names) > 0:
                 for i in range(len(self.column_names), dataset.metadata.columns):

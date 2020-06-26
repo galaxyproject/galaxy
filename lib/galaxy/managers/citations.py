@@ -67,7 +67,7 @@ def parse_citation(elem, citation_manager):
     try:
         citation = citation_class(elem, citation_manager)
     except Exception as e:
-        raise Exception("Invalid citation of type '%s' with content '%s': %s" % (citation_type, elem.text, e))
+        raise Exception("Invalid citation of type '{}' with content '{}': {}".format(citation_type, elem.text, e))
     return citation
 
 

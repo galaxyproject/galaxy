@@ -98,7 +98,7 @@ class SelectorTemplate(Target):
         if name in self._children:
             return self._children[name](**{"_": self.selector})
         else:
-            raise AttributeError("Could not find child [%s] in %s" % (name, self._children))
+            raise AttributeError("Could not find child [{}] in {}".format(name, self._children))
 
     __getitem__ = __getattr__
 

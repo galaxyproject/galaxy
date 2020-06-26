@@ -344,9 +344,9 @@ class BamNative(CompressedArchive):
     def to_archive(self, trans, dataset, name=""):
         rel_paths = []
         file_paths = []
-        rel_paths.append("%s.%s" % (name or dataset.file_name, dataset.extension))
+        rel_paths.append("{}.{}".format(name or dataset.file_name, dataset.extension))
         file_paths.append(dataset.file_name)
-        rel_paths.append("%s.%s.bai" % (name or dataset.file_name, dataset.extension))
+        rel_paths.append("{}.{}.bai".format(name or dataset.file_name, dataset.extension))
         file_paths.append(dataset.metadata.bam_index.file_name)
         return zip(file_paths, rel_paths)
 
@@ -403,7 +403,7 @@ class BamNative(CompressedArchive):
                             # Galaxy display each tag as separate column because 'tostring()' funcition put tabs in between each tag of tags column.
                             # Below code will remove spaces between each tag.
                             bamline_modified = ('\t').join(bamline.split()[:11] + [(' ').join(bamline.split()[11:])])
-                            ck_data = "%s\n%s" % (ck_data, bamline_modified)
+                            ck_data = "{}\n{}".format(ck_data, bamline_modified)
                     else:
                         # Nothing to enumerate; we've either offset to the end
                         # of the bamfile, or there is no data. (possible with
@@ -489,9 +489,9 @@ class Bam(BamNative):
             # we start another process and discard stderr.
             if index_flag == '-b':
                 # IOError: No such file or directory: '-b' if index_flag is set to -b (pysam 0.15.4)
-                cmd = ['python', '-c', "import pysam; pysam.index('%s', '%s')" % (file_name, index_name)]
+                cmd = ['python', '-c', "import pysam; pysam.index('{}', '{}')".format(file_name, index_name)]
             else:
-                cmd = ['python', '-c', "import pysam; pysam.index('%s', '%s', '%s')" % (index_flag, file_name, index_name)]
+                cmd = ['python', '-c', "import pysam; pysam.index('{}', '{}', '{}')".format(index_flag, file_name, index_name)]
             with open(os.devnull, 'w') as devnull:
                 subprocess.check_call(cmd, stderr=devnull, shell=False)
             needs_sorting = False
@@ -981,7 +981,7 @@ class GmxBinary(Binary):
         try:
             return dataset.peek
         except Exception:
-            return "Binary GROMACS %s trajectory file (%s)" % (self.file_ext, nice_size(dataset.get_size()))
+            return "Binary GROMACS {} trajectory file ({})".format(self.file_ext, nice_size(dataset.get_size()))
 
 
 class Trr(GmxBinary):
@@ -1114,7 +1114,7 @@ class Biom2(H5):
             try:
                 with h5py.File(dataset.file_name) as f:
                     for k, v in f.attrs.items():
-                        lines.append('%s:  %s' % (k, util.unicodify(v)))
+                        lines.append('{}:  {}'.format(k, util.unicodify(v)))
             except Exception as e:
                 log.warning('%s, set_peek Exception: %s', self, util.unicodify(e))
             dataset.peek = '\n'.join(lines)
@@ -1335,7 +1335,7 @@ class BigWig(Binary):
         try:
             return dataset.peek
         except Exception:
-            return "Binary UCSC %s file (%s)" % (self._name, nice_size(dataset.get_size()))
+            return "Binary UCSC {} file ({})".format(self._name, nice_size(dataset.get_size()))
 
 
 class BigBed(BigWig):
@@ -1459,7 +1459,7 @@ class SQlite(Binary):
             if dataset.metadata.tables:
                 for table in dataset.metadata.tables:
                     try:
-                        lines.append('%s [%s]' % (table, dataset.metadata.table_row_count[table]))
+                        lines.append('{} [{}]'.format(table, dataset.metadata.table_row_count[table]))
                     except Exception:
                         continue
             dataset.peek = '\n'.join(lines)
@@ -1574,7 +1574,7 @@ class CuffDiffSQlite(SQlite):
             for gene_id, gene_name in result:
                 if gene_name is None:
                     continue
-                gene = '%s: %s' % (gene_id, gene_name)
+                gene = '{}: {}'.format(gene_id, gene_name)
                 if gene not in genes:
                     genes.append(gene)
             samples_query = 'SELECT DISTINCT(sample_name) as sample_name FROM samples ORDER BY sample_name'
@@ -1722,7 +1722,7 @@ class BlibSQlite(SQlite):
             c = conn.cursor()
             tables_query = "SELECT majorVersion,minorVersion FROM LibInfo"
             (majorVersion, minorVersion) = c.execute(tables_query).fetchall()[0]
-            dataset.metadata.blib_version = '%s.%s' % (majorVersion, minorVersion)
+            dataset.metadata.blib_version = '{}.{}'.format(majorVersion, minorVersion)
         except Exception as e:
             log.warning('%s, set_meta Exception: %s', self, e)
 
@@ -2658,7 +2658,7 @@ class BafTar(CompressedArchive):
         try:
             return dataset.peek
         except Exception:
-            return "%s (%s)" % (self.get_type(), nice_size(dataset.get_size()))
+            return "{} ({})".format(self.get_type(), nice_size(dataset.get_size()))
 
 
 class YepTar(BafTar):

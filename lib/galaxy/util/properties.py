@@ -163,7 +163,7 @@ class NicerConfigParser(ConfigParser):
         except Exception:
             e = sys.exc_info()[1]
             args = list(e.args)
-            args[0] = 'Error in file %s: %s' % (self.filename, e)
+            args[0] = 'Error in file {}: {}'.format(self.filename, e)
             e.args = tuple(args)
             e.message = args[0]
             raise
@@ -183,7 +183,7 @@ class NicerConfigParser(ConfigParser):
             except Exception:
                 e = sys.exc_info()[1]
                 args = list(e.args)
-                args[0] = 'Error in file %s: %s' % (parser.filename, e)
+                args[0] = 'Error in file {}: {}'.format(parser.filename, e)
                 e.args = tuple(args)
                 e.message = args[0]
                 raise

@@ -92,7 +92,7 @@ class GalaxyInternalMarkdownDirectiveHandler(object):
             if id_match:
                 object_id = int(id_match.group(2))
                 encoded_id = trans.security.encode_id(object_id)
-                line = line.replace(id_match.group(), "%s=%s" % (id_match.group(1), encoded_id))
+                line = line.replace(id_match.group(), "{}={}".format(id_match.group(1), encoded_id))
 
             if container == "history_dataset_display":
                 assert object_id is not None
@@ -299,7 +299,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         name = hda.name or ''
         with open(dataset.file_name, "rb") as f:
             base64_image_data = base64.b64encode(f.read()).decode("utf-8")
-        rval = ("![%s](data:image/png;base64,%s)" % (name, base64_image_data), True)
+        rval = ("![{}](data:image/png;base64,{})".format(name, base64_image_data), True)
         return rval
 
     def handle_dataset_peek(self, line, hda):
@@ -327,7 +327,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         # it requires module_injector and such.
         for order_index, step in enumerate(stored_workflow.latest_workflow.steps):
             annotation = get_item_annotation_str(self.trans.sa_session, self.trans.user, step) or ''
-            markdown += "|%s|%s|\n" % (step.label or "Step %d" % (order_index + 1), annotation)
+            markdown += "|{}|{}|\n".format(step.label or "Step %d" % (order_index + 1), annotation)
         markdown += "\n---\n"
         return (markdown, True)
 
@@ -342,7 +342,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
                     walk_elements(element.child_collection, element_prefix + element.element_identifier + ":")
             else:
                 for element in collection.elements:
-                    markdown_wrapper[0] += "**Element:** %s%s\n\n" % (element_prefix, element.element_identifier)
+                    markdown_wrapper[0] += "**Element:** {}{}\n\n".format(element_prefix, element.element_identifier)
                     markdown_wrapper[0] += self._display_dataset_content(element.hda, header="Element Contents")
         walk_elements(hdca.collection)
         markdown = '---\n%s\n---\n' % markdown_wrapper[0]
@@ -369,7 +369,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
             markdown += "**%s**\n\n" % metric_plugin
             markdown += "|   |   |\n|---|--|\n"
             for title, value in metrics_for_plugin.items():
-                markdown += "| %s | %s |\n" % (title, value)
+                markdown += "| {} | {} |\n".format(title, value)
         return (markdown, True)
 
     def handle_job_parameters(self, line, job):
@@ -387,7 +387,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
             markdown += " | "
             value = parameter["value"]
             if isinstance(value, list):
-                markdown += ", ".join("%s: %s" % (p["hid"], p["name"]) for p in value)
+                markdown += ", ".join("{}: {}".format(p["hid"], p["name"]) for p in value)
             else:
                 markdown += value
             markdown += " |\n"
@@ -562,7 +562,7 @@ history_dataset_collection_display(input=%s)
                     ref_object_type = "history_dataset"
                 else:
                     ref_object_type = "history_dataset_collection"
-            line = line.replace(target_match.group(), "%s_id=%s" % (ref_object_type, ref_object.id))
+            line = line.replace(target_match.group(), "{}_id={}".format(ref_object_type, ref_object.id))
         return (line, False)
 
     workflow_markdown = _remap_galaxy_markdown_calls(

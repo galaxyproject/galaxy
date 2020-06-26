@@ -54,7 +54,7 @@ class SubprocessDataProvider(base.DataProvider):
         try:
             # how expensive is this?
             popen = subprocess.Popen(command_list, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-            log.info('opened subrocess (%s), PID: %s' % (str(command_list), str(popen.pid)))
+            log.info('opened subrocess ({}), PID: {}'.format(str(command_list), str(popen.pid)))
 
         except OSError as os_err:
             command_str = ' '.join(self.command)
@@ -65,15 +65,15 @@ class SubprocessDataProvider(base.DataProvider):
     def __exit__(self, *args):
         # poll the subrocess for an exit code
         self.exit_code = self.popen.poll()
-        log.info('%s.__exit__, exit_code: %s' % (str(self), str(self.exit_code)))
+        log.info('{}.__exit__, exit_code: {}'.format(str(self), str(self.exit_code)))
         return super(SubprocessDataProvider, self).__exit__(*args)
 
     def __str__(self):
         # provide the pid and current return code
         source_str = ''
         if hasattr(self, 'popen'):
-            source_str = '%s:%s' % (str(self.popen.pid), str(self.popen.poll()))
-        return '%s(%s)' % (self.__class__.__name__, str(source_str))
+            source_str = '{}:{}'.format(str(self.popen.pid), str(self.popen.poll()))
+        return '{}({})'.format(self.__class__.__name__, str(source_str))
 
 
 class RegexSubprocessDataProvider(line.RegexLineDataProvider):

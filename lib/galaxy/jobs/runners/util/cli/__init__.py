@@ -28,7 +28,7 @@ class CliInterface(object):
             for file in glob(module_pattern):
                 if basename(file).startswith('_'):
                     continue
-                module_name = '%s.%s' % (module_path, basename(file).rsplit('.py', 1)[0])
+                module_name = '{}.{}'.format(module_path, basename(file).rsplit('.py', 1)[0])
                 module = __import__(module_name)
                 for comp in module_name.split(".")[1:]:
                     module = getattr(module, comp)

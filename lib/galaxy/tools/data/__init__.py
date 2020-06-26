@@ -159,7 +159,7 @@ class ToolDataTableManager(object):
                                                      tool_data_path=tool_data_path,
                                                      from_shed_config=True)
         except Exception as e:
-            error_message = 'Error attempting to parse file %s: %s' % (str(os.path.split(config_filename)[1]), util.unicodify(e))
+            error_message = 'Error attempting to parse file {}: {}'.format(str(os.path.split(config_filename)[1]), util.unicodify(e))
             log.debug(error_message, exc_info=True)
             table_elems = []
         if persist:
@@ -419,7 +419,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                 # warnings about missing location files that would otherwise be
                 # empty and we don't care about unless the admin chooses to
                 # populate them.
-                log.warning("Cannot find index file '%s' for tool data table '%s'" % (filename, self.name))
+                log.warning("Cannot find index file '{}' for tool data table '{}'".format(filename, self.name))
 
             if filename not in self.filenames or not self.filenames[filename]['found']:
                 self.filenames[filename] = dict(found=found, filename=filename, from_shed_config=from_shed_config, tool_data_path=tool_data_path,
@@ -431,7 +431,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                 tmp_file.close()
 
     def merge_tool_data_table(self, other_table, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd):
-        assert self.columns == other_table.columns, "Merging tabular data tables with non matching columns is not allowed: %s:%s != %s:%s" % (self.name, self.columns, other_table.name, other_table.columns)
+        assert self.columns == other_table.columns, "Merging tabular data tables with non matching columns is not allowed: {}:{} != {}:{}".format(self.name, self.columns, other_table.name, other_table.columns)
         # merge filename info
         for filename, info in other_table.filenames.items():
             if filename not in self.filenames:
@@ -671,7 +671,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                 values = self._replace_field_separators(values)
                 self.filter_file_fields(filename, values)
             else:
-                log.warning("Cannot find index file '%s' for tool data table '%s'" % (filename, self.name))
+                log.warning("Cannot find index file '{}' for tool data table '{}'".format(filename, self.name))
 
         self.reload_from_files()
 
@@ -856,8 +856,8 @@ class RefgenieToolDataTable(TabularToolDataTable):
                 if asset != self.rg_asset:
                     continue
                 digest = rgc.id(genome, asset, tag=tag)
-                uuid = 'refgenie:%s/%s:%s@%s' % (genome, self.rg_asset, tag, digest)
-                display_name = description or '%s/%s' % (genome, tagged_asset)
+                uuid = 'refgenie:{}/{}:{}@{}'.format(genome, self.rg_asset, tag, digest)
+                display_name = description or '{}/{}'.format(genome, tagged_asset)
 
                 def _seek_key(key):
                     return rgc.seek(genome, asset, tag_name=tag, seek_key=key)

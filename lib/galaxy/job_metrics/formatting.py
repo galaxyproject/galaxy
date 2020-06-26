@@ -15,4 +15,4 @@ def seconds_to_str(value):
     elif value < 3600:
         return "%s minutes" % round(value / 60, 2)
     else:
-        return "%s hours and %s minutes" % (round(value / 3600, 2), round((value % 3600) / 60, 2))
+        return "{} hours and {} minutes".format(round(value / 3600, 2), round((value % 3600) / 60, 2))

@@ -86,7 +86,7 @@ AUTO_PROPAGATED_TAGS = ["name"]
 class RepresentById(object):
     def __repr__(self):
         try:
-            r = '<galaxy.model.%s(%s) at %s>' % (self.__class__.__name__, cached_id(self), hex(id(self)))
+            r = '<galaxy.model.{}({}) at {}>'.format(self.__class__.__name__, cached_id(self), hex(id(self)))
         except Exception:
             r = object.__repr__(self)
             log.exception("Caught exception attempting to generate repr for: %s", r)
@@ -323,7 +323,7 @@ class JobLike(object):
         else:
             extra += "unflushed"
 
-        return "%s[%s,tool_id=%s]" % (self.__class__.__name__, extra, self.tool_id)
+        return "{}[{},tool_id={}]".format(self.__class__.__name__, extra, self.tool_id)
 
     @property
     def stdout(self):
@@ -1303,7 +1303,7 @@ class Task(JobLike, RepresentById):
         Return an id tag suitable for identifying the task.
         This combines the task's job id and the task's own id.
         """
-        return "%s_%s" % (self.job.id, self.id)
+        return "{}_{}".format(self.job.id, self.id)
 
     def get_command_line(self):
         return self.command_line
@@ -2803,7 +2803,7 @@ class DatasetInstance(object):
         """
         # See if we can convert the dataset
         if target_ext not in self.get_converter_types():
-            raise NoConverterException("Conversion from '%s' to '%s' not possible" % (self.extension, target_ext))
+            raise NoConverterException("Conversion from '{}' to '{}' not possible".format(self.extension, target_ext))
         # See if converted dataset already exists, either in metadata in conversions.
         converted_dataset = self.get_metadata_dataset(target_ext)
         if converted_dataset:
@@ -3912,7 +3912,7 @@ class ImplicitlyConvertedDatasetAssociation(RepresentById):
             try:
                 os.unlink(self.file_name)
             except Exception as e:
-                log.error("Failed to purge associated file (%s) from disk: %s" % (self.file_name, unicodify(e)))
+                log.error("Failed to purge associated file ({}) from disk: {}".format(self.file_name, unicodify(e)))
 
 
 DEFAULT_COLLECTION_NAME = "Unnamed Collection"
@@ -4127,7 +4127,7 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
         for element in self.elements:
             if getattr(element, get_by_attribute) == key:
                 return element
-        error_message = "Dataset collection has no %s with key %s." % (get_by_attribute, key)
+        error_message = "Dataset collection has no {} with key {}.".format(get_by_attribute, key)
         raise KeyError(error_message)
 
     def copy(self, destination=None, element_destination=None, flush=True):
@@ -5243,7 +5243,7 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         if workflow_output:
             raise Exception("Failed to find workflow output named [%s], one was defined but none registered during execution." % label)
         else:
-            raise Exception("Failed to find workflow output named [%s], workflow doesn't define output by that name - valid names are %s." % (label, self.workflow.workflow_output_labels))
+            raise Exception("Failed to find workflow output named [{}], workflow doesn't define output by that name - valid names are {}.".format(label, self.workflow.workflow_output_labels))
 
     def get_input_object(self, label):
         for input_dataset_assoc in self.input_datasets:
@@ -5404,7 +5404,7 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             extra += "id=%s" % safe_id
         else:
             extra += "unflushed"
-        return "%s[%s]" % (self.__class__.__name__, extra)
+        return "{}[{}]".format(self.__class__.__name__, extra)
 
 
 class WorkflowInvocationToSubworkflowInvocationAssociation(Dictifiable, RepresentById):

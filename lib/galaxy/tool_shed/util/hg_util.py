@@ -112,7 +112,7 @@ def pull_repository(repo_path, repository_clone_url, ctx_rev):
     try:
         subprocess.check_output(['hg', 'pull', '-r', ctx_rev, repository_clone_url], stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
-        error_message = "Error pulling revision '%s': %s" % (ctx_rev, unicodify(e))
+        error_message = "Error pulling revision '{}': {}".format(ctx_rev, unicodify(e))
         if isinstance(e, subprocess.CalledProcessError):
             error_message += "\nOutput was:\n%s" % unicodify(e.output)
         raise Exception(error_message)

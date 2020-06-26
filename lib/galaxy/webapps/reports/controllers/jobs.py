@@ -116,7 +116,7 @@ class SpecifiedDateListGrid(grids.Grid):
     class StateColumn(grids.TextColumn):
 
         def get_value(self, trans, grid, job):
-            return '<div class="count-box state-color-%s">%s</div>' % (job.state, job.state)
+            return '<div class="count-box state-color-{}">{}</div>'.format(job.state, job.state)
 
         def filter(self, trans, user, query, column_filter):
             if column_filter == 'Unfinished':

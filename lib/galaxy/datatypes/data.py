@@ -68,7 +68,7 @@ class DatatypeValidation(object):
         return DatatypeValidation("unknown", "Dataset validation unimplemented for this datatype.")
 
     def __repr__(self):
-        return "DatatypeValidation[state=%s,message=%s]" % (self.state, self.message)
+        return "DatatypeValidation[state={},message={}]".format(self.state, self.message)
 
 
 def validate(dataset_instance):
@@ -312,7 +312,7 @@ class Data(object):
 
                 display_name = os.path.splitext(outfname)[0]
                 if not display_name.endswith(ext):
-                    display_name = '%s_%s' % (display_name, ext)
+                    display_name = '{}_{}'.format(display_name, ext)
 
                 error, msg = self._archive_main_file(archive, display_name, path)[:2]
                 if not error:
@@ -338,7 +338,7 @@ class Data(object):
                         outext = 'tgz'
                         if params.do_action == 'tbz':
                             outext = 'tbz'
-                        trans.response.headers["Content-Disposition"] = 'attachment; filename="%s.%s"' % (outfname, outext)
+                        trans.response.headers["Content-Disposition"] = 'attachment; filename="{}.{}"'.format(outfname, outext)
                         archive.wsgi_status = trans.response.wsgi_status()
                         archive.wsgi_headeritems = trans.response.wsgi_headeritems()
                         return archive.stream
@@ -372,14 +372,14 @@ class Data(object):
         rel_paths = []
         file_paths = []
         if dataset.extension in composite_extensions:
-            main_file = "%s.%s" % (name, 'html')
+            main_file = "{}.{}".format(name, 'html')
             rel_paths.append(main_file)
             file_paths.append(dataset.file_name)
             for fpath, rpath in self.__archive_extra_files_path(dataset.extra_files_path):
                 rel_paths.append(os.path.join(name, rpath))
                 file_paths.append(fpath)
         else:
-            rel_paths.append("%s.%s" % (name or dataset.file_name, dataset.extension))
+            rel_paths.append("{}.{}".format(name or dataset.file_name, dataset.extension))
             file_paths.append(dataset.file_name)
         return zip(file_paths, rel_paths)
 
@@ -425,7 +425,7 @@ class Data(object):
                             # href = url_for(controller='dataset', action='display',
                             # dataset_id=trans.security.encode_id(data.dataset.id),
                             # preview=preview, filename=fname, to_ext=to_ext)
-                            tmp_fh.write('<tr bgcolor="%s"><td>%s</td></tr>\n' % (bgcolor, escape(fname)))
+                            tmp_fh.write('<tr bgcolor="{}"><td>{}</td></tr>\n'.format(bgcolor, escape(fname)))
                         tmp_fh.write('</table></body></html>\n')
                     return self._yield_user_file_content(trans, data, tmp_file_name)
                 mime = mimetypes.guess_type(file_path)[0]
@@ -437,7 +437,7 @@ class Data(object):
                 self._clean_and_set_mime_type(trans, mime)
                 return self._yield_user_file_content(trans, data, file_path)
             else:
-                return webob.exc.HTTPNotFound("Could not find '%s' on the extra files path %s." % (filename, file_path))
+                return webob.exc.HTTPNotFound("Could not find '{}' on the extra files path {}.".format(filename, file_path))
         self._clean_and_set_mime_type(trans, data.get_mime())
 
         trans.log_event("Display dataset id: %s" % str(data.id))
@@ -624,7 +624,7 @@ class Data(object):
                 return getattr(self, self.supported_display_apps[type]['file_function'])(dataset, **kwd)
         except Exception:
             log.exception('Function %s is referred to in datatype %s for displaying as type %s, but is not accessible', self.supported_display_apps[type]['file_function'], self.__class__.__name__, type)
-        return "This display type (%s) is not implemented for this datatype (%s)." % (type, dataset.ext)
+        return "This display type ({}) is not implemented for this datatype ({}).".format(type, dataset.ext)
 
     def get_display_links(self, dataset, type, app, base_url, target_frame='_blank', **kwd):
         """
@@ -654,7 +654,7 @@ class Data(object):
         converter = trans.app.datatypes_registry.get_converter_by_target_type(original_dataset.ext, target_type)
 
         if converter is None:
-            raise Exception("A converter does not exist for %s to %s." % (original_dataset.ext, target_type))
+            raise Exception("A converter does not exist for {} to {}.".format(original_dataset.ext, target_type))
         # Generate parameter dictionary
         params = {}
         # determine input parameter name and add to params
@@ -680,7 +680,7 @@ class Data(object):
                 value.visible = False
         if return_output:
             return converted_dataset
-        return "The file conversion of %s on data %s has been added to the Queue." % (converter.name, original_dataset.hid)
+        return "The file conversion of {} on data {} has been added to the Queue.".format(converter.name, original_dataset.hid)
 
     # We need to clear associated files before we set metadata
     # so that as soon as metadata starts to be set, e.g. implicitly converted datasets are deleted and no longer available 'while' metadata is being set, not just after
@@ -882,7 +882,7 @@ class Text(Data):
             if line_count is None:
                 # See if line_count is stored in the metadata
                 if dataset.metadata.data_lines:
-                    dataset.blurb = "%s %s" % (util.commaify(str(dataset.metadata.data_lines)), inflector.cond_plural(dataset.metadata.data_lines, self.line_class))
+                    dataset.blurb = "{} {}".format(util.commaify(str(dataset.metadata.data_lines)), inflector.cond_plural(dataset.metadata.data_lines, self.line_class))
                 else:
                     # Number of lines is not known ( this should not happen ), and auto-detect is
                     # needed to set metadata
@@ -891,12 +891,12 @@ class Text(Data):
                         # Small dataset, recount all lines and reset peek afterward.
                         lc = self.count_data_lines(dataset)
                         dataset.metadata.data_lines = lc
-                        dataset.blurb = "%s %s" % (util.commaify(str(lc)), inflector.cond_plural(lc, self.line_class))
+                        dataset.blurb = "{} {}".format(util.commaify(str(lc)), inflector.cond_plural(lc, self.line_class))
                     else:
                         est_lines = self.estimate_file_lines(dataset)
-                        dataset.blurb = "~%s %s" % (util.commaify(util.roundify(str(est_lines))), inflector.cond_plural(est_lines, self.line_class))
+                        dataset.blurb = "~{} {}".format(util.commaify(util.roundify(str(est_lines))), inflector.cond_plural(est_lines, self.line_class))
             else:
-                dataset.blurb = "%s %s" % (util.commaify(str(line_count)), inflector.cond_plural(line_count, self.line_class))
+                dataset.blurb = "{} {}".format(util.commaify(str(line_count)), inflector.cond_plural(line_count, self.line_class))
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'

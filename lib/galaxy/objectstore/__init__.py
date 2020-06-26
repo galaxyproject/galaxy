@@ -538,7 +538,7 @@ class DiskObjectStore(ConcreteObjectStore):
                 os.remove(path)
                 return True
         except OSError as ex:
-            log.critical('%s delete error %s' % (self.__get_filename(obj, **kwargs), ex))
+            log.critical('{} delete error {}'.format(self.__get_filename(obj, **kwargs), ex))
         return False
 
     def _get_data(self, obj, start=0, count=-1, **kwargs):
@@ -584,7 +584,7 @@ class DiskObjectStore(ConcreteObjectStore):
                     shutil.copy(file_name, path)
                     umask_fix_perms(path, self.config.umask, 0o666)
             except IOError as ex:
-                log.critical('Error copying %s to %s: %s' % (file_name, self.__get_filename(obj, **kwargs), ex))
+                log.critical('Error copying {} to {}: {}'.format(file_name, self.__get_filename(obj, **kwargs), ex))
                 raise ex
 
     def _get_object_url(self, obj, **kwargs):

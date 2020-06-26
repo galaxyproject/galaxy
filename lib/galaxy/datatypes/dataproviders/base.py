@@ -160,7 +160,7 @@ class DataProvider(six.Iterator):
         """
         # we need to protect against recursion (in __getattr__) if self.source hasn't been set
         source_str = str(self.source) if hasattr(self, 'source') else ''
-        return '%s(%s)' % (self.__class__.__name__, str(source_str))
+        return '{}({})'.format(self.__class__.__name__, str(source_str))
 
 
 class FilteredDataProvider(DataProvider):

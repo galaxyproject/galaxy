@@ -529,7 +529,7 @@ def ensure_brew_on_path(args):
 
     def ensure_on_path(brew):
         if brew != brew_on_path:
-            os.environ["PATH"] = "%s:%s" % (os.path.dirname(brew), os.environ["PATH"])
+            os.environ["PATH"] = "{}:{}".format(os.path.dirname(brew), os.environ["PATH"])
 
     default_brew_path = os.path.join(DEFAULT_HOMEBREW_ROOT, "bin", "brew")
     if args and args.brew:

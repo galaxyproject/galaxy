@@ -43,7 +43,7 @@ class GithubPlugin(BaseGitPlugin):
                 base_url=self.github_api_url
             )
             # Connect to the default repository and fill up the issue cache for it
-            repo = self.github.get_repo('%s/%s' % (self.git_default_repo_owner, self.git_default_repo_name))
+            repo = self.github.get_repo('{}/{}'.format(self.git_default_repo_owner, self.git_default_repo_name))
             self._fill_issue_cache(repo, "default")
 
             # We'll also cache labels which we'll use for tagging issues.
@@ -85,7 +85,7 @@ class GithubPlugin(BaseGitPlugin):
                 self._fill_issue_cache(gh_project, issue_cache_key)
 
             # Retrieve label
-            label = self.get_label('%s/%s' % (unicodify(job.tool_id), unicodify(job.tool_version)), gh_project, issue_cache_key)
+            label = self.get_label('{}/{}'.format(unicodify(job.tool_id), unicodify(job.tool_version)), gh_project, issue_cache_key)
 
             # Generate information for the tool
             error_title = self._generate_error_title(job)

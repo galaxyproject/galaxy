@@ -121,7 +121,7 @@ class OpenIDProviders(object):
             try:
                 provider = OpenIDProvider.from_file(os.path.join('lib/galaxy/openid', elem.get('file')))
                 providers[provider.id] = provider
-                log.debug('Loaded OpenID provider: %s (%s)' % (provider.name, provider.id))
+                log.debug('Loaded OpenID provider: {} ({})'.format(provider.name, provider.id))
             except Exception as e:
                 log.error('Failed to add OpenID provider: %s' % (e))
         return cls(providers)

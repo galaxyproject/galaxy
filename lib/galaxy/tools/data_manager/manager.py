@@ -44,7 +44,7 @@ class DataManagers(object):
                 raise
             return  # default config option and it doesn't exist, which is fine
         except Exception as e:
-            log.error('There was an error parsing your Data Manager config file "%s": %s' % (xml_filename, e))
+            log.error('There was an error parsing your Data Manager config file "{}": {}'.format(xml_filename, e))
             return  # we are not able to load any data managers
         root = tree.getroot()
         if root.tag != 'data_managers':
@@ -255,7 +255,7 @@ class DataManager(object):
             try:
                 output_dict = json.loads(open(output_dataset.file_name).read())
             except Exception as e:
-                log.warning('Error reading DataManagerTool json for "%s": %s' % (output_name, e))
+                log.warning('Error reading DataManagerTool json for "{}": {}'.format(output_name, e))
                 continue
             data_manager_dicts[output_name] = output_dict
             for key, value in output_dict.items():
@@ -268,7 +268,7 @@ class DataManager(object):
         for data_table_name in self.data_tables.keys():
             data_table_values = data_tables_dict.pop(data_table_name, None)
             if not data_table_values:
-                log.warning('No values for data table "%s" were returned by the data manager "%s".' % (data_table_name, self.id))
+                log.warning('No values for data table "{}" were returned by the data manager "{}".'.format(data_table_name, self.id))
                 continue  # next data table
             data_table_remove_values = None
             if isinstance(data_table_values, dict):
@@ -280,10 +280,10 @@ class DataManager(object):
 
             data_table = self.data_managers.app.tool_data_tables.get(data_table_name, None)
             if data_table is None:
-                log.error('The data manager "%s" returned an unknown data table "%s" with new entries "%s". These entries will not be created. Please confirm that an entry for "%s" exists in your "%s" file.' % (self.id, data_table_name, data_table_values, data_table_name, 'tool_data_table_conf.xml'))
+                log.error('The data manager "{}" returned an unknown data table "{}" with new entries "{}". These entries will not be created. Please confirm that an entry for "{}" exists in your "{}" file.'.format(self.id, data_table_name, data_table_values, data_table_name, 'tool_data_table_conf.xml'))
                 continue  # next table name
             if not isinstance(data_table, SUPPORTED_DATA_TABLE_TYPES):
-                log.error('The data manager "%s" returned an unsupported data table "%s" with type "%s" with new entries "%s". These entries will not be created. Please confirm that the data table is of a supported type (%s).' % (self.id, data_table_name, type(data_table), data_table_values, SUPPORTED_DATA_TABLE_TYPES))
+                log.error('The data manager "{}" returned an unsupported data table "{}" with type "{}" with new entries "{}". These entries will not be created. Please confirm that the data table is of a supported type ({}).'.format(self.id, data_table_name, type(data_table), data_table_values, SUPPORTED_DATA_TABLE_TYPES))
                 continue  # next table name
             output_ref_values = {}
             if data_table_name in self.output_ref_by_data_table:
@@ -340,7 +340,7 @@ class DataManager(object):
             for data_table_name, data_table_values in data_tables_dict.items():
                 # tool returned extra data table entries, but data table was not declared in data manager
                 # do not add these values, but do provide messages
-                log.warning('The data manager "%s" returned an undeclared data table "%s" with new entries "%s". These entries will not be created. Please confirm that an entry for "%s" exists in your "%s" file.' % (self.id, data_table_name, data_table_values, data_table_name, self.data_managers.filename))
+                log.warning('The data manager "{}" returned an undeclared data table "{}" with new entries "{}". These entries will not be created. Please confirm that an entry for "{}" exists in your "{}" file.'.format(self.id, data_table_name, data_table_values, data_table_name, self.data_managers.filename))
 
     def process_move(self, data_table_name, column_name, source_base_path, relative_symlinks=False, **kwd):
         if data_table_name in self.move_by_data_table_column and column_name in self.move_by_data_table_column[data_table_name]:

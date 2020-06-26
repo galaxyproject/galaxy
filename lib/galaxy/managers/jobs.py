@@ -39,7 +39,7 @@ def get_path_key(path_tuple):
             # we remove the last 2 items of the path tuple (values and list index)
             return path_key
         if path_key:
-            path_key = "%s%s%s" % (path_key, sep, p)
+            path_key = "{}{}{}".format(path_key, sep, p)
         else:
             path_key = p
     return path_key

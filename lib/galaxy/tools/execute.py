@@ -187,7 +187,7 @@ class ExecutionTracker(object):
                 job_params=None,
             )
         except Exception:
-            output_collection_name = "%s across %s" % (self.tool.name, on_text)
+            output_collection_name = "{} across {}".format(self.tool.name, on_text)
 
         return output_collection_name
 

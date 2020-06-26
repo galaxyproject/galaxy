@@ -119,7 +119,7 @@ class ExpressionValidator(Validator):
         try:
             evalresult = eval(self.expression, dict(value=value))
         except Exception:
-            log.debug("Validator %s could not be evaluated on %s" % (self.expression, str(value)), exc_info=True)
+            log.debug("Validator {} could not be evaluated on {}".format(self.expression, str(value)), exc_info=True)
             raise ValueError(message)
         if not(evalresult):
             raise ValueError(message)
@@ -176,7 +176,7 @@ class InRangeValidator(Validator):
             op1 = '>'
         if self.exclude_max:
             op2 = '<'
-        self.message = message or "Value must be %s %s and %s %s" % (op1, self_min_str, op2, self_max_str)
+        self.message = message or "Value must be {} {} and {} {}".format(op1, self_min_str, op2, self_max_str)
 
     def validate(self, value, trans=None):
         if self.exclude_min:
@@ -386,13 +386,13 @@ class MetadataInFileColumnValidator(Validator):
     def from_element(cls, param, elem):
         filename = elem.get("filename", None)
         if filename:
-            filename = "%s/%s" % (param.tool.app.config.tool_data_path, filename.strip())
+            filename = "{}/{}".format(param.tool.app.config.tool_data_path, filename.strip())
         metadata_name = elem.get("metadata_name", None)
         if metadata_name:
             metadata_name = metadata_name.strip()
         metadata_column = int(elem.get("metadata_column", 0))
         split = elem.get("split", "\t")
-        message = elem.get("message", "Value for metadata %s was not found in %s." % (metadata_name, filename))
+        message = elem.get("message", "Value for metadata {} was not found in {}.".format(metadata_name, filename))
         line_startswith = elem.get("line_startswith", None)
         if line_startswith:
             line_startswith = line_startswith.strip()
@@ -502,7 +502,7 @@ class MetadataInDataTableColumnValidator(Validator):
             metadata_column = int(metadata_column)
         except ValueError:
             pass
-        message = elem.get("message", "Value for metadata %s was not found in %s." % (metadata_name, table_name))
+        message = elem.get("message", "Value for metadata {} was not found in {}.".format(metadata_name, table_name))
         line_startswith = elem.get("line_startswith", None)
         if line_startswith:
             line_startswith = line_startswith.strip()

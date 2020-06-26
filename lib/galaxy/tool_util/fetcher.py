@@ -19,7 +19,7 @@ class ToolLocationFetcher(object):
                 raise Exception("Invalid URI passed to get_tool_source")
             scheme, rest = uri_like.split(":", 2)
             if scheme not in self.resolver_classes:
-                raise Exception("Unknown tool scheme [%s] for URI [%s]" % (scheme, uri_like))
+                raise Exception("Unknown tool scheme [{}] for URI [{}]".format(scheme, uri_like))
             path = self.resolver_classes[scheme]().get_tool_source_path(uri_like)
 
         return path

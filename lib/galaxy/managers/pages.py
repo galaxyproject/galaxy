@@ -303,11 +303,11 @@ class PageContentProcessor(HTMLParser, object):
                 value = value.replace('>', '&gt;').replace('<', '&lt;').replace('"', '&quot;')
                 value = self.bare_ampersand.sub("&amp;", value)
                 uattrs.append((key, value))
-            strattrs = ''.join(' %s="%s"' % (k, v) for k, v in uattrs)
+            strattrs = ''.join(' {}="{}"'.format(k, v) for k, v in uattrs)
         if tag in self.elements_no_end_tag:
-            self.pieces.append('<%s%s />' % (tag, strattrs))
+            self.pieces.append('<{}{} />'.format(tag, strattrs))
         else:
-            self.pieces.append('<%s%s>' % (tag, strattrs))
+            self.pieces.append('<{}{}>'.format(tag, strattrs))
 
     def handle_endtag(self, tag):
         """

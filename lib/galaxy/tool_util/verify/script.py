@@ -47,7 +47,7 @@ def main(argv=None):
     verbose = args.verbose
     for test_index in test_indices:
         if tool_version:
-            tool_id_and_version = "%s/%s" % (tool_id, tool_version)
+            tool_id_and_version = "{}/{}".format(tool_id, tool_version)
         else:
             tool_id_and_version = tool_id
 
@@ -71,7 +71,7 @@ def main(argv=None):
 
         except Exception as e:
             if verbose:
-                print("%s failed, %s" % (test_identifier, e))
+                print("{} failed, {}".format(test_identifier, e))
             exceptions.append(e)
 
     report_obj = {

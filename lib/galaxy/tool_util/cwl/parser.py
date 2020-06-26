@@ -512,7 +512,7 @@ class JobProxy(object):
             def stage_recursive(value):
                 is_list = isinstance(value, list)
                 is_dict = isinstance(value, dict)
-                log.info("handling value %s, is_list %s, is_dict %s" % (value, is_list, is_dict))
+                log.info("handling value {}, is_list {}, is_dict {}".format(value, is_list, is_dict))
                 if is_list:
                     for val in value:
                         stage_recursive(val)
@@ -585,7 +585,7 @@ class JobProxy(object):
         else:
             self._ok = False
 
-        log.info("Output are %s, status is %s" % (out, process_status))
+        log.info("Output are {}, status is {}".format(out, process_status))
 
     def collect_outputs(self, tool_working_directory, rcode):
         if not self.is_command_line_job:
@@ -639,7 +639,7 @@ class JobProxy(object):
         cwl_job = self.cwl_job()
 
         def stageFunc(resolved_path, target_path):
-            log.info("resolving %s to %s" % (resolved_path, target_path))
+            log.info("resolving {} to {}".format(resolved_path, target_path))
             try:
                 os.symlink(resolved_path, target_path)
             except OSError:
@@ -871,7 +871,7 @@ def split_step_references(step_references, workflow_id=None, multiple=True):
                 sep_on = "#"
             expected_prefix = workflow_id + sep_on
             if not step_reference.startswith(expected_prefix):
-                raise AssertionError("step_reference [%s] doesn't start with %s" % (step_reference, expected_prefix))
+                raise AssertionError("step_reference [{}] doesn't start with {}".format(step_reference, expected_prefix))
             step_reference = step_reference[len(expected_prefix):]
 
         # Now just grab the step name and input/output name.

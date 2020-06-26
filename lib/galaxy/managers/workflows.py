@@ -307,7 +307,7 @@ class WorkflowContentsManager(UsesAnnotations):
         trans.workflow_building_mode = workflow_building_modes.ENABLED
         # If there's a source, put it in the workflow name.
         if source:
-            name = "%s (imported from %s)" % (data['name'], source)
+            name = "{} (imported from {})".format(data['name'], source)
         else:
             name = data['name']
         workflow, missing_tool_tups = self._workflow_from_raw_description(
@@ -787,7 +787,7 @@ class WorkflowContentsManager(UsesAnnotations):
                         collection_type = map_over
                         step_data_output['collection'] = True
                         if step_data_output.get('collection_type'):
-                            collection_type = "%s:%s" % (map_over, step_data_output['collection_type'])
+                            collection_type = "{}:{}".format(map_over, step_data_output['collection_type'])
                         step_data_output['collection_type'] = collection_type
         return steps
 
@@ -1210,7 +1210,7 @@ class WorkflowContentsManager(UsesAnnotations):
                         raise exceptions.MessageException(message)
                     external_id = conn_dict['id']
                     if external_id not in steps_by_external_id:
-                        raise KeyError("Failed to find external id %s in %s" % (external_id, steps_by_external_id.keys()))
+                        raise KeyError("Failed to find external id {} in {}".format(external_id, steps_by_external_id.keys()))
                     output_step = steps_by_external_id[external_id]
 
                     output_name = conn_dict["output_name"]

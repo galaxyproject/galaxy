@@ -46,7 +46,7 @@ class ToolLineage(object):
     def tool_ids(self):
         versionless_tool_id = remove_version_from_guid(self.tool_id)
         tool_id = versionless_tool_id or self.tool_id
-        return ["%s/%s" % (tool_id, version) for version in self.tool_versions]
+        return ["{}/{}".format(tool_id, version) for version in self.tool_versions]
 
     @staticmethod
     def from_tool(tool):

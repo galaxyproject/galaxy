@@ -40,7 +40,7 @@ def get_observer_class(config_name, config_value, default, monitor_what_str):
         expect_observer = False
         observer_class = None
     else:
-        message = "Unrecognized value for %s config option: %s" % (config_name, config_value)
+        message = "Unrecognized value for {} config option: {}".format(config_name, config_value)
         raise Exception(message)
 
     if expect_observer and observer_class is None:

@@ -193,7 +193,7 @@ class DynamicDisplayApplicationBuilder(object):
                 # now populate
                 links.append(DisplayApplicationLink.from_elem(new_elem, display_application, other_values=dynamic_values))
             else:
-                log.warning('Invalid dynamic display application link specified in %s: "%s"' % (filename, line))
+                log.warning('Invalid dynamic display application link specified in {}: "{}"'.format(filename, line))
         self.links = links
 
     def __iter__(self):

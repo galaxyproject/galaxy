@@ -162,4 +162,4 @@ class ToolParameterSanitizer(object):
         elif isinstance(value, list):
             return list(map(self.sanitize_text, value))
         else:
-            raise Exception('Unknown parameter type (%s:%s)' % (type(value), value))
+            raise Exception('Unknown parameter type ({}:{})'.format(type(value), value))

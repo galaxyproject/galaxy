@@ -159,8 +159,8 @@ def wrap_with_safe_string(value, no_wrap_classes=None):
             wrapped_class = value.__class__
         value_mod = inspect.getmodule(value)
         if value_mod:
-            wrapped_class_name = "%s.%s" % (value_mod.__name__, wrapped_class_name)
-        wrapped_class_name = "SafeStringWrapper(%s:%s)" % (wrapped_class_name, ",".join(sorted(map(str, no_wrap_classes))))
+            wrapped_class_name = "{}.{}".format(value_mod.__name__, wrapped_class_name)
+        wrapped_class_name = "SafeStringWrapper({}:{})".format(wrapped_class_name, ",".join(sorted(map(str, no_wrap_classes))))
         do_wrap_func_name = "__do_wrap_%s" % (wrapped_class_name)
         do_wrap_func = __do_wrap
         global_dict = globals()
@@ -238,7 +238,7 @@ class SafeStringWrapper(object):
         return sanitize_lists_to_string(self.unsanitized, valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP)
 
     def __repr__(self):
-        return "%s object at %x on: %s" % (sanitize_lists_to_string(self.__class__.__name__, valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP), id(self), sanitize_lists_to_string(repr(self.unsanitized), valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP))
+        return "{} object at {:x} on: {}".format(sanitize_lists_to_string(self.__class__.__name__, valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP), id(self), sanitize_lists_to_string(repr(self.unsanitized), valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP))
 
     def __lt__(self, other):
         while isinstance(other, SafeStringWrapper):

@@ -326,7 +326,7 @@ class ContainerInterfaceConfig(dict):
         try:
             return self[name]
         except KeyError:
-            raise AttributeError("'%s' object has no attribute '%s'" % (self.__class__.__name__, name))
+            raise AttributeError("'{}' object has no attribute '{}'".format(self.__class__.__name__, name))
 
     def get(self, name, default=None):
         try:

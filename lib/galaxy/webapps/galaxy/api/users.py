@@ -298,7 +298,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
                     help = input.get('help', '')
                     required = 'Required' if util.string_as_bool(input.get('required')) else ''
                     if help:
-                        input['help'] = "%s %s" % (help, required)
+                        input['help'] = "{} {}".format(help, required)
                     else:
                         input['help'] = required
                     field = item + '|' + input['name']
@@ -488,13 +488,13 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
                 try:
                     user_address = trans.sa_session.query(trans.app.model.UserAddress).get(trans.security.decode_id(d['id']))
                 except Exception as e:
-                    raise exceptions.ObjectNotFound('Failed to access user address (%s). %s' % (d['id'], e))
+                    raise exceptions.ObjectNotFound('Failed to access user address ({}). {}'.format(d['id'], e))
             else:
                 user_address = trans.model.UserAddress()
                 trans.log_event('User address added')
             for field in AddressField.fields():
                 if str(field[2]).lower() == 'required' and not d.get(field[0]):
-                    raise exceptions.ObjectAttributeMissingException('Address %s: %s (%s) required.' % (index + 1, field[1], field[0]))
+                    raise exceptions.ObjectAttributeMissingException('Address {}: {} ({}) required.'.format(index + 1, field[1], field[0]))
                 setattr(user_address, field[0], str(d.get(field[0], '')))
             user_address.user = user
             user.addresses.append(user_address)
@@ -683,7 +683,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         for filter_name in filter_config:
             function = factory.build_filter_function(filter_name)
             if function is None:
-                errors['%s|%s' % (filter_type, filter_name)] = 'Filter function not found.'
+                errors['{}|{}'.format(filter_type, filter_name)] = 'Filter function not found.'
 
             short_description, description = None, None
             doc_string = docstring_trim(function.__doc__)
@@ -869,7 +869,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
                             lines_skipped += 1
                             continue
                         counter += 1
-                        f.write('%s\t%s\n' % (chrom, length))
+                        f.write('{}\t{}\n'.format(chrom, length))
                 build_dict['len'] = new_len.id
                 build_dict['count'] = counter
             else:

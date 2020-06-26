@@ -126,7 +126,7 @@ class DatasetDataProvider(base.DataProvider):
                                  getattr(self.dataset.datatype, 'column_names', None) or None)
         if not metadata_column_names:
             raise KeyError('No column_names found for ' +
-                           'datatype: %s, dataset: %s' % (str(self.dataset.datatype), str(self.dataset)))
+                           'datatype: {}, dataset: {}'.format(str(self.dataset.datatype), str(self.dataset)))
         indeces = []  # if indeces and column_names:
         # pull using indeces and re-name with given names - no need to alter (does as super would)
         #    pass

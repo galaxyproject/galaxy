@@ -443,7 +443,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                 session.flush()
                 viz_title = escape(visualization.title)
                 other_email = escape(other.email)
-                trans.set_message("Visualization '%s' shared with user '%s'" % (viz_title, other_email))
+                trans.set_message("Visualization '{}' shared with user '{}'".format(viz_title, other_email))
                 return trans.response.send_redirect(web.url_for("/visualizations/sharing?id=%s" % id))
         return trans.fill_template("/ind_share_base.mako",
                                    message=msg,
@@ -935,7 +935,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                 if (i > 500):
                     break
                 fields = line.split()
-                location = name = "%s:%s-%s" % (fields[0], fields[1], fields[2])
+                location = name = "{}:{}-{}".format(fields[0], fields[1], fields[2])
                 if len(fields) > 3:
                     name = fields[4]
                 rows.append([location, name])

@@ -250,7 +250,7 @@ class ToolSource(object):
     def __str__(self):
         source_path = self.source_path
         if source_path:
-            as_str = u'%s[%s]' % (self.__class__.__name__, source_path)
+            as_str = u'{}[{}]'.format(self.__class__.__name__, source_path)
         else:
             as_str = u'%s[In-memory]' % (self.__class__.__name__)
         return as_str

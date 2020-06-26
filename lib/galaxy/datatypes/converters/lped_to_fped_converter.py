@@ -42,7 +42,7 @@ def rgConv(inpedfilepath, outhtmlname, outfilepath):
     try:
         mf = open(inmap, 'r')
     except Exception:
-        sys.exit('%s cannot open inmap file %s - do you have permission?\n' % (prog, inmap))
+        sys.exit('{} cannot open inmap file {} - do you have permission?\n'.format(prog, inmap))
     try:
         rsl = [x.split()[1] for x in mf]
     except Exception:
@@ -95,10 +95,10 @@ def main():
     flist = os.listdir(outfilepath)
     with open(outhtmlname, 'w') as f:
         f.write(galhtmlprefix % prog)
-        print('## Rgenetics: http://rgenetics.org Galaxy Tools %s %s' % (prog, timenow()))  # becomes info
-        f.write('<div>## Rgenetics: http://rgenetics.org Galaxy Tools %s %s\n<ol>' % (prog, timenow()))
+        print('## Rgenetics: http://rgenetics.org Galaxy Tools {} {}'.format(prog, timenow()))  # becomes info
+        f.write('<div>## Rgenetics: http://rgenetics.org Galaxy Tools {} {}\n<ol>'.format(prog, timenow()))
         for i, data in enumerate(flist):
-            f.write('<li><a href="%s">%s</a></li>\n' % (os.path.split(data)[-1], os.path.split(data)[-1]))
+            f.write('<li><a href="{}">{}</a></li>\n'.format(os.path.split(data)[-1], os.path.split(data)[-1]))
         f.write("</div></body></html>")
 
 

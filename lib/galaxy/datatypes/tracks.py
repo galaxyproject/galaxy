@@ -63,7 +63,7 @@ class UCSCTrackHub(Html):
             opt_text = ''
             if composite_file.optional:
                 opt_text = ' (optional)'
-            rval.append('<li><a href="%s">%s</a>%s' % (composite_name, composite_name, opt_text))
+            rval.append('<li><a href="{}">{}</a>{}'.format(composite_name, composite_name, opt_text))
         rval.append('</ul></html>')
         return "\n".join(rval)
 

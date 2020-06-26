@@ -398,7 +398,7 @@ def handle_exception(exc_info, error_stream, html=True,
         else:
             reported = True
     else:
-        error_stream.write('Error - %s: %s\n' % (
+        error_stream.write('Error - {}: {}\n'.format(
             exc_data.exception_type, exc_data.exception_value))
     if html:
         if debug_mode and simple_html_error:

@@ -90,7 +90,7 @@ class BaseJobRunner(object):
         """
         self.work_queue = Queue()
         self.work_threads = []
-        log.debug('Starting %s %s workers' % (self.nworkers, self.runner_name))
+        log.debug('Starting {} {} workers'.format(self.nworkers, self.runner_name))
         for i in range(self.nworkers):
             worker = threading.Thread(name="%s.work_thread-%d" % (self.runner_name, i), target=self.run_next)
             worker.daemon = True
@@ -129,7 +129,7 @@ class BaseJobRunner(object):
             except Exception:
                 name = 'unknown'
             try:
-                action_str = 'galaxy.jobs.runners.%s.%s' % (self.__class__.__name__.lower(), name)
+                action_str = 'galaxy.jobs.runners.{}.{}'.format(self.__class__.__name__.lower(), name)
                 action_timer = self.app.execution_timer_factory.get_timer(
                     'internals.%s' % action_str,
                     'job runner action %s for job ${job_id} executed' % (action_str)
@@ -137,7 +137,7 @@ class BaseJobRunner(object):
                 method(arg)
                 log.trace(action_timer.to_str(job_id=job_id))
             except Exception:
-                log.exception("(%s) Unhandled exception calling %s" % (job_id, name))
+                log.exception("({}) Unhandled exception calling {}".format(job_id, name))
                 if not isinstance(arg, JobState):
                     job_state = JobState(job_wrapper=arg, job_destination={})
                 else:
@@ -151,7 +151,7 @@ class BaseJobRunner(object):
         put_timer = ExecutionTimer()
         job_wrapper.enqueue()
         self.mark_as_queued(job_wrapper)
-        log.debug("Job [%s] queued %s" % (job_wrapper.job_id, put_timer))
+        log.debug("Job [{}] queued {}".format(job_wrapper.job_id, put_timer))
 
     def mark_as_queued(self, job_wrapper):
         self.work_queue.put((self.queue_job, job_wrapper))
@@ -222,12 +222,12 @@ class BaseJobRunner(object):
 
         # Make sure the job hasn't been deleted
         if job_state == model.Job.states.DELETED:
-            log.debug("(%s) Job deleted by user before it entered the %s queue" % (job_id, self.runner_name))
+            log.debug("({}) Job deleted by user before it entered the {} queue".format(job_id, self.runner_name))
             if self.app.config.cleanup_job in ("always", "onsuccess"):
                 job_wrapper.cleanup()
             return False
         elif job_state != model.Job.states.QUEUED:
-            log.info("(%s) Job is in state %s, skipping execution" % (job_id, job_state))
+            log.info("({}) Job is in state {}, skipping execution".format(job_id, job_state))
             # cleanup may not be safe in all states
             return False
 
@@ -352,13 +352,13 @@ class BaseJobRunner(object):
                                                                            tmp_dir=job_wrapper.working_directory,
                                                                            # We don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
                                                                            kwds={'overwrite' : False})
-            external_metadata_script = "%s %s %s" % (lib_adjust, venv, external_metadata_script)
+            external_metadata_script = "{} {} {}".format(lib_adjust, venv, external_metadata_script)
             if resolve_requirements:
                 dependency_shell_commands = self.app.datatypes_registry.set_external_metadata_tool.build_dependency_shell_commands(job_directory=job_wrapper.working_directory)
                 if dependency_shell_commands:
                     if isinstance(dependency_shell_commands, list):
                         dependency_shell_commands = "&&".join(dependency_shell_commands)
-                    external_metadata_script = "%s&&%s" % (dependency_shell_commands, external_metadata_script)
+                    external_metadata_script = "{}&&{}".format(dependency_shell_commands, external_metadata_script)
             log.debug('executing external set_meta script for job %d: %s' % (job_wrapper.job_id, external_metadata_script))
             external_metadata_proc = subprocess.Popen(args=external_metadata_script,
                                                       shell=True,
@@ -396,7 +396,7 @@ class BaseJobRunner(object):
         # Additional logging to enable if debugging from_work_dir handling, metadata
         # commands, etc... (or just peak in the job script.)
         job_id = job_wrapper.job_id
-        log.debug('(%s) command is: %s' % (job_id, command_line))
+        log.debug('({}) command is: {}'.format(job_id, command_line))
         options.update(**kwds)
         return job_script(**options)
 
@@ -539,7 +539,7 @@ class BaseJobRunner(object):
 
             job_wrapper.finish(tool_stdout, tool_stderr, exit_code, check_output_detected_state=check_output_detected_state, job_stdout=job_stdout, job_stderr=job_stderr)
         except Exception:
-            log.exception("(%s/%s) Job wrapper finish method failed" % (job_id or '', external_job_id or ''))
+            log.exception("({}/{}) Job wrapper finish method failed".format(job_id or '', external_job_id or ''))
             job_wrapper.fail("Unable to finish job", exception=True)
 
 
@@ -600,8 +600,8 @@ class JobState(object):
                 if not hasattr(self, "job_id"):
                     prefix = "(%s)" % self.job_wrapper.get_id_tag()
                 else:
-                    prefix = "(%s/%s)" % (self.job_wrapper.get_id_tag(), self.job_id)
-                log.debug("%s Unable to cleanup %s: %s" % (prefix, file, unicodify(e)))
+                    prefix = "({}/{})".format(self.job_wrapper.get_id_tag(), self.job_id)
+                log.debug("{} Unable to cleanup {}: {}".format(prefix, file, unicodify(e)))
 
 
 class AsynchronousJobState(JobState):

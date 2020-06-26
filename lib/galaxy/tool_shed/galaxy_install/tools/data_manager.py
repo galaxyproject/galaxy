@@ -97,12 +97,12 @@ class DataManagerHandler(object):
                         continue
                     guid = data_manager_dict.get('guid', None)
                     if guid is None:
-                        log.error("Data manager guid '%s' is not set in metadata for '%s'." % (guid, data_manager_id))
+                        log.error("Data manager guid '{}' is not set in metadata for '{}'.".format(guid, data_manager_id))
                         continue
                     elem.set('guid', guid)
                     tool_guid = data_manager_dict.get('tool_guid', None)
                     if tool_guid is None:
-                        log.error("Data manager tool guid '%s' is not set in metadata for '%s'." % (tool_guid, data_manager_id))
+                        log.error("Data manager tool guid '{}' is not set in metadata for '{}'.".format(tool_guid, data_manager_id))
                         continue
                     tool_dict = repository_tools_by_guid.get(tool_guid, None)
                     if tool_dict is None:
@@ -137,7 +137,7 @@ class DataManagerHandler(object):
                 elif elem.tag is etree.Comment:
                     pass
                 else:
-                    log.warning("Encountered unexpected element '%s':\n%s" % (elem.tag, xml_to_string(elem)))
+                    log.warning("Encountered unexpected element '{}':\n{}".format(elem.tag, xml_to_string(elem)))
                 config_elems.append(elem)
                 data_manager_config_has_changes = True
             # Persist the altered shed_data_manager_config file.

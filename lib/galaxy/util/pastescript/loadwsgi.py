@@ -71,7 +71,7 @@ def fix_type_error(exc_info, callable, varargs, kwargs):
         kwargs = sorted(kwargs.keys())
         args += ', '.join('%s=...' % n for n in kwargs)
     gotspec = '(%s)' % args
-    msg = '%s; got %s, wanted %s' % (exc_info[1], gotspec, argspec)
+    msg = '{}; got {}, wanted {}'.format(exc_info[1], gotspec, argspec)
     exc_info[1].args = (msg,)
     return exc_info
 
@@ -161,7 +161,7 @@ class _ObjectType(object):
         self.config_prefixes = [_aslist(p) for p in _aslist(self.config_prefixes)]
 
     def __repr__(self):
-        return '<%s protocols=%r prefixes=%r>' % (
+        return '<{} protocols={!r} prefixes={!r}>'.format(
             self.name, self.egg_protocols, self.config_prefixes)
 
     def invoke(self, context):

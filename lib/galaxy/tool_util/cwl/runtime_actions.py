@@ -200,7 +200,7 @@ def handle_outputs(job_directory=None):
         elif isinstance(output, dict):
             prefix = "%s|__part__|" % output_name
             for record_key, record_value in output.items():
-                record_value_output_key = "%s%s" % (prefix, record_key)
+                record_value_output_key = "{}{}".format(prefix, record_key)
                 if isinstance(record_value, dict) and "class" in record_value:
                     handle_known_output(record_value, record_value_output_key, output_name)
                 else:
@@ -214,7 +214,7 @@ def handle_outputs(job_directory=None):
                     output_path = _possible_uri_to_path(el["location"])
                     elements.append({"name": str(index), "filename": output_path, "created_from_basename": el["basename"]})
                 else:
-                    target_path = "%s____%s" % (output_name, str(index))
+                    target_path = "{}____{}".format(output_name, str(index))
                     with open(target_path, "w") as f:
                         f.write(json.dumps(el))
                     elements.append({"name": str(index), "filename": target_path, "ext": "expression.json"})

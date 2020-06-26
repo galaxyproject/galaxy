@@ -148,7 +148,7 @@ class BlastXml(GenericXml):
                         raise ValueError("The header in BLAST XML file %s is too long" % f)
                 if "<BlastOutput>" not in header:
                     h.close()
-                    raise ValueError("%s is not a BLAST XML file:\n%s\n..." % (f, header))
+                    raise ValueError("{} is not a BLAST XML file:\n{}\n...".format(f, header))
                 if f == split_files[0]:
                     out.write(header)
                     old_header = header
@@ -224,7 +224,7 @@ class _BlastDb(Data):
         if not msg:
             msg = title
         # Galaxy assumes HTML for the display of composite datatypes,
-        return smart_str("<html><head><title>%s</title></head><body><pre>%s</pre></body></html>" % (title, msg))
+        return smart_str("<html><head><title>{}</title></head><body><pre>{}</pre></body></html>".format(title, msg))
 
     def merge(split_files, output_file):
         """Merge BLAST databases (not implemented for now)."""

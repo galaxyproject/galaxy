@@ -311,7 +311,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
                 session = trans.sa_session
                 session.add(share)
                 session.flush()
-                trans.set_message("Workflow '%s' shared with user '%s'" % (escape(stored.name), escape(other.email)))
+                trans.set_message("Workflow '{}' shared with user '{}'".format(escape(stored.name), escape(other.email)))
                 return trans.response.send_redirect(url_for(controller='workflow', action='sharing', id=id))
         return trans.fill_template("/ind_share_base.mako",
                                    message=msg,
@@ -758,7 +758,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         request = unicodify(request_raw.strip(), 'utf-8')
 
         # Do request and get result.
-        auth_header = base64.b64encode('%s:%s' % (myexp_username, myexp_password))
+        auth_header = base64.b64encode('{}:{}'.format(myexp_username, myexp_password))
         headers = {"Content-type": "text/xml", "Accept": "text/xml", "Authorization": "Basic %s" % auth_header}
         myexp_url = trans.app.config.myexperiment_target_url
         conn = HTTPConnection(myexp_url)
@@ -953,7 +953,7 @@ def _build_workflow_on_str(instance_ds_names):
     elif num_multi_inputs == 1:
         return " on %s" % instance_ds_names[0]
     else:
-        return " on %s and %s" % (", ".join(instance_ds_names[0:-1]), instance_ds_names[-1])
+        return " on {} and {}".format(", ".join(instance_ds_names[0:-1]), instance_ds_names[-1])
 
 
 def _expand_multiple_inputs(kwargs):

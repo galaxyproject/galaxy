@@ -279,7 +279,7 @@ class UWSGIApplicationStack(MessageApplicationStack):
                 host = UWSGIApplicationStack.localhost_addrs[0]
             return proto + host + port
         except (IndexError, AttributeError):
-            return '%s %s' % (opt, val)
+            return '{} {}'.format(opt, val)
 
     @staticmethod
     def _socket_opts():

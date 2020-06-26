@@ -48,7 +48,7 @@ class Registry(object):
                 if name and url and username and password:
                     self.tool_sheds_auth[name] = AUTH_TUPLE(username, password)
             except Exception as e:
-                log.warning('Error loading reference to tool shed "%s", problem: %s' % (name, str(e)))
+                log.warning('Error loading reference to tool shed "{}", problem: {}'.format(name, str(e)))
 
     def url_auth(self, url):
         """

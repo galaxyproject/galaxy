@@ -699,14 +699,14 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
             if format == 'zip':
                 archive.close()
                 trans.response.set_content_type("application/octet-stream")
-                trans.response.headers["Content-Disposition"] = 'attachment; filename="%s.%s"' % (fname, outext)
+                trans.response.headers["Content-Disposition"] = 'attachment; filename="{}.{}"'.format(fname, outext)
                 archive = util.streamball.ZipBall(tmpf, tmpd)
                 archive.wsgi_status = trans.response.wsgi_status()
                 archive.wsgi_headeritems = trans.response.wsgi_headeritems()
                 return archive.stream
             else:
                 trans.response.set_content_type("application/x-tar")
-                trans.response.headers["Content-Disposition"] = 'attachment; filename="%s.%s"' % (fname, outext)
+                trans.response.headers["Content-Disposition"] = 'attachment; filename="{}.{}"'.format(fname, outext)
                 archive.wsgi_status = trans.response.wsgi_status()
                 archive.wsgi_headeritems = trans.response.wsgi_headeritems()
                 return archive.stream

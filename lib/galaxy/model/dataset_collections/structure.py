@@ -141,7 +141,7 @@ class Tree(BaseTree):
         return Tree(cloned_children, self.collection_type_description)
 
     def __str__(self):
-        return "Tree[collection_type=%s,children=%s]" % (self.collection_type_description, ",".join(map(lambda identifier_and_element: "%s=%s" % (identifier_and_element[0], identifier_and_element[1]), self.children)))
+        return "Tree[collection_type={},children={}]".format(self.collection_type_description, ",".join(map(lambda identifier_and_element: "{}={}".format(identifier_and_element[0], identifier_and_element[1]), self.children)))
 
 
 def tool_output_to_structure(get_sliced_input_collection_structure, tool_output, collections_manager):

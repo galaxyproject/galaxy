@@ -749,7 +749,7 @@ def __pull_up_params(parent_elem, child_elem):
 
 def __prefix_join(prefix, name, index=None):
     name = name if index is None else "%s_%d" % (name, index)
-    return name if not prefix else "%s|%s" % (prefix, name)
+    return name if not prefix else "{}|{}".format(prefix, name)
 
 
 def _copy_to_dict_if_present(elem, rval, attributes):

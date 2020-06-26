@@ -115,7 +115,7 @@ def size_string(raw_text, size=MAX_DISPLAY_SIZE):
     """Return a subset of a string (up to MAX_DISPLAY_SIZE) translated to a safe string for display in a browser."""
     if raw_text and len(raw_text) >= size:
         large_str = '\nFile contents truncated because file size is larger than maximum viewing size of %s\n' % nice_size(size)
-        raw_text = '%s%s' % (raw_text[0:size], large_str)
+        raw_text = '{}{}'.format(raw_text[0:size], large_str)
     return raw_text or ''
 
 

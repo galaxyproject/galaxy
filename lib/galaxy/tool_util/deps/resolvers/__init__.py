@@ -260,7 +260,7 @@ class Dependency(Dictifiable):
         """
         Return a message describing this dependency
         """
-        return "Using dependency %s version %s of type %s" % (self.name, self.version, self.dependency_type)
+        return "Using dependency {} version {} of type {}".format(self.name, self.version, self.dependency_type)
 
 
 class ContainerDependency(Dependency):

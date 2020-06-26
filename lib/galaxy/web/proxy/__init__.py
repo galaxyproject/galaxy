@@ -83,7 +83,7 @@ class ProxyManager(object):
         if not self.dynamic_proxy_external_proxy:
             proxy_url = '%s://%s:%d' % (scheme, host, self.dynamic_proxy_bind_port)
         else:
-            proxy_url = '%s://%s%s' % (scheme, host, proxy_prefix)
+            proxy_url = '{}://{}{}'.format(scheme, host, proxy_prefix)
         return {
             'proxy_url': proxy_url,
             'proxied_port': proxy_requests.port,
@@ -328,14 +328,14 @@ class RestGolangProxyIpc(object):
 
     def __init__(self, config):
         self.config = config
-        self.api_url = 'http://127.0.0.1:%s/api?api_key=%s' % (self.config.dynamic_proxy_bind_port, self.config.dynamic_proxy_golang_api_key)
+        self.api_url = 'http://127.0.0.1:{}/api?api_key={}'.format(self.config.dynamic_proxy_bind_port, self.config.dynamic_proxy_golang_api_key)
 
     def handle_requests(self, authentication, proxy_requests, route_name, container_ids, container_interface, sleep=1):
         """Make a POST request to the GO proxy to register a route
         """
         values = {
             'FrontendPath': route_name,
-            'BackendAddr': "%s:%s" % (proxy_requests.host, proxy_requests.port),
+            'BackendAddr': "{}:{}".format(proxy_requests.host, proxy_requests.port),
             'AuthorizedCookie': authentication.cookie_value,
             'ContainerIds': container_ids,
         }

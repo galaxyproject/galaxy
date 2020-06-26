@@ -379,7 +379,7 @@ def collect_primary_datasets(job_context, output, input_ext):
                 raise Exception("Problem parsing metadata fields for file %s" % filename)
             designation = fields_match.designation
             if filename_index == 0 and extra_file_collector.assign_primary_output and output_index == 0:
-                new_outdata_name = fields_match.name or "%s (%s)" % (outdata.name, designation)
+                new_outdata_name = fields_match.name or "{} ({})".format(outdata.name, designation)
                 outdata.dataset.external_filename = None  # resets filename_override
                 # Move data from temp location to dataset location
                 job_context.object_store.update_from_file(outdata.dataset, file_name=filename, create=True)
@@ -395,7 +395,7 @@ def collect_primary_datasets(job_context, output, input_ext):
             if dbkey == INPUT_DBKEY_TOKEN:
                 dbkey = job_context.input_dbkey
             # Create new primary dataset
-            new_primary_name = fields_match.name or "%s (%s)" % (outdata.name, designation)
+            new_primary_name = fields_match.name or "{} ({})".format(outdata.name, designation)
             info = outdata.info
 
             # TODO: should be able to disambiguate files in different directories...
@@ -414,7 +414,7 @@ def collect_primary_datasets(job_context, output, input_ext):
                 dataset_attributes=new_primary_datasets_attributes,
             )
             # Associate new dataset with job
-            job_context.add_output_dataset_association('__new_primary_file_%s|%s__' % (name, designation), primary_data)
+            job_context.add_output_dataset_association('__new_primary_file_{}|{}__'.format(name, designation), primary_data)
 
             if new_primary_datasets_attributes:
                 extra_files_path = new_primary_datasets_attributes.get('extra_files', None)
@@ -585,7 +585,7 @@ def read_exit_code_from(exit_code_file, id_tag):
         exit_code = int(exit_code_str)
     except ValueError:
         galaxy_id_tag = id_tag
-        log.warning("(%s) Exit code '%s' invalid. Using 0." % (galaxy_id_tag, exit_code_str))
+        log.warning("({}) Exit code '{}' invalid. Using 0.".format(galaxy_id_tag, exit_code_str))
         exit_code = 0
 
     return exit_code

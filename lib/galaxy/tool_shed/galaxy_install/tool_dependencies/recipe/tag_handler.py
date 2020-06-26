@@ -173,7 +173,7 @@ class Install(RecipeTag, SyncDatabase):
                                                                               include_after_install_actions=True)
                 if not actions_elem_tuples:
                     proceed_with_install = False
-                    error_message = 'Version %s of the %s package cannot be installed because ' % (str(package_version), str(package_name))
+                    error_message = 'Version {} of the {} package cannot be installed because '.format(str(package_version), str(package_name))
                     error_message += 'the recipe for installing the package is missing either an &lt;actions&gt; tag set or an &lt;actions_group&gt; '
                     error_message += 'tag set.'
                     # Since there was an installation error, update the tool dependency status to Error.
@@ -262,7 +262,7 @@ class Repository(RecipeTag, SyncDatabase):
             return tmp_filename
         else:
             message = "Unable to retrieve required tool_dependencies.xml file from the Tool Shed for revision "
-            message += "%s of installed repository %s owned by %s." % (str(changeset_revision), str(name), str(owner))
+            message += "{} of installed repository {} owned by {}.".format(str(changeset_revision), str(name), str(owner))
             raise Exception(message)
 
     def create_tool_dependency_with_initialized_env_sh_file(self, dependent_install_dir, tool_shed_repository,

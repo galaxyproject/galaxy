@@ -92,7 +92,7 @@ class DataManager(BaseUIController):
             job = trans.sa_session.query(trans.app.model.Job).get(job_id)
         except Exception as e:
             job = None
-            log.error("Bad job id (%s) passed to job_info: %s" % (job_id, e))
+            log.error("Bad job id ({}) passed to job_info: {}".format(job_id, e))
         if not job:
             return {'message': "Invalid job (%s) was requested" % job_id,
                     'status': "error"}
@@ -116,7 +116,7 @@ class DataManager(BaseUIController):
                 data_manager_json = loads(open(hda.get_file_name()).read())
             except Exception as e:
                 data_manager_json = {}
-                error_messages.append("Unable to obtain data_table info for hda (%s): %s" % (hda.id, e))
+                error_messages.append("Unable to obtain data_table info for hda ({}): {}".format(hda.id, e))
             values = []
             for key, value in data_manager_json.get('data_tables', {}).items():
                 values.append((key, value))
@@ -180,7 +180,7 @@ class DataManager(BaseUIController):
         )
         data = None
         if table_names:
-            message = "Reloaded data table%s '%s'." % ('s'[len(table_names) == 1:],
+            message = "Reloaded data table{} '{}'.".format('s'[len(table_names) == 1:],
                                                        ', '.join(table_names))
             data = self.tool_data_table_info_1(trans,
                                                table_name=table_names[0],

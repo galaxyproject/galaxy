@@ -53,7 +53,7 @@ class RawObjectWrapper(ToolParameterValueWrapper):
 
     def __str__(self):
         try:
-            return "%s:%s" % (self.obj.__module__, self.obj.__class__.__name__)
+            return "{}:{}".format(self.obj.__module__, self.obj.__class__.__name__)
         except Exception:
             # Most likely None, which lacks __module__.
             return str(self.obj)
@@ -186,7 +186,7 @@ class SelectToolParameterWrapper(ToolParameterValueWrapper):
         return self.input.to_param_dict_string(self.value, other_values=self._other_values)
 
     def __add__(self, x):
-        return '%s%s' % (self, x)
+        return '{}{}'.format(self, x)
 
     def __getattr__(self, key):
         return getattr(self.input, key)

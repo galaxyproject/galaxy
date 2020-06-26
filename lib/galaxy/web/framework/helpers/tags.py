@@ -23,7 +23,7 @@ def format_attrs(**attrs):
     >>> format_attrs(p=None) == u''
     True
     """
-    strings = [u' %s="%s"' % (attr, escape_silent(value))
+    strings = [u' {}="{}"'.format(attr, escape_silent(value))
         for attr, value in sorted(attrs.items())
         if value is not None]
     return u''.join(strings)

@@ -284,7 +284,7 @@ def get_repo_info_tuple_contents(repo_info_tuple):
 
 
 def get_repository_admin_role_name(repository_name, repository_owner):
-    return '%s_%s_admin' % (str(repository_name), str(repository_owner))
+    return '{}_{}_admin'.format(str(repository_name), str(repository_owner))
 
 
 def get_repository_and_repository_dependencies_from_repo_info_dict(app, repo_info_dict):

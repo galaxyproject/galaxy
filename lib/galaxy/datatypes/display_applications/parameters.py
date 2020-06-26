@@ -83,7 +83,7 @@ class DisplayApplicationDataParameter(DisplayApplicationParameter):
             data = data.value
         if self.metadata:
             rval = getattr(data.metadata, self.metadata, None)
-            assert rval, 'Unknown metadata name (%s) provided for dataset type (%s).' % (self.metadata, data.datatype.__class__.name)
+            assert rval, 'Unknown metadata name ({}) provided for dataset type ({}).'.format(self.metadata, data.datatype.__class__.name)
             return Bunch(file_name=rval.file_name, state=data.state, states=data.states, extension='data')
         elif self.extensions and (self.force_conversion or not isinstance(data.datatype, self.formats)):
             for ext in self.extensions:
@@ -190,7 +190,7 @@ class DisplayParameterValueWrapper(object):
         base_url = self.trans.request.base
         if self.parameter.strip_https and base_url[: 5].lower() == 'https':
             base_url = "http%s" % base_url[5:]
-        return "%s%s" % (base_url,
+        return "{}{}".format(base_url,
                          self.trans.app.url_for(controller='dataset',
                                                 action="display_application",
                                                 dataset_id=self._dataset_hash,

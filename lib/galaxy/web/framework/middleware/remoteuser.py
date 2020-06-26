@@ -82,7 +82,7 @@ class RemoteUser(object):
             if self.normalize_remote_user_email:
                 environ[self.remote_user_header] = environ[self.remote_user_header].lower()
             if self.maildomain and '@' not in environ[self.remote_user_header]:
-                environ[self.remote_user_header] = "%s@%s" % (environ[self.remote_user_header], self.maildomain)
+                environ[self.remote_user_header] = "{}@{}".format(environ[self.remote_user_header], self.maildomain)
 
         path_info = environ.get('PATH_INFO', '')
 

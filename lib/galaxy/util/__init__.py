@@ -448,7 +448,7 @@ def shrink_string_by_size(value, size, join_by="..", left_larger=True, beginning
                 left_index += 1
             else:
                 right_index += 1
-        value = "%s%s%s" % (value[:left_index], join_by, value[-right_index:])
+        value = "{}{}{}".format(value[:left_index], join_by, value[-right_index:])
     return value
 
 
@@ -671,7 +671,7 @@ def mask_password_from_url(url):
             # This can manipulate the input other than just masking password,
             # so the previous string replace method is preferred when the
             # password doesn't appear twice in the url
-            split = split._replace(netloc=split.netloc.replace("%s:%s" % (split.username, split.password), '%s:********' % split.username))
+            split = split._replace(netloc=split.netloc.replace("{}:{}".format(split.username, split.password), '%s:********' % split.username))
             url = urlparse.urlunsplit(split)
     return url
 
@@ -1321,7 +1321,7 @@ def umask_fix_perms(path, umask, unmasked_perms, gid=None):
         try:
             os.chmod(path, perms)
         except Exception as e:
-            log.warning('Unable to honor umask (%s) for %s, tried to set: %s but mode remains %s, error was: %s' % (oct(umask),
+            log.warning('Unable to honor umask ({}) for {}, tried to set: {} but mode remains {}, error was: {}'.format(oct(umask),
                                                                                                                     path,
                                                                                                                     oct(perms),
                                                                                                                     oct(stat.S_IMODE(st.st_mode)),
@@ -1337,7 +1337,7 @@ def umask_fix_perms(path, umask, unmasked_perms, gid=None):
             except Exception:
                 desired_group = gid
                 current_group = st.st_gid
-            log.warning('Unable to honor primary group (%s) for %s, group remains %s, error was: %s' % (desired_group,
+            log.warning('Unable to honor primary group ({}) for {}, group remains {}, error was: {}'.format(desired_group,
                                                                                                         path,
                                                                                                         current_group,
                                                                                                         unicodify(e)))
@@ -1398,7 +1398,7 @@ def nice_size(size):
             size = size / float(1024 ** ind)
             if word == 'bytes':  # No decimals for bytes
                 return "%s%d bytes" % (prefix, size)
-            return "%s%.1f %s" % (prefix, size, word)
+            return "{}{:.1f} {}".format(prefix, size, word)
     return '??? bytes'
 
 
@@ -1445,7 +1445,7 @@ def size_to_bytes(size):
     elif multiple.startswith('e'):
         return int(number * 1024 ** 6)
     else:
-        raise ValueError("Unknown multiplier '%s' in '%s'" % (multiple, size))
+        raise ValueError("Unknown multiplier '{}' in '{}'".format(multiple, size))
 
 
 def send_mail(frm, to, subject, body, config, html=None):
@@ -1664,9 +1664,9 @@ def build_url(base_url, port=80, scheme='http', pathspec=None, params=None, dose
     if port != 80:
         url = '%s://%s:%d/%s' % (parsed_url.scheme, parsed_url.netloc.rstrip('/'), int(port), parsed_url.path)
     else:
-        url = '%s://%s/%s' % (parsed_url.scheme, parsed_url.netloc.rstrip('/'), parsed_url.path.lstrip('/'))
+        url = '{}://{}/{}'.format(parsed_url.scheme, parsed_url.netloc.rstrip('/'), parsed_url.path.lstrip('/'))
     if len(pathspec) > 0:
-        url = '%s/%s' % (url.rstrip('/'), '/'.join(pathspec))
+        url = '{}/{}'.format(url.rstrip('/'), '/'.join(pathspec))
     if parsed_url.query:
         for query_parameter in parsed_url.query.split('&'):
             key, value = query_parameter.split('=')

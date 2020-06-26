@@ -238,7 +238,7 @@ class Command(object):
             usage = ' ' + self.usage
         else:
             usage = ''
-        self.parser.usage = "%%prog [options]%s\n%s" % (
+        self.parser.usage = "%prog [options]{}\n{}".format(
             usage, self.summary)
         self.parser.prog = self._prog_name()
         if self.description:
@@ -248,7 +248,7 @@ class Command(object):
         self.options, self.args = self.parser.parse_args(args)
 
     def _prog_name(self):
-        return '%s %s' % (os.path.basename(sys.argv[0]), self.command_name)
+        return '{} {}'.format(os.path.basename(sys.argv[0]), self.command_name)
 
     ########################################
     # Utility methods
@@ -380,7 +380,7 @@ class NotFoundCommand(Command):
         print('Known commands:')
         longest = max([len(n) for n, c in commands])
         for name, command in commands:
-            print('  %s  %s' % (self.pad(name, length=longest),
+            print('  {}  {}'.format(self.pad(name, length=longest),
                                 command.load().summary))
         return 2
 
@@ -724,7 +724,7 @@ class ServeCommand(Command):
     def record_pid(self, pid_file):
         pid = os.getpid()
         if self.verbose > 1:
-            print('Writing PID %s to %s' % (pid, pid_file))
+            print('Writing PID {} to {}'.format(pid, pid_file))
         f = open(pid_file, 'w')
         f.write(str(pid))
         f.close()
@@ -771,7 +771,7 @@ class ServeCommand(Command):
             return 1
         pid = live_pidfile(pid_file)
         if not pid:
-            print('PID %s in %s is not running' % (pid, pid_file))
+            print('PID {} in {} is not running'.format(pid, pid_file))
             return 1
         print('Server running in PID %s' % pid)
         return 0
@@ -847,7 +847,7 @@ class ServeCommand(Command):
                 gid = entry.pw_gid
             uid = entry.pw_uid
         if self.verbose > 0:
-            print('Changing user to %s:%s (%s:%s)' % (
+            print('Changing user to {}:{} ({}:{})'.format(
                 user, group or '(unknown)', uid, gid))
         if hasattr(os, 'initgroups'):
             os.initgroups(user, gid)
@@ -944,7 +944,7 @@ def _remove_pid_file(written_pid, filename, verbosity):
         pass
     else:
         if pid_in_file != current_pid:
-            print("PID file %s contains %s, not expected PID %s" % (
+            print("PID file {} contains {}, not expected PID {}".format(
                 filename, pid_in_file, current_pid))
             return
     if verbosity > 0:
@@ -961,7 +961,7 @@ def _remove_pid_file(written_pid, filename, verbosity):
         f.write('')
         f.close()
     except OSError as e:
-        print('Stale PID left in file: %s (%e)' % (filename, e))
+        print('Stale PID left in file: {} ({:e})'.format(filename, e))
     else:
         print('Stale PID removed')
 

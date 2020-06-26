@@ -261,7 +261,7 @@ class UploadDataset(Group):
         return inflector.pluralize(self.title)
 
     def group_title(self, context):
-        return "%s (%s)" % (self.title, context.get(self.file_type_name, self.default_file_type))
+        return "{} ({})".format(self.title, context.get(self.file_type_name, self.default_file_type))
 
     def title_by_index(self, trans, index, context):
         d_type = self.get_datatype(trans, context)
@@ -269,7 +269,7 @@ class UploadDataset(Group):
             if i == index:
                 rval = composite_name
                 if composite_file.description:
-                    rval = "%s (%s)" % (rval, composite_file.description)
+                    rval = "{} ({})".format(rval, composite_file.description)
                 if composite_file.optional:
                     rval = "%s [optional]" % rval
                 return rval

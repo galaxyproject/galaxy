@@ -52,7 +52,7 @@ class ToolRequirement(object):
         return hash((self.name, self.type, self.version, frozenset(self.specs)))
 
     def __str__(self):
-        return "ToolRequirement[%s,version=%s,type=%s,specs=%s]" % (self.name, self.version, self.type, self.specs)
+        return "ToolRequirement[{},version={},type={},specs={}]".format(self.name, self.version, self.type, self.specs)
 
     __repr__ = __str__
 
@@ -195,7 +195,7 @@ class ContainerDescription(object):
         )
 
     def __str__(self):
-        return "ContainerDescription[identifier=%s,type=%s]" % (self.identifier, self.type)
+        return "ContainerDescription[identifier={},type={}]".format(self.identifier, self.type)
 
 
 def parse_requirements_from_dict(root_dict):

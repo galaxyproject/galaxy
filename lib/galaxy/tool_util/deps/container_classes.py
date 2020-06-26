@@ -86,7 +86,7 @@ class Container(object):
         self.container_info = {}
 
     def prop(self, name, default):
-        destination_name = "%s_%s" % (self.container_type, name)
+        destination_name = "{}_{}".format(self.container_type, name)
         return self.destination_info.get(destination_name, default)
 
     @property
@@ -140,9 +140,9 @@ def preprocess_volumes(volumes_raw_str, container_type):
         if len(volume_parts) > 3:
             raise Exception("Unparsable volumes string in configuration [%s]" % volumes_raw_str)
         if len(volume_parts) == 3:
-            volume_parts = ["%s:%s" % (volume_parts[0], volume_parts[1]), volume_parts[2]]
+            volume_parts = ["{}:{}".format(volume_parts[0], volume_parts[1]), volume_parts[2]]
         if len(volume_parts) == 2 and volume_parts[1] not in ("rw", "ro", "default_ro"):
-            volume_parts = ["%s:%s" % (volume_parts[0], volume_parts[1]), "rw"]
+            volume_parts = ["{}:{}".format(volume_parts[0], volume_parts[1]), "rw"]
         if len(volume_parts) == 1:
             volume_parts.append("rw")
         volumes.append(volume_parts)
@@ -270,7 +270,7 @@ class DockerContainer(Container, HasDockerLikeVolumes):
     def containerize_command(self, command):
         env_directives = []
         for pass_through_var in self.tool_info.env_pass_through:
-            env_directives.append('"%s=$%s"' % (pass_through_var, pass_through_var))
+            env_directives.append('"{}=${}"'.format(pass_through_var, pass_through_var))
 
         # Allow destinations to explicitly set environment variables just for
         # docker container. Better approach is to set for destination and then
@@ -278,7 +278,7 @@ class DockerContainer(Container, HasDockerLikeVolumes):
         for key, value in six.iteritems(self.destination_info):
             if key.startswith("docker_env_"):
                 env = key[len("docker_env_"):]
-                env_directives.append('"%s=%s"' % (env, value))
+                env_directives.append('"{}={}"'.format(env, value))
 
         working_directory = self.job_info.working_directory
         if not working_directory:

@@ -295,7 +295,7 @@ def maf_index_by_uid(maf_uid, index_location_file):
                     maf_files = fields[4].replace("\n", "").replace("\r", "").split(",")
                     return bx.align.maf.MultiIndexed(maf_files, keep_open=True, parse_e_rows=False)
                 except Exception as e:
-                    raise Exception('MAF UID (%s) found, but configuration appears to be malformed: %s' % (maf_uid, e))
+                    raise Exception('MAF UID ({}) found, but configuration appears to be malformed: {}'.format(maf_uid, e))
         except Exception:
             pass
     return None
@@ -347,7 +347,7 @@ def build_maf_index_species_chromosomes(filename, index_species=None):
                         indexes.add(c.src, forward_strand_start, forward_strand_end, pos, max=c.src_size)
     except Exception as e:
         # most likely a bad MAF
-        log.debug('Building MAF index on %s failed: %s' % (filename, e))
+        log.debug('Building MAF index on {} failed: {}'.format(filename, e))
         return (None, [], {}, 0)
     return (indexes, species, species_chromosomes, blocks)
 
@@ -513,7 +513,7 @@ def get_region_alignment(index, primary_species, chrom, start, end, strand='+', 
 def reduce_block_by_primary_genome(block, species, chromosome, region_start):
     # returns ( startIndex, {species:texts}
     # where texts' contents are reduced to only positions existing in the primary genome
-    src = "%s.%s" % (species, chromosome)
+    src = "{}.{}".format(species, chromosome)
     ref = block.get_component_by_src(src)
     start_offset = ref.start - region_start
     species_texts = {}
@@ -534,7 +534,7 @@ def fill_region_alignment(alignment, index, primary_species, chrom, start, end, 
     region = bx.intervals.Interval(start, end)
     region.chrom = chrom
     region.strand = strand
-    primary_src = "%s.%s" % (primary_species, chrom)
+    primary_src = "{}.{}".format(primary_species, chrom)
 
     # Order blocks overlaping this position by score, lowest first
     blocks = []
@@ -685,11 +685,11 @@ def remove_temp_index_file(index_filename):
 def get_fasta_header(component, attributes={}, suffix=None):
     header = ">%s(%s):%i-%i|" % (component.src, component.strand, component.get_forward_strand_start(), component.get_forward_strand_end())
     for key, value in attributes.items():
-        header = "%s%s=%s|" % (header, key, value)
+        header = "{}{}={}|".format(header, key, value)
     if suffix:
-        header = "%s%s" % (header, suffix)
+        header = "{}{}".format(header, suffix)
     else:
-        header = "%s%s" % (header, src_split(component.src)[0])
+        header = "{}{}".format(header, src_split(component.src)[0])
     return header
 
 

@@ -147,7 +147,7 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
     source_command = ""
     if container:
         source_command = container.source_environment
-    script_contents = u"#!%s\n%s%s%s%s" % (
+    script_contents = u"#!{}\n{}{}{}{}".format(
         shell,
         integrity_injection,
         set_e,
@@ -155,7 +155,7 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
         tool_commands,
     )
     write_script(local_container_script, script_contents, config)
-    commands = "%s %s" % (shell, local_container_script)
+    commands = "{} {}".format(shell, local_container_script)
     # TODO: Cleanup for_pulsar hack.
     # - Integrate Pulsar sending tool_stdout/tool_stderr back
     #   https://github.com/galaxyproject/pulsar/pull/202
@@ -166,11 +166,11 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
     #   https://github.com/galaxyproject/galaxy/pull/8449
     for_pulsar = False
     if 'script_directory' in remote_command_params:
-        commands = "%s %s" % (shell, join(remote_command_params['script_directory'], script_name))
+        commands = "{} {}".format(shell, join(remote_command_params['script_directory'], script_name))
         for_pulsar = True
     if not for_pulsar:
         commands += " > ../outputs/tool_stdout 2> ../outputs/tool_stderr"
-    log.info("Built script [%s] for tool command [%s]" % (local_container_script, tool_commands))
+    log.info("Built script [{}] for tool command [{}]".format(local_container_script, tool_commands))
     return commands
 
 
@@ -236,14 +236,14 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
     metadata_command = metadata_command.strip()
     if metadata_command:
         # Place Galaxy and its dependencies in environment for metadata regardless of tool.
-        metadata_command = "%s%s" % (SETUP_GALAXY_FOR_METADATA, metadata_command)
+        metadata_command = "{}{}".format(SETUP_GALAXY_FOR_METADATA, metadata_command)
         commands_builder.capture_return_code()
         commands_builder.append_command(metadata_command)
 
 
 def __copy_if_exists_command(work_dir_output):
     source_file, destination = work_dir_output
-    return "if [ -f %s ] ; then cp %s %s ; fi" % (source_file, source_file, destination)
+    return "if [ -f {} ] ; then cp {} {} ; fi".format(source_file, source_file, destination)
 
 
 class CommandsBuilder(object):
@@ -262,7 +262,7 @@ class CommandsBuilder(object):
 
     def prepend_command(self, command, sep=";"):
         if command:
-            self.commands = u"%s%s %s" % (command,
+            self.commands = u"{}{} {}".format(command,
                                          sep,
                                          self.commands)
         return self
@@ -272,7 +272,7 @@ class CommandsBuilder(object):
 
     def append_command(self, command, sep=';'):
         if command:
-            self.commands = u"%s%s %s" % (self.commands,
+            self.commands = u"{}{} {}".format(self.commands,
                                           sep,
                                           command)
         return self

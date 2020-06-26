@@ -311,7 +311,7 @@ class ToolOutputCollectionPart(object):
     def effective_output_name(self):
         name = self.output_collection_def.name
         part_name = self.element_identifier
-        effective_output_name = "%s|__part__|%s" % (name, part_name)
+        effective_output_name = "{}|__part__|{}".format(name, part_name)
         return effective_output_name
 
     @staticmethod

@@ -469,7 +469,7 @@ class ToolVersionListGrid(grids.Grid):
             if toolbox.has_tool(tool_version.tool_id, exact=True):
                 link = url_for(controller='tool_runner', tool_id=tool_version.tool_id)
                 link_str = '<a target="_blank" href="%s">' % link
-                return '<div class="count-box state-color-ok">%s%s</a></div>' % (link_str, tool_version.tool_id)
+                return '<div class="count-box state-color-ok">{}{}</a></div>'.format(link_str, tool_version.tool_id)
             return tool_version.tool_id
 
     class ToolVersionsColumn(grids.TextColumn):
@@ -482,7 +482,7 @@ class ToolVersionListGrid(grids.Grid):
                     if toolbox.has_tool(tool_id, exact=True):
                         link = url_for(controller='tool_runner', tool_id=tool_id)
                         link_str = '<a target="_blank" href="%s">' % link
-                        tool_ids_str += '<div class="count-box state-color-ok">%s%s</a></div><br/>' % (link_str, tool_id)
+                        tool_ids_str += '<div class="count-box state-color-ok">{}{}</a></div><br/>'.format(link_str, tool_id)
                     else:
                         tool_ids_str += '%s<br/>' % tool_version.tool_id
             else:
@@ -850,7 +850,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 if user:
                     trans.handle_user_logout()
                     trans.handle_user_login(user)
-                    return trans.show_message('You are now logged in as %s, <a target="_top" href="%s">return to the home page</a>' % (user.email, url_for(controller='root')), use_panels=True)
+                    return trans.show_message('You are now logged in as {}, <a target="_top" href="{}">return to the home page</a>'.format(user.email, url_for(controller='root')), use_panels=True)
             except Exception:
                 log.exception("Error fetching user for impersonation")
         return trans.response.send_redirect(web.url_for(controller='admin',
@@ -1049,7 +1049,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                         role.description = new_description
                         trans.sa_session.add(role)
                         trans.sa_session.flush()
-            return {'message': 'Role \'%s\' has been renamed to \'%s\'.' % (old_name, new_name)}
+            return {'message': 'Role \'{}\' has been renamed to \'{}\'.'.format(old_name, new_name)}
 
     @web.legacy_expose_api
     @web.require_admin
@@ -1215,7 +1215,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                         group.name = new_name
                         trans.sa_session.add(group)
                         trans.sa_session.flush()
-            return {'message': 'Group \'%s\' has been renamed to \'%s\'.' % (old_name, new_name)}
+            return {'message': 'Group \'{}\' has been renamed to \'{}\'.'.format(old_name, new_name)}
 
     @web.legacy_expose_api
     @web.require_admin
@@ -1451,7 +1451,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         if new in (current, None):
             message = 'Usage is unchanged at %s.' % nice_size(current)
         else:
-            message = 'Usage has changed by %s to %s.' % (nice_size(new - current), nice_size(new))
+            message = 'Usage has changed by {} to {}.'.format(nice_size(new - current), nice_size(new))
         return (message, 'done')
 
     def _new_user_apikey(self, trans, user_id):
@@ -1464,7 +1464,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         )
         trans.sa_session.add(new_key)
         trans.sa_session.flush()
-        return ("New key '%s' generated for requested user '%s'." % (new_key.key, user.email), "done")
+        return ("New key '{}' generated for requested user '{}'.".format(new_key.key, user.email), "done")
 
     def _activate_user(self, trans, user_id):
         user = trans.sa_session.query(trans.model.User).get(trans.security.decode_id(user_id))

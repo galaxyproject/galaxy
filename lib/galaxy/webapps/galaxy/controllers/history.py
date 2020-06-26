@@ -158,7 +158,7 @@ class SharedHistoryListGrid(grids.Grid):
             for state in ('ok', 'running', 'queued', 'error'):
                 total = sum(1 for d in history.active_datasets if d.state == state)
                 if total:
-                    rval += '<div class="count-box state-color-%s">%s</div>' % (state, total)
+                    rval += '<div class="count-box state-color-{}">{}</div>'.format(state, total)
             return rval
 
     class SharedByColumn(grids.GridColumn):
@@ -347,7 +347,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         if n_deleted:
             part = "Deleted %d %s" % (n_deleted, iff(n_deleted != 1, "histories", "history"))
             if purge and trans.app.config.allow_user_dataset_purge:
-                part += " and removed %s dataset%s from disk" % (iff(n_deleted != 1, "their", "its"), iff(n_deleted != 1, 's', ''))
+                part += " and removed {} dataset{} from disk".format(iff(n_deleted != 1, "their", "its"), iff(n_deleted != 1, 's', ''))
             elif purge:
                 part += " but the datasets were not removed from disk because that feature is not enabled in this Galaxy instance"
             message_parts.append("%s.  " % part)
@@ -752,7 +752,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         send_to_users, send_to_err = self._get_users(trans, user, email)
         if not send_to_users:
             if not send_to_err:
-                send_to_err += "%s is not a valid Galaxy user.  %s" % (email, err_msg)
+                send_to_err += "{} is not a valid Galaxy user.  {}".format(email, err_msg)
             return trans.fill_template("/history/share.mako",
                                        histories=histories,
                                        email=email,
@@ -848,7 +848,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                                    .filter(and_(trans.app.model.HistoryUserShareAssociation.table.c.user_id == send_to_user.id,
                                                 trans.app.model.HistoryUserShareAssociation.table.c.history_id == history.id)) \
                                    .count() > 0:
-                    send_to_err += "History (%s) already shared with user (%s)" % (history.name, send_to_user.email)
+                    send_to_err += "History ({}) already shared with user ({})".format(history.name, send_to_user.email)
                 else:
                     # Only deal with datasets that have not been purged
                     for hda in history.activatable_datasets:
@@ -932,7 +932,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                                    .filter(and_(trans.app.model.HistoryUserShareAssociation.table.c.user_id == send_to_user.id,
                                                 trans.app.model.HistoryUserShareAssociation.table.c.history_id == history.id)) \
                                    .count() > 0:
-                    send_to_err += "History (%s) already shared with user (%s)" % (history.name, send_to_user.email)
+                    send_to_err += "History ({}) already shared with user ({})".format(history.name, send_to_user.email)
                 else:
                     # Build the dict that will be used for sharing
                     if send_to_user not in histories_for_sharing:
@@ -965,7 +965,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                                    .filter(and_(trans.app.model.HistoryUserShareAssociation.table.c.user_id == send_to_user.id,
                                                 trans.app.model.HistoryUserShareAssociation.table.c.history_id == history.id)) \
                                    .count() > 0:
-                    send_to_err += "History (%s) already shared with user (%s)" % (history.name, send_to_user.email)
+                    send_to_err += "History ({}) already shared with user ({})".format(history.name, send_to_user.email)
                 else:
                     # Only deal with datasets that have not been purged
                     for hda in history.activatable_datasets:
@@ -1065,10 +1065,10 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 if hda.dataset.user_can_purge:
                     try:
                         hda.dataset.full_delete()
-                        trans.log_event("Dataset id %s has been purged upon the the purge of HDA id %s" % (hda.dataset.id, hda.id))
+                        trans.log_event("Dataset id {} has been purged upon the the purge of HDA id {}".format(hda.dataset.id, hda.id))
                         trans.sa_session.add(hda.dataset)
                     except Exception:
-                        log.exception('Unable to purge dataset (%s) on purge of hda (%s):' % (hda.dataset.id, hda.id))
+                        log.exception('Unable to purge dataset ({}) on purge of hda ({}):'.format(hda.dataset.id, hda.id))
                 count += 1
             return trans.show_ok_message("%d datasets have been deleted permanently" % count, refresh_frames=['history'])
         return trans.show_error_message("Cannot purge deleted datasets from this session.")
@@ -1205,7 +1205,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                     h.name = new_name
                     trans.sa_session.add(h)
                     trans.sa_session.flush()
-                    trans.log_event('History renamed: id: %s, renamed to: %s' % (str(h.id), new_name))
+                    trans.log_event('History renamed: id: {}, renamed to: {}'.format(str(h.id), new_name))
                     messages.append('History \'' + cur_name + '\' renamed to \'' + new_name + '\'.')
             message = sanitize_text(' '.join(messages)) if messages else 'History names remain unchanged.'
             return {'message': message, 'status': 'success'}
