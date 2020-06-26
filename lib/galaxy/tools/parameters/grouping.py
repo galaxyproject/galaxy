@@ -1,8 +1,8 @@
 """
 Constructs for grouping tool parameters
 """
-import logging
 import io
+import logging
 import os
 import unicodedata
 
