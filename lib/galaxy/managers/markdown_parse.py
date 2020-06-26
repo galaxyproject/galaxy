@@ -21,12 +21,17 @@ VALID_ARGUMENTS = {
     "history_dataset_info": ["input", "output", "history_dataset_id"],
     "history_dataset_link": ["input", "output", "history_dataset_id", "path", "label"],
     "history_dataset_index": ["input", "output", "history_dataset_id", "path"],
+    "history_dataset_name": ["input", "output", "history_dataset_id"],
+    "history_dataset_type": ["input", "output", "history_dataset_id"],
     "history_dataset_collection_display": ["input", "output", "history_dataset_collection_id"],
     "workflow_display": ["workflow_id"],
     "job_metrics": ["step", "job_id"],
     "job_parameters": ["step", "job_id"],
     "tool_stderr": ["step", "job_id"],
     "tool_stdout": ["step", "job_id"],
+    "generate_galaxy_version": [],
+    "generate_time": [],
+    "invocation_time": ["invocation_id"],
     # Invocation Flavored Markdown
     "invocation_outputs": [],
     "invocation_inputs": [],
@@ -87,6 +92,7 @@ def validate_galaxy_markdown(galaxy_markdown, internal=True):
                 container = func_call_match.group("container")
                 valid_args = VALID_ARGUMENTS[container]
                 first_arg_call = func_call_match.group("firstargcall")
+
                 def _validate_arg(arg_str):
                     if arg_str is not None:
                         arg_name = arg_str.split("=", 1)[0].strip()
