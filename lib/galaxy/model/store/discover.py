@@ -54,12 +54,16 @@ class ModelPersistenceContext(object):
         primary_data=None,
         init_from=None,
         dataset_attributes=None,
-        tag_list=[],
-        sources=[],
-        hashes=[],
+        tag_list=None,
+        sources=None,
+        hashes=None,
         created_from_basename=None,
         final_job_state='ok',
     ):
+        tag_list = tag_list or []
+        sources = sources or []
+        hashes = hashes or []
+
         sa_session = self.sa_session
 
         # You can initialize a dataset or initialize from a dataset but not both.
