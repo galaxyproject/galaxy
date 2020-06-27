@@ -379,7 +379,7 @@ class GalaxyTagHandler(TagHandler):
 class GalaxyTagHandlerSession(GalaxyTagHandler):
     """Like GalaxyTagHandler, but avoids one flush per created tag."""
     def __init__(self, sa_session):
-        GalaxyTagHandler.__init__(self, sa_session)
+        super().__init__(sa_session)
         self.created_tags = {}
 
     def _get_tag(self, tag_name):
@@ -389,7 +389,7 @@ class GalaxyTagHandlerSession(GalaxyTagHandler):
 
     def _create_tag_instance(self, tag_name):
         """Create tag and and store in cache."""
-        tag = super(GalaxyTagHandlerSession, self)._create_tag_instance(tag_name)
+        tag = super()._create_tag_instance(tag_name)
         self.created_tags[tag_name] = tag
         return tag
 
