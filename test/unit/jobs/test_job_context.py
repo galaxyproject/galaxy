@@ -63,8 +63,8 @@ def test_job_context_discover_outputs_flushes_once(mocker):
     input_dbkey = '?'
     final_job_state = 'ok'
     collection_description = FilePatternDatasetCollectionDescription(pattern="__name__")
-    collection = model.DatasetCollection(collection_type='list')
-
+    collection = model.DatasetCollection(collection_type='list', populated=False)
+    sa_session.add(collection)
     job_context = JobContext(tool, tool_provided_metadata, job, job_working_directory, permission_provider, metadata_source_provider, input_dbkey, object_store, final_job_state)
     collection_builder = builder.BoundCollectionBuilder(collection)
     dataset_collectors = [dataset_collector(collection_description)]
@@ -80,4 +80,7 @@ def test_job_context_discover_outputs_flushes_once(mocker):
         metadata_source_name='',
         final_job_state=job_context.final_job_state,
     )
+    collection_builder.populate()
     assert spy.call_count == 1
+    assert len(collection.dataset_instances) == 10
+    assert collection.dataset_instances[0].dataset.file_size == 1
