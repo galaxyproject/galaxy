@@ -46,7 +46,7 @@ class ModelPersistenceContext(object):
         visible,
         dbkey,
         name,
-        filename,
+        filename=None,
         metadata_source_name=None,
         info=None,
         library_folder=None,
@@ -127,21 +127,28 @@ class ModelPersistenceContext(object):
         if created_from_basename is not None:
             primary_data.created_from_basename = created_from_basename
 
+        has_flushed = False
         if tag_list:
             # If we have a tag we need a primary id, so need to flush here
             # TODO: eliminate creating tag associations within create dataset
             # We can do this incrementally by not passing in a tag list.
             self.flush()
+            has_flushed = True
             self.tag_handler.add_tags_from_list(self.job.user, primary_data, tag_list)
 
         # Move data from temp location to dataset location
-        if not link_data:
-            self.object_store.update_from_file(primary_data.dataset, file_name=filename, create=True)
-        else:
-            primary_data.link_to(filename)
+        if filename:
+            # TODO: eliminate this, should happen outside of create_dataset so that we don't need to flush
+            if not has_flushed:
+                self.flush()
+                has_flushed = True
+            if not link_data:
+                self.object_store.update_from_file(primary_data.dataset, file_name=filename, create=True)
+            else:
+                primary_data.link_to(filename)
+            # We are sure there are no extra files, so optimize things that follow by settting total size also.
+            primary_data.set_size(no_extra_files=True)
 
-        # We are sure there are no extra files, so optimize things that follow by settting total size also.
-        primary_data.set_size(no_extra_files=True)
         # If match specified a name use otherwise generate one from
         # designation.
         primary_data.name = name
@@ -202,7 +209,7 @@ class ModelPersistenceContext(object):
         if name is None:
             name = "unnamed output"
 
-        element_datasets = {'element_identifiers': [], 'datasets': [], 'tag_lists': []}
+        element_datasets = {'element_identifiers': [], 'datasets': [], 'tag_lists': [], 'paths': []}
         for filename, discovered_file in filenames.items():
             create_dataset_timer = ExecutionTimer()
             fields_match = discovered_file.match
@@ -232,7 +239,6 @@ class ModelPersistenceContext(object):
                 visible=visible,
                 dbkey=dbkey,
                 name=dataset_name,
-                filename=filename,
                 metadata_source_name=metadata_source_name,
                 link_data=link_data,
                 sources=sources,
@@ -251,6 +257,7 @@ class ModelPersistenceContext(object):
             element_datasets['element_identifiers'].append(element_identifiers)
             element_datasets['datasets'].append(dataset)
             element_datasets['tag_lists'].append(discovered_file.match.tag_list)
+            element_datasets['paths'].append(filename)
 
         add_datasets_timer = ExecutionTimer()
         self.add_datasets_to_history(element_datasets['datasets'])
@@ -274,6 +281,7 @@ class ModelPersistenceContext(object):
             self.add_output_dataset_association(association_name, dataset)
 
         self.flush()
+        self.update_object_store_with_datasets(datasets=element_datasets['datasets'], paths=element_datasets['paths'])
 
     def add_tags_to_datasets(self, datasets, tag_lists):
         if any(tag_lists):
@@ -284,6 +292,11 @@ class ModelPersistenceContext(object):
             tag_session = self.tag_handler.create_tag_handler_session()
             for dataset, tags in zip(datasets, tag_lists):
                 tag_session.add_tags_from_list(self.job.user, dataset, tags, flush=False)
+
+    def update_object_store_with_datasets(self, datasets, paths):
+        for dataset, path in zip(datasets, paths):
+            self.object_store.update_from_file(dataset, file_name=path, create=True)
+            dataset.set_size(no_extra_files=True)
 
     @abc.abstractproperty
     def tag_handler(self):
