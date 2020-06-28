@@ -2,12 +2,13 @@ import os
 import tempfile
 
 from galaxy import model
-from galaxy.job_execution.output_collect import dataset_collector, JobContext, MetadataSourceProvider
+from galaxy.job_execution.output_collect import (
+    dataset_collector,
+    JobContext,
+)
 from galaxy.model.dataset_collections import builder
 from galaxy.tool_util.parser.output_collection_def import FilePatternDatasetCollectionDescription
-
-
-from ..tools.test_history_imp_exp import _create_datasets, _mock_app, Dummy
+from ..tools.test_history_imp_exp import _mock_app
 
 
 class PermissionProvider:
@@ -21,10 +22,12 @@ class PermissionProvider:
     def copy_dataset_permissions(self, init_from, primary_data):
         pass
 
+
 class MetadataSourceProvider:
 
     def get_metadata_source(self, input_name):
         return None
+
 
 class Tool:
 
@@ -39,10 +42,10 @@ def setup_data(job_working_directory):
             out.write(str(i))
 
 
-def test_job_context_discover_outputs():
-
+def test_job_context_discover_outputs_flushes_once(mocker):
     app = _mock_app()
     sa_session = app.model.context
+    # mocker is a pytest-mock fixture
 
     u = model.User(email="collection@example.com", password="password")
     h = model.History(name="Test History", user=u)
@@ -68,6 +71,7 @@ def test_job_context_discover_outputs():
     output_name = 'output'
     filenames = job_context.find_files(output_name, collection, dataset_collectors)
     assert len(filenames) == 10
+    spy = mocker.spy(sa_session, 'flush')
     job_context.populate_collection_elements(
         collection,
         collection_builder,
@@ -76,3 +80,4 @@ def test_job_context_discover_outputs():
         metadata_source_name='',
         final_job_state=job_context.final_job_state,
     )
+    assert spy.call_count == 1
