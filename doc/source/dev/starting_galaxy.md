@@ -93,4 +93,3 @@ Galaxy is started by running ./run.sh script. The following call graph documents
     * CommunityWebApplication: A WSGI application that maps requests to objects using routes and to methods on those objects
     * Map all requests to controllers/actions
     * Wrap web app in some middleware and return webapp
-
