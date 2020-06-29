@@ -179,12 +179,14 @@ class Data(object):
         """Unimplemented method, allows guessing of metadata from contents of file"""
         return True
 
-    def missing_meta(self, dataset, check=[], skip=[]):
+    def missing_meta(self, dataset, check=None, skip=None):
         """
         Checks for empty metadata values, Returns True if non-optional metadata is missing
         Specifying a list of 'check' values will only check those names provided; when used, optionality is ignored
         Specifying a list of 'skip' items will return True even when a named metadata value is missing
         """
+        if skip is None:
+            skip = []
         if check:
             to_check = ((to_check, dataset.metadata.get(to_check)) for to_check in check)
         else:
@@ -346,7 +348,7 @@ class Data(object):
 
     def __archive_extra_files_path(self, extra_files_path):
         """Yield filepaths and relative filepaths for files in extra_files_path"""
-        for root, dirs, files in os.walk(extra_files_path):
+        for root, _, files in os.walk(extra_files_path):
             for fname in files:
                 fpath = os.path.join(root, fname)
                 rpath = os.path.relpath(fpath, extra_files_path)
@@ -858,13 +860,17 @@ class Text(Data):
         Count the number of lines of data in dataset,
         skipping all blank lines and comments.
         """
+        CHUNK_SIZE = 2 ** 15  # 32Kb
         data_lines = 0
         with compression_utils.get_fileobj(dataset.file_name) as in_file:
             # FIXME: Potential encoding issue can prevent the ability to iterate over lines
             # causing set_meta process to fail otherwise OK jobs. A better solution than
             # a silent try/except is desirable.
             try:
-                for line in in_file:
+                while True:
+                    line = in_file.readline(CHUNK_SIZE)
+                    if not line:
+                        break
                     line = line.strip()
                     if line and not line.startswith('#'):
                         data_lines += 1
