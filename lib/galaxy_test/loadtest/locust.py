@@ -21,4 +21,7 @@ class ObjectStoreLoadTest(HttpUser):
     @task
     def upload_download_delete_random_file(self):
         command = subprocess.run(["sh", self.run_tests_script, "-api", "./lib/galaxy_test/api/test_tools_upload.py::ToolsUploadTestCase::test_upload_download_delete_of_randomly_generated_file"])
-        print("The exit code was %d" % command.returncode)
+        if command.returncode == 0:
+            print("Exit code was 0")
+        else:
+            print("Exit code was NOT 0")
