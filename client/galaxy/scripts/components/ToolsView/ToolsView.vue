@@ -119,6 +119,11 @@ export default {
             };
         },
     },
+    watch: {
+        toolset () {
+            this.initialize(this.toolset);
+        }
+    },
     created() {
         axios
             .get(`${getAppRoot()}api/tools?tool_help=True`)

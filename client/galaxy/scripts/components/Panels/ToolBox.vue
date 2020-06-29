@@ -17,24 +17,40 @@
                     v-model="selected"
                     :options="toolsets"
                 >
-                    <option v-for="toolset in toolsets" v-bind:key="toolset" v-on:click="getToolsetToolIds(toolset)">
+                    <option v-for="toolset in toolsets" :key="toolset" @click="getToolsetToolIds(toolset)">
                         {{ toolset }}
                     </option>
                 </select>
 
-            </div>
-            <tool-search :query="query" placeholder="search tools" @onQuery="onQuery" @onResults="onResults" />
+                <!-- <multiselect
+                    placeholder="Select a Toolset"
+                    v-model="selected"
+                    :options="toolsets"
+                    :click="getToolsetToolIds"
+                >
+                </multiselect> -->
 
-            <div class="py-2" v-if="hasResults">
-                <b-button @click="onToggle">{{ buttonText }}</b-button>
+                <span><input type="checkbox" id="checkbox" v-model="detailedView" @change="onPanelResize">
+                    Show detailed tools view
+                </span>
+
+                <tools-view v-if="showDetailedView" :toolset="getToolsetTools" tool-open="_self" />
             </div>
-            <div class="py-2" v-else-if="query">
-                <span v-if="query.length < 3" class="font-weight-bold">***Search string too short***</span>
-                <span v-else class="font-weight-bold">***No Results Found***</span>
+
+            <div class="toolsearch">
+                <tool-search v-if="!showDetailedView" :query="query" placeholder="search tools" @onQuery="onQuery" @onResults="onResults" />
+
+                <div class="py-2" v-if="hasResults">
+                    <b-button @click="onToggle">{{ buttonText }}</b-button>
+                </div>
+                <div class="py-2" v-else-if="query">
+                    <span v-if="query.length < 3" class="font-weight-bold">***Search string too short***</span>
+                    <span v-else class="font-weight-bold">***No Results Found***</span>
+                </div>
             </div>
         </div>
         <div class="unified-panel-body">
-            <div class="toolMenuContainer">
+            <div class="toolMenuContainer" v-if="!showDetailedView">
                 <div class="toolMenu">
                     <tool-section
                         v-for="section in sections"
@@ -67,12 +83,13 @@
 </template>
 
 <script>
-import axios from "axios";
+//import Multiselect from "vue-multiselect";
 import ToolSection from "./Common/ToolSection";
 import ToolSearch from "./Common/ToolSearch";
 import UploadButton from "./Buttons/UploadButton";
 import FavoritesButton from "./Buttons/FavoritesButton";
-import { filterToolSections, filterTools, resizePanel } from "./utilities";
+import ToolsView from "components/ToolsView/ToolsView"
+import { filterToolSections, filterTools, filterToolsets, resizePanel } from "./utilities";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import svc from "./service";
@@ -81,10 +98,12 @@ import _l from "utils/localization";
 export default {
     name: "ToolBox",
     components: {
+        //Multiselect,
         UploadButton,
         FavoritesButton,
         ToolSection,
         ToolSearch,
+        ToolsView,
     },
     data() {
         return {
@@ -93,10 +112,13 @@ export default {
             queryFilter: null,
             showSections: false,
             buttonText: "",
-            toolsets: ["None"],
+            mainToolbox: "Main Toolbox",
+            selected: "Main Toolbox",
+            toolsets: ["Main Toolbox"],
             toolsetIds: [],
-            selected: "None",
             savedWidth: null,
+            toolsetTools: [],
+            detailedView: false,
         };
     },
     props: {
@@ -115,16 +137,19 @@ export default {
     },
     computed: {
         sections() {
-            // what happens when searching a toolset? still just displays selected toolset
-            if (this.toolsetIds.length > 0 && this.selected != "None") {
-                return filterToolSections(this.toolbox, this.toolsetIds);
-                //idea: get list of uninstalled tools that are in toolset and suggest installing them/contact admin
+            // Searching through toolset
+            if (this.selected != this.mainToolbox && this.results) {
+                console.log("SEARCH TOOLSET");
+                return filterToolsets(this.toolbox, this.toolsetIds, this.results);
+                //account for this.showSections here too
             }
-            else if (this.showSections) {
-                return filterToolSections(this.toolbox, this.results);
-            } else {
-                return filterTools(this.toolbox, this.results);
-            }
+
+            var searchList = this.toolsetIds ? this.toolsetIds : this.results;
+
+            return this.showSections 
+            ? filterToolSections(this.toolbox, searchList)
+            : filterTools(this.toolbox, searchList);
+            
         },
         isUser() {
             const Galaxy = getGalaxyInstance();
@@ -150,8 +175,13 @@ export default {
             return this.results && this.results.length > 0;
         },
         toolsetEnabled() {
-            return true;
-            //return getGalaxyInstance().config.enable_toolsets; //make configurable feature?
+            return getGalaxyInstance().config.enable_toolset;
+        },
+        showDetailedView() {
+            return this.detailedView;
+        },
+        getToolsetTools() {
+            return filterTools(this.toolbox, this.toolsetIds);
         },
     },
     methods: {
@@ -162,12 +192,12 @@ export default {
             this.results = results;
             this.queryFilter = this.hasResults ? this.query : null;
             this.setButtonText();
-            this.onResultsResize();
         },
-        onResultsResize() {
-            if (this.results) {
+        onPanelResize() {
+            //if (this.results) {
+            if (this.detailedView) {
                 this.savedWidth = parseInt(document.getElementById("left").style["width"]);
-                resizePanel(this.savedWidth * 2);
+                resizePanel(window.innerWidth - this.savedWidth); //change to either hide History Panel or subtract History width
             } else {
                 resizePanel(this.savedWidth);
             }
@@ -185,7 +215,7 @@ export default {
                 Galaxy.upload.show();
             } else if (tool.form_style === "regular") {
                 evt.preventDefault();
-                Galaxy.router.push("/", {
+                Galaxy.router.push("/", { //might use for toolview JULEENNNNN
                     tool_id: tool.id,
                     version: tool.version,
                 });
@@ -203,31 +233,27 @@ export default {
                 .then((toolsets) => {
                     toolsets.sort();
                     this.toolsets = this.toolsets.concat(toolsets);
+                    console.log("TOOLSETS: ", toolsets, this.toolsets);
                 })
-                /*.catch((error) => {
+                .catch((error) => {
                     this.messageVariant = "danger";
                     const message = error.response.data && error.response.data.err_msg;
                     this.messageText = message || "Unable to load list of toolsets.";
-                })*/;
+                });
         },
         getToolsetToolIds(toolset_id) {
-            console.log("\nTOOLSET_ID: ", toolset_id);
-
-            if (toolset_id != "None") {
+            if (toolset_id != this.mainToolbox) {
                 svc.getToolsetToolIds(toolset_id)
                 .then((toolIds) => {
                     console.log("\n\nTOOL_IDS: ", toolIds);
                     this.toolsetIds = toolIds;
-                    //this.filterToolsetTools(toolsIds);
-                    //return filterToolSections(this.toolbox, toolsIds);
-                    /* add option to see other tools in the toolset that are not installed. to have tools installed, contact your Galaxy admin*/
 
                 })
-                /*.catch((error) => {
+                .catch((error) => {
                     this.messageVariant = "danger";
                     const message = error.response.data && error.response.data.err_msg;
-                    this.messageText = message || "Unable to load list of toolsets.";
-                })*/;
+                    this.messageText = message || "Unable to load list of tool ids for selected toolset.";
+                });
             } else {
                 this.toolsetIds = [];
                 //reset to full toolbox

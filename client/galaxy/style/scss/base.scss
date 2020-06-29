@@ -1253,6 +1253,19 @@ div.toolSectionTitle {
     font-size: $h4-font-size;
 }
 
+div.toolset {
+    @extend .py-1;
+    text-decoration: none;
+    line-height: $panel_footer_height;
+    width: 100%;
+    display: block;
+    select {
+        line-height: $panel_footer_height;
+        width: 100%;
+        display: block;
+    }
+}
+
 .toolPanelLabel {
     @extend .pb-1;
     @extend .pt-2;
