@@ -1057,9 +1057,8 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', strip_null=Fals
         # Now in Python 3, value is an instance of bytes or str
         if not isinstance(value, text_type):
             value = text_type(value, encoding, error)
-    except Exception:
-        msg = "Value '%s' could not be coerced to Unicode" % value
-        log.exception(msg)
+    except Exception as e:
+        msg = "Value '%s' could not be coerced to Unicode: %s('%s')" % (value, type(e).__name__, e)
         raise Exception(msg)
     if strip_null:
         return value.replace('\0', '')
