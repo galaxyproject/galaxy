@@ -63,6 +63,7 @@ class ModelPersistenceContext(object):
         tag_list = tag_list or []
         sources = sources or []
         hashes = hashes or []
+        dataset_attributes = dataset_attributes or {}
 
         sa_session = self.sa_session
 
@@ -168,37 +169,43 @@ class ModelPersistenceContext(object):
         if info is not None:
             primary_data.info = info
 
-        # add tool/metadata provided information
-        dataset_attributes = dataset_attributes or {}
-        if dataset_attributes:
-            # TODO: discover_files should produce a match that encorporates this -
-            # would simplify ToolProvidedMetadata interface and eliminate this
-            # crap path.
-            dataset_att_by_name = dict(ext='extension')
-            for att_set in ['name', 'info', 'ext', 'dbkey']:
-                dataset_att_name = dataset_att_by_name.get(att_set, att_set)
-                setattr(primary_data, dataset_att_name, dataset_attributes.get(att_set, getattr(primary_data, dataset_att_name)))
-
-        try:
-            metadata_dict = dataset_attributes.get('metadata', None)
-            if metadata_dict:
-                if "dbkey" in dataset_attributes:
-                    metadata_dict["dbkey"] = dataset_attributes["dbkey"]
-                # branch tested with tool_provided_metadata_3 / tool_provided_metadata_10
-                primary_data.metadata.from_JSON_dict(json_dict=metadata_dict)
-            else:
-                primary_data.set_meta()
-        except Exception:
-            if primary_data.state == galaxy.model.HistoryDatasetAssociation.states.OK:
-                primary_data.state = galaxy.model.HistoryDatasetAssociation.states.FAILED_METADATA
-            log.exception("Exception occured while setting metdata")
-
-        try:
-            primary_data.set_peek()
-        except Exception:
-            log.exception("Exception occured while setting dataset peek")
+        if filename:
+            self.set_datasets_metadata(datasets=[primary_data], datasets_attributes=[dataset_attributes])
 
         return primary_data
+
+    @staticmethod
+    def set_datasets_metadata(datasets, datasets_attributes=None):
+        datasets_attributes = datasets_attributes or [{} for _ in datasets]
+        for primary_data, dataset_attributes in zip(datasets, datasets_attributes):
+            # add tool/metadata provided information
+            if dataset_attributes:
+                # TODO: discover_files should produce a match that encorporates this -
+                # would simplify ToolProvidedMetadata interface and eliminate this
+                # crap path.
+                dataset_att_by_name = dict(ext='extension')
+                for att_set in ['name', 'info', 'ext', 'dbkey']:
+                    dataset_att_name = dataset_att_by_name.get(att_set, att_set)
+                    setattr(primary_data, dataset_att_name, dataset_attributes.get(att_set, getattr(primary_data, dataset_att_name)))
+
+            try:
+                metadata_dict = dataset_attributes.get('metadata', None)
+                if metadata_dict:
+                    if "dbkey" in dataset_attributes:
+                        metadata_dict["dbkey"] = dataset_attributes["dbkey"]
+                    # branch tested with tool_provided_metadata_3 / tool_provided_metadata_10
+                    primary_data.metadata.from_JSON_dict(json_dict=metadata_dict)
+                else:
+                    primary_data.set_meta()
+            except Exception:
+                if primary_data.state == galaxy.model.HistoryDatasetAssociation.states.OK:
+                    primary_data.state = galaxy.model.HistoryDatasetAssociation.states.FAILED_METADATA
+                log.exception("Exception occured while setting metdata")
+
+            try:
+                primary_data.set_peek()
+            except Exception:
+                log.exception("Exception occured while setting dataset peek")
 
     def populate_collection_elements(self, collection, root_collection_builder, filenames, name=None, metadata_source_name=None, final_job_state='ok'):
         # TODO: allow configurable sorting.
@@ -282,6 +289,7 @@ class ModelPersistenceContext(object):
 
         self.flush()
         self.update_object_store_with_datasets(datasets=element_datasets['datasets'], paths=element_datasets['paths'])
+        self.set_datasets_metadata(datasets=element_datasets['datasets'])
 
     def add_tags_to_datasets(self, datasets, tag_lists):
         if any(tag_lists):
@@ -295,7 +303,7 @@ class ModelPersistenceContext(object):
 
     def update_object_store_with_datasets(self, datasets, paths):
         for dataset, path in zip(datasets, paths):
-            self.object_store.update_from_file(dataset, file_name=path, create=True)
+            self.object_store.update_from_file(dataset.dataset, file_name=path, create=True)
             dataset.set_size(no_extra_files=True)
 
     @abc.abstractproperty
