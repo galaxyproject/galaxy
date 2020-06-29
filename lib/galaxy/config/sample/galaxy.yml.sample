@@ -2047,3 +2047,10 @@ galaxy:
   # deep learning model are shown.
   #overwrite_model_recommendations: false
 
+  # Allow the use of pre-determined toolsets in the toolbox and for the toolsview integration.
+  # If it is enabled and set to true, please enable 'toolset_path' as well
+  #enable_toolset: false
+
+  # Set remote path of the curated sets of tools.
+  #toolset_path: TBD
+

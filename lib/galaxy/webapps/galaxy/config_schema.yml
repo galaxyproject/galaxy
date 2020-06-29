@@ -3084,3 +3084,17 @@ mapping:
           Overwrite or append to the tool recommendations by the deep learning model. When set to true, all the recommendations by the deep learning model
           are overwritten by the recommendations set by an admin in a config file 'tool_recommendations_overwrite.yml'. When set to false, the recommended tools
           by admins and predicted by the deep learning model are shown.
+
+      enable_toolset:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Allow the use of pre-determined toolsets in the toolbox and for the toolsview integration.
+          If it is enabled and set to true, please enable 'toolset_path' as well
+
+      toolset_path:
+        type: str
+        required: false
+        desc: |
+          Set remote path of the curated sets of tools.

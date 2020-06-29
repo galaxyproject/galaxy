@@ -67,6 +67,8 @@ class ConfigSerializer(base.ModelSerializer):
             'admin_tool_recommendations_path'   : _use_config,
             'overwrite_model_recommendations'   : _use_config,
             'topk_recommendations'              : _use_config,
+            'enable_toolset'                    : _use_config,
+            'toolset_path'                      : _use_config,
             'allow_user_impersonation'          : _use_config,
             'allow_user_creation'               : _defaults_to(False),  # schema default is True
             'use_remote_user'                   : _defaults_to(None),  # schema default is False; or config.single_user
