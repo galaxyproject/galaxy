@@ -199,9 +199,9 @@ def get_speaker_name(start, end):
 	for s in range(0, len(segments)):
 		this_segment = segments[s]
 		if this_segment["start"] <= start and this_segment["end"] >= end:
-			if this_segment['speakerLabel'] is not None:
+			if 'speakerLabel' in this_segment.keys() and this_segment['speakerLabel'] is not None:
 				name = this_segment['speakerLabel']
-			elif this_segment['label'] is not None:
+			elif 'label' in this_segment.keys() and this_segment['label'] is not None:
 				name = this_segment['label'] + "_" + str(s)
 
 	if name is None:
