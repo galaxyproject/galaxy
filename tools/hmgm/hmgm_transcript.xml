@@ -1,12 +1,13 @@
 <tool id="hmgm_transcript" name="HMGM Transcript Correction" version="1.0.2">
   <description>Manual transcript correction by a human</description>
   <command detect_errors="exit_code">
-    $__tool_directory__/../amp_json_schema/amp_stt_to_draftjs.py $input_transcript $draftjs_transcript;
+    $__tool_directory__/../amp_json_schema/amp_stt_to_draftjs.py $input_transcript $input_segmentation $draftjs_transcript;
     $__tool_directory__/hmgm_main.py Transcript $__root_dir__ $draftjs_transcript $output_transcript $task_info '$context_json';
     $__tool_directory__/../amp_json_schema/bbcEditor_to_schema.py $output_transcript $std_amp_output $draftjs_transcript
   </command>
   <inputs>
     <param name="input_transcript" type="data" format="json" label="Input Transcript JSON file" help="JSON file for the transcript to be corrected "/>
+    <param name="input_segmentation" type="data" format="json" label="Input Segmentation JSON file" help="JSON Segmentation file for the transcript to be corrected "/>
     <param name="context_json" type="text" label="Human MGM Task Context" help="JSON string containing context information needed for creating Human MGM task">
     	<sanitizer sanitize="false">
     	</sanitizer>
