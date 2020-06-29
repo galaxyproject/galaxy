@@ -1,5 +1,5 @@
 <template>
-    <div v-infinite-scroll="loadMore" infinite-scroll-disabled="busy">
+    <div id="tools-view" v-infinite-scroll="loadMore" infinite-scroll-disabled="busy">
         <h2 class="mb-3" style="text-align: center;">
             <span id="tools-view">Consolidated view of {{ tools.length }} available tools.</span>
         </h2>
@@ -33,7 +33,8 @@
                 <b-card v-for="(info, index) in buffer" :key="index" ref="cards" class="m-2" style="width: 23rem;">
                     <template v-slot:header>
                         <div>
-                            <b-link :href="info.url" target="_blank">
+                            <!-- <b-link :href="info.url" :target="toolOpen"> -->
+                            <b-link :href="info.url || info.link" :target="toolOpen">
                                 <h4 class="tools-view-name">{{ info.name }}</h4>
                             </b-link>
                             <b-badge class="tools-view-section">{{ info.section }}</b-badge>
@@ -82,6 +83,15 @@ export default {
             type: Number,
             default: 200,
         },
+        toolset: {
+            type: Array,
+            required: true,
+            default: () => [],
+        },
+        toolOpen: {
+            type: String,
+            default: () => "_blank",
+        }
     },
     data() {
         return {
@@ -200,7 +210,11 @@ export default {
             return this.tools.length;
         },
         initialize(tools) {
-            this.tools = this.toolsExtracted(tools);
+            if (this.toolset.length > 0) {
+                this.tools = this.toolset;
+            } else {
+                this.tools = this.toolsExtracted(tools);
+            }
             this.buffer = this.tools.slice(0, 20);
             this.loading = false;
         },
