@@ -2,7 +2,7 @@
   <description>OCR Using Azure Video Indexer</description>
     <requirements>
     </requirements>
-  <command detect_errors="exit_code"> $__tool_directory__/azure_video_indexer_wrapper.py $input_file $accountId $apiKey $location $ocr_json_output $ocr_json_output_long $amp_ocr_json_output</command>
+  <command detect_errors="exit_code"> $__tool_directory__/azure_video_indexer_wrapper.py $input_file $accountId $apiKey $location $azure_ocr $azure_ocr_long $amp_ocr</command>
   <inputs>
 	<param name="input_file" type="data" format="video" label="Video File" help="A video file input for OCR"/>
 	<param name="accountId" type="text" label="Azure Account ID" help="Azure Account ID"/>
@@ -14,9 +14,9 @@
     </param>
   </inputs>
   <outputs>
-    <data format="json" name="ocr_json_output" />
-    <data format="json" name="ocr_json_output_long" />
-    <data format="json" name="amp_ocr_json_output" />
+    <data format="json" name="azure_ocr" />
+    <data format="json" name="azure_ocr_long" />
+    <data format="json" name="amp_ocr" />
   </outputs>
   <tests>
   </tests>

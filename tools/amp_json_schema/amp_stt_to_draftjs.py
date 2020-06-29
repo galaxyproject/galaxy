@@ -8,6 +8,11 @@ import logging
 
 from adjustment import Adjustment
 
+log = logging.getLogger(__name__)
+
+segments = list()
+speaker_count = 0
+
 # Converts AMP speech to text json to Draft JS which is used by the transcript editor.
 def main():
 
@@ -57,6 +62,9 @@ def main():
 			data = dict() # Data element
 			entityRanges = list() # A list of entity ranges
 			lastOffset = 0  # The last offset of a word we searched for
+			speaker_name = None
+			block_start = None
+			this_transcript = ''
 
 			# Iterate through all of the words
 			for w in range(0, len(ampResultWords)):
@@ -74,20 +82,52 @@ def main():
 				# If the current word is actually a word, create the necessary output
 				if word['type'] == 'pronunciation':
 					# Use the current position as the key
-					key = len(blockWords)
-					# Find the offset in the paragraph, starting with the last offset
-					lastOffset = ampTranscript.index(wordText,lastOffset)
+					key = w
 					start = word['start']
+					if block_start is None:
+						block_start = start
+
+					# Check to see if speaker has changed
+					tmp_speaker_name = get_speaker_name(start, word['end'])
+
+					if speaker_name is None:
+						speaker_name = tmp_speaker_name
+						
+					if key > 0:
+						if tmp_speaker_name != speaker_name:
+							# Create the data values necessary 
+							data['speaker'] = speaker_name # Generic speaker since we don't have speakers at this point
+							data['words'] = blockWords
+							data['start'] = block_start
+							# Add this all as a block.  We only have one since only one speaker
+							out_json['blocks'].append({
+								'depth': 0,
+								'data' : data,
+								'entityRanges': entityRanges,
+								'text' : this_transcript.strip(),
+								'type' : 'paragraph',
+								'inlineStyleRanges': []
+							})
+							blockWords = list() # Words in this data block
+							data = dict() # Data element
+							entityRanges = list()
+							block_start = None
+							this_transcript = ''
+							speaker_name = tmp_speaker_name
+
+					# Find the offset in the paragraph, starting with the last offset
+					lastOffset = ampTranscript.index(wordText, lastOffset)
+
 					# Append punctuation if there is any
 					textWithPunct = wordText + punctuation
-
+					this_transcript = this_transcript + " " + textWithPunct
 					# Create the word
 					newWord = {
 						'start': start,
 						'end': word['end'],
 						'confidence': word['score']['scoreValue'],
 						'index':key,
-						'punct': wordText + punctuation,
+						'punct': textWithPunct,
 						'text': wordText
 					}
 					# Create the entity range
@@ -110,47 +150,65 @@ def main():
 
 					# Add this to the entity range
 					entityRanges.append(entityRange)
+
 					# Add the word
 					blockWords.append(newWord)
+
 					# Increment offset
 					lastOffset +=1
 
-			# Create the data values necessary 
-			data['speaker'] = 'Speaker 0' # Generic speaker since we don't have speakers at this point
-			data['words'] = blockWords
-			data['start'] = ampResultWords[0]['start']
+			# DO THIS EVERY TIME A SPEAKER CHANGES
 
-			# Add this all as a block.  We only have one since only one speaker
-			out_json['blocks'].append({
-				'depth': 0,
-				'data' : data,
-				'entityRanges': entityRanges,
-				'text' : ampTranscript,
-				'type' : 'paragraph',
-				'inlineStyleRanges': []
-			})
+			
+
+			
 			# Write the json
 			write_output_json(out_json, output_json)
-
-segments = list()
+speakers = list()
+def add_data(speaker_name, words, start):
+	this_speaker = None
+	for s in range(0, len(speakers)):
+		if speakers[s]['speaker'] == speaker_name:
+			this_speaker = speakers[s]
+			break
+	
+	if this_speaker is None:
+		this_speaker = dict()
+		this_speaker['speaker'] = speaker_name
+		this_speaker['words'] = words
+		this_speaker['start'] = start
+		speakers.append(this_speaker)
+	else:
+		for w in range(0, len(words)):
+			this_speaker['words'].append(words[w])
+	
 def fill_speakers(segmentation_json):
-	log.debug("filling speakers")
+	print("filling speakers")
 	try:
 		with open(segmentation_json) as segmentation_json:
 			segmentation = json.load(segmentation_json)
 			# Conversion already done.  Exit
 			if 'segments' in segmentation.keys():
 				for s in range(0, len(segmentation['segments'])):
-					segments.append(s)
+					segments.append(segmentation['segments'][s])
 	except ValueError:
 		print("Error reading segmentation json")
-	log.debug(segments)
 
-def add_to_speaker():
-	return
+def get_speaker_name(start, end):
+	name = None
+	for s in range(0, len(segments)):
+		this_segment = segments[s]
+		if this_segment["start"] <= start and this_segment["end"] >= end:
+			if this_segment['speakerLabel'] is not None:
+				name = this_segment['speakerLabel']
+			elif this_segment['label'] is not None:
+				name = this_segment['label'] + "_" + str(s)
 
-def get_speaker():
-	return
+	if name is None:
+		name = "Speaker_" + str(speaker_count)
+		speaker_count += 1
+
+	return name
 
 def load_segmentation():
 	return
