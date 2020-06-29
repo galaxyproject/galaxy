@@ -84,7 +84,7 @@ def main():
 					# Use the current position as the key
 					key = w
 					start = word['start']
-					
+
 					# Record the start of the block
 					if block_start is None:
 						block_start = start
@@ -169,26 +169,8 @@ def main():
 			
 			# Write the json
 			write_output_json(out_json, output_json)
-speakers = list()
-def add_data(speaker_name, words, start):
-	this_speaker = None
-	for s in range(0, len(speakers)):
-		if speakers[s]['speaker'] == speaker_name:
-			this_speaker = speakers[s]
-			break
-	
-	if this_speaker is None:
-		this_speaker = dict()
-		this_speaker['speaker'] = speaker_name
-		this_speaker['words'] = words
-		this_speaker['start'] = start
-		speakers.append(this_speaker)
-	else:
-		for w in range(0, len(words)):
-			this_speaker['words'].append(words[w])
-	
+			
 def fill_speakers(segmentation_json):
-	print("filling speakers")
 	try:
 		with open(segmentation_json) as segmentation_json:
 			segmentation = json.load(segmentation_json)
@@ -214,9 +196,6 @@ def get_speaker_name(start, end):
 		speaker_count += 1
 
 	return name
-
-def load_segmentation():
-	return
 
 # Serialize schema obj and write it to output file
 def write_output_json(input_json, json_file):
