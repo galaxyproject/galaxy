@@ -59,7 +59,6 @@ def main():
 			ampTranscript = ampResult['transcript']
 
 			blockWords = list() # Words in this data block
-			data = dict() # Data element
 			entityRanges = list() # A list of entity ranges
 			lastOffset = 0  # The last offset of a word we searched for
 			speaker_name = None
@@ -100,21 +99,13 @@ def main():
 						# If it is a new speaker, record the words associated with the previous speaker and restart.
 						if tmp_speaker_name != speaker_name:
 							# Create the data values necessary 
-							data['speaker'] = speaker_name # Generic speaker since we don't have speakers at this point
-							data['words'] = blockWords
-							data['start'] = block_start
+							data = createData(speaker_name, blockWords, block_start)
 							# Add this all as a block.  We only have one since only one speaker
-							out_json['blocks'].append({
-								'depth': 0,
-								'data' : data,
-								'entityRanges': entityRanges,
-								'text' : this_transcript.strip(),
-								'type' : 'paragraph',
-								'inlineStyleRanges': []
-							})
+							block = createBlock(0, data, entityRanges, this_transcript)
+							out_json['blocks'].append(block)
+							
 							# Once we have logged a block, reset the values
 							blockWords = list() # Words in this data block
-							data = dict() # Data element
 							entityRanges = list()
 							block_start = None
 							this_transcript = ''
@@ -127,6 +118,7 @@ def main():
 					textWithPunct = wordText + punctuation
 					# For this block, generate transcript text
 					this_transcript = this_transcript + " " + textWithPunct
+
 					# Create the word
 					newWord = {
 						'start': start,
@@ -136,6 +128,7 @@ def main():
 						'punct': textWithPunct,
 						'text': wordText
 					}
+
 					# Create the entity range
 					entityRange = {
 						'offset': lastOffset,
@@ -162,10 +155,34 @@ def main():
 
 					# Increment offset
 					lastOffset +=1
-			
+
+				# If it's the end, make sure we get the 
+				if w == (len(ampResultWords) -1):
+					data = createData(speaker_name, blockWords, block_start)
+					# Add this all as a block.  We only have one since only one speaker
+					block = createBlock(0, data, entityRanges, this_transcript)
+					out_json['blocks'].append(block)
+
 			# Write the json
 			write_output_json(out_json, output_json)
-			
+
+def createBlock(depth, data, entityRanges, transcript):
+	return {
+				'depth': depth,
+				'data' : data,
+				'entityRanges': entityRanges,
+				'text' : transcript.strip(),
+				'type' : 'paragraph',
+				'inlineStyleRanges': []
+			}
+
+def createData(speaker, words, start):
+	data = dict()
+	data['speaker'] = speaker # Generic speaker since we don't have speakers at this point
+	data['words'] = words
+	data['start'] = start
+	return data
+
 def fill_speakers(segmentation_json):
 	try:
 		with open(segmentation_json) as segmentation_json:
