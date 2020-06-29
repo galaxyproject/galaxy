@@ -66,6 +66,11 @@ class RegexValidator(Validator):
     Traceback (most recent call last):
         ...
     ValueError: Not gonna happen
+    >>> t = p.validate(["Foo", "foo"])
+    >>> t = p.validate(["Foo", "Fop"])
+    Traceback (most recent call last):
+        ...
+    ValueError: Not gonna happen
     """
 
     @classmethod
