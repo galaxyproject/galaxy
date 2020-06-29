@@ -11,7 +11,6 @@ from adjustment import Adjustment
 log = logging.getLogger(__name__)
 
 segments = list()
-speaker_count = 0
 
 # Converts AMP speech to text json to Draft JS which is used by the transcript editor.
 def main():
@@ -32,6 +31,7 @@ def main():
 			
 	if exit_peacefully == False:
 		fill_speakers(segmentation_json)
+		speaker_count = 0
 		out_json = dict()
 		out_json['entityMap'] = {}
 		out_json['blocks'] = []
@@ -89,7 +89,7 @@ def main():
 						block_start = start
 
 					# Check to see if speaker has changed
-					tmp_speaker_name = get_speaker_name(start, word['end'])
+					tmp_speaker_name = get_speaker_name(start, word['end'], speaker_count)
 
 					if speaker_name is None:
 						speaker_name = tmp_speaker_name
@@ -98,6 +98,7 @@ def main():
 					if key > 0:
 						# If it is a new speaker, record the words associated with the previous speaker and restart.
 						if tmp_speaker_name != speaker_name:
+							speaker_count+=1
 							# Create the data values necessary 
 							data = createData(speaker_name, blockWords, block_start)
 							# Add this all as a block.  We only have one since only one speaker
@@ -194,7 +195,7 @@ def fill_speakers(segmentation_json):
 	except ValueError:
 		print("Error reading segmentation json")
 
-def get_speaker_name(start, end):
+def get_speaker_name(start, end, speaker_count):
 	name = None
 	for s in range(0, len(segments)):
 		this_segment = segments[s]
