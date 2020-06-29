@@ -84,6 +84,8 @@ def main():
 					# Use the current position as the key
 					key = w
 					start = word['start']
+					
+					# Record the start of the block
 					if block_start is None:
 						block_start = start
 
@@ -92,8 +94,10 @@ def main():
 
 					if speaker_name is None:
 						speaker_name = tmp_speaker_name
-						
+					
+					# If we have more than one word...
 					if key > 0:
+						# If it is a new speaker, record the words associated with the previous speaker and restart.
 						if tmp_speaker_name != speaker_name:
 							# Create the data values necessary 
 							data['speaker'] = speaker_name # Generic speaker since we don't have speakers at this point
@@ -108,6 +112,7 @@ def main():
 								'type' : 'paragraph',
 								'inlineStyleRanges': []
 							})
+							# Once we have logged a block, reset the values
 							blockWords = list() # Words in this data block
 							data = dict() # Data element
 							entityRanges = list()
