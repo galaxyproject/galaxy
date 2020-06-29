@@ -125,6 +125,7 @@ def main():
 
 					# Append punctuation if there is any
 					textWithPunct = wordText + punctuation
+					# For this block, generate transcript text
 					this_transcript = this_transcript + " " + textWithPunct
 					# Create the word
 					newWord = {
@@ -161,11 +162,6 @@ def main():
 
 					# Increment offset
 					lastOffset +=1
-
-			# DO THIS EVERY TIME A SPEAKER CHANGES
-
-			
-
 			
 			# Write the json
 			write_output_json(out_json, output_json)
