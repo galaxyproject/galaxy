@@ -156,9 +156,6 @@ def main():
 					# Add the word
 					blockWords.append(newWord)
 
-					# Increment offset
-					lastOffset +=1
-
 				# If it's the end, make sure we get the 
 				if w == (len(ampResultWords) -1):
 					data = createData(speaker_name, blockWords, block_start)
