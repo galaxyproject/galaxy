@@ -62,7 +62,7 @@ Enhancements
   (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
   `Pull Request 9562`_
 * Datasource tool for SRA manifest
-  `Pull Request 9613`_
+  `Pull Request 9613`_, `Pull Request 9892`_
 .. enhancement_tag_viz
 
 * Skip visualization build, if no changes were registered
@@ -175,7 +175,7 @@ Enhancements
   `Pull Request 9186`_
 * Full Python dependencies update
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 9188`_
+  `Pull Request 9188`_, `Pull Request 9402`_, `Pull Request 9529`_, `Pull Request 9697`_
 * Allow mixed store_by objectstore configurations.
   `Pull Request 9197`_
 * implement workflow bookmark selenium test
@@ -217,9 +217,6 @@ Enhancements
   `Pull Request 9390`_
 * Replace editor grid image with css, add editor client unit tests
   `Pull Request 9392`_
-* Full Python dependencies update
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 9402`_
 * Vuefy interactive tools
   (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
   `Pull Request 9409`_
@@ -254,9 +251,6 @@ Enhancements
   `Pull Request 9521`_
 * Rename and modify current_history_contents method
   `Pull Request 9526`_
-* Full Python dependencies update
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 9529`_
 * Improvement to the selenium test to change password from user preferences
   (thanks to `@Realjuan <https://github.com/Realjuan>`__).
   `Pull Request 9545`_
@@ -306,14 +300,11 @@ Enhancements
 * Feature/3937 advanced search tooltip
   (thanks to `@assuntad23 <https://github.com/assuntad23>`__).
   `Pull Request 9696`_
-* Full Python dependencies update
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 9697`_
 .. small_enhancement
 
 * Rename function, params in ConfigSerializer
   `Pull Request 9247`_
-* Make `str.join()`s more efficient
+* Make ``str.join()``s more efficient
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 9258`_
 * Faster and cleaner set creation
@@ -338,7 +329,7 @@ Enhancements
   `Pull Request 9443`_
 * Move sanitize_whitelist into mutable_config_dir
   `Pull Request 9455`_
-* Use auto_create functionality of `get_private_user_role()`
+* Use auto_create functionality of ``get_private_user_role()``
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 9509`_
 * Combine selenium tests for creating and switching histories
@@ -401,6 +392,9 @@ Fixes
 * extract_genomic_dna.py: import Comment, Header from bx.tabular.io instead of bx.intervals.io
   (thanks to `@cat-bro <https://github.com/cat-bro>`__).
   `Pull Request 9748`_
+* Move some tools that no longer need galaxy on the PATH
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 9850`_
 .. bug_tag_workflows
 
 * Fix workflow list filtering dropdown
@@ -411,6 +405,8 @@ Fixes
   `Pull Request 9676`_
 * Trigger onchange event, fixes tool version changes being lost
   `Pull Request 9695`_
+* Input dataset module format filtering fix;
+  `Pull Request 9884`_
 .. bug_tag_ui
 
 * fix for python3 and GEDA, was getting "Connection closed at byte 0"
@@ -451,6 +447,8 @@ Fixes
 * Migrate condor runner to jwd for job-files
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 9833`_
+* Fix incorrect variable assignment
+  `Pull Request 9907`_
 .. bug_tag_admin
 
 * Fix vue helper in admin router, fixes toolshed installation, avoids console errors
@@ -514,7 +512,7 @@ Fixes
 * Use a Galaxy root path with a space for converters and mulled tests
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 9429`_
-* Fix `test_run_simple()` test broken on Python 2 by virtualenv 20.0.5
+* Fix ``test_run_simple()`` test broken on Python 2 by virtualenv 20.0.5
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 9458`_
 * Use browser locale over global default
@@ -575,8 +573,8 @@ Fixes
 * Fix indexing script
   `Pull Request 9565`_
 * Assign random password in user manager if none specified
-  (thanks to `@nuwang <https://github.com/nuwang>`__).
-  `Pull Request 9587`_
+  (thanks to `@nuwang <https://github.com/nuwang>`__, `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9587`_, `Pull Request 9851`_
 * Fix removal of workflow outputs from workflow nodes in editor
   `Pull Request 9606`_
 * Fix ELIXIR AAI
@@ -587,7 +585,7 @@ Fixes
   `Pull Request 9622`_
 * Change session timeout redirect URL to login entrypoint.
   `Pull Request 9626`_
-* Changed CSS overflow property from scroll to hidden to make table scr…
+* Changed CSS overflow property from scroll to hidden to make table scrollable
   (thanks to `@assuntad23 <https://github.com/assuntad23>`__).
   `Pull Request 9627`_
 * fix links in Galaxy xsd docs
@@ -601,7 +599,7 @@ Fixes
 * Hide "python: not found" error when Python 2 is not installed
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 9657`_
-* Fix for `time.clock()` removal in Python 3.8
+* Fix for ``time.clock()`` removal in Python 3.8
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 9666`_
 * Fixed an issue in object store integration tests
@@ -622,6 +620,8 @@ Fixes
   `Pull Request 9724`_
 * Fix custos credential fetching in python3
   `Pull Request 9726`_
+* oidc-based authnz provider overhaul; breaking changes for keycloak
+  `Pull Request 9730`_
 * Sort Workflow list by last updated time instead of created time
   `Pull Request 9740`_
 * Remove dummy tool sequence
@@ -648,6 +648,31 @@ Fixes
   `Pull Request 9821`_
 * Tolerate exception in container resolution
   `Pull Request 9824`_
+* Invalidate tool cache when tool modified outside of Galaxy
+  `Pull Request 9866`_
+* Custos spec fixes
+  `Pull Request 9889`_
+* Fixes for flake8 3.8 and bugbear
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9896`_
+* Fix webpack import proxy prefix
+  `Pull Request 9898`_
+* Fix extra preference values leaking between requests
+  (thanks to `@nuwang <https://github.com/nuwang>`__).
+  `Pull Request 9913`_
+* Rewrite ``check_html()`` and ``Text.count_data_lines()`` to read a chunk of each line
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9920`_
+* Make cookie handling more robust
+  `Pull Request 9921`_
+* Enable regex validator to validate lists of values.
+  `Pull Request 9925`_
+* oidc: fix dict_keys does not support indexing
+  (thanks to `@almahmoud <https://github.com/almahmoud>`__).
+  `Pull Request 9931`_
+* Move the ``--debug`` flag after the conda subcommand
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9932`_
 
 .. include:: 20.05_prs.rst
 
