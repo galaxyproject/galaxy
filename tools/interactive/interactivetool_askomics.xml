@@ -58,7 +58,7 @@
     ]]>
     </command>
     <inputs>
-        <param name="infiles" type="data" optional="true" multiple="true" format="tabular,gff,gff3,interval" label="Datasets to load into AskOmics"/>
+        <param name="infiles" type="data" optional="true" multiple="true" format="tabular,gff,gff3,interval,xml,ttl,nt" label="Datasets to load into AskOmics"/>
     </inputs>
     <outputs>
         <data name="outfile" format="txt" />
