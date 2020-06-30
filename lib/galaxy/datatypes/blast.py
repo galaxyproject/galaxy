@@ -307,3 +307,18 @@ class BlastDomainDb(_BlastDb, Data):
         self.add_composite_file('blastdb.psi', is_binary=True, optional=True)
         self.add_composite_file('blastdb.rps', is_binary=True, optional=True)
         self.add_composite_file('blastdb.aux', is_binary=True, optional=True)
+
+
+class BlastNucDb5(BlastNucDb):
+    """Class for nucleotide BLAST database files."""
+    file_ext = 'blastdbn5'
+
+
+class BlastProtDb5(BlastProtDb):
+    """Class for protein BLAST database files."""
+    file_ext = 'blastdbp5'
+
+
+class BlastDomainDb5(BlastDomainDb):
+    """Class for domain BLAST database files."""
+    file_ext = 'blastdbd5'
