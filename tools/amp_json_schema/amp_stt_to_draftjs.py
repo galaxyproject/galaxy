@@ -113,11 +113,9 @@ def main():
 							speaker_name = tmp_speaker_name
 							lastOffset = 0
 
-					# Find the offset in the paragraph, starting with the last offset
-					lastOffset = this_transcript.index(wordText, lastOffset)
-
 					# Append punctuation if there is any
 					textWithPunct = wordText + punctuation
+
 					# For this block, generate transcript text
 					this_transcript = this_transcript + " " + textWithPunct
 
@@ -141,6 +139,9 @@ def main():
 						'confidence': newWord['confidence'],
 						'text': wordText
 					}
+
+					# Find the offset in the paragraph, starting with the last offset
+					lastOffset = this_transcript + 1
 
 					# Create the entity map listing
 					out_json['entityMap'][key] = {
