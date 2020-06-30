@@ -350,6 +350,7 @@ class BaseJobRunner(object):
         env_setup_commands.append(job_wrapper.get_env_setup_clause() or '')
         destination = job_wrapper.job_destination or {}
         envs = destination.get("env", [])
+        log.debug(job_wrapper)
         envs.extend(job_wrapper.environment_variables)
         for env in envs:
             env_setup_commands.append(env_to_statement(env))

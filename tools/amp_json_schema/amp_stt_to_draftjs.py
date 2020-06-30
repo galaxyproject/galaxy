@@ -111,9 +111,10 @@ def main():
 							block_start = None
 							this_transcript = ''
 							speaker_name = tmp_speaker_name
+							lastOffset = 0
 
 					# Find the offset in the paragraph, starting with the last offset
-					lastOffset = ampTranscript.index(wordText, lastOffset)
+					lastOffset = this_transcript.index(wordText, lastOffset)
 
 					# Append punctuation if there is any
 					textWithPunct = wordText + punctuation
