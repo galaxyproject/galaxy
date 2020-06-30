@@ -1,8 +1,136 @@
 """
 Database trigger installation and removal
+
+Recommended trigger naming convention: tr_{table name}_{when}_{operation}_{action details}, where:
+    table_name: table on which the trigger is created
+    when: b|a|i for before, after, or instead of
+    operation: i|u|d for insert, update, or delete
+    action details: specify what the trigger does
 """
 
 from sqlalchemy import DDL
+
+
+def create_triggers(engine):
+    DatasetJobTrigger(engine).create()
+    install_timestamp_triggers(engine)
+
+
+class Trigger(object):
+    """
+    Base class for triggers. A concrete trigger class should extend this class and override
+    the `get_sql_create_postgres_trigger()` and `get_sql_create_sqlite_trigger()` methods.
+    """
+    POSTGRES = 0
+    SQLITE = 1
+
+    def __init__(self, engine, table_name, trigger_name):
+        self.engine = engine
+        self.table = table_name
+        self.trigger = trigger_name  # for postgres, used for both trigger and function name
+        self._set_db_type()
+
+    def create(self):
+        if self.db == Trigger.POSTGRES:
+            sql = self.get_sql_create_postgres_trigger()
+        else:
+            sql = self.get_sql_create_sqlite_trigger()
+        self.engine.execute(sql)
+
+    def drop(self):
+        if self.db == Trigger.POSTGRES:
+            sql = self.get_sql_drop_postgres_trigger()
+        else:
+            sql = self.get_sql_drop_sqlite_trigger()
+        self.engine.execute(sql)
+
+    def get_sql_create_postgres_trigger(self):
+        raise Exception('Not implemented')
+
+    def get_sql_create_sqlite_trigger(self):
+        raise Exception('Not implemented')
+
+    def get_sql_drop_postgres_trigger(self):
+        sql = []
+        sql.append('DROP TRIGGER IF EXISTS {trigger} on {table};'.format(
+            trigger=self.trigger, table=self.table))
+        sql.append('DROP FUNCTION IF EXISTS {trigger};'.format(trigger=self.trigger))
+        return '\n'.join(sql)
+
+    def get_sql_drop_sqlite_trigger(self):
+        return 'DROP TRIGGER IF EXISTS {trigger};'.format(trigger=self.trigger)
+
+    def _set_db_type(self):
+        if self.engine.name in ['postgres', 'postgresql']:
+            self.db = Trigger.POSTGRES
+        elif self.engine.name in ['sqlite']:
+            self.db = Trigger.SQLITE
+        else:
+            raise Exception('Unsupported database type: %s' % self.engine.name)
+
+
+class DatasetJobTrigger(Trigger):
+    """ Launches on job_to_output_dataset record creation. Populates job_id column in each
+    output dataset following: job_to_output_dataset > history_dataset_association > dataset.
+
+    Note: 'dataset' in job_to_output_dataset is a dataset instance, not a dataset, but it
+    has a reference to a dataset, which is what we need.
+    """
+
+    def __init__(self, engine):
+        super().__init__(engine, 'job_to_output_dataset', 'tr_job_to_output_dataset_ai_update_dataset')
+
+    def get_sql_create_postgres_trigger(self):
+
+        def get_function():
+            sql = '''
+                CREATE FUNCTION {trigger}() RETURNS trigger AS $$
+                    BEGIN
+                        UPDATE dataset d
+                        SET
+                            job_id = NEW.job_id
+                        FROM history_dataset_association hda
+                        WHERE NEW.dataset_id = hda.id AND hda.dataset_id = d.id;
+
+                        RETURN NULL;
+                    END;
+                $$ LANGUAGE plpgsql;
+            '''.format(trigger=self.trigger)
+            return sql
+
+        def get_trigger():
+            sql = '''
+                CREATE TRIGGER {trigger}
+                    AFTER INSERT
+                    ON {table}
+                    FOR EACH ROW
+                    EXECUTE FUNCTION {function}();
+            '''.format(trigger=self.trigger, table=self.table, function=self.trigger)
+            return sql
+
+        sql = []
+        sql.append(self.get_sql_drop_postgres_trigger())
+        sql.append(get_function())
+        sql.append(get_trigger())
+        return '\n'.join(sql)
+
+    def get_sql_create_sqlite_trigger(self):
+        sql = '''
+            CREATE TRIGGER IF NOT EXISTS {trigger}
+                AFTER INSERT
+                ON {table}
+                FOR EACH ROW
+                BEGIN
+                    UPDATE dataset
+                    SET
+                        job_id = NEW.job_id
+                    WHERE id IN (
+                        SELECT hda.dataset_id FROM history_dataset_association hda
+                        WHERE hda.id = NEW.dataset_id
+                    );
+                END;
+        '''.format(trigger=self.trigger, table=self.table)
+        return sql
 
 
 def install_timestamp_triggers(engine):
