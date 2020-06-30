@@ -38,6 +38,8 @@ def main():
         entityMap = data["entityMap"]
         for i in range(0, len(entityMap.keys())):
             punctuation = ''
+            if str(i) not in entityMap.keys():
+                continue
             entity = entityMap[str(i)]
             if "data" in entity:
                 if "text" in entity["data"].keys():
