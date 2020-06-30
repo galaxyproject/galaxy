@@ -141,7 +141,7 @@ def main():
 					}
 
 					# Find the offset in the paragraph, starting with the last offset
-					lastOffset = len(this_transcript) + 1
+					lastOffset = len(this_transcript)
 
 					# Create the entity map listing
 					out_json['entityMap'][key] = {
@@ -155,9 +155,6 @@ def main():
 
 					# Add the word
 					blockWords.append(newWord)
-
-					# Increment offset
-					lastOffset +=1
 
 				# If it's the end, make sure we get the 
 				if w == (len(ampResultWords) -1):
