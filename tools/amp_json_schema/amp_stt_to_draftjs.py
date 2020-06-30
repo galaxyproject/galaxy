@@ -141,7 +141,7 @@ def main():
 					}
 
 					# Find the offset in the paragraph, starting with the last offset
-					lastOffset = this_transcript + 1
+					lastOffset = len(this_transcript) + 1
 
 					# Create the entity map listing
 					out_json['entityMap'][key] = {
