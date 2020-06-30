@@ -13,7 +13,7 @@ from sqlalchemy import (
 )
 
 from galaxy.model.migrate.versions.util import (
-    add_column, 
+    add_column,
     drop_column,
 )
 
