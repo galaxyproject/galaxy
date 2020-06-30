@@ -1,0 +1,33 @@
+<tool id="blastdbp_composite" name="composite basic tool" version="1.0.0">
+    <command><![CDATA[
+        mkdir '$output.extra_files_path' &&
+        cp '$input.extra_files_path'/* '$output.extra_files_path' &&
+        touch '$output'
+    ]]>
+    </command>
+    <inputs>
+        <param name="input" type="data" format="blastdbp" label="blastdb"/>
+        <param name="select_in" type="select" multiple="true" optional="true" label="Some select" help="">
+            <option value="A">A</option>
+            <option value="B">B</option>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output" format="blastdbp"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="blastdb" ftype="blastdbp" >
+                <composite_data value="blastdb.phr"/>
+                <composite_data value="blastdb.pin"/>
+                <composite_data value="blastdb.psq"/>
+            </param>
+            <param name="text_in" value="" />
+            <output name="output" value="blastdb" ftype="blastdbp">
+                <extra_files type="file" name="blastdb.phr" value="blastdb.phr"/>
+                <extra_files type="file" name="blastdb.pin" value="blastdb.pin"/>
+                <extra_files type="file" name="blastdb.psq" value="blastdb.psq"/>
+            </output>
+        </test>
+    </tests>
+</tool>
