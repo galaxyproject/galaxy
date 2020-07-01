@@ -382,6 +382,9 @@ class ToolsTestCase(ApiTestCase, TestsTools):
                     "extra_files": {
                         "items_from": "archive",
                         "src": "files",
+                        # Prevent Galaxy from checking for a single file in
+                        # a directory and re-interpreting the archive
+                        "fuzzy_root": False,
                     }
                 }],
             }]
