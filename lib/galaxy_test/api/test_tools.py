@@ -15,7 +15,7 @@ from galaxy_test.base.populators import (
     DatasetPopulator,
     LibraryPopulator,
     skip_without_tool,
-    stage_rules_test_data,
+    stage_rules_example,
     uses_test_history,
 )
 from ._framework import ApiTestCase
@@ -615,7 +615,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
 
     def _apply_rules_and_check(self, example):
         with self.dataset_populator.test_history() as history_id:
-            inputs = stage_rules_test_data(self.galaxy_interactor, history_id, example)
+            inputs = stage_rules_example(self.galaxy_interactor, history_id, example)
             hdca = inputs["input"]
             inputs = {
                 "input": {"src": "hdca", "id": hdca["id"]},
