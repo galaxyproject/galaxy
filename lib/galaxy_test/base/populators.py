@@ -1463,7 +1463,7 @@ def stage_inputs(galaxy_interactor, history_id, job, use_path_paste=True, use_fe
     return inputs, datasets
 
 
-def stage_rules_test_data(galaxy_interactor, history_id, example):
+def stage_rules_example(galaxy_interactor, history_id, example):
     """Wrapper around stage_inputs for staging collections defined by rules spec DSL."""
     input_dict = example["test_data"].copy()
     input_dict["collection_type"] = input_dict.pop("type")

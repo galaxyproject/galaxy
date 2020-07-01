@@ -5,7 +5,7 @@ from galaxy_test.base import rules_test_data
 from galaxy_test.base.populators import (
     flakey,
     skip_if_github_down,
-    stage_rules_test_data,
+    stage_rules_example,
 )
 from .framework import (
     managed_history,
@@ -348,7 +348,7 @@ https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-da
 
         self.home()
         history_id = self.current_history_id()
-        stage_rules_test_data(self.api_interactor_for_logged_in_user(), history_id, example)
+        stage_rules_example(self.api_interactor_for_logged_in_user(), history_id, example)
         self.dataset_populator.wait_for_history(history_id)
         self.home()
         self._tool_open_apply_rules()
