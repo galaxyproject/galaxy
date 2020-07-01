@@ -31,7 +31,7 @@
                 <template v-slot:cell(name)="row">
                     <a :href="createContentLink(row.item)">{{ row.item.name }}</a>
                 </template>
-
+                
                 <template v-slot:cell(message)="row">
                     <div class="description-field" v-if="getMessage(row.item)">
                         <div v-if="getMessage(row.item).length > 40 && !expandedMessage.includes(row.item.id)">
@@ -72,26 +72,47 @@
                 </template>
 
                 <template v-slot:cell(buttons)="row">
-                    <a v-if="row.item.can_manage && !row.item.deleted && row.item.type === 'folder'">
+                    <div v-if="row.item.editMode">
                         <button
-                            data-toggle="tooltip"
-                            data-placement="top"
-                            class="primary-button btn-sm permission_folder_btn"
-                            :title="'Edit ' + row.item.name"
+
+                                class="primary-button btn-sm permission_folder_btn"
+                                :title="'save ' + row.item.name"
                         >
-                            <span class="fa fa-pencil"></span> Edit
+                            <font-awesome-icon :icon="['far', 'save']"/>
+                            Save
                         </button>
-                    </a>
-                    <a v-if="row.item.can_manage" :href="createPermissionLink(row.item)">
                         <button
-                            data-toggle="tooltip"
-                            data-placement="top"
-                            class="primary-button btn-sm permission_folder_btn"
-                            :title="'Permissions of ' + row.item.name"
+                                class="primary-button btn-sm permission_folder_btn"
+                                title="Discard Changes"
+                                @click="toggleMode(row.item)"
                         >
-                            <span class="fa fa-group"></span> Manage
+                            <font-awesome-icon :icon="['fas', 'times']"/>
+                            Cancel
                         </button>
-                    </a>
+                    </div>
+                    <div v-else>
+                        <a v-if="row.item.can_manage && !row.item.deleted && row.item.type === 'folder'">
+                            <button
+                                    @click="toggleMode(row.item)"
+                                    data-toggle="tooltip"
+                                    data-placement="top"
+                                    class="primary-button btn-sm permission_folder_btn"
+                                    :title="'Edit ' + row.item.name"
+                            >
+                                <span class="fa fa-pencil"></span> Edit
+                            </button>
+                        </a>
+                        <a v-if="row.item.can_manage" :href="createPermissionLink(row.item)">
+                            <button
+                                    data-toggle="tooltip"
+                                    data-placement="top"
+                                    class="primary-button btn-sm permission_folder_btn"
+                                    :title="'Permissions of ' + row.item.name"
+                            >
+                                <span class="fa fa-group"></span> Manage
+                            </button>
+                        </a>
+                    </div>
                 </template>
             </b-table>
             <b-container>
@@ -147,7 +168,9 @@ import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { faShieldAlt } from "@fortawesome/free-solid-svg-icons";
 import { faGlobe } from "@fortawesome/free-solid-svg-icons";
 import { faKey } from "@fortawesome/free-solid-svg-icons";
-
+import { faSave } from "@fortawesome/free-regular-svg-icons";
+import { faTimes } from "@fortawesome/free-solid-svg-icons";
+// fa fa-floppy-o
 import UtcDate from "components/UtcDate";
 import BootstrapVue from "bootstrap-vue";
 import { Services } from "./services";
@@ -161,6 +184,8 @@ library.add(faSpinner);
 library.add(faShieldAlt);
 library.add(faKey);
 library.add(faGlobe);
+library.add(faSave);
+library.add(faTimes);
 
 Vue.use(BootstrapVue);
 
@@ -217,6 +242,9 @@ export default {
         clearSelected() {
             this.$refs.folder_content_table.clearSelected();
         },
+        refreshTable() {
+            this.$refs.folder_content_table.refresh();
+        },
         toggleSelect() {
             if (this.selected.length !== this.rows) {
                 this.selectAllRows();
@@ -248,6 +276,12 @@ export default {
         },
         linkify(raw_text) {
             return linkify(raw_text);
+        },
+        toggleMode(item) {
+            console.log("Cancel")
+            console.log("item.editMode")
+            item.editMode = !item.editMode;
+            this.refreshTable()
         },
     },
 };
