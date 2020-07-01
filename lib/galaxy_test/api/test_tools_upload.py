@@ -274,20 +274,19 @@ class ToolsUploadTestCase(ApiTestCase):
 
     @skip_without_datatype("velvet")
     @uses_test_history(require_new=False)
-    def test_composite_datatype_space_to_tab(self):
+    def test_composite_datatype_space_to_tab(self, history_id):
         # Like previous test but set one upload with space_to_tab to True to
         # verify that works.
-        with self.dataset_populator.test_history() as history_id:
-            dataset = self._velvet_upload(history_id, extra_inputs={
-                "files_1|url_paste": "roadmaps content",
-                "files_1|type": "upload_dataset",
-                "files_1|space_to_tab": "Yes",
-                "files_2|url_paste": "log content",
-                "files_2|type": "upload_dataset",
-            })
+        dataset = self._velvet_upload(history_id, extra_inputs={
+            "files_1|url_paste": "roadmaps content",
+            "files_1|type": "upload_dataset",
+            "files_1|space_to_tab": "Yes",
+            "files_2|url_paste": "log content",
+            "files_2|type": "upload_dataset",
+        })
 
-            roadmaps_content = self._get_roadmaps_content(history_id, dataset)
-            assert roadmaps_content.strip() == "roadmaps\tcontent", roadmaps_content
+        roadmaps_content = self._get_roadmaps_content(history_id, dataset)
+        assert roadmaps_content.strip() == "roadmaps\tcontent", roadmaps_content
 
     @skip_without_datatype("velvet")
     def test_composite_datatype_posix_lines(self):
