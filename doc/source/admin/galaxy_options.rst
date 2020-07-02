@@ -1261,8 +1261,9 @@
 :Description:
     E-mail domains blocklist is used for filtering out users that are
     using disposable email addresses at registration.  If their
-    address domain matches any domain on the list, they are refused
-    registration.
+    address's base domain matches any domain on the list, they are
+    refused registration. Address subdomains are ignored (both
+    'name@spam.com' and 'name@foo.spam.com' will match 'spam.com').
     Example value 'email_blocklist.conf'
     The value of this option will be resolved with respect to
     <config_dir>.
@@ -1278,8 +1279,11 @@
     E-mail domains allowlist is used to specify allowed email address
     domains. If the list is non-empty and a user attempts registration
     using an email address belonging to a domain that is not on the
-    list, registration will be denied. This is a more restrictive
-    option than <email_domain_blocklist_file>, and therefore, in case
+    list, registration will be denied. Unlike
+    <email_domain_allowlist_file> which matches the address's base
+    domain, here email addresses are matched against the full domain
+    (base + subdomain). This is a more restrictive option than
+    <email_domain_blocklist_file>, and therefore, in case
     <email_domain_allowlist_file> is set and is not empty,
     <email_domain_blocklist_file> will be ignored.
     Example value 'email_allowlist.conf'
