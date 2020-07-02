@@ -5,7 +5,7 @@ import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import levenshteinDistance from "utils/levenshtein";
 import naturalSort from "utils/natural-sort";
-import baseCreator from "mvc/collection/base-creator";
+import baseCreator from "mvc/collection/mixins/CollectionCreatorMixin";
 import baseMVC from "mvc/base-mvc";
 import _l from "utils/localization";
 import "ui/hoverhighlight";
@@ -210,7 +210,7 @@ function autoPairFnBuilder(options) {
 /** An interface for building collections of paired datasets.
  */
 var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
-    .extend(baseCreator.CollectionCreatorMixin)
+    .extend(baseCreator)
     .extend({
         _logNamespace: logNamespace,
 
@@ -1514,7 +1514,7 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
             return "PairedCollectionCreator";
         },
 
-        templates: _.extend({}, baseCreator.CollectionCreatorMixin._creatorTemplates, {
+        templates: _.extend({}, baseCreator._creatorTemplates, {
             /** the header (not including help text) */
             header: _.template(
                 [

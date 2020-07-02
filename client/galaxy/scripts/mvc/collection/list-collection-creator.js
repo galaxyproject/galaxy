@@ -4,7 +4,7 @@ import Backbone from "backbone";
 import HDCA from "mvc/history/hdca-model";
 import STATES from "mvc/dataset/states";
 import BASE_MVC from "mvc/base-mvc";
-import baseCreator from "mvc/collection/base-creator";
+import baseCreator from "mvc/collection/mixins/CollectionCreatorMixin";
 import UI_MODAL from "mvc/ui/ui-modal";
 import _l from "utils/localization";
 import Vue from "vue";
@@ -165,7 +165,7 @@ var DatasetCollectionElementView = Backbone.View.extend(BASE_MVC.LoggableMixin).
 /** An interface for building collections.
  */
 var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
-    .extend(baseCreator.CollectionCreatorMixin)
+    .extend(baseCreator)
     .extend({
         _logNamespace: logNamespace,
 
@@ -771,7 +771,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         //TODO: underscore currently unnecc. bc no vars are used
         //TODO: better way of localizing text-nodes in long strings
         /** underscore template fns attached to class */
-        templates: _.extend({}, baseCreator.CollectionCreatorMixin._creatorTemplates, {
+        templates: _.extend({}, baseCreator._creatorTemplates, {
             /** the header (not including help text) */
             header: _.template(
                 [
