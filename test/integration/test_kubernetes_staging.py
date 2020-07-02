@@ -196,7 +196,6 @@ class KubernetesDependencyResolutionIntegrationTestCase(BaseKubernetesStagingTes
         config["default_job_shell"] = '/bin/sh'
         # Disable tool dependency resolution.
         config["tool_dependency_dir"] = "none"
-        config["enable_beta_mulled_containers"] = "true"
         set_infrastucture_url(config)
 
     def test_mulled_simple(self):

@@ -9,7 +9,9 @@ describe("Node", () => {
                 id: "node-id",
                 name: "node-name",
                 type: "tool",
+                step: {},
                 getManager: () => {},
+                getCanvasManager: () => {},
             },
         });
         const icon = wrapper.findAll("i");

@@ -661,7 +661,7 @@ class InputModule(WorkflowModule):
         if "format" in state:
             formats = state["format"]
             if formats:
-                formats = ",".join(formats)
+                formats = ",".join(listify(formats))
                 state["format"] = formats
         state = json.dumps(state)
         return state
@@ -998,7 +998,7 @@ class InputParameterModule(WorkflowModule):
                     intxn_vals = set.intersection(*({option[1] for option in options} for options in static_options))
                     intxn_opts = {option for options in static_options for option in options if option[1] in intxn_vals}
                     d = defaultdict(set)  # Collapse labels with same values
-                    for label, value, selected in intxn_opts:
+                    for label, value, _ in intxn_opts:
                         d[value].add(label)
                     options = [{"label": ', '.join(label), "value": value, "selected": False} for value, label in d.items()]
 
@@ -1710,7 +1710,7 @@ class ToolModule(WorkflowModule):
                 visit_input_values(tool.inputs, execution_state.inputs, callback, no_replacement_value=NO_REPLACEMENT, replace_optional_connections=True)
             except KeyError as k:
                 message_template = "Error due to input mapping of '%s' in '%s'.  A common cause of this is conditional outputs that cannot be determined until runtime, please review your workflow."
-                message = message_template % (tool.name, k.message)
+                message = message_template % (tool.name, unicodify(k))
                 raise exceptions.MessageException(message)
 
             unmatched_input_connections = expected_replacement_keys - found_replacement_keys

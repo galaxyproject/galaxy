@@ -295,7 +295,10 @@ class ToolBox(BaseGalaxyToolBox):
 
     def create_tool(self, config_file, tool_cache_data_dir=None, **kwds):
         cache = self.get_cache_region(tool_cache_data_dir or self.app.config.tool_cache_data_dir)
-        tool_source = cache.get_or_create(config_file, creator=self.get_expanded_tool_source, expiration_time=-1, creator_args=((config_file,), {}))
+        if config_file.endswith('.xml'):
+            tool_source = cache.get_or_create(config_file, creator=self.get_expanded_tool_source, expiration_time=-1, creator_args=((config_file,), {}))
+        else:
+            tool_source = self.get_expanded_tool_source(config_file)
         tool = self._create_tool_from_source(tool_source, config_file=config_file, **kwds)
         if not self.app.config.delay_tool_initialization:
             tool.assert_finalized(raise_if_invalid=True)
@@ -1597,7 +1600,7 @@ class Tool(Dictifiable):
                 completed_job=completed_job,
                 collection_info=collection_info,
             )
-        except webob.exc.HTTPFound as e:
+        except (webob.exc.HTTPFound, exceptions.MessageException) as e:
             # if it's a webob redirect exception, pass it up the stack
             raise e
         except ToolInputsNotReadyException as e:
@@ -2136,7 +2139,7 @@ class Tool(Dictifiable):
             'requirements'  : [{'name' : r.name, 'version' : r.version} for r in self.requirements],
             'errors'        : state_errors,
             'tool_errors'   : self.tool_errors,
-            'state_inputs'  : params_to_strings(self.inputs, state_inputs, self.app),
+            'state_inputs'  : params_to_strings(self.inputs, state_inputs, self.app, use_security=True, nested=True),
             'job_id'        : trans.security.encode_id(job.id) if job else None,
             'job_remap'     : self._get_job_remap(job),
             'history_id'    : trans.security.encode_id(history.id) if history else None,

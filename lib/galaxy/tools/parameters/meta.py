@@ -202,6 +202,6 @@ def __collection_multirun_parameter(value):
     batch_values = util.listify(value['values'])
     if len(batch_values) == 1:
         batch_over = batch_values[0]
-        if isinstance(batch_over, dict) and ('src' in batch_over) and (batch_over['src'] == 'hdca'):
+        if isinstance(batch_over, dict) and ('src' in batch_over) and (batch_over['src'] in {'hdca', 'dce'}):
             return True
     return False
