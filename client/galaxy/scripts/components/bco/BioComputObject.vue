@@ -1,7 +1,7 @@
 <template>
     <div id="bco-viewer" class="overflow-auto h-100" @scroll="onScroll">
         <h2 class="mb-3">
-            <span id="invocations-title">BioCompute Object</span>
+            <span id="invocations-title">BioCompute Objects</span>
         </h2>
         <json-dump class="item" :item="treeData" />
     </div>
@@ -10,8 +10,6 @@
 <script>
 
 import axios from "axios";
-
-import { mapActions } from "vuex";
 import { getAppRoot } from "onload/loadConfig";
 import JsonDump from "components/bco/JsonDump.vue";
 
@@ -35,7 +33,6 @@ export default {
         getBCO: function () {
             const invocationId = this.invocationId;
             const url = getAppRoot() + `api/invocations/${invocationId}/export_bco`;
-            // const params = {};
 
             axios
                 .get(url)
