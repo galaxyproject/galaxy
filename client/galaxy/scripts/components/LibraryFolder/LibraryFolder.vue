@@ -60,8 +60,8 @@
                                     :title="getMessage(row.item)"
                                     v-html="linkify(getMessage(row.item).substring(0, 40))"
                                 >
-                                </span
-                                >...
+                                </span>
+                                <span :title="getMessage(row.item)"> ...</span>
                                 <a class="more-text-btn" @click="expandMessage(row.item)" href="javascript:void(0)"
                                     >(more)</a
                                 >
