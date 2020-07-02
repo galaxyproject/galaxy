@@ -31,7 +31,12 @@
                 <!-- Name -->
                 <template v-slot:cell(name)="row">
                     <div v-if="row.item.editMode">
-                        <textarea class="form-control" :ref="'name'+row.item.id" :value="row.item.name" rows="3"></textarea>
+                        <textarea
+                            class="form-control"
+                            :ref="'name' + row.item.id"
+                            :value="row.item.name"
+                            rows="3"
+                        ></textarea>
                     </div>
                     <div v-else>
                         <a :href="createContentLink(row.item)">{{ row.item.name }}</a>
@@ -41,16 +46,24 @@
                 <!-- Description -->
                 <template v-slot:cell(message)="row">
                     <div v-if="row.item.editMode">
-                        <textarea class="form-control" :ref="'description'+row.item.id" :value="row.item.description" rows="3"></textarea>
+                        <textarea
+                            class="form-control"
+                            :ref="'description' + row.item.id"
+                            :value="row.item.description"
+                            rows="3"
+                        ></textarea>
                     </div>
                     <div v-else>
                         <div class="description-field" v-if="getMessage(row.item)">
                             <div v-if="getMessage(row.item).length > 40 && !expandedMessage.includes(row.item.id)">
-                            <span :title="getMessage(row.item)" v-html="linkify(getMessage(row.item).substring(0, 40))"
-                            >
-                            </span>...
+                                <span
+                                    :title="getMessage(row.item)"
+                                    v-html="linkify(getMessage(row.item).substring(0, 40))"
+                                >
+                                </span
+                                >...
                                 <a class="more-text-btn" @click="expandMessage(row.item)" href="javascript:void(0)"
-                                >(more)</a
+                                    >(more)</a
                                 >
                             </div>
                             <div v-else v-html="linkify(getMessage(row.item))"></div>
@@ -86,40 +99,40 @@
                 <template v-slot:cell(buttons)="row">
                     <div v-if="row.item.editMode">
                         <button
-                                @click="saveChanges(row.item)"
-                                class="primary-button btn-sm permission_folder_btn"
-                                :title="'save ' + row.item.name"
+                            @click="saveChanges(row.item)"
+                            class="primary-button btn-sm permission_folder_btn"
+                            :title="'save ' + row.item.name"
                         >
-                            <font-awesome-icon :icon="['far', 'save']"/>
+                            <font-awesome-icon :icon="['far', 'save']" />
                             Save
                         </button>
                         <button
-                                class="primary-button btn-sm permission_folder_btn"
-                                title="Discard Changes"
-                                @click="toggleMode(row.item)"
+                            class="primary-button btn-sm permission_folder_btn"
+                            title="Discard Changes"
+                            @click="toggleMode(row.item)"
                         >
-                            <font-awesome-icon :icon="['fas', 'times']"/>
+                            <font-awesome-icon :icon="['fas', 'times']" />
                             Cancel
                         </button>
                     </div>
                     <div v-else>
                         <a v-if="row.item.can_manage && !row.item.deleted && row.item.type === 'folder'">
                             <button
-                                    @click="toggleMode(row.item)"
-                                    data-toggle="tooltip"
-                                    data-placement="top"
-                                    class="primary-button btn-sm permission_folder_btn"
-                                    :title="'Edit ' + row.item.name"
+                                @click="toggleMode(row.item)"
+                                data-toggle="tooltip"
+                                data-placement="top"
+                                class="primary-button btn-sm permission_folder_btn"
+                                :title="'Edit ' + row.item.name"
                             >
                                 <span class="fa fa-pencil"></span> Edit
                             </button>
                         </a>
                         <a v-if="row.item.can_manage" :href="createPermissionLink(row.item)">
                             <button
-                                    data-toggle="tooltip"
-                                    data-placement="top"
-                                    class="primary-button btn-sm permission_folder_btn"
-                                    :title="'Permissions of ' + row.item.name"
+                                data-toggle="tooltip"
+                                data-placement="top"
+                                class="primary-button btn-sm permission_folder_btn"
+                                :title="'Permissions of ' + row.item.name"
                             >
                                 <span class="fa fa-group"></span> Manage
                             </button>
@@ -188,7 +201,7 @@ import BootstrapVue from "bootstrap-vue";
 import { Services } from "./services";
 import Utils from "utils/utils";
 import linkify from "linkifyjs/html";
-import {fields} from "./table-fields";
+import { fields } from "./table-fields";
 import { Toast } from "ui/toast";
 
 library.add(faFile);
@@ -292,7 +305,7 @@ export default {
         },
         toggleMode(item) {
             item.editMode = !item.editMode;
-            this.refreshTable()
+            this.refreshTable();
         },
         saveChanges(folder) {
             let is_changed = false;
@@ -306,13 +319,14 @@ export default {
                     return;
                 }
             }
-            const new_description = this.$refs[`description${folder.id}`].value
+            const new_description = this.$refs[`description${folder.id}`].value;
             if (typeof new_description !== "undefined" && new_description !== folder.description) {
                 folder.description = new_description;
                 is_changed = true;
             }
             if (is_changed) {
-                this.services.updateFolder(folder,
+                this.services.updateFolder(
+                    folder,
                     () => {
                         Toast.success("Changes to folder saved.");
                         folder.editMode = false;
@@ -324,7 +338,8 @@ export default {
                         } else {
                             Toast.error("An error occurred while attempting to update the folder.");
                         }
-                    })
+                    }
+                );
             } else {
                 Toast.info("Nothing has changed.");
             }
@@ -334,5 +349,5 @@ export default {
 </script>
 
 <style scoped>
-    @import "library-folder-table.css";
+@import "library-folder-table.css";
 </style>

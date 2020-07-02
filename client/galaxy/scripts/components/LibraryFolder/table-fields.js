@@ -48,4 +48,4 @@ export const fields = [
         key: "buttons",
         sortable: false,
     },
-]
+];
