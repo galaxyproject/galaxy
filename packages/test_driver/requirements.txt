@@ -2,4 +2,6 @@ galaxy-data
 galaxy-web-apps
 nose
 pytest
-
+pyyaml
+sqlalchemy-utils
+six
