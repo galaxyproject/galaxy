@@ -34,7 +34,7 @@ def validate_datatype_extension(datatypes_registry, ext):
 
 def validate_url(url, ip_allowlist):
     # If it doesn't look like a URL, ignore it.
-    if not (url.startswith('http://') or url.startswith('https://')):
+    if not (url.lstrip().startswith('http://') or url.lstrip().startswith('https://')):
         return url
 
     # Strip leading whitespace before passing url to urlparse()
