@@ -28,21 +28,33 @@
                         <span aria-hidden="true">&nbsp;</span>
                     </template>
                 </template>
+                <!-- Name -->
                 <template v-slot:cell(name)="row">
-                    <a :href="createContentLink(row.item)">{{ row.item.name }}</a>
+                    <div v-if="row.item.editMode">
+                        <textarea class="form-control" :ref="'name'+row.item.id" :value="row.item.name" rows="3"></textarea>
+                    </div>
+                    <div v-else>
+                        <a :href="createContentLink(row.item)">{{ row.item.name }}</a>
+                    </div>
                 </template>
-                
+
+                <!-- Description -->
                 <template v-slot:cell(message)="row">
-                    <div class="description-field" v-if="getMessage(row.item)">
-                        <div v-if="getMessage(row.item).length > 40 && !expandedMessage.includes(row.item.id)">
+                    <div v-if="row.item.editMode">
+                        <textarea class="form-control" :ref="'description'+row.item.id" :value="row.item.description" rows="3"></textarea>
+                    </div>
+                    <div v-else>
+                        <div class="description-field" v-if="getMessage(row.item)">
+                            <div v-if="getMessage(row.item).length > 40 && !expandedMessage.includes(row.item.id)">
                             <span :title="getMessage(row.item)" v-html="linkify(getMessage(row.item).substring(0, 40))"
-                                >
-                            </span>...
-                            <a class="more-text-btn" @click="expandMessage(row.item)" href="javascript:void(0)"
-                                >(more)</a
                             >
+                            </span>...
+                                <a class="more-text-btn" @click="expandMessage(row.item)" href="javascript:void(0)"
+                                >(more)</a
+                                >
+                            </div>
+                            <div v-else v-html="linkify(getMessage(row.item))"></div>
                         </div>
-                        <div v-else v-html="linkify(getMessage(row.item))"></div>
                     </div>
                 </template>
                 <template v-slot:cell(type_icon)="row">
@@ -74,7 +86,7 @@
                 <template v-slot:cell(buttons)="row">
                     <div v-if="row.item.editMode">
                         <button
-
+                                @click="saveChanges(row.item)"
                                 class="primary-button btn-sm permission_folder_btn"
                                 :title="'save ' + row.item.name"
                         >
@@ -177,6 +189,7 @@ import { Services } from "./services";
 import Utils from "utils/utils";
 import linkify from "linkifyjs/html";
 import {fields} from "./table-fields";
+import { Toast } from "ui/toast";
 
 library.add(faFile);
 library.add(faFolder);
@@ -278,15 +291,48 @@ export default {
             return linkify(raw_text);
         },
         toggleMode(item) {
-            console.log("Cancel")
-            console.log("item.editMode")
             item.editMode = !item.editMode;
             this.refreshTable()
+        },
+        saveChanges(folder) {
+            let is_changed = false;
+            const new_name = this.$refs[`name${folder.id}`].value;
+            if (typeof new_name !== "undefined" && new_name !== folder.name) {
+                if (new_name.length > 2) {
+                    folder.name = new_name;
+                    is_changed = true;
+                } else {
+                    Toast.warning("Folder name has to be at least 3 characters long.");
+                    return;
+                }
+            }
+            const new_description = this.$refs[`description${folder.id}`].value
+            if (typeof new_description !== "undefined" && new_description !== folder.description) {
+                folder.description = new_description;
+                is_changed = true;
+            }
+            if (is_changed) {
+                this.services.updateFolder(folder,
+                    () => {
+                        Toast.success("Changes to folder saved.");
+                        folder.editMode = false;
+                        this.refreshTable();
+                    },
+                    (error) => {
+                        if (error.data && error.data.err_msg) {
+                            Toast.error(error.data.err_msg);
+                        } else {
+                            Toast.error("An error occurred while attempting to update the folder.");
+                        }
+                    })
+            } else {
+                Toast.info("Nothing has changed.");
+            }
         },
     },
 };
 </script>
 
 <style scoped>
-@import "library-folder-table.css";
+    @import "library-folder-table.css";
 </style>
