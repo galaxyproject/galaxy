@@ -17,7 +17,7 @@
                 @row-selected="onRowSelected"
                 ref="folder_content_table"
             >
-                <template v-slot:head(selected)="scope">
+                <template v-slot:head(selected)="">
                     <span class="select-all-symbl" @click="toggleSelect">&check;</span>
                 </template>
                 <template v-slot:cell(selected)="{ rowSelected }">
