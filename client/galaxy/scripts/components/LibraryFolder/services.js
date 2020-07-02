@@ -16,4 +16,19 @@ export class Services {
             rethrowSimple(e);
         }
     }
+
+    updateFolder(item, onSucess, onError) {
+        const url = `${this.root}api/folders/${item.id}`;
+        try {
+            const response = axios.patch(url, item).then(()=>{
+                onSucess()
+            }).catch(error => {
+                onError(error)
+
+            })
+            return response.data;
+        } catch (e) {
+            rethrowSimple(e);
+        }
+    }
 }
