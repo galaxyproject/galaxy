@@ -128,7 +128,7 @@ def _handle_script_integrity(path, config):
     script_integrity_verified = False
     count = getattr(config, "check_job_script_integrity_count", DEFAULT_INTEGRITY_COUNT)
     sleep_amt = getattr(config, "check_job_script_integrity_sleep", DEFAULT_INTEGRITY_SLEEP)
-    for i in range(count):
+    for _ in range(count):
         try:
             returncode = subprocess.call([path], env={"ABC_TEST_JOB_SCRIPT_INTEGRITY_XYZ": "1"})
             if returncode == 42:

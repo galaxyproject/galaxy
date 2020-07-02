@@ -1,7 +1,5 @@
 import logging
 import re
-import sys
-import traceback
 import uuid
 from collections import OrderedDict
 from math import isinf
@@ -13,7 +11,11 @@ from galaxy.tool_util.parser.util import (
     DEFAULT_DELTA,
     DEFAULT_DELTA_FRAC
 )
-from galaxy.util import string_as_bool, xml_text, xml_to_string
+from galaxy.util import (
+    string_as_bool,
+    xml_text,
+    xml_to_string
+)
 from .interface import (
     InputSource,
     PageSource,
@@ -829,7 +831,7 @@ class StdioParser(object):
                 self.parse_stdio_exit_codes(stdio_elem)
                 self.parse_stdio_regexes(stdio_elem)
         except Exception:
-            log.error("Exception in parse_stdio! " + str(sys.exc_info()))
+            log.exception("Exception in parse_stdio!")
 
     def parse_stdio_exit_codes(self, stdio_elem):
         """
@@ -857,8 +859,7 @@ class StdioParser(object):
                 if code_range is None:
                     code_range = exit_code_elem.get("value", "")
                 if code_range is None:
-                    log.warning("Tool stdio exit codes must have " +
-                                "a range or value")
+                    log.warning("Tool stdio exit codes must have a range or value")
                     continue
                 # Parse the range. We look for:
                 #   :Y
@@ -899,18 +900,11 @@ class StdioParser(object):
                 # isn't bogus. If we have two infinite values, then
                 # the start must be -inf and the end must be +inf.
                 # So at least warn about this situation:
-                if (isinf(exit_code.range_start) and
-                        isinf(exit_code.range_end)):
-                    log.warning("Tool exit_code range %s will match on " +
-                                "all exit codes" % code_range)
+                if isinf(exit_code.range_start) and isinf(exit_code.range_end):
+                    log.warning("Tool exit_code range %s will match on all exit codes" % code_range)
                 self.stdio_exit_codes.append(exit_code)
         except Exception:
-            log.error("Exception in parse_stdio_exit_codes! " +
-                      str(sys.exc_info()))
-            trace = sys.exc_info()[2]
-            if trace is not None:
-                trace_msg = repr(traceback.format_tb(trace))
-                log.error("Traceback: %s" % trace_msg)
+            log.exception("Exception in parse_stdio_exit_codes!")
 
     def parse_stdio_regexes(self, stdio_elem):
         """
@@ -973,12 +967,7 @@ class StdioParser(object):
                         regex.stderr_match = True
                 self.stdio_regexes.append(regex)
         except Exception:
-            log.error("Exception in parse_stdio_exit_codes! " +
-                      str(sys.exc_info()))
-            trace = sys.exc_info()[2]
-            if trace is not None:
-                trace_msg = repr(traceback.format_tb(trace))
-                log.error("Traceback: %s" % trace_msg)
+            log.exception("Exception in parse_stdio_exit_codes!")
 
     # TODO: This method doesn't have to be part of the Tool class.
     def parse_error_level(self, err_level):
@@ -1003,12 +992,7 @@ class StdioParser(object):
                     log.debug("Tool %s: error level %s did not match log/warning/fatal" %
                               (self.id, err_level))
         except Exception:
-            log.error("Exception in parse_error_level " +
-                      str(sys.exc_info()))
-            trace = sys.exc_info()[2]
-            if trace is not None:
-                trace_msg = repr(traceback.format_tb(trace))
-                log.error("Traceback: %s" % trace_msg)
+            log.exception("Exception in parse_error_level")
         return return_level
 
 
@@ -1085,7 +1069,7 @@ class XmlInputSource(InputSource):
     def parse_static_options(self):
         static_options = list()
         elem = self.input_elem
-        for index, option in enumerate(elem.findall("option")):
+        for option in elem.findall("option"):
             value = option.get("value")
             selected = string_as_bool(option.get("selected", False))
             static_options.append((option.text or value, value, selected))

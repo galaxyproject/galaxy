@@ -200,7 +200,7 @@ class SlurmJobRunner(DRMAAJobRunner):
 def _remove_spurious_top_lines(rfh, ajs, maxlines=3):
     bad = []
     putback = None
-    for i in range(maxlines):
+    for _ in range(maxlines):
         line = rfh.readline()
         log.trace('checking line: %s', line)
         for pattern in SLURM_TOP_WARNING_RES:
