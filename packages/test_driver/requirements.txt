@@ -1,4 +1,5 @@
 galaxy-data
+galaxy-web-apps
 nose
 pytest
 
