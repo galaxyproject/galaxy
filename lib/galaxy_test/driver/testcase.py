@@ -6,7 +6,8 @@ import unittest
 
 from galaxy.security import idencoding
 from galaxy.tool_util.verify.test_data import TestDataResolver
-from .driver_util import GalaxyTestDriver, setup_keep_outdir, target_url_parts
+from galaxy_test.base.env import setup_keep_outdir, target_url_parts
+from .driver_util import GalaxyTestDriver
 
 log = logging.getLogger(__name__)
 
