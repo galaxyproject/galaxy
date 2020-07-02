@@ -108,7 +108,7 @@ def main():
 							# Once we have logged a block, reset the values
 							blockWords = list() # Words in this data block
 							entityRanges = list()
-							block_start = None
+							block_start = start
 							this_transcript = ''
 							speaker_name = tmp_speaker_name
 							lastOffset = 0
