@@ -2,7 +2,7 @@ from galaxy_test.api.test_histories import ImportExportHistoryTestCase
 from galaxy_test.driver.integration_util import IntegrationTestCase
 
 
-class ImportExportHistoryOutputsToWorkingDirTestCase(IntegrationTestCase, ImportExportHistoryTestCase):
+class ImportExportHistoryOutputsToWorkingDirTestCase(ImportExportHistoryTestCase, IntegrationTestCase):
 
     framework_tool_and_types = True
 

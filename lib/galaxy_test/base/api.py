@@ -1,5 +1,6 @@
 import os
 from contextlib import contextmanager
+from unittest import TestCase
 
 from six.moves.urllib.parse import urlencode
 
@@ -111,6 +112,13 @@ class UsesApiTestCaseMixin:
         return "1234567890123456"
 
     _assert_has_key = _assert_has_keys
+
+
+class ApiTestCase(FunctionalTestCase, UsesApiTestCaseMixin, TestCase):
+
+    def setUp(self):
+        super().setUp()
+        self._setup_interactor()
 
 
 class ApiTestInteractor(BaseInteractor):

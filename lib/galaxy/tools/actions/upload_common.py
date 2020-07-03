@@ -18,10 +18,7 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
 )
 from galaxy.model import tags
-from galaxy.util import (
-    commands,
-    unicodify
-)
+from galaxy.util import unicodify
 from galaxy.util.path import external_chown
 
 log = logging.getLogger(__name__)
