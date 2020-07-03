@@ -3,12 +3,8 @@ API operations allowing clients to determine datatype supported by Galaxy.
 """
 import logging
 
-from galaxy import exceptions
 from galaxy.datatypes.data import Data
-from galaxy.util import (
-    asbool,
-    unicodify
-)
+from galaxy.util import asbool
 from galaxy.web import expose_api_anonymous_and_sessionless
 from galaxy.webapps.base.controller import BaseAPIController
 
@@ -41,10 +37,7 @@ class DatatypesController(BaseAPIController):
                 return rval
         except Exception as e:
             log.exception('Could not get datatypes')
-            if not isinstance(e, exceptions.MessageException):
-                raise exceptions.InternalServerError(unicodify(e))
-            else:
-                raise
+            raise e
 
     @expose_api_anonymous_and_sessionless
     def mapping(self, trans, **kwd):
@@ -75,10 +68,7 @@ class DatatypesController(BaseAPIController):
 
         except Exception as e:
             log.exception('Could not get datatype mapping')
-            if not isinstance(e, exceptions.MessageException):
-                raise exceptions.InternalServerError(unicodify(e))
-            else:
-                raise
+            raise e
 
     @expose_api_anonymous_and_sessionless
     def sniffers(self, trans, **kwd):
@@ -95,10 +85,7 @@ class DatatypesController(BaseAPIController):
             return rval
         except Exception as e:
             log.exception('Could not get datatypes')
-            if not isinstance(e, exceptions.MessageException):
-                raise exceptions.InternalServerError(unicodify(e))
-            else:
-                raise
+            raise e
 
     @expose_api_anonymous_and_sessionless
     def converters(self, trans, **kwd):
