@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-20.5.0.dev0
+20.5.0 (2020-07-03)
 ---------------------
 
 * First release from 20.05 branch of Galaxy.
