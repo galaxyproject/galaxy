@@ -3,12 +3,14 @@ Unit tests for base DataProviders.
 .. seealso:: galaxy.datatypes.dataproviders.base
 """
 import logging
+import os
+import tempfile
 import unittest
 
 from six import StringIO
 
 from galaxy.datatypes.dataproviders import base, exceptions
-from ...unittest_utils import tempfilecache, utility
+from galaxy.util import clean_multiline_string
 
 log = logging.getLogger(__name__)
 
@@ -34,7 +36,7 @@ class BaseTestCase(unittest.TestCase):
 
     def __init__(self, *args):
         unittest.TestCase.__init__(self, *args)
-        self.tmpfiles = tempfilecache.TempFileCache(log)
+        self.tmpfiles = TempFileCache()
 
     def setUp(self):
         log.debug('BEGIN %s %s', ('.' * 40), self._testMethodName)
@@ -47,7 +49,7 @@ class BaseTestCase(unittest.TestCase):
 
     def format_tmpfile_contents(self, contents=None):
         contents = contents or self.default_file_contents
-        contents = utility.clean_multiline_string(contents)
+        contents = clean_multiline_string(contents)
         log.debug('file contents:\n%s', contents)
         return contents
 
@@ -131,7 +133,7 @@ class Test_BaseDataProvider(BaseTestCase):
     def test_stringio(self):
         """should work with StringIO
         """
-        contents = utility.clean_multiline_string("""
+        contents = clean_multiline_string("""
             One
             Two
             Three
@@ -293,7 +295,7 @@ class Test_MultiSourceDataProvider(BaseTestCase):
     def contents_and_tmpfile(self, contents=None):
         # TODO: hmmmm...
         contents = contents or self.default_file_contents
-        contents = utility.clean_multiline_string(contents)
+        contents = clean_multiline_string(contents)
         return (contents, self.tmpfiles.create_tmpfile(contents))
 
     def test_multiple_sources(self):
@@ -319,7 +321,7 @@ class Test_MultiSourceDataProvider(BaseTestCase):
                 Twelve! (<-- http://youtu.be/JZshZp-cxKg)
             """
         ]
-        contents = [utility.clean_multiline_string(c) for c in contents]
+        contents = [clean_multiline_string(c) for c in contents]
         source_list = [open(self.tmpfiles.create_tmpfile(c)) for c in contents]
 
         provider = self.provider_class(source_list)
@@ -351,7 +353,7 @@ class Test_MultiSourceDataProvider(BaseTestCase):
                 Twelve! (<-- http://youtu.be/JZshZp-cxKg)
             """
         ]
-        contents = [utility.clean_multiline_string(c) for c in contents]
+        contents = [clean_multiline_string(c) for c in contents]
         source_list = [open(self.tmpfiles.create_tmpfile(c)) for c in contents]
 
         def no_Fs(string):
@@ -370,6 +372,45 @@ class Test_MultiSourceDataProvider(BaseTestCase):
         data = list(provider)
         log.debug('data: %s', str(data))
         self.assertEqual(''.join(data), 'Two\nThree\nNine\nEleven\n')
+
+
+class TempFileCache(object):
+    """
+    Creates and caches tempfiles with/based-on the given contents.
+    """
+
+    def __init__(self):
+        super(TempFileCache, self).__init__()
+        self.clear()
+
+    def clear(self):
+        self.delete_tmpfiles()
+        self._content_dict = {}
+
+    def create_tmpfile(self, contents):
+        if not hasattr(self, '_content_dict'):
+            self.set_up_tmpfiles()
+
+        if contents not in self._content_dict:
+            # create a named tmp and write contents to it, return filename
+            with tempfile.NamedTemporaryFile(delete=False, mode='w+') as tmpfile:
+                tmpfile.write(contents)
+                tmpfile_name = tmpfile.name
+            log.debug('created tmpfile.name: %s', tmpfile_name)
+            self._content_dict[contents] = tmpfile_name
+
+        else:
+            log.debug('(cached): %s', self._content_dict[contents])
+        return self._content_dict[contents]
+
+    def delete_tmpfiles(self):
+        if not hasattr(self, '_content_dict') or not self._content_dict:
+            return
+        for tmpfile_contents in self._content_dict:
+            tmpfile = self._content_dict[tmpfile_contents]
+            if os.path.exists(tmpfile):
+                log.debug('unlinking tmpfile: %s', tmpfile)
+                os.unlink(tmpfile)
 
 
 if __name__ == '__main__':
