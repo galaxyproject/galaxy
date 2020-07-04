@@ -913,7 +913,10 @@ class JobWrapper(HasResourceParameters):
         if use_persisted_destination:
             self.job_runner_mapper.cached_job_destination = JobDestination(from_job=job)
         # Wrapper holding the info required to restore and clean up from files used for setting metadata externally
-        metadata_strategy_override = self.get_destination_configuration('metadata_strategy', None)
+        try:
+            metadata_strategy_override = self.get_destination_configuration('metadata_strategy', None)
+        except JobMappingException:
+            metadata_strategy_override = None
         if job.tasks:
             metadata_strategy_override = "directory"
         self.external_output_metadata = get_metadata_compute_strategy(self.app.config, job.id, metadata_strategy_override=metadata_strategy_override)
