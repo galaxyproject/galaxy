@@ -402,10 +402,10 @@
                embedding metadata calculation in job script itself.
           -->
           <param id="metadata_strategy">directory</param>
-          <!-- If set overwrites metadata_strategy (configurable in galaxy.yml).
+          <!-- If set, overwrites metadata_strategy (configurable in galaxy.yml).
                Valid values are `directory` (default), `extended` and `legacy`.
-               Setting metadata_strategy to extended requires that all object stores
-               that can be written to store datasets by uuid. In extended mode jobs
+               Setting metadata_strategy to `extended` requires that all object stores
+               that can be written to store datasets by uuid. In `extended` mode jobs
                will decide if a tool run failed, the object stores configuration
                is serialized and made available to the job and is used for writing output
                datasets to the object store as part of the job and dynamic output discovery
