@@ -16,6 +16,10 @@ class EmbeddedMetadataPulsarIntegrationInstance(integration_util.IntegrationInst
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         config["job_config_file"] = EMBEDDED_PULSAR_JOB_CONFIG_FILE
+        config['object_store_store_by'] = 'uuid'
+        # metadata_strategy is being set to directory in embedded_pulsar_metadata_job_conf.yml,
+        # since extended_metadata doesn't work yet on pulsar
+        config['metadata_strategy'] = 'extended'
 
 
 instance = integration_util.integration_module_instance(EmbeddedMetadataPulsarIntegrationInstance)

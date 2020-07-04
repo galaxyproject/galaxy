@@ -906,17 +906,17 @@ class JobWrapper(HasResourceParameters):
         self.output_paths = None
         self.output_hdas_and_paths = None
         self.tool_provided_job_metadata = None
-        # Wrapper holding the info required to restore and clean up from files used for setting metadata externally
-        metadata_strategy_override = None
-        if job.tasks:
-            metadata_strategy_override = "directory"
-        self.external_output_metadata = get_metadata_compute_strategy(self.app.config, job.id, metadata_strategy_override=metadata_strategy_override)
         self.job_runner_mapper = JobRunnerMapper(self, queue.dispatcher.url_to_destination, self.app.job_config)
         self.params = None
         if job.params:
             self.params = loads(job.params)
         if use_persisted_destination:
             self.job_runner_mapper.cached_job_destination = JobDestination(from_job=job)
+        # Wrapper holding the info required to restore and clean up from files used for setting metadata externally
+        metadata_strategy_override = self.get_destination_configuration('metadata_strategy', None)
+        if job.tasks:
+            metadata_strategy_override = "directory"
+        self.external_output_metadata = get_metadata_compute_strategy(self.app.config, job.id, metadata_strategy_override=metadata_strategy_override)
 
         self.__commands_in_new_shell = True
         self.__user_system_pwent = None
