@@ -1,4 +1,5 @@
 import galaxy.containers
+import galaxy.containers.docker_model
 
 
 def test_dummy():

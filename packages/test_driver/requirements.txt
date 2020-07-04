@@ -1,4 +1,12 @@
+galaxy-app
 galaxy-data
+galaxy-test-base
+galaxy-tool-util
+galaxy-util
+galaxy-web-apps
+galaxy-web-framework
 nose
 pytest
-
+pyyaml
+sqlalchemy-utils
+six
