@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-19.9.0.dev0
+20.5.0.dev0
 ---------------------
 
-* Initial import from dev branch of Galaxy during 19.09 development cycle.
+* First release from the 20.05 branch of Galaxy.
