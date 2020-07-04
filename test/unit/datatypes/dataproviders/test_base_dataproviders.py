@@ -380,17 +380,9 @@ class TempFileCache(object):
     """
 
     def __init__(self):
-        super(TempFileCache, self).__init__()
-        self.clear()
-
-    def clear(self):
-        self.delete_tmpfiles()
         self._content_dict = {}
 
     def create_tmpfile(self, contents):
-        if not hasattr(self, '_content_dict'):
-            self.set_up_tmpfiles()
-
         if contents not in self._content_dict:
             # create a named tmp and write contents to it, return filename
             with tempfile.NamedTemporaryFile(delete=False, mode='w+') as tmpfile:
@@ -403,14 +395,12 @@ class TempFileCache(object):
             log.debug('(cached): %s', self._content_dict[contents])
         return self._content_dict[contents]
 
-    def delete_tmpfiles(self):
-        if not hasattr(self, '_content_dict') or not self._content_dict:
-            return
-        for tmpfile_contents in self._content_dict:
-            tmpfile = self._content_dict[tmpfile_contents]
+    def clear(self):
+        for tmpfile in self._content_dict.values():
             if os.path.exists(tmpfile):
                 log.debug('unlinking tmpfile: %s', tmpfile)
                 os.unlink(tmpfile)
+        self._content_dict = {}
 
 
 if __name__ == '__main__':
