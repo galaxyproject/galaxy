@@ -138,7 +138,7 @@ pyopenssl==19.1.0
 pyparsing==2.4.7
 pyperclip==1.8.0
 pyrsistent==0.16.0
-pysam==0.15.4
+pysam==0.16.0.1
 pysftp==0.2.9
 python-cinderclient==4.0.0
 python-dateutil==2.8.1
