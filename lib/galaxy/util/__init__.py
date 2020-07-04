@@ -1137,8 +1137,7 @@ def clean_multiline_string(multiline_string, sep='\n'):
         string_list = string_list[1:]
     if not string_list[-1]:
         string_list = string_list[:-1]
-    # return '\n'.join( docstrings )
-    return ''.join((s + '\n') for s in string_list)
+    return '\n'.join(string_list) + '\n'
 
 
 class ParamsWithSpecs(collections.defaultdict):
