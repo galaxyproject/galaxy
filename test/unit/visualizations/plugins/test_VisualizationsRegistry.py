@@ -8,9 +8,10 @@ import unittest
 from six import text_type
 
 from galaxy import model
+from galaxy.util import clean_multiline_string
 from galaxy.visualization.plugins import plugin
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
-from ...unittest_utils import galaxy_mock, utility
+from ...unittest_utils import galaxy_mock
 
 glx_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, os.pardir))
 template_cache_dir = os.path.join(glx_dir, 'database', 'compiled_templates')
@@ -132,7 +133,7 @@ class VisualizationsRegistry_TestCase(unittest.TestCase):
     def test_interactive_environ_plugin_load(self):
         """
         """
-        jupyter_config = utility.clean_multiline_string("""\
+        jupyter_config = clean_multiline_string("""\
         <?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE interactive_environment SYSTEM "../../interactive_environments.dtd">
         <interactive_environment name="Jupyter">
@@ -212,7 +213,7 @@ class VisualizationsRegistry_TestCase(unittest.TestCase):
 
     def test_script_entry(self):
         """"""
-        script_entry_config = utility.clean_multiline_string("""\
+        script_entry_config = clean_multiline_string("""\
         <?xml version="1.0" encoding="UTF-8"?>
         <visualization name="js-test">
             <data_sources>
