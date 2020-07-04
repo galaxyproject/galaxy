@@ -1,6 +1,6 @@
 /* global QUnit */
 import $ from "jquery";
-import DatatypesMapping from "qunit/test-data/json/datatypes.mapping.json";
+import { testDatatypesMapper } from "components/Datatypes/test_fixtures";
 import sinon from "sinon";
 import WorkflowNode from "components/Workflow/Editor/Node";
 import Terminals from "components/Workflow/Editor/modules/terminals";
@@ -49,7 +49,7 @@ function buildNode(propsData) {
     propsData.getCanvasManager = () => {
         return {};
     };
-    propsData.datatypesMapping = DatatypesMapping;
+    propsData.datatypesMapper = testDatatypesMapper;
     return new component({
         propsData: propsData,
         el: "#canvas-container",
@@ -63,7 +63,7 @@ QUnit.module("Input terminal model test", {
         this.input = { extensions: ["txt"], multiple: false, optional: false };
         const inputEl = $("<div>")[0];
         this.input_terminal = new Terminals.InputTerminal({
-            datatypesMapping: DatatypesMapping,
+            datatypesMapper: testDatatypesMapper,
             element: inputEl,
             input: this.input,
             node: this.node,
@@ -309,7 +309,7 @@ QUnit.module("Input collection terminal model test", {
         this.input = { extensions: ["txt"], collection_types: ["list"] };
         const inputEl = $("<div>")[0];
         this.input_terminal = new Terminals.InputCollectionTerminal({
-            datatypesMapping: DatatypesMapping,
+            datatypesMapper: testDatatypesMapper,
             element: inputEl,
             input: this.input,
             node: this.node,
@@ -869,7 +869,7 @@ QUnit.module("terminal mapping logic", {
         }
         const inputEl = $("<div>")[0];
         const inputTerminal = new Terminals.InputTerminal({
-            datatypesMapping: DatatypesMapping,
+            datatypesMapper: testDatatypesMapper,
             element: inputEl,
             input: input,
         });
@@ -887,7 +887,7 @@ QUnit.module("terminal mapping logic", {
         }
         const inputEl = $("<div>")[0];
         const inputTerminal = new Terminals.InputCollectionTerminal({
-            datatypesMapping: DatatypesMapping,
+            datatypesMapper: testDatatypesMapper,
             element: inputEl,
             input: input,
             node: node,
