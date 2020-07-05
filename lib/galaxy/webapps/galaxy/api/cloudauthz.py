@@ -44,7 +44,7 @@ class CloudAuthzController(BaseAPIController):
         * GET /api/cloud/authz
             Lists all the cloud authorizations user has defined.
 
-        :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
+        :type  trans: galaxy.webapps.base.webapp.GalaxyWebTransaction
         :param trans: Galaxy web transaction
 
         :param kwargs: empty dict
@@ -64,7 +64,7 @@ class CloudAuthzController(BaseAPIController):
         * POST /api/cloud/authz
             Request to store the payload as a cloudauthz (cloud authorization) configuration for a user.
 
-        :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
+        :type  trans: galaxy.webapps.base.webapp.GalaxyWebTransaction
         :param trans: Galaxy web transaction
 
         :type payload: dict
@@ -160,7 +160,7 @@ class CloudAuthzController(BaseAPIController):
         * DELETE /api/cloud/authz/{encoded_authz_id}
             Deletes the CloudAuthz record with the given ``encoded_authz_id`` from database.
 
-        :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
+        :type  trans: galaxy.webapps.base.webapp.GalaxyWebTransaction
         :param trans: Galaxy web transaction
 
         :type  encoded_authz_id:    string
@@ -200,7 +200,7 @@ class CloudAuthzController(BaseAPIController):
             With this API only the following attributes of a cloudauthz configuration
             can be updated: `authn_id`, `provider`, `config`, `deleted`.
 
-        :type  trans:               galaxy.web.framework.webapp.GalaxyWebTransaction
+        :type  trans:               galaxy.webapps.base.webapp.GalaxyWebTransaction
         :param trans:               Galaxy web transaction
 
         :type  encoded_authz_id:    string
