@@ -39,7 +39,7 @@ In order to avoid excessive indentation, self.tool_action_execute() call graph i
         * job.add_parameter() -- include the dumped param file above
         * job.add_output_dataset()
         * trans.sa_session.add(output_object) -- object_output is HistoryDatasetAssociation object
-        * trans.sa_session.ad(job)
+        * trans.sa_session.add(job)
         * trans.app.job_manager.enqueue(job, tool) -- Queue the job for execution  
           * tool.get_configured_job_handler()
           * Create queue call back partial function
