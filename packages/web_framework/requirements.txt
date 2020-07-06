@@ -1,3 +1,4 @@
+babel
 galaxy-data
 galaxy-web-stack
 paste
