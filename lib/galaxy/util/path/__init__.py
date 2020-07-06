@@ -355,11 +355,11 @@ def external_chown(path, pwent, external_chown_script, description="file"):
         cmd = shlex.split(external_chown_script)
         cmd.extend([path, pwent[0], str(pwent[3])])
         log.debug('Changing ownership of {} with: {}'.format(path, ' '.join(cmd)))
-        p = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = p.communicate()
-        assert p.returncode == 0, stderr
-    except Exception as e:
+        galaxy.util.commands.execute(cmd)
+        return True
+    except galaxy.util.commands.CommandLineException as e:
         log.warning('Changing ownership of {} {} failed: {}'.format(description, path, galaxy.util.unicodify(e)))
+        return False
 
 
 def __listify(item):

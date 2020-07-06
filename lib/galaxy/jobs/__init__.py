@@ -58,7 +58,7 @@ from galaxy.tool_util.output_checker import (
 from galaxy.util import (
     parse_xml_string,
     safe_makedirs,
-    unicodify,
+    unicodify
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
