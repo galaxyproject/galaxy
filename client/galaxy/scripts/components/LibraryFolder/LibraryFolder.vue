@@ -4,10 +4,20 @@
             <font-awesome-icon icon="spinner" spin size="9x" />
         </div>
         <div v-else-if="folderContents.length !== 0">
+            <b-input-group size="sm">
+                <b-form-input
+                        v-model="filter"
+                        type="search"
+                        id="filterInput"
+                        placeholder="Type to Search"
+                ></b-form-input>
+            </b-input-group>
             <b-table
                 id="folder-table"
                 striped
                 hover
+                :filter="filter"
+                :filterIncludedFields="filterOn"
                 :fields="fields"
                 :items="folderContents"
                 :per-page="perPage"
@@ -16,6 +26,7 @@
                 :select-mode="selectMode"
                 @row-selected="onRowSelected"
                 ref="folder_content_table"
+                @filtered="onFiltered"
             >
                 <template v-slot:head(selected)="">
                     <span class="select-all-symbl" @click="toggleSelect">&check;</span>
@@ -237,6 +248,8 @@ export default {
             folderContents: [],
             hasLoaded: false,
             perPage: 15,
+            filter: null,
+            filterOn: [],
         };
     },
     computed: {
@@ -306,6 +319,11 @@ export default {
         toggleMode(item) {
             item.editMode = !item.editMode;
             this.refreshTable();
+        },
+        onFiltered(filteredItems) {
+            // Trigger pagination to update the number of buttons/pages due to filtering
+            this.totalRows = filteredItems.length
+            this.currentPage = 1
         },
         saveChanges(folder) {
             let is_changed = false;
