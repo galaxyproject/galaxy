@@ -39,7 +39,7 @@ for ((i=0; i<${#PACKAGE_DIRS[@]}; i++)); do
     run_tests=${RUN_TESTS[$i]}
 
     cd "$package_dir"
-    pip install -e .
+    pip install -e '.[test]'
     # Install extras (if needed)
     if [ "$package_dir" = "util" ]; then
         pip install -e '.[template,jstree]'
