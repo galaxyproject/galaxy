@@ -3,7 +3,7 @@ galaxy-data
 galaxy-test-base
 galaxy-tool-util
 galaxy-util
-galaxy-web-apps
+galaxy-webapps
 galaxy-web-framework
 nose
 pytest

@@ -29,7 +29,7 @@ PACKAGE_DIRS=(
     web_stack
     web_framework
     app
-    web_apps
+    webapps
 )
 # tool_util not yet working 100%,
 # data has many problems quota, tool shed install database, etc..
