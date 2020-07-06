@@ -1,10 +1,10 @@
 """
 Object Store plugin for the Integrated Rule-Oriented Data Store (iRODS)
 """
-from contextlib import contextmanager
 import logging
 import os
 import shutil
+from contextlib import contextmanager
 from datetime import datetime
 from functools import partial
 try:
