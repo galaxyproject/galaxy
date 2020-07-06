@@ -6,8 +6,8 @@ import re
 import unittest
 
 import galaxy.config
-from galaxy.web.framework import webapp as Webapp
-from ...unittest_utils import galaxy_mock
+from galaxy.webapps.base import webapp as Webapp
+from ..unittest_utils import galaxy_mock
 
 log = logging.getLogger(__name__)
 
