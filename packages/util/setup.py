@@ -60,9 +60,7 @@ else:
     requirements = []
 
 
-test_requirements = [
-    "respones",
-]
+test_requirements = open("test-requirements.txt").read().split("\n")
 
 
 setup(
