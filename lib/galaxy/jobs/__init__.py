@@ -57,6 +57,7 @@ from galaxy.tool_util.output_checker import (
 )
 from galaxy.util import (
     parse_xml_string,
+    RWXRWXRWX,
     safe_makedirs,
     unicodify
 )
@@ -2207,9 +2208,11 @@ class JobWrapper(HasResourceParameters):
     def change_ownership_for_run(self):
         job = self.get_job()
         external_chown_script = self.get_destination_configuration("external_chown_script", None)
-        if job.user is not None:
-            external_chown(self.working_directory, self.user_system_pwent,
+        if job.user is not None and external_chown_script is not None:
+            ret = external_chown(self.working_directory, self.user_system_pwent,
                            external_chown_script, description="working directory")
+            if not ret:
+                os.chmod(self.working_directory, RWXRWXRWX)
 
     def reclaim_ownership(self):
         job = self.get_job()

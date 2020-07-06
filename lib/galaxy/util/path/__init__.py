@@ -5,7 +5,6 @@ import errno
 import imp
 import logging
 import shlex
-import subprocess
 from functools import partial
 try:
     from grp import getgrgid
@@ -347,9 +346,14 @@ def external_chown(path, pwent, external_chown_script, description="file"):
     call the external chown script (if not None) to change
     the user and group of the given path, and additional description
     of the file/path for the log message can be given
+
+    return
+    - None if external_chown_script is None
+    - True in case of success
+    - False in case of failure
     """
     if external_chown_script is None:
-        return
+        return None
 
     try:
         cmd = shlex.split(external_chown_script)
