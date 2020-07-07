@@ -24,9 +24,10 @@ class JobImportHistoryArchiveWrapper:
         self.job_id = job_id
         self.sa_session = self.app.model.context
 
-    def setup_job(self, jiha, archive_source):
-        external_chown(archive_source, jiha.job.user.system_user_pwent(self.app.config.real_system_username),
-                       self.app.config.external_chown_script, "history import archive")
+    def setup_job(self, jiha, archive_source, archive_type):
+        if archive_type != "url":
+            external_chown(archive_source, jiha.job.user.system_user_pwent(self.app.config.real_system_username),
+                           self.app.config.external_chown_script, "history import archive")
         external_chown(jiha.archive_dir, jiha.job.user.system_user_pwent(self.app.config.real_system_username),
                        self.app.config.external_chown_script, "history import archive directory")
 

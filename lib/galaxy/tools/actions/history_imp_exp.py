@@ -52,7 +52,7 @@ class ImportHistoryToolAction(ToolAction):
         trans.sa_session.add(jiha)
 
         job_wrapper = JobImportHistoryArchiveWrapper(trans.app, job)
-        job_wrapper.setup_job(jiha, incoming['__ARCHIVE_SOURCE__'])
+        job_wrapper.setup_job(jiha, incoming['__ARCHIVE_SOURCE__'], incoming["__ARCHIVE_TYPE__"])
 
         #
         # Add parameters to job_parameter table.
