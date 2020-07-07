@@ -89,7 +89,7 @@ Please mind `http` and `https`.
         <url>https://custos.scigap.org/apiserver/identity-management/v1.0.0/</url>
         <client_id> ... </client_id>
         <client_secret> ... </client_secret>
-        <redirect_uri>http://localhost:8000/authnz/custos/callback</redirect_uri>
+        <redirect_uri>http://localhost:8080/authnz/custos/callback</redirect_uri>
         <!-- (Optional) Trusted CA certificate file or directory to use when verify Custos authorization server.
              See http://docs.python-requests.org/en/master/user/advanced/#ssl-cert-verification for more information. -->
         <!-- <ca_bundle>/path/to/ca_bundle</ca_bundle> -->
