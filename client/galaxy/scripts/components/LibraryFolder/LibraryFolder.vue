@@ -4,14 +4,13 @@
             <font-awesome-icon icon="spinner" spin size="9x" />
         </div>
         <div v-else-if="folderContents.length !== 0">
-            <b-input-group size="sm">
-                <b-form-input
-                        v-model="filter"
-                        type="search"
-                        id="filterInput"
-                        placeholder="Type to Search"
-                ></b-form-input>
-            </b-input-group>
+            <FolderTopBar
+                @updateSearch="updateSearchValue($event)"
+                @newFolder="newFolder"
+                :folder_id="folder_id"
+                :selected="selected"
+                :metadata="folder_metadata"
+            ></FolderTopBar>
             <b-table
                 id="folder-table"
                 striped
@@ -94,7 +93,7 @@
                     </div>
                 </template>
                 <template v-slot:cell(update_time)="row">
-                    <UtcDate :date="row.item.update_time" mode="elapsed" />
+                    <UtcDate v-if="row.item.update_time" :date="row.item.update_time" mode="elapsed" />
                 </template>
                 <template v-slot:cell(is_unrestricted)="row">
                     <font-awesome-icon v-if="row.item.is_unrestricted" title="Unrestricted dataset" icon="globe" />
@@ -110,7 +109,7 @@
                 <template v-slot:cell(buttons)="row">
                     <div v-if="row.item.editMode">
                         <button
-                            @click="saveChanges(row.item)"
+                            @click="row.item.id ? saveChanges(row.item) : createNewFolder(row.item)"
                             class="primary-button btn-sm permission_folder_btn"
                             :title="'save ' + row.item.name"
                         >
@@ -196,6 +195,15 @@
 <script>
 import Vue from "vue";
 import { getAppRoot } from "onload/loadConfig";
+import UtcDate from "components/UtcDate";
+import BootstrapVue from "bootstrap-vue";
+import { Services } from "./services";
+import Utils from "utils/utils";
+import linkify from "linkifyjs/html";
+import { fields } from "./table-fields";
+import { Toast } from "ui/toast";
+import FolderTopBar from "./FolderTopBar";
+
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faFile } from "@fortawesome/free-regular-svg-icons";
@@ -206,14 +214,10 @@ import { faGlobe } from "@fortawesome/free-solid-svg-icons";
 import { faKey } from "@fortawesome/free-solid-svg-icons";
 import { faSave } from "@fortawesome/free-regular-svg-icons";
 import { faTimes } from "@fortawesome/free-solid-svg-icons";
-// fa fa-floppy-o
-import UtcDate from "components/UtcDate";
-import BootstrapVue from "bootstrap-vue";
-import { Services } from "./services";
-import Utils from "utils/utils";
-import linkify from "linkifyjs/html";
-import { fields } from "./table-fields";
-import { Toast } from "ui/toast";
+import { getGalaxyInstance } from "app";
+import mod_library_model from "mvc/library/library-model";
+import Backbone from "backbone";
+import $ from "jquery";
 
 library.add(faFile);
 library.add(faFolder);
@@ -234,12 +238,14 @@ export default {
         },
     },
     components: {
+        FolderTopBar,
         UtcDate,
         FontAwesomeIcon,
     },
     data() {
         return {
             error: null,
+            folder_metadata: null,
             currentPage: 1,
             fields: fields,
             selectMode: "multi",
@@ -250,6 +256,10 @@ export default {
             perPage: 15,
             filter: null,
             filterOn: [],
+            is_admin: false,
+            multiple_add_dataset_options: false,
+            user_library_import_dir: false,
+            library_import_dir: false,
         };
     },
     computed: {
@@ -267,6 +277,7 @@ export default {
                     (content) => (content.update_time = new Date(content.update_time).toISOString())
                 );
                 this.folderContents = response.folder_contents;
+                this.folder_metadata = response.metadata;
                 this.hasLoaded = true;
                 console.log(this.folderContents);
             })
@@ -275,6 +286,9 @@ export default {
             });
     },
     methods: {
+        updateSearchValue(value) {
+            this.filter = value;
+        },
         selectAllRows() {
             this.$refs.folder_content_table.selectAllRows();
         },
@@ -318,13 +332,60 @@ export default {
         },
         toggleMode(item) {
             item.editMode = !item.editMode;
+            this.folderContents = this.folderContents.filter((item) => {
+                if (item.id) return item;
+            });
             this.refreshTable();
         },
         onFiltered(filteredItems) {
             // Trigger pagination to update the number of buttons/pages due to filtering
-            this.totalRows = filteredItems.length
-            this.currentPage = 1
+            this.totalRows = filteredItems.length;
+            this.currentPage = 1;
         },
+        newFolder() {
+            this.folderContents.unshift({
+                editMode: true,
+                type: "folder",
+                name: "",
+                description: "",
+            });
+            this.refreshTable();
+        },
+        createNewFolder: function (folder) {
+            const name = this.$refs[`name${folder.id}`].value;
+            const description = this.$refs[`description${folder.id}`].value;
+            if (!name) {
+                Toast.error("Folder's name is missing.");
+            } else if (name.length < 3) {
+                Toast.warning("Folder name has to be at least 3 characters long.");
+            } else {
+                this.services.newFolder(
+                    {
+                        parent_id: this.folder_id,
+                        name: name,
+                        description: description,
+                    },
+                    () => {
+                        Toast.success("Folder created.");
+                        // TODO: Find a better way to get new folder ID
+                        this.services.getFolderContents(this.folder_id).then((response) => {
+                            response.folder_contents.forEach(
+                                (content) => (content.update_time = new Date(content.update_time).toISOString())
+                            );
+                            this.folderContents = response.folder_contents;
+                            this.folder_metadata = response.metadata;
+                            this.refreshTable();
+                        });
+                    },
+                    () => {
+                        Toast.error("An error occurred.");
+                    }
+                );
+            }
+        },
+        /*
+            Former Backbone code, adopted to work with Vue
+            */
         saveChanges(folder) {
             let is_changed = false;
             const new_name = this.$refs[`name${folder.id}`].value;

@@ -33,4 +33,24 @@ export class Services {
             rethrowSimple(e);
         }
     }
+    newFolder(folder, onSucess, onError) {
+        console.log(folder);
+        const url = `${this.root}api/folders/${folder.parent_id}`;
+        try {
+            const response = axios
+                .post(url, {
+                    name: folder.name,
+                    description: folder.description,
+                })
+                .then(() => {
+                    onSucess();
+                })
+                .catch((error) => {
+                    onError(error);
+                });
+            return response.data;
+        } catch (e) {
+            rethrowSimple(e);
+        }
+    }
 }
