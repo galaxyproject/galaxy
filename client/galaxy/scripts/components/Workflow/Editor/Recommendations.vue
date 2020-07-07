@@ -36,7 +36,7 @@ export default {
             type: Function,
             required: true,
         },
-        datatypesMapping: {
+        datatypesMapper: {
             type: Object,
             required: true,
         },
@@ -146,10 +146,7 @@ export default {
             });
         },
         _isSubType(child, parent) {
-            const mapping = this.datatypesMapping;
-            child = mapping.ext_to_class_name[child];
-            parent = mapping.ext_to_class_name[parent];
-            return mapping.class_to_classes[child] && parent in mapping.class_to_classes[child];
+            return this.datatypesMapper.isSubType(child, parent);
         },
     },
 };

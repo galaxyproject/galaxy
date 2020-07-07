@@ -16,9 +16,11 @@ import webob.compat
 import webob.exc
 import webob.exc as httpexceptions  # noqa: F401
 # We will use some very basic HTTP/wsgi utilities from the paste library
-from paste.request import get_cookies
 from paste.response import HeaderDict
-from six.moves.http_cookies import SimpleCookie
+from six.moves.http_cookies import (
+    CookieError,
+    SimpleCookie
+)
 
 from galaxy.util import smart_str
 
@@ -388,7 +390,16 @@ class Request(webob.Request):
 
     @lazy_property
     def cookies(self):
-        return get_cookies(self.environ)
+        cookies = SimpleCookie()
+        cookie_header = self.environ.get("HTTP_COOKIE")
+        if cookie_header:
+            galaxy_cookies = "; ".join(x.strip() for x in cookie_header.split('; ') if x.startswith('galaxy'))
+            if galaxy_cookies:
+                try:
+                    cookies.load(galaxy_cookies)
+                except CookieError:
+                    pass
+        return cookies
 
     @lazy_property
     def base(self):

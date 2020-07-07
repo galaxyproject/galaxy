@@ -484,7 +484,7 @@ def run_sniffers_raw(filename_or_file_prefix, sniff_order, is_binary=False):
                     continue
                 if not datatype_compressed and file_prefix.compressed_format:
                     continue
-                if file_prefix.compressed_format and getattr(datatype, "compressed_format"):
+                if file_prefix.compressed_format and getattr(datatype, "compressed_format", None):
                     # In this case go a step further and compare the compressed format detected
                     # to the expected.
                     if file_prefix.compressed_format != datatype.compressed_format:
@@ -638,9 +638,10 @@ def handle_compressed_file(
     is_valid = False
     uncompressed = filename
     tmp_dir = tmp_dir or os.path.dirname(filename)
-    for compressed_type, check_compressed_function in COMPRESSION_CHECK_FUNCTIONS:
+    for key, check_compressed_function in COMPRESSION_CHECK_FUNCTIONS:
         is_compressed, is_valid = check_compressed_function(filename, check_content=check_content)
         if is_compressed:
+            compressed_type = key
             break  # found compression type
     if is_compressed and is_valid:
         if ext in AUTO_DETECT_EXTENSIONS:

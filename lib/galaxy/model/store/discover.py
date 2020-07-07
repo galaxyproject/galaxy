@@ -46,7 +46,7 @@ class ModelPersistenceContext(object):
         visible,
         dbkey,
         name,
-        filename,
+        filename=None,
         metadata_source_name=None,
         info=None,
         library_folder=None,
@@ -54,12 +54,17 @@ class ModelPersistenceContext(object):
         primary_data=None,
         init_from=None,
         dataset_attributes=None,
-        tag_list=[],
-        sources=[],
-        hashes=[],
+        tag_list=None,
+        sources=None,
+        hashes=None,
         created_from_basename=None,
         final_job_state='ok',
     ):
+        tag_list = tag_list or []
+        sources = sources or []
+        hashes = hashes or []
+        dataset_attributes = dataset_attributes or {}
+
         sa_session = self.sa_session
 
         # You can initialize a dataset or initialize from a dataset but not both.
@@ -123,19 +128,28 @@ class ModelPersistenceContext(object):
         if created_from_basename is not None:
             primary_data.created_from_basename = created_from_basename
 
-        self.flush()
-
+        has_flushed = False
         if tag_list:
+            # If we have a tag we need a primary id, so need to flush here
+            # TODO: eliminate creating tag associations within create dataset
+            # We can do this incrementally by not passing in a tag list.
+            self.flush()
+            has_flushed = True
             self.tag_handler.add_tags_from_list(self.job.user, primary_data, tag_list)
 
         # Move data from temp location to dataset location
-        if not link_data:
-            self.object_store.update_from_file(primary_data.dataset, file_name=filename, create=True)
-        else:
-            primary_data.link_to(filename)
+        if filename:
+            # TODO: eliminate this, should happen outside of create_dataset so that we don't need to flush
+            if not has_flushed:
+                self.flush()
+                has_flushed = True
+            if not link_data:
+                self.object_store.update_from_file(primary_data.dataset, file_name=filename, create=True)
+            else:
+                primary_data.link_to(filename)
+            # We are sure there are no extra files, so optimize things that follow by settting total size also.
+            primary_data.set_size(no_extra_files=True)
 
-        # We are sure there are no extra files, so optimize things that follow by settting total size also.
-        primary_data.set_size(no_extra_files=True)
         # If match specified a name use otherwise generate one from
         # designation.
         primary_data.name = name
@@ -155,37 +169,43 @@ class ModelPersistenceContext(object):
         if info is not None:
             primary_data.info = info
 
-        # add tool/metadata provided information
-        dataset_attributes = dataset_attributes or {}
-        if dataset_attributes:
-            # TODO: discover_files should produce a match that encorporates this -
-            # would simplify ToolProvidedMetadata interface and eliminate this
-            # crap path.
-            dataset_att_by_name = dict(ext='extension')
-            for att_set in ['name', 'info', 'ext', 'dbkey']:
-                dataset_att_name = dataset_att_by_name.get(att_set, att_set)
-                setattr(primary_data, dataset_att_name, dataset_attributes.get(att_set, getattr(primary_data, dataset_att_name)))
-
-        try:
-            metadata_dict = dataset_attributes.get('metadata', None)
-            if metadata_dict:
-                if "dbkey" in dataset_attributes:
-                    metadata_dict["dbkey"] = dataset_attributes["dbkey"]
-                # branch tested with tool_provided_metadata_3 / tool_provided_metadata_10
-                primary_data.metadata.from_JSON_dict(json_dict=metadata_dict)
-            else:
-                primary_data.set_meta()
-        except Exception:
-            if primary_data.state == galaxy.model.HistoryDatasetAssociation.states.OK:
-                primary_data.state = galaxy.model.HistoryDatasetAssociation.states.FAILED_METADATA
-            log.exception("Exception occured while setting metdata")
-
-        try:
-            primary_data.set_peek()
-        except Exception:
-            log.exception("Exception occured while setting dataset peek")
+        if filename:
+            self.set_datasets_metadata(datasets=[primary_data], datasets_attributes=[dataset_attributes])
 
         return primary_data
+
+    @staticmethod
+    def set_datasets_metadata(datasets, datasets_attributes=None):
+        datasets_attributes = datasets_attributes or [{} for _ in datasets]
+        for primary_data, dataset_attributes in zip(datasets, datasets_attributes):
+            # add tool/metadata provided information
+            if dataset_attributes:
+                # TODO: discover_files should produce a match that encorporates this -
+                # would simplify ToolProvidedMetadata interface and eliminate this
+                # crap path.
+                dataset_att_by_name = dict(ext='extension')
+                for att_set in ['name', 'info', 'ext', 'dbkey']:
+                    dataset_att_name = dataset_att_by_name.get(att_set, att_set)
+                    setattr(primary_data, dataset_att_name, dataset_attributes.get(att_set, getattr(primary_data, dataset_att_name)))
+
+            try:
+                metadata_dict = dataset_attributes.get('metadata', None)
+                if metadata_dict:
+                    if "dbkey" in dataset_attributes:
+                        metadata_dict["dbkey"] = dataset_attributes["dbkey"]
+                    # branch tested with tool_provided_metadata_3 / tool_provided_metadata_10
+                    primary_data.metadata.from_JSON_dict(json_dict=metadata_dict)
+                else:
+                    primary_data.set_meta()
+            except Exception:
+                if primary_data.state == galaxy.model.HistoryDatasetAssociation.states.OK:
+                    primary_data.state = galaxy.model.HistoryDatasetAssociation.states.FAILED_METADATA
+                log.exception("Exception occured while setting metdata")
+
+            try:
+                primary_data.set_peek()
+            except Exception:
+                log.exception("Exception occured while setting dataset peek")
 
     def populate_collection_elements(self, collection, root_collection_builder, filenames, name=None, metadata_source_name=None, final_job_state='ok'):
         # TODO: allow configurable sorting.
@@ -196,7 +216,7 @@ class ModelPersistenceContext(object):
         if name is None:
             name = "unnamed output"
 
-        element_datasets = []
+        element_datasets = {'element_identifiers': [], 'datasets': [], 'tag_lists': [], 'paths': []}
         for filename, discovered_file in filenames.items():
             create_dataset_timer = ExecutionTimer()
             fields_match = discovered_file.match
@@ -215,7 +235,6 @@ class ModelPersistenceContext(object):
             dataset_name = fields_match.name or designation
 
             link_data = discovered_file.match.link_data
-            tag_list = discovered_file.match.tag_list
 
             sources = discovered_file.match.sources
             hashes = discovered_file.match.hashes
@@ -227,10 +246,8 @@ class ModelPersistenceContext(object):
                 visible=visible,
                 dbkey=dbkey,
                 name=dataset_name,
-                filename=filename,
                 metadata_source_name=metadata_source_name,
                 link_data=link_data,
-                tag_list=tag_list,
                 sources=sources,
                 hashes=hashes,
                 created_from_basename=created_from_basename,
@@ -244,10 +261,14 @@ class ModelPersistenceContext(object):
                 name,
                 create_dataset_timer,
             )
-            element_datasets.append((element_identifiers, dataset))
+            element_datasets['element_identifiers'].append(element_identifiers)
+            element_datasets['datasets'].append(dataset)
+            element_datasets['tag_lists'].append(discovered_file.match.tag_list)
+            element_datasets['paths'].append(filename)
 
         add_datasets_timer = ExecutionTimer()
-        self.add_datasets_to_history([d for (ei, d) in element_datasets])
+        self.add_datasets_to_history(element_datasets['datasets'])
+        self.add_tags_to_datasets(datasets=element_datasets['datasets'], tag_lists=element_datasets['tag_lists'])
         log.debug(
             "(%s) Add dynamic collection datasets to history for output [%s] %s",
             self.job_id(),
@@ -255,7 +276,7 @@ class ModelPersistenceContext(object):
             add_datasets_timer,
         )
 
-        for (element_identifiers, dataset) in element_datasets:
+        for (element_identifiers, dataset) in zip(element_datasets['element_identifiers'], element_datasets['datasets']):
             current_builder = root_collection_builder
             for element_identifier in element_identifiers[:-1]:
                 current_builder = current_builder.get_level(element_identifier)
@@ -267,6 +288,23 @@ class ModelPersistenceContext(object):
             self.add_output_dataset_association(association_name, dataset)
 
         self.flush()
+        self.update_object_store_with_datasets(datasets=element_datasets['datasets'], paths=element_datasets['paths'])
+        self.set_datasets_metadata(datasets=element_datasets['datasets'])
+
+    def add_tags_to_datasets(self, datasets, tag_lists):
+        if any(tag_lists):
+            # This works around SessionlessModelPersistenceContext not implementing a tag handler ...
+            # that's not better or worse than what we previously did in create_datasets
+            # TDOD: implement that or figure out why it is not implemented and find a better solution.
+            # Could it be that SessionlessModelPersistenceContext doesn't support tags?
+            tag_session = self.tag_handler.create_tag_handler_session()
+            for dataset, tags in zip(datasets, tag_lists):
+                tag_session.add_tags_from_list(self.job.user, dataset, tags, flush=False)
+
+    def update_object_store_with_datasets(self, datasets, paths):
+        for dataset, path in zip(datasets, paths):
+            self.object_store.update_from_file(dataset.dataset, file_name=path, create=True)
+            dataset.set_size(no_extra_files=True)
 
     @abc.abstractproperty
     def tag_handler(self):

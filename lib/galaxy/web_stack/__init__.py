@@ -538,7 +538,7 @@ class WeblessApplicationStack(ApplicationStack):
                 or (dialect.name == 'mysql' and dialect.server_version_info >= (8, 0, 1))):
             add_method = HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED
         else:
-            HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION
+            add_method = HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION
         if add_method in job_config.UNSUPPORTED_HANDLER_ASSIGNMENT_METHODS:
             remove_methods.append(add_method)
             add_method = HANDLER_ASSIGNMENT_METHODS.DB_PREASSIGN

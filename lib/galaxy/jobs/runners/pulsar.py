@@ -555,10 +555,11 @@ class PulsarJobRunner(AsynchronousJobRunner):
         job_id = job_state.job_id
         return self.get_client(job_destination_params, job_id)
 
-    def get_client(self, job_destination_params, job_id, env=[]):
+    def get_client(self, job_destination_params, job_id, env=None):
         # Cannot use url_for outside of web thread.
         # files_endpoint = url_for( controller="job_files", job_id=encoded_job_id )
-
+        if env is None:
+            env = []
         encoded_job_id = self.app.security.encode_id(job_id)
         job_key = self.app.security.encode_id(job_id, kind="jobs_files")
         endpoint_base = "%s/api/jobs/%s/files?job_key=%s"

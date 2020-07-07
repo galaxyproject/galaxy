@@ -89,7 +89,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
                 len(trans.app.config.oidc) == 1 and
                 len(trans.app.auth_manager.authenticators) == 0
                 and is_logout_redirect is False):
-            provider = trans.app.config.oidc.keys()[0]
+            provider = next(iter(trans.app.config.oidc.keys()))
             success, message, redirect_uri = trans.app.authnz_manager.authenticate(provider, trans)
             if success:
                 return trans.response.send_redirect(redirect_uri)

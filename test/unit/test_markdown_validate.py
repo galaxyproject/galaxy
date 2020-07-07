@@ -86,12 +86,12 @@ job_metrics(THISFAKEID)
     # assert quotes are fine
     assert_markdown_valid("""
 ```galaxy
-job_metrics(output="Moo Cow")
+job_metrics(step="Moo Cow")
 ```
 """)
     assert_markdown_valid("""
 ```galaxy
-job_metrics(output='Moo Cow')
+job_metrics(step='Moo Cow')
 ```
 """)
     # assert spaces require quotes
@@ -121,3 +121,94 @@ job_metrics(output='Moo Cow)
 job_metrics(output=Moo Cow')
 ```
 """)
+
+    assert_markdown_valid("""
+```galaxy
+workflow_display()
+```
+""")
+
+    # Test image with a composite path (param needs to be closed, can't be misnamed i.e. pathx)
+    assert_markdown_valid("""
+
+```galaxy
+history_dataset_as_image(output="cow", path="foo/bar.png")
+```
+""")
+    assert_markdown_valid("""
+
+```galaxy
+history_dataset_as_image(output=cow, path="foo/bar.png")
+```
+""")
+    assert_markdown_invalid("""
+
+```galaxy
+history_dataset_as_image(output="cow", path="foo/bar.png)
+```
+""", at_line=3)
+    assert_markdown_invalid("""
+
+```galaxy
+history_dataset_as_image(output="cow", pathx="foo/bar.png")
+```
+""", at_line=3)
+
+    # Test validation of three arguments
+    assert_markdown_valid("""
+```galaxy
+history_dataset_link(output=moo, path="cow.png", label="my label")
+```
+""")
+    assert_markdown_invalid("""
+```galaxy
+history_dataset_link(outputx=moo, path="cow.png", label="my label")
+```
+""", at_line=2)
+    assert_markdown_invalid("""
+```galaxy
+history_dataset_link(output=moo, pathx="cow.png", label="my label")
+```
+""", at_line=2)
+    assert_markdown_invalid("""
+```galaxy
+history_dataset_link(output=moo, path="cow.png", labelx="my label")
+```
+""", at_line=2)
+
+    # Test validation of arguments with different whitespaces
+    assert_markdown_valid("""
+```galaxy
+history_dataset_link(output= moo, path= "cow.png", label= "my label")
+```
+""")
+    assert_markdown_valid("""
+```galaxy
+history_dataset_link(output = moo, path = "cow.png", label = "my label")
+```
+""")
+    assert_markdown_valid("""
+```galaxy
+history_dataset_link(output = moo, path ="cow.png", label= "my label" )
+```
+""")
+    assert_markdown_valid("""
+```galaxy
+history_dataset_link(  output = moo, path ="cow.png", label= "my label" )
+```
+""")
+    assert_markdown_invalid("""
+```galaxy
+history_dataset_link(  outputx = moo, path ="cow.png", label= "my label" )
+```
+""", at_line=2)
+    assert_markdown_invalid("""
+```galaxy
+history_dataset_link(  output = moo, pathx ="cow.png", label= "my label" )
+```
+""", at_line=2)
+    assert_markdown_invalid("""
+```galaxy
+history_dataset_link(  output = moo, path ="cow.png", labelx= "my label" )
+```
+""", at_line=2)

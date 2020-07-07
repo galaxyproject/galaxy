@@ -4,6 +4,7 @@ import routes
 
 from galaxy import managers
 from galaxy.exceptions import ObjectNotFound
+from galaxy.managers.base import decode_id
 from galaxy.managers.collections_util import (
     api_payload_to_create_params,
     dictify_dataset_collection_instance,
@@ -52,7 +53,7 @@ class DatasetCollectionsController(
         instance_type = payload.pop("instance_type", "history")
         if instance_type == "history":
             history_id = payload.get('history_id')
-            history_id = self.decode_id(history_id)
+            history_id = decode_id(self.app, history_id)
             history = self.history_manager.get_owned(history_id, trans.user, current_history=trans.history)
             create_params["parent"] = history
         elif instance_type == "library":
@@ -115,7 +116,7 @@ class DatasetCollectionsController(
             instance_type=instance_type)
 
         # check to make sure the dsc is part of the validated hdca
-        decoded_parent_id = trans.app.security.decode_id(parent_id)
+        decoded_parent_id = decode_id(self.app, parent_id)
         if not hdca.contains_collection(decoded_parent_id):
             errmsg = 'Requested dataset collection is not contained within indicated history content'
             raise ObjectNotFound(errmsg)

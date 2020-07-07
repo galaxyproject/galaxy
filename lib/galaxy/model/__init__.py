@@ -1766,8 +1766,8 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
             object_session(self).add(dataset)
             object_session(self).flush()
         elif not isinstance(dataset, HistoryDatasetAssociation):
-            raise TypeError("You can only add Dataset and HistoryDatasetAssociation instances to a history" +
-                            " ( you tried to add %s )." % str(dataset))
+            raise TypeError("You can only add Dataset and HistoryDatasetAssociation instances to a history"
+                            + " ( you tried to add %s )." % str(dataset))
         if parent_id:
             for data in self.datasets:
                 if data.id == parent_id:
@@ -3378,8 +3378,8 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
 
     @type_id.expression
     def type_id(cls):
-        return ((type_coerce(cls.content_type, types.Unicode) + u'-' +
-                 type_coerce(cls.id, types.Unicode)).label('type_id'))
+        return ((type_coerce(cls.content_type, types.Unicode) + u'-'
+                 + type_coerce(cls.id, types.Unicode)).label('type_id'))
 
 
 class HistoryDatasetAssociationHistory(RepresentById):
@@ -4288,8 +4288,8 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
 
     @type_id.expression
     def type_id(cls):
-        return ((type_coerce(cls.content_type, types.Unicode) + u'-' +
-                 type_coerce(cls.id, types.Unicode)).label('type_id'))
+        return ((type_coerce(cls.content_type, types.Unicode) + u'-'
+                 + type_coerce(cls.id, types.Unicode)).label('type_id'))
 
     @property
     def job_source_type(self):
@@ -5941,11 +5941,11 @@ class CloudAuthz(RepresentById):
         return not self.__eq__(other)
 
     def equals(self, user_id, provider, authn_id, config):
-        return (self.user_id == user_id and
-                self.provider == provider and
-                self.authn_id == authn_id and
-                len({k: self.config[k] for k in self.config if k in config and
-                     self.config[k] == config[k]}) == len(self.config))
+        return (self.user_id == user_id
+                and self.provider == provider
+                and self.authn_id == authn_id
+                and len({k: self.config[k] for k in self.config if k in config
+                         and self.config[k] == config[k]}) == len(self.config))
 
 
 class Page(Dictifiable, RepresentById):

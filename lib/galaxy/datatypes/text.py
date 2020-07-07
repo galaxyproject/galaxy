@@ -55,7 +55,7 @@ class Html(Text):
         True
         """
         headers = iter_headers(file_prefix, None)
-        for i, hdr in enumerate(headers):
+        for hdr in headers:
             if hdr and hdr[0].lower().find('<html>') >= 0:
                 return True
         return False
@@ -358,7 +358,7 @@ class ImgtJson(Json):
                 try:
                     json_dict = json.load(fh)
                     tax_names = []
-                    for i, entry in enumerate(json_dict):
+                    for entry in json_dict:
                         if 'taxonId' in entry:
                             names = "%d: %s" % (entry['taxonId'], ','.join(entry['speciesNames']))
                             tax_names.append(names)
@@ -592,7 +592,7 @@ class SnpEffDb(Text):
         genome_version = None
         snpeff_version = None
         if data_dir and os.path.isdir(data_dir):
-            for root, dirs, files in os.walk(data_dir):
+            for root, _, files in os.walk(data_dir):
                 for fname in files:
                     if fname.startswith('snpEffectPredictor'):
                         # if snpEffectPredictor.bin download succeeded
@@ -678,7 +678,7 @@ class SnpSiftDbNSFP(Text):
             efp = dataset.extra_files_path
             if os.path.exists(efp):
                 flist = os.listdir(efp)
-                for i, fname in enumerate(flist):
+                for fname in flist:
                     if fname.endswith('.gz'):
                         dataset.metadata.bgzip = fname
                         try:

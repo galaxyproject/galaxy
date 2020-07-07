@@ -1,4 +1,5 @@
 import axios from "axios";
+import { rethrowSimple } from "utils/simple-error";
 
 /** Datasets request helper **/
 export class Services {
@@ -65,6 +66,30 @@ export class Services {
             return response.data;
         } catch (e) {
             this._errorMessage(e);
+        }
+    }
+
+    async getCompositeDatasetContentFiles(id) {
+        const url = `${this.root}api/histories/${id}/contents/${id}/extra_files`;
+        try {
+            const response = await axios.get(url);
+            return response.data;
+        } catch (e) {
+            rethrowSimple(e);
+        }
+    }
+
+    getCompositeDatasetLink(history_dataset_id, path) {
+        return `${this.root}api/histories/${history_dataset_id}/contents/${history_dataset_id}/display?filename=${path}`;
+    }
+
+    async getCompositeDatasetInfo(id) {
+        const url = `${this.root}api/histories/${id}/contents/${id}`;
+        try {
+            const response = await axios.get(url);
+            return response.data;
+        } catch (e) {
+            rethrowSimple(e);
         }
     }
 

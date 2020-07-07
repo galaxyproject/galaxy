@@ -14,7 +14,7 @@ import galaxy.datatypes.registry
 import galaxy.model
 import galaxy.model.mapping
 import galaxy.web.framework
-import galaxy.web.framework.webapp
+import galaxy.webapps.base.webapp
 from galaxy import util
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
@@ -27,7 +27,7 @@ from galaxy.webapps.util import wrap_if_allowed
 log = logging.getLogger(__name__)
 
 
-class GalaxyWebApplication(galaxy.web.framework.webapp.WebApplication):
+class GalaxyWebApplication(galaxy.webapps.base.webapp.WebApplication):
     pass
 
 
@@ -196,7 +196,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
 
 
 def uwsgi_app():
-    return galaxy.web.framework.webapp.build_native_uwsgi_app(app_factory, "galaxy")
+    return galaxy.webapps.base.webapp.build_native_uwsgi_app(app_factory, "galaxy")
 
 
 # For backwards compatibility
@@ -459,7 +459,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.resource('datatype',
                            'datatypes',
                            path_prefix='/api',
-                           collection={'sniffers': 'GET', 'mapping': 'GET', 'converters': 'GET', 'edam_data': 'GET', 'edam_formats': 'GET'},
+                           collection={'sniffers': 'GET', 'mapping': 'GET', 'converters': 'GET', 'edam_data': 'GET', 'edam_formats': 'GET', 'types_and_mapping': 'GET'},
                            parent_resources=dict(member_name='datatype', collection_name='datatypes'))
     webapp.mapper.resource('search', 'search', path_prefix='/api')
     webapp.mapper.connect('/api/pages/{id}.pdf', action='show_pdf', controller="pages", conditions=dict(method=["GET"]))
@@ -1249,5 +1249,5 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
 
 
 def wrap_in_static(app, global_conf, plugin_frameworks=None, **local_conf):
-    urlmap, cache_time = galaxy.web.framework.webapp.build_url_map(app, global_conf, local_conf)
+    urlmap, cache_time = galaxy.webapps.base.webapp.build_url_map(app, global_conf, local_conf)
     return urlmap
