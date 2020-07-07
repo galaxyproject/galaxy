@@ -3,14 +3,18 @@
         <h2 class="mb-3">
             <span id="invocations-title">BioCompute Objects</span>
         </h2>
-        <json-dump class="item" :item="treeData" />
+        <ul>
+            <json-dump class="item" :item="treeData" />
+        </ul>
     </div>
 </template>
 
 <script>
 
 import axios from "axios";
-import { getAppRoot } from "onload/loadConfig";
+import {
+    getAppRoot
+} from "onload/loadConfig";
 import JsonDump from "components/bco/JsonDump.vue";
 
 export default {
@@ -24,20 +28,61 @@ export default {
             required: true,
         },
     },
-    data: function () {
+    data: function() {
         return {
             treeData: {},
         };
     },
     computed: {
-        getBCO: function () {
+        getBCO: function() {
             const invocationId = this.invocationId;
             const url = getAppRoot() + `api/invocations/${invocationId}/export_bco`;
+
+            // Iterator.
+            
+            // Source:  https://stackoverflow.com/questions/53050116/converting-a-regular-json-file-to-a-parent-child-hierarchical-json-as-used-by-d3
+            
+            const iterate = (obj) => {
+            
+            	const getObjects = (o, parent) =>
+		    o && typeof o === 'object' ? Object.entries(o).map(([name, v]) => ({
+			name,
+			parent,
+			children: getObjects(v, name)
+		    })) : [{
+			name: o,
+			parent
+		    }];
+		
+		var pc_struct = [obj],
+    		result = getObjects({ Root: pc_struct[0] }, 'null');
+    		
+    		// Get rid of the root element, converting the array
+    		// into an object.
+    		
+    		// Source:  https://stackoverflow.com/questions/7193599/how-can-i-turn-a-jsonarray-into-a-jsonobject
+    		
+    		//JSONObject jo = new JSONObject();
+    		
+		// Populate the array.
+		//for(var i in result[0]) {
+		
+			//jo.put(i, result[0]);
+		
+		//}
+    		
+    		// Kick it back.
+    		console.log(result[0]);
+    		return(result[0]);
+    		
+    		//return(jo);
+    		
+            }
 
             axios
                 .get(url)
                 .then((response) => {
-                    this.treeData = response.data;
+                    this.treeData = iterate(response.data);
                 })
                 .catch((e) => {
                     console.error(e);
@@ -45,7 +90,13 @@ export default {
         },
     },
     methods: {
-        onScroll({ target: { scrollTop, clientHeight, scrollHeight } }) {
+        onScroll({
+            target: {
+                scrollTop,
+                clientHeight,
+                scrollHeight
+            }
+        }) {
             if (scrollTop + clientHeight >= scrollHeight) {
                 if (this.offset + this.limit <= this.rows.length) {
                     this.offset += this.limit;
