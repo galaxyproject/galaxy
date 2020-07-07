@@ -2,7 +2,7 @@
 
 __version__ = '19.9.0.dev0'
 
-PROJECT_NAME = "galaxy-web-apps"
+PROJECT_NAME = "galaxy-webapps"
 PROJECT_OWNER = PROJECT_USERAME = "galaxyproject"
 PROJECT_URL = "https://github.com/galaxyproject/galaxy"
 PROJECT_AUTHOR = 'Galaxy Project and Community'

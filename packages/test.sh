@@ -14,7 +14,6 @@ TEST_ENV_DIR=${TEST_ENV_DIR:-$(mktemp -d -t gxpkgtestenvXXXXXX)}
 
 virtualenv -p "$TEST_PYTHON" "$TEST_ENV_DIR"
 . "${TEST_ENV_DIR}/bin/activate"
-pip install pytest
 
 # ensure ordered by dependency dag
 PACKAGE_DIRS=(
@@ -29,7 +28,7 @@ PACKAGE_DIRS=(
     web_stack
     web_framework
     app
-    web_apps
+    webapps
 )
 # tool_util not yet working 100%,
 # data has many problems quota, tool shed install database, etc..
@@ -39,7 +38,9 @@ for ((i=0; i<${#PACKAGE_DIRS[@]}; i++)); do
     run_tests=${RUN_TESTS[$i]}
 
     cd "$package_dir"
-    pip install -e .
+    pip install -e '.'
+    pip install -r test-requirements.txt
+
     # Install extras (if needed)
     if [ "$package_dir" = "util" ]; then
         pip install -e '.[template,jstree]'

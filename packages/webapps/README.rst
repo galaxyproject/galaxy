@@ -1,6 +1,6 @@
 
-.. image:: https://badge.fury.io/py/galaxy-web-apps.svg
-   :target: https://pypi.python.org/pypi/galaxy-web-apps/
+.. image:: https://badge.fury.io/py/galaxy-webapps.svg
+   :target: https://pypi.python.org/pypi/galaxy-webapps/
 
 
 Overview
