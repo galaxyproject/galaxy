@@ -7,9 +7,9 @@ from tempfile import mkdtemp
 
 from galaxy import model
 from galaxy.exceptions import MalformedContents
+from galaxy.objectstore.test_helpers import TestConfig
 from galaxy.tools.imp_exp import JobExportHistoryArchiveWrapper, JobImportHistoryArchiveWrapper, unpack_tar_gz_archive
 from galaxy.tools.imp_exp.export_history import create_archive
-from ..objectstore.test_objectstore import TestConfig
 from ..unittest_utils.galaxy_mock import MockApp
 
 

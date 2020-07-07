@@ -6,8 +6,8 @@ import galaxy.datatypes.registry
 import galaxy.model
 import galaxy.model.mapping as mapping
 from galaxy.model.metadata import MetadataTempFile
+from galaxy.objectstore.test_helpers import DISK_TEST_CONFIG, TestConfig
 from galaxy.util import ExecutionTimer
-from .objectstore.test_objectstore import DISK_TEST_CONFIG, TestConfig
 
 
 datatypes_registry = galaxy.datatypes.registry.Registry()
