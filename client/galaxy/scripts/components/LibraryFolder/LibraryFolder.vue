@@ -120,7 +120,7 @@
                 <template v-slot:cell(buttons)="row">
                     <div v-if="row.item.editMode">
                         <button
-                            @click="row.item.id ? saveChanges(row.item) : createNewFolder(row.item)"
+                            @click="row.item.isNewFolder ? createNewFolder(row.item) : saveChanges(row.item)"
                             class="primary-button btn-sm permission_folder_btn"
                             :title="'save ' + row.item.name"
                         >
@@ -317,7 +317,7 @@ export default {
         toggleMode(item) {
             item.editMode = !item.editMode;
             this.folderContents = this.folderContents.filter((item) => {
-                if (item.id) return item;
+                if (!item.isNewFolder) return item;
             });
             this.refreshTable();
         },
@@ -347,6 +347,8 @@ export default {
                         folder.update_time = resp.update_time;
                         folder.editMode = false;
                         folder.can_manage = true;
+                        folder.isNewFolder = false;
+
                         this.refreshTable();
                         Toast.success("Folder created.");
                     },

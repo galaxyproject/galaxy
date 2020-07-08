@@ -106,6 +106,7 @@ export default {
         newFolder() {
             this.folderContents.unshift({
                 editMode: true,
+                isNewFolder: true,
                 type: "folder",
                 name: "",
                 description: "",
