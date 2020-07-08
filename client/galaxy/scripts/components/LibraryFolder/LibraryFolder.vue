@@ -207,10 +207,10 @@ import linkify from "linkifyjs/html";
 import { fields } from "./table-fields";
 import { Toast } from "ui/toast";
 import FolderTopBar from "./TopToolbar/FolderTopBar";
-import { initFontAwesomeIcons } from "./icons.js";
+import { initFolderTableIcons } from "./icons.js";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
-initFontAwesomeIcons();
+initFolderTableIcons();
 
 Vue.use(BootstrapVue);
 

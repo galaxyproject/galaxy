@@ -53,18 +53,12 @@
 <script>
 import BootstrapVue from "bootstrap-vue";
 import { getGalaxyInstance } from "app";
-import { library } from "@fortawesome/fontawesome-svg-core";
-
 import Vue from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faHome } from "@fortawesome/free-solid-svg-icons";
-import { faPlus } from "@fortawesome/free-solid-svg-icons";
-import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { showLocInfo } from "./details-modal";
+import {initTopBarIcons} from "components/LibraryFolder/icons"
 
-library.add(faHome);
-library.add(faPlus);
-library.add(faInfoCircle);
+initTopBarIcons()
 
 Vue.use(BootstrapVue);
 
