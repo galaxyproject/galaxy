@@ -1,0 +1,104 @@
+<template>
+    <div class="d-flex align-items-center mb-2">
+        <a class="mr-1 btn btn-secondary" href="/library/list" data-toggle="tooltip" title="Go to first page">
+            <font-awesome-icon icon="home" />
+        </a>
+        <div>
+            <form class="form-inline">
+                <b-input-group size="sm">
+                    <b-form-input
+                        class="mr-1"
+                        v-on:input="updateSearch($event)"
+                        type="search"
+                        id="filterInput"
+                        placeholder="Search"
+                    >
+                        >
+                    </b-form-input>
+                </b-input-group>
+                <button
+                    v-if="metadata.can_add_library_item"
+                    title="Create new folder"
+                    class="btn btn-secondary toolbtn-create-folder add-library-items add-library-items-folder mr-1"
+                    type="button"
+                    @click="newFolder"
+                >
+                    <font-awesome-icon icon="plus" />
+                    Folder
+                </button>
+            </form>
+        </div>
+    </div>
+</template>
+<script>
+import BootstrapVue from "bootstrap-vue";
+import { getGalaxyInstance } from "app";
+import { Toast } from "ui/toast";
+import { getAppRoot } from "onload/loadConfig";
+import { library } from "@fortawesome/fontawesome-svg-core";
+
+import Vue from "vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { faHome } from "@fortawesome/free-solid-svg-icons";
+import { faPlus } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faHome);
+library.add(faPlus);
+
+Vue.use(BootstrapVue);
+
+export default {
+    name: "FolderTopBar",
+    props: {
+        folder_id: {
+            type: String,
+            required: true,
+        },
+        selected: {
+            type: Array,
+            required: true,
+        },
+        metadata: {
+            type: Object,
+            required: true,
+        },
+    },
+    components: {
+        FontAwesomeIcon,
+    },
+    created() {
+        const Galaxy = getGalaxyInstance();
+        this.is_admin = Galaxy.user.attributes.is_admin;
+        this.user_library_import_dir = Galaxy.config.user_library_import_dir;
+        this.library_import_dir = Galaxy.config.library_import_dir;
+        this.allow_library_path_paste = Galaxy.config.allow_library_path_paste;
+        if (
+            this.user_library_import_dir !== null ||
+            this.allow_library_path_paste !== false ||
+            this.library_import_dir !== null
+        ) {
+            this.multiple_add_dataset_options = true;
+        }
+    },
+    methods: {
+        updateSearch: function (value) {
+            this.$emit("updateSearch", value);
+        },
+        newFolder: function () {
+            this.$emit("newFolder");
+        },
+        /*
+             Slightly adopted legacy backbone code
+             */
+        findCheckedItems: function () {
+            const folder_ids = [];
+            const dataset_ids = [];
+
+            this.selected.forEach((item) =>
+                item.type === "folder" ? folder_ids.push(item.id) : dataset_ids.push(item.id)
+            );
+            return { folder_ids: folder_ids, dataset_ids: dataset_ids };
+        },
+    },
+};
+</script>
