@@ -36,12 +36,16 @@
                     <span class="fa fa-trash"></span> Delete
                 </button>
                 <span class="mr-1" data-toggle="tooltip" title="Show location details">
-                                <button @click="showDetails" data-id="<%- id %>"
-                                        class="primary-button toolbtn-show-locinfo" type="button">
-                                                <font-awesome-icon icon="info-circle"/>
-                                                Details
-                                </button>
-                 </span>
+                    <button
+                        @click="showDetails"
+                        data-id="<%- id %>"
+                        class="primary-button toolbtn-show-locinfo"
+                        type="button"
+                    >
+                        <font-awesome-icon icon="info-circle" />
+                        Details
+                    </button>
+                </span>
             </form>
         </div>
     </div>
@@ -56,7 +60,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faHome } from "@fortawesome/free-solid-svg-icons";
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
-import {showLocInfo} from "./details-modal";
+import { showLocInfo } from "./details-modal";
 
 library.add(faHome);
 library.add(faPlus);
@@ -117,10 +121,9 @@ export default {
         /*
         Slightly adopted Bootstrap code
          */
-        showDetails(){
-            showLocInfo(Object.assign({id: this.folder_id}, this.metadata))
-        }
-
+        showDetails() {
+            showLocInfo(Object.assign({ id: this.folder_id }, this.metadata));
+        },
     },
 };
 </script>

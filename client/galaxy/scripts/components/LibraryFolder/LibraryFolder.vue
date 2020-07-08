@@ -3,7 +3,7 @@
         <div v-if="!hasLoaded" class="d-flex justify-content-center m-5">
             <font-awesome-icon icon="spinner" spin size="9x" />
         </div>
-        <div v-else-if="folderContents.length !== 0">
+        <div v-else>
             <FolderTopBar
                 @updateSearch="updateSearchValue($event)"
                 @refreshTable="refreshTable"
@@ -27,8 +27,17 @@
                 @row-selected="onRowSelected"
                 ref="folder_content_table"
                 @filtered="onFiltered"
+                show-empty
             >
-                
+                <template v-slot:empty="">
+                    <div class="empty-folder-text">
+                        This folder is either empty or you do not have proper access permissions to see the contents. If
+                        you expected something to show up please consult the
+                        <a href="https://galaxyproject.org/data-libraries/#permissions" target="_blank">
+                            library security wikipage
+                        </a>
+                    </div>
+                </template>
                 <template v-slot:head(selected)="">
                     <span class="select-all-symbl" @click="toggleSelect">&check;</span>
                 </template>
@@ -183,13 +192,6 @@
                     </b-col>
                 </b-row>
             </b-container>
-        </div>
-        <div v-else class="empty-folder-text">
-            This folder is either empty or you do not have proper access permissions to see the contents. If you
-            expected something to show up please consult the
-            <a href="https://galaxyproject.org/data-libraries/#permissions" target="_blank">
-                library security wikipage
-            </a>
         </div>
     </div>
 </template>

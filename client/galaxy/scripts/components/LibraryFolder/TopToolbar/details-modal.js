@@ -1,11 +1,11 @@
-import {getGalaxyInstance} from "app";
+import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
-import {Toast} from "ui/toast";
+import { Toast } from "ui/toast";
 import mod_library_model from "mvc/library/library-model";
 import _ from "underscore";
 
 export function showLocInfo(metadata) {
-    const lib_id = metadata.parent_library_id
+    const lib_id = metadata.parent_library_id;
     const Galaxy = getGalaxyInstance();
     var library = null;
     // if (Galaxy.libraries.libraryListView !== null) {
@@ -38,7 +38,7 @@ function showLocInfoModal(library, metadata) {
     modal.show({
         closing_events: true,
         title: _l("Location Details"),
-        body: template({library: library, options: metadata}),
+        body: template({ library: library, options: metadata }),
         buttons: {
             Close: () => {
                 Galaxy.modal.hide();
