@@ -1,13 +1,15 @@
 <template>
-    <div class="progress state-progress">
+    <div>
         <span class="note" v-if="note">
-            {{ note }}<span v-if="loading">.<span class="blinking">..</span> </span>
+            {{ note }}<span v-if="loading">.<span class="blinking">..</span></span>
         </span>
-        <div class="progress-bar info" :style="styleFromProgress(infoProgress)" :title="infoMessage"></div>
-        <div class="progress-bar ok" :style="styleFromProgress(okProgress)" :title="okMessage"></div>
-        <div class="progress-bar running" :style="styleFromProgress(runningProgress)" :title="runningMessage"></div>
-        <div class="progress-bar new" :style="styleFromProgress(newProgress)" :title="newMessage"></div>
-        <div class="progress-bar error" :style="styleFromProgress(errorProgress)" :title="errorMessage"></div>
+        <b-progress>
+            <b-progress-bar variant="secondary" :value="infoProgress * 100" :label="infoMessage"/>
+            <b-progress-bar variant="info" :value="runningProgress * 100" :label="runningMessage"/>
+            <b-progress-bar variant="success" :value="okProgress * 100" :label="okMessage"/>
+            <b-progress-bar variant="warning" :value="newProgress * 100" :label="newMessage"/>
+            <b-progress-bar variant="danger" :value="errorProgress * 100" :label="errorMessage"/>
+        </b-progress>
     </div>
 </template>
 <script>
@@ -26,11 +28,6 @@ export default {
         newMessage: { type: String, default: null },
         errorProgress: { type: Number, default: 0.0 },
         errorMessage: { type: String, default: null },
-    },
-    methods: {
-        styleFromProgress: function (progress) {
-            return { width: `${progress * 100}%` };
-        },
-    },
+    }
 };
 </script>

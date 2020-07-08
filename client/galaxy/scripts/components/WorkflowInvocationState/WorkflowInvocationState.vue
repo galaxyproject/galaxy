@@ -2,7 +2,6 @@
     <div>
         <span v-if="provideContext">
             <b>Workflow Invocation State</b>
-            <span v-if="createdTime"> (invoked at {{ createdTime }})</span>
         </span>
         <div :class="{ 'context-wrapped': provideContext }">
             <div>
@@ -67,7 +66,6 @@ import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
 import { cancelWorkflowScheduling } from "./services";
-
 import { getRootFromIndexLink } from "onload";
 import JOB_STATES_MODEL from "mvc/history/job-states-model";
 import mixin from "components/JobStates/mixin";
