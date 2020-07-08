@@ -35,6 +35,13 @@
                 >
                     <span class="fa fa-trash"></span> Delete
                 </button>
+                <span class="mr-1" data-toggle="tooltip" title="Show location details">
+                                <button @click="showDetails" data-id="<%- id %>"
+                                        class="primary-button toolbtn-show-locinfo" type="button">
+                                                <font-awesome-icon icon="info-circle"/>
+                                                Details
+                                </button>
+                 </span>
             </form>
         </div>
     </div>
@@ -42,17 +49,18 @@
 <script>
 import BootstrapVue from "bootstrap-vue";
 import { getGalaxyInstance } from "app";
-import { Toast } from "ui/toast";
-import { getAppRoot } from "onload/loadConfig";
 import { library } from "@fortawesome/fontawesome-svg-core";
 
 import Vue from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faHome } from "@fortawesome/free-solid-svg-icons";
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import {showLocInfo} from "./details-modal";
 
 library.add(faHome);
 library.add(faPlus);
+library.add(faInfoCircle);
 
 Vue.use(BootstrapVue);
 
@@ -106,6 +114,13 @@ export default {
             });
             this.$emit("refreshTable");
         },
+        /*
+        Slightly adopted Bootstrap code
+         */
+        showDetails(){
+            showLocInfo(Object.assign({id: this.folder_id}, this.metadata))
+        }
+
     },
 };
 </script>

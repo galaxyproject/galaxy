@@ -28,6 +28,7 @@
                 ref="folder_content_table"
                 @filtered="onFiltered"
             >
+                
                 <template v-slot:head(selected)="">
                     <span class="select-all-symbl" @click="toggleSelect">&check;</span>
                 </template>
@@ -203,7 +204,7 @@ import Utils from "utils/utils";
 import linkify from "linkifyjs/html";
 import { fields } from "./table-fields";
 import { Toast } from "ui/toast";
-import FolderTopBar from "./FolderTopBar";
+import FolderTopBar from "./TopToolbar/FolderTopBar";
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -215,10 +216,6 @@ import { faGlobe } from "@fortawesome/free-solid-svg-icons";
 import { faKey } from "@fortawesome/free-solid-svg-icons";
 import { faSave } from "@fortawesome/free-regular-svg-icons";
 import { faTimes } from "@fortawesome/free-solid-svg-icons";
-import { getGalaxyInstance } from "app";
-import mod_library_model from "mvc/library/library-model";
-import Backbone from "backbone";
-import $ from "jquery";
 
 library.add(faFile);
 library.add(faFolder);
@@ -280,7 +277,7 @@ export default {
                 this.folderContents = response.folder_contents;
                 this.folder_metadata = response.metadata;
                 this.hasLoaded = true;
-                console.log(this.folderContents);
+                console.log(response);
             })
             .catch((error) => {
                 this.error = error;
