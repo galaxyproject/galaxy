@@ -363,6 +363,7 @@ export default {
                         folder.description = description;
                         folder.update_time = resp.update_time;
                         folder.editMode = false;
+                        folder.can_manage = true;
                         this.refreshTable();
                         Toast.success("Folder created.");
                     },
