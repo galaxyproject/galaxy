@@ -34,7 +34,6 @@ export class Services {
         }
     }
     newFolder(folder, onSucess, onError) {
-        console.log(folder);
         const url = `${this.root}api/folders/${folder.parent_id}`;
         try {
             const response = axios
@@ -42,8 +41,8 @@ export class Services {
                     name: folder.name,
                     description: folder.description,
                 })
-                .then(() => {
-                    onSucess();
+                .then((response) => {
+                    onSucess(response.data);
                 })
                 .catch((error) => {
                     onError(error);

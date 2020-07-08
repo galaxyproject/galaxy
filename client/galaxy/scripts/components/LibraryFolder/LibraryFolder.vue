@@ -365,17 +365,14 @@ export default {
                         name: name,
                         description: description,
                     },
-                    () => {
+                    (resp) => {
+                        folder.id = resp.id;
+                        folder.name = name;
+                        folder.description = description;
+                        folder.update_time = resp.update_time;
+                        folder.editMode = false;
+                        this.refreshTable();
                         Toast.success("Folder created.");
-                        // TODO: Find a better way to get new folder ID
-                        this.services.getFolderContents(this.folder_id).then((response) => {
-                            response.folder_contents.forEach(
-                                (content) => (content.update_time = new Date(content.update_time).toISOString())
-                            );
-                            this.folderContents = response.folder_contents;
-                            this.folder_metadata = response.metadata;
-                            this.refreshTable();
-                        });
                     },
                     () => {
                         Toast.error("An error occurred.");
@@ -384,8 +381,8 @@ export default {
             }
         },
         /*
-            Former Backbone code, adopted to work with Vue
-            */
+         Former Backbone code, adopted to work with Vue
+        */
         saveChanges(folder) {
             let is_changed = false;
             const new_name = this.$refs[`name${folder.id}`].value;
