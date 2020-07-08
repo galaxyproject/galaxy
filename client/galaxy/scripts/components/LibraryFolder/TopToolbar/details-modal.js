@@ -8,27 +8,26 @@ export function showLocInfo(metadata) {
     const lib_id = metadata.parent_library_id;
     const Galaxy = getGalaxyInstance();
     var library = null;
-    // if (Galaxy.libraries.libraryListView !== null) {
-    //     library = Galaxy.libraries.libraryListView.collection.get(this.folder_id);
-    //     this.showLocInfoModal(library);
-    // } else {
-
-    library = new mod_library_model.Library({
-        id: lib_id,
-    });
-    library.fetch({
-        success: () => {
-            showLocInfoModal(library, metadata);
-        },
-        error: function (model, response) {
-            if (typeof response.responseJSON !== "undefined") {
-                Toast.error(response.responseJSON.err_msg);
-            } else {
-                Toast.error("An error occurred.");
-            }
-        },
-    });
-    // }
+    if (Galaxy.libraries && Galaxy.libraries.libraryListView !== null) {
+        library = Galaxy.libraries.libraryListView.collection.get(this.folder_id);
+        this.showLocInfoModal(library);
+    } else {
+        library = new mod_library_model.Library({
+            id: lib_id,
+        });
+        library.fetch({
+            success: () => {
+                showLocInfoModal(library, metadata);
+            },
+            error: function (model, response) {
+                if (typeof response.responseJSON !== "undefined") {
+                    Toast.error(response.responseJSON.err_msg);
+                } else {
+                    Toast.error("An error occurred.");
+                }
+            },
+        });
+    }
 }
 
 function showLocInfoModal(library, metadata) {
