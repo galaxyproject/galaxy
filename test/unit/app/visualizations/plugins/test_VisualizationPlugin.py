@@ -11,7 +11,7 @@ from galaxy.visualization.plugins import (
     resource_parser,
     utils as vis_utils
 )
-from ...unittest_utils import galaxy_mock
+from ....unittest_utils import galaxy_mock
 
 
 class VisualizationsPlugin_TestCase(unittest.TestCase):
