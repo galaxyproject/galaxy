@@ -3,9 +3,13 @@
         <h2 class="mb-3">
             <span id="invocations-title">BioCompute Object for Invocation {{ invocationId }}</span>
         </h2>
-        <ul>
-            <json-dump class="item" :item="treeData" />
-        </ul>
+        <div id="objectid">
+            <table>
+            	<object-id :item="object_id" />
+            </table>
+        </div>
+        <spec-version :item="spec_version" />
+        <e-tag :item="etag" />
     </div>
 </template>
 
@@ -15,7 +19,9 @@ import axios from "axios";
 import {
     getAppRoot
 } from "onload/loadConfig";
-import JsonDump from "components/bco/JsonDump.vue";
+import ObjectId from "components/bco/ObjectId.vue";
+import SpecVersion from "components/bco/SpecVersion.vue";
+import ETag from "components/bco/ETag.vue";
 
 import { mapCacheActions } from "vuex-cache";
 import { mapGetters, mapActions } from "vuex";
@@ -24,7 +30,9 @@ import { getRootFromIndexLink } from "onload";
 export default {
     name: "BCOviewer",
     components: {
-        JsonDump,
+        ObjectId,
+        SpecVersion,
+        ETag,
     },
     props: {
         invocationId: {
@@ -36,6 +44,9 @@ export default {
         return {
             treeData: {},
             bco: {},
+            object_id: {},
+            spec_version: {},
+            etag: {},
         };
     },
     computed: {
@@ -64,35 +75,29 @@ export default {
             parent
             }];
         
-        var pc_struct = [obj],
+        	var pc_struct = [obj],
             result = getObjects({ Root: pc_struct[0] }, 'null');
             
-            // Get rid of the root element, converting the array
-            // into an object.
-            
-            // Source:  https://stackoverflow.com/questions/7193599/how-can-i-turn-a-jsonarray-into-a-jsonobject
-            
-            //JSONObject jo = new JSONObject();
-            
-        // Populate the array.
-        //for(var i in result[0]) {
-        
-            //jo.put(i, result[0]);
-        
-        //}
-            
             // Kick it back.
-            console.log(result[0]);
-            return(result[0]);
-            
-            //return(jo);
-            
+            return(result[0]['children']);
+    		
             }
 
             axios
                 .get(url)
                 .then((response) => {
+                    
+                    // First, get the tree data in parent/child format.
                     this.treeData = iterate(response.data);
+                    
+                    // Create a property handler.
+                    var this_helper = this;
+                    
+                    // Now go through and define individual top-level objects.
+                    this.treeData.forEach(function (item, index) {
+			  this_helper[item['name']] = item;
+			});
+                    console.log(this);
                 })
                 .catch((e) => {
                     console.error(e);
