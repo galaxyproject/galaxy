@@ -207,26 +207,10 @@ import linkify from "linkifyjs/html";
 import { fields } from "./table-fields";
 import { Toast } from "ui/toast";
 import FolderTopBar from "./TopToolbar/FolderTopBar";
-
+import { initFontAwesomeIcons } from "./icons.js";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faFile } from "@fortawesome/free-regular-svg-icons";
-import { faFolder } from "@fortawesome/free-regular-svg-icons";
-import { faSpinner } from "@fortawesome/free-solid-svg-icons";
-import { faShieldAlt } from "@fortawesome/free-solid-svg-icons";
-import { faGlobe } from "@fortawesome/free-solid-svg-icons";
-import { faKey } from "@fortawesome/free-solid-svg-icons";
-import { faSave } from "@fortawesome/free-regular-svg-icons";
-import { faTimes } from "@fortawesome/free-solid-svg-icons";
 
-library.add(faFile);
-library.add(faFolder);
-library.add(faSpinner);
-library.add(faShieldAlt);
-library.add(faKey);
-library.add(faGlobe);
-library.add(faSave);
-library.add(faTimes);
+initFontAwesomeIcons();
 
 Vue.use(BootstrapVue);
 
