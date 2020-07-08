@@ -10,7 +10,7 @@ from galaxy.tool_shed.util import (
     repository_util,
 )
 from galaxy.util.tool_shed import common_util
-from ..tools.test_toolbox import (
+from ..app.tools.test_toolbox import (
     BaseToolBoxTestCase,
     DEFAULT_TEST_REPO
 )
