@@ -5,12 +5,13 @@ import unittest
 
 from six import string_types
 
+from galaxy.util import clean_multiline_string
 from galaxy.visualization.plugins import (
     plugin as vis_plugin,
     resource_parser,
     utils as vis_utils
 )
-from ...unittest_utils import galaxy_mock, utility
+from ...unittest_utils import galaxy_mock
 
 
 class VisualizationsPlugin_TestCase(unittest.TestCase):
@@ -142,7 +143,7 @@ class VisualizationsPlugin_TestCase(unittest.TestCase):
         """
         # use the python in a template to test for variables that should be there
         # TODO: gotta be a better way
-        testing_template = utility.clean_multiline_string("""\
+        testing_template = clean_multiline_string("""\
         <%
             found_all = True
             should_have = [

@@ -10,8 +10,8 @@ except ImportError:
 
 from galaxy.tool_util.verify.interactor import GalaxyInteractorApi, verify_tool
 from galaxy.tools import DataManagerTool
+from galaxy_test.base.env import setup_keep_outdir, target_url_parts
 from galaxy_test.base.instrument import register_job_data
-from galaxy_test.driver.driver_util import setup_keep_outdir, target_url_parts
 from galaxy_test.driver.testcase import FunctionalTestCase
 
 log = logging.getLogger(__name__)

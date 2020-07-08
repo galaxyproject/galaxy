@@ -240,7 +240,7 @@ class AuthnzManager(object):
         ID does not exist, or the configuration is defined for a another
         user than trans.user.
 
-        :type  trans:       galaxy.web.framework.webapp.GalaxyWebTransaction
+        :type  trans:       galaxy.webapps.base.webapp.GalaxyWebTransaction
         :param trans:       Galaxy web transaction
 
         :type  authz_id:    int

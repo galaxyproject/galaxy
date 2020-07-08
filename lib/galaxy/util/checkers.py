@@ -146,7 +146,7 @@ def is_zip(file_path):
 
 
 def is_single_file_zip(file_path):
-    for i, member in enumerate(iter_zip(file_path)):
+    for i, _ in enumerate(iter_zip(file_path)):
         if i > 1:
             return False
     return True

@@ -33,7 +33,7 @@
                             :content-id="step.content_id"
                             :step="step"
                             :key="key"
-                            :datatypes-mapping="datatypesMapping"
+                            :datatypes-mapper="datatypesMapper"
                             :get-manager="getManager"
                             :get-canvas-manager="getCanvasManager"
                             @onAdd="onAdd"
@@ -95,7 +95,8 @@
 </template>
 
 <script>
-import { getDatatypes, getModule, getVersions, saveWorkflow, loadWorkflow } from "./modules/services";
+import { getDatatypesMapper } from "components/Datatypes";
+import { getModule, getVersions, saveWorkflow, loadWorkflow } from "./modules/services";
 import {
     showWarnings,
     showUpgradeMessage,
@@ -179,16 +180,16 @@ export default {
             hasChanges: false,
             nodeIndex: 0,
             nodes: {},
-            datatypesMapping: {},
+            datatypesMapper: null,
             datatypes: [],
             report: {},
             activeNode: null,
         };
     },
     created() {
-        getDatatypes().then((response) => {
-            this.datatypesMapping = response.datatypes_mapping;
-            this.datatypes = response.datatypes;
+        getDatatypesMapper().then((mapper) => {
+            this.datatypesMapper = mapper;
+            this.datatypes = mapper.datatypes;
 
             // canvas overview management
             this.canvasManager = new WorkflowCanvas(this, this.$refs.canvas);

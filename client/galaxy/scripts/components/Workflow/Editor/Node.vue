@@ -26,7 +26,7 @@
                 <Recommendations
                     :get-node="getNode"
                     :get-manager="getManager"
-                    :datatypes-mapping="datatypesMapping"
+                    :datatypes-mapper="datatypesMapper"
                     @onCreate="onCreate"
                 />
             </b-popover>
@@ -56,7 +56,7 @@
                 :input="input"
                 :get-node="getNode"
                 :get-manager="getManager"
-                :datatypes-mapping="datatypesMapping"
+                :datatypes-mapper="datatypesMapper"
                 @onAdd="onAddInput"
                 @onChange="onChange"
             />
@@ -124,7 +124,7 @@ export default {
             type: Function,
             default: null,
         },
-        datatypesMapping: {
+        datatypesMapper: {
             type: Object,
             default: null,
         },

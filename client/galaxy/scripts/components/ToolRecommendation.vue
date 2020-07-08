@@ -17,7 +17,8 @@
 <script>
 import * as d3 from "d3";
 import { getAppRoot } from "onload/loadConfig";
-import { getDatatypeMapping, getToolPredictions } from "components/Workflow/Editor/modules/services";
+import { getDatatypesMapper } from "components/Datatypes";
+import { getToolPredictions } from "components/Workflow/Editor/modules/services";
 
 export default {
     props: {
@@ -53,10 +54,10 @@ export default {
                 tool_sequence: toolId,
             };
             getToolPredictions(requestData).then((responsePred) => {
-                getDatatypeMapping().then((datatypesMapping) => {
+                getDatatypesMapper().then((datatypesMapper) => {
                     const predData = responsePred.predicted_data;
-                    const extToType = datatypesMapping.ext_to_class_name;
-                    const typeToType = datatypesMapping.class_to_classes;
+                    const extToType = datatypesMapper.datatypesMapping.ext_to_class_name;
+                    const typeToType = datatypesMapper.datatypesMapping.class_to_classes;
                     this.deprecated = predData.is_deprecated;
                     this.deprecatedMessage = predData.message;
                     if (responsePred !== null && predData.children.length > 0) {

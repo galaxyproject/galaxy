@@ -44,4 +44,16 @@ def assert_error_code_is(response, error_code):
     assert err_code == int(error_code), ASSERT_FAIL_ERROR_CODE % (err_code, int(error_code))
 
 
+def assert_object_id_error(response):
+    # for tests that use fake object IDs - API might throw MalformedId (400) or
+    # or ObjectNotFound (404) - depending if the ID happens to be parseable with
+    # servers API key.
+    error_code = response.status_code
+    assert error_code in [400, 404]
+    if error_code == 400:
+        assert_error_code_is(response, 400009)
+    else:
+        assert_error_code_is(response, 404001)
+
+
 assert_has_key = assert_has_keys

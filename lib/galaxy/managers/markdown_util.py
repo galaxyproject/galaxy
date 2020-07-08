@@ -36,6 +36,7 @@ from galaxy.managers.jobs import (
     summarize_job_parameters,
 )
 from galaxy.model.item_attrs import get_item_annotation_str
+from galaxy.model.orm.now import now
 from galaxy.util.sanitize_html import sanitize_html
 from .markdown_parse import GALAXY_MARKDOWN_FUNCTION_CALL_LINE, validate_galaxy_markdown
 
@@ -46,8 +47,8 @@ OUTPUT_LABEL_PATTERN = re.compile(r'output=\s*%s\s*' % ARG_VAL_CAPTURED_REGEX)
 INPUT_LABEL_PATTERN = re.compile(r'input=\s*%s\s*' % ARG_VAL_CAPTURED_REGEX)
 STEP_LABEL_PATTERN = re.compile(r'step=\s*%s\s*' % ARG_VAL_CAPTURED_REGEX)
 # STEP_OUTPUT_LABEL_PATTERN = re.compile(r'step_output=([\w_\-]+)/([\w_\-]+)')
-UNENCODED_ID_PATTERN = re.compile(r'(workflow_id|history_dataset_id|history_dataset_collection_id|job_id)=([\d]+)')
-ENCODED_ID_PATTERN = re.compile(r'(workflow_id|history_dataset_id|history_dataset_collection_id|job_id)=([a-z0-9]+)')
+UNENCODED_ID_PATTERN = re.compile(r'(workflow_id|history_dataset_id|history_dataset_collection_id|job_id|invocation_id)=([\d]+)')
+ENCODED_ID_PATTERN = re.compile(r'(workflow_id|history_dataset_id|history_dataset_collection_id|job_id|invocation_id)=([a-z0-9]+)')
 INVOCATION_SECTION_MARKDOWN_CONTAINER_LINE_PATTERN = re.compile(
     r"```\s*galaxy\s*"
 )
@@ -98,6 +99,14 @@ class GalaxyInternalMarkdownDirectiveHandler(object):
                 assert object_id is not None
                 hda = hda_manager.get_accessible(object_id, trans.user)
                 rval = self.handle_dataset_display(line, hda)
+            elif container == "history_dataset_link":
+                assert object_id is not None
+                hda = hda_manager.get_accessible(object_id, trans.user)
+                rval = self.handle_dataset_display(line, hda)
+            elif container == "history_dataset_index":
+                assert object_id is not None
+                hda = hda_manager.get_accessible(object_id, trans.user)
+                rval = self.handle_dataset_display(line, hda)
             elif container == "history_dataset_embedded":
                 assert object_id is not None
                 hda = hda_manager.get_accessible(object_id, trans.user)
@@ -114,6 +123,14 @@ class GalaxyInternalMarkdownDirectiveHandler(object):
                 assert object_id is not None
                 hda = hda_manager.get_accessible(object_id, trans.user)
                 rval = self.handle_dataset_info(line, hda)
+            elif container == "history_dataset_type":
+                assert object_id is not None
+                hda = hda_manager.get_accessible(object_id, trans.user)
+                rval = self.handle_dataset_type(line, hda)
+            elif container == "history_dataset_name":
+                assert object_id is not None
+                hda = hda_manager.get_accessible(object_id, trans.user)
+                rval = self.handle_dataset_name(line, hda)
             elif container == "workflow_display":
                 stored_workflow = workflow_manager.get_stored_accessible_workflow(trans, encoded_id)
                 # TODO: should be workflow id...
@@ -133,6 +150,14 @@ class GalaxyInternalMarkdownDirectiveHandler(object):
             elif container == "job_metrics":
                 job = job_manager.get_accessible_job(trans, object_id)
                 rval = self.handle_job_metrics(line, job)
+            elif container == "generate_galaxy_version":
+                version = trans.app.config.version_major
+                rval = self.handle_generate_galaxy_version(line, version)
+            elif container == "generate_time":
+                rval = self.handle_generate_time(line, now())
+            elif container == "invocation_time":
+                invocation = workflow_manager.get_invocation(trans, object_id)
+                rval = self.handle_invocation_time(line, invocation)
             else:
                 raise MalformedContents("Unknown Galaxy Markdown directive encountered [%s]" % container)
             if rval is not None:
@@ -160,6 +185,14 @@ class GalaxyInternalMarkdownDirectiveHandler(object):
         pass
 
     @abc.abstractmethod
+    def handle_dataset_name(self, line, hda):
+        pass
+
+    @abc.abstractmethod
+    def handle_dataset_type(self, line, hda):
+        pass
+
+    @abc.abstractmethod
     def handle_workflow_display(self, line, stored_workflow):
         pass
 
@@ -181,6 +214,18 @@ class GalaxyInternalMarkdownDirectiveHandler(object):
 
     @abc.abstractmethod
     def handle_job_parameters(self, line, job):
+        pass
+
+    @abc.abstractmethod
+    def handle_generate_galaxy_version(self, line, galaxy_version):
+        pass
+
+    @abc.abstractmethod
+    def handle_generate_time(self, line, date):
+        pass
+
+    @abc.abstractmethod
+    def handle_invocation_time(self, line, date):
         pass
 
 
@@ -242,6 +287,21 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
 
     def handle_job_parameters(self, line, job):
         pass
+
+    def handle_generate_galaxy_version(self, line, generate_version):
+        self.extra_rendering_data["generate_version"] = generate_version
+
+    def handle_generate_time(self, line, generate_time):
+        self.extra_rendering_data["generate_time"] = generate_time.isoformat()
+
+    def handle_invocation_time(self, line, invocation):
+        self.ensure_rendering_data_for("invocations", invocation)["create_time"] = invocation.create_time.isoformat()
+
+    def handle_dataset_type(self, line, hda):
+        self.extend_history_dataset_rendering_data(hda, "ext", hda.ext, "*Unknown dataset type*")
+
+    def handle_dataset_name(self, line, hda):
+        self.extend_history_dataset_rendering_data(hda, "name", hda.name, "*Unknown dataset name*")
 
 
 def ready_galaxy_markdown_for_export(trans, internal_galaxy_markdown):
@@ -394,6 +454,35 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
 
         return (markdown, True)
 
+    def handle_generate_galaxy_version(self, line, generate_version):
+        if generate_version:
+            content = self.markdown_formatting_helpers.literal_via_fence(generate_version)
+        else:
+            content = "*No Galaxy Version Available*"
+        return (content, True)
+
+    def handle_generate_time(self, line, generate_time):
+        content = self.markdown_formatting_helpers.literal_via_fence(generate_time.isoformat())
+        return (content, True)
+
+    def handle_invocation_time(self, line, invocation):
+        content = self.markdown_formatting_helpers.literal_via_fence(invocation.create_time.isoformat())
+        return (content, True)
+
+    def handle_dataset_name(self, line, hda):
+        if hda.name:
+            content = self.markdown_formatting_helpers.literal_via_fence(hda.name)
+        else:
+            content = "*No Dataset Name Available*"
+        return (content, True)
+
+    def handle_dataset_type(self, line, hda):
+        if hda.ext:
+            content = self.markdown_formatting_helpers.literal_via_fence(hda.ext)
+        else:
+            content = "*No Dataset Type Available*"
+        return (content, True)
+
 
 class MarkdownFormatHelpers(object):
     """Inject common markdown formatting helpers for per-datatype rendering."""
@@ -530,6 +619,8 @@ history_dataset_collection_display(input=%s)
             # TODO: this really should be workflow id not stored workflow id but the API
             # it consumes wants the stored id.
             return ("workflow_display(workflow_id=%s)\n" % invocation.workflow.stored_workflow.id, False)
+        if container == "invocation_date":
+            return ("invocation_date(invocation_id=%s)\n" % invocation.id, False)
         ref_object_type = None
         output_match = re.search(OUTPUT_LABEL_PATTERN, line)
         input_match = re.search(INPUT_LABEL_PATTERN, line)

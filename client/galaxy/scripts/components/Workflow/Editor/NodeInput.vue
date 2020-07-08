@@ -25,7 +25,7 @@ export default {
             type: Function,
             required: true,
         },
-        datatypesMapping: {
+        datatypesMapper: {
             type: Object,
             required: true,
         },
@@ -66,7 +66,7 @@ export default {
             }
             const terminal = new terminalClass({
                 node: this.getNode(),
-                datatypesMapping: this.datatypesMapping,
+                datatypesMapper: this.datatypesMapper,
                 name: input.name,
                 input: input,
                 element: this.$refs.terminal,

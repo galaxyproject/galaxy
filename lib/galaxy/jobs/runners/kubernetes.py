@@ -145,8 +145,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 sleep(3)
                 elapsed_seconds += 3
                 if elapsed_seconds > self.runner_params['k8s_timeout_seconds_job_deletion']:
-                    log.debug("Timed out before k8s could delete existing untrusted job " + k8s_job_name +
-                              ", not queuing associated Galaxy job.")
+                    log.debug(
+                        "Timed out before k8s could delete existing untrusted job %s, not queuing associated Galaxy job."
+                        % k8s_job_name)
                     return
                 log.debug("Waiting for job to be deleted " + k8s_job_name)
 
