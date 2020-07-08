@@ -26,6 +26,15 @@
                     <font-awesome-icon icon="plus" />
                     Folder
                 </button>
+                <button
+                    data-toggle="tooltip"
+                    title="Mark items deleted"
+                    class="primary-button toolbtn-bulk-delete logged-dataset-manipulation mr-1"
+                    style="display: none;"
+                    type="button"
+                >
+                    <span class="fa fa-trash"></span> Delete
+                </button>
             </form>
         </div>
     </div>
@@ -62,6 +71,10 @@ export default {
             type: Object,
             required: true,
         },
+        folderContents: {
+            type: Array,
+            required: true,
+        },
     },
     components: {
         FontAwesomeIcon,
@@ -84,20 +97,14 @@ export default {
         updateSearch: function (value) {
             this.$emit("updateSearch", value);
         },
-        newFolder: function () {
-            this.$emit("newFolder");
-        },
-        /*
-             Slightly adopted legacy backbone code
-             */
-        findCheckedItems: function () {
-            const folder_ids = [];
-            const dataset_ids = [];
-
-            this.selected.forEach((item) =>
-                item.type === "folder" ? folder_ids.push(item.id) : dataset_ids.push(item.id)
-            );
-            return { folder_ids: folder_ids, dataset_ids: dataset_ids };
+        newFolder() {
+            this.folderContents.unshift({
+                editMode: true,
+                type: "folder",
+                name: "",
+                description: "",
+            });
+            this.$emit("refreshTable");
         },
     },
 };

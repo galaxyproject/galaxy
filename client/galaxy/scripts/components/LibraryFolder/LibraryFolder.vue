@@ -6,7 +6,8 @@
         <div v-else-if="folderContents.length !== 0">
             <FolderTopBar
                 @updateSearch="updateSearchValue($event)"
-                @newFolder="newFolder"
+                @refreshTable="refreshTable"
+                :folderContents="this.folderContents"
                 :folder_id="folder_id"
                 :selected="selected"
                 :metadata="folder_metadata"
@@ -341,15 +342,6 @@ export default {
             // Trigger pagination to update the number of buttons/pages due to filtering
             this.totalRows = filteredItems.length;
             this.currentPage = 1;
-        },
-        newFolder() {
-            this.folderContents.unshift({
-                editMode: true,
-                type: "folder",
-                name: "",
-                description: "",
-            });
-            this.refreshTable();
         },
         createNewFolder: function (folder) {
             const name = this.$refs[`name${folder.id}`].value;
