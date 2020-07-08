@@ -12,9 +12,15 @@
                 <td>{{ bco.provenance_domain.version }}</td>
                 <td><button>Edit</button></td>
             </tr>
-            <tr>
+            <tr v-for="object in bco.provenance_domain.review" :key="object">
                 <td>Review</td>
-                <td>{{ bco.provenance_domain.review }}</td>
+                <td>
+                    Status: {{ object.status }} Date: {{ object.date }}</br>
+                    Comment: {{ object.reviewer_comment }}</br>
+                    Name: {{ object.reviewer.name }} </br>
+                    Affiliation: {{ object.reviewer.affiliation }} </br>
+                    Email: {{ object.reviewer.email }} </br>
+                </td>
                 <td><button>Add</button><br /><button>Remove</button></td>
             </tr>
             <!-- <tr>

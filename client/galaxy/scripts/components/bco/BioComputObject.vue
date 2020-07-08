@@ -1,7 +1,7 @@
 <template>
     <div id="bco-viewer" class="overflow-auto h-100" @scroll="onScroll">
         <h2 class="mb-3">
-            <span id="invocations-title">BioCompute Objects</span>
+            <span id="invocations-title">BioCompute Object for Invocation {{ invocationId }}</span>
         </h2>
         <ul>
             <json-dump class="item" :item="treeData" />
@@ -17,6 +17,10 @@ import {
 } from "onload/loadConfig";
 import JsonDump from "components/bco/JsonDump.vue";
 
+import { mapCacheActions } from "vuex-cache";
+import { mapGetters, mapActions } from "vuex";
+import { getRootFromIndexLink } from "onload";
+
 export default {
     name: "BCOviewer",
     components: {
@@ -28,12 +32,18 @@ export default {
             required: true,
         },
     },
-    data: function() {
+    data() {
         return {
             treeData: {},
+            bco: {},
         };
     },
     computed: {
+        ...mapGetters(["getBioComputeById"]),
+        biocomputeState: function () {
+            const biocompute = this.getBioComputeById(this.invocationId);
+            return state.biocompute
+        },
         getBCO: function() {
             const invocationId = this.invocationId;
             const url = getAppRoot() + `api/invocations/${invocationId}/export_bco`;
@@ -44,39 +54,39 @@ export default {
             
             const iterate = (obj) => {
             
-            	const getObjects = (o, parent) =>
-		    o && typeof o === 'object' ? Object.entries(o).map(([name, v]) => ({
-			name,
-			parent,
-			children: getObjects(v, name)
-		    })) : [{
-			name: o,
-			parent
-		    }];
-		
-		var pc_struct = [obj],
-    		result = getObjects({ Root: pc_struct[0] }, 'null');
-    		
-    		// Get rid of the root element, converting the array
-    		// into an object.
-    		
-    		// Source:  https://stackoverflow.com/questions/7193599/how-can-i-turn-a-jsonarray-into-a-jsonobject
-    		
-    		//JSONObject jo = new JSONObject();
-    		
-		// Populate the array.
-		//for(var i in result[0]) {
-		
-			//jo.put(i, result[0]);
-		
-		//}
-    		
-    		// Kick it back.
-    		console.log(result[0]);
-    		return(result[0]);
-    		
-    		//return(jo);
-    		
+                const getObjects = (o, parent) =>
+            o && typeof o === 'object' ? Object.entries(o).map(([name, v]) => ({
+            name,
+            parent,
+            children: getObjects(v, name)
+            })) : [{
+            name: o,
+            parent
+            }];
+        
+        var pc_struct = [obj],
+            result = getObjects({ Root: pc_struct[0] }, 'null');
+            
+            // Get rid of the root element, converting the array
+            // into an object.
+            
+            // Source:  https://stackoverflow.com/questions/7193599/how-can-i-turn-a-jsonarray-into-a-jsonobject
+            
+            //JSONObject jo = new JSONObject();
+            
+        // Populate the array.
+        //for(var i in result[0]) {
+        
+            //jo.put(i, result[0]);
+        
+        //}
+            
+            // Kick it back.
+            console.log(result[0]);
+            return(result[0]);
+            
+            //return(jo);
+            
             }
 
             axios
@@ -90,6 +100,7 @@ export default {
         },
     },
     methods: {
+        ...mapActions(["fetchIBiocomputeForId"]),
         onScroll({
             target: {
                 scrollTop,

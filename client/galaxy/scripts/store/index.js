@@ -30,6 +30,7 @@ export function createStore() {
         ],
         modules: {
             gridSearch: gridSearchStore,
+            biocompute: biocomputeStore,
             histories: historyStore,
             tags: tagStore,
             jobMetrics: jobMetricsStore,
