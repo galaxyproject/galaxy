@@ -1,6 +1,6 @@
 from galaxy import model
 from .util import BaseParameterTestCase
-from ..unittest_utils import galaxy_mock
+from ...unittest_utils import galaxy_mock
 
 
 class DataToolParameterTestCase(BaseParameterTestCase):

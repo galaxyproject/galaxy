@@ -7,7 +7,7 @@ import tempfile
 from galaxy.tools import expressions
 
 THIS_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
-TEST_DIRECTORY = os.path.join(THIS_DIRECTORY, os.path.pardir, os.path.pardir)
+TEST_DIRECTORY = os.path.join(THIS_DIRECTORY, os.path.pardir, os.path.pardir, os.path.pardir)
 ROOT_DIRECTORY = os.path.join(TEST_DIRECTORY, os.path.pardir)
 LIB_DIRECTORY = os.path.join(ROOT_DIRECTORY, "lib")
 

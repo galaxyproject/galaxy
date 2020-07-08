@@ -9,7 +9,7 @@ except ImportError:
     psycopg2 = None
 
 from galaxy.util import which
-from ..unittest_utils import galaxy_mock
+from ...unittest_utils import galaxy_mock
 
 
 def create_base_test(connection, amqp_type, amqp_connection=None):
