@@ -20,7 +20,7 @@
                 class="fa fa-times"
                 @click="cancelWorkflowScheduling"
             ></span>
-            <progress-bar v-if="!stepCount" note="Loading step state summary" :loading="true" :info-count="1" />
+            <progress-bar v-if="!stepCount" note="Loading step state summary" :loading="true" />
             <progress-bar
                 v-else-if="invocationState == 'cancelled'"
                 note="Invocation scheduling cancelled - expected jobs and outputs may not be generated"
@@ -36,7 +36,6 @@
                 :note="stepStatesStr"
                 :total="stepCount"
                 :ok-count="stepStates.scheduled"
-                :new-count="stepCount - stepStates.scheduled"
             />
         </div>
         <div>
@@ -49,7 +48,7 @@
                 :new-count="newCount"
                 :error-count="errorCount"
             />
-            <progress-bar v-else note="Loading job summary" :loading="true" :info-count="1" />
+            <progress-bar v-else note="Loading job summary" :loading="true" />
         </div>
     </div>
 </template>

@@ -1,14 +1,13 @@
 <template>
-    <div>
-        <small class="note" v-if="note">
-            {{ note }}<span v-if="loading">.<span class="blinking">..</span></span>
-        </small>
+    <div class="my-1">
         <b-progress :max="total">
-            <b-progress-bar variant="warning" :value="infoCount" show-value />
-            <b-progress-bar variant="warning" :value="runningCount" show-value />
-            <b-progress-bar variant="success" :value="okCount" show-value />
-            <b-progress-bar variant="warning" :value="newCount" show-value />
-            <b-progress-bar variant="danger" :value="errorCount" show-value />
+            <span class="position-absolute text-center w-100 mt-2" v-if="note">
+                {{ note }}<span v-if="loading">.<span class="blinking">..</span></span>
+            </span>
+            <b-progress-bar variant="success" :value="okCount" />
+            <b-progress-bar variant="danger" :value="errorCount" />
+            <b-progress-bar variant="warning" :value="runningCount" />
+            <b-progress-bar variant="warning" :value="newCount" />
         </b-progress>
     </div>
 </template>
@@ -27,10 +26,6 @@ export default {
         loading: {
             type: Boolean,
             default: false,
-        },
-        infoCount: {
-            type: Number,
-            default: 0,
         },
         okCount: {
             type: Number,
