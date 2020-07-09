@@ -56,9 +56,9 @@ import { getGalaxyInstance } from "app";
 import Vue from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { showLocInfo } from "./details-modal";
-import {initTopBarIcons} from "components/LibraryFolder/icons"
+import { initTopBarIcons } from "components/LibraryFolder/icons";
 
-initTopBarIcons()
+initTopBarIcons();
 
 Vue.use(BootstrapVue);
 

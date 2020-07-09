@@ -1,4 +1,4 @@
-import {faFile, faSave, faFolder} from "@fortawesome/free-regular-svg-icons";
+import { faFile, faSave, faFolder } from "@fortawesome/free-regular-svg-icons";
 import {
     faTimes,
     faKey,
@@ -7,9 +7,9 @@ import {
     faHome,
     faInfoCircle,
     faPlus,
-    faSpinner
+    faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
-import {library} from "@fortawesome/fontawesome-svg-core";
+import { library } from "@fortawesome/fontawesome-svg-core";
 
 const tableIcons = [faFile, faFolder, faSpinner, faShieldAlt, faKey, faGlobe, faSave, faTimes];
 const topBarIcons = [faHome, faPlus, faInfoCircle];
