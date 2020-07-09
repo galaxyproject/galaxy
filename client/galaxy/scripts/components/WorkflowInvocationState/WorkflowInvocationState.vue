@@ -1,7 +1,7 @@
 <template>
     <div>
-        <div>
-            <b>Step Scheduling</b>
+        <div class="mt-2">
+            <b>Invocation</b>
             <span
                 v-if="stepCount && !invocationSchedulingTerminal"
                 v-b-tooltip.hover
@@ -9,49 +9,49 @@
                 class="fa fa-times"
                 @click="cancelWorkflowScheduling"
             ></span>
-            <div v-if="!stepCount">
-                <progress-bar note="Loading step state summary" :loading="true" :info-count="1" />
-            </div>
-            <div v-else-if="invocationState == 'cancelled'">
-                <progress-bar
-                    note="Invocation scheduling cancelled - expected jobs and outputs may not be generated"
-                    :error-count="1"
-                />
-            </div>
-            <div v-else-if="invocationState == 'failed'">
-                <progress-bar
-                    note="Invocation scheduling failed - Galaxy administrator may have additional details in logs"
-                    :error-count="1"
-                />
-            </div>
-            <div v-else>
-                <progress-bar
-                    :note="stepStatesStr"
-                    :total="stepCount"
-                    :ok-count="stepStates.scheduled"
-                    :new-count="stepCount - stepStates.scheduled"
-                />
-            </div>
+            <progress-bar v-if="!stepCount" note="Loading step state summary" :loading="true" :info-count="1" />
+            <progress-bar
+                v-else-if="invocationState == 'cancelled'"
+                note="Invocation scheduling cancelled - expected jobs and outputs may not be generated"
+                :error-count="1"
+            />
+            <progress-bar
+                v-else-if="invocationState == 'failed'"
+                note="Invocation scheduling failed - Galaxy administrator may have additional details in logs"
+                :error-count="1"
+            />
+            <progress-bar
+                v-else
+                :note="stepStatesStr"
+                :total="stepCount"
+                :ok-count="stepStates.scheduled"
+                :new-count="stepCount - stepStates.scheduled"
+            />
         </div>
         <div>
-            <div v-if="jobCount">
-                <progress-bar
-                    :note="jobStatesStr"
-                    :total="jobCount"
-                    :ok-count="okCount"
-                    :running-count="runningCount"
-                    :new-count="newCount"
-                    :error-count="errorCount"
-                />
+            <progress-bar
+                v-if="jobCount"
+                :note="jobStatesStr"
+                :total="jobCount"
+                :ok-count="okCount"
+                :running-count="runningCount"
+                :new-count="newCount"
+                :error-count="errorCount"
+            />
+            <progress-bar v-else note="Loading job summary" :loading="true" :info-count="1" />
+        </div>
+        <div class="mt-1">
+            <div v-if="invocationSchedulingTerminal && jobStatesTerminal">
+                <a :href="invocationLink">
+                    <a class="fa fa-print mr-1" :href="invocationPdfLink"/>
+                    <span>View Report</span>
+                </a>
             </div>
             <div v-else>
-                <progress-bar note="Loading job summary" :loading="true" :info-count="1" />
+                <span class="fa fa-spinner fa-spin" />
+                <span>Processing...</span>
             </div>
         </div>
-        <span v-if="invocationSchedulingTerminal && jobStatesTerminal">
-            <a :href="invocationLink">View Invocation Report</a>
-            <a class="fa fa-print" :href="invocationPdfLink"></a>
-        </span>
     </div>
 </template>
 <script>
