@@ -1,55 +1,46 @@
 <template>
-    <div>
-        <div class="mt-2">
-            <div class="mt-1">
-                <div v-if="invocationSchedulingTerminal && jobStatesTerminal">
-                    <a :href="invocationLink">
-                        <a class="fa fa-print mr-1" :href="invocationPdfLink"/>
-                        <span>View Report</span>
-                    </a>
-                </div>
-                <div v-else>
-                    <span class="fa fa-spinner fa-spin" />
-                    <span>Invocation...</span>
-                </div>
-            </div>
-            <span
-                v-if="stepCount && !invocationSchedulingTerminal"
-                v-b-tooltip.hover
-                title="Cancel scheduling of workflow invocation"
-                class="fa fa-times"
-                @click="cancelWorkflowScheduling"
-            ></span>
-            <progress-bar v-if="!stepCount" note="Loading step state summary" :loading="true" />
-            <progress-bar
-                v-else-if="invocationState == 'cancelled'"
-                note="Invocation scheduling cancelled - expected jobs and outputs may not be generated"
-                :error-count="1"
-            />
-            <progress-bar
-                v-else-if="invocationState == 'failed'"
-                note="Invocation scheduling failed - Galaxy administrator may have additional details in logs"
-                :error-count="1"
-            />
-            <progress-bar
-                v-else
-                :note="stepStatesStr"
-                :total="stepCount"
-                :ok-count="stepStates.scheduled"
-            />
+    <div class="mb-3">
+        <div v-if="invocationSchedulingTerminal && jobStatesTerminal">
+            <span>
+                <a :href="invocationLink"
+                    ><b>View Report {{ index + 1 }}</b></a
+                >
+                <a class="fa fa-print ml-1" :href="invocationPdfLink" v-b-tooltip title="Download PDF" />
+            </span>
         </div>
-        <div>
-            <progress-bar
-                v-if="jobCount"
-                :note="jobStatesStr"
-                :total="jobCount"
-                :ok-count="okCount"
-                :running-count="runningCount"
-                :new-count="newCount"
-                :error-count="errorCount"
-            />
-            <progress-bar v-else note="Loading job summary" :loading="true" />
+        <div v-else>
+            <span class="fa fa-spinner fa-spin" />
+            <span>Invocation {{ index + 1 }}...</span>
         </div>
+        <span
+            v-if="stepCount && !invocationSchedulingTerminal"
+            v-b-tooltip.hover
+            title="Cancel scheduling of workflow invocation"
+            class="fa fa-times"
+            @click="cancelWorkflowScheduling"
+        ></span>
+        <progress-bar v-if="!stepCount" note="Loading step state summary" :loading="true" />
+        <progress-bar
+            v-else-if="invocationState == 'cancelled'"
+            note="Invocation scheduling cancelled - expected jobs and outputs may not be generated"
+            :error-count="1"
+        />
+        <progress-bar
+            v-else-if="invocationState == 'failed'"
+            note="Invocation scheduling failed - Galaxy administrator may have additional details in logs"
+            :error-count="1"
+        />
+        <progress-bar v-else :note="stepStatesStr" :total="stepCount" :ok-count="stepStates.scheduled" />
+        <progress-bar
+            v-if="jobCount"
+            :note="jobStatesStr"
+            :total="jobCount"
+            :ok-count="okCount"
+            :running-count="runningCount"
+            :new-count="newCount"
+            :error-count="errorCount"
+        />
+        <progress-bar v-else note="Loading job summary" :loading="true" />
     </div>
 </template>
 <script>
@@ -77,6 +68,10 @@ export default {
         invocationId: {
             type: String,
             required: true,
+        },
+        index: {
+            type: Number,
+            default: 0,
         },
     },
     data() {
