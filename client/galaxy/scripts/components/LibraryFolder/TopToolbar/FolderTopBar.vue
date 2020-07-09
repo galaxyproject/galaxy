@@ -27,13 +27,14 @@
                     Folder
                 </button>
                 <button
+                    v-if="logged_dataset_manipulation"
                     data-toggle="tooltip"
                     title="Mark items deleted"
                     class="primary-button toolbtn-bulk-delete logged-dataset-manipulation mr-1"
-                    style="display: none;"
                     type="button"
                 >
-                    <span class="fa fa-trash"></span> Delete
+                    <font-awesome-icon icon="trash" />
+                    Delete
                 </button>
                 <span class="mr-1" data-toggle="tooltip" title="Show location details">
                     <button
@@ -57,6 +58,7 @@ import Vue from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { showLocInfo } from "./details-modal";
 import { initTopBarIcons } from "components/LibraryFolder/icons";
+import $ from "jquery";
 
 initTopBarIcons();
 
@@ -85,6 +87,16 @@ export default {
     components: {
         FontAwesomeIcon,
     },
+    data() {
+        return {
+            dataset_manipulation: false,
+            logged_dataset_manipulation: false,
+            is_admin: false,
+            multiple_add_dataset_options: false,
+            user_library_import_dir: false,
+            library_import_dir: false,
+        };
+    },
     created() {
         const Galaxy = getGalaxyInstance();
         this.is_admin = Galaxy.user.attributes.is_admin;
@@ -97,6 +109,17 @@ export default {
             this.library_import_dir !== null
         ) {
             this.multiple_add_dataset_options = true;
+        }
+        const contains_file_or_folder = this.folderContents.find((el) => el.type === "folder" || el.type === "file");
+
+        // logic from legacy code
+        if (contains_file_or_folder) {
+            if (Galaxy.user) {
+                this.dataset_manipulation = true;
+                if (!Galaxy.user.isAnonymous()) {
+                    this.logged_dataset_manipulation = true;
+                }
+            }
         }
     },
     methods: {

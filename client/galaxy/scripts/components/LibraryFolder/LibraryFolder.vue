@@ -256,10 +256,6 @@ export default {
             perPage: 15,
             filter: null,
             filterOn: [],
-            is_admin: false,
-            multiple_add_dataset_options: false,
-            user_library_import_dir: false,
-            library_import_dir: false,
         };
     },
     computed: {
