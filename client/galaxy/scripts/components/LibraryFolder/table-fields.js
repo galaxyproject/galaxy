@@ -29,13 +29,13 @@ export const fields = [
         sortable: true,
     },
     {
-        label: "State",
-        key: "state",
+        label: "Date Updated (UTC)",
+        key: "update_time",
         sortable: true,
     },
     {
-        label: "Date Updated (UTC)",
-        key: "update_time",
+        label: "State",
+        key: "state",
         sortable: true,
     },
     {
