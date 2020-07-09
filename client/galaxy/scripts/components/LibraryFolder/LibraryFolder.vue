@@ -51,8 +51,16 @@
                 </template>
                 <!-- Name -->
                 <template v-slot:cell(name)="row">
-                    <div v-if="row.item.editMode">
+                    <div v-if="row.item.isNewFolder">
                         <textarea
+                            v-if="row.item"
+                            class="form-control"
+                            :ref="'name' + row.item.id"
+                            v-model="row.item.name"
+                            rows="3"
+                        ></textarea>
+                        <textarea
+                            v-else
                             class="form-control"
                             :ref="'name' + row.item.id"
                             :value="row.item.name"
@@ -68,6 +76,14 @@
                 <template v-slot:cell(message)="row">
                     <div v-if="row.item.editMode">
                         <textarea
+                            v-if="row.item.isNewFolder"
+                            class="form-control"
+                            :ref="'description' + row.item.id"
+                            v-model="row.item.description"
+                            rows="3"
+                        ></textarea>
+                        <textarea
+                            v-else
                             class="form-control"
                             :ref="'description' + row.item.id"
                             :value="row.item.description"
@@ -130,7 +146,7 @@
                         <button
                             class="primary-button btn-sm permission_folder_btn"
                             title="Discard Changes"
-                            @click="toggleMode(row.item)"
+                            @click="toggleEditMode(row.item)"
                         >
                             <font-awesome-icon :icon="['fas', 'times']" />
                             Cancel
@@ -139,7 +155,7 @@
                     <div v-else>
                         <a v-if="row.item.can_manage && !row.item.deleted && row.item.type === 'folder'">
                             <button
-                                @click="toggleMode(row.item)"
+                                @click="toggleEditMode(row.item)"
                                 data-toggle="tooltip"
                                 data-placement="top"
                                 class="primary-button btn-sm permission_folder_btn"
@@ -325,7 +341,7 @@ export default {
         linkify(raw_text) {
             return linkify(raw_text);
         },
-        toggleMode(item) {
+        toggleEditMode(item) {
             item.editMode = !item.editMode;
             this.folderContents = this.folderContents.filter((item) => {
                 if (!item.isNewFolder) return item;
@@ -338,23 +354,19 @@ export default {
             this.currentPage = 1;
         },
         createNewFolder: function (folder) {
-            const name = this.$refs[`name${folder.id}`].value;
-            const description = this.$refs[`description${folder.id}`].value;
-            if (!name) {
+            if (!folder.name) {
                 Toast.error("Folder's name is missing.");
-            } else if (name.length < 3) {
+            } else if (folder.name.length < 3) {
                 Toast.warning("Folder name has to be at least 3 characters long.");
             } else {
                 this.services.newFolder(
                     {
                         parent_id: this.folder_id,
-                        name: name,
-                        description: description,
+                        name: folder.name,
+                        description: folder.description,
                     },
                     (resp) => {
                         folder.id = resp.id;
-                        folder.name = name;
-                        folder.description = description;
                         folder.update_time = resp.update_time;
                         folder.editMode = false;
                         folder.can_manage = true;
