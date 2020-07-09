@@ -9,8 +9,8 @@ from galaxy import model
 from galaxy.exceptions import MalformedContents
 from galaxy.tools.imp_exp import JobExportHistoryArchiveWrapper, JobImportHistoryArchiveWrapper, unpack_tar_gz_archive
 from galaxy.tools.imp_exp.export_history import create_archive
-from ..objectstore.test_objectstore import TestConfig
 from ..unittest_utils.galaxy_mock import MockApp
+from ..unittest_utils.objectstore_helpers import TestConfig
 
 
 # good enough for the very specific tests we're writing as of now...
