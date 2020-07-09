@@ -1,64 +1,115 @@
 <template>
-    <div id="provenance">
-        <div v-show="bco">
-            <h2 class="domain">Provenance Domain</h2>
-            <tr>
-                <td>Name</td>
-                <td>{{ bco.provenance_domain.name }}</td>
-                <td><button>Edit</button></td>
-            </tr>
-            <tr>
-                <td>Version</td>
-                <td>{{ bco.provenance_domain.version }}</td>
-                <td><button>Edit</button></td>
-            </tr>
-            <tr v-for="object in bco.provenance_domain.review" :key="object">
-                <td>Review</td>
-                <td>
-                    Status: {{ object.status }} Date: {{ object.date }}</br>
-                    Comment: {{ object.reviewer_comment }}</br>
-                    Name: {{ object.reviewer.name }} </br>
-                    Affiliation: {{ object.reviewer.affiliation }} </br>
-                    Email: {{ object.reviewer.email }} </br>
-                </td>
-                <td><button>Add</button><br /><button>Remove</button></td>
-            </tr>
-            <!-- <tr>
-                <td>Obsolete</td>
-                <td>{{ bco.provenance_domain.obsolete_after }}</td>
-                <td><button>Edit</button></td>
-            </tr>
-            <tr>
-                <td>Embargo</td>
-                <td v-if="bco.provenance_domain.embargo.start_time !== 'undefined'" >
-                    {{ bco.provenance_domain.embargo.start_time }}<br />{{ bco.provenance_domain.embargo.end_time }}
-                </td>
-            </tr> -->
-            <tr>
-                <td>Created:</td>
-                <td>{{ bco.provenance_domain.created }}</td>
-            </tr>
-            <tr>
-                <td>Modified</td>
-                <td>{{ bco.provenance_domain.modified }}</td>
-            </tr>
-            <tr>
-                <td>Contributors</td>
-                <td>{{ bco.provenance_domain.contributors }}</td>
-                <td><button>Add</button></td>
-            </tr>
-            <tr>
-                <td>License</td>
-                <td>{{ bco.provenance_domain.license }}</td>
-                <td><button>Edit</button></td>
-            </tr>
-        </div>
-    </div>
+    <table>
+        <tr>
+            <td>Name</td>
+            <td>{{ item.name }}</td>
+        </tr>
+        <tr>
+            <td>Version</td>
+            <td>{{ item.version }}</td>
+        </tr>
+        <tr>
+            <td>Review</td>
+        </tr>
+        <tr>
+            <td>Status</td>
+            <td>Date</td>
+            <td>Name</td>
+            <td>Email</td>
+            <td>Affiliation</td>
+            <td>Comment</td>
+            <td></td>
+        </tr>
+        <tr v-for="object in item.review" :key="object">
+            <td><textarea>{{ object.status }}</textarea></td>
+            <td><textarea>{{ object.date }}</textarea></td>
+            <td><textarea>{{ object.reviewer.name }}</textarea></td>
+            <td><textarea>{{ object.reviewer.email }}</textarea></td>
+            <td><textarea>{{ object.reviewer.affiliation }}</textarea></td>
+            <td><textarea>{{ object.reviewer_comment }}</textarea></td>
+            <td><button>Remove</button></td>
+        </tr>
+        <tr>
+        <td colspan=6>
+        <button>Add Review Step</button>
+        </td>
+        </tr>
+        <tr>
+            <td>Obsolete After</td>
+            <td>{{ check_key('obsolete_after') }}</td>
+        </tr>
+        <tr>
+            <td>Embargo</td>
+            <td>
+                {{ check_key('embargo.start_time') }}<br />{{ check_key('embargo.end_time') }}
+            </td>
+        </tr>
+        <tr>
+            <td>Created:</td>
+            <td>{{ item.created }}</td>
+        </tr>
+        <tr>
+            <td>Modified</td>
+            <td>{{ item.modified }}</td>
+        </tr>
+        <tr>
+            <td>Contributors</td>
+        </tr>
+        <tr>
+            <td>Name</td>
+            <td>Affiliation</td>
+            <td>Email</td>
+            <td>Contribution</td>
+            <td></td>
+        </tr>
+        <tr v-for="contrib in item.contributors" :key="contrib.name">
+            <td>{{ contrib.name }}</td>
+            <td>{{ contrib.affiliation }}</td>
+            <td>{{ contrib.email }}</td>
+            <td>{{ contrib.contribution[0] }}</td>
+        </tr>
+        <tr>
+        <td colspan=4>
+        <button>Add Contributor</button>
+        </td>
+        </tr>
+        <tr>
+            <td>License</td>
+            <td>{{ item.license }}</td>
+        </tr>
+    </table>
 </template>
 
 <script>
 export default {
-    name: "provenance",
-    props: ["bco"],
+
+    methods: {
+
+        check_key: function(incoming) {
+
+            // Check if a key exists.  If not, return 'undefined'.
+            var kickback = '';
+
+            if (this.item.hasOwnProperty(incoming)) {
+
+                kickback = this.item[incoming];
+            
+            } else {
+
+                kickback = 'undefined';
+
+            }
+
+            // Kick it back.
+            return kickback;
+
+        }
+
+    },
+    name: 'provenance',
+    props: {
+        item: Object
+    }
+
 };
 </script>

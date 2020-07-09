@@ -1,15 +1,36 @@
+<style>
+	
+	/* Don't want the table cells to be too wide (forces text-wrapping) */
+
+	button {
+		width: 100%;
+	}
+
+	tr {
+		border-bottom: 1px solid #D3D3D3;
+	}
+
+	td {
+		max-width: 350px;
+		padding: 5px;
+	}
+
+	textarea {
+		resize: none;
+	}
+
+</style>
+
 <template>
     <div id="bco-viewer" class="overflow-auto h-100" @scroll="onScroll">
         <h2 class="mb-3">
             <span id="invocations-title">BioCompute Object for Invocation {{ invocationId }}</span>
         </h2>
-        <div id="objectid">
-            <table>
-            	<object-id :item="object_id" />
-            </table>
-        </div>
+        <object-id :item="object_id" />
         <spec-version :item="spec_version" />
         <e-tag :item="etag" />
+        <h2>Provenance Domain</h2>
+        <provenance-domain :item="provenance_domain" />
     </div>
 </template>
 
@@ -22,6 +43,7 @@ import {
 import ObjectId from "components/bco/ObjectId.vue";
 import SpecVersion from "components/bco/SpecVersion.vue";
 import ETag from "components/bco/ETag.vue";
+import ProvenanceDomain from "components/bco/Provenance.vue";
 
 import { mapCacheActions } from "vuex-cache";
 import { mapGetters, mapActions } from "vuex";
@@ -33,6 +55,7 @@ export default {
         ObjectId,
         SpecVersion,
         ETag,
+        ProvenanceDomain
     },
     props: {
         invocationId: {
@@ -42,11 +65,11 @@ export default {
     },
     data() {
         return {
-            treeData: {},
             bco: {},
             object_id: {},
             spec_version: {},
             etag: {},
+            provenance_domain: {}
         };
     },
     computed: {
@@ -87,17 +110,21 @@ export default {
                 .get(url)
                 .then((response) => {
                     
-                    // First, get the tree data in parent/child format.
-                    this.treeData = iterate(response.data);
-                    
                     // Create a property handler.
                     var this_helper = this;
                     
-                    // Now go through and define individual top-level objects.
-                    this.treeData.forEach(function (item, index) {
-			  this_helper[item['name']] = item;
-			});
-                    console.log(this);
+                    // Loop over the response and assign values to new
+                    // objects.
+                    
+                    for (var key of Object.keys(response.data)) {
+                    
+					    // Vue-wide object.
+					    this_helper[key] = response.data[key]
+					}
+
+					console.log(this);
+					console.log(this.embargo.start_time);
+		
                 })
                 .catch((e) => {
                     console.error(e);
