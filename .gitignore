@@ -76,6 +76,7 @@ workflow_schedulers_conf.xml
 config/plugins/interactive_environments/**/*.ini
 !config/plugins
 config/hmgm.ini
+config/azure.ini
 static/welcome.html.*
 static/welcome.html
 static/client_build_hash.txt
