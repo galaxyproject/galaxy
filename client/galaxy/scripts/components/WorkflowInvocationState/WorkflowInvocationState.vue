@@ -1,8 +1,5 @@
 <template>
     <div>
-        <span v-if="provideContext">
-            <b>Workflow Invocation State</b>
-        </span>
         <div :class="{ 'context-wrapped': provideContext }">
             <div>
                 Step Scheduling
@@ -14,44 +11,43 @@
                     @click="cancelWorkflowScheduling"
                 ></span>
                 <div v-if="!stepCount">
-                    <progress-bar note="Loading step state summary" :loading="true" :info-progress="1" />
+                    <progress-bar
+                        note="Loading step state summary" :loading="true" :info-count="1" />
                 </div>
                 <div v-else-if="invocationState == 'cancelled'">
                     <progress-bar
                         note="Invocation scheduling cancelled - expected jobs and outputs may not be generated"
-                        :error-progress="1"
+                        :error-count="1"
                     />
                 </div>
                 <div v-else-if="invocationState == 'failed'">
                     <progress-bar
                         note="Invocation scheduling failed - Galaxy administrator may have additional details in logs"
-                        :error-progress="1"
+                        :error-count="1"
                     />
                 </div>
                 <div v-else>
                     <progress-bar
                         :note="stepStatesStr"
-                        :ok-progress="stepScheduledPercent"
-                        :new-progress="stepOtherPercent"
+                        :total="stepCount"
+                        :ok-count="stepStates.scheduled"
+                        :new-count="stepCount - stepStates.scheduled"
                     />
                 </div>
             </div>
             <div>
-                Job Execution
                 <div v-if="jobCount">
                     <progress-bar
                         :note="jobStatesStr"
-                        :ok-progress="okPercent"
-                        :running-progress="runningPercent"
-                        :new-progress="otherPercent"
-                        :error-progress="errorPercent"
-                        :ok-message="okMessage"
-                        :running-message="runningMessage"
-                        :error-message="errorMessage"
+                        :total="jobCount"
+                        :ok-count="okCount"
+                        :running-count="runningCount"
+                        :new-count="newCount"
+                        :error-count="errorCount"
                     />
                 </div>
                 <div v-else>
-                    <progress-bar note="Loading job summary" :loading="true" :info-progress="1" />
+                    <progress-bar note="Loading job summary" :loading="true" :info-count="1" />
                 </div>
             </div>
             <span v-if="invocationSchedulingTerminal && jobStatesTerminal">
@@ -152,17 +148,6 @@ export default {
         jobStatesTerminal: function () {
             return this.jobStatesSummary && this.jobStatesSummary.terminal();
         },
-        stepScheduledPercent: function () {
-            let percent = 0.0;
-            if (this.stepCount !== null) {
-                percent = (this.stepStates["scheduled"] || 0) / this.stepCount;
-            }
-            return percent;
-        },
-        stepOtherPercent: function () {
-            const percent = 1.0 - this.stepScheduledPercent;
-            return percent;
-        },
         stepStatesStr: function () {
             return `${this.stepStates["scheduled"] || 0} of ${this.stepCount} steps successfully scheduled`;
         },
@@ -172,15 +157,6 @@ export default {
                 jobStr += " (total number of jobs will change until all steps fully scheduled)";
             }
             return jobStr;
-        },
-        okMessage() {
-            return `${this.okCount} jobs completed successfully`;
-        },
-        errorMessage() {
-            return `${this.errorCount} jobs failed`;
-        },
-        runningMessage() {
-            return `${this.runningCount} jobs currently running`;
         },
         jobStatesSummary() {
             const jobsSummary = this.getInvocationJobsSummaryById(this.invocationId);
