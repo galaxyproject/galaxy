@@ -1,7 +1,18 @@
 <template>
     <div>
         <div class="mt-2">
-            <b>Invocation</b>
+            <div class="mt-1">
+                <div v-if="invocationSchedulingTerminal && jobStatesTerminal">
+                    <a :href="invocationLink">
+                        <a class="fa fa-print mr-1" :href="invocationPdfLink"/>
+                        <span>View Report</span>
+                    </a>
+                </div>
+                <div v-else>
+                    <span class="fa fa-spinner fa-spin" />
+                    <span>Invocation...</span>
+                </div>
+            </div>
             <span
                 v-if="stepCount && !invocationSchedulingTerminal"
                 v-b-tooltip.hover
@@ -39,18 +50,6 @@
                 :error-count="errorCount"
             />
             <progress-bar v-else note="Loading job summary" :loading="true" :info-count="1" />
-        </div>
-        <div class="mt-1">
-            <div v-if="invocationSchedulingTerminal && jobStatesTerminal">
-                <a :href="invocationLink">
-                    <a class="fa fa-print mr-1" :href="invocationPdfLink"/>
-                    <span>View Report</span>
-                </a>
-            </div>
-            <div v-else>
-                <span class="fa fa-spinner fa-spin" />
-                <span>Processing...</span>
-            </div>
         </div>
     </div>
 </template>

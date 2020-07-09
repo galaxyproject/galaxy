@@ -1,8 +1,8 @@
 <template>
     <div>
-        <span class="note" v-if="note">
+        <small class="note" v-if="note">
             {{ note }}<span v-if="loading">.<span class="blinking">..</span></span>
-        </span>
+        </small>
         <b-progress :max="total">
             <b-progress-bar variant="warning" :value="infoCount" show-value />
             <b-progress-bar variant="warning" :value="runningCount" show-value />
