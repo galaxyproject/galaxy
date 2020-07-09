@@ -283,13 +283,26 @@ export default {
             this.$refs.folder_content_table.refresh();
         },
         toggleSelect() {
-            if (this.selected.length !== this.rows) {
+            // Since we cannot select new folders, toggle should clear all if all rows match, expect new folders
+            let newFoldersCounter = 0
+            this.folderContents.forEach(row=>{
+                if(row.isNewFolder)
+                    newFoldersCounter++
+            })
+
+            if (this.selected.length + newFoldersCounter !== this.rows ) {
                 this.selectAllRows();
             } else {
                 this.clearSelected();
             }
         },
         onRowSelected(items) {
+            // make new folders not selectable
+            // https://github.com/bootstrap-vue/bootstrap-vue/issues/3134#issuecomment-526810892
+            for (let i = 0; i < items.length; i++) {
+                if(items[i].isNewFolder)
+                     this.$refs.folder_content_table.unselectRow(i)
+            }
             this.selected = items;
         },
         bytesToString(raw_size) {
