@@ -1,9 +1,9 @@
 <template>
     <div class="my-1">
+        <small class="position-absolute text-center w-100" v-if="note">
+            {{ note }}<span v-if="loading">.<span class="blinking">..</span></span>
+        </small>
         <b-progress :max="total">
-            <span class="position-absolute text-center w-100 mt-2" v-if="note">
-                {{ note }}<span v-if="loading">.<span class="blinking">..</span></span>
-            </span>
             <b-progress-bar variant="success" :value="okCount" />
             <b-progress-bar variant="danger" :value="errorCount" />
             <b-progress-bar variant="warning" :value="runningCount" />
