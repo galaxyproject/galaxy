@@ -261,22 +261,12 @@ class ModelPersistenceContext(object):
                 name,
                 create_dataset_timer,
             )
-            dataset.set_size(no_extra_files=True)
             element_datasets['element_identifiers'].append(element_identifiers)
             element_datasets['datasets'].append(dataset)
             element_datasets['tag_lists'].append(discovered_file.match.tag_list)
             element_datasets['paths'].append(filename)
 
-        add_datasets_timer = ExecutionTimer()
-        self.add_datasets_to_history(element_datasets['datasets'])
         self.add_tags_to_datasets(datasets=element_datasets['datasets'], tag_lists=element_datasets['tag_lists'])
-        log.debug(
-            "(%s) Add dynamic collection datasets to history for output [%s] %s",
-            self.job_id(),
-            name,
-            add_datasets_timer,
-        )
-
         for (element_identifiers, dataset) in zip(element_datasets['element_identifiers'], element_datasets['datasets']):
             current_builder = root_collection_builder
             for element_identifier in element_identifiers[:-1]:
@@ -290,6 +280,14 @@ class ModelPersistenceContext(object):
 
         self.flush()
         self.update_object_store_with_datasets(datasets=element_datasets['datasets'], paths=element_datasets['paths'])
+        add_datasets_timer = ExecutionTimer()
+        self.add_datasets_to_history(element_datasets['datasets'])
+        log.debug(
+            "(%s) Add dynamic collection datasets to history for output [%s] %s",
+            self.job_id(),
+            name,
+            add_datasets_timer,
+        )
         self.set_datasets_metadata(datasets=element_datasets['datasets'])
 
     def add_tags_to_datasets(self, datasets, tag_lists):
@@ -305,6 +303,7 @@ class ModelPersistenceContext(object):
     def update_object_store_with_datasets(self, datasets, paths):
         for dataset, path in zip(datasets, paths):
             self.object_store.update_from_file(dataset.dataset, file_name=path, create=True)
+            dataset.set_size(no_extra_files=True)
 
     @abc.abstractproperty
     def tag_handler(self):
