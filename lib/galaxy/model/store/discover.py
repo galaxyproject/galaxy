@@ -261,6 +261,7 @@ class ModelPersistenceContext(object):
                 name,
                 create_dataset_timer,
             )
+            dataset.set_size(no_extra_files=True)
             element_datasets['element_identifiers'].append(element_identifiers)
             element_datasets['datasets'].append(dataset)
             element_datasets['tag_lists'].append(discovered_file.match.tag_list)
@@ -304,7 +305,6 @@ class ModelPersistenceContext(object):
     def update_object_store_with_datasets(self, datasets, paths):
         for dataset, path in zip(datasets, paths):
             self.object_store.update_from_file(dataset.dataset, file_name=path, create=True)
-            dataset.set_size(no_extra_files=True)
 
     @abc.abstractproperty
     def tag_handler(self):
