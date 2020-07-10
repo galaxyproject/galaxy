@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import configparser
 import sys
 import requests
 import logging
@@ -9,6 +10,8 @@ import os
 from datetime import timedelta
 from datetime import datetime
 import math
+import uuid
+import boto3
 
 from requests_toolbelt import MultipartEncoder
 
@@ -19,7 +22,7 @@ from video_ocr import VideoOcrSchema, VideoOcrMediaSchema, VideoOcrResolutionSch
 def main():
 	apiUrl = "https://api.videoindexer.ai"
 
-	(input_file, accountId, apiKey, location, output_from_azure_simple, output_from_azure, output_amp_ocr_schema) = sys.argv[1:8]
+	(input_file, location, root_dir, output_from_azure_simple, output_from_azure, output_amp_ocr_schema) = sys.argv[1:7]
 
 	try:
 		import http.client as http_client
@@ -27,17 +30,26 @@ def main():
 		# Python 2
 		import httplib as http_client
 
+	config = read_config(root_dir)
+	s3_bucket = config['videoindexer']['s3Bucket']
+	accountId = config['videoindexer']['accountId']
+	apiKey = config['videoindexer']['apiKey']
+
 	# You must initialize logging, otherwise you'll not see debug output.
 	logging.basicConfig()
 
 	# Turn on HTTP debugging here
 	http_client.HTTPConnection.debuglevel = 1
 
+	s3_path = upload_to_s3(input_file, s3_bucket)
+	print("S3 path " + s3_path)
 	# Get an authorization token for subsequent requests
 	auth_token = get_auth_token(apiUrl, location, accountId, apiKey)
 	
+	video_url = "https://" + s3_bucket + ".s3.us-east-2.amazonaws.com/" + s3_path
+
 	# Upload the video and get the ID to reference for indexing status and results
-	videoId = upload_video(apiUrl, location, accountId, auth_token, input_file)
+	videoId = upload_video(apiUrl, location, accountId, auth_token, input_file, video_url)
 
 	# Get the auth token associated with this video	
 	video_auth_token = get_video_auth_token(apiUrl, location, accountId, apiKey, videoId)
@@ -66,6 +78,7 @@ def main():
 	# Parse the json
 	parse_json(input_file, output_amp_ocr_schema, advanced_json, simple_json)
 	
+	delete_from_s3(s3_path, s3_bucket)
 
 # Convert the timestamp to total seconds
 def convertTimestampToSeconds(timestamp):
@@ -230,7 +243,7 @@ def get_video_auth_token(apiUrl, location, accountId, apiKey, videoId):
 	return request_auth_token(token_url, apiKey)
 
 # Upload the video using multipart form upload
-def upload_video(apiUrl, location, accountId, auth_token, input_file):
+def upload_video(apiUrl, location, accountId, auth_token, input_file, video_url):
 
 	# Create a unique file name 
 	millis = int(round(time.time() * 1000))
@@ -239,15 +252,13 @@ def upload_video(apiUrl, location, accountId, auth_token, input_file):
 	
 	data = {}
 	with open(input_file, 'rb') as f:
-		data["file"] = ("file", f)
-		m = MultipartEncoder(fields=data)
-		headers = {'Content-Type':  m.content_type}
 		params = {'accessToken':auth_token,
 				'name':'amp_video_' + str(millis),
 				'description':'AMP File Upload',
 				'privacy':'private',
-				'partition':'No Partition'}
-		r = requests.post(upload_url, data=m, headers=headers, params = params)
+				'partition':'No Partition',
+				'videoUrl':video_url}
+		r = requests.post(upload_url, params = params)
 		
 		if r.status_code != 200:
 			print("Upload failure")
@@ -260,11 +271,36 @@ def upload_video(apiUrl, location, accountId, auth_token, input_file):
 			else:
 				exit(1)
 
+def upload_to_s3(input_file, bucket):
+	s3_client = boto3.client('s3')
+	jobname = str(uuid.uuid1())
+	try:
+		print('before response')
+		response = s3_client.upload_file(input_file, bucket, jobname, ExtraArgs={'ACL': 'public-read'})
+		print(response)
+	except Exception as e:
+		print(e)
+		return None
+	return jobname
+
+def delete_from_s3(s3_path, bucket):
+	s3_client = boto3.resource('s3')
+	try:
+		obj = s3_client.Object(bucket, s3_path)
+		obj.delete()
+	except Exception as e:
+		print(e)
+
+def read_config(root_dir):
+	config = configparser.ConfigParser()
+	config.read(root_dir + "/config/azure.ini")
+	return config
+
 # Serialize obj and write it to output file
 def write_json_file(obj, output_file):
-    # Serialize the object
-    with open(output_file, 'w') as outfile:
-        json.dump(obj, outfile, default=lambda x: x.__dict__)
+	# Serialize the object
+	with open(output_file, 'w') as outfile:
+		json.dump(obj, outfile, default=lambda x: x.__dict__)
 
 if __name__ == "__main__":
 	main()

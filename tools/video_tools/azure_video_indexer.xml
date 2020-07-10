@@ -2,11 +2,9 @@
   <description>OCR Using Azure Video Indexer</description>
     <requirements>
     </requirements>
-  <command detect_errors="exit_code"> $__tool_directory__/azure_video_indexer_wrapper.py $input_file $accountId $apiKey $location $azure_ocr $azure_ocr_long $amp_ocr</command>
+  <command detect_errors="exit_code"> $__tool_directory__/azure_video_indexer_wrapper.py $input_file $location $__root_dir__ $azure_ocr $azure_ocr_long $amp_ocr</command>
   <inputs>
 	<param name="input_file" type="data" format="video" label="Video File" help="A video file input for OCR"/>
-	<param name="accountId" type="text" label="Azure Account ID" help="Azure Account ID"/>
-	<param name="apiKey" type="text" label="API Key" help="Video Indexer API Key"/>
   <param name="location" type="select" label="Azure Location" help="Region video indexer account is running in Azure">
       <option value="trial">Trial</option>
       <option value="westus2">West US 2</option>
