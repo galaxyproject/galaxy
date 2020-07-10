@@ -304,7 +304,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             data_object_path = collection_path + "/" + str(data_object_name)
 
             try:
-                log.debug("In _get_size_in_irods(): Number of active connections: %s, Number of idle connections: %s", len(session.pool.active), len(session.pool.idle))
                 data_obj = session.data_objects.get(data_object_path)
                 return data_obj.__sizeof__()
             except (DataObjectDoesNotExist, CollectionDoesNotExist):
@@ -325,7 +324,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             data_object_path = collection_path + "/" + str(data_object_name)
 
             try:
-                log.debug("In _data_object_exists(): Number of active connections: %s, Number of idle connections: %s", len(session.pool.active), len(session.pool.idle))
                 session.data_objects.get(data_object_path)
                 return True
             except (DataObjectDoesNotExist, CollectionDoesNotExist):
@@ -363,7 +361,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             data_obj = None
 
             try:
-                log.debug("In _download(): Number of active connections: %s, Number of idle connections: %s", len(session.pool.active), len(session.pool.idle))
                 data_obj = session.data_objects.get(data_object_path)
             except (DataObjectDoesNotExist, CollectionDoesNotExist):
                 log.warn("Collection or data object (%s) does not exist", data_object_path)
@@ -400,12 +397,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
             source_file = source_file if source_file else self._get_cache_path(rel_path)
             options = {kw.FORCE_FLAG_KW: ''}
-
-            try:
-                log.debug("In _push_to_irods(): Number of active connections: %s, Number of idle connections: %s", len(session.pool.active), len(session.pool.idle))
-            except NetworkException as e:
-                log.exception(e)
-                return False
 
             if os.path.exists(source_file):
                 # Check if the data object exists in iRODS
@@ -549,7 +540,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             obj_dir = kwargs.get('obj_dir', False)
 
             try:
-                log.debug("In _delete(): Number of active connections: %s, Number of idle connections: %s", len(session.pool.active), len(session.pool.idle))
                 # Remove temparory data in JOB_WORK directory
                 if base_dir and dir_only and obj_dir:
                     shutil.rmtree(os.path.abspath(rel_path))
