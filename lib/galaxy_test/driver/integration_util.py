@@ -11,7 +11,7 @@ import pytest
 
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.util.commands import which
-from .api import UsesApiTestCaseMixin
+from galaxy_test.base.api import UsesApiTestCaseMixin
 from .driver_util import GalaxyTestDriver
 
 NO_APP_MESSAGE = "test_case._app called though no Galaxy has been configured."

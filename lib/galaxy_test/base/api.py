@@ -3,22 +3,21 @@ from contextlib import contextmanager
 
 from six.moves.urllib.parse import urlencode
 
-from galaxy_test.base.api_asserts import (
+from .api_asserts import (
     assert_error_code_is,
     assert_has_keys,
     assert_not_has_keys,
     assert_status_code_is,
     assert_status_code_is_ok,
 )
-from galaxy_test.base.api_util import (
+from .api_util import (
     ADMIN_TEST_USER,
     get_master_api_key,
     get_user_api_key,
     OTHER_USER,
     TEST_USER,
 )
-from galaxy_test.base.interactor import TestCaseGalaxyInteractor as BaseInteractor
-from .testcase import FunctionalTestCase
+from .interactor import TestCaseGalaxyInteractor as BaseInteractor
 
 
 class UsesApiTestCaseMixin(object):
@@ -109,13 +108,6 @@ class UsesApiTestCaseMixin(object):
         return "1234567890123456"
 
     _assert_has_key = _assert_has_keys
-
-
-class ApiTestCase(FunctionalTestCase, UsesApiTestCaseMixin):
-
-    def setUp(self):
-        super(ApiTestCase, self).setUp()
-        self._setup_interactor()
 
 
 class ApiTestInteractor(BaseInteractor):
