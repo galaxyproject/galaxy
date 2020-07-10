@@ -174,7 +174,7 @@ def set_metadata_portable():
 
         # Load outputs.
         import_model_store = store.imported_store_for_metadata('metadata/outputs_new', object_store=object_store)
-        export_store = store.DirectoryModelExportStore('metadata/outputs_populated', serialize_dataset_objects=True, for_edit=True)
+        export_store = store.DirectoryModelExportStore('metadata/outputs_populated', serialize_dataset_objects=True, for_edit=True, strip_metadata_files=False)
 
     for output_name, output_dict in outputs.items():
         if extended_metadata_collection:

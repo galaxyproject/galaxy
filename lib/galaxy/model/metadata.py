@@ -524,8 +524,7 @@ class FileParameter(MetadataParameter):
             return None
         if isinstance(value, galaxy.model.MetadataFile) or isinstance(value, MetadataTempFile):
             return value
-        mf = session.query(galaxy.model.MetadataFile).get(value)
-        return mf
+        return session.query(galaxy.model.MetadataFile).get(value)
 
     def make_copy(self, value, target_context, source_context):
         value = self.wrap(value, object_session(target_context.parent))
@@ -540,7 +539,10 @@ class FileParameter(MetadataParameter):
     @classmethod
     def marshal(cls, value):
         if isinstance(value, galaxy.model.MetadataFile):
-            value = value.id
+            # We want to push value.id to the database, but need to skip this when no session is available,
+            # as in extended_metadata mode, so there we just accept MetadataFile.
+            # We will only serialize MetadataFile in this mode and not push to the database, so this is OK.
+            value = value.id or value
         return value
 
     def from_external_value(self, value, parent, path_rewriter=None):
