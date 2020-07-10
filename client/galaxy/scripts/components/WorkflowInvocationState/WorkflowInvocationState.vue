@@ -11,23 +11,23 @@
         <div v-else>
             <span class="fa fa-spinner fa-spin" />
             <span>Invocation {{ index + 1 }}...</span>
+            <span
+                v-if="stepCount && !invocationSchedulingTerminal"
+                v-b-tooltip.hover
+                title="Cancel scheduling of workflow invocation"
+                class="fa fa-times"
+                @click="cancelWorkflowScheduling"
+            ></span>
         </div>
-        <span
-            v-if="stepCount && !invocationSchedulingTerminal"
-            v-b-tooltip.hover
-            title="Cancel scheduling of workflow invocation"
-            class="fa fa-times"
-            @click="cancelWorkflowScheduling"
-        ></span>
-        <progress-bar v-if="!stepCount" note="Loading step state summary" :loading="true" />
+        <progress-bar v-if="!stepCount" note="Loading step state summary..." :loading="true" />
         <progress-bar
             v-else-if="invocationState == 'cancelled'"
-            note="Invocation scheduling cancelled - expected jobs and outputs may not be generated"
+            note="Invocation scheduling cancelled - expected jobs and outputs may not be generated."
             :error-count="1"
         />
         <progress-bar
             v-else-if="invocationState == 'failed'"
-            note="Invocation scheduling failed - Galaxy administrator may have additional details in logs"
+            note="Invocation scheduling failed - Galaxy administrator may have additional details in logs."
             :error-count="1"
         />
         <progress-bar v-else :note="stepStatesStr" :total="stepCount" :ok-count="stepStates.scheduled" />
@@ -40,7 +40,7 @@
             :new-count="newCount"
             :error-count="errorCount"
         />
-        <progress-bar v-else note="Loading job summary" :loading="true" />
+        <progress-bar v-else note="Loading job summary..." :loading="true" />
     </div>
 </template>
 <script>
@@ -135,14 +135,14 @@ export default {
             return this.jobStatesSummary && this.jobStatesSummary.terminal();
         },
         stepStatesStr: function () {
-            return `${this.stepStates.scheduled || 0} of ${this.stepCount} steps successfully scheduled`;
+            return `${this.stepStates.scheduled || 0} of ${this.stepCount} steps successfully scheduled.`;
         },
         jobStatesStr: function () {
             let jobStr = `${this.jobStatesSummary.states()["ok"] || 0} of ${this.jobCount} jobs complete`;
             if (!this.invocationSchedulingTerminal) {
                 jobStr += " (total number of jobs will change until all steps fully scheduled)";
             }
-            return jobStr;
+            return `${jobStr}.`;
         },
         jobStatesSummary() {
             const jobsSummary = this.getInvocationJobsSummaryById(this.invocationId);
