@@ -65,6 +65,9 @@
                         <history-dropdown :history="getHistoryById(data.item.history_id)" />
                     </div>
                 </template>
+                <template v-slot:cell(create_time)="data">
+                    <UtcDate :date="data.value" mode="elapsed" />
+                </template>
             </b-table>
         </div>
     </div>
@@ -73,6 +76,7 @@
 <script>
 import { getRootFromIndexLink } from "onload";
 import { WorkflowInvocationState } from "components/WorkflowInvocationState";
+import UtcDate from "components/UtcDate";
 import LoadingSpan from "components/LoadingSpan";
 import WorkflowDropdown from "components/Workflow/WorkflowDropdown";
 import HistoryDropdown from "components/History/HistoryDropdown";
@@ -81,6 +85,7 @@ import { mapGetters } from "vuex";
 
 export default {
     components: {
+        UtcDate,
         WorkflowInvocationState,
         LoadingSpan,
         WorkflowDropdown,
@@ -98,10 +103,8 @@ export default {
             { key: "details", label: "" },
             { key: "workflow_id", label: "Workflow" },
             { key: "history_id", label: "History" },
-            { key: "id", label: "Invocation ID" },
+            { key: "create_time", label: "Invoked" },
             { key: "state" },
-            { key: "update_time", label: "Last Update" },
-            { key: "create_time", label: "Invocation Time" },
         ];
         return {
             invocationItemsModel: [],
