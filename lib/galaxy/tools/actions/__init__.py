@@ -454,6 +454,7 @@ class DefaultToolAction(object):
             # Flush all datasets at once.
             return data
 
+        datasets_to_persist = []
         for name, output in tool.outputs.items():
             if not filter_output(output, incoming):
                 handle_output_timer = ExecutionTimer()
@@ -461,7 +462,6 @@ class DefaultToolAction(object):
                     collections_manager = app.dataset_collections_service
                     element_identifiers = []
                     known_outputs = output.known_outputs(input_collections, collections_manager.type_registry)
-                    created_element_datasets = []
                     # Just to echo TODO elsewhere - this should be restructured to allow
                     # nested collections.
                     for output_part_def in known_outputs:
@@ -488,7 +488,7 @@ class DefaultToolAction(object):
 
                         effective_output_name = output_part_def.effective_output_name
                         element = handle_output(effective_output_name, output_part_def.output_def, hidden=True)
-                        created_element_datasets.append(element)
+                        datasets_to_persist.append(element)
                         # TODO: this shouldn't exist in the top-level of the history at all
                         # but for now we are still working around that by hiding the contents
                         # there.
@@ -500,7 +500,6 @@ class DefaultToolAction(object):
                             "name": output_part_def.element_identifier,
                         })
 
-                    history.add_datasets(trans.sa_session, created_element_datasets, set_hid=set_output_hid, quota=False, flush=True)
                     if output.dynamic_structure:
                         assert not element_identifiers  # known_outputs must have been empty
                         element_kwds = dict(elements=collections_manager.ELEMENTS_UNINITIALIZED)
@@ -521,7 +520,6 @@ class DefaultToolAction(object):
             'Added output datasets to history',
         )
         # Add all the top-level (non-child) datasets to the history unless otherwise specified
-        datasets_to_persist = []
         for name, data in out_data.items():
             if name not in child_dataset_names and name not in incoming:  # don't add children; or already existing datasets, i.e. async created
                 datasets_to_persist.append(data)
