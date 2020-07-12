@@ -1590,7 +1590,7 @@ class Tool(Dictifiable):
         resulting output data or an error message indicating the problem.
         """
         try:
-            job, out_data = self.execute(
+            rval = self.execute(
                 trans,
                 incoming=execution_slice.param_combination,
                 history=history,
@@ -1601,6 +1601,10 @@ class Tool(Dictifiable):
                 collection_info=collection_info,
                 flush_job=flush_job,
             )
+            job = rval[0]
+            out_data = rval[1]
+            if len(rval) == 3:
+                execution_slice.datasets_to_persist = rval[2]
         except (webob.exc.HTTPFound, exceptions.MessageException) as e:
             # if it's a webob redirect exception, pass it up the stack
             raise e

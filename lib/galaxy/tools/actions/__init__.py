@@ -525,9 +525,6 @@ class DefaultToolAction(object):
         for name, data in out_data.items():
             if name not in child_dataset_names and name not in incoming:  # don't add children; or already existing datasets, i.e. async created
                 datasets_to_persist.append(data)
-        # Set HID and add to history.
-        # This is brand new and certainly empty so don't worry about quota.
-        history.add_datasets(trans.sa_session, datasets_to_persist, set_hid=set_output_hid, quota=False, flush=False)
 
         # Add all the children to their parents
         for parent_name, child_name in parent_to_child_pairs:
@@ -579,6 +576,9 @@ class DefaultToolAction(object):
             trans.response.send_redirect(url_for(controller='tool_runner', action='redirect', redirect_url=redirect_url))
         else:
             if flush_job:
+                # Set HID and add to history.
+                # This is brand new and certainly empty so don't worry about quota.
+                history.add_datasets(trans.sa_session, datasets_to_persist, set_hid=set_output_hid, quota=False, flush=False)
                 job_flush_timer = ExecutionTimer()
                 trans.sa_session.flush()
                 log.info("Flushed transaction for job %s %s" % (job.log_str(), job_flush_timer))
@@ -586,7 +586,7 @@ class DefaultToolAction(object):
                 # Dispatch to a job handler. enqueue() is responsible for flushing the job
                 app.job_manager.enqueue(job, tool=tool)
                 trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
-            return job, out_data
+            return job, out_data, datasets_to_persist
 
     def _remap_job_on_rerun(self, trans, galaxy_session, rerun_remap_job_id, current_job, out_data):
         """

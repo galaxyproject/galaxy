@@ -93,6 +93,7 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
 
     jobs_executed = 0
     has_remaining_jobs = False
+    datasets_to_persist = []
 
     for i, execution_slice in enumerate(execution_tracker.new_execution_slices()):
         if max_num_jobs and jobs_executed >= max_num_jobs:
@@ -100,7 +101,11 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
             break
         else:
             execute_single_job(execution_slice, completed_jobs[i])
+            if execution_slice.datasets_to_persist:
+                datasets_to_persist.extend(execution_slice.datasets_to_persist)
 
+    if datasets_to_persist:
+        history.add_datasets(trans.sa_session, datasets_to_persist, set_hid=True, quota=False, flush=False)
     trans.sa_session.flush()
     for job in execution_tracker.successful_jobs:
         # Put the job in the queue if tracking in memory
@@ -122,6 +127,7 @@ class ExecutionSlice(object):
         self.job_index = job_index
         self.param_combination = param_combination
         self.dataset_collection_elements = dataset_collection_elements
+        self.datasets_to_persist = None
 
 
 class ExecutionTracker(object):
