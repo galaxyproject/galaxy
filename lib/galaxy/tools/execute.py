@@ -106,7 +106,10 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
 
     if datasets_to_persist:
         history.add_datasets(trans.sa_session, datasets_to_persist, set_hid=True, quota=False, flush=False)
-    trans.sa_session.flush()
+        # a side effect of history.add_datasets is a commit within db_next_hid (even with flush=False).
+    else:
+        # Make sure collections, implicit jobs etc are flushed even if there are no precreated output datasets
+        trans.sa_session.flush()
     for job in execution_tracker.successful_jobs:
         # Put the job in the queue if tracking in memory
         tool.app.job_manager.enqueue(job, tool=tool)
