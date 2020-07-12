@@ -114,10 +114,13 @@ const View = Backbone.View.extend({
         if (this.config.message_box_visible) {
             const content = this.config.message_box_content || "";
             const level = this.config.message_box_class || "info";
-            this.$el.addClass("has-message-box");
-            this.$messagebox.attr("class", `panel-${level}-message`).html(content).toggle(!!content).show();
+            this.$messagebox
+                .attr("class", `alert alert-${level} rounded-0 m-0 p-2`)
+                .append($("<div/>").attr("class", "fa fa-fw mr-1 fa-exclamation"))
+                .append(content)
+                .toggle(!!content)
+                .show();
         } else {
-            this.$el.removeClass("has-message-box");
             this.$messagebox.hide();
         }
         return this;
@@ -128,12 +131,16 @@ const View = Backbone.View.extend({
         if (this.config.show_inactivity_warning) {
             const content = this.config.inactivity_box_content || "";
             const verificationLink = $("<a/>")
+                .attr("class", "ml-1")
                 .attr("href", `${getAppRoot()}user/resend_verification`)
                 .text("Resend verification");
-            this.$el.addClass("has-inactivity-box");
-            this.$inactivebox.html(`${content} `).append(verificationLink).toggle(!!content).show();
+            this.$inactivebox
+                .append($("<div/>").attr("class", "fa fa-fw mr-1 fa-exclamation-triangle"))
+                .append(content)
+                .append(verificationLink)
+                .toggle(!!content)
+                .show();
         } else {
-            this.$el.removeClass("has-inactivity-box");
             this.$inactivebox.hide();
         }
         return this;
@@ -159,8 +166,8 @@ const View = Backbone.View.extend({
             `<div id="everything">
                 <div id="background"/>
                 <div id="masthead"/>
-                <div id="messagebox" class="full-message"/>
-                <div id="inactivebox" class="full-message panel-warning-message" />
+                <small id="messagebox"/>
+                <small id="inactivebox" class="alert rounded-0 m-0 p-2 alert-warning" />
                 <div id="columns">
                     <div id="left" class="unified-panel"/>
                     <div id="center" />
