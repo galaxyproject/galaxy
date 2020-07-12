@@ -373,7 +373,7 @@ class ExecutionTracker(object):
             job_assoc = model.ImplicitCollectionJobsJobAssociation()
             job_assoc.order_index = execution_slice.job_index
             job_assoc.implicit_collection_jobs = implicit_collection_jobs
-            job_assoc.job_id = job.id
+            job_assoc.job = job
             self.trans.sa_session.add(job_assoc)
 
 
