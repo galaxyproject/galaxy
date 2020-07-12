@@ -101,11 +101,10 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
         else:
             execute_single_job(execution_slice, completed_jobs[i])
 
-    full_flush_timer = ExecutionTimer()
     trans.sa_session.flush()
     for job in execution_tracker.successful_jobs:
         # Put the job in the queue if tracking in memory
-        app.job_manager.enqueue(job, tool=tool)
+        tool.app.job_manager.enqueue(job, tool=tool)
         trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
 
     if has_remaining_jobs:
