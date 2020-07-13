@@ -1765,9 +1765,10 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
             dataset = HistoryDatasetAssociation(dataset=dataset)
             object_session(self).add(dataset)
             object_session(self).flush()
-        elif not isinstance(dataset, HistoryDatasetAssociation):
+        elif not isinstance(dataset, (HistoryDatasetAssociation, HistoryDatasetCollectionAssociation)):
             raise TypeError("You can only add Dataset and HistoryDatasetAssociation instances to a history"
                             + " ( you tried to add %s )." % str(dataset))
+        is_dataset = is_hda(dataset)
         if parent_id:
             for data in self.datasets:
                 if data.id == parent_id:
@@ -1779,24 +1780,23 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
         else:
             if set_hid:
                 dataset.hid = self._next_hid()
-        if quota and self.user:
+        if quota and is_dataset and self.user:
             self.user.adjust_total_disk_usage(dataset.quota_amount(self.user))
         dataset.history = self
-        if genome_build not in [None, '?']:
+        if is_dataset and genome_build not in [None, '?']:
             self.genome_build = genome_build
         dataset.history_id = self.id
         return dataset
 
     def add_datasets(self, sa_session, datasets, parent_id=None, genome_build=None, set_hid=True, quota=True, flush=False):
         """ Optimized version of add_dataset above that minimizes database
-        interactions when adding many datasets to history at once.
+        interactions when adding many datasets and collections to history at once.
         """
-        all_hdas = all(is_hda(_) for _ in datasets)
-        optimize = len(datasets) > 1 and parent_id is None and all_hdas and set_hid
+        optimize = len(datasets) > 1 and parent_id is None and set_hid
         if optimize:
             self.__add_datasets_optimized(datasets, genome_build=genome_build)
             if quota and self.user:
-                disk_usage = sum([d.get_total_size() for d in datasets])
+                disk_usage = sum([d.get_total_size() for d in datasets if is_hda(d)])
                 self.user.adjust_total_disk_usage(disk_usage)
             sa_session.add_all(datasets)
             if flush:
@@ -1821,7 +1821,7 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
             dataset.hid = base_hid + i
             dataset.history = self
             dataset.history_id = cached_id(self)
-            if set_genome:
+            if set_genome and is_hda(dataset):
                 self.genome_build = genome_build
         return datasets
 

@@ -505,11 +505,15 @@ class DefaultToolAction(object):
                         element_kwds = dict(elements=collections_manager.ELEMENTS_UNINITIALIZED)
                     else:
                         element_kwds = dict(element_identifiers=element_identifiers)
-                    output_collections.create_collection(
+                    hdca = output_collections.create_collection(
                         output=output,
                         name=name,
+                        set_hid=True if flush_job else False,
+                        flush=flush_job,
                         **element_kwds
                     )
+                    if hdca:
+                        datasets_to_persist.append(hdca)
                     log.info("Handled collection output named %s for tool %s %s" % (name, tool.id, handle_output_timer))
                 else:
                     handle_output(name, output)
@@ -584,7 +588,7 @@ class DefaultToolAction(object):
                 # Dispatch to a job handler. enqueue() is responsible for flushing the job
                 app.job_manager.enqueue(job, tool=tool)
                 trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
-            return job, out_data, datasets_to_persist
+            return job, out_data, datasets_to_persist, history
 
     def _remap_job_on_rerun(self, trans, galaxy_session, rerun_remap_job_id, current_job, out_data):
         """
@@ -807,7 +811,7 @@ class OutputCollections(object):
         self.out_collection_instances = {}
         self.tags = tags
 
-    def create_collection(self, output, name, collection_type=None, **element_kwds):
+    def create_collection(self, output, name, collection_type=None, set_hid=True, flush=True, **element_kwds):
         input_collections = self.input_collections
         collections_manager = self.trans.app.dataset_collections_service
         collection_type = collection_type or output.structure.collection_type
@@ -886,11 +890,14 @@ class OutputCollections(object):
                 collection_type=collection_type,
                 trusted_identifiers=True,
                 tags=self.tags,
+                set_hid=set_hid,
+                flush=flush,
                 **element_kwds
             )
             # name here is name of the output element - not name
             # of the hdca.
             self.out_collection_instances[name] = hdca
+            return hdca
 
 
 def on_text_for_names(input_names):

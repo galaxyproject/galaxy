@@ -1603,8 +1603,9 @@ class Tool(Dictifiable):
             )
             job = rval[0]
             out_data = rval[1]
-            if len(rval) == 3:
+            if len(rval) == 4:
                 execution_slice.datasets_to_persist = rval[2]
+                execution_slice.history = rval[3]
         except (webob.exc.HTTPFound, exceptions.MessageException) as e:
             # if it's a webob redirect exception, pass it up the stack
             raise e
