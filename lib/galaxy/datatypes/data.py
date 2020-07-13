@@ -855,7 +855,6 @@ class Text(Data):
             sample_lines = dataset_read.count('\n')
             est_lines = int(sample_lines * (float(dataset.get_size()) / float(sample_size)))
         except UnicodeDecodeError:
-            # encoding error - this *should not happen* 
             log.error('Unable to estimate lines in file {}'.format(dataset.file_name))
             est_lines = None
         return est_lines
