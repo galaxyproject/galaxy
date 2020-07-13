@@ -112,8 +112,9 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
         trans.sa_session.flush()
     for job in execution_tracker.successful_jobs:
         # Put the job in the queue if tracking in memory
-        tool.app.job_manager.enqueue(job, tool=tool)
+        tool.app.job_manager.enqueue(job, tool=tool, flush=False)
         trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
+    trans.sa_session.flush()
 
     if has_remaining_jobs:
         raise PartialJobExecution(execution_tracker)
