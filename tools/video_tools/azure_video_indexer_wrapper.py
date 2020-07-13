@@ -71,6 +71,7 @@ def main():
 	http_client.HTTPConnection.debuglevel = 1
 
 	# Get the video index json (simple)
+	auth_token = get_auth_token(apiUrl, location, accountId, apiKey)
 	simple_json = get_video_index_json(apiUrl, location, accountId, videoId, auth_token, apiKey)
 	write_json_file(simple_json, output_from_azure_simple)
 
