@@ -52,17 +52,20 @@ def main():
 	videoId = upload_video(apiUrl, location, accountId, auth_token, input_file, video_url)
 
 	# Get the auth token associated with this video	
-	video_auth_token = get_video_auth_token(apiUrl, location, accountId, apiKey, videoId)
+	# video_auth_token = get_video_auth_token(apiUrl, location, accountId, apiKey, videoId)
 
 	# Check on the indexing status
 	while True:
+		# The token expires after an hour.  Let's just refresh every iteration
+		video_auth_token = get_video_auth_token(apiUrl, location, accountId, apiKey, videoId)
+
 		state = get_processing_status(apiUrl, location, accountId, videoId, video_auth_token)
 		
 		# We have a status other than uploaded or processing, it is complete
 		if state != "Uploaded" and state != "Processing":
 			break
 		# Wait a bit before checking again
-		time.sleep(30)
+		time.sleep(60)
 
 	# Turn on HTTP debugging here
 	http_client.HTTPConnection.debuglevel = 1
