@@ -6,11 +6,9 @@
         <b-alert variant="info" show v-if="headerMessage">
             {{ headerMessage }}
         </b-alert>
-        <b-alert v-if="loading" variant="info" show>
-            <loading-span message="Loading workflow invocation job data" />
-        </b-alert>
+        <loading-span v-if="loading" message="Loading workflow invocations" />
         <div v-else>
-            <b-alert v-if="!invocationItemsComputed.length" variant="secondary" show>
+            <b-alert v-if="!invocationItemsComputed.length" variant="info" show>
                 {{ noInvocationsMessage }}
             </b-alert>
             <b-table
@@ -23,10 +21,6 @@
                 caption-top
                 :busy="loading"
             >
-                <template v-slot:table-caption>
-                    These invocations are not finished scheduling - one or more steps are waiting on others steps to be
-                    complete before the full structure of the jobs in the workflow can be determined.
-                </template>
                 <template v-slot:row-details="row">
                     <b-card>
                         <workflow-invocation-state :invocation-id="row.item.id" />
@@ -108,7 +102,6 @@ export default {
                 return {
                     id: invocation["id"],
                     create_time: invocation["create_time"],
-                    update_time: invocation["update_time"],
                     workflow_id: invocation["workflow_id"],
                     history_id: invocation["history_id"],
                     state: invocation["state"],
@@ -118,9 +111,6 @@ export default {
         },
         swapRowDetails(row) {
             row.toggleDetails();
-        },
-        handleError(error) {
-            console.error(error);
         },
         executeWorkflow: function (workflow_id) {
             window.location = `${getAppRoot()}workflows/run?id=${workflow_id}`;
