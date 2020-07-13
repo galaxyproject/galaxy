@@ -549,11 +549,16 @@ class DefaultToolAction(object):
         # Now that we have a job id, we can remap any outputs if this is a rerun and the user chose to continue dependent jobs
         # This functionality requires tracking jobs in the database.
         if app.config.track_jobs_in_database and rerun_remap_job_id is not None:
+            # We need a flush here in order to rewrite jobs parameter,
+            # but remapping jobs should only affect single jobs anyway, so this is not too costly.
+            trans.sa_session.flush()
             self._remap_job_on_rerun(trans=trans,
                                      galaxy_session=galaxy_session,
                                      rerun_remap_job_id=rerun_remap_job_id,
                                      current_job=job,
                                      out_data=out_data)
+            # remap_job_on_rerun may assign hids, only add datasets to history that don't have hid yet.
+            datasets_to_persist = [d for d in datasets_to_persist if d.hid is None]
         log.info("Setup for job %s complete, ready to be enqueued %s" % (job.log_str(), job_setup_timer))
 
         # Some tools are not really executable, but jobs are still created for them ( for record keeping ).
