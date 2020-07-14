@@ -1,9 +1,7 @@
 babel
-Cheetah3
 galaxy-data
 galaxy-util
 galaxy-web-stack
-Mako
 MarkupSafe
 paste
 requests
