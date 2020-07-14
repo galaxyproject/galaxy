@@ -14,8 +14,8 @@ from galaxy.web_stack import ApplicationStack, UWSGIApplicationStack
 
 # File would be slightly more readable if contents were embedded directly, but
 # there are advantages to testing the documentation/examples.
-SIMPLE_JOB_CONF = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "lib", "galaxy", "config", "sample", "job_conf.xml.sample_basic")
-ADVANCED_JOB_CONF = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "lib", "galaxy", "config", "sample", "job_conf.xml.sample_advanced")
+SIMPLE_JOB_CONF = os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, os.pardir, "lib", "galaxy", "config", "sample", "job_conf.xml.sample_basic")
+ADVANCED_JOB_CONF = os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, os.pardir, "lib", "galaxy", "config", "sample", "job_conf.xml.sample_advanced")
 ADVANCED_JOB_CONF_YAML = os.path.join(os.path.dirname(__file__), "job_conf.sample_advanced.yml")
 CONDITIONAL_RUNNER_JOB_CONF = os.path.join(os.path.dirname(__file__), "conditional_runners_job_conf.xml")
 HANDLER_TEMPLATE_JOB_CONF = os.path.join(os.path.dirname(__file__), "handler_template_job_conf.xml")
@@ -396,8 +396,8 @@ class AdvancedJobConfYamlParserTestCase(AdvancedJobConfXmlParserTestCase):
 
 
 def test_yaml_advanced_validation():
-    schema = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "lib", "galaxy", "webapps", "galaxy", "job_config_schema.yml")
-    integration_tests_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "test", "integration")
+    schema = os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, os.pardir, "lib", "galaxy", "webapps", "galaxy", "job_config_schema.yml")
+    integration_tests_dir = os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, os.pardir, "test", "integration")
     valid_files = [
         ADVANCED_JOB_CONF_YAML,
         os.path.join(integration_tests_dir, "delay_job_conf.yml"),
