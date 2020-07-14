@@ -459,7 +459,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
         # Check cache
         if self._in_cache(rel_path):
-            in_cache = True
+            return True
         # Check iRODS
         in_irods = self._data_object_exists(rel_path)
 
