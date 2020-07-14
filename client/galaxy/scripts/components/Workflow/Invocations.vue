@@ -27,12 +27,19 @@
                     </b-card>
                 </template>
                 <template v-slot:cell(workflow_id)="data">
-                    <b-link href="#" @click.stop="swapRowDetails(data)">
+                    <b-link v-b-tooltip title="Show Invocation details" href="#" @click.stop="swapRowDetails(data)">
                         <b>{{ getWorkflowNameByInstanceId(data.item.workflow_id) }}</b>
                     </b-link>
                 </template>
                 <template v-slot:cell(history_id)="data">
-                    {{ getHistoryNameById(data.item.history_id) }}
+                    <b-link
+                        v-b-tooltip
+                        title="Switch to History"
+                        href="#"
+                        @click.stop="switchHistory(data.item.history_id)"
+                    >
+                        <b>{{ getHistoryNameById(data.item.history_id) }}</b>
+                    </b-link>
                 </template>
                 <template v-slot:cell(create_time)="data">
                     <UtcDate :date="data.value" mode="elapsed" />
@@ -52,6 +59,7 @@
 
 <script>
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import { WorkflowInvocationState } from "components/WorkflowInvocationState";
 import UtcDate from "components/UtcDate";
 import LoadingSpan from "components/LoadingSpan";
@@ -112,8 +120,12 @@ export default {
         swapRowDetails(row) {
             row.toggleDetails();
         },
-        executeWorkflow: function (workflow_id) {
-            window.location = `${getAppRoot()}workflows/run?id=${workflow_id}`;
+        executeWorkflow: function (workflowId) {
+            window.location = `${getAppRoot()}workflows/run?id=${workflowId}`;
+        },
+        switchHistory(historyId) {
+            const Galaxy = getGalaxyInstance();
+            Galaxy.currHistoryPanel.switchToHistory(historyId);
         },
     },
 };
