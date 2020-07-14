@@ -211,6 +211,37 @@ class ToolsUploadTestCase(ApiTestCase):
 
     @skip_without_datatype("velvet")
     @uses_test_history(require_new=False)
+    def test_composite_datatype_fetch(self, history_id):
+        destination = {"type": "hdas"}
+        targets = [{
+            "destination": destination,
+            "items": [{
+                "src": "composite",
+                "ext": "velvet",
+                "composite": {
+                    "items": [
+                        {"src": "pasted", "paste_content": "sequences content"},
+                        {"src": "pasted", "paste_content": "roadmaps content"},
+                        {"src": "pasted", "paste_content": "log content"},
+                    ]
+                },
+            }],
+        }]
+        payload = {
+            "history_id": history_id,
+            "targets": json.dumps(targets),
+        }
+        fetch_response = self.dataset_populator.fetch(payload)
+        self._assert_status_code_is(fetch_response, 200)
+        outputs = fetch_response.json()["outputs"]
+        assert len(outputs) == 1
+        output = outputs[0]
+
+        roadmaps_content = self._get_roadmaps_content(history_id, output)
+        assert roadmaps_content.strip() == "roadmaps content", roadmaps_content
+
+    @skip_without_datatype("velvet")
+    @uses_test_history(require_new=False)
     def test_composite_datatype_stage(self, history_id):
         job = {
             "input1": {
@@ -223,11 +254,9 @@ class ToolsUploadTestCase(ApiTestCase):
                 ]
             }
         }
-        print(history_id)
         inputs, datsets = stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False)
 
     @skip_without_datatype("velvet")
-    @uses_test_history(require_new=False)
     def test_composite_datatype_space_to_tab(self):
         # Like previous test but set one upload with space_to_tab to True to
         # verify that works.

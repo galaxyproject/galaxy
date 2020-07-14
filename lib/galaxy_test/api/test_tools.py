@@ -366,25 +366,57 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             run_response = self.dataset_populator.tools_post(payload)
             self.dataset_populator.wait_for_tool_run(history_id, run_response)
             dataset = run_response.json()["outputs"][0]
-            content = self.dataset_populator.get_history_dataset_content(history_id, dataset=dataset)
-            assert content.strip() == "Test123"
-            extra_files = self.dataset_populator.get_history_dataset_extra_files(history_id, dataset_id=dataset["id"])
-            assert len(extra_files) == 5, extra_files
-            expected_contents = {
-                "testdir": "Directory",
-                "testdir/c": "Directory",
-                "testdir/a": "File",
-                "testdir/b": "File",
-                "testdir/c/d": "File",
-            }
-            found_files = set()
-            for extra_file in extra_files:
-                path = extra_file["path"]
-                assert path in expected_contents
-                assert extra_file["class"] == expected_contents[path]
-                found_files.add(path)
+            self._check_testdir_composite(dataset, history_id)
 
-            assert len(found_files) == 5, found_files
+    @uses_test_history(require_new=False)
+    def test_upload_composite_as_tar_fetch(self, history_id):
+        tar_path = self.test_data_resolver.get_filename("testdir.tar")
+        with open(tar_path, "rb") as tar_f:
+            destination = {"type": "hdas"}
+            targets = [{
+                "destination": destination,
+                "items": [{
+                    "src": "pasted",
+                    "paste_content": "Test123\n",
+                    "ext": "txt",
+                    "extra_files": {
+                        "items_from": "archive",
+                        "src": "files",
+                    }
+                }],
+            }]
+            payload = {
+                "history_id": history_id,
+                "targets": json.dumps(targets),
+            }
+            payload["__files"] = {"files_0|file_data": tar_f}
+            fetch_response = self.dataset_populator.fetch(payload)
+            self._assert_status_code_is(fetch_response, 200)
+            outputs = fetch_response.json()["outputs"]
+            assert len(outputs) == 1
+            output = outputs[0]
+            self._check_testdir_composite(output, history_id)
+
+    def _check_testdir_composite(self, dataset, history_id):
+        content = self.dataset_populator.get_history_dataset_content(history_id, dataset=dataset)
+        assert content.strip() == "Test123"
+        extra_files = self.dataset_populator.get_history_dataset_extra_files(history_id, dataset_id=dataset["id"])
+        assert len(extra_files) == 5, extra_files
+        expected_contents = {
+            "testdir": "Directory",
+            "testdir/c": "Directory",
+            "testdir/a": "File",
+            "testdir/b": "File",
+            "testdir/c/d": "File",
+        }
+        found_files = set()
+        for extra_file in extra_files:
+            path = extra_file["path"]
+            assert path in expected_contents
+            assert extra_file["class"] == expected_contents[path]
+            found_files.add(path)
+
+        assert len(found_files) == 5, found_files
 
     @uses_test_history(require_new=False)
     def test_upload_composite_from_bad_tar(self, history_id):
