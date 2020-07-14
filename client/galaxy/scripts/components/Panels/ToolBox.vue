@@ -43,7 +43,7 @@
                 <div class="py-2" v-if="hasResults">
                     <b-button @click="onToggle">{{ buttonText }}</b-button>
                 </div>
-                <div class="py-2" v-else-if="query">
+                <div class="py-2" v-else-if="query"> <!-- move to ToolSearch component?-->
                     <span v-if="query.length < 3" class="font-weight-bold">***Search string too short***</span>
                     <span v-else class="font-weight-bold">***No Results Found***</span>
                 </div>
@@ -88,7 +88,8 @@ import ToolSection from "./Common/ToolSection";
 import ToolSearch from "./Common/ToolSearch";
 import UploadButton from "./Buttons/UploadButton";
 import FavoritesButton from "./Buttons/FavoritesButton";
-import ToolsView from "components/ToolsView/ToolsView"
+import ToolsView from "components/ToolsView/ToolsView";
+import { toolsExtracted } from "components/ToolsView/utilities";
 import { filterToolSections, filterTools, filterToolsets, resizePanel } from "./utilities";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
@@ -144,7 +145,8 @@ export default {
                 //account for this.showSections here too
             }
 
-            var searchList = this.toolsetIds ? this.toolsetIds : this.results;
+            var searchList = this.toolsetIds.length > 0 ? this.toolsetIds : this.results;
+            console.log("TOOLSET IDS: ", this.toolsetIds, this.results, searchList);
 
             return this.showSections 
             ? filterToolSections(this.toolbox, searchList)
@@ -181,7 +183,11 @@ export default {
             return this.detailedView;
         },
         getToolsetTools() {
-            return filterTools(this.toolbox, this.toolsetIds);
+            if (this.selected == this.mainToolbox) {
+                return toolsExtracted(this.toolbox);
+            } else {
+                return filterTools(this.toolbox, this.toolsetIds);
+            }
         },
     },
     methods: {

@@ -241,8 +241,10 @@ const CenterPanel = Backbone.View.extend({
         const Galaxy = getGalaxyInstance();
         let contentWindow = this.$frame[0].contentWindow || {};
         let message;
+        console.log("IN DISPLAY ", view);
         try {
             message = contentWindow.onbeforeunload && contentWindow.onbeforeunload();
+            console.log("IN TRY: ", message);
         } catch (err) {
             // This can happen when external content is displayed in this iframe // CORS violation
             contentWindow = {};
@@ -251,6 +253,7 @@ const CenterPanel = Backbone.View.extend({
             );
         }
         if (!message || confirm(message)) {
+            console.log("IN DISPLAY IF");
             contentWindow.onbeforeunload = undefined;
             this.$frame.attr("src", "about:blank").hide();
             this.$panel

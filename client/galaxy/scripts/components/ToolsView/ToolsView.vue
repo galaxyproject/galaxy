@@ -7,19 +7,17 @@
             <b-container fluid class="mb-4">
                 <b-row class="justify-content-center">
                     <b-col md="6">
-                        <b-form-group description="Search for strings or regular expressions">
-                            <b-input-group>
-                                <b-form-input
-                                    v-model="filterText"
-                                    placeholder="Type to Search"
-                                    @keyup.native="filter('filterByText')"
-                                    @keyup.esc.native="filterText = ''"
-                                />
-                                <b-input-group-append>
-                                    <b-btn :disabled="!filter" @click="filter = ''">Clear (esc)</b-btn>
-                                </b-input-group-append>
-                            </b-input-group>
-                        </b-form-group>
+                        <div class="toolsearch">
+                            <tool-search v-if="!showDetailedView" :query="query" placeholder="search tools" @onQuery="onQuery" @onResults="onResults" />
+
+                            <div class="py-2" v-if="hasResults">
+                                <b-button @click="onToggle">{{ buttonText }}</b-button>
+                            </div>
+                            <div class="py-2" v-else-if="query"> <!-- move to ToolSearch component?-->
+                                <span v-if="query.length < 3" class="font-weight-bold">***Search string too short***</span>
+                                <span v-else class="font-weight-bold">***No Results Found***</span>
+                            </div>
+                        </div>
                     </b-col>
                 </b-row>
             </b-container>
@@ -69,11 +67,14 @@ import { getAppRoot } from "onload/loadConfig";
 import infiniteScroll from "vue-infinite-scroll";
 import isotope from "vueisotope";
 import axios from "axios";
+import { toolsExtracted } from "./utilities";
+import ToolSearch from "components/Panels/Common/ToolSearch.vue"; 
 import Citations from "components/Citations.vue";
 import { setTimeout } from "timers";
 
 export default {
     components: {
+        ToolSearch,
         Citations,
         isotope,
     },
@@ -97,10 +98,13 @@ export default {
         return {
             tools: [],
             buffer: [],
-            filterOption: null,
-            filterText: "",
+            //filterOption: null,
+            //filterText: "",
             busy: false,
             loading: true,
+            query: null,
+            results: null,
+            queryFilter: null,
         };
     },
     computed: {
@@ -118,11 +122,18 @@ export default {
                 },
             };
         },
+        hasResults() {
+            return this.results && this.results.length > 0;
+        },
     },
     watch: {
         toolset () {
             this.initialize(this.toolset);
-        }
+        },
+        results () {
+            var filteredToolset = this.toolset.filter((tool) => this.results.includes(tool));
+            this.initialize(filteredToolset); //still using this.toolset since if statement in initialise checks that first.
+        },
     },
     created() {
         axios
@@ -153,35 +164,35 @@ export default {
         filter(key) {
             this.$refs.iso.filter(key);
         },
-        toolsExtracted(tools) {
-            function extractSections(acc, section) {
-                function extractTools(_acc, tool) {
-                    return tool.name
-                        ? [
-                              ..._acc,
-                              {
-                                  id: tool.id,
-                                  name: tool.name,
-                                  section: section.name,
-                                  description: tool.description,
-                                  url: getAppRoot() + String(tool.link).substring(1),
-                                  version: tool.version,
-                                  help: tool.help,
-                              },
-                          ]
-                        : _acc;
-                }
-                if ("elems" in section) {
-                    return acc.concat(section.elems.reduce(extractTools, []));
-                }
-                return acc;
-            }
-            return tools
-                .reduce(extractSections, [])
-                .map((a) => [Math.random(), a])
-                .sort((a, b) => a[0] - b[0])
-                .map((a) => a[1]);
-        },
+        // toolsExtracted(tools) {
+        //     function extractSections(acc, section) {
+        //         function extractTools(_acc, tool) {
+        //             return tool.name
+        //                 ? [
+        //                       ..._acc,
+        //                       {
+        //                           id: tool.id,
+        //                           name: tool.name,
+        //                           section: section.name,
+        //                           description: tool.description,
+        //                           url: getAppRoot() + String(tool.link).substring(1),
+        //                           version: tool.version,
+        //                           help: tool.help,
+        //                       },
+        //                   ]
+        //                 : _acc;
+        //         }
+        //         if ("elems" in section) {
+        //             return acc.concat(section.elems.reduce(extractTools, []));
+        //         }
+        //         return acc;
+        //     }
+        //     return tools
+        //         .reduce(extractSections, [])
+        //         .map((a) => [Math.random(), a])
+        //         .sort((a, b) => a[0] - b[0])
+        //         .map((a) => a[1]);
+        // },
         loadMore() {
             if (this.buffer.length < this.tools.length) {
                 this.busy = true;
@@ -218,10 +229,19 @@ export default {
             if (this.toolset.length > 0) {
                 this.tools = this.toolset;
             } else {
-                this.tools = this.toolsExtracted(tools);
+                // this.tools = this.toolsExtracted(tools);
+                this.tools = toolsExtracted(tools);
             }
             this.buffer = this.tools.slice(0, 20);
             this.loading = false;
+        },
+        onQuery(query) {
+            this.query = query;
+        },
+        onResults(results) {
+            this.results = results;
+            console.log("RESULTS: ", this.toolset, this.results);
+            this.queryFilter = this.hasResults ? this.query : null;
         },
     },
 };
