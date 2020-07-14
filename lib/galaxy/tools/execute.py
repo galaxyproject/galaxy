@@ -68,7 +68,7 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
             del params['__workflow_resource_params__']
         if validate_outputs:
             params['__validate_outputs__'] = True
-        job, result = tool.handle_single_execution(trans, rerun_remap_job_id, execution_slice, history, execution_cache, completed_job, collection_info)
+        job, result = tool.handle_single_execution(trans, rerun_remap_job_id, execution_slice, history, execution_cache, completed_job, collection_info, flush_job=False)
         if job:
             log.debug(job_timer.to_str(tool_id=tool.id, job_id=job.id))
             execution_tracker.record_success(execution_slice, job, result)
@@ -93,6 +93,7 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
 
     jobs_executed = 0
     has_remaining_jobs = False
+    datasets_to_persist = []
 
     for i, execution_slice in enumerate(execution_tracker.new_execution_slices()):
         if max_num_jobs and jobs_executed >= max_num_jobs:
@@ -100,6 +101,19 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
             break
         else:
             execute_single_job(execution_slice, completed_jobs[i])
+            if execution_slice.datasets_to_persist:
+                datasets_to_persist.extend(execution_slice.datasets_to_persist)
+
+    if datasets_to_persist:
+        execution_slice.history.add_datasets(trans.sa_session, datasets_to_persist, set_hid=True, quota=False, flush=False)
+        # a side effect of history.add_datasets is a commit within db_next_hid (even with flush=False).
+    else:
+        # Make sure collections, implicit jobs etc are flushed even if there are no precreated output datasets
+        trans.sa_session.flush()
+    for job in execution_tracker.successful_jobs:
+        # Put the job in the queue if tracking in memory
+        tool.app.job_manager.enqueue(job, tool=tool)
+        trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
 
     if has_remaining_jobs:
         raise PartialJobExecution(execution_tracker)
@@ -116,6 +130,8 @@ class ExecutionSlice(object):
         self.job_index = job_index
         self.param_combination = param_combination
         self.dataset_collection_elements = dataset_collection_elements
+        self.datasets_to_persist = None
+        self.history = None
 
 
 class ExecutionTracker(object):
@@ -361,7 +377,7 @@ class ExecutionTracker(object):
             job_assoc = model.ImplicitCollectionJobsJobAssociation()
             job_assoc.order_index = execution_slice.job_index
             job_assoc.implicit_collection_jobs = implicit_collection_jobs
-            job_assoc.job_id = job.id
+            job_assoc.job = job
             self.trans.sa_session.add(job_assoc)
 
 
