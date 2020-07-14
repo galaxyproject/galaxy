@@ -33,6 +33,7 @@ class ToolExecutionCache(object):
         self.trans = trans
         self.current_user_roles = trans.get_current_user_roles()
         self.chrom_info = {}
+        self.cached_collection_elements = {}
 
     def get_chrom_info(self, tool_id, input_dbkey):
         genome_builds = self.trans.app.genome_builds
@@ -381,6 +382,7 @@ class DefaultToolAction(object):
                     inp_dataset_collections,
                     input_ext,
                     python_template_version=tool.python_template_version,
+                    execution_cache=execution_cache,
                 )
                 create_datasets = True
                 dataset = None
@@ -949,7 +951,7 @@ def get_ext_or_implicit_ext(hda):
     return hda.ext
 
 
-def determine_output_format(output, parameter_context, input_datasets, input_dataset_collections, random_input_ext, python_template_version='3'):
+def determine_output_format(output, parameter_context, input_datasets, input_dataset_collections, random_input_ext, python_template_version='3', execution_cache=None):
     """ Determines the output format for a dataset based on an abstract
     description of the output (galaxy.tool_util.parser.ToolOutput), the parameter
     wrappers, a map of the input datasets (name => HDA), and the last input
@@ -990,7 +992,13 @@ def determine_output_format(output, parameter_context, input_datasets, input_dat
                     try:
                         input_element = input_collection_collection[element_index]
                     except KeyError:
-                        for element in input_collection_collection.dataset_elements:
+                        if execution_cache:
+                            dataset_elements = execution_cache.cached_collection_elements.get(input_collection_collection.id)
+                            if dataset_elements is None:
+                                dataset_elements = execution_cache.cached_collection_elements[input_collection_collection.id] = input_collection_collection.dataset_elements
+                        else:
+                            dataset_elements = input_collection_collection.dataset_elements
+                        for element in dataset_elements:
                             if element.element_identifier == element_index:
                                 input_element = element
                                 break
