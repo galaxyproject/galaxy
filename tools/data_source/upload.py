@@ -204,27 +204,25 @@ def add_composite_file(dataset, registry, output_path, files_path):
 
         auto_decompress = composite_file_path.get('auto_decompress', True)
         if auto_decompress and not datatype.composite_type and CompressedFile.can_decompress(dp):
-            # It isn't an explictly composite datatype, so these are just extra files to attach
+            # It isn't an explicitly composite datatype, so these are just extra files to attach
             # as composite data. It'd be better if Galaxy was communicating this to the tool
             # a little more explicitly so we didn't need to dispatch on the datatype and so we
             # could attach arbitrary extra composite data to an existing composite datatype if
             # if need be? Perhaps that would be a mistake though.
             CompressedFile(dp).extract(files_path)
         else:
-            if not is_binary:
-                tmpdir = output_adjacent_tmpdir(output_path)
-                tmp_prefix = 'data_id_%s_convert_' % dataset.dataset_id
-                if composite_file_path.get('space_to_tab'):
-                    sniff.convert_newlines_sep2tabs(dp, tmp_dir=tmpdir, tmp_prefix=tmp_prefix)
-                else:
-                    sniff.convert_newlines(dp, tmp_dir=tmpdir, tmp_prefix=tmp_prefix)
-
-            file_output_path = os.path.join(files_path, name)
-            shutil.move(dp, file_output_path)
-
-            # groom the dataset file content if required by the corresponding datatype definition
-            if datatype.dataset_content_needs_grooming(file_output_path):
-                datatype.groom_dataset_content(file_output_path)
+            tmpdir = output_adjacent_tmpdir(output_path)
+            tmp_prefix = 'data_id_%s_convert_' % dataset.dataset_id
+            sniff.handle_composite_file(
+                datatype,
+                dp,
+                files_path,
+                name,
+                is_binary,
+                tmpdir,
+                tmp_prefix,
+                composite_file_path,
+            )
 
     # Do we have pre-defined composite files from the datatype definition.
     if dataset.composite_files:
@@ -282,7 +280,7 @@ def __write_job_metadata(metadata):
 def output_adjacent_tmpdir(output_path):
     """ For temp files that will ultimately be moved to output_path anyway
     just create the file directly in output_path's directory so shutil.move
-    will work optimially.
+    will work optimally.
     """
     return os.path.dirname(output_path)
 

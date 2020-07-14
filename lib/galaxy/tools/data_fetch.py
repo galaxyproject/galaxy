@@ -15,7 +15,8 @@ from galaxy.datatypes.upload_util import (
     handle_upload,
     UploadProblemException,
 )
-from galaxy.util import in_directory
+from galaxy.util import in_directory, safe_makedirs
+from galaxy.util.bunch import Bunch
 from galaxy.util.compression_utils import CompressedFile
 from galaxy.util.hash_util import HASH_NAMES, memory_bound_hexdigest
 
@@ -90,7 +91,90 @@ def _fetch_target(upload_config, target):
     if "name" in target:
         fetched_target["name"] = target["name"]
 
-    def _resolve_src(item):
+    def _copy_and_validate_simple_attributes(src_item, target_metadata):
+        info = src_item.get("info", None)
+        created_from_basename = src_item.get("created_from_basename", None)
+        tags = src_item.get("tags", [])
+        object_id = src_item.get("object_id", None)
+
+        if info is not None:
+            target_metadata["info"] = info
+        if object_id is not None:
+            target_metadata["object_id"] = object_id
+        if tags:
+            target_metadata["tags"] = tags
+        if created_from_basename:
+            target_metadata["created_from_basename"] = created_from_basename
+        return target_metadata
+
+    def _resolve_item(item):
+        # Might be a dataset or a composite upload.
+        requested_ext = item.get("ext", None)
+        registry = upload_config.registry
+        datatype = registry.get_datatype_by_extension(requested_ext)
+        composite = item.pop("composite", None)
+        if datatype and datatype.composite_type:
+            composite_type = datatype.composite_type
+            writable_files = datatype.writable_files
+            assert composite_type == "auto_primary_file", "basic composite uploads not yet implemented"
+
+            # get_composite_dataset_name finds dataset name from basename of contents
+            # and such but we're not implementing that here yet. yagni?
+            # also need name...
+            dataset_bunch = Bunch()
+            name = item.get("name") or 'Composite Dataset'
+            dataset_bunch.name = name
+            primary_file = sniff.stream_to_file(StringIO(datatype.generate_primary_file(dataset_bunch)), prefix='upload_auto_primary_file', dir=".")
+            extra_files_path = primary_file + "_extra"
+            os.mkdir(extra_files_path)
+            rval = {
+                "name": name,
+                "filename": primary_file,
+                "ext": requested_ext,
+                "link_data_only": False,
+                "sources": [],
+                "hashes": [],
+                "extra_files": extra_files_path,
+            }
+            _copy_and_validate_simple_attributes(item, rval)
+            composite_items = composite.get("elements", [])
+            keys = [value.name for value in writable_files.values()]
+            composite_item_idx = 0
+            for composite_item in composite_items:
+                if composite_item_idx >= len(keys):
+                    # raise exception - too many files?
+                    pass
+                key = keys[composite_item_idx]
+                writable_file = writable_files[key]
+                _, src_target = _has_src_to_path(upload_config, composite_item)
+                # do the writing
+                sniff.handle_composite_file(
+                    datatype,
+                    src_target,
+                    extra_files_path,
+                    key,
+                    writable_file.is_binary,
+                    ".",
+                    os.path.basename(extra_files_path) + "_",
+                    composite_item,
+                )
+                composite_item_idx += 1
+
+            writable_files_idx = composite_item_idx
+            while writable_files_idx < len(keys):
+                key = keys[writable_files_idx]
+                writable_file = writable_files[key]
+                if not writable_file.optional:
+                    # raise Exception, non-optional file missing
+                    pass
+                writable_files_idx += 1
+            return rval
+        else:
+            if composite:
+                raise Exception("Non-composite datatype [%s] attempting to be created with composite data." % datatype)
+            return _resolve_item_with_primary(item)
+
+    def _resolve_item_with_primary(item):
         converted_path = None
 
         name, path = _has_src_to_path(upload_config, item, is_dataset=True)
@@ -107,10 +191,6 @@ def _fetch_target(upload_config, target):
 
         dbkey = item.get("dbkey", "?")
         requested_ext = item.get("ext", "auto")
-        info = item.get("info", None)
-        created_from_basename = item.get("created_from_basename", None)
-        tags = item.get("tags", [])
-        object_id = item.get("object_id", None)
         link_data_only = upload_config.link_data_only
         if "link_data_only" in item:
             # Allow overriding this on a per file basis.
@@ -152,23 +232,52 @@ def _fetch_target(upload_config, target):
         elif not link_data_only:
             path = upload_config.ensure_in_working_directory(path, purge_source, in_place)
 
+        extra_files = item.get("extra_files")
+        staged_extra_files = None
+        if extra_files:
+            # TODO: optimize to just copy the whole directory to extra files instead.
+            assert not upload_config.link_data_only, "linking composite dataset files not yet implemented"
+            extra_files_path = path + "_extra"
+            staged_extra_files = extra_files_path
+            os.mkdir(extra_files_path)
+
+            def walk_extra_files(items, prefix=""):
+                print(items)
+                for item in items:
+                    print(item)
+                    if "elements" in item:
+                        name = item.get("name")
+                        if not prefix:
+                            item_prefix = name
+                        else:
+                            item_prefix = prefix + "/" + name
+                        walk_extra_files(item.get("elements"), prefix=item_prefix)
+                    else:
+                        name, src_path = _has_src_to_path(upload_config, item)
+                        if prefix:
+                            rel_path = prefix + "/" + name
+                        else:
+                            rel_path = name
+
+                        file_output_path = os.path.join(staged_extra_files, rel_path)
+                        parent_dir = os.path.dirname(file_output_path)
+                        if not os.path.exists(parent_dir):
+                            safe_makedirs(parent_dir)
+                        shutil.move(src_path, file_output_path)
+            walk_extra_files(extra_files.get("elements", []))
+
+        # TODO:
+        # in galaxy json add 'extra_files' and point at target derived from extra_files:
         if not link_data_only and datatype and datatype.dataset_content_needs_grooming(path):
             # Groom the dataset content if necessary
             datatype.groom_dataset_content(path)
 
         rval = {"name": name, "filename": path, "dbkey": dbkey, "ext": ext, "link_data_only": link_data_only, "sources": sources, "hashes": hashes}
-        if info is not None:
-            rval["info"] = info
-        if object_id is not None:
-            rval["object_id"] = object_id
-        if tags:
-            rval["tags"] = tags
-        if created_from_basename:
-            rval["created_from_basename"] = created_from_basename
-        return rval
+        if staged_extra_files:
+            rval["extra_files"] = os.path.abspath(staged_extra_files)
+        return _copy_and_validate_simple_attributes(item, rval)
 
-    elements = elements_tree_map(_resolve_src, items)
-
+    elements = elements_tree_map(_resolve_item, items)
     fetched_target["elements"] = elements
     return fetched_target
 
@@ -182,9 +291,10 @@ def _bagit_to_items(directory):
 
 def _decompress_target(upload_config, target):
     elements_from_name, elements_from_path = _has_src_to_path(upload_config, target, is_dataset=False)
-    temp_directory = tempfile.mkdtemp(prefix=elements_from_name, dir=".")
-    decompressed_directory = CompressedFile(elements_from_path).extract(temp_directory)
-    return decompressed_directory
+    temp_directory = os.path.abspath(tempfile.mkdtemp(prefix=elements_from_name, dir="."))
+    cf = CompressedFile(elements_from_path)
+    cf.extract(temp_directory)
+    return temp_directory
 
 
 def elements_tree_map(f, items):

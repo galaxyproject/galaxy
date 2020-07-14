@@ -47,6 +47,7 @@ class ModelPersistenceContext(object):
         dbkey,
         name,
         filename=None,
+        extra_files=None,
         metadata_source_name=None,
         info=None,
         library_folder=None,
@@ -147,8 +148,12 @@ class ModelPersistenceContext(object):
                 self.object_store.update_from_file(primary_data.dataset, file_name=filename, create=True)
             else:
                 primary_data.link_to(filename)
-            # We are sure there are no extra files, so optimize things that follow by settting total size also.
-            primary_data.set_size(no_extra_files=True)
+            if extra_files:
+                persist_extra_files(self.object_store, extra_files, primary_data)
+                primary_data.set_size()
+            else:
+                # We are sure there are no extra files, so optimize things that follow by settting total size also.
+                primary_data.set_size(no_extra_files=True)
 
         # If match specified a name use otherwise generate one from
         # designation.
@@ -450,6 +455,24 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
         """No-op, no job context to persist this association for."""
 
 
+def persist_extra_files(object_store, src_extra_files_path, primary_data):
+    if src_extra_files_path and os.path.exists(src_extra_files_path):
+        primary_data.dataset.create_extra_files_path()
+        target_extra_files_path = primary_data.extra_files_path
+        for root, dirs, files in os.walk(src_extra_files_path):
+            extra_dir = os.path.join(target_extra_files_path, root.replace(src_extra_files_path, '', 1).lstrip(os.path.sep))
+            extra_dir = os.path.normpath(extra_dir)
+            for f in files:
+                object_store.update_from_file(
+                    primary_data.dataset,
+                    extra_dir=extra_dir,
+                    alt_name=f,
+                    file_name=os.path.join(root, f),
+                    create=True,
+                    preserve_symlinks=True
+                )
+
+
 def persist_target_to_export_store(target_dict, export_store, object_store, work_directory):
     replace_request_syntax_sugar(target_dict)
     model_persistence_context = SessionlessModelPersistenceContext(object_store, export_store, work_directory)
@@ -584,7 +607,7 @@ def persist_hdas(elements, model_persistence_context, final_job_state='ok'):
                 sources = fields_match.sources
                 hashes = fields_match.hashes
                 created_from_basename = fields_match.created_from_basename
-
+                extra_files = fields_match.extra_files
                 dataset = model_persistence_context.create_dataset(
                     ext=ext,
                     designation=designation,
@@ -592,6 +615,7 @@ def persist_hdas(elements, model_persistence_context, final_job_state='ok'):
                     dbkey=dbkey,
                     name=name,
                     filename=discovered_file.path,
+                    extra_files=extra_files,
                     info=info,
                     link_data=link_data,
                     primary_data=primary_dataset,
@@ -773,6 +797,10 @@ class JsonCollectedDatasetMatch(object):
     @property
     def created_from_basename(self):
         return self.as_dict.get("created_from_basename")
+
+    @property
+    def extra_files(self):
+        return self.as_dict.get("extra_files")
 
 
 class RegexCollectedDatasetMatch(JsonCollectedDatasetMatch):
