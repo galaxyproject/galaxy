@@ -1,4 +1,4 @@
-<tool id="strict_shell_profile" name="strict_shell_profile" version="1.0.0" profile="16.04">
+<tool id="strict_shell_profile" name="strict_shell_profile" version="1.0.0" profile="20.09">
     <command detect_errors="exit_code">
         echo "Hello" > $out_file1
         ; sh -c "exit $exit_code"

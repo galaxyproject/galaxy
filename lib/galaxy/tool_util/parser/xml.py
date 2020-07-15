@@ -488,7 +488,7 @@ class XmlToolSource(ToolSource):
 
     def parse_strict_shell(self):
         command_el = self._command_el
-        if self.legacy_defaults:
+        if packaging.version.parse(self.parse_profile()) < packaging.version.parse('20.09'):
             default = "False"
         else:
             default = "True"
