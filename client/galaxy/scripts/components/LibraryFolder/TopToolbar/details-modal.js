@@ -9,8 +9,8 @@ export function showLocInfo(metadata) {
     const Galaxy = getGalaxyInstance();
     var library = null;
     if (Galaxy.libraries && Galaxy.libraries.libraryListView !== null) {
-        library = Galaxy.libraries.libraryListView.collection.get(this.folder_id);
-        this.showLocInfoModal(library);
+        library = Galaxy.libraries.libraryListView.collection.get(metadata.folder_id);
+        showLocInfoModal(library);
     } else {
         library = new mod_library_model.Library({
             id: lib_id,

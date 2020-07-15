@@ -7,7 +7,9 @@
             <FolderTopBar
                 @updateSearch="updateSearchValue($event)"
                 @refreshTable="refreshTable"
-                :folderContents="this.folderContents"
+                @fetchFolderContents="fetchFolderContents($event)"
+                :folderContents="folderContents"
+                :include_deleted="include_deleted"
                 :folder_id="folder_id"
                 :selected="selected"
                 :metadata="folder_metadata"
@@ -67,8 +69,12 @@
                             rows="3"
                         ></textarea>
                     </div>
-                    <div v-else>
+                    <div v-else-if="!row.item.deleted">
                         <a :href="createContentLink(row.item)">{{ row.item.name }}</a>
+                    </div>
+                    <!-- Deleted Item-->
+                    <div v-else>
+                        <div style="color:grey;">{{row.item.name}}</div>
                     </div>
                 </template>
 
@@ -255,6 +261,7 @@ export default {
             hasLoaded: false,
             perPage: 15,
             filter: null,
+            include_deleted: false,
             filterOn: [],
         };
     },
@@ -266,22 +273,27 @@ export default {
     created() {
         this.root = getAppRoot();
         this.services = new Services({ root: this.root });
-        this.services
-            .getFolderContents(this.folder_id)
-            .then((response) => {
-                response.folder_contents.forEach(
-                    (content) => (content.update_time = new Date(content.update_time).toISOString())
-                );
-                this.folderContents = response.folder_contents;
-                this.folder_metadata = response.metadata;
-                this.hasLoaded = true;
-                console.log(response);
-            })
-            .catch((error) => {
-                this.error = error;
-            });
+        this.fetchFolderContents()
     },
     methods: {
+        fetchFolderContents(include_deleted=false) {
+            this.include_deleted = include_deleted
+            this.hasLoaded = false
+            this.services
+                .getFolderContents(this.folder_id, include_deleted)
+                .then((response) => {
+                    response.folder_contents.forEach(
+                        (content) => (content.update_time = new Date(content.update_time).toISOString())
+                    );
+                    this.folderContents = response.folder_contents;
+                    this.folder_metadata = response.metadata;
+                    this.hasLoaded = true;
+                    console.log(response);
+                })
+                .catch((error) => {
+                    this.error = error;
+                });
+        },
         updateSearchValue(value) {
             this.filter = value;
         },

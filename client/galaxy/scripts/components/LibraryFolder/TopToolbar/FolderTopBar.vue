@@ -1,5 +1,5 @@
 <template>
-    <div class="d-flex align-items-center mb-2">
+    <div class="form-inline d-flex align-items-center mb-2">
         <a class="mr-1 btn btn-secondary" href="/library/list" data-toggle="tooltip" title="Go to first page">
             <font-awesome-icon icon="home" />
         </a>
@@ -32,6 +32,7 @@
                     title="Mark items deleted"
                     class="primary-button toolbtn-bulk-delete logged-dataset-manipulation mr-1"
                     type="button"
+                    @click="deleteSelected"
                 >
                     <font-awesome-icon icon="trash" />
                     Delete
@@ -39,7 +40,6 @@
                 <span class="mr-1" data-toggle="tooltip" title="Show location details">
                     <button
                         @click="showDetails"
-                        data-id="<%- id %>"
                         class="primary-button toolbtn-show-locinfo"
                         type="button"
                     >
@@ -47,6 +47,18 @@
                         Details
                     </button>
                 </span>
+                <div class="form-check logged-dataset-manipulation mr-1"
+                     v-if="logged_dataset_manipulation"
+                >
+                    <b-form-checkbox
+                            id="checkbox-1"
+                            :checked="include_deleted"
+                            v-on:input="toggle_include_deleted($event)"
+                            name="checkbox-1"
+                    >
+                        include deleted
+                    </b-form-checkbox>
+                </div>
             </form>
         </div>
     </div>
@@ -57,8 +69,8 @@ import { getGalaxyInstance } from "app";
 import Vue from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { showLocInfo } from "./details-modal";
+import { deleteSelectedItems } from "./delete-selected";
 import { initTopBarIcons } from "components/LibraryFolder/icons";
-import $ from "jquery";
 
 initTopBarIcons();
 
@@ -69,6 +81,10 @@ export default {
     props: {
         folder_id: {
             type: String,
+            required: true,
+        },
+        include_deleted: {
+            type: Boolean,
             required: true,
         },
         selected: {
@@ -126,6 +142,9 @@ export default {
         updateSearch: function (value) {
             this.$emit("updateSearch", value);
         },
+        deleteSelected: function () {
+            deleteSelectedItems(this.selected)
+        },
         newFolder() {
             this.folderContents.unshift({
                 editMode: true,
@@ -140,8 +159,12 @@ export default {
         Slightly adopted Bootstrap code
          */
         showDetails() {
-            showLocInfo(Object.assign({ id: this.folder_id }, this.metadata));
+            showLocInfo(Object.assign({id: this.folder_id}, this.metadata));
         },
+        toggle_include_deleted: function (value) {
+            console.log(value)
+            this.$emit("fetchFolderContents", value);
+        }
     },
 };
 </script>
