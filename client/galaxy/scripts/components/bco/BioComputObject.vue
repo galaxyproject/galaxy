@@ -78,58 +78,6 @@ export default {
             const biocompute = this.getBioComputeById(this.invocationId);
             return state.biocompute
         },
-        getBCO: function() {
-            const invocationId = this.invocationId;
-            const url = getAppRoot() + `api/invocations/${invocationId}/export_bco`;
-
-            // Iterator.
-            
-            // Source:  https://stackoverflow.com/questions/53050116/converting-a-regular-json-file-to-a-parent-child-hierarchical-json-as-used-by-d3
-            
-            const iterate = (obj) => {
-            
-                const getObjects = (o, parent) =>
-            o && typeof o === 'object' ? Object.entries(o).map(([name, v]) => ({
-            name,
-            parent,
-            children: getObjects(v, name)
-            })) : [{
-            name: o,
-            parent
-            }];
-        
-        	var pc_struct = [obj],
-            result = getObjects({ Root: pc_struct[0] }, 'null');
-            
-            // Kick it back.
-            return(result[0]['children']);
-    		
-            }
-
-            axios
-                .get(url)
-                .then((response) => {
-                    
-                    // Create a property handler.
-                    var this_helper = this;
-                    
-                    // Loop over the response and assign values to new
-                    // objects.
-                    
-                    for (var key of Object.keys(response.data)) {
-                    
-					    // Vue-wide object.
-					    this_helper[key] = response.data[key]
-					}
-
-					console.log(this);
-					console.log(this.embargo.start_time);
-		
-                })
-                .catch((e) => {
-                    console.error(e);
-                });
-        },
     },
     methods: {
         ...mapActions(["fetchIBiocomputeForId"]),
@@ -148,5 +96,39 @@ export default {
             }
         },
     },
+    mounted: function () {
+        
+        // Call only after everything has loaded.
+        // Source: https://vuejs.org/v2/api/#mounted
+
+        this.$nextTick(function () {
+        const invocationId = this.invocationId;
+        const url = getAppRoot() + `api/invocations/${invocationId}/export_bco`;
+
+        axios
+            .get(url)
+            .then((response) => {
+                
+                // Create a property handler.
+                var this_helper = this;
+                
+                // Loop over the response and assign values to new
+                // objects.
+                
+                for (var key of Object.keys(response.data)) {
+                
+                    // Vue-wide object.
+                    this_helper[key] = response.data[key]
+                }
+
+                console.log(this);
+                console.log(this.embargo.start_time);
+    
+            })
+            .catch((e) => {
+                console.error(e);
+            });
+      })
+    }
 };
 </script>
