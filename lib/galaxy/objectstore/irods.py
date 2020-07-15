@@ -454,7 +454,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         return False
 
     def _exists(self, obj, **kwargs):
-        in_cache = in_irods = False
+        in_irods = False
         rel_path = self._construct_path(obj, **kwargs)
 
         # Check cache
@@ -467,7 +467,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         dir_only = kwargs.get('dir_only', False)
         base_dir = kwargs.get('base_dir', None)
         if dir_only:
-            if in_cache or in_irods:
+            if in_irods:
                 return True
             # for JOB_WORK directory
             elif base_dir:
@@ -477,9 +477,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             else:
                 return False
 
-        if in_cache and not in_irods:
-            return True
-        elif in_irods:
+        if in_irods:
             return True
         else:
             return False
