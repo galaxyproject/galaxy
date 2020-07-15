@@ -41,7 +41,9 @@
                     </div>
                 </template>
                 <template v-slot:head(selected)="">
-                    <span class="select-all-symbl" title="Check to select all datasets" @click="toggleSelect">&check;</span>
+                    <span class="select-all-symbl" title="Check to select all datasets" @click="toggleSelect"
+                        >&check;</span
+                    >
                 </template>
                 <template v-slot:cell(selected)="{ rowSelected }">
                     <template v-if="rowSelected">
@@ -130,7 +132,11 @@
                 </template>
                 <template v-slot:cell(is_unrestricted)="row">
                     <font-awesome-icon v-if="row.item.is_unrestricted" title="Unrestricted dataset" icon="globe" />
-
+                    <font-awesome-icon
+                        v-else-if="row.item.deleted"
+                        title="Marked deleted"
+                        icon="ban"
+                    ></font-awesome-icon>
                     <font-awesome-icon v-else-if="row.item.is_private" title="Private dataset" icon="key" />
                     <font-awesome-icon
                         v-else-if="row.item.is_private === false && row.item.is_unrestricted === false"
@@ -170,7 +176,7 @@
                                 <span class="fa fa-pencil"></span> Edit
                             </button>
                         </a>
-                        <a v-if="row.item.can_manage" :href="createPermissionLink(row.item)">
+                        <a v-if="row.item.can_manage && !row.item.deleted" :href="createPermissionLink(row.item)">
                             <button
                                 data-toggle="tooltip"
                                 data-placement="top"
@@ -180,6 +186,15 @@
                                 <span class="fa fa-group"></span> Manage
                             </button>
                         </a>
+                        <button
+                            v-if="row.item.deleted"
+                            :title="'Undelete ' + row.item.name"
+                            class="primary-button btn-sm undelete_dataset_btn"
+                            type="button"
+                            style="margin-left: 1em;"
+                        >
+                            <span class="fa fa-unlock"></span> Undelete
+                        </button>
                     </div>
                 </template>
             </b-table>
