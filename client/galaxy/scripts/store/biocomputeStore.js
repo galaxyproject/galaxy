@@ -21,7 +21,7 @@ const actions = {
 
 const mutations = {
     saveBiocomputeForId: (state, { invocationId, biocomputeData }) => {
-        Vue.set(state.biocompute, invocationId, biocomputeData);
+        Vue.set(state.biocomputeDetailsById, invocationId, biocomputeData);
     },
 };
 

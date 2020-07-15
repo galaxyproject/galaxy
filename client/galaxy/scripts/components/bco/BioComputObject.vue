@@ -49,6 +49,8 @@ import { mapCacheActions } from "vuex-cache";
 import { mapGetters, mapActions } from "vuex";
 import { getRootFromIndexLink } from "onload";
 
+import Vuex from 'vuex';
+
 export default {
     name: "BCOviewer",
     components: {
@@ -101,33 +103,39 @@ export default {
         // Call only after everything has loaded.
         // Source: https://vuejs.org/v2/api/#mounted
 
+        // Context helper.
+        var context_helper = this;
+
         this.$nextTick(function () {
-        const invocationId = this.invocationId;
-        const url = getAppRoot() + `api/invocations/${invocationId}/export_bco`;
+            const invocationId = this.invocationId;
+            const url = getAppRoot() + `api/invocations/${invocationId}/export_bco`;
 
-        axios
-            .get(url)
-            .then((response) => {
-                
-                // Create a property handler.
-                var this_helper = this;
-                
-                // Loop over the response and assign values to new
-                // objects.
-                
-                for (var key of Object.keys(response.data)) {
-                
-                    // Vue-wide object.
-                    this_helper[key] = response.data[key]
-                }
+            axios
+                .get(url)
+                .then((response) => {
+                    
+                    // Immediately commit the original BCO to the store.
+                    context_helper.fetchIBiocomputeForId(invocationId);
 
-                console.log(this);
-                console.log(this.embargo.start_time);
-    
-            })
-            .catch((e) => {
-                console.error(e);
-            });
+                    // Create a context handler.
+                    var this_helper = this;
+                    
+                    // Loop over the response and assign values to new
+                    // objects.
+                    
+                    for (var key of Object.keys(response.data)) {
+                    
+                        // Vue-wide object.
+                        this_helper[key] = response.data[key]
+                    }
+
+                    //console.log(this);
+                    //console.log(this.embargo.start_time);
+        
+                })
+                .catch((e) => {
+                    console.error(e);
+                });
       })
     }
 };
