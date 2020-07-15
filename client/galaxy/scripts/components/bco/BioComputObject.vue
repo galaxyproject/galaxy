@@ -1,44 +1,63 @@
+<style>
+	
+	/* Don't want the table cells to be too wide (forces text-wrapping) */
+
+	button {
+		width: 100%;
+	}
+
+	tr {
+		border-bottom: 1px solid #D3D3D3;
+	}
+
+	td {
+		max-width: 350px;
+		padding: 5px;
+	}
+
+	textarea {
+		resize: none;
+	}
+
+</style>
+
 <template>
     <div id="bco-viewer" class="overflow-auto h-100" @scroll="onScroll">
         <h2 class="mb-3">
-            <span id="invocations-title">BioCompute Object</span>
+            <span id="invocations-title">BioCompute Object for Invocation {{ invocationId }}</span>
         </h2>
-        <top-level :bco="bco" />
-        <provenance :bco="bco" />
-        <usability :bco="bco" />
-        <extension :bco="bco" />
-        <description :bco="bco" />
-        <parametric :bco="bco" />
-        <inputoutput :bco="bco" />
-        <error-domain :bco="bco" />
+        <object-id :item="object_id" />
+        <spec-version :item="spec_version" />
+        <e-tag :item="etag" />
+        <h2>Provenance Domain</h2>
+        <provenance-domain :item="provenance_domain" />
     </div>
 </template>
 
 <script>
-import axios from "axios";
 
-import { mapActions } from "vuex";
-import { getAppRoot } from "onload/loadConfig";
-import TopLevel from "components/bco/TopLevel.vue";
-import Provenance from "components/bco/Provenance.vue";
-import Usability from "components/bco/Usability.vue";
-import Extension from "components/bco/Extension.vue";
-import Parametric from "components/bco/Parametric.vue";
-import Description from "components/bco/Description.vue";
-import Inputoutput from "components/bco/InputOutput.vue";
-import ErrorDomain from "components/bco/ErrorDomain.vue";
+import axios from "axios";
+import {
+    getAppRoot
+} from "onload/loadConfig";
+import ObjectId from "components/bco/ObjectId.vue";
+import SpecVersion from "components/bco/SpecVersion.vue";
+import ETag from "components/bco/ETag.vue";
+import ProvenanceDomain from "components/bco/Provenance.vue";
+
+import { mapCacheActions } from "vuex-cache";
+import { mapGetters, mapActions } from "vuex";
+import { getRootFromIndexLink } from "onload";
+
+import Vuex from 'vuex';
 
 export default {
     name: "BCOviewer",
     components: {
-        TopLevel,
-        Provenance,
-        Usability,
-        Extension,
-        Description,
-        Parametric,
-        Inputoutput,
-        ErrorDomain,
+        ObjectId,
+        SpecVersion,
+        ETag,
+        ProvenanceDomain
     },
     props: {
         invocationId: {
@@ -46,29 +65,31 @@ export default {
             required: true,
         },
     },
-    data: function () {
+    data() {
         return {
             bco: {},
+            object_id: {},
+            spec_version: {},
+            etag: {},
+            provenance_domain: {}
         };
     },
     computed: {
-        getBCO: function () {
-            const invocationId = this.invocationId;
-            const url = getAppRoot() + `api/invocations/${invocationId}/export_bco`;
-            // const params = {};
-
-            axios
-                .get(url)
-                .then((response) => {
-                    this.bco = response.data;
-                })
-                .catch((e) => {
-                    console.error(e);
-                });
+        ...mapGetters(["getBioComputeById"]),
+        biocomputeState: function () {
+            const biocompute = this.getBioComputeById(this.invocationId);
+            return state.biocompute
         },
     },
     methods: {
-        onScroll({ target: { scrollTop, clientHeight, scrollHeight } }) {
+        ...mapActions(["fetchIBiocomputeForId"]),
+        onScroll({
+            target: {
+                scrollTop,
+                clientHeight,
+                scrollHeight
+            }
+        }) {
             if (scrollTop + clientHeight >= scrollHeight) {
                 if (this.offset + this.limit <= this.rows.length) {
                     this.offset += this.limit;
@@ -77,5 +98,45 @@ export default {
             }
         },
     },
+    mounted: function () {
+        
+        // Call only after everything has loaded.
+        // Source: https://vuejs.org/v2/api/#mounted
+
+        // Context helper.
+        var context_helper = this;
+
+        this.$nextTick(function () {
+            const invocationId = this.invocationId;
+            const url = getAppRoot() + `api/invocations/${invocationId}/export_bco`;
+
+            axios
+                .get(url)
+                .then((response) => {
+                    
+                    // Immediately commit the original BCO to the store.
+                    context_helper.fetchIBiocomputeForId(invocationId);
+
+                    // Create a context handler.
+                    var this_helper = this;
+                    
+                    // Loop over the response and assign values to new
+                    // objects.
+                    
+                    for (var key of Object.keys(response.data)) {
+                    
+                        // Vue-wide object.
+                        this_helper[key] = response.data[key]
+                    }
+
+                    //console.log(this);
+                    //console.log(this.embargo.start_time);
+        
+                })
+                .catch((e) => {
+                    console.error(e);
+                });
+      })
+    }
 };
 </script>

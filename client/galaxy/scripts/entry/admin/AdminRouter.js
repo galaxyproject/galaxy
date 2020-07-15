@@ -45,7 +45,6 @@ export const getAdminRouter = (Galaxy, options) => {
             "(/)admin/toolbox_dependencies": "show_toolbox_dependencies",
             "(/)admin/data_manager*path": "show_data_manager",
             "(/)admin(/)reset_metadata": "show_reset_metadata",
-            "(/)admin(/)reset_metadata": "show_reset_metadata",
             "*notFound": "not_found",
         },
 

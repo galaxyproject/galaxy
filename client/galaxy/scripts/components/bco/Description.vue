@@ -2,11 +2,15 @@
     <div id="description">
         <div v-show="bco" class="bco-stats">
             <h2 class="domain">Description Domain</h2>
-            <table v-for="object in bco.description_domain" :key="object">
+            <tr><h3>Key Words</h3></tr>
+            <span v-for="object in bco.description_domain.keywords" :key="object">
                 <tr>
-                    <td>{{ object }}</td>
+                    <td> <textarea> {{ object }},</textarea> </td>
                 </tr>
-            </table>
+            </span>
+			<tr>
+				<td>Platform:</td><td></td> 
+			</tr>
         </div>
     </div>
 </template>
