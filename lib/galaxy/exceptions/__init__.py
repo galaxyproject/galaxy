@@ -31,6 +31,15 @@ class MessageException(Exception):
         self.type = type
         self.extra_error_info = extra_error_info
 
+    @staticmethod
+    def from_code(status_code, message):
+        exception_class = MessageException
+        if status_code == 404:
+            exception_class = ObjectNotFound
+        elif status_code / 100 == 5:
+            exception_class = InternalServerError
+        return exception_class(message)
+
     def __str__(self):
         return self.err_msg
 

@@ -345,6 +345,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                     workflow_src = {"src": "from_path", "path": archive_source[len("file://"):]}
                     payload["workflow"] = workflow_src
                     return self.__api_import_new_workflow(trans, payload, **kwd)
+                elif archive_source == "trs_tool":
+                    trs_server = payload.get("trs_server")
+                    trs_tool_id = payload.get("trs_tool_id")
+                    trs_version_id = payload.get("trs_version_id")
+                    archive_data = self.app.trs_proxy.get_version_descriptor(trs_server, trs_tool_id, trs_version_id)
                 else:
                     try:
                         archive_data = requests.get(archive_source).text

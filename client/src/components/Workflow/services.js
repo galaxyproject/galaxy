@@ -76,4 +76,46 @@ export class Services {
             }
         }
     }
+
+    async getTrsServers() {
+        const url = `${this.root}api/trs_consume/servers`;
+        try {
+            const response = await axios.get(url);
+            return response.data;
+        } catch (e) {
+            rethrowSimple(e);
+        }
+    }
+
+    async getTrsTool(trsServer, toolId) {
+        // Due to the slashes in the toolId, WSGI doesn't work with
+        // encodeURIComponent. I verified the framework is converting
+        // the information and we're losing it. As ugly as Base64 is, it is
+        // better than the alternatives IMO. -John
+        // https://github.com/pallets/flask/issues/900
+        toolId = btoa(toolId);
+        const url = `${this.root}api/trs_consume/${trsServer}/tools/${toolId}?tool_id_b64_encoded=true`;
+        try {
+            const response = await axios.get(url);
+            return response.data;
+        } catch (e) {
+            rethrowSimple(e);
+        }
+    }
+
+    async importTrsTool(trsServer, toolId, versionId) {
+        const data = {
+            archive_source: "trs_tool",
+            trs_server: trsServer,
+            trs_tool_id: toolId,
+            trs_version_id: versionId,
+        };
+        const url = `${this.root}api/workflows`;
+        try {
+            const response = await axios.post(url, data);
+            return response.data;
+        } catch (e) {
+            rethrowSimple(e);
+        }
+    }
 }
