@@ -38,23 +38,17 @@
                     Delete
                 </button>
                 <span class="mr-1" data-toggle="tooltip" title="Show location details">
-                    <button
-                        @click="showDetails"
-                        class="primary-button toolbtn-show-locinfo"
-                        type="button"
-                    >
+                    <button @click="showDetails" class="primary-button toolbtn-show-locinfo" type="button">
                         <font-awesome-icon icon="info-circle" />
                         Details
                     </button>
                 </span>
-                <div class="form-check logged-dataset-manipulation mr-1"
-                     v-if="logged_dataset_manipulation"
-                >
+                <div class="form-check logged-dataset-manipulation mr-1" v-if="logged_dataset_manipulation">
                     <b-form-checkbox
-                            id="checkbox-1"
-                            :checked="include_deleted"
-                            v-on:input="toggle_include_deleted($event)"
-                            name="checkbox-1"
+                        id="checkbox-1"
+                        :checked="include_deleted"
+                        v-on:input="toggle_include_deleted($event)"
+                        name="checkbox-1"
                     >
                         include deleted
                     </b-form-checkbox>
@@ -143,7 +137,7 @@ export default {
             this.$emit("updateSearch", value);
         },
         deleteSelected: function () {
-            deleteSelectedItems(this.selected)
+            deleteSelectedItems(this.selected);
         },
         newFolder() {
             this.folderContents.unshift({
@@ -159,12 +153,11 @@ export default {
         Slightly adopted Bootstrap code
          */
         showDetails() {
-            showLocInfo(Object.assign({id: this.folder_id}, this.metadata));
+            showLocInfo(Object.assign({ id: this.folder_id }, this.metadata));
         },
         toggle_include_deleted: function (value) {
-            console.log(value)
             this.$emit("fetchFolderContents", value);
-        }
+        },
     },
 };
 </script>

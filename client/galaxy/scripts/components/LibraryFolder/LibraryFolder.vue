@@ -41,7 +41,7 @@
                     </div>
                 </template>
                 <template v-slot:head(selected)="">
-                    <span class="select-all-symbl" @click="toggleSelect">&check;</span>
+                    <span class="select-all-symbl" title="Check to select all datasets" @click="toggleSelect">&check;</span>
                 </template>
                 <template v-slot:cell(selected)="{ rowSelected }">
                     <template v-if="rowSelected">
@@ -74,7 +74,7 @@
                     </div>
                     <!-- Deleted Item-->
                     <div v-else>
-                        <div style="color:grey;">{{row.item.name}}</div>
+                        <div style="color: grey;">{{ row.item.name }}</div>
                     </div>
                 </template>
 
@@ -273,12 +273,12 @@ export default {
     created() {
         this.root = getAppRoot();
         this.services = new Services({ root: this.root });
-        this.fetchFolderContents()
+        this.fetchFolderContents();
     },
     methods: {
-        fetchFolderContents(include_deleted=false) {
-            this.include_deleted = include_deleted
-            this.hasLoaded = false
+        fetchFolderContents(include_deleted = false) {
+            this.include_deleted = include_deleted;
+            this.hasLoaded = false;
             this.services
                 .getFolderContents(this.folder_id, include_deleted)
                 .then((response) => {
@@ -308,12 +308,11 @@ export default {
         },
         toggleSelect() {
             // Since we cannot select new folders, toggle should clear all if all rows match, expect new folders
-            let newFoldersCounter = 0;
-            this.folderContents.forEach((row) => {
-                if (row.isNewFolder) newFoldersCounter++;
+            let unselectable = 0;
+            this.$refs.folder_content_table.computedItems.forEach((row) => {
+                if (row.isNewFolder || row.deleted) unselectable++;
             });
-
-            if (this.selected.length + newFoldersCounter !== this.rows) {
+            if (this.selected.length + unselectable < this.$refs.folder_content_table.computedItems.length) {
                 this.selectAllRows();
             } else {
                 this.clearSelected();
@@ -323,7 +322,7 @@ export default {
             // make new folders not selectable
             // https://github.com/bootstrap-vue/bootstrap-vue/issues/3134#issuecomment-526810892
             for (let i = 0; i < items.length; i++) {
-                if (items[i].isNewFolder) this.$refs.folder_content_table.unselectRow(i);
+                if (items[i].isNewFolder || items[i].deleted) this.$refs.folder_content_table.unselectRow(i);
             }
             this.selected = items;
         },
