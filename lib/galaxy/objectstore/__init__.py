@@ -15,10 +15,6 @@ import time
 from collections import OrderedDict
 
 import yaml
-try:
-    from sqlalchemy.orm import object_session
-except ImportError:
-    object_session = None
 
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.util import (
@@ -839,7 +835,6 @@ class DistributedObjectStore(NestedObjectStore):
                     raise ObjectInvalid('objectstore.create, could not generate '
                                         'obj.object_store_id: %s, kwargs: %s'
                                         % (str(obj), str(kwargs)))
-                _create_object_in_session(obj)
                 log.debug("Selected backend '%s' for creation of %s %s"
                           % (obj.object_store_id, obj.__class__.__name__, obj.id))
             else:
@@ -872,7 +867,6 @@ class DistributedObjectStore(NestedObjectStore):
                 log.warning('%s object with ID %s found in backend object store with ID %s'
                             % (obj.__class__.__name__, obj.id, id))
                 obj.object_store_id = id
-                _create_object_in_session(obj)
                 return id
         return None
 
@@ -1069,15 +1063,6 @@ def config_to_dict(config):
         'object_store_cache_path': config.object_store_cache_path,
         'gid': config.gid,
     }
-
-
-def _create_object_in_session(obj):
-    session = object_session(obj) if object_session is not None else None
-    if session is not None:
-        object_session(obj).add(obj)
-        object_session(obj).flush()
-    else:
-        raise Exception(NO_SESSION_ERROR_MESSAGE)
 
 
 class ObjectStorePopulator(object):
