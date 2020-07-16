@@ -189,6 +189,7 @@
                             </button>
                         </a>
                         <button
+                            @click="undelete(row.item)"
                             v-if="row.item.deleted"
                             :title="'Undelete ' + row.item.name"
                             class="primary-button btn-sm undelete_dataset_btn"
@@ -248,6 +249,7 @@ import { Toast } from "ui/toast";
 import FolderTopBar from "./TopToolbar/FolderTopBar";
 import { initFolderTableIcons } from "./icons.js";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { getGalaxyInstance } from "../../app";
 
 initFolderTableIcons();
 
@@ -405,6 +407,45 @@ export default {
                 );
             }
         },
+        undelete: function (element) {
+            console.log("element", element);
+
+            const onError = (response) => {
+                const message = `${element.type === "folder" ? "Folder" : "Dataset"}`;
+                if (typeof response.responseJSON !== "undefined") {
+                    Toast.error(`${message} was not undeleted. ${response.responseJSON.err_msg}`);
+                } else {
+                    Toast.error(`An error occurred! ${message} was not undeleted. Please try again.`);
+                }
+            };
+            if (element.type === "folder")
+                this.services.undeleteFolder(
+                    element,
+                    (response) => {
+                        element.deleted = response.deleted;
+                        this.refreshTable();
+                        Toast.success("Folder undeleted.");
+                    },
+                    onError
+                );
+            else
+                this.services.undeleteDataset(
+                    element,
+                    (response) => {
+                        element.deleted = response.deleted;
+                        this.refreshTable();
+                        Toast.success("Dataset undeleted. Click this to see it.", "", {
+                            onclick: function () {
+                                window.location = `${getAppRoot()}library/list#folders/${this.folder_id}/datasets/${
+                                    element.id
+                                }`;
+                            },
+                        });
+                    },
+                    onError
+                );
+        },
+
         /*
          Former Backbone code, adopted to work with Vue
         */

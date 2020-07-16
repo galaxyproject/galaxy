@@ -52,4 +52,36 @@ export class Services {
             rethrowSimple(e);
         }
     }
+    undeleteFolder(folder, onSucess, onError) {
+        const url = `${this.root}api/folders/${folder.id}?undelete=true`;
+        try {
+            const response = axios
+                .delete(url)
+                .then((response) => {
+                    onSucess(response.data);
+                })
+                .catch((error) => {
+                    onError(error);
+                });
+            return response.data;
+        } catch (e) {
+            rethrowSimple(e);
+        }
+    }
+    undeleteDataset(dataset, onSucess, onError) {
+        const url = `${this.root}api/libraries/datasets/${dataset.id}?undelete=true`;
+        try {
+            const response = axios
+                .delete(url)
+                .then((response) => {
+                    onSucess(response.data);
+                })
+                .catch((error) => {
+                    onError(error);
+                });
+            return response.data;
+        } catch (e) {
+            rethrowSimple(e);
+        }
+    }
 }
