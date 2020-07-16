@@ -249,7 +249,7 @@ import { Toast } from "ui/toast";
 import FolderTopBar from "./TopToolbar/FolderTopBar";
 import { initFolderTableIcons } from "./icons.js";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { getGalaxyInstance } from "../../app";
+import { getGalaxyInstance } from "app";
 
 initFolderTableIcons();
 
@@ -452,7 +452,6 @@ export default {
         saveChanges(folder) {
             let is_changed = false;
             const new_name = this.$refs[`name${folder.id}`].value;
-            console.log("new_name", new_name);
             if (new_name && new_name !== folder.name) {
                 if (new_name.length > 2) {
                     folder.name = new_name;
