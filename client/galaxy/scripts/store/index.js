@@ -16,6 +16,8 @@ import { userStore } from "./userStore";
 import { configStore } from "./configStore";
 import { workflowStore } from "./workflowStore";
 import { biocomputeStore } from "./biocomputeStore";
+import { datasetPathDestinationStore } from "./datasetPathDestinationStore";
+import { datasetExtFilesStore } from "./datasetExtFilesStore";
 
 Vue.use(Vuex);
 
@@ -35,6 +37,8 @@ export function createStore() {
             tags: tagStore,
             jobMetrics: jobMetricsStore,
             destinationParameters: jobDestinationParametersStore,
+            datasetPathDestination: datasetPathDestinationStore,
+            datasetExtFiles: datasetExtFilesStore,
             invocations: invocationStore,
             user: userStore,
             config: configStore,

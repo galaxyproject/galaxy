@@ -11,7 +11,6 @@ import "./tests/form_tests";
 
 import "./tests/list_of_pairs_collection_creator_tests";
 import "./tests/workflow_editor_tests";
-import "./tests/masthead_tests";
 import "./tests/graph_tests";
 import "./tests/job_dag_tests";
 import "./tests/history_contents_model_tests";

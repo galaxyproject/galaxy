@@ -42,7 +42,7 @@ Some examples:
 - using localhost to authenticate with Google:
     http://localhost:8080/authnz/google/callback
 
-- using localhost to authenticat with Globus:
+- using localhost to authenticate with Globus:
     http://localhost:8080/authnz/globus/callback
 
 - using an instance hosted at `https://usegalaxy.org` with Google:
@@ -74,6 +74,7 @@ Please mind `http` and `https`.
          does NOT show consent screen for this scope, hence user will only see a login page when they try to
          login to Galaxy using their Google account.
         -->
+        <icon>https://developers.google.com/identity/images/btn_google_signin_light_normal_web.png</icon>
     </provider>
 
     <!-- Documentation: http://globus-integration-examples.readthedocs.io -->
@@ -81,17 +82,29 @@ Please mind `http` and `https`.
         <client_id> ... </client_id>
         <client_secret> ... </client_secret>
         <redirect_uri>http://localhost:8080/authnz/globus/callback</redirect_uri>
-
         <prompt>consent</prompt>
     </provider>
 
     <provider name="Custos">
-        <url> ... </url>
+        <url>https://custos.scigap.org/apiserver/identity-management/v1.0.0/</url>
         <client_id> ... </client_id>
         <client_secret> ... </client_secret>
         <redirect_uri>http://localhost:8000/authnz/custos/callback</redirect_uri>
+        <!-- (Optional) Trusted CA certificate file or directory to use when verify Custos authorization server.
+             See http://docs.python-requests.org/en/master/user/advanced/#ssl-cert-verification for more information. -->
+        <!-- <ca_bundle>/path/to/ca_bundle</ca_bundle> -->
+        <!-- (Optional) Override the default Custos well-known URL to point to a different instance -->
+        <!-- <well_known_oidc_config_uri>https://.../.well-known/openid-configuration</well_known_oidc_config_uri> -->
+        <!-- (Optional) Enable logging out of the IDP when user logs out of Galaxy -->
+        <!-- <enable_idp_logout>false</enable_idp_logout> -->
+    </provider>
 
-        <realm> ... </realm>
+    <provider name="Keycloak">
+        <!-- The URL should include the base keycloak path as well as the realm -->
+        <url>https://keycloak.example.org/realms/master/</url>
+        <client_id> ... </client_id>
+        <client_secret> ... </client_secret>
+        <redirect_uri>http://localhost:8080/authnz/keycloak/callback</redirect_uri>
         <!-- (Optional) Trusted CA certificate file or directory to use when verify Custos authorization server.
              See http://docs.python-requests.org/en/master/user/advanced/#ssl-cert-verification for more information. -->
         <!-- <ca_bundle>/path/to/ca_bundle</ca_bundle> -->
@@ -100,14 +113,39 @@ Please mind `http` and `https`.
         <!-- (Optional) Override the default idp hint -->
         <!-- <idphint>cilogon</idphint> -->
         <!-- (Optional) Enable logging out of the IDP when user logs out of Galaxy -->
-        <!-- <enable_idp_logout>true</enable_idp_logout> -->
+        <!-- <enable_idp_logout>false</enable_idp_logout> -->
+        <!-- <icon>https://path/to/icon</icon>  -->
     </provider>
+
     <!-- Documentation: https://galaxyproject.org/authnz/config/oidc/idps/elixir-aai  -->
     <provider name="Elixir">
         <client_id>...</client_id>
         <client_secret>...</client_secret>
         <redirect_uri>http://localhost:8080/authnz/elixir/callback</redirect_uri>
         <prompt>consent</prompt>
+        <icon>https://elixir-europe.org/sites/default/files/images/login-button-orange.png</icon>
+    </provider>
+
+    <provider name="Okta">
+        <client_id> ... </client_id>
+        <client_secret> ... </client_secret>
+        <redirect_uri>http://localhost:8080/authnz/okta/callback</redirect_uri>
+        <!-- Okta API URL, based on 'Single Sign-On to Okta' URL here: https://developer.okta.com/docs/api/resources/oidc#2-okta-as-the-identity-platform-for-your-app-or-api
+        This has subsequently had the '/v1/authorize' removed. In productive deployments, this will likely resemble:
+        https://${company}.okta.com/oauth2/${authServerId}/
+
+        To get the URL, you have to create an application in Okta. The following settings serve as example as of the time of writing:
+        - Page 1 - Platform
+          - Platform: Web
+        - Page 2 - Settings
+          - Name: (Decide yourself)
+          - Base URIs: http://localhost:8080/
+          - Login redirect URIs: http://localhost:8080/authnz/okta/callback
+          - Grant type allowed: Authorization code
+
+        You should subsequently be able to get the client ID and the client secret from the Okta website.
+         -->
+        <api_url> ... </api_url>
     </provider>
 
 </OIDC>

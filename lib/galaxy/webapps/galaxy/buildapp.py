@@ -14,7 +14,7 @@ import galaxy.datatypes.registry
 import galaxy.model
 import galaxy.model.mapping
 import galaxy.web.framework
-import galaxy.web.framework.webapp
+import galaxy.webapps.base.webapp
 from galaxy import util
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
@@ -27,7 +27,7 @@ from galaxy.webapps.util import wrap_if_allowed
 log = logging.getLogger(__name__)
 
 
-class GalaxyWebApplication(galaxy.web.framework.webapp.WebApplication):
+class GalaxyWebApplication(galaxy.webapps.base.webapp.WebApplication):
     pass
 
 
@@ -75,6 +75,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_route('/authnz/{provider}/logout', controller='authnz', action='logout', provider=None)
     # Returns the provider specific logout url for currently logged in provider
     webapp.add_route('/authnz/logout', controller='authnz', action='get_logout_url')
+    webapp.add_route('/authnz/get_cilogon_idps', controller='authnz', action='get_cilogon_idps')
 
     # These two routes handle our simple needs at the moment
     webapp.add_route('/async/{tool_id}/{data_id}/{data_secret}', controller='async', action='index', tool_id=None, data_id=None, data_secret=None)
@@ -196,7 +197,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
 
 
 def uwsgi_app():
-    return galaxy.web.framework.webapp.build_native_uwsgi_app(app_factory, "galaxy")
+    return galaxy.webapps.base.webapp.build_native_uwsgi_app(app_factory, "galaxy")
 
 
 # For backwards compatibility
@@ -205,7 +206,6 @@ uwsgi_app_factory = uwsgi_app
 
 def postfork_setup():
     from galaxy.app import app
-    app.queue_worker.bind_and_start()
     app.application_stack.log_startup()
 
 
@@ -319,7 +319,13 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/tool_data/{id:.+?}/fields/{value:.+?}/files/{path:.+?}', action='download_field_file', controller="tool_data")
     webapp.mapper.connect('/api/tool_data/{id:.+?}/fields/{value:.+?}', action='show_field', controller="tool_data")
     webapp.mapper.connect('/api/tool_data/{id:.+?}/reload', action='reload', controller="tool_data")
-    webapp.mapper.resource('dataset_collection', 'dataset_collections', path_prefix='/api/')
+
+    webapp.mapper.resource('dataset_collection', 'dataset_collections', path_prefix='/api')
+    webapp.mapper.connect('contents_dataset_collection',
+        '/api/dataset_collections/{hdca_id}/contents/{parent_id}',
+        controller="dataset_collections",
+        action="contents")
+
     webapp.mapper.resource('form', 'forms', path_prefix='/api')
     webapp.mapper.resource('role', 'roles', path_prefix='/api')
     webapp.mapper.resource('upload', 'uploads', path_prefix='/api')
@@ -454,7 +460,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.resource('datatype',
                            'datatypes',
                            path_prefix='/api',
-                           collection={'sniffers': 'GET', 'mapping': 'GET', 'converters': 'GET', 'edam_data': 'GET', 'edam_formats': 'GET'},
+                           collection={'sniffers': 'GET', 'mapping': 'GET', 'converters': 'GET', 'edam_data': 'GET', 'edam_formats': 'GET', 'types_and_mapping': 'GET'},
                            parent_resources=dict(member_name='datatype', collection_name='datatypes'))
     webapp.mapper.resource('search', 'search', path_prefix='/api')
     webapp.mapper.connect('/api/pages/{id}.pdf', action='show_pdf', controller="pages", conditions=dict(method=["GET"]))
@@ -1246,5 +1252,5 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
 
 
 def wrap_in_static(app, global_conf, plugin_frameworks=None, **local_conf):
-    urlmap, cache_time = galaxy.web.framework.webapp.build_url_map(app, global_conf, local_conf)
+    urlmap, cache_time = galaxy.webapps.base.webapp.build_url_map(app, global_conf, local_conf)
     return urlmap

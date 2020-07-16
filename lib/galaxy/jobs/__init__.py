@@ -11,7 +11,6 @@ import pwd
 import shlex
 import shutil
 import string
-import subprocess
 import sys
 import time
 import traceback
@@ -20,7 +19,6 @@ from abc import (
     abstractmethod,
 )
 from json import loads
-from xml.etree import ElementTree
 
 import packaging.version
 import six
@@ -60,6 +58,8 @@ from galaxy.tool_util.output_checker import (
     DETECTED_JOB_STATE,
 )
 from galaxy.util import (
+    commands,
+    parse_xml_string,
     RWXRWXRWX,
     safe_makedirs,
     unicodify,
@@ -522,7 +522,7 @@ class JobConfiguration(ConfiguresHandlers):
         """Loads the new-style job configuration from options in the job config file (by default, job_conf.xml).
 
         :param tree: Object representing the root ``<job_conf>`` object in the job config file.
-        :type tree: ``xml.etree.ElementTree.Element``
+        :type tree: ``lxml.etree._Element``
         """
         root = tree.getroot()
         log.debug('Loading job configuration from %s' % self.app.config.job_config_file)
@@ -573,7 +573,7 @@ class JobConfiguration(ConfiguresHandlers):
                 fields_names = self.resource_groups[resource_group]
                 fields = [self.resource_parameters[n] for n in fields_names]
                 if fields:
-                    conditional_element = ElementTree.fromstring(self.JOB_RESOURCE_CONDITIONAL_XML)
+                    conditional_element = parse_xml_string(self.JOB_RESOURCE_CONDITIONAL_XML)
                     when_yes_elem = conditional_element.findall('when')[1]
                     for parameter in fields:
                         when_yes_elem.append(parameter)
@@ -607,7 +607,7 @@ class JobConfiguration(ConfiguresHandlers):
         """Parses any child <param> tags in to a dictionary suitable for persistence.
 
         :param parent: Parent element in which to find child <param> tags.
-        :type parent: ``xml.etree.ElementTree.Element``
+        :type parent: ``lxml.etree._Element``
 
         :returns: dict
         """
@@ -618,7 +618,7 @@ class JobConfiguration(ConfiguresHandlers):
         """Parses any child <env> tags in to a dictionary suitable for persistence.
 
         :param parent: Parent element in which to find child <env> tags.
-        :type parent: ``xml.etree.ElementTree.Element``
+        :type parent: ``lxml.etree._Element``
 
         :returns: dict
         """
@@ -638,7 +638,7 @@ class JobConfiguration(ConfiguresHandlers):
         """Parses any child <resubmit> tags in to a dictionary suitable for persistence.
 
         :param parent: Parent element in which to find child <resubmit> tags.
-        :type parent: ``xml.etree.ElementTree.Element``
+        :type parent: ``lxml.etree._Element``
 
         :returns: dict
         """
@@ -906,17 +906,20 @@ class JobWrapper(HasResourceParameters):
         self.output_paths = None
         self.output_hdas_and_paths = None
         self.tool_provided_job_metadata = None
-        # Wrapper holding the info required to restore and clean up from files used for setting metadata externally
-        metadata_strategy_override = None
-        if job.tasks:
-            metadata_strategy_override = "directory"
-        self.external_output_metadata = get_metadata_compute_strategy(self.app.config, job.id, metadata_strategy_override=metadata_strategy_override)
         self.job_runner_mapper = JobRunnerMapper(self, queue.dispatcher.url_to_destination, self.app.job_config)
         self.params = None
         if job.params:
             self.params = loads(job.params)
         if use_persisted_destination:
             self.job_runner_mapper.cached_job_destination = JobDestination(from_job=job)
+        # Wrapper holding the info required to restore and clean up from files used for setting metadata externally
+        try:
+            metadata_strategy_override = self.get_destination_configuration('metadata_strategy', None)
+        except JobMappingException:
+            metadata_strategy_override = None
+        if job.tasks:
+            metadata_strategy_override = "directory"
+        self.external_output_metadata = get_metadata_compute_strategy(self.app.config, job.id, metadata_strategy_override=metadata_strategy_override)
 
         self.__commands_in_new_shell = True
         self.__user_system_pwent = None
@@ -1142,6 +1145,14 @@ class JobWrapper(HasResourceParameters):
                             job.id)
 
     @property
+    def guest_ports(self):
+        if hasattr(self, "interactivetools"):
+            guest_ports = [ep.get('port') for ep in self.interactivetools]
+            return guest_ports
+        else:
+            return []
+
+    @property
     def working_directory(self):
         if self.__working_directory is None:
             job = self.get_job()
@@ -1364,26 +1375,11 @@ class JobWrapper(HasResourceParameters):
             log.warning("(%s) Ignoring state change from '%s' to '%s' for job "
                         "that is already terminal", job.id, job.state, state)
             return
-        for dataset_assoc in job.output_datasets + job.output_library_datasets:
-            dataset = dataset_assoc.dataset
-            if not job_supplied:
-                self.sa_session.refresh(dataset)
-            state_changed = dataset.raw_set_dataset_state(state)
-            if state_changed:
-                # Arguably a hack to get state changes to appear in the history panel because
-                # the history panel polls on hda.update_time and ignores hda.dataset.update_time.
-                # For those less pragmatic needing a more theoretically sound reason for the update,
-                # perhaps arguments can be made that the entity that is the HDA
-                # really should be described as updated since its effective state did change and its
-                # RESTful representation in the API does change as a result of the above dataset update.
-                dataset.update()
-            if info:
-                dataset.info = info
-            self.sa_session.add(dataset)
         if info:
             job.info = info
         job.set_state(state)
         self.sa_session.add(job)
+        job.update_output_states()
         if flush:
             self.sa_session.flush()
 
@@ -1409,6 +1405,14 @@ class JobWrapper(HasResourceParameters):
         job.destination_id = job_destination.id
         job.destination_params = job_destination.params
         job.job_runner_name = job_destination.runner
+        job.job_runner_external_id = external_id
+        self.sa_session.add(job)
+        if flush:
+            self.sa_session.flush()
+
+    def set_external_id(self, external_id, job=None, flush=True):
+        if job is None:
+            job = self.get_job()
         job.job_runner_external_id = external_id
         self.sa_session.add(job)
         if flush:
@@ -1713,14 +1717,12 @@ class JobWrapper(HasResourceParameters):
         self.tool.call_hook('exec_after_process', self.app, inp_data=inp_data,
                             out_data=out_data, param_dict=param_dict,
                             tool=self.tool, stdout=job.stdout, stderr=job.stderr)
-        job.command_line = unicodify(self.command_line)
 
         collected_bytes = 0
         # Once datasets are collected, set the total dataset size (includes extra files)
         for dataset_assoc in job.output_datasets:
             if not dataset_assoc.dataset.dataset.purged:
-                dataset_assoc.dataset.dataset.set_total_size()
-                collected_bytes += dataset_assoc.dataset.dataset.get_total_size()
+                collected_bytes += dataset_assoc.dataset.set_total_size()
 
         if job.user:
             job.user.adjust_total_disk_usage(collected_bytes)
@@ -1741,7 +1743,7 @@ class JobWrapper(HasResourceParameters):
         # dataset creation, and will allow us to eliminate force_history_refresh.
         job.set_final_state(final_job_state)
         if not job.tasks:
-            # If job was composed of tasks, don't attempt to recollect statisitcs
+            # If job was composed of tasks, don't attempt to recollect statistics
             self._collect_metrics(job, job_metrics_directory)
         self.sa_session.flush()
         if job.state == job.states.ERROR:
@@ -2061,7 +2063,7 @@ class JobWrapper(HasResourceParameters):
             safe_makedirs(os.path.join(self.working_directory, 'metadata'))
             self.app.datatypes_registry.to_xml_file(path=datatypes_config)
 
-        inp_data, out_data, out_collections = job.io_dicts()
+        inp_data, out_data, out_collections = job.io_dicts(exclude_implicit_outputs=True)
         job_metadata = os.path.join(self.tool_working_directory, self.tool.provided_metadata_file)
         object_store_conf = self.object_store.to_dict()
         command = self.external_output_metadata.setup_external_metadata(out_data,
@@ -2206,14 +2208,10 @@ class JobWrapper(HasResourceParameters):
             cmd = shlex.split(external_chown_script)
             cmd.extend([self.working_directory, username, str(gid)])
             log.debug('(%s) Changing ownership of working directory with: %s' % (job.id, ' '.join(cmd)))
-            p = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            stdout, stderr = p.communicate()
-            stdout, stderr = unicodify(stdout).strip(), unicodify(stderr).strip()
-            if p.returncode != 0:
-                log.error('external script failed.')
-                log.error('stdout was: %s' % stdout)
-                log.error('stderr was: %s' % stderr)
-            assert p.returncode == 0
+            try:
+                commands.execute(cmd)
+            except commands.CommandLineException as e:
+                log.error('external script failed: %s' % unicodify(e))
 
     def change_ownership_for_run(self):
         job = self.get_job()

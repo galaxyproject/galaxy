@@ -8,7 +8,6 @@ import logging
 import os
 import os.path
 import re
-from xml.etree.ElementTree import XML
 
 from six import string_types
 from webob.compat import cgi_FieldStorage
@@ -19,7 +18,8 @@ from galaxy.tool_util.parser import get_input_source as ensure_input_source
 from galaxy.util import (
     sanitize_param,
     string_as_bool,
-    unicodify
+    unicodify,
+    XML,
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
@@ -2080,6 +2080,8 @@ class DataCollectionToolParameter(BaseDataToolParameter):
                 if isinstance(value, dict) and 'src' in value and 'id' in value:
                     if value['src'] == 'hdca':
                         rval = trans.sa_session.query(trans.app.model.HistoryDatasetCollectionAssociation).get(trans.security.decode_id(value['id']))
+                    elif value['src'] == 'dce':
+                        rval = trans.sa_session.query(trans.app.model.DatasetCollectionElement).get(trans.security.decode_id(value['id']))
         elif isinstance(value, string_types):
             if value.startswith("dce:"):
                 rval = trans.sa_session.query(trans.app.model.DatasetCollectionElement).get(value[len("dce:"):])
@@ -2112,7 +2114,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
         d = super(DataCollectionToolParameter, self).to_dict(trans)
         d['extensions'] = self.extensions
         d['multiple'] = self.multiple
-        d['options'] = {'hda': [], 'hdca': []}
+        d['options'] = {'hda': [], 'hdca': [], 'dce': []}
 
         # return dictionary without options if context is unavailable
         history = trans.history
@@ -2123,6 +2125,17 @@ class DataCollectionToolParameter(BaseDataToolParameter):
         dataset_matcher_factory = get_dataset_matcher_factory(trans)
         dataset_matcher = dataset_matcher_factory.dataset_matcher(self, other_values)
         dataset_collection_matcher = dataset_matcher_factory.dataset_collection_matcher(dataset_matcher)
+
+        # append DCE
+        if isinstance(other_values.get(self.name), galaxy.model.DatasetCollectionElement):
+            dce = other_values[self.name]
+            d['options']['dce'].append({
+                'id'   : trans.security.encode_id(dce.id),
+                'hid'  : None,
+                'name' : dce.element_identifier,
+                'src'  : 'dce',
+                'tags' : []
+            })
 
         # append directly matched collections
         for hdca, implicit_conversion in self.match_collections(trans, history, dataset_collection_matcher):

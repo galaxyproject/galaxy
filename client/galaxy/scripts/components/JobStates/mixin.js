@@ -26,17 +26,8 @@ export default {
         errorCount() {
             return this.countStates(["error"]);
         },
-        runningPercent() {
-            return this.runningCount / (this.jobCount * 1.0);
-        },
-        okPercent() {
-            return this.okCount / (this.jobCount * 1.0);
-        },
-        errorPercent() {
-            return this.errorCount / (this.jobCount * 1.0);
-        },
-        otherPercent() {
-            return 1.0 - this.okPercent - this.runningPercent - this.errorPercent;
+        newCount() {
+            return this.jobCount - this.okCount - this.runningCount - this.errorCount;
         },
     },
     methods: {

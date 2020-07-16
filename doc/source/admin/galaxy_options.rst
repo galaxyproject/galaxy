@@ -783,6 +783,18 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~
+``refgenie_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    File containing refgenie configuration, e.g.
+    /path/to/genome_config.yaml. Can be used by refgenie backed tool
+    data tables.
+:Default: ``None``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``build_sites_config_file``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1003,6 +1015,41 @@
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~
+``tool_cache_data_dir``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Tool related caching. Fully expanded tools and metadata will be
+    stored at this path. Per tool_conf cache locations can be
+    configured in (shed_)tool_conf.xml files using the
+    tool_cache_data_dir attribute.
+:Default: ``tool_cache``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_search_index_dir``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Directory in which the toolbox search index is stored.
+:Default: ``tool_search_index``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``delay_tool_initialization``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set this to true to delay parsing of tool inputs and outputs until
+    they are needed. This results in faster startup times but uses
+    more memory when using forked Galaxy processes.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~
 ``citation_cache_type``
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1207,32 +1254,42 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~
-``blacklist_file``
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``email_domain_blocklist_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    E-mail domains blacklist is used for filtering out users that are
-    using disposable email address during the registration.  If their
-    address domain matches any domain in the blacklist, they are
-    refused the registration.
-    Example value 'config/disposable_email_blacklist.conf'
+    E-mail domains blocklist is used for filtering out users that are
+    using disposable email addresses at registration.  If their
+    address's base domain matches any domain on the list, they are
+    refused registration. Address subdomains are ignored (both
+    'name@spam.com' and 'name@foo.spam.com' will match 'spam.com').
+    Example value 'email_blocklist.conf'
+    The value of this option will be resolved with respect to
+    <config_dir>.
 :Default: ``None``
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~
-``whitelist_file``
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``email_domain_allowlist_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    E-mail domains whitelist is used to specify allowed email address
+    E-mail domains allowlist is used to specify allowed email address
     domains. If the list is non-empty and a user attempts registration
     using an email address belonging to a domain that is not on the
-    list, registration will be enied. This is a more restrictive
-    option than <blacklist_file>, and therefore, in case
-    <whitelist_file> is defined, <blacklist_file> will be ignored.
-:Default: ``disposable_email_whitelist.conf``
+    list, registration will be denied. Unlike
+    <email_domain_allowlist_file> which matches the address's base
+    domain, here email addresses are matched against the full domain
+    (base + subdomain). This is a more restrictive option than
+    <email_domain_blocklist_file>, and therefore, in case
+    <email_domain_allowlist_file> is set and is not empty,
+    <email_domain_blocklist_file> will be ignored.
+    Example value 'email_allowlist.conf'
+    The value of this option will be resolved with respect to
+    <config_dir>.
+:Default: ``None``
 :Type: str
 
 
@@ -1381,9 +1438,10 @@
 ~~~~~~~~~~~~~~~~
 
 :Description:
-    This flag enables an AWS cost estimate for every job based on their runtime matrices.
-    CPU, RAM and runtime usage is mapped against AWS pricing table.
-    Please note, that those numbers are only estimates.
+    This flag enables an AWS cost estimate for every job based on
+    their runtime matrices. CPU, RAM and runtime usage is mapped
+    against AWS pricing table. Please note, that those numbers are
+    only estimates.
 :Default: ``false``
 :Type: bool
 
@@ -2177,17 +2235,17 @@
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``sanitize_whitelist_file``
+``sanitize_allowlist_file``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Whitelist sanitization file. Datasets created by tools listed in
-    this file are trusted and will not have their HTML sanitized on
-    display.  This can be manually edited or manipulated through the
-    Admin control panel -- see "Manage Display Whitelist"
+    Datasets created by tools listed in this file are trusted and will
+    not have their HTML sanitized on display.  This can be manually
+    edited or manipulated through the Admin control panel -- see
+    "Manage Allowlist"
     The value of this option will be resolved with respect to
     <mutable_config_dir>.
-:Default: ``sanitize_whitelist.txt``
+:Default: ``sanitize_allowlist.txt``
 :Type: str
 
 
@@ -2329,8 +2387,7 @@
 :Description:
     Heartbeat log filename. Can accept the template variables
     {server_name} and {pid}
-    Sample default 'heartbeat_{server_name}.log'
-:Default: ``None``
+:Default: ``heartbeat_{server_name}.log``
 :Type: str
 
 
@@ -2459,7 +2516,7 @@
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``user_library_import_symlink_whitelist``
+``user_library_import_symlink_allowlist``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
@@ -2923,11 +2980,11 @@
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~
-``fetch_url_whitelist``
+``fetch_url_allowlist``
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Whitelist for local network addresses for "Upload from URL"
+    List of allowed local network addresses for "Upload from URL"
     dialog. By default, Galaxy will deny access to the local network
     address space, to prevent users making requests to services which
     the administrator did not intend to expose. Previously, you could
@@ -3516,6 +3573,22 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~
+``metadata_strategy``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Determines how metadata will be set. Valid values are `directory`,
+    `extended` and `legacy`. In extended mode jobs will decide if a
+    tool run failed, the object stores configuration is serialized and
+    made available to the job and is used for writing output datasets
+    to the object store as part of the job and dynamic output
+    discovery (e.g. discovered datasets <discover_datasets>,
+    unpopulated collections, etc) happens as part of the job.
+:Default: ``directory``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``retry_metadata_internally``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3848,11 +3921,13 @@
     from workflow_resource_params_file). If this this is a function
     reference it will be passed various inputs (workflow model object
     and user) and it should produce a list of input IDs. If it is a
-    path it is expected to an XML or YAML file describing how to map
-    group names to parameter descriptions (additional types of
+    path it is expected to be an XML or YAML file describing how to
+    map group names to parameter descriptions (additional types of
     mappings via these files could be implemented but haven't yet -
     for instance using workflow tags to do the mapping).
-:Default: ``config/workflow_resource_mapper_conf.yml``
+    Sample default path
+    'config/workflow_resource_mapper_conf.yml.sample'
+:Default: ``None``
 :Type: str
 
 
@@ -4105,7 +4180,7 @@
 :Description:
     Set the number of predictions/recommendations to be made by the
     model
-:Default: ``20``
+:Default: ``10``
 :Type: int
 
 

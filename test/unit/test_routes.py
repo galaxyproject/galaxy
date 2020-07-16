@@ -1,6 +1,6 @@
 from galaxy.util.bunch import Bunch
 from galaxy.web import url_for
-from galaxy.web.framework.webapp import WebApplication
+from galaxy.webapps.base.webapp import WebApplication
 from galaxy.webapps.galaxy import buildapp as galaxy_buildapp
 
 

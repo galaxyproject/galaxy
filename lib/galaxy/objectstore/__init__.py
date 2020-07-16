@@ -13,7 +13,6 @@ import shutil
 import threading
 import time
 from collections import OrderedDict
-from xml.etree import ElementTree
 
 import yaml
 try:
@@ -25,6 +24,7 @@ from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.util import (
     directory_hash_id,
     force_symlink,
+    parse_xml,
     umask_fix_perms,
 )
 from galaxy.util.bunch import Bunch
@@ -39,8 +39,7 @@ NO_SESSION_ERROR_MESSAGE = "Attempted to 'create' object store entity in configu
 log = logging.getLogger(__name__)
 
 
-class ObjectStore(object):
-    __metaclass__ = abc.ABCMeta
+class ObjectStore(object, metaclass=abc.ABCMeta):
 
     """ObjectStore interface.
 
@@ -311,7 +310,7 @@ class ConcreteObjectStore(BaseObjectStore):
     sense for the delegating object stores.
     """
 
-    def __init__(self, config, config_dict={}, **kwargs):
+    def __init__(self, config, config_dict=None, **kwargs):
         """
         :type config: object
         :param config: An object, most likely populated from
@@ -324,6 +323,8 @@ class ConcreteObjectStore(BaseObjectStore):
               parent directory those directories will be created.
             * new_file_path -- Used to set the 'temp' extra_dir.
         """
+        if config_dict is None:
+            config_dict = {}
         super(ConcreteObjectStore, self).__init__(config=config, config_dict=config_dict, **kwargs)
         self.store_by = config_dict.get("store_by", None) or getattr(config, "object_store_store_by", "id")
 
@@ -676,7 +677,7 @@ class NestedObjectStore(BaseObjectStore):
     def _call_method(self, method, obj, default, default_is_exception,
             **kwargs):
         """Check all children object stores for the first one with the dataset."""
-        for key, store in self.backends.items():
+        for store in self.backends.values():
             if store.exists(obj, **kwargs):
                 return store.__getattribute__(method)(obj, **kwargs)
         if default_is_exception:
@@ -721,26 +722,22 @@ class DistributedObjectStore(NestedObjectStore):
         self.global_max_percent_full = config_dict.get("global_max_percent_full", 0)
         random.seed()
 
-        backends_def = config_dict["backends"]
-        for backend_def in backends_def:
+        for backend_def in config_dict["backends"]:
             backened_id = backend_def["id"]
-            file_path = backend_def["files_dir"]
-            extra_dirs = backend_def.get("extra_dirs", [])
             maxpctfull = backend_def.get("max_percent_full", 0)
             weight = backend_def["weight"]
-            store_by = backend_def.get("store_by")
-            disk_config_dict = dict(files_dir=file_path, extra_dirs=extra_dirs)
-            if store_by is not None:
-                disk_config_dict['store_by'] = store_by
-            self.backends[backened_id] = DiskObjectStore(config, disk_config_dict)
-            self.max_percent_full[backened_id] = maxpctfull
-            log.debug("Loaded disk backend '%s' with weight %s and file_path: %s" % (backened_id, weight, file_path))
 
-            for i in range(0, weight):
+            backend = build_object_store_from_config(config, config_dict=backend_def, fsmon=fsmon)
+
+            self.backends[backened_id] = backend
+            self.max_percent_full[backened_id] = maxpctfull
+
+            for _ in range(0, weight):
                 # The simplest way to do weighting: add backend ids to a
                 # sequence the number of times equalling weight, then randomly
                 # choose a backend from that sequence at creation
                 self.weighted_backend_ids.append(backened_id)
+
         self.original_weighted_backend_ids = self.weighted_backend_ids
 
         self.sleeper = None
@@ -764,33 +761,22 @@ class DistributedObjectStore(NestedObjectStore):
             'backends': backends,
         }
 
-        for elem in [e for e in backends_root if e.tag == 'backend']:
-            id = elem.get('id')
-            weight = int(elem.get('weight', 1))
-            maxpctfull = float(elem.get('maxpctfull', 0))
-            elem_type = elem.get('type', 'disk')
-            store_by = elem.get('store_by', None)
-            if elem_type:
-                path = None
-                extra_dirs = []
-                for sub in elem:
-                    if sub.tag == 'files_dir':
-                        path = sub.get('path')
-                    elif sub.tag == 'extra_dir':
-                        type = sub.get('type')
-                        extra_dirs.append({"type": type, "path": sub.get('path')})
+        for b in [e for e in backends_root if e.tag == 'backend']:
+            store_id = b.get("id")
+            store_weight = int(b.get("weight", 1))
+            store_maxpctfull = float(b.get('maxpctfull', 0))
+            store_type = b.get("type", "disk")
+            store_by = b.get('store_by', None)
 
-                backend_dict = {
-                    'id': id,
-                    'weight': weight,
-                    'max_percent_full': maxpctfull,
-                    'files_dir': path,
-                    'extra_dirs': extra_dirs,
-                    'type': elem_type,
-                }
-                if store_by is not None:
-                    backend_dict['store_by'] = store_by
-                backends.append(backend_dict)
+            objectstore_class, _ = type_to_object_store_class(store_type)
+            backend_config_dict = objectstore_class.parse_xml(b)
+            backend_config_dict["id"] = store_id
+            backend_config_dict["weight"] = store_weight
+            backend_config_dict["max_percent_full"] = store_maxpctfull
+            backend_config_dict["type"] = store_type
+            if store_by is not None:
+                backend_config_dict["store_by"] = store_by
+            backends.append(backend_config_dict)
 
         return config_dict
 
@@ -805,7 +791,7 @@ class DistributedObjectStore(NestedObjectStore):
                 "'distributed_object_store_config_file')"
 
             log.debug('Loading backends for distributed object store from %s', distributed_config)
-            config_xml = ElementTree.parse(distributed_config).getroot()
+            config_xml = parse_xml(distributed_config).getroot()
             legacy = True
         else:
             log.debug('Loading backends for distributed object store from %s', config_xml.get('id'))
@@ -926,7 +912,7 @@ class HierarchicalObjectStore(NestedObjectStore):
     def to_dict(self):
         as_dict = super(HierarchicalObjectStore, self).to_dict()
         backends = []
-        for backend_id, backend in self.backends.items():
+        for backend in self.backends.values():
             backend_as_dict = backend.to_dict()
             backends.append(backend_as_dict)
         as_dict["backends"] = backends
@@ -1007,7 +993,7 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None, config_
                 # This is a top level invocation of build_object_store_from_config, and
                 # we have an object_store_conf.xml -- read the .xml and build
                 # accordingly
-                config_xml = ElementTree.parse(config.object_store_config_file).getroot()
+                config_xml = parse_xml(config.object_store_config_file).getroot()
                 store = config_xml.get('type')
             else:
                 with open(config_file, "rt") as f:

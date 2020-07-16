@@ -7,8 +7,8 @@
   ]]></command>
   <configfiles>
       <configfile name="ext_config">{"output1": {
-  "name": "${input1.name[0:-len('.gz')] if $input1.name.endswith('.gz') else $input1.name} uncompressed",
-  "ext": "${input1.ext[0:-len('.gz')]}"
+  "name": "${input1.name[0:-len('.bz2')] if $input1.name.endswith('.bz2') else $input1.name} uncompressed",
+  "ext": "${input1.ext[0:-len('.bz2')]}"
 }}</configfile>
   </configfiles>
   <inputs>

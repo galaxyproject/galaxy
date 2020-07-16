@@ -436,6 +436,8 @@ class ModelImportStore(object):
                                                          element=model.DatasetCollectionElement.UNINITIALIZED_ELEMENT,
                                                          element_index=element_attrs['element_index'],
                                                          element_identifier=element_attrs['element_identifier'])
+                    if 'encoded_id' in element_attrs:
+                        object_import_tracker.dces_by_key[element_attrs['encoded_id']] = dce
                     if 'hda' in element_attrs:
                         hda_attrs = element_attrs['hda']
                         if object_key in hda_attrs:
@@ -557,7 +559,7 @@ class ModelImportStore(object):
                 # attach to this node... unless we've already encountered another dataset
                 # copied from that jobs output... in that case we are going to cheat and
                 # say this dataset was copied from that one. It wasn't in the original Galaxy
-                # instance but I think it is find to pretend in order to create a DAG here.
+                # instance but I think it is fine to pretend in order to create a DAG here.
                 hda_copied_from_sinks = object_import_tracker.hda_copied_from_sinks
                 if copied_from_object_key in hda_copied_from_sinks:
                     hda.copied_from_history_dataset_association = object_import_tracker.hdas_by_key[hda_copied_from_sinks[copied_from_object_key]]
@@ -625,6 +627,12 @@ class ModelImportStore(object):
                 hdca = object_import_tracker.hdca_copied_from_sinks[input_key]
             return hdca
 
+        def _find_dce(input_key):
+            dce = None
+            if input_key in object_import_tracker.dces_by_key:
+                dce = object_import_tracker.dces_by_key[input_key]
+            return dce
+
         #
         # Create jobs.
         #
@@ -636,7 +644,7 @@ class ModelImportStore(object):
                 assert self.import_options.allow_edit
                 assert not self.sessionless
                 job = self.sa_session.query(model.Job).get(job_attrs["id"])
-                self._connect_job_io(job, job_attrs, _find_hda, _find_hdca)
+                self._connect_job_io(job, job_attrs, _find_hda, _find_hdca, _find_dce)
                 self._flush()
                 continue
 
@@ -674,12 +682,12 @@ class ModelImportStore(object):
             self._flush()
 
             # Connect jobs to input and output datasets.
-            params = self._normalize_job_parameters(imported_job, job_attrs, _find_hda, _find_hdca)
+            params = self._normalize_job_parameters(imported_job, job_attrs, _find_hda, _find_hdca, _find_dce)
             for name, value in params.items():
                 # Transform parameter values when necessary.
                 imported_job.add_parameter(name, dumps(value))
 
-            self._connect_job_io(imported_job, job_attrs, _find_hda, _find_hdca)
+            self._connect_job_io(imported_job, job_attrs, _find_hda, _find_hdca, _find_dce)
             self._flush()
 
             if object_key in job_attrs:
@@ -695,7 +703,8 @@ class ModelImportStore(object):
             for order_index, job in enumerate(icj_attrs["jobs"]):
                 icja = model.ImplicitCollectionJobsJobAssociation()
                 icja.implicit_collection_jobs = icj
-                icja.job = object_import_tracker.jobs_by_key[job]
+                if job in object_import_tracker.jobs_by_key:
+                    icja.job = object_import_tracker.jobs_by_key[job]
                 icja.order_index = order_index
                 icj.jobs.append(icja)
                 self._session_add(icja)
@@ -744,6 +753,8 @@ class ObjectImportTracker(object):
         self.hdas_by_id = {}
         self.hdcas_by_key = {}
         self.hdcas_by_id = {}
+        self.dces_by_key = {}
+        self.dces_by_id = {}
         self.lddas_by_key = {}
         self.hda_copied_from_sinks = {}
         self.hdca_copied_from_sinks = {}
@@ -827,7 +838,7 @@ class DirectoryImportModelStore1901(BaseDirectoryImportModelStore):
 
         self.archive_dir = archive_dir
 
-    def _connect_job_io(self, imported_job, job_attrs, _find_hda, _find_hdca):
+    def _connect_job_io(self, imported_job, job_attrs, _find_hda, _find_hdca, _find_dce):
         for output_key in job_attrs['output_datasets']:
             output_hda = _find_hda(output_key)
             if output_hda:
@@ -842,7 +853,7 @@ class DirectoryImportModelStore1901(BaseDirectoryImportModelStore):
                 if input_hda:
                     imported_job.add_input_dataset(input_name, input_hda)
 
-    def _normalize_job_parameters(self, imported_job, job_attrs, _find_hda, _find_hdca):
+    def _normalize_job_parameters(self, imported_job, job_attrs, _find_hda, _find_hdca, _find_dce):
         def remap_objects(p, k, obj):
             if isinstance(obj, dict) and obj.get('__HistoryDatasetAssociation__', False):
                 imported_hda = _find_hda(obj[self.object_key])
@@ -872,7 +883,7 @@ class DirectoryImportModelStoreLatest(BaseDirectoryImportModelStore):
         else:
             self.import_history_encoded_id = None
 
-    def _connect_job_io(self, imported_job, job_attrs, _find_hda, _find_hdca):
+    def _connect_job_io(self, imported_job, job_attrs, _find_hda, _find_hdca, _find_dce):
 
         if 'input_dataset_mapping' in job_attrs:
             for input_name, input_keys in job_attrs['input_dataset_mapping'].items():
@@ -889,6 +900,14 @@ class DirectoryImportModelStoreLatest(BaseDirectoryImportModelStore):
                     input_hdca = _find_hdca(input_key)
                     if input_hdca:
                         imported_job.add_input_dataset_collection(input_name, input_hdca)
+
+        if 'input_dataset_collection_element_mapping' in job_attrs:
+            for input_name, input_keys in job_attrs['input_dataset_collection_element_mapping'].items():
+                input_keys = input_keys or []
+                for input_key in input_keys:
+                    input_dce = _find_dce(input_key)
+                    if input_dce:
+                        imported_job.add_input_dataset_collection_element(input_name, input_dce)
 
         if 'output_dataset_mapping' in job_attrs:
             for output_name, output_keys in job_attrs['output_dataset_mapping'].items():
@@ -912,9 +931,9 @@ class DirectoryImportModelStoreLatest(BaseDirectoryImportModelStore):
     def trust_hid(self, obj_attrs):
         return self.import_history_encoded_id and obj_attrs.get("history_encoded_id") == self.import_history_encoded_id
 
-    def _normalize_job_parameters(self, imported_job, job_attrs, _find_hda, _find_hdca):
+    def _normalize_job_parameters(self, imported_job, job_attrs, _find_hda, _find_hdca, _find_dce):
         def remap_objects(p, k, obj):
-            if isinstance(obj, dict) and "src" in obj and obj["src"] in ["hda", "hdca"]:
+            if isinstance(obj, dict) and "src" in obj and obj["src"] in ["hda", "hdca", "dce"]:
                 if obj["src"] == "hda":
                     imported_hda = _find_hda(obj["id"])
                     if imported_hda:
@@ -925,6 +944,12 @@ class DirectoryImportModelStoreLatest(BaseDirectoryImportModelStore):
                     imported_hdca = _find_hdca(obj["id"])
                     if imported_hdca:
                         new_id = imported_hdca.id
+                    else:
+                        new_id = None
+                elif obj["src"] == "dce":
+                    imported_dce = _find_dce(obj["id"])
+                    if imported_dce:
+                        new_id = imported_dce.id
                     else:
                         new_id = None
                 else:
@@ -1264,6 +1289,7 @@ class DirectoryModelExportStore(ModelExportStore):
             input_dataset_mapping = {}
             output_dataset_mapping = {}
             input_dataset_collection_mapping = {}
+            input_dataset_collection_element_mapping = {}
             output_dataset_collection_mapping = {}
             implicit_output_dataset_collection_mapping = {}
 
@@ -1294,6 +1320,14 @@ class DirectoryModelExportStore(ModelExportStore):
 
                     input_dataset_collection_mapping[name].append(self.exported_key(assoc.dataset_collection))
 
+            for assoc in job.input_dataset_collection_elements:
+                if assoc.dataset_collection_element:
+                    name = assoc.name
+                    if name not in input_dataset_collection_element_mapping:
+                        input_dataset_collection_element_mapping[name] = []
+
+                    input_dataset_collection_element_mapping[name].append(self.exported_key(assoc.dataset_collection_element))
+
             for assoc in job.output_dataset_collection_instances:
                 # Optional data outputs will not have a dataset.
                 if assoc.dataset_collection_instance:
@@ -1314,6 +1348,7 @@ class DirectoryModelExportStore(ModelExportStore):
 
             job_attrs['input_dataset_mapping'] = input_dataset_mapping
             job_attrs['input_dataset_collection_mapping'] = input_dataset_collection_mapping
+            job_attrs['input_dataset_collection_element_mapping'] = input_dataset_collection_element_mapping
             job_attrs['output_dataset_mapping'] = output_dataset_mapping
             job_attrs['output_dataset_collection_mapping'] = output_dataset_collection_mapping
             job_attrs['implicit_output_dataset_collection_mapping'] = implicit_output_dataset_collection_mapping

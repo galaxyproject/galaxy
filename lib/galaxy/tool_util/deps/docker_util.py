@@ -6,7 +6,7 @@ import os
 
 from six.moves import shlex_quote
 
-from .commands import argv_to_str
+from galaxy.util.commands import argv_to_str
 
 DEFAULT_DOCKER_COMMAND = "docker"
 DEFAULT_SUDO = False

@@ -1,4 +1,8 @@
-from tempfile import NamedTemporaryFile
+import errno
+import os
+import tempfile
+
+import pytest
 
 from galaxy import util
 
@@ -35,7 +39,7 @@ def test_parse_xml_string():
 
 
 def test_parse_xml_file():
-    with NamedTemporaryFile(mode='w') as tmp:
+    with tempfile.NamedTemporaryFile(mode='w') as tmp:
         tmp.write(SECTION_XML)
         tmp.flush()
         section = util.parse_xml(tmp.name).getroot()
@@ -69,3 +73,21 @@ def test_xml_to_string_pretty():
     </tool>
 </section>"""
     assert s == PRETTY
+
+
+def test_parse_xml_enoent():
+    fd, path = tempfile.mkstemp()
+    os.close(fd)
+    os.remove(path)
+    with pytest.raises(IOError) as excinfo:
+        util.parse_xml(path)
+    assert excinfo.value.errno == errno.ENOENT
+
+
+def test_clean_multiline_string():
+    x = util.clean_multiline_string("""
+        a
+        b
+        c
+""")
+    assert x == "a\nb\nc\n"

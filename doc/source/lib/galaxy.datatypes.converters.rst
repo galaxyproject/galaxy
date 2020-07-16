@@ -17,14 +17,6 @@ galaxy.datatypes.converters.bed\_to\_gff\_converter module
     :undoc-members:
     :show-inheritance:
 
-galaxy.datatypes.converters.bedgraph\_to\_array\_tree\_converter module
------------------------------------------------------------------------
-
-.. automodule:: galaxy.datatypes.converters.bedgraph_to_array_tree_converter
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 galaxy.datatypes.converters.bgzip module
 ----------------------------------------
 
@@ -109,14 +101,6 @@ galaxy.datatypes.converters.interval\_to\_bedstrict\_converter module
 ---------------------------------------------------------------------
 
 .. automodule:: galaxy.datatypes.converters.interval_to_bedstrict_converter
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-galaxy.datatypes.converters.interval\_to\_coverage module
----------------------------------------------------------
-
-.. automodule:: galaxy.datatypes.converters.interval_to_coverage
     :members:
     :undoc-members:
     :show-inheritance:
@@ -217,14 +201,6 @@ galaxy.datatypes.converters.ref\_to\_seq\_taxonomy\_converter module
     :undoc-members:
     :show-inheritance:
 
-galaxy.datatypes.converters.sam\_to\_bam module
------------------------------------------------
-
-.. automodule:: galaxy.datatypes.converters.sam_to_bam
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 galaxy.datatypes.converters.tabular\_csv module
 -----------------------------------------------
 
@@ -253,14 +229,6 @@ galaxy.datatypes.converters.vcf\_to\_vcf\_bgzip module
 ------------------------------------------------------
 
 .. automodule:: galaxy.datatypes.converters.vcf_to_vcf_bgzip
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-galaxy.datatypes.converters.wiggle\_to\_array\_tree\_converter module
----------------------------------------------------------------------
-
-.. automodule:: galaxy.datatypes.converters.wiggle_to_array_tree_converter
     :members:
     :undoc-members:
     :show-inheritance:

@@ -316,50 +316,14 @@ body {
     }
 }
 
-// Messages for message box, slightly different style
-
-.panel-error-message,
-.panel-warning-message,
-.panel-done-message,
-.panel-info-message {
-    height: $panel-message-height;
-    line-height: $panel-message-height;
-    padding: 0px;
-    padding-left: 2.5rem;
-    background-color: $state-danger-bg;
-    background-image: url(../../images/error_small.png);
-    background-repeat: no-repeat;
-    background-position: 0.5rem 50%;
-}
-
-.panel-warning-message {
-    background-image: url(../../images/warn_small.png);
-    background-color: $state-warning-bg;
-}
-
-.panel-done-message {
-    background-image: url(../../images/ok_small.png);
-    background-color: $state-success-bg;
-}
-
-.panel-info-message {
-    background-image: url(../../images/info_icon.svg);
-    background-size: 1.5rem;
-    background-color: $state-info-bg;
-    svg:path {
-        fill: black;
-    }
-}
-
 // ==== Masthead ====
-
 #masthead {
     @extend .p-0;
     @extend .mb-0;
     background-color: $brand-masthead;
     height: $masthead-height;
     .navbar-nav {
-        min-height: 100%;
+        height: $masthead-height;
         > li {
             // This allows the background color to fill the full height of the
             // masthead, while still keeping the contents centered (using flex)
@@ -408,7 +372,6 @@ body {
         text-decoration: none;
         .navbar-brand-image {
             display: inline;
-            height: 1.8rem;
             margin-right: 0.3rem;
             border: none;
         }
@@ -629,6 +592,9 @@ div.form-row-input label {
 }
 
 // Messages
+.form-help {
+    word-break: break-word;
+}
 
 .errormessagelarge,
 .warningmessagelarge,
@@ -871,8 +837,7 @@ div.debug {
     border: solid 1px #aaaaaa;
     padding: 1px 2px 1px 3px;
     margin-right: 5px;
-    -moz-border-radius: 0.5em;
-    -webkit-border-radius: 0.5em;
+    border-radius: 0.5em;
     font-style: italic;
 }
 .page-link-grid a,
@@ -960,34 +925,7 @@ ul.manage-table-actions li {
     margin-left: 0.5em;
 }
 
-.state-progress {
-    @extend .position-relative;
-    @extend .m-1;
-    border: $border-default;
-    .info {
-        color: $text-color;
-        background: $body-bg;
-    }
-    .new {
-        background: $state-default-bg;
-    }
-    .running {
-        background: $state-running-bg;
-    }
-    .ok {
-        background: $state-success-bg;
-    }
-    .error {
-        background: $state-danger-bg;
-    }
-    .note {
-        @extend .position-absolute;
-        @extend .ml-2;
-    }
-}
-
 // State colors
-
 .state-color-new {
     border-color: $state-default-border;
     background: $state-default-bg;
@@ -1071,10 +1009,10 @@ a.action-button {
 }
 
 .action-button:hover {
-    @extend .btn:hover;
+    @extend .btn, :hover;
 }
 .action-button:active {
-    @extend .btn.active;
+    @extend .btn, .active;
 }
 
 // A menu button is a button that has an attached popup menu
@@ -1084,10 +1022,10 @@ a.action-button {
     @extend .btn-secondary;
 
     &:hover {
-        @extend .btn:hover;
+        @extend .btn, :hover;
     }
     &:active {
-        @extend .btn.active;
+        @extend .btn, .active;
     }
 
     display: inline-block;
@@ -1134,17 +1072,6 @@ a.action-button {
 
 .menubutton.background-none {
     background: none;
-}
-
-// A split menu button, the main button has an action, the arrow causes the
-// popup menu to appear
-
-.menubutton.popup.split {
-    // padding-right: 2em;
-}
-
-.menubutton.popup.split:hover {
-    //background: url(../../images/ddarrowsplit.png) no-repeat right -39px;
 }
 
 // Popup menu styles

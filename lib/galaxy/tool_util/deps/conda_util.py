@@ -12,15 +12,12 @@ import packaging.version
 import six
 from six.moves import shlex_quote
 
-from galaxy.tool_util.deps.commands import CommandLineException
 from galaxy.util import (
+    commands,
     smart_str,
     unicodify
 )
-from . import (
-    commands,
-    installable
-)
+from . import installable
 
 log = logging.getLogger(__name__)
 
@@ -223,9 +220,9 @@ class CondaContext(installable.InstallableContext):
         Return the process exit code (i.e. 0 in case of success).
         """
         cmd = [self.conda_exec]
+        cmd.extend(operation.split())
         if self.debug:
             cmd.append("--debug")
-        cmd.append(operation)
         cmd.extend(args)
         env = {}
         if self.condarc_override:
@@ -252,15 +249,15 @@ class CondaContext(installable.InstallableContext):
         """
         Return the process exit code (i.e. 0 in case of success).
         """
-        create_base_args = [
+        create_args = [
             "-y",
             "--quiet"
         ]
         if allow_local and self.use_local:
-            create_base_args.extend(["--use-local"])
-        create_base_args.extend(self._override_channels_args)
-        create_base_args.extend(args)
-        return self.exec_command("create", create_base_args, stdout_path=stdout_path)
+            create_args.extend(["--use-local"])
+        create_args.extend(self._override_channels_args)
+        create_args.extend(args)
+        return self.exec_command("create", create_args, stdout_path=stdout_path)
 
     def exec_remove(self, args):
         """
@@ -268,38 +265,38 @@ class CondaContext(installable.InstallableContext):
 
         Return the process exit code (i.e. 0 in case of success).
         """
-        remove_base_args = [
-            "remove",
+        remove_args = [
             "-y",
             "--name"
         ]
-        remove_base_args.extend(args)
-        return self.exec_command("env", remove_base_args)
+        remove_args.extend(args)
+        return self.exec_command("env remove", remove_args)
 
     def exec_install(self, args, allow_local=True, stdout_path=None):
         """
         Return the process exit code (i.e. 0 in case of success).
         """
-        install_base_args = [
+        install_args = [
             "-y"
         ]
         if allow_local and self.use_local:
-            install_base_args.append("--use-local")
-        install_base_args.extend(self._override_channels_args)
-        install_base_args.extend(args)
-        return self.exec_command("install", install_base_args, stdout_path=stdout_path)
+            install_args.append("--use-local")
+        install_args.extend(self._override_channels_args)
+        install_args.extend(args)
+        return self.exec_command("install", install_args, stdout_path=stdout_path)
 
-    def exec_clean(self, args=[], quiet=False):
+    def exec_clean(self, args=None, quiet=False):
         """
         Clean up after conda installation.
 
         Return the process exit code (i.e. 0 in case of success).
         """
-        clean_base_args = [
+        clean_args = [
             "--tarballs",
             "-y"
         ]
-        clean_args = clean_base_args + args
+        if args:
+            clean_args.extend(args)
         stdout_path = None
         if quiet:
             stdout_path = "/dev/null"
@@ -533,7 +530,7 @@ def best_search_result(conda_target, conda_context, channels_override=None, offl
         hits = json.loads(res).get(conda_target.package, [])[::-1]
         hits = sorted(hits, key=lambda hit: hit['build_number'], reverse=True)
         hits = sorted(hits, key=lambda hit: packaging.version.parse(hit['version']), reverse=True)
-    except CommandLineException:
+    except commands.CommandLineException:
         log.error("Could not execute: '%s'", search_cmd)
         hits = []
 

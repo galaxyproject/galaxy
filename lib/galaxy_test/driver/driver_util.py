@@ -1,6 +1,5 @@
 """Scripts for drivers of Galaxy functional tests."""
 
-import fcntl
 import logging
 import os
 import random
@@ -9,7 +8,6 @@ import shutil
 import signal
 import socket
 import string
-import struct
 import subprocess
 import sys
 import tempfile
@@ -41,13 +39,16 @@ from galaxy.util import asbool, download_to_file, galaxy_directory
 from galaxy.util.properties import load_app_properties
 from galaxy.web import buildapp
 from galaxy_test.base.api_util import get_master_api_key, get_user_api_key
+from galaxy_test.base.env import (
+    DEFAULT_WEB_HOST,
+    target_url_parts,
+)
 from galaxy_test.base.instrument import StructuredTestDataPlugin
 from galaxy_test.base.nose_util import run
 from tool_shed.webapp.app import UniverseApplication as ToolshedUniverseApplication
 from .test_logging import logging_config_file
 
 galaxy_root = galaxy_directory()
-DEFAULT_WEB_HOST = socket.gethostbyname('localhost')
 DEFAULT_CONFIG_PREFIX = "GALAXY"
 GALAXY_TEST_DIRECTORY = os.path.join(galaxy_root, "test")
 GALAXY_TEST_FILE_DIR = "test-data,https://github.com/galaxyproject/galaxy-test-data.git"
@@ -317,13 +318,15 @@ def _tool_data_table_config_path(default_tool_data_table_config_path=None):
     return tool_data_table_config_path
 
 
-def nose_config_and_run(argv=None, env=None, ignore_files=[], plugins=None):
+def nose_config_and_run(argv=None, env=None, ignore_files=None, plugins=None):
     """Setup a nose context and run tests.
 
     Tests are specified by argv (defaulting to sys.argv).
     """
     if env is None:
         env = os.environ
+    if ignore_files is None:
+        ignore_files = []
     if plugins is None:
         plugins = nose.plugins.manager.DefaultPluginManager()
     if argv is None:
@@ -479,7 +482,7 @@ def get_webapp_global_conf():
 def wait_for_http_server(host, port, sleep_amount=0.1, sleep_tries=150):
     """Wait for an HTTP server to boot up."""
     # Test if the server is up
-    for i in range(sleep_tries):
+    for _ in range(sleep_tries):
         # directly test the app, not the proxy
         conn = http_client.HTTPConnection(host, port)
         try:
@@ -504,7 +507,7 @@ def attempt_ports(port):
         raise Exception("An existing process seems bound to specified test server port [%s]" % port)
     else:
         random.seed()
-        for i in range(0, 9):
+        for _ in range(0, 9):
             port = str(random.randint(8000, 10000))
             yield port
 
@@ -522,7 +525,7 @@ def serve_webapp(webapp, port=None, host=None):
             server = httpserver.serve(webapp, host=host, port=port, start_loop=False)
             break
         except socket.error as e:
-            if e[0] == 98:
+            if e.errno == 98:
                 continue
             raise
 
@@ -610,24 +613,6 @@ def build_shed_app(simple_kwargs):
     tool_shed_context = app.model.context
 
     return app
-
-
-class classproperty(object):
-
-    def __init__(self, f):
-        self.f = f
-
-    def __get__(self, obj, owner):
-        return self.f(owner)
-
-
-def get_ip_address(ifname):
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    return socket.inet_ntoa(fcntl.ioctl(
-        s.fileno(),
-        0x8915,  # SIOCGIFADDR
-        struct.pack('256s', ifname[:15].encode('utf-8'))
-    )[20:24])
 
 
 def explicitly_configured_host_and_port(prefix, config_object):
@@ -960,7 +945,7 @@ class GalaxyTestDriver(TestDriver):
                 # one - other just read the properties above and use the default
                 # implementation from this file.
                 galaxy_config = getattr(config_object, "galaxy_config", None)
-                if hasattr(galaxy_config, '__call__'):
+                if callable(galaxy_config):
                     galaxy_config = galaxy_config()
                 if galaxy_config is None:
                     setup_galaxy_config_kwds = dict(
@@ -1051,7 +1036,9 @@ class GalaxyTestDriver(TestDriver):
             return test_classes
         return functional.test_toolbox
 
-    def run_tool_test(self, tool_id, index=0, resource_parameters={}):
+    def run_tool_test(self, tool_id, index=0, resource_parameters=None):
+        if resource_parameters is None:
+            resource_parameters = {}
         host, port, url = target_url_parts()
         galaxy_interactor_kwds = {
             "galaxy_url": url,
@@ -1074,24 +1061,6 @@ def drive_test(test_driver_class):
     sys.exit(test_driver.run())
 
 
-def setup_keep_outdir():
-    keep_outdir = os.environ.get('GALAXY_TEST_SAVE', '')
-    if keep_outdir > '':
-        try:
-            os.makedirs(keep_outdir)
-        except Exception:
-            pass
-    return keep_outdir
-
-
-def target_url_parts():
-    host = socket.gethostbyname(os.environ.get('GALAXY_TEST_HOST', DEFAULT_WEB_HOST))
-    port = os.environ.get('GALAXY_TEST_PORT')
-    default_url = "http://%s:%s" % (host, port)
-    url = os.environ.get('GALAXY_TEST_EXTERNAL', default_url)
-    return host, port, url
-
-
 __all__ = (
     "copy_database_template",
     "build_logger",
@@ -1102,9 +1071,7 @@ __all__ = (
     "database_conf",
     "get_webapp_global_conf",
     "nose_config_and_run",
-    "setup_keep_outdir",
     "setup_galaxy_config",
-    "target_url_parts",
     "TestDriver",
     "wait_for_http_server",
 )

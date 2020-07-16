@@ -1,7 +1,5 @@
 import logging
 import re
-import sys
-import traceback
 import uuid
 from collections import OrderedDict
 from math import isinf
@@ -9,8 +7,15 @@ from math import isinf
 import packaging.version
 
 from galaxy.tool_util.deps import requirements
-from galaxy.tool_util.parser.util import DEFAULT_DELTA
-from galaxy.util import string_as_bool, xml_text, xml_to_string
+from galaxy.tool_util.parser.util import (
+    DEFAULT_DELTA,
+    DEFAULT_DELTA_FRAC
+)
+from galaxy.util import (
+    string_as_bool,
+    xml_text,
+    xml_to_string
+)
 from .interface import (
     InputSource,
     PageSource,
@@ -49,6 +54,9 @@ class XmlToolSource(ToolSource):
         self._source_path = source_path
         self._macro_paths = macro_paths or []
         self.legacy_defaults = self.parse_profile() == "16.01"
+
+    def to_string(self):
+        return xml_to_string(self.root)
 
     def parse_version(self):
         return self.root.get("version", None)
@@ -482,19 +490,26 @@ class XmlToolSource(ToolSource):
 
     def parse_strict_shell(self):
         command_el = self._command_el
-        if command_el is not None:
-            return string_as_bool(command_el.get("strict", "False"))
-        elif self.legacy_defaults:
-            return False
+        if packaging.version.parse(self.parse_profile()) < packaging.version.parse('20.09'):
+            default = "False"
         else:
-            return True
+            default = "True"
+        if command_el is not None:
+            return string_as_bool(command_el.get("strict", default))
+        else:
+            return string_as_bool(default)
 
     def parse_help(self):
         help_elem = self.root.find('help')
         return help_elem.text if help_elem is not None else None
 
+    @property
     def macro_paths(self):
         return self._macro_paths
+
+    @property
+    def source_path(self):
+        return self._source_path
 
     def parse_tests_to_dict(self):
         tests_elem = self.root.find("tests")
@@ -614,6 +629,7 @@ def __parse_test_attributes(output_elem, attrib, parse_elements=False, parse_dis
     attributes['lines_diff'] = int(attrib.pop('lines_diff', '0'))
     # Allow a file size to vary if sim_size compare
     attributes['delta'] = int(attrib.pop('delta', DEFAULT_DELTA))
+    attributes['delta_frac'] = float(attrib['delta_frac']) if 'delta_frac' in attrib else DEFAULT_DELTA_FRAC
     attributes['sort'] = string_as_bool(attrib.pop('sort', False))
     attributes['decompress'] = string_as_bool(attrib.pop('decompress', False))
     extra_files = []
@@ -711,21 +727,18 @@ def __expand_input_elems(root_elem, prefix=""):
         new_prefix = __prefix_join(prefix, name, index=index)
         __expand_input_elems(repeat_elem, new_prefix)
         __pull_up_params(root_elem, repeat_elem)
-        root_elem.remove(repeat_elem)
 
     cond_elems = root_elem.findall('conditional')
     for cond_elem in cond_elems:
         new_prefix = __prefix_join(prefix, cond_elem.get("name"))
         __expand_input_elems(cond_elem, new_prefix)
         __pull_up_params(root_elem, cond_elem)
-        root_elem.remove(cond_elem)
 
     section_elems = root_elem.findall('section')
     for section_elem in section_elems:
         new_prefix = __prefix_join(prefix, section_elem.get("name"))
         __expand_input_elems(section_elem, new_prefix)
         __pull_up_params(root_elem, section_elem)
-        root_elem.remove(section_elem)
 
 
 def __append_prefix_to_params(elem, prefix):
@@ -736,7 +749,6 @@ def __append_prefix_to_params(elem, prefix):
 def __pull_up_params(parent_elem, child_elem):
     for param_elem in child_elem.findall('param'):
         parent_elem.append(param_elem)
-        child_elem.remove(param_elem)
 
 
 def __prefix_join(prefix, name, index=None):
@@ -821,7 +833,7 @@ class StdioParser(object):
                 self.parse_stdio_exit_codes(stdio_elem)
                 self.parse_stdio_regexes(stdio_elem)
         except Exception:
-            log.error("Exception in parse_stdio! " + str(sys.exc_info()))
+            log.exception("Exception in parse_stdio!")
 
     def parse_stdio_exit_codes(self, stdio_elem):
         """
@@ -849,8 +861,7 @@ class StdioParser(object):
                 if code_range is None:
                     code_range = exit_code_elem.get("value", "")
                 if code_range is None:
-                    log.warning("Tool stdio exit codes must have " +
-                                "a range or value")
+                    log.warning("Tool stdio exit codes must have a range or value")
                     continue
                 # Parse the range. We look for:
                 #   :Y
@@ -891,18 +902,11 @@ class StdioParser(object):
                 # isn't bogus. If we have two infinite values, then
                 # the start must be -inf and the end must be +inf.
                 # So at least warn about this situation:
-                if (isinf(exit_code.range_start) and
-                        isinf(exit_code.range_end)):
-                    log.warning("Tool exit_code range %s will match on " +
-                                "all exit codes" % code_range)
+                if isinf(exit_code.range_start) and isinf(exit_code.range_end):
+                    log.warning("Tool exit_code range %s will match on all exit codes" % code_range)
                 self.stdio_exit_codes.append(exit_code)
         except Exception:
-            log.error("Exception in parse_stdio_exit_codes! " +
-                      str(sys.exc_info()))
-            trace = sys.exc_info()[2]
-            if trace is not None:
-                trace_msg = repr(traceback.format_tb(trace))
-                log.error("Traceback: %s" % trace_msg)
+            log.exception("Exception in parse_stdio_exit_codes!")
 
     def parse_stdio_regexes(self, stdio_elem):
         """
@@ -965,12 +969,7 @@ class StdioParser(object):
                         regex.stderr_match = True
                 self.stdio_regexes.append(regex)
         except Exception:
-            log.error("Exception in parse_stdio_exit_codes! " +
-                      str(sys.exc_info()))
-            trace = sys.exc_info()[2]
-            if trace is not None:
-                trace_msg = repr(traceback.format_tb(trace))
-                log.error("Traceback: %s" % trace_msg)
+            log.exception("Exception in parse_stdio_exit_codes!")
 
     # TODO: This method doesn't have to be part of the Tool class.
     def parse_error_level(self, err_level):
@@ -995,12 +994,7 @@ class StdioParser(object):
                     log.debug("Tool %s: error level %s did not match log/warning/fatal" %
                               (self.id, err_level))
         except Exception:
-            log.error("Exception in parse_error_level " +
-                      str(sys.exc_info()))
-            trace = sys.exc_info()[2]
-            if trace is not None:
-                trace_msg = repr(traceback.format_tb(trace))
-                log.error("Traceback: %s" % trace_msg)
+            log.exception("Exception in parse_error_level")
         return return_level
 
 
@@ -1077,7 +1071,7 @@ class XmlInputSource(InputSource):
     def parse_static_options(self):
         static_options = list()
         elem = self.input_elem
-        for index, option in enumerate(elem.findall("option")):
+        for option in elem.findall("option"):
             value = option.get("value")
             selected = string_as_bool(option.get("selected", False))
             static_options.append((option.text or value, value, selected))

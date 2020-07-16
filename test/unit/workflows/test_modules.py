@@ -456,7 +456,8 @@ def __mock_tool(
                                           output_type='data')},
         params_from_strings=mock.Mock(),
         check_and_update_param_values=mock.Mock(),
-        to_json=_to_json
+        to_json=_to_json,
+        assert_finalized=lambda: None,
     )
 
     return tool

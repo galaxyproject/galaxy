@@ -4,11 +4,11 @@ import time
 from sqlalchemy import false, func
 
 from galaxy import util, web
+from galaxy.security.validate_user_input import validate_password
 from galaxy.util import inflector
 from galaxy.util.hash_util import new_secure_hash
 from galaxy.web.form_builder import CheckboxField
 from tool_shed.util.web_util import escape
-
 
 log = logging.getLogger(__name__)
 compliance_log = logging.getLogger('COMPLIANCE')
@@ -685,12 +685,8 @@ class Admin(object):
                 user = get_user(trans, user_id)
                 password = kwd.get('password', None)
                 confirm = kwd.get('confirm', None)
-                if len(password) < 6:
-                    message = "Use a password of at least 6 characters."
-                    status = 'error'
-                    break
-                elif password != confirm:
-                    message = "Passwords do not match."
+                message = validate_password(trans, password, confirm)
+                if message:
                     status = 'error'
                     break
                 else:

@@ -4,9 +4,8 @@
             <h4>Tool recommendation</h4>
             You have used {{ getToolId }} tool. For further analysis, you could try using the following/recommended
             tools. The recommended tools are shown in the decreasing order of their scores predicted using machine
-            learning analysis on workflows. A tool with a higher score (closer to 100%) may fit better as the following
-            tool than a tool with a lower score. Please click on one of the following/recommended tools to open its
-            definition.
+            learning analysis on workflows. Therefore, tools at the top may be more useful than the ones at the bottom.
+            Please click on one of the following/recommended tools to open its definition.
         </div>
         <div v-else-if="deprecated" class="warningmessagelarge">
             You have used {{ getToolId }} tool. {{ deprecatedMessage }}
@@ -18,7 +17,8 @@
 <script>
 import * as d3 from "d3";
 import { getAppRoot } from "onload/loadConfig";
-import { getDatatypeMapping, getToolPredictions } from "components/Workflow/Editor/services";
+import { getDatatypesMapper } from "components/Datatypes";
+import { getToolPredictions } from "components/Workflow/Editor/modules/services";
 
 export default {
     props: {
@@ -54,10 +54,10 @@ export default {
                 tool_sequence: toolId,
             };
             getToolPredictions(requestData).then((responsePred) => {
-                getDatatypeMapping().then((datatypesMapping) => {
+                getDatatypesMapper().then((datatypesMapper) => {
                     const predData = responsePred.predicted_data;
-                    const extToType = datatypesMapping.ext_to_class_name;
-                    const typeToType = datatypesMapping.class_to_classes;
+                    const extToType = datatypesMapper.datatypesMapping.ext_to_class_name;
+                    const typeToType = datatypesMapper.datatypesMapping.class_to_classes;
                     this.deprecated = predData.is_deprecated;
                     this.deprecatedMessage = predData.message;
                     if (responsePred !== null && predData.children.length > 0) {

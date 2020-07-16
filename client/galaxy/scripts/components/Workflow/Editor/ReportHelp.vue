@@ -13,9 +13,9 @@
             example would display a representation of the workflow in the resulting report:
         </p>
         <pre>
-\`\`\`galaxy
+```galaxy
 workflow_display()
-\`\`\`
+```
 </pre
         >
         <dl>
@@ -34,9 +34,19 @@ workflow_display()
             with:
         </p>
         <pre>
-\`\`\`galaxy
+```galaxy
 job_parameters(step="qc")
-\`\`\`
+```
+</pre
+        >
+        <p>
+            It is also possible to reference a single job parameter
+        </p>
+
+        <pre>
+```galaxy
+job_parameters(step="qc", param="parameter_text")
+```
 </pre
         >
         <dt><tt>tool_stderr</tt></dt>
@@ -54,9 +64,9 @@ job_parameters(step="qc")
         </p>
 
         <pre>
-\`\`\`galaxy
+```galaxy
 history_dataset_collection_display(output="Merged Bam")
-\`\`\`
+```
 </pre
         >
         <div v-html="datasetCommandsHtml" />

@@ -43,6 +43,8 @@ from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
 from galaxy.model.security import GalaxyRBACAgent
 from galaxy.model.triggers import install_timestamp_triggers
+from galaxy.model.view import HistoryDatasetCollectionJobStateSummary
+from galaxy.model.view.utils import install_views
 
 log = logging.getLogger(__name__)
 
@@ -667,6 +669,13 @@ model.JobToInputDatasetCollectionAssociation.table = Table(
     Column("id", Integer, primary_key=True),
     Column("job_id", Integer, ForeignKey("job.id"), index=True),
     Column("dataset_collection_id", Integer, ForeignKey("history_dataset_collection_association.id"), index=True),
+    Column("name", Unicode(255)))
+
+model.JobToInputDatasetCollectionElementAssociation.table = Table(
+    "job_to_input_dataset_collection_element", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("job_id", Integer, ForeignKey("job.id"), index=True),
+    Column("dataset_collection_element_id", Integer, ForeignKey("dataset_collection_element.id"), index=True),
     Column("name", Unicode(255)))
 
 model.JobToImplicitOutputDatasetCollectionAssociation.table = Table(
@@ -2180,6 +2189,12 @@ mapper(model.JobToInputDatasetCollectionAssociation, model.JobToInputDatasetColl
         lazy=False)
 ))
 
+mapper(model.JobToInputDatasetCollectionElementAssociation, model.JobToInputDatasetCollectionElementAssociation.table, properties=dict(
+    job=relation(model.Job),
+    dataset_collection_element=relation(model.DatasetCollectionElement,
+    lazy=False)
+))
+
 mapper(model.JobToOutputDatasetCollectionAssociation, model.JobToOutputDatasetCollectionAssociation.table, properties=dict(
     job=relation(model.Job),
     dataset_collection_instance=relation(model.HistoryDatasetCollectionAssociation,
@@ -2309,6 +2324,7 @@ mapper(model.Job, model.Job.table, properties=dict(
     parameters=relation(model.JobParameter, lazy=True),
     input_datasets=relation(model.JobToInputDatasetAssociation),
     input_dataset_collections=relation(model.JobToInputDatasetCollectionAssociation, lazy=True),
+    input_dataset_collection_elements=relation(model.JobToInputDatasetCollectionElementAssociation, lazy=True),
     output_datasets=relation(model.JobToOutputDatasetAssociation, lazy=True),
     any_output_dataset_deleted=column_property(
         exists([model.HistoryDatasetAssociation],
@@ -2376,6 +2392,11 @@ simple_mapping(model.HistoryDatasetCollectionAssociation,
         model.Job,
         backref=backref("history_dataset_collection_associations", uselist=True),
         uselist=False,
+    ),
+    job_state_summary=relation(HistoryDatasetCollectionJobStateSummary,
+        primaryjoin=((model.HistoryDatasetCollectionAssociation.table.c.id == HistoryDatasetCollectionJobStateSummary.__table__.c.hdca_id)),
+        foreign_keys=HistoryDatasetCollectionJobStateSummary.__table__.c.hdca_id,
+        uselist=False
     ),
     tags=relation(model.HistoryDatasetCollectionTagAssociation,
         order_by=model.HistoryDatasetCollectionTagAssociation.table.c.id,
@@ -2876,6 +2897,7 @@ def init(file_path, url, engine_options=None, create_tables=False, map_install_m
     if create_tables:
         metadata.create_all()
         install_timestamp_triggers(engine)
+        install_views(engine)
         # metadata.engine.commit()
 
     result.create_tables = create_tables

@@ -171,7 +171,7 @@ class ConfiguresHandlers(object):
         default and only one child.
 
         :param parent: Object representing a tag that may or may not have a 'default' attribute.
-        :type parent: ``xml.etree.ElementTree.Element``
+        :type parent: ``lxml.etree._Element``
         :param names: The list of destination or handler IDs or tags that were loaded.
         :type names: list of str
         :param auto: Automatically set a default if there is no default in the parent tag and there is only one child.
@@ -199,16 +199,16 @@ class ConfiguresHandlers(object):
 
     @staticmethod
     def _findall_with_required(parent, match, attribs=None):
-        """Like ``xml.etree.ElementTree.Element.findall()``, except only returns children that have the specified attribs.
+        """Like ``lxml.etree.Element.findall()``, except only returns children that have the specified attribs.
 
         :param parent: Parent element in which to find.
-        :type parent: ``xml.etree.ElementTree.Element``
+        :type parent: ``lxml.etree._Element``
         :param match: Name of child elements to find.
         :type match: str
         :param attribs: List of required attributes in children elements.
         :type attribs: list of str
 
-        :returns: list of ``xml.etree.ElementTree.Element``
+        :returns: list of ``lxml.etree._Element``
         """
         rval = []
         if attribs is None:
@@ -268,7 +268,7 @@ class ConfiguresHandlers(object):
 
     @property
     def handler_tags(self):
-        """Get an iteratable of all configured handler tags.
+        """Get an iterable of all configured handler tags.
         """
         return filter(lambda k: isinstance(self.handlers[k], list), self.handlers.keys())
 

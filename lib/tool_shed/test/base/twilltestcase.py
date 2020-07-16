@@ -23,7 +23,7 @@ import galaxy.util
 from galaxy.security import idencoding
 from galaxy.util import smart_str, unicodify
 from galaxy_test.base.api_util import get_master_api_key
-from galaxy_test.driver.testcase import FunctionalTestCase
+from galaxy_test.driver.testcase import DrivenFunctionalTestCase
 from tool_shed.util import (
     hg_util,
     hgweb_config,
@@ -40,7 +40,7 @@ log = logging.getLogger(__name__)
 tc.options['equiv_refresh_interval'] = 0
 
 
-class ShedTwillTestCase(FunctionalTestCase):
+class ShedTwillTestCase(DrivenFunctionalTestCase):
 
     def setUp(self):
         # Security helper

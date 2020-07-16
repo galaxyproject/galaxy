@@ -145,6 +145,7 @@ class MockJobWrapper(object):
         self.cleanup_job = "never"
         self.tmp_dir_creation_statement = ""
         self.use_metadata_binary = False
+        self.guest_ports = []
 
         # Cruft for setting metadata externally, axe at some point.
         self.external_output_metadata = bunch.Bunch(
@@ -170,7 +171,7 @@ class MockJobWrapper(object):
     def prepare(self):
         self.prepare_called = True
 
-    def set_job_destination(self, job_destination, external_id):
+    def set_external_id(self, external_id, **kwd):
         self.job.job_runner_external_id = external_id
 
     def get_command_line(self):
@@ -185,7 +186,7 @@ class MockJobWrapper(object):
     def get_state(self):
         return self.state
 
-    def change_state(self, state):
+    def change_state(self, state, job=None):
         self.state = state
 
     def get_output_fnames(self):

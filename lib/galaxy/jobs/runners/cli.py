@@ -111,7 +111,7 @@ class ShellJobRunner(AsynchronousJobRunner):
         log.info("(%s) queued with identifier: %s" % (galaxy_id_tag, external_job_id))
 
         # store runner information for tracking if Galaxy restarts
-        job_wrapper.set_job_destination(job_destination, external_job_id)
+        job_wrapper.set_external_id(external_job_id)
 
         # Store state information for job
         ajs.job_id = external_job_id
@@ -216,7 +216,7 @@ class ShellJobRunner(AsynchronousJobRunner):
             else:
                 job_destinations[ajs.job_destination.id]['job_ids'].append(ajs.job_id)
         # check each destination for the listed job ids
-        for job_destination_id, v in job_destinations.items():
+        for v in job_destinations.values():
             job_destination = v['job_destination']
             job_ids = v['job_ids']
             shell_params, job_params = self.parse_destination_params(job_destination.params)

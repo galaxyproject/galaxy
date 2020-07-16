@@ -111,7 +111,7 @@ def skip_if_site_down(url):
 
     def site_down():
         try:
-            response = requests.get(url)
+            response = requests.get(url, timeout=10)
             return response.status_code != 200
         except Exception:
             return False
@@ -306,7 +306,7 @@ class BaseDatasetPopulator(object):
             create_response = self._post("dynamic_tools", data=payload, admin=True)
         except TypeError:
             create_response = self._post("dynamic_tools", data=payload)
-        assert create_response.status_code == 200, create_response.json()
+        assert create_response.status_code == 200, create_response.text
         return create_response.json()
 
     def list_dynamic_tools(self):
@@ -352,7 +352,7 @@ class BaseDatasetPopulator(object):
     def new_history(self, **kwds):
         name = kwds.get("name", "API Test History")
         create_history_response = self._post("histories", data=dict(name=name))
-        assert "id" in create_history_response.json(), create_history_response.json()
+        assert "id" in create_history_response.json(), create_history_response.text
         history_id = create_history_response.json()["id"]
         return history_id
 
@@ -1456,12 +1456,12 @@ def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_
             label_map[key] = dataset_populator.ds_entry(hda)
             inputs[key] = hda
         else:
-            raise ValueError("Invalid test_data def %" % test_data)
+            raise ValueError("Invalid test_data def %s" % test_data)
 
     return inputs, label_map, has_uploads
 
 
-def wait_on_state(state_func, desc="state", skip_states=["running", "queued", "new", "ready"], assert_ok=False, timeout=DEFAULT_TIMEOUT):
+def wait_on_state(state_func, desc="state", skip_states=None, assert_ok=False, timeout=DEFAULT_TIMEOUT):
     def get_state():
         response = state_func()
         assert response.status_code == 200, "Failed to fetch state update while waiting. [%s]" % response.content
@@ -1472,6 +1472,9 @@ def wait_on_state(state_func, desc="state", skip_states=["running", "queued", "n
             if assert_ok:
                 assert state == "ok", "Final state - %s - not okay." % state
             return state
+
+    if skip_states is None:
+        skip_states = ["running", "queued", "new", "ready"]
     try:
         return wait_on(get_state, desc=desc, timeout=timeout)
     except TimeoutAssertionError as e:
@@ -1492,20 +1495,25 @@ class GiPostGetMixin(object):
     def _get(self, route, data=None):
         if data is None:
             data = {}
-
         return self._gi.make_get_request(self._url(route), data=data)
 
-    def _post(self, route, data={}):
+    def _post(self, route, data=None):
+        if data is None:
+            data = {}
         data = data.copy()
         data['key'] = self._gi.key
         return requests.post(self._url(route), data=data)
 
-    def _put(self, route, data={}):
+    def _put(self, route, data=None):
+        if data is None:
+            data = {}
         data = data.copy()
         data['key'] = self._gi.key
         return requests.put(self._url(route), data=data)
 
-    def _delete(self, route, data={}):
+    def _delete(self, route, data=None):
+        if data is None:
+            data = {}
         data = data.copy()
         data['key'] = self._gi.key
         return requests.delete(self._url(route), data=data)

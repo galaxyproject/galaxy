@@ -26,10 +26,11 @@ try:
 except ImportError:
     yaml = None
 
-from galaxy.tool_util.deps import commands, installable
+from galaxy.tool_util.deps import installable
 from galaxy.tool_util.deps.conda_util import best_search_result
 from galaxy.tool_util.deps.docker_util import command_list as docker_command_list
 from galaxy.util import (
+    commands,
     safe_makedirs,
     unicodify,
 )

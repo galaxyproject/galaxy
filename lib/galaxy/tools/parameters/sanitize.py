@@ -15,7 +15,7 @@ class ToolParameterSanitizer(object):
     """
     Handles tool parameter specific sanitizing.
 
-    >>> from xml.etree.ElementTree import XML
+    >>> from galaxy.util import XML
     >>> sanitizer = ToolParameterSanitizer.from_element(XML(
     ... '''
     ... <sanitizer invalid_char="">

@@ -219,9 +219,9 @@ def reload_display_application(app, **kwargs):
     app.datatypes_registry.reload_display_applications(display_application_ids)
 
 
-def reload_sanitize_whitelist(app):
-    log.debug("Executing reload sanitize whitelist control task.")
-    app.config.reload_sanitize_whitelist()
+def reload_sanitize_allowlist(app):
+    log.debug("Executing reload sanitize allowlist control task.")
+    app.config.reload_sanitize_allowlist()
 
 
 def recalculate_user_disk_usage(app, **kwargs):
@@ -247,8 +247,11 @@ def reload_tool_data_tables(app, **kwargs):
 
 
 def rebuild_toolbox_search_index(app, **kwargs):
-    if app.toolbox_search.index_count < app.toolbox._reload_count:
-        app.reindex_tool_search()
+    if app.is_webapp:
+        if app.toolbox_search.index_count < app.toolbox._reload_count:
+            app.reindex_tool_search()
+    else:
+        log.debug("App is not a webapp, not building a search index")
 
 
 def reload_job_rules(app, **kwargs):
@@ -317,7 +320,7 @@ control_message_to_task = {
     'reload_tool_data_tables': reload_tool_data_tables,
     'reload_job_rules': reload_job_rules,
     'admin_job_lock': admin_job_lock,
-    'reload_sanitize_whitelist': reload_sanitize_whitelist,
+    'reload_sanitize_allowlist': reload_sanitize_allowlist,
     'recalculate_user_disk_usage': recalculate_user_disk_usage,
     'rebuild_toolbox_search_index': rebuild_toolbox_search_index,
     'reconfigure_watcher': reconfigure_watcher,

@@ -40,8 +40,8 @@ def set_validated_state(dataset_instance):
     dataset_instance.validated_state_message = datatype_validation.message
 
     # Set special metadata property that will reload this on server side.
-    setattr(dataset_instance.metadata, "__validated_state__", datatype_validation.state)
-    setattr(dataset_instance.metadata, "__validated_state_message__", datatype_validation.message)
+    dataset_instance.metadata.__validated_state__ = datatype_validation.state
+    dataset_instance.metadata.__validated_state_message__ = datatype_validation.message
 
 
 def set_meta_with_tool_provided(dataset_instance, file_dict, set_meta_kwds, datatypes_registry, max_metadata_value_size):
@@ -60,7 +60,7 @@ def set_meta_with_tool_provided(dataset_instance, file_dict, set_meta_kwds, data
             # side and the model updated (see MetadataCollection.{from,to}_JSON_dict)
             dataset_instance.extension = extension
             # Set special metadata property that will reload this on server side.
-            setattr(dataset_instance.metadata, "__extension__", extension)
+            dataset_instance.metadata.__extension__ = extension
         except Exception:
             log.exception("Problem sniffing datatype.")
 
@@ -174,7 +174,7 @@ def set_metadata_portable():
 
         # Load outputs.
         import_model_store = store.imported_store_for_metadata('metadata/outputs_new', object_store=object_store)
-        export_store = store.DirectoryModelExportStore('metadata/outputs_populated', serialize_dataset_objects=True, for_edit=True)
+        export_store = store.DirectoryModelExportStore('metadata/outputs_populated', serialize_dataset_objects=True, for_edit=True, strip_metadata_files=False)
 
     for output_name, output_dict in outputs.items():
         if extended_metadata_collection:

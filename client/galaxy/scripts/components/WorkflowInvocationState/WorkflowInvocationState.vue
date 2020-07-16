@@ -1,73 +1,52 @@
 <template>
-    <div>
-        <span v-if="provideContext">
-            <b>Workflow Invocation State</b>
-            <span v-if="createdTime"> (invoked at {{ createdTime }})</span>
-        </span>
-        <div :class="{ 'context-wrapped': provideContext }">
-            <div>
-                Step Scheduling
-                <span
-                    v-if="stepCount && !invocationSchedulingTerminal"
-                    v-b-tooltip.hover
-                    title="Cancel scheduling of workflow invocation"
-                    class="fa fa-times"
-                    @click="cancelWorkflowScheduling"
-                ></span>
-                <div v-if="!stepCount">
-                    <progress-bar note="Loading step state summary" :loading="true" :info-progress="1" />
-                </div>
-                <div v-else-if="invocationState == 'cancelled'">
-                    <progress-bar
-                        note="Invocation scheduling cancelled - expected jobs and outputs may not be generated"
-                        :error-progress="1"
-                    />
-                </div>
-                <div v-else-if="invocationState == 'failed'">
-                    <progress-bar
-                        note="Invocation scheduling failed - Galaxy administrator may have additional details in logs"
-                        :error-progress="1"
-                    />
-                </div>
-                <div v-else>
-                    <progress-bar
-                        :note="stepStatesStr"
-                        :ok-progress="stepScheduledPercent"
-                        :new-progress="stepOtherPercent"
-                    />
-                </div>
-            </div>
-            <div>
-                Job Execution
-                <div v-if="jobCount">
-                    <progress-bar
-                        :note="jobStatesStr"
-                        :ok-progress="okPercent"
-                        :running-progress="runningPercent"
-                        :new-progress="otherPercent"
-                        :error-progress="errorPercent"
-                        :ok-message="okMessage"
-                        :running-message="runningMessage"
-                        :error-message="errorMessage"
-                    />
-                </div>
-                <div v-else>
-                    <progress-bar note="Loading job summary" :loading="true" :info-progress="1" />
-                </div>
-            </div>
-            <span v-if="invocationSchedulingTerminal && jobStatesTerminal">
-                <div>
-                    <a :href="invocationLink">View Invocation Report</a>
-                    <a class="fa fa-print" :href="invocationPdfLink"></a>
-                </div>
-                <div>
-                    <a :href="bcoLink" class="btn btn-secondary">Edit BioCompute Object</a>
-                </div>
-                <div>
-                    <a :href="bcoJSON" class="btn btn-secondary">Download BioCompute Object</a>
-                </div>
+    <div class="mb-3">
+        <div v-if="invocationSchedulingTerminal && jobStatesTerminal">
+            <span>
+                <a :href="invocationLink"
+                    ><b>View Report {{ index + 1 }}</b></a
+                >
+                <a class="fa fa-print ml-1" :href="invocationPdfLink" v-b-tooltip title="Download PDF" />
             </span>
+	        <span>
+	            <a :href="bcoLink" class="btn btn-secondary">Edit BioCompute Object</a>
+	        </span>
+	        <span>
+	            <a :href="bcoJSON" class="btn btn-secondary">Download BioCompute Object</a>
+	        </span>
         </div>
+        <div v-else>
+            <span class="fa fa-spinner fa-spin" />
+            <span>Invocation {{ index + 1 }}...</span>
+            <span
+                v-if="stepCount && !invocationSchedulingTerminal"
+                v-b-tooltip.hover
+                title="Cancel scheduling of workflow invocation"
+                class="fa fa-times"
+                @click="cancelWorkflowScheduling"
+            ></span>
+        </div>
+        <progress-bar v-if="!stepCount" note="Loading step state summary..." :loading="true" />
+        <progress-bar
+            v-else-if="invocationState == 'cancelled'"
+            note="Invocation scheduling cancelled - expected jobs and outputs may not be generated."
+            :error-count="1"
+        />
+        <progress-bar
+            v-else-if="invocationState == 'failed'"
+            note="Invocation scheduling failed - Galaxy administrator may have additional details in logs."
+            :error-count="1"
+        />
+        <progress-bar v-else :note="stepStatesStr" :total="stepCount" :ok-count="stepStates.scheduled" />
+        <progress-bar
+            v-if="jobCount"
+            :note="jobStatesStr"
+            :total="jobCount"
+            :ok-count="okCount"
+            :running-count="runningCount"
+            :new-count="newCount"
+            :error-count="errorCount"
+        />
+        <progress-bar v-else note="Loading job summary..." :loading="true" />
     </div>
 </template>
 <script>
@@ -75,7 +54,6 @@ import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
 import { cancelWorkflowScheduling } from "./services";
-
 import { getRootFromIndexLink } from "onload";
 import JOB_STATES_MODEL from "mvc/history/job-states-model";
 import mixin from "components/JobStates/mixin";
@@ -97,9 +75,9 @@ export default {
             type: String,
             required: true,
         },
-        provideContext: {
-            type: Boolean,
-            default: true,
+        index: {
+            type: Number,
+            default: 0,
         },
     },
     data() {
@@ -168,35 +146,15 @@ export default {
         jobStatesTerminal: function () {
             return this.jobStatesSummary && this.jobStatesSummary.terminal();
         },
-        stepScheduledPercent: function () {
-            let percent = 0.0;
-            if (this.stepCount !== null) {
-                percent = (this.stepStates["scheduled"] || 0) / this.stepCount;
-            }
-            return percent;
-        },
-        stepOtherPercent: function () {
-            const percent = 1.0 - this.stepScheduledPercent;
-            return percent;
-        },
         stepStatesStr: function () {
-            return `${this.stepStates["scheduled"] || 0} of ${this.stepCount} steps successfully scheduled`;
+            return `${this.stepStates.scheduled || 0} of ${this.stepCount} steps successfully scheduled.`;
         },
         jobStatesStr: function () {
             let jobStr = `${this.jobStatesSummary.states()["ok"] || 0} of ${this.jobCount} jobs complete`;
             if (!this.invocationSchedulingTerminal) {
                 jobStr += " (total number of jobs will change until all steps fully scheduled)";
             }
-            return jobStr;
-        },
-        okMessage() {
-            return `${this.okCount} jobs completed successfully`;
-        },
-        errorMessage() {
-            return `${this.errorCount} jobs failed`;
-        },
-        runningMessage() {
-            return `${this.runningCount} jobs currently running`;
+            return `${jobStr}.`;
         },
         jobStatesSummary() {
             const jobsSummary = this.getInvocationJobsSummaryById(this.invocationId);
@@ -232,9 +190,3 @@ export default {
     },
 };
 </script>
-<style scoped>
-.context-wrapped {
-    border-left: 1px solid black;
-    padding-left: 10px;
-}
-</style>

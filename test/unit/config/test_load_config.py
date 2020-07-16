@@ -13,6 +13,10 @@ MOCK_SCHEMA = {
     'property6': {'something_else': 'b'},  # no type
 }
 
+MOCK_RENAMED_OPTIONS = {
+    'old_property1': 'property1'
+}
+
 
 def get_schema(app_mapping):
     return {'mapping': {'galaxy': {'mapping': app_mapping}}}
@@ -23,6 +27,7 @@ def mock_init(monkeypatch):
     monkeypatch.setattr(AppSchema, '_read_schema', lambda a, b: get_schema(MOCK_SCHEMA))
     monkeypatch.setattr(GalaxyAppConfiguration, '_process_config', lambda a, b: None)
     monkeypatch.setattr(GalaxyAppConfiguration, '_override_tempdir', lambda a, b: None)
+    monkeypatch.setattr(GalaxyAppConfiguration, 'renamed_options', MOCK_RENAMED_OPTIONS)
 
 
 def test_load_config_from_schema(mock_init):
@@ -96,3 +101,15 @@ def test_update_raw_config_from_kwargs_falsy_not_none(mock_init):
 
     assert config._raw_config['property1'] == '0'  # updated
     assert type(config._raw_config['property1']) is str  # and converted to str
+
+
+def test_unset_renamed_option_set_by_old_option(mock_init):
+    config = GalaxyAppConfiguration(old_property1='b')
+
+    assert config._raw_config['property1'] == 'b'
+
+
+def test_set_renamed_option_not_overridden_by_old_option(mock_init):
+    config = GalaxyAppConfiguration(old_property1='b', property1='c')
+
+    assert config._raw_config['property1'] == 'c'

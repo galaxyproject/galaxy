@@ -38,7 +38,7 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.util.bunch import Bunch
-from galaxy.util.logging import get_logger
+from galaxy.util.custom_logging import get_logger
 from galaxy.util.monitors import Monitors
 from .state_handler_factory import build_state_handlers
 
@@ -160,7 +160,7 @@ class BaseJobRunner(object):
         """Attempts to gracefully shut down the worker threads
         """
         log.info("%s: Sending stop signal to %s job worker threads", self.runner_name, len(self.work_threads))
-        for i in range(len(self.work_threads)):
+        for _ in range(len(self.work_threads)):
             self.work_queue.put((STOP_SIGNAL, None))
 
         join_timeout = self.app.config.monitor_thread_join_timeout
@@ -425,7 +425,7 @@ class BaseJobRunner(object):
             compute_tmp_directory = job_wrapper.tmp_directory()
 
         tool = job_wrapper.tool
-        guest_ports = [ep.get('port') for ep in getattr(job_wrapper, 'interactivetools', [])]
+        guest_ports = job_wrapper.guest_ports
         tool_info = ToolInfo(
             tool.containers,
             tool.requirements,
@@ -516,18 +516,18 @@ class BaseJobRunner(object):
                 job_stderr = None
 
             check_output_detected_state = job_wrapper.check_tool_output(tool_stdout, tool_stderr, tool_exit_code=exit_code, job=job, job_stdout=job_stdout, job_stderr=job_stderr)
-            job_not_ok = check_output_detected_state != DETECTED_JOB_STATE.OK
+            job_ok = check_output_detected_state == DETECTED_JOB_STATE.OK
 
             # clean up the job files
             cleanup_job = job_state.job_wrapper.cleanup_job
-            if cleanup_job == "always" or (job_not_ok and cleanup_job == "onsuccess"):
+            if cleanup_job == "always" or (job_ok and cleanup_job == "onsuccess"):
                 job_state.cleanup()
 
             # Flush with streams...
             self.sa_session.add(job)
             self.sa_session.flush()
 
-            if job_not_ok:
+            if not job_ok:
                 job_runner_state = JobState.runner_states.TOOL_DETECT_ERROR
                 if check_output_detected_state == DETECTED_JOB_STATE.OUT_OF_MEMORY_ERROR:
                     job_runner_state = JobState.runner_states.MEMORY_LIMIT_REACHED

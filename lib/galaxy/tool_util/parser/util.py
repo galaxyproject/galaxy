@@ -1,6 +1,7 @@
 from collections import OrderedDict
 
-DEFAULT_DELTA = "10000"
+DEFAULT_DELTA = 10000
+DEFAULT_DELTA_FRAC = None
 
 
 def is_dict(item):
