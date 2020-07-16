@@ -92,7 +92,7 @@ function templateDeletingItemsProgressBar() {
  */
 function chainCallDeletingItems(items_to_delete) {
     const Galaxy = getGalaxyInstance();
-    this.deleted_items = new mod_library_model.Folder();
+    const deleted_items = new mod_library_model.Folder();
     var item_to_delete = items_to_delete.pop();
     if (typeof item_to_delete === "undefined") {
         if (chain_call_control.failed_number === 0) {
@@ -105,7 +105,7 @@ function chainCallDeletingItems(items_to_delete) {
             Toast.warning("Some of the items could not be deleted. Please make sure you have sufficient permissions.");
         }
         Galaxy.modal.hide();
-        return this.deleted_items;
+        return deleted_items;
     }
     item_to_delete
         .destroy()
