@@ -173,7 +173,8 @@
                                 class="primary-button btn-sm permission_folder_btn"
                                 :title="'Edit ' + row.item.name"
                             >
-                                <span class="fa fa-pencil"></span> Edit
+                                <font-awesome-icon icon="pencil-alt" />
+                                Edit
                             </button>
                         </a>
                         <a v-if="row.item.can_manage && !row.item.deleted" :href="createPermissionLink(row.item)">
@@ -183,7 +184,8 @@
                                 class="primary-button btn-sm permission_folder_btn"
                                 :title="'Permissions of ' + row.item.name"
                             >
-                                <span class="fa fa-group"></span> Manage
+                                <font-awesome-icon icon="users" />
+                                Manage
                             </button>
                         </a>
                         <button
@@ -191,9 +193,9 @@
                             :title="'Undelete ' + row.item.name"
                             class="primary-button btn-sm undelete_dataset_btn"
                             type="button"
-                            style="margin-left: 1em;"
                         >
-                            <span class="fa fa-unlock"></span> Undelete
+                            <font-awesome-icon icon="unlock" />
+                            Undelete
                         </button>
                     </div>
                 </template>

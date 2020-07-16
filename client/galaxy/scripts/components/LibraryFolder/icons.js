@@ -10,10 +10,26 @@ import {
     faSpinner,
     faTrash,
     faBan,
+    faUnlock,
+    faPencilAlt,
+    faUsers,
 } from "@fortawesome/free-solid-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
 
-const tableIcons = [faFile, faFolder, faSpinner, faShieldAlt, faKey, faGlobe, faSave, faTimes, faBan];
+const tableIcons = [
+    faFile,
+    faFolder,
+    faSpinner,
+    faShieldAlt,
+    faKey,
+    faGlobe,
+    faSave,
+    faTimes,
+    faBan,
+    faUnlock,
+    faPencilAlt,
+    faUsers,
+];
 const topBarIcons = [faHome, faPlus, faInfoCircle, faTrash];
 
 export function initFolderTableIcons() {
