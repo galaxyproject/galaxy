@@ -6,7 +6,12 @@
 		width: 100%;
 	}
 
-	tr {
+    h2 {
+        font-weight: bold;
+        margin-top: 20px;
+    }
+
+	td {
 		border-bottom: 1px solid #D3D3D3;
 	}
 
@@ -15,7 +20,24 @@
 		padding: 5px;
 	}
 
+    td:nth-child(1) {
+        font-weight: bold;
+    }
+
+    td.bold_except {
+        font-weight: normal;
+    }
+
+    td.bold_contain {
+        font-weight: bold;
+    }
+
+    td.border_except {
+        border-bottom: none;
+    }
+
 	textarea {
+        padding: 5px;
 		resize: none;
 	}
 
@@ -26,10 +48,7 @@
         <h2 class="mb-3">
             <span id="invocations-title">BioCompute Object for Invocation {{ invocationId }}</span>
         </h2>
-        <object-id :item="object_id" />
-        <spec-version :item="spec_version" />
-        <e-tag :item="etag" />
-        <h2>Provenance Domain</h2>
+        <bco-header :objectid="object_id" :etag="etag" :specversion="spec_version" />
         <provenance-domain :item="provenance_domain" />
     </div>
 </template>
@@ -40,9 +59,7 @@ import axios from "axios";
 import {
     getAppRoot
 } from "onload/loadConfig";
-import ObjectId from "components/bco/ObjectId.vue";
-import SpecVersion from "components/bco/SpecVersion.vue";
-import ETag from "components/bco/ETag.vue";
+import BcoHeader from "components/bco/BcoHeader.vue";
 import ProvenanceDomain from "components/bco/Provenance.vue";
 
 import { mapCacheActions } from "vuex-cache";
@@ -54,9 +71,7 @@ import Vuex from 'vuex';
 export default {
     name: "BCOviewer",
     components: {
-        ObjectId,
-        SpecVersion,
-        ETag,
+        BcoHeader,
         ProvenanceDomain
     },
     props: {

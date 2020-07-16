@@ -1,15 +1,20 @@
 <template>
     <table>
         <tr>
+        <td colspan=3>
+            <h2>Provenance Domain</h2>
+        </td>
+        </tr>
+        <tr>
             <td>Name</td>
-            <td colspan=3>{{ item.name }}</td>
+            <td colspan=2>{{ item.name }}</td>
         </tr>
         <tr>
             <td>Version</td>
             <td>{{ item.version }}</td>
         </tr>
         <tr>
-            <td>Review</td>
+            <td class='border_except'>Review</td>
         </tr>
         <tr>
             <td></td>
@@ -34,40 +39,57 @@
         </tr>
         <tr>
         <td></td>
-        <td colspan=5>
+        <td colspan=6>
         <button>Add Review Step</button>
         </td>
+        <tr>
+            <td colspan=8>
+            </td>
+        </tr>
         </tr>
         <tr>
             <td>Obsolete After</td>
             <td>{{ check_key('obsolete_after') }}</td>
         </tr>
         <tr>
-            <td>Embargo</td>
-            <td>
-                {{ check_key('embargo.start_time') }}<br />{{ check_key('embargo.end_time') }}
+            <td colspan=8>
             </td>
         </tr>
         <tr>
-            <td>Created:</td>
-            <td>{{ item.created }}</td>
+            <td>Embargo</td>
+            <td colspan=2></td>
+            <td class='bold_contain'>Created</td>
+            <td></td>
+            <td class='bold_contain'>Modified</td>
         </tr>
         <tr>
-            <td>Modified</td>
+            <td class='bold_except'>
+                {{ check_key('embargo.start_time') }}
+            </td>
+            <td>
+                {{ check_key('embargo.end_time') }}
+            </td>
+            <td></td>
+            <td>{{ item.created }}</td>
+            <td></td>
             <td>{{ item.modified }}</td>
+        </tr>
+        <tr>
+            <td colspan=8>
+            </td>
         </tr>
         <tr>
             <td>Contributors</td>
         </tr>
         <tr>
             <td>Name</td>
-            <td>Affiliation</td>
-            <td>Email</td>
-            <td>Contribution</td>
+            <td class='bold_contain'>Affiliation</td>
+            <td class='bold_contain'>Email</td>
+            <td class='bold_contain'>Contribution</td>
             <td></td>
         </tr>
         <tr v-for="contrib in item.contributors" :key="contrib.name">
-            <td>{{ contrib.name }}</td>
+            <td class='bold_except'>{{ contrib.name }}</td>
             <td>{{ contrib.affiliation }}</td>
             <td>{{ contrib.email }}</td>
             <td>{{ contrib.contribution[0] }}</td>
