@@ -55,9 +55,9 @@
                 </template>
                 <!-- Name -->
                 <template v-slot:cell(name)="row">
-                    <div v-if="row.item.isNewFolder">
+                    <div v-if="row.item.editMode">
                         <textarea
-                            v-if="row.item"
+                            v-if="row.item.isNewFolder"
                             class="form-control"
                             :ref="'name' + row.item.id"
                             v-model="row.item.name"
@@ -452,7 +452,8 @@ export default {
         saveChanges(folder) {
             let is_changed = false;
             const new_name = this.$refs[`name${folder.id}`].value;
-            if (typeof new_name !== "undefined" && new_name !== folder.name) {
+            console.log("new_name", new_name);
+            if (new_name && new_name !== folder.name) {
                 if (new_name.length > 2) {
                     folder.name = new_name;
                     is_changed = true;
