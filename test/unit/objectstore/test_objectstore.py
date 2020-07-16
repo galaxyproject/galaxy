@@ -1,9 +1,7 @@
 import os
-from contextlib import contextmanager
 from tempfile import mkdtemp
 from uuid import uuid4
 
-from galaxy import objectstore
 from galaxy.exceptions import ObjectInvalid
 from galaxy.objectstore.azure_blob import AzureBlobObjectStore
 from galaxy.objectstore.cloud import Cloud
@@ -318,14 +316,15 @@ backends:
 def test_distributed_store():
     for config_str in [DISTRIBUTED_TEST_CONFIG, DISTRIBUTED_TEST_CONFIG_YAML]:
         with TestConfig(config_str) as (directory, object_store):
-            with __stubbed_persistence() as persisted_ids:
-                for i in range(100):
-                    dataset = MockDataset(100 + i)
-                    object_store.create(dataset)
+            persisted_ids = []
+            for i in range(100):
+                dataset = MockDataset(100 + i)
+                object_store.create(dataset)
+                persisted_ids.append(dataset.object_store_id)
 
             # Test distributes datasets between backends according to weights
-            backend_1_count = len([v for v in persisted_ids.values() if v == "files1"])
-            backend_2_count = len([v for v in persisted_ids.values() if v == "files2"])
+            backend_1_count = sum(1 for v in persisted_ids if v == "files1")
+            backend_2_count = sum(1 for v in persisted_ids if v == "files2")
 
             assert backend_1_count > 0
             assert backend_2_count > 0
@@ -752,26 +751,6 @@ class MockDataset(object):
     def rel_path_for_uuid_test(self):
         rel_path = os.path.join(*directory_hash_id(self.uuid))
         return rel_path
-
-
-# Poor man's mocking. Need to get a real mocking library as real Galaxy development
-# dependnecy.
-PERSIST_METHOD_NAME = "_create_object_in_session"
-
-
-@contextmanager
-def __stubbed_persistence():
-    real_method = getattr(objectstore, PERSIST_METHOD_NAME)
-    try:
-        persisted_ids = {}
-
-        def persist(object):
-            persisted_ids[object.id] = object.object_store_id
-        setattr(objectstore, PERSIST_METHOD_NAME, persist)
-        yield persisted_ids
-
-    finally:
-        setattr(objectstore, PERSIST_METHOD_NAME, real_method)
 
 
 def _assert_has_keys(the_dict, keys):
