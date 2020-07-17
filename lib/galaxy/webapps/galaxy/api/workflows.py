@@ -1011,7 +1011,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         # h_contents = self.history_contents_manager.contained(history)
 
         # TODO add a keyword option/function to determine the spec_version used in BCO creation, and populate it accordingly
-        spec_version = kwd.get('spec_version', 'https://w3id.org/biocompute/1.4.0/')
+        spec_version = kwd.get('spec_version', 'https://w3id.org/ieee/ieee-2791-schema/2791object.json')
 
         # listing the versions of the workflow for 'version' and 'derived_from'
         versions = []
@@ -1047,7 +1047,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                     # 'orcid': '',  TODO
                     'name': contributing_user.username,
                     'affiliation': contributing_user.email.split('@')[-1],
-                    # Would like to find a way to offer a choice on this value
+                    # Would like to find a way to offer a choice on this value TODO
                     'contribution': 'curatedBy',
                     'email': contributing_user.email
                 }
@@ -1174,6 +1174,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             'script': [url_for('workflows', encoded_workflow_id=encoded_workflow_id)],
             'script_driver': 'Galaxy',
             'software_prerequisites': software_prerequisites,
+            
             'external_data_endpoints': [],
             'environment_variables': {}
         }

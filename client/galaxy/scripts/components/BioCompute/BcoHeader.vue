@@ -2,25 +2,23 @@
     <table>
         <tr>
             <td>
-                <h2>Object ID</h2>
+                <b>Object ID</b>
             </td>
-            <td>
-            </td>
-                <h2>e-Tag</h2>
-            <td>
-                <h2>Spec Version</h2>
-            </td>
-        </tr>
-        <tr>
             <td class='bold_except'>
                 {{ objectid }}
             </td>
+        </tr>
+        <tr>
             <td>
+                <b>e-Tag</b>
             </td>
             <td>
                 {{ etag }}
             </td>
+        </tr>
+        <tr>
             <td>
+                <b>Spec Version</b>
             </td>
             <td>
                 {{ specversion }}

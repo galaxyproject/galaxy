@@ -8,9 +8,9 @@
                     <td> <textarea> {{ object }},</textarea> </td>
                 </tr>
             </span>
-			<tr>
-				<td>Platform:</td><td></td> 
-			</tr>
+            <tr>
+                <td>Platform:</td><td></td> 
+            </tr>
         </div>
     </div>
 </template>

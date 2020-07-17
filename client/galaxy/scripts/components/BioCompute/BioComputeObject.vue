@@ -1,48 +1,3 @@
-<style>
-	
-	/* Don't want the table cells to be too wide (forces text-wrapping) */
-
-	button {
-		width: 100%;
-	}
-
-    h2 {
-        font-weight: bold;
-        margin-top: 20px;
-    }
-
-	td {
-		border-bottom: 1px solid #D3D3D3;
-	}
-
-	td {
-		max-width: 350px;
-		padding: 5px;
-	}
-
-    td:nth-child(1) {
-        font-weight: bold;
-    }
-
-    td.bold_except {
-        font-weight: normal;
-    }
-
-    td.bold_contain {
-        font-weight: bold;
-    }
-
-    td.border_except {
-        border-bottom: none;
-    }
-
-	textarea {
-        padding: 5px;
-		resize: none;
-	}
-
-</style>
-
 <template>
     <div id="bco-viewer" class="overflow-auto h-100" @scroll="onScroll">
         <h2 class="mb-3">
@@ -61,12 +16,7 @@ import {
 } from "onload/loadConfig";
 import BcoHeader from "components/BioCompute/BcoHeader.vue";
 import ProvenanceDomain from "components/BioCompute/Provenance.vue";
-
-import { mapCacheActions } from "vuex-cache";
 import { mapGetters, mapActions } from "vuex";
-import { getRootFromIndexLink } from "onload";
-
-import Vuex from 'vuex';
 
 export default {
     name: "BCOviewer",
@@ -155,3 +105,47 @@ export default {
     }
 };
 </script>
+<style>
+	
+	/* Don't want the table cells to be too wide (forces text-wrapping) */
+
+	button {
+		width: 100%;
+	}
+
+    h2 {
+        font-weight: bold;
+        margin-top: 20px;
+    }
+
+	td {
+		border-bottom: 1px solid #D3D3D3;
+	}
+
+	td {
+		max-width: 350px;
+		padding: 5px;
+	}
+
+    td:nth-child(1) {
+        font-weight: bold;
+    }
+
+    td.bold_except {
+        font-weight: normal;
+    }
+
+    td.bold_contain {
+        font-weight: bold;
+    }
+
+    td.border_except {
+        border-bottom: none;
+    }
+
+	textarea {
+        padding: 5px;
+		resize: none;
+	}
+
+</style>
