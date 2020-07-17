@@ -24,7 +24,7 @@ from galaxy.managers import (
     history_contents,
     workflows
 )
-from galaxy.managers.jobs import fetch_job_states, invocation_job_source_iter
+from galaxy.managers.jobs import fetch_job_states, invocation_job_source_iter,
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 from galaxy.tools import recommendations
@@ -1010,7 +1010,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         # h_contents = self.history_contents_manager.contained(history)
 
-        # TODO add a keyword option/function to determine the spec_version used in BCO creation, and populate it accordingly
         spec_version = kwd.get('spec_version', 'https://w3id.org/ieee/ieee-2791-schema/2791object.json')
 
         # listing the versions of the workflow for 'version' and 'derived_from'
@@ -1078,6 +1077,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 for wo in step.workflow_step.workflow_outputs:
                     workflow_outputs_list.append(wo.output_name)
                 for job in step.jobs:
+                    
                     for job_input in job.input_datasets:
                         if hasattr(job_input.dataset, 'dataset_id'):
                             encoded_dataset_id = trans.security.encode_id(job_input.dataset.dataset_id)
