@@ -40,37 +40,6 @@ module.exports = {
                 test: /\.svg(\?v=\d+\.\d+\.\d+)?$/,
                 loaders: "url-loader",
                 options: { limit: 10000, mimetype: "image/svg+xml" }
-            },
-            {
-                test: require.resolve("jquery"),
-                use: [
-                    {
-                        loader: "expose-loader",
-                        query: "jQuery"
-                    },
-                    {
-                        loader: "expose-loader",
-                        query: "$"
-                    }
-                ]
-            },
-            {
-                test: require.resolve("d3"),
-                use: [
-                    {
-                        loader: "expose-loader",
-                        query: "d3"
-                    }
-                ]
-            },
-            {
-                test: require.resolve("underscore"),
-                use: [
-                    {
-                        loader: "expose-loader",
-                        query: "_"
-                    }
-                ]
             }
         ]
     },
