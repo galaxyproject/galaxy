@@ -120,8 +120,17 @@ class GitLabPlugin(BaseGitPlugin):
 
                 # Make sure we are always logged in, then retrieve the GitLab project if it isn't cached.
                 self.gitlab.auth()
-                if gitlab_projecturl not in self.git_project_cache:
-                    self.git_project_cache[gitlab_projecturl] = self.gitlab.projects.get(gitlab_urlencodedpath)
+                try:
+                    if gitlab_projecturl not in self.git_project_cache:
+                        self.git_project_cache[gitlab_projecturl] = self.gitlab.projects.get(gitlab_urlencodedpath)
+                catch gitlab.GitlabGetError:
+                    # Handle scenario where the repository doesn't exist so we can still continue
+                    log.warn("GitLab error reporting - Repository '%s' doesn't exist, using default repository." % gitlab_urlencodedpath)
+                    # Redo some of the previous steps to recover from such an issue but continue issue creation
+                    gitlab_projecturl = "/".join((self.git_default_repo_owner, self.git_default_repo_name))
+                    gitlab_urlencodedpath = urllib.quote_plus(gitlab_projecturl)
+                    if gitlab_projecturl not in self.git_project_cache:
+                        self.git_project_cache[gitlab_projecturl] = self.gitlab.projects.get(gitlab_urlencodedpath)
                 gl_project = self.git_project_cache[gitlab_projecturl]
 
                 # Make sure we keep a cache of the issues, per tool in this case
