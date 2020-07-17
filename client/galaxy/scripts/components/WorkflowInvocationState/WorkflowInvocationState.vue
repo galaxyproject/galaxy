@@ -7,12 +7,12 @@
                 >
                 <a class="fa fa-print ml-1" :href="invocationPdfLink" v-b-tooltip title="Download PDF" />
             </span>
-	        <span>
-	            <a :href="bcoLink" class="btn btn-secondary">Edit BioCompute Object</a>
-	        </span>
-	        <span>
-	            <a :href="bcoJSON" class="btn btn-secondary">Download BioCompute Object</a>
-	        </span>
+            <span>
+                <a :href="bcoLink" class="btn btn-secondary">Edit BioCompute Object</a>
+            </span>
+            <span>
+                <a :href="bcoJSON" class="btn btn-secondary">Download BioCompute Object</a>
+            </span>
         </div>
         <div v-else>
             <span class="fa fa-spinner fa-spin" />

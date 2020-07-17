@@ -40,11 +40,11 @@ export default {
         };
     },
     computed: {
-        ...mapGetters(["getBioComputeById"]),
-        biocomputeState: function () {
-            const biocompute = this.getBioComputeById(this.invocationId);
-            return state.biocompute
-        },
+        // ...mapGetters(["getBioComputeById"]),
+        // biocomputeState: function () {
+        //     const biocompute = this.getBioComputeById(this.invocationId);
+        //     return state.biocompute
+        // },
     },
     methods: {
         ...mapActions(["fetchIBiocomputeForId"]),

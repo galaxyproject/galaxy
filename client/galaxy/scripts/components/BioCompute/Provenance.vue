@@ -29,12 +29,12 @@
         <tr v-for="(object, index) in item.review" :key="object">
             <td></td>
             <!-- Source:  https://stackoverflow.com/questions/51953173/how-do-i-pass-input-text-using-v-onchange-to-my-vue-method -->
-            <td><textarea :data-jpath="`bco_object.provenance_domain.review.[${index}].status`" v-on:input='event => check_input(event)'>{{ object.status }}</textarea></td>
-            <td><textarea v-on:input='event => check_input(event)'>{{ object.date }}</textarea></td>
-            <td><textarea v-on:input='event => check_input(event)'>{{ object.reviewer.name }}</textarea></td>
-            <td><textarea v-on:input='event => check_input(event)'>{{ object.reviewer.email }}</textarea></td>
-            <td><textarea v-on:input='event => check_input(event)'>{{ object.reviewer.affiliation }}</textarea></td>
-            <td><textarea v-on:input='event => check_input(event)'>{{ object.reviewer_comment }}</textarea></td>
+            <td><textarea :data-jpath="`bco_object.provenance_domain.review.[${index}].status`" v-on:input='event => check_input(event)' v-model="object.status"/></td>
+            <td><textarea v-on:input='event => check_input(event)' v-model="object.date"/></textarea></td>
+            <td><textarea v-on:input='event => check_input(event)' v-model="object.reviewer.name"/></textarea></td>
+            <td><textarea v-on:input='event => check_input(event)'  v-model="object.reviewer.email" /></textarea></td>
+            <td><textarea v-on:input='event => check_input(event)' v-model="object.reviewer.affiliation"/></textarea></td>
+            <td><textarea v-on:input='event => check_input(event)' v-model="object.reviewer_comment"/></textarea></td>
             <td><button>Remove</button></td>
         </tr>
         <tr>
@@ -45,7 +45,6 @@
         <tr>
             <td colspan=8>
             </td>
-        </tr>
         </tr>
         <tr>
             <td>Obsolete After</td>

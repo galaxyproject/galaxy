@@ -1029,7 +1029,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         contributors = []
         for contributing_user in contributing_users:
             contributor = {
-                # 'orcid': '', TODO
+                'orcid': kwd.get('xref', []),
                 'name': contributing_user.username,
                 'affiliation': contributing_user.email.split('@')[-1],
                 'contribution': ['authoredBy'],
@@ -1044,10 +1044,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 'reviewer_comment': '',
                 'date': workflow_invocation.update_time.isoformat(),
                 'reviewer': {
-                    # 'orcid': '',  TODO
+                    'orcid': kwd.get('orcid', []),
                     'name': contributing_user.username,
                     'affiliation': contributing_user.email.split('@')[-1],
-                    # Would like to find a way to offer a choice on this value TODO
                     'contribution': 'curatedBy',
                     'email': contributing_user.email
                 }
@@ -1115,7 +1114,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                     'name': current_tool['name'],
                     'description': current_tool['annotation'],
                     'version': current_tool['tool_version'],
-                    #  'prerequisite': prerequisite,
+                    'prerequisite': kwd.get('prerequisite', []),
                     'input_list': input_list,
                     'output_list': output_list
                 }
@@ -1174,9 +1173,14 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             'script': [url_for('workflows', encoded_workflow_id=encoded_workflow_id)],
             'script_driver': 'Galaxy',
             'software_prerequisites': software_prerequisites,
-            
-            'external_data_endpoints': [],
-            'environment_variables': {}
+            'external_data_endpoints': [
+                {
+                    'name': 'Access to Galaxy',
+                    'url': url_for('/', qualified=True)
+                },
+                kwd.get('external_data_endpoints')
+            ],
+            'environment_variables': kwd.get('environment_variables', {})
         }
 
         extension = [

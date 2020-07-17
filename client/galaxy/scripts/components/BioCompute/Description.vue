@@ -5,7 +5,7 @@
             <tr><h3>Key Words</h3></tr>
             <span v-for="object in bco.description_domain.keywords" :key="object">
                 <tr>
-                    <td> <textarea> {{ object }},</textarea> </td>
+                    <td> <textarea v-model="object" /> </td>
                 </tr>
             </span>
             <tr>
