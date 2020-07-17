@@ -7,12 +7,10 @@
         "build": "webpack --mode development"
     },
     "dependencies": {
-        "underscore": "^1.9.2",
-        "jquery": "1.x"
+        "underscore": "^1.9.2"
     },
     "devDependencies": {
         "css-loader": "^3.4.2",
-        "d3": "3.x",
         "expose-loader": "^0.7.5",
         "file-loader": "^5.0.2",
         "hyphy-vision": "2.6.3",
