@@ -77,7 +77,7 @@ module.exports = {
     resolve: {
         modules: ["node_modules"],
         alias: {
-            "phylotree.css": __dirname + "/node_modules/phylotree/build/phylotree.css",
+            "phylotree.css": __dirname + "/node_modules/phylotree/phylotree.css",
             "hyphy-vision.css": __dirname + "/node_modules/hyphy-vision/dist/hyphyvision.css"
         }
     }
