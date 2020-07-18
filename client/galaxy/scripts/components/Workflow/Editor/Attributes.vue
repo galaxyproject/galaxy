@@ -114,6 +114,11 @@ export default {
             return versions;
         },
     },
+    watch: {
+        version() {
+            this.versionCurrent = this.version;
+        },
+    },
     methods: {
         onTags(tags) {
             this.tagsCurrent = tags;
