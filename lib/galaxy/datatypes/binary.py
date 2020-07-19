@@ -1004,6 +1004,42 @@ class Anndata(H5):
         except Exception as e:
             log.warning('%s, set_meta Exception: %s', self, e)
 
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            tmp = dataset.metadata
+            peekstr = "[n_obs x n_vars]\n    %d x %d" % tmp.shape
+            if 'obs' in tmp.layers:
+                peekstr += "\n[obs]: %d layer(s)\n    %s" % (
+                    tmp.obs_count, ' '.join(tmp.obs_names)
+                )
+            if 'var' in tmp.layers:
+                peekstr += "\n[var]: %d layer(s)\n    %s" % (
+                    tmp.var_count, ' '.join(tmp.var_names)
+                )
+            if 'obsm' in tmp.layers:
+                peekstr += "\n[obsm]: %d layer(s)\n    %s" % (
+                    tmp.obsm_count, ' '.join(tmp.obsm_names)
+                )
+            if 'varm' in tmp.layers:
+                peekstr += "\n[varm]: %d layer(s)\n    %s" % (
+                    tmp.varm_count, ' '.join(tmp.varm_names)
+                )
+            if 'uns' in tmp.layers:
+                peekstr += "\n[uns]: %d layer(s)\n    %s" % (
+                    tmp.uns_count, ' '.join(tmp.uns_names)
+                )
+            dataset.peek = peekstr
+            dataset.blurb = "Anndata file (%s)" % nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "Binary Anndata file (%s)" % (nice_size(dataset.get_size()))
+
 class GmxBinary(Binary):
     """
     Base class for GROMACS binary files - xtc, trr, cpt
