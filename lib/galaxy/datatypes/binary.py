@@ -941,6 +941,33 @@ class Anndata(H5):
     """
     file_ext = 'h5ad'
 
+    MetadataElement(name="title", default="", desc="title", readonly=True, visible=True, no_value="")
+    MetadataElement(name="description", default="", desc="description", readonly=True, visible=True, no_value="")
+    MetadataElement(name="url", default="", desc="url", readonly=True, visible=True, no_value="")
+    MetadataElement(name="doi", default="", desc="doi", readonly=True, visible=True, no_value="")
+    #MetadataElement(name="loom_spec_version", default="", desc="loom_spec_version", readonly=True, visible=True, no_value="")
+    MetadataElement(name="creation_date", default=None, desc="creation_date", readonly=True, visible=True, no_value=None)
+    MetadataElement(name="shape", default=(), desc="shape", param=metadata.ListParameter, readonly=True, visible=True, no_value=())
+    MetadataElement(name="layers_count", default=0, desc="layers_count", readonly=True, visible=True, no_value=0)
+    MetadataElement(name="layers_names", desc="layers_names", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
+    MetadataElement(name="row_attrs_count", default=0, desc="row_attrs_count", readonly=True, visible=True, no_value=0)
+    MetadataElement(name="obs_names", desc="obs_names", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
+    MetadataElement(name="obs_layers", desc="obs_layers", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
+    MetadataElement(name="obs_count", default=0, desc="obs_count", readonly=True, visible=True, no_value=0)
+    MetadataElement(name="obs_size", default=0, desc="obs_size", readonly=True, visible=True, no_value=0)
+    MetadataElement(name="obsm_layers", desc="obsm_layers", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
+    MetadataElement(name="obsm_count", default=0, desc="obsm_count", readonly=True, visible=True, no_value=0)
+    MetadataElement(name="raw_var_layers", desc="raw_var_layers", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
+    MetadataElement(name="raw_var_count", default=0, desc="raw_var_count", readonly=True, visible=True, no_value=0)
+    MetadataElement(name="raw_var_size", default=0, desc="raw_var_size", readonly=True, visible=True, no_value=0)
+    MetadataElement(name="var_layers", desc="var_layers", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
+    MetadataElement(name="var_count", default=0, desc="var_count", readonly=True, visible=True, no_value=0)
+    MetadataElement(name="var_size", default=0, desc="var_size", readonly=True, visible=True, no_value=0)
+    MetadataElement(name="varm_layers", desc="varm_layers", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
+    MetadataElement(name="varm_count", default=0, desc="varm_count", readonly=True, visible=True, no_value=0)
+    MetadataElement(name="uns_layers", desc="uns_layers", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
+    MetadataElement(name="uns_count", default=0, desc="uns_count", readonly=True, visible=True, no_value=0)
+
     def sniff(self, filename):
         if super(Anndata, self).sniff(filename):
             try:
@@ -962,21 +989,22 @@ class Anndata(H5):
                 # the above appear to be completely empty
                 dataset.metadata.shape = tuple(anndata_file['X'].shape)
                 # all possible keys
-                dataset.metadata.layers = tuple(anndata_file)
+                dataset.metadata.layers_count = len(anndata_file)
+                dataset.metadata.layers_names = tuple(anndata_file)
 
-                if 'obs' in dataset.metadata.layers:
+                if 'obs' in dataset.metadata.layers_names:
                     tmp = anndata_file["obs"]
                     dataset.metadata.obs_names = tmp["index"]
                     dataset.metadata.obs_layers = tmp.dtype.names
                     dataset.metadata.obs_count = len(tmp.dtype)
                     dataset.metadata.obs_size = tmp.size
 
-                if 'obsm' in dataset.metadata.layers:
+                if 'obsm' in dataset.metadata.layers_names:
                     tmp = anndata_file["obsm"]
                     dataset.metadata.obsm_layers = tuple(tmp)
                     dataset.metadata.obsm_count = len(tmp)
 
-                if 'raw.var' in dataset.metadata.layers:
+                if 'raw.var' in dataset.metadata.layers_names:
                     tmp = anndata_file["raw.var"]
                     # full set of genes would never need to be previewed
                     #dataset.metadata.raw_var_names = tmp["index"]
@@ -984,7 +1012,7 @@ class Anndata(H5):
                     dataset.metadata.raw_var_count = len(tmp.dtype)
                     dataset.metadata.raw_var_size = tmp.size
 
-                if 'var' in dataset.metadata.layers:
+                if 'var' in dataset.metadata.layers_names:
                     tmp = anndata_file["var"]
                     # row names are not used in preview windows
                     #dataset.metadata.var_names = tmp["index"]
@@ -992,12 +1020,12 @@ class Anndata(H5):
                     dataset.metadata.var_count = len(tmp.dtype)
                     dataset.metadata.var_size = tmp.size
 
-                if 'varm' in dataset.metadata.layers:
+                if 'varm' in dataset.metadata.layers_names:
                     tmp = anndata_file["varm"]
                     dataset.metadata.varm_layers = tuple(tmp)
                     dataset.metadata.varm_count = len(tmp)
 
-                if 'uns' in dataset.metadata.layers:
+                if 'uns' in dataset.metadata.layers_names:
                     tmp = anndata_file["uns"]
                     dataset.metadata.uns_layers = tuple(tmp)
                     dataset.metadata.uns_count = len(tmp)
