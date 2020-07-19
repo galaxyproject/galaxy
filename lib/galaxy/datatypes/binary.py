@@ -950,6 +950,59 @@ class Anndata(H5):
                 return False
         return False
 
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super(Anndata, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        try:
+            with h5py.File(dataset.file_name, 'r') as anndata_file:
+                dataset.metadata.title = util.unicodify(anndata_file.attrs.get('title'))
+                dataset.metadata.description = util.unicodify(anndata_file.attrs.get('description'))
+                dataset.metadata.url = util.unicodify(anndata_file.attrs.get('url'))
+                dataset.metadata.doi = util.unicodify(anndata_file.attrs.get('doi'))
+                dataset.creation_date = util.unicodify(anndata_file.attrs.get('creation_date'))
+                # the above appear to be completely empty
+                dataset.metadata.shape = tuple(anndata_file['X'].shape)
+                # all possible keys
+                dataset.metadata.layers = tuple(anndata_file)
+
+                if 'obs' in dataset.metadata.layers:
+                    tmp = anndata_file["obs"]
+                    dataset.metadata.obs_names = tmp["index"]
+                    dataset.metadata.obs_layers = tmp.dtype.names
+                    dataset.metadata.obs_count = len(tmp.dtype)
+                    dataset.metadata.obs_size = tmp.size
+
+                if 'obsm' in dataset.metadata.layers:
+                    tmp = anndata_file["obsm"]
+                    dataset.metadata.obsm_layers = tuple(tmp)
+                    dataset.metadata.obsm_count = len(tmp)
+
+                if 'raw.var' in dataset.metadata.layers:
+                    tmp = anndata_file["raw.var"]
+                    # full set of genes would never need to be previewed
+                    #dataset.metadata.raw_var_names = tmp["index"]
+                    dataset.metadata.raw_var_layers = tmp.dtype.names
+                    dataset.metadata.raw_var_count = len(tmp.dtype)
+                    dataset.metadata.raw_var_size = tmp.size
+
+                if 'var' in dataset.metadata.layers:
+                    tmp = anndata_file["var"]
+                    # row names are not used in preview windows
+                    #dataset.metadata.var_names = tmp["index"]
+                    dataset.metadata.var_layers = tmp.dtype.names
+                    dataset.metadata.var_count = len(tmp.dtype)
+                    dataset.metadata.var_size = tmp.size
+
+                if 'varm' in dataset.metadata.layers:
+                    tmp = anndata_file["varm"]
+                    dataset.metadata.varm_layers = tuple(tmp)
+                    dataset.metadata.varm_count = len(tmp)
+
+                if 'uns' in dataset.metadata.layers:
+                    tmp = anndata_file["uns"]
+                    dataset.metadata.uns_layers = tuple(tmp)
+                    dataset.metadata.uns_count = len(tmp)
+        except Exception as e:
+            log.warning('%s, set_meta Exception: %s', self, e)
 
 class GmxBinary(Binary):
     """
