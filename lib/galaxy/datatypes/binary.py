@@ -1040,37 +1040,37 @@ class Anndata(H5):
         except Exception:
             return "Binary Anndata file (%s)" % (nice_size(dataset.get_size()))
 
-    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
-        preview = util.string_as_bool(preview)
-        if offset is not None:
-            return self.get_chunk(trans, dataset, offset, ck_size)
-        elif to_ext or not preview:
-            to_ext = to_ext or dataset.extension
-            return self._serve_raw(trans, dataset, to_ext, **kwd)
-        elif dataset.metadata.columns > 50:
-            # Fancy tabular display is only suitable for datasets without an incredibly large number of columns.
-            # We should add a new datatype 'matrix', with its own draw method, suitable for this kind of data.
-            # For now, default to the old behavior, ugly as it is.  Remove this after adding 'matrix'.
-            max_peek_size = 1000000  # 1 MB
-            if os.stat(dataset.file_name).st_size < max_peek_size:
-                self._clean_and_set_mime_type(trans, dataset.get_mime())
-                return open(dataset.file_name, mode='rb')
-            else:
-                trans.response.set_content_type("text/html")
-                return trans.stream_template_mako("/dataset/large_file.mako",
-                                                  truncated_data=open(dataset.file_name, mode='r').read(max_peek_size),
-                                                  data=dataset)
-        else:
-            column_names = 'null'
-            if dataset.metadata.obs_names
-                column_names = dataset.metadata.obs_names
-            return trans.fill_template("/dataset/tabular_chunked.mako",
-                                       ## TODO: how to get the "X" slot?
-                                       dataset=dataset,
-                                       chunk=self.get_chunk(trans, dataset, 0),
-                                       column_number=column_number,
-                                       column_names=column_names,
-                                       column_types=column_types)
+    # def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
+    #     preview = util.string_as_bool(preview)
+    #     if offset is not None:
+    #         return self.get_chunk(trans, dataset, offset, ck_size)
+    #     elif to_ext or not preview:
+    #         to_ext = to_ext or dataset.extension
+    #         return self._serve_raw(trans, dataset, to_ext, **kwd)
+    #     elif dataset.metadata.columns > 50:
+    #         # Fancy tabular display is only suitable for datasets without an incredibly large number of columns.
+    #         # We should add a new datatype 'matrix', with its own draw method, suitable for this kind of data.
+    #         # For now, default to the old behavior, ugly as it is.  Remove this after adding 'matrix'.
+    #         max_peek_size = 1000000  # 1 MB
+    #         if os.stat(dataset.file_name).st_size < max_peek_size:
+    #             self._clean_and_set_mime_type(trans, dataset.get_mime())
+    #             return open(dataset.file_name, mode='rb')
+    #         else:
+    #             trans.response.set_content_type("text/html")
+    #             return trans.stream_template_mako("/dataset/large_file.mako",
+    #                                               truncated_data=open(dataset.file_name, mode='r').read(max_peek_size),
+    #                                               data=dataset)
+    #     else:
+    #         column_names = 'null'
+    #         if dataset.metadata.obs_names:
+    #             column_names = dataset.metadata.obs_names
+    #         return trans.fill_template("/dataset/tabular_chunked.mako",
+    #                                    ## TODO: how to get the "X" slot?
+    #                                    dataset=dataset,
+    #                                    chunk=self.get_chunk(trans, dataset, 0),
+    #                                    column_number=column_number,
+    #                                    column_names=column_names,
+    #                                    column_types=column_types)
 
 class GmxBinary(Binary):
     """
