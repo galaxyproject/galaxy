@@ -115,7 +115,7 @@ export default {
             // Check if a key exists.  If not, return 'undefined'.
             var kickback = '';
 
-            if (this.item.hasOwnProperty(incoming)) {
+            if (Object.prototype.hasOwnProperty(this.item, incoming)) {
 
                 kickback = this.item[incoming];
             

@@ -16,7 +16,7 @@ import {
 } from "onload/loadConfig";
 import BcoHeader from "components/BioCompute/BcoHeader.vue";
 import ProvenanceDomain from "components/BioCompute/Provenance.vue";
-import { mapGetters, mapActions } from "vuex";
+import { mapActions } from "vuex";
 
 export default {
     name: "BCOviewer",
@@ -47,7 +47,7 @@ export default {
         // },
     },
     methods: {
-        ...mapActions(["fetchIBiocomputeForId"]),
+        ...mapActions(["cloneBioComputeInfo"]),
         onScroll({
             target: {
                 scrollTop,
@@ -73,34 +73,30 @@ export default {
 
         this.$nextTick(function () {
             const invocationId = this.invocationId;
-            const url = getAppRoot() + `api/invocations/${invocationId}/export_bco`;
 
-            axios
-                .get(url)
-                .then((response) => {
-                    
-                    // Immediately commit the original BCO to the store.
-                    context_helper.fetchIBiocomputeForId(invocationId);
+            // Immediately commit the original BCO to the store.
+            context_helper.cloneBioComputeInfo(invocationId);
 
-                    // Create a context handler.
-                    var this_helper = this;
-                    
-                    // Loop over the response and assign values to new
-                    // objects.
-                    
-                    for (var key of Object.keys(response.data)) {
-                    
-                        // Vue-wide object.
-                        this_helper[key] = response.data[key]
-                    }
+            // Save the "User" version of the BCO, meaning the version that can be edited
+            // by the user by changing inputs on the page but which does NOT affect
+            // the originally pulled BCO.  In this way we can compare changes between
+            // the original and the edit object.
+            //context_helper.fetchIBiocomputeForId(invocationId + '-USER');
 
-                    //console.log(this);
-                    //console.log(this.embargo.start_time);
-        
-                })
-                .catch((e) => {
-                    console.error(e);
-                });
+            // Create a context handler.
+            //var this_helper = this;
+            
+            // Loop over the response and assign values to new
+            // objects.
+            
+            //for (var key of Object.keys(response.data)) {
+            
+                // Vue-wide object.
+                //this_helper[key] = response.data[key]
+            //}
+
+            //console.log(this);
+            //console.log(this.embargo.start_time);
       })
     }
 };
