@@ -941,13 +941,12 @@ class Anndata(H5):
     """
     file_ext = 'h5ad'
 
-    MetadataElement(name="title", default="", desc="title", readonly=True, visible=True, no_value="")
-    MetadataElement(name="description", default="", desc="description", readonly=True, visible=True, no_value="")
-    MetadataElement(name="url", default="", desc="url", readonly=True, visible=True, no_value="")
-    MetadataElement(name="doi", default="", desc="doi", readonly=True, visible=True, no_value="")
-    #MetadataElement(name="loom_spec_version", default="", desc="loom_spec_version", readonly=True, visible=True, no_value="")
-    MetadataElement(name="creation_date", default=None, desc="creation_date", readonly=True, visible=True, no_value=None)
-    MetadataElement(name="shape", default=(), desc="shape", param=metadata.ListParameter, readonly=True, visible=True, no_value=())
+    #MetadataElement(name="title", default="", desc="title", readonly=True, visible=True, no_value="")
+    #MetadataElement(name="description", default="", desc="description", readonly=True, visible=True, no_value="")
+    #MetadataElement(name="url", default="", desc="url", readonly=True, visible=True, no_value="")
+    #MetadataElement(name="doi", default="", desc="doi", readonly=True, visible=True, no_value="")
+    #MetadataElement(name="anndata_spec_version", default="", desc="loom_spec_version", readonly=True, visible=True, no_value="")
+    #MetadataElement(name="creation_date", default=None, desc="creation_date", readonly=True, visible=True, no_value=None)
     MetadataElement(name="layers_count", default=0, desc="layers_count", readonly=True, visible=True, no_value=0)
     MetadataElement(name="layers_names", desc="layers_names", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
     MetadataElement(name="row_attrs_count", default=0, desc="row_attrs_count", readonly=True, visible=True, no_value=0)
@@ -967,6 +966,7 @@ class Anndata(H5):
     MetadataElement(name="varm_count", default=0, desc="varm_count", readonly=True, visible=True, no_value=0)
     MetadataElement(name="uns_layers", desc="uns_layers", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
     MetadataElement(name="uns_count", default=0, desc="uns_count", readonly=True, visible=True, no_value=0)
+    MetadataElement(name="shape", default=(), desc="shape", param=metadata.ListParameter, readonly=True, visible=True, no_value=())
 
     def sniff(self, filename):
         if super(Anndata, self).sniff(filename):
@@ -986,76 +986,83 @@ class Anndata(H5):
                 dataset.metadata.url = util.unicodify(anndata_file.attrs.get('url'))
                 dataset.metadata.doi = util.unicodify(anndata_file.attrs.get('doi'))
                 dataset.creation_date = util.unicodify(anndata_file.attrs.get('creation_date'))
-                # the above appear to be completely empty
-                dataset.metadata.shape = tuple(anndata_file['X'].shape)
+                # none of the above appear to work, taken from LOOM datatype
+
                 # all possible keys
                 dataset.metadata.layers_count = len(anndata_file)
-                dataset.metadata.layers_names = tuple(anndata_file)
+                dataset.metadata.layers_names = list(anndata_file.keys())
 
                 if 'obs' in dataset.metadata.layers_names:
                     tmp = anndata_file["obs"]
-                    dataset.metadata.obs_names = tmp["index"]
-                    dataset.metadata.obs_layers = tmp.dtype.names
+                    dataset.metadata.obs_names = [util.unicodify(x) for x in tmp["index"]]
+                    dataset.metadata.obs_layers = [util.unicodify(x) for x in tmp.dtype.names]
                     dataset.metadata.obs_count = len(tmp.dtype)
                     dataset.metadata.obs_size = tmp.size
 
                 if 'obsm' in dataset.metadata.layers_names:
                     tmp = anndata_file["obsm"]
-                    dataset.metadata.obsm_layers = tuple(tmp)
+                    dataset.metadata.obsm_layers = [util.unicodify(x) for x in tmp.keys()]
                     dataset.metadata.obsm_count = len(tmp)
 
                 if 'raw.var' in dataset.metadata.layers_names:
                     tmp = anndata_file["raw.var"]
                     # full set of genes would never need to be previewed
                     #dataset.metadata.raw_var_names = tmp["index"]
-                    dataset.metadata.raw_var_layers = tmp.dtype.names
+                    dataset.metadata.raw_var_layers = [util.unicodify(x) for x in tmp.dtype.names]
                     dataset.metadata.raw_var_count = len(tmp.dtype)
                     dataset.metadata.raw_var_size = tmp.size
 
                 if 'var' in dataset.metadata.layers_names:
                     tmp = anndata_file["var"]
-                    # row names are not used in preview windows
+                    # row names are never used in preview windows
                     #dataset.metadata.var_names = tmp["index"]
-                    dataset.metadata.var_layers = tmp.dtype.names
+                    dataset.metadata.var_layers = [util.unicodify(x) for x in tmp.dtype.names]
                     dataset.metadata.var_count = len(tmp.dtype)
                     dataset.metadata.var_size = tmp.size
 
                 if 'varm' in dataset.metadata.layers_names:
                     tmp = anndata_file["varm"]
-                    dataset.metadata.varm_layers = tuple(tmp)
+                    dataset.metadata.varm_layers = [util.unicodify(x) for x in tmp.keys()]
                     dataset.metadata.varm_count = len(tmp)
 
                 if 'uns' in dataset.metadata.layers_names:
                     tmp = anndata_file["uns"]
-                    dataset.metadata.uns_layers = tuple(tmp)
+                    dataset.metadata.uns_layers = [util.unicodify(x) for x in tmp.keys()]
                     dataset.metadata.uns_count = len(tmp)
+
+                # Shape we determine here due to the non-standard representation of 'X'
+                if hasattr(anndata_file['X'], 'shape'):
+                    dataset.metadata.shape = tuple(anndata_file['X'].shape)
+                else:
+                    dataset.metadata.shape = (dataset.metadata.obs_size, dataset.metadata.var_size)
+
         except Exception as e:
             log.warning('%s, set_meta Exception: %s', self, e)
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             tmp = dataset.metadata
-            peekstr = "[n_obs x n_vars]\n    %d x %d" % tmp.shape
-            if 'obs' in tmp.layers:
-                peekstr += "\n[obs]: %d layer(s)\n    %s" % (
-                    tmp.obs_count, ' '.join(tmp.obs_names)
-                )
-            if 'var' in tmp.layers:
-                peekstr += "\n[var]: %d layer(s)\n    %s" % (
-                    tmp.var_count, ' '.join(tmp.var_names)
-                )
-            if 'obsm' in tmp.layers:
-                peekstr += "\n[obsm]: %d layer(s)\n    %s" % (
-                    tmp.obsm_count, ' '.join(tmp.obsm_names)
-                )
-            if 'varm' in tmp.layers:
-                peekstr += "\n[varm]: %d layer(s)\n    %s" % (
-                    tmp.varm_count, ' '.join(tmp.varm_names)
-                )
-            if 'uns' in tmp.layers:
-                peekstr += "\n[uns]: %d layer(s)\n    %s" % (
-                    tmp.uns_count, ' '.join(tmp.uns_names)
-                )
+            peekstr = "[n_obs x n_vars]" ##\n    %d x %d" % tmp.shape
+            #if 'obs' in tmp.layers_names:
+            #    peekstr += "\n[obs]: %d layer(s)\n    %s" % (
+            #        tmp.obs_count, " " ##str(list(tmp.obs_layers))
+            #    )
+            # if 'var' in tmp.layers_names:
+            #     peekstr += "\n[var]: %d layer(s)\n    %s" % (
+            #         tmp.var_count, " " ##' '.join(tmp.var_names)
+            #     )
+            # if 'obsm' in tmp.layers_names:
+            #     peekstr += "\n[obsm]: %d layer(s)\n    %s" % (
+            #         tmp.obsm_count, " " ##' '.join(tmp.obsm_names)
+            #     )
+            # if 'varm' in tmp.layers_names:
+            #     peekstr += "\n[varm]: %d layer(s)\n    %s" % (
+            #         tmp.varm_count, " " ##' '.join(tmp.varm_names)
+            #     )
+            # if 'uns' in tmp.layers_names:
+            #     peekstr += "\n[uns]: %d layer(s)\n    %s" % (
+            #         tmp.uns_count, " " ##' '.join(tmp.uns_names)
+            #     )
             dataset.peek = peekstr
             dataset.blurb = "Anndata file (%s)" % nice_size(dataset.get_size())
         else:
