@@ -6,9 +6,9 @@ import socket
 import tempfile
 from collections import OrderedDict
 from json import dump, dumps
+from urllib.parse import urlparse
 
 from six import StringIO
-from six.moves.urllib.parse import urlparse
 from sqlalchemy.orm import eagerload_all
 from webob.compat import cgi_FieldStorage
 
@@ -37,6 +37,8 @@ def validate_url(url, ip_allowlist):
     if not (url.lstrip().startswith('http://') or url.lstrip().startswith('https://')):
         return url
 
+    # Strip leading whitespace before passing url to urlparse()
+    url = url.lstrip()
     # Extract hostname component
     parsed_url = urlparse(url).netloc
     # If credentials are in this URL, we need to strip those.

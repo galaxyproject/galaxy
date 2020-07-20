@@ -18,7 +18,7 @@ export default {
         },
         icon: {
             type: String,
-            deafult: "",
+            default: "fa-play",
         },
         percentage: {
             type: Number,

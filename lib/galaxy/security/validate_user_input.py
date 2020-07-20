@@ -66,19 +66,23 @@ def validate_email(trans, email, user=None, check_dup=True, allow_empty=False):
         message = "User with email '%s' already exists." % email
     #  If the allowlist is not empty filter out any domain not in the list and ignore blocklist.
     elif trans.app.config.email_domain_allowlist_content is not None:
-        domain = email.split('@')[1]
-        if len(domain.split('.')) > 2:
-            domain = ('.').join(domain.split('.')[-2:])
+        domain = extract_domain(email)
         if domain not in trans.app.config.email_domain_allowlist_content:
             message = "Please enter an allowed domain email address for this server."
     #  If the blocklist is not empty filter out the disposable domains.
     elif trans.app.config.email_domain_blocklist_content is not None:
-        domain = email.split('@')[1]
-        if len(domain.split('.')) > 2:
-            domain = ('.').join(domain.split('.')[-2:])
+        domain = extract_domain(email, base_only=True)
         if domain in trans.app.config.email_domain_blocklist_content:
             message = "Please enter your permanent email address."
     return message
+
+
+def extract_domain(email, base_only=False):
+    domain = email.split('@')[1]
+    parts = domain.split('.')
+    if len(parts) > 2 and base_only:
+        return ('.').join(parts[-2:])
+    return domain
 
 
 def validate_publicname(trans, publicname, user=None):

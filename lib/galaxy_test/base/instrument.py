@@ -1,6 +1,6 @@
 """ Utilities to help instrument tool tests.
 
-Including structed data nose plugin that allows storing arbitrary structured
+Including structured data nose plugin that allows storing arbitrary structured
 data on a per test case basis - used by tool test to store inputs,
 output problems, job tests, etc... but could easily by used by other test
 types in a different way.

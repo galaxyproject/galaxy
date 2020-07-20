@@ -240,7 +240,7 @@ class AuthnzManager:
         ID does not exist, or the configuration is defined for a another
         user than trans.user.
 
-        :type  trans:       galaxy.web.framework.webapp.GalaxyWebTransaction
+        :type  trans:       galaxy.webapps.base.webapp.GalaxyWebTransaction
         :param trans:       Galaxy web transaction
 
         :type  authz_id:    int
@@ -292,7 +292,7 @@ class AuthnzManager:
             raise exceptions.AuthenticationFailed(e.message)
         except Exception as e:
             msg = 'The following error occurred when handling callback from `{}` identity provider: ' \
-                  '{}'.format(provider, e.message)
+                  '{}'.format(provider, str(e))
             log.exception(msg)
             return False, msg, (None, None)
 
@@ -321,7 +321,7 @@ class AuthnzManager:
             return True, message, backend.logout(trans, post_logout_redirect_url)
         except Exception as e:
             msg = 'The following error occurred when logging out from `{}` identity provider: ' \
-                  '{}'.format(provider, e.message)
+                  '{}'.format(provider, str(e))
             log.exception(msg)
             return False, msg, None
 

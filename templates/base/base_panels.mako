@@ -174,13 +174,13 @@
             </div>
             
             %if self.message_box_visible:
-                <div id="messagebox" class="panel-${app.config.message_box_class}-message" style="display:block">
+                <div id="messagebox" class="alert alert-${app.config.message_box_class} rounded-0 m-0 p-2">
                     ${app.config.message_box_content}
                 </div>
             %endif
             
             %if self.show_inactivity_warning:
-                <div id="inactivebox" class="panel-warning-message">
+                <div id="inactivebox" class="alert alert-warning rounded-0 m-0 p-2">
                     ${app.config.inactivity_box_content} <a href="${h.url_for( controller='user', action='resend_verification' )}">Resend verification.</a>
                 </div>
             %endif

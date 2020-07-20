@@ -216,7 +216,7 @@ class ShellJobRunner(AsynchronousJobRunner):
             else:
                 job_destinations[ajs.job_destination.id]['job_ids'].append(ajs.job_id)
         # check each destination for the listed job ids
-        for job_destination_id, v in job_destinations.items():
+        for v in job_destinations.values():
             job_destination = v['job_destination']
             job_ids = v['job_ids']
             shell_params, job_params = self.parse_destination_params(job_destination.params)

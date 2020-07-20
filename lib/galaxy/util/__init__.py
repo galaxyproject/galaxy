@@ -17,6 +17,7 @@ import stat
 import string
 import sys
 import tempfile
+import textwrap
 import threading
 import time
 import unicodedata
@@ -815,10 +816,9 @@ class Params:
                 # name. Anything relying on NEVER_SANITIZE should be
                 # changed to not require this and NEVER_SANITIZE should be
                 # removed.
-                if (value is not None and
-                        key not in self.NEVER_SANITIZE and
-                        True not in [key.endswith("|%s" % nonsanitize_parameter) for
-                                     nonsanitize_parameter in self.NEVER_SANITIZE]):
+                if (value is not None and key not in self.NEVER_SANITIZE
+                        and True not in [key.endswith("|%s" % nonsanitize_parameter) for
+                                         nonsanitize_parameter in self.NEVER_SANITIZE]):
                     self.__dict__[key] = sanitize_param(value)
                 else:
                     self.__dict__[key] = value
@@ -1042,11 +1042,10 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', strip_null=Fals
                 value = str(value)
         # Now in Python 2, value is an instance of basestring, but may be not unicode
         # Now in Python 3, value is an instance of bytes or str
-        if not isinstance(value, str):
-            value = str(value, encoding, error)
-    except Exception:
-        msg = "Value '%s' could not be coerced to Unicode" % value
-        log.exception(msg)
+        if not isinstance(value, text_type):
+            value = text_type(value, encoding, error)
+    except Exception as e:
+        msg = "Value '%s' could not be coerced to Unicode: %s('%s')" % (value, type(e).__name__, e)
         raise Exception(msg)
     if strip_null:
         return value.replace('\0', '')
@@ -1112,6 +1111,19 @@ def object_to_string(obj):
 
 def string_to_object(s):
     return binascii.unhexlify(s)
+
+
+def clean_multiline_string(multiline_string, sep='\n'):
+    """
+    Dedent, split, remove first and last empty lines, rejoin.
+    """
+    multiline_string = textwrap.dedent(multiline_string)
+    string_list = multiline_string.split(sep)
+    if not string_list[0]:
+        string_list = string_list[1:]
+    if not string_list[-1]:
+        string_list = string_list[:-1]
+    return '\n'.join(string_list) + '\n'
 
 
 class ParamsWithSpecs(collections.defaultdict):
@@ -1246,7 +1258,7 @@ def read_build_sites(filename, check_builds=True):
 
 
 def relativize_symlinks(path, start=None, followlinks=False):
-    for root, dirs, files in os.walk(path, followlinks=followlinks):
+    for root, _, files in os.walk(path, followlinks=followlinks):
         rel_start = None
         for file_name in files:
             symlink_file_name = os.path.join(root, file_name)
@@ -1280,7 +1292,7 @@ def mkstemp_ln(src, prefix='mkstemp_ln_'):
     """
     dir = os.path.dirname(src)
     names = tempfile._get_candidate_names()
-    for seq in xrange(tempfile.TMP_MAX):
+    for _ in xrange(tempfile.TMP_MAX):
         name = next(names)
         file = os.path.join(dir, prefix + name)
         try:
@@ -1680,6 +1692,15 @@ def download_to_file(url, dest_file_path, timeout=30, chunk_size=2 ** 20):
         for chunk in r.iter_content(chunk_size):
             if chunk:
                 f.write(chunk)
+
+
+class classproperty(object):
+
+    def __init__(self, f):
+        self.f = f
+
+    def __get__(self, obj, owner):
+        return self.f(owner)
 
 
 def get_executable():

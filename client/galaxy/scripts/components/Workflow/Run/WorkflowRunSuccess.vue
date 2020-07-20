@@ -19,11 +19,11 @@
             </p>
         </div>
         <workflow-invocation-state
-            v-for="invocation in invocations"
+            v-for="(invocation, index) in invocations"
             :key="invocation.id"
+            :index="index"
             :invocation-id="invocation.id"
-        >
-        </workflow-invocation-state>
+        />
         <div id="webhook-view"></div>
     </div>
 </template>

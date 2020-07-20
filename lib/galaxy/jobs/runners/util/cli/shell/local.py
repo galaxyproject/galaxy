@@ -55,7 +55,7 @@ class LocalShell(BaseShellExec):
         p = Popen(cmd, stdin=None, stdout=outf, stderr=PIPE, shell=is_cmd_string, preexec_fn=os.setpgrp)
         # check process group until timeout
 
-        for i in range(int(timeout / timeout_check_interval)):
+        for _ in range(int(timeout / timeout_check_interval)):
             sleep(0.1)  # For fast returning commands
             if not check_pg(p.pid):
                 break

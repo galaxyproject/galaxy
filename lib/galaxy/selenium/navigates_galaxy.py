@@ -1413,13 +1413,15 @@ class NavigatesGalaxy(HasDriver):
         assert text == expected, "Tooltip text [{}] was not expected text [{}].".format(text, expected)
 
     def assert_error_message(self, contains=None):
-        return self._assert_message("error", contains=contains)
+        element = self.components._.messages["error"]
+        return self.assert_message(element, contains=contains)
 
     def assert_warning_message(self, contains=None):
-        return self._assert_message("warning", contains=contains)
+        element = self.components._.messages["warning"]
+        return self.assert_message(element, contains=contains)
 
-    def _assert_message(self, message_type, contains=None):
-        element = self.components._.messages[message_type].wait_for_visible()
+    def assert_message(self, element, contains=None):
+        element = element.wait_for_visible()
         assert element, "No error message found, one expected."
         if contains is not None:
             text = element.text

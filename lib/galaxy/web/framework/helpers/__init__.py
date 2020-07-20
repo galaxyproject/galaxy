@@ -3,7 +3,7 @@ Galaxy web framework helpers
 
 The functions in this module should be considered part of the API used by
 visualizations in their mako files through the `$h` object, see
-GalaxyWebTransaction in galaxy/web/framework/webapp.py
+GalaxyWebTransaction in galaxy/webapps/base/webapp.py
 """
 from datetime import datetime, timedelta
 

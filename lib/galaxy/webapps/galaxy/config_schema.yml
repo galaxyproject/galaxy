@@ -930,8 +930,9 @@ mapping:
         required: false
         desc: |
           E-mail domains blocklist is used for filtering out users that are using
-          disposable email addresses at registration.  If their address domain matches any
-          domain on the list, they are refused registration.
+          disposable email addresses at registration.  If their address's base domain
+          matches any domain on the list, they are refused registration. Address subdomains
+          are ignored (both 'name@spam.com' and 'name@foo.spam.com' will match 'spam.com').
 
           Example value 'email_blocklist.conf'
 
@@ -944,7 +945,9 @@ mapping:
           E-mail domains allowlist is used to specify allowed email address domains.
           If the list is non-empty and a user attempts registration using an email
           address belonging to a domain that is not on the list, registration will be
-          denied. This is a more restrictive option than <email_domain_blocklist_file>, and
+          denied. Unlike <email_domain_allowlist_file> which matches the address's
+          base domain, here email addresses are matched against the full domain (base + subdomain).
+          This is a more restrictive option than <email_domain_blocklist_file>, and
           therefore, in case <email_domain_allowlist_file> is set and is not empty,
           <email_domain_blocklist_file> will be ignored.
 
@@ -2641,6 +2644,18 @@ mapping:
           Enable job recovery (if Galaxy is restarted while cluster jobs are running,
           it can "recover" them when it starts).  This is not safe to use if you are
           running more than one Galaxy server using the same database.
+
+      metadata_strategy:
+        type: str
+        required: false
+        default: directory
+        desc: |
+          Determines how metadata will be set. Valid values are `directory`, `extended` and `legacy`.
+          In extended mode jobs will decide if a tool run failed, the object stores
+          configuration is serialized and made available to the job and is used for
+          writing output datasets to the object store as part of the job and dynamic
+          output discovery (e.g. discovered datasets <discover_datasets>, unpopulated collections,
+          etc) happens as part of the job.
 
       retry_metadata_internally:
         type: bool

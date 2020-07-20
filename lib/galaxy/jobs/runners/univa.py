@@ -422,13 +422,15 @@ class UnivaJobRunner(DRMAAJobRunner):
         # log.debug("UnivaJobRunner._get_drmaa_state_wait ({jobid}) -> {state}".format(jobid=job_id, state=self.drmaa_job_state_strings[state]))
         return state
 
-    def _get_drmaa_state(self, job_id, ds, waitqacct, extinfo=dict()):
+    def _get_drmaa_state(self, job_id, ds, waitqacct, extinfo=None):
         """
         get the state using drmaa.job_info/qstat and drmaa.wait/qacct using the above functions
         qacct/wait is only called if waitqacct is True.
         the function returns the state (one of the drmaa states) and extended
         information in the extinfo dict
         """
+        if extinfo is None:
+            extinfo = {}
         # log.debug("UnivaJobRunner._get_drmaa_state ({jobid}) {qw}".format(jobid=job_id, qw=waitqacct))
         state = self.drmaa.JobState.UNDETERMINED
         # try to get the state with drmaa.job_status (does not work for jobs

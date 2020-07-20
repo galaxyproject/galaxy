@@ -12,7 +12,7 @@ VERSION?=$(shell DEV_RELEASE=$(DEV_RELEASE) python $(BUILD_SCRIPTS_DIR)/print_ve
 PROJECT_NAME?="galaxy-$(shell basename $(CURDIR))"
 PROJECT_NAME:=$(subst _,-,$(PROJECT_NAME))
 BRANCH?=$(shell git rev-parse --abbrev-ref HEAD)
-TEST_DIR?=test
+TEST_DIR?=tests
 TESTS?=$(SOURCE_DIR) $(TEST_DIR)
 
 .PHONY: clean-pyc clean-build docs clean

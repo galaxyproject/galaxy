@@ -3,6 +3,7 @@ import tarfile
 
 from six import BytesIO
 
+from galaxy_test.base.api_asserts import assert_object_id_error
 from galaxy_test.base.populators import DatasetCollectionPopulator, DatasetPopulator, skip_if_github_down
 from ._framework import ApiTestCase
 
@@ -287,10 +288,10 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         hdca, contents_url = self._create_collection_contents_pair()
         response = self._get(contents_url)
         self._assert_status_code_is(response, 200)
-        fake_collection_id = self.security.encode_id(1000)
-        fake_contents_url = '/api/dataset_collections/{}/contents/{}'.format(hdca['id'], fake_collection_id)
+        fake_collection_id = '5d7db0757a2eb7ef'
+        fake_contents_url = '/api/dataset_collections/%s/contents/%s' % (hdca['id'], fake_collection_id)
         error_response = self._get(fake_contents_url)
-        self._assert_status_code_is(error_response, 404)
+        assert_object_id_error(error_response)
 
     def test_show_dataset_collection_contents(self):
         # Get contents_url from history contents, use it to show the first level

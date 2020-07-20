@@ -219,7 +219,7 @@ class Terminal extends EventEmitter {
 class BaseInputTerminal extends Terminal {
     constructor(attr) {
         super(attr);
-        this.datatypesMapping = attr.datatypesMapping;
+        this.datatypesMapper = attr.datatypesMapper;
         this.update(attr.input); // subclasses should implement this...
     }
     canAccept(other) {
@@ -348,10 +348,7 @@ class BaseInputTerminal extends Terminal {
         );
     }
     _isSubType(child, parent) {
-        const mapping = this.datatypesMapping;
-        child = mapping.ext_to_class_name[child];
-        parent = mapping.ext_to_class_name[parent];
-        return mapping.class_to_classes[child] && parent in mapping.class_to_classes[child];
+        return this.datatypesMapper.isSubType(child, parent);
     }
     _producesAcceptableDatatypeAndOptionalness(other) {
         if (!this.optional && !this.multiple && other.optional) {

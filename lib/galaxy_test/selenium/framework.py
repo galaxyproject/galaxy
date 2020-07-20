@@ -25,11 +25,15 @@ from galaxy.selenium.navigates_galaxy import (
     NavigatesGalaxy,
     retry_during_transitions
 )
-from galaxy.util import asbool
+from galaxy.util import asbool, classproperty
 from galaxy_test.base import populators
-from galaxy_test.driver.api import UsesApiTestCaseMixin
-from galaxy_test.driver.driver_util import classproperty, DEFAULT_WEB_HOST, get_ip_address
-from galaxy_test.driver.testcase import FunctionalTestCase
+from galaxy_test.base.api import UsesApiTestCaseMixin
+from galaxy_test.base.env import DEFAULT_WEB_HOST, get_ip_address
+from galaxy_test.base.testcase import FunctionalTestCase
+try:
+    from galaxy_test.driver.driver_util import GalaxyTestDriver
+except ImportError:
+    GalaxyTestDriver = None
 
 DEFAULT_TIMEOUT_MULTIPLIER = 1
 DEFAULT_TEST_ERRORS_DIRECTORY = os.path.abspath("database/test_errors")
@@ -396,6 +400,7 @@ class TestWithSeleniumMixin(NavigatesGalaxy, UsesApiTestCaseMixin):
 
 
 class SeleniumTestCase(FunctionalTestCase, TestWithSeleniumMixin):
+    galaxy_driver_class = GalaxyTestDriver
 
     def setUp(self):
         super().setUp()

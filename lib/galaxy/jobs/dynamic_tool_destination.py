@@ -734,7 +734,8 @@ def parse_yaml(path="/config/tool_destinations.yml",
                 # os.path.realpath gets the path of DynamicToolDestination.py
                 # and then os.path.join is used to go back four directories
                 config_directory = os.path.join(
-                    os.path.dirname(os.path.realpath(__file__)), '../../../..')
+                    os.path.dirname(os.path.realpath(__file__)), os.pardir,
+                    os.pardir, os.pardir, os.pardir)
 
                 opt_file = config_directory + path
 
@@ -889,8 +890,8 @@ def validate_config(obj, app=None, return_bool=False,):
 
             elif isinstance(obj['default_destination'], dict):
 
-                if ('priority' in obj['default_destination'] and
-                        isinstance(obj['default_destination']['priority'], dict)):
+                if ('priority' in obj['default_destination']
+                        and isinstance(obj['default_destination']['priority'], dict)):
 
                     for priority in obj['default_destination']['priority']:
                         if isinstance(obj['default_destination']['priority'][priority],
@@ -1104,8 +1105,8 @@ def validate_config(obj, app=None, return_bool=False,):
                                         # if we got a rule back that seems to be
                                         # valid (or was fixable) then append it to
                                         # list of ready-to-use tools
-                                        if (not return_bool and
-                                                validated_rule is not None):
+                                        if (not return_bool
+                                                and validated_rule is not None):
                                             curr_tool_rules.append(
                                                 copy.deepcopy(validated_rule))
 
@@ -1262,7 +1263,7 @@ def str_to_bytes(size):
             # Get the unit and convert to bytes
             try:
                 pos = units.index(curr_unit)
-                for x in range(pos, 1, -1):
+                for _ in range(pos, 1, -1):
                     curr_size *= 1024
             except ValueError:
                 error = "Unable to convert size " + str(size)
@@ -1645,29 +1646,25 @@ def get_destination_list_from_job_config(job_config_location):
     # and then os.path.join is used to go back four directories
 
     config_location = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), '../../..')
+        os.path.dirname(os.path.realpath(__file__)), os.pardir, os.pardir, os.pardir)
 
     if job_config_location:
         local_path = re.compile('^/config/.+$')
         if local_path.match(job_config_location):
-            job_config_location = config_location + job_config_location
+            job_config_location = os.path.join(config_location, job_config_location)
     else:  # Pick one of the default ones
         message = "* No job config specified, "
-        if os.path.isfile(config_location + "/config/job_conf.xml"):
-            job_config_location = config_location + "/config/job_conf.xml"
-            message += "using 'config/job_conf.xml'. *"
-
-        elif os.path.isfile(config_location +
-                "/config/job_conf.xml.sample_advanced"):
-            job_config_location = (config_location
-                + "/config/job_conf.xml.sample_advanced")
-            message += "using 'config/job_conf.xml.sample_advanced'. *"
-
-        elif os.path.isfile(config_location +
-                "/config/job_conf.xml.sample_basic"):
-            job_config_location = (config_location
-                + "/config/job_conf.xml.sample_basic")
-            message += "using 'config/job_conf.xml.sample_basic'. *"
+        possible_job_conf_files = [
+            "config/job_conf.xml",
+            "config/job_conf.xml.sample_advanced",
+            "config/job_conf.xml.sample_basic",
+        ]
+        for f in possible_job_conf_files:
+            possible_job_conf_path = os.path.join(config_location, f)
+            if os.path.isfile(possible_job_conf_path):
+                job_config_location = possible_job_conf_path
+                message += "using '%s'. *" % f
+                break
         else:
             message += ("and no default job configs in 'config/'. "
                     + "Expect lots of failures. *")

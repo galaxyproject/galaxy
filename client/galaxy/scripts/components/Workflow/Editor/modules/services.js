@@ -13,18 +13,6 @@ export async function getVersions(id) {
     }
 }
 
-export async function getDatatypes() {
-    try {
-        const datatypesRequest = await axios.get(`${getAppRoot()}api/datatypes`);
-        const datatypes = datatypesRequest.data;
-        const mappingRequest = await axios.get(`${getAppRoot()}api/datatypes/mapping`);
-        const datatypes_mapping = mappingRequest.data;
-        return { datatypes, datatypes_mapping };
-    } catch (e) {
-        rethrowSimple(e);
-    }
-}
-
 export async function getModule(request_data) {
     try {
         const { data } = await axios.post(`${getAppRoot()}api/workflows/build_module`, request_data);

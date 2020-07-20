@@ -17,8 +17,8 @@ from galaxy.model import CustosAuthnzToken, User
 from ..authnz import IdentityProvider
 
 log = logging.getLogger(__name__)
-STATE_COOKIE_NAME = 'custos-state'
-NONCE_COOKIE_NAME = 'custos-nonce'
+STATE_COOKIE_NAME = 'galaxy-oidc-state'
+NONCE_COOKIE_NAME = 'galaxy-oidc-nonce'
 KEYCLOAK_BACKENDS = {'custos', 'cilogon', 'keycloak'}
 
 

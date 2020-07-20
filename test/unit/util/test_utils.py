@@ -82,3 +82,12 @@ def test_parse_xml_enoent():
     with pytest.raises(IOError) as excinfo:
         util.parse_xml(path)
     assert excinfo.value.errno == errno.ENOENT
+
+
+def test_clean_multiline_string():
+    x = util.clean_multiline_string("""
+        a
+        b
+        c
+""")
+    assert x == "a\nb\nc\n"

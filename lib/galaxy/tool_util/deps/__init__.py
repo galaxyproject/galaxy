@@ -107,11 +107,13 @@ class DependencyManager:
     """
     cached = False
 
-    def __init__(self, default_base_path, conf_file=None, app_config={}):
+    def __init__(self, default_base_path, conf_file=None, app_config=None):
         """
         Create a new dependency manager looking for packages under the paths listed
         in `base_paths`.  The default base path is app.config.tool_dependency_dir.
         """
+        if app_config is None:
+            app_config = {}
         if not os.path.exists(default_base_path):
             log.warning("Path '%s' does not exist, ignoring", default_base_path)
         if not os.path.isdir(default_base_path):
@@ -149,9 +151,11 @@ class DependencyManager:
         """Returns the union of enabled container types."""
         return self._enabled_container_types
 
-    def get_resolver_option(self, resolver, key, explicit_resolver_options={}):
+    def get_resolver_option(self, resolver, key, explicit_resolver_options=None):
         """Look in resolver-specific settings for option and then fallback to global settings.
         """
+        if explicit_resolver_options is None:
+            explicit_resolver_options = {}
         default = resolver.config_options.get(key)
         config_prefix = resolver.resolver_type
         global_key = "{}_{}".format(config_prefix, key)
@@ -408,7 +412,9 @@ class CachedDependencyManager(DependencyManager):
 class NullDependencyManager(DependencyManager):
     cached = False
 
-    def __init__(self, default_base_path=None, conf_file=None, app_config={}):
+    def __init__(self, default_base_path=None, conf_file=None, app_config=None):
+        if app_config is None:
+            app_config = {}
         self.__app_config = app_config
         self.resolver_classes = set()
         self.dependency_resolvers = []
