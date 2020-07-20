@@ -6,7 +6,6 @@ import random
 import re
 import shutil
 import signal
-import socket
 import string
 import subprocess
 import sys

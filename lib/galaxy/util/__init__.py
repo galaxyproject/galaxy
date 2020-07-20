@@ -1042,8 +1042,8 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', strip_null=Fals
                 value = str(value)
         # Now in Python 2, value is an instance of basestring, but may be not unicode
         # Now in Python 3, value is an instance of bytes or str
-        if not isinstance(value, text_type):
-            value = text_type(value, encoding, error)
+        if not isinstance(value, str):
+            value = str(value, encoding, error)
     except Exception as e:
         msg = "Value '{}' could not be coerced to Unicode: {}('{}')".format(value, type(e).__name__, e)
         raise Exception(msg)
