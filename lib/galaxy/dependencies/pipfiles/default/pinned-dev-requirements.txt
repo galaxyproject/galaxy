@@ -52,7 +52,7 @@ scandir==1.10.0 ; python_version < '3.5'
 selenium==3.141.0
 six==1.11.0
 snowballstemmer==2.0.0
-sphinx-markdown-tables==0.0.13
+sphinx-markdown-tables==0.0.14
 sphinx-rtd-theme==0.4.3
 sphinx==1.8.5
 sphinxcontrib-websupport==1.1.2
