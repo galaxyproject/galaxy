@@ -1001,7 +1001,7 @@ class Anndata(H5):
 
                 if 'obsm' in dataset.metadata.layers_names:
                     tmp = anndata_file["obsm"]
-                    dataset.metadata.obsm_layers = [util.unicodify(x) for x in tmp.keys()]
+                    dataset.metadata.obsm_layers = [util.unicodify(x) for x in list(tmp.keys())]
                     dataset.metadata.obsm_count = len(tmp)
 
                 if 'raw.var' in dataset.metadata.layers_names:
@@ -1022,12 +1022,12 @@ class Anndata(H5):
 
                 if 'varm' in dataset.metadata.layers_names:
                     tmp = anndata_file["varm"]
-                    dataset.metadata.varm_layers = [util.unicodify(x) for x in tmp.keys()]
+                    dataset.metadata.varm_layers = [util.unicodify(x) for x in list(tmp.keys())]
                     dataset.metadata.varm_count = len(tmp)
 
                 if 'uns' in dataset.metadata.layers_names:
                     tmp = anndata_file["uns"]
-                    dataset.metadata.uns_layers = [util.unicodify(x) for x in tmp.keys()]
+                    dataset.metadata.uns_layers = [util.unicodify(x) for x in list(tmp.keys())]
                     dataset.metadata.uns_count = len(tmp)
 
                 # Shape we determine here due to the non-standard representation of 'X'
@@ -1042,27 +1042,24 @@ class Anndata(H5):
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             tmp = dataset.metadata
-            peekstr = "[n_obs x n_vars]" ##\n    %d x %d" % tmp.shape
-            #if 'obs' in tmp.layers_names:
-            #    peekstr += "\n[obs]: %d layer(s)\n    %s" % (
-            #        tmp.obs_count, " " ##str(list(tmp.obs_layers))
-            #    )
-            # if 'var' in tmp.layers_names:
-            #     peekstr += "\n[var]: %d layer(s)\n    %s" % (
-            #         tmp.var_count, " " ##' '.join(tmp.var_names)
-            #     )
-            # if 'obsm' in tmp.layers_names:
-            #     peekstr += "\n[obsm]: %d layer(s)\n    %s" % (
-            #         tmp.obsm_count, " " ##' '.join(tmp.obsm_names)
-            #     )
-            # if 'varm' in tmp.layers_names:
-            #     peekstr += "\n[varm]: %d layer(s)\n    %s" % (
-            #         tmp.varm_count, " " ##' '.join(tmp.varm_names)
-            #     )
-            # if 'uns' in tmp.layers_names:
-            #     peekstr += "\n[uns]: %d layer(s)\n    %s" % (
-            #         tmp.uns_count, " " ##' '.join(tmp.uns_names)
-            #     )
+
+            def _makelayerstrings (layer, count, names):
+                if layer in tmp.layers_names:
+                    return "\n[%s]: %d %s\n    %s" % (
+                        layer,
+                        count,
+                        "layer" if count == 1 else "layers",
+                        ', '.join(sorted(names))
+                    )
+                return ""
+
+            peekstr = "[n_obs x n_vars]\n    %d x %d" % tmp.shape
+            peekstr += _makelayerstrings("obs", tmp.obs_count, tmp.obs_layers)
+            peekstr += _makelayerstrings("var", tmp.var_count, tmp.var_layers)
+            peekstr += _makelayerstrings("obsm", tmp.obsm_count, tmp.obsm_layers)
+            peekstr += _makelayerstrings("varm", tmp.varm_count, tmp.varm_layers)
+            peekstr += _makelayerstrings("uns", tmp.uns_count, tmp.uns_layers)
+
             dataset.peek = peekstr
             dataset.blurb = "Anndata file (%s)" % nice_size(dataset.get_size())
         else:
