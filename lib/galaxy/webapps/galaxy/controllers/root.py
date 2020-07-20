@@ -278,8 +278,8 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
                 trans.set_history(new_history)
             trans.log_event("History imported, id: {}, name: '{}': ".format(str(new_history.id), new_history.name))
             return trans.show_ok_message("""
-                History "%s" has been imported. Click <a href="%s">here</a>
-                to begin.""" % (new_history.name, web.url_for('/')))
+                History "{}" has been imported. Click <a href="{}">here</a>
+                to begin.""".format(new_history.name, web.url_for('/')))
         elif not user_history.datasets or confirm:
             new_history = import_history.copy()
             new_history.name = "imported: " + new_history.name
@@ -297,8 +297,8 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             trans.set_history(new_history)
             trans.log_event("History imported, id: {}, name: '{}': ".format(str(new_history.id), new_history.name))
             return trans.show_ok_message("""
-                History "%s" has been imported. Click <a href="%s">here</a>
-                to begin.""" % (new_history.name, web.url_for('/')))
+                History "{}" has been imported. Click <a href="{}">here</a>
+                to begin.""".format(new_history.name, web.url_for('/')))
         return trans.show_warn_message("""
             Warning! If you import this history, you will lose your current
             history. Click <a href="%s">here</a> to confirm.

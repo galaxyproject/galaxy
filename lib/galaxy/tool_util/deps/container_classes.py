@@ -324,11 +324,11 @@ class DockerContainer(Container, HasDockerLikeVolumes):
         # Standard error is:
         #    Error response from daemon: Cannot kill container: 2b0b961527574ebc873256b481bbe72e: No such container: 2b0b961527574ebc873256b481bbe72e
         return """
-_on_exit() {
-  %s &> /dev/null
-}
+_on_exit() {{
+  {} &> /dev/null
+}}
 trap _on_exit 0
-%s\n%s""" % (kill_command, cache_command, run_command)
+{}\n{}""".format(kill_command, cache_command, run_command)
 
     def __cache_from_file_command(self, cached_image_file, docker_host_props):
         images_cmd = docker_util.build_docker_images_command(truncate=False, **docker_host_props)

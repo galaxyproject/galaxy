@@ -1333,7 +1333,7 @@ class SetupRubyEnvironment(Download, RecipeStep):
                     if os.path.isfile(gem):
                         # we assume a local shipped gem file
                         cmd = '''PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
-                                gem install --local %s %s''' % (gem, gem_parameters)
+                                gem install --local {} {}'''.format(gem, gem_parameters)
                     elif gem.find('://') != -1:
                         # We assume a URL to a gem file.
                         url = gem
@@ -1341,7 +1341,7 @@ class SetupRubyEnvironment(Download, RecipeStep):
                         checksums = ruby_package_tup_dict.get('checksums', {})
                         self.url_download(work_dir, gem_name, url, extract=False, checksums=checksums)
                         cmd = '''PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
-                                gem install --local %s %s''' % (gem_name, gem_parameters)
+                                gem install --local {} {}'''.format(gem_name, gem_parameters)
                     else:
                         # gem file from rubygems.org with or without version number
                         if gem_version:
@@ -1349,11 +1349,11 @@ class SetupRubyEnvironment(Download, RecipeStep):
                             # Use raw strings so that python won't automatically unescape the quotes before passing the command
                             # to subprocess.Popen.
                             cmd = r'''PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
-                                gem install %s --version "=%s" %s''' % (gem, gem_version, gem_parameters)
+                                gem install {} --version "={}" {}'''.format(gem, gem_version, gem_parameters)
                         else:
                             # no version number given
                             cmd = '''PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
-                                gem install %s %s''' % (gem, gem_parameters)
+                                gem install {} {}'''.format(gem, gem_parameters)
                     cmd = install_environment.build_command(basic_util.evaluate_template(cmd, install_environment))
                     return_code = install_environment.handle_command(tool_dependency=tool_dependency,
                                                                      cmd=cmd,

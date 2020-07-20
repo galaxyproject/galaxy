@@ -48,7 +48,7 @@ class DatatypesApiTestCase(ApiTestCase):
 
         datatypes = response_dict["datatypes"]
         for common_type in ["tabular", "fasta"]:
-            assert common_type in datatypes, "%s not in %s" % (common_type, datatypes)
+            assert common_type in datatypes, "{} not in {}".format(common_type, datatypes)
 
     def test_sniffers(self):
         response = self._get("datatypes/sniffers")

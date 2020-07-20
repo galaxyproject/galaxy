@@ -444,10 +444,10 @@ def send_report(rep, exc_data, html=True):
         traceback.print_exc(file=output)
         if html:
             return """
-            <p>Additionally an error occurred while sending the %s report:
+            <p>Additionally an error occurred while sending the {} report:
 
-            <pre>%s</pre>
-            </p>""" % (
+            <pre>{}</pre>
+            </p>""".format(
                 markupsafe.escape(str(rep)), output.getvalue())
         else:
             return (
@@ -463,11 +463,11 @@ def error_template(head_html, exception, extra):
     <html>
     <head>
     <style type="text/css">
-    body { color: #303030; background: #dfe5f9; font-family:"Lucida Grande",verdana,arial,helvetica,sans-serif; font-size:12px; line-height:16px; }
-    .content { max-width: 720px; margin: auto; margin-top: 50px; }
+    body {{ color: #303030; background: #dfe5f9; font-family:"Lucida Grande",verdana,arial,helvetica,sans-serif; font-size:12px; line-height:16px; }}
+    .content {{ max-width: 720px; margin: auto; margin-top: 50px; }}
     </style>
     <title>Internal Server Error</title>
-    %s
+    {}
     </head>
     <body>
     <div class="content">
@@ -475,14 +475,14 @@ def error_template(head_html, exception, extra):
 
     <h2>Galaxy was unable to successfully complete your request</h2>
 
-    <p>%s</p>
+    <p>{}</p>
 
     This may be an intermittent problem due to load or other unpredictable factors, reloading the page may address the problem.
 
-    %s
+    {}
     </div>
     </body>
-    </html>''' % (head_html, exception, extra)
+    </html>'''.format(head_html, exception, extra)
 
 
 def make_error_middleware(app, global_conf, **kw):

@@ -172,17 +172,17 @@ class Pdf(Image):
 
 def create_applet_tag_peek(class_name, archive, params):
     text = """
-<object classid="java:%s"
+<object classid="java:{}"
       type="application/x-java-applet"
       height="30" width="200" align="center" >
-      <param name="archive" value="%s"/>""" % (class_name, archive)
+      <param name="archive" value="{}"/>""".format(class_name, archive)
     for name, value in params.items():
         text += """<param name="{}" value="{}"/>""".format(name, value)
     text += """
 <object classid="clsid:8AD9C840-044E-11D1-B3E9-00805F499D93"
         height="30" width="200" >
-        <param name="code" value="%s" />
-        <param name="archive" value="%s"/>""" % (class_name, archive)
+        <param name="code" value="{}" />
+        <param name="archive" value="{}"/>""".format(class_name, archive)
     for name, value in params.items():
         text += """<param name="{}" value="{}"/>""".format(name, value)
     text += """<div class="errormessage">You must install and enable Java in your browser in order to access this applet.<div></object>

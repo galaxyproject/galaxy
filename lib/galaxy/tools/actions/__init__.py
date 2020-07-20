@@ -515,7 +515,7 @@ class DefaultToolAction:
                     )
                     if hdca:
                         datasets_to_persist.append(hdca)
-                    log.info("Handled collection output named %s for tool %s %s" % (name, tool.id, handle_output_timer))
+                    log.info("Handled collection output named {} for tool {} {}".format(name, tool.id, handle_output_timer))
                 else:
                     handle_output(name, output)
                     log.info("Handled output named {} for tool {} {}".format(name, tool.id, handle_output_timer))
@@ -560,7 +560,7 @@ class DefaultToolAction:
                                      current_job=job,
                                      out_data=out_data)
             datasets_to_persist = []
-        log.info("Setup for job %s complete, ready to be enqueued %s" % (job.log_str(), job_setup_timer))
+        log.info("Setup for job {} complete, ready to be enqueued {}".format(job.log_str(), job_setup_timer))
 
         # Some tools are not really executable, but jobs are still created for them ( for record keeping ).
         # Examples include tools that redirect to other applications ( epigraph ).  These special tools must
@@ -589,7 +589,7 @@ class DefaultToolAction:
                 history.add_datasets(trans.sa_session, datasets_to_persist, set_hid=set_output_hid, quota=False, flush=False)
                 job_flush_timer = ExecutionTimer()
                 trans.sa_session.flush()
-                log.info("Flushed transaction for job %s %s" % (job.log_str(), job_flush_timer))
+                log.info("Flushed transaction for job {} {}".format(job.log_str(), job_flush_timer))
 
                 # Dispatch to a job handler. enqueue() is responsible for flushing the job
                 app.job_manager.enqueue(job, tool=tool)

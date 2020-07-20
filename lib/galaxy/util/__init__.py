@@ -1045,7 +1045,7 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', strip_null=Fals
         if not isinstance(value, text_type):
             value = text_type(value, encoding, error)
     except Exception as e:
-        msg = "Value '%s' could not be coerced to Unicode: %s('%s')" % (value, type(e).__name__, e)
+        msg = "Value '{}' could not be coerced to Unicode: {}('{}')".format(value, type(e).__name__, e)
         raise Exception(msg)
     if strip_null:
         return value.replace('\0', '')

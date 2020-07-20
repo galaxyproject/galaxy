@@ -773,9 +773,9 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         workflow_list_str = " <br>Return to <a href='%s'>workflow list." % url_for(controller='workflows', action='list')
         if myexp_workflow_id:
             return trans.show_message(
-                """Workflow '%s' successfully exported to myExperiment. <br/>
-                <a href="http://%s/workflows/%s">Click here to view the workflow on myExperiment</a> %s
-                """ % (stored.name, myexp_url, myexp_workflow_id, workflow_list_str),
+                """Workflow '{}' successfully exported to myExperiment. <br/>
+                <a href="http://{}/workflows/{}">Click here to view the workflow on myExperiment</a> {}
+                """.format(stored.name, myexp_url, myexp_workflow_id, workflow_list_str),
                 use_panels=True)
         else:
             return trans.show_error_message(

@@ -289,7 +289,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         response = self._get(contents_url)
         self._assert_status_code_is(response, 200)
         fake_collection_id = '5d7db0757a2eb7ef'
-        fake_contents_url = '/api/dataset_collections/%s/contents/%s' % (hdca['id'], fake_collection_id)
+        fake_contents_url = '/api/dataset_collections/{}/contents/{}'.format(hdca['id'], fake_collection_id)
         error_response = self._get(fake_contents_url)
         assert_object_id_error(error_response)
 
