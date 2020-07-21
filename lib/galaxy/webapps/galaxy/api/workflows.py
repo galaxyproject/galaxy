@@ -813,10 +813,13 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 trans=trans,
                 workflow=workflow,
                 workflow_run_config=run_config,
-                request_params=work_request_params
+                request_params=work_request_params,
+                flush=False,
             )
-            invocation = self.encode_all_ids(trans, workflow_invocation.to_dict(), recursive=True)
-            invocations.append(invocation)
+            invocations.append(workflow_invocation)
+
+        trans.sa_session.flush()
+        invocations = [self.encode_all_ids(trans, invocation.to_dict(), recursive=True) for invocation in invocations]
 
         if is_batch:
             return invocations

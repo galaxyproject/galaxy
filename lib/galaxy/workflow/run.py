@@ -106,12 +106,12 @@ def __invoke(trans, workflow, workflow_run_config, workflow_invocation=None, pop
     return outputs, invoker.workflow_invocation
 
 
-def queue_invoke(trans, workflow, workflow_run_config, request_params={}, populate_state=True):
+def queue_invoke(trans, workflow, workflow_run_config, request_params={}, populate_state=True, flush=True):
     if populate_state:
         modules.populate_module_and_state(trans, workflow, workflow_run_config.param_map, allow_tool_state_corrections=workflow_run_config.allow_tool_state_corrections)
     workflow_invocation = workflow_run_config_to_request(trans, workflow_run_config, workflow)
     workflow_invocation.workflow = workflow
-    return trans.app.workflow_scheduling_manager.queue(workflow_invocation, request_params)
+    return trans.app.workflow_scheduling_manager.queue(workflow_invocation, request_params, flush=flush)
 
 
 class WorkflowInvoker(object):

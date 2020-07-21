@@ -379,7 +379,7 @@ class ConfiguresHandlers(object):
             _timed_flush_obj(obj)
         return handler_id
 
-    def _assign_db_tag(self, obj, method, configured, **kwargs):
+    def _assign_db_tag(self, obj, method, configured, flush=True, **kwargs):
         """Assign object to a handler by setting its ``handler`` column in the database to either the configured handler
         ID or tag, or to the default tag (or ``_default_``)
 
@@ -393,10 +393,11 @@ class ConfiguresHandlers(object):
         if handler is None:
             handler = self.default_handler_id or self.DEFAULT_HANDLER_TAG
         obj.set_handler(handler)
-        _timed_flush_obj(obj)
+        if flush:
+            _timed_flush_obj(obj)
         return handler
 
-    def _assign_uwsgi_mule_message_handler(self, obj, method, configured, message_callback=None, **kwargs):
+    def _assign_uwsgi_mule_message_handler(self, obj, method, configured, message_callback=None, flush=True, **kwargs):
         """Assign object to a handler by sending a setup message to the appropriate handler pool (farm), where a handler
         (mule) will receive the message and assign itself.
 
@@ -419,7 +420,8 @@ class ConfiguresHandlers(object):
             log.debug("(%s) No handler pool (uWSGI farm) for '%s' found", obj.log_str(), tag)
             raise HandlerAssignmentSkip()
         else:
-            _timed_flush_obj(obj)
+            if flush:
+                _timed_flush_obj(obj)
             message = message_callback()
             self.app.application_stack.send_message(pool, message)
         return pool
