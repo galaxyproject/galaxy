@@ -995,9 +995,14 @@ class Anndata(H5):
                 if 'obs' in dataset.metadata.layers_names:
                     tmp = anndata_file["obs"]
                     dataset.metadata.obs_names = [util.unicodify(x) for x in tmp["index"]]
-                    dataset.metadata.obs_layers = [util.unicodify(x) for x in tmp.dtype.names]
-                    dataset.metadata.obs_count = len(tmp.dtype)
-                    dataset.metadata.obs_size = tmp.size
+                    if hasattr(tmp, 'dtype'):
+                        dataset.metadata.obs_layers = [util.unicodify(x) for x in tmp.dtype.names]
+                        dataset.metadata.obs_count = len(tmp.dtype)
+                        dataset.metadata.obs_size = tmp.size
+                    else:
+                        dataset.metadata.obs_layers = [util.unicodify(x) for x in list(tmp.keys())]
+                        dataset.metadata.obs_count = len(dataset.metadata.obs_layers)
+                        dataset.metadata.obs_size = len(dataset.metadata.obs_names)
 
                 if 'obsm' in dataset.metadata.layers_names:
                     tmp = anndata_file["obsm"]
@@ -1016,9 +1021,14 @@ class Anndata(H5):
                     tmp = anndata_file["var"]
                     # row names are never used in preview windows
                     #dataset.metadata.var_names = tmp["index"]
-                    dataset.metadata.var_layers = [util.unicodify(x) for x in tmp.dtype.names]
-                    dataset.metadata.var_count = len(tmp.dtype)
-                    dataset.metadata.var_size = tmp.size
+                    if hasattr(tmp, 'dtype'):
+                        dataset.metadata.var_layers = [util.unicodify(x) for x in tmp.dtype.names]
+                        dataset.metadata.var_count = len(tmp.dtype)
+                        dataset.metadata.var_size = tmp.size
+                    else:
+                        dataset.metadata.var_layers = [util.unicodify(x) for x in list(tmp.keys())]
+                        dataset.metadata.var_count = len(dataset.metadata.var_layers)
+                        dataset.metadata.var_size = len(list(tmp["index"]))
 
                 if 'varm' in dataset.metadata.layers_names:
                     tmp = anndata_file["varm"]
@@ -1030,8 +1040,11 @@ class Anndata(H5):
                     dataset.metadata.uns_layers = [util.unicodify(x) for x in list(tmp.keys())]
                     dataset.metadata.uns_count = len(tmp)
 
-                # Shape we determine here due to the non-standard representation of 'X'
-                if hasattr(anndata_file['X'], 'shape'):
+                # Shape we determine here due to the non-standard representation of 'X' dimensions
+                shape = anndata_file['X'].attrs.get("shape")
+                if shape is not None:
+                    dataset.metadata.shape = tuple(shape)
+                elif hasattr(anndata_file['X'], 'shape'):
                     dataset.metadata.shape = tuple(anndata_file['X'].shape)
                 else:
                     dataset.metadata.shape = (dataset.metadata.obs_size, dataset.metadata.var_size)
