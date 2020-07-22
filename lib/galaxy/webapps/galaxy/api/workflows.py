@@ -1069,7 +1069,6 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
             if tag.user_tname not in keywords:
                 keywords.append(tag.user_tname)
 
-        metrics = {}
         tools, input_subdomain, output_subdomain, pipeline_steps, software_prerequisites = [], [], [], [], []
         for step in workflow_invocation.steps:
             if step.workflow_step.type == "tool":
@@ -1077,7 +1076,6 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
                 for wo in step.workflow_step.workflow_outputs:
                     workflow_outputs_list.add(wo.output_name)
                 for job in step.jobs:
-                    metrics[i] = summarize_job_metrics(trans, job)
                     for job_input in job.input_datasets:
                         if hasattr(job_input.dataset, "dataset_id"):
                             encoded_dataset_id = trans.security.encode_id(job_input.dataset.dataset_id)
