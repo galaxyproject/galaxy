@@ -312,7 +312,7 @@ class ExecutionTracker:
     def implicit_collection_jobs(self):
         # TODO: refactor to track this properly maybe?
         if self.implicit_collections:
-            return next(self.implicit_collections.values()).implicit_collection_jobs
+            return next(iter(self.implicit_collections.values())).implicit_collection_jobs
         else:
             return None
 
