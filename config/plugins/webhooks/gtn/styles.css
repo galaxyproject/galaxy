@@ -1,0 +1,29 @@
+.gtn-screen {
+	position: fixed;
+	z-index: 202;
+	width:100%;
+	height:100%;
+	display:none;
+}
+
+.gtn-screen-overlay {
+	position: fixed;
+	top:0;
+	left:0;
+	background: rgba(224, 224, 224, 0.75);
+	z-index: 201;
+	width:100%;
+	height:100%;
+	display:none;
+	opacity: 2;
+}
+
+.gtn-header {
+	position: fixed;
+	top: 34px;
+	height: 100%;
+	width: 100%;
+	z-index: 203;
+	display: flex;
+	justify-content: center;
+}
