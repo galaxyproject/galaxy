@@ -93,7 +93,7 @@ $(document).ready(function() {
 				<div id="gtn_screen_overlay" class="gtn-screen-overlay"></div>
 				<div id="gtn_screen" class="gtn-screen">
 					<div class="gtn-header">
-						<iframe id="gtn-embed" src="/training-material/topics/visualisation/tutorials/circos/tutorial.html?theme=rainbow" width="80%" height="80%"></iframe>
+						<iframe id="gtn-embed" src="/training-material/topics/visualisation/tutorials/circos/tutorial.html" width="80%" height="80%"></iframe>
 					</div>
 				</div>
 		   `;
