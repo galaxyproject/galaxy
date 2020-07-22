@@ -242,20 +242,18 @@ def _fetch_target(upload_config, target):
             os.mkdir(extra_files_path)
 
             def walk_extra_files(items, prefix=""):
-                print(items)
                 for item in items:
-                    print(item)
                     if "elements" in item:
                         name = item.get("name")
                         if not prefix:
                             item_prefix = name
                         else:
-                            item_prefix = prefix + "/" + name
+                            item_prefix = os.path.join(prefix, name)
                         walk_extra_files(item.get("elements"), prefix=item_prefix)
                     else:
                         name, src_path = _has_src_to_path(upload_config, item)
                         if prefix:
-                            rel_path = prefix + "/" + name
+                            rel_path = os.path.join(prefix, name)
                         else:
                             rel_path = name
 
