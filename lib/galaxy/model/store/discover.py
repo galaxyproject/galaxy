@@ -221,7 +221,7 @@ class ModelPersistenceContext(object):
         if name is None:
             name = "unnamed output"
 
-        element_datasets = {'element_identifiers': [], 'datasets': [], 'tag_lists': [], 'paths': []}
+        element_datasets = {'element_identifiers': [], 'datasets': [], 'tag_lists': [], 'paths': [], 'extra_files': []}
         for filename, discovered_file in filenames.items():
             create_dataset_timer = ExecutionTimer()
             fields_match = discovered_file.match
@@ -232,6 +232,7 @@ class ModelPersistenceContext(object):
             visible = fields_match.visible
             ext = fields_match.ext
             dbkey = fields_match.dbkey
+            extra_files = fields_match.extra_files
             # galaxy.tools.parser.output_collection_def.INPUT_DBKEY_TOKEN
             if dbkey == "__input__":
                 dbkey = self.input_dbkey
@@ -267,6 +268,7 @@ class ModelPersistenceContext(object):
                 create_dataset_timer,
             )
             element_datasets['element_identifiers'].append(element_identifiers)
+            element_datasets['extra_files'].append(extra_files)
             element_datasets['datasets'].append(dataset)
             element_datasets['tag_lists'].append(discovered_file.match.tag_list)
             element_datasets['paths'].append(filename)
@@ -284,7 +286,7 @@ class ModelPersistenceContext(object):
             self.add_output_dataset_association(association_name, dataset)
 
         self.flush()
-        self.update_object_store_with_datasets(datasets=element_datasets['datasets'], paths=element_datasets['paths'])
+        self.update_object_store_with_datasets(datasets=element_datasets['datasets'], paths=element_datasets['paths'], extra_files=element_datasets['extra_files'])
         add_datasets_timer = ExecutionTimer()
         self.add_datasets_to_history(element_datasets['datasets'])
         log.debug(
@@ -305,10 +307,14 @@ class ModelPersistenceContext(object):
             for dataset, tags in zip(datasets, tag_lists):
                 tag_session.add_tags_from_list(self.job.user, dataset, tags, flush=False)
 
-    def update_object_store_with_datasets(self, datasets, paths):
-        for dataset, path in zip(datasets, paths):
+    def update_object_store_with_datasets(self, datasets, paths, extra_files):
+        for dataset, path, extra_file in zip(datasets, paths, extra_files):
             self.object_store.update_from_file(dataset.dataset, file_name=path, create=True)
-            dataset.set_size(no_extra_files=True)
+            if extra_file:
+                persist_extra_files(self.object_store, extra_files, dataset)
+                dataset.set_size()
+            else:
+                dataset.set_size(no_extra_files=True)
 
     @abc.abstractproperty
     def tag_handler(self):
