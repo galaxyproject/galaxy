@@ -604,40 +604,41 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             return None
         if getattr(self.app.config, "normalize_remote_user_email", False):
             remote_user_email = remote_user_email.lower()
-        user = self.sa_session.query(self.app.model.User).filter(self.app.model.User.table.c.email == remote_user_email).first()
-        if user:
-            # GVK: June 29, 2009 - This is to correct the behavior of a previous bug where a private
-            # role and default user / history permissions were not set for remote users.  When a
-            # remote user authenticates, we'll look for this information, and if missing, create it.
-            if not self.app.security_agent.get_private_user_role(user):
+        from galaxy.util.filelock import FileLock
+        with FileLock('user_creation'):
+            user = self.sa_session.query(self.app.model.User).filter(self.app.model.User.table.c.email == remote_user_email).first()
+            if user:
+                # GVK: June 29, 2009 - This is to correct the behavior of a previous bug where a private
+                # role and default user / history permissions were not set for remote users.  When a
+                # remote user authenticates, we'll look for this information, and if missing, create it.
+                if not self.app.security_agent.get_private_user_role(user):
+                    self.app.security_agent.create_private_user_role(user)
+                if 'webapp' not in self.environ or self.environ['webapp'] != 'tool_shed':
+                    if not user.default_permissions:
+                        self.app.security_agent.user_set_default_permissions(user)
+                        self.app.security_agent.user_set_default_permissions(user, history=True, dataset=True)
+            elif user is None:
+                username = remote_user_email.split('@', 1)[0].lower()
+                random.seed()
+                user = self.app.model.User(email=remote_user_email)
+                user.set_random_password(length=12)
+                user.external = True
+                # Replace invalid characters in the username
+                for char in [x for x in username if x not in string.ascii_lowercase + string.digits + '-' + '.']:
+                    username = username.replace(char, '-')
+                # Find a unique username - user can change it later
+                if self.sa_session.query(self.app.model.User).filter_by(username=username).first():
+                    i = 1
+                    while self.sa_session.query(self.app.model.User).filter_by(username=(username + '-' + str(i))).first():
+                        i += 1
+                    username += '-' + str(i)
+                user.username = username
+                self.sa_session.add(user)
+                self.sa_session.flush()
                 self.app.security_agent.create_private_user_role(user)
-            if 'webapp' not in self.environ or self.environ['webapp'] != 'tool_shed':
-                if not user.default_permissions:
-                    self.app.security_agent.user_set_default_permissions(user)
+                # We set default user permissions, before we log in and set the default history permissions
+                if 'webapp' not in self.environ or self.environ['webapp'] != 'tool_shed':
                     self.app.security_agent.user_set_default_permissions(user, history=True, dataset=True)
-        elif user is None:
-            username = remote_user_email.split('@', 1)[0].lower()
-            random.seed()
-            user = self.app.model.User(email=remote_user_email)
-            user.set_random_password(length=12)
-            user.external = True
-            # Replace invalid characters in the username
-            for char in [x for x in username if x not in f"{string.ascii_lowercase + string.digits}-."]:
-                username = username.replace(char, '-')
-            # Find a unique username - user can change it later
-            if self.sa_session.query(self.app.model.User).filter_by(username=username).first():
-                i = 1
-                while self.sa_session.query(self.app.model.User).filter_by(username=f"{username}-{str(i)}").first():
-                    i += 1
-                username += f"-{str(i)}"
-            user.username = username
-            self.sa_session.add(user)
-            self.sa_session.flush()
-            self.app.security_agent.create_private_user_role(user)
-            # We set default user permissions, before we log in and set the default history permissions
-            if 'webapp' not in self.environ or self.environ['webapp'] != 'tool_shed':
-                self.app.security_agent.user_set_default_permissions(user)
-            # self.log_event( "Automatically created account '%s'", user.email )
         return user
 
     @property

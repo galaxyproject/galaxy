@@ -96,26 +96,28 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         """
         Create a new user.
         """
-        self._error_on_duplicate_email(email)
-        user = self.model_class(email=email)
-        if password:
-            user.set_password_cleartext(password)
-        else:
-            user.set_random_password()
-        user.username = username
-        if self.app.config.user_activation_on:
-            user.active = False
-        else:
-            # Activation is off, every new user is active by default.
-            user.active = True
-        self.session().add(user)
-        try:
-            self.session().flush()
-            # TODO:?? flush needed for permissions below? If not, make optional
-        except exc.IntegrityError as db_err:
-            raise exceptions.Conflict(str(db_err))
-        self.app.security_agent.create_user_role(user, self.app)
-        return user
+        from galaxy.util.filelock import FileLock
+        with FileLock('user_creation'):
+            self._error_on_duplicate_email(email)
+            user = self.model_class(email=email)
+            if password:
+                user.set_password_cleartext(password)
+            else:
+                user.set_random_password()
+            user.username = username
+            if self.app.config.user_activation_on:
+                user.active = False
+            else:
+                # Activation is off, every new user is active by default.
+                user.active = True
+            self.session().add(user)
+            try:
+                self.session().flush()
+                # TODO:?? flush needed for permissions below? If not, make optional
+            except exc.IntegrityError as db_err:
+                raise exceptions.Conflict(str(db_err))
+            self.app.security_agent.create_user_role(user, self.app)
+            return user
 
     def delete(self, user, flush=True):
         """Mark the given user deleted."""
