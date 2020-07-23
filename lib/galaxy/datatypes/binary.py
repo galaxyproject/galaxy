@@ -1047,6 +1047,47 @@ class BcfUncompressed(BaseBcf):
             return False
 
 
+class HIC(Binary):
+    """
+    Class describing an Juicer hic file
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('SRR1791297_30.hic')
+    >>> HIC().sniff(fname)
+    True
+    """
+    file_ext = "hic"
+    # edam_format = "format_3590" # Don't know what to set here or if it is necessary at all. Copied from h5(binary) class.
+
+    def __init__(self, **kwd):
+        Binary.__init__(self, **kwd)
+        self._magic = b'HIC'
+
+    def sniff(self, filename):
+        try:
+            header = open(filename, 'rb')
+            header_magic = struct.unpack('<3s', header.read(3))[0]
+            if header_magic == self._magic:
+                return True
+            return False
+        except Exception:
+            return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "HIC file for storing genomic interaction data."
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "HIC file (%s)" % (nice_size(dataset.get_size()))
+
+
 class H5(Binary):
     """
     Class describing an HDF5 file
@@ -1858,6 +1899,62 @@ class MCool(H5):
         except Exception:
             return f"MCool (HDF5) file ({nice_size(dataset.get_size())})."
 
+        
+class SCool(H5):
+    """
+    Class describing the single-cell cool format (https://github.com/mirnylab/cooler)
+    """
+
+    file_ext = "scool"
+
+    def sniff(self, filename):
+        """
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('matrix.scool')
+        >>> SCool().sniff(fname)
+        True
+        >>> fname = get_test_fname('matrix.cool')
+        >>> SCool().sniff(fname)
+        False
+        >>> fname = get_test_fname('test.mz5')
+        >>> SCool().sniff(fname)
+        False
+        >>> fname = get_test_fname('wiggle.wig')
+        >>> SCool().sniff(fname)
+        False
+        >>> fname = get_test_fname('biom2_sparse_otu_table_hdf5.biom2')
+        >>> SCool().sniff(fname)
+        False
+        """
+
+        MAGIC = "HDF5::Cooler"
+        URL = "https://github.com/mirnylab/cooler"
+
+        if super(SCool, self).sniff(filename):
+            with h5py.File(filename, 'r') as handle:
+                keys = ['chroms', 'bins', 'pixels', 'indexes']
+                for matrix in handle.keys():
+                    fmt = util.unicodify(handle[matrix].attrs.get('format'))
+                    url = util.unicodify(handle[matrix].attrs.get('format-url'))
+                    if fmt == MAGIC or url == URL:
+                        if not all(name in handle[matrix].keys() for name in keys):
+                            return False
+                return True
+        return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Single-cell Cool (HDF5) file for storing genomic interaction data."
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "SCool (HDF5) file (%s)." % (nice_size(dataset.get_size()))
 
 class H5MLM(H5):
     """
