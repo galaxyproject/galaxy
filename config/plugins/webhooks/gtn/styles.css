@@ -26,4 +26,6 @@
 	z-index: 203;
 	display: flex;
 	justify-content: center;
+	flex-direction: column;
+	align-items: center;
 }
