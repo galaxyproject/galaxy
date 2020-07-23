@@ -65,7 +65,7 @@ galaxy-sequence-utils==1.1.5
 google-api-python-client==1.7.8
 google-auth-httplib2==0.0.3
 google-auth==1.14.1
-gxformat2==0.11.1
+gxformat2==0.11.3
 h5py==2.10.0
 httplib2==0.17.3
 humanfriendly==8.2
