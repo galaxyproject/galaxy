@@ -1,0 +1,151 @@
+<tool id="interactive_tool_jupytool" tool_type="interactive" name="Interactive JupyTool and notebook" version="0.0.1">
+    <requirements>
+        <container type="docker">quay.io/bgruening/docker-jupyter-notebook:ie2</container>
+    </requirements>
+    <entry_points>
+        <entry_point name="JupyTool interactive tool" requires_domain="True">
+            <port>8888</port>
+            <url>ipython/lab</url>
+        </entry_point>
+    </entry_points>
+    <environment_variables>
+        <environment_variable name="HISTORY_ID">$__history_id__</environment_variable>
+        <environment_variable name="REMOTE_HOST">$__galaxy_url__</environment_variable>
+        <environment_variable name="GALAXY_WEB_PORT">8080</environment_variable>
+        <environment_variable name="GALAXY_URL">$__galaxy_url__</environment_variable>
+        <environment_variable name="API_KEY" inject="api_key" />
+    </environment_variables>
+    <configfiles>
+        <inputs name="inputs" filename="galaxy_inputs.json" /> <!-- data_style="paths" /> data_collection doesnt support paths-->
+    </configfiles>
+    <command detect_errors="aggressive"><![CDATA[
+        #import re
+        export GALAXY_WORKING_DIR=`pwd` &&
+        mkdir -p ./jupyter/outputs/ &&
+        mkdir -p ./jupyter/data &&
+        mkdir -p ./jupyter/inputs &&
+        cp 'galaxy_inputs.json' './jupyter/inputs/galaxy_inputs.json' &&
+
+        ##set $cleaned_name = re.sub('[^\w\-\.]', '_', str($input.element_identifier))
+        ##ln -sf '$input' './jupyter/data/${cleaned_name}' &&
+        #for $user_input in $user_inputs:
+            #if str($user_input.input_type.input_type_selector) == "dataset":
+                ln -sf '${user_input.input_type.input_value}' './jupyter/data/${user_input.input_name}' &&
+            #elif str($user_input.input_type.input_type_selector) == "dataset_multiple":
+                #for $i, $inp in enumerate($user_input.input_type.input_value):
+                    ln -sf '${inp}' './jupyter/data/${i}_${user_input.input_name}' &&
+                #end for
+            #elif str($user_input.input_type.input_type_selector) == "dataset_collection":
+                mkdir -p ./jupyter/data/${user_input.input_name} &&
+                #for $inp in $user_input.input_type.input_value:
+                    #set $cleaned_name = re.sub('[^\w\-\.]', '_', str($inp.element_identifier))
+                    ln -sf '${inp}' './jupyter/data/${user_input.input_name}/${cleaned_name}' &&
+                #end for
+            #end if
+        #end for
+
+        ## change into the directory where the notebooks are located
+        cd ./jupyter/ &&
+        export PATH=/home/jovyan/.local/bin:\$PATH &&
+
+        #if $mode.mode_select == 'scratch':
+            ## copy default notebook
+            cp '$__tool_directory__/default_notebook.ipynb' ./ipython_galaxy_notebook.ipynb &&
+            jupyter trust ./ipython_galaxy_notebook.ipynb &&
+            jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True &&
+            cp ./ipython_galaxy_notebook.ipynb '$jupyter_notebook'
+
+        #else:
+            #set $cleaned_name = re.sub('[^\w\-\.]', '_', str($mode.ipynb.element_identifier))
+            cp '$mode.ipynb' ./${cleaned_name}.ipynb &&
+            jupyter trust ./${cleaned_name}.ipynb &&
+
+            #if $mode.run_it:
+                jupyter nbconvert --to notebook --execute --output ./ipython_galaxy_notebook.ipynb --allow-errors  ./*.ipynb &&
+            #else:
+                jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True &&
+            #end if
+            cp ./ipython_galaxy_notebook.ipynb '$jupyter_notebook'
+        #end if
+    ]]>
+    </command>
+    <inputs>
+        <conditional name="mode">
+            <param name="mode_select" type="select" label="Do you already have a notebook?" help="If not, no problem we will provide you with a default one.">
+                <option value="scratch">Start with a fresh notebook</option>
+                <option value="previous">Load a previous notebook</option>
+            </param>
+            <when value="scratch"/>
+            <when value="previous">
+                <param name="ipynb" type="data" format="ipynb" label="IPython Notebook"/>
+                <param name="run_it" type="boolean" truevalue="true" falsevalue="false" label="Execute notebook and return a new one."
+                    help="This option is useful in workflows when you just want to execute a notebook and not dive into the webfrontend."/>
+            </when>
+        </conditional>
+        <repeat name="user_inputs" title="User inputs">
+            <param name="input_name" type="text" value="" optional="False"/>
+            <conditional name="input_type">
+                <param name="input_type_selector" type="select" label="Choose the input type">
+                    <option value="dataset" selected="true">Dataset</option>
+                    <option value="dataset_multiple">Dataset Multiples</option>
+                    <option value="dataset_collection">Dataset Collection</option>
+                    <option value="text">Text</option>
+                    <option value="integer">Integer</option>
+                    <option value="float">Floating Point</option>
+                    <option value="boolean">Boolean</option>
+                </param>
+                <when value="dataset">
+                    <param name="input_value" type="data" format="data" label="Select value" multiple="false" optional="true"/>
+                </when>
+                <when value="dataset_multiple">
+                    <param name="input_value" type="data" format="data" label="Select value" multiple="true" optional="true"/>
+                </when>
+                <when value="dataset_collection">
+                    <param name="input_value" type="data_collection" format="data" label="Select value" optional="true"/>
+                </when>
+                <when value="text">
+                    <param name="input_value" type="text" value="" label="Select value" optional="true"/>
+                </when>
+                <when value="integer">
+                    <param name="input_value" type="integer" value="" label="Select value" optional="true"/>
+                </when>
+                <when value="float">
+                    <param name="input_value" type="float" value="" label="Select value" optional="true"/>
+                </when>
+                <when value="boolean">
+                    <param name="input_value" type="boolean" truevalue="true" falsevalue="false" label="Select value" />
+                </when>
+            </conditional>
+        </repeat>
+    </inputs>
+    <outputs>
+        <data name="jupyter_notebook" format="ipynb" label="Executed JupyTool Notebook"></data>
+        <data name="output_dataset" format="data" label="JupyTool dataset"></data>
+        <collection name="output_collection" type="list" label="JupyTool collection" hidden="False">
+            <discover_datasets pattern="__designation_and_ext__" directory="jupyter/outputs/" visible="true"/>
+        </collection>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="mode" value="previous" />
+            <param name="ipynb" value="test.ipynb" />
+            <param name="run_it" value="true" />
+            <output name="jupyter_notebook" file="test.ipynb" ftype="ipynb"/>
+        </test>
+    </tests>
+    <help>
+    Welcome to the JupyTool! Here you can create, run, and share custom Galaxy tools based upon Jupyter Notebooks.
+
+    The Jupyter Notebook is an open-source web application that allows you to create and share documents that contain live code, equations,
+    visualizations and narrative text. Uses include: data cleaning and transformation, numerical simulation, statistical modeling, data visualization,
+    machine learning, and much more.
+
+    Galaxy offers you to use Jupyter Notebooks directly in Galaxy accessing and interacting with Galaxy datasets as you like. A very common use-case is to
+    do the heavy lifting and data reduction steps in Galaxy and the plotting and more `interactive` part on smaller datasets in Jupyter.
+
+    You can start with a new Jupyter notebook from scratch or load an already existing one, e.g. from your collegue and execute it on your dataset.
+    If you have a defined input dataset you can even execute a Jupyter notebook in a workflow, given that the notebook is writing the output back to the history.
+
+    You can import data into the notebook via a predefined `get()` function and write results back to Galaxy with a `put()` function.
+    </help>
+</tool>
