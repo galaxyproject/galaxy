@@ -68,10 +68,9 @@ $(document).ready(function () {
     self.showOverlay = showOverlay;
     self.removeOverlay = removeOverlay;
 
-    // Test for the precense of /training-material/. If that is available we
+    // Test for the presence of /training-material/. If that is available we
     // can opt in the fancy click-to-run features. Otherwise we fallback to
     // displaying the real GTN.
-
     var jqxhr = $.get("/training-material/", function () {
         // proxy is available
         addIframe(true);
