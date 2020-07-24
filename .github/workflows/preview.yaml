@@ -1,0 +1,33 @@
+on:
+  repository_dispatch:
+    types: [preview-command]
+
+jobs:
+  package:
+    name: Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: save kubeconfig
+        shell: bash
+        run: echo "${{ secrets.KUBECONFIG}}" > ~/.kubeconfig
+
+      - name: deploy
+        id: deploy
+        run: sh .github/scripts/generate_config.sh
+        container:
+          image: alpine/helm:latest
+          env:
+            PR_NUMBER: ${{ github.event.client_payload.github.payload.issue.number }}
+
+      - name: Create comment
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
+          issue-number: ${{ github.event.client_payload.github.payload.issue.number }}
+          body: | 
+            ```
+            Done!
+            ```
