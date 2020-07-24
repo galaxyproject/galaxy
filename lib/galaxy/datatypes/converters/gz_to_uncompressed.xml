@@ -17,4 +17,10 @@
   </outputs>
   <help>
   </help>
+  <tests>
+    <test>
+      <param name="input1" ftype="vcf_bgzip" value="test.vcf.gz"/>
+      <output name="output1" file="test.vcf"/>
+    </test>
+  </tests>
 </tool>
