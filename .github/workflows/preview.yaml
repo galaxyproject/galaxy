@@ -3,31 +3,34 @@ on:
     types: [preview-command]
 
 jobs:
-  package:
-    name: Deploy
+  preview:
+    container:
+      image: dtzar/helm-kubectl:latest
+      env:
+        PR_NUMBER: ${{ github.event.client_payload.github.payload.issue.number }}
+    name: Preview
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
 
       - name: save kubeconfig
         shell: bash
-        run: echo "${{ secrets.KUBECONFIG}}" > ~/.kubeconfig
-
+        run: mkdir -p ~/.kube && echo "${{ secrets.KUBECONFIG}}" > ~/.kube/config
+      - name: get changed files
+        uses: lots0logs/gh-action-get-changed-files@2.1.4
+        with:
+          token: GITHUB_TOKEN
       - name: deploy
         id: deploy
         run: sh .github/scripts/generate_config.sh
-        container:
-          image: alpine/helm:latest
-          env:
-            PR_NUMBER: ${{ github.event.client_payload.github.payload.issue.number }}
-
+        shell: bash
       - name: Create comment
         uses: peter-evans/create-or-update-comment@v1
         with:
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
           repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
           issue-number: ${{ github.event.client_payload.github.payload.issue.number }}
-          body: | 
+          body: |
             ```
             Done!
             ```
