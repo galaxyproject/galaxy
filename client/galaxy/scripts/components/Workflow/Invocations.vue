@@ -23,6 +23,9 @@
             >
                 <template v-slot:row-details="row">
                     <b-card>
+                        <small class="float-right">
+                            <b>Invocation: {{ row.item.id }}</b>
+                        </small>
                         <workflow-invocation-state :invocation-id="row.item.id" />
                     </b-card>
                 </template>
@@ -44,10 +47,13 @@
                 <template v-slot:cell(create_time)="data">
                     <UtcDate :date="data.value" mode="elapsed" />
                 </template>
+                <template v-slot:cell(update_time)="data">
+                    <UtcDate :date="data.value" mode="elapsed" />
+                </template>
                 <template v-slot:cell(execute)="data">
                     <b-button
                         v-b-tooltip.hover.bottom
-                        title="Rerun Workflow"
+                        title="Run Workflow"
                         class="workflow-run btn-sm btn-primary fa fa-play"
                         @click.stop="executeWorkflow(getWorkflowByInstanceId(data.item.workflow_id).id)"
                     />
@@ -84,6 +90,7 @@ export default {
             { key: "workflow_id", label: "Workflow" },
             { key: "history_id", label: "History" },
             { key: "create_time", label: "Invoked" },
+            { key: "update_time", label: "Updated" },
             { key: "state" },
             { key: "execute", label: "" },
         ];
@@ -110,6 +117,7 @@ export default {
                 return {
                     id: invocation["id"],
                     create_time: invocation["create_time"],
+                    update_time: invocation["update_time"],
                     workflow_id: invocation["workflow_id"],
                     history_id: invocation["history_id"],
                     state: invocation["state"],
