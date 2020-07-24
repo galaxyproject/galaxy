@@ -24,6 +24,7 @@ from galaxy.managers import (
     history_contents,
     workflows
 )
+
 from galaxy.managers.jobs import fetch_job_states, invocation_job_source_iter, summarize_job_metrics
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
@@ -1070,7 +1071,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             if tag.user_tname not in keywords:
                 keywords.append(tag.user_tname)
 
-        metrics = {}
         tools, input_subdomain, output_subdomain, pipeline_steps, software_prerequisites = [], [], [], [], []
         for i, step in enumerate(workflow_invocation.steps):
             if step.workflow_step.type == 'tool':
@@ -1078,7 +1078,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 for wo in step.workflow_step.workflow_outputs:
                     workflow_outputs_list.append(wo.output_name)
                 for job in step.jobs:
-                    metrics[i] = summarize_job_metrics(trans, job)
+                    
                     for job_input in job.input_datasets:
                         if hasattr(job_input.dataset, 'dataset_id'):
                             encoded_dataset_id = trans.security.encode_id(job_input.dataset.dataset_id)
@@ -1145,7 +1145,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 }
                 input_subdomain.append(input_obj)
 
-
             if step.workflow_step.type == 'data_collection_input':
                 encoded_dataset_id = trans.security.encode_id(step.workflow_step.id)
                 input_obj = {
@@ -1185,16 +1184,12 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             'environment_variables': kwd.get('environment_variables', {})
         }
 
-        aws_estimate = {}
-
         extension = [
             {
                 'extension_schema': 'https://raw.githubusercontent.com/biocompute-objects/extension_domain/6d2cd8482e6075746984662edcf78b57d3d38065/galaxy/galaxy_extension.json',
                 'galaxy_extension': {
                     'galaxy_url': url_for('/', qualified=True),
-                    'galaxy_version': VERSION,
-                    'aws_estimate': aws_estimate,
-                    'job_metrics': metrics
+                    'galaxy_version': VERSION
                 }
             }
         ]
@@ -1271,6 +1266,46 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             decoded_invocation_step_id
         )
         return self.__encode_invocation_step(trans, invocation_step)
+
+    def _generate_aws_estimate(self, trans, invocation_id, **kwd):
+        """
+        build AWS cloud estimate
+        """
+        decoded_workflow_invocation_id = self.decode_id(invocation_id)
+        workflow_invocation = self.workflow_manager.get_invocation(trans, decoded_workflow_invocation_id)
+        history = workflow_invocation.history
+
+        aws_dict, metrics, ds_metrics = {}, {}, {}
+        h_contents = self.history_contents_manager.contained(history)
+        for h in h_contents:
+            ds_metrics[h.dataset.id] = {
+                'file_size': int(h.dataset.file_size),
+                'total_size': int(h.dataset.total_size),
+                'uuid': str(h.dataset.uuid)
+            }
+        for i, step in enumerate(workflow_invocation.steps):
+            if step.workflow_step.type == 'tool':
+                for job in step.jobs:
+                    metrics[i] = summarize_job_metrics(trans, job)
+                    for job_input in job.input_datasets:
+                        if hasattr(job_input.dataset, 'dataset_id'):
+                            ds_metrics[job_input.dataset.id].update({'filename': job_input.dataset.name})
+                            metrics[i].append(ds_metrics[job_input.dataset.id])
+                    for job_output in job.output_datasets:
+                        if hasattr(job_output.dataset, 'dataset_id'):
+                            ds_metrics[job_output.dataset.id].update({'filename': job_output.dataset.name})
+                            metrics[i].append(ds_metrics[job_output.dataset.id])
+
+        aws_dict = metrics
+        return aws_dict
+
+    @expose_api
+    def export_aws_estimate(self, trans, invocation_id, **kwd):
+        '''
+        GET /api/invocations/{invocations_id}/aws_estimate
+        Return a dictionary with an AWS estimate for a workflow invocation.
+        '''
+        return self._generate_aws_estimate(trans, invocation_id, **kwd)
 
     @expose_api_anonymous_and_sessionless
     def invocation_step_jobs_summary(self, trans, invocation_id, **kwd):
