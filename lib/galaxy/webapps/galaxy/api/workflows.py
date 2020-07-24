@@ -27,6 +27,7 @@ from galaxy import (
     model,
     util,
 )
+from galaxy.managers import history_contents
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.jobs import (
     fetch_job_states,
@@ -74,6 +75,7 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
     def __init__(self, app: StructuredApp):
         super().__init__(app)
         self.history_manager = app.history_manager
+        self.history_contents_manager = history_contents.HistoryContentsManager(app)
         self.workflow_manager = app.workflow_manager
         self.workflow_contents_manager = app.workflow_contents_manager
         self.tool_recommendations = recommendations.ToolRecommendations()
@@ -1308,6 +1310,46 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         decoded_invocation_step_id = self.decode_id(step_id)
         invocation_step = self.workflow_manager.get_invocation_step(trans, decoded_invocation_step_id)
         return self.__encode_invocation_step(trans, invocation_step)
+
+    def _generate_aws_estimate(self, trans, invocation_id, **kwd):
+        """
+        build AWS cloud estimate
+        """
+        decoded_workflow_invocation_id = self.decode_id(invocation_id)
+        workflow_invocation = self.workflow_manager.get_invocation(trans, decoded_workflow_invocation_id)
+        history = workflow_invocation.history
+
+        aws_dict, metrics, ds_metrics = {}, {}, {}
+        h_contents = self.history_contents_manager.contained(history)
+        for h in h_contents:
+            ds_metrics[h.dataset.id] = {
+                "file_size": int(h.dataset.file_size),
+                "total_size": int(h.dataset.total_size),
+                "uuid": str(h.dataset.uuid),
+            }
+        for i, step in enumerate(workflow_invocation.steps):
+            if step.workflow_step.type == "tool":
+                for job in step.jobs:
+                    metrics[i] = summarize_job_metrics(trans, job)
+                    for job_input in job.input_datasets:
+                        if hasattr(job_input.dataset, "dataset_id"):
+                            ds_metrics[job_input.dataset.id].update({"filename": job_input.dataset.name})
+                            metrics[i].append(ds_metrics[job_input.dataset.id])
+                    for job_output in job.output_datasets:
+                        if hasattr(job_output.dataset, "dataset_id"):
+                            ds_metrics[job_output.dataset.id].update({"filename": job_output.dataset.name})
+                            metrics[i].append(ds_metrics[job_output.dataset.id])
+
+        aws_dict = metrics
+        return aws_dict
+
+    @expose_api
+    def export_aws_estimate(self, trans, invocation_id, **kwd):
+        """
+        GET /api/invocations/{invocations_id}/aws_estimate
+        Return a dictionary with an AWS estimate for a workflow invocation.
+        """
+        return self._generate_aws_estimate(trans, invocation_id, **kwd)
 
     @expose_api_anonymous_and_sessionless
     def invocation_step_jobs_summary(self, trans: GalaxyWebTransaction, invocation_id, **kwd):
