@@ -97,7 +97,7 @@ setup(
     include_package_data=True,
     install_requires=requirements,
     extras_require={
-        'condatesting': ['jinja2'],
+        'mulled': ['conda', 'cytoolz', 'jinja2', 'Whoosh'],
     },
     license="AFL",
     zip_safe=False,
