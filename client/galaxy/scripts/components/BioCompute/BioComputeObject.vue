@@ -3,26 +3,32 @@
         <h2 class="mb-3">
             <span id="invocations-title">BioCompute Object for Invocation {{ invocationId }}</span>
         </h2>
-        <bco-header :objectid="object_id" :etag="etag" :specversion="spec_version" />
-        <provenance-domain :item="provenance_domain" />
+        <bco-header :objectid="bco.object_id" :etag="bco.etag" :specversion="bco.spec_version" />
+        <provenance :item="bco.provenance_domain" :invokeId=invocationId />
+        <usability-domain :usability="bco.usability_domain" />
     </div>
 </template>
 
 <script>
 
 import axios from "axios";
-import {
-    getAppRoot
-} from "onload/loadConfig";
+import { getAppRoot } from "onload/loadConfig";
 import BcoHeader from "components/BioCompute/BcoHeader.vue";
+<<<<<<< HEAD
 import ProvenanceDomain from "components/BioCompute/Provenance.vue";
 import { mapActions } from "vuex";
+=======
+import Provenance from "components/BioCompute/Provenance.vue";
+import Usability from "components/BioCompute/Usability.vue";
+
+>>>>>>> BioComputeDev
 
 export default {
     name: "BCOviewer",
     components: {
         BcoHeader,
-        ProvenanceDomain
+        Usability,
+        Provenance
     },
     props: {
         invocationId: {
@@ -33,21 +39,13 @@ export default {
     data() {
         return {
             bco: {},
-            object_id: {},
-            spec_version: {},
-            etag: {},
-            provenance_domain: {}
         };
     },
-    computed: {
-        // ...mapGetters(["getBioComputeById"]),
-        // biocomputeState: function () {
-        //     const biocompute = this.getBioComputeById(this.invocationId);
-        //     return state.biocompute
-        // },
-    },
     methods: {
+<<<<<<< HEAD
         ...mapActions(["cloneBioComputeInfo"]),
+=======
+>>>>>>> BioComputeDev
         onScroll({
             target: {
                 scrollTop,
@@ -72,6 +70,7 @@ export default {
         var context_helper = this;
 
         this.$nextTick(function () {
+<<<<<<< HEAD
             const invocationId = this.invocationId;
 
             // Immediately commit the original BCO to the store.
@@ -82,6 +81,30 @@ export default {
             // the originally pulled BCO.  In this way we can compare changes between
             // the original and the edit object.
             //context_helper.fetchIBiocomputeForId(invocationId + '-USER');
+=======
+
+            // Define the invocation ID.
+            const invocationId = context_helper.invocationId;
+
+            // Fetch the BCO.
+            const url = getAppRoot() + `api/invocations/${invocationId}/export_bco`;
+            axios.get(url).then((response) => {
+                
+                // Set the BCO.
+                context_helper.bco = response.data;
+
+                // Set the session information.
+
+                // Original values.
+                sessionStorage.setItem(invocationId, JSON.stringify(response.data));
+
+                // User-modifiable values.
+                sessionStorage.setItem(invocationId + '-USER', JSON.stringify(response.data));
+
+            }).catch((e) => {
+                console.error(e);
+            });
+>>>>>>> BioComputeDev
 
             // Create a context handler.
             //var this_helper = this;
@@ -94,9 +117,16 @@ export default {
                 // Vue-wide object.
                 //this_helper[key] = response.data[key]
             //}
+<<<<<<< HEAD
 
             //console.log(this);
             //console.log(this.embargo.start_time);
+=======
+            //console.log(this);
+            //console.log(this.embargo.start_time);
+
+            
+>>>>>>> BioComputeDev
       })
     }
 };

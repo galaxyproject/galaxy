@@ -1,8 +1,8 @@
 <template>
     <div id="usability">
-        <div v-show="bco">
-            <h2 class="domain">Usability Domain</h2>
-            <table v-for="object in bco.usability_domain" :key="object">
+        <div v-show="usability">
+            <h3 class="domain">Usability Domain</h3>
+            <table v-for="object in usability" :key="object">
                 <tr>
                     {{
                         object
@@ -17,6 +17,8 @@
 <script>
 export default {
     name: "usability",
-    props: ["bco"],
+    props: {
+        usability: Array
+    },
 };
 </script>
