@@ -10,6 +10,7 @@ from galaxy_test.base.populators import (
     DatasetPopulator,
     skip_if_site_down,
     skip_without_datatype,
+    stage_inputs,
     uses_test_history,
 )
 from ._framework import ApiTestCase
@@ -209,20 +210,83 @@ class ToolsUploadTestCase(ApiTestCase):
             assert roadmaps_content.strip() == "roadmaps content", roadmaps_content
 
     @skip_without_datatype("velvet")
-    def test_composite_datatype_space_to_tab(self):
+    @uses_test_history(require_new=False)
+    def test_composite_datatype_fetch(self, history_id):
+        destination = {"type": "hdas"}
+        targets = [{
+            "destination": destination,
+            "items": [{
+                "src": "composite",
+                "ext": "velvet",
+                "composite": {
+                    "items": [
+                        {"src": "pasted", "paste_content": "sequences content"},
+                        {"src": "pasted", "paste_content": "roadmaps content"},
+                        {"src": "pasted", "paste_content": "log content"},
+                    ]
+                },
+            }],
+        }]
+        payload = {
+            "history_id": history_id,
+            "targets": json.dumps(targets),
+        }
+        fetch_response = self.dataset_populator.fetch(payload)
+        self._assert_status_code_is(fetch_response, 200)
+        outputs = fetch_response.json()["outputs"]
+        assert len(outputs) == 1
+        output = outputs[0]
+
+        roadmaps_content = self._get_roadmaps_content(history_id, output)
+        assert roadmaps_content.strip() == "roadmaps content", roadmaps_content
+
+    @skip_without_datatype("velvet")
+    @uses_test_history(require_new=False)
+    def test_composite_datatype_stage_fetch(self, history_id):
+        job = {
+            "input1": {
+                "class": "File",
+                "format": "velvet",
+                "composite_data": [
+                    "test-data/simple_line.txt",
+                    "test-data/simple_line_alternative.txt",
+                    "test-data/simple_line_x2.txt",
+                ]
+            }
+        }
+        inputs, datsets = stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False)
+
+    @skip_without_datatype("velvet")
+    @uses_test_history(require_new=False)
+    def test_composite_datatype_stage_upload1(self, history_id):
+        job = {
+            "input1": {
+                "class": "File",
+                "format": "velvet",
+                "composite_data": [
+                    "test-data/simple_line.txt",
+                    "test-data/simple_line_alternative.txt",
+                    "test-data/simple_line_x2.txt",
+                ]
+            }
+        }
+        inputs, datsets = stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False, use_fetch_api=False)
+
+    @skip_without_datatype("velvet")
+    @uses_test_history(require_new=False)
+    def test_composite_datatype_space_to_tab(self, history_id):
         # Like previous test but set one upload with space_to_tab to True to
         # verify that works.
-        with self.dataset_populator.test_history() as history_id:
-            dataset = self._velvet_upload(history_id, extra_inputs={
-                "files_1|url_paste": "roadmaps content",
-                "files_1|type": "upload_dataset",
-                "files_1|space_to_tab": "Yes",
-                "files_2|url_paste": "log content",
-                "files_2|type": "upload_dataset",
-            })
+        dataset = self._velvet_upload(history_id, extra_inputs={
+            "files_1|url_paste": "roadmaps content",
+            "files_1|type": "upload_dataset",
+            "files_1|space_to_tab": "Yes",
+            "files_2|url_paste": "log content",
+            "files_2|type": "upload_dataset",
+        })
 
-            roadmaps_content = self._get_roadmaps_content(history_id, dataset)
-            assert roadmaps_content.strip() == "roadmaps\tcontent", roadmaps_content
+        roadmaps_content = self._get_roadmaps_content(history_id, dataset)
+        assert roadmaps_content.strip() == "roadmaps\tcontent", roadmaps_content
 
     @skip_without_datatype("velvet")
     def test_composite_datatype_posix_lines(self):
