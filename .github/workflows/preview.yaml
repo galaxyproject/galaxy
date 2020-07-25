@@ -25,7 +25,7 @@ jobs:
         run: mkdir -p ~/.kube && echo "${{ secrets.KUBECONFIG}}" > ~/.kube/config
       - name: deploy
         id: deploy
-        run: sh .github/scripts/generate_config.sh
+        run: sh .github/scripts/deploy_preview.sh
         shell: bash
       - name: Create comment
         uses: peter-evans/create-or-update-comment@v1
