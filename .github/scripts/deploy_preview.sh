@@ -9,7 +9,12 @@ git diff --name-status "$PR_BASE" "$PR_HEAD"
 # Abort if anything but modified and added
 abort=$(git diff --name-status "$PR_BASE" "$PR_HEAD" | cut -c1 | grep -E "C|D|R|T|U|X|B")
 
+echo $abort
+
+echo "Starting"
+
 if [[ -n $abort ]]; then
+    echo "Starting making list"
     git diff --name-only "$PR_BASE" "$PR_HEAD" > filelist
 
     while IFS= read -r line; do echo -n $line | base64; done < filelist > encfilelist
