@@ -4,10 +4,12 @@ set -e
 
 helm repo add gxy https://raw.githubusercontent.com/cloudve/helm-charts/master/
 
+git diff --name-status "$PR_BASE" "$PR_HEAD"
+
 # Abort if anything but modified and added
 abort=$(git diff --name-status "$PR_BASE" "$PR_HEAD" | cut -c1 | grep -E "C|D|R|T|U|X|B")
 
-if [[ ! -n $abort ]]; then
+if [[ -n $abort ]]; then
     git diff --name-only "$PR_BASE" "$PR_HEAD" > filelist
 
     while IFS= read -r line; do echo -n $line | base64; done < filelist > encfilelist
@@ -16,6 +18,7 @@ if [[ ! -n $abort ]]; then
     paste -d "\0\"=" start encfilelist /dev/null filelist > setfilelist
     PROJMAN_SET=$(paste -s -d ' ' setfilelist)
 
+    echo helm upgrade --install galaxy-preview-injection-$PR_NUM gxy/projman --set projectName="galaxy-$PR_NUM" $PROJMAN_SET
     helm upgrade --install galaxy-preview-injection-$PR_NUM gxy/projman --set projectName="galaxy-$PR_NUM" $PROJMAN_SET
 
     cat <<EOF > vols.yaml
@@ -35,6 +38,7 @@ extraVolumeMounts:
     mountPath: "/galaxy/server"
 EOF
 
+    echo helm upgrade --install galaxy-preview-$PR_NUM gxy/galaxy -f values.yaml -f vols.yaml
     helm upgrade --install galaxy-preview-$PR_NUM gxy/galaxy -f values.yaml -f vols.yaml
 
 fi
