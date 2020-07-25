@@ -7,7 +7,7 @@ jobs:
     container:
       image: dtzar/helm-kubectl:latest
       env:
-        PR_NUMBER: ${{ github.event.client_payload.github.payload.issue.number }}
+        PR_NUM: ${{ github.event.client_payload.github.payload.issue.number }}
         PR_HEAD: ${{ github.event.client_payload.pull_request.head.sha }}
         PR_BASE: ${{ github.event.client_payload.pull_request.base.sha }}
     name: Preview
