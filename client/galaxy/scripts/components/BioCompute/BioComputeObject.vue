@@ -14,14 +14,9 @@
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 import BcoHeader from "components/BioCompute/BcoHeader.vue";
-<<<<<<< HEAD
-import ProvenanceDomain from "components/BioCompute/Provenance.vue";
-import { mapActions } from "vuex";
-=======
 import Provenance from "components/BioCompute/Provenance.vue";
 import Usability from "components/BioCompute/Usability.vue";
 
->>>>>>> BioComputeDev
 
 export default {
     name: "BCOviewer",
@@ -42,10 +37,6 @@ export default {
         };
     },
     methods: {
-<<<<<<< HEAD
-        ...mapActions(["cloneBioComputeInfo"]),
-=======
->>>>>>> BioComputeDev
         onScroll({
             target: {
                 scrollTop,
@@ -70,18 +61,6 @@ export default {
         var context_helper = this;
 
         this.$nextTick(function () {
-<<<<<<< HEAD
-            const invocationId = this.invocationId;
-
-            // Immediately commit the original BCO to the store.
-            context_helper.cloneBioComputeInfo(invocationId);
-
-            // Save the "User" version of the BCO, meaning the version that can be edited
-            // by the user by changing inputs on the page but which does NOT affect
-            // the originally pulled BCO.  In this way we can compare changes between
-            // the original and the edit object.
-            //context_helper.fetchIBiocomputeForId(invocationId + '-USER');
-=======
 
             // Define the invocation ID.
             const invocationId = context_helper.invocationId;
@@ -104,7 +83,6 @@ export default {
             }).catch((e) => {
                 console.error(e);
             });
->>>>>>> BioComputeDev
 
             // Create a context handler.
             //var this_helper = this;
@@ -117,16 +95,10 @@ export default {
                 // Vue-wide object.
                 //this_helper[key] = response.data[key]
             //}
-<<<<<<< HEAD
-
-            //console.log(this);
-            //console.log(this.embargo.start_time);
-=======
             //console.log(this);
             //console.log(this.embargo.start_time);
 
             
->>>>>>> BioComputeDev
       })
     }
 };
