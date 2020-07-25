@@ -1,6 +1,4 @@
 import _ from "underscore";
-import jQuery from "jquery";
-import Backbone from "backbone";
 import HDCA from "mvc/history/hdca-model";
 import STATES from "mvc/dataset/states";
 import BASE_MVC from "mvc/base-mvc";
