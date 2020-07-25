@@ -18,6 +18,7 @@ from galaxy.model.store.discover import (
     ModelPersistenceContext,
     persist_elements_to_folder,
     persist_elements_to_hdca,
+    persist_extra_files,
     persist_hdas,
     RegexCollectedDatasetMatch,
     SessionlessModelPersistenceContext,
@@ -420,19 +421,7 @@ def collect_primary_datasets(job_context, output, input_ext):
                 extra_files_path = new_primary_datasets_attributes.get('extra_files', None)
                 if extra_files_path:
                     extra_files_path_joined = os.path.join(job_working_directory, extra_files_path)
-                    primary_data.dataset.create_extra_files_path()
-                    for root, dirs, files in os.walk(extra_files_path_joined):
-                        extra_dir = os.path.join(primary_data.extra_files_path, root.replace(extra_files_path_joined, '', 1).lstrip(os.path.sep))
-                        extra_dir = os.path.normpath(extra_dir)
-                        for f in files:
-                            job_context.object_store.update_from_file(
-                                primary_data.dataset,
-                                extra_dir=extra_dir,
-                                alt_name=f,
-                                file_name=os.path.join(root, f),
-                                create=True,
-                                preserve_symlinks=True
-                            )
+                    persist_extra_files(job_context.object_store, extra_files_path_joined, primary_data)
             job_context.add_datasets_to_history([primary_data], for_output_dataset=outdata)
             # Add dataset to return dict
             primary_datasets[name][designation] = primary_data

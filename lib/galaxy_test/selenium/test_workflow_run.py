@@ -153,7 +153,7 @@ steps:
         self.workflow_run_with_name(name)
         self.sleep_for(self.wait_types.UX_TRANSITION)
         # Check that this tool form contains a warning about different versions.
-        self.assert_warning_message(contains="different versions")
+        self.assert_message(self.components.workflow_run.warning, contains="different versions")
         self.screenshot("workflow_run_tool_upgrade")
 
     @selenium_test

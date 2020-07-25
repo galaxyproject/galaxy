@@ -186,6 +186,12 @@ class NavigatesGalaxy(HasDriver):
         else:
             return response.json()
 
+    def api_post(self, endpoint, data=None):
+        data = data or {}
+        full_url = self.build_url("api/" + endpoint, for_selenium=False)
+        response = requests.post(full_url, data=data, cookies=self.selenium_to_requests_cookies())
+        return response.json()
+
     def api_delete(self, endpoint, raw=False):
         full_url = self.build_url("api/" + endpoint, for_selenium=False)
         response = requests.delete(full_url, cookies=self.selenium_to_requests_cookies())
@@ -369,9 +375,16 @@ class NavigatesGalaxy(HasDriver):
     def get_logged_in_user(self):
         return self.api_get("users/current")
 
-    def get_api_key(self):
+    def get_api_key(self, force=False):
+        # If force is false, use the form inputs API and allow the key to be absent.
+        if not force:
+            return self.api_get("users/%s/api_key/inputs" % self.get_user_id())["inputs"][0]["value"]
+        else:
+            return self.api_post("users/%s/api_key" % self.get_user_id())
+
+    def get_user_id(self):
         user = self.get_logged_in_user()
-        return self.api_get("users/%s/api_key/inputs" % user["id"])["inputs"][0]["value"]
+        return user["id"]
 
     def is_logged_in(self):
         return "email" in self.get_logged_in_user()
@@ -1414,13 +1427,15 @@ class NavigatesGalaxy(HasDriver):
         assert text == expected, "Tooltip text [%s] was not expected text [%s]." % (text, expected)
 
     def assert_error_message(self, contains=None):
-        return self._assert_message("error", contains=contains)
+        element = self.components._.messages["error"]
+        return self.assert_message(element, contains=contains)
 
     def assert_warning_message(self, contains=None):
-        return self._assert_message("warning", contains=contains)
+        element = self.components._.messages["warning"]
+        return self.assert_message(element, contains=contains)
 
-    def _assert_message(self, message_type, contains=None):
-        element = self.components._.messages[message_type].wait_for_visible()
+    def assert_message(self, element, contains=None):
+        element = element.wait_for_visible()
         assert element, "No error message found, one expected."
         if contains is not None:
             text = element.text

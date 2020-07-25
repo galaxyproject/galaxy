@@ -2889,7 +2889,7 @@ Prior to Galaxy release 19.01 the stdio block has only been used for non-legacy 
         </xs:attribute>
         <xs:attribute name="strict" type="xs:boolean">
           <xs:annotation>
-            <xs:documentation xml:lang="en">This boolean forces the ``#set -e`` directive on in shell scripts - so that in a multi-part command if any part fails the job exits with a non-zero exit code. This is enabled by default for tools with ``profile>=16.04`` and disabled on legacy tools.</xs:documentation>
+            <xs:documentation xml:lang="en">This boolean forces the ``#set -e`` directive on in shell scripts - so that in a multi-part command if any part fails the job exits with a non-zero exit code. This is enabled by default for tools with ``profile>=20.09`` and disabled on legacy tools.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>

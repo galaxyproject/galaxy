@@ -84,7 +84,7 @@ class AdminAppTestCase(SeleniumTestCase):
         self.screenshot("admin_data_tables")
 
         admin_component.index.display_applications.wait_for_and_click()
-        self.assert_warning_message("No display applications available.")
+        self.assert_message(self.components.admin.warning, "No display applications available.")
         self.screenshot("admin_display_applications")
 
         admin_component.index.jobs.wait_for_and_click()

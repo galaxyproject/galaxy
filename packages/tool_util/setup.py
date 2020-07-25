@@ -32,6 +32,7 @@ TEST_DIR = 'tests'
 PACKAGES = [
     'galaxy',
     'galaxy.tool_util',
+    'galaxy.tool_util.client',
     'galaxy.tool_util.cwl',
     'galaxy.tool_util.deps',
     'galaxy.tool_util.deps.container_resolvers',

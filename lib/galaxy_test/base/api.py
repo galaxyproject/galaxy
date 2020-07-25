@@ -3,22 +3,21 @@ from contextlib import contextmanager
 
 from six.moves.urllib.parse import urlencode
 
-from galaxy_test.base.api_asserts import (
+from .api_asserts import (
     assert_error_code_is,
     assert_has_keys,
     assert_not_has_keys,
     assert_status_code_is,
     assert_status_code_is_ok,
 )
-from galaxy_test.base.api_util import (
+from .api_util import (
     ADMIN_TEST_USER,
     get_master_api_key,
     get_user_api_key,
     OTHER_USER,
     TEST_USER,
 )
-from galaxy_test.base.interactor import TestCaseGalaxyInteractor as BaseInteractor
-from .testcase import FunctionalTestCase
+from .interactor import TestCaseGalaxyInteractor as BaseInteractor
 
 
 class UsesApiTestCaseMixin(object):
@@ -45,7 +44,10 @@ class UsesApiTestCaseMixin(object):
     def _setup_interactor(self):
         self.user_api_key = get_user_api_key()
         self.master_api_key = get_master_api_key()
-        self.galaxy_interactor = ApiTestInteractor(self)
+        self.galaxy_interactor = self._get_interactor()
+
+    def _get_interactor(self, api_key=None):
+        return ApiTestInteractor(self, api_key=api_key)
 
     def _setup_user(self, email, password=None, is_admin=True):
         self.galaxy_interactor.ensure_user_with_email(email, password=password)
@@ -111,22 +113,15 @@ class UsesApiTestCaseMixin(object):
     _assert_has_key = _assert_has_keys
 
 
-class ApiTestCase(FunctionalTestCase, UsesApiTestCaseMixin):
-
-    def setUp(self):
-        super(ApiTestCase, self).setUp()
-        self._setup_interactor()
-
-
 class ApiTestInteractor(BaseInteractor):
     """ Specialized variant of the API interactor (originally developed for
     tool functional tests) for testing the API generally.
     """
 
-    def __init__(self, test_case):
+    def __init__(self, test_case, api_key=None):
         admin = getattr(test_case, "require_admin_user", False)
         test_user = TEST_USER if not admin else ADMIN_TEST_USER
-        super(ApiTestInteractor, self).__init__(test_case, test_user=test_user)
+        super(ApiTestInteractor, self).__init__(test_case, test_user=test_user, api_key=api_key)
 
     # This variant the lower level get and post methods are meant to be used
     # directly to test API - instead of relying on higher-level constructs for

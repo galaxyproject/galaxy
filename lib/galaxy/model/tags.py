@@ -132,7 +132,9 @@ class TagHandler(object):
         """Delete tags from an item."""
         # Delete item-tag associations.
         for tag in item.tags:
-            self.sa_session.delete(tag)
+            if tag.id:
+                # Only can and need to delete tag if tag is persisted
+                self.sa_session.delete(tag)
         # Delete tags from item.
         del item.tags[:]
 

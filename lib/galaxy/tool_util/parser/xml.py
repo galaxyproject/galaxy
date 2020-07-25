@@ -490,12 +490,14 @@ class XmlToolSource(ToolSource):
 
     def parse_strict_shell(self):
         command_el = self._command_el
-        if command_el is not None:
-            return string_as_bool(command_el.get("strict", "False"))
-        elif self.legacy_defaults:
-            return False
+        if packaging.version.parse(self.parse_profile()) < packaging.version.parse('20.09'):
+            default = "False"
         else:
-            return True
+            default = "True"
+        if command_el is not None:
+            return string_as_bool(command_el.get("strict", default))
+        else:
+            return string_as_bool(default)
 
     def parse_help(self):
         help_elem = self.root.find('help')

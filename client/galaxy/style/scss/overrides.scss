@@ -147,3 +147,14 @@ pre.code {
     padding: 0.5rem 1.5rem 0.5rem 1rem;
     font-weight: bold;
 }
+
+// progress bar
+.progress-bar.bg-success {
+    background: $state-success-bg !important;
+}
+.progress-bar.bg-danger {
+    background: $state-danger-bg !important;
+}
+.progress-bar.bg-warning {
+    background: $state-warning-bg !important;
+}

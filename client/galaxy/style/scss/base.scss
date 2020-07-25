@@ -316,43 +316,7 @@ body {
     }
 }
 
-// Messages for message box, slightly different style
-
-.panel-error-message,
-.panel-warning-message,
-.panel-done-message,
-.panel-info-message {
-    height: $panel-message-height;
-    line-height: $panel-message-height;
-    padding: 0px;
-    padding-left: 2.5rem;
-    background-color: $state-danger-bg;
-    background-image: url(../../images/error_small.png);
-    background-repeat: no-repeat;
-    background-position: 0.5rem 50%;
-}
-
-.panel-warning-message {
-    background-image: url(../../images/warn_small.png);
-    background-color: $state-warning-bg;
-}
-
-.panel-done-message {
-    background-image: url(../../images/ok_small.png);
-    background-color: $state-success-bg;
-}
-
-.panel-info-message {
-    background-image: url(../../images/info_icon.svg);
-    background-size: 1.5rem;
-    background-color: $state-info-bg;
-    svg:path {
-        fill: black;
-    }
-}
-
 // ==== Masthead ====
-
 #masthead {
     @extend .p-0;
     @extend .mb-0;
@@ -961,34 +925,7 @@ ul.manage-table-actions li {
     margin-left: 0.5em;
 }
 
-.state-progress {
-    @extend .position-relative;
-    @extend .m-1;
-    border: $border-default;
-    .info {
-        color: $text-color;
-        background: $body-bg;
-    }
-    .new {
-        background: $state-default-bg;
-    }
-    .running {
-        background: $state-running-bg;
-    }
-    .ok {
-        background: $state-success-bg;
-    }
-    .error {
-        background: $state-danger-bg;
-    }
-    .note {
-        @extend .position-absolute;
-        @extend .ml-2;
-    }
-}
-
 // State colors
-
 .state-color-new {
     border-color: $state-default-border;
     background: $state-default-bg;

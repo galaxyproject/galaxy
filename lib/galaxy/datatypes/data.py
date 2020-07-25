@@ -849,10 +849,14 @@ class Text(Data):
         Perform a rough estimate by extrapolating number of lines from a small read.
         """
         sample_size = 1048576
-        with open(dataset.file_name) as dataset_fh:
-            dataset_read = dataset_fh.read(sample_size)
-        sample_lines = dataset_read.count('\n')
-        est_lines = int(sample_lines * (float(dataset.get_size()) / float(sample_size)))
+        try:
+            with compression_utils.get_fileobj(dataset.file_name) as dataset_fh:
+                dataset_read = dataset_fh.read(sample_size)
+            sample_lines = dataset_read.count('\n')
+            est_lines = int(sample_lines * (float(dataset.get_size()) / float(sample_size)))
+        except UnicodeDecodeError:
+            log.error('Unable to estimate lines in file {}'.format(dataset.file_name))
+            est_lines = None
         return est_lines
 
     def count_data_lines(self, dataset):
@@ -874,8 +878,9 @@ class Text(Data):
                     line = line.strip()
                     if line and not line.startswith('#'):
                         data_lines += 1
-            except Exception:
-                pass
+            except UnicodeDecodeError:
+                log.error('Unable to count lines in file {}'.format(dataset.file_name))
+                data_lines = None
         return data_lines
 
     def set_peek(self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None, line_wrap=True):
@@ -896,11 +901,17 @@ class Text(Data):
                     if int(dataset.get_size()) <= 1048576:
                         # Small dataset, recount all lines and reset peek afterward.
                         lc = self.count_data_lines(dataset)
-                        dataset.metadata.data_lines = lc
-                        dataset.blurb = "%s %s" % (util.commaify(str(lc)), inflector.cond_plural(lc, self.line_class))
+                        if lc is not None:
+                            dataset.metadata.data_lines = lc
+                            dataset.blurb = "%s %s" % (util.commaify(str(lc)), inflector.cond_plural(lc, self.line_class))
+                        else:
+                            dataset.blurb = "Error: Cannot count lines in dataset"
                     else:
                         est_lines = self.estimate_file_lines(dataset)
-                        dataset.blurb = "~%s %s" % (util.commaify(util.roundify(str(est_lines))), inflector.cond_plural(est_lines, self.line_class))
+                        if est_lines is not None:
+                            dataset.blurb = "~%s %s" % (util.commaify(util.roundify(str(est_lines))), inflector.cond_plural(est_lines, self.line_class))
+                        else:
+                            dataset.blurb = "Error: Cannot estimate lines in dataset"
             else:
                 dataset.blurb = "%s %s" % (util.commaify(str(line_count)), inflector.cond_plural(line_count, self.line_class))
         else:

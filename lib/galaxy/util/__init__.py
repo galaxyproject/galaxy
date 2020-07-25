@@ -1707,6 +1707,15 @@ def download_to_file(url, dest_file_path, timeout=30, chunk_size=2 ** 20):
                 f.write(chunk)
 
 
+class classproperty(object):
+
+    def __init__(self, f):
+        self.f = f
+
+    def __get__(self, obj, owner):
+        return self.f(owner)
+
+
 def get_executable():
     exe = sys.executable
     if exe.endswith('uwsgi'):

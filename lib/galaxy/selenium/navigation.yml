@@ -326,6 +326,7 @@ workflows:
 workflow_run:
 
   selectors:
+    warning: ".ui-form-composite .alert-warning"
     input_div: "[step-label='${label}']"
     input_data_div: "[step-label='${label}'] .select2-container"
     # TODO: put step labels in the DOM ideally
@@ -415,6 +416,7 @@ admin:
       allowlist: '#admin-link-allowlist'
 
   selectors:
+    warning: '#center .alert-warning'
     # TODO: place betters IDS or something on this in these grids in the DOM
     datatypes_grid: '#data-types-grid'
     data_tables_grid: '#data-tables-grid'

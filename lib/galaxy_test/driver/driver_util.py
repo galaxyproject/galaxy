@@ -1,6 +1,5 @@
 """Scripts for drivers of Galaxy functional tests."""
 
-import fcntl
 import logging
 import os
 import random
@@ -9,7 +8,6 @@ import shutil
 import signal
 import socket
 import string
-import struct
 import subprocess
 import sys
 import tempfile
@@ -41,7 +39,10 @@ from galaxy.util import asbool, download_to_file, galaxy_directory
 from galaxy.util.properties import load_app_properties
 from galaxy.web import buildapp
 from galaxy_test.base.api_util import get_master_api_key, get_user_api_key
-from galaxy_test.base.env import DEFAULT_WEB_HOST, target_url_parts
+from galaxy_test.base.env import (
+    DEFAULT_WEB_HOST,
+    target_url_parts,
+)
 from galaxy_test.base.instrument import StructuredTestDataPlugin
 from galaxy_test.base.nose_util import run
 from tool_shed.webapp.app import UniverseApplication as ToolshedUniverseApplication
@@ -612,24 +613,6 @@ def build_shed_app(simple_kwargs):
     tool_shed_context = app.model.context
 
     return app
-
-
-class classproperty(object):
-
-    def __init__(self, f):
-        self.f = f
-
-    def __get__(self, obj, owner):
-        return self.f(owner)
-
-
-def get_ip_address(ifname):
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    return socket.inet_ntoa(fcntl.ioctl(
-        s.fileno(),
-        0x8915,  # SIOCGIFADDR
-        struct.pack('256s', ifname[:15].encode('utf-8'))
-    )[20:24])
 
 
 def explicitly_configured_host_and_port(prefix, config_object):

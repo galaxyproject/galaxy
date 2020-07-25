@@ -47,6 +47,7 @@ class ModelPersistenceContext(object):
         dbkey,
         name,
         filename=None,
+        extra_files=None,
         metadata_source_name=None,
         info=None,
         library_folder=None,
@@ -147,8 +148,12 @@ class ModelPersistenceContext(object):
                 self.object_store.update_from_file(primary_data.dataset, file_name=filename, create=True)
             else:
                 primary_data.link_to(filename)
-            # We are sure there are no extra files, so optimize things that follow by settting total size also.
-            primary_data.set_size(no_extra_files=True)
+            if extra_files:
+                persist_extra_files(self.object_store, extra_files, primary_data)
+                primary_data.set_size()
+            else:
+                # We are sure there are no extra files, so optimize things that follow by settting total size also.
+                primary_data.set_size(no_extra_files=True)
 
         # If match specified a name use otherwise generate one from
         # designation.
@@ -216,7 +221,7 @@ class ModelPersistenceContext(object):
         if name is None:
             name = "unnamed output"
 
-        element_datasets = {'element_identifiers': [], 'datasets': [], 'tag_lists': [], 'paths': []}
+        element_datasets = {'element_identifiers': [], 'datasets': [], 'tag_lists': [], 'paths': [], 'extra_files': []}
         for filename, discovered_file in filenames.items():
             create_dataset_timer = ExecutionTimer()
             fields_match = discovered_file.match
@@ -227,6 +232,7 @@ class ModelPersistenceContext(object):
             visible = fields_match.visible
             ext = fields_match.ext
             dbkey = fields_match.dbkey
+            extra_files = fields_match.extra_files
             # galaxy.tools.parser.output_collection_def.INPUT_DBKEY_TOKEN
             if dbkey == "__input__":
                 dbkey = self.input_dbkey
@@ -262,20 +268,12 @@ class ModelPersistenceContext(object):
                 create_dataset_timer,
             )
             element_datasets['element_identifiers'].append(element_identifiers)
+            element_datasets['extra_files'].append(extra_files)
             element_datasets['datasets'].append(dataset)
             element_datasets['tag_lists'].append(discovered_file.match.tag_list)
             element_datasets['paths'].append(filename)
 
-        add_datasets_timer = ExecutionTimer()
-        self.add_datasets_to_history(element_datasets['datasets'])
         self.add_tags_to_datasets(datasets=element_datasets['datasets'], tag_lists=element_datasets['tag_lists'])
-        log.debug(
-            "(%s) Add dynamic collection datasets to history for output [%s] %s",
-            self.job_id(),
-            name,
-            add_datasets_timer,
-        )
-
         for (element_identifiers, dataset) in zip(element_datasets['element_identifiers'], element_datasets['datasets']):
             current_builder = root_collection_builder
             for element_identifier in element_identifiers[:-1]:
@@ -288,7 +286,15 @@ class ModelPersistenceContext(object):
             self.add_output_dataset_association(association_name, dataset)
 
         self.flush()
-        self.update_object_store_with_datasets(datasets=element_datasets['datasets'], paths=element_datasets['paths'])
+        self.update_object_store_with_datasets(datasets=element_datasets['datasets'], paths=element_datasets['paths'], extra_files=element_datasets['extra_files'])
+        add_datasets_timer = ExecutionTimer()
+        self.add_datasets_to_history(element_datasets['datasets'])
+        log.debug(
+            "(%s) Add dynamic collection datasets to history for output [%s] %s",
+            self.job_id(),
+            name,
+            add_datasets_timer,
+        )
         self.set_datasets_metadata(datasets=element_datasets['datasets'])
 
     def add_tags_to_datasets(self, datasets, tag_lists):
@@ -301,10 +307,14 @@ class ModelPersistenceContext(object):
             for dataset, tags in zip(datasets, tag_lists):
                 tag_session.add_tags_from_list(self.job.user, dataset, tags, flush=False)
 
-    def update_object_store_with_datasets(self, datasets, paths):
-        for dataset, path in zip(datasets, paths):
+    def update_object_store_with_datasets(self, datasets, paths, extra_files):
+        for dataset, path, extra_file in zip(datasets, paths, extra_files):
             self.object_store.update_from_file(dataset.dataset, file_name=path, create=True)
-            dataset.set_size(no_extra_files=True)
+            if extra_file:
+                persist_extra_files(self.object_store, extra_files, dataset)
+                dataset.set_size()
+            else:
+                dataset.set_size(no_extra_files=True)
 
     @abc.abstractproperty
     def tag_handler(self):
@@ -451,6 +461,24 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
         """No-op, no job context to persist this association for."""
 
 
+def persist_extra_files(object_store, src_extra_files_path, primary_data):
+    if src_extra_files_path and os.path.exists(src_extra_files_path):
+        primary_data.dataset.create_extra_files_path()
+        target_extra_files_path = primary_data.extra_files_path
+        for root, dirs, files in os.walk(src_extra_files_path):
+            extra_dir = os.path.join(target_extra_files_path, root.replace(src_extra_files_path, '', 1).lstrip(os.path.sep))
+            extra_dir = os.path.normpath(extra_dir)
+            for f in files:
+                object_store.update_from_file(
+                    primary_data.dataset,
+                    extra_dir=extra_dir,
+                    alt_name=f,
+                    file_name=os.path.join(root, f),
+                    create=True,
+                    preserve_symlinks=True
+                )
+
+
 def persist_target_to_export_store(target_dict, export_store, object_store, work_directory):
     replace_request_syntax_sugar(target_dict)
     model_persistence_context = SessionlessModelPersistenceContext(object_store, export_store, work_directory)
@@ -585,7 +613,7 @@ def persist_hdas(elements, model_persistence_context, final_job_state='ok'):
                 sources = fields_match.sources
                 hashes = fields_match.hashes
                 created_from_basename = fields_match.created_from_basename
-
+                extra_files = fields_match.extra_files
                 dataset = model_persistence_context.create_dataset(
                     ext=ext,
                     designation=designation,
@@ -593,6 +621,7 @@ def persist_hdas(elements, model_persistence_context, final_job_state='ok'):
                     dbkey=dbkey,
                     name=name,
                     filename=discovered_file.path,
+                    extra_files=extra_files,
                     info=info,
                     link_data=link_data,
                     primary_data=primary_dataset,
@@ -774,6 +803,10 @@ class JsonCollectedDatasetMatch(object):
     @property
     def created_from_basename(self):
         return self.as_dict.get("created_from_basename")
+
+    @property
+    def extra_files(self):
+        return self.as_dict.get("extra_files")
 
 
 class RegexCollectedDatasetMatch(JsonCollectedDatasetMatch):

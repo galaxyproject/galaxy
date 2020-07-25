@@ -292,7 +292,7 @@ class AuthnzManager(object):
             raise exceptions.AuthenticationFailed(e.message)
         except Exception as e:
             msg = 'The following error occurred when handling callback from `{}` identity provider: ' \
-                  '{}'.format(provider, e.message)
+                  '{}'.format(provider, str(e))
             log.exception(msg)
             return False, msg, (None, None)
 
@@ -321,7 +321,7 @@ class AuthnzManager(object):
             return True, message, backend.logout(trans, post_logout_redirect_url)
         except Exception as e:
             msg = 'The following error occurred when logging out from `{}` identity provider: ' \
-                  '{}'.format(provider, e.message)
+                  '{}'.format(provider, str(e))
             log.exception(msg)
             return False, msg, None
 

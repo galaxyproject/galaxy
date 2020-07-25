@@ -3,6 +3,7 @@ import axios from "axios";
 import { __RewireAPI__ as rewire } from "./WorkflowRun";
 import WorkflowRun from "./WorkflowRun.vue";
 import { mount, createLocalVue } from "@vue/test-utils";
+import flushPromises from "flush-promises";
 
 import sampleRunData1 from "./testdata/run1.json";
 
@@ -34,10 +35,7 @@ describe("WorkflowRun.vue", () => {
         expect(wrapper.vm.loading).to.equal(true);
         expect(wrapper.vm.error).to.equal(null);
         expect(wrapper.vm.model).to.equal(null);
-        await localVue.nextTick();
-        await localVue.nextTick();
-        await localVue.nextTick();
-        await localVue.nextTick();
+        await flushPromises();
         expect(wrapper.vm.error).to.equal(null);
         expect(wrapper.vm.loading).to.equal(false);
         const model = wrapper.vm.model;
