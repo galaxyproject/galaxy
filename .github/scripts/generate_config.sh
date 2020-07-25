@@ -4,5 +4,14 @@ set -e
 
 helm repo add gxy https://raw.githubusercontent.com/cloudve/helm-charts/master/
 
-cat ${HOME}/files_added.json
-cat ${HOME}/files_modified.json
+echo $PR_NUMBER
+
+echo $PR_HEAD
+echo $PR_BASE
+
+
+echo $PR_NUMBER2
+
+git diff --name-only "$PR_BASE" "$PR_HEAD" > filelist
+
+cat filelist
