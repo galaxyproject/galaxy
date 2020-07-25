@@ -1,4 +1,6 @@
 $(document).ready(function () {
+    var gtnWebhookLoaded = false;
+
     function showOverlay() {
         $(".gtn-screen-overlay").show();
         $(".gtn-screen").show();
@@ -9,16 +11,21 @@ $(document).ready(function () {
         $(".gtn-screen").hide();
     }
 
-    function addIframe(proxied) {
+    function addIframe() {
+        gtnWebhookLoaded = true;
         var url, message;
-        if (proxied) {
+
+        // Test for the presence of /training-material/. If that is available we
+        // can opt in the fancy click-to-run features. Otherwise we fallback to
+        // displaying the real GTN.
+        var jqxhr = $.get("/training-material/", function () {
             url = "/training-material/";
             message = "";
-        } else {
+        }).fail(function () {
             url = "https://training.galaxyproject.org/training-material/";
             message =
                 '<span><a href="https://docs.galaxyproject.org/en/master/admin/special_topics/gtn.html">Click to run</a> unavailable.</span>';
-        }
+        });
 
         parentElement.prepend(`
 			<div id="gtn_screen_overlay" class="gtn-screen-overlay"></div>
@@ -68,28 +75,46 @@ $(document).ready(function () {
     self.showOverlay = showOverlay;
     self.removeOverlay = removeOverlay;
 
-    // Test for the presence of /training-material/. If that is available we
-    // can opt in the fancy click-to-run features. Otherwise we fallback to
-    // displaying the real GTN.
-    var jqxhr = $.get("/training-material/", function () {
-        // proxy is available
-        addIframe(true);
-    }).fail(function () {
-        addIframe(false);
-    });
+    // https://gist.github.com/jwilson8767/db379026efcbd932f64382db4b02853e
+    function elementReady(selector) {
+        return new Promise((resolve, reject) => {
+            let el = document.querySelector(selector);
+            if (el) {
+                resolve(el);
+            }
+            new MutationObserver((mutationRecords, observer) => {
+                // Query for elements matching the specified selector
+                Array.from(document.querySelectorAll(selector)).forEach((element) => {
+                    resolve(element);
+                    //Once we have resolved we don't need the observer anymore.
+                    observer.disconnect();
+                });
+            }).observe(document.documentElement, {
+                childList: true,
+                subtree: true,
+            });
+        });
+    }
 
-    parentElement.find("ul #gtn a").on("click", function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        if ($(".gtn-screen-overlay").is(":visible")) {
-            self.removeOverlay();
-        } else {
-            self.showOverlay();
-        }
+    elementReady("#gtn a").then((el) => {
+        el.addEventListener("click", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+            if (!gtnWebhookLoaded) {
+                addIframe();
+            }
+            if ($(".gtn-screen-overlay").is(":visible")) {
+                self.removeOverlay();
+            } else {
+                self.showOverlay();
+            }
+            return false;
+        });
     });
 
     // Remove the overlay on escape button click
-    parentElement.on("keydown", function (e) {
+    document.addEventListener("keydown", function (e) {
         // Check for escape button - "27"
         if (e.which === 27 || e.keyCode === 27) {
             self.removeOverlay();
