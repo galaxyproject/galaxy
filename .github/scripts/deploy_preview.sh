@@ -28,22 +28,21 @@ if [[ ! -n $abort ]]; then
 
     cat <<EOF > vols.yaml
 extraVolumes:
-  - name: "code-injection"
-    configMap:
-      name: galaxy-$PR_NUM-projman-configs
-      items:
 EOF
 
-    sed -E 's#--set-file configs.("[^"]+")=(.+)#        - key: \1\n          path: "\2"#g' setfilelist >> vols.yaml
-
-    cat <<EOF >> vols.yaml
+    cat <<EOF > vol-mounts.yaml
 extraVolumeMounts:
-  - name: code-injection
-    mountPath: "/galaxy/server"
 EOF
 
-    echo helm upgrade --install "galaxy-preview-$PR_NUM" gxy/galaxy -f values.yaml -f vols.yaml
-    helm upgrade --install galaxy-preview-$PR_NUM gxy/galaxy -f values.yaml -f vols.yaml
+    while read line; do
+      echo "Injecting $line"
+      sed -E 's#--set-file configs."([^"]+)"=(([^/]+/)+)([^/\n]+)#  - name: "code-injection-\1"\n    configMap:\n      name: galaxy-$PR_NUM-projman-configs\n      items:\n        - key: "\1"\n          path: "\4"#g' <<< $line >> vols.yaml
+      sed -E 's#--set-file configs."([^"]+)"=(([^/]+/)+)([^/\n]+)#  - name: "code-injection-\1"\n    mountPath: "/galaxy/server/\2"#g' <<< $line >> vol-mounts.yaml
+
+    done <setfilelist
+
+    echo helm upgrade --install "galaxy-preview-$PR_NUM" gxy/galaxy -f values.yaml -f vols.yaml -f vol-mounts.yaml
+    helm upgrade --install "galaxy-preview-$PR_NUM" gxy/galaxy -f values.yaml -f vols.yaml -f vol-mounts.yaml > gxyinstalloutput
 
 fi
 

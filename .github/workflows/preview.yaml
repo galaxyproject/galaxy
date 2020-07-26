@@ -27,13 +27,13 @@ jobs:
         id: deploy
         run: bash .github/scripts/deploy_preview.sh
         shell: bash
+      - id: set
+        run: |
+          echo ::set-output name=gxyoutput::$(cat gxyinstalloutput)
       - name: Create comment
         uses: peter-evans/create-or-update-comment@v1
         with:
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
           repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
           issue-number: ${{ github.event.client_payload.github.payload.issue.number }}
-          body: |
-            ```
-            Done!
-            ```
+          body: ${{ steps.id.outputs.gxyoutput }}
