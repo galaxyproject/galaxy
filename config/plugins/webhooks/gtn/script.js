@@ -97,7 +97,11 @@ $(document).ready(function () {
     }
 
     elementReady("#gtn a").then((el) => {
-        el.addEventListener("click", function (e) {
+        // External stuff may also have attached a click handler here (vue-based masthead)
+        // replace with a clean copy of the node to remove all that cruft.
+        clean = el.cloneNode(true);
+        el.parentNode.replaceChild(clean, el);
+        clean.addEventListener("click", (e) => {
             e.preventDefault();
             e.stopPropagation();
             return false;
