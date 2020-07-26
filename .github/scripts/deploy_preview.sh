@@ -9,7 +9,7 @@ echo "Starting"
 
 if [[ ! -n $abort ]]; then
 
-    curl -O https://gist.githubusercontent.com/almahmoud/a67fb678b76c901e19385f85d02ef8ca/raw/2388c72efe6aa0c0757d76e9b6828f05b6f4b410/values.yaml
+    curl -O https://gist.githubusercontent.com/almahmoud/a67fb678b76c901e19385f85d02ef8ca/raw/2759daf60b5a69950e7b9022bea833241f750a51/values.yaml
 
     helm repo add gxy https://github.com/cloudve/helm-charts/raw/preview-ci
 
@@ -41,7 +41,7 @@ EOF
     done <setfilelist
 
     echo helm upgrade --install "galaxy-preview-$PR_NUM" gxy/galaxy -f values.yaml -f vols.yaml -f vol-mounts.yaml --set ingress.path="/issue-$PR_NUM/galaxy/"
-    helm upgrade --install "galaxy-preview-$PR_NUM" gxy/galaxy -f values.yaml -f vols.yaml -f vol-mounts.yaml --set ingress.path="/issue-$PR_NUM/galaxy/" > gxyinstalloutput
+    helm upgrade --install "galaxy-preview-$PR_NUM" gxy/galaxy -f values.yaml -f vols.yaml -f vol-mounts.yaml --set ingress.path="/issue-$PR_NUM/galaxy" > gxyinstalloutput
 
 fi
 
