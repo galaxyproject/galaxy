@@ -40,8 +40,8 @@ EOF
 
     done <setfilelist
 
-    echo helm upgrade --install "galaxy-preview-$PR_NUM" gxy/galaxy -f values.yaml -f vols.yaml -f vol-mounts.yaml
-    helm upgrade --install "galaxy-preview-$PR_NUM" gxy/galaxy -f values.yaml -f vols.yaml -f vol-mounts.yaml > gxyinstalloutput
+    echo helm upgrade --install "galaxy-preview-$PR_NUM" gxy/galaxy -f values.yaml -f vols.yaml -f vol-mounts.yaml --set ingress.path="/issue-$PR_NUM/galaxy/"
+    helm upgrade --install "galaxy-preview-$PR_NUM" gxy/galaxy -f values.yaml -f vols.yaml -f vol-mounts.yaml --set ingress.path="/issue-$PR_NUM/galaxy/" > gxyinstalloutput
 
 fi
 
