@@ -1,19 +1,22 @@
-$(document).ready(function () {
+$(document).ready(() => {
     var gtnWebhookLoaded = false;
 
-    function showOverlay() {
-        $(".gtn-screen-overlay").show();
-        $(".gtn-screen").show();
+    function toggleOverlay() {
+        document.getElementById("gtn-container").classList.toggle("d-none");
     }
 
     function removeOverlay() {
-        $(".gtn-screen-overlay").hide();
-        $(".gtn-screen").hide();
+        document.getElementById("gtn-container").classList.add("d-none");
     }
 
     function addIframe() {
         gtnWebhookLoaded = true;
-        var url, message;
+        var url = "https://training.galaxyproject.org/training-material/";
+        var message = `
+            <span>
+                <a href="https://docs.galaxyproject.org/en/master/admin/special_topics/gtn.html">Click to run</a> unavailable.
+            </span>
+        `;
 
         // Test for the presence of /training-material/. If that is available we
         // can opt in the fancy click-to-run features. Otherwise we fallback to
@@ -21,35 +24,34 @@ $(document).ready(function () {
         var jqxhr = $.get("/training-material/", function () {
             url = "/training-material/";
             message = "";
-        }).fail(function () {
-            url = "https://training.galaxyproject.org/training-material/";
-            message =
-                '<span><a href="https://docs.galaxyproject.org/en/master/admin/special_topics/gtn.html">Click to run</a> unavailable.</span>';
         });
 
-        parentElement.prepend(`
-			<div id="gtn_screen_overlay" class="gtn-screen-overlay"></div>
-			<div id="gtn_screen" class="gtn-screen">
-				<div class="gtn-header">
-					<iframe id="gtn-embed" src="${url}" width="80%" height="80%"></iframe>
-					${message}
-				</div>
-			</div>
-	   `);
+        document.querySelector("body.full-content").insertAdjacentHTML(
+            "afterbegin",
+            `
+            <div id="gtn-container">
+                <div id="gtn-screen-overlay"></div>
+                <div id="gtn-screen">
+                    <div class="gtn-header">
+                        <iframe id="gtn-embed" src="${url}" width="80%" height="80%"></iframe>
+                        ${message}
+                    </div>
+                </div>
+            </div>`
+        );
 
         // Clicking outside of GTN closes it
-        $("#gtn_screen").click(function () {
-            self.removeOverlay();
+        document.getElementById("gtn-screen").addEventListener("click", () => {
+            removeOverlay();
         });
 
         // Depends on the iframe being present
-        $("#gtn-embed").on("load", function () {
-            //new_url = document.getElementById("gtn-embed").contentWindow.location.href;
+        document.getElementById("gtn-embed").addEventListener("load", () => {
             var gtn_tools = $("#gtn-embed").contents().find("span[data-tool]");
             // Buttonify
             gtn_tools.addClass("btn btn-primary");
 
-            gtn_tools.click(function (e) {
+            gtn_tools.click((e) => {
                 var target = e.target;
 
                 // Sometimes we get the i or the strong, not the parent.
@@ -65,17 +67,14 @@ $(document).ready(function () {
                 } else {
                     Galaxy.router.push(`/?tool_id=${tool_id}&version=${tool_version}`);
                 }
-                self.removeOverlay();
+                removeOverlay();
             });
         });
     }
-
-    var self = this;
-    var parentElement = $(".full-content");
-    self.showOverlay = showOverlay;
-    self.removeOverlay = removeOverlay;
-
-    // https://gist.github.com/jwilson8767/db379026efcbd932f64382db4b02853e
+    /* The masthead icon may not exist yet when this webhook executes; we need this to wait for that to happen.
+     * elementReady function from gist:
+     * https://gist.github.com/jwilson8767/db379026efcbd932f64382db4b02853e
+     */
     function elementReady(selector) {
         return new Promise((resolve, reject) => {
             let el = document.querySelector(selector);
@@ -104,24 +103,19 @@ $(document).ready(function () {
         clean.addEventListener("click", (e) => {
             e.preventDefault();
             e.stopPropagation();
-            return false;
             if (!gtnWebhookLoaded) {
                 addIframe();
-            }
-            if ($(".gtn-screen-overlay").is(":visible")) {
-                self.removeOverlay();
             } else {
-                self.showOverlay();
+                toggleOverlay();
             }
-            return false;
         });
     });
 
     // Remove the overlay on escape button click
-    document.addEventListener("keydown", function (e) {
+    document.addEventListener("keydown", (e) => {
         // Check for escape button - "27"
         if (e.which === 27 || e.keyCode === 27) {
-            self.removeOverlay();
+            removeOverlay();
         }
     });
 });

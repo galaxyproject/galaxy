@@ -1,12 +1,11 @@
-.gtn-screen {
+#gtn-screen {
 	position: fixed;
 	z-index: 202;
 	width:100%;
 	height:100%;
-	display:none;
 }
 
-.gtn-screen-overlay {
+#gtn-screen-overlay {
 	position: fixed;
 	top:0;
 	left:0;
@@ -14,11 +13,10 @@
 	z-index: 201;
 	width:100%;
 	height:100%;
-	display:none;
 	opacity: 2;
 }
 
-.gtn-header {
+#gtn-header {
 	position: fixed;
 	top: 34px;
 	height: 100%;
