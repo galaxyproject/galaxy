@@ -36,4 +36,4 @@ jobs:
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
           repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
           issue-number: ${{ github.event.client_payload.github.payload.issue.number }}
-          body: ${{ steps.id.outputs.gxyoutput }}
+          body: ${{ steps.set.outputs.gxyoutput }}

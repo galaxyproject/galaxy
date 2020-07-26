@@ -11,13 +11,12 @@ if [[ ! -n $abort ]]; then
 
     curl -O https://gist.githubusercontent.com/almahmoud/a67fb678b76c901e19385f85d02ef8ca/raw/2388c72efe6aa0c0757d76e9b6828f05b6f4b410/values.yaml
 
-    helm repo add gxy https://raw.githubusercontent.com/cloudve/helm-charts/master/
+    helm repo add gxy https://github.com/cloudve/helm-charts/raw/preview-ci
 
     echo "Starting making list"
     git diff --name-only "$PR_BASE" "$PR_HEAD" > filelist
 
-    while IFS= read -r line; do echo -n $line | base64; done < filelist > encfilelist
-    sed -i -e 's/\=//g' encfilelist
+    while IFS= read -r line; do echo -n $line | base64; done < filelist | tr A-Z a-z | sed -E s/[^a-z0-9]+/-/g | sed -E s/^-+\|-+$//g  | cut -c -30 > encfilelist
     sed -E 's#.+#--set-file configs."#g' filelist > start
     sed -E 's#.+#=#g' filelist > middle
     paste -d "\0\"" start encfilelist middle filelist > setfilelist
@@ -36,8 +35,8 @@ EOF
 
     while read line; do
       echo "Injecting $line"
-      sed -E 's#--set-file configs."([^"]+)"=(([^/]+/)+)([^/\n]+)#  - name: "code-injection-\1"\n    configMap:\n      name: galaxy-$PR_NUM-projman-configs\n      items:\n        - key: "\1"\n          path: "\4"#g' <<< $line >> vols.yaml
-      sed -E 's#--set-file configs."([^"]+)"=(([^/]+/)+)([^/\n]+)#  - name: "code-injection-\1"\n    mountPath: "/galaxy/server/\2"#g' <<< $line >> vol-mounts.yaml
+      sed -E "s#--set-file configs.\"([^\"]+)\"=(([^/]+/)+)([^/\n]+)#  - name: \"code-injection-\1\"\n    configMap:\n      name: galaxy-$PR_NUM-projman-configs\n      items:\n        - key: \"\1\"\n          path: \"\4\"#g" <<< $line >> vols.yaml
+      sed -E "s#--set-file configs.\"([^\"]+)\"=(([^/]+/)+)([^/\n]+)#  - name: \"code-injection-\1\"\n    mountPath: \"/galaxy/server/\2\4\"#g" <<< $line >> vol-mounts.yaml
 
     done <setfilelist
 
