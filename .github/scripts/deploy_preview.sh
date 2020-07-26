@@ -36,7 +36,7 @@ EOF
     while read line; do
       echo "Injecting $line"
       sed -E "s#--set-file configs.\"([^\"]+)\"=(([^/]+/)+)([^/\n]+)#  - name: \"code-injection-\1\"\n    configMap:\n      name: galaxy-$PR_NUM-projman-configs\n      items:\n        - key: \"\1\"\n          path: \"\4\"#g" <<< $line >> vols.yaml
-      sed -E "s#--set-file configs.\"([^\"]+)\"=(([^/]+/)+)([^/\n]+)#  - name: \"code-injection-\1\"\n    mountPath: \"/galaxy/server/\2\4\"#g" <<< $line >> vol-mounts.yaml
+      sed -E "s#--set-file configs.\"([^\"]+)\"=(([^/]+/)+)([^/\n]+)#  - name: \"code-injection-\1\"\n    subPath: \"\4\"\n    mountPath: \"/galaxy/server/\2\4\"#g" <<< $line >> vol-mounts.yaml
 
     done <setfilelist
 
