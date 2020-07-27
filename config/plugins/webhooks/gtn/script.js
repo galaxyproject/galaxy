@@ -54,7 +54,7 @@ $(document).ready(() => {
                 document.getElementById("gtn-embed").addEventListener("load", () => {
                     var gtn_tools = $("#gtn-embed").contents().find("span[data-tool]");
                     // Buttonify
-                    gtn_tools.addClass("btn btn-primary");
+                    gtn_tools.addClass("galaxy-proxy-active");
 
                     gtn_tools.click((e) => {
                         var target = e.target;
