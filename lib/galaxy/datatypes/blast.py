@@ -340,4 +340,3 @@ class LastDb(Data):
         self.add_composite_file('lastdb.ssp', is_binary=True)
         self.add_composite_file('lastdb.suf', is_binary=True)
         self.add_composite_file('lastdb.tis', is_binary=True)
-
