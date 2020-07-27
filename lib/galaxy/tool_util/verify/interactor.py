@@ -643,7 +643,7 @@ class GalaxyInteractorApi:
         else:
             data.update(params)
             kwd['data'] = data
-        return requests.post("%s/%s" % (self.api_url, path), **kwd)
+        return requests.post("{}/{}".format(self.api_url, path), **kwd)
 
     def _delete(self, path, data=None, key=None, admin=False, anon=False):
         params, data = self.__inject_api_key(data=data, key=key, admin=admin, anon=anon)

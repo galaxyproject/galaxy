@@ -10,7 +10,7 @@ def wait_on(function, desc, timeout):
     while True:
         total_wait = delta * iteration
         if total_wait > timeout:
-            timeout_message = "Timed out after %s seconds waiting on %s." % (
+            timeout_message = "Timed out after {} seconds waiting on {}.".format(
                 total_wait, desc
             )
             raise TimeoutAssertionError(timeout_message)
