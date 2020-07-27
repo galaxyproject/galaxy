@@ -2,8 +2,7 @@
     <invocations
         :invocation-items="invocationItems"
         :loading="loading"
-        header-message="Your most recent workflow invocations are displayed on this page."
-        no-invocations-message="There are no workflow invocations to show."
+        no-invocations-message="There are no invocations to be shown."
     >
     </invocations>
 </template>
