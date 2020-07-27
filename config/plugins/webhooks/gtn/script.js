@@ -70,7 +70,7 @@ $(document).ready(() => {
                         if (tool_id === "upload1" || tool_id === "upload") {
                             Galaxy.upload.show();
                         } else {
-                            Galaxy.router.push(`/?tool_id=${tool_id}&version=${tool_version}`);
+                            Galaxy.router.push(`?tool_id=${tool_id}&version=${tool_version}`);
                         }
                         removeOverlay();
                     });
