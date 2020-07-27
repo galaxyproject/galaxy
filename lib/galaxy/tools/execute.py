@@ -112,8 +112,9 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
         trans.sa_session.flush()
     for job in execution_tracker.successful_jobs:
         # Put the job in the queue if tracking in memory
-        tool.app.job_manager.enqueue(job, tool=tool)
+        tool.app.job_manager.enqueue(job, tool=tool, flush=False)
         trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
+    trans.sa_session.flush()
 
     if has_remaining_jobs:
         raise PartialJobExecution(execution_tracker)
@@ -421,9 +422,7 @@ class WorkflowStepExecutionTracker(ExecutionTracker):
 
     def record_success(self, execution_slice, job, outputs):
         super(WorkflowStepExecutionTracker, self).record_success(execution_slice, job, outputs)
-        if self.collection_info:
-            self.invocation_step.implicit_collection_jobs = self.implicit_collection_jobs
-        else:
+        if not self.collection_info:
             self.invocation_step.job = job
         self.job_callback(job)
 
@@ -452,6 +451,7 @@ class WorkflowStepExecutionTracker(ExecutionTracker):
                 assert hasattr(implicit_collection, "history_content_type")  # make sure it is an HDCA and not a DC
                 collections[output_assoc.output_name] = output_assoc.dataset_collection
             self.implicit_collections = collections
+        self.invocation_step.implicit_collection_jobs = self.implicit_collection_jobs
 
 
 __all__ = ('execute', )
