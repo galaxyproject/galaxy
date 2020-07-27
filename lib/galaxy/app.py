@@ -13,6 +13,7 @@ import galaxy.security
 from galaxy import config, job_metrics, jobs
 from galaxy.config_watchers import ConfigWatchers
 from galaxy.containers import build_container_interfaces
+from galaxy.files import ConfiguredFileSources
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.hdas import HDAManager
@@ -109,6 +110,9 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self.library_folder_manager = FolderManager()
         self.library_manager = LibraryManager()
         self.dynamic_tool_manager = DynamicToolManager(self)
+
+        # ConfiguredFileSources
+        self.file_sources = ConfiguredFileSources.from_app_config(self.config)
 
         # Tool Data Tables
         self._configure_tool_data_tables(from_shed_config=False)

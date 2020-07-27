@@ -4759,6 +4759,7 @@ to setup configuration files for use by tools.]]></xs:documentation>
   <xs:group name="ConfigFilesElement">
     <xs:choice>
       <xs:element name="inputs" type="ConfigInputs"/>
+      <xs:element name="file_sources" type="ConfigFileSources"/>
       <xs:element name="configfile" type="ConfigFile"/>
     </xs:choice>
   </xs:group>
@@ -4887,6 +4888,30 @@ response to this directive.
         <xs:attribute name="data_style" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">Set to 'paths' to include dataset paths in the resulting file.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:complexType name="ConfigFileSources">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="name" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en"><![CDATA[
+Cheetah variable to populate the path to the inputs JSON file created in
+response to this directive.
+]]></xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="filename" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Path relative to the working directory of the tool for the file sources JSON configuration file created in response to this directive.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>

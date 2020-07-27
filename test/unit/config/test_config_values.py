@@ -67,6 +67,7 @@ class ExpectedValues:
             'dependency_resolvers_config_file': self._in_config_dir('dependency_resolvers_conf.xml'),
             'dynamic_proxy_session_map': self._in_data_dir('session_map.sqlite'),
             'file_path': self._in_data_dir('objects'),
+            'file_sources_config_file': self._in_config_dir('file_sources_conf.yml'),
             'galaxy_data_manager_data_path': self._in_root_dir('tool-data'),
             'integrated_tool_panel_config': self._in_managed_config_dir('integrated_tool_panel.xml'),
             'interactivetools_map': self._in_data_dir('interactivetools_map.sqlite'),

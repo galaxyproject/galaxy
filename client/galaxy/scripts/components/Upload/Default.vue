@@ -78,11 +78,11 @@
                 ref="btnFtp"
                 class="ui-button-default"
                 id="btn-ftp"
-                @click="_eventFtp"
+                @click="_eventRemoteFiles"
                 :disabled="!enableSources"
-                v-if="ftpUploadSite"
+                v-if="remoteFiles"
             >
-                <span class="fa fa-folder-open-o"></span>{{ btnFtpTitle }}
+                <span class="fa fa-folder-open-o"></span>{{ btnFilesTitle }}
             </b-button>
             <b-button
                 ref="btnLocal"
@@ -133,7 +133,6 @@ export default {
             enableSources: false,
             btnLocalTitle: _l("Choose local files"),
             btnCreateTitle: _l("Paste/Fetch data"),
-            btnFtpTitle: _l("Choose FTP files"),
             btnStartTitle: _l("Start"),
             btnStopTitle: _l("Pause"),
             btnResetTitle: _l("Reset"),

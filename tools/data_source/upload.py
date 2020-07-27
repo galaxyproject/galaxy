@@ -11,8 +11,6 @@ import shutil
 import sys
 from json import dump, load, loads
 
-from six.moves.urllib.request import urlopen
-
 from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry
 from galaxy.datatypes.upload_util import handle_upload, UploadProblemException
@@ -24,6 +22,26 @@ from galaxy.util import (
 from galaxy.util.compression_utils import CompressedFile
 
 assert sys.version_info[:2] >= (2, 7)
+
+
+_file_sources = None
+
+
+def get_file_sources():
+    global _file_sources
+    if _file_sources is None:
+        from galaxy.files import ConfiguredFileSources
+        file_sources = None
+        if os.path.exists("file_sources.json"):
+            file_sources_as_dict = None
+            with open("file_sources.json", "r") as f:
+                file_sources_as_dict = load(f)
+            if file_sources_as_dict is not None:
+                file_sources = ConfiguredFileSources.from_dict(file_sources_as_dict)
+        if file_sources is None:
+            ConfiguredFileSources.from_dict([])
+        _file_sources = file_sources
+    return _file_sources
 
 
 def file_err(msg, dataset):
@@ -102,7 +120,7 @@ def add_file(dataset, registry, output_path):
 
     if dataset.type == 'url':
         try:
-            dataset.path = sniff.stream_url_to_file(dataset.path)
+            dataset.path = sniff.stream_url_to_file(dataset.path, file_sources=get_file_sources())
         except Exception as e:
             raise UploadProblemException('Unable to fetch %s\n%s' % (dataset.path, unicodify(e)))
 
@@ -184,7 +202,7 @@ def add_composite_file(dataset, registry, output_path, files_path):
         is_url = path_or_url.find('://') != -1  # todo fixme
         if is_url:
             try:
-                temp_name = sniff.stream_to_file(urlopen(path_or_url), prefix='url_paste')
+                temp_name = sniff.stream_url_to_file(path_or_url, file_sources=get_file_sources())
             except Exception as e:
                 raise UploadProblemException('Unable to fetch %s\n%s' % (path_or_url, unicodify(e)))
 
