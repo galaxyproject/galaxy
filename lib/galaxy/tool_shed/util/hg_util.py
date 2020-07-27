@@ -23,7 +23,7 @@ def clone_repository(repository_clone_url, repository_file_dir, ctx_rev=None):
     if not os.path.exists(repository_file_dir):
         os.makedirs(repository_file_dir)
     try:
-        subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+        subprocess.check_output(cmd, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL)
         return True, None
     except Exception as e:
         error_message = 'Error cloning repository: %s' % unicodify(e)

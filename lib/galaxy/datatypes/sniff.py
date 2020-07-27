@@ -82,6 +82,21 @@ def stream_to_file(stream, suffix='', prefix='', dir=None, text=False, **kwd):
     return stream_to_open_named_file(stream, fd, temp_name, **kwd)
 
 
+def handle_composite_file(datatype, src_path, extra_files, name, is_binary, tmp_dir, tmp_prefix, upload_opts):
+    if not is_binary:
+        if upload_opts.get('space_to_tab'):
+            convert_newlines_sep2tabs(src_path, tmp_dir=tmp_dir, tmp_prefix=tmp_prefix)
+        else:
+            convert_newlines(src_path, tmp_dir=tmp_dir, tmp_prefix=tmp_prefix)
+
+    file_output_path = os.path.join(extra_files, name)
+    shutil.move(src_path, file_output_path)
+
+    # groom the dataset file content if required by the corresponding datatype definition
+    if datatype and datatype.dataset_content_needs_grooming(file_output_path):
+        datatype.groom_dataset_content(file_output_path)
+
+
 def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload", block_size=128 * 1024, regexp=None):
     """
     Converts in place a file from universal line endings

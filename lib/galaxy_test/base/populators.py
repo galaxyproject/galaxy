@@ -3,7 +3,6 @@ import json
 import os
 import random
 import string
-import time
 import unittest
 from collections import namedtuple
 from functools import wraps
@@ -24,7 +23,12 @@ from gxformat2._yaml import ordered_load
 from pkg_resources import resource_string
 from six import StringIO
 
+from galaxy.tool_util.client.staging import InteractorStaging
 from galaxy.tool_util.verify.test_data import TestDataResolver
+from galaxy.tool_util.verify.wait import (
+    TimeoutAssertionError,
+    wait_on as tool_util_wait_on,
+)
 from galaxy.util import unicodify
 from . import api_asserts
 
@@ -690,20 +694,9 @@ class DatasetPopulator(BaseDatasetPopulator):
         return self.galaxy_interactor.api_key
 
     def _post(self, route, data=None, files=None, admin=False):
-        if data is None:
-            data = {}
-
-        if files is None:
-            files = data.get("__files", None)
-            if files is not None:
-                del data["__files"]
-
         return self.galaxy_interactor.post(route, data, files=files, admin=admin)
 
     def _put(self, route, data=None):
-        if data is None:
-            data = {}
-
         return self.galaxy_interactor.put(route, data)
 
     def _get(self, route, data=None, admin=False):
@@ -1383,6 +1376,7 @@ class DatasetCollectionPopulator(BaseDatasetCollectionPopulator):
 
 
 def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_populator):
+    """Load a dictionary as inputs to a workflow (test data focused)."""
 
     def open_test_data(test_dict, mode="rb"):
         test_data_resolver = TestDataResolver()
@@ -1459,6 +1453,23 @@ def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_
             raise ValueError("Invalid test_data def %s" % test_data)
 
     return inputs, label_map, has_uploads
+
+
+def stage_inputs(galaxy_interactor, history_id, job, use_path_paste=True, use_fetch_api=True):
+    """Alternative to load_data_dict that uses production-style workflow inputs."""
+    inputs, datasets = InteractorStaging(galaxy_interactor, use_fetch_api=use_fetch_api).stage(
+        "workflow", history_id=history_id, job=job, use_path_paste=use_path_paste,
+    )
+    return inputs, datasets
+
+
+def stage_rules_example(galaxy_interactor, history_id, example):
+    """Wrapper around stage_inputs for staging collections defined by rules spec DSL."""
+    input_dict = example["test_data"].copy()
+    input_dict["collection_type"] = input_dict.pop("type")
+    input_dict["class"] = "Collection"
+    inputs, _ = stage_inputs(galaxy_interactor, history_id=history_id, job={"input": input_dict})
+    return inputs
 
 
 def wait_on_state(state_func, desc="state", skip_states=None, assert_ok=False, timeout=DEFAULT_TIMEOUT):
@@ -1560,23 +1571,4 @@ class GiWorkflowPopulator(BaseWorkflowPopulator, GiPostGetMixin):
 
 
 def wait_on(function, desc, timeout=DEFAULT_TIMEOUT):
-    delta = .25
-    iteration = 0
-    while True:
-        total_wait = delta * iteration
-        if total_wait > timeout:
-            timeout_message = "Timed out after {} seconds waiting on {}.".format(
-                total_wait, desc
-            )
-            raise TimeoutAssertionError(timeout_message)
-        iteration += 1
-        value = function()
-        if value is not None:
-            return value
-        time.sleep(delta)
-
-
-class TimeoutAssertionError(AssertionError):
-
-    def __init__(self, message):
-        super().__init__(message)
+    return tool_util_wait_on(function, desc, timeout)

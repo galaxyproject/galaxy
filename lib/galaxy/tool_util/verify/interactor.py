@@ -26,6 +26,7 @@ from galaxy.tool_util.parser.interface import TestCollectionDef, TestCollectionO
 from galaxy.util.bunch import Bunch
 from . import verify
 from .asserts import verify_assertions
+from .wait import wait_on
 
 log = getLogger(__name__)
 
@@ -249,26 +250,12 @@ class GalaxyInteractorApi:
                     msg = "Failed to verify dataset metadata, metadata key [%s] was not found." % key
                     raise Exception(msg)
 
-    def wait_for_job(self, job_id, history_id, maxseconds):
-        self.wait_for(lambda: not self.__job_ready(job_id, history_id), maxseconds=maxseconds)
+    def wait_for_job(self, job_id, history_id=None, maxseconds=DEFAULT_TOOL_TEST_WAIT):
+        self.wait_for(lambda: self.__job_ready(job_id, history_id), maxseconds=maxseconds)
 
-    def wait_for(self, func, what='Tool test run', **kwd):
-        sleep_amount = 0.2
-        slept = 0
+    def wait_for(self, func, what='tool test run', **kwd):
         walltime_exceeded = int(kwd.get("maxseconds", DEFAULT_TOOL_TEST_WAIT))
-
-        while slept <= walltime_exceeded:
-            result = func()
-            if result:
-                time.sleep(sleep_amount)
-                slept += sleep_amount
-                sleep_amount *= 2
-            else:
-                return
-
-        message = '{} exceeded walltime [total {}, max {}], terminating.'.format(what, slept, walltime_exceeded)
-        log.info(message)
-        raise AssertionError(message)
+        wait_on(func, what, walltime_exceeded)
 
     def get_job_stdio(self, job_id):
         job_stdio = self.__get_job_stdio(job_id).json()
@@ -476,7 +463,7 @@ class GalaxyInteractorApi:
     def delete_history(self, history):
         return None
 
-    def __job_ready(self, job_id, history_id):
+    def __job_ready(self, job_id, history_id=None):
         if job_id is None:
             raise ValueError("__job_ready passed empty job_id")
         job_json = self._get("jobs/%s" % job_id).json()
@@ -484,7 +471,7 @@ class GalaxyInteractorApi:
         try:
             return self._state_ready(state, error_msg="Job in error state.")
         except Exception:
-            if VERBOSE_ERRORS:
+            if VERBOSE_ERRORS and history_id is not None:
                 self._summarize_history(history_id)
             raise
 
@@ -570,7 +557,7 @@ class GalaxyInteractorApi:
             return True
         elif state_str == 'error':
             raise Exception(error_msg)
-        return False
+        return None
 
     def __submit_tool(self, history_id, tool_id, tool_input, extra_data={}, files=None):
         data = dict(
@@ -625,11 +612,38 @@ class GalaxyInteractorApi:
             params['key'] = key
         return params, data
 
-    def _post(self, path, data=None, files=None, key=None, admin=False, anon=False):
+    def _post(self, path, data=None, files=None, key=None, admin=False, anon=False, json=False):
+        # If json=True, use post payload using request's json parameter instead of the data
+        # parameter (i.e. assume the contents is a jsonified blob instead of form parameters
+        # with individual parameters jsonified if needed).
         params, data = self.__inject_api_key(data=data, key=key, admin=admin, anon=anon)
-        # no params for POST
-        data.update(params)
-        return requests.post("{}/{}".format(self.api_url, path), data=data, files=files)
+
+        # handle encoded files
+        if files is None:
+            files = data.get("__files", None)
+            if files is not None:
+                del data["__files"]
+
+                # files doesn't really work with json, so dump the parameters
+                # and do a normal POST with request's data parameter.
+                if json:
+                    json = False
+                    new_items = {}
+                    for key, val in data.items():
+                        if isinstance(val, dict) or isinstance(val, list):
+                            new_items[key] = dumps(val)
+                    data.update(new_items)
+
+        kwd = {
+            'files': files,
+        }
+        if json:
+            kwd['json'] = data
+            kwd['params'] = params
+        else:
+            data.update(params)
+            kwd['data'] = data
+        return requests.post("%s/%s" % (self.api_url, path), **kwd)
 
     def _delete(self, path, data=None, key=None, admin=False, anon=False):
         params, data = self.__inject_api_key(data=data, key=key, admin=admin, anon=anon)

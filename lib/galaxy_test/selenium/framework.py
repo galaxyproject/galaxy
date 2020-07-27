@@ -261,6 +261,11 @@ class TestWithSeleniumMixin(NavigatesGalaxy, UsesApiTestCaseMixin):
 
         self.driver.save_screenshot(target)
 
+    def api_interactor_for_logged_in_user(self):
+        api_key = self.get_api_key(force=True)
+        interactor = self._get_interactor(api_key=api_key)
+        return interactor
+
     def write_screenshot_directory_file(self, label, content):
         target = self._screenshot_path(label, ".txt")
         if target is None:

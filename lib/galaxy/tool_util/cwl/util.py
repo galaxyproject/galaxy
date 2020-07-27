@@ -113,8 +113,8 @@ def galactic_job_json(
         upload_response = upload_func(target)
         return response_to_hda(target, upload_response)
 
-    def upload_file_literal(contents):
-        target = FileLiteralTarget(contents)
+    def upload_file_literal(contents, **kwd):
+        target = FileLiteralTarget(contents, **kwd)
         upload_response = upload_func(target)
         return response_to_hda(target, upload_response)
 
@@ -175,6 +175,9 @@ def galactic_job_json(
         # format to match output definitions in tool, where did filetype come from?
         filetype = value.get("filetype", None) or value.get("format", None)
         composite_data_raw = value.get("composite_data", None)
+        kwd = {}
+        if "tags" in value:
+            kwd["tags"] = value.get("tags")
         if composite_data_raw:
             composite_data = []
             for entry in composite_data_raw:
@@ -184,13 +187,13 @@ def galactic_job_json(
                 else:
                     path = entry
                 composite_data.append(path)
-            rval_c = upload_file_with_composite_data(None, composite_data, filetype=filetype)
+            rval_c = upload_file_with_composite_data(None, composite_data, filetype=filetype, **kwd)
             return rval_c
 
         if file_path is None:
             contents = value.get("contents", None)
             if contents is not None:
-                return upload_file_literal(contents)
+                return upload_file_literal(contents, **kwd)
 
             return value
 
@@ -217,7 +220,7 @@ def galactic_job_json(
             tf.close()
             secondary_files_tar_path = tmp.name
 
-        return upload_file(file_path, secondary_files_tar_path, filetype=filetype)
+        return upload_file(file_path, secondary_files_tar_path, filetype=filetype, **kwd)
 
     def replacement_directory(value):
         file_path = value.get("location", None) or value.get("path", None)
@@ -248,22 +251,38 @@ def galactic_job_json(
         hdca_id = collection["id"]
         return {"src": "hdca", "id": hdca_id}
 
-    def replacement_collection(value):
+    def to_elements(value, rank_collection_type):
         collection_element_identifiers = []
-        assert "collection_type" in value
         assert "elements" in value
-
-        collection_type = value["collection_type"]
         elements = value["elements"]
 
+        is_nested_collection = ":" in rank_collection_type
         for element in elements:
-            dataset = replacement_item(element, force_to_file=True)
-            collection_element = dataset.copy()
-            collection_element["name"] = element["identifier"]
-            collection_element_identifiers.append(collection_element)
+            if not is_nested_collection:
+                # flat collection
+                dataset = replacement_item(element, force_to_file=True)
+                collection_element = dataset.copy()
+                collection_element["name"] = element["identifier"]
+                collection_element_identifiers.append(collection_element)
+            else:
+                # nested collection
+                sub_collection_type = rank_collection_type[rank_collection_type.find(":") + 1:]
+                collection_element = {
+                    "name": element["identifier"],
+                    "src": "new_collection",
+                    "collection_type": sub_collection_type,
+                    "element_identifiers": to_elements(element, sub_collection_type)
+                }
+                collection_element_identifiers.append(collection_element)
 
-        # TODO: handle nested lists/arrays
-        collection = collection_create_func(collection_element_identifiers, collection_type)
+        return collection_element_identifiers
+
+    def replacement_collection(value):
+        assert "collection_type" in value
+        collection_type = value["collection_type"]
+        elements = to_elements(value, collection_type)
+
+        collection = collection_create_func(elements, collection_type)
         dataset_collections.append(collection)
         hdca_id = collection["id"]
         return {"src": "hdca", "id": hdca_id}
@@ -311,6 +330,7 @@ class FileLiteralTarget:
 
     def __init__(self, contents, **kwargs):
         self.contents = contents
+        self.properties = kwargs
 
     def __str__(self):
         return "FileLiteralTarget[path={}] with {}".format(self.path, self.properties)
