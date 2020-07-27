@@ -11,13 +11,12 @@
         </div>
         <div class="unified-panel-controls">
             <tool-search :query="query" placeholder="search tools" @onQuery="onQuery" @onResults="onResults" />
-
             <div class="py-2" v-if="hasResults">
                 <b-button @click="onToggle">{{ buttonText }}</b-button>
             </div>
             <div class="py-2" v-else-if="query">
-                <span v-if="query.length < 3" class="font-weight-bold">***Search string too short***</span>
-                <span v-else class="font-weight-bold">***No Results Found***</span>
+                <b-badge v-if="query.length < 3" class="w-100">Search string too short</b-badge>
+                <b-badge v-else class="w-100">No Results Found</b-badge>
             </div>
         </div>
         <div class="unified-panel-body">
