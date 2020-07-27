@@ -30,7 +30,6 @@ $(document).ready(() => {
                 }
             })
             .then(() => {
-                console.debug("DONE!", url);
                 document.querySelector("body.full-content").insertAdjacentHTML(
                     "afterbegin",
                     `
