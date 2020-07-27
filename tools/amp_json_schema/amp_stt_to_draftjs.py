@@ -30,7 +30,8 @@ def main():
 			print("File exists, but not json.  Continue conversion")
 			
 	if exit_peacefully == False:
-		fill_speakers(segmentation_json)
+		if segmentation_json is not None and segmentation_json!='None':
+			fill_speakers(segmentation_json)
 		speaker_count = 0
 		out_json = dict()
 		out_json['entityMap'] = {}
@@ -195,6 +196,9 @@ def fill_speakers(segmentation_json):
 		print("Error reading segmentation json")
 
 def get_speaker_name(start, end, speaker_count):
+	if len(segments)==0:
+		return "Speaker_0"
+
 	name = None
 	for s in range(0, len(segments)):
 		this_segment = segments[s]
