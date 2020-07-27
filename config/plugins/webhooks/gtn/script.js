@@ -1,10 +1,6 @@
 $(document).ready(() => {
     var gtnWebhookLoaded = false;
 
-    function toggleOverlay() {
-        document.getElementById("gtn-container").classList.toggle("d-none");
-    }
-
     function removeOverlay() {
         document.getElementById("gtn-container").classList.add("d-none");
     }
@@ -110,7 +106,7 @@ $(document).ready(() => {
             if (!gtnWebhookLoaded) {
                 addIframe();
             } else {
-                toggleOverlay();
+                document.getElementById("gtn-container").classList.toggle("d-none");
             }
         });
     });
