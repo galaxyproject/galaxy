@@ -37,7 +37,7 @@ $(document).ready(() => {
                     <div id="gtn-container">
                         <div id="gtn-screen-overlay"></div>
                         <div id="gtn-screen">
-                            <div class="gtn-header">
+                            <div id="gtn-header">
                                 <iframe id="gtn-embed" src="${url}" width="80%" height="80%"></iframe>
                                 ${message}
                             </div>
