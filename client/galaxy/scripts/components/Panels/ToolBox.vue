@@ -12,7 +12,10 @@
         <div class="unified-panel-controls">
             <tool-search :query="query" placeholder="search tools" @onQuery="onQuery" @onResults="onResults" />
             <div class="py-2" v-if="hasResults">
-                <b-button @click="onToggle">{{ buttonText }}</b-button>
+                <b-button @click="onToggle" size="sm" class="w-100">
+                    <span :class="buttonIcon" />
+                    <span class="mr-1">{{ buttonText }}</span>
+                </b-button>
             </div>
             <div class="py-2" v-else-if="query">
                 <b-badge v-if="query.length < 3" class="w-100">Search string too short</b-badge>
@@ -69,6 +72,7 @@ export default {
             queryFilter: null,
             showSections: false,
             buttonText: "",
+            buttonIcon: "",
         };
     },
     props: {
@@ -148,6 +152,7 @@ export default {
         },
         setButtonText() {
             this.buttonText = this.showSections ? "Hide Sections" : "Show Sections";
+            this.buttonIcon = this.showSections ? "fa fa-eye-slash" : "fa fa-eye";
         },
     },
 };
