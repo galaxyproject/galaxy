@@ -8,6 +8,7 @@
                 @updateSearch="updateSearchValue($event)"
                 @refreshTable="refreshTable"
                 @fetchFolderContents="fetchFolderContents($event)"
+                @deleteFromTable="deleteFromTable"
                 :folderContents="folderContents"
                 :include_deleted="include_deleted"
                 :folder_id="folder_id"
@@ -324,6 +325,13 @@ export default {
         },
         refreshTable() {
             this.$refs.folder_content_table.refresh();
+        },
+        deleteFromTable(deletedItem) {
+            this.folderContents = this.folderContents.filter((element) => {
+                if (element.id !== deletedItem.id) {
+                    return element;
+                }
+            });
         },
         toggleSelect() {
             // Since we cannot select new folders, toggle should clear all if all rows match, expect new folders

@@ -13,7 +13,7 @@ let chain_call_control = {};
 /**
  * Delete the selected items. Atomic. One by one.
  */
-export function deleteSelectedItems(checkedRows) {
+export function deleteSelectedItems(checkedRows, onRemove, refreshTable) {
     const Galaxy = getGalaxyInstance();
     var dataset_ids = [];
     var folder_ids = [];
@@ -68,7 +68,7 @@ export function deleteSelectedItems(checkedRows) {
 
         chain_call_control.total_number = items_total;
         // call the recursive function to call ajax one after each other (request FIFO queue)
-        new chainCallDeletingItems(items_to_delete);
+        chainCallDeletingItems(items_to_delete, onRemove, refreshTable);
     }
 }
 
@@ -88,9 +88,8 @@ function templateDeletingItemsProgressBar() {
 /**
  * Take the array of lddas, create request for each and
  * call them in chain. Update progress bar in between each.
- * @param  {array} lddas_set array of lddas to delete
  */
-function chainCallDeletingItems(items_to_delete) {
+function chainCallDeletingItems(items_to_delete, onRemove, refreshTable) {
     const Galaxy = getGalaxyInstance();
     const deleted_items = new mod_library_model.Folder();
     var item_to_delete = items_to_delete.pop();
@@ -110,19 +109,21 @@ function chainCallDeletingItems(items_to_delete) {
     item_to_delete
         .destroy()
         .done((item) => {
+            onRemove(item);
             // TODO remove stuff from table content
             // Galaxy.libraries.folderListView.collection.remove(item_to_delete.id);
             updateProgress();
             // add the deleted item to collection, triggers rendering
             // TODO add to deleted
 
-            chainCallDeletingItems(items_to_delete);
+            chainCallDeletingItems(items_to_delete, onRemove, refreshTable);
         })
         .fail(() => {
             chain_call_control.failed_number += 1;
             updateProgress();
-            chainCallDeletingItems(items_to_delete);
+            chainCallDeletingItems(items_to_delete, onRemove, refreshTable);
         });
+    refreshTable();
 }
 
 /**

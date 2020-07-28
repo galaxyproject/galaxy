@@ -137,7 +137,11 @@ export default {
             this.$emit("updateSearch", value);
         },
         deleteSelected: function () {
-            deleteSelectedItems(this.selected);
+            deleteSelectedItems(
+                this.selected,
+                (deletedItem) => this.$emit("deleteFromTable", deletedItem),
+                () => this.$emit("refreshTable")
+            );
         },
         newFolder() {
             this.folderContents.unshift({
