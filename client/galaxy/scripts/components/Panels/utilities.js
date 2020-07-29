@@ -9,7 +9,7 @@ export function filterToolSections(layout, results) {
                     }
                 });
             }
-            //Sorts tools in section by rank in results
+            // sort tools in section by rank in results
             toolRes.sort((tool1, tool2) => {
                 return results.indexOf(tool1.id) - results.indexOf(tool2.id);
             });
@@ -19,8 +19,7 @@ export function filterToolSections(layout, results) {
                 elems: toolRes,
             };
         });
-
-        //Filter out categories without tools in results
+        // filter out categories without tools in results
         return filteredLayout
             .filter((section) => {
                 const isSection = section.elems && section.elems.length > 0;
@@ -28,6 +27,9 @@ export function filterToolSections(layout, results) {
                 return isSection || isMatchedTool;
             })
             .sort((sect1, sect2) => {
+                if (sect1.elems.length == 0 || sect2.elems.length == 0) {
+                    return 0;
+                }
                 return results.indexOf(sect1.elems[0].id) - results.indexOf(sect2.elems[0].id);
             });
     } else {
@@ -36,17 +38,15 @@ export function filterToolSections(layout, results) {
 }
 
 export function filterTools(layout, results) {
-    // don't consider expression tools, unless it's workflow editor
+    // do not consider expression tools, unless requested by the workflow editor
     layout = layout.filter((section) => section.name !== "Expression Tools");
-
     if (results) {
         var toolsResults = [];
         if (results.length < 1) {
             return toolsResults;
         }
-
-        //Goes through each section and adds each tools that's in results to
-        //toolsResults, sorted by search ranking
+        // iterate through each section and add each tool that is in the results to
+        // toolsResults, sort by search ranking
         layout.map((section) => {
             if (section.elems) {
                 section.elems.forEach((el) => {
@@ -56,7 +56,6 @@ export function filterTools(layout, results) {
                 });
             }
         });
-
         return toolsResults.sort((tool1, tool2) => {
             return results.indexOf(tool1.id) - results.indexOf(tool2.id);
         });
