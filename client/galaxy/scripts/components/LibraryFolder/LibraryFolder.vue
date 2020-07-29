@@ -1,5 +1,7 @@
 <template>
     <div>
+        <div id="path-bar"></div>
+
         <div v-if="!hasLoaded" class="d-flex justify-content-center m-5">
             <font-awesome-icon icon="spinner" spin size="9x" />
         </div>
@@ -250,7 +252,7 @@ import { Toast } from "ui/toast";
 import FolderTopBar from "./TopToolbar/FolderTopBar";
 import { initFolderTableIcons } from "./icons.js";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { getGalaxyInstance } from "app";
+import mod_path_bar from "./path-bar";
 
 initFolderTableIcons();
 
@@ -295,6 +297,18 @@ export default {
         this.services = new Services({ root: this.root });
         this.fetchFolderContents();
     },
+    watch: {
+        hasLoaded: function (newVal, oldVal) {
+            console.log(mod_path_bar);
+            if (newVal === true) {
+                const pathbar = new mod_path_bar.PathBar({
+                    full_path: this.folder_metadata.full_path,
+                    id: this.folder_id,
+                    parent_library_id: this.folder_metadata.parent_library_id,
+                });
+            }
+        },
+    },
     methods: {
         fetchFolderContents(include_deleted = false) {
             this.include_deleted = include_deleted;
@@ -308,7 +322,6 @@ export default {
                     this.folderContents = response.folder_contents;
                     this.folder_metadata = response.metadata;
                     this.hasLoaded = true;
-                    console.log(response);
                 })
                 .catch((error) => {
                     this.error = error;
