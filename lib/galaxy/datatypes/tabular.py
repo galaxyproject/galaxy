@@ -28,8 +28,6 @@ from galaxy.datatypes.sniff import (
 from galaxy.util import compression_utils
 from . import dataproviders
 
-long = int
-
 log = logging.getLogger(__name__)
 
 
@@ -894,11 +892,11 @@ class Eland(Tabular):
                 line_pieces = line.split('\t')
                 if len(line_pieces) != 22:
                     return False
-                if long(line_pieces[1]) < 0:
+                if int(line_pieces[1]) < 0:
                     raise Exception('Out of range')
-                if long(line_pieces[2]) < 0:
+                if int(line_pieces[2]) < 0:
                     raise Exception('Out of range')
-                if long(line_pieces[3]) < 0:
+                if int(line_pieces[3]) < 0:
                     raise Exception('Out of range')
                 int(line_pieces[4])
                 int(line_pieces[5])

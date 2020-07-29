@@ -35,8 +35,6 @@ from galaxy.util.checkers import (
 from galaxy.util.image_util import check_image_type
 from . import data
 
-long = int
-
 log = logging.getLogger(__name__)
 
 
@@ -131,7 +129,7 @@ class Sequence(data.Text):
                 sequences_per_file[i] += 1
         elif split_params['split_mode'] == 'to_size':
             # loop through the sections and calculate the number of sequences
-            chunk_size = long(split_params['split_size'])
+            chunk_size = int(split_params['split_size'])
             rem = total_sequences % chunk_size
             sequences_per_file = [chunk_size for i in range(total_sequences / chunk_size)]
             # TODO: Should we invest the time in a better way to handle small remainders?
@@ -149,7 +147,7 @@ class Sequence(data.Text):
             total_sequences = input_datasets[0].metadata.sequences
         else:
             with compression_utils.get_fileobj(input_datasets[0].file_name) as in_file:
-                total_sequences = long(0)
+                total_sequences = int(0)
                 for i, line in enumerate(in_file):
                     total_sequences += 1
             total_sequences /= 4
@@ -161,9 +159,9 @@ class Sequence(data.Text):
     def do_fast_split(cls, input_datasets, toc_file_datasets, subdir_generator_function, split_params):
         data = json.load(open(toc_file_datasets[0].file_name))
         sections = data['sections']
-        total_sequences = long(0)
+        total_sequences = int(0)
         for section in sections:
-            total_sequences += long(section['sequences'])
+            total_sequences += int(section['sequences'])
         sequences_per_file = cls.get_sequences_per_file(total_sequences, split_params)
         return cls.write_split_files(input_datasets, toc_file_datasets, subdir_generator_function, sequences_per_file)
     do_fast_split = classmethod(do_fast_split)
@@ -228,30 +226,30 @@ class Sequence(data.Text):
         sections = toc_file['sections']
         result = []
 
-        current_sequence = long(0)
+        current_sequence = int(0)
         i = 0
         # skip to the section that contains my starting sequence
-        while i < len(sections) and start_sequence >= current_sequence + long(sections[i]['sequences']):
-            current_sequence += long(sections[i]['sequences'])
+        while i < len(sections) and start_sequence >= current_sequence + int(sections[i]['sequences']):
+            current_sequence += int(sections[i]['sequences'])
             i += 1
         if i == len(sections):  # bad input data!
             raise Exception('No FQTOC section contains starting sequence %s' % start_sequence)
 
         # These two variables act as an accumulator for consecutive entire blocks that
         # can be copied verbatim (without decompressing)
-        start_chunk = long(-1)
-        end_chunk = long(-1)
+        start_chunk = int(-1)
+        end_chunk = int(-1)
         copy_chunk_cmd = 'dd bs=1 skip=%s count=%s if=%s 2> /dev/null >> %s'
 
         while sequence_count > 0 and i < len(sections):
             # we need to extract partial data. So, find the byte offsets of the chunks that contain the data we need
             # use a combination of dd (to pull just the right sections out) tail (to skip lines) and head (to get the
             # right number of lines
-            sequences = long(sections[i]['sequences'])
+            sequences = int(sections[i]['sequences'])
             skip_sequences = start_sequence - current_sequence
             sequences_to_extract = min(sequence_count, sequences - skip_sequences)
-            start_copy = long(sections[i]['start'])
-            end_copy = long(sections[i]['end'])
+            start_copy = int(sections[i]['start'])
+            end_copy = int(sections[i]['end'])
             if sequences_to_extract < sequences:
                 if start_chunk > -1:
                     result.append(copy_chunk_cmd % (start_chunk, end_chunk - start_chunk, input_name, output_name))
@@ -774,7 +772,7 @@ class BaseFastq(Sequence):
         args = data['args']
         input_name = data['input_name']
         output_name = data['output_name']
-        start_sequence = long(args['start_sequence'])
+        start_sequence = int(args['start_sequence'])
         sequence_count = int(args['num_sequences'])
 
         if 'toc_file' in args:

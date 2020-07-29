@@ -5,8 +5,6 @@ from galaxy import util
 from . import InstrumentPlugin
 from .. import formatting
 
-long = int
-
 
 MEMINFO_LINE = re.compile(r"(\w+)\s*\:\s*(\d+) kB")
 
@@ -52,7 +50,7 @@ class MemInfoPlugin(InstrumentPlugin):
                 # defined for formatter. Grab everything in verbose mode for
                 # an arbitrary snapshot of memory at beginning of run.
                 if key in MEMINFO_TITLES or self.verbose:
-                    value = long(line_match.group(2))
+                    value = int(line_match.group(2))
                     properties[key] = value
         return properties
 

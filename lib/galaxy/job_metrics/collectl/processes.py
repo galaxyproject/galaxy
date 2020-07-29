@@ -9,8 +9,6 @@ import tempfile
 from galaxy import util
 from ..collectl import stats
 
-long = int
-
 log = logging.getLogger(__name__)
 
 # Collectl process information cheat sheet:
@@ -167,7 +165,7 @@ class CollectlProcessSummarizer:
                 if column_name in ["SysT", "UsrT", "PCT"]:
                     to_num = float
                 else:
-                    to_num = long
+                    to_num = int
 
                 interval_stat = sum(to_num(r[column_index]) for r in rows)
                 self.tree_statistics[column_name].track(interval_stat)

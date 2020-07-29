@@ -11,8 +11,6 @@ from whoosh.query import And, Every, Term
 from galaxy import exceptions
 from galaxy.exceptions import ObjectNotFound
 
-long = int
-
 log = logging.getLogger(__name__)
 
 schema = Schema(
@@ -43,7 +41,7 @@ class RepoWeighting(scoring.BM25F):
         reasonable_hits = 100.0
 
         stored_times_downloaded = searcher.stored_fields(docnum)["times_downloaded"]
-        if not isinstance(stored_times_downloaded, (int, long)):
+        if not isinstance(stored_times_downloaded, int):
             times_downloaded = int(stored_times_downloaded)
         else:
             times_downloaded = stored_times_downloaded
