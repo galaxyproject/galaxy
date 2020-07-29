@@ -1,59 +1,63 @@
 <template>
-    <div class="form-inline d-flex align-items-center mb-2">
-        <a class="mr-1 btn btn-secondary" href="/library/list" data-toggle="tooltip" title="Go to first page">
-            <font-awesome-icon icon="home" />
-        </a>
-        <div>
-            <form class="form-inline">
-                <b-input-group size="sm">
-                    <b-form-input
-                        class="mr-1"
-                        v-on:input="updateSearch($event)"
-                        type="search"
-                        id="filterInput"
-                        placeholder="Search"
-                    >
+    <div>
+        <div id="path-bar" />
+
+        <div class="form-inline d-flex align-items-center mb-2">
+            <a class="mr-1 btn btn-secondary" href="/library/list" data-toggle="tooltip" title="Go to first page">
+                <font-awesome-icon icon="home" />
+            </a>
+            <div>
+                <form class="form-inline">
+                    <b-input-group size="sm">
+                        <b-form-input
+                            class="mr-1"
+                            v-on:input="updateSearch($event)"
+                            type="search"
+                            id="filterInput"
+                            placeholder="Search"
                         >
-                    </b-form-input>
-                </b-input-group>
-                <button
-                    v-if="metadata.can_add_library_item"
-                    title="Create new folder"
-                    class="btn btn-secondary toolbtn-create-folder add-library-items add-library-items-folder mr-1"
-                    type="button"
-                    @click="newFolder"
-                >
-                    <font-awesome-icon icon="plus" />
-                    Folder
-                </button>
-                <button
-                    v-if="logged_dataset_manipulation"
-                    data-toggle="tooltip"
-                    title="Mark items deleted"
-                    class="primary-button toolbtn-bulk-delete logged-dataset-manipulation mr-1"
-                    type="button"
-                    @click="deleteSelected"
-                >
-                    <font-awesome-icon icon="trash" />
-                    Delete
-                </button>
-                <span class="mr-1" data-toggle="tooltip" title="Show location details">
-                    <button @click="showDetails" class="primary-button toolbtn-show-locinfo" type="button">
-                        <font-awesome-icon icon="info-circle" />
-                        Details
-                    </button>
-                </span>
-                <div class="form-check logged-dataset-manipulation mr-1" v-if="logged_dataset_manipulation">
-                    <b-form-checkbox
-                        id="checkbox-1"
-                        :checked="include_deleted"
-                        v-on:input="toggle_include_deleted($event)"
-                        name="checkbox-1"
+                            >
+                        </b-form-input>
+                    </b-input-group>
+                    <button
+                        v-if="metadata.can_add_library_item"
+                        title="Create new folder"
+                        class="btn btn-secondary toolbtn-create-folder add-library-items add-library-items-folder mr-1"
+                        type="button"
+                        @click="newFolder"
                     >
-                        include deleted
-                    </b-form-checkbox>
-                </div>
-            </form>
+                        <font-awesome-icon icon="plus" />
+                        Folder
+                    </button>
+                    <button
+                        v-if="logged_dataset_manipulation"
+                        data-toggle="tooltip"
+                        title="Mark items deleted"
+                        class="primary-button toolbtn-bulk-delete logged-dataset-manipulation mr-1"
+                        type="button"
+                        @click="deleteSelected"
+                    >
+                        <font-awesome-icon icon="trash" />
+                        Delete
+                    </button>
+                    <span class="mr-1" data-toggle="tooltip" title="Show location details">
+                        <button @click="showDetails" class="primary-button toolbtn-show-locinfo" type="button">
+                            <font-awesome-icon icon="info-circle" />
+                            Details
+                        </button>
+                    </span>
+                    <div class="form-check logged-dataset-manipulation mr-1" v-if="logged_dataset_manipulation">
+                        <b-form-checkbox
+                            id="checkbox-1"
+                            :checked="include_deleted"
+                            v-on:input="toggle_include_deleted($event)"
+                            name="checkbox-1"
+                        >
+                            include deleted
+                        </b-form-checkbox>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </template>
@@ -65,6 +69,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { showLocInfo } from "./details-modal";
 import { deleteSelectedItems } from "./delete-selected";
 import { initTopBarIcons } from "components/LibraryFolder/icons";
+import mod_path_bar from "../path-bar";
 
 initTopBarIcons();
 
@@ -131,6 +136,13 @@ export default {
                 }
             }
         }
+    },
+    mounted() {
+        const pathbar = new mod_path_bar.PathBar({
+            full_path: this.metadata.full_path,
+            id: this.folder_id,
+            parent_library_id: this.metadata.parent_library_id,
+        });
     },
     methods: {
         updateSearch: function (value) {

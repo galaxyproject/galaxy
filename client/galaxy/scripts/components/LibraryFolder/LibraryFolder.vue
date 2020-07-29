@@ -1,7 +1,5 @@
 <template>
     <div>
-        <div id="path-bar"></div>
-
         <div v-if="!hasLoaded" class="d-flex justify-content-center m-5">
             <font-awesome-icon icon="spinner" spin size="9x" />
         </div>
@@ -296,18 +294,6 @@ export default {
         this.root = getAppRoot();
         this.services = new Services({ root: this.root });
         this.fetchFolderContents();
-    },
-    watch: {
-        hasLoaded: function (newVal, oldVal) {
-            console.log(mod_path_bar);
-            if (newVal === true) {
-                const pathbar = new mod_path_bar.PathBar({
-                    full_path: this.folder_metadata.full_path,
-                    id: this.folder_id,
-                    parent_library_id: this.folder_metadata.parent_library_id,
-                });
-            }
-        },
     },
     methods: {
         fetchFolderContents(include_deleted = false) {
