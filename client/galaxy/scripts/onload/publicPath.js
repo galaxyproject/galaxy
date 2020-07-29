@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 /**
  * Set dynamically loaded webpack public path. (https://webpack.js.org/guides/public-path/#on-the-fly)
  * This is, by default, just `/static/dist/`, but if galaxy is being served at
