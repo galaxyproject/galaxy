@@ -27,7 +27,7 @@ def main():
     lines_per_chunk = 4 * sequences
     chunk_begin = 0
 
-    with open(input_fname) as in_file, open(sys.argv[2], 'w') as out_file:
+    with open(input_fname, 'rb') as in_file, open(sys.argv[2], 'w') as out_file:
         out_file.write('{"sections" : [')
 
         for line in in_file:
