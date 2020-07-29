@@ -775,10 +775,11 @@ class BaseFastq(Sequence):
         input_name = data['input_name']
         output_name = data['output_name']
         start_sequence = long(args['start_sequence'])
-        sequence_count = long(args['num_sequences'])
+        sequence_count = int(args['num_sequences'])
 
         if 'toc_file' in args:
-            toc_file = json.load(open(args['toc_file']))
+            with open(args['toc_file']) as f:
+                toc_file = json.load(f)
             commands = Sequence.get_split_commands_with_toc(input_name, output_name, toc_file, start_sequence, sequence_count)
         else:
             commands = Sequence.get_split_commands_sequential(is_gzip(input_name), input_name, output_name, start_sequence, sequence_count)

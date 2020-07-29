@@ -122,7 +122,8 @@ class TabularData(data.Text):
                                        column_types=column_types)
 
     def display_as_markdown(self, dataset_instance, markdown_format_helpers):
-        contents = open(dataset_instance.file_name).read(data.DEFAULT_MAX_PEEK_SIZE)
+        with open(dataset_instance.file_name) as f:
+            contents = f.read(data.DEFAULT_MAX_PEEK_SIZE)
         markdown = self.make_html_table(dataset_instance, peek=contents)
         if len(contents) == data.DEFAULT_MAX_PEEK_SIZE:
             markdown += markdown_format_helpers.indicate_data_truncated()
@@ -998,7 +999,8 @@ class BaseCSV(TabularData):
         """ Return True if if recognizes dialect and header. """
         try:
             # check the dialect works
-            reader = csv.reader(open(filename), self.dialect)
+            with open(filename) as f:
+                reader = csv.reader(f, self.dialect)
             # Check we can read header and get columns
             header_row = next(reader)
             if len(header_row) < 2:
@@ -1027,7 +1029,9 @@ class BaseCSV(TabularData):
                     pass
 
             # Optional: Check Python's csv comes up with a similar dialect
-            auto_dialect = csv.Sniffer().sniff(open(filename).read(self.big_peek_size))
+            with open(filename) as f:
+                big_peek = f.read(self.big_peek_size)
+            auto_dialect = csv.Sniffer().sniff(big_peek)
             if (auto_dialect.delimiter != self.dialect.delimiter):
                 return False
             if (auto_dialect.quotechar != self.dialect.quotechar):
@@ -1042,7 +1046,7 @@ class BaseCSV(TabularData):
             Note Without checking the dialect returned by sniff
                   this test may be checking the wrong dialect.
             """
-            if not csv.Sniffer().has_header(open(filename).read(self.big_peek_size)):
+            if not csv.Sniffer().has_header(big_peek):
                 return False
             return True
         except Exception:

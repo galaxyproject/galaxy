@@ -712,7 +712,8 @@ class RexpBase(Html):
         if not dataset.dataset.purged:
             pp = os.path.join(dataset.extra_files_path, '%s.pheno' % dataset.metadata.base_name)
             try:
-                p = open(pp).readlines()
+                with open(pp) as f:
+                    p = f.readlines()
             except Exception:
                 p = ['##failed to find %s' % pp, ]
             dataset.peek = ''.join(p[:5])
@@ -727,7 +728,8 @@ class RexpBase(Html):
         """
         pp = os.path.join(dataset.extra_files_path, '%s.pheno' % dataset.metadata.base_name)
         try:
-            p = open(pp).readlines()
+            with open(pp) as f:
+                p = f.readlines()
         except Exception:
             p = ['##failed to find %s' % pp]
         return ''.join(p[:5])
@@ -738,7 +740,8 @@ class RexpBase(Html):
         """
         h = '## rexpression get_file_peek: no file found'
         try:
-            h = open(filename).readlines()
+            with open(filename) as f:
+                h = f.readlines()
         except Exception:
             pass
         return ''.join(h[:5])
@@ -788,7 +791,8 @@ class RexpBase(Html):
         pp = os.path.join(dataset.extra_files_path, pn)
         dataset.metadata.pheno_path = pp
         try:
-            pf = open(pp).readlines()  # read the basename.phenodata in the extra_files_path
+            with open(pp) as f:
+                pf = f.readlines()  # read the basename.phenodata in the extra_files_path
         except Exception:
             pf = None
         if pf:

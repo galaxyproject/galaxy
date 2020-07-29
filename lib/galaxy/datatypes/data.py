@@ -483,7 +483,8 @@ class Data(metaclass=DataMeta):
         if self.is_binary:
             result = "*cannot display binary content*\n"
         else:
-            contents = open(dataset_instance.file_name).read(DEFAULT_MAX_PEEK_SIZE)
+            with open(dataset_instance.file_name) as f:
+                contents = f.read(DEFAULT_MAX_PEEK_SIZE)
             result = markdown_format_helpers.literal_via_fence(contents)
             if len(contents) == DEFAULT_MAX_PEEK_SIZE:
                 result += markdown_format_helpers.indicate_data_truncated()
@@ -501,7 +502,8 @@ class Data(metaclass=DataMeta):
             # This is returning to the browser, it needs to be encoded.
             # TODO Ideally this happens a layer higher, but this is a bad
             # issue affecting many tools
-            return sanitize_html(open(filename).read()).encode('utf-8')
+            with open(filename) as f:
+                return sanitize_html(f.read()).encode('utf-8')
 
         return open(filename, mode='rb')
 

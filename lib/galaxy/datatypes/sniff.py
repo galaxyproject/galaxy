@@ -12,7 +12,7 @@ import re
 import shutil
 import sys
 import tempfile
-import urllib
+import urllib.request
 import zipfile
 
 from galaxy import util
