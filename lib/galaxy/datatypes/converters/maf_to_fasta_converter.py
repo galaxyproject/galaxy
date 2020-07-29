@@ -14,8 +14,8 @@ def __main__():
     output_name = sys.argv.pop(1)
     input_name = sys.argv.pop(1)
     count = 0
-    with open(output_name, 'w') as out, open(input_name) as in:
-        for count, block in enumerate(bx.align.maf.Reader(in)):
+    with open(output_name, 'w') as out, open(input_name) as infile:
+        for count, block in enumerate(bx.align.maf.Reader(infile)):
             spec_counts = {}
             for c in block.components:
                 spec, chrom = maf_utilities.src_split(c.src)
