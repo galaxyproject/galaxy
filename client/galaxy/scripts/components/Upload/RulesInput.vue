@@ -16,8 +16,9 @@
                     <select2 container-class="upload-footer-selection" v-model="selectionType">
                         <option value="paste">{{ l("Pasted Table") }}</option>
                         <option value="dataset">{{ l("History Dataset") }}</option>
-                        <option v-if="ftpUploadSite" value="ftp">{{ l("FTP Directory") }} </option></select2
-                    >
+                        <option v-if="ftpUploadSite" value="ftp">{{ l("FTP Directory") }} </option>
+                        <option value="remote_files">{{ l("Remote Files Directory") }}</option>
+                    </select2>
                 </div>
             </div>
             <div id="upload-rule-dataset-option" class="upload-rule-option" v-if="selectionType == 'dataset'">
@@ -80,6 +81,7 @@ import BootstrapVue from "bootstrap-vue";
 import UploadUtils from "mvc/upload/upload-utils";
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
+import { filesDialog } from "utils/data";
 
 Vue.use(BootstrapVue);
 
@@ -90,6 +92,7 @@ export default {
             l: _l,
             datasets: [],
             ftpFiles: [],
+            uris: [],
             datasetsSet: false,
             topInfo: _l("Tabular source data to extract collection files and metadata from"),
             enableReset: false,
@@ -126,6 +129,8 @@ export default {
                     this.sourceContent = ftp_files.map((file) => file["path"]).join("\n");
                     this.ftpFiles = ftp_files;
                 });
+            } else if (selectionType == "remote_files") {
+                filesDialog(this._handleRemoteFilesUri, { mode: "directory" });
             }
         },
         selectedDatasetId: function (selectedDatasetId) {
@@ -152,6 +157,15 @@ export default {
             this.sourceContent = "";
         },
 
+        _handleRemoteFilesUri: function (record) {
+            // fetch files at URI
+            UploadUtils.getRemoteFilesAt(record.url).then((files) => {
+                files = files.filter((file) => file["class"] == "File");
+                this.sourceContent = files.map((file) => file["uri"]).join("\n");
+                this.uris = files;
+            });
+        },
+
         _eventBuild: function () {
             this._buildSelection(this.sourceContent);
         },
@@ -167,6 +181,9 @@ export default {
                 selection.selectionType = "ftp";
                 selection.elements = this.ftpFiles;
                 selection.ftpUploadSite = this.ftpUploadSite;
+            } else if (selectionType == "remote_files") {
+                selection.selectionType = "remote_files";
+                selection.elements = this.uris;
             }
             selection.dataType = this.dataType;
             Galaxy.currHistoryPanel.buildCollection("rules", selection, true);

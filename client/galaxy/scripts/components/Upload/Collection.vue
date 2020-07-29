@@ -96,11 +96,11 @@
                 ref="btnFtp"
                 class="ui-button-default"
                 id="btn-ftp"
-                @click="_eventFtp"
+                @click="_eventRemoteFiles"
                 :disabled="!enableSources"
-                v-if="ftpUploadSite"
+                v-if="remoteFiles"
             >
-                <span class="fa fa-folder-open-o"></span>{{ btnFtpTitle }}
+                <span class="fa fa-folder-open-o"></span>{{ btnFilesTitle }}
             </b-button>
             <b-button
                 ref="btnLocal"

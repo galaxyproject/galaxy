@@ -22,6 +22,7 @@ from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.expressions import ExpressionContext
 
 log = logging.getLogger(__name__)
+URI_PREFIXES = ["%s://" % x for x in ["http", "https", "ftp", "file", "gxfiles", "gximport", "gxuserimport", "gxftp"]]
 
 
 class Group(Dictifiable):
@@ -348,9 +349,9 @@ class UploadDataset(Group):
                 url_paste = open(url_paste_file).read()
 
                 def start_of_url(content):
-                    start_of_url_paste = content.lstrip()[0:8].lower()
+                    start_of_url_paste = content.lstrip()[0:10].lower()
                     looks_like_url = False
-                    for url_prefix in ["http://", "https://", "ftp://", "file://"]:
+                    for url_prefix in URI_PREFIXES:
                         if start_of_url_paste.startswith(url_prefix):
                             looks_like_url = True
                             break

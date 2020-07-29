@@ -2,6 +2,7 @@ import $ from "jquery";
 import axios from "axios";
 import Vue from "vue";
 import DataDialog from "components/DataDialog/DataDialog.vue";
+import { FilesDialog } from "components/FilesDialog";
 import WorkflowDialog from "components/SelectionDialog/WorkflowDialog.vue";
 import DatasetCollectionDialog from "components/SelectionDialog/DatasetCollectionDialog.vue";
 import { getGalaxyInstance } from "app";
@@ -70,6 +71,13 @@ export function datasetCollectionDialog(callback, options = {}) {
         });
         _mountSelectionDialog(DatasetCollectionDialog, options);
     });
+}
+
+export function filesDialog(callback, options = {}) {
+    Object.assign(options, {
+        callback: callback,
+    });
+    _mountSelectionDialog(FilesDialog, options);
 }
 
 function _mountSelectionDialog(clazz, options) {

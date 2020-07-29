@@ -13,13 +13,16 @@
         >
             <template v-slot:cell(label)="data">
                 <i v-if="data.item.isLeaf" :class="leafIcon" /> <i v-else class="fa fa-folder" />
-                {{ data.value ? data.value : "-" }}
+                <span :title="data.item.labelTitle">{{ data.value ? data.value : "-" }}</span>
             </template>
             <template v-slot:cell(details)="data">
                 {{ data.value ? data.value : "-" }}
             </template>
             <template v-slot:cell(time)="data">
                 {{ data.value ? data.value : "-" }}
+            </template>
+            <template v-slot:cell(navigate)="data">
+                <i v-if="!data.item.isLeaf" class="fa fa-caret-square-o-right" @click.stop="open(data.item)" />
             </template>
         </b-table>
         <div v-if="nItems === 0">
@@ -39,6 +42,11 @@ import BootstrapVue from "bootstrap-vue";
 
 Vue.use(BootstrapVue);
 
+const LABEL_FIELD = { key: "label", sortable: true };
+const DETAILS_FIELD = { key: "details", sortable: true };
+const TIME_FIELD = { key: "time", sortable: true };
+const NAVIGATE_FIELD = { key: "navigate", label: "", sortable: false };
+
 export default {
     props: {
         items: {
@@ -57,24 +65,22 @@ export default {
             type: String,
             default: "fa fa-file-o",
         },
+        showDetails: {
+            type: Boolean,
+            default: true,
+        },
+        showTime: {
+            type: Boolean,
+            default: true,
+        },
+        showNavigate: {
+            type: Boolean,
+            default: false,
+        },
     },
     data() {
         return {
             currentPage: 1,
-            fields: [
-                {
-                    key: "label",
-                    sortable: true,
-                },
-                {
-                    key: "details",
-                    sortable: true,
-                },
-                {
-                    key: "time",
-                    sortable: true,
-                },
-            ],
             nItems: 0,
             perPage: 100,
         };
@@ -87,6 +93,21 @@ export default {
             },
         },
     },
+    computed: {
+        fields: function () {
+            const fields = [LABEL_FIELD];
+            if (this.showDetails) {
+                fields.push(DETAILS_FIELD);
+            }
+            if (this.showTime) {
+                fields.push(TIME_FIELD);
+            }
+            if (this.showNavigate) {
+                fields.push(NAVIGATE_FIELD);
+            }
+            return fields;
+        },
+    },
     methods: {
         /** Resets pagination when a filter/search word is entered **/
         filtered: function (items) {
@@ -96,6 +117,9 @@ export default {
         /** Collects selected datasets in value array **/
         clicked: function (record) {
             this.$emit("clicked", record);
+        },
+        open: function (record) {
+            this.$emit("open", record);
         },
     },
 };

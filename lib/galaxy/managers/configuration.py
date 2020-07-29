@@ -104,6 +104,7 @@ class ConfigSerializer(base.ModelSerializer):
             'cookie_domain'                     : _use_config,
             'python'                            : _defaults_to((sys.version_info.major, sys.version_info.minor)),
             'select_type_workflow_threshold'    : _use_config,
+            'file_sources_configured'           : lambda config, key, **context: self.app.file_sources.custom_sources_configured,
         }
 
 

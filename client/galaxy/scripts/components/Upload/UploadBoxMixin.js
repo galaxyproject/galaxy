@@ -9,6 +9,9 @@ import { getGalaxyInstance } from "app";
 import UploadFtp from "mvc/upload/upload-ftp";
 import LazyLimited from "mvc/lazy/lazy-limited";
 import { findExtension } from "./utils";
+import { filesDialog } from "utils/data";
+
+const localize = _l;
 
 export default {
     components: {
@@ -23,6 +26,18 @@ export default {
         lazyLoadMax: {
             type: Number,
             default: null,
+        },
+    },
+    computed: {
+        btnFilesTitle() {
+            if (this.fileSourcesConfigured) {
+                return localize("Choose remote files");
+            } else {
+                return localize("Choose FTP files");
+            }
+        },
+        remoteFiles() {
+            return this.fileSourcesConfigured || this.ftpUploadSite;
         },
     },
     methods: {
@@ -183,27 +198,46 @@ export default {
             this.uploadbox.remove(model.id);
             this._updateStateForCounters();
         },
-        /** Show/hide ftp popup */
-        _eventFtp: function () {
-            this.ftp.show(
-                new UploadFtp({
-                    collection: this.collection,
-                    ftp_upload_site: this.ftpUploadSite,
-                    onadd: (ftp_file) => {
-                        return this.uploadbox.add([
-                            {
-                                mode: "ftp",
-                                name: ftp_file.path,
-                                size: ftp_file.size,
-                                path: ftp_file.path,
-                            },
-                        ]);
+        /** Show remote files dialog or FTP files */
+        _eventRemoteFiles: function () {
+            if (this.fileSourcesConfigured) {
+                filesDialog(
+                    (items) => {
+                        this.uploadbox.add(
+                            items.map((item) => {
+                                const rval = {
+                                    mode: "ftp",
+                                    name: item.label,
+                                    size: item.size,
+                                    path: item.url,
+                                };
+                                return rval;
+                            })
+                        );
                     },
-                    onremove: function (model_index) {
-                        this.collection.remove(model_index);
-                    },
-                }).$el
-            );
+                    { multiple: true }
+                );
+            } else {
+                this.ftp.show(
+                    new UploadFtp({
+                        collection: this.collection,
+                        ftp_upload_site: this.ftpUploadSite,
+                        onadd: (ftp_file) => {
+                            return this.uploadbox.add([
+                                {
+                                    mode: "ftp",
+                                    name: ftp_file.path,
+                                    size: ftp_file.size,
+                                    path: ftp_file.path,
+                                },
+                            ]);
+                        },
+                        onremove: function (model_index) {
+                            this.collection.remove(model_index);
+                        },
+                    }).$el
+                );
+            }
         },
         /** Create a new file */
         _eventCreate: function () {
@@ -252,6 +286,7 @@ export default {
             this.listExtensions = this.app.listExtensions;
             this.listGenomes = this.app.listGenomes;
             this.ftpUploadSite = this.app.currentFtp();
+            this.fileSourcesConfigured = this.app.fileSourcesConfigured;
         },
         initFtpPopover() {
             // add ftp file viewer

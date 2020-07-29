@@ -56,4 +56,12 @@ def assert_object_id_error(response):
         assert_error_code_is(response, 404001)
 
 
+def assert_error_message_contains(response, expected_contains):
+    if hasattr(response, "json"):
+        response = response.json()
+    assert_has_keys(response, "err_msg")
+    err_msg = response["err_msg"]
+    assert expected_contains in err_msg
+
+
 assert_has_key = assert_has_keys

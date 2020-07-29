@@ -629,6 +629,8 @@ export default {
         } else {
             if (this.elementsType == "ftp") {
                 mapping = [{ type: "ftp_path", columns: [0] }];
+            } else if (this.elementsType == "remote_files") {
+                mapping = [{ type: "url", columns: [0] }];
             } else if (this.elementsType == "datasets") {
                 mapping = [{ type: "list_identifiers", columns: [1] }];
             } else {
@@ -673,6 +675,11 @@ export default {
                 rules.push({
                     type: "add_column_metadata",
                     value: "path",
+                });
+            } else if (this.elementsType == "remote_files") {
+                rules.push({
+                    type: "add_column_metadata",
+                    value: "uri",
                 });
             }
         }
@@ -961,6 +968,9 @@ export default {
                 metadataOptions["tags"] = _l("Tags");
             } else if (this.elementsType == "ftp") {
                 metadataOptions["path"] = _l("Path");
+            } else if (this.elementsType == "remote_files") {
+                // IS THIS NEEDED?
+                metadataOptions["url"] = _l("URL");
             } else if (this.elementsType == "library_datasets") {
                 metadataOptions["name"] = _l("Name");
             } else if (this.elementsType == "datasets") {
@@ -1007,7 +1017,8 @@ export default {
                 valid = false;
             }
 
-            const requiresSourceColumn = this.elementsType == "ftp" || this.elementsType == "raw";
+            const requiresSourceColumn =
+                this.elementsType == "ftp" || this.elementsType == "raw" || this.elementsType == "remote_files";
             if (requiresSourceColumn && !mappingAsDict.ftp_path && !mappingAsDict.url) {
                 valid = false;
             }
@@ -1029,7 +1040,8 @@ export default {
             if (
                 this.elementsType == "datasets" ||
                 this.elementsType == "library_datasets" ||
-                this.elementsType == "ftp"
+                this.elementsType == "ftp" ||
+                this.elementsType == "remote_files"
             ) {
                 sources = this.initialElements.slice();
                 data = sources.map((el) => []);
