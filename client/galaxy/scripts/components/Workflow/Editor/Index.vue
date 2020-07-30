@@ -273,11 +273,9 @@ export default {
         onLayout() {
             this.canvasManager.drawOverview();
             this.canvasManager.scrollToNodes();
-            return import(/* webpackChunkName: "workflowLayout" */ "components/Workflow/Editor/modules/layout.js").then(
-                (layout) => {
-                    layout.default(this);
-                }
-            );
+            return import(/* webpackChunkName: "workflowLayout" */ "./modules/layout.js").then((layout) => {
+                layout.autoLayout(this);
+            });
         },
         onAttributes() {
             showAttributes();

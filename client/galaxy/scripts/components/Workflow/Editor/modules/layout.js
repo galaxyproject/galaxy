@@ -2,7 +2,7 @@ import $ from "jquery";
 import ELK from "elkjs/lib/elk.bundled.js";
 const elk = new ELK();
 
-export default function autoLayout(workflow) {
+export function autoLayout(workflow) {
     workflow.hasChanges = true;
 
     // Convert this to ELK compat.
