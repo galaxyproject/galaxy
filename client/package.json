@@ -30,6 +30,7 @@
     "citation-js": "^0.5.0-alpha.5",
     "d3": "3",
     "decode-uri-component": "^0.2.0",
+    "elkjs": "^0.6.2",
     "flush-promises": "^1.0.2",
     "glob": "^7.1.6",
     "handsontable": "^2.0.0",
