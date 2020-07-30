@@ -45,7 +45,7 @@ export function autoLayout(workflow) {
                 $(element).css({ top: q.y, left: q.x });
             })
 
-            Object.values(all_nodes).forEach((node) => {
+            Object.values(workflow.nodes).forEach((node) => {
                 node.onRedraw();
             });
         })
