@@ -18,7 +18,6 @@ def wait_on(function, desc, timeout, delta=DEFAULT_POLLING_DELTA, polling_backof
     supplied function ever returning a non-None value.
     """
     sleep = sleep_ or time.sleep
-    iteration = 0
     total_wait = 0
     while True:
         if total_wait > timeout:
@@ -26,7 +25,6 @@ def wait_on(function, desc, timeout, delta=DEFAULT_POLLING_DELTA, polling_backof
                 total_wait, desc
             )
             raise TimeoutAssertionError(timeout_message)
-        iteration += 1
         value = function()
         if value is not None:
             return value
