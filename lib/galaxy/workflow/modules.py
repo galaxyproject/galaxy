@@ -488,7 +488,6 @@ class SubWorkflowModule(WorkflowModule):
                     for data_output in data_outputs:
                         data_output_uuid = data_output.get('uuid') or object()
                         if data_output['name'] == workflow_output['output_name'] or data_output_uuid == workflow_output_uuid:
-                            data_output['label'] = label
                             data_output['name'] = label
                             # That's the right data_output
                             break
