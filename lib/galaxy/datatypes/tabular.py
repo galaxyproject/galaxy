@@ -995,10 +995,9 @@ class BaseCSV(TabularData):
 
     def sniff(self, filename):
         """ Return True if if recognizes dialect and header. """
-        try:
-            # check the dialect works
-            with open(filename) as f:
-                reader = csv.reader(f, self.dialect)
+        # check the dialect works
+        with open(filename, newline='') as f:
+            reader = csv.reader(f, self.dialect)
             # Check we can read header and get columns
             header_row = next(reader)
             if len(header_row) < 2:
@@ -1026,30 +1025,27 @@ class BaseCSV(TabularData):
                 for data_row in reader:
                     pass
 
-            # Optional: Check Python's csv comes up with a similar dialect
-            with open(filename) as f:
-                big_peek = f.read(self.big_peek_size)
-            auto_dialect = csv.Sniffer().sniff(big_peek)
-            if (auto_dialect.delimiter != self.dialect.delimiter):
-                return False
-            if (auto_dialect.quotechar != self.dialect.quotechar):
-                return False
-            """
-            Not checking for other dialect options
-            They may be mis detected from just the sample.
-            Or not effect the read such as doublequote
-
-            Optional: Check for headers as in the past.
-            Note No way around Python's csv calling Sniffer.sniff again.
-            Note Without checking the dialect returned by sniff
-                  this test may be checking the wrong dialect.
-            """
-            if not csv.Sniffer().has_header(big_peek):
-                return False
-            return True
-        except Exception:
-            # Not readable by Python's csv using this dialect
+        # Optional: Check Python's csv comes up with a similar dialect
+        with open(filename) as f:
+            big_peek = f.read(self.big_peek_size)
+        auto_dialect = csv.Sniffer().sniff(big_peek)
+        if (auto_dialect.delimiter != self.dialect.delimiter):
             return False
+        if (auto_dialect.quotechar != self.dialect.quotechar):
+            return False
+        """
+        Not checking for other dialect options
+        They may be mis detected from just the sample.
+        Or not effect the read such as doublequote
+
+        Optional: Check for headers as in the past.
+        Note No way around Python's csv calling Sniffer.sniff again.
+        Note Without checking the dialect returned by sniff
+              this test may be checking the wrong dialect.
+        """
+        if not csv.Sniffer().has_header(big_peek):
+            return False
+        return True
 
     def set_meta(self, dataset, **kwd):
         column_types = []
@@ -1057,7 +1053,7 @@ class BaseCSV(TabularData):
         data_row = []
         data_lines = 0
         if dataset.has_data():
-            with open(dataset.file_name) as csvfile:
+            with open(dataset.file_name, newline='') as csvfile:
                 # Parse file with the correct dialect
                 reader = csv.reader(csvfile, self.dialect)
                 try:
