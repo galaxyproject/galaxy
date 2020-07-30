@@ -7,23 +7,18 @@ var PathBar = Backbone.View.extend({
     full_path: null,
 
     initialize: function (options) {
-        console.log("options", options);
-        console.log("options", options);
-        console.log("options", options);
-        console.log("options", options);
-        console.log("options", options);
         this.render(options);
     },
     pathBar: function () {
         return _.template(
             `<ol class="breadcrumb">
                 <li class="breadcrumb-item">
-                    <a title="Return to the list of libraries" href="#">Libraries</a>
+                    <a title="Return to the list of libraries" href="/library/list">Libraries</a>
                 </li>
                 <% _.each(path, function(path_item) { %>
                     <% if (path_item[0] != id) { %>
                         <li class="breadcrumb-item">
-                            <a title="Return to this folder" href="#/folders/<%- path_item[0] %>">
+                            <a title="Return to this folder" href="<%- path_item[0] %>">
                                 <%- path_item[1] %>
                             </a>
                         </li>
