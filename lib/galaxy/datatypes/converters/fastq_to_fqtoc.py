@@ -27,15 +27,17 @@ def main():
     lines_per_chunk = 4 * sequences
     chunk_begin = 0
 
-    with open(input_fname, 'rb') as in_file, open(sys.argv[2], 'w') as out_file:
+    with open(input_fname) as in_file, open(sys.argv[2], 'w') as out_file:
         out_file.write('{"sections" : [')
 
-        for line in in_file:
+        line = in_file.readline()
+        while line:
             current_line += 1
             if 0 == current_line % lines_per_chunk:
                 chunk_end = in_file.tell()
                 out_file.write('{"start":"%s","end":"%s","sequences":"%s"},' % (chunk_begin, chunk_end, sequences))
                 chunk_begin = chunk_end
+            line = in_file.readline()
 
         chunk_end = in_file.tell()
         out_file.write('{"start":"%s","end":"%s","sequences":"%s"}' % (chunk_begin, chunk_end, (current_line % lines_per_chunk) / 4))
