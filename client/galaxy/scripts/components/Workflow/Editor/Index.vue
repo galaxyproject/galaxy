@@ -106,7 +106,6 @@ import {
     showForm,
     saveAs,
 } from "./modules/utilities";
-import { autoLayout } from "./modules/layout";
 import WorkflowCanvas from "./modules/canvas";
 import WorkflowOptions from "./Options";
 import MarkdownEditor from "components/Markdown/MarkdownEditor";
@@ -274,7 +273,11 @@ export default {
         onLayout() {
             this.canvasManager.drawOverview();
             this.canvasManager.scrollToNodes();
-            autoLayout(this);
+            return import(/* webpackChunkName: "workflowLayout" */ "components/Workflow/Editor/modules/layout.js").then(
+                (layout) => {
+                    layout.default(this);
+                }
+            );
         },
         onAttributes() {
             showAttributes();
