@@ -992,7 +992,7 @@ class InputParameterModule(WorkflowModule):
                 options = None
                 if static_options and len(static_options) == 1:
                     # If we are connected to a single option, just use it as is so order is preserved cleanly and such.
-                    options = [{"value": o[0], "label": o[1]} for o in static_options[0]]
+                    options = [{"label": o[0], "value": o[1]} for o in static_options[0]]
                 elif static_options:
                     # Intersection based on values of multiple option connections.
                     intxn_vals = set.intersection(*({option[1] for option in options} for options in static_options))
