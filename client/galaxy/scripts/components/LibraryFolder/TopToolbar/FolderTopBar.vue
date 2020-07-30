@@ -39,9 +39,9 @@
                             Download <span class="caret"></span>
                         </button>
                         <div class="dropdown-menu" role="menu">
-                            <a class="dropdown-item" :href="getDownloadUrl('tgz')">.tar.gz</a>
-                            <a class="dropdown-item" :href="getDownloadUrl('tbz')">.tar.bz</a>
-                            <a class="dropdown-item" :href="getDownloadUrl('zip')">.zip</a>
+                            <a class="dropdown-item" @click="getDownloadUrl('tgz')">.tar.gz</a>
+                            <a class="dropdown-item" @click="getDownloadUrl('tbz')">.tar.bz</a>
+                            <a class="dropdown-item" @click="getDownloadUrl('zip')">.zip</a>
                         </div>
                     </div>
                     <button
@@ -84,7 +84,9 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { showLocInfo } from "./details-modal";
 import { deleteSelectedItems } from "./delete-selected";
 import { initTopBarIcons } from "components/LibraryFolder/icons";
-import mod_path_bar from "../path-bar";
+import mod_path_bar from "components/LibraryFolder/path-bar";
+import { Toast } from "ui/toast";
+import download from "./download";
 
 initTopBarIcons();
 
@@ -180,13 +182,13 @@ export default {
             });
             this.$emit("refreshTable");
         },
-        getDownloadUrl(compressionMethod) {
-            let url = `/api/libraries/datasets/download/${compressionMethod}?ld_ids=68013dab1c13fb37&ld_ids=4eb81b04b33684fd`;
-            console.log(this.selected);
-            this.selected.forEach((dataset) => {
-                url += `&ld_ids=${dataset.ldda_id}`;
+        getDownloadUrl(format) {
+            let datasets_ids = [];
+            let folder_ids = [];
+            this.selected.forEach((item) => {
+                item.type === "file" ? datasets_ids.push(item.id) : folder_ids.push(item.id);
             });
-            return url;
+            download(format, datasets_ids, folder_ids);
         },
         /*
         Slightly adopted Bootstrap code
