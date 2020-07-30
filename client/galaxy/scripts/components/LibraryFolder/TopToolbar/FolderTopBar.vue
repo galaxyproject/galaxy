@@ -29,6 +29,21 @@
                         <font-awesome-icon icon="plus" />
                         Folder
                     </button>
+                    <div
+                        title="Download items as archive"
+                        class="dropdown dataset-manipulation mr-1"
+                        v-if="dataset_manipulation"
+                    >
+                        <button type="button" class="primary-button dropdown-toggle" data-toggle="dropdown">
+                            <font-awesome-icon icon="download" />
+                            Download <span class="caret"></span>
+                        </button>
+                        <div class="dropdown-menu" role="menu">
+                            <a class="dropdown-item" :href="getDownloadUrl('tgz')">.tar.gz</a>
+                            <a class="dropdown-item" :href="getDownloadUrl('tbz')">.tar.bz</a>
+                            <a class="dropdown-item" :href="getDownloadUrl('zip')">.zip</a>
+                        </div>
+                    </div>
                     <button
                         v-if="logged_dataset_manipulation"
                         data-toggle="tooltip"
@@ -164,6 +179,14 @@ export default {
                 description: "",
             });
             this.$emit("refreshTable");
+        },
+        getDownloadUrl(compressionMethod) {
+            let url = `/api/libraries/datasets/download/${compressionMethod}?ld_ids=68013dab1c13fb37&ld_ids=4eb81b04b33684fd`;
+            console.log(this.selected);
+            this.selected.forEach((dataset) => {
+                url += `&ld_ids=${dataset.ldda_id}`;
+            });
+            return url;
         },
         /*
         Slightly adopted Bootstrap code
