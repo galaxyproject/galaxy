@@ -221,6 +221,42 @@ class ToolsUploadTestCase(ApiTestCase):
             tiff_metadata = self._upload_and_get_details(fh, file_type="auto")
         self.assertEqual(tiff_metadata["file_ext"], "tiff")
 
+    @uses_test_history(require_new=False)
+    def test_newlines_stage_fetch(self, history_id):
+        job = {
+            "input1": {
+                "class": "File",
+                "format": "txt",
+                "path": "test-data/simple_line_no_newline.txt",
+            }
+        }
+        inputs, datasets = stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False)
+        dataset = datasets[0][0]
+        content = self.dataset_populator.get_history_dataset_content(
+            history_id=history_id,
+            dataset=dataset
+        )
+        # By default this appends the newline.
+        self.assertEqual(content, "This is a line of text.\n")
+
+    @uses_test_history(require_new=False)
+    def test_newlines_stage_fetch_configured(self, history_id):
+        job = {
+            "input1": {
+                "class": "File",
+                "format": "txt",
+                "path": "test-data/simple_line_no_newline.txt",
+            }
+        }
+        inputs, datasets = stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False, to_posix_lines=False)
+        dataset = datasets[0][0]
+        content = self.dataset_populator.get_history_dataset_content(
+            history_id=history_id,
+            dataset=dataset
+        )
+        # By default this appends the newline.
+        self.assertEqual(content, "This is a line of text.")
+
     @skip_without_datatype("velvet")
     def test_composite_datatype(self):
         with self.dataset_populator.test_history() as history_id:

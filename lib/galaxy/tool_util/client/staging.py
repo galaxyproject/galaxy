@@ -57,7 +57,7 @@ class StagingInterace(object):
     def _handle_job(self, job_response):
         """Implementer can decide if to wait for job(s) individually or not here."""
 
-    def stage(self, tool_or_workflow, history_id, job=None, job_path=None, use_path_paste=LOAD_TOOLS_FROM_PATH):
+    def stage(self, tool_or_workflow, history_id, job=None, job_path=None, use_path_paste=LOAD_TOOLS_FROM_PATH, to_posix_lines=True):
         files_attached = [False]
 
         def upload_func_fetch(upload_target):
@@ -79,6 +79,7 @@ class StagingInterace(object):
                 fetch_payload = _fetch_payload(
                     history_id,
                     file_type=upload_target.properties.get('filetype', None) or "auto",
+                    to_posix_lines=to_posix_lines,
                 )
                 name = _file_path_to_name(file_path)
                 if file_path is not None:
@@ -101,9 +102,11 @@ class StagingInterace(object):
                 fetch_payload["targets"][0]["elements"][0]["name"] = name
             elif isinstance(upload_target, FileLiteralTarget):
                 fetch_payload = _fetch_payload(history_id)
+                # For file literals - take them as is - never convert line endings.
                 fetch_payload["targets"][0]["elements"][0].update({
                     "src": "pasted",
-                    "paste_content": upload_target.contents
+                    "paste_content": upload_target.contents,
+                    "to_posix_lines": False,
                 })
                 tags = upload_target.properties.get("tags")
                 if tags:
@@ -143,6 +146,7 @@ class StagingInterace(object):
                 upload_payload = _upload_payload(
                     history_id,
                     file_type=upload_target.properties.get('filetype', None) or "auto",
+                    to_posix_lines=to_posix_lines,
                 )
                 name = _file_path_to_name(file_path)
                 upload_payload["inputs"]["files_0|auto_decompress"] = False
@@ -168,7 +172,8 @@ class StagingInterace(object):
                 self._log("upload_payload is %s" % upload_payload)
                 return self._tools_post(upload_payload, files_attached=files_attached[0])
             elif isinstance(upload_target, FileLiteralTarget):
-                payload = _upload_payload(history_id, file_type="auto", auto_decompress=False)
+                # For file literals - take them as is - never convert line endings.
+                payload = _upload_payload(history_id, file_type="auto", auto_decompress=False, to_posix_lines=False)
                 payload["inputs"]["files_0|url_paste"] = upload_target.contents
                 return self._tools_post(payload)
             elif isinstance(upload_target, DirectoryUploadTarget):
