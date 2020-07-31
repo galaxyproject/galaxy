@@ -29,6 +29,32 @@
                         <font-awesome-icon icon="plus" />
                         Folder
                     </button>
+                    <div class="dropdown mr-1">
+                        <button
+                            type="button"
+                            class="primary-button dropdown-toggle add-to-history"
+                            data-toggle="dropdown"
+                        >
+                            <font-awesome-icon icon="book" /> Export to History <span class="caret"></span>
+                        </button>
+                        <div class="dropdown-menu" role="menu">
+                            <a
+                                href="javascript:void(0)"
+                                role="button"
+                                class="toolbtn-bulk-import add-to-history-datasets dropdown-item"
+                                @click="importToHistoryModal"
+                            >
+                                as Datasets
+                            </a>
+                            <a
+                                href="javascript:void(0)"
+                                role="button"
+                                class="toolbtn-collection-import add-to-history-collection dropdown-item"
+                            >
+                                as a Collection
+                            </a>
+                        </div>
+                    </div>
                     <div
                         title="Download items as archive"
                         class="dropdown dataset-manipulation mr-1"
@@ -85,6 +111,7 @@ import { showLocInfo } from "./details-modal";
 import { deleteSelectedItems } from "./delete-selected";
 import { initTopBarIcons } from "components/LibraryFolder/icons";
 import mod_path_bar from "components/LibraryFolder/path-bar";
+import mod_import_dataset from "./import-dataset";
 import { Toast } from "ui/toast";
 import download from "./download";
 
@@ -183,16 +210,32 @@ export default {
             this.$emit("refreshTable");
         },
         getDownloadUrl(format) {
-            const datasets_ids = [];
-            const folder_ids = [];
+
+            const {datasets_ids, folder_ids} = this.findCheckedItems()
             if (this.selected.length === 0) {
                 Toast.info("You must select at least one dataset to download");
                 return;
             }
+
+            download(format, datasets_ids, folder_ids);
+        },
+        // helper function to make legacy code compatible
+        findCheckedItems: function () {
+            const datasets_ids = [];
+            const folder_ids = [];
             this.selected.forEach((item) => {
                 item.type === "file" ? datasets_ids.push(item.id) : folder_ids.push(item.id);
             });
-            download(format, datasets_ids, folder_ids);
+            return {datasets_ids, folder_ids}
+        },
+        importToHistoryModal: function (value) {
+            const {datasets_ids, folder_ids} = this.findCheckedItems()
+            const checkedItems = this.selected;
+            checkedItems.dataset_ids = datasets_ids
+            checkedItems.folder_ids = folder_ids
+            const datasetModal = new mod_import_dataset.ImportDatasetModal({
+                selected: checkedItems
+            });
         },
         /*
         Slightly adopted Bootstrap code

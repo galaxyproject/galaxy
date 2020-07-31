@@ -129,7 +129,7 @@ function chainCallDeletingItems(items_to_delete, onRemove, refreshTable) {
 /**
  * Update progress bar in modal.
  */
-function updateProgress() {
+export function updateProgress() {
     progress += progressStep;
     $(".progress-bar-import").width(`${Math.round(progress)}%`);
     var txt_representation = `${Math.round(progress)}% Complete`;
