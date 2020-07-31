@@ -24,7 +24,7 @@ export function autoLayout(workflow) {
                 properties: {
                     "port.side": "WEST",
                     "port.index": idx,
-                }
+                },
             };
         });
 
@@ -34,7 +34,7 @@ export function autoLayout(workflow) {
                 properties: {
                     "port.side": "EAST",
                     "port.index": idx,
-                }
+                },
             };
         });
 
