@@ -8,7 +8,11 @@ export function autoLayout(workflow) {
     // Convert this to ELK compat.
     var newgraph = {
         id: "",
-        layoutOptions: { "elk.algorithm": "layered" },
+        layoutOptions: {
+            "elk.algorithm": "layered",
+            "crossingMinimization.semiInteractive": true,
+            "nodePlacement.strategy": "NETWORK_SIMPLEX",
+        },
         children: [],
         edges: [],
     };
