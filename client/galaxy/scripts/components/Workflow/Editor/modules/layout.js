@@ -18,10 +18,31 @@ export function autoLayout(workflow) {
     };
 
     newgraph.children = Object.values(workflow.nodes).map((node) => {
+        var inputs = Object.keys(node.inputTerminals).map((t, idx) => {
+            return {
+                id: `${node._uid}/in/${t}`,
+                properties: {
+                    "port.side": "WEST",
+                    "port.index": idx,
+                }
+            };
+        });
+
+        var outputs = Object.keys(node.outputTerminals).map((t, idx) => {
+            return {
+                id: `${node._uid}/out/${t}`,
+                properties: {
+                    "port.side": "EAST",
+                    "port.index": idx,
+                }
+            };
+        });
+
         return {
             id: node._uid,
-            height: $(node.element).height() + 80,
-            width: $(node.element).width() + 30,
+            height: $(node.element).height() + 20,
+            width: $(node.element).width() + 60,
+            ports: inputs.concat(outputs),
         };
     });
 
@@ -30,8 +51,8 @@ export function autoLayout(workflow) {
             t.connectors.forEach((c) => {
                 newgraph.edges.push({
                     id: `e_${node._uid}_${c.outputHandle.node._uid}`,
-                    sources: [c.outputHandle.node._uid],
-                    targets: [node._uid],
+                    sources: [`${c.outputHandle.node._uid}/out/${c.outputHandle.name}`],
+                    targets: [`${c.inputHandle.node._uid}/in/${c.inputHandle.name}`],
                 });
             });
         });
