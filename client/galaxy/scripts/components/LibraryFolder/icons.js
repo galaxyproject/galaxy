@@ -14,6 +14,7 @@ import {
     faPencilAlt,
     faUsers,
     faDownload,
+    faBook,
 } from "@fortawesome/free-solid-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
 
@@ -31,7 +32,7 @@ const tableIcons = [
     faPencilAlt,
     faUsers,
 ];
-const topBarIcons = [faHome, faPlus, faInfoCircle, faTrash, faDownload];
+const topBarIcons = [faHome, faPlus, faInfoCircle, faTrash, faDownload, faBook];
 
 export function initFolderTableIcons() {
     tableIcons.forEach((icon) => {

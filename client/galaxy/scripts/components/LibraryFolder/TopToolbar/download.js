@@ -24,9 +24,9 @@ function processDownload(url, data, method) {
 }
 /**
  * Download selected datasets. Called from the router.
- * @param  {str} format    requested archive format
- * @param  dataset_ids   requested datasets_ids
- * @param  folder_ids    requested folder_ids
+ * @param  {str} format requested archive format
+ * @param  dataset_ids requested datasets_ids
+ * @param  folder_ids requested folder_ids
  */
 export default function download(format, dataset_ids, folder_ids) {
     // function download(format) {

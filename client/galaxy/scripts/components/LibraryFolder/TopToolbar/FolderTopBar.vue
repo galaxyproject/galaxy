@@ -183,8 +183,12 @@ export default {
             this.$emit("refreshTable");
         },
         getDownloadUrl(format) {
-            let datasets_ids = [];
-            let folder_ids = [];
+            const datasets_ids = [];
+            const folder_ids = [];
+            if (this.selected.length === 0) {
+                Toast.info("You must select at least one dataset to download");
+                return;
+            }
             this.selected.forEach((item) => {
                 item.type === "file" ? datasets_ids.push(item.id) : folder_ids.push(item.id);
             });
