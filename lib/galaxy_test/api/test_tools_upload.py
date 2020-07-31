@@ -5,6 +5,7 @@ from galaxy_test.base.constants import (
     ONE_TO_SIX_ON_WINDOWS,
     ONE_TO_SIX_WITH_SPACES,
     ONE_TO_SIX_WITH_TABS,
+    ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE,
 )
 from galaxy_test.base.populators import (
     DatasetPopulator,
@@ -59,6 +60,30 @@ class ToolsUploadTestCase(ApiTestCase):
     def test_fetch_post_lines_option(self):
         windows_content = ONE_TO_SIX_ON_WINDOWS
         result_content = self._upload_and_get_content(windows_content, api="fetch", to_posix_lines=True)
+        self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS)
+
+    # Test how trailing new lines are added
+    # - upload1 adds by default because to_posix_lines is on by default
+    # - fetch doesn't add by default because to_posix_lines is off by default
+    # - fetch does add trailing newline if to_posix_lines is enabled
+    def test_post_lines_trailing(self):
+        input_content = ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE
+        result_content = self._upload_and_get_content(input_content)
+        self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS)
+
+    def test_post_lines_trailing_off(self):
+        input_content = ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE
+        result_content = self._upload_and_get_content(input_content, to_posix_lines=False)
+        self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE)
+
+    def test_fetch_post_lines_trailing_off_by_default(self):
+        input_content = ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE
+        result_content = self._upload_and_get_content(input_content, api="fetch")
+        self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE)
+
+    def test_fetch_post_lines_trailing_if_to_posix(self):
+        input_content = ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE
+        result_content = self._upload_and_get_content(input_content, api="fetch", to_posix_lines=True)
         self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS)
 
     def test_upload_tab_to_space_off_by_default(self):
