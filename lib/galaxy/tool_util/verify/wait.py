@@ -2,23 +2,35 @@
 
 import time
 
+DEFAULT_POLLING_BACKOFF = 0
+DEFAULT_POLLING_DELTA = 0.25
 
-def wait_on(function, desc, timeout):
-    """Wait for function to return non-None value."""
-    delta = .25
-    iteration = 0
+TIMEOUT_MESSAGE_TEMPLATE = "Timed out after %s seconds waiting on %s."
+
+
+def wait_on(function, desc, timeout, delta=DEFAULT_POLLING_DELTA, polling_backoff=DEFAULT_POLLING_BACKOFF, sleep_=None):
+    """Wait for function to return non-None value.
+
+    Grow the polling interval (initially ``delta`` defaulting to 0.25 seconds)
+    incrementally by the supplied ``polling_backoff`` (defaulting to 0).
+
+    Throw a TimeoutAssertionError if the supplied timeout is reached without
+    supplied function ever returning a non-None value.
+    """
+    sleep = sleep_ or time.sleep
+    total_wait = 0
     while True:
-        total_wait = delta * iteration
         if total_wait > timeout:
-            timeout_message = "Timed out after %s seconds waiting on %s." % (
+            timeout_message = TIMEOUT_MESSAGE_TEMPLATE % (
                 total_wait, desc
             )
             raise TimeoutAssertionError(timeout_message)
-        iteration += 1
         value = function()
         if value is not None:
             return value
-        time.sleep(delta)
+        total_wait += delta
+        sleep(delta)
+        delta += polling_backoff
 
 
 class TimeoutAssertionError(AssertionError):
