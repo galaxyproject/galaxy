@@ -222,7 +222,7 @@ class CanvasManager {
             logic so we don't interfere with standard copy/paste functionality.
         */
         document.addEventListener("copy", (e) => {
-            if (document.activeElement && inputElementTypes.indexOf(document.activeElement.type) === -1) {
+            if (document.activeElement && !inputElementTypes.includes(document.activeElement.type)) {
                 if (this.app.activeNode && this.app.activeNode.type !== "subworkflow") {
                     e.clipboardData.setData(
                         "application/json",
@@ -235,7 +235,7 @@ class CanvasManager {
             }
         });
         document.addEventListener("paste", (e) => {
-            if (document.activeElement && inputElementTypes.indexOf(document.activeElement.type) === -1) {
+            if (document.activeElement && !inputElementTypes.includes(document.activeElement.type)) {
                 let nodeId;
                 try {
                     nodeId = JSON.parse(e.clipboardData.getData("application/json")).nodeId;
