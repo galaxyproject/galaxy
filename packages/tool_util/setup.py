@@ -97,7 +97,12 @@ setup(
     include_package_data=True,
     install_requires=requirements,
     extras_require={
-        'mulled': ['conda', 'cytoolz', 'jinja2', 'Whoosh'],
+        'mulled': [
+            'conda',
+            'cytoolz',  # cytoolz is an undeclared dependency of the conda package on PyPI
+            'jinja2',
+            'Whoosh',
+        ],
     },
     license="AFL",
     zip_safe=False,
