@@ -215,10 +215,17 @@ class CanvasManager {
         }
     }
     init_copy_paste() {
+        /*
+            Both of these copy/paste event bindings check the active element
+            and, if it's one of the text inputs, skip the workflow copy/paste
+            logic so we don't interfere with standard copy/paste functionality.
+        */
         document.addEventListener("copy", (e) => {
-            // If it appears that the user is trying to copy/paste text, we
-            // pass that through.
-            if (window.getSelection().toString() === "") {
+            if (
+                document.activeElement &&
+                document.activeElement.type !== "text" &&
+                document.activeElement.type !== "textarea"
+            ) {
                 if (this.app.activeNode && this.app.activeNode.type !== "subworkflow") {
                     e.clipboardData.setData(
                         "application/json",
@@ -231,8 +238,6 @@ class CanvasManager {
             }
         });
         document.addEventListener("paste", (e) => {
-            // If it appears that the user is trying to paste into a text box,
-            // pass that through and skip the workflow copy/paste logic.
             if (
                 document.activeElement &&
                 document.activeElement.type !== "textarea" &&
