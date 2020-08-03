@@ -9,6 +9,7 @@ export const zoomLevels = [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 
 
 // Default zoome level
 export const defaultZoomLevel = 7;
+const inputElementTypes = ["input", "text", "textarea"];
 
 // FIXME: merge scroll panel into CanvasManager, clean up hardcoded stuff.
 class ScrollPanel {
@@ -221,11 +222,7 @@ class CanvasManager {
             logic so we don't interfere with standard copy/paste functionality.
         */
         document.addEventListener("copy", (e) => {
-            if (
-                document.activeElement &&
-                document.activeElement.type !== "text" &&
-                document.activeElement.type !== "textarea"
-            ) {
+            if (document.activeElement && inputElementTypes.indexOf(document.activeElement.type) === -1) {
                 if (this.app.activeNode && this.app.activeNode.type !== "subworkflow") {
                     e.clipboardData.setData(
                         "application/json",
@@ -238,11 +235,7 @@ class CanvasManager {
             }
         });
         document.addEventListener("paste", (e) => {
-            if (
-                document.activeElement &&
-                document.activeElement.type !== "textarea" &&
-                document.activeElement.type !== "text"
-            ) {
+            if (document.activeElement && inputElementTypes.indexOf(document.activeElement.type) === -1) {
                 let nodeId;
                 try {
                     nodeId = JSON.parse(e.clipboardData.getData("application/json")).nodeId;
