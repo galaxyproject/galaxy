@@ -6,7 +6,7 @@ import _ from "underscore";
 import Backbone from "backbone";
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
-import { updateProgress } from "./delete-selected";
+import { updateProgress } from "../delete-selected";
 
 var ImportDatasetModal = Backbone.View.extend({
     options: null,
@@ -23,7 +23,6 @@ var ImportDatasetModal = Backbone.View.extend({
         return this.options.selected;
     },
     importToHistoryModal: function () {
-        // e.preventDefault();
         const Galaxy = getGalaxyInstance();
         var $checkedValues = this.findCheckedItems();
         var template = this.templateImportIntoHistoryModal();

@@ -35,14 +35,15 @@
                             class="primary-button dropdown-toggle add-to-history"
                             data-toggle="dropdown"
                         >
-                            <font-awesome-icon icon="book" /> Export to History <span class="caret"></span>
+                            <font-awesome-icon icon="book" />
+                            Export to History <span class="caret"></span>
                         </button>
                         <div class="dropdown-menu" role="menu">
                             <a
                                 href="javascript:void(0)"
                                 role="button"
                                 class="toolbtn-bulk-import add-to-history-datasets dropdown-item"
-                                @click="importToHistoryModal"
+                                @click="importToHistoryModal(false)"
                             >
                                 as Datasets
                             </a>
@@ -50,6 +51,7 @@
                                 href="javascript:void(0)"
                                 role="button"
                                 class="toolbtn-collection-import add-to-history-collection dropdown-item"
+                                @click="importToHistoryModal(true)"
                             >
                                 as a Collection
                             </a>
@@ -111,7 +113,8 @@ import { showLocInfo } from "./details-modal";
 import { deleteSelectedItems } from "./delete-selected";
 import { initTopBarIcons } from "components/LibraryFolder/icons";
 import mod_path_bar from "components/LibraryFolder/path-bar";
-import mod_import_dataset from "./import-dataset";
+import mod_import_dataset from "./import/import-dataset";
+import mod_import_collection from "./import/import-collection";
 import { Toast } from "ui/toast";
 import download from "./download";
 
@@ -210,36 +213,41 @@ export default {
             this.$emit("refreshTable");
         },
         getDownloadUrl(format) {
-
-            const {datasets_ids, folder_ids} = this.findCheckedItems()
+            const { datasets, folders } = this.findCheckedItems();
             if (this.selected.length === 0) {
                 Toast.info("You must select at least one dataset to download");
                 return;
             }
 
-            download(format, datasets_ids, folder_ids);
+            download(format, datasets, folders);
         },
         // helper function to make legacy code compatible
-        findCheckedItems: function () {
-            const datasets_ids = [];
-            const folder_ids = [];
+        findCheckedItems: function (idOnly = true) {
+            const datasets = [];
+            const folder = [];
             this.selected.forEach((item) => {
-                item.type === "file" ? datasets_ids.push(item.id) : folder_ids.push(item.id);
+                item.type === "file" ? datasets.push(idOnly ? item.id : item) : idOnly ? item.id : item;
             });
-            return {datasets_ids, folder_ids}
+            return { datasets: datasets, folders: folder };
         },
-        importToHistoryModal: function (value) {
-            const {datasets_ids, folder_ids} = this.findCheckedItems()
+        importToHistoryModal: function (isCollection) {
+            const { datasets, folders } = this.findCheckedItems(!isCollection);
             const checkedItems = this.selected;
-            checkedItems.dataset_ids = datasets_ids
-            checkedItems.folder_ids = folder_ids
-            const datasetModal = new mod_import_dataset.ImportDatasetModal({
-                selected: checkedItems
-            });
+            checkedItems.dataset_ids = datasets;
+            checkedItems.folder_ids = folders;
+            if (isCollection) {
+                new mod_import_collection.ImportCollectionModal({
+                    selected: checkedItems,
+                });
+            } else {
+                new mod_import_dataset.ImportDatasetModal({
+                    selected: checkedItems,
+                });
+            }
         },
         /*
-        Slightly adopted Bootstrap code
-         */
+            Slightly adopted Bootstrap code
+             */
         showDetails() {
             showLocInfo(Object.assign({ id: this.folder_id }, this.metadata));
         },
