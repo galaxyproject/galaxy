@@ -1314,7 +1314,7 @@ When this attribute is true and ``compare`` is set to ``diff``, try to decompres
     </xs:attribute>
     <xs:attribute name="delta" type="xs:integer" default="10000">
       <xs:annotation>
-        <xs:documentation xml:lang="en">If ``compare`` is set to ``sim_size``, this is the maximum allowed absolute size difference (in bytes) between the data set that is generated in the test and the file in ``test-data/`` that is referenced by the ``file`` attribute. Default value is DEFAULT_DELTA (10000 bytes). Can be combined with ``delta_frac``.</xs:documentation>
+        <xs:documentation xml:lang="en">If ``compare`` is set to ``sim_size``, this is the maximum allowed absolute size difference (in bytes) between the data set that is generated in the test and the file in ``test-data/`` that is referenced by the ``file`` attribute. Default value is 10000 bytes. Can be combined with ``delta_frac``.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="delta_frac" type="xs:float">
