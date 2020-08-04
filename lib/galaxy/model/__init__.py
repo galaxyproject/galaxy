@@ -2640,8 +2640,8 @@ class DatasetInstance(object):
             # extension is None
             return 'data'
 
-    def set_peek(self):
-        return self.datatype.set_peek(self)
+    def set_peek(self, **kwd):
+        return self.datatype.set_peek(self, **kwd)
 
     def init_meta(self, copy_from=None):
         return self.datatype.init_meta(self, copy_from=copy_from)
