@@ -617,33 +617,8 @@ class GalaxyInteractorApi:
         # parameter (i.e. assume the contents is a jsonified blob instead of form parameters
         # with individual parameters jsonified if needed).
         params, data = self.__inject_api_key(data=data, key=key, admin=admin, anon=anon)
-
-        # handle encoded files
-        if files is None:
-            files = data.get("__files", None)
-            if files is not None:
-                del data["__files"]
-
-                # files doesn't really work with json, so dump the parameters
-                # and do a normal POST with request's data parameter.
-                if json:
-                    json = False
-                    new_items = {}
-                    for key, val in data.items():
-                        if isinstance(val, dict) or isinstance(val, list):
-                            new_items[key] = dumps(val)
-                    data.update(new_items)
-
-        kwd = {
-            'files': files,
-        }
-        if json:
-            kwd['json'] = data
-            kwd['params'] = params
-        else:
-            data.update(params)
-            kwd['data'] = data
-        return requests.post("{}/{}".format(self.api_url, path), **kwd)
+        url = "%s/%s" % (self.api_url, path)
+        return galaxy_requests_post(url, data=data, files=files, params=params, as_json=json)
 
     def _delete(self, path, data=None, key=None, admin=False, anon=False):
         params, data = self.__inject_api_key(data=data, key=key, admin=admin, anon=anon)
@@ -1151,3 +1126,49 @@ def test_data_iter(required_files):
                 raise Exception('edit_attributes type (%s) is unimplemented' % edit_att.get('type', None))
 
         yield data_dict
+
+
+def galaxy_requests_post(url, data=None, files=None, as_json=False, params=None):
+    """Handle some Galaxy conventions and work around requests issues.
+
+    This is admittedly kind of hacky, so the interface may change frequently - be
+    careful on reuse.
+
+    If ``as_json`` is True, use post payload using request's json parameter instead
+    of the data parameter (i.e. assume the contents is a json-ified blob instead of
+    form parameters with individual parameters json-ified if needed). requests doesn't
+    allow files to be specified with the json parameter - so rewrite the parameters
+    to handle that if as_json is True with specified files.
+    """
+    params = params or {}
+    data = data or {}
+
+    # handle encoded files
+    if files is None:
+        # if not explicitly passed, check __files... convention used in tool testing
+        # and API testing code
+        files = data.get("__files", None)
+        if files is not None:
+            del data["__files"]
+
+    # files doesn't really work with json, so dump the parameters
+    # and do a normal POST with request's data parameter.
+    if files is not None and as_json:
+        as_json = False
+        new_items = {}
+        for key, val in data.items():
+            if isinstance(val, dict) or isinstance(val, list):
+                new_items[key] = dumps(val)
+        data.update(new_items)
+
+    kwd = {
+        'files': files,
+    }
+    if as_json:
+        kwd['json'] = data
+        kwd['params'] = params
+    else:
+        data.update(params)
+        kwd['data'] = data
+
+    return requests.post(url, **kwd)

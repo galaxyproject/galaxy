@@ -20,13 +20,13 @@ module.exports = (env = {}, argv = {}) => {
             login: ["polyfills", "bundleEntries", "entry/login"],
             analysis: ["polyfills", "bundleEntries", "entry/analysis"],
             admin: ["polyfills", "bundleEntries", "entry/admin"],
-            generic: ["polyfills", "bundleEntries", "entry/generic"]
+            generic: ["polyfills", "bundleEntries", "entry/generic"],
         },
         output: {
             path: path.join(__dirname, "../", "/static/dist"),
             publicPath: "/static/dist/",
             filename: "[name].bundled.js",
-            chunkFilename: "[name].chunk.js"
+            chunkFilename: "[name].chunk.js",
         },
         resolve: {
             extensions: ["*", ".js", ".json", ".vue", ".scss"],
@@ -39,8 +39,8 @@ module.exports = (env = {}, argv = {}) => {
                 moment: path.resolve(__dirname, "node_modules/moment"),
                 underscore: path.resolve(__dirname, "node_modules/underscore"),
                 // client-side application config
-                config$: path.join(__dirname, "galaxy", "config", targetEnv) + ".js"
-            }
+                config$: path.join(__dirname, "galaxy", "config", targetEnv) + ".js",
+            },
         },
         optimization: {
             splitChunks: {
@@ -48,23 +48,23 @@ module.exports = (env = {}, argv = {}) => {
                     styles: {
                         name: "base",
                         chunks: "all",
-                        test: m => m.constructor.name == "CssModule",
-                        priority: -5
+                        test: (m) => m.constructor.name == "CssModule",
+                        priority: -5,
                     },
                     libs: {
                         name: "libs",
-                        test: /node_modules[\\/](?!(handsontable|pikaday|moment)[\\/])|galaxy\/scripts\/libs/,
+                        test: /node_modules[\\/](?!(handsontable|pikaday|moment|elkjs)[\\/])|galaxy\/scripts\/libs/,
                         chunks: "all",
-                        priority: -10
-                    }
-                }
-            }
+                        priority: -10,
+                    },
+                },
+            },
         },
         module: {
             rules: [
                 {
                     test: /\.vue$/,
-                    loader: "vue-loader"
+                    loader: "vue-loader",
                 },
                 {
                     test: /\.js$/,
@@ -72,7 +72,7 @@ module.exports = (env = {}, argv = {}) => {
                      * Babel transpile excludes for:
                      * - all node_modules except for handsontable, bootstrap-vue
                      * - statically included libs (like old jquery plugins, etc.)
-                    */
+                     */
                     exclude: [/(node_modules\/(?!(handsontable|bootstrap-vue)\/))/, libsBase],
                     loader: "babel-loader",
                     options: {
@@ -80,34 +80,34 @@ module.exports = (env = {}, argv = {}) => {
                         cacheCompression: false,
                         presets: [["@babel/preset-env", { modules: false }]],
                         plugins: ["transform-vue-template", "@babel/plugin-syntax-dynamic-import"],
-                        ignore: ["i18n.js", "utils/localization.js", "nls/*"]
-                    }
+                        ignore: ["i18n.js", "utils/localization.js", "nls/*"],
+                    },
                 },
                 {
                     test: `${libsBase}/jquery.custom.js`,
                     use: [
                         {
                             loader: "expose-loader",
-                            options: "jQuery"
+                            options: "jQuery",
                         },
                         {
                             loader: "expose-loader",
-                            options: "$"
-                        }
-                    ]
+                            options: "$",
+                        },
+                    ],
                 },
                 {
                     test: require.resolve("underscore"),
                     use: [
                         {
                             loader: "expose-loader",
-                            options: "_"
+                            options: "_",
                         },
                         {
                             loader: "expose-loader",
-                            options: "underscore"
-                        }
-                    ]
+                            options: "underscore",
+                        },
+                    ],
                 },
                 {
                     test: /\.(png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot)(\?.*$|$)/,
@@ -115,9 +115,9 @@ module.exports = (env = {}, argv = {}) => {
                         loader: "file-loader",
                         options: {
                             outputPath: "assets",
-                            publicPath: "../dist/assets/"
-                        }
-                    }
+                            publicPath: "../dist/assets/",
+                        },
+                    },
                 },
                 // Alternative to setting window.bundleEntries
                 // Just import "bundleEntries" in any endpoint that needs
@@ -128,18 +128,18 @@ module.exports = (env = {}, argv = {}) => {
                     use: [
                         {
                             loader: "expose-loader",
-                            options: "bundleEntries"
-                        }
-                    ]
+                            options: "bundleEntries",
+                        },
+                    ],
                 },
                 {
                     test: `${scriptsBase}/onload/loadConfig.js`,
                     use: [
                         {
                             loader: "expose-loader",
-                            options: "config"
-                        }
-                    ]
+                            options: "config",
+                        },
+                    ],
                 },
                 {
                     test: /\.(sa|sc|c)ss$/,
@@ -147,47 +147,47 @@ module.exports = (env = {}, argv = {}) => {
                         {
                             loader: MiniCssExtractPlugin.loader,
                             options: {
-                                hmr: process.env.NODE_ENV === "development"
-                            }
+                                hmr: process.env.NODE_ENV === "development",
+                            },
                         },
                         {
                             loader: "css-loader",
-                            options: { sourceMap: true }
+                            options: { sourceMap: true },
                         },
                         {
                             loader: "postcss-loader",
                             options: {
-                                plugins: function() {
+                                plugins: function () {
                                     return [require("autoprefixer")];
-                                }
-                            }
+                                },
+                            },
                         },
                         {
                             loader: "sass-loader",
                             options: {
                                 sourceMap: true,
                                 sassOptions: {
-                                    includePaths: ["galaxy/style/scss", path.resolve(__dirname, "./node_modules")]
-                                }
-                            }
-                        }
-                    ]
+                                    includePaths: ["galaxy/style/scss", path.resolve(__dirname, "./node_modules")],
+                                },
+                            },
+                        },
+                    ],
                 },
                 {
                     test: /\.(txt|tmpl)$/,
-                    loader: "raw-loader"
-                }
-            ]
+                    loader: "raw-loader",
+                },
+            ],
         },
         node: {
-            setImmediate: false
+            setImmediate: false,
         },
         resolveLoader: {
             alias: {
                 // since we support both requirejs i18n and non-requirejs and both use a similar syntax,
                 // use an alias so we can just use one file
-                i18n: "amdi18n-loader"
-            }
+                i18n: "amdi18n-loader",
+            },
         },
         plugins: [
             // this plugin allows using the following keys/globals in scripts (w/o req'ing them first)
@@ -197,27 +197,27 @@ module.exports = (env = {}, argv = {}) => {
                 jQuery: `${libsBase}/jquery.custom.js`,
                 _: "underscore",
                 Backbone: "backbone",
-                Galaxy: ["app", "monitor"]
+                Galaxy: ["app", "monitor"],
             }),
             new VueLoaderPlugin(),
             new MiniCssExtractPlugin({
                 filename: "[name].css",
-                sourceMap: true
+                sourceMap: true,
             }),
             // https://github.com/webpack-contrib/mini-css-extract-plugin/issues/141
             new OptimizeCssAssetsPlugin({
                 cssProcessorOptions: {
                     map: {
                         inline: false,
-                        annotation: true
-                    }
-                }
+                        annotation: true,
+                    },
+                },
             }),
-            new DuplicatePackageCheckerPlugin()
+            new DuplicatePackageCheckerPlugin(),
         ],
         devServer: {
-            hot: true
-        }
+            hot: true,
+        },
     };
 
     if (process.env.GXY_BUILD_SOURCEMAPS || process.env.NODE_ENV == "development") {
