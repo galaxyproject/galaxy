@@ -29,6 +29,55 @@
                         <font-awesome-icon icon="plus" />
                         Folder
                     </button>
+                    <div v-if="metadata.can_add_library_item">
+                        <div
+                            v-if="multiple_add_dataset_options"
+                            title="Add datasets to current folder"
+                            class="dropdown add-library-items add-library-items-datasets mr-1"
+                        >
+                            <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">
+                                <span class="fa fa-plus"></span> Datasets <span class="caret" />
+                            </button>
+                            <div class="dropdown-menu">
+                                <a class="dropdown-item select-all-symbl" @click="addDatasets('history')">
+                                    from History</a
+                                >
+                                <a
+                                    v-if="user_library_import_dir"
+                                    class="dropdown-item select-all-symbl"
+                                    @click="addDatasets('userdir')"
+                                >
+                                    from User Directory
+                                </a>
+                                <div v-if="library_import_dir || allow_library_path_paste">
+                                    <h5 class="dropdown-header select-all-symbl">Admins only</h5>
+                                    <a
+                                        v-if="library_import_dir"
+                                        class="dropdown-item select-all-symbl"
+                                        @click="addDatasets('importdir')"
+                                    >
+                                        from Import Directory
+                                    </a>
+                                    <a
+                                        v-if="allow_library_path_paste"
+                                        class="dropdown-item select-all-symbl"
+                                        @click="addDatasets('path')"
+                                    >
+                                        from Path
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <a
+                        v-else
+                        title="Add Datasets to Current Folder"
+                        class="btn btn-secondary add-library-items add-library-items-datasets mr-1"
+                        href="#folders/<%= id %>/import/history"
+                        role="button"
+                    >
+                        <span class="fa fa-plus"></span> Datasets
+                    </a>
                     <div class="dropdown mr-1">
                         <button
                             type="button"
@@ -67,9 +116,9 @@
                             Download <span class="caret"></span>
                         </button>
                         <div class="dropdown-menu" role="menu">
-                            <a class="dropdown-item" @click="getDownloadUrl('tgz')">.tar.gz</a>
-                            <a class="dropdown-item" @click="getDownloadUrl('tbz')">.tar.bz</a>
-                            <a class="dropdown-item" @click="getDownloadUrl('zip')">.zip</a>
+                            <a class="dropdown-item" @click="downloadData('tgz')">.tar.gz</a>
+                            <a class="dropdown-item" @click="downloadData('tbz')">.tar.bz</a>
+                            <a class="dropdown-item" @click="downloadData('zip')">.zip</a>
                         </div>
                     </div>
                     <button
@@ -113,10 +162,13 @@ import { showLocInfo } from "./details-modal";
 import { deleteSelectedItems } from "./delete-selected";
 import { initTopBarIcons } from "components/LibraryFolder/icons";
 import mod_path_bar from "components/LibraryFolder/path-bar";
-import mod_import_dataset from "./import/import-dataset";
-import mod_import_collection from "./import/import-collection";
+import mod_import_dataset from "./import-to-history/import-dataset";
+import mod_import_collection from "./import-to-history/import-collection";
+import mod_add_datasets from "./add-datasets";
 import { Toast } from "ui/toast";
 import download from "./download";
+import mod_utils from "utils/utils";
+import { getAppRoot } from "onload/loadConfig";
 
 initTopBarIcons();
 
@@ -157,6 +209,21 @@ export default {
             multiple_add_dataset_options: false,
             user_library_import_dir: false,
             library_import_dir: false,
+            allow_library_path_paste: false,
+            list_genomes: [],
+            list_extensions: [],
+            // datatype placeholder for extension auto-detection
+            auto: {
+                id: "auto",
+                text: "Auto-detect",
+                description:
+                    "This system will try to detect the file type automatically." +
+                    " If your file is not detected properly as one of the known formats," +
+                    " it most likely means that it has some format problems (e.g., different" +
+                    " number of columns on different rows). You can still coerce the system" +
+                    " to set your data to the format you think it should be." +
+                    " You can also upload compressed files, which will automatically be decompressed.",
+            },
         };
     },
     created() {
@@ -183,19 +250,18 @@ export default {
                 }
             }
         }
+        this.fetchExtAndGenomes();
     },
     mounted() {
-        const pathbar = new mod_path_bar.PathBar({
+        new mod_path_bar.PathBar({
             full_path: this.metadata.full_path,
             id: this.folder_id,
             parent_library_id: this.metadata.parent_library_id,
         });
     },
-    computed:{
+    computed: {
         allDatasets: function () {
-            return this.folderContents.filter(element=>
-                    element.type === "file"
-            )
+            return this.folderContents.filter((element) => element.type === "file");
         },
     },
     methods: {
@@ -219,7 +285,7 @@ export default {
             });
             this.$emit("refreshTable");
         },
-        getDownloadUrl(format) {
+        downloadData(format) {
             const { datasets, folders } = this.findCheckedItems();
             if (this.selected.length === 0) {
                 Toast.info("You must select at least one dataset to download");
@@ -227,6 +293,15 @@ export default {
             }
 
             download(format, datasets, folders);
+        },
+        addDatasets(source) {
+            new mod_add_datasets.AddDatasets({
+                source: source,
+                id: this.folder_id,
+                updateContent: this.updateContent,
+                list_genomes: this.list_genomes,
+                list_extensions: this.list_extensions,
+            });
         },
         // helper function to make legacy code compatible
         findCheckedItems: function (idOnly = true) {
@@ -245,7 +320,7 @@ export default {
             if (isCollection) {
                 new mod_import_collection.ImportCollectionModal({
                     selected: checkedItems,
-                    allDatasets: this.allDatasets
+                    allDatasets: this.allDatasets,
                 });
             } else {
                 new mod_import_dataset.ImportDatasetModal({
@@ -256,12 +331,57 @@ export default {
         /*
             Slightly adopted Bootstrap code
              */
+        /**
+         * Request all extensions and genomes from Galaxy
+         * and save them in sorted arrays.
+         */
+        fetchExtAndGenomes: function () {
+            mod_utils.get({
+                url: `${getAppRoot()}api/datatypes?extension_only=False`,
+                success: (datatypes) => {
+                    this.list_extensions = [];
+                    for (const key in datatypes) {
+                        this.list_extensions.push({
+                            id: datatypes[key].extension,
+                            text: datatypes[key].extension,
+                            description: datatypes[key].description,
+                            description_url: datatypes[key].description_url,
+                        });
+                    }
+                    this.list_extensions.sort((a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0));
+                    this.list_extensions.unshift(this.auto);
+                    console.log(this.list_extensions);
+                },
+                cache: true,
+            });
+            mod_utils.get({
+                url: `${getAppRoot()}api/genomes`,
+                success: (genomes) => {
+                    this.list_genomes = [];
+                    for (const key in genomes) {
+                        this.list_genomes.push({
+                            id: genomes[key][1],
+                            text: genomes[key][0],
+                        });
+                    }
+                    this.list_genomes.sort((a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0));
+                    console.log(this.list_genomes, this.list_genomes);
+                },
+                cache: true,
+            });
+        },
         showDetails() {
             showLocInfo(Object.assign({ id: this.folder_id }, this.metadata));
         },
         toggle_include_deleted: function (value) {
             this.$emit("fetchFolderContents", value);
         },
+        updateContent: function () {
+            this.$emit("fetchFolderContents");
+        },
     },
 };
 </script>
+<style scoped>
+@import "../library-folder-table.css";
+</style>

@@ -1,12 +1,8 @@
 import { getGalaxyInstance } from "app";
 import { Toast } from "ui/toast";
-import _l from "utils/localization";
 import mod_library_model from "mvc/library/library-model";
 import _ from "underscore";
 import Backbone from "backbone";
-import $ from "jquery";
-import { getAppRoot } from "onload/loadConfig";
-import { updateProgress } from "../delete-selected";
 import LIST_CREATOR from "mvc/collection/list-collection-creator";
 import PAIR_CREATOR from "mvc/collection/pair-collection-creator";
 import PAIRED_CREATOR from "mvc/collection/list-of-pairs-collection-creator";
