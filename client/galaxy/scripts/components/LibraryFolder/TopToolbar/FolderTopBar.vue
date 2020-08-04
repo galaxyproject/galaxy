@@ -191,6 +191,13 @@ export default {
             parent_library_id: this.metadata.parent_library_id,
         });
     },
+    computed:{
+        allDatasets: function () {
+            return this.folderContents.filter(element=>
+                    element.type === "file"
+            )
+        },
+    },
     methods: {
         updateSearch: function (value) {
             this.$emit("updateSearch", value);
@@ -238,6 +245,7 @@ export default {
             if (isCollection) {
                 new mod_import_collection.ImportCollectionModal({
                     selected: checkedItems,
+                    allDatasets: this.allDatasets
                 });
             } else {
                 new mod_import_dataset.ImportDatasetModal({

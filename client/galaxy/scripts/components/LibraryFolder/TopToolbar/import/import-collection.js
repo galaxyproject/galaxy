@@ -7,10 +7,10 @@ import Backbone from "backbone";
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import { updateProgress } from "../delete-selected";
-import LIST_CREATOR from "../../../../mvc/collection/list-collection-creator";
-import PAIR_CREATOR from "../../../../mvc/collection/pair-collection-creator";
-import PAIRED_CREATOR from "../../../../mvc/collection/list-of-pairs-collection-creator";
-import HDCA_MODEL from "../../../../mvc/history/hdca-model";
+import LIST_CREATOR from "mvc/collection/list-collection-creator";
+import PAIR_CREATOR from "mvc/collection/pair-collection-creator";
+import PAIRED_CREATOR from "mvc/collection/list-of-pairs-collection-creator";
+import HDCA_MODEL from "mvc/history/hdca-model";
 
 var ImportCollectionModal = Backbone.View.extend({
     options: null,
@@ -86,11 +86,7 @@ var ImportCollectionModal = Backbone.View.extend({
                 collection_elements.push(collection_item);
             }
         } else if (elements_source === "folder") {
-            const all_datasets = Galaxy.libraries.folderListView.folder_container.get("folder").where({ type: "file" });
-            collection_elements = new Backbone.Collection(all_datasets).toJSON();
-            for (var i = collection_elements.length - 1; i >= 0; i--) {
-                collection_elements[i].id = collection_elements[i].ldda_id;
-            }
+            collection_elements = this.options.allDatasets;
         }
         const new_history_name = this.modal.$("input[name=history_name]").val();
         if (new_history_name !== "") {
