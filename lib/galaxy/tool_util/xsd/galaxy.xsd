@@ -1314,7 +1314,7 @@ When this attribute is true and ``compare`` is set to ``diff``, try to decompres
     </xs:attribute>
     <xs:attribute name="delta" type="xs:integer" default="10000">
       <xs:annotation>
-        <xs:documentation xml:lang="en">If ``compare`` is set to ``sim_size``, this is the maximum allowed absolute size difference (in bytes) between the data set that is generated in the test and the file in ``test-data/`` that is referenced by the ``file`` attribute. Can be combined with ``delta_frac``.</xs:documentation>
+        <xs:documentation xml:lang="en">If ``compare`` is set to ``sim_size``, this is the maximum allowed absolute size difference (in bytes) between the data set that is generated in the test and the file in ``test-data/`` that is referenced by the ``file`` attribute. Default value is 10000 bytes. Can be combined with ``delta_frac``.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="delta_frac" type="xs:float">
@@ -3923,7 +3923,7 @@ types where the order of the columns is not set.</xs:documentation>
       <xs:annotation>
         <xs:documentation xml:lang="en">Relative path to a file produced by the
 tool in its working directory. Output's contents are set to this file's
-contents.</xs:documentation>
+contents. The behaviour when this file does not exist in the working directory is undefined; the resulting dataset could be empty or the tool execution could fail.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="hidden" type="xs:boolean" default="false">
