@@ -85,6 +85,7 @@ class TempFileHandler(object):
             if index is None:
                 index = len(self.files)
                 temp_kwds = dict(self.kwds)
+                temp_kwds['delete'] = False
                 temp_kwds.update(kwds)
                 # Being able to use delete=True here, would simplify a bit,
                 # but we support python2.4 in these tools
@@ -100,11 +101,11 @@ class TempFileHandler(object):
                         else:
                             raise e
                 tmp_file.close()
-                self.files.append(open(filename, 'w'))
+                self.files.append(open(filename, 'r+'))
             else:
                 while True:
                     try:
-                        self.files[index] = open(self.files[index].name, 'r')
+                        self.files[index] = open(self.files[index].name, 'r+')
                         break
                     except OSError as e:
                         if self.open_file_indexes and e.errno == EMFILE:
