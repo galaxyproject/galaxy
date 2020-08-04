@@ -966,7 +966,7 @@ class Anndata(H5):
     MetadataElement(name="varm_count", default=0, desc="varm_count", readonly=True, visible=True, no_value=0)
     MetadataElement(name="uns_layers", desc="uns_layers", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
     MetadataElement(name="uns_count", default=0, desc="uns_count", readonly=True, visible=True, no_value=0)
-    MetadataElement(name="shape", default=(), desc="shape", param=metadata.ListParameter, readonly=True, visible=True, no_value=())
+    MetadataElement(name="shape", default=(0,0), desc="shape", param=metadata.ListParameter, readonly=True, visible=True, no_value=(0,0))
 
     def sniff(self, filename):
         if super(Anndata, self).sniff(filename):
@@ -1047,7 +1047,7 @@ class Anndata(H5):
                     elif hasattr(anndata_file['X'], 'shape'):
                         dataset.metadata.shape = tuple(anndata_file['X'].shape)
                     else:
-                        dataset.metadata.shape = (dataset.metadata.obs_size, dataset.metadata.var_size)
+                        dataset.metadata.shape = (int(dataset.metadata.obs_size), int(dataset.metadata.var_size))
 
         except Exception as e:
             log.warning('%s, set_meta Exception: %s', self, e)
