@@ -42,11 +42,6 @@ from galaxy.webapps.base.controller import (
     UsesVisualizationMixin,
 )
 
-try:
-    maketrans = str.maketrans
-except AttributeError:
-    from string import maketrans
-
 log = logging.getLogger(__name__)
 
 
@@ -589,7 +584,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         if archive_format in ['zip', 'tgz', 'tbz']:
             # error = False
             killme = string.punctuation + string.whitespace
-            trantab = maketrans(killme, '_' * len(killme))
+            trantab = str.maketrans(killme, '_' * len(killme))
             try:
                 outext = 'zip'
                 if archive_format == 'zip':
