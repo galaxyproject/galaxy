@@ -126,7 +126,7 @@ UWSGI_OPTIONS = OrderedDict([
     }),
     ('#mount', {
         'desc': """Mount the web application (e.g. Galaxy, Reports, etc.) at the given URL prefix. Cannot be used together with 'module:' above.""",
-        'default': '/galaxy=galaxy.webapps.galaxy.buildapp:uwsgi_app()',
+        'default': '/galaxy=$uwsgi_module',
         'type': 'str',
     }),
     ('manage-script-name', {
