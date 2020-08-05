@@ -9,6 +9,7 @@ export const zoomLevels = [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 
 
 // Default zoome level
 export const defaultZoomLevel = 7;
+const inputElementTypes = ["input", "text", "textarea"];
 
 // FIXME: merge scroll panel into CanvasManager, clean up hardcoded stuff.
 class ScrollPanel {
@@ -215,10 +216,13 @@ class CanvasManager {
         }
     }
     init_copy_paste() {
+        /*
+            Both of these copy/paste event bindings check the active element
+            and, if it's one of the text inputs, skip the workflow copy/paste
+            logic so we don't interfere with standard copy/paste functionality.
+        */
         document.addEventListener("copy", (e) => {
-            // If it appears that the user is trying to copy/paste text, we
-            // pass that through.
-            if (window.getSelection().toString() === "") {
+            if (document.activeElement && !inputElementTypes.includes(document.activeElement.type)) {
                 if (this.app.activeNode && this.app.activeNode.type !== "subworkflow") {
                     e.clipboardData.setData(
                         "application/json",
@@ -231,13 +235,7 @@ class CanvasManager {
             }
         });
         document.addEventListener("paste", (e) => {
-            // If it appears that the user is trying to paste into a text box,
-            // pass that through and skip the workflow copy/paste logic.
-            if (
-                document.activeElement &&
-                document.activeElement.type !== "textarea" &&
-                document.activeElement.type !== "text"
-            ) {
+            if (document.activeElement && !inputElementTypes.includes(document.activeElement.type)) {
                 let nodeId;
                 try {
                     nodeId = JSON.parse(e.clipboardData.getData("application/json")).nodeId;
