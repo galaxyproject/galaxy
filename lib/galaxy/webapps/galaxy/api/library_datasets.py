@@ -512,19 +512,19 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
 
     @web.expose
     #  TODO convert to expose_api
-    def download(self, trans, format, **kwd):
+    def download(self, trans, archive_format, **kwd):
         """
-        GET /api/libraries/datasets/download/{format}
-        POST /api/libraries/datasets/download/{format}
+        GET /api/libraries/datasets/download/{archive_format}
+        POST /api/libraries/datasets/download/{archive_format}
 
-        Download requested datasets (identified by encoded IDs) in requested format.
+        Download requested datasets (identified by encoded IDs) in requested archive_format.
 
         example: ``GET localhost:8080/api/libraries/datasets/download/tbz?ld_ids%255B%255D=a0d84b45643a2678&ld_ids%255B%255D=fe38c84dcd46c828``
 
-        .. note:: supported format values are: 'zip', 'tgz', 'tbz', 'uncompressed'
+        .. note:: supported archive_format values are: 'zip', 'tgz', 'tbz', 'uncompressed'
 
-        :param  format:      string representing requested archive format
-        :type   format:      string
+        :param  archive_format:      string representing requested archive archive_format
+        :type   archive_format:      string
         :param  ld_ids[]:      an array of encoded dataset ids
         :type   ld_ids[]:      an array
         :param  folder_ids[]:      an array of encoded folder ids
@@ -586,30 +586,30 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         if not library_datasets:
             raise exceptions.RequestParameterMissingException('Request has to contain a list of dataset ids or folder ids to download.')
 
-        if format in ['zip', 'tgz', 'tbz']:
+        if archive_format in ['zip', 'tgz', 'tbz']:
             # error = False
             killme = string.punctuation + string.whitespace
             trantab = maketrans(killme, '_' * len(killme))
             try:
                 outext = 'zip'
-                if format == 'zip':
+                if archive_format == 'zip':
                     # Can't use mkstemp - the file must not exist first
                     tmpd = tempfile.mkdtemp()
                     util.umask_fix_perms(tmpd, trans.app.config.umask, 0o777, self.app.config.gid)
-                    tmpf = os.path.join(tmpd, 'library_download.' + format)
+                    tmpf = os.path.join(tmpd, 'library_download.' + archive_format)
                     if trans.app.config.upstream_gzip:
                         archive = zipfile.ZipFile(tmpf, 'w', zipfile.ZIP_STORED, True)
                     else:
                         archive = zipfile.ZipFile(tmpf, 'w', zipfile.ZIP_DEFLATED, True)
                     archive.add = lambda x, y: archive.write(x, y.encode('CP437'))
-                elif format == 'tgz':
+                elif archive_format == 'tgz':
                     if trans.app.config.upstream_gzip:
                         archive = StreamBall('w|')
                         outext = 'tar'
                     else:
                         archive = StreamBall('w|gz')
                         outext = 'tgz'
-                elif format == 'tbz':
+                elif archive_format == 'tbz':
                     archive = StreamBall('w|bz2')
                     outext = 'tbz2'
             except (OSError, zipfile.BadZipfile):
@@ -646,7 +646,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                     if zpathext == '':
                         zpath = '%s.html' % zpath  # fake the real nature of the html file
                     try:
-                        if format == 'zip':
+                        if archive_format == 'zip':
                             archive.add(ldda.dataset.file_name, zpath)  # add the primary of a composite set
                         else:
                             archive.add(ldda.dataset.file_name, zpath, check_file=True)  # add the primary of a composite set
@@ -666,7 +666,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                         if fname > '':
                             fname = fname.translate(trantab)
                         try:
-                            if format == 'zip':
+                            if archive_format == 'zip':
                                 archive.add(fpath, fname)
                             else:
                                 archive.add(fpath, fname, check_file=True)
@@ -681,7 +681,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                             raise exceptions.InternalServerError("Unable to add dataset to temporary library download archive . " + util.unicodify(e))
                 else:
                     try:
-                        if format == 'zip':
+                        if archive_format == 'zip':
                             archive.add(ldda.dataset.file_name, path)
                         else:
                             archive.add(ldda.dataset.file_name, path, check_file=True)
@@ -696,7 +696,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                         raise exceptions.InternalServerError("Unknown error. " + util.unicodify(e))
             lname = 'selected_dataset'
             fname = lname.replace(' ', '_') + '_files'
-            if format == 'zip':
+            if archive_format == 'zip':
                 archive.close()
                 trans.response.set_content_type("application/octet-stream")
                 trans.response.headers["Content-Disposition"] = 'attachment; filename="%s.%s"' % (fname, outext)
@@ -710,7 +710,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                 archive.wsgi_status = trans.response.wsgi_status()
                 archive.wsgi_headeritems = trans.response.wsgi_headeritems()
                 return archive.stream
-        elif format == 'uncompressed':
+        elif archive_format == 'uncompressed':
             if len(library_datasets) != 1:
                 raise exceptions.RequestParameterInvalidException("You can download only one uncompressed file at once.")
             else:
@@ -728,4 +728,4 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                 except Exception:
                     raise exceptions.InternalServerError("This dataset contains no content.")
         else:
-            raise exceptions.RequestParameterInvalidException("Wrong format parameter specified")
+            raise exceptions.RequestParameterInvalidException("Wrong archive_format parameter specified")
