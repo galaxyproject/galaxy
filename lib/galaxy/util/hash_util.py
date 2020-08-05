@@ -73,7 +73,7 @@ def new_secure_hash(text_type):
 
 
 def hmac_new(key, value):
-    return hmac.new(key, value, sha).hexdigest()
+    return hmac.new(smart_str(key), smart_str(value), sha).hexdigest()
 
 
 def is_hashable(value):

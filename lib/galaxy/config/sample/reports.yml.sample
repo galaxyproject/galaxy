@@ -52,7 +52,7 @@ uwsgi:
 
   # Mount the web application (e.g. Galaxy, Reports, etc.) at the given
   # URL prefix. Cannot be used together with 'module:' above.
-  #mount: /galaxy=galaxy.webapps.galaxy.buildapp:uwsgi_app()
+  #mount: /galaxy=galaxy.webapps.reports.buildapp:uwsgi_app()
 
   # Make uWSGI rewrite PATH_INFO and SCRIPT_NAME according to
   # mount-points. Set this to true if a URL prefix is used.

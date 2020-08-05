@@ -528,7 +528,11 @@ class FileParameter(MetadataParameter):
 
     def make_copy(self, value, target_context, source_context):
         value = self.wrap(value, object_session(target_context.parent))
-        if value:
+        target_dataset = target_context.parent.dataset
+        if value and target_dataset.object_store.exists(target_dataset):
+            # Only copy MetadataFile if the target dataset has been created in an object store.
+            # All current datatypes re-generate MetadataFile objects when setting metadata,
+            # so this would ultimately get overwritten anyway.
             new_value = galaxy.model.MetadataFile(dataset=target_context.parent, name=self.spec.name)
             object_session(target_context.parent).add(new_value)
             object_session(target_context.parent).flush()
