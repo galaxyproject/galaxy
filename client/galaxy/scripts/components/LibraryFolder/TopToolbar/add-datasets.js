@@ -24,10 +24,10 @@ var AddDatasets = Backbone.View.extend({
         this.list_genomes = options.list_genomes;
         this.showImportModal(options);
     },
+
     /*
      Slightly adopted Backbone code
      */
-
     showImportModal: function (options) {
         const Galaxy = getGalaxyInstance();
         switch (options.source) {
@@ -52,6 +52,68 @@ var AddDatasets = Backbone.View.extend({
                 Toast.error("Invalid import source.");
                 break;
         }
+    },
+    templateBrowserModal: function () {
+        return _.template(
+            `<div id="file_browser_modal">
+                    <div style="margin-bottom:1em;">
+                        <label title="Switch to selecting files" class="radio-inline import-type-switch">
+                            <input type="radio" name="jstree-radio" value="jstree-disable-folders" checked="checked">
+                            Choose Files
+                        </label>
+                        <label title="Switch to selecting folders" class="radio-inline import-type-switch">
+                            <input type="radio" name="jstree-radio" value="jstree-disable-files">
+                            Choose Folders
+                        </label>
+                    </div>
+                    <div class="alert alert-info jstree-files-message">
+                        All files you select will be imported into the current folder ignoring their folder structure.
+                    </div>
+                    <div class="alert alert-info jstree-folders-message" style="display:none;">
+                        All files within the selected folders and their subfolders will be imported into the current folder.
+                    </div>
+                    <div style="margin-bottom:1em;">
+                        <label class="checkbox-inline jstree-preserve-structure" style="display:none;">
+                            <input class="preserve-checkbox" type="checkbox" value="preserve_directory_structure">
+                                Preserve directory structure
+                            </label>
+                        <label class="checkbox-inline">
+                            <input class="link-checkbox" type="checkbox" value="link_files">
+                                Link files instead of copying
+                        </label>
+                        <label class="checkbox-inline">
+                            <input class="posix-checkbox" type="checkbox" value="to_posix_lines" checked="checked">
+                                Convert line endings to POSIX
+                        </label>
+                        <label class="checkbox-inline">
+                            <input class="spacetab-checkbox" type="checkbox" value="space_to_tab">
+                                Convert spaces to tabs
+                        </label>
+                    </div>
+                    <button title="Select all files" type="button" class="button primary-button libimport-select-all">
+                        Select all
+                    </button>
+                    <button title="Select no files" type="button" class="button primary-button libimport-select-none">
+                        Unselect all
+                    </button>
+                    <hr /> <!-- append jstree object here -->
+                    <div id="jstree_browser">
+                    </div>
+                    <hr />
+                    <p>You can set extension type and genome for all imported datasets at once:</p>
+                    <div>
+                        Type: <span id="library_extension_select" class="library-extension-select" />
+                        Genome: <span id="library_genome_select" class="library-genome-select" />
+                    </div>
+                    <br />
+                    <div>
+                        <label class="checkbox-inline tag-files">
+                            Tag datasets based on file names
+                            <input class="tag-files" type="checkbox" value="tag_using_filenames">
+                        </label>
+                    </div>
+                </div>`
+        );
     },
     templateImportPathModal: function () {
         return _.template(
@@ -175,6 +237,7 @@ var AddDatasets = Backbone.View.extend({
             },
             closing_callback: () => {
                 // TODO update table without fetching new content from the server
+                this.options.updateContent();
                 // Galaxy.libraries.library_router.navigate(`folders/${this.id}`, {
                 //     trigger: true,
                 // });
@@ -206,6 +269,156 @@ var AddDatasets = Backbone.View.extend({
                 options.disabled_jstree_element = "files";
                 this.renderJstree(options);
             }
+        });
+    },
+    /**
+     * Take the selected items from the jstree, create a request queue
+     * and send them one by one to the server for importing into
+     * the current folder.
+     *
+     * jstree.js has to be loaded before
+     * @see renderJstree
+     */
+    importFromJstreePath: function (that, options) {
+        var all_nodes = $("#jstree_browser").jstree().get_selected(true);
+        // remove the disabled elements that could have been trigerred with the 'select all'
+        var selected_nodes = _.filter(all_nodes, (node) => node.state.disabled == false);
+        var preserve_dirs = this.modal.$el.find(".preserve-checkbox").is(":checked");
+        var link_data = this.modal.$el.find(".link-checkbox").is(":checked");
+        var space_to_tab = this.modal.$el.find(".spacetab-checkbox").is(":checked");
+        var to_posix_lines = this.modal.$el.find(".posix-checkbox").is(":checked");
+        var file_type = this.select_extension.value();
+        var dbkey = this.select_genome.value();
+        var tag_using_filenames = this.modal.$el.find(".tag-files").is(":checked");
+        var selection_type = selected_nodes[0].type;
+        var paths = [];
+        if (selected_nodes.length < 1) {
+            Toast.info("Please select some items first.");
+        } else {
+            this.modal.disableButton("Import");
+            for (let i = selected_nodes.length - 1; i >= 0; i--) {
+                if (selected_nodes[i].li_attr.full_path !== undefined) {
+                    paths.push(selected_nodes[i].li_attr.full_path);
+                }
+            }
+            this.initChainCallControl({
+                length: paths.length,
+                action: "adding_datasets",
+            });
+            if (selection_type === "folder") {
+                const full_source = `${options.source}_folder`;
+                this.chainCallImportingFolders({
+                    paths: paths,
+                    preserve_dirs: preserve_dirs,
+                    link_data: link_data,
+                    space_to_tab: space_to_tab,
+                    to_posix_lines: to_posix_lines,
+                    source: full_source,
+                    file_type: file_type,
+                    dbkey: dbkey,
+                    tag_using_filenames: tag_using_filenames,
+                });
+            } else if (selection_type === "file") {
+                const full_source = `${options.source}_file`;
+                this.chainCallImportingUserdirFiles({
+                    paths: paths,
+                    file_type: file_type,
+                    dbkey: dbkey,
+                    link_data: link_data,
+                    space_to_tab: space_to_tab,
+                    to_posix_lines: to_posix_lines,
+                    source: full_source,
+                    tag_using_filenames: tag_using_filenames,
+                });
+            }
+        }
+    },
+    /**
+     * Take the array of paths and create a request for each of them
+     * calling them in chain. Update the progress bar in between each.
+     * @param  {array} paths                    paths relative to user folder on Galaxy
+     * @param  {boolean} tag_using_filenames    add tags to datasets using names of files
+     */
+    chainCallImportingUserdirFiles: function (options) {
+        const Galaxy = getGalaxyInstance();
+        const popped_item = options.paths.pop();
+        if (typeof popped_item === "undefined") {
+            if (this.options.chain_call_control.failed_number === 0) {
+                Toast.success("Selected files imported into the current folder");
+                Galaxy.modal.hide();
+            } else {
+                Toast.error("An error occurred.");
+            }
+            return true;
+        }
+        const post_url = `${getAppRoot()}api/libraries/datasets`;
+        const post_data = {
+            encoded_folder_id: this.id,
+            source: options.source,
+            path: popped_item,
+            file_type: options.file_type,
+            link_data: options.link_data,
+            space_to_tab: options.space_to_tab,
+            to_posix_lines: options.to_posix_lines,
+            dbkey: options.dbkey,
+            tag_using_filenames: options.tag_using_filenames,
+        };
+        const promise = $.when($.post(post_url, post_data));
+        promise
+            .done((response) => {
+                updateProgress();
+                this.chainCallImportingUserdirFiles(options);
+            })
+            .fail(() => {
+                this.options.chain_call_control.failed_number += 1;
+                updateProgress();
+                this.chainCallImportingUserdirFiles(options);
+            });
+    },
+    /**
+     * Fetch the contents of user directory on Galaxy
+     * and render jstree component based on received
+     * data.
+     * @param  {[type]} options [description]
+     */
+    renderJstree: function (options) {
+        this.options = _.extend(this.options, options);
+        var target = options.source || "userdir";
+        var disabled_jstree_element = this.options.disabled_jstree_element;
+        this.jstree = new mod_library_model.Jstree();
+        this.jstree.url = `${this.jstree.urlRoot}?target=${target}&format=jstree&disable=${disabled_jstree_element}`;
+        this.jstree.fetch({
+            success: (model, response) => {
+                $("#jstree_browser").jstree("destroy");
+                $("#jstree_browser").jstree({
+                    core: {
+                        data: model,
+                    },
+                    plugins: ["types", "checkbox"],
+                    types: {
+                        folder: {
+                            icon: "jstree-folder",
+                        },
+                        file: {
+                            icon: "jstree-file",
+                        },
+                    },
+                    checkbox: {
+                        three_state: false,
+                    },
+                });
+            },
+            error: (model, response) => {
+                if (typeof response.responseJSON !== "undefined") {
+                    if (response.responseJSON.err_code === 404001) {
+                        Toast.warning(response.responseJSON.err_msg);
+                    } else {
+                        Toast.error(response.responseJSON.err_msg);
+                    }
+                } else {
+                    Toast.error("An error occurred.");
+                }
+            },
         });
     },
     /**
