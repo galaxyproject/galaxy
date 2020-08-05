@@ -1,3 +1,5 @@
+@import "./TopToolbar/pointer.css";
+
 th:focus {
     outline: none !important;
 }
@@ -23,12 +25,4 @@ th:focus {
 
 .empty-folder-text {
     text-align: center;
-}
-
-.select-all-symbl {
-    cursor: pointer;
-    -webkit-user-select: none; /* Chrome all / Safari all */
-    -moz-user-select: none; /* Firefox all */
-    -ms-user-select: none; /* IE 10+ */
-    user-select: none; /* Likely future */
 }

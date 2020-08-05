@@ -382,6 +382,7 @@ export default {
     },
 };
 </script>
+
 <style scoped>
-@import "../library-folder-table.css";
+@import "./pointer.css";
 </style>
