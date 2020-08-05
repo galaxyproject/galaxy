@@ -414,8 +414,6 @@ export default {
             }
         },
         undelete: function (element) {
-            console.log("element", element);
-
             const onError = (response) => {
                 const message = `${element.type === "folder" ? "Folder" : "Dataset"}`;
                 if (typeof response.responseJSON !== "undefined") {

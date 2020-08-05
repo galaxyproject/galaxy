@@ -47,7 +47,6 @@ var PathBar = Backbone.View.extend({
         } else {
             upper_folder_id = path[path.length - 2][0];
         }
-        console.log(options);
         this.$el.html(
             template({
                 path: options.full_path,

@@ -350,7 +350,6 @@ export default {
                     }
                     this.list_extensions.sort((a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0));
                     this.list_extensions.unshift(this.auto);
-                    console.log(this.list_extensions);
                 },
                 cache: true,
             });
@@ -365,7 +364,6 @@ export default {
                         });
                     }
                     this.list_genomes.sort((a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0));
-                    console.log(this.list_genomes, this.list_genomes);
                 },
                 cache: true,
             });
