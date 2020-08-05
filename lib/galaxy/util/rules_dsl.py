@@ -70,7 +70,7 @@ class AddColumnMetadataRuleDefinition(BaseRuleDefinition):
     rule_type = "add_column_metadata"
 
     def validate_rule(self, rule):
-        _ensure_rule_contains_keys(rule, {"value": (str,)})
+        _ensure_rule_contains_keys(rule, {"value": str})
 
     def apply(self, rule, data, sources):
         rule_value = rule["value"]
@@ -98,7 +98,7 @@ class AddColumnGroupTagValueRuleDefinition(BaseRuleDefinition):
     rule_type = "add_column_group_tag_value"
 
     def validate_rule(self, rule):
-        _ensure_rule_contains_keys(rule, {"value": (str,)})
+        _ensure_rule_contains_keys(rule, {"value": str})
 
     def apply(self, rule, data, sources):
         rule_value = rule["value"]
@@ -155,7 +155,7 @@ class AddColumnRegexRuleDefinition(BaseRuleDefinition):
     rule_type = "add_column_regex"
 
     def validate_rule(self, rule):
-        _ensure_rule_contains_keys(rule, {"target_column": int, "expression": (str,)})
+        _ensure_rule_contains_keys(rule, {"target_column": int, "expression": str})
         _ensure_valid_pattern(rule["expression"])
 
     def apply(self, rule, data, sources):
@@ -187,7 +187,7 @@ class AddColumnValueRuleDefinition(BaseRuleDefinition):
     rule_type = "add_column_value"
 
     def validate_rule(self, rule):
-        _ensure_rule_contains_keys(rule, {"value": (str,)})
+        _ensure_rule_contains_keys(rule, {"value": str})
 
     def apply(self, rule, data, sources):
         value = rule["value"]
@@ -206,7 +206,7 @@ class AddColumnSubstrRuleDefinition(BaseRuleDefinition):
         _ensure_rule_contains_keys(rule, {
             "target_column": int,
             "length": int,
-            "substr_type": (str,),
+            "substr_type": str,
         })
         _ensure_key_value_in(rule, "substr_type", ["keep_prefix", "drop_prefix", "keep_suffix", "drop_suffix"])
 
@@ -275,7 +275,7 @@ class AddFilterRegexRuleDefinition(BaseRuleDefinition):
         _ensure_rule_contains_keys(rule, {
             "target_column": int,
             "invert": bool,
-            "expression": (str,),
+            "expression": str,
         })
         _ensure_valid_pattern(rule["expression"])
 
@@ -300,7 +300,7 @@ class AddFilterCountRuleDefinition(BaseRuleDefinition):
         _ensure_rule_contains_keys(rule, {
             "count": int,
             "invert": bool,
-            "which": (str,),
+            "which": str,
         })
         _ensure_key_value_in(rule, "which", ["first", "last"])
 
@@ -347,7 +347,7 @@ class AddFilterMatchesRuleDefinition(BaseRuleDefinition):
         _ensure_rule_contains_keys(rule, {
             "target_column": int,
             "invert": bool,
-            "value": (str,),
+            "value": str,
         })
 
     def apply(self, rule, data, sources):
@@ -370,7 +370,7 @@ class AddFilterCompareRuleDefinition(BaseRuleDefinition):
         _ensure_rule_contains_keys(rule, {
             "target_column": int,
             "value": int,
-            "compare_type": (str,),
+            "compare_type": str,
         })
         _ensure_key_value_in(rule, "compare_type", ["less_than", "less_than_equal", "greater_than", "greater_than_equal"])
 
