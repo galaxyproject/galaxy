@@ -1,5 +1,5 @@
 <tool id="composite" name="composite" version="1.0.0">
-  <command>cat '${os.path.join(input.extra_files_path, "Sequences")}' > $output</command>
+  <command>cat '$input.extra_files_path/Sequences' > $output</command>
   <inputs>
     <param name="input" type="data" format="velvet" label="Velvet Dataset" help="Prepared by velveth."/>
   </inputs>
