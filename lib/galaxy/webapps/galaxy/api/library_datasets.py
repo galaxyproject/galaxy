@@ -596,7 +596,18 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                         archive = zipfile.ZipFile(tmpf, 'w', zipfile.ZIP_STORED, True)
                     else:
                         archive = zipfile.ZipFile(tmpf, 'w', zipfile.ZIP_DEFLATED, True)
-                    archive.add = lambda x, y: archive.write(x, y.encode('CP437'))
+
+                    def zipfile_add(fpath, arcname):
+                        encoded_arcname = arcname.encode('CP437')
+                        try:
+                            archive.write(fpath, encoded_arcname)
+                        except TypeError:
+                            # Despite documenting the need for CP437 encoded arcname,
+                            # python 3 actually needs this to be a unicode string ...
+                            # https://bugs.python.org/issue24110
+                            archive.write(fpath, arcname)
+                    archive.add = zipfile_add
+
                 elif archive_format == 'tgz':
                     if trans.app.config.upstream_gzip:
                         archive = StreamBall('w|')
