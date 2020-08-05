@@ -941,12 +941,12 @@ class Anndata(H5):
     """
     file_ext = 'h5ad'
 
-    #MetadataElement(name="title", default="", desc="title", readonly=True, visible=True, no_value="")
-    #MetadataElement(name="description", default="", desc="description", readonly=True, visible=True, no_value="")
-    #MetadataElement(name="url", default="", desc="url", readonly=True, visible=True, no_value="")
-    #MetadataElement(name="doi", default="", desc="doi", readonly=True, visible=True, no_value="")
-    #MetadataElement(name="anndata_spec_version", default="", desc="loom_spec_version", readonly=True, visible=True, no_value="")
-    #MetadataElement(name="creation_date", default=None, desc="creation_date", readonly=True, visible=True, no_value=None)
+    MetadataElement(name="title", default="", desc="title", readonly=True, visible=True, no_value="")
+    MetadataElement(name="description", default="", desc="description", readonly=True, visible=True, no_value="")
+    MetadataElement(name="url", default="", desc="url", readonly=True, visible=True, no_value="")
+    MetadataElement(name="doi", default="", desc="doi", readonly=True, visible=True, no_value="")
+    MetadataElement(name="anndata_spec_version", default="", desc="anndata_spec_version", readonly=True, visible=True, no_value="")
+    MetadataElement(name="creation_date", default=None, desc="creation_date", readonly=True, visible=True, no_value=None)
     MetadataElement(name="layers_count", default=0, desc="layers_count", readonly=True, visible=True, no_value=0)
     MetadataElement(name="layers_names", desc="layers_names", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
     MetadataElement(name="row_attrs_count", default=0, desc="row_attrs_count", readonly=True, visible=True, no_value=0)
@@ -966,7 +966,7 @@ class Anndata(H5):
     MetadataElement(name="varm_count", default=0, desc="varm_count", readonly=True, visible=True, no_value=0)
     MetadataElement(name="uns_layers", desc="uns_layers", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
     MetadataElement(name="uns_count", default=0, desc="uns_count", readonly=True, visible=True, no_value=0)
-    MetadataElement(name="shape", default=(0,0), desc="shape", param=metadata.ListParameter, readonly=True, visible=True, no_value=(0,0))
+    MetadataElement(name="shape", default=(), desc="shape", param=metadata.ListParameter, readonly=True, visible=True, no_value=(0,0))
 
     def sniff(self, filename):
         if super(Anndata, self).sniff(filename):
@@ -986,13 +986,14 @@ class Anndata(H5):
                 dataset.metadata.url = util.unicodify(anndata_file.attrs.get('url'))
                 dataset.metadata.doi = util.unicodify(anndata_file.attrs.get('doi'))
                 dataset.creation_date = util.unicodify(anndata_file.attrs.get('creation_date'))
-                # none of the above appear to work, taken from LOOM datatype
+                # none of the above appear to work in any dataset tested, but could be useful for future
+                # AnnData datasets
 
                 # all possible keys
                 dataset.metadata.layers_count = len(anndata_file)
                 dataset.metadata.layers_names = list(anndata_file.keys())
 
-                def _layercountsize (tmp, lennames=None):
+                def _layercountsize (tmp, lennames=0):
                     "From TMP and LENNAMES, return layers, their number, and the length of one of the layers (all equal)."
                     if hasattr(tmp, 'dtype'):
                         layers = [util.unicodify(x) for x in tmp.dtype.names]
@@ -1047,7 +1048,7 @@ class Anndata(H5):
                     elif hasattr(anndata_file['X'], 'shape'):
                         dataset.metadata.shape = tuple(anndata_file['X'].shape)
                     else:
-                        dataset.metadata.shape = (int(dataset.metadata.obs_size), int(dataset.metadata.var_size))
+                        dataset.metadata.shape = tuple(int(dataset.metadata.obs_size), int(dataset.metadata.var_size))
 
         except Exception as e:
             log.warning('%s, set_meta Exception: %s', self, e)
@@ -1067,7 +1068,7 @@ class Anndata(H5):
                     )
                 return ""
 
-            peekstr = "[n_obs x n_vars]\n    %d x %d" % tmp.shape
+            peekstr = "[n_obs x n_vars]\n    %d x %d" % tuple(tmp.shape)
             peekstr += _makelayerstrings("obs", tmp.obs_count, tmp.obs_layers)
             peekstr += _makelayerstrings("var", tmp.var_count, tmp.var_layers)
             peekstr += _makelayerstrings("obsm", tmp.obsm_count, tmp.obsm_layers)
