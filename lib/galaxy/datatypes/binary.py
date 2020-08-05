@@ -998,7 +998,7 @@ class Anndata(H5):
                     if hasattr(tmp, 'dtype'):
                         layers = [util.unicodify(x) for x in tmp.dtype.names]
                         count = len(tmp.dtype)
-                        size = tmp.size
+                        size = int(tmp.size)
                     else:
                         layers = [util.unicodify(x) for x in list(tmp.keys())]
                         count = len(layers)
