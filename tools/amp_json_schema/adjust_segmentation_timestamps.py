@@ -52,7 +52,7 @@ def adjust_segment(segment, offset_adj):
     # Get the adjustment for which the word falls within it's start and end
     for adj in offset_adj:
         if segment.start is not None and segment.start >= adj.start and segment.start <= adj.end:
-            print("STT Offset:" + str(segment.start) + " Adjusted Offset:" + str(segment.start + adj.adjustment))
+            print("Offset:" + str(segment.start) + " Adjusted Offset:" + str(segment.start + adj.adjustment))
             segment.start = segment.start + adj.adjustment
             segment.end = segment.end + adj.adjustment
             return
@@ -60,10 +60,10 @@ def adjust_segment(segment, offset_adj):
 
     
 # Serialize schema obj and write it to output file
-def write_output_json(transcribe_schema, json_file):
+def write_output_json(segmentation_schema, json_file):
     # Serialize the segmentation object
     with open(json_file, 'w') as outfile:
-        json.dump(transcribe_schema, outfile, default=lambda x: x.__dict__)
+        json.dump(segmentation_schema, outfile, default=lambda x: x.__dict__)
     
 if __name__ == "__main__":
     main()
