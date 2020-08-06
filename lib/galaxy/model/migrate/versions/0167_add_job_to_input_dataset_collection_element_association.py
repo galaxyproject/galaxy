@@ -1,7 +1,6 @@
 """
 Migration script to add a new job_to_input_dataset_collection_element table to track job inputs.
 """
-from __future__ import print_function
 
 import logging
 

@@ -29,10 +29,10 @@ def get_quay_containers(repository='biocontainers'):
     for repo in repos:
         logging.info(repo)
         tags_response = requests.get(
-            "%s/%s/%s" % (QUAY_API_ENDPOINT, repository, repo['name']))
+            "{}/{}/{}".format(QUAY_API_ENDPOINT, repository, repo['name']))
         tags = tags_response.json()['tags']
         for tag in tags:
-            containers.append('%s:%s' % (repo['name'], tag))
+            containers.append('{}:{}'.format(repo['name'], tag))
 
     return containers
 

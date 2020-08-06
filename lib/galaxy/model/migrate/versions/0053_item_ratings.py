@@ -1,7 +1,6 @@
 """
 Migration script to create tables for rating histories, datasets, workflows, pages, and visualizations.
 """
-from __future__ import print_function
 
 import logging
 

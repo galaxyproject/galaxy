@@ -61,7 +61,7 @@ def get_mercurial_default_options_dict(command):
         possible = possible[0]
     if len(possible) != 1:
         raise Exception('unable to find mercurial command "%s"' % command)
-    return dict((r[1].replace(b'-', b'_'), r[2]) for r in next(iter(possible.values()))[1][1])
+    return {r[1].replace(b'-', b'_'): r[2] for r in next(iter(possible.values()))[1][1]}
 
 
 class RepositoryController(BaseUIController, ratings_util.ItemRatings):
@@ -734,7 +734,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     string.Template(template).safe_substitute(tool_shed_url=tool_shed_url,
                                                               repository_owner=str(repository.user.username),
                                                               repository_name=str(repository.name))
-                repository_string = '%s\n%s' % (repository_string, repository_template)
+                repository_string = '{}\n{}'.format(repository_string, repository_template)
             template = basic_util.DOCKER_IMAGE_TEMPLATE
             docker_image_template = \
                 string.Template(template).safe_substitute(selected_repositories=repository_string)
@@ -744,7 +744,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             opened_file = open(docker_file_path, "w")
             opened_file.write(docker_image_string)
             opened_file.close()
-            opened_file = open(docker_file_path, "r")
+            opened_file = open(docker_file_path)
             # Make sure the file is removed from disk after the contents have been downloaded.
             os.unlink(docker_file_path)
             docker_file_path, docker_file_name = os.path.split(docker_file_path)
@@ -2357,7 +2357,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 user = None
             if user:
                 user_id = trans.security.encode_id(user.id)
-                message = "This list of repositories owned by <b>%s</b>, does not include one named <b>%s</b>." % (str(owner), str(name))
+                message = "This list of repositories owned by <b>{}</b>, does not include one named <b>{}</b>.".format(str(owner), str(name))
                 return trans.response.send_redirect(web.url_for(controller='repository',
                                                                 action='index',
                                                                 user_id=user_id,
@@ -2505,13 +2505,13 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             if ctx_parent_rev < 0:
                 prev = None
             else:
-                prev = "<b>%s:%s</b> <i>(%s)</i>" % (ctx_parent_rev, ctx_parent, ctx_parent_date)
+                prev = "<b>{}:{}</b> <i>({})</i>".format(ctx_parent_rev, ctx_parent, ctx_parent_date)
         else:
             prev = None
         if ctx_child:
             ctx_child_date = hg_util.get_readable_ctx_date(ctx_child)
             ctx_child_rev = ctx_child.rev()
-            next = "<b>%s:%s</b> <i>(%s)</i>" % (ctx_child_rev, ctx_child, ctx_child_date)
+            next = "<b>{}:{}</b> <i>({})</i>".format(ctx_child_rev, ctx_child, ctx_child_date)
         else:
             next = None
         return trans.fill_template('/webapps/tool_shed/repository/view_changeset.mako',

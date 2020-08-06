@@ -59,7 +59,7 @@ def parse_config_xml(config_xml):
             msg = 'No {tag} element in XML tree'.format(tag=tag)
             log.error(msg)
             raise Exception(msg)
-        extra_dirs = [dict(((k, e.get(k)) for k in attrs)) for e in extra_dirs]
+        extra_dirs = [{k: e.get(k) for k in attrs} for e in extra_dirs]
         return {
             'auth': {
                 'account_name': account_name,
@@ -90,7 +90,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
     store_type = 'azure_blob'
 
     def __init__(self, config, config_dict):
-        super(AzureBlobObjectStore, self).__init__(config, config_dict)
+        super().__init__(config, config_dict)
 
         self.transfer_progress = 0
 
@@ -126,7 +126,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
             log.info("Cache cleaner manager started")
 
     def to_dict(self):
-        as_dict = super(AzureBlobObjectStore, self).to_dict()
+        as_dict = super().to_dict()
         as_dict.update({
             'auth': {
                 'account_name': self.account_name,
@@ -397,7 +397,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         if self._exists(obj, **kwargs):
             return bool(self._size(obj, **kwargs) > 0)
         else:
-            raise ObjectNotFound('objectstore.empty, object does not exist: %s, kwargs: %s' % (str(obj), str(kwargs)))
+            raise ObjectNotFound('objectstore.empty, object does not exist: {}, kwargs: {}'.format(str(obj), str(kwargs)))
 
     def _size(self, obj, **kwargs):
         rel_path = self._construct_path(obj, **kwargs)
@@ -454,7 +454,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         if not self._in_cache(rel_path):
             self._pull_into_cache(rel_path)
         # Read the file content from cache
-        data_file = open(self._get_cache_path(rel_path), 'r')
+        data_file = open(self._get_cache_path(rel_path))
         data_file.seek(start)
         content = data_file.read(count)
         data_file.close()
@@ -493,7 +493,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         # even if it does not exist.
         # if dir_only:
         #     return cache_path
-        raise ObjectNotFound('objectstore.get_filename, no cache_path: %s, kwargs: %s' % (str(obj), str(kwargs)))
+        raise ObjectNotFound('objectstore.get_filename, no cache_path: {}, kwargs: {}'.format(str(obj), str(kwargs)))
 
     def _update_from_file(self, obj, file_name=None, create=False, **kwargs):
         if create is True:
@@ -518,7 +518,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
             self._push_to_os(rel_path, source_file)
 
         else:
-            raise ObjectNotFound('objectstore.update_from_file, object does not exist: %s, kwargs: %s' % (str(obj), str(kwargs)))
+            raise ObjectNotFound('objectstore.update_from_file, object does not exist: {}, kwargs: {}'.format(str(obj), str(kwargs)))
 
     def _get_object_url(self, obj, **kwargs):
         if self._exists(obj, **kwargs):

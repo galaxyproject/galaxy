@@ -362,7 +362,7 @@ def _handle_hash_validation(upload_config, hash_function, hash_value, path):
     if upload_config.validate_hashes:
         calculated_hash_value = memory_bound_hexdigest(hash_func_name=hash_function, path=path)
         if calculated_hash_value != hash_value:
-            raise Exception("Failed to validate upload with [%s] - expected [%s] got [%s]" % (hash_function, hash_value, calculated_hash_value))
+            raise Exception("Failed to validate upload with [{}] - expected [{}] got [{}]".format(hash_function, hash_value, calculated_hash_value))
 
 
 def _arg_parser():
@@ -394,7 +394,7 @@ def get_file_sources():
     return _file_sources
 
 
-class UploadConfig(object):
+class UploadConfig:
 
     def __init__(self, request, registry):
         self.registry = registry

@@ -5,7 +5,6 @@ Unpack a tar or tar.gz archive into a directory.
 usage: %prog archive_source dest_dir
     --[url|file] source type, either a URL or a file.
 """
-from __future__ import print_function
 
 import math
 import optparse

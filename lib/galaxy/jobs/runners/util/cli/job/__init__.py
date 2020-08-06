@@ -6,11 +6,8 @@ from abc import (
     abstractmethod
 )
 
-import six
 
-
-@six.add_metaclass(ABCMeta)
-class BaseJobExec(object):
+class BaseJobExec(metaclass=ABCMeta):
 
     @abstractmethod
     def __init__(self, **params):

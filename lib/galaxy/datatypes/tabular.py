@@ -1,7 +1,6 @@
 """
 Tabular datatype
 """
-from __future__ import absolute_import
 
 import abc
 import binascii
@@ -11,7 +10,6 @@ import os
 import re
 import shutil
 import subprocess
-import sys
 import tempfile
 from json import dumps
 
@@ -29,9 +27,6 @@ from galaxy.datatypes.sniff import (
 )
 from galaxy.util import compression_utils
 from . import dataproviders
-
-if sys.version_info > (3,):
-    long = int
 
 log = logging.getLogger(__name__)
 
@@ -57,9 +52,9 @@ class TabularData(data.Text):
         raise NotImplementedError
 
     def set_peek(self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None):
-        super(TabularData, self).set_peek(dataset, line_count=line_count, WIDTH=WIDTH, skipchars=skipchars, line_wrap=False)
+        super().set_peek(dataset, line_count=line_count, WIDTH=WIDTH, skipchars=skipchars, line_wrap=False)
         if dataset.metadata.comment_lines:
-            dataset.blurb = "%s, %s comments" % (dataset.blurb, util.commaify(str(dataset.metadata.comment_lines)))
+            dataset.blurb = "{}, {} comments".format(dataset.blurb, util.commaify(str(dataset.metadata.comment_lines)))
 
     def displayable(self, dataset):
         try:
@@ -125,7 +120,8 @@ class TabularData(data.Text):
                                        column_types=column_types)
 
     def display_as_markdown(self, dataset_instance, markdown_format_helpers):
-        contents = open(dataset_instance.file_name, "r").read(data.DEFAULT_MAX_PEEK_SIZE)
+        with open(dataset_instance.file_name) as f:
+            contents = f.read(data.DEFAULT_MAX_PEEK_SIZE)
         markdown = self.make_html_table(dataset_instance, peek=contents)
         if len(contents) == data.DEFAULT_MAX_PEEK_SIZE:
             markdown += markdown_format_helpers.indicate_data_truncated()
@@ -181,7 +177,7 @@ class TabularData(data.Text):
                 if header is None:
                     out.append(column_number_format % str(i + 1))
                 else:
-                    out.append('%s.%s' % (str(i + 1), escape(header)))
+                    out.append('{}.{}'.format(str(i + 1), escape(header)))
                 out.append('</th>')
             out.append('</tr>')
         except Exception as exc:
@@ -309,7 +305,7 @@ class Tabular(TabularData):
                 if column_type2 == column_type:
                     return False
             # neither column type was found in our ordered list, this cannot happen
-            raise ValueError("Tried to compare unknown column types: %s and %s" % (column_type1, column_type2))
+            raise ValueError("Tried to compare unknown column types: {} and {}".format(column_type1, column_type2))
 
         def is_int(column_text):
             try:
@@ -430,7 +426,7 @@ class SraManifest(Tabular):
     data_line_offset = 1
 
     def set_meta(self, dataset, **kwds):
-        super(SraManifest, self).set_meta(dataset, **kwds)
+        super().set_meta(dataset, **kwds)
         dataset.metadata.comment_lines = 1
 
     def get_column_names(self, first_line):
@@ -440,7 +436,7 @@ class SraManifest(Tabular):
 class Taxonomy(Tabular):
     def __init__(self, **kwd):
         """Initialize taxonomy datatype"""
-        super(Taxonomy, self).__init__(**kwd)
+        super().__init__(**kwd)
         self.column_names = ['Name', 'TaxId', 'Root', 'Superkingdom', 'Kingdom', 'Subkingdom',
                              'Superphylum', 'Phylum', 'Subphylum', 'Superclass', 'Class', 'Subclass',
                              'Superorder', 'Order', 'Suborder', 'Superfamily', 'Family', 'Subfamily',
@@ -463,7 +459,7 @@ class Sam(Tabular):
 
     def __init__(self, **kwd):
         """Initialize sam datatype"""
-        super(Sam, self).__init__(**kwd)
+        super().__init__(**kwd)
         self.column_names = ['QNAME', 'FLAG', 'RNAME', 'POS', 'MAPQ', 'CIGAR',
                              'MRNM', 'MPOS', 'ISIZE', 'SEQ', 'QUAL', 'OPT'
                              ]
@@ -570,33 +566,33 @@ class Sam(Tabular):
     @dataproviders.decorators.dataprovider_factory('line', dataproviders.line.FilteredLineDataProvider.settings)
     def line_dataprovider(self, dataset, **settings):
         settings['comment_char'] = '@'
-        return super(Sam, self).line_dataprovider(dataset, **settings)
+        return super().line_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory('regex-line', dataproviders.line.RegexLineDataProvider.settings)
     def regex_line_dataprovider(self, dataset, **settings):
         settings['comment_char'] = '@'
-        return super(Sam, self).regex_line_dataprovider(dataset, **settings)
+        return super().regex_line_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory('column', dataproviders.column.ColumnarDataProvider.settings)
     def column_dataprovider(self, dataset, **settings):
         settings['comment_char'] = '@'
-        return super(Sam, self).column_dataprovider(dataset, **settings)
+        return super().column_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory('dataset-column',
                                                    dataproviders.column.ColumnarDataProvider.settings)
     def dataset_column_dataprovider(self, dataset, **settings):
         settings['comment_char'] = '@'
-        return super(Sam, self).dataset_column_dataprovider(dataset, **settings)
+        return super().dataset_column_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory('dict', dataproviders.column.DictDataProvider.settings)
     def dict_dataprovider(self, dataset, **settings):
         settings['comment_char'] = '@'
-        return super(Sam, self).dict_dataprovider(dataset, **settings)
+        return super().dict_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory('dataset-dict', dataproviders.column.DictDataProvider.settings)
     def dataset_dict_dataprovider(self, dataset, **settings):
         settings['comment_char'] = '@'
-        return super(Sam, self).dataset_dict_dataprovider(dataset, **settings)
+        return super().dataset_dict_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory('header', dataproviders.line.RegexLineDataProvider.settings)
     def header_dataprovider(self, dataset, **settings):
@@ -645,7 +641,7 @@ class Pileup(Tabular):
     MetadataElement(name="baseCol", default=3, desc="Reference base column", param=metadata.ColumnParameter)
 
     def init_meta(self, dataset, copy_from=None):
-        super(Pileup, self).init_meta(dataset, copy_from=copy_from)
+        super().init_meta(dataset, copy_from=copy_from)
 
     def display_peek(self, dataset):
         """Returns formated html of peek"""
@@ -740,7 +736,7 @@ class BaseVcf(Tabular):
         return self.make_html_table(dataset, column_names=self.column_names)
 
     def set_meta(self, dataset, **kwd):
-        super(BaseVcf, self).set_meta(dataset, **kwd)
+        super().set_meta(dataset, **kwd)
         source = open(dataset.file_name)
 
         # Skip comments.
@@ -843,7 +839,7 @@ class Eland(Tabular):
 
     def __init__(self, **kwd):
         """Initialize eland datatype"""
-        super(Eland, self).__init__(**kwd)
+        super().__init__(**kwd)
         self.column_names = ['MACHINE', 'RUN_NO', 'LANE', 'TILE', 'X', 'Y',
                              'INDEX', 'READ_NO', 'SEQ', 'QUAL', 'CHROM', 'CONTIG',
                              'POSITION', 'STRAND', 'DESC', 'SRAS', 'PRAS', 'PART_CHROM'
@@ -859,7 +855,7 @@ class Eland(Tabular):
             # Generate column header
             out.append('<tr>')
             for i, name in enumerate(self.column_names):
-                out.append('<th>%s.%s</th>' % (str(i + 1), name))
+                out.append('<th>{}.{}</th>'.format(str(i + 1), name))
             # This data type requires at least 11 columns in the data
             if dataset.metadata.columns - len(self.column_names) > 0:
                 for i in range(len(self.column_names), dataset.metadata.columns):
@@ -896,11 +892,11 @@ class Eland(Tabular):
                 line_pieces = line.split('\t')
                 if len(line_pieces) != 22:
                     return False
-                if long(line_pieces[1]) < 0:
+                if int(line_pieces[1]) < 0:
                     raise Exception('Out of range')
-                if long(line_pieces[2]) < 0:
+                if int(line_pieces[2]) < 0:
                     raise Exception('Out of range')
-                if long(line_pieces[3]) < 0:
+                if int(line_pieces[3]) < 0:
                     raise Exception('Out of range')
                 int(line_pieces[4])
                 int(line_pieces[5])
@@ -933,7 +929,6 @@ class Eland(Tabular):
                         tiles[line_pieces[3]] = 1
                         barcodes[line_pieces[6]] = 1
                         reads[line_pieces[7]] = 1
-                    pass
                 dataset.metadata.data_lines = i + 1
             dataset.metadata.comment_lines = 0
             dataset.metadata.columns = 21
@@ -1000,9 +995,9 @@ class BaseCSV(TabularData):
 
     def sniff(self, filename):
         """ Return True if if recognizes dialect and header. """
-        try:
-            # check the dialect works
-            reader = csv.reader(open(filename, 'r'), self.dialect)
+        # check the dialect works
+        with open(filename, newline='') as f:
+            reader = csv.reader(f, self.dialect)
             # Check we can read header and get columns
             header_row = next(reader)
             if len(header_row) < 2:
@@ -1030,28 +1025,27 @@ class BaseCSV(TabularData):
                 for data_row in reader:
                     pass
 
-            # Optional: Check Python's csv comes up with a similar dialect
-            auto_dialect = csv.Sniffer().sniff(open(filename, 'r').read(self.big_peek_size))
-            if (auto_dialect.delimiter != self.dialect.delimiter):
-                return False
-            if (auto_dialect.quotechar != self.dialect.quotechar):
-                return False
-            """
-            Not checking for other dialect options
-            They may be mis detected from just the sample.
-            Or not effect the read such as doublequote
-
-            Optional: Check for headers as in the past.
-            Note No way around Python's csv calling Sniffer.sniff again.
-            Note Without checking the dialect returned by sniff
-                  this test may be checking the wrong dialect.
-            """
-            if not csv.Sniffer().has_header(open(filename, 'r').read(self.big_peek_size)):
-                return False
-            return True
-        except Exception:
-            # Not readable by Python's csv using this dialect
+        # Optional: Check Python's csv comes up with a similar dialect
+        with open(filename) as f:
+            big_peek = f.read(self.big_peek_size)
+        auto_dialect = csv.Sniffer().sniff(big_peek)
+        if (auto_dialect.delimiter != self.dialect.delimiter):
             return False
+        if (auto_dialect.quotechar != self.dialect.quotechar):
+            return False
+        """
+        Not checking for other dialect options
+        They may be mis detected from just the sample.
+        Or not effect the read such as doublequote
+
+        Optional: Check for headers as in the past.
+        Note No way around Python's csv calling Sniffer.sniff again.
+        Note Without checking the dialect returned by sniff
+              this test may be checking the wrong dialect.
+        """
+        if not csv.Sniffer().has_header(big_peek):
+            return False
+        return True
 
     def set_meta(self, dataset, **kwd):
         column_types = []
@@ -1059,7 +1053,7 @@ class BaseCSV(TabularData):
         data_row = []
         data_lines = 0
         if dataset.has_data():
-            with open(dataset.file_name, 'r') as csvfile:
+            with open(dataset.file_name, newline='') as csvfile:
                 # Parse file with the correct dialect
                 reader = csv.reader(csvfile, self.dialect)
                 try:
@@ -1126,7 +1120,7 @@ class ConnectivityTable(Tabular):
     structure_regexp = re.compile("^[0-9]+" + "(?:\t|[ ]+)" + "[ACGTURYKMSWBDHVN]+" + "(?:\t|[ ]+)" + "[^\t]+" + "(?:\t|[ ]+)" + "[^\t]+" + "(?:\t|[ ]+)" + "[^\t]+" + "(?:\t|[ ]+)" + "[^\t]+")
 
     def __init__(self, **kwd):
-        super(ConnectivityTable, self).__init__(**kwd)
+        super().__init__(**kwd)
         self.columns = 6
         self.column_names = ['base_index', 'base', 'neighbor_left', 'neighbor_right', 'partner', 'natural_numbering']
         self.column_types = ['int', 'str', 'int', 'int', 'int', 'int']
@@ -1258,7 +1252,7 @@ class MatrixMarket(TabularData):
     file_ext = "mtx"
 
     def __init__(self, **kwd):
-        super(MatrixMarket, self).__init__(**kwd)
+        super().__init__(**kwd)
 
     def sniff_prefix(self, file_prefix):
         return file_prefix.startswith('%%MatrixMarket matrix coordinate')

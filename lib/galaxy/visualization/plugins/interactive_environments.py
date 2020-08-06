@@ -38,7 +38,7 @@ ENV_OVERRIDE_CAPITALIZE = frozenset({
 log = logging.getLogger(__name__)
 
 
-class InteractiveEnvironmentRequest(object):
+class InteractiveEnvironmentRequest:
 
     def __init__(self, trans, plugin):
         self.trans = trans
@@ -123,7 +123,7 @@ class InteractiveEnvironmentRequest(object):
             except AttributeError:
                 raise Exception("[{0}] Could not find allowed_images.yml, or image tag in {0}.ini file for ".format(self.attr.viz_id))
 
-        with open(fn, 'r') as handle:
+        with open(fn) as handle:
             self.allowed_images = [x['image'] for x in yaml.safe_load(handle)]
 
             if len(self.allowed_images) == 0:
@@ -266,7 +266,7 @@ class InteractiveEnvironmentRequest(object):
         if env_override is None:
             env_override = {}
         conf = self.get_conf_dict()
-        conf = dict([(key.upper(), item) for key, item in conf.items()])
+        conf = {key.upper(): item for key, item in conf.items()}
         for key, item in env_override.items():
             if key in ENV_OVERRIDE_CAPITALIZE:
                 key = key.upper()
@@ -393,7 +393,7 @@ class InteractiveEnvironmentRequest(object):
             decoded_id = self.trans.security.decode_id(id)
             dataset = self.trans.sa_session.query(model.HistoryDatasetAssociation).get(decoded_id)
             # TODO: do we need to check if the user has access?
-            volumes.append(self.volume('/import/[{0}] {1}.{2}'.format(dataset.id, dataset.name, dataset.ext), dataset.get_file_name()))
+            volumes.append(self.volume('/import/[{}] {}.{}'.format(dataset.id, dataset.name, dataset.ext), dataset.get_file_name()))
         return volumes
 
     def _find_port_mapping(self, port_mappings):
@@ -428,7 +428,7 @@ class InteractiveEnvironmentRequest(object):
 
             redacted_command = [make_safe(x) for x in raw_cmd]
 
-        log.info("Starting docker container for IE {0} with command [{1}]".format(
+        log.info("Starting docker container for IE {} with command [{}]".format(
             self.attr.viz_id,
             ' '.join(shlex_quote(x) for x in redacted_command)
         ))
@@ -437,7 +437,7 @@ class InteractiveEnvironmentRequest(object):
         stdout = unicodify(stdout)
         stderr = unicodify(stderr)
         if p.returncode != 0:
-            log.error("Container Launch error\n\n%s\n%s" % (stdout, stderr))
+            log.error("Container Launch error\n\n{}\n{}".format(stdout, stderr))
             return None
         else:
             container_id = stdout.strip()
@@ -542,7 +542,7 @@ class InteractiveEnvironmentRequest(object):
         :returns: inspect_data, a dict of docker inspect output
         """
         raw_cmd = self.base_docker_cmd('inspect') + [container_id]
-        log.info("Inspecting docker container {0} with command [{1}]".format(
+        log.info("Inspecting docker container {} with command [{}]".format(
             container_id,
             ' '.join(shlex_quote(x) for x in raw_cmd)
         ))
@@ -550,7 +550,7 @@ class InteractiveEnvironmentRequest(object):
         p = Popen(raw_cmd, stdout=PIPE, stderr=PIPE, close_fds=True)
         stdout, stderr = p.communicate()
         if p.returncode != 0:
-            log.error("Container Launch error\n\n%s\n%s" % (stdout, stderr))
+            log.error("Container Launch error\n\n{}\n{}".format(stdout, stderr))
             return None
 
         inspect_data = json.loads(stdout)

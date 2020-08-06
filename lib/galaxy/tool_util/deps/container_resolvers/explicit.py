@@ -57,7 +57,7 @@ class ExplicitSingularityContainerResolver(ExplicitContainerResolver):
 class BaseAdminConfiguredContainerResolver(ContainerResolver):
 
     def __init__(self, app_info=None, shell=DEFAULT_SHELL, **kwds):
-        super(BaseAdminConfiguredContainerResolver, self).__init__(app_info, **kwds)
+        super().__init__(app_info, **kwds)
         self.shell = shell
 
     def _container_description(self, identifier, container_type):
@@ -76,7 +76,7 @@ class FallbackContainerResolver(BaseAdminConfiguredContainerResolver):
     container_type = 'docker'
 
     def __init__(self, app_info=None, identifier="", **kwds):
-        super(FallbackContainerResolver, self).__init__(app_info, **kwds)
+        super().__init__(app_info, **kwds)
         assert identifier, "fallback container resolver must be specified with non-empty identifier"
         self.identifier = identifier
 
@@ -103,7 +103,7 @@ class FallbackNoRequirementsContainerResolver(FallbackContainerResolver):
     resolver_type = "fallback_no_requirements"
 
     def _match(self, enabled_container_types, tool_info, container_description):
-        type_matches = super(FallbackNoRequirementsContainerResolver, self)._match(enabled_container_types, tool_info, container_description)
+        type_matches = super()._match(enabled_container_types, tool_info, container_description)
         return type_matches and (tool_info.requirements is None or len(tool_info.requirements) == 0)
 
 
@@ -118,7 +118,7 @@ class RequiresGalaxyEnvironmentContainerResolver(FallbackContainerResolver):
     resolver_type = "requires_galaxy_environment"
 
     def _match(self, enabled_container_types, tool_info, container_description):
-        type_matches = super(RequiresGalaxyEnvironmentContainerResolver, self)._match(enabled_container_types, tool_info, container_description)
+        type_matches = super()._match(enabled_container_types, tool_info, container_description)
         return type_matches and tool_info.requires_galaxy_python_environment
 
 
@@ -132,7 +132,7 @@ class MappingContainerResolver(BaseAdminConfiguredContainerResolver):
     resolver_type = "mapping"
 
     def __init__(self, app_info=None, **kwds):
-        super(MappingContainerResolver, self).__init__(app_info, **kwds)
+        super().__init__(app_info, **kwds)
         mappings = self.resolver_kwds["mappings"]
         assert isinstance(mappings, list), "mapping container resolver must be specified with mapping list"
         self.mappings = mappings

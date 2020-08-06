@@ -30,7 +30,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
     """
 
     def __init__(self, app):
-        super(ToolsController, self).__init__(app)
+        super().__init__(app)
         self.history_manager = managers.histories.HistoryManager(app)
         self.hda_manager = managers.hdas.HDAManager(app)
 

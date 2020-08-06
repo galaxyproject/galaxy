@@ -128,14 +128,14 @@ class HistoryPanelTestCase(SeleniumTestCase):
             current_tags = self.components.history_panel.tags
             current_tags.wait_for_visible()
             assert [tag.text for tag in
-                    current_tags.all()] == expected_tags, "tags [%s] are not the same as expected [%s]" % (current_tags, expected_tags)
+                    current_tags.all()] == expected_tags, "tags [{}] are not the same as expected [{}]".format(current_tags, expected_tags)
 
         def clear_tags(expected_tags_size):
 
             close_tag_buttons = self.components.history_panel.tag_close_btn.all()
             current_tags_size = len(close_tag_buttons)
 
-            assert expected_tags_size == current_tags_size, "there are more tags than expected! current %s, expected %s" % (
+            assert expected_tags_size == current_tags_size, "there are more tags than expected! current {}, expected {}".format(
                 current_tags_size, expected_tags_size)
             for close_btn in reversed(close_tag_buttons):
                 close_btn.click()

@@ -8,7 +8,7 @@ category_name = 'Test 1460 Data Manager'
 category_description = 'Test script 1460 for testing Data Managers'
 data_manager_repository_name = 'data_manager_1460'
 data_manager_repository_description = 'Repository that contains a Data Manager'
-data_manager_repository_long_description = '%s: %s' % (data_manager_repository_name, data_manager_repository_description)
+data_manager_repository_long_description = '{}: {}'.format(data_manager_repository_name, data_manager_repository_description)
 data_manager_name = 'testing_data_manager'
 data_manager_tar_file = '1460_files/data_manager_files/test_data_manager.tar'
 

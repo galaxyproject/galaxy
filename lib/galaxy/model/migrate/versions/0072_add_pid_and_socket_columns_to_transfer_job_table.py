@@ -1,7 +1,6 @@
 """
 Migration script to add 'pid' and 'socket' columns to the transfer_job table.
 """
-from __future__ import print_function
 
 import logging
 

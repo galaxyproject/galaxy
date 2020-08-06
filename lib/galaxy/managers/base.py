@@ -31,7 +31,6 @@ import re
 
 import routes
 import sqlalchemy
-from six import string_types
 
 from galaxy import exceptions
 from galaxy import model
@@ -115,8 +114,8 @@ def get_object(trans, id, class_name, check_ownership=False, check_accessible=Fa
         item = trans.sa_session.query(item_class).get(decoded_id)
         assert item is not None
     except Exception:
-        log.exception("Invalid %s id ( %s ) specified." % (class_name, id))
-        raise exceptions.MessageException("Invalid %s id ( %s ) specified" % (class_name, id), type="error")
+        log.exception("Invalid {} id ( {} ) specified.".format(class_name, id))
+        raise exceptions.MessageException("Invalid {} id ( {} ) specified".format(class_name, id), type="error")
 
     if check_ownership or check_accessible:
         security_check(trans, item, check_ownership, check_accessible)
@@ -149,7 +148,7 @@ def munge_lists(listA, listB):
 
 
 # -----------------------------------------------------------------------------
-class ModelManager(object):
+class ModelManager:
     """
     Base class for all model/resource managers.
 
@@ -473,7 +472,7 @@ class ModelManager(object):
 
 # ---- code for classes that use one *main* model manager
 # TODO: this may become unecessary if we can access managers some other way (class var, app, etc.)
-class HasAModelManager(object):
+class HasAModelManager:
     """
     Mixin used where serializers, deserializers, filter parsers, etc.
     need some functionality around the model they're mainly concerned with
@@ -502,14 +501,12 @@ class HasAModelManager(object):
 # ==== SERIALIZERS/to_dict,from_dict
 class ModelSerializingError(exceptions.InternalServerError):
     """Thrown when request model values can't be serialized"""
-    pass
 
 
 class ModelDeserializingError(exceptions.ObjectAttributeInvalidException):
     """Thrown when an incoming value isn't usable by the model
     (bad type, out of range, etc.)
     """
-    pass
 
 
 class SkipAttribute(Exception):
@@ -517,7 +514,6 @@ class SkipAttribute(Exception):
     Raise this inside a serializer to prevent the returned dictionary from having
     a the associated key or value for this attribute.
     """
-    pass
 
 
 class ModelSerializer(HasAModelManager):
@@ -544,7 +540,7 @@ class ModelSerializer(HasAModelManager):
         """
         Set up serializer map, any additional serializable keys, and views here.
         """
-        super(ModelSerializer, self).__init__(app, **kwargs)
+        super().__init__(app, **kwargs)
         self.app = app
 
         # a list of valid serializable keys that can use the default (string) serializer
@@ -715,7 +711,7 @@ class ModelDeserializer(HasAModelManager):
         """
         Set up deserializers and validator.
         """
-        super(ModelDeserializer, self).__init__(app, **kwargs)
+        super().__init__(app, **kwargs)
         self.app = app
 
         self.deserializers = {}
@@ -730,7 +726,6 @@ class ModelDeserializer(HasAModelManager):
         into attributes to be assigned to the item.
         """
         # to be overridden in subclasses
-        pass
 
     def deserialize(self, item, data, flush=True, **context):
         """
@@ -797,7 +792,7 @@ class ModelValidator(HasAModelManager):
     """
 
     def __init__(self, app, *args, **kwargs):
-        super(ModelValidator, self).__init__(app, **kwargs)
+        super().__init__(app, **kwargs)
         self.app = app
 
     def type(self, key, val, types):
@@ -813,7 +808,7 @@ class ModelValidator(HasAModelManager):
 
     # validators for primitives and compounds of primitives
     def basestring(self, key, val):
-        return self.type(key, val, string_types)
+        return self.type(key, val, (str,))
 
     def bool(self, key, val):
         return self.type(key, val, bool)
@@ -825,7 +820,7 @@ class ModelValidator(HasAModelManager):
         """
         Must be a basestring or None.
         """
-        return self.type(key, val, (string_types, type(None)))
+        return self.type(key, val, ((str,), type(None)))
 
     def int_range(self, key, val, min=None, max=None):
         """
@@ -907,7 +902,7 @@ class ModelFilterParser(HasAModelManager):
         """
         Set up serializer map, any additional serializable keys, and views here.
         """
-        super(ModelFilterParser, self).__init__(app, **kwargs)
+        super().__init__(app, **kwargs)
         self.app = app
 
         #: regex for testing/dicing iso8601 date strings, with optional time and ms, but allowing only UTC timezone

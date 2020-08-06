@@ -14,7 +14,7 @@ from galaxy.web_stack.message import JobHandlerMessage
 log = logging.getLogger(__name__)
 
 
-class JobManager(object):
+class JobManager:
     """
     Highest level interface to job management.
     """
@@ -96,7 +96,7 @@ class JobManager(object):
         self.job_handler.shutdown()
 
 
-class NoopManager(object):
+class NoopManager:
     """
     Implements the JobManager interface but does nothing
     """
@@ -110,7 +110,7 @@ class NoopManager(object):
         pass
 
 
-class NoopHandler(object):
+class NoopHandler:
     """
     Implements the JobHandler interface but does nothing
     """

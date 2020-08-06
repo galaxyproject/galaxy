@@ -1,7 +1,6 @@
 """
 Migration script to add a 'handler' column to the 'job' table.
 """
-from __future__ import print_function
 
 import logging
 

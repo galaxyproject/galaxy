@@ -20,7 +20,7 @@ from .api_util import (
 from .interactor import TestCaseGalaxyInteractor as BaseInteractor
 
 
-class UsesApiTestCaseMixin(object):
+class UsesApiTestCaseMixin:
 
     def tearDown(self):
         if os.environ.get('GALAXY_TEST_EXTERNAL') is None:
@@ -31,14 +31,14 @@ class UsesApiTestCaseMixin(object):
     def _api_url(self, path, params=None, use_key=None, use_admin_key=None):
         if not params:
             params = {}
-        url = "%s/api/%s" % (self.url, path)
+        url = "{}/api/{}".format(self.url, path)
         if use_key:
             params["key"] = self.galaxy_interactor.api_key
         if use_admin_key:
             params["key"] = self.galaxy_interactor.master_api_key
         query = urlencode(params)
         if query:
-            url = "%s?%s" % (url, query)
+            url = "{}?{}".format(url, query)
         return url
 
     def _setup_interactor(self):
@@ -121,7 +121,7 @@ class ApiTestInteractor(BaseInteractor):
     def __init__(self, test_case, api_key=None):
         admin = getattr(test_case, "require_admin_user", False)
         test_user = TEST_USER if not admin else ADMIN_TEST_USER
-        super(ApiTestInteractor, self).__init__(test_case, test_user=test_user, api_key=api_key)
+        super().__init__(test_case, test_user=test_user, api_key=api_key)
 
     # This variant the lower level get and post methods are meant to be used
     # directly to test API - instead of relying on higher-level constructs for

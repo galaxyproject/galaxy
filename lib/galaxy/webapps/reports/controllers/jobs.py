@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import calendar
 import logging
 import re
@@ -23,7 +21,7 @@ from galaxy.webapps.reports.framework import grids
 log = logging.getLogger(__name__)
 
 
-class Timer(object):
+class Timer:
     def __init__(self):
         self.start()
         self.stop()
@@ -116,7 +114,7 @@ class SpecifiedDateListGrid(grids.Grid):
     class StateColumn(grids.TextColumn):
 
         def get_value(self, trans, grid, job):
-            return '<div class="count-box state-color-%s">%s</div>' % (job.state, job.state)
+            return '<div class="count-box state-color-{}">{}</div>'.format(job.state, job.state)
 
         def filter(self, trans, user, query, column_filter):
             if column_filter == 'Unfinished':

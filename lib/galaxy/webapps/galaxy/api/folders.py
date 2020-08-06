@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 class FoldersController(BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems):
 
     def __init__(self, app):
-        super(FoldersController, self).__init__(app)
+        super().__init__(app)
         self.folder_manager = folders.FolderManager()
         self.role_manager = roles.RoleManager(app)
 

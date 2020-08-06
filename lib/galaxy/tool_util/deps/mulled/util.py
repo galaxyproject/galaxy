@@ -1,5 +1,4 @@
 """Utilities for working with mulled abstractions outside the mulled package."""
-from __future__ import print_function
 
 import collections
 import hashlib
@@ -49,7 +48,7 @@ def quay_versions(namespace, pkg_name):
 def quay_repository(namespace, pkg_name):
     assert namespace is not None
     assert pkg_name is not None
-    url = 'https://quay.io/api/v1/repository/%s/%s' % (namespace, pkg_name)
+    url = 'https://quay.io/api/v1/repository/{}/{}'.format(namespace, pkg_name)
     response = requests.get(url, timeout=QUAY_IO_TIMEOUT)
     data = response.json()
     return data
@@ -177,7 +176,7 @@ def _simple_image_name(targets, image_build=None):
         suffix += ":%s" % target.version
         if build is not None:
             suffix += "--%s" % build
-    return "%s%s" % (target.package_name, suffix)
+    return "{}{}".format(target.package_name, suffix)
 
 
 def v1_image_name(targets, image_build=None, name_override=None):
@@ -214,7 +213,7 @@ def v1_image_name(targets, image_build=None, name_override=None):
         m = hashlib.sha1()
         m.update(requirements_buffer.encode())
         suffix = "" if not image_build else ":%s" % image_build
-        return "mulled-v1-%s%s" % (m.hexdigest(), suffix)
+        return "mulled-v1-{}{}".format(m.hexdigest(), suffix)
 
 
 def v2_image_name(targets, image_build=None, name_override=None):
@@ -280,8 +279,8 @@ def v2_image_name(targets, image_build=None, name_override=None):
             build_suffix = image_build
         suffix = ""
         if version_hash_str or build_suffix:
-            suffix = ":%s%s" % (version_hash_str, build_suffix)
-        return "mulled-v2-%s%s" % (package_hash.hexdigest(), suffix)
+            suffix = ":{}{}".format(version_hash_str, build_suffix)
+        return "mulled-v2-{}{}".format(package_hash.hexdigest(), suffix)
 
 
 def get_file_from_recipe_url(url):
@@ -299,7 +298,7 @@ def split_container_name(name):
     return name.replace('--', ':').split(':')
 
 
-class PrintProgress(object):
+class PrintProgress:
     def __init__(self):
         self.thread = threading.Thread(target=self.progress)
         self.stop = threading.Event()

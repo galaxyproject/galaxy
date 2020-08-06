@@ -3,7 +3,6 @@
 A 'handler' is a named Python process running the Galaxy application responsible
 for some activity such as queuing up jobs or scheduling workflows.
 """
-from __future__ import absolute_import
 
 import logging
 import os
@@ -31,10 +30,9 @@ HANDLER_ASSIGNMENT_METHODS = namedtuple('JOB_HANDLER_ASSIGNMENT_METHODS', _handl
 class HandlerAssignmentSkip(Exception):
     """Exception for handler assignment methods to raise if the next method should be tried.
     """
-    pass
 
 
-class ConfiguresHandlers(object):
+class ConfiguresHandlers:
     DEFAULT_HANDLER_TAG = '_default_'
     DEFAULT_BASE_HANDLER_POOLS = ()
     UNSUPPORTED_HANDLER_ASSIGNMENT_METHODS = ()
@@ -115,7 +113,7 @@ class ConfiguresHandlers(object):
             for method in handling_config_dict.get("assign", []):
                 method = method.lower()
                 assert method in HANDLER_ASSIGNMENT_METHODS, \
-                    "Invalid job handler assignment method '%s', must be one of: %s" % (
+                    "Invalid job handler assignment method '{}', must be one of: {}".format(
                         method, ', '.join(HANDLER_ASSIGNMENT_METHODS))
                 try:
                     self.handler_assignment_methods.append(method)
@@ -216,7 +214,7 @@ class ConfiguresHandlers(object):
         for elem in parent.findall(match):
             for attrib in attribs:
                 if attrib not in elem.attrib:
-                    log.warning("required '%s' attribute is missing from <%s> element" % (attrib, match))
+                    log.warning("required '{}' attribute is missing from <{}> element".format(attrib, match))
                     break
             else:
                 rval.append(elem)
@@ -470,4 +468,4 @@ def _timed_flush_obj(obj):
     obj_flush_timer = ExecutionTimer()
     sa_session = object_session(obj)
     sa_session.flush()
-    log.info("Flushed transaction for %s %s" % (obj.log_str(), obj_flush_timer))
+    log.info("Flushed transaction for {} {}".format(obj.log_str(), obj_flush_timer))

@@ -4,7 +4,6 @@ This script fixes a problem introduced in the previous migration script
 thus the index "ix_hdadaa_history_dataset_association_id" has to be
 manually created.
 """
-from __future__ import print_function
 
 import datetime
 import logging

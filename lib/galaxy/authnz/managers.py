@@ -44,7 +44,7 @@ DEFAULT_OIDC_IDP_ICONS = {
 }
 
 
-class AuthnzManager(object):
+class AuthnzManager:
 
     def __init__(self, app, oidc_config_file, oidc_backends_config_file):
         """

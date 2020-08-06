@@ -5,7 +5,6 @@ from abc import (
     abstractmethod
 )
 
-import six
 
 from galaxy.managers.markdown_util import (
     internal_galaxy_markdown_to_pdf,
@@ -14,8 +13,7 @@ from galaxy.managers.markdown_util import (
 )
 
 
-@six.add_metaclass(ABCMeta)
-class WorkflowReportGeneratorPlugin(object):
+class WorkflowReportGeneratorPlugin(metaclass=ABCMeta):
     """
     """
 
@@ -35,8 +33,7 @@ class WorkflowReportGeneratorPlugin(object):
         """
 
 
-@six.add_metaclass(ABCMeta)
-class WorkflowMarkdownGeneratorPlugin(WorkflowReportGeneratorPlugin):
+class WorkflowMarkdownGeneratorPlugin(WorkflowReportGeneratorPlugin, metaclass=ABCMeta):
     """WorkflowReportGeneratorPlugin that generates markdown as base report."""
 
     def generate_report_json(self, trans, invocation, runtime_report_config_json=None):

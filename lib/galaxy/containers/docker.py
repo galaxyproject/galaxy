@@ -1,7 +1,6 @@
 """
 Interface to Docker
 """
-from __future__ import absolute_import
 
 import logging
 import os
@@ -19,7 +18,6 @@ try:
 except ImportError:
     ConnectionError = None
     ReadTimeout = None
-from six import string_types
 from six.moves import shlex_quote
 
 from galaxy.containers import ContainerInterface
@@ -61,9 +59,9 @@ class DockerInterface(ContainerInterface):
     )
 
     def validate_config(self):
-        super(DockerInterface, self).validate_config()
+        super().validate_config()
         self.__host_iter = None
-        if self._conf.host is None or isinstance(self._conf.host, string_types):
+        if self._conf.host is None or isinstance(self._conf.host, str):
             self.__host_iter = repeat(self._conf.host)
         else:
             self.__host_iter = cycle(self._conf.host)
@@ -128,7 +126,7 @@ class DockerCLIInterface(DockerInterface):
 
     def validate_config(self):
         log.warning('The `docker_cli` interface is deprecated and will be removed in Galaxy 18.09, please use `docker`')
-        super(DockerCLIInterface, self).validate_config()
+        super().validate_config()
         global_kwopts = []
         if self._conf.host:
             global_kwopts.append('--host')
@@ -159,7 +157,7 @@ class DockerCLIInterface(DockerInterface):
             l = val
         else:
             for hostvol, guestopts in val.items():
-                if isinstance(guestopts, string_types):
+                if isinstance(guestopts, str):
                     # {'/host/vol': '/container/vol'}
                     l.append('{}:{}'.format(hostvol, guestopts))
                 else:
@@ -219,7 +217,7 @@ class DockerCLIInterface(DockerInterface):
                 raise ContainerImageNotFound(msg, image=image)
 
 
-class DockerAPIClient(object):
+class DockerAPIClient:
     """Wraps a ``docker.APIClient`` to catch exceptions.
     """
 
@@ -347,7 +345,7 @@ class DockerAPIInterface(DockerInterface):
 
     def validate_config(self):
         assert docker is not None, "Docker module could not be imported, DockerAPIInterface unavailable"
-        super(DockerAPIInterface, self).validate_config()
+        super().validate_config()
         self.__client = None
 
     @property

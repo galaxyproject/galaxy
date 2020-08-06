@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import logging
 import signal
 import sys
@@ -345,14 +343,14 @@ class StatsdStructuredExecutionTimer(StructuredExecutionTimer):
 
     def __init__(self, galaxy_statsd_client, *args, **kwds):
         self.galaxy_statsd_client = galaxy_statsd_client
-        super(StatsdStructuredExecutionTimer, self).__init__(*args, **kwds)
+        super().__init__(*args, **kwds)
 
     def to_str(self, **kwd):
         self.galaxy_statsd_client.timing(self.timer_id, self.elapsed * 1000., kwd)
-        return super(StatsdStructuredExecutionTimer, self).to_str(**kwd)
+        return super().to_str(**kwd)
 
 
-class ExecutionTimerFactory(object):
+class ExecutionTimerFactory:
 
     def __init__(self, config):
         statsd_host = getattr(config, "statsd_host", None)

@@ -1,7 +1,6 @@
 """
 Migration script to create table for exporting histories to archives.
 """
-from __future__ import print_function
 
 import logging
 

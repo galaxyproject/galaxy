@@ -59,7 +59,7 @@ from galaxy.model.tool_shed_install import ToolVersion
 log = logging.getLogger(__name__)
 
 
-class ViewField(object):
+class ViewField:
     """
     A ViewField defines a field in a view that filter operations can be applied to
     These filter operations are either handled with standard sqlalchemy filter calls,
@@ -88,7 +88,7 @@ class ViewField(object):
         self.id_decode = id_decode
 
 
-class ViewQueryBaseClass(object):
+class ViewQueryBaseClass:
     FIELDS = {}
     VIEW_NAME = "undefined"
 
@@ -597,7 +597,7 @@ not_dquote = anything:x ?(x != '"') -> x
 """
 
 
-class GalaxyQuery(object):
+class GalaxyQuery:
     """
     This class represents a data structure of a compiled GQL query
     """
@@ -608,7 +608,7 @@ class GalaxyQuery(object):
         self.conditional = conditional
 
 
-class GalaxyQueryComparison(object):
+class GalaxyQueryComparison:
     """
     This class represents the data structure of the comparison arguments of a
     compiled GQL query (ie where name='Untitled History')
@@ -620,7 +620,7 @@ class GalaxyQueryComparison(object):
         self.right = right
 
 
-class GalaxyQueryAnd(object):
+class GalaxyQueryAnd:
     """
     This class represents the data structure of the comparison arguments of a
     compiled GQL query (ie where name='Untitled History')
@@ -636,7 +636,7 @@ class GalaxyParseError(Exception):
     pass
 
 
-class SearchQuery(object):
+class SearchQuery:
     def __init__(self, view, query):
         self.view = view
         self.query = query
@@ -666,7 +666,7 @@ class SearchQuery(object):
         return o
 
 
-class GalaxySearchEngine(object):
+class GalaxySearchEngine:
     """
     Primary class for searching. Parses GQL (Galaxy Query Language) queries and returns a 'SearchQuery' class
     """

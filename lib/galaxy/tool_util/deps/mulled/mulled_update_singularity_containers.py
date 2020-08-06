@@ -167,7 +167,7 @@ def container_testing(args=None):
         for container in test_results['failed']:
             f.write('\n\t\t%s' % container['container'])
             for error in container['errors']:
-                f.write('\n\t\t\tCOMMAND: %s\n\t\t\t\tERROR:%s' % (error.get(
+                f.write('\n\t\t\tCOMMAND: {}\n\t\t\t\tERROR:{}'.format(error.get(
                     'command', 'import' + error.get('import', 'nothing found')), error['output']))
         f.write('\n\tNO TEST AVAILABLE:')
         for container in test_results['notest']:

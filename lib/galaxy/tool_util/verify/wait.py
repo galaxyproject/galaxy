@@ -5,7 +5,7 @@ import time
 DEFAULT_POLLING_BACKOFF = 0
 DEFAULT_POLLING_DELTA = 0.25
 
-TIMEOUT_MESSAGE_TEMPLATE = "Timed out after %s seconds waiting on %s."
+TIMEOUT_MESSAGE_TEMPLATE = "Timed out after {} seconds waiting on {}."
 
 
 def wait_on(function, desc, timeout, delta=DEFAULT_POLLING_DELTA, polling_backoff=DEFAULT_POLLING_BACKOFF, sleep_=None):
@@ -21,10 +21,7 @@ def wait_on(function, desc, timeout, delta=DEFAULT_POLLING_DELTA, polling_backof
     total_wait = 0
     while True:
         if total_wait > timeout:
-            timeout_message = TIMEOUT_MESSAGE_TEMPLATE % (
-                total_wait, desc
-            )
-            raise TimeoutAssertionError(timeout_message)
+            raise TimeoutAssertionError(TIMEOUT_MESSAGE_TEMPLATE.format(total_wait, desc))
         value = function()
         if value is not None:
             return value

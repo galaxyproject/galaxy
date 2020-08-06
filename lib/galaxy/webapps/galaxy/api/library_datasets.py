@@ -53,7 +53,7 @@ log = logging.getLogger(__name__)
 class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, LibraryActions):
 
     def __init__(self, app):
-        super(LibraryDatasetsController, self).__init__(app)
+        super().__init__(app)
         self.app = app
         self.folder_manager = folders.FolderManager()
         self.role_manager = roles.RoleManager(app)
@@ -650,7 +650,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                             archive.add(ldda.dataset.file_name, zpath)  # add the primary of a composite set
                         else:
                             archive.add(ldda.dataset.file_name, zpath, check_file=True)  # add the primary of a composite set
-                    except IOError:
+                    except OSError:
                         log.exception("Unable to add composite parent %s to temporary library download archive", ldda.dataset.file_name)
                         raise exceptions.InternalServerError("Unable to create archive for download.")
                     except ObjectNotFound:
@@ -670,7 +670,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                                 archive.add(fpath, fname)
                             else:
                                 archive.add(fpath, fname, check_file=True)
-                        except IOError:
+                        except OSError:
                             log.exception("Unable to add %s to temporary library download archive %s", fname, outfname)
                             raise exceptions.InternalServerError("Unable to create archive for download.")
                         except ObjectNotFound:
@@ -685,7 +685,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                             archive.add(ldda.dataset.file_name, path)
                         else:
                             archive.add(ldda.dataset.file_name, path, check_file=True)
-                    except IOError:
+                    except OSError:
                         log.exception("Unable to write %s to temporary library download archive", ldda.dataset.file_name)
                         raise exceptions.InternalServerError("Unable to create archive for download")
                     except ObjectNotFound:
@@ -699,14 +699,14 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
             if format == 'zip':
                 archive.close()
                 trans.response.set_content_type("application/octet-stream")
-                trans.response.headers["Content-Disposition"] = 'attachment; filename="%s.%s"' % (fname, outext)
+                trans.response.headers["Content-Disposition"] = 'attachment; filename="{}.{}"'.format(fname, outext)
                 archive = util.streamball.ZipBall(tmpf, tmpd)
                 archive.wsgi_status = trans.response.wsgi_status()
                 archive.wsgi_headeritems = trans.response.wsgi_headeritems()
                 return archive.stream
             else:
                 trans.response.set_content_type("application/x-tar")
-                trans.response.headers["Content-Disposition"] = 'attachment; filename="%s.%s"' % (fname, outext)
+                trans.response.headers["Content-Disposition"] = 'attachment; filename="{}.{}"'.format(fname, outext)
                 archive.wsgi_status = trans.response.wsgi_status()
                 archive.wsgi_headeritems = trans.response.wsgi_headeritems()
                 return archive.stream

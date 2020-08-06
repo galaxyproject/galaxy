@@ -10,7 +10,7 @@ from galaxy.util.template import fill_template
 DEFAULT_DATASET_NAME = 'dataset'
 
 
-class DisplayApplicationParameter(object):
+class DisplayApplicationParameter:
     """ Abstract Class for Display Application Parameters """
 
     type = None
@@ -83,7 +83,7 @@ class DisplayApplicationDataParameter(DisplayApplicationParameter):
             data = data.value
         if self.metadata:
             rval = getattr(data.metadata, self.metadata, None)
-            assert rval, 'Unknown metadata name (%s) provided for dataset type (%s).' % (self.metadata, data.datatype.__class__.name)
+            assert rval, 'Unknown metadata name ({}) provided for dataset type ({}).'.format(self.metadata, data.datatype.__class__.name)
             return Bunch(file_name=rval.file_name, state=data.state, states=data.states, extension='data')
         elif self.extensions and (self.force_conversion or not isinstance(data.datatype, self.formats)):
             for ext in self.extensions:
@@ -159,7 +159,7 @@ parameter_type_to_class = {DisplayApplicationDataParameter.type: DisplayApplicat
                            DisplayApplicationTemplateParameter.type: DisplayApplicationTemplateParameter}
 
 
-class DisplayParameterValueWrapper(object):
+class DisplayParameterValueWrapper:
     ACTION_NAME = 'param'
 
     def __init__(self, value, parameter, other_values, dataset_hash, user_hash, trans):
@@ -190,15 +190,15 @@ class DisplayParameterValueWrapper(object):
         base_url = self.trans.request.base
         if self.parameter.strip_https and base_url[: 5].lower() == 'https':
             base_url = "http%s" % base_url[5:]
-        return "%s%s" % (base_url,
-                         self.trans.app.url_for(controller='dataset',
-                                                action="display_application",
-                                                dataset_id=self._dataset_hash,
-                                                user_id=self._user_hash,
-                                                app_name=quote_plus(self.parameter.link.display_application.id),
-                                                link_name=quote_plus(self.parameter.link.id),
-                                                app_action=self.action_name,
-                                                action_param=self._url))
+        return "{}{}".format(base_url,
+                             self.trans.app.url_for(controller='dataset',
+                                                    action="display_application",
+                                                    dataset_id=self._dataset_hash,
+                                                    user_id=self._user_hash,
+                                                    app_name=quote_plus(self.parameter.link.display_application.id),
+                                                    link_name=quote_plus(self.parameter.link.id),
+                                                    app_action=self.action_name,
+                                                    action_param=self._url))
 
     @property
     def action_name(self):

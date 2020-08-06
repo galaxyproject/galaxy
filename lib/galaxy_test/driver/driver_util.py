@@ -6,7 +6,6 @@ import random
 import re
 import shutil
 import signal
-import socket
 import string
 import subprocess
 import sys
@@ -189,7 +188,7 @@ def setup_galaxy_config(
             default_data_manager_config = data_manager_config
     data_manager_config_file = "test/functional/tools/sample_data_manager_conf.xml"
     if default_data_manager_config is not None:
-        data_manager_config_file = "%s,%s" % (default_data_manager_config, data_manager_config_file)
+        data_manager_config_file = "{},{}".format(default_data_manager_config, data_manager_config_file)
     master_api_key = get_master_api_key()
     cleanup_job = 'never' if ("GALAXY_TEST_NO_CLEANUP" in os.environ or
                               "TOOL_SHED_TEST_NO_CLEANUP" in os.environ) else 'onsuccess'
@@ -207,7 +206,7 @@ def setup_galaxy_config(
         tool_conf = FRAMEWORK_UPLOAD_TOOL_CONF
 
     if shed_tool_conf is not None:
-        tool_conf = "%s,%s" % (tool_conf, shed_tool_conf)
+        tool_conf = "{},{}".format(tool_conf, shed_tool_conf)
 
     shed_tool_data_table_config = default_shed_tool_data_table_config
 
@@ -490,7 +489,7 @@ def wait_for_http_server(host, port, sleep_amount=0.1, sleep_tries=150):
             response = conn.getresponse()
             if response.status == 200:
                 break
-        except socket.error as e:
+        except OSError as e:
             if e.errno not in [61, 111]:
                 raise
         time.sleep(sleep_amount)
@@ -511,7 +510,7 @@ def attempt_ports(port):
             port = str(random.randint(8000, 10000))
             yield port
 
-        raise Exception("Unable to open a port between %s and %s to start Galaxy server" % (8000, 10000))
+        raise Exception("Unable to open a port between {} and {} to start Galaxy server".format(8000, 10000))
 
 
 def serve_webapp(webapp, port=None, host=None):
@@ -524,7 +523,7 @@ def serve_webapp(webapp, port=None, host=None):
         try:
             server = httpserver.serve(webapp, host=host, port=port, start_loop=False)
             break
-        except socket.error as e:
+        except OSError as e:
             if e.errno == 98:
                 continue
             raise
@@ -645,7 +644,7 @@ def set_and_wait_for_http_target(prefix, host, port, sleep_amount=0.1, sleep_tri
     wait_for_http_server(host, port, sleep_amount=sleep_amount, sleep_tries=sleep_tries)
 
 
-class ServerWrapper(object):
+class ServerWrapper:
 
     def __init__(self, name, host, port):
         self.name = name
@@ -663,7 +662,7 @@ class ServerWrapper(object):
 class PasteServerWrapper(ServerWrapper):
 
     def __init__(self, app, server, name, host, port):
-        super(PasteServerWrapper, self).__init__(name, host, port)
+        super().__init__(name, host, port)
         self._app = app
         self._server = server
 
@@ -686,7 +685,7 @@ class PasteServerWrapper(ServerWrapper):
 class UwsgiServerWrapper(ServerWrapper):
 
     def __init__(self, p, name, host, port):
-        super(UwsgiServerWrapper, self).__init__(name, host, port)
+        super().__init__(name, host, port)
         self._p = p
         self._r = None
         self._t = threading.Thread(target=self.wait)
@@ -737,7 +736,7 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
     if enable_realtime_mapping:
         # Avoid YAML.dump configuration since uwsgi doesn't like real YAML :( -
         # though maybe it would work?
-        with open(yaml_config_path, "r") as f:
+        with open(yaml_config_path) as f:
             old_contents = f.read()
         with open(yaml_config_path, "w") as f:
             test_port = str(port) if port else r"[0-9]+"
@@ -750,7 +749,7 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
         uwsgi_command = [
             "uwsgi",
             "--http",
-            "%s:%s" % (host, port),
+            "{}:{}".format(host, port),
             "--yaml",
             yaml_config_path,
             "--module",
@@ -783,7 +782,7 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
         server_wrapper = attempt_port_bind(port)
         try:
             set_and_wait_for_http_target(prefix, host, port, sleep_tries=50)
-            log.info("Test-managed uwsgi web server for %s started at %s:%s" % (name, host, port))
+            log.info("Test-managed uwsgi web server for {} started at {}:{}".format(name, host, port))
             return server_wrapper
         except Exception:
             server_wrapper.stop()
@@ -812,13 +811,13 @@ def launch_server(app, webapp_factory, kwargs, prefix=DEFAULT_CONFIG_PREFIX, con
         host=host, port=port
     )
     set_and_wait_for_http_target(prefix, host, port)
-    log.info("Embedded paste web server for %s started at %s:%s" % (name, host, port))
+    log.info("Embedded paste web server for {} started at {}:{}".format(name, host, port))
     return PasteServerWrapper(
         app, server, name, host, port
     )
 
 
-class TestDriver(object):
+class TestDriver:
     """Responsible for the life-cycle of a Galaxy-style functional test.
 
     Sets up servers, configures tests, runs nose, and tears things
@@ -992,7 +991,7 @@ class GalaxyTestDriver(TestDriver):
                     galaxy_config,
                     config_object=config_object,
                 )
-                log.info("Functional tests will be run against external Galaxy server %s:%s" % (server_wrapper.host, server_wrapper.port))
+                log.info("Functional tests will be run against external Galaxy server {}:{}".format(server_wrapper.host, server_wrapper.port))
             self.server_wrappers.append(server_wrapper)
         else:
             log.info("Functional tests will be run against test managed Galaxy server %s" % self.external_galaxy)

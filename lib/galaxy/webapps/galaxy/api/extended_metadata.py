@@ -77,7 +77,7 @@ class HistoryDatasetExtendMetadataController(BaseExtendedMetadataController):
     exmeta_item_id = "history_content_id"
 
     def __init__(self, app):
-        super(HistoryDatasetExtendMetadataController, self).__init__(app)
+        super().__init__(app)
         self.hda_manager = managers.hdas.HDAManager(app)
 
     def _get_item_from_id(self, trans, idstr, check_writable=True):

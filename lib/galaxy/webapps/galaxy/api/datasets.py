@@ -4,7 +4,6 @@ API operations on the contents of a history dataset.
 import logging
 import os
 
-from six import string_types
 
 from galaxy import (
     exceptions as galaxy_exceptions,
@@ -34,7 +33,7 @@ log = logging.getLogger(__name__)
 class DatasetsController(BaseAPIController, UsesVisualizationMixin):
 
     def __init__(self, app):
-        super(DatasetsController, self).__init__(app)
+        super().__init__(app)
         self.history_manager = managers.histories.HistoryManager(app)
         self.hda_manager = managers.hdas.HDAManager(app)
         self.hda_serializer = managers.hdas.HDASerializer(app)
@@ -47,7 +46,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
     def _parse_serialization_params(self, kwd, default_view):
         view = kwd.get('view', None)
         keys = kwd.get('keys')
-        if isinstance(keys, string_types):
+        if isinstance(keys, str):
             keys = keys.split(',')
         return dict(view=view, keys=keys, default_view=default_view)
 
@@ -432,7 +431,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
             file_ext = hda.metadata.spec.get(metadata_file).get("file_ext", metadata_file)
             fname = ''.join(c in util.FILENAME_VALID_CHARS and c or '_' for c in hda.name)[0:150]
             trans.response.headers["Content-Type"] = "application/octet-stream"
-            trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (hda.hid, fname, file_ext)
+            trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy{}-[{}].{}"'.format(hda.hid, fname, file_ext)
             return open(hda.metadata.get(metadata_file).file_name, 'rb')
         except Exception as e:
             log.exception("Error getting metadata_file (%s) for dataset (%s) from history (%s)",

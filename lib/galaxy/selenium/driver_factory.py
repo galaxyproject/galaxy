@@ -55,7 +55,7 @@ def get_remote_driver(
     assert browser in ["CHROME", "EDGE", "ANDROID", "FIREFOX", "INTERNETEXPLORER", "IPAD", "IPHONE", "OPERA", "PHANTOMJS", "SAFARI"]
     desired_capabilities = getattr(DesiredCapabilities, browser)
     desired_capabilities["loggingPrefs"] = LOGGING_PREFS
-    executor = 'http://%s:%s/wd/hub' % (host, port)
+    executor = 'http://{}:{}/wd/hub'.format(host, port)
     driver = webdriver.Remote(
         command_executor=executor,
         desired_capabilities=desired_capabilities,
@@ -76,7 +76,7 @@ def virtual_display_if_enabled(enabled):
         return NoopDisplay()
 
 
-class NoopDisplay(object):
+class NoopDisplay:
 
     def stop(self):
         """No-op stop for consistent use with pyvirtualdisplay Display class."""

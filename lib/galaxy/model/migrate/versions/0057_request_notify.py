@@ -2,7 +2,6 @@
 Migration script to modify the 'notify' field in the 'request' table from a boolean
 to a JSONType
 """
-from __future__ import print_function
 
 import logging
 from json import dumps

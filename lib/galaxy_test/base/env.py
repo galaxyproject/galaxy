@@ -21,7 +21,7 @@ def setup_keep_outdir():
 def target_url_parts():
     host = socket.gethostbyname(os.environ.get('GALAXY_TEST_HOST', DEFAULT_WEB_HOST))
     port = os.environ.get('GALAXY_TEST_PORT')
-    default_url = "http://%s:%s" % (host, port)
+    default_url = "http://{}:{}".format(host, port)
     url = os.environ.get('GALAXY_TEST_EXTERNAL', default_url)
     return host, port, url
 

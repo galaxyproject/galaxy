@@ -20,7 +20,7 @@ UNKNOWN_OPTION = {
 }
 
 
-class Schema(object):
+class Schema:
 
     def __init__(self, mapping):
         self.app_schema = mapping
@@ -42,10 +42,10 @@ class AppSchema(Schema):
         self.description = self.raw_schema.get("desc", None)
         app_schema = self.raw_schema['mapping'][app_name]['mapping']
         self._preprocess(app_schema)
-        super(AppSchema, self).__init__(app_schema)
+        super().__init__(app_schema)
 
     def _read_schema(self, path):
-        with open(path, "r") as f:
+        with open(path) as f:
             return ordered_load(f)
 
     def _preprocess(self, app_schema):

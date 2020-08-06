@@ -1,7 +1,6 @@
 """
 Migration script to add the new_repo_alert column to the galaxy_user table.
 """
-from __future__ import print_function
 
 import logging
 import sys

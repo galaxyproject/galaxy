@@ -3,6 +3,7 @@
 Used to share code between the Galaxy test framework
 and other Galaxy CWL clients (e.g. Planemo)."""
 import hashlib
+import io
 import json
 import os
 import tarfile
@@ -10,11 +11,6 @@ import tempfile
 from collections import namedtuple
 
 import yaml
-from six import (
-    BytesIO,
-    iteritems,
-    python_2_unicode_compatible
-)
 
 from galaxy.util import unicodify
 
@@ -38,7 +34,7 @@ def output_properties(path=None, content=None, basename=None, pseduo_location=Fa
         properties["path"] = path
         f = open(path, "rb")
     else:
-        f = BytesIO(content)
+        f = io.BytesIO(content)
 
     try:
         contents = f.read(1024 * 1024)
@@ -310,7 +306,7 @@ def galactic_job_json(
         return {"src": "hdca", "id": hdca_id}
 
     replace_keys = {}
-    for key, value in iteritems(job):
+    for key, value in job.items():
         replace_keys[key] = replacement_item(value)
 
     job.update(replace_keys)
@@ -330,19 +326,17 @@ def _ensure_file_exists(file_path):
         raise Exception(message)
 
 
-@python_2_unicode_compatible
-class FileLiteralTarget(object):
+class FileLiteralTarget:
 
     def __init__(self, contents, **kwargs):
         self.contents = contents
         self.properties = kwargs
 
     def __str__(self):
-        return "FileLiteralTarget[path=%s] with %s" % (self.path, self.properties)
+        return "FileLiteralTarget[path={}] with {}".format(self.path, self.properties)
 
 
-@python_2_unicode_compatible
-class FileUploadTarget(object):
+class FileUploadTarget:
 
     def __init__(self, path, secondary_files=None, **kwargs):
         self.path = path
@@ -351,11 +345,10 @@ class FileUploadTarget(object):
         self.properties = kwargs
 
     def __str__(self):
-        return "FileUploadTarget[path=%s] with %s" % (self.path, self.properties)
+        return "FileUploadTarget[path={}] with {}".format(self.path, self.properties)
 
 
-@python_2_unicode_compatible
-class ObjectUploadTarget(object):
+class ObjectUploadTarget:
 
     def __init__(self, the_object):
         self.object = the_object
@@ -364,8 +357,7 @@ class ObjectUploadTarget(object):
         return "ObjectUploadTarget[object=%s]" % self.object
 
 
-@python_2_unicode_compatible
-class DirectoryUploadTarget(object):
+class DirectoryUploadTarget:
 
     def __init__(self, tar_path):
         self.tar_path = tar_path
@@ -397,7 +389,7 @@ def invocation_to_output(invocation, history_id, output_id):
         collection = invocation["output_collections"][output_id]
         galaxy_output = GalaxyOutput(history_id, "dataset_collection", collection["id"], None)
     else:
-        raise Exception("Failed to find output with label [%s] in [%s]" % (output_id, invocation))
+        raise Exception("Failed to find output with label [{}] in [{}]".format(output_id, invocation))
 
     return galaxy_output
 
@@ -565,7 +557,7 @@ def guess_artifact_type(path):
     # TODO: Handle IDs within files.
     tool_or_workflow = "workflow"
     try:
-        with open(path, "r") as f:
+        with open(path) as f:
             artifact = yaml.safe_load(f)
 
         tool_or_workflow = "tool" if artifact["class"] != "Workflow" else "workflow"

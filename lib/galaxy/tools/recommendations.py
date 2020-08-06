@@ -90,7 +90,7 @@ class ToolRecommendations():
                         return False
             # set the dictionary of tools
             self.model_data_dictionary = json.loads(trained_model['data_dictionary'][()])
-            self.reverse_dictionary = dict((v, k) for k, v in self.model_data_dictionary.items())
+            self.reverse_dictionary = {v: k for k, v in self.model_data_dictionary.items()}
             # set the list of compatible tools
             self.compatible_tools = json.loads(trained_model['compatible_tools'][()])
             tool_weights = json.loads(trained_model['class_weights'][()])

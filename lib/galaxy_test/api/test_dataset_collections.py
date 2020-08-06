@@ -11,7 +11,7 @@ from ._framework import ApiTestCase
 class DatasetCollectionApiTestCase(ApiTestCase):
 
     def setUp(self):
-        super(DatasetCollectionApiTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
         self.history_id = self.dataset_populator.new_history()
@@ -105,7 +105,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         assert len(namelist) == 3, "Expected 3 elements in [%s]" % namelist
         collection_name = dataset_collection['name']
         for element, zip_path in zip(returned_dce, namelist):
-            assert "%s/%s.%s" % (collection_name, element['element_identifier'], element['object']['file_ext']) == zip_path
+            assert "{}/{}.{}".format(collection_name, element['element_identifier'], element['object']['file_ext']) == zip_path
 
     def test_pair_download(self):
         fetch_response = self.dataset_collection_populator.create_pair_in_history(self.history_id, direct_upload=True).json()
@@ -120,7 +120,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         assert len(namelist) == 2, "Expected 2 elements in [%s]" % namelist
         collection_name = dataset_collection['name']
         for element, zip_path in zip(returned_dce, namelist):
-            assert "%s/%s.%s" % (collection_name, element['element_identifier'], element['object']['file_ext']) == zip_path
+            assert "{}/{}.{}".format(collection_name, element['element_identifier'], element['object']['file_ext']) == zip_path
 
     def test_list_pair_download(self):
         fetch_response = self.dataset_collection_populator.create_list_of_pairs_in_history(self.history_id).json()
@@ -136,7 +136,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         assert len(namelist) == 2, "Expected 2 elements in [%s]" % namelist
         pair_collection_name = pair['element_identifier']
         for element, zip_path in zip(pair['object']['elements'], namelist):
-            assert "%s/%s/%s.%s" % (list_collection_name, pair_collection_name, element['element_identifier'], element['object']['file_ext']) == zip_path
+            assert "{}/{}/{}.{}".format(list_collection_name, pair_collection_name, element['element_identifier'], element['object']['file_ext']) == zip_path
 
     def test_list_list_download(self):
         dataset_collection = self.dataset_collection_populator.create_list_of_list_in_history(self.history_id).json()
@@ -263,7 +263,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         hdca = contents[0]
         assert hdca["history_content_type"] == "dataset_collection"
         hdca_id = hdca["id"]
-        collection_response = self._get("histories/%s/contents/dataset_collections/%s" % (self.history_id, hdca_id))
+        collection_response = self._get("histories/{}/contents/dataset_collections/{}".format(self.history_id, hdca_id))
         self._assert_status_code_is(collection_response, 200)
         return collection_response.json()
 
@@ -274,7 +274,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         return dataset_collection
 
     def _download_dataset_collection(self, history_id, hdca_id):
-        return self._get("histories/%s/contents/dataset_collections/%s/download" % (history_id, hdca_id))
+        return self._get("histories/{}/contents/dataset_collections/{}/download".format(history_id, hdca_id))
 
     def test_collection_contents_security(self):
         # request contents on an hdca that doesn't belong to user
@@ -289,7 +289,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         response = self._get(contents_url)
         self._assert_status_code_is(response, 200)
         fake_collection_id = '5d7db0757a2eb7ef'
-        fake_contents_url = '/api/dataset_collections/%s/contents/%s' % (hdca['id'], fake_collection_id)
+        fake_contents_url = '/api/dataset_collections/{}/contents/{}'.format(hdca['id'], fake_collection_id)
         error_response = self._get(fake_contents_url)
         assert_object_id_error(error_response)
 

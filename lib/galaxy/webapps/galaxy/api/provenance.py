@@ -22,7 +22,7 @@ class BaseProvenanceController(BaseAPIController):
     """
 
     def __init__(self, app):
-        super(BaseProvenanceController, self).__init__(app)
+        super().__init__(app)
         self.hda_manager = managers.hdas.HDAManager(app)
 
     @web.legacy_expose_api

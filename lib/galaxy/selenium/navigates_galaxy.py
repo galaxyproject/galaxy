@@ -2,7 +2,6 @@
 
 Implementer must provide a self.build_url method to target Galaxy.
 """
-from __future__ import print_function
 
 import collections
 import contextlib
@@ -60,7 +59,7 @@ WAIT_TYPES = Bunch(
 DEFAULT_WAIT_TYPE = WAIT_TYPES.DATABASE_OPERATION
 
 
-class NullTourCallback(object):
+class NullTourCallback:
 
     def handle_step(self, step, step_index):
         pass
@@ -163,7 +162,7 @@ class NavigatesGalaxy(HasDriver):
 
     @contextlib.contextmanager
     def local_storage(self, key, value):
-        self.driver.execute_script('''window.localStorage.setItem("%s", %s);''' % (key, value))
+        self.driver.execute_script('''window.localStorage.setItem("{}", {});'''.format(key, value))
         try:
             yield
         finally:
@@ -224,9 +223,9 @@ class NavigatesGalaxy(HasDriver):
         if history_id not in [h['id'] for h in histories]:
             return {}
         if datasets_only:
-            endpoint = 'histories/%s/contents?view=%s' % (history_id, view)
+            endpoint = 'histories/{}/contents?view={}'.format(history_id, view)
         else:
-            endpoint = 'histories/%s?view=%s' % (history_id, view)
+            endpoint = 'histories/{}?view={}'.format(history_id, view)
         return self.api_get(endpoint)
 
     def current_history(self):
@@ -401,7 +400,7 @@ class NavigatesGalaxy(HasDriver):
         return search_box
 
     def _get_random_name(self, prefix=None, suffix=None, len=10):
-        return '%s%s%s' % (
+        return '{}{}{}'.format(
             prefix or '',
             ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(len)),
             suffix or '',
@@ -1226,13 +1225,13 @@ class NavigatesGalaxy(HasDriver):
         self.wait_for_and_click(dataset_selector)
 
     def history_panel_item_click_visualization_menu(self, hid):
-        viz_button_selector = "%s %s" % (self.history_panel_item_selector(hid), ".visualizations-dropdown")
+        viz_button_selector = "{} {}".format(self.history_panel_item_selector(hid), ".visualizations-dropdown")
         self.wait_for_and_click_selector(viz_button_selector)
-        self.wait_for_selector_visible("%s %s" % (viz_button_selector, ".dropdown-menu"))
+        self.wait_for_selector_visible("{} {}".format(viz_button_selector, ".dropdown-menu"))
 
     def history_panel_item_available_visualizations_elements(self, hid):
         # Precondition: viz menu has been opened with history_panel_item_click_visualization_menu
-        viz_menu_selectors = "%s %s" % (self.history_panel_item_selector(hid), "a.visualization-link")
+        viz_menu_selectors = "{} {}".format(self.history_panel_item_selector(hid), "a.visualization-link")
         return self.driver.find_elements_by_css_selector(viz_menu_selectors)
 
     def history_panel_item_get_nametags(self, hid):
@@ -1260,8 +1259,8 @@ class NavigatesGalaxy(HasDriver):
         try:
             history_item = [d for d in contents if d["hid"] == hid][0]
         except IndexError:
-            raise Exception("Could not find history item with hid [%s] in contents [%s]" % (hid, contents))
-        history_item_selector = "#%s-%s" % (history_item["history_content_type"], history_item["id"])
+            raise Exception("Could not find history item with hid [{}] in contents [{}]".format(hid, contents))
+        history_item_selector = "#{}-{}".format(history_item["history_content_type"], history_item["id"])
         if wait:
             self.wait_for_selector_visible(history_item_selector)
         return history_item_selector
@@ -1344,7 +1343,7 @@ class NavigatesGalaxy(HasDriver):
 
         self.home()
 
-        with open(path, "r") as f:
+        with open(path) as f:
             tour_dict = yaml.safe_load(f)
         steps = tour_dict["steps"]
         for i, step in enumerate(steps):
@@ -1424,7 +1423,7 @@ class NavigatesGalaxy(HasDriver):
         if hasattr(expected, "text"):
             expected = expected.text
         text = self.get_tooltip_text(element, sleep=sleep, click_away=click_away)
-        assert text == expected, "Tooltip text [%s] was not expected text [%s]." % (text, expected)
+        assert text == expected, "Tooltip text [{}] was not expected text [{}].".format(text, expected)
 
     def assert_error_message(self, contains=None):
         element = self.components._.messages["error"]
@@ -1440,7 +1439,7 @@ class NavigatesGalaxy(HasDriver):
         if contains is not None:
             text = element.text
             if contains not in text:
-                message = "Text [%s] expected inside of [%s] but not found." % (contains, text)
+                message = "Text [{}] expected inside of [{}] but not found.".format(contains, text)
                 raise AssertionError(message)
 
     def assert_no_error_message(self):
@@ -1549,7 +1548,7 @@ class NotLoggedInException(TimeoutException):
     def __init__(self, timeout_exception, user_info, dom_message):
         template = "Waiting for UI to reflect user logged in but it did not occur. API indicates no user is currently logged in. %s API response was [%s]. %s"
         msg = template % (dom_message, user_info, timeout_exception.msg)
-        super(NotLoggedInException, self).__init__(
+        super().__init__(
             msg=msg,
             screen=timeout_exception.screen,
             stacktrace=timeout_exception.stacktrace
