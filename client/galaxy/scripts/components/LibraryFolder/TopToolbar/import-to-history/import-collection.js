@@ -68,7 +68,6 @@ var ImportCollectionModal = Backbone.View.extend({
      * The code below overwrites the id with ldda_id for this reason.
      */
     showCollectionBuilder: function (checked_items) {
-        const Galaxy = getGalaxyInstance();
         let collection_elements = [];
         const elements_source = this.modal.$('input[type="radio"]:checked').val();
         if (elements_source === "selection") {

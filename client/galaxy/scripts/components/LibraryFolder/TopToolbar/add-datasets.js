@@ -8,7 +8,6 @@ import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import { updateProgress } from "./delete-selected";
 import mod_select from "mvc/ui/ui-select";
-import mod_utils from "utils/utils";
 
 var AddDatasets = Backbone.View.extend({
     options: null,
@@ -29,7 +28,6 @@ var AddDatasets = Backbone.View.extend({
      Slightly adopted Backbone code
      */
     showImportModal: function (options) {
-        const Galaxy = getGalaxyInstance();
         switch (options.source) {
             case "history":
                 this.addFilesFromHistoryModal();

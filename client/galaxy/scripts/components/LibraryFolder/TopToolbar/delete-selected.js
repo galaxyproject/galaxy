@@ -8,7 +8,7 @@ import $ from "jquery";
 let progress = 0;
 let items_total = 0;
 let progressStep = 0;
-let chain_call_control = {};
+const chain_call_control = {};
 
 /**
  * Delete the selected items. Atomic. One by one.
