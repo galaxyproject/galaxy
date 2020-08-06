@@ -47,12 +47,13 @@ class ZipBall:
     def __init__(self, tmpf, tmpd):
         self._tmpf = tmpf
         self._tmpd = tmpd
+        self.wsgi_status = None
+        self.wsgi_headeritems = None
 
     def stream(self, environ, start_response):
         response_write = start_response(self.wsgi_status, self.wsgi_headeritems)
-        tmpfh = open(self._tmpf)
-        response_write(tmpfh.read())
-        tmpfh.close()
+        with open(self._tmpf, 'rb') as tmpfh:
+            response_write(tmpfh.read())
         try:
             os.unlink(self._tmpf)
             os.rmdir(self._tmpd)

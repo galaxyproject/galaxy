@@ -869,7 +869,7 @@ def populate_api_routes(webapp, app):
                           conditions=dict(method=["DELETE"]))
 
     webapp.mapper.connect('download_ld_items',
-                          '/api/libraries/datasets/download/{format}',
+                          '/api/libraries/datasets/download/{archive_format}',
                           controller='library_datasets',
                           action='download',
                           conditions=dict(method=["POST", "GET"]))
