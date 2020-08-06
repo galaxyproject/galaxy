@@ -39,28 +39,28 @@
                                 <span class="fa fa-plus"></span> Datasets <span class="caret" />
                             </button>
                             <div class="dropdown-menu">
-                                <a class="dropdown-item select-all-symbl" @click="addDatasets('history')">
+                                <a class="dropdown-item cursor-pointer" @click="addDatasets('history')">
                                     from History</a
                                 >
                                 <a
                                     v-if="user_library_import_dir"
-                                    class="dropdown-item select-all-symbl"
+                                    class="dropdown-item cursor-pointer"
                                     @click="addDatasets('userdir')"
                                 >
                                     from User Directory
                                 </a>
                                 <div v-if="library_import_dir || allow_library_path_paste">
-                                    <h5 class="dropdown-header select-all-symbl">Admins only</h5>
+                                    <h5 class="dropdown-header cursor-pointer">Admins only</h5>
                                     <a
                                         v-if="library_import_dir"
-                                        class="dropdown-item select-all-symbl"
+                                        class="dropdown-item cursor-pointer"
                                         @click="addDatasets('importdir')"
                                     >
                                         from Import Directory
                                     </a>
                                     <a
                                         v-if="allow_library_path_paste"
-                                        class="dropdown-item select-all-symbl"
+                                        class="dropdown-item cursor-pointer"
                                         @click="addDatasets('path')"
                                     >
                                         from Path
@@ -116,9 +116,9 @@
                             Download <span class="caret"></span>
                         </button>
                         <div class="dropdown-menu" role="menu">
-                            <a class="dropdown-item" @click="downloadData('tgz')">.tar.gz</a>
-                            <a class="dropdown-item" @click="downloadData('tbz')">.tar.bz</a>
-                            <a class="dropdown-item" @click="downloadData('zip')">.zip</a>
+                            <a class="dropdown-item cursor-pointer" @click="downloadData('tgz')">.tar.gz</a>
+                            <a class="dropdown-item cursor-pointer" @click="downloadData('tbz')">.tar.bz</a>
+                            <a class="dropdown-item cursor-pointer" @click="downloadData('zip')">.zip</a>
                         </div>
                     </div>
                     <button

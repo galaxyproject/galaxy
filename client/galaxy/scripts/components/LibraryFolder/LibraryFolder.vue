@@ -42,7 +42,7 @@
                     </div>
                 </template>
                 <template v-slot:head(selected)="">
-                    <span class="select-all-symbl" title="Check to select all datasets" @click="toggleSelect"
+                    <span class="cursor-pointer" title="Check to select all datasets" @click="toggleSelect"
                         >&check;</span
                     >
                 </template>
