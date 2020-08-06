@@ -16,7 +16,7 @@
                 :metadata="folder_metadata"
             ></FolderTopBar>
             <b-table
-                id="folder-table"
+                id="folder_list_body"
                 striped
                 hover
                 :filter="filter"
@@ -60,6 +60,7 @@
                         <textarea
                             v-if="row.item.isNewFolder"
                             class="form-control"
+                            name="input_folder_name"
                             :ref="'name' + row.item.id"
                             v-model="row.item.name"
                             rows="3"
@@ -150,7 +151,7 @@
                     <div v-if="row.item.editMode">
                         <button
                             @click="row.item.isNewFolder ? createNewFolder(row.item) : saveChanges(row.item)"
-                            class="primary-button btn-sm permission_folder_btn"
+                            class="primary-button btn-sm permission_folder_btn save_folder_btn"
                             :title="'save ' + row.item.name"
                         >
                             <font-awesome-icon :icon="['far', 'save']" />
@@ -209,7 +210,7 @@
                             v-model="currentPage"
                             :total-rows="rows"
                             :per-page="perPage"
-                            aria-controls="folder-table"
+                            aria-controls="folder_list_body"
                         >
                         </b-pagination>
                     </b-col>

@@ -965,8 +965,8 @@ class NavigatesGalaxy(HasDriver):
             self.wait_for_absent_or_hidden(self.navigation.libraries.folder.selectors.import_progress_bar)
 
     def libraries_table_elements(self):
-        tbody_element = self.wait_for_selector_visible("#folder_list_body")
-        return tbody_element.find_elements_by_css_selector("tr")[1:]
+        tbody_element = self.wait_for_selector_visible("#folder_list_body > tbody")
+        return tbody_element.find_elements_by_css_selector("tr:not(.b-table-empty-row)")
 
     def wait_for_overlays_cleared(self):
         """Wait for modals and Toast notifications to disappear."""
