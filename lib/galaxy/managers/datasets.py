@@ -522,12 +522,13 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer,
         """
         meta_files = []
         for meta_type in dataset_assoc.metadata_file_types:
-            meta_files.append(
-                dict(file_type=meta_type,
-                     download_url=self.url_for('history_contents_metadata_file',
-                                               history_id=self.app.security.encode_id(dataset_assoc.history_id),
-                                               history_content_id=self.app.security.encode_id(dataset_assoc.id),
-                                               metadata_file=meta_type)))
+            if getattr(dataset_assoc.metadata, meta_type, None):
+                meta_files.append(
+                    dict(file_type=meta_type,
+                         download_url=self.url_for('history_contents_metadata_file',
+                                                   history_id=self.app.security.encode_id(dataset_assoc.history_id),
+                                                   history_content_id=self.app.security.encode_id(dataset_assoc.id),
+                                                   metadata_file=meta_type)))
         return meta_files
 
     def serialize_metadata(self, dataset_assoc, key, excluded=None, **context):
@@ -553,6 +554,8 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer,
             # If no value for metadata, look in datatype for metadata.
             elif val is None and hasattr(dataset_assoc.datatype, name):
                 val = getattr(dataset_assoc.datatype, name)
+            if val is None and spec.get("optional"):
+                continue
             metadata[name] = val
 
         return metadata
