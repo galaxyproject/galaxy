@@ -17,7 +17,7 @@
   <help>
 .. class:: infomark
 
-Adjust timestamps of a speech-to-text json output to match timestamps of the original file.
+Adjust timestamps of a segmentation json from speaker diarization output to match timestamps of the original file.
 
   </help>
 </tool>
