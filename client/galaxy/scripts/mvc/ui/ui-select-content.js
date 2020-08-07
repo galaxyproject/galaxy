@@ -393,7 +393,7 @@ const View = Backbone.View.extend({
             .addClass("d-flex flex-row flex-wrap flex-lg-nowrap")
             .append($("<div/>").append(this.button_type.$el))
             .append($fields);
-        if (galaxy.config.enable_upload_from_form_button) {
+        if (galaxy.config.upload_from_form_button == "always-on") {
             this.$el.append($("<div style='margin-right: 5px;' />").append(this.upload_dialog.$el));
         }
         this.$el.append($("<div/>").append(this.button_dialog.$el));
