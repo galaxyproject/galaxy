@@ -272,8 +272,10 @@ const View = Backbone.View.extend({
                 });
                 if (cnf.src == "hda") {
                     this.button_dialog.show();
+                    this.upload_dialog.show();
                 } else {
                     this.button_dialog.hide();
+                    this.upload_dialog.hide();
                 }
                 this.button_type.value(i);
             } else {
@@ -306,7 +308,8 @@ const View = Backbone.View.extend({
 
         // prepare extension component of error message
         const data = self.model.get("data");
-        const extensions = Utils.textify(this.model.get("extensions"));
+        const formats = this.model.get("extensions");
+        const extensions = Utils.textify(formats);
         const src_labels = this.model.get("src_labels");
 
         // build radio button for data selectors
@@ -362,14 +365,38 @@ const View = Backbone.View.extend({
             },
         });
 
+        // build data dialog button
+        this.upload_dialog = new Ui.Button({
+            icon: "fa-upload",
+            tooltip: "Upload Dataset",
+            onclick: () => {
+                const current = this.model.get("current");
+                const cnf = this.config[current];
+                // model doesn't have format yet unfortunately, need to get through to here.
+                galaxy.data.dialog(
+                    (response) => {
+                        this._handleDropValues(response, false);
+                    },
+                    {
+                        multiple: cnf.multiple,
+                        formats: formats,
+                        new: true,
+                    }
+                );
+            },
+        });
+
         // append views
         const $fields = $("<div/>").addClass("overflow-auto w-100 py-2 py-lg-0 pr-lg-2 ");
         this.$el
             .empty()
             .addClass("d-flex flex-row flex-wrap flex-lg-nowrap")
             .append($("<div/>").append(this.button_type.$el))
-            .append($fields)
-            .append($("<div/>").append(this.button_dialog.$el));
+            .append($fields);
+        if (galaxy.config.enable_upload_from_form_button) {
+            this.$el.append($("<div style='margin-right: 5px;' />").append(this.upload_dialog.$el));
+        }
+        this.$el.append($("<div/>").append(this.button_dialog.$el));
         _.each(this.fields, (field) => {
             $fields.append(field.$el);
         });

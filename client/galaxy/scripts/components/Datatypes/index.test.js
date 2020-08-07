@@ -20,7 +20,9 @@ describe("Datatypes/index.js", () => {
             axiosMock.onGet(`/api/datatypes/types_and_mapping`).reply(200, typesAndMappingResponse);
             await getDatatypesMapper().then((mapper) => {
                 expect(mapper.isSubType("txt", "data")).to.equals(true);
+                expect(mapper.isSubType("txt", "txt")).to.equals(true);
                 expect(mapper.isSubType("data", "txt")).to.equals(false);
+                expect(mapper.isSubTypeOfAny("data", ["txt", "data"])).to.equals(true);
             });
         });
     });

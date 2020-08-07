@@ -300,6 +300,7 @@ import { getAppRoot } from "onload/loadConfig";
                     alert(m);
                 },
                 complete: () => {},
+                multiple: true,
             },
             options
         );
@@ -320,7 +321,7 @@ import { getAppRoot } from "onload/loadConfig";
 
         // element
         var uploadinput = $(this).uploadinput({
-            multiple: true,
+            multiple: opts.multiple,
             onchange: (files) => {
                 _.each(files, (file) => {
                     file.chunk_mode = true;

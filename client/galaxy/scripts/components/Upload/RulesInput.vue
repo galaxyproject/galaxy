@@ -46,7 +46,7 @@
             ></textarea>
         </span>
         <template v-slot:buttons>
-            <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="app.hide()">
+            <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="app.dismiss()">
                 {{ btnCloseTitle }}
             </b-button>
             <b-button
@@ -103,7 +103,7 @@ export default {
             selectionType: "paste",
             btnBuildTitle: _l("Build"),
             btnResetTitle: _l("Reset"),
-            btnCloseTitle: _l("Close"),
+            btnCloseTitle: this.app.callback ? _l("Cancel") : _l("Close"),
         };
     },
     created() {

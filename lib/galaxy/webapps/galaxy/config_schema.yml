@@ -2158,6 +2158,15 @@ mapping:
           When using LDAP for authentication, allow administrators to pre-populate users
           using an additional form on 'Create new user'
 
+      enable_upload_from_form_button:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          If enabled, add another button to tool form data inputs that allow uploading
+          data from the tool form in fewer clicks (at the expense of making the form more
+          complicated).
+
       allow_user_dataset_purge:
         type: bool
         default: true
