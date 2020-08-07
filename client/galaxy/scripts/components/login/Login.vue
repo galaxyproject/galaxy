@@ -38,19 +38,24 @@
                                         </multiselect>
                                     </b-form-group>
 
-                                    <b-button
-                                        v-if="Object.prototype.hasOwnProperty.call(oidc_idps, 'cilogon')"
-                                        @click="submitCILogon('cilogon')"
-                                        :disabled="selected === null"
-                                        >Sign in with Institutional Credentials*</b-button
-                                    >
-                                    <!--convert to v-else-if to allow only one or the other. if both enabled, put the one that should be default first-->
-                                    <b-button
-                                        v-if="Object.prototype.hasOwnProperty.call(oidc_idps, 'custos')"
-                                        @click="submitCILogon('custos')"
-                                        :disabled="selected === null"
-                                        >Sign in with Custos *</b-button
-                                    >
+                                    <input type="checkbox" id="remember-idp" v-model="rememberIdp">
+                                    <label for="remember-idp"> Remember institution </label>
+
+                                    <div>
+                                        <b-button
+                                            v-if="Object.prototype.hasOwnProperty.call(oidc_idps, 'cilogon')"
+                                            @click="submitCILogon('cilogon')"
+                                            :disabled="selected === null"
+                                            >Sign in with Institutional Credentials*</b-button
+                                        >
+                                        <!--convert to v-else-if to allow only one or the other. if both enabled, put the one that should be default first-->
+                                        <b-button
+                                            v-if="Object.prototype.hasOwnProperty.call(oidc_idps, 'custos')"
+                                            @click="submitCILogon('custos')"
+                                            :disabled="selected === null"
+                                            >Sign in with Custos*</b-button
+                                        >
+                                    </div>
 
                                     <p class="mt-3">
                                         <small class="text-muted">
@@ -159,6 +164,7 @@ export default {
             oidc_idps: galaxy.config.oidc,
             cilogon_idps: [],
             selected: null,
+            rememberIdp: false,
         };
     },
     computed: {
@@ -224,6 +230,7 @@ export default {
         submitCILogon(idp) {
             const rootUrl = getAppRoot();
 
+            this.setIdpCookie();          
             axios
                 .post(`${rootUrl}authnz/${idp}/login/?idphint=${this.selected.EntityID}`)
                 .then((response) => {
@@ -267,7 +274,23 @@ export default {
                 this.cilogon_idps = response.data;
                 //List is originally sorted by OrganizationName which can be different from DisplayName
                 this.cilogon_idps.sort((a, b) => (a.DisplayName > b.DisplayName ? 1 : -1));
+            })
+            .then(() => {
+                this.selected = this.cilogon_idps.find(idp => idp.EntityID === this.getIdpCookie());
             });
+        },
+        setIdpCookie() {
+            var expires = new Date();
+            expires.setTime(expires.getTime() + 2628000000); //one month in milliseconds
+            document.cookie = "remembered-idp=" + this.selected.EntityID + "; expires=" + expires.toUTCString();
+        },
+        getIdpCookie() {
+            const idpCookie = document.cookie
+                                .split('; ')
+                                .find(row => row.startsWith('remembered-idp'))
+                                .split('=')[1];
+            
+            return idpCookie;
         },
     },
     created() {
