@@ -34,6 +34,17 @@ class AuthenticationController(BaseAPIController):
         self.api_keys_manager = api_keys.ApiKeyManager(app)
 
     @expose_api_anonymous_and_sessionless
+    def options(self, trans, **kwd):
+        """
+        A no-op endpoint to return generic OPTIONS for the API.  Right now this is solely to inform preflight CORS checks, which are API wide.
+        """
+        trans.response.headers['Access-Control-Allow-Headers'] = '*'
+        #Access-Control-Allow-Methods: POST, GET, OPTIONS, DELETE
+        #Access-Control-Max-Age: 86400
+        print(trans.response.headers)
+        return
+
+    @expose_api_anonymous_and_sessionless
     def get_api_key(self, trans, **kwd):
         """
         def get_api_key( self, trans, **kwd )
