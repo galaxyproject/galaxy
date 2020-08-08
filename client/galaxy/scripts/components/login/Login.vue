@@ -230,7 +230,7 @@ export default {
         },
         submitCILogon(idp) {
             const rootUrl = getAppRoot();
-            this.setIdpCookie();
+            this.setIdpPreference();
             axios
                 .post(`${rootUrl}authnz/${idp}/login/?idphint=${this.selected.EntityID}`)
                 .then((response) => {
@@ -269,7 +269,6 @@ export default {
         },
         getCILogonIdps() {
             const rootUrl = getAppRoot();
-
             axios
                 .get(`${rootUrl}authnz/get_cilogon_idps`)
                 .then((response) => {
@@ -278,21 +277,17 @@ export default {
                     this.cilogon_idps.sort((a, b) => (a.DisplayName > b.DisplayName ? 1 : -1));
                 })
                 .then(() => {
-                    this.selected = this.cilogon_idps.find((idp) => idp.EntityID === this.getIdpCookie());
+                    const preferredIdp = this.getIdpPreference();
+                    if (preferredIdp) {
+                        this.selected = this.cilogon_idps.find((idp) => idp.EntityID === preferredIdp);
+                    }
                 });
         },
-        setIdpCookie() {
-            var expires = new Date();
-            expires.setTime(expires.getTime() + 2628000000); //one month in milliseconds
-            document.cookie = "remembered-idp=" + this.selected.EntityID + "; expires=" + expires.toUTCString();
+        setIdpPreference() {
+            window.localStorage.setItem("galaxy-remembered-idp", this.selected.EntityID);
         },
-        getIdpCookie() {
-            const idpCookie = document.cookie
-                .split("; ")
-                .find((row) => row.startsWith("remembered-idp"))
-                .split("=")[1];
-
-            return idpCookie;
+        getIdpPreference() {
+            return window.localStorage.getItem("galaxy-remembered-idp");
         },
     },
     created() {
