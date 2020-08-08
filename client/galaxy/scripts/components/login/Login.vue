@@ -38,7 +38,7 @@
                                         </multiselect>
                                     </b-form-group>
 
-                                    <input type="checkbox" id="remember-idp" v-model="rememberIdp">
+                                    <input type="checkbox" id="remember-idp" v-model="rememberIdp" />
                                     <label for="remember-idp"> Remember institution </label>
 
                                     <div>
@@ -229,8 +229,7 @@ export default {
         },
         submitCILogon(idp) {
             const rootUrl = getAppRoot();
-
-            this.setIdpCookie();          
+            this.setIdpCookie();
             axios
                 .post(`${rootUrl}authnz/${idp}/login/?idphint=${this.selected.EntityID}`)
                 .then((response) => {
@@ -270,14 +269,16 @@ export default {
         getCILogonIdps() {
             const rootUrl = getAppRoot();
 
-            axios.get(`${rootUrl}authnz/get_cilogon_idps`).then((response) => {
-                this.cilogon_idps = response.data;
-                //List is originally sorted by OrganizationName which can be different from DisplayName
-                this.cilogon_idps.sort((a, b) => (a.DisplayName > b.DisplayName ? 1 : -1));
-            })
-            .then(() => {
-                this.selected = this.cilogon_idps.find(idp => idp.EntityID === this.getIdpCookie());
-            });
+            axios
+                .get(`${rootUrl}authnz/get_cilogon_idps`)
+                .then((response) => {
+                    this.cilogon_idps = response.data;
+                    //List is originally sorted by OrganizationName which can be different from DisplayName
+                    this.cilogon_idps.sort((a, b) => (a.DisplayName > b.DisplayName ? 1 : -1));
+                })
+                .then(() => {
+                    this.selected = this.cilogon_idps.find((idp) => idp.EntityID === this.getIdpCookie());
+                });
         },
         setIdpCookie() {
             var expires = new Date();
@@ -286,10 +287,10 @@ export default {
         },
         getIdpCookie() {
             const idpCookie = document.cookie
-                                .split('; ')
-                                .find(row => row.startsWith('remembered-idp'))
-                                .split('=')[1];
-            
+                .split("; ")
+                .find((row) => row.startsWith("remembered-idp"))
+                .split("=")[1];
+
             return idpCookie;
         },
     },
