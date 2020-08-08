@@ -38,24 +38,25 @@
                                         </multiselect>
                                     </b-form-group>
 
-                                    <input type="checkbox" id="remember-idp" v-model="rememberIdp" />
-                                    <label for="remember-idp"> Remember institution </label>
+                                    <b-form-group>
+                                        <b-form-checkbox id="remember-idp" v-model="rememberIdp">
+                                            Remember institution selection
+                                        </b-form-checkbox>
+                                    </b-form-group>
 
-                                    <div>
-                                        <b-button
-                                            v-if="Object.prototype.hasOwnProperty.call(oidc_idps, 'cilogon')"
-                                            @click="submitCILogon('cilogon')"
-                                            :disabled="selected === null"
-                                            >Sign in with Institutional Credentials*</b-button
-                                        >
-                                        <!--convert to v-else-if to allow only one or the other. if both enabled, put the one that should be default first-->
-                                        <b-button
-                                            v-if="Object.prototype.hasOwnProperty.call(oidc_idps, 'custos')"
-                                            @click="submitCILogon('custos')"
-                                            :disabled="selected === null"
-                                            >Sign in with Custos*</b-button
-                                        >
-                                    </div>
+                                    <b-button
+                                        v-if="Object.prototype.hasOwnProperty.call(oidc_idps, 'cilogon')"
+                                        @click="submitCILogon('cilogon')"
+                                        :disabled="selected === null"
+                                        >Sign in with Institutional Credentials*</b-button
+                                    >
+                                    <!--convert to v-else-if to allow only one or the other. if both enabled, put the one that should be default first-->
+                                    <b-button
+                                        v-if="Object.prototype.hasOwnProperty.call(oidc_idps, 'custos')"
+                                        @click="submitCILogon('custos')"
+                                        :disabled="selected === null"
+                                        >Sign in with Custos*</b-button
+                                    >
 
                                     <p class="mt-3">
                                         <small class="text-muted">
