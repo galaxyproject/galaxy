@@ -284,13 +284,18 @@ export default {
                 });
         },
         setIdpPreference() {
-            window.localStorage.setItem("galaxy-remembered-idp", this.selected.EntityID);
+            if (this.rememberIdp) {
+                localStorage.setItem("galaxy-remembered-idp", this.selected.EntityID);
+            } else {
+                localStorage.removeItem("galaxy-remembered-idp");
+            }
         },
         getIdpPreference() {
-            return window.localStorage.getItem("galaxy-remembered-idp");
+            return localStorage.getItem("galaxy-remembered-idp");
         },
     },
     created() {
+        this.rememberIdp = this.getIdpPreference() !== null;
         this.getCILogonIdps();
     },
 };
