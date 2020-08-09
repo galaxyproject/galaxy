@@ -112,8 +112,7 @@ function ajaxErrorModal(model, xhr, options, message, title) {
 function _ajaxDetails(model, xhr, options) {
     const Galaxy = getGalaxyInstance();
     return {
-        //TODO: still can't manage Raven id
-        raven: _.result(window.Raven, "lastEventId"),
+        sentry: Galaxy?.Sentry.lastEventId(),
         userAgent: navigator.userAgent,
         onLine: navigator.onLine,
         version: _.result(Galaxy.config, "version_major"),

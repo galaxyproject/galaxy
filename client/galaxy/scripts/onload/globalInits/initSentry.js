@@ -19,5 +19,6 @@ export const initSentry = (galaxy, config) => {
                 });
             });
         }
+        galaxy.Sentry = Sentry;
     }
 };
