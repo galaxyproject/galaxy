@@ -1,5 +1,5 @@
 import $ from "jquery";
-import _ from "libs/underscore";
+import _ from "underscore";
 import Backbone from "backbone";
 import { getGalaxyInstance } from "app";
 import { Toast } from "ui/toast";
