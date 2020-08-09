@@ -16,7 +16,7 @@ webpackConfig.output.publicPath = "";
 webpackConfig.resolve.modules.push(path.join(__dirname, "galaxy/style/scss"));
 
 const galaxyStyleDocs = [];
-glob.sync("./galaxy/docs/galaxy-*.md").forEach((file) => {
+glob.sync("./docs/galaxy-*.md").forEach((file) => {
     const name = file.match(/galaxy-(\w+).md/)[1];
     galaxyStyleDocs.push({ name: name, content: file });
 });
@@ -28,7 +28,7 @@ const sections = [
     },
     {
         name: "Basic Bootstrap Styles",
-        content: "./galaxy/docs/bootstrap.md",
+        content: "./docs/bootstrap.md",
     },
     {
         name: "Components",
