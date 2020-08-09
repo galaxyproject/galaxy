@@ -32,7 +32,6 @@ const paths = {
         "jquery.cookie": ["jquery.cookie.js", "jquery/jquery.cookie.js"],
         "jquery-migrate": ["dist/jquery-migrate.js", "jquery/jquery.migrate.js"],
         "jquery-mousewheel": ["jquery.mousewheel.js", "jquery/jquery.mousewheel.js"],
-        "raven-js": ["dist/raven.js", "raven.js"],
         requirejs: ["require.js", "require.js"],
         underscore: ["underscore.js", "underscore.js"],
     },
