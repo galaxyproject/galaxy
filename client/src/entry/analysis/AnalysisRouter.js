@@ -386,6 +386,20 @@ export const getAnalysisRouter = (Galaxy) =>
         /** load workflow by its url in run mode */
         _loadWorkflow: function () {
             const workflowId = QueryStringParsing.get("id");
-            this._display_vue_helper(WorkflowRun, { workflowId: workflowId }, "workflow");
+            const Galaxy = getGalaxyInstance();
+            let preferSimpleForm = Galaxy.config.simplified_workflow_run_ui == "prefer";
+            const preferSimpleFormOverride = QueryStringParsing.get("simplified_workflow_run_ui");
+            if (preferSimpleFormOverride == "prefer") {
+                preferSimpleForm = true;
+            }
+            const simpleFormTargetHistory = Galaxy.config.simplified_workflow_run_ui_target_history;
+            const simpleFormUseJobCache = Galaxy.config.simplified_workflow_run_ui_job_cache == "on";
+            const props = {
+                workflowId,
+                preferSimpleForm,
+                simpleFormTargetHistory,
+                simpleFormUseJobCache,
+            };
+            this._display_vue_helper(WorkflowRun, props, "workflow");
         },
     });
