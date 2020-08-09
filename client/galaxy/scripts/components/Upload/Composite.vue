@@ -34,7 +34,7 @@
             </select2>
         </template>
         <template v-slot:buttons>
-            <b-button ref="btnClose" class="ui-button-default" @click="app.hide()">
+            <b-button ref="btnClose" class="ui-button-default" @click="app.dismiss()">
                 {{ btnCloseTitle }}
             </b-button>
             <b-button
@@ -74,7 +74,7 @@ export default {
             showHelper: true,
             btnResetTitle: _l("Reset"),
             btnStartTitle: _l("Start"),
-            btnCloseTitle: _l("Close"),
+            btnCloseTitle: this.app.callback ? _l("Cancel") : _l("Close"),
             readyStart: false,
         };
     },

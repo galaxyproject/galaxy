@@ -42,7 +42,7 @@
             </select2>
         </template>
         <template v-slot:buttons>
-            <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="app.hide()">
+            <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="app.dismiss()">
                 {{ btnCloseTitle }}
             </b-button>
             <b-button
@@ -139,6 +139,7 @@ export default {
             listExtensions: [],
             listGenomes: [],
             running: false,
+            multiple: true, // needed for uploadbox stuff - always allow multiple uploads for collections
             counterAnnounce: 0,
             counterSuccess: 0,
             counterError: 0,
@@ -158,7 +159,7 @@ export default {
             btnBuildTitle: _l("Build"),
             btnStopTitle: _l("Pause"),
             btnResetTitle: _l("Reset"),
-            btnCloseTitle: _l("Close"),
+            btnCloseTitle: this.app.callback ? _l("Cancel") : _l("Close"),
         };
     },
     created() {

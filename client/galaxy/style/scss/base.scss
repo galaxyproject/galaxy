@@ -316,6 +316,15 @@ body {
     }
 }
 
+.upload-dialog {
+    width: 900px;
+}
+
+.upload-dialog-body {
+    height: 500px;
+    overflow: hidden;
+}
+
 // ==== Masthead ====
 #masthead {
     @extend .p-0;

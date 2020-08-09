@@ -23,6 +23,10 @@
                 <div class="fa fa-caret-left mr-1" />
                 Back
             </b-btn>
+            <b-btn size="sm" class="float-left mr-1" @click="newUpload">
+                <div class="fa fa-upload ml-1" />
+                Upload
+            </b-btn>
             <b-btn
                 v-if="multiple"
                 size="sm"
@@ -44,6 +48,7 @@ import SelectionDialogMixin from "components/SelectionDialog/SelectionDialogMixi
 import { UrlTracker } from "./utilities";
 import { Model } from "./model";
 import { Services } from "./services";
+import { mountUploadModal } from "components/Upload";
 
 Vue.use(BootstrapVue);
 
@@ -124,6 +129,16 @@ export default {
             } else {
                 this.load(record.url);
             }
+        },
+        newUpload: function () {
+            const propsData = {
+                multiple: this.multiple,
+                format: this.format,
+                callback: this.callback,
+                modalShow: true,
+            };
+            mountUploadModal(propsData);
+            this.modalShow = false;
         },
         /** Called when selection is complete, values are formatted and parsed to external callback **/
         finalize: function () {

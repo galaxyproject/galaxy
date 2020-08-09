@@ -102,15 +102,15 @@ export default {
         },
         _updateStateForCounters: function () {
             this.setTopInfoBasedOnCounters();
-            this.enableReset =
-                this.counterRunning == 0 && this.counterAnnounce + this.counterSuccess + this.counterError > 0;
+            const counterNonRunning = this.counterAnnounce + this.counterSuccess + this.counterError;
+            this.enableReset = this.counterRunning == 0 && counterNonRunning > 0;
             this.enableStart = this.counterRunning == 0 && this.counterAnnounce > 0;
             this.enableBuild =
                 this.counterRunning == 0 &&
                 this.counterAnnounce == 0 &&
                 this.counterSuccess > 0 &&
                 this.counterError == 0;
-            this.enableSources = this.counterRunning == 0;
+            this.enableSources = this.counterRunning == 0 && (this.multiple || counterNonRunning == 0);
             var show_table = this.counterAnnounce + this.counterSuccess + this.counterError > 0;
             this.showHelper = !show_table;
         },
@@ -259,7 +259,7 @@ export default {
             return $(this.$refs.uploadTable);
         },
         extensionDetails(extension) {
-            return findExtension(this.listExtensions, extension);
+            return findExtension(this.effectiveExtensions, extension);
         },
         initExtensionInfo() {
             $(this.$refs.footerExtensionInfo)
@@ -283,7 +283,7 @@ export default {
             this.collection = new UploadModel.Collection();
         },
         initAppProperties() {
-            this.listExtensions = this.app.listExtensions;
+            this.listExtensions = this.app.effectiveExtensions;
             this.listGenomes = this.app.listGenomes;
             this.ftpUploadSite = this.app.currentFtp();
             this.fileSourcesConfigured = this.app.fileSourcesConfigured;

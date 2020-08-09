@@ -10,4 +10,8 @@ export class DatatypesMapperModel {
         parent = mapping.ext_to_class_name[parent];
         return mapping.class_to_classes[child] && parent in mapping.class_to_classes[child];
     }
+
+    isSubTypeOfAny(child, parents) {
+        return parents.some((parent) => this.isSubType(child, parent));
+    }
 }
