@@ -1311,45 +1311,61 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         invocation_step = self.workflow_manager.get_invocation_step(trans, decoded_invocation_step_id)
         return self.__encode_invocation_step(trans, invocation_step)
 
-    def _generate_aws_estimate(self, trans, invocation_id, **kwd):
+    def _generate_invocation_metrics(self, trans, invocation_id, **kwd):
         """
-        build AWS cloud estimate
+        build a dictionary of invocation metrics
         """
         decoded_workflow_invocation_id = self.decode_id(invocation_id)
         workflow_invocation = self.workflow_manager.get_invocation(trans, decoded_workflow_invocation_id)
         history = workflow_invocation.history
 
-        aws_dict, metrics, ds_metrics = {}, {}, {}
+        metrics, h_metrics = {}, {}
         h_contents = self.history_contents_manager.contained(history)
-        for h in h_contents:
-            ds_metrics[h.dataset.id] = {
-                "file_size": int(h.dataset.file_size),
-                "total_size": int(h.dataset.total_size),
-                "uuid": str(h.dataset.uuid),
-            }
+
         for i, step in enumerate(workflow_invocation.steps):
             if step.workflow_step.type == "tool":
+                tool_id = step.workflow_step.tool_id.split("/")[-2:]
                 for job in step.jobs:
-                    metrics[i] = summarize_job_metrics(trans, job)
+                    job_metrics = summarize_job_metrics(trans, job)
+                    metrics[i] = {
+                        "tool_name": tool_id[0],
+                        "tool_version": tool_id[1],
+                        "galaxy_slots": "",
+                        "runtime_seconds": "",
+                        "job_inputs": [],
+                        "job_outputs": [],
+                    }
+                    for value in [x for x in job_metrics if x["name"] == "galaxy_slots"]:
+                        metrics[i]["galaxy_slots"] = value["raw_value"]
+                    for value in [x for x in job_metrics if x["name"] == "runtime_seconds"]:
+                        metrics[i]["runtime_seconds"] = value["raw_value"]
                     for job_input in job.input_datasets:
                         if hasattr(job_input.dataset, "dataset_id"):
-                            ds_metrics[job_input.dataset.id].update({"filename": job_input.dataset.name})
-                            metrics[i].append(ds_metrics[job_input.dataset.id])
+                            for h in [x for x in h_contents if x.dataset_id == job_input.dataset.id]:
+                                h_metrics = {
+                                    "total_size": int(h.dataset.total_size),
+                                    "uuid": str(h.dataset.uuid),
+                                    "job_input_name": job_input.name,
+                                }
+                                metrics[i]["job_inputs"].append(h_metrics)
                     for job_output in job.output_datasets:
                         if hasattr(job_output.dataset, "dataset_id"):
-                            ds_metrics[job_output.dataset.id].update({"filename": job_output.dataset.name})
-                            metrics[i].append(ds_metrics[job_output.dataset.id])
-
-        aws_dict = metrics
-        return aws_dict
+                            for h in [x for x in h_contents if x.dataset_id == job_output.dataset.id]:
+                                h_metrics = {
+                                    "total_size": int(h.dataset.total_size),
+                                    "uuid": str(h.dataset.uuid),
+                                    "job_output_name": job_output.name,
+                                }
+                                metrics[i]["job_outputs"].append(h_metrics)
+        return metrics
 
     @expose_api
-    def export_aws_estimate(self, trans, invocation_id, **kwd):
+    def export_invocation_metrics(self, trans, invocation_id, **kwd):
         """
-        GET /api/invocations/{invocations_id}/aws_estimate
-        Return a dictionary with an AWS estimate for a workflow invocation.
+        GET /api/invocations/{invocations_id}/invocation_metrics
+        Return a dictionary with metrics from a workflow invocation.
         """
-        return self._generate_aws_estimate(trans, invocation_id, **kwd)
+        return self._generate_invocation_metrics(trans, invocation_id, **kwd)
 
     @expose_api_anonymous_and_sessionless
     def invocation_step_jobs_summary(self, trans: GalaxyWebTransaction, invocation_id, **kwd):
