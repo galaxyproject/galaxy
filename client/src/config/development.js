@@ -1,3 +1,3 @@
 export default {
-    name: "development configs"
-}
+    name: "development configs",
+};

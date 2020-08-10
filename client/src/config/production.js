@@ -1,3 +1,3 @@
 export default {
-    name: "production configs"
-}
+    name: "production configs",
+};
