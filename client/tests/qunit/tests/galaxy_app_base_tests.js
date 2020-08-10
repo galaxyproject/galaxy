@@ -1,5 +1,5 @@
 /* global QUnit */
-import testApp from "qunit/test-app";
+import testApp from "../test-app";
 import { getGalaxyInstance, setGalaxyInstance } from "app";
 
 QUnit.module("Galaxy client app tests", {

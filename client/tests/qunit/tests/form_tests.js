@@ -4,7 +4,7 @@
 
 /* global QUnit */
 import $ from "jquery";
-import testApp from "qunit/test-app";
+import testApp from "../test-app";
 import InputElement from "mvc/form/form-input";
 import Ui from "mvc/ui/ui-misc";
 import FormData from "mvc/form/form-data";

@@ -1,5 +1,5 @@
 /* global QUnit */
-import testApp from "qunit/test-app";
+import testApp from "../test-app";
 import Utils from "utils/utils";
 
 QUnit.module("Utils test", {

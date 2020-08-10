@@ -1,5 +1,5 @@
 /* global QUnit */
-import testApp from "qunit/test-app";
+import testApp from "../test-app";
 import GRAPH from "utils/graph";
 
 QUnit.module("utils/graph.js library tests", {

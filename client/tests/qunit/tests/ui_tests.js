@@ -1,6 +1,6 @@
 /* global QUnit */
 import $ from "jquery";
-import testApp from "qunit/test-app";
+import testApp from "../test-app";
 import sinon from "sinon";
 import Ui from "mvc/ui/ui-misc";
 import SelectContent from "mvc/ui/ui-select-content";

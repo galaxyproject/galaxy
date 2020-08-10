@@ -2,7 +2,7 @@
 // (or demonstrating) qunit+backbone interactions.
 
 /* global QUnit */
-import testApp from "qunit/test-app";
+import testApp from "../test-app";
 import HDA_MODEL from "mvc/history/hda-model";
 import HDA_BASE from "mvc/history/hda-li";
 

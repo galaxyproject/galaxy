@@ -1,6 +1,6 @@
 /* global QUnit */
 import $ from "jquery";
-import testApp from "qunit/test-app";
+import testApp from "../test-app";
 
 QUnit.module("Galaxy jquery plugin test", {
     beforeEach: function () {

@@ -1,8 +1,8 @@
 /* global QUnit */
 import _ from "underscore";
-import testApp from "qunit/test-app";
+import testApp from "../test-app";
+import testData from "../test-data/job-dag-1";
 import JobDAG from "mvc/history/job-dag";
-import testData from "qunit/test-data/job-dag-1";
 
 QUnit.module("mvc/history/job-dag.js tests", {
     beforeEach: function () {

@@ -5,7 +5,7 @@
 import jQuery from "jquery";
 import sinon from "sinon";
 import metrics from "utils/metrics-logger";
-import testApp from "qunit/test-app";
+import testApp from "../test-app";
 
 var MockConsole = function () {
     var self = this;

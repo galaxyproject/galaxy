@@ -1,6 +1,6 @@
 /* global QUnit */
 import $ from "jquery";
-import testApp from "qunit/test-app";
+import testApp from "../test-app";
 import GalaxyModal from "mvc/ui/ui-modal";
 
 QUnit.module("Modal dialog test", {

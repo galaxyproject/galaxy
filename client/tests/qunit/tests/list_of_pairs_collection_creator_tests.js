@@ -2,9 +2,9 @@
 import _ from "underscore";
 import $ from "jquery";
 // import sinon from "sinon";
-import testApp from "qunit/test-app";
+import testApp from "../test-app";
 import PAIRED_COLLECTION_CREATOR from "mvc/collection/list-of-pairs-collection-creator";
-import DATA from "qunit/test-data/paired-collection-creator.data";
+import DATA from "../test-data/paired-collection-creator.data";
 
 var PCC = PAIRED_COLLECTION_CREATOR.PairedCollectionCreator;
 

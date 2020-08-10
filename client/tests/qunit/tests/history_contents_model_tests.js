@@ -1,7 +1,7 @@
 /* global QUnit */
 import $ from "jquery";
 import sinon from "sinon";
-import testApp from "qunit/test-app";
+import testApp from "../test-app";
 import HDA_MODEL from "mvc/history/hda-model";
 
 QUnit.module("History Contents Model QUnit.Tests", {
