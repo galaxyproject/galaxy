@@ -39,7 +39,9 @@ def main():
             offset_adj.append(Adjustment(start - current_adj, end - current_adj, current_adj))
         # Keep track of the last segment end
         last_end = end
-    
+    print("#OFFSET ADJUSTMENTS")
+    for adj in offset_adj:
+        print(str(adj.start) + ":" + str(adj.end) + ":"  + str(adj.adjustment))
     # For each word, find the corresponding adjustment
     for segment in seg.segments:
         adjust_segment(segment, offset_adj)
@@ -51,7 +53,7 @@ def adjust_segment(segment, offset_adj):
     print(f"Segment: {segment.start} : {segment.end}")
     # Get the adjustment for which the word falls within it's start and end
     for adj in offset_adj:
-        if segment.start is not None and segment.start >= adj.start and segment.start <= adj.end:
+        if segment.end is not None and segment.end >= adj.start and segment.end <= adj.end:
             print("Offset:" + str(segment.start) + " Adjusted Offset:" + str(segment.start + adj.adjustment))
             segment.start = segment.start + adj.adjustment
             segment.end = segment.end + adj.adjustment
