@@ -619,7 +619,7 @@ def populate_api_routes(webapp, app):
     connect_invocation_endpoint('cancel', '', action='cancel_invocation', conditions=dict(method=['DELETE']))
     connect_invocation_endpoint('show_step', '/steps/{step_id}', action='invocation_step')
     connect_invocation_endpoint('update_step', '/steps/{step_id}', action='update_invocation_step', conditions=dict(method=['PUT']))
-    connect_invocation_endpoint('aws_estimate', '/aws_estimate', action='export_aws_estimate')
+    connect_invocation_endpoint('invocation_metrics', '/invocation_metrics', action='export_invocation_metrics')
 
     # ============================
     # ===== AUTHENTICATE API =====
