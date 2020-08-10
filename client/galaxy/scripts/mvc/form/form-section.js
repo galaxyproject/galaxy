@@ -15,7 +15,11 @@ var View = Backbone.View.extend({
         this.inputs = options.inputs;
         this.parameters = new Parameters();
         this.setElement($("<div/>"));
-        this.render();
+        this.rendered = false;
+        this.elements = {};
+        if (options.skip_render !== true) {
+            this.renderOnce();
+        }
     },
 
     /** Render section view */
@@ -25,6 +29,14 @@ var View = Backbone.View.extend({
         _.each(this.inputs, (input) => {
             self.add(input);
         });
+    },
+
+    /** Only call render function if view has not been rendered before */
+    renderOnce: function () {
+        if (this.rendered === false) {
+            this.render();
+            this.rendered = true;
+        }
     },
 
     /** Add a new input element */
@@ -60,7 +72,9 @@ var View = Backbone.View.extend({
             for (var i in input_def.cases) {
                 var sub_section = new View(this.app, {
                     inputs: input_def.cases[i].inputs,
+                    skip_render: true,
                 });
+                this.elements[input_def.id + "_" + i] = sub_section;
                 this._append(sub_section.$el.addClass("ui-portlet-section pl-2"), `${input_def.id}-section-${i}`);
             }
             field.model.set("onchange", (value) => {
@@ -76,6 +90,8 @@ var View = Backbone.View.extend({
                         }
                     }
                     if (i == selectedCase && nonhidden) {
+                        const selectedView = self.elements[input_def.id + "_" + i];
+                        selectedView.renderOnce();
                         section_row.fadeIn("fast");
                     } else {
                         section_row.hide();
@@ -140,14 +156,16 @@ var View = Backbone.View.extend({
 
     /** Add a customized section */
     _addSection: function (input_def) {
+        const section = new View(this.app, { inputs: input_def.inputs, skip_render: true });
         var portlet = new Portlet.View({
             title: input_def.title || input_def.name,
             cls: "ui-portlet-section",
             collapsible: true,
             collapsible_button: true,
             collapsed: !input_def.expanded,
+            section: section,
         });
-        portlet.append(new View(this.app, { inputs: input_def.inputs }).$el);
+        portlet.append(section.$el);
         portlet.append($("<div/>").addClass("form-text text-muted").html(input_def.help));
         this.app.on("expand", (input_id) => {
             portlet.$(`#${input_id}`).length > 0 && portlet.expand();
