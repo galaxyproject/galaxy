@@ -11,7 +11,6 @@ import { setGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import galaxyOptions from "./test-data/bootstrapped";
 import serverdata from "./test-data/fakeserver";
-import "./assets/base.css";
 
 export function setupTestGalaxy(galaxyOptions_ = null) {
     galaxyOptions_ = galaxyOptions_ || galaxyOptions;
