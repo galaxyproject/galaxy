@@ -2324,6 +2324,10 @@ class Dataset(StorableObject, RepresentById):
         self.sources = []
         self.hashes = []
 
+    @property
+    def is_new(self):
+        return self.state == self.states.NEW
+
     def in_ready_state(self):
         return self.state in self.ready_states
 
@@ -2447,7 +2451,7 @@ class Dataset(StorableObject, RepresentById):
 
     def has_data(self):
         """Detects whether there is any data"""
-        return self.get_size() > 0
+        return not self.is_new and self.get_size() > 0
 
     def mark_deleted(self):
         self.deleted = True
