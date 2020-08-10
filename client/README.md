@@ -97,7 +97,7 @@ Changing Styles/CSS
 
 Galaxy uses Sass for its styling, which is a superset of CSS that compiles down
 to regular CSS.  Most Galaxy styling source (.scss) files are kept in
-`client/galaxy/style/scss.  There are additionally style blocks alongside some
+`client/src/style/scss.  There are additionally style blocks alongside some
 Vue components -- styles that are particular to that individual component and
 do not apply site-wide.
 

@@ -13,7 +13,7 @@ const fileLoaderConfigRule = { rules: [{ test: fileLoaderTest, use: ["file-loade
 webpackConfig.module = merge.smart(webpackConfig.module, fileLoaderConfigRule);
 webpackConfig.output.publicPath = "";
 
-webpackConfig.resolve.modules.push(path.join(__dirname, "galaxy/style/scss"));
+webpackConfig.resolve.modules.push(path.join(__dirname, "src/style/scss"));
 
 const galaxyStyleDocs = [];
 glob.sync("./docs/galaxy-*.md").forEach((file) => {
@@ -53,6 +53,6 @@ module.exports = {
     webpackConfig,
     pagePerSection: true,
     sections,
-    require: ["./galaxy/style/scss/base.scss", "./src/polyfills.js", "./src/bundleEntries.js"],
+    require: ["./src/style/scss/base.scss", "./src/polyfills.js", "./src/bundleEntries.js"],
     vuex: "./src/store/index.js",
 };

@@ -8,7 +8,7 @@ const DuplicatePackageCheckerPlugin = require("duplicate-package-checker-webpack
 
 const scriptsBase = path.join(__dirname, "src");
 const libsBase = path.join(scriptsBase, "libs");
-const styleBase = path.join(__dirname, "galaxy/style");
+const styleBase = path.join(__dirname, "src/style");
 const imageBase = path.join(__dirname, "../static/style");
 
 module.exports = (env = {}, argv = {}) => {
@@ -167,7 +167,7 @@ module.exports = (env = {}, argv = {}) => {
                             options: {
                                 sourceMap: true,
                                 sassOptions: {
-                                    includePaths: ["galaxy/style/scss", path.resolve(__dirname, "./node_modules")],
+                                    includePaths: ["src/style/scss", path.resolve(__dirname, "./node_modules")],
                                 },
                             },
                         },
