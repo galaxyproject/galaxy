@@ -262,7 +262,7 @@ body {
         text-align: center;
         height: $panel_footer_height;
         width: $panel_footer_height - 5;
-        background-image: url(../../images/visualization/draggable_horizontal.png);
+        background-image: url(../../assets/images/visualization/draggable_horizontal.png);
         background-repeat: no-repeat;
         background-position: 50% 50%;
         cursor: col-resize;
@@ -615,7 +615,7 @@ div.form-row-input label {
     @extend .alert;
     min-height: 36px;
     padding-left: 52px;
-    background-image: url(../../images/error_large.png);
+    background-image: url(../../assets/images/error_large.png);
     background-repeat: no-repeat;
     background-position: 10px 5px;
     .messagerow {
@@ -631,18 +631,18 @@ div.form-row-input label {
 .warningmessagelarge {
     @extend .alert-warning;
     padding-left: 52px;
-    background-image: url(../../images/warn_large.png);
+    background-image: url(../../assets/images/warn_large.png);
 }
 
 .donemessagelarge {
     @extend .alert-success;
     padding-left: 52px;
-    background-image: url(../../images/ok_large.png);
+    background-image: url(../../assets/images/ok_large.png);
 }
 
 .infomessagelarge {
     @extend .alert-info;
-    background-image: url(../../images/info_large.png);
+    background-image: url(../../assets/images/info_large.png);
 }
 
 .errormessage,
@@ -660,7 +660,7 @@ div.form-row-input label {
     padding: 5px;
     padding-left: 25px;
     min-height: 15px;
-    background-image: url(../../images/error_small.png);
+    background-image: url(../../assets/images/error_small.png);
     background-repeat: no-repeat;
     background-position: 5px 6px;
 }
@@ -675,20 +675,20 @@ div.form-row-input label {
 .warningmessagesmall,
 .form-help .warning {
     @extend .alert-warning;
-    background-image: url(../../images/warn_small.png);
+    background-image: url(../../assets/images/warn_small.png);
 }
 
 .donemessage,
 .donemessagesmall {
     @extend .alert-success;
-    background-image: url(../../images/ok_small.png);
+    background-image: url(../../assets/images/ok_small.png);
 }
 
 .infomessage,
 .infomessagesmall,
 .form-help .note {
     @extend .alert-info;
-    background-image: url(../../images/info_small.png);
+    background-image: url(../../assets/images/info_small.png);
 }
 
 .errormark,
@@ -699,20 +699,20 @@ div.form-row-input label {
 .err_bgr {
     padding-left: 20px;
     min-height: 15px;
-    background: url(../../images/error_small.png) no-repeat;
+    background: url(../../assets/images/error_small.png) no-repeat;
 }
 
 .warningmark {
-    background-image: url(../../images/warn_small.png);
+    background-image: url(../../assets/images/warn_small.png);
 }
 
 .donemark {
-    background-image: url(../../images/ok_small.png);
+    background-image: url(../../assets/images/ok_small.png);
 }
 
 .infomark,
 .ok_bgr {
-    background-image: url(../../images/info_small.png);
+    background-image: url(../../assets/images/info_small.png);
 }
 
 /* I think this is only used in view details */
@@ -866,7 +866,7 @@ div.debug {
     border-collapse: separate;
 }
 .delete-search-icon {
-    background: url(../../images/delete_tag_icon_gray.png) center no-repeat;
+    background: url(../../assets/images/delete_tag_icon_gray.png) center no-repeat;
     display: inline-block;
     width: 10px;
     cursor: pointer;
@@ -1196,7 +1196,7 @@ div.permissionContainer {
 }
 
 .icon-button.multiinput {
-    background: url(../../images/documents-stack.png) no-repeat;
+    background: url(../../assets/images/documents-stack.png) no-repeat;
     cursor: pointer;
     float: none;
     display: inline-block;
@@ -1204,12 +1204,12 @@ div.permissionContainer {
 }
 
 .icon-button.multiinput.disabled {
-    background: url(../../images/documents-stack-faded.png) no-repeat;
+    background: url(../../assets/images/documents-stack-faded.png) no-repeat;
     cursor: pointer;
 }
 
 .icon-button.link {
-    background: url(../../images/silk/link.png) no-repeat;
+    background: url(../../assets/images/silk/link.png) no-repeat;
     cursor: pointer;
     float: none;
     display: inline-block;
@@ -1217,7 +1217,7 @@ div.permissionContainer {
 }
 
 .icon-button.link-broken {
-    background: url(../../images/silk/link_break.png) no-repeat;
+    background: url(../../assets/images/silk/link_break.png) no-repeat;
     cursor: pointer;
     float: none;
     display: inline-block;
@@ -1301,7 +1301,7 @@ div.toolSectionTitle {
     height: 32px;
     width: 32px;
     display: none;
-    background: url(../../images/largespinner.gif);
+    background: url(../../assets/images/largespinner.gif);
 }
 
 #content_table td {
@@ -1357,14 +1357,14 @@ div.toolSectionTitle {
 }
 
 .icon-button.general-question {
-    background: url(../../images/question-octagon-frame.png) no-repeat;
+    background: url(../../assets/images/question-octagon-frame.png) no-repeat;
     float: right;
     margin-top: 3px;
     margin-right: 4px;
 }
 
 .icon-button.tag-question {
-    background: url(../../images/question-balloon.png) no-repeat;
+    background: url(../../assets/images/question-balloon.png) no-repeat;
     float: right;
     margin-top: 3px;
     margin-right: 4px;
@@ -1566,7 +1566,7 @@ body.reports {
     padding: 0;
     overflow: hidden;
     #left {
-        background: #c1c9e5 url(../../images/menu_bg.png) top repeat-x;
+        background: #c1c9e5 url(../../assets/images/menu_bg.png) top repeat-x;
     }
     .unified-panel-body {
         overflow: auto;
@@ -1584,7 +1584,7 @@ body.reports {
     left: 0;
     right: 0;
     bottom: 0;
-    background: url(../../images/largespinner.gif) no-repeat center center fixed;
+    background: url(../../assets/images/largespinner.gif) no-repeat center center fixed;
 }
 
 /* Used for tree in tool recommendations */
