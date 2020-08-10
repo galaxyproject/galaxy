@@ -467,6 +467,11 @@ libraries:
       import_history_contents_items: '.library_selected_history_content tbody > tr'
       import_from_path_textarea: '#import_paths'
       select_all: '#select-all-checkboxes'
+      select_one: '.description-field'
+      download_dropdown: '#download-dropdown-btn'
+      download_zip:
+        type: xpath
+        selector: '//a[contains(text(), ".zip")]'
 
     labels:
       from_history: 'from History'

@@ -1486,7 +1486,7 @@ var FolderToolbarView = Backbone.View.extend({
                             </div>
                             <div title="Download items as archive"
                                 class="dropdown dataset-manipulation mr-1" style="display:none; ">
-                                <button type="button" class="primary-button dropdown-toggle" data-toggle="dropdown">
+                                <button id="download-dropdown-btn" type="button" class="primary-button dropdown-toggle" data-toggle="dropdown">
                                     <span class="fa fa-save"></span> Download <span class="caret"></span>
                                 </button>
                                 <div class="dropdown-menu" role="menu">

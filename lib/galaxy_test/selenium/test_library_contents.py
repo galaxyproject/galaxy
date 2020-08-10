@@ -1,5 +1,7 @@
 from selenium.webdriver.support.ui import Select
 
+import os
+
 from .framework import (
     retry_assertion_during_transitions,
     retry_during_transitions,
@@ -44,6 +46,20 @@ class LibraryContentsTestCase(SeleniumTestCase):
         self.screenshot("libraries_dataset_import")
         self.libraries_dataset_import_from_history_click_ok()
         self._assert_num_displayed_items_is(1)
+
+    @selenium_test
+    def download_dataset_from_library(self):
+        self.test_import_dataset_from_history()
+
+        self.components.libraries.folder.select_one.wait_for_and_click()
+        self.components.libraries.folder.download_dropdown.wait_for_and_click()
+        self.components.libraries.folder.download_zip.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        folder_files = os.listdir(self.get_download_path())
+
+        expected_filename = "selected_dataset_files.zip"
+        assert expected_filename in folder_files
+
 
     # Fine test locally but the upload doesn't work in Docker compose. I'd think
     # Galaxy must be running so that test-data/1.txt would work but it just doesn't
