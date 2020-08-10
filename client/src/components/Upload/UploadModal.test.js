@@ -1,7 +1,7 @@
 import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
 import UploadModal from "./UploadModal.vue";
-import { setupTestGalaxy } from "qunit/test-app";
+import { setupTestGalaxy } from "../../../test/qunit/test-app";
 
 import { shallowMount, createLocalVue } from "@vue/test-utils";
 

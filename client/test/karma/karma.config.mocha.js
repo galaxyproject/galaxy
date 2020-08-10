@@ -14,30 +14,31 @@ const defaultFiles = [
     // component/module tests
     "**/*.test.js",
     // pre-existing rules definition tests
-    "**/mocha/tests/*_tests.js"
+    "../test/mocha/tests/rules_tests.js",
 ];
 
 function getTestFiles() {
     // check for user-supplied list
-    let userPatterns = getUserTestGlobs();
-    let patterns = userPatterns.length ? userPatterns : defaultFiles;
-    return patterns.map(pattern => ({ pattern, watched: true}));
+    const userPatterns = getUserTestGlobs();
+    const patterns = userPatterns.length ? userPatterns : defaultFiles;
+    return patterns.map((pattern) => ({ pattern, watched: true }));
 }
 
 // command line arg "watch-only" can be a list of file globs
 // for karma to watch
 function getUserTestGlobs() {
-    let userGlobs = process.argv.find(s => s.startsWith("watch-only"));
+    const userGlobs = process.argv.find((s) => s.startsWith("watch-only"));
     return userGlobs ? processUserGlobs(userGlobs) : [];
 }
 
 // split command line arg into an array
 function processUserGlobs(val) {
     let result = [];
-    let fileListString = val.split("=")[1];
+    const fileListString = val.split("=")[1];
     if (fileListString) {
-        result = fileListString.split(",")
-            .map(s => s.trim())
+        result = fileListString
+            .split(",")
+            .map((s) => s.trim())
             .map(checkGlobPrefix);
     }
     return result;
@@ -49,23 +50,19 @@ function checkGlobPrefix(glob) {
 }
 
 module.exports = function (config) {
-
     const baseConfig = baseKarmaConfig(config);
 
-    let files = [
-        "../../node_modules/@babel/polyfill/dist/polyfill.js",
-        ...getTestFiles()
-    ];
+    const files = ["../node_modules/@babel/polyfill/dist/polyfill.js", ...getTestFiles()];
 
-    let settings = Object.assign({}, baseConfig, {
+    const settings = Object.assign({}, baseConfig, {
         files,
         preprocessors: {
-            "**/*.js": ["webpack"]
+            "**/*.js": ["webpack"],
         },
         exclude: ["**/qunit/*"],
         reporters: ["mocha"],
-        frameworks: ["mocha", "chai"]
+        frameworks: ["mocha", "chai"],
     });
 
     config.set(settings);
-}
+};

@@ -11,29 +11,23 @@
 
 const baseKarmaConfig = require("./karma.config.base");
 
-const testFiles = [
-    "../../node_modules/@babel/polyfill/dist/polyfill.js",
-    "qunit/test.js"
-];
+const testFiles = ["node_modules/@babel/polyfill/dist/polyfill.js", "../qunit/test.js"];
 
-const assets = [
-    "qunit/assets/*.css"
-];
+const assets = ["../qunit/assets/*.css"];
 
-let preprocessors = testFiles.reduce((result, path) => {
+const preprocessors = testFiles.reduce((result, path) => {
     result[path] = ["webpack"];
     return result;
 }, {});
 
 module.exports = function (config) {
-
     const baseConfig = baseKarmaConfig(config);
 
-    let settings = Object.assign({}, baseConfig, {
+    const settings = Object.assign({}, baseConfig, {
         files: testFiles.concat(assets),
         preprocessors: preprocessors,
         frameworks: ["polyfill", "qunit"],
-        singleRun: true
+        singleRun: true,
     });
 
     config.set(settings);

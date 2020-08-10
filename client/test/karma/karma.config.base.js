@@ -4,30 +4,32 @@
 
 const webpackConfigFunc = require("./webpack.config.unittest");
 
-module.exports = config => {
-
+module.exports = (config) => {
     // Karma does not execute the webpack config function by default
-    const webpackConfig = webpackConfigFunc({}, {
-        mode: "testing"
-    });
+    const webpackConfig = webpackConfigFunc(
+        {},
+        {
+            mode: "testing",
+        }
+    );
 
     return {
-        basePath: "../src",
+        basePath: "../../src",
         browsers: ["ChromeHeadlessNoSandbox"],
         client: {
-            captureConsole: true
+            captureConsole: true,
         },
         failOnEmptyTestSuite: false,
         singleRun: true,
         webpack: webpackConfig,
         webpackMiddleware: {
-            noInfo: true
+            noInfo: true,
         },
         customLaunchers: {
             ChromeHeadlessNoSandbox: {
                 base: "ChromeHeadless",
-                flags: ["--no-sandbox"]
-            }
-        }
-    }
-}
+                flags: ["--no-sandbox"],
+            },
+        },
+    };
+};

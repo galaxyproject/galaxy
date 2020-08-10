@@ -1,11 +1,8 @@
-import chai from "chai";
 import RuleDefs from "mvc/rules/rule-definitions";
 import SPEC_TEST_CASES from "json-loader!yaml-loader!./rules_dsl_spec.yml";
 
-const RULES = RuleDefs.RULES;
-
 function applyRules(rules, data, sources) {
-    let columns = [];
+    const columns = [];
     if (data[0]) {
         for (const index in data[0]) {
             columns.push("new");
@@ -20,9 +17,9 @@ function itShouldConform(specTestCase, i) {
         doc = " - " + specTestCase.doc;
     }
     it("should pass conformance test case " + i + " (from rules_dsl_spec.yml)" + doc, function () {
-        chai.assert.property(specTestCase, "rules");
+        expect(specTestCase).to.have.property("rules");
         if (specTestCase.initial) {
-            chai.assert.property(specTestCase, "final");
+            expect(specTestCase).to.have.property("final");
 
             const rules = specTestCase.rules;
             const initial = specTestCase.initial;
@@ -31,12 +28,12 @@ function itShouldConform(specTestCase, i) {
             const final = applyRules(rules, initial.data, initial.sources);
             const finalData = final.data;
             const finalSources = final.sources;
-            chai.assert.deepEqual(finalData, expectedFinal.data);
+            expect(finalData).to.deep.equal(expectedFinal.data);
             if (expectedFinal.sources !== undefined) {
-                chai.assert.deepEqual(finalSources, expectedFinal.sources);
+                expect(finalSources).to.deep.equal(expectedFinal.sources);
             }
         } else {
-            chai.assert(specTestCase.error);
+            expect(specTestCase.error).to.be.true;
             // TODO: test these...
         }
     });

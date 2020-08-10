@@ -9,8 +9,8 @@ import sinon from "sinon";
 import Backbone from "backbone";
 import { setGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
-import galaxyOptions from "qunit/test-data/bootstrapped";
-import serverdata from "qunit/test-data/fakeserver";
+import galaxyOptions from "./test-data/bootstrapped";
+import serverdata from "./test-data/fakeserver";
 import "./assets/base.css";
 
 export function setupTestGalaxy(galaxyOptions_ = null) {
