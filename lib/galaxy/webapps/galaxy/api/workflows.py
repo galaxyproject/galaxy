@@ -1059,7 +1059,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     def export_invocation_metrics(self, trans, invocation_id, **kwd):
         '''
         GET /api/invocations/{invocations_id}/invocation_metrics
-        Return a dictionary with metrics from a workflow invocation. 
+        Return a dictionary with metrics from a workflow invocation.
         '''
         return self._generate_invocation_metrics(trans, invocation_id, **kwd)
 
