@@ -1,7 +1,7 @@
 // eslint-disable-next-line no-undef
 define(["i18n!nls/locale"], function (localeStrings) {
     // =============================================================================
-    /** Simple string replacement localization. Language data from galaxy/scripts/nls */
+    /** Simple string replacement localization. Language data from src/nls */
 
     if (Object.prototype.hasOwnProperty.call(localeStrings, "__root")) {
         //console.debug( 'amdi18n+webpack localization for ' + locale + ' loaded' );

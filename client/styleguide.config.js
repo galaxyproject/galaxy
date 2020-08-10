@@ -34,7 +34,7 @@ const sections = [
         name: "Components",
         // Components that are directories will get their own section
         sections: glob
-            .sync("./galaxy/scripts/components/*")
+            .sync("./src/components/*")
             .map((file) => {
                 if (fs.lstatSync(file).isDirectory()) {
                     return {
@@ -45,7 +45,7 @@ const sections = [
             })
             .filter((v) => v),
         // ...while top level components are handled here.
-        components: "./galaxy/scripts/components/*.vue",
+        components: "./src/components/*.vue",
     },
 ];
 
@@ -53,6 +53,6 @@ module.exports = {
     webpackConfig,
     pagePerSection: true,
     sections,
-    require: ["./galaxy/style/scss/base.scss", "./galaxy/scripts/polyfills.js", "./galaxy/scripts/bundleEntries.js"],
-    vuex: "./galaxy/scripts/store/index.js",
+    require: ["./galaxy/style/scss/base.scss", "./src/polyfills.js", "./src/bundleEntries.js"],
+    vuex: "./src/store/index.js",
 };

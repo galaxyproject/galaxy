@@ -1690,7 +1690,7 @@ export default {
 };
 </script>
 
-<style src="../../../node_modules/handsontable/dist/handsontable.full.css"></style>
+<style src="../../node_modules/handsontable/dist/handsontable.full.css"></style>
 <style>
 .table-column {
     width: 100%;

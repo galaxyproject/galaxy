@@ -153,7 +153,7 @@ static/plugins
 static/scripts
 node_modules
 bower_components
-client/galaxy/scripts/libs/*
+client/src/libs/*
 client/galaxy/style/less/*
 
 # Documentation build files.

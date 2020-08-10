@@ -1563,7 +1563,7 @@
 
 :Description:
     Default localization for Galaxy UI. Allowed values are listed at
-    the end of client/galaxy/scripts/nls/locale.js. With the default
+    the end of client/src/nls/locale.js. With the default
     value (auto), the locale will be automatically adjusted to the
     user's navigator language. Users can override this settings in
     their user preferences if the localization settings are enabled in

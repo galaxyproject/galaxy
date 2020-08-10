@@ -12,7 +12,7 @@ module.exports = config => {
     });
 
     return {
-        basePath: "../galaxy/scripts",
+        basePath: "../src",
         browsers: ["ChromeHeadlessNoSandbox"],
         client: {
             captureConsole: true

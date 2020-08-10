@@ -6,7 +6,7 @@ const OptimizeCssAssetsPlugin = require("optimize-css-assets-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const DuplicatePackageCheckerPlugin = require("duplicate-package-checker-webpack-plugin");
 
-const scriptsBase = path.join(__dirname, "galaxy/scripts");
+const scriptsBase = path.join(__dirname, "src");
 const libsBase = path.join(scriptsBase, "libs");
 const styleBase = path.join(__dirname, "galaxy/style");
 const imageBase = path.join(__dirname, "../static/style");
