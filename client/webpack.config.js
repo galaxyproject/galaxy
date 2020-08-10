@@ -8,8 +8,7 @@ const DuplicatePackageCheckerPlugin = require("duplicate-package-checker-webpack
 
 const scriptsBase = path.join(__dirname, "src");
 const libsBase = path.join(scriptsBase, "libs");
-const styleBase = path.join(__dirname, "src/style");
-const imageBase = path.join(__dirname, "../static/style");
+const styleBase = path.join(scriptsBase, "style");
 
 module.exports = (env = {}, argv = {}) => {
     // environment name based on -d, -p, webpack flag
@@ -30,7 +29,7 @@ module.exports = (env = {}, argv = {}) => {
         },
         resolve: {
             extensions: ["*", ".js", ".json", ".vue", ".scss"],
-            modules: [scriptsBase, "node_modules", styleBase, imageBase],
+            modules: [scriptsBase, "node_modules", styleBase],
             alias: {
                 jquery$: `${libsBase}/jquery.custom.js`,
                 jqueryVendor$: `${libsBase}/jquery/jquery.js`,
@@ -167,7 +166,10 @@ module.exports = (env = {}, argv = {}) => {
                             options: {
                                 sourceMap: true,
                                 sassOptions: {
-                                    includePaths: ["src/style/scss", path.resolve(__dirname, "./node_modules")],
+                                    includePaths: [
+                                        path.join(styleBase, "scss"),
+                                        path.resolve(__dirname, "./node_modules"),
+                                    ],
                                 },
                             },
                         },
