@@ -130,7 +130,7 @@
                     </div>
                 </template>
                 <template v-slot:cell(update_time)="row">
-                    <UtcDate v-if="row.item.update_time" :date="row.item.update_time" mode="elapsed" />
+                    <UtcDate v-if="row.item.update_time" :date="row.item.update_time" custom-format="'YYYY-MM-DD- HH:mm a'" mode="elapsed" />
                 </template>
                 <template v-slot:cell(is_unrestricted)="row">
                     <font-awesome-icon v-if="row.item.is_unrestricted" title="Unrestricted dataset" icon="globe" />
@@ -251,6 +251,8 @@ import { Toast } from "ui/toast";
 import FolderTopBar from "./TopToolbar/FolderTopBar";
 import { initFolderTableIcons } from "./icons.js";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import moment from "moment";
+
 
 initFolderTableIcons();
 
@@ -293,6 +295,7 @@ export default {
     created() {
         this.root = getAppRoot();
         this.services = new Services({ root: this.root });
+
         this.fetchFolderContents();
     },
     methods: {
@@ -302,9 +305,6 @@ export default {
             this.services
                 .getFolderContents(this.folder_id, include_deleted)
                 .then((response) => {
-                    response.folder_contents.forEach(
-                        (content) => (content.update_time = new Date(content.update_time).toISOString())
-                    );
                     this.folderContents = response.folder_contents;
                     this.folder_metadata = response.metadata;
                     this.hasLoaded = true;
