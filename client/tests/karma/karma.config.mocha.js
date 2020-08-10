@@ -14,7 +14,7 @@ const defaultFiles = [
     // component/module tests
     "**/*.test.js",
     // pre-existing rules definition tests
-    "../test/mocha/tests/rules_tests.js",
+    "../tests/mocha/tests/rules_tests.js",
 ];
 
 function getTestFiles() {
@@ -58,6 +58,7 @@ module.exports = function (config) {
         files,
         preprocessors: {
             "**/*.js": ["webpack"],
+            "../tests/mocha/tests/rules_tests.js": ["webpack"],
         },
         exclude: ["**/qunit/*"],
         reporters: ["mocha"],
