@@ -38,6 +38,12 @@
                                         </multiselect>
                                     </b-form-group>
 
+                                    <b-form-group>
+                                        <b-form-checkbox id="remember-idp" v-model="rememberIdp">
+                                            Remember institution selection
+                                        </b-form-checkbox>
+                                    </b-form-group>
+
                                     <b-button
                                         v-if="Object.prototype.hasOwnProperty.call(oidc_idps, 'cilogon')"
                                         @click="submitCILogon('cilogon')"
@@ -49,7 +55,7 @@
                                         v-if="Object.prototype.hasOwnProperty.call(oidc_idps, 'custos')"
                                         @click="submitCILogon('custos')"
                                         :disabled="selected === null"
-                                        >Sign in with Custos *</b-button
+                                        >Sign in with Custos*</b-button
                                     >
 
                                     <p class="mt-3">
@@ -159,6 +165,7 @@ export default {
             oidc_idps: galaxy.config.oidc,
             cilogon_idps: [],
             selected: null,
+            rememberIdp: false,
         };
     },
     computed: {
@@ -223,7 +230,7 @@ export default {
         },
         submitCILogon(idp) {
             const rootUrl = getAppRoot();
-
+            this.setIdpPreference();
             axios
                 .post(`${rootUrl}authnz/${idp}/login/?idphint=${this.selected.EntityID}`)
                 .then((response) => {
@@ -262,15 +269,33 @@ export default {
         },
         getCILogonIdps() {
             const rootUrl = getAppRoot();
-
-            axios.get(`${rootUrl}authnz/get_cilogon_idps`).then((response) => {
-                this.cilogon_idps = response.data;
-                //List is originally sorted by OrganizationName which can be different from DisplayName
-                this.cilogon_idps.sort((a, b) => (a.DisplayName > b.DisplayName ? 1 : -1));
-            });
+            axios
+                .get(`${rootUrl}authnz/get_cilogon_idps`)
+                .then((response) => {
+                    this.cilogon_idps = response.data;
+                    //List is originally sorted by OrganizationName which can be different from DisplayName
+                    this.cilogon_idps.sort((a, b) => (a.DisplayName > b.DisplayName ? 1 : -1));
+                })
+                .then(() => {
+                    const preferredIdp = this.getIdpPreference();
+                    if (preferredIdp) {
+                        this.selected = this.cilogon_idps.find((idp) => idp.EntityID === preferredIdp);
+                    }
+                });
+        },
+        setIdpPreference() {
+            if (this.rememberIdp) {
+                localStorage.setItem("galaxy-remembered-idp", this.selected.EntityID);
+            } else {
+                localStorage.removeItem("galaxy-remembered-idp");
+            }
+        },
+        getIdpPreference() {
+            return localStorage.getItem("galaxy-remembered-idp");
         },
     },
     created() {
+        this.rememberIdp = this.getIdpPreference() !== null;
         this.getCILogonIdps();
     },
 };
