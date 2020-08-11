@@ -1286,33 +1286,13 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         trans.response.set_content_type("application/json")
         return format_return_as_json(ret_dict, pretty=True)
 
-    @expose_api
-    def invocation_step(self, trans, invocation_id, step_id, **kwd):
-        """
-        GET /api/workflows/{workflow_id}/invocations/{invocation_id}/steps/{step_id}
-        GET /api/invocations/{invocation_id}/steps/{step_id}
-
-        :param  invocation_id:      the invocation id (required)
-        :type   invocation_id:      str
-
-        :param  step_id:      encoded id of the WorkflowInvocationStep (required)
-        :type   step_id:      str
-
-        :param  payload:       payload containing update action information
-                               for running workflow.
-
-        :raises: exceptions.MessageException, exceptions.ObjectNotFound
-        """
-        decoded_invocation_step_id = self.decode_id(step_id)
-        invocation_step = self.workflow_manager.get_invocation_step(trans, decoded_invocation_step_id)
-        return self.__encode_invocation_step(trans, invocation_step)
-
     def _generate_invocation_metrics(self, trans, invocation_id, **kwd):
         """
         build a dictionary of invocation metrics
         """
         decoded_workflow_invocation_id = self.decode_id(invocation_id)
         workflow_invocation = self.workflow_manager.get_invocation(trans, decoded_workflow_invocation_id)
+        history = workflow_invocation.history
 
         metrics, h_metrics = {}, {}
         h_contents = self.history_manager.contained(history)
@@ -1361,6 +1341,27 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         Return a dictionary with metrics from a workflow invocation.
         """
         return self._generate_invocation_metrics(trans, invocation_id, **kwd)
+
+    @expose_api
+    def invocation_step(self, trans, invocation_id, step_id, **kwd):
+        """
+        GET /api/workflows/{workflow_id}/invocations/{invocation_id}/steps/{step_id}
+        GET /api/invocations/{invocation_id}/steps/{step_id}
+
+        :param  invocation_id:      the invocation id (required)
+        :type   invocation_id:      str
+
+        :param  step_id:      encoded id of the WorkflowInvocationStep (required)
+        :type   step_id:      str
+
+        :param  payload:       payload containing update action information
+                               for running workflow.
+
+        :raises: exceptions.MessageException, exceptions.ObjectNotFound
+        """
+        decoded_invocation_step_id = self.decode_id(step_id)
+        invocation_step = self.workflow_manager.get_invocation_step(trans, decoded_invocation_step_id)
+        return self.__encode_invocation_step(trans, invocation_step)
 
     @expose_api_anonymous_and_sessionless
     def invocation_step_jobs_summary(self, trans: GalaxyWebTransaction, invocation_id, **kwd):
