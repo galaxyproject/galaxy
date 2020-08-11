@@ -396,8 +396,8 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         path = kwd.get('path', None)
         if path is None:
             raise exceptions.RequestParameterMissingException('The required attribute path is missing.')
-        if isinstance(path, int):
-            raise exceptions.RequestParameterInvalidException('The required attribute path is Integer.')
+        if not isinstance(path, str):
+            raise exceptions.RequestParameterInvalidException('The required attribute path is not String.')
 
         folder = self.folder_manager.get(trans, folder_id)
 
