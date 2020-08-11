@@ -14,6 +14,15 @@ import { getAppRoot } from "onload/loadConfig";
 
 QUnit.module("Form test", {
     beforeEach: function () {
+        var styleToTest = $(`
+        <style>
+            .ui-form-backdrop {
+                display: block;
+                opacity: 0;
+                cursor: default;
+            }
+        </style>`);
+        $("head").append(styleToTest);
         testApp.create();
         $.fx.off = true;
     },
@@ -29,10 +38,6 @@ QUnit.test("tool-form", function (assert) {
     window.fakeserver.respond();
 
     var form = toolform.form;
-    var output = "";
-    for (var property in assert) {
-        output += property + ": ; ";
-    }
     assert.ok(
         form.$(".portlet-title-text").html() == "<b>_name</b> _description (Galaxy Version _version)",
         "Title correct"
@@ -72,7 +77,7 @@ QUnit.test("tool-form", function (assert) {
     $add.click();
     assert.ok($add.attr("disabled"), "Adding new repeat has been disabled");
     form.$(".form-repeat-delete").each(function (i, d) {
-        assert.ok($(d).css("display") == "block", "Delete buttons " + i + " enabled");
+        assert.ok($(d).css("display") == "inline-block", "Delete buttons " + i + " enabled");
     });
     assert.ok(
         JSON.stringify(form.data.create()) ==
