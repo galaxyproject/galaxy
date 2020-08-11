@@ -52,13 +52,26 @@ def main():
 def adjust_segment(segment, offset_adj):
     print(f"Segment: {segment.start} : {segment.end}")
     # Get the adjustment for which the word falls within it's start and end
+    least_diff = None
+    least_adjustment = None
     for adj in offset_adj:
-        if segment.end is not None and segment.end >= adj.start and segment.end <= adj.end:
-            print("Offset:" + str(segment.start) + " Adjusted Offset:" + str(segment.start + adj.adjustment))
-            segment.start = segment.start + adj.adjustment
-            segment.end = segment.end + adj.adjustment
-            return
-    print("No adjustment found")
+        if segment.start is not None and segment.start >= adj.start and segment.start <= adj.end:
+            diff = adj.end - segment.start
+            if least_diff is None or diff > least_diff:
+                least_diff = diff
+                least_adjustment = adj
+        elif segment.end is not None and segment.end >= adj.start and segment.end <= adj.end:
+            diff = segment.end - adj.start
+            if least_diff is None or diff > least_diff:
+                least_diff = diff
+                least_adjustment = adj
+
+    if least_adjustment is not None:
+        print("Offset:" + str(segment.start) + " Adjusted Offset:" + str(segment.start + least_adjustment.adjustment))
+        segment.start = segment.start + least_adjustment.adjustment
+        segment.end = segment.end + least_adjustment.adjustment
+    else:
+        print("No adjustment found")
 
     
 # Serialize schema obj and write it to output file
