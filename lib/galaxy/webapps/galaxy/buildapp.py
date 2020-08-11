@@ -627,6 +627,13 @@ def populate_api_routes(webapp, app):
                           action='get_api_key',
                           conditions=dict(method=["GET"]))
 
+    # API OPTIONS RESPONSE
+    webapp.mapper.connect('options',
+                          '/api/{path_info:.*?}',
+                          controller='authenticate',
+                          action='options',
+                          conditions={'method': ['OPTIONS']})
+
     # ======================================
     # ====== DISPLAY APPLICATIONS API ======
     # ======================================
