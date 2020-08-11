@@ -1,6 +1,6 @@
-from selenium.webdriver.support.ui import Select
-
 import os
+
+from selenium.webdriver.support.ui import Select
 
 from .framework import (
     retry_assertion_during_transitions,
@@ -59,7 +59,6 @@ class LibraryContentsTestCase(SeleniumTestCase):
 
         expected_filename = "selected_dataset_files.zip"
         assert expected_filename in folder_files
-
 
     # Fine test locally but the upload doesn't work in Docker compose. I'd think
     # Galaxy must be running so that test-data/1.txt would work but it just doesn't
