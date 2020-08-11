@@ -147,7 +147,7 @@ export default {
             return `${this.stepStates.scheduled || 0} of ${this.stepCount} steps successfully scheduled.`;
         },
         jobStatesStr: function () {
-            let jobStr = `${this.jobStatesSummary.states()["ok"] || 0} of ${this.jobCount} jobs complete`;
+            let jobStr = `${this.jobStatesSummary.numTerminal()} of ${this.jobCount} jobs complete`;
             if (!this.invocationSchedulingTerminal) {
                 jobStr += " (total number of jobs will change until all steps fully scheduled)";
             }
