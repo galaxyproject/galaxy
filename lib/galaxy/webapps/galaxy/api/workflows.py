@@ -1020,7 +1020,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         for i, step in enumerate(workflow_invocation.steps):
             if step.workflow_step.type == 'tool':
-                tool_id = step.workflow_step.tool_id.split('/')[-2:]
                 for job in step.jobs:
                     job_metrics = summarize_job_metrics(trans, job)
                     metrics[i] = {
