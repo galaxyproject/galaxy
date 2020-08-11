@@ -79,13 +79,13 @@ def get_start_with_buffer(start):
 	if start <= buffer:
 		return 0
 	else:
-		return start - buffer
+		return math.floor(start - buffer)
 
 def get_end_with_buffer(end, file_duration):
 	if end + buffer > file_duration:
 		return file_duration
 	else:
-		return end + buffer
+		return math.ceil(end + buffer)
 
 # Given a start and end offset, create a segment of audio 
 def create_audio_part(input_file, start, end, segment, file_duration):
