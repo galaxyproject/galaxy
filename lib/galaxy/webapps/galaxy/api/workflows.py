@@ -1024,7 +1024,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                     job_metrics = summarize_job_metrics(trans, job)
                     metrics[i] = {
                         'tool_id': job.tool_id,
-                        'tool_version': tool_id[1],
+                        'tool_version': job.tool_version,
                         'galaxy_slots': '',
                         'runtime_seconds': '',
                         'job_inputs': [],
