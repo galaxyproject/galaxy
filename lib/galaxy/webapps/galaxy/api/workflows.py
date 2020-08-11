@@ -1184,14 +1184,29 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             'environment_variables': kwd.get('environment_variables', {})
         }
 
+        invocation_metrics = self._generate_invocation_metrics(trans, invocation_id)
+        io_dict = {}
+        cores, runtime, mem = 0, 0, 0
+        for job in invocation_metrics:
+            galaxy_slots = int(float(invocation_metrics[job]['galaxy_slots']))
+            if galaxy_slots > int(cores): cores = galaxy_slots
+            runtime = int(runtime) + int(float(invocation_metrics[job]['runtime_seconds']))
+            for j in invocation_metrics[job]['job_inputs']: io_dict[j['uuid']] = j['total_size']
+            for j in invocation_metrics[job]['job_outputs']: io_dict[j['uuid']] = j['total_size']
+        for io in io_dict: mem =+ int(io_dict[io])
+        metrics = [cores, runtime, mem]
+
         extension = [
             {
                 'extension_schema': 'https://raw.githubusercontent.com/biocompute-objects/extension_domain/6d2cd8482e6075746984662edcf78b57d3d38065/galaxy/galaxy_extension.json',
                 'galaxy_extension': {
                     'galaxy_url': url_for('/', qualified=True),
                     'galaxy_version': VERSION,
-                    # 'aws_estimate': aws_estimate,
-                    # 'job_metrics': metrics
+                    'invocation_metrics': {
+                        'max_cores': metrics[0],
+                        'total_runtime': metrics[1],
+                        'total_memory': metrics[2]
+                    }
                 }
             }
         ]
@@ -1224,46 +1239,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         }
         return bco_dict
 
-    def _generate_aws_estimate(self, trans, invocation_id, **kwd):
-        """
-        build AWS cloud estimate
-        """
-        decoded_workflow_invocation_id = self.decode_id(invocation_id)
-        workflow_invocation = self.workflow_manager.get_invocation(trans, decoded_workflow_invocation_id)
-        history = workflow_invocation.history
-
-        aws_dict, metrics, ds_metrics = {}, {}, {}
-        h_contents = self.history_contents_manager.contained(history)
-        for h in h_contents:
-            ds_metrics[h.dataset.id] = {
-                'file_size': int(h.dataset.file_size),
-                'total_size': int(h.dataset.total_size),
-                'uuid': str(h.dataset.uuid)
-            }
-        for i, step in enumerate(workflow_invocation.steps):
-            if step.workflow_step.type == 'tool':
-                for job in step.jobs:
-                    metrics[i] = summarize_job_metrics(trans, job)
-                    for job_input in job.input_datasets:
-                        if hasattr(job_input.dataset, 'dataset_id'):
-                            ds_metrics[job_input.dataset.id].update({'filename': job_input.dataset.name})
-                            metrics[i].append(ds_metrics[job_input.dataset.id])
-                    for job_output in job.output_datasets:
-                        if hasattr(job_output.dataset, 'dataset_id'):
-                            ds_metrics[job_output.dataset.id].update({'filename': job_output.dataset.name})
-                            metrics[i].append(ds_metrics[job_output.dataset.id])
-
-        aws_dict = metrics
-        return aws_dict
-
-    @expose_api
-    def export_aws_estimate(self, trans, invocation_id, **kwd):
-        '''
-        GET /api/invocations/{invocations_id}/aws_estimate
-        Return a dictionary with an AWS estimate for a workflow invocation.
-        '''
-        return self._generate_aws_estimate(trans, invocation_id, **kwd)
-
     @expose_api
     def export_invocation_bco(self, trans, invocation_id, **kwd):
         '''
@@ -1284,30 +1259,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         trans.response.headers["Content-Disposition"] = 'attachment; filename="bco_%s.json"' % invocation_id
         trans.response.set_content_type("application/json")
         return format_return_as_json(ret_dict, pretty=True)
-
-    @expose_api
-    def invocation_step(self, trans, invocation_id, step_id, **kwd):
-        """
-        GET /api/workflows/{workflow_id}/invocations/{invocation_id}/steps/{step_id}
-        GET /api/invocations/{invocation_id}/steps/{step_id}
-
-        :param  invocation_id:      the invocation id (required)
-        :type   invocation_id:      str
-
-        :param  step_id:      encoded id of the WorkflowInvocationStep (required)
-        :type   step_id:      str
-
-        :param  payload:       payload containing update action information
-                               for running workflow.
-
-        :raises: exceptions.MessageException, exceptions.ObjectNotFound
-        """
-        decoded_invocation_step_id = self.decode_id(step_id)
-        invocation_step = self.workflow_manager.get_invocation_step(
-            trans,
-            decoded_invocation_step_id
-        )
-        return self.__encode_invocation_step(trans, invocation_step)
 
     def _generate_invocation_metrics(self, trans, invocation_id, **kwd):
         """
@@ -1364,6 +1315,30 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         Return a dictionary with metrics from a workflow invocation. 
         '''
         return self._generate_invocation_metrics(trans, invocation_id, **kwd)
+
+    @expose_api
+    def invocation_step(self, trans, invocation_id, step_id, **kwd):
+        """
+        GET /api/workflows/{workflow_id}/invocations/{invocation_id}/steps/{step_id}
+        GET /api/invocations/{invocation_id}/steps/{step_id}
+
+        :param  invocation_id:      the invocation id (required)
+        :type   invocation_id:      str
+
+        :param  step_id:      encoded id of the WorkflowInvocationStep (required)
+        :type   step_id:      str
+
+        :param  payload:       payload containing update action information
+                               for running workflow.
+
+        :raises: exceptions.MessageException, exceptions.ObjectNotFound
+        """
+        decoded_invocation_step_id = self.decode_id(step_id)
+        invocation_step = self.workflow_manager.get_invocation_step(
+            trans,
+            decoded_invocation_step_id
+        )
+        return self.__encode_invocation_step(trans, invocation_step)
 
     @expose_api_anonymous_and_sessionless
     def invocation_step_jobs_summary(self, trans, invocation_id, **kwd):
