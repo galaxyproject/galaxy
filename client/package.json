@@ -75,15 +75,15 @@
     "webpack-production-maps": "GXY_BUILD_SOURCEMAPS=1 webpack -p",
     "gulp": "gulp",
     "save-build-hash": "(git rev-parse HEAD 2>/dev/null || echo '') >../static/client_build_hash.txt",
-    "prettier": "prettier --write 'galaxy/style/scss/**/*.scss' 'galaxy/scripts/**/{*.js,*.vue}' '!galaxy/scripts/libs/**'",
-    "prettier-check": "prettier --check 'galaxy/style/scss/**/*.scss' 'galaxy/scripts/**/{*.js,*.vue}' '!galaxy/scripts/libs/**'",
+    "prettier": "prettier --write 'src/style/scss/**/*.scss' 'src/**/{*.js,*.vue}' '!src/libs/**'",
+    "prettier-check": "prettier --check 'src/style/scss/**/*.scss' 'src/**/{*.js,*.vue}' '!src/libs/**'",
     "styleguide": "vue-styleguidist server",
     "styleguide:build": "vue-styleguidist build",
     "test": "yarn run test-mocha && yarn run test-qunit",
     "test-watch": "yarn run test-mocha --no-single-run",
-    "test-qunit": "karma start karma/karma.config.qunit.js",
-    "test-mocha": "karma start karma/karma.config.mocha.js",
-    "eslint": "eslint -c .eslintrc.js galaxy/scripts --ext .js,.vue"
+    "test-qunit": "karma start tests/karma/karma.config.qunit.js",
+    "test-mocha": "karma start tests/karma/karma.config.mocha.js",
+    "eslint": "eslint -c .eslintrc.js src --ext .js,.vue"
   },
   "devDependencies": {
     "@babel/core": "^7.10.1",

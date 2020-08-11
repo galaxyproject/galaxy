@@ -616,6 +616,18 @@
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``file_sources_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Configured FileSource plugins.
+    The value of this option will be resolved with respect to
+    <config_dir>.
+:Default: ``file_sources_conf.yml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``enable_mulled_containers``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1563,10 +1575,10 @@
 
 :Description:
     Default localization for Galaxy UI. Allowed values are listed at
-    the end of client/galaxy/scripts/nls/locale.js. With the default
-    value (auto), the locale will be automatically adjusted to the
-    user's navigator language. Users can override this settings in
-    their user preferences if the localization settings are enabled in
+    the end of client/src/nls/locale.js. With the default value
+    (auto), the locale will be automatically adjusted to the user's
+    navigator language. Users can override this settings in their user
+    preferences if the localization settings are enabled in
     user_preferences_extra_conf.yml
 :Default: ``auto``
 :Type: str
@@ -2916,6 +2928,22 @@
     pre-populate users using an additional form on 'Create new user'
 :Default: ``false``
 :Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``upload_from_form_button``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    If 'always-on', add another button to tool form data inputs that
+    allow uploading data from the tool form in fewer clicks (at the
+    expense of making the form more complicated). This applies to
+    workflows as well.
+    Avoiding making this a boolean because we may add options such as
+    'in-single-form-view' or 'in-simplified-workflow-views'.
+    https://github.com/galaxyproject/galaxy/pull/9809/files#r461889109
+:Default: ``always-off``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

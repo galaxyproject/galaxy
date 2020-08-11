@@ -13,10 +13,10 @@ const fileLoaderConfigRule = { rules: [{ test: fileLoaderTest, use: ["file-loade
 webpackConfig.module = merge.smart(webpackConfig.module, fileLoaderConfigRule);
 webpackConfig.output.publicPath = "";
 
-webpackConfig.resolve.modules.push(path.join(__dirname, "galaxy/style/scss"));
+webpackConfig.resolve.modules.push(path.join(__dirname, "src/style/scss"));
 
 const galaxyStyleDocs = [];
-glob.sync("./galaxy/docs/galaxy-*.md").forEach((file) => {
+glob.sync("./docs/galaxy-*.md").forEach((file) => {
     const name = file.match(/galaxy-(\w+).md/)[1];
     galaxyStyleDocs.push({ name: name, content: file });
 });
@@ -28,13 +28,13 @@ const sections = [
     },
     {
         name: "Basic Bootstrap Styles",
-        content: "./galaxy/docs/bootstrap.md",
+        content: "./docs/bootstrap.md",
     },
     {
         name: "Components",
         // Components that are directories will get their own section
         sections: glob
-            .sync("./galaxy/scripts/components/*")
+            .sync("./src/components/*")
             .map((file) => {
                 if (fs.lstatSync(file).isDirectory()) {
                     return {
@@ -45,7 +45,7 @@ const sections = [
             })
             .filter((v) => v),
         // ...while top level components are handled here.
-        components: "./galaxy/scripts/components/*.vue",
+        components: "./src/components/*.vue",
     },
 ];
 
@@ -53,6 +53,6 @@ module.exports = {
     webpackConfig,
     pagePerSection: true,
     sections,
-    require: ["./galaxy/style/scss/base.scss", "./galaxy/scripts/polyfills.js", "./galaxy/scripts/bundleEntries.js"],
-    vuex: "./galaxy/scripts/store/index.js",
+    require: ["./src/style/scss/base.scss", "./src/polyfills.js", "./src/bundleEntries.js"],
+    vuex: "./src/store/index.js",
 };

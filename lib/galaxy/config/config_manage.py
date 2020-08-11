@@ -97,8 +97,8 @@ UWSGI_OPTIONS = OrderedDict([
     }),
     ('static-safe', {
         'key': 'static-safe',
-        'desc': """Allow serving images out of `client`.  Most modern Galaxy interfaces bundle all of this, but some older pages still serve these via symlink, requiring this rule.""",
-        'default': 'client/galaxy/images',
+        'desc': """Allow serving certain assets out of `client`.  Most modern Galaxy interfaces bundle all of this, but some older pages still serve these via symlink, requiring this rule.""",
+        'default': 'client/src/assets',
         'type': 'str',
     }),
     ('master', {
