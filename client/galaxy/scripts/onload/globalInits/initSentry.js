@@ -1,7 +1,7 @@
-import Raven from "libs/raven";
+import * as Sentry from "@sentry/browser";
 
 /**
- * Initializes raven/sentry, one of the few functions that should actually be
+ * Initializes Sentry, one of the few functions that should actually be
  * in a global init. Transplanted here from js-app.mako
  *
  * @param {object} config Galaxy configuration object
@@ -11,9 +11,14 @@ export const initSentry = (galaxy, config) => {
 
     if (config.sentry) {
         const { sentry_dsn_public, email } = config.sentry;
-        Raven.config(sentry_dsn_public).install();
+        Sentry.init({ dsn: sentry_dsn_public });
         if (email) {
-            Raven.setUser({ email });
+            Sentry.configureScope((scope) => {
+                scope.setUser({
+                    email: email,
+                });
+            });
         }
+        galaxy.Sentry = Sentry;
     }
 };

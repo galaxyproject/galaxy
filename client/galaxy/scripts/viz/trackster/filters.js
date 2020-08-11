@@ -1,6 +1,6 @@
 import $ from "jquery";
 import _l from "utils/localization";
-import _ from "libs/underscore";
+import _ from "underscore";
 import { getGalaxyInstance } from "app";
 
 /**
