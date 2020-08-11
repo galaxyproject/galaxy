@@ -1340,14 +1340,15 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
                     for value in [x for x in job_metrics if x["name"] == "runtime_seconds"]:
                         metrics[i]["runtime_seconds"] = value["raw_value"]
                     for job_input in job.input_datasets:
-                        if hasattr(job_input.dataset, "dataset_id"):
-                            for h in [x for x in h_contents if x.dataset_id == job_input.dataset.id]:
-                                h_metrics = {
-                                    "total_size": int(h.dataset.total_size),
-                                    "uuid": str(h.dataset.uuid),
-                                    "job_input_name": job_input.name,
-                                }
-                                metrics[i]["job_inputs"].append(h_metrics)
+                        if job_input.dataset.dataset:
+                            dataset = job_input.dataset
+                            dataset_metrics = {
+                                "total_size": int(dataset.total_size),
+                                "id": trans.security.encode_id(dataset.id),
+                                "model_class": dataset.__class__.__name__,
+                                "job_input_name": job_input.name,
+                            }
+                            metrics[i]["job_inputs"].append(dataset_metrics)
                     for job_output in job.output_datasets:
                         if hasattr(job_output.dataset, "dataset_id"):
                             for h in [x for x in h_contents if x.dataset_id == job_output.dataset.id]:
