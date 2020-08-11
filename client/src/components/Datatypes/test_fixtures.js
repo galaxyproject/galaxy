@@ -1,6 +1,6 @@
 // TODO: Swap these awful relative paths to an alias
-import DatatypesMappingJson from "../../../tests/qunit/test-data/json/datatypes.mapping.json";
-import DatatypesJson from "../../../tests/qunit/test-data/json/datatypes.json";
+import DatatypesMappingJson from "qunit/test-data/json/datatypes.mapping.json";
+import DatatypesJson from "qunit/test-data/json/datatypes.json";
 import { DatatypesMapperModel } from "./model.js";
 
 export const typesAndMappingResponse = {
