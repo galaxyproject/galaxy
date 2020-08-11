@@ -24,6 +24,7 @@ export var View = Backbone.View.extend({
                 onchange_title: null,
             }).set(options);
         this.setElement(this._template());
+        this.section = options.section;
 
         // link all dom elements
         this.$body = this.$(".portlet-body");
@@ -184,6 +185,9 @@ export var View = Backbone.View.extend({
     /** Expand portlet */
     expand: function () {
         this.collapsed = false;
+        if (this.section) {
+            this.section.renderOnce();
+        }
         this.$content.show();
         this.collapsible_button.setIcon("fa-eye");
     },
