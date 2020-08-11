@@ -1327,7 +1327,7 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
                 for job in step.jobs:
                     job_metrics = summarize_job_metrics(trans, job)
                     metrics[i] = {
-                        "tool_name": tool_id[0],
+                        "tool_id": job.tool_id,
                         "tool_version": tool_id[1],
                         "galaxy_slots": "",
                         "runtime_seconds": "",
