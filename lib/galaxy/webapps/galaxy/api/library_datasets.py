@@ -396,9 +396,10 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         path = kwd.get('path', None)
         if path is None:
             raise exceptions.RequestParameterMissingException('The required attribute path is missing.')
-        folder = self.folder_manager.get(trans, folder_id)
         if isinstance(path, int):
-            path = str(path)
+            raise exceptions.RequestParameterInvalidException('The required attribute path is Integer.')
+
+        folder = self.folder_manager.get(trans, folder_id)
 
         source = kwd.get('source', None)
         if source not in ['userdir_file', 'userdir_folder', 'importdir_file', 'importdir_folder', 'admin_path']:

@@ -666,7 +666,8 @@ var FolderToolbarView = Backbone.View.extend({
             this.modal.disableButton("Import");
             for (let i = selected_nodes.length - 1; i >= 0; i--) {
                 if (selected_nodes[i].li_attr.full_path !== undefined) {
-                    paths.push(selected_nodes[i].li_attr.full_path);
+                    // should be always String
+                    paths.push(`"${selected_nodes[i].li_attr.full_path}"`);
                 }
             }
             this.initChainCallControl({
