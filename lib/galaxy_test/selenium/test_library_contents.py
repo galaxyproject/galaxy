@@ -60,6 +60,25 @@ class LibraryContentsTestCase(SeleniumTestCase):
         expected_filename = "selected_dataset_files.zip"
         assert expected_filename in folder_files
 
+    @selenium_test
+    def test_delete_dataset(self):
+        self.test_import_dataset_from_history()
+
+        self.sleep_for(self.wait_types.UX_RENDER)
+        # assert "you should select one" modal
+        assert self.components.libraries.folder.toast_msg.is_displayed
+
+        self.components.libraries.folder.delete_btn.wait_for_and_click()
+
+        self.components.libraries.folder.select_one.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        self.components.libraries.folder.delete_btn.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        self._assert_num_displayed_items_is(0)
+
+
     # Fine test locally but the upload doesn't work in Docker compose. I'd think
     # Galaxy must be running so that test-data/1.txt would work but it just doesn't
     # for some reason. https://jenkins.galaxyproject.org/job/jmchilton-selenium/79/artifact/79-test-errors/test_import_dataset_from_path2017100413221507137721/
