@@ -119,8 +119,8 @@ def _get_uwsgi_args(cliargs, kwargs):
         if hmr_server.lower() in ['1', 'true', 'default']:
             hmr_server = "http:127.0.0.1:8081"
         __add_arg(args, 'route', '^/static/dist/ {hmr_server}'.format(hmr_server=hmr_server))
-    # We always want to append client/galaxy/images as static-safe.
-    __add_arg(args, 'static-safe', '{here}/client/galaxy/images'.format(here=os.getcwd()))
+    # We always want to append client/src/assets as static-safe.
+    __add_arg(args, 'static-safe', '{here}/client/src/assets'.format(here=os.getcwd()))
 
     for arg in DEFAULT_ARGS['_all_'] + DEFAULT_ARGS[cliargs.app]:
         if not __arg_set(arg, uwsgi_kwargs):
