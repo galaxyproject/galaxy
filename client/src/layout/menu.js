@@ -136,6 +136,67 @@ export function fetchMenu(options = {}) {
     }
 
     //
+    // Help tab.
+    //
+    const helpTab = {
+        id: "help",
+        title: _l("Help"),
+        url: "javascript:void(0)",
+        tooltip: _l("Support, contact, and community"),
+        menu: [
+            {
+                title: _l("Support"),
+                url: options.support_url,
+                target: "_blank",
+            },
+            {
+                title: _l("Search"),
+                url: options.search_url,
+                target: "_blank",
+            },
+            {
+                title: _l("Mailing Lists"),
+                url: options.mailing_lists,
+                target: "_blank",
+            },
+            {
+                title: _l("Videos"),
+                url: options.screencasts_url,
+                target: "_blank",
+            },
+            {
+                title: _l("Wiki"),
+                url: options.wiki_url,
+                target: "_blank",
+            },
+            {
+                title: _l("How to Cite Galaxy"),
+                url: options.citation_url,
+                target: "_blank",
+            },
+            {
+                title: _l("Interactive Tours"),
+                url: "tours",
+            },
+        ],
+    };
+    if (options.terms_url) {
+        helpTab.menu.push({
+            title: _l("Terms and Conditions"),
+            url: options.terms_url,
+            target: "_blank",
+        });
+    }
+    if (options.helpsite_url) {
+        helpTab.menu.unshift({
+            title: _l("Galaxy Help"),
+            url: options.helpsite_url,
+            target: "_blank",
+        });
+    }
+    menu.push(helpTab);
+
+    //
     // User tab.
     //
     let userTab = {};
@@ -230,65 +291,5 @@ export function fetchMenu(options = {}) {
     }
     menu.push(userTab);
 
-    //
-    // Help tab.
-    //
-    const helpTab = {
-        id: "help",
-        title: _l("Help"),
-        url: "javascript:void(0)",
-        tooltip: _l("Support, contact, and community"),
-        menu: [
-            {
-                title: _l("Support"),
-                url: options.support_url,
-                target: "_blank",
-            },
-            {
-                title: _l("Search"),
-                url: options.search_url,
-                target: "_blank",
-            },
-            {
-                title: _l("Mailing Lists"),
-                url: options.mailing_lists,
-                target: "_blank",
-            },
-            {
-                title: _l("Videos"),
-                url: options.screencasts_url,
-                target: "_blank",
-            },
-            {
-                title: _l("Wiki"),
-                url: options.wiki_url,
-                target: "_blank",
-            },
-            {
-                title: _l("How to Cite Galaxy"),
-                url: options.citation_url,
-                target: "_blank",
-            },
-            {
-                title: _l("Interactive Tours"),
-                url: "tours",
-            },
-        ],
-    };
-    if (options.terms_url) {
-        helpTab.menu.push({
-            title: _l("Terms and Conditions"),
-            url: options.terms_url,
-            target: "_blank",
-        });
-    }
-    if (options.helpsite_url) {
-        helpTab.menu.unshift({
-            title: _l("Galaxy Help"),
-            url: options.helpsite_url,
-            target: "_blank",
-        });
-    }
-    menu.push(helpTab);
     return menu;
 }
