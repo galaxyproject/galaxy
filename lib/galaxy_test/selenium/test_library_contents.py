@@ -78,7 +78,6 @@ class LibraryContentsTestCase(SeleniumTestCase):
 
         self._assert_num_displayed_items_is(0)
 
-
     # Fine test locally but the upload doesn't work in Docker compose. I'd think
     # Galaxy must be running so that test-data/1.txt would work but it just doesn't
     # for some reason. https://jenkins.galaxyproject.org/job/jmchilton-selenium/79/artifact/79-test-errors/test_import_dataset_from_path2017100413221507137721/
