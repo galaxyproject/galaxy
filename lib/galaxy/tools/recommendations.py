@@ -57,15 +57,15 @@ class ToolRecommendations():
             # keras is not downloaded because of conditional requirement and Galaxy does not build
             try:
                 from keras.models import model_from_json
-                import tensorflow.compat.v1 as tf
-                tf.disable_v2_behavior()
+                import tensorflow as tf
+                tf.compat.v1.disable_v2_behavior()
             except Exception:
                 trans.response.status = 400
                 return False
             # set graph and session only once
             if self.graph is None:
                 self.graph = tf.Graph()
-                self.session = tf.Session(graph=self.graph)
+                self.session = tf.compat.v1.Session(graph=self.graph)
             model_weights = list()
             counter_layer_weights = 0
             self.tool_recommendation_model_path = self.__download_model(remote_model_url)
