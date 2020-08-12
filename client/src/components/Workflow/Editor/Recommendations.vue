@@ -121,6 +121,8 @@ export default {
                 this.deprecatedMessage = predictedData.message;
                 if (predictedDataChildren.length > 0) {
                     const cTools = [];
+                    const toolMap = new Map();
+                    const filteredTools = [];
                     for (const nameObj of predictedDataChildren.entries()) {
                         const t = {};
                         const inputDatatypes = nameObj[1].i_extensions;
@@ -140,7 +142,17 @@ export default {
                             }
                         }
                     }
-                    this.compatibleTools = cTools;
+                    for (const tool of cTools) {
+                        const toolId = tool.id;
+                        if (!toolMap.has(toolId)) {
+                            toolMap.set(toolId, true);
+                            filteredTools.push({
+                                id: toolId,
+                                name: tool.name
+                            });
+                        }
+                    }
+                    this.compatibleTools = filteredTools;
                 }
                 this.showLoading = false;
             });
