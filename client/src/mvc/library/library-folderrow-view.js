@@ -329,7 +329,7 @@ var FolderRowView = Backbone.View.extend({
                 <td class="mid">
                     <span title="Dataset" class="fa fa-file-o"></span>
                 </td>
-                <td class="mid">
+                <td class="mid lib-folder-checkbox">
                     <input style="margin: 0;" type="checkbox">
                 </td>
                 <td>
@@ -342,8 +342,7 @@ var FolderRowView = Backbone.View.extend({
                     <% if( content_item.get("message").length > 40 ) { %>
                         <td data-toggle="tooltip" data-placement="auto"
                             title='<%= _.escape(content_item.get("message")) %>'>
-                            <div class="description-field">                            <%= _.escape(content_item.get("message")).substring(0, 40) + "..." %>
-</div>
+                            <%= _.escape(content_item.get("message")).substring(0, 40) + "..." %>
                         </td>
                     <% } else { %>
                     <td><div class="description-field"> 
