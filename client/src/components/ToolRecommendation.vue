@@ -62,10 +62,10 @@ export default {
                     this.deprecatedMessage = predData.message;
                     if (responsePred !== null && predData.children.length > 0) {
                         const filteredData = {};
-                        const compatibleTools = {};
-                        const filteredChildren = [];
+                        const compatibleTools = [];
                         const outputDatatypes = predData.o_extensions;
                         const children = predData.children;
+                        const toolMap = new Map();
                         for (const nameObj of children.entries()) {
                             const inputDatatypes = nameObj[1].i_extensions;
                             for (const outT of outputDatatypes.entries()) {
@@ -78,24 +78,20 @@ export default {
                                         outT[1] === "_sniff_" ||
                                         outT[1] === "input_collection"
                                     ) {
-                                        compatibleTools[nameObj[1].tool_id] = nameObj[1].name;
-                                        break;
+                                        const toolId = nameObj[1].tool_id;
+                                        if (!toolMap.has(toolId)) {
+                                            toolMap.set(toolId, true);
+                                            compatibleTools.push(nameObj[1]);
+                                            break;
+                                        }
                                     }
-                                }
-                            }
-                        }
-                        for (const id in compatibleTools) {
-                            for (const nameObj of children.entries()) {
-                                if (nameObj[1].tool_id === id) {
-                                    filteredChildren.push(nameObj[1]);
-                                    break;
                                 }
                             }
                         }
                         filteredData.o_extensions = predData.o_extensions;
                         filteredData.name = predData.name;
-                        filteredData.children = filteredChildren;
-                        if (filteredChildren.length > 0 && this.deprecated === false) {
+                        filteredData.children = compatibleTools;
+                        if (compatibleTools.length > 0 && this.deprecated === false) {
                             this.showMessage = true;
                             this.renderD3Tree(filteredData);
                         }
