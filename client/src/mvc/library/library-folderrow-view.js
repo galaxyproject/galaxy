@@ -267,13 +267,13 @@ var FolderRowView = Backbone.View.extend({
                         <% if( content_item.get("description").length > 40 ) { %>
                             <td data-toggle="tooltip" data-placement="auto"
                                 title='<%= _.escape(content_item.get("description")) %>'>
-                                <div class="description-field"><%= _.escape(content_item.get("description")).substring(0, 40) + "..." %></div>
+                                <%= _.escape(content_item.get("description")).substring(0, 40) + "..." %>
                             </td>
                         <% } else { %>
-                            <td><div class="description-field"><%= _.escape(content_item.get("description"))%></div></td>
+                            <td><%= _.escape(content_item.get("description"))%></td>
                         <% } %>
                     <% } else { %>
-                        <td> <div class="description-field"></div></td>
+                        <td></td>
                     <% } %>
                 <% } else if(edit_mode){ %>
                     <td>
@@ -345,8 +345,7 @@ var FolderRowView = Backbone.View.extend({
                             <%= _.escape(content_item.get("message")).substring(0, 40) + "..." %>
                         </td>
                     <% } else { %>
-                    <td><div class="description-field"> 
-                        <%= _.escape(content_item.get("message"))%></div></td>
+                        <td><%= _.escape(content_item.get("message"))%></td>
                     <% } %>
                 <% } %>
                 <td><div class="nametags"><!-- Nametags mount here --></div></td>
