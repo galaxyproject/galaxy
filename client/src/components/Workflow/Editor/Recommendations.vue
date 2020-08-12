@@ -124,7 +124,6 @@ export default {
                     const toolMap = new Map();
                     const filteredTools = [];
                     for (const nameObj of predictedDataChildren.entries()) {
-                        const t = {};
                         const inputDatatypes = nameObj[1].i_extensions;
                         for (const outT of outputDatatypes.entries()) {
                             for (const inTool of inputDatatypes.entries()) {
@@ -134,25 +133,20 @@ export default {
                                     outT[1] === "_sniff_" ||
                                     outT[1] === "input_collection"
                                 ) {
-                                    t.id = nameObj[1].tool_id;
-                                    t.name = nameObj[1].name;
-                                    cTools.push(t);
-                                    break;
+                                    const toolId = nameObj[1].tool_id;
+                                    if (!toolMap.has(toolId)) {
+                                        toolMap.set(toolId, true);
+                                        cTools.push({
+                                            id: toolId,
+                                            name: nameObj[1].name
+                                        });
+                                        break;
+                                    }
                                 }
                             }
                         }
                     }
-                    for (const tool of cTools) {
-                        const toolId = tool.id;
-                        if (!toolMap.has(toolId)) {
-                            toolMap.set(toolId, true);
-                            filteredTools.push({
-                                id: toolId,
-                                name: tool.name
-                            });
-                        }
-                    }
-                    this.compatibleTools = filteredTools;
+                    this.compatibleTools = cTools;
                 }
                 this.showLoading = false;
             });
