@@ -39,7 +39,7 @@ export default {
         datatypesMapper: {
             type: Object,
             required: true,
-        }
+        },
     },
     data() {
         return {
