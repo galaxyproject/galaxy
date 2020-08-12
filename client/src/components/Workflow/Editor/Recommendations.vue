@@ -122,7 +122,6 @@ export default {
                 if (predictedDataChildren.length > 0) {
                     const cTools = [];
                     const toolMap = new Map();
-                    const filteredTools = [];
                     for (const nameObj of predictedDataChildren.entries()) {
                         const inputDatatypes = nameObj[1].i_extensions;
                         for (const outT of outputDatatypes.entries()) {
