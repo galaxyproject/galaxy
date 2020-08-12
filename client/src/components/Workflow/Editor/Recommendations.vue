@@ -25,20 +25,20 @@ import _l from "utils/localization";
 
 export default {
     components: {
-        LoadingSpan
+        LoadingSpan,
     },
     props: {
         getNode: {
             type: Function,
-            required: true
+            required: true,
         },
         getManager: {
             type: Function,
-            required: true
+            required: true,
         },
         datatypesMapper: {
             type: Object,
-            required: true
+            required: true,
         }
     },
     data() {
@@ -48,7 +48,7 @@ export default {
             popoverHeaderText: _l("Tool recommendations"),
             noRecommendationsMessage: _l("No tool recommendations"),
             deprecatedMessage: "",
-            showLoading: true
+            showLoading: true,
         };
     },
     created() {
@@ -113,7 +113,7 @@ export default {
             const workflowSimple = toSimple(workflow);
             const toolSequence = this.getWorkflowPath(workflowSimple, node.id);
             const requestData = { tool_sequence: toolSequence };
-            getToolPredictions(requestData).then(responsePred => {
+            getToolPredictions(requestData).then((responsePred) => {
                 const predictedData = responsePred.predicted_data;
                 const outputDatatypes = predictedData.o_extensions;
                 const predictedDataChildren = predictedData.children;
@@ -152,7 +152,7 @@ export default {
         },
         _isSubType(child, parent) {
             return this.datatypesMapper.isSubType(child, parent);
-        }
-    }
+        },
+    },
 };
 </script>
