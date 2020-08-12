@@ -57,7 +57,8 @@ class ToolRecommendations():
             # keras is not downloaded because of conditional requirement and Galaxy does not build
             try:
                 from keras.models import model_from_json
-                import tensorflow as tf
+                import tensorflow.compat.v1 as tf
+                tf.disable_v2_behavior()
             except Exception:
                 trans.response.status = 400
                 return False
