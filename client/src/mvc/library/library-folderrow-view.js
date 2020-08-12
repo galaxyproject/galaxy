@@ -329,7 +329,7 @@ var FolderRowView = Backbone.View.extend({
                 <td class="mid">
                     <span title="Dataset" class="fa fa-file-o"></span>
                 </td>
-                <td class="mid">
+                <td class="mid lib-folder-checkbox">
                     <input style="margin: 0;" type="checkbox">
                 </td>
                 <td>
