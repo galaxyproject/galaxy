@@ -253,7 +253,7 @@ export default {
             this.$emit("onChange");
         },
         onCreate(contentId) {
-            this.$emit.on("onCreate", contentId);
+            this.$emit("onCreate", contentId);
             this.popoverShow = false;
         },
         onClone() {
