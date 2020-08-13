@@ -63,39 +63,39 @@ class LibraryContentsTestCase(SeleniumTestCase):
     # Fine test locally but the upload doesn't work in Docker compose. I'd think
     # Galaxy must be running so that test-data/1.txt would work but it just doesn't
     # for some reason. https://jenkins.galaxyproject.org/job/jmchilton-selenium/79/artifact/79-test-errors/test_import_dataset_from_path2017100413221507137721/
-    # @selenium_test
-    # def test_import_dataset_from_path(self):
-    #     self._navigate_to_new_library()
-    #     self._assert_num_displayed_items_is(0)
-    #     self.sleep_for(self.wait_types.UX_RENDER)
+    @selenium_test
+    def test_import_dataset_from_path(self):
+        self._navigate_to_new_library()
+        self._assert_num_displayed_items_is(0)
+        self.sleep_for(self.wait_types.UX_RENDER)
 
-    #     # Click the cancel button, make sure modal is hidden.
-    #     self.libraries_dataset_import_from_path()
-    #     self.wait_for_visible(self.navigation.libraries.folder.selectors.import_modal)
-    #     self.wait_for_and_click(self.navigation.libraries.folder.selectors.import_datasets_cancel_button)
-    #     self.wait_for_absent_or_hidden(self.navigation.libraries.folder.selectors.import_modal)
+        # Click the cancel button, make sure modal is hidden.
+        self.libraries_dataset_import_from_path()
+        self.wait_for_visible(self.navigation.libraries.folder.selectors.import_modal)
+        self.wait_for_and_click(self.navigation.libraries.folder.selectors.import_datasets_cancel_button)
+        self.wait_for_absent_or_hidden(self.navigation.libraries.folder.selectors.import_modal)
 
-    #     # Try again... this time actually select some paths.
-    #     self.libraries_dataset_import_from_path()
-    #     textarea = self.wait_for_and_click(self.navigation.libraries.folder.selectors.import_from_path_textarea)
-    #     textarea.send_keys("test-data/1.txt")
-    #     self.sleep_for(self.wait_types.UX_RENDER)
-    #     self.wait_for_and_click(self.navigation.libraries.folder.selectors.import_datasets_ok_button)
-    #     # Let the progress bar disappear...
-    #     self.wait_for_absent_or_hidden(self.navigation.libraries.folder.selectors.import_progress_bar)
-    #     self._assert_num_displayed_items_is(1)
+        # Try again... this time actually select some paths.
+        self.libraries_dataset_import_from_path()
+        textarea = self.wait_for_and_click(self.navigation.libraries.folder.selectors.import_from_path_textarea)
+        textarea.send_keys("test-data/1.txt")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.wait_for_and_click(self.navigation.libraries.folder.selectors.import_datasets_ok_button)
+        # Let the progress bar disappear...
+        self.wait_for_absent_or_hidden(self.navigation.libraries.folder.selectors.import_progress_bar)
+        self._assert_num_displayed_items_is(1)
 
-    #     self.click_label("1.txt")
-    #     self.wait_for_visible(self.navigation.libraries.dataset.selectors.table)
-    #     elements = self.find_elements(self.navigation.libraries.dataset.selectors.table_rows)
-    #     table_as_dict = {}
-    #     for element in elements:
-    #         key = element.find_element_by_tag_name("th").text
-    #         value = element.find_element_by_tag_name("td").text
-    #         table_as_dict[key] = value
+        self.click_label("1.txt")
+        self.wait_for_visible(self.navigation.libraries.dataset.selectors.table)
+        elements = self.find_elements(self.navigation.libraries.dataset.selectors.table_rows)
+        table_as_dict = {}
+        for element in elements:
+            key = element.find_element_by_tag_name("th").text
+            value = element.find_element_by_tag_name("td").text
+            table_as_dict[key] = value
 
-    #     assert table_as_dict["Name"] == "1.txt", table_as_dict
-    #     assert table_as_dict["Genome build"] == "?", table_as_dict
+        assert table_as_dict["Name"] == "1.txt", table_as_dict
+        assert table_as_dict["Genome build"] == "?", table_as_dict
 
     @selenium_test
     def test_show_details(self):
