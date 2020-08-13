@@ -252,8 +252,8 @@ export default {
             this.activeOutputs.toggle(name);
             this.$emit("onChange");
         },
-        onCreate(contentId) {
-            this.$emit("onCreate", contentId);
+        onCreate(contentId, name) {
+            this.$emit("onCreate", contentId, name);
             this.popoverShow = false;
         },
         onClone() {
