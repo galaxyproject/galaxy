@@ -237,7 +237,7 @@ def set_metadata_portable():
                 dataset.set_size()
                 if 'uuid' in context:
                     dataset.dataset.uuid = context['uuid']
-                object_store.update_from_file(dataset.dataset, create=True)
+                object_store.update_from_file(dataset.dataset, file_name=dataset_filename_override, create=True)
                 from galaxy.job_execution.output_collect import collect_extra_files
                 collect_extra_files(object_store, dataset, ".")
                 if galaxy.model.Job.states.ERROR == final_job_state:
@@ -265,11 +265,8 @@ def set_metadata_portable():
                     if context_key in context:
                         context_value = context[context_key]
                         setattr(dataset, context_key, context_value)
-
-                if extended_metadata_collection:
-                    export_store.add_dataset(dataset)
-                else:
-                    cPickle.dump(dataset, open(filename_out, 'wb+'))
+                dataset.dataset.external_filename = None
+                export_store.add_dataset(dataset)
             else:
                 dataset.metadata.to_JSON_dict(filename_out)  # write out results of set_meta
 
