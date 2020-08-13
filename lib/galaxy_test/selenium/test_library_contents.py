@@ -65,7 +65,7 @@ class LibraryContentsTestCase(SeleniumTestCase):
         self.test_import_dataset_from_history()
 
         self.sleep_for(self.wait_types.UX_RENDER)
-        # assert "you should select one" modal
+        # assert "you must select at least one" modal
         assert self.components.libraries.folder.toast_msg.is_displayed
 
         self.components.libraries.folder.delete_btn.wait_for_and_click()
