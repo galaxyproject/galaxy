@@ -32,6 +32,40 @@
                 </div>
             </div>
         </b-row>
+        <b-row class="ml-3 mb-1">
+            <i class="pref-icon pt-1 fa fa-lg fa-sign-out" />
+            <div class="pref-content pr-1">
+                 <a><b v-b-modal.modal-prevent-closing>Delete Account</b></a>
+                <div class="form-text text-muted">
+                    Delete your user account. This will not purge your account immediately.
+                </div>
+                <b-modal
+                id="modal-prevent-closing"
+                ref="modal"
+                title="Type your user email for this account as confirmation."
+                @show="resetModal"
+                @hidden="resetModal"
+                @ok="handleOk"
+                >
+                <p><b>This action cannot be undone. Your account will be permanently deleted, along with the data contained in it.</b></p>
+                <form ref="form" @submit.stop.prevent="handleSubmit">
+                    <b-form-group
+                    :state="nameState"
+                    label="User email"
+                    label-for="Email"
+                    invalid-feedback="Incorrect email"
+                    >
+                    <b-form-input
+                        id="name-input"
+                        v-model="name"
+                        :state="nameState"
+                        required
+                    ></b-form-input>
+                    </b-form-group>
+                </form>
+            </b-modal>
+            </div>
+        </b-row>
         <p class="mt-2">
             You are using <strong>{{ diskUsage }}</strong> of disk space in this Galaxy instance.
             <span v-html="quotaUsageString"></span>
@@ -73,6 +107,9 @@ export default {
             baseUrl: `${getAppRoot()}user`,
             messageVariant: null,
             message: null,
+            name: '',
+            nameState: null,
+            submittedNames: [],
         };
     },
     created() {
@@ -107,6 +144,8 @@ export default {
                         case "logout":
                             activeLinks[key].onclick = this.signOut;
                             break;
+                        // case "delete_user":
+                        //     activeLinks[key].onclick = this.deleteUser;
                         default:
                             activeLinks[key].action = key;
                     }
@@ -178,10 +217,46 @@ export default {
                 },
             });
         },
+        checkFormValidity() {
+            const valid = this.$refs.form.checkValidity()
+            this.nameState = valid
+            return valid
+        },
+        resetModal() {
+            this.name = ''
+            this.nameState = null
+        },
+        handleOk(bvModalEvt) {
+            // Prevent modal from closing
+            bvModalEvt.preventDefault()
+            // Trigger submit handler
+            this.handleSubmit()
+        },
+        async handleSubmit() {
+            const Galaxy = getGalaxyInstance();
+            if (!this.checkFormValidity()) {
+                return false
+            }
+            var value = await axios.get(`${getAppRoot()}api/users/${this.userId}`)
+            console.log(value)
+            var email = JSON.parse(JSON.stringify(value.data)).email
+            var userid = JSON.parse(JSON.stringify(value.data)).id
+            console.log(userid)
+            if (email === this.name){
+                this.nameState = true
+                await fetch(`${getAppRoot()}admin/users_list/?async=false&sort=email&page=1&show_item_checkboxes=true&advanced_search=false&operation=delete&id=${userId}&f-purged=False`, {method: 'POST'});
+                window.location.href = `${getAppRoot()}user/logout?session_csrf_token=${
+                    Galaxy.session_csrf_token
+                }`;
+            }else {
+                this.nameState = false
+                return false
+            }
+        },
     },
 };
 </script>
-
+\
 <style scoped>
 .pref-content {
     width: calc(100% - 3rem);

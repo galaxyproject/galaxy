@@ -97,5 +97,11 @@ export const getUserPreferencesModel = () => {
             icon: "fa-sign-out",
             shouldRender: !!Galaxy.session_csrf_token,
         },
+        // delete_user: {
+        //     title: _l("Delete profile"),
+        //     id: "edit-preferences-delete-user",
+        //     description: _l("Click here to delete your account."),
+        //     icon: "fa-sign-out",
+        // }
     };
 };
