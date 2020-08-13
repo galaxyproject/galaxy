@@ -372,7 +372,7 @@ class DiskObjectStore(ConcreteObjectStore):
         :param extra_dirs: Keys are string, values are directory paths.
         """
         super(DiskObjectStore, self).__init__(config, config_dict)
-        self.file_path = config_dict.get("files_dir") or config.file_path
+        self.file_path = os.path.abspath(config_dict.get("files_dir") or config.file_path)
 
     @classmethod
     def parse_xml(clazz, config_xml):
