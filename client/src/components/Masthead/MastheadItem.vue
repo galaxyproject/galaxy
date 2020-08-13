@@ -118,13 +118,13 @@ export default {
             return document.getElementById("galaxy_main");
         },
     },
-    mounted() {
-        if (this.galaxyIframe) {
+    updated() {
+        if (this.$refs.dropdown && this.galaxyIframe) {
             this.galaxyIframe.addEventListener("load", this.iframeListener);
         }
     },
     destroyed() {
-        if (this.galaxyIframe) {
+        if (this.$refs.dropdown && this.galaxyIframe) {
             this.galaxyIframe.removeEventListener("load", this.iframeListener);
         }
     },
