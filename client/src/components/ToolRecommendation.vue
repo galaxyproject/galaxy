@@ -19,6 +19,7 @@ import * as d3 from "d3";
 import { getAppRoot } from "onload/loadConfig";
 import { getDatatypesMapper } from "components/Datatypes";
 import { getToolPredictions } from "components/Workflow/Editor/modules/services";
+import { getCompatibleRecommendations } from "components/Workflow/Editor/modules/utilities";
 
 export default {
     props: {
@@ -56,43 +57,22 @@ export default {
             getToolPredictions(requestData).then((responsePred) => {
                 getDatatypesMapper().then((datatypesMapper) => {
                     const predData = responsePred.predicted_data;
-                    const extToType = datatypesMapper.datatypesMapping.ext_to_class_name;
-                    const typeToType = datatypesMapper.datatypesMapping.class_to_classes;
                     this.deprecated = predData.is_deprecated;
                     this.deprecatedMessage = predData.message;
                     if (responsePred !== null && predData.children.length > 0) {
                         const filteredData = {};
-                        const compatibleTools = [];
                         const outputDatatypes = predData.o_extensions;
                         const children = predData.children;
-                        const toolMap = new Map();
-                        for (const nameObj of children.entries()) {
-                            const inputDatatypes = nameObj[1].i_extensions;
-                            for (const outT of outputDatatypes.entries()) {
-                                for (const inTool of inputDatatypes.entries()) {
-                                    const child = extToType[outT[1]];
-                                    const parent = extToType[inTool[1]];
-                                    if (
-                                        (typeToType[child] && parent in typeToType[child]) === true ||
-                                        outT[1] === "input" ||
-                                        outT[1] === "_sniff_" ||
-                                        outT[1] === "input_collection"
-                                    ) {
-                                        const toolId = nameObj[1].tool_id;
-                                        if (!toolMap.has(toolId)) {
-                                            toolMap.set(toolId, true);
-                                            compatibleTools.push(nameObj[1]);
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        filteredData.o_extensions = predData.o_extensions;
-                        filteredData.name = predData.name;
-                        filteredData.children = compatibleTools;
+                        const compatibleTools = getCompatibleRecommendations(
+                            children,
+                            outputDatatypes,
+                            datatypesMapper
+                        );
                         if (compatibleTools.length > 0 && this.deprecated === false) {
                             this.showMessage = true;
+                            filteredData.o_extensions = predData.o_extensions;
+                            filteredData.name = predData.name;
+                            filteredData.children = compatibleTools;
                             this.renderD3Tree(filteredData);
                         }
                     }
@@ -214,7 +194,7 @@ export default {
                     d._children = null;
                 }
                 update(d);
-                const tId = d.tool_id;
+                const tId = d.id;
                 if (tId !== undefined && tId !== "undefined" && tId !== null && tId !== "") {
                     document.location.href = `${getAppRoot()}tool_runner?tool_id=${tId}`;
                 }
