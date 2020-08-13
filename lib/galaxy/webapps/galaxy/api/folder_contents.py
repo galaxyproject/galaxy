@@ -251,7 +251,6 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
             else:
                 current_folder_datasets = folder.datasets[offset:offset + limit]
 
-
         for dataset in current_folder_datasets:
             if dataset.deleted:
                 if include_deleted:
