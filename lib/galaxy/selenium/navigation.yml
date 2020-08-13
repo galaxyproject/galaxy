@@ -469,6 +469,8 @@ libraries:
       select_all: '#select-all-checkboxes'
       select_one: '.lib-folder-checkbox'
       download_dropdown: '#download-dropdown-btn'
+      delete_btn: '.toolbtn-bulk-delete'
+      toast_msg: '.toast-message'
       download_zip:
         type: xpath
         selector: '//a[contains(text(), ".zip")]'
