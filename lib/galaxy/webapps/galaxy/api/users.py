@@ -229,7 +229,6 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         self.user_deserializer.deserialize(user_to_update, payload, user=current_user, trans=trans)
         return self.user_serializer.serialize_to_view(user_to_update, view='detailed')
 
-    @web.require_admin
     @expose_api
     def delete(self, trans, id, **kwd):
         """

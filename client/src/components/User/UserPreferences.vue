@@ -35,7 +35,7 @@
         <b-row class="ml-3 mb-1">
             <i class="pref-icon pt-1 fa fa-lg fa-sign-out" />
             <div class="pref-content pr-1">
-                 <a><b v-b-modal.modal-prevent-closing>Delete Account</b></a>
+                 <a href="javascript:void(0)"><b v-b-modal.modal-prevent-closing>Delete Account</b></a>
                 <div class="form-text text-muted">
                     Delete your user account. This will not purge your account immediately.
                 </div>
@@ -240,14 +240,12 @@ export default {
             var value = await axios.get(`${getAppRoot()}api/users/${this.userId}`)
             console.log(value)
             var email = JSON.parse(JSON.stringify(value.data)).email
-            var userid = JSON.parse(JSON.stringify(value.data)).id
-            console.log(userid)
+            var userId = JSON.parse(JSON.stringify(value.data)).id
+            console.log(userId)
             if (email === this.name){
                 this.nameState = true
-                await fetch(`${getAppRoot()}admin/users_list/?async=false&sort=email&page=1&show_item_checkboxes=true&advanced_search=false&operation=delete&id=${userId}&f-purged=False`, {method: 'POST'});
-                window.location.href = `${getAppRoot()}user/logout?session_csrf_token=${
-                    Galaxy.session_csrf_token
-                }`;
+                await fetch(`${getAppRoot()}api/users/${userId}`, {method: 'DELETE'});
+                window.location.href = `${getAppRoot()}`;
             }else {
                 this.nameState = false
                 return false
