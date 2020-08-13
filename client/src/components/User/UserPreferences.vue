@@ -238,7 +238,6 @@ export default {
                 return false
             }
             var value = await axios.get(`${getAppRoot()}api/users/${this.userId}`)
-            console.log(value)
             var email = JSON.parse(JSON.stringify(value.data)).email
             var userId = JSON.parse(JSON.stringify(value.data)).id
             console.log(userId)
