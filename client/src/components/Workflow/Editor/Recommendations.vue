@@ -19,6 +19,7 @@
 
 <script>
 import { getToolPredictions } from "./modules/services";
+import { getCompatibleRecommendations } from "./modules/utilities";
 import LoadingSpan from "components/LoadingSpan";
 import { toSimple } from "./modules/model";
 import _l from "utils/localization";
@@ -120,33 +121,14 @@ export default {
                 this.isDeprecated = predictedData.is_deprecated;
                 this.deprecatedMessage = predictedData.message;
                 if (predictedDataChildren.length > 0) {
-                    const cTools = [];
-                    for (const nameObj of predictedDataChildren.entries()) {
-                        const t = {};
-                        const inputDatatypes = nameObj[1].i_extensions;
-                        for (const outT of outputDatatypes.entries()) {
-                            for (const inTool of inputDatatypes.entries()) {
-                                if (
-                                    this._isSubType(outT[1], inTool[1]) ||
-                                    outT[1] === "input" ||
-                                    outT[1] === "_sniff_" ||
-                                    outT[1] === "input_collection"
-                                ) {
-                                    t.id = nameObj[1].tool_id;
-                                    t.name = nameObj[1].name;
-                                    cTools.push(t);
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    this.compatibleTools = cTools;
+                    this.compatibleTools = getCompatibleRecommendations(
+                        predictedDataChildren,
+                        outputDatatypes,
+                        this.datatypesMapper
+                    );
                 }
                 this.showLoading = false;
             });
-        },
-        _isSubType(child, parent) {
-            return this.datatypesMapper.isSubType(child, parent);
         },
     },
 };
