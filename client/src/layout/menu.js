@@ -1,6 +1,8 @@
 import axios from "axios";
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
+import { CommunicationServerView } from "layout/communication-server-view";
+import { getIdentityProviders } from "components/User/ExternalIdentities/service";
 
 const POST_LOGOUT_URL = "root/login?is_logout_redirect=true";
 
@@ -12,6 +14,12 @@ export function userLogout(logoutAll = false) {
     const galaxy = getGalaxyInstance();
     const session_csrf_token = galaxy.session_csrf_token;
     const url = `${galaxy.root}user/logout?session_csrf_token=${session_csrf_token}&logout_all=${logoutAll}`;
+    
+    var identities;
+    getIdentityProviders()
+        .then((results) => {
+            identities = results;
+        });
     axios
         .get(url)
         .then((response) => {
@@ -20,7 +28,15 @@ export function userLogout(logoutAll = false) {
             }
             // Check if we need to logout of OIDC IDP
             if (galaxy.config.enable_oidc) {
-                return axios.get(`${galaxy.root}authnz/logout`);
+                const email = galaxy.user.attributes.email;
+                var provider;
+                for (var i = 0; i < identities.length; i++) {
+                    if (identities[i].email == email) {
+                        provider = identities[i].provider;
+                        break;
+                    }
+                }
+                return axios.get(`${galaxy.root}authnz/${provider}/logout`);
             } else {
                 // Otherwise pass through the initial logout response
                 return response;
