@@ -41,6 +41,10 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
         response as a separate object providing data for
         breadcrumb path building.
 
+        ..example:
+            limit and offset can be combined. Skip the first two and return five:
+                '?limit=3&offset=5'
+
         :param  folder_id: encoded ID of the folder which
             contents should be library_dataset_dict
         :type   folder_id: encoded string
