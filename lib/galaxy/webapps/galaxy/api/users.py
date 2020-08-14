@@ -250,12 +250,12 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
                 log.debug("Purging user %s" % user_to_update)
                 self.user_manager.purge(user_to_update)
             else:
-                self.user_manager.delete(user_to_update) 
+                self.user_manager.delete(user_to_update)
         else:
             if user == user_to_update:
                 self.user_manager.delete(user)
             else:
-                raise exceptions.InsufficientPermissionsException('You may only delete your own account.', id=id) 
+                raise exceptions.InsufficientPermissionsException('You may only delete your own account.', id=id)
         return self.user_serializer.serialize_to_view(user, view='detailed')
 
     @web.require_admin

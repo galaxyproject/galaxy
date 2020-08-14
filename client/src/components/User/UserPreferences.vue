@@ -35,35 +35,35 @@
         <b-row class="ml-3 mb-1">
             <i class="pref-icon pt-1 fa fa-lg fa-sign-out" />
             <div class="pref-content pr-1">
-                 <a href="javascript:void(0)"><b v-b-modal.modal-prevent-closing>Delete Account</b></a>
+                <a href="javascript:void(0)"><b v-b-modal.modal-prevent-closing>Delete Account</b></a>
                 <div class="form-text text-muted">
                     Delete your user account. This will not purge your account immediately.
                 </div>
                 <b-modal
-                id="modal-prevent-closing"
-                ref="modal"
-                title="Type your user email for this account as confirmation."
-                @show="resetModal"
-                @hidden="resetModal"
-                @ok="handleOk"
+                    id="modal-prevent-closing"
+                    ref="modal"
+                    title="Type your user email for this account as confirmation."
+                    @show="resetModal"
+                    @hidden="resetModal"
+                    @ok="handleOk"
                 >
-                <p><b>This action cannot be undone. Your account will be permanently deleted, along with the data contained in it.</b></p>
-                <form ref="form" @submit.stop.prevent="handleSubmit">
-                    <b-form-group
-                    :state="nameState"
-                    label="User email"
-                    label-for="Email"
-                    invalid-feedback="Incorrect email"
-                    >
-                    <b-form-input
-                        id="name-input"
-                        v-model="name"
-                        :state="nameState"
-                        required
-                    ></b-form-input>
-                    </b-form-group>
-                </form>
-            </b-modal>
+                    <p>
+                        <b
+                            >This action cannot be undone. Your account will be permanently deleted, along with the data
+                            contained in it.</b
+                        >
+                    </p>
+                    <form ref="form" @submit.stop.prevent="handleSubmit">
+                        <b-form-group
+                            :state="nameState"
+                            label="User email"
+                            label-for="Email"
+                            invalid-feedback="Incorrect email"
+                        >
+                            <b-form-input id="name-input" v-model="name" :state="nameState" required></b-form-input>
+                        </b-form-group>
+                    </form>
+                </b-modal>
             </div>
         </b-row>
         <p class="mt-2">
@@ -107,7 +107,7 @@ export default {
             baseUrl: `${getAppRoot()}user`,
             messageVariant: null,
             message: null,
-            name: '',
+            name: "",
             nameState: null,
             submittedNames: [],
         };
@@ -218,36 +218,34 @@ export default {
             });
         },
         checkFormValidity() {
-            const valid = this.$refs.form.checkValidity()
-            this.nameState = valid
-            return valid
+            const valid = this.$refs.form.checkValidity();
+            this.nameState = valid;
+            return valid;
         },
         resetModal() {
-            this.name = ''
-            this.nameState = null
+            this.name = "";
+            this.nameState = null;
         },
         handleOk(bvModalEvt) {
             // Prevent modal from closing
-            bvModalEvt.preventDefault()
+            bvModalEvt.preventDefault();
             // Trigger submit handler
-            this.handleSubmit()
+            this.handleSubmit();
         },
         async handleSubmit() {
-            const Galaxy = getGalaxyInstance();
             if (!this.checkFormValidity()) {
-                return false
+                return false;
             }
-            var value = await axios.get(`${getAppRoot()}api/users/${this.userId}`)
-            var email = JSON.parse(JSON.stringify(value.data)).email
-            var userId = JSON.parse(JSON.stringify(value.data)).id
-            console.log(userId)
-            if (email === this.name){
-                this.nameState = true
-                await fetch(`${getAppRoot()}api/users/${userId}`, {method: 'DELETE'});
+            var value = await axios.get(`${getAppRoot()}api/users/${this.userId}`);
+            var email = JSON.parse(JSON.stringify(value.data)).email;
+            var userId = JSON.parse(JSON.stringify(value.data)).id;
+            if (email === this.name) {
+                this.nameState = true;
+                await fetch(`${getAppRoot()}api/users/${userId}`, { method: "DELETE" });
                 window.location.href = `${getAppRoot()}`;
-            }else {
-                this.nameState = false
-                return false
+            } else {
+                this.nameState = false;
+                return false;
             }
         },
     },
