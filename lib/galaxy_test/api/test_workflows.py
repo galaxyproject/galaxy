@@ -1133,7 +1133,7 @@ test_data:
 
     def test_run_subworkflow_simple(self):
         with self.dataset_populator.test_history() as history_id:
-            self._run_jobs(WORKFLOW_NESTED_SIMPLE, test_data="""
+            run_response = self._run_jobs(WORKFLOW_NESTED_SIMPLE, test_data="""
 outer_input:
   value: 1.bed
   type: File
@@ -1141,6 +1141,12 @@ outer_input:
 
             content = self.dataset_populator.get_history_dataset_content(history_id)
             self.assertEqual("chrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\nchrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n", content)
+            steps = self.workflow_populator.get_invocation(run_response.invocation_id)['steps']
+            assert sum(1 for step in steps if step['subworkflow_invocation_id'] is None) == 3
+            subworkflow_invocation_id = [step['subworkflow_invocation_id'] for step in steps if step['subworkflow_invocation_id']][0]
+            subworkflow_invocation = self.workflow_populator.get_invocation(subworkflow_invocation_id)
+            assert subworkflow_invocation['steps'][0]['workflow_step_label'] == 'inner_input'
+            assert subworkflow_invocation['steps'][1]['workflow_step_label'] == 'random_lines'
 
     @skip_without_tool("random_lines1")
     def test_run_subworkflow_runtime_parameters(self):
