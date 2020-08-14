@@ -10,16 +10,19 @@ export class WorkflowRunModel {
         this.runData = runData;
         this.name = runData.name;
         this.workflowResourceParameters = runData.workflow_resource_parameters;
+        this.hasWorkflowResourceParameters = !_.isEmpty(this.workflowResourceParameters);
         this.historyId = runData.history_id;
         this.workflowId = runData.id;
 
         this.hasUpgradeMessages = runData.has_upgrade_messages;
-        this.hasStepVersionChanges = runData.step_version_changes && runData.step_version_changes.length > 0;
+        this.hasStepVersionChanges = !_.isEmpty(runData.step_version_changes);
 
         this.steps = [];
         this.links = [];
         this.parms = [];
         this.wpInputs = {};
+        let hasOpenToolSteps = false;
+        let hasReplacementParametersInToolForm = false;
 
         _.each(runData.steps, (step, i) => {
             var icon = WorkflowIcons[step.step_type];
@@ -130,6 +133,7 @@ export class WorkflowRunModel {
         _.each(this.steps, (step, i) => {
             _.each(this.parms[i], (input, name) => {
                 _handleWorkflowParameter(input.value, (wp_input) => {
+                    hasReplacementParametersInToolForm = true;
                     wp_input.links.push(step);
                     input.wp_linked = true;
                     input.type = "text";
@@ -166,6 +170,7 @@ export class WorkflowRunModel {
                         (input.value && input.value.__class__ == "RuntimeValue" && !input.step_linked)
                     ) {
                         step.collapsed = false;
+                        hasOpenToolSteps = true;
                     }
                     if (is_runtime_value) {
                         input.value = null;
@@ -180,6 +185,8 @@ export class WorkflowRunModel {
                 });
             }
         });
+        this.hasOpenToolSteps = hasOpenToolSteps;
+        this.hasReplacementParametersInToolForm = hasReplacementParametersInToolForm;
     }
 }
 

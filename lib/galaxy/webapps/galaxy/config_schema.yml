@@ -2436,6 +2436,38 @@ mapping:
           When false, the most recently added compatible item in the history will
           be used for each "Set at Runtime" input, independent of others in the workflow.
 
+      simplified_workflow_run_ui:
+        type: str
+        default: 'prefer'
+        enum: ['off', 'prefer']
+        required: false
+        desc: |
+          If set to 'off' by default, always use the traditional workflow form that renders
+          all steps in the GUI and serializes the tool state of all steps during
+          invocation. Set to 'prefer' to default to a simplified workflow UI that
+          only renders the inputs if possible (the workflow must have no disconnected
+          runtime inputs and not replacement parameters within tool steps). In the
+          future 'force' may be added an option for Galaskio-style servers that should
+          only render simplified workflows.
+
+      simplified_workflow_run_ui_target_history:
+        type: str
+        default: 'current'
+        enum: ['current', 'new']
+        required: false
+        desc: |
+          When the simplified workflow run form is rendered, should the invocation outputs
+          be sent to the 'current' history or a 'new' history.
+
+      simplified_workflow_run_ui_job_cache:
+        type: str
+        default: 'off'
+        enum: ['on', 'off']
+        required: false
+        desc: |
+          When the simplified workflow run form is rendered, should the invocation use job
+          caching. This isn't a boolean so an option for 'show-selection' can be added later.
+
       myexperiment_target_url:
         type: str
         default: www.myexperiment.org:80

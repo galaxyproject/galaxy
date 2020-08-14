@@ -246,25 +246,27 @@ def build_workflow_run_configs(trans, workflow, payload):
 
     run_configs = []
     unexpanded_param_map = _normalize_step_parameters(workflow.steps, raw_parameters, legacy=legacy, already_normalized=already_normalized)
-    expanded_params, expanded_param_keys = expand_workflow_inputs(unexpanded_param_map)
-    for index, param_map in enumerate(expanded_params):
-        history = _get_target_history(trans, workflow, payload, expanded_param_keys, index)
-        inputs = payload.get('inputs', None)
-        inputs_by = payload.get('inputs_by', None)
-        # New default is to reference steps by index of workflow step
-        # which is intrinsic to the workflow and independent of the state
-        # of Galaxy at the time of workflow import.
-        default_inputs_by = 'step_index|step_uuid'
-        if inputs is None:
-            # Default to legacy behavior - read ds_map and reference steps
-            # by unencoded step id (a raw database id).
-            inputs = payload.get('ds_map', {})
-            if legacy:
-                default_inputs_by = 'step_id|step_uuid'
-            inputs_by = inputs_by or default_inputs_by
-        else:
-            inputs = inputs or {}
+    unexpanded_inputs = payload.get('inputs', None)
+    inputs_by = payload.get('inputs_by', None)
+    # New default is to reference steps by index of workflow step
+    # which is intrinsic to the workflow and independent of the state
+    # of Galaxy at the time of workflow import.
+    default_inputs_by = 'step_index|step_uuid'
+    inputs_by = inputs_by or default_inputs_by
+
+    if unexpanded_inputs is None:
+        # Default to legacy behavior - read ds_map and reference steps
+        # by unencoded step id (a raw database id).
+        unexpanded_inputs = payload.get('ds_map', {})
+        if legacy:
+            default_inputs_by = 'step_id|step_uuid'
         inputs_by = inputs_by or default_inputs_by
+    else:
+        unexpanded_inputs = unexpanded_inputs or {}
+
+    expanded_params, expanded_param_keys, expanded_inputs = expand_workflow_inputs(unexpanded_param_map, unexpanded_inputs)
+    for index, (param_map, inputs) in enumerate(zip(expanded_params, expanded_inputs)):
+        history = _get_target_history(trans, workflow, payload, expanded_param_keys, index)
         if inputs or not already_normalized:
             normalized_inputs = _normalize_inputs(workflow.steps, inputs, inputs_by)
         else:
