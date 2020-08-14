@@ -224,7 +224,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         editing_someone_else = current_user != user_to_update
         is_admin = trans.api_inherit_admin or self.user_manager.is_admin(current_user)
         if editing_someone_else and not is_admin:
-            raise exceptions.InsufficientPermissionsException('you are not allowed to update that user', id=id)
+            raise exceptions.InsufficientPermissionsException('You are not allowed to update that user', id=id)
 
         self.user_deserializer.deserialize(user_to_update, payload, user=current_user, trans=trans)
         return self.user_serializer.serialize_to_view(user_to_update, view='detailed')
@@ -234,6 +234,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         """
         DELETE /api/users/{id}
         delete the user with the given ``id``
+        Functionality restricted based on admin status
 
         :param id: the encoded id of the user to delete
         :type  id: str
@@ -241,13 +242,20 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         :param purge: (optional) if True, purge the user
         :type  purge: bool
         """
-        user = self.get_user(trans, id)
-        purge = util.string_as_bool(kwd.get('purge', False))
-        if purge:
-            log.debug("Purging user %s" % user)
-            self.user_manager.purge(user)
+        user = trans.user
+        user_to_update = self.user_manager.by_id(self.decode_id(id))
+        if trans.user_is_admin:
+            purge = util.string_as_bool(kwd.get('purge', False))
+            if purge:
+                log.debug("Purging user %s" % user_to_update)
+                self.user_manager.purge(user_to_update)
+            else:
+                self.user_manager.delete(user_to_update) 
         else:
-            self.user_manager.delete(user)
+            if user == user_to_update:
+                self.user_manager.delete(user)
+            else:
+                raise exceptions.InsufficientPermissionsException('You may only delete your own account.', id=id) 
         return self.user_serializer.serialize_to_view(user, view='detailed')
 
     @web.require_admin

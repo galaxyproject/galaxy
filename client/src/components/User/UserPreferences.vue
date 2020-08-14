@@ -253,7 +253,6 @@ export default {
     },
 };
 </script>
-\
 <style scoped>
 .pref-content {
     width: calc(100% - 3rem);
