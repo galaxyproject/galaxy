@@ -12,7 +12,7 @@ const baseKarmaConfig = require("./karma.config.base");
 // Complete list of unit tests
 const defaultFiles = [
     // component/module tests
-    "**/*.test.js",
+    "**/*.mocha.js",
     // pre-existing rules definition tests
     "../tests/mocha/tests/rules_tests.js",
 ];
