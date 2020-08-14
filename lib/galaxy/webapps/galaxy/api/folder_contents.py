@@ -243,7 +243,7 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
                 #         subfolder.api_type = 'folder'
                 #         content_items.append( subfolder )
 
-        datasets_size = int(len(folder.datasets))
+        datasets_size = len(folder.datasets)
         if offset is None or limit is None:
             current_folder_datasets = folder.datasets
 
