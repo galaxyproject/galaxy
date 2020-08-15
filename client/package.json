@@ -80,7 +80,7 @@
     "styleguide": "vue-styleguidist server",
     "styleguide:build": "vue-styleguidist build",
     "test": "yarn run test-mocha && yarn run test-qunit && yarn run jest",
-    "jest": "jest --config tests/jest.config.js",
+    "jest": "jest --config tests/jest/jest.config.js",
     "test-watch": "yarn run test-mocha --no-single-run",
     "test-qunit": "karma start tests/karma/karma.config.qunit.js",
     "test-mocha": "karma start tests/karma/karma.config.mocha.js",
