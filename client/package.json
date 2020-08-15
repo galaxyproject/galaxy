@@ -96,6 +96,7 @@
     "amdi18n-loader": "^0.9.3",
     "autoprefixer": "^9.8.0",
     "axios-mock-adapter": "^1.18.1",
+    "babel-core": "^7.0.0-bridge.0",
     "babel-eslint": "^10.1.0",
     "babel-jest": "^26.3.0",
     "babel-loader": "^8.1.0",
