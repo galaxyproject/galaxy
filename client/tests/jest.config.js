@@ -1,3 +1,5 @@
+const path = require("path"); 
+
 // For a detailed explanation regarding each configuration property, visit:
 // https://jestjs.io/docs/en/configuration.html
 
@@ -77,7 +79,8 @@ module.exports = {
     ],
 
     modulePaths: [
-      "<rootDir>/galaxy/src/"
+      "<rootDir>/src/",
+      "<rootDir>/node_modules/"
     ],
 
     // A map from regular expressions to module names or to arrays of module names that allow to stub out resources with a single module
@@ -114,12 +117,12 @@ module.exports = {
     // restoreMocks: false,
 
     // The root directory that Jest should scan for tests and modules within
-    // rootDir: undefined,
+    rootDir: path.join(__dirname, "../"),
 
     // A list of paths to directories that Jest should use to search for files in
-    // roots: [
-    //   "<rootDir>"
-    // ],
+    roots: [
+      "<rootDir>/src"
+    ],
 
     // Allows you to use a custom runner instead of Jest's default test runner
     // runner: "jest-runner",
