@@ -919,7 +919,7 @@ class JobWrapper(HasResourceParameters):
             metadata_strategy_override = None
         if job.tasks:
             metadata_strategy_override = "directory"
-        self.external_output_metadata = get_metadata_compute_strategy(self.app.config, job.id, metadata_strategy_override=metadata_strategy_override)
+        self.external_output_metadata = get_metadata_compute_strategy(self.app.config, job.id, metadata_strategy_override=metadata_strategy_override, tool_id=job.tool_id)
 
         self.__commands_in_new_shell = True
         self.__user_system_pwent = None

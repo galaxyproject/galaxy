@@ -112,8 +112,7 @@ class BaseObjectstoreUploadTest(UploadTestDatatypeDataTestCase):
         temp_directory = cls._test_driver.mkdtemp()
         cls.object_stores_parent = temp_directory
         cls.object_store_config_path = os.path.join(temp_directory, "object_store_conf.xml")
-        # This doesn't quite work yet, fails with extra_files_path
-        # config["metadata_strategy"] = "extended"
+        config["metadata_strategy"] = "extended"
         config["outpus_to_working_dir"] = True
         config["retry_metadata_internally"] = False
         config["object_store_store_by"] = "uuid"
