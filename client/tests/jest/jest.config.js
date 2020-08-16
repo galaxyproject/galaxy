@@ -57,7 +57,7 @@ module.exports = {
     // globalTeardown: undefined,
 
     // A set of global variables that need to be available in all test environments
-    // globals: {},
+    globals: {"__webpack_public_path__": ""},
 
     // The maximum amount of workers used to run your tests. Can be specified as % or a number. E.g. maxWorkers: 10% will use 10% of your CPU amount + 1 as the maximum worker number. maxWorkers: 2 will use a maximum of 2 workers.
     // maxWorkers: "50%",
@@ -75,6 +75,8 @@ module.exports = {
     // A map from regular expressions to module names or to arrays of module names that allow to stub out resources with a single module
     moduleNameMapper: {
         "\\.(css|scss)$": "<rootDir>/tests/jest/__mocks__/styleMock.js",
+        "utils/localization": "<rootDir>/tests/jest/__mocks__/localizationMock.js",
+        "^config$": "<rootDir>/tests/jest/__mocks__/configMock.js",
     },
 
     // An array of regexp pattern strings, matched against all module paths before considered 'visible' to the module loader
