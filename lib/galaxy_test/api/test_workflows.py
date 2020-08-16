@@ -1145,8 +1145,9 @@ outer_input:
             assert sum(1 for step in steps if step['subworkflow_invocation_id'] is None) == 3
             subworkflow_invocation_id = [step['subworkflow_invocation_id'] for step in steps if step['subworkflow_invocation_id']][0]
             subworkflow_invocation = self.workflow_populator.get_invocation(subworkflow_invocation_id)
-            assert subworkflow_invocation['steps'][0]['workflow_step_label'] == 'inner_input'
-            assert subworkflow_invocation['steps'][1]['workflow_step_label'] == 'random_lines'
+            # inner_input should be step 0, random_lines should be step 1, but step order gets lost on python < 3.6
+            assert [step for step in subworkflow_invocation['steps'] if step['workflow_step_label'] == 'inner_input']
+            assert [step for step in subworkflow_invocation['steps'] if step['workflow_step_label'] == 'random_lines']
 
     @skip_without_tool("random_lines1")
     def test_run_subworkflow_runtime_parameters(self):
