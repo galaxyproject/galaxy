@@ -52,7 +52,7 @@
 
 <script>
 import Vue from "vue";
-import { VBPopoverPlugin, VBTooltipPlugin } from 'bootstrap-vue'
+import { VBPopoverPlugin, VBTooltipPlugin } from "bootstrap-vue";
 import { BNavItem, BNavItemDropdown, BDropdownItem } from "bootstrap-vue";
 
 Vue.use(VBPopoverPlugin);
