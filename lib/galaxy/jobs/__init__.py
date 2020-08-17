@@ -1290,7 +1290,7 @@ class JobWrapper(HasResourceParameters):
                     dataset.extension = 'data'
                 try:
                     self.__update_output(job, dataset)
-                except:
+                except Exception:
                     # Failure to update the output of a failed job should not prevent completion of the failure method
                     log.exception("(%s) fail(): Failed to update job output dataset with id: %s", self.get_id_tag(),
                                   dataset.dataset.id)
