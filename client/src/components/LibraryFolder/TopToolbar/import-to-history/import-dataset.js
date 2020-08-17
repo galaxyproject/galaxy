@@ -7,6 +7,7 @@ import Backbone from "backbone";
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import { updateProgress } from "../delete-selected";
+import { templateAddingDatasetsProgressBar } from "../templates/adding-datasets-progress-bar";
 
 var ImportDatasetModal = Backbone.View.extend({
     options: null,
@@ -117,9 +118,8 @@ var ImportDatasetModal = Backbone.View.extend({
             historyItem.source = "library_folder";
             items_to_import.push(historyItem);
         }
-        this.initChainCallControl({
+        this.initChainCallControlToHistory({
             length: items_to_import.length,
-            action: "to_history",
             history_name: history_name,
         });
         // set the used history as current so user will see the last one
@@ -128,30 +128,10 @@ var ImportDatasetModal = Backbone.View.extend({
         this.chainCallImportingIntoHistory(items_to_import, history_name);
     },
 
-    initChainCallControl: function (options) {
-        const Galaxy = getGalaxyInstance();
+    initChainCallControlToHistory: function (options) {
         var template;
-        switch (options.action) {
-            case "adding_datasets":
-                template = this.templateAddingDatasetsProgressBar();
-                this.modal.$el.find(".modal-body").html(
-                    template({
-                        folder_name: this.options.folder_name,
-                    })
-                );
-                break;
-            case "deleting_datasets":
-                template = this.templateDeletingItemsProgressBar();
-                this.modal.$el.find(".modal-body").html(template());
-                break;
-            case "to_history":
-                template = this.templateImportIntoHistoryProgressBar();
-                this.modal.$el.find(".modal-body").html(template({ history_name: options.history_name }));
-                break;
-            default:
-                Galaxy.emit.error("Wrong action specified.", "datalibs");
-                break;
-        }
+        template = this.templateImportIntoHistoryProgressBar();
+        this.modal.$el.find(".modal-body").html(template({ history_name: options.history_name }));
 
         // var progress_bar_tmpl = this.templateAddingDatasetsProgressBar();
         // this.modal.$el.find( '.modal-body' ).html( progress_bar_tmpl( { folder_name : this.options.folder_name } ) );
@@ -253,19 +233,6 @@ var ImportDatasetModal = Backbone.View.extend({
                     or create new:
                     <input type="text" name="history_name" value=""
                         placeholder="name of the new history" style="width:50%;" />
-                </div>
-            </div>`
-        );
-    },
-    templateAddingDatasetsProgressBar: function () {
-        return _.template(
-            `<div class="import_text">
-                Adding selected datasets to library folder <b><%= _.escape(folder_name) %></b>
-            </div>
-            <div class="progress">
-                <div class="progress-bar progress-bar-import" role="progressbar" aria-valuenow="0" aria-valuemin="0"
-                    aria-valuemax="100" style="width: 00%;">
-                    <span class="completion_span">0% Complete</span>
                 </div>
             </div>`
         );

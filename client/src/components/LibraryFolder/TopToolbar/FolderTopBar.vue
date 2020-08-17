@@ -69,15 +69,6 @@
                             </div>
                         </div>
                     </div>
-                    <a
-                        v-else
-                        title="Add Datasets to Current Folder"
-                        class="btn btn-secondary add-library-items add-library-items-datasets mr-1"
-                        href="#folders/<%= id %>/import/history"
-                        role="button"
-                    >
-                        <span class="fa fa-plus"></span> Datasets
-                    </a>
                     <div class="dropdown mr-1">
                         <button
                             type="button"

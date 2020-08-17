@@ -8,6 +8,7 @@ import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import { updateProgress } from "./delete-selected";
 import mod_select from "mvc/ui/ui-select";
+import { templateAddingDatasetsProgressBar } from "./templates/adding-datasets-progress-bar";
 
 var AddDatasets = Backbone.View.extend({
     options: null,
@@ -300,9 +301,8 @@ var AddDatasets = Backbone.View.extend({
                     paths.push(`"${selected_nodes[i].li_attr.full_path}"`);
                 }
             }
-            this.initChainCallControl({
+            this.initChainCallControlAddingDatasets({
                 length: paths.length,
-                action: "adding_datasets",
             });
             if (selection_type === "folder") {
                 const full_source = `${options.source}_folder`;
@@ -476,9 +476,8 @@ var AddDatasets = Backbone.View.extend({
                     valid_paths.push(trimmed);
                 }
             }
-            this.initChainCallControl({
+            this.initChainCallControlAddingDatasets({
                 length: valid_paths.length,
-                action: "adding_datasets",
             });
             this.chainCallImportingFolders({
                 paths: valid_paths,
@@ -736,37 +735,20 @@ var AddDatasets = Backbone.View.extend({
                 }
                 items_to_add.push(folder_item);
             }
-            this.initChainCallControl({
+            this.initChainCallControlAddingDatasets({
                 length: items_to_add.length,
-                action: "adding_datasets",
             });
             this.chainCallAddingHdas(items_to_add);
         }
     },
-    initChainCallControl: function (options) {
-        const Galaxy = getGalaxyInstance();
+    initChainCallControlAddingDatasets: function (options) {
         var template;
-        switch (options.action) {
-            case "adding_datasets":
-                template = this.templateAddingDatasetsProgressBar();
-                this.modal.$el.find(".modal-body").html(
-                    template({
-                        folder_name: this.options.folder_name,
-                    })
-                );
-                break;
-            case "deleting_datasets":
-                template = this.templateDeletingItemsProgressBar();
-                this.modal.$el.find(".modal-body").html(template());
-                break;
-            case "to_history":
-                template = this.templateImportIntoHistoryProgressBar();
-                this.modal.$el.find(".modal-body").html(template({ history_name: options.history_name }));
-                break;
-            default:
-                Galaxy.emit.error("Wrong action specified.", "datalibs");
-                break;
-        }
+        template = templateAddingDatasetsProgressBar();
+        this.modal.$el.find(".modal-body").html(
+            template({
+                folder_name: this.options.folder_name,
+            })
+        );
 
         // var progress_bar_tmpl = this.templateAddingDatasetsProgressBar();
         // this.modal.$el.find( '.modal-body' ).html( progress_bar_tmpl( { folder_name : this.options.folder_name } ) );
@@ -775,19 +757,7 @@ var AddDatasets = Backbone.View.extend({
         this.options.chain_call_control.total_number = options.length;
         this.options.chain_call_control.failed_number = 0;
     },
-    templateAddingDatasetsProgressBar: function () {
-        return _.template(
-            `<div class="import_text">
-                Adding selected datasets to library folder <b><%= _.escape(folder_name) %></b>
-            </div>
-            <div class="progress">
-                <div class="progress-bar progress-bar-import" role="progressbar" aria-valuenow="0" aria-valuemin="0"
-                    aria-valuemax="100" style="width: 00%;">
-                    <span class="completion_span">0% Complete</span>
-                </div>
-            </div>`
-        );
-    },
+
     /**
      * Take the array of hdas and create a request for each.
      * Call them in chain and update progress bar in between each.
