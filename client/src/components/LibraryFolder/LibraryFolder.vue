@@ -15,6 +15,8 @@
                 :selected="selected"
                 :metadata="folder_metadata"
             ></FolderTopBar>
+            <a id="first_folder_item" class="btn btn-secondary btn-sm" :href="parentFolder">..</a>
+
             <b-table
                 id="folder_list_body"
                 striped
@@ -33,7 +35,7 @@
                 show-empty
             >
                 <template v-slot:empty="">
-                    <div class="empty-folder-text">
+                    <div class="empty-folder-message">
                         This folder is either empty or you do not have proper access permissions to see the contents. If
                         you expected something to show up please consult the
                         <a href="https://galaxyproject.org/data-libraries/#permissions" target="_blank">
@@ -130,7 +132,12 @@
                     </div>
                 </template>
                 <template v-slot:cell(update_time)="row">
-                    <UtcDate v-if="row.item.update_time" :date="row.item.update_time" custom-format="'YYYY-MM-DD- HH:mm a'" mode="elapsed" />
+                    <UtcDate
+                        v-if="row.item.update_time"
+                        :date="row.item.update_time"
+                        custom-format="'YYYY-MM-DD- HH:mm a'"
+                        mode="elapsed"
+                    />
                 </template>
                 <template v-slot:cell(is_unrestricted)="row">
                     <font-awesome-icon v-if="row.item.is_unrestricted" title="Unrestricted dataset" icon="globe" />
@@ -288,6 +295,14 @@ export default {
     computed: {
         rows() {
             return this.folderContents.length;
+        },
+        parentFolder() {
+            const path = this.folder_metadata.full_path;
+            if (path.length === 1) {
+                return `${this.root}library/list/`;
+            } else {
+                return `${this.root}library/folders/${path[path.length - 2][0]}`;
+            }
         },
     },
     created() {
