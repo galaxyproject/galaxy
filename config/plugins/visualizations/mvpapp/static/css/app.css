@@ -1,0 +1,99 @@
+
+body {
+    padding-top: 70px;
+}
+.navbar-fixed-top {
+    background-color: #9e9f9f;
+}
+
+.selected-peptide {
+    background-color: lightblue;
+}
+
+.shadow {
+    -webkit-box-shadow: 1px 1px 2px 3px #ccc;  /* Safari 3-4, iOS 4.0.2 - 4.2, Android 2.3+ */
+    -moz-box-shadow:    1px 1px 2px 3px #ccc;  /* Firefox 3.5 - 3.6 */
+    box-shadow:         1px 1px 2px 3px #ccc;  /* Opera 10.5, IE 9, Firefox 4+, Chrome 6+, iOS 5 */
+    margin: 4px;
+    padding: 4px;
+}
+
+.used-for-filtering {
+    background-color: darkgrey;
+    color: #afd9ee;
+}
+
+.fixed-height-panel {
+    height: 500px;
+    overflow-y: scroll;
+}
+
+.aa {
+    font-family: monospace;
+    font-size: 14pt;
+    border-radius: 5px;
+}
+
+.aa_mod {
+    border-radius:10px 10px 10px 10px;
+    border:solid 1px darkslategray;
+    background-color: darkslategray;
+    color: #cccccc;
+    cursor: pointer;
+}
+
+.aa_header {
+    margin-right: 10px;
+}
+
+
+div .score_name {
+    margin: 5px;
+}
+
+div .selected{
+    background-color: #1c94c4;
+}
+
+a:link {
+    text-decoration: none;
+}
+
+a:visited {
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: none;
+}
+
+a:active {
+    text-decoration: none;
+}
+
+path.fdr_path_passed {
+    stroke: black;
+    fill: none;
+    stroke-width: 2px;
+
+}
+
+path.fdr_path_failed {
+    stroke: orange;
+    fill: none;
+    stroke-width: 2px;
+
+}
+
+.panel_test {
+    background-color: red;
+}
+
+.glyphicon-question-sign {
+    cursor: pointer;
+}
+
+.modal-body {
+    max-height: calc(100vh - 212px);
+    overflow-y: auto;
+}
