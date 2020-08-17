@@ -26,8 +26,8 @@ describe("InstallationSettings", () => {
                 toolshedUrl: "toolshedUrl",
             },
         });
-        expect(wrapper.find(".title").text()).to.equal("Installing 'name'");
-        expect(wrapper.find(".description").text()).to.equal("long_description");
-        expect(wrapper.find(".revision").text()).to.equal("owner rev. changesetRevision");
+        expect(wrapper.find(".title").text()).toBe("Installing 'name'");
+        expect(wrapper.find(".description").text()).toBe("long_description");
+        expect(wrapper.find(".revision").text()).toBe("owner rev. changesetRevision");
     });
 });

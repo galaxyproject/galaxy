@@ -39,16 +39,16 @@ describe("InstalledList", () => {
                 RepositoryDetails: true,
             },
         });
-        expect(wrapper.find(".loading-message").text()).to.equal("Loading installed repositories...");
+        expect(wrapper.find(".loading-message").text()).toBe("Loading installed repositories...");
         await Vue.nextTick();
-        expect(wrapper.find(".installed-message").text()).to.equal("2 repositories installed on this instance.");
+        expect(wrapper.find(".installed-message").text()).toBe("2 repositories installed on this instance.");
         const names = wrapper.findAll(".name");
-        expect(names.length).to.equal(2);
-        expect(names.at(0).text()).to.equal("name_0");
-        expect(names.at(1).text()).to.equal("name_1");
+        expect(names.length).toBe(2);
+        expect(names.at(0).text()).toBe("name_0");
+        expect(names.at(1).text()).toBe("name_1");
         const links = wrapper.findAll("a");
-        expect(links.length).to.equal(3);
+        expect(links.length).toBe(3);
         const badge = links.at(1).find(".badge");
-        expect(badge.text()).to.equal("Newer version available!");
+        expect(badge.text()).toBe("Newer version available!");
     });
 });
