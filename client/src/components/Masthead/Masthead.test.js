@@ -75,6 +75,10 @@ describe("Masthead.vue", () => {
             frame: scratchbook,
         };
 
+        const attachElement = document.createElement("div");
+        if (document.body) {
+            document.body.appendChild(attachElement);
+        }
         wrapper = mount(Masthead, {
             propsData: {
                 mastheadState,
@@ -82,7 +86,7 @@ describe("Masthead.vue", () => {
                 appRoot: "prefix/",
             },
             localVue,
-            attachToDocument: true,
+            attachTo: attachElement,
         });
     });
 
