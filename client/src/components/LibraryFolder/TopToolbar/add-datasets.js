@@ -754,7 +754,7 @@ var AddDatasets = Backbone.View.extend({
     },
     initChainCallControlAddingDatasets: function (options) {
         var template;
-        template = templateAddingDatasetsProgressBar();
+        template = this.templateAddingDatasetsProgressBar();
         this.modal.$el.find(".modal-body").html(
             template({
                 folder_name: this.options.folder_name,

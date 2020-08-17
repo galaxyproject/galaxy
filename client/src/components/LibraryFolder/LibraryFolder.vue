@@ -15,7 +15,7 @@
                 :selected="selected"
                 :metadata="folder_metadata"
             ></FolderTopBar>
-            <a id="first_folder_item" class="btn btn-secondary btn-sm" :href="parentFolder">..</a>
+            <a class="btn btn-secondary btn-sm btn_open_folder" :href="parentFolder">..</a>
 
             <b-table
                 id="folder_list_body"
@@ -89,14 +89,14 @@
                     <div v-if="row.item.editMode">
                         <textarea
                             v-if="row.item.isNewFolder"
-                            class="form-control"
+                            class="form-control input_folder_description"
                             :ref="'description' + row.item.id"
                             v-model="row.item.description"
                             rows="3"
                         ></textarea>
                         <textarea
                             v-else
-                            class="form-control"
+                            class="form-control input_folder_description"
                             :ref="'description' + row.item.id"
                             :value="row.item.description"
                             rows="3"
@@ -106,6 +106,7 @@
                         <div class="description-field" v-if="getMessage(row.item)">
                             <div v-if="getMessage(row.item).length > 40 && !expandedMessage.includes(row.item.id)">
                                 <span
+                                    class="shrinked-description"
                                     :title="getMessage(row.item)"
                                     v-html="linkify(getMessage(row.item).substring(0, 40))"
                                 >
@@ -179,7 +180,7 @@
                                 @click="toggleEditMode(row.item)"
                                 data-toggle="tooltip"
                                 data-placement="top"
-                                class="primary-button btn-sm permission_folder_btn"
+                                class="primary-button btn-sm permission_folder_btn edit_folder_btn"
                                 :title="'Edit ' + row.item.name"
                             >
                                 <font-awesome-icon icon="pencil-alt" />
