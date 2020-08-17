@@ -11,6 +11,47 @@ from galaxy.web.formatting import expand_pretty_datetime_format
 TestData = namedtuple('TestData', ('key', 'expected', 'loaded'))
 
 
+@pytest.fixture(scope='module')
+def appconfig():
+    return config.GalaxyAppConfiguration()
+
+
+@pytest.fixture
+def mock_config_file(monkeypatch):
+    # Set this to return None to force the creation of base config directories
+    # in _set_config_directories(). Used to test the values of these directories only.
+    monkeypatch.setattr(config, 'find_config_file', lambda x: None)
+
+
+def test_root(appconfig):
+    assert appconfig.root == os.path.abspath('.')
+
+
+def test_common_base_config(appconfig):
+    assert appconfig.shed_tools_dir == os.path.join(appconfig.data_dir, 'shed_tools')
+    assert appconfig.sample_config_dir == os.path.join(appconfig.root, 'lib', 'galaxy', 'config', 'sample')
+
+
+def test_base_config_if_running_from_source(monkeypatch, mock_config_file):
+    # Simulated condition: running from source, config_file is None.
+    monkeypatch.setattr(config, 'running_from_source', True)
+    appconfig = config.GalaxyAppConfiguration()
+    assert not appconfig.config_file
+    assert appconfig.config_dir == os.path.join(appconfig.root, 'config')
+    assert appconfig.data_dir == os.path.join(appconfig.root, 'database')
+    assert appconfig.managed_config_dir == appconfig.config_dir
+
+
+def test_base_config_if_running_not_from_source(monkeypatch, mock_config_file):
+    # Simulated condition: running not from source, config_file is None.
+    monkeypatch.setattr(config, 'running_from_source', False)
+    appconfig = config.GalaxyAppConfiguration()
+    assert not appconfig.config_file
+    assert appconfig.config_dir == os.getcwd()
+    assert appconfig.data_dir == os.path.join(appconfig.config_dir, 'data')
+    assert appconfig.managed_config_dir == os.path.join(appconfig.data_dir, 'config')
+
+
 def listify_strip(value):
     return listify(value, do_strip=True)
 
@@ -155,54 +196,6 @@ class ExpectedValues:
 
     def get_expected_amqp_internal_connection(self, value):
         return 'sqlalchemy+sqlite:///{}/control.sqlite?isolation_level=IMMEDIATE'.format(self._config.data_dir)
-
-
-@pytest.fixture
-def mock_config_file(monkeypatch):
-    # Set this to return None to force the creation of base config directories
-    # in _set_config_directories(). Used to test the values of these directories only.
-    monkeypatch.setattr(config, 'find_config_file', lambda x: None)
-
-
-@pytest.fixture
-def mock_config_running_from_source(monkeypatch, mock_config_file):
-    # Simulated condition: running from source, config_file is None.
-    monkeypatch.setattr(config, 'running_from_source', True)
-
-
-@pytest.fixture
-def mock_config_running_not_from_source(monkeypatch, mock_config_file):
-    # Simulated condition: running not from source, config_file is None.
-    monkeypatch.setattr(config, 'running_from_source', False)
-
-
-@pytest.fixture
-def appconfig(monkeypatch):
-    monkeypatch.setattr(config.GalaxyAppConfiguration, '_override_tempdir', lambda a, b: None)
-    return config.GalaxyAppConfiguration()
-
-
-def test_root(appconfig):
-    assert appconfig.root == os.path.abspath('.')
-
-
-def test_base_config_if_running_from_source(mock_config_running_from_source, appconfig):
-    assert not appconfig.config_file
-    assert appconfig.config_dir == os.path.join(appconfig.root, 'config')
-    assert appconfig.data_dir == os.path.join(appconfig.root, 'database')
-    assert appconfig.managed_config_dir == appconfig.config_dir
-
-
-def test_base_config_if_running_not_from_source(mock_config_running_not_from_source, appconfig):
-    assert not appconfig.config_file
-    assert appconfig.config_dir == os.getcwd()
-    assert appconfig.data_dir == os.path.join(appconfig.config_dir, 'data')
-    assert appconfig.managed_config_dir == os.path.join(appconfig.data_dir, 'config')
-
-
-def test_common_base_config(appconfig):
-    assert appconfig.shed_tools_dir == os.path.join(appconfig.data_dir, 'shed_tools')
-    assert appconfig.sample_config_dir == os.path.join(appconfig.root, 'lib', 'galaxy', 'config', 'sample')
 
 
 def get_config_data():
