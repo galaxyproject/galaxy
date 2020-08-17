@@ -53,9 +53,6 @@ export default {
         }
     },
     props: {
-        builder: {
-            required: true,
-        },
         prefix: {
             type: String,
             default: "galaxy_rules_",
