@@ -41,6 +41,7 @@
             :error-count="errorCount"
         />
         <progress-bar v-else note="Loading job summary..." :loading="true" />
+        <WorkflowInvocationDetails v-bind:invocation="invocation"/>
     </div>
 </template>
 <script>
@@ -49,6 +50,8 @@ import Vue from "vue";
 
 import { cancelWorkflowScheduling } from "./services";
 import { getRootFromIndexLink } from "onload";
+import WorkflowInvocationDetails from "./WorkflowInvocationDetails";
+
 import JOB_STATES_MODEL from "mvc/history/job-states-model";
 import mixin from "components/JobStates/mixin";
 import ProgressBar from "components/ProgressBar";
@@ -62,6 +65,7 @@ Vue.use(BootstrapVue);
 export default {
     components: {
         ProgressBar,
+        WorkflowInvocationDetails,
     },
     mixins: [mixin],
     props: {
@@ -86,6 +90,9 @@ export default {
     },
     computed: {
         ...mapGetters(["getInvocationById", "getInvocationJobsSummaryById"]),
+        invocation: function () {
+            return this.getInvocationById(this.invocationId);
+        },
         invocationState: function () {
             const invocation = this.getInvocationById(this.invocationId);
             const state = invocation ? invocation.state : "new";
