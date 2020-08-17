@@ -3,6 +3,7 @@ import axios from "axios";
 import DatasetCollectionDialog from "./DatasetCollectionDialog.vue";
 import { setupTestGalaxy } from "qunit/test-app";
 import SelectionDialog from "./SelectionDialog.vue";
+import flushPromises from "flush-promises";
 
 import { shallowMount, createLocalVue } from "@vue/test-utils";
 
@@ -21,10 +22,6 @@ describe("DatasetCollectionDialog.vue", () => {
         axiosMock = new MockAdapter(axios);
         setupTestGalaxy();
         localVue = createLocalVue();
-        wrapper = shallowMount(DatasetCollectionDialog, {
-            propsData: mockOptions,
-            localVue: localVue,
-        });
     });
 
     afterEach(() => {
@@ -38,27 +35,31 @@ describe("DatasetCollectionDialog.vue", () => {
             .onGet(`/api/histories/${mockOptions.history}/contents?type=dataset_collection`)
             .reply(200, collectionsResponse);
 
-        expect(wrapper.find(SelectionDialog).is(SelectionDialog)).to.equals(true);
-        expect(wrapper.vm.optionsShow).to.equals(false);
+        wrapper = shallowMount(DatasetCollectionDialog, {
+            propsData: mockOptions,
+            localVue: localVue,
+        });
 
-        await localVue.nextTick();
-        await localVue.nextTick();
-        await localVue.nextTick();
+        expect(wrapper.find(SelectionDialog)).toBeTruthy();
+        expect(wrapper.vm.optionsShow).toBe(false);
+
+        await flushPromises();
 
         // why not shown?
-        expect(wrapper.vm.errorMessage).to.equals(null);
-        expect(wrapper.vm.optionsShow).to.equals(true);
+        expect(wrapper.vm.errorMessage).toBeNull();
+        expect(wrapper.vm.optionsShow).toBe(true);
     });
 
     it("error message set on dataset collection fetch problems", async () => {
-        expect(wrapper.vm.errorMessage).to.equals(null);
+        expect(wrapper.vm.errorMessage).toBeNull();
         axiosMock
             .onGet(`/api/histories/${mockOptions.history}/contents?type=dataset_collection`)
             .reply(403, { err_msg: "Bad error" });
-        await localVue.nextTick();
-        await localVue.nextTick();
-        await localVue.nextTick();
-        await localVue.nextTick();
-        expect(wrapper.vm.errorMessage).to.equals("Bad error");
+        wrapper = shallowMount(DatasetCollectionDialog, {
+            propsData: mockOptions,
+            localVue: localVue,
+        });
+        await flushPromises();
+        expect(wrapper.vm.errorMessage).toBe("Bad error");
     });
 });
