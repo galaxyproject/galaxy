@@ -7,7 +7,6 @@ import Backbone from "backbone";
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import { updateProgress } from "../delete-selected";
-import { templateAddingDatasetsProgressBar } from "../templates/adding-datasets-progress-bar";
 
 var ImportDatasetModal = Backbone.View.extend({
     options: null,

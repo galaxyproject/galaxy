@@ -8,7 +8,6 @@ import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import { updateProgress } from "./delete-selected";
 import mod_select from "mvc/ui/ui-select";
-import { templateAddingDatasetsProgressBar } from "./templates/adding-datasets-progress-bar";
 
 var AddDatasets = Backbone.View.extend({
     options: null,
@@ -586,7 +585,19 @@ var AddDatasets = Backbone.View.extend({
             },
         });
     },
-
+    templateAddingDatasetsProgressBar: function () {
+        return _.template(
+            `<div class="import_text">
+                Adding selected datasets to library folder <b><%= _.escape(folder_name) %></b>
+            </div>
+            <div class="progress">
+                <div class="progress-bar progress-bar-import" role="progressbar" aria-valuenow="0" aria-valuemin="0"
+                    aria-valuemax="100" style="width: 00%;">
+                    <span class="completion_span">0% Complete</span>
+                </div>
+            </div>`
+        );
+    },
     templateAddFilesFromHistory: function () {
         return _.template(
             `<div id="add_files_modal">
