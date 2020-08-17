@@ -53,7 +53,7 @@
                         <span aria-hidden="true">&check;</span>
                     </template>
                     <template v-else>
-                        <span aria-hidden="true">&nbsp;</span>
+                        <span class="lib-folder-checkbox" aria-hidden="true">&nbsp;</span>
                     </template>
                 </template>
                 <!-- Name -->
