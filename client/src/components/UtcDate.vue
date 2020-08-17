@@ -22,13 +22,11 @@ export default {
         },
         customFormat: {
             type: String,
-        }
+        },
     },
     created() {
-        if (this.customFormat)
-            this.processedDate = moment(this.date, this.customFormat).format()
-        else
-            this.processedDate = this.date
+        if (this.customFormat) this.processedDate = moment(this.date, this.customFormat).format();
+        else this.processedDate = this.date;
     },
     computed: {
         elapsedTime: function () {

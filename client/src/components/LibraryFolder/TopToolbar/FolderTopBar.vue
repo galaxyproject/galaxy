@@ -102,7 +102,12 @@
                         class="dropdown dataset-manipulation mr-1"
                         v-if="dataset_manipulation"
                     >
-                        <button type="button" id="download-dropdown-btn" class="primary-button dropdown-toggle" data-toggle="dropdown">
+                        <button
+                            type="button"
+                            id="download-dropdown-btn"
+                            class="primary-button dropdown-toggle"
+                            data-toggle="dropdown"
+                        >
                             <font-awesome-icon icon="download" />
                             Download <span class="caret"></span>
                         </button>
