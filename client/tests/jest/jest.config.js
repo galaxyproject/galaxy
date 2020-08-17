@@ -73,10 +73,12 @@ module.exports = {
     modulePaths: ["<rootDir>/src/", "<rootDir>/node_modules/", "<rootDir>/tests/"],
 
     // A map from regular expressions to module names or to arrays of module names that allow to stub out resources with a single module
+    // Some of these should turn into true mocks, instead of this module name mapping hack.
     moduleNameMapper: {
-        "\\.(css|scss)$": "<rootDir>/tests/jest/__mocks__/styleMock.js",
-        "utils/localization": "<rootDir>/tests/jest/__mocks__/localizationMock.js",
-        "^config$": "<rootDir>/tests/jest/__mocks__/configMock.js",
+        "\\.(css|scss)$": "<rootDir>/tests/jest/__mocks__/style.js",
+        "^config$": "<rootDir>/tests/jest/__mocks__/config.js",
+        "utils/localization$": "<rootDir>/tests/jest/__mocks__/localization.js",
+        "viz/trackster$": "<rootDir>/tests/jest/__mocks__/trackster.js",
     },
 
     // An array of regexp pattern strings, matched against all module paths before considered 'visible' to the module loader
