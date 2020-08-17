@@ -587,7 +587,7 @@ class Registry:
         # initialization.
         if data.has_data():
             data.set_size()
-        data.init_meta(copy_from=data)
+            data.init_meta(copy_from=data)
         return data
 
     def load_datatype_converters(self, toolbox, installed_repository_dict=None, deactivate=False, use_cached=False):
