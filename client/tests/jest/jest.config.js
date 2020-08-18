@@ -70,7 +70,7 @@ module.exports = {
     // ],
 
     // An array of file extensions your modules use
-    moduleFileExtensions: ["js", "json", "vue"],
+    moduleFileExtensions: ["js", "json", "vue", "yml"],
 
     modulePaths: ["<rootDir>/src/", "<rootDir>/node_modules/", "<rootDir>/tests/"],
 
@@ -118,7 +118,7 @@ module.exports = {
     rootDir: path.join(__dirname, "../../"),
 
     // A list of paths to directories that Jest should use to search for files in
-    roots: ["<rootDir>/src"],
+    roots: ["<rootDir>/src", "<rootDir>/tests/jest/standalone/"],
 
     // Allows you to use a custom runner instead of Jest's default test runner
     // runner: "jest-runner",
@@ -172,6 +172,7 @@ module.exports = {
         [`(${modulesToTransform}).+\\.js$`]: "vue-jest",
         ".*\\.(vue)$": "vue-jest",
         "^.+\\.js$": "babel-jest",
+        "\\.yml$": "yaml-jest",
     },
 
     // An array of regexp pattern strings that are matched against all source file paths, matched files will skip transformation
