@@ -15,7 +15,7 @@ describe("Collection.vue", () => {
 
     it("does render FTP is site set", async () => {
         const { wrapper } = mountWithApp(Collection);
-        expect(wrapper.find("#btn-ftp").isVisible()).toBe(true);
+        expect(wrapper.find("#btn-ftp").element).toBeVisible();
     });
 
     it("doesn't render FTP is no site set", async () => {

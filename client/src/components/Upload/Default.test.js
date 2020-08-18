@@ -21,7 +21,7 @@ describe("Default.vue", () => {
 
     it("does render FTP is site set", async () => {
         const { wrapper, localVue } = mountWithApp(Default);
-        expect(wrapper.find("#btn-ftp").isVisible()).toBe(true);
+        expect(wrapper.find("#btn-ftp").element).toBeVisible();
         wrapper.find("#btn-ftp").trigger("click");
         await localVue.nextTick();
         // TODO: test popover appears... not sure best way to do this...

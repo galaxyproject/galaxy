@@ -49,12 +49,12 @@ describe("ToolsView/ToolsView.vue", () => {
             .at(0);
         const modalId = "modal--" + infoButton.attributes().index;
         const modal = wrapper.find("#" + modalId);
-        expect(modal.isVisible() === false).toBeTruthy();
+        expect(modal.element).not.toBeVisible();
 
         infoButton.trigger("click");
         await flushPromises();
 
-        expect(modal.isVisible()).toBeTruthy();
+        expect(modal.element).toBeVisible();
     });
 
     it("citation should open on click", async () => {
@@ -64,13 +64,13 @@ describe("ToolsView/ToolsView.vue", () => {
             .at(0);
         const citation = wrapper.find("#" + infoButton.attributes("aria-controls").replace(/ /g, "_"));
 
-        expect(citation.isVisible() === false).toBeTruthy();
+        expect(citation.element).not.toBeVisible();
         expect(infoButton.attributes("aria-expanded") === "false").toBeTruthy();
 
         infoButton.trigger("click");
         await flushPromises();
 
         expect(infoButton.attributes("aria-expanded") === "true").toBeTruthy();
-        expect(citation.isVisible()).toBeTruthy();
+        expect(citation.element).toBeVisible();
     });
 });
