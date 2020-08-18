@@ -71,14 +71,15 @@ class HistoryDatasetStateTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
 
     def _assert_buttons(self, hid, expected_buttons):
         item_button = self.history_panel_item_component(hid=hid)
-        for i in range(len(expected_buttons)):
+        for i, expected_button in enumerate(expected_buttons):
 
-            # ensure old tooltip expired
+            # ensure old tooltip expired,
+            # no tooltip appeared before the 1st element
             if i > 0:
                 previous_button = item_button["%s_button" % expected_buttons[i - 1]].wait_for_visible()
                 if previous_button.get_attribute("aria-describedby") is not None:
                     # wait for tooltip to disappear
                     self.components._.tooltip_balloon.wait_for_absent()
 
-            button = item_button["%s_button" % expected_buttons[i]]
-            self.assert_tooltip_text(button.wait_for_visible(), BUTTON_TOOLTIPS[expected_buttons[i]])
+            button = item_button["%s_button" % expected_button]
+            self.assert_tooltip_text(button.wait_for_visible(), BUTTON_TOOLTIPS[expected_button])
