@@ -5,6 +5,7 @@ import { Model } from "./model";
 import { UrlTracker } from "./utilities";
 import { Services } from "./services";
 import { mount, createLocalVue } from "@vue/test-utils";
+import { getNewAttachNode } from "jest/helpers";
 
 const mockOptions = {
     callback: () => {},
@@ -132,13 +133,9 @@ describe("DataDialog.vue", () => {
             "root";
         });
         const localVue = createLocalVue();
-        const attachElement = document.createElement("div");
-        if (document.body) {
-            document.body.appendChild(attachElement);
-        }
         wrapper = mount(DataDialog, {
             propsData: mockOptions,
-            attachTo: attachElement,
+            attachTo: getNewAttachNode(),
             localVue,
         });
     });

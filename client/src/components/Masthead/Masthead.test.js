@@ -1,6 +1,7 @@
 import { default as Masthead, __RewireAPI__ as rewire } from "./Masthead.vue";
 import { mount, createLocalVue } from "@vue/test-utils";
 import Scratchbook from "layout/scratchbook";
+import { getNewAttachNode } from "jest/helpers";
 
 describe("Masthead.vue", () => {
     let wrapper;
@@ -75,10 +76,6 @@ describe("Masthead.vue", () => {
             frame: scratchbook,
         };
 
-        const attachElement = document.createElement("div");
-        if (document.body) {
-            document.body.appendChild(attachElement);
-        }
         wrapper = mount(Masthead, {
             propsData: {
                 mastheadState,
@@ -86,7 +83,7 @@ describe("Masthead.vue", () => {
                 appRoot: "prefix/",
             },
             localVue,
-            attachTo: attachElement,
+            attachTo: getNewAttachNode(),
         });
     });
 

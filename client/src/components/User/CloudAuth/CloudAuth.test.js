@@ -11,6 +11,7 @@ import BootstrapVue from "bootstrap-vue";
 
 // test data
 import listCredentials from "./testdata/listCredentials.json";
+import { getNewAttachNode } from "jest/helpers";
 
 const localVue = createLocalVue();
 localVue.use(BootstrapVue);
@@ -29,12 +30,7 @@ describe("CloudAuth component", () => {
     beforeEach(async () => {
         const creds = listCredentials.map(Credential.create);
         stub = sinon.stub(mockSvc, "listCredentials").resolves(creds);
-        const attachElement = document.createElement("div");
-        if (document.body) {
-            document.body.appendChild(attachElement);
-        }
-
-        wrapper = shallowMount(CloudAuth, { localVue, attachTo: attachElement });
+        wrapper = shallowMount(CloudAuth, { localVue, attachTo: getNewAttachNode() });
         await flushPromises();
     });
 

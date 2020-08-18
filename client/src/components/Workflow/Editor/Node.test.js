@@ -1,8 +1,16 @@
 import Vue from "vue";
 import { mount } from "@vue/test-utils";
 import Node from "./Node";
+import { setupTestGalaxy } from "qunit/test-app";
+import { getNewAttachNode } from "jest/helpers";
 
 describe("Node", () => {
+    beforeEach(() => {
+        // TODO: Move setupTestGalaxy to a single pretest setup, mock, or fix all the test requiring it.
+        setupTestGalaxy();
+    });
+
+    setupTestGalaxy();
     it("test attributes", async () => {
         const wrapper = mount(Node, {
             propsData: {
@@ -13,17 +21,18 @@ describe("Node", () => {
                 getManager: () => {},
                 getCanvasManager: () => {},
             },
+            attachTo: getNewAttachNode(),
         });
         const icon = wrapper.findAll("i");
-        expect(icon.at(2).classes()).to.contain("fa-wrench");
+        expect(icon.at(2).classes()).toEqual(expect.arrayContaining(["fa-wrench"]));
         const toolLinks = wrapper.findAll("i");
-        expect(toolLinks.length).to.equal(3);
+        expect(toolLinks.length).toBe(3);
         wrapper.setProps({ type: "subworkflow" });
         await Vue.nextTick();
-        expect(icon.at(2).classes()).to.contain("fa-sitemap");
+        expect(icon.at(2).classes()).toEqual(expect.arrayContaining(["fa-sitemap"]));
         const subworkflowLinks = wrapper.findAll("i");
-        expect(subworkflowLinks.length).to.equal(2);
+        expect(subworkflowLinks.length).toBe(2);
         const workflowTitle = wrapper.find(".node-title");
-        expect(workflowTitle.text()).to.equal("node-name");
+        expect(workflowTitle.text()).toBe("node-name");
     });
 });

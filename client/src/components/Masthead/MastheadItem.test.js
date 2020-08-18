@@ -1,5 +1,6 @@
 import MastheadItem from "./MastheadItem.vue";
 import { mount, createLocalVue } from "@vue/test-utils";
+import { getNewAttachNode } from "jest/helpers";
 
 describe("Masthead.vue", () => {
     let wrapper;
@@ -17,18 +18,13 @@ describe("Masthead.vue", () => {
             menu: menu,
         };
 
-        const attachElement = document.createElement("div");
-        if (document.body) {
-            document.body.appendChild(attachElement);
-        }
-
         return mount(MastheadItem, {
             propsData: {
                 tab,
                 activeTab: active,
             },
             localVue,
-            attachTo: attachElement,
+            attachTo: getNewAttachNode(),
         });
     }
 

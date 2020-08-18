@@ -2,6 +2,7 @@ import _ from "underscore";
 import Backbone from "backbone";
 import "utils/uploadbox";
 import { mount, createLocalVue } from "@vue/test-utils";
+import { getNewAttachNode } from "jest/helpers";
 
 export function mountWithApp(component, options = {}, propsData_ = {}) {
     const app = _.defaults(options, {
@@ -33,14 +34,10 @@ export function mountWithApp(component, options = {}, propsData_ = {}) {
     });
     const propsData = _.defaults(propsData_, { app });
     const localVue = createLocalVue();
-    const attachElement = document.createElement("div");
-    if (document.body) {
-        document.body.appendChild(attachElement);
-    }
     const wrapper = mount(component, {
         propsData,
         localVue,
-        attachTo: attachElement,
+        attachTo: getNewAttachNode(),
         stubs: {
             select2: true,
         },
