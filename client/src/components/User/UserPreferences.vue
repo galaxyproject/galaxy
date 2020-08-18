@@ -33,7 +33,7 @@
             </div>
         </b-row>
         <b-row class="ml-3 mb-1">
-            <i class="pref-icon pt-1 fa fa-lg fa-sign-out" />
+            <i class="pref-icon pt-1 fa fa-lg fa-radiation" />
             <div class="pref-content pr-1">
                 <a href="javascript:void(0)"><b v-b-modal.modal-prevent-closing>Delete Account</b></a>
                 <div class="form-text text-muted">
@@ -85,6 +85,7 @@ import _l from "utils/localization";
 import axios from "axios";
 import QueryStringParsing from "utils/query-string-parsing";
 import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
+import "@fortawesome/fontawesome-svg-core";
 
 Vue.use(BootstrapVue);
 
