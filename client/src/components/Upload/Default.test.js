@@ -1,5 +1,5 @@
 import Default from "./Default.vue";
-import { mountWithApp } from "./test_helpers";
+import { mountWithApp } from "./testHelpers";
 import { __RewireAPI__ as rewire } from "./Default";
 import Backbone from "backbone";
 

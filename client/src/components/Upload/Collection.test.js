@@ -1,5 +1,5 @@
 import Collection from "./Collection.vue";
-import { mountWithApp } from "./test_helpers";
+import { mountWithApp } from "./testHelpers";
 
 describe("Collection.vue", () => {
     it("loads with correct initial state", async () => {
