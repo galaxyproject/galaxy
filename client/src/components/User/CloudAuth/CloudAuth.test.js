@@ -29,10 +29,12 @@ describe("CloudAuth component", () => {
     beforeEach(async () => {
         const creds = listCredentials.map(Credential.create);
         stub = sinon.stub(mockSvc, "listCredentials").resolves(creds);
-        /* https://github.com/vuejs/vue-test-utils/issues/829 for more info
-         * regarding the sync option used here.
-         */
-        wrapper = shallowMount(CloudAuth, { sync: false, localVue });
+        const attachElement = document.createElement("div");
+        if (document.body) {
+            document.body.appendChild(attachElement);
+        }
+
+        wrapper = shallowMount(CloudAuth, { localVue, attachTo: attachElement });
         await flushPromises();
     });
 
@@ -44,10 +46,10 @@ describe("CloudAuth component", () => {
 
     describe("initialization", () => {
         it("should render the initial list", () => {
-            assert(wrapper);
-            assert(wrapper.contains(CloudAuthItem));
-            assert(wrapper.vm.items.length == 2);
-            assert(wrapper.vm.filteredItems.length == 2);
+            expect(wrapper).toBeTruthy();
+            expect(wrapper.findComponent(CloudAuthItem).exists()).toBeTruthy();
+            expect(wrapper.vm.items.length == 2).toBeTruthy();
+            expect(wrapper.vm.filteredItems.length == 2).toBeTruthy();
         });
     });
 
@@ -57,35 +59,35 @@ describe("CloudAuth component", () => {
 
             wrapper.vm.filter = "aws";
             results = wrapper.vm.filteredItems;
-            assert(wrapper.contains(CloudAuthItem));
-            assert(results.length == 1, `Wrong number of items: ${results.length}`);
+            expect(wrapper.findComponent(CloudAuthItem).exists()).toBeTruthy();
+            expect(results.length == 1).toBeTruthy();
 
             wrapper.vm.filter = "azure";
             results = wrapper.vm.filteredItems;
-            assert(results.length == 1, `Wrong number of items: ${results.length}`);
+            expect(results.length == 1).toBeTruthy();
 
             wrapper.vm.filter = "";
             results = wrapper.vm.filteredItems;
-            assert(results.length == 2, `Wrong number of items: ${results.length}`);
+            expect(results.length == 2).toBeTruthy();
         });
     });
 
     describe("create button", () => {
         it("clicking create button should add a blank key", () => {
             let results = wrapper.vm.filteredItems;
-            assert(wrapper.contains(CloudAuthItem));
-            assert(results.length == 2, `Wrong number of items: ${results.length}`);
+            expect(wrapper.findComponent(CloudAuthItem).exists()).toBeTruthy();
+            expect(results.length == 2).toBeTruthy();
 
             const button = wrapper.find("button[name=createNewKey]");
-            assert(button);
+            expect(button).toBeTruthy();
             button.trigger("click");
 
             results = wrapper.vm.filteredItems;
-            assert(results.length == 3, `Wrong number of items: ${results.length}`);
+            expect(results.length == 3).toBeTruthy();
 
             const blank = results.find((i) => i.id == null);
-            assert(blank, "missing blank key");
-            assert(blank.id == null);
+            expect(blank).toBeTruthy();
+            expect(blank.id == null).toBeTruthy();
         });
     });
 });
