@@ -242,21 +242,20 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         :param purge: (optional) if True, purge the user
         :type  purge: bool
         """
-        user = trans.user
         user_to_update = self.user_manager.by_id(self.decode_id(id))
         if trans.user_is_admin:
             purge = util.string_as_bool(kwd.get('purge', False))
             if purge:
-                log.debug("Purging user %s" % user_to_update)
+                log.debug("Purging user %s", user_to_update)
                 self.user_manager.purge(user_to_update)
             else:
                 self.user_manager.delete(user_to_update)
         else:
-            if user == user_to_update:
-                self.user_manager.delete(user)
+            if trans.user == user_to_update:
+                self.user_manager.delete(user_to_update)
             else:
                 raise exceptions.InsufficientPermissionsException('You may only delete your own account.', id=id)
-        return self.user_serializer.serialize_to_view(user, view='detailed')
+        return self.user_serializer.serialize_to_view(user_to_update, view='detailed')
 
     @web.require_admin
     @expose_api
