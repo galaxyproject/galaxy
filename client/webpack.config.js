@@ -67,6 +67,11 @@ module.exports = (env = {}, argv = {}) => {
                     loader: "vue-loader",
                 },
                 {
+                         test: /\.mjs$/,
+                         include: /node_modules/,
+                         type: 'javascript/auto'
+                },
+                {
                     test: /\.js$/,
                     /*
                      * Babel transpile excludes for:

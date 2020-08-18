@@ -17,7 +17,7 @@
         <div v-if="Object.keys(invocation.output_collections).length > 0">
             <details><summary><b>Invocation Output Collections</b></summary>
                 <div v-for="output in invocation.output_collections" v-bind:key="output.id">
-                    {{output}}
+                    <WorkflowInvocationOutputs v-bind:dataset_collection_id="output.id"/>
                 </div>
             </details>
         </div>
@@ -37,7 +37,6 @@ import Vue from "vue";
 import {Dataset} from "components/History/ContentItem/Dataset";
 import WorkflowInvocationOutputs from "./WorkflowInvocationOutputs";
 import ListMixin from "components/History/ListMixin";
-import {legacyNavigationPlugin} from "components/plugins/legacyNavigation";
 
 import { getAppRoot } from "onload/loadConfig";
 import axios from "axios"
@@ -48,7 +47,6 @@ import { mapGetters, mapActions } from "vuex";
 const getUrl = (path) => getRootFromIndexLink() + path;
 
 Vue.use(BootstrapVue);
-Vue.use(legacyNavigationPlugin);
 
 export default {
     mixins: [ListMixin],
@@ -58,22 +56,6 @@ export default {
     props: {
         invocation: {
             required: true,
-        }
-    },
-    data () {
-        return {
-            datasetById: {}
-        }
-    },
-    methods: {
-        getHDA: function (history_dataset_id) {
-           const data = axios.get(
-            `${getAppRoot()}api/datasets/${history_dataset_id}`
-            ).then(response => {
-                this.datasetById[history_dataset_id] = response.data
-                console.log(response.data);
-                return response.data
-            })
         }
     },
 }
