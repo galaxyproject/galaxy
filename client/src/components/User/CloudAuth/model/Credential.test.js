@@ -3,43 +3,43 @@ import { Credential } from "./Credential";
 describe("Credential model", () => {
     describe("basic model props", () => {
         it("should exist", () => {
-            assert(Credential);
+            expect(Credential).toBeTruthy();
         });
 
         it("should build with defaults", () => {
             const instance = new Credential();
-            assert(instance);
+            expect(instance).toBeTruthy();
         });
 
         it("should build with props", () => {
             const description = "i am the test description";
             const props = { description };
             const instance = new Credential(props);
-            assert(instance);
-            assert(instance.description == description);
+            expect(instance).toBeTruthy();
+            expect(instance.description == description).toBeTruthy();
         });
 
         it("default config object should be AWS", () => {
             const instance = new Credential();
-            assert("role_arn" in instance.config, "Missing role_arn prop");
-            assert(instance.config.constructor.name == "AwsConfig");
+            expect("role_arn" in instance.config).toBeTruthy();
+            expect(instance.config.constructor.name == "AwsConfig").toBeTruthy();
         });
 
         it("should load a different config object given the right provider", () => {
             const provider = "azure";
             const props = { provider };
             const instance = new Credential(props);
-            assert(instance.provider == provider);
-            assert(instance.config.constructor.name == "AzureConfig");
+            expect(instance.provider == provider).toBeTruthy();
+            expect(instance.config.constructor.name == "AzureConfig").toBeTruthy();
         });
 
         it("should dynamically switch config objects as resourceProvider is changed", () => {
             const instance = new Credential();
-            assert(instance.provider == "aws", "Should default to AWS config' ");
+            expect(instance.provider == "aws").toBeTruthy();
             instance.resourceProvider = "azure";
-            assert(instance.config.constructor.name == "AzureConfig", "Should have been AzureConfig");
+            expect(instance.config.constructor.name == "AzureConfig").toBeTruthy();
             instance.resourceProvider = "aws";
-            assert(instance.config.constructor.name == "AwsConfig", "Should be AWS Config again");
+            expect(instance.config.constructor.name == "AwsConfig").toBeTruthy();
         });
     });
 
@@ -47,28 +47,28 @@ describe("Credential model", () => {
         it("should flag as dirty when a prop is changed", () => {
             const instance = new Credential();
             instance.description = "foo";
-            assert(instance.dirty);
+            expect(instance.dirty).toBeTruthy();
         });
 
         it("should flag as clean when a prop is restored", () => {
             const instance = new Credential();
             instance.description = "foo";
-            assert(instance.dirty);
+            expect(instance.dirty).toBeTruthy();
             instance.description = "";
-            assert(!instance.dirty);
+            expect(!instance.dirty).toBeTruthy();
         });
 
         it("should not flag as dirty when a transient prop is changed", () => {
             const instance = new Credential();
             instance.loading = true;
-            assert(!instance.dirty);
+            expect(!instance.dirty).toBeTruthy();
         });
     });
 
     describe("validation", () => {
         it("a new object should be invalid", () => {
             const instance = new Credential();
-            assert(!instance.valid);
+            expect(!instance.valid).toBeTruthy();
         });
 
         it("it should become valid when props are assigned", () => {
@@ -76,7 +76,7 @@ describe("Credential model", () => {
             instance.authn_id = "floob";
             instance.resourceProvider = "aws";
             instance.config.role_arn = "abc";
-            assert(instance.valid);
+            expect(instance.valid).toBeTruthy();
         });
 
         it("it should be valid when initialized with correct props", () => {
@@ -88,7 +88,7 @@ describe("Credential model", () => {
                 },
             };
             const instance = new Credential(props);
-            assert(instance.valid);
+            expect(instance.valid).toBeTruthy();
         });
 
         it("should be invalid when bad props assigned", () => {
@@ -100,7 +100,7 @@ describe("Credential model", () => {
                 },
             };
             const instance = new Credential(props);
-            assert(!instance.valid);
+            expect(!instance.valid).toBeTruthy();
         });
     });
 });
