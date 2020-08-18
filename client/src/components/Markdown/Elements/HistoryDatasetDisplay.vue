@@ -1,46 +1,48 @@
 <template>
-    <b-card class="w-50 mx-auto" body-class="p-0">
-        <b-card-header v-if="!embedded">
-            <span class="float-right">
-                <b-button
-                    :href="downloadUrl"
-                    variant="link"
-                    size="sm"
-                    role="button"
-                    title="Download Dataset"
-                    type="button"
-                    class="py-0 px-1"
-                    v-b-tooltip.hover
-                >
-                    <span class="fa fa-download" />
-                </b-button>
-                <b-button
-                    :href="importUrl"
-                    role="button"
-                    variant="link"
-                    title="Import Dataset"
-                    type="button"
-                    class="py-0 px-1"
-                    v-b-tooltip.hover
-                >
-                    <span class="fa fa-file-import" />
-                </b-button>
-            </span>
-            <span>
-                <span>Dataset:</span>
-                <span class="font-weight-light">{{ datasetName }}</span>
-            </span>
-        </b-card-header>
-        <b-card-body>
-            <LoadingSpan v-if="loading" message="Loading Dataset" />
-            <div v-else class="content-height">
-                <pre><code class="code-wrap">{{ itemContent.item_data }}</code></pre>
-                <b-link v-if="itemContent.truncated" :href="itemContent.item_url">
-                    Show More...
-                </b-link>
-            </div>
-        </b-card-body>
-    </b-card>
+    <div class="w-50 p-2 float-left">
+        <b-card body-class="p-0">
+            <b-card-header v-if="!embedded">
+                <span class="float-right">
+                    <b-button
+                        :href="downloadUrl"
+                        variant="link"
+                        size="sm"
+                        role="button"
+                        title="Download Dataset"
+                        type="button"
+                        class="py-0 px-1"
+                        v-b-tooltip.hover
+                    >
+                        <span class="fa fa-download" />
+                    </b-button>
+                    <b-button
+                        :href="importUrl"
+                        role="button"
+                        variant="link"
+                        title="Import Dataset"
+                        type="button"
+                        class="py-0 px-1"
+                        v-b-tooltip.hover
+                    >
+                        <span class="fa fa-file-import" />
+                    </b-button>
+                </span>
+                <span>
+                    <span>Dataset:</span>
+                    <span class="font-weight-light">{{ datasetName }}</span>
+                </span>
+            </b-card-header>
+            <b-card-body>
+                <LoadingSpan v-if="loading" message="Loading Dataset" />
+                <div v-else class="content-height">
+                    <pre><code class="code-wrap">{{ itemContent.item_data }}</code></pre>
+                    <b-link v-if="itemContent.truncated" :href="itemContent.item_url">
+                        Show More...
+                    </b-link>
+                </div>
+            </b-card-body>
+        </b-card>
+    </div>
 </template>
 
 <script>

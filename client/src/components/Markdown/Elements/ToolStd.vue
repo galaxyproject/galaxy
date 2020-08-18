@@ -1,9 +1,11 @@
 <template>
-    <b-card nobody class="content-height w-50 mx-auto">
-        <div :class="name" :job_id="args.job_id">
-            <pre><code class="code-wrap">{{ jobContent }}</code></pre>
-        </div>
-    </b-card>
+    <div class="w-50 p-2 float-left">
+        <b-card nobody class="content-height">
+            <div :class="name" :job_id="args.job_id">
+                <pre><code class="code-wrap">{{ jobContent }}</code></pre>
+            </div>
+        </b-card>
+    </div>
 </template>
 
 <script>

@@ -1,7 +1,9 @@
 <template>
-    <b-card nobody class="w-50 mx-auto" body-class="p-1">
-        <b-img :src="imageUrl" fluid />
-    </b-card>
+    <div class="w-50 p-2 float-left">
+        <b-card nobody body-class="p-1">
+            <b-img :src="imageUrl" fluid />
+        </b-card>
+    </div>
 </template>
 
 <script>

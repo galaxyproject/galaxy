@@ -62,7 +62,6 @@
                     :args="obj.args"
                     :datasets="historyDatasets"
                 />
-                <br />
             </div>
         </div>
     </div>

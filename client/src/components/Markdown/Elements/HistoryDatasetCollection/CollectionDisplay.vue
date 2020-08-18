@@ -1,18 +1,20 @@
 <template>
-    <b-card class="w-50 mx-auto" body-class="p-0">
-        <b-card-header>
-            <span>
-                <span>Dataset Collection:</span>
-                <span class="font-weight-light">{{ collectionName }}</span>
-            </span>
-        </b-card-header>
-        <b-card-body>
-            <LoadingSpan v-if="loading" message="Loading Collection" />
-            <div v-else class="content-height">
-                <CollectionTree :node="itemContent" :skip-head="true" />
-            </div>
-        </b-card-body>
-    </b-card>
+    <div class="w-50 p-2 float-left">
+        <b-card body-class="p-0">
+            <b-card-header>
+                <span>
+                    <span>Dataset Collection:</span>
+                    <span class="font-weight-light">{{ collectionName }}</span>
+                </span>
+            </b-card-header>
+            <b-card-body>
+                <LoadingSpan v-if="loading" message="Loading Collection" />
+                <div v-else class="content-height">
+                    <CollectionTree :node="itemContent" :skip-head="true" />
+                </div>
+            </b-card-body>
+        </b-card>
+    </div>
 </template>
 
 <script>

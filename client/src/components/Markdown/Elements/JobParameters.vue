@@ -1,7 +1,9 @@
 <template>
-    <b-card nobody class="w-50 mx-auto">
-        <JobParameters class="job-parameters" :jobId="args.job_id" :param="args.param" :includeTitle="false" />
-    </b-card>
+    <div class="w-50 p-2 float-left">
+        <b-card nobody>
+            <JobParameters class="job-parameters" :jobId="args.job_id" :param="args.param" :includeTitle="false" />
+        </b-card>
+    </div>
 </template>
 
 <script>

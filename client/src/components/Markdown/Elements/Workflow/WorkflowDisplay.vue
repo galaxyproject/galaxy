@@ -1,35 +1,37 @@
 <template>
-    <b-card class="w-50 mx-auto" body-class="p-0">
-        <b-card-header v-if="!embedded">
-            <span class="float-right">
-                <b-button
-                    :href="downloadUrl"
-                    variant="link"
-                    size="sm"
-                    role="button"
-                    title="Download Workflow"
-                    type="button"
-                    class="py-0 px-1"
-                    v-b-tooltip.hover
-                >
-                    <span class="fa fa-download" />
-                </b-button>
-            </span>
-            <span>
-                <span>Workflow:</span>
-                <span class="font-weight-light">{{ workflowName }}</span>
-            </span>
-        </b-card-header>
-        <b-card-body>
-            <LoadingSpan v-if="loading" message="Loading Workflow" />
-            <div v-else class="content-height">
-                <div v-for="step in itemContent.steps" :key="step.order_index" class="mb-2">
-                    <div>Step {{ step.order_index + 1 }}: {{ step.label }}</div>
-                    <WorkflowTree :input="step" :skip-head="true" />
+    <div class="w-50 p-2 float-left">
+        <b-card body-class="p-0">
+            <b-card-header v-if="!embedded">
+                <span class="float-right">
+                    <b-button
+                        :href="downloadUrl"
+                        variant="link"
+                        size="sm"
+                        role="button"
+                        title="Download Workflow"
+                        type="button"
+                        class="py-0 px-1"
+                        v-b-tooltip.hover
+                    >
+                        <span class="fa fa-download" />
+                    </b-button>
+                </span>
+                <span>
+                    <span>Workflow:</span>
+                    <span class="font-weight-light">{{ workflowName }}</span>
+                </span>
+            </b-card-header>
+            <b-card-body>
+                <LoadingSpan v-if="loading" message="Loading Workflow" />
+                <div v-else class="content-height">
+                    <div v-for="step in itemContent.steps" :key="step.order_index" class="mb-2">
+                        <div>Step {{ step.order_index + 1 }}: {{ step.label }}</div>
+                        <WorkflowTree :input="step" :skip-head="true" />
+                    </div>
                 </div>
-            </div>
-        </b-card-body>
-    </b-card>
+            </b-card-body>
+        </b-card>
+    </div>
 </template>
 
 <script>
