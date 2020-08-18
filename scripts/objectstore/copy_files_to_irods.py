@@ -7,9 +7,35 @@ from psycopg2 import connect, sql
 from galaxy.util import directory_hash_id
 
 
-def copy_file_to_irods(dataset_id, galaxy_dir="/Users/kxk302/workspace/galaxy", object_store_info={"files1" : "database/files1", "files2" : "database/files2"}, irods_home="/tempZone/home/rods"):
-    cursor = None
+def copy_files_to_irods(start_dataset_id, end_dataset_id, galaxy_dir="/Users/kxk302/workspace/galaxy", object_store_info={"files1" : "database/files1", "files2" : "database/files2"}, irods_home="/tempZone/home/rods", connection_info={"dbname" : "galaxy", "user" : "postgres", "host" : "localhost", "password" : "password"}):
     conn = None
+
+    if start_dataset_id >= end_dataset_id:
+        print("start_dataset_id %d must be smaller than end_dataset_id %d", start_dataset_id, end_dataset_id)
+        return
+
+    try:
+        # declare a new PostgreSQL connection object
+        conn = connect(
+            dbname=connection_info["dbname"],
+            user=connection_info["user"],
+            host=connection_info["host"],
+            password=connection_info["password"]
+        )
+        conn.cursor()
+
+    except Exception as e:
+        print(e)
+        return
+
+    for dataset_id in range(start_dataset_id, end_dataset_id):
+        copy_file_to_irods(dataset_id, galaxy_dir, object_store_info, irods_home, conn)
+
+    conn.close()
+
+
+def copy_file_to_irods(dataset_id, galaxy_dir, object_store_info, irods_home, conn):
+    cursor = None
     sql_statement = None
     sql_object = None
     uuid = None
@@ -23,29 +49,19 @@ def copy_file_to_irods(dataset_id, galaxy_dir="/Users/kxk302/workspace/galaxy", 
     icommand_mkdir = None
     icommand_put = None
 
-    try:
-        # declare a new PostgreSQL connection object
-        conn = connect(
-            dbname="galaxy",
-            user="postgres",
-            host="localhost",
-            password="password"
-        )
-        cursor = conn.cursor()
-
-    except Exception as e:
-        print(e)
-        return
-
     sql_statement = "SELECT * FROM dataset WHERE state = \'ok\' AND deleted = False AND purged = False AND id = {};".format(dataset_id)
     print(sql_statement)
     try:
+        cursor = conn.cursor()
+
         sql_object = sql.SQL(
             sql_statement
         )
         cursor.execute(sql_object)
-        table_data = cursor.fetchall()
+        print("cursor.execute() completed")
 
+        table_data = cursor.fetchall()
+        print("cursor.fetchall() completed")
         for num, row in enumerate(table_data):
             print("row: ", row)
             print("\n")
@@ -89,4 +105,8 @@ def copy_file_to_irods(dataset_id, galaxy_dir="/Users/kxk302/workspace/galaxy", 
 
     except Exception as e:
         print(e)
+        conn.rollback()
         return
+
+    conn.commit()
+    cursor.close()
