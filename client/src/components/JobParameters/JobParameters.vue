@@ -56,9 +56,11 @@ export default {
     props: {
         jobId: {
             type: String,
+            default: null,
         },
         datasetId: {
             type: String,
+            default: null,
         },
         datasetType: {
             type: String,
@@ -66,6 +68,7 @@ export default {
         },
         param: {
             type: String,
+            default: undefined,
         },
         includeTitle: {
             type: Boolean,

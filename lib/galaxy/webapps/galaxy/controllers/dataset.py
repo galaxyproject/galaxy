@@ -561,6 +561,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             raise web.httpexceptions.HTTPNotFound()
 
     @web.expose
+    @web.json
     def get_item_content_async(self, trans, id):
         """ Returns item content in HTML format. """
 
@@ -572,7 +573,12 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         truncated, dataset_data = self.hda_manager.text_data(dataset, preview=True)
         # Get annotation.
         dataset.annotation = self.get_item_annotation_str(trans.sa_session, trans.user, dataset)
-        return trans.stream_template_mako("/dataset/item_content.mako", item=dataset, item_data=dataset_data, truncated=truncated)
+        item_url = url_for( controller='dataset', action='display_by_username_and_slug', username=dataset.history.user.username, slug=trans.security.encode_id( dataset.id ), preview=False )
+        return {
+            "item_data": dataset_data,
+            "truncated": truncated,
+            "item_url": item_url,
+        }
 
     @web.expose
     def annotate_async(self, trans, id, new_annotation=None, **kwargs):
