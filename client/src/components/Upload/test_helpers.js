@@ -33,10 +33,14 @@ export function mountWithApp(component, options = {}, propsData_ = {}) {
     });
     const propsData = _.defaults(propsData_, { app });
     const localVue = createLocalVue();
+    const attachElement = document.createElement("div");
+    if (document.body) {
+        document.body.appendChild(attachElement);
+    }
     const wrapper = mount(component, {
         propsData,
         localVue,
-        attachToDocument: true,
+        attachTo: attachElement,
         stubs: {
             select2: true,
         },

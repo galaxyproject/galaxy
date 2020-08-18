@@ -141,9 +141,13 @@ describe("DataDialog.vue", () => {
             root: "root";
         });
         const localVue = createLocalVue();
+        const attachElement = document.createElement("div");
+        if (document.body) {
+            document.body.appendChild(attachElement);
+        }
         wrapper = mount(DataDialog, {
             propsData: mockOptions,
-            attachToDocument: true,
+            attachTo: attachElement,
             localVue,
         });
     });
