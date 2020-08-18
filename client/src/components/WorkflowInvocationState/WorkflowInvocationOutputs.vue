@@ -1,6 +1,8 @@
 <template>
     <div v-if="dataset">
-        <index v-bind:item="dataset" v-bind:expanded="false"/>
+        <span v-on:click="expand">
+            <index v-bind:item="dataset" v-bind:expanded="expanded" v-bind:showTags="true"/>
+        </span>
     </div>
 </template>
 <script>
@@ -34,7 +36,14 @@ export default {
     },
     data () {
         return {
-            dataset: null
+            dataset: null,
+            expanded: false,
+        }
+    },
+    methods: {
+        expand(event) {
+            console.log('Exapnding'); 
+            this.expanded = !this.expanded;
         }
     },
     mounted () {
