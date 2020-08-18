@@ -15,12 +15,12 @@
   %for input_index, input in enumerate( inputs.values() ):
     %if input.type == "repeat":
       <div>
-          <div class="form-row ml-2"><b>${input.title_plural}</b></div>
+          <div class="form-row"><b>${input.title_plural}</b></div>
           <% repeat_values = values[input.name] %>
           %for i in range( len( repeat_values ) ):
-            <div class="ml-2">
+            <div class="ui-portlet-section ml-2">
                 <% index = repeat_values[i]['__index__'] %>
-                <div class="form-row ml-2"><b>${input.title} ${i + 1}</b></div>
+                <div class="form-row"><b>${input.title} ${i + 1}</b></div>
                 ${do_inputs( input.inputs, repeat_values[ i ], prefix + input.name + "_" + str(index) + "|", step, other_values )}
             </div> 
           %endfor
@@ -34,9 +34,9 @@
     %elif input.type == "section":
       <% new_prefix = prefix + input.name + "|" %>
       <% group_values = values[input.name] %>
-      <div class="form-row ml-2"><b>${input.title}:</b></div>
+      <div class="form-row"><b>${input.title}:</b></div>
       <div>
-        <div class="ml-2">
+        <div class="ui-portlet-section ml-2">
           ${do_inputs( input.inputs, group_values, new_prefix, step, other_values )}
         </div>
       </div>
@@ -47,7 +47,7 @@
 </%def>
 
 <%def name="row_for_param( param, value, other_values, prefix, step )">
-    <% cls = "form-row ml-2" %>
+    <% cls = "form-row" %>
     <div class="${cls}">
         <label>${param.get_label() | h}</label>
         <div>
@@ -92,56 +92,64 @@
         # and an error will occur. To prevent this error, make sure user has a history. 
         trans.get_history( most_recent=True, create=True )
     %>
-    %for i, step in enumerate( steps ):
-        %if step.type == 'tool' or step.type is None:
-          <%
-            tool = trans.app.toolbox.get_tool( step.tool_id )
-          %>
-          %if tool:
-            <h4>Step ${int(step.order_index)+1}: ${tool.name | h}</h4>
-            %if hasattr( step, "annotation") and step.annotation is not None:
-                <div class="annotation">${step.annotation}</div>
+    %if outer_workflow:
+    <table class="annotated-item">
+        <tr><th>Step</th><th class="annotation">Annotation</th></tr>
+    %endif
+        %for i, step in enumerate( steps ):
+            <tr><td>
+            %if step.type == 'tool' or step.type is None:
+              <% 
+                tool = trans.app.toolbox.get_tool( step.tool_id )
+              %>
+              <div class="card mt-3 mr-3">
+                %if tool:
+                  <div class="card-header">Step ${int(step.order_index)+1}: ${tool.name | h}</div>
+                  <div class="card-body">
+                    ${do_inputs( tool.inputs, step.state.inputs, "", step )}
+                  </div>
+                %else:
+                  <div class="card-header">Step ${int(step.order_index)+1}: Unknown Tool with id '${step.tool_id | h}'</div>
+                %endif
+              </div>
+            %elif step.type == 'subworkflow':
+              <div class="card mt-3 mr-3">
+                  <div class="card-header">Step ${int(step.order_index)+1}: ${step.label or (step.subworkflow.name if step.subworkflow else "Missing workflow") | h}</div>
+                  <% errors = step.module.get_errors() %>
+                  %if errors:
+                    <div class="card-body">
+                      <b>Error in Subworkflow:</b>
+                      <ul>
+                        %for error in errors:
+                          <li>${error}</li>
+                        %endfor
+                      </ul>
+                    </div>
+                  %else:
+                    <div class="card-body">
+                      <table>${render_item( step.subworkflow, step.subworkflow.steps, outer_workflow=False )}</table>
+                    </div>
+                  %endif
+              </div>
+            %else:
+            ## TODO: always input dataset?
+            <% module = step.module %>
+              <div class="card mt-3 mr-3">
+                  <div class="card-header">Step ${int(step.order_index)+1}: ${module.name | h}</div>
+                  <div class="card-body">
+                    ${do_inputs( module.get_runtime_inputs(), step.state.inputs, "", step )}
+                  </div>
+              </div>
             %endif
-            <div>
-              ${do_inputs( tool.inputs, step.state.inputs, "", step )}
-            </div>
-          %else:
-            <h4>Step ${int(step.order_index)+1}: Unknown Tool with id '${step.tool_id | h}'</h4>
-            %if hasattr( step, "annotation") and step.annotation is not None:
-                <div class="annotation">${step.annotation}</div>
-            %endif
-          %endif
-        %elif step.type == 'subworkflow':
-          <h4>Step ${int(step.order_index)+1}: ${step.label or (step.subworkflow.name if step.subworkflow else "Missing workflow") | h}</h4>
-          %if hasattr( step, "annotation") and step.annotation is not None:
-              <div class="annotation">${step.annotation}</div>
-          %endif
-          <% errors = step.module.get_errors() %>
-          %if errors:
-            <div>
-              <b>Error in Subworkflow:</b>
-              <ul>
-                %for error in errors:
-                  <li>${error}</li>
-                %endfor
-              </ul>
-            </div>
-          %else:
-            <div>
-              <table>${render_item( step.subworkflow, step.subworkflow.steps, outer_workflow=False )}</table>
-            </div>
-          %endif
-        %else:
-        ## TODO: always input dataset?
-        <% module = step.module %>
-          <h4>Step ${int(step.order_index)+1}: ${module.name | h}</h4>
-          %if hasattr( step, "annotation") and step.annotation is not None:
-              <div class="annotation">${step.annotation}</div>
-          %endif
-          <div>
-            ${do_inputs( module.get_runtime_inputs(), step.state.inputs, "", step )}
-          </div>
-        %endif
-        <br/>
-    %endfor
+            </td>
+            <td class="annotation">
+                %if hasattr( step, "annotation") and step.annotation is not None:
+                    ${step.annotation}
+                %endif                
+            </td>
+            </tr>
+        %endfor
+    %if outer_workflow:
+    </table>
+    %endif
 </%def>
