@@ -80,7 +80,7 @@ import InvocationTime from "./Elements/InvocationTime";
 import JobMetrics from "./Elements/JobMetrics";
 import JobParameters from "./Elements/JobParameters";
 import ToolStd from "./Elements/ToolStd";
-import WorkflowDisplay from "./Elements/WorkflowDisplay";
+import WorkflowDisplay from "./Elements/Workflow/WorkflowDisplay";
 
 const FUNCTION_VALUE_REGEX = `\\s*(?:[\\w_\\-]+|\\"[^\\"]+\\"|\\'[^\\']+\\')\\s*`;
 const FUNCTION_CALL = `\\s*\\w+\\s*=` + FUNCTION_VALUE_REGEX;
