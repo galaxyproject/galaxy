@@ -605,7 +605,7 @@ class WorkflowContentsManager(UsesAnnotations):
                     conns = step.input_connections_by_name[ prefix + param.name ]
                     if not isinstance(conns, list):
                         conns = [conns]
-                    value = ["Output dataset '%s' from step %d" % (conn.output_name, int(conn.output_step.order_index)+1) for conn in conns]
+                    value = ["Output '%s' from Step %d." % (conn.output_name, int(conn.output_step.order_index)+1) for conn in conns]
                     value = ",".join(value)
                 else:
                     value = "Select at Runtime."
