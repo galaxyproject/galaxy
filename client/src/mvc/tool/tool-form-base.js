@@ -185,7 +185,7 @@ export default FormBase.extend({
         });
         menu_button.addMenu({
             icon: "fa-share",
-            title: _l("Share"),
+            title: _l("Get link"),
             onclick: function () {
                 copy(`${window.location.origin + getAppRoot()}root?tool_id=${options.id}`);
                 Toast.info("Link is copied to your clipboard");
