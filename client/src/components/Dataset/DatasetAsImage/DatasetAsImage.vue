@@ -19,6 +19,7 @@ export default {
         },
         path: {
             type: String,
+            default: null,
         },
     },
     created() {
