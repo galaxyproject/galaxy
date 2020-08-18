@@ -18,7 +18,8 @@
                 <div class="float-right m-1">Identifier {{ markdownConfig.id }}</div>
             </b-badge>
             <div v-for="(obj, index) in markdownObjects" :key="index">
-                <div v-if="obj.name == 'generate_galaxy_version'" class="galaxy-version">
+                <div v-if="obj.name == 'default'" v-html="obj.content" />
+                <div v-else-if="obj.name == 'generate_galaxy_version'" class="galaxy-version">
                     <pre><code>{{ getVersion }}</code></pre>
                 </div>
                 <div v-else-if="obj.name == 'generate_time'" class="galaxy-time">
@@ -61,7 +62,6 @@
                     :args="obj.args"
                     :datasets="historyDatasets"
                 />
-                <div v-else v-html="obj.content" />
                 <br />
             </div>
         </div>
@@ -174,11 +174,13 @@ export default {
                     const galaxyEnd = digest.substr(galaxyStart + 1).indexOf("```");
                     if (galaxyEnd != -1) {
                         if (galaxyStart > 0) {
-                            const defaultContent = digest.substr(0, galaxyStart);
-                            sections.push({
-                                name: "default",
-                                content: md.render(defaultContent),
-                            });
+                            const defaultContent = digest.substr(0, galaxyStart).trim();
+                            if (defaultContent) {
+                                sections.push({
+                                    name: "default",
+                                    content: md.render(defaultContent),
+                                });
+                            }
                         }
                         const galaxyEndIndex = galaxyEnd + 4;
                         const galaxySection = digest.substr(galaxyStart, galaxyEndIndex);
@@ -193,6 +195,7 @@ export default {
                     break;
                 }
             }
+
             return sections;
         },
         getArgs(content) {
