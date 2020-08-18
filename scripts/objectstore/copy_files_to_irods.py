@@ -1,15 +1,13 @@
 import os
 import subprocess
-import sys
 import time
-sys.path.insert(0, '../../packages/objectstore/')
 
 from psycopg2 import connect, sql
 
 from galaxy.util import directory_hash_id
 
 
-def copy_file_to_irods(dataset_id, objectstore_id="", galaxy_dir="/Users/kxk302/workspace/galaxy", object_store_info={"files1" : "database/files1", "files2" : "database/files2"}, irods_home="/tempZone/home/rods"):
+def copy_file_to_irods(dataset_id, galaxy_dir="/Users/kxk302/workspace/galaxy", object_store_info={"files1" : "database/files1", "files2" : "database/files2"}, irods_home="/tempZone/home/rods"):
     cursor = None
     conn = None
     sql_statement = None
@@ -39,7 +37,7 @@ def copy_file_to_irods(dataset_id, objectstore_id="", galaxy_dir="/Users/kxk302/
         print(e)
         return
 
-    sql_statement = "SELECT * FROM dataset WHERE state = \'ok\' AND deleted = False AND purged = False AND id = {} AND object_store_id = \'{}\';".format(dataset_id, objectstore_id)
+    sql_statement = "SELECT * FROM dataset WHERE state = \'ok\' AND deleted = False AND purged = False AND id = {};".format(dataset_id)
     print(sql_statement)
     try:
         sql_object = sql.SQL(
