@@ -587,7 +587,8 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def _workflow_to_dict_preview(self, trans, workflow):
         """
-        Builds workflow dictionary used by run workflow form
+        Builds workflow dictionary containing input labels and values.
+        Used to create embedded workflow previews.
         """
         if len(workflow.steps) == 0:
             raise exceptions.MessageException('Workflow cannot be run because it does not have any steps.')
