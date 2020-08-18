@@ -473,7 +473,7 @@ class WorkflowContentsManager(UsesAnnotations):
         elif style == "run":
             wf_dict = self._workflow_to_dict_run(trans, stored, workflow=workflow)
         elif style == "preview":
-            wf_dict = self._workflow_to_dict_preview(trans, stored, workflow=workflow)
+            wf_dict = self._workflow_to_dict_preview(trans, workflow=workflow)
         elif style == "format2":
             wf_dict = self._workflow_to_dict_export(trans, stored, workflow=workflow)
             wf_dict = to_format_2(wf_dict)
@@ -585,7 +585,7 @@ class WorkflowContentsManager(UsesAnnotations):
             'workflow_resource_parameters': self._workflow_resource_parameters(trans, stored, workflow),
         }
 
-    def _workflow_to_dict_preview(self, trans, stored, workflow):
+    def _workflow_to_dict_preview(self, trans, workflow):
         """
         Builds workflow dictionary used by run workflow form
         """
@@ -621,17 +621,17 @@ class WorkflowContentsManager(UsesAnnotations):
                 input_dict = {}
                 input_dict["type"] = input.type
                 if input.type == "repeat":
-                    input_dict["type"] = "repeat"
-                    input_dict["title"] = input.title_plural
                     repeat_values = values[input.name]
-                    nested_input_dicts = []
-                    for i in range( len( repeat_values ) ):
-                        nested_input_dict = {}
-                        index = repeat_values[i]['__index__']
-                        nested_input_dict["title"] = "%i. %s" % (i + 1, input.title)
-                        nested_input_dict["inputs"] = do_inputs( input.inputs, repeat_values[ i ], prefix + input.name + "_" + str(index) + "|", step, other_values )
-                        nested_input_dicts.append(nested_input_dict)
-                    input_dict["inputs"] = nested_input_dicts        
+                    if len( repeat_values ) > 0:
+                        input_dict["title"] = input.title_plural
+                        nested_input_dicts = []
+                        for i in range( len( repeat_values ) ):
+                            nested_input_dict = {}
+                            index = repeat_values[i]['__index__']
+                            nested_input_dict["title"] = "%i. %s" % (i + 1, input.title)
+                            nested_input_dict["inputs"] = do_inputs( input.inputs, repeat_values[ i ], prefix + input.name + "_" + str(index) + "|", step, other_values )
+                            nested_input_dicts.append(nested_input_dict)
+                        input_dict["inputs"] = nested_input_dicts
                 elif input.type == "conditional":
                     group_values = values[input.name]
                     current_case = group_values['__current_case__']
@@ -673,6 +673,8 @@ class WorkflowContentsManager(UsesAnnotations):
                 errors = step.module.get_errors()
                 if errors:
                     step_dict["errors"] = errors
+                subworkflow_dict = self._workflow_to_dict_preview(trans, step.subworkflow)
+                step_dict["inputs"] = subworkflow_dict["steps"]
             else:
                 module = step.module
                 step_dict["label"] = step.label or module.name
