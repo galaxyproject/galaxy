@@ -678,7 +678,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 step_dict["inputs"] = subworkflow_dict["steps"]
             else:
                 module = step.module
-                step_dict["label"] = step.label or module.name
+                step_dict["label"] = module.name
                 step_dict["inputs"] = do_inputs( module.get_runtime_inputs(), step.state.inputs, "", step )
             step_dicts.append(step_dict)
         return {
