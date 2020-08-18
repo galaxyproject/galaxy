@@ -15,11 +15,41 @@ class LibraryContentsTestCase(SeleniumTestCase):
     requires_admin = True
 
     @selenium_test
-    def test_create_folder(self):
+    def test_sub_folder(self):
+        def change_description(description):
+            self.components.libraries.folder.edit_folder_btn.wait_for_and_click()
+            self.components.libraries.folder.input_folder_description.wait_for_visible().clear()
+            self.components.libraries.folder.input_folder_description.wait_for_and_send_keys(description)
+            self.components.libraries.folder.save_folder_btn.wait_for_and_click()
+
+        sub_folder_name = self._get_random_name(prefix="new_sub_folder")
+        description = self._get_random_name(prefix="new_sub_folder_description")
+        long_description = self._get_random_name(prefix="new_sub_folder_description", len=45)
+
+        # create mew folder
         self._navigate_to_new_library()
         self._assert_num_displayed_items_is(0)
-        self.libraries_folder_create("folder1")
+        self.libraries_folder_create(sub_folder_name)
         self._assert_num_displayed_items_is(1)
+
+        # check empty folder
+        new_folder_link = self.wait_for_xpath_visible('//a[contains(text(), "%s")]' % sub_folder_name)
+        new_folder_link.click()
+
+        # assert that 'empty folder message' is present
+        self.components.libraries.folder.empty_folder_message.wait_for_present()
+        # go one folder up
+        self.components.libraries.folder.btn_open_upper_folder.wait_for_and_click()
+        # assert empty description
+        self.components.libraries.folder.description_field.assert_absent_or_hidden()
+        # change description
+        change_description(description)
+        assert description == self.components.libraries.folder.description_field.wait_for_text()
+        change_description(long_description)
+
+        # assert shrinked description
+        shrinked_description = long_description[0:40] + "..."
+        assert shrinked_description == self.components.libraries.folder.description_field.wait_for_text()
 
     @selenium_test
     def test_import_dataset_from_history(self):

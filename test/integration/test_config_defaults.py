@@ -195,6 +195,7 @@ DO_NOT_TEST = [
     'object_store_store_by',  # broken: default overridden
     'pretty_datetime_format',  # untestable; refactor config/__init__ to test
     'retry_metadata_internally',  # broken: default overridden
+    'simplified_workflow_run_ui',  # set to off in testing
     'statsd_host',  # broken: default overridden with empty string
     'template_cache_path',  # may or may not be able to test; may be broken
     'tool_config_file',  # default not used; may or may not be testable
