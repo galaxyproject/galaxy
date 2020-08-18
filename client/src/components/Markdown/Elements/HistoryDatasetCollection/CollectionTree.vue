@@ -1,10 +1,12 @@
 <template>
     <div>
-        <span v-if="!skipHead" class="label"><b>{{ name }}</b></span>
+        <span v-if="!skipHead" class="label"
+            ><b>{{ name }}</b></span
+        >
         <b-alert v-if="!!error" variant="danger" show>Error: {{ error }}</b-alert>
         <pre v-if="miscInfo"><code v-html="miscInfo"/></pre>
         <pre v-if="peek"><code v-html="peek"/></pre>
-        <div v-if="node && node.elements && node.elements.length" class="mr-1">
+        <div v-if="node && node.elements && node.elements.length" :class="{ 'ml-3': !skipHead }">
             <CollectionNode v-for="child in node.elements" :node="child" :key="child.id" />
         </div>
     </div>
@@ -21,7 +23,7 @@ export default {
         skipHead: {
             type: Boolean,
             default: false,
-        }
+        },
     },
     computed: {
         name() {

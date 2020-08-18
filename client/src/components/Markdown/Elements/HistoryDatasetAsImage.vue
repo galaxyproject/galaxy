@@ -1,6 +1,6 @@
 <template>
     <b-card nobody class="w-50" body-class="p-1">
-        <b-img :src="imageUrl" fluid/>
+        <b-img :src="imageUrl" fluid />
     </b-card>
 </template>
 

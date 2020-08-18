@@ -22,7 +22,12 @@
         </b-card-header>
         <b-card-body>
             <LoadingSpan v-if="loading" message="Please wait..." />
-            <div v-else class="content-height" v-html="itemContent" />
+            <div v-else class="content-height">
+                <div v-for="step in itemContent.steps" :key="step.order_index" class="mb-2">
+                    <div>Step {{ step.order_index + 1 }}: {{ step.label }}</div>
+                    <WorkflowTree :input="step" :skip-head="true" />
+                </div>
+            </div>
         </b-card-body>
     </b-card>
 </template>
@@ -30,10 +35,12 @@
 <script>
 import { getAppRoot } from "onload/loadConfig";
 import LoadingSpan from "components/LoadingSpan";
+import WorkflowTree from "./WorkflowTree";
 import axios from "axios";
 export default {
     components: {
         LoadingSpan,
+        WorkflowTree,
     },
     props: {
         args: {
@@ -58,6 +65,8 @@ export default {
     created() {
         this.getContent().then((data) => {
             this.itemContent = data;
+            console.log(this.itemContent);
+            console.log(this.args.workflow_id);
             this.loading = false;
         });
     },
@@ -70,7 +79,7 @@ export default {
             return `${getAppRoot()}api/workflows/${this.args.workflow_id}/download?format=json-download`;
         },
         itemUrl() {
-            return `${getAppRoot()}workflow/get_item_content_async?id=${this.args.workflow_id}`;
+            return `${getAppRoot()}api/workflows/${this.args.workflow_id}/download?style=preview`;
         },
     },
     methods: {

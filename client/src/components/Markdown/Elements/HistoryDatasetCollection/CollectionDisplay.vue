@@ -9,7 +9,7 @@
         <b-card-body>
             <LoadingSpan v-if="loading" message="Loading Collection" />
             <div v-else class="content-height">
-                <CollectionTree :node="itemContent" :skip-head="true"/>
+                <CollectionTree :node="itemContent" :skip-head="true" />
             </div>
         </b-card-body>
     </b-card>
