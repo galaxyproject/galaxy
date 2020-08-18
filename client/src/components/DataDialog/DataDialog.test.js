@@ -105,7 +105,7 @@ describe("services.js/Services", () => {
 
 describe("DataDialog.vue", () => {
     let wrapper;
-
+    /*
     const rawData = [
         {
             id: 1,
@@ -125,20 +125,11 @@ describe("DataDialog.vue", () => {
             history_content_type: "dataset_collection",
         },
     ];
-
-    const mockServices = class {
-        get(url) {
-            const services = new Services(mockOptions);
-            const items = services.getItems(rawData);
-            return new Promise((resolve, reject) => {
-                resolve(items);
-            });
-        }
-    };
+    */
 
     beforeEach(() => {
         rewire.__Rewire__("getGalaxyInstance", () => {
-            root: "root";
+            "root";
         });
         const localVue = createLocalVue();
         const attachElement = document.createElement("div");

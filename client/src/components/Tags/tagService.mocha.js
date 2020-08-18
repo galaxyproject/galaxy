@@ -1,4 +1,3 @@
-/* global expect */
 import sinon from "sinon";
 import { TagService, __RewireAPI__ as rewire } from "./tagService";
 import { createTag } from "./model";
@@ -9,16 +8,16 @@ import { take, takeUntil } from "rxjs/operators";
 import autocompleteResponse from "./testData/autocompleteResponse.txt";
 
 describe("Tags/tagService.js", () => {
-    let svcParams = {
+    const svcParams = {
         id: 123,
         itemClass: "fooClass",
         context: "",
         debounceInterval: 50, // shorter value than default for unit tests
     };
 
-    let svc = new TagService(svcParams);
+    const svc = new TagService(svcParams);
 
-    let mockAxios = {
+    const mockAxios = {
         get: () => null,
     };
 
@@ -33,22 +32,22 @@ describe("Tags/tagService.js", () => {
     });
 
     describe("save", () => {
-        let testLabel = "fo0bar123";
-        let testTag = createTag(testLabel);
+        const testLabel = "fo0bar123";
+        const testTag = createTag(testLabel);
 
-        let { id, itemClass, context } = svcParams;
-        let expectedSaveUrl = `/tag/add_tag_async?item_id=${id}&item_class=${itemClass}&context=${context}&new_tag=${testLabel}`;
+        const { id, itemClass, context } = svcParams;
+        const expectedSaveUrl = `/tag/add_tag_async?item_id=${id}&item_class=${itemClass}&context=${context}&new_tag=${testLabel}`;
 
         it("should save a string tag", async () => {
             stub = sinon.stub(mockAxios, "get").resolves({ status: 200 });
-            let savedTag = await svc.save(testLabel);
+            const savedTag = await svc.save(testLabel);
             expect(savedTag.text).to.equal(testLabel);
             assert(stub.calledWith(expectedSaveUrl));
         });
 
         it("should save an object tag", async () => {
             stub = sinon.stub(mockAxios, "get").resolves({ status: 200 });
-            let savedTag = await svc.save(testTag);
+            const savedTag = await svc.save(testTag);
             expect(savedTag.text).to.equal(testLabel);
             assert(stub.calledWith(expectedSaveUrl));
         });
@@ -57,22 +56,22 @@ describe("Tags/tagService.js", () => {
     });
 
     describe("delete", () => {
-        let testLabel = "fo0bar123";
-        let testTag = createTag(testLabel);
+        const testLabel = "fo0bar123";
+        const testTag = createTag(testLabel);
 
-        let { id, itemClass, context } = svcParams;
-        let expectedDeleteUrl = `/tag/remove_tag_async?item_id=${id}&item_class=${itemClass}&context=${context}&tag_name=${testLabel}`;
+        const { id, itemClass, context } = svcParams;
+        const expectedDeleteUrl = `/tag/remove_tag_async?item_id=${id}&item_class=${itemClass}&context=${context}&tag_name=${testLabel}`;
 
         it("should delete a text tag", async () => {
             stub = sinon.stub(mockAxios, "get").resolves({ status: 200 });
-            let result = await svc.delete(testTag);
+            const result = await svc.delete(testTag);
             assert(result);
             assert(stub.calledWith(expectedDeleteUrl));
         });
 
         it("should delete an object tag", async () => {
             stub = sinon.stub(mockAxios, "get").resolves({ status: 200 });
-            let result = await svc.delete(testTag);
+            const result = await svc.delete(testTag);
             assert(result);
             assert(stub.calledWith(expectedDeleteUrl));
         });
@@ -81,16 +80,16 @@ describe("Tags/tagService.js", () => {
     });
 
     describe("autocomplete", () => {
-        let searchString = "foo";
-        let { id, itemClass } = svcParams;
-        let expectedSearchUrl = `/tag/tag_autocomplete_data?item_id=${id}&item_class=${itemClass}&q=${searchString}`;
+        const searchString = "foo";
+        const { id, itemClass } = svcParams;
+        const expectedSearchUrl = `/tag/tag_autocomplete_data?item_id=${id}&item_class=${itemClass}&q=${searchString}`;
 
-        let successResponse = {
+        const successResponse = {
             status: 200,
             data: autocompleteResponse,
         };
 
-        let checkAutocompleteResult = (result) => {
+        const checkAutocompleteResult = (result) => {
             assert(result);
             assert(result instanceof Array);
             assert(result.length == 2);
@@ -102,7 +101,7 @@ describe("Tags/tagService.js", () => {
         // test this call if we just expose it
         it("ajax call should return tag objects", async () => {
             stub = sinon.stub(mockAxios, "get").resolves(successResponse);
-            let result = await svc.autocomplete(searchString);
+            const result = await svc.autocomplete(searchString);
             assert(stub.calledWith(expectedSearchUrl), "Called with wrong search url");
             checkAutocompleteResult(result);
         });
@@ -113,8 +112,8 @@ describe("Tags/tagService.js", () => {
             let searchResult;
 
             // ends subscription to observable so test doesn't go on forever
-            let spamCount = Math.floor(Math.random() * 10);
-            let timer = interval(1500).pipe(take(1));
+            const spamCount = Math.floor(Math.random() * 10);
+            const timer = interval(1500).pipe(take(1));
 
             // stub ajax request to return the success response if the
             // searchString is the expected input

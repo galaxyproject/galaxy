@@ -1,5 +1,3 @@
-/* global expect */
-
 import Vuex from "vuex";
 import { mount, createLocalVue } from "@vue/test-utils";
 import Tags from "./Tags";
@@ -13,18 +11,18 @@ describe("Tags/Tags.vue", () => {
     localVue.filter("localize", (value) => _l(value));
     localVue.use(Vuex);
 
-    let id = "testId",
-        itemClass = "TestObject",
-        context = "testing",
-        tagService,
-        wrapper,
-        emitted,
-        startingTags = ["a", "b", "c"],
-        storeKey = "testingTagSet";
+    const id = "testId";
+    const itemClass = "TestObject";
+    const context = "testing";
+    let tagService;
+    let wrapper;
+    let emitted;
+    const startingTags = ["a", "b", "c"];
+    const storeKey = "testingTagSet";
 
-    let clickFirstTag = () => {
+    const clickFirstTag = () => {
         if (wrapper) {
-            let firstTag = wrapper.find(".ti-tag-center > div");
+            const firstTag = wrapper.find(".ti-tag-center > div");
             firstTag.trigger("click");
         } else {
             console.log("missing tag");
@@ -73,13 +71,13 @@ describe("Tags/Tags.vue", () => {
     });
 
     it("should display the tags I give it", async () => {
-        let tags = wrapper.findAll(".ti-tag-center .tag-name");
+        const tags = wrapper.findAll(".ti-tag-center .tag-name");
         expect(tags.length).to.equal(3);
         expect(tags.at(0).text()).to.equal(startingTags[0]);
     });
 
     it("should put the initialized tags into the store at initialization", async () => {
-        let storedTags = store.getters.getTagsById(storeKey);
+        const storedTags = store.getters.getTagsById(storeKey);
         expect(storedTags.length).to.equal(3);
         startingTags.forEach((tag, i) => {
             expect(tag).to.equal(storedTags[i]);
@@ -93,7 +91,7 @@ describe("Tags/Tags.vue", () => {
     });
 
     it("should reflect changes in the store", async () => {
-        let newTags = ["asdfadsadf", "gfhjfghjf"];
+        const newTags = ["asdfadsadf", "gfhjfghjf"];
         store.dispatch("updateTags", { key: storeKey, tags: newTags });
 
         // TODO: figure out how to make the computed observableTags
@@ -105,7 +103,7 @@ describe("Tags/Tags.vue", () => {
         wrapper.setProps({ storeKey: "thisshouldbeunnecessary" });
         wrapper.setProps({ storeKey });
 
-        let observed = wrapper.vm.observedTags;
+        const observed = wrapper.vm.observedTags;
         expect(observed.length).to.equal(newTags.length);
         observed.forEach((tagLabel, i) => {
             expect(newTags[i]).to.equal(tagLabel);
@@ -122,7 +120,7 @@ describe("Tags/Tags.vue", () => {
         });
 
         it("should generate autocomplete items when you set the search text", (done) => {
-            let sampleTxt = "floobar";
+            const sampleTxt = "floobar";
             subscription = tagService.autocompleteOptions.subscribe((results) => {
                 expect(results.length).equal(1);
                 results.forEach((r) => {
@@ -134,7 +132,7 @@ describe("Tags/Tags.vue", () => {
         });
 
         it("should debounce autocomplete requests", (done) => {
-            let sampleTxt = "floobar";
+            const sampleTxt = "floobar";
             subscription = tagService.autocompleteOptions.subscribe((results) => {
                 expect(results.length).equal(1);
                 results.forEach((r) => {

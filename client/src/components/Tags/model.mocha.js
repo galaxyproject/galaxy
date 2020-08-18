@@ -1,4 +1,3 @@
-/* global expect */
 import { createTag, diffTags } from "./model";
 
 describe("Tags/model.js", () => {
@@ -6,8 +5,8 @@ describe("Tags/model.js", () => {
 
     describe("tag model", () => {
         it("should have a string representation equal to text prop", () => {
-            let testLabel = "abc";
-            let model = createTag(testLabel);
+            const testLabel = "abc";
+            const model = createTag(testLabel);
             assert.equal(model, testLabel);
             assert.equal(model.text, testLabel);
             assert.equal(model.toString(), testLabel);
@@ -18,14 +17,14 @@ describe("Tags/model.js", () => {
 
     describe("createTag", () => {
         it("should build a model from a string", () => {
-            let label = "floob";
-            let model = createTag(label);
+            const label = "floob";
+            const model = createTag(label);
             expect(model.text).to.equal(label);
         });
 
         it("should build a model from an object", () => {
-            let data = { text: "floob" };
-            let model = createTag(data);
+            const data = { text: "floob" };
+            const model = createTag(data);
             expect(model.text).to.equal(data.text);
         });
     });
@@ -34,7 +33,8 @@ describe("Tags/model.js", () => {
     // selected items from a list of returned autocomplete options
 
     describe("diffTags", () => {
-        let source, selected;
+        let source;
+        let selected;
 
         beforeEach(() => {
             source = ["a", "b", "c", "d"].map(createTag);
@@ -42,7 +42,7 @@ describe("Tags/model.js", () => {
         });
 
         it("should remove duplicates from a passed array", () => {
-            let result = diffTags(source, selected);
+            const result = diffTags(source, selected);
             expect(result.length).to.equal(2);
             assert(result[0].equals(source[1]), true);
             assert(result[0].equals(createTag("b")), true);
@@ -53,9 +53,9 @@ describe("Tags/model.js", () => {
 
     describe("handles name tags", () => {
         it("should accept a #label", () => {
-            let testLabel = "#abc";
-            let expectedLabel = "name:abc";
-            let model = createTag(testLabel);
+            const testLabel = "#abc";
+            const expectedLabel = "name:abc";
+            const model = createTag(testLabel);
             assert.equal(model, expectedLabel);
             assert.equal(model.text, expectedLabel);
             assert.equal(model.toString(), expectedLabel);

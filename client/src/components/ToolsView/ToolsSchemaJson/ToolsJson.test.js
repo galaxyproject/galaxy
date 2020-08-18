@@ -7,7 +7,8 @@ import Vue from "vue";
 import { mount } from "@vue/test-utils";
 
 describe("ToolsView/ToolsView.vue", () => {
-    let wrapper, axiosMock;
+    let wrapper;
+    let axiosMock;
     const defaultSchemaElementTag = "application/ld+json";
 
     beforeEach(async () => {

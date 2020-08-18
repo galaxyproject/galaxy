@@ -13,7 +13,8 @@ describe("JobMetrics/JobMetrics.vue", () => {
     const localVue = createLocalVue();
     localVue.use(Vuex);
 
-    let testStore, axiosMock;
+    let testStore;
+    let axiosMock;
 
     beforeEach(() => {
         axiosMock = new MockAdapter(axios);
@@ -68,7 +69,7 @@ describe("JobMetrics/JobMetrics.vue", () => {
     });
 
     it("should render correct AWS Estimates", async () => {
-        let deriveRenderedAwsEstimate = async (cores, seconds, memory) => {
+        const deriveRenderedAwsEstimate = async (cores, seconds, memory) => {
             const JOB_ID = Math.random().toString(36).substring(2);
             const propsData = {
                 jobId: JOB_ID,
@@ -100,25 +101,25 @@ describe("JobMetrics/JobMetrics.vue", () => {
 
             return estimates;
         };
-        let assertAwsInstance = (estimates) => {
+        const assertAwsInstance = (estimates) => {
             const instance = ec2.find((instance) => estimates.name === instance.name);
             expect(estimates.mem).to.equals(instance.mem.toString());
             expect(estimates.vcpus).to.equals(instance.vcpus.toString());
             expect(estimates.cpu).to.equals(instance.cpu.toString());
         };
 
-        let estimates_small = await deriveRenderedAwsEstimate("1.0000000", "9.0000000", "2048.0000000");
+        const estimates_small = await deriveRenderedAwsEstimate("1.0000000", "9.0000000", "2048.0000000");
 
         expect(estimates_small.name).to.equals("t2.small");
         expect(estimates_small.cost).to.equals("0.00 USD");
         assertAwsInstance(estimates_small);
 
-        let estimates_large = await deriveRenderedAwsEstimate("40.0000000", "18000.0000000", "194560.0000000");
+        const estimates_large = await deriveRenderedAwsEstimate("40.0000000", "18000.0000000", "194560.0000000");
         expect(estimates_large.name).to.equals("m5d.12xlarge");
         expect(estimates_large.cost).to.equals("16.32 USD");
         assertAwsInstance(estimates_large);
 
-        let estimates_not_available = await deriveRenderedAwsEstimate(
+        const estimates_not_available = await deriveRenderedAwsEstimate(
             "99999.0000000",
             "18000.0000000",
             "99999.0000000"

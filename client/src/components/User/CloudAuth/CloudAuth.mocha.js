@@ -17,7 +17,8 @@ localVue.use(BootstrapVue);
 localVue.filter("localize", (value) => _l(value));
 
 describe("CloudAuth component", () => {
-    let stub, wrapper;
+    let stub;
+    let wrapper;
 
     const mockSvc = {
         listCredentials: async () => null,

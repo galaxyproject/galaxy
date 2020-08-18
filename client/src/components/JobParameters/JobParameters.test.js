@@ -10,11 +10,10 @@ const JOB_ID = "foo";
 
 describe("JobMetrics/JobMetrics.vue", () => {
     const localVue = createLocalVue();
-    localVue.use(Vuex);
-
-    let wrapper, emitted, axiosMock;
-
     const linkParam = paramResponse.parameters.find((element) => Array.isArray(element.value));
+    let axiosMock;
+
+    localVue.use(Vuex);
 
     beforeEach(() => {
         axiosMock = new MockAdapter(axios);

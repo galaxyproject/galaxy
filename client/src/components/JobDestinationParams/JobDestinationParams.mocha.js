@@ -15,7 +15,9 @@ describe("JobDestinationParams/JobDestinationParams.vue", () => {
 
     const responseKeys = Object.keys(jobDestinationResponse);
 
-    let testStore, axiosMock, wrapper;
+    let testStore;
+    let axiosMock;
+    let wrapper;
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);

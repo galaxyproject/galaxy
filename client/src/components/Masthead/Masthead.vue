@@ -16,10 +16,10 @@
             <masthead-item
                 v-for="(tab, idx) in tabs"
                 :tab="tab"
-                :activeTab="activeTab"
+                :active-tab="activeTab"
                 :key="`tab-${idx}`"
-                :appRoot="appRoot"
-                :Galaxy="Galaxy"
+                :app-root="appRoot"
+                :galaxy="Galaxy"
                 v-show="!(tab.hidden === undefined ? false : tab.hidden)"
             >
             </masthead-item>

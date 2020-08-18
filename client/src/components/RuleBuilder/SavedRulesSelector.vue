@@ -2,7 +2,7 @@
     <div class="btn-group dropdown">
         <span
             class="fas fa-history rule-builder-view-source"
-            v-bind:class="{ disabled: numOfSavedRules == 0 }"
+            :class="{ disabled: numOfSavedRules == 0 }"
             v-b-tooltip.hover.bottom
             :title="savedRulesMenu"
             data-toggle="dropdown"
