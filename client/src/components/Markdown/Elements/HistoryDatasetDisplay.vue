@@ -1,5 +1,5 @@
 <template>
-    <b-card class="w-50" body-class="p-0">
+    <b-card class="w-50 mx-auto" body-class="p-0">
         <b-card-header v-if="!embedded">
             <span class="float-right">
                 <b-button

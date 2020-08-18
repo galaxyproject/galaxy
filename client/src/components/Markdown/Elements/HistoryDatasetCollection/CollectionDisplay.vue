@@ -1,5 +1,5 @@
 <template>
-    <b-card class="w-50" body-class="p-0">
+    <b-card class="w-50 mx-auto" body-class="p-0">
         <b-card-header>
             <span>
                 <span>Dataset Collection:</span>

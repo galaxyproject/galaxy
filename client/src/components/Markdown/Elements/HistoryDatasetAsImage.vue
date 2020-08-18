@@ -1,5 +1,5 @@
 <template>
-    <b-card nobody class="w-50" body-class="p-1">
+    <b-card nobody class="w-50 mx-auto" body-class="p-1">
         <b-img :src="imageUrl" fluid />
     </b-card>
 </template>

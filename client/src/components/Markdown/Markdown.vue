@@ -17,8 +17,7 @@
                 <div class="float-left m-1">Created with Galaxy {{ getVersion }} on {{ getTime }} UTC</div>
                 <div class="float-right m-1">Identifier {{ markdownConfig.id }}</div>
             </b-badge>
-            <div v-html="markdownRendered"></div>
-            <div v-for="obj in markdownObjects" :key="obj.key">
+            <div v-for="(obj, index) in markdownObjects" :key="index">
                 <div v-if="obj.name == 'generate_galaxy_version'" class="galaxy-version">
                     <pre><code>{{ getVersion }}</code></pre>
                 </div>
@@ -62,6 +61,7 @@
                     :args="obj.args"
                     :datasets="historyDatasets"
                 />
+                <div v-else v-html="obj.content" />
                 <br />
             </div>
         </div>
@@ -72,8 +72,8 @@
 import store from "store";
 import { getGalaxyInstance } from "app";
 import MarkdownIt from "markdown-it";
-import LoadingSpan from "components/LoadingSpan";
 
+import LoadingSpan from "components/LoadingSpan";
 import HistoryDatasetAsImage from "./Elements/HistoryDatasetAsImage";
 import HistoryDatasetDisplay from "./Elements/HistoryDatasetDisplay";
 import HistoryDatasetLink from "./Elements/HistoryDatasetLink";
@@ -92,8 +92,6 @@ const FUNCTION_CALL_LINE = `\\s*(\\w+)\\s*\\(\\s*(?:(${FUNCTION_CALL})(,${FUNCTI
 const FUNCTION_CALL_LINE_TEMPLATE = new RegExp(FUNCTION_CALL_LINE, "m");
 
 const md = MarkdownIt();
-
-const default_fence = md.renderer.rules.fence;
 
 export default {
     store: store,
@@ -153,50 +151,69 @@ export default {
             return Galaxy.config.enable_beta_markdown_export ? this.exportLink : null;
         },
     },
-    created() {
-        const self = this;
-        md.renderer.rules.fence = function (tokens, idx, options, env, slf) {
-            const token = tokens[idx];
-            const info = token.info ? token.info.trim() : "";
-            const content = token.content;
-            if (info == "galaxy") {
-                const galaxy_function = FUNCTION_CALL_LINE_TEMPLATE.exec(content);
-                const args = {};
-                const function_name = galaxy_function[1];
-                // we need [... ] to return empty string, if regex doesn't match
-                const function_arguments = [...content.matchAll(new RegExp(FUNCTION_CALL, "g"))];
-
-                for (let i = 0; i < function_arguments.length; i++) {
-                    if (function_arguments[i] === undefined) continue;
-                    const arguments_str = function_arguments[i].toString().replace(/,/g, "").trim();
-
-                    if (arguments_str) {
-                        const [key, val] = arguments_str.split("=");
-                        args[key.trim()] = val.replace(/['"]+/g, "").trim();
-                    }
-                }
-                self.markdownObjects.push({
-                    key: self.markdownObjects.length,
-                    name: function_name,
-                    args: args,
-                    content: content,
-                });
-                return "";
-            } else {
-                return default_fence(tokens, idx, options, env, slf);
-            }
-        };
-    },
     watch: {
-        markdownConfig: function (mConfig, oldVal) {
-            const markdown = mConfig.markdown;
+        markdownConfig: function (config) {
+            const markdown = config.markdown;
+            this.markdownObjects = this.splitMarkdown(markdown);
             this.markdownRendered = md.render(markdown);
-            this.historyDatasets = mConfig.history_datasets || {};
-            this.historyDatasetCollections = mConfig.history_dataset_collections || {};
-            this.workflows = mConfig.workflows || {};
-            this.jobs = mConfig.jobs || {};
-            this.invocations = mConfig.invocations || {};
+            this.historyDatasets = config.history_datasets || {};
+            this.historyDatasetCollections = config.history_dataset_collections || {};
+            this.workflows = config.workflows || {};
+            this.jobs = config.jobs || {};
+            this.invocations = config.invocations || {};
             this.loading = false;
+        },
+    },
+    methods: {
+        splitMarkdown(markdown) {
+            const sections = [];
+            let digest = markdown;
+            while (digest.length > 0) {
+                const galaxyStart = digest.indexOf("```galaxy");
+                if (galaxyStart != -1) {
+                    const galaxyEnd = digest.substr(galaxyStart + 1).indexOf("```");
+                    if (galaxyEnd != -1) {
+                        if (galaxyStart > 0) {
+                            const defaultContent = digest.substr(0, galaxyStart);
+                            sections.push({
+                                name: "default",
+                                content: md.render(defaultContent),
+                            });
+                        }
+                        const galaxyEndIndex = galaxyEnd + 4;
+                        const galaxySection = digest.substr(galaxyStart, galaxyEndIndex);
+                        sections.push(this.getArgs(galaxySection));
+                        digest = digest.substr(galaxyStart + galaxyEndIndex + 1);
+                    }
+                } else {
+                    sections.push({
+                        name: "default",
+                        content: md.render(digest),
+                    });
+                    break;
+                }
+            }
+            return sections;
+        },
+        getArgs(content) {
+            const galaxy_function = FUNCTION_CALL_LINE_TEMPLATE.exec(content);
+            const args = {};
+            const function_name = galaxy_function[1];
+            // we need [... ] to return empty string, if regex doesn't match
+            const function_arguments = [...content.matchAll(new RegExp(FUNCTION_CALL, "g"))];
+            for (let i = 0; i < function_arguments.length; i++) {
+                if (function_arguments[i] === undefined) continue;
+                const arguments_str = function_arguments[i].toString().replace(/,/g, "").trim();
+                if (arguments_str) {
+                    const [key, val] = arguments_str.split("=");
+                    args[key.trim()] = val.replace(/['"]+/g, "").trim();
+                }
+            }
+            return {
+                name: function_name,
+                args: args,
+                content: content,
+            };
         },
     },
 };

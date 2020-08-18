@@ -1,5 +1,5 @@
 <template>
-    <b-card nobody class="content-height w-50">
+    <b-card nobody class="content-height w-50 mx-auto">
         <div :class="name" :job_id="args.job_id">
             <pre><code class="code-wrap">{{ jobContent }}</code></pre>
         </div>
