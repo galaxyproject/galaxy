@@ -1,5 +1,8 @@
 <template>
     <div class="markdown-wrapper">
+        <a v-if="effectiveExportLink" :href="exportLink" class="markdown-export position-absolute p-3">
+            <i class="fa fa-3x fa-download" />
+        </a>
         <div>
             <h3 class="float-right align-middle mr-1 mt-2">Galaxy {{ markdownConfig.model_class }}</h3>
             <span class="float-left font-weight-light mb-3">
@@ -13,9 +16,6 @@
             <div class="float-right m-1">Identifier {{ markdownConfig.id }}</div>
         </b-badge>
         <div v-html="markdownRendered"></div>
-        <a :href="exportLink" class="markdown-export" v-if="effectiveExportLink">
-            <i class="fa fa-4x fa-download" />
-        </a>
         <div v-for="obj in markdownObjects" :key="obj.key">
             <div v-if="obj.name == 'generate_galaxy_version'" class="galaxy-version">
                 <pre><code>{{ getVersion }}</code></pre>
@@ -117,7 +117,6 @@ export default {
         },
         exportLink: {
             type: String,
-            required: false,
             default: null,
         },
     },
@@ -195,14 +194,10 @@ export default {
     },
 };
 </script>
-<style lang="scss">
+<style scoped>
 .markdown-export {
-    position: absolute;
     bottom: 0;
     right: 0;
-    z-index: 2000;
-    padding: 1rem;
-    color: gray;
     opacity: 0.5;
 }
 </style>
