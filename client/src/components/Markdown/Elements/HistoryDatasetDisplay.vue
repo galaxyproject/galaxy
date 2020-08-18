@@ -89,7 +89,7 @@ export default {
             return `${getAppRoot()}dataset/imp?dataset_id=${this.args.history_dataset_id}`;
         },
         itemUrl() {
-            return `${getAppRoot()}dataset/get_item_content_async?id=${this.args.history_dataset_id}`;
+            return `${getAppRoot()}api/datasets/${this.args.history_dataset_id}/get_content_as_text`;
         },
     },
     methods: {

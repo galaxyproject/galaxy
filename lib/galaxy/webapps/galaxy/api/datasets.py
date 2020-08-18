@@ -419,6 +419,22 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
             rval = "Could not get display data for dataset: %s" % util.unicodify(e)
         return rval
 
+    @web.expose_api
+    def get_content_as_text(self, trans, dataset_id):
+        """ Returns item content as Text. """
+        decoded_id = self.decode_id(dataset_id)
+        dataset = self.hda_manager.get_accessible(decoded_id, trans.user)
+        dataset = self.hda_manager.error_if_uploading(dataset)
+        if dataset is None:
+            raise galaxy_exceptions.MessageException("Dataset not found.")
+        truncated, dataset_data = self.hda_manager.text_data(dataset, preview=True)
+        item_url = web.url_for( controller='dataset', action='display_by_username_and_slug', username=dataset.history.user.username, slug=trans.security.encode_id( dataset.id ), preview=False )
+        return {
+            "item_data": dataset_data,
+            "truncated": truncated,
+            "item_url": item_url,
+        }
+
     @web.legacy_expose_api_raw_anonymous
     def get_metadata_file(self, trans, history_content_id, history_id, metadata_file=None, **kwd):
         """
