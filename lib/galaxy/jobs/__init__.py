@@ -1288,7 +1288,12 @@ class JobWrapper(HasResourceParameters):
                 dataset.mark_unhidden()
                 if dataset.ext == 'auto':
                     dataset.extension = 'data'
-                self.__update_output(job, dataset)
+                try:
+                    self.__update_output(job, dataset)
+                except Exception:
+                    # Failure to update the output of a failed job should not prevent completion of the failure method
+                    log.exception("(%s) fail(): Failed to update job output dataset with id: %s", self.get_id_tag(),
+                                  dataset.dataset.id)
                 # Pause any dependent jobs (and those jobs' outputs)
                 for dep_job_assoc in dataset.dependent_jobs:
                     self.pause(dep_job_assoc.job, "Execution of this dataset's job is paused because its input datasets are in an error state.")
