@@ -5,7 +5,7 @@ export default {
 
     computed: {
         contentItemComponent() {
-            if (this.item._id === undefined) {
+            if (this.item.id === undefined) {
                 return "Placeholder";
                 // return "Loading";
             }
