@@ -93,6 +93,7 @@
     "@babel/plugin-syntax-dynamic-import": "^7.8.3",
     "@babel/plugin-transform-runtime": "^7.11.0",
     "@babel/preset-env": "^7.11.0",
+    "@testing-library/jest-dom": "^5.11.3",
     "@vue/test-utils": "^1.0.3",
     "amdi18n-loader": "^0.9.3",
     "autoprefixer": "^9.8.0",
