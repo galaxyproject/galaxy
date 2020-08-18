@@ -34,7 +34,7 @@
             </b-card-header>
             <b-card-body>
                 <LoadingSpan v-if="loading" message="Loading Dataset" />
-                <div v-else class="content-height">
+                <div v-else class="embedded-dataset content-height">
                     <pre><code class="code-wrap">{{ itemContent.item_data }}</code></pre>
                     <b-link v-if="itemContent.truncated" :href="itemContent.item_url">
                         Show More...

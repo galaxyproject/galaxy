@@ -18,7 +18,7 @@
                 <div class="float-right m-1">Identifier {{ markdownConfig.id }}</div>
             </b-badge>
             <div v-for="(obj, index) in markdownObjects" :key="index">
-                <div v-if="obj.name == 'default'" v-html="obj.content" />
+                <p v-if="obj.name == 'default'" v-html="obj.content" class="text-justify m-2" />
                 <div v-else-if="obj.name == 'generate_galaxy_version'" class="galaxy-version">
                     <pre><code>{{ getVersion }}</code></pre>
                 </div>

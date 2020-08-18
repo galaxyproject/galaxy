@@ -5,14 +5,13 @@ from abc import (
     abstractmethod
 )
 
-
+from galaxy.managers import workflows
 from galaxy.managers.markdown_util import (
     internal_galaxy_markdown_to_pdf,
     ready_galaxy_markdown_for_export,
     resolve_invocation_markdown,
 )
 
-from galaxy.managers import workflows
 
 class WorkflowReportGeneratorPlugin(metaclass=ABCMeta):
     """

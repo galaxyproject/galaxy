@@ -596,65 +596,65 @@ class WorkflowContentsManager(UsesAnnotations):
             raise exceptions.MessageException('Workflow cannot be run because it contains cycles.')
 
         # Ensure that the user has a history
-        trans.get_history( most_recent=True, create=True )
+        trans.get_history(most_recent=True, create=True)
 
-        def row_for_param( input_dict, param, raw_value, other_values, prefix, step ):
+        def row_for_param(input_dict, param, raw_value, other_values, prefix, step):
             input_dict["label"] = param.get_label()
             value = None
-            if isinstance( param, DataToolParameter ) or isinstance( param, DataCollectionToolParameter ):
-                if ( prefix + param.name ) in step.input_connections_by_name:
-                    conns = step.input_connections_by_name[ prefix + param.name ]
+            if isinstance(param, DataToolParameter) or isinstance(param, DataCollectionToolParameter):
+                if (prefix + param.name) in step.input_connections_by_name:
+                    conns = step.input_connections_by_name[prefix + param.name]
                     if not isinstance(conns, list):
                         conns = [conns]
-                    value = ["Output '%s' from Step %d." % (conn.output_name, int(conn.output_step.order_index)+1) for conn in conns]
+                    value = ["Output '%s' from Step %d." % (conn.output_name, int(conn.output_step.order_index) + 1) for conn in conns]
                     value = ",".join(value)
                 else:
                     value = "Select at Runtime."
             else:
-                value = param.value_to_display_text( raw_value ) or 'Unavailable.'
+                value = param.value_to_display_text(raw_value) or 'Unavailable.'
             input_dict["value"] = value
-            if hasattr( step, 'upgrade_messages' ) and step.upgrade_messages and param.name in step.upgrade_messages:
+            if hasattr(step, 'upgrade_messages') and step.upgrade_messages and param.name in step.upgrade_messages:
                 input_dict["upgrade_messages"] = step.upgrade_messages[param.name]
 
-        def do_inputs( inputs, values, prefix, step, other_values=None ):
+        def do_inputs(inputs, values, prefix, step, other_values=None):
             input_dicts = []
-            for input_index, input in enumerate( inputs.values() ):
+            for input_index, input in enumerate(inputs.values()):
                 input_dict = {}
                 input_dict["type"] = input.type
                 if input.type == "repeat":
                     repeat_values = values[input.name]
-                    if len( repeat_values ) > 0:
+                    if len(repeat_values) > 0:
                         input_dict["title"] = input.title_plural
                         nested_input_dicts = []
-                        for i in range( len( repeat_values ) ):
+                        for i in range(len(repeat_values)):
                             nested_input_dict = {}
                             index = repeat_values[i]['__index__']
                             nested_input_dict["title"] = "%i. %s" % (i + 1, input.title)
-                            nested_input_dict["inputs"] = do_inputs( input.inputs, repeat_values[ i ], prefix + input.name + "_" + str(index) + "|", step, other_values )
+                            nested_input_dict["inputs"] = do_inputs(input.inputs, repeat_values[i], prefix + input.name + "_" + str(index) + "|", step, other_values)
                             nested_input_dicts.append(nested_input_dict)
                         input_dict["inputs"] = nested_input_dicts
                 elif input.type == "conditional":
                     group_values = values[input.name]
                     current_case = group_values['__current_case__']
                     new_prefix = prefix + input.name + "|"
-                    row_for_param( input_dict,  input.test_param, group_values[ input.test_param.name ], other_values, prefix, step )
-                    input_dict["inputs"] = do_inputs( input.cases[ current_case ].inputs, group_values, new_prefix, step, other_values )
+                    row_for_param(input_dict, input.test_param, group_values[input.test_param.name], other_values, prefix, step)
+                    input_dict["inputs"] = do_inputs(input.cases[current_case].inputs, group_values, new_prefix, step, other_values)
                 elif input.type == "section":
                     new_prefix = prefix + input.name + "|"
                     group_values = values[input.name]
                     input_dict["title"] = input.title
-                    input_dict["inputs"] = do_inputs( input.inputs, group_values, new_prefix, step, other_values )
+                    input_dict["inputs"] = do_inputs(input.inputs, group_values, new_prefix, step, other_values)
                 else:
-                    row_for_param( input_dict, input, values[ input.name ], other_values, prefix, step )
+                    row_for_param(input_dict, input, values[input.name], other_values, prefix, step)
                 input_dicts.append(input_dict)
             return input_dicts
 
         step_dicts = []
-        for i, step in enumerate( workflow.steps ):
+        for i, step in enumerate(workflow.steps):
             module_injector = WorkflowModuleInjector(trans)
             step_dict = {}
             step_dict["order_index"] = step.order_index
-            if hasattr( step, "annotation") and step.annotation is not None:
+            if hasattr(step, "annotation") and step.annotation is not None:
                 step_dict["annotation"] = step.annotation
             try:
                 module_injector.inject(step, steps=workflow.steps, exact_tools=False)
@@ -663,12 +663,12 @@ class WorkflowContentsManager(UsesAnnotations):
                 step_dicts.append(step_dict)
                 continue
             if step.type == 'tool' or step.type is None:
-                tool = trans.app.toolbox.get_tool( step.tool_id )
+                tool = trans.app.toolbox.get_tool(step.tool_id)
                 if tool:
                     step_dict["label"] = step.label or tool.name
                 else:
                     step_dict["label"] = "Unknown Tool with id '%s'" % step.tool_id
-                step_dict["inputs"] = do_inputs( tool.inputs, step.state.inputs, "", step )
+                step_dict["inputs"] = do_inputs(tool.inputs, step.state.inputs, "", step)
             elif step.type == 'subworkflow':
                 step_dict["label"] = step.label or (step.subworkflow.name if step.subworkflow else "Missing workflow.")
                 errors = step.module.get_errors()
@@ -679,7 +679,7 @@ class WorkflowContentsManager(UsesAnnotations):
             else:
                 module = step.module
                 step_dict["label"] = module.name
-                step_dict["inputs"] = do_inputs( module.get_runtime_inputs(), step.state.inputs, "", step )
+                step_dict["inputs"] = do_inputs(module.get_runtime_inputs(), step.state.inputs, "", step)
             step_dicts.append(step_dict)
         return {
             "steps": step_dicts,

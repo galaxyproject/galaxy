@@ -428,7 +428,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
         if dataset is None:
             raise galaxy_exceptions.MessageException("Dataset not found.")
         truncated, dataset_data = self.hda_manager.text_data(dataset, preview=True)
-        item_url = web.url_for( controller='dataset', action='display_by_username_and_slug', username=dataset.history.user.username, slug=trans.security.encode_id( dataset.id ), preview=False )
+        item_url = web.url_for(controller='dataset', action='display_by_username_and_slug', username=dataset.history.user.username, slug=trans.security.encode_id(dataset.id), preview=False)
         return {
             "item_data": dataset_data,
             "truncated": truncated,
