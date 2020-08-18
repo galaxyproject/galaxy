@@ -40,7 +40,7 @@ describe("DatasetCollectionDialog.vue", () => {
             localVue: localVue,
         });
 
-        expect(wrapper.find(SelectionDialog)).toBeTruthy();
+        expect(wrapper.findComponent(SelectionDialog).exists()).toBe(true);
         expect(wrapper.vm.optionsShow).toBe(false);
 
         await flushPromises();

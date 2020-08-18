@@ -144,7 +144,7 @@ describe("DataDialog.vue", () => {
     });
 
     it("loads correctly, embeds a SelectionDialog", async () => {
-        expect(wrapper.find(SelectionDialog).is(SelectionDialog)).toBe(true);
+        expect(wrapper.findComponent(SelectionDialog).exists()).toBe(true);
         // Cannot get nested slot templates to render into the wrapper
         ///  Lots of open issues around this
         ///  ... Maybe because named slots have many issues
