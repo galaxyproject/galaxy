@@ -16,12 +16,19 @@ describe("Masthead.vue", () => {
             id: "mytab",
             menu: menu,
         };
+
+        const attachElement = document.createElement("div");
+        if (document.body) {
+            document.body.appendChild(attachElement);
+        }
+
         return mount(MastheadItem, {
             propsData: {
                 tab,
                 activeTab: active,
             },
             localVue,
+            attachTo: attachElement,
         });
     }
 

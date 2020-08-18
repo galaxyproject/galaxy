@@ -68,7 +68,7 @@ module.exports = {
     // ],
 
     // An array of file extensions your modules use
-    moduleFileExtensions: ["js", "json", "jsx", "ts", "tsx", "node", "vue"],
+    moduleFileExtensions: ["js", "json", "vue"],
 
     modulePaths: ["<rootDir>/src/", "<rootDir>/node_modules/", "<rootDir>/tests/"],
 
