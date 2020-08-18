@@ -14,7 +14,7 @@ export default {
         },
         message: {
             type: String,
-            default: "Please wait",
+            default: "Loading",
         },
     },
     computed: {

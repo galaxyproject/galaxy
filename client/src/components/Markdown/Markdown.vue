@@ -1,66 +1,69 @@
 <template>
     <div class="markdown-wrapper">
-        <a v-if="effectiveExportLink" :href="exportLink" class="markdown-export position-absolute p-3">
-            <i class="fa fa-3x fa-download" />
-        </a>
-        <div>
-            <h3 class="float-right align-middle mr-1 mt-2">Galaxy {{ markdownConfig.model_class }}</h3>
-            <span class="float-left font-weight-light mb-3">
-                <small>Title: {{ markdownConfig.title || markdownConfig.model_class }}</small
-                ><br />
-                <small>Username: {{ markdownConfig.username }}</small>
-            </span>
-        </div>
-        <b-badge variant="info" class="w-100 rounded mb-3">
-            <div class="float-left m-1">Created with Galaxy {{ getVersion }} on {{ getTime }} UTC</div>
-            <div class="float-right m-1">Identifier {{ markdownConfig.id }}</div>
-        </b-badge>
-        <div v-html="markdownRendered"></div>
-        <div v-for="obj in markdownObjects" :key="obj.key">
-            <div v-if="obj.name == 'generate_galaxy_version'" class="galaxy-version">
-                <pre><code>{{ getVersion }}</code></pre>
+        <LoadingSpan v-if="loading" />
+        <div v-else>
+            <a v-if="effectiveExportLink" :href="exportLink" class="markdown-export position-absolute p-3">
+                <i class="fa fa-3x fa-download" />
+            </a>
+            <div>
+                <h3 class="float-right align-middle mr-1 mt-2">Galaxy {{ markdownConfig.model_class }}</h3>
+                <span class="float-left font-weight-light mb-3">
+                    <small>Title: {{ markdownConfig.title || markdownConfig.model_class }}</small
+                    ><br />
+                    <small>Username: {{ markdownConfig.username }}</small>
+                </span>
             </div>
-            <div v-if="obj.name == 'generate_time'" class="galaxy-time">
-                <pre><code>{{ getTime }}</code></pre>
+            <b-badge variant="info" class="w-100 rounded mb-3">
+                <div class="float-left m-1">Created with Galaxy {{ getVersion }} on {{ getTime }} UTC</div>
+                <div class="float-right m-1">Identifier {{ markdownConfig.id }}</div>
+            </b-badge>
+            <div v-html="markdownRendered"></div>
+            <div v-for="obj in markdownObjects" :key="obj.key">
+                <div v-if="obj.name == 'generate_galaxy_version'" class="galaxy-version">
+                    <pre><code>{{ getVersion }}</code></pre>
+                </div>
+                <div v-else-if="obj.name == 'generate_time'" class="galaxy-time">
+                    <pre><code>{{ getTime }}</code></pre>
+                </div>
+                <HistoryDatasetAsImage v-else-if="obj.name == 'history_dataset_as_image'" :args="obj.args" />
+                <HistoryDatasetLink v-else-if="obj.name == 'history_dataset_link'" :args="obj.args" />
+                <HistoryDatasetIndex v-else-if="obj.name == 'history_dataset_index'" :args="obj.args" />
+                <InvocationTime v-else-if="obj.name == 'invocation_time'" :args="obj.args" :invocations="invocations" />
+                <JobMetrics v-else-if="obj.name == 'job_metrics'" :args="obj.args" />
+                <JobParameters v-else-if="obj.name == 'job_parameters'" :args="obj.args" />
+                <WorkflowDisplay v-else-if="obj.name == 'workflow_display'" :args="obj.args" :workflows="workflows" />
+                <HistoryDatasetCollectionDisplay
+                    v-else-if="obj.name == 'history_dataset_collection_display'"
+                    :args="obj.args"
+                    :collections="historyDatasetCollections"
+                />
+                <ToolStd
+                    v-else-if="['tool_stdout', 'tool_stderr'].includes(obj.name)"
+                    :args="obj.args"
+                    :name="obj.name"
+                    :jobs="jobs"
+                />
+                <HistoryDatasetDisplay
+                    v-else-if="['history_dataset_embedded', 'history_dataset_display'].includes(obj.name)"
+                    :args="obj.args"
+                    :datasets="historyDatasets"
+                    :embedded="obj.name == 'history_dataset_embedded'"
+                />
+                <HistoryDatasetDetails
+                    v-else-if="
+                        [
+                            'history_dataset_name',
+                            'history_dataset_info',
+                            'history_dataset_peek',
+                            'history_dataset_type',
+                        ].includes(obj.name)
+                    "
+                    :name="obj.name"
+                    :args="obj.args"
+                    :datasets="historyDatasets"
+                />
+                <br />
             </div>
-            <HistoryDatasetAsImage v-if="obj.name == 'history_dataset_as_image'" :args="obj.args" />
-            <HistoryDatasetLink v-if="obj.name == 'history_dataset_link'" :args="obj.args" />
-            <HistoryDatasetIndex v-if="obj.name == 'history_dataset_index'" :args="obj.args" />
-            <InvocationTime v-if="obj.name == 'invocation_time'" :args="obj.args" :invocations="invocations" />
-            <JobMetrics v-if="obj.name == 'job_metrics'" :args="obj.args" />
-            <JobParameters v-if="obj.name == 'job_parameters'" :args="obj.args" />
-            <WorkflowDisplay v-if="obj.name == 'workflow_display'" :args="obj.args" :workflows="workflows" />
-            <HistoryDatasetCollectionDisplay
-                v-if="obj.name == 'history_dataset_collection_display'"
-                :args="obj.args"
-                :collections="historyDatasetCollections"
-            />
-            <ToolStd
-                v-if="['tool_stdout', 'tool_stderr'].includes(obj.name)"
-                :args="obj.args"
-                :name="obj.name"
-                :jobs="jobs"
-            />
-            <HistoryDatasetDisplay
-                v-if="['history_dataset_embedded', 'history_dataset_display'].includes(obj.name)"
-                :args="obj.args"
-                :datasets="historyDatasets"
-                :embedded="obj.name == 'history_dataset_embedded'"
-            />
-            <HistoryDatasetDetails
-                v-if="
-                    [
-                        'history_dataset_name',
-                        'history_dataset_info',
-                        'history_dataset_peek',
-                        'history_dataset_type',
-                    ].includes(obj.name)
-                "
-                :name="obj.name"
-                :args="obj.args"
-                :datasets="historyDatasets"
-            />
-            <br />
         </div>
     </div>
 </template>
@@ -69,6 +72,7 @@
 import store from "store";
 import { getGalaxyInstance } from "app";
 import MarkdownIt from "markdown-it";
+import LoadingSpan from "components/LoadingSpan";
 
 import HistoryDatasetAsImage from "./Elements/HistoryDatasetAsImage";
 import HistoryDatasetDisplay from "./Elements/HistoryDatasetDisplay";
@@ -102,6 +106,7 @@ export default {
         HistoryDatasetLink,
         JobMetrics,
         JobParameters,
+        LoadingSpan,
         ToolStd,
         WorkflowDisplay,
         InvocationTime,
@@ -129,6 +134,7 @@ export default {
             workflows: {},
             jobs: {},
             invocations: {},
+            loading: true,
         };
     },
     computed: {
@@ -190,6 +196,7 @@ export default {
             this.workflows = mConfig.workflows || {};
             this.jobs = mConfig.jobs || {};
             this.invocations = mConfig.invocations || {};
+            this.loading = false;
         },
     },
 };

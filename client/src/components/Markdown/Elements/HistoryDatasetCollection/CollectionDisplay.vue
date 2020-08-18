@@ -43,7 +43,6 @@ export default {
     created() {
         this.getContent().then((data) => {
             this.itemContent = data;
-            console.log(data);
             this.loading = false;
         });
     },

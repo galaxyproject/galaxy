@@ -21,7 +21,7 @@
             </span>
         </b-card-header>
         <b-card-body>
-            <LoadingSpan v-if="loading" message="Please wait..." />
+            <LoadingSpan v-if="loading" message="Loading Workflow" />
             <div v-else class="content-height">
                 <div v-for="step in itemContent.steps" :key="step.order_index" class="mb-2">
                     <div>Step {{ step.order_index + 1 }}: {{ step.label }}</div>
@@ -65,8 +65,6 @@ export default {
     created() {
         this.getContent().then((data) => {
             this.itemContent = data;
-            console.log(this.itemContent);
-            console.log(this.args.workflow_id);
             this.loading = false;
         });
     },
