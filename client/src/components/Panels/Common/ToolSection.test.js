@@ -1,6 +1,7 @@
 import Vue from "vue";
 import { mount } from "@vue/test-utils";
 import ToolSection from "./ToolSection";
+import { getNewAttachNode } from "jest/helpers";
 
 describe("ToolSection", () => {
     test("test tool section", () => {
@@ -10,6 +11,7 @@ describe("ToolSection", () => {
                     name: "name",
                 },
             },
+            attachTo: getNewAttachNode(),
         });
         const nameElement = wrapper.findAll(".name");
         expect(nameElement.at(0).text()).toBe("name");
@@ -32,6 +34,7 @@ describe("ToolSection", () => {
                     ],
                 },
             },
+            attachTo: getNewAttachNode(),
         });
         expect(wrapper.vm.opened).toBe(false);
         const $sectionName = wrapper.find(".name");
@@ -63,6 +66,7 @@ describe("ToolSection", () => {
                 },
                 queryFilter: "test",
             },
+            attachTo: getNewAttachNode(),
         });
         expect(wrapper.vm.opened).toBe(true);
         const $sectionName = wrapper.find(".name");

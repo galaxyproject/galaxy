@@ -1,6 +1,7 @@
 import Vue from "vue";
 import { mount } from "@vue/test-utils";
 import SavedRulesSelector from "components/RuleBuilder/SavedRulesSelector";
+import { getNewAttachNode } from "../../../tests/jest/helpers";
 
 describe("SavedRulesSelector", () => {
     let wrapper;
@@ -12,6 +13,7 @@ describe("SavedRulesSelector", () => {
                 // Add a unique prefix for this test run so the test is not affected by local storage values
                 prefix: "test_prefix_" + new Date().toISOString() + "_",
             },
+            attachTo: getNewAttachNode(),
         });
         await Vue.nextTick();
     });

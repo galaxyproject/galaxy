@@ -53,12 +53,10 @@ export class TagService {
     }
 
     async delete(tag) {
-        console.debug("ASYNC CALLING DELETE");
         return createTag(tag);
     }
 
     async autocomplete(txt) {
-        console.debug("ASYNC CALLING AUTOCOMP");
         return [txt].map(createTag);
     }
 }

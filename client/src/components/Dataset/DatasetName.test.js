@@ -1,9 +1,13 @@
 import { mount } from "@vue/test-utils";
 import DatasetName from "./DatasetName";
+import { getNewAttachNode } from "../../../tests/jest/helpers";
 
 describe("Dataset Name", () => {
     it("test dataset default", async () => {
-        const wrapper = mount(DatasetName, { propsData: { item: { name: "name", state: "success" } } });
+        const wrapper = mount(DatasetName, {
+            propsData: { item: { name: "name", state: "success" } },
+            attachTo: getNewAttachNode(),
+        });
         const state = wrapper.findAll(".name");
         expect(state.length).toBe(1);
         expect(state.at(0).text()).toBe("name");
@@ -15,7 +19,10 @@ describe("Dataset Name", () => {
         expect(Array.isArray(wrapper.emitted().copyDataset)).toBe(true);
     });
     it("test dataset error", async () => {
-        const wrapper = mount(DatasetName, { propsData: { item: { name: "name", state: "error" } } });
+        const wrapper = mount(DatasetName, {
+            propsData: { item: { name: "name", state: "error" } },
+            attachTo: getNewAttachNode(),
+        });
         const state = wrapper.findAll(".name");
         expect(state.length).toBe(1);
         expect(state.at(0).text()).toBe("name");
@@ -24,7 +31,10 @@ describe("Dataset Name", () => {
         expect(errorstate.at(0).classes()).toEqual(expect.arrayContaining(["text-danger"]));
     });
     it("test dataset paused", async () => {
-        const wrapper = mount(DatasetName, { propsData: { item: { name: "name", state: "paused" } } });
+        const wrapper = mount(DatasetName, {
+            propsData: { item: { name: "name", state: "paused" } },
+            attachTo: getNewAttachNode(),
+        });
         const state = wrapper.findAll(".name");
         expect(state.length).toBe(1);
         expect(state.at(0).text()).toBe("name");

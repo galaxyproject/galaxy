@@ -1,5 +1,6 @@
 import { mount } from "@vue/test-utils";
 import Tool from "./Tool";
+import { getNewAttachNode } from "jest/helpers";
 
 describe("Tool", () => {
     test("test tool", () => {
@@ -7,6 +8,7 @@ describe("Tool", () => {
             propsData: {
                 tool: {},
             },
+            attachTo: getNewAttachNode(),
         });
         const nameElement = wrapper.findAll(".name");
         expect(nameElement.at(0).text()).toBe("");
@@ -28,6 +30,7 @@ describe("Tool", () => {
                 operationIcon: "operationIconClass",
                 operationTitle: "operationTitle",
             },
+            attachTo: getNewAttachNode(),
         });
         const nameElement = wrapper.findAll(".name");
         expect(nameElement.at(0).text()).toBe("name");
@@ -45,6 +48,7 @@ describe("Tool", () => {
                 },
                 hideName: true,
             },
+            attachTo: getNewAttachNode(),
         });
         const nameElement = wrapper.findAll(".name");
         expect(nameElement.length).toBe(0);
