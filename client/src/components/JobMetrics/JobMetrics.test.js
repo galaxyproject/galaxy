@@ -1,30 +1,28 @@
-import Vuex from "vuex";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import { mount, createLocalVue } from "@vue/test-utils";
-import { createStore } from "../../store";
 import flushPromises from "flush-promises";
 import JobMetrics from "./JobMetrics";
 import ec2 from "./ec2.json";
+import Vuex from "vuex";
+import createCache from "vuex-cache";
+import { jobMetricsStore } from "store/jobMetricsStore";
+import axios from "axios";
 
 const JOB_ID = "moo";
 
+// Ignore all axios calls, data is mocked locally -- just say "OKAY!"
+jest.mock("axios");
+axios.get.mockResolvedValue({ response: { status: 200 } });
+
+const localVue = createLocalVue();
+localVue.use(Vuex);
+const testStore = new Vuex.Store({
+    plugins: [createCache()],
+    modules: {
+        jobMetricsStore,
+    },
+});
+
 describe("JobMetrics/JobMetrics.vue", () => {
-    const localVue = createLocalVue();
-    localVue.use(Vuex);
-
-    let testStore;
-    let axiosMock;
-
-    beforeEach(() => {
-        axiosMock = new MockAdapter(axios);
-        testStore = createStore();
-    });
-
-    afterEach(() => {
-        axiosMock.restore();
-    });
-
     it("should not render a div if no plugins found in store", async () => {
         const propsData = {
             jobId: JOB_ID,
@@ -35,7 +33,7 @@ describe("JobMetrics/JobMetrics.vue", () => {
             localVue,
         });
         await wrapper.vm.$nextTick();
-        expect(wrapper.isEmpty()).to.equals(true);
+        expect(wrapper.find("div").exists()).toBe(false);
     });
 
     it("should group plugins by type", async () => {
@@ -47,25 +45,29 @@ describe("JobMetrics/JobMetrics.vue", () => {
             { plugin: "core", title: "memory", value: 146 },
             { plugin: "extended", title: "awesomeness", value: 42 },
         ];
-        axiosMock.onGet(`/api/jobs/${JOB_ID}/metrics`).reply(200, metricsResponse);
         const wrapper = mount(JobMetrics, {
             store: testStore,
             propsData,
             localVue,
+            computed: {
+                jobMetrics() {
+                    return metricsResponse;
+                },
+            },
         });
         // Wait for axios and rendering.
         await flushPromises();
-        expect(wrapper.vm.jobMetrics.length).to.equals(3);
-        expect(wrapper.vm.jobId).to.equals(JOB_ID);
-        expect(wrapper.vm.metricsByPlugins.core.runtime).to.equals(145);
-        expect(wrapper.vm.orderedPlugins.length).to.equals(2);
+        expect(wrapper.vm.jobMetrics.length).toBe(3);
+        expect(wrapper.vm.jobId).toBe(JOB_ID);
+        expect(wrapper.vm.metricsByPlugins.core.runtime).toBe(145);
+        expect(wrapper.vm.orderedPlugins.length).toBe(2);
         // Three metrics, begin metrics for two plugins
         const metricsTables = wrapper.findAll(".metrics_plugin");
-        expect(metricsTables.length).to.equals(2);
-        expect(metricsTables.at(0).find(".metrics_plugin_title").text()).to.equals("core");
-        expect(metricsTables.at(0).findAll("tr").length).to.equals(2);
-        expect(metricsTables.at(1).find(".metrics_plugin_title").text()).to.equals("extended");
-        expect(metricsTables.at(1).findAll("tr").length).to.equals(1);
+        expect(metricsTables.length).toBe(2);
+        expect(metricsTables.at(0).find(".metrics_plugin_title").text()).toBe("core");
+        expect(metricsTables.at(0).findAll("tr").length).toBe(2);
+        expect(metricsTables.at(1).find(".metrics_plugin_title").text()).toBe("extended");
+        expect(metricsTables.at(1).findAll("tr").length).toBe(1);
     });
 
     it("should render correct AWS Estimates", async () => {
@@ -80,11 +82,15 @@ describe("JobMetrics/JobMetrics.vue", () => {
                 { plugin: "core", name: "runtime_seconds", raw_value: seconds },
                 { plugin: "core", name: "galaxy_memory_mb", raw_value: memory },
             ];
-            axiosMock.onGet(`/api/jobs/${JOB_ID}/metrics`).reply(200, metricsResponse);
             const wrapper = mount(JobMetrics, {
                 store: testStore,
                 propsData,
                 localVue,
+                computed: {
+                    jobMetrics() {
+                        return metricsResponse;
+                    },
+                },
             });
             // Wait for axios and rendering.
             await flushPromises();
@@ -103,20 +109,20 @@ describe("JobMetrics/JobMetrics.vue", () => {
         };
         const assertAwsInstance = (estimates) => {
             const instance = ec2.find((instance) => estimates.name === instance.name);
-            expect(estimates.mem).to.equals(instance.mem.toString());
-            expect(estimates.vcpus).to.equals(instance.vcpus.toString());
-            expect(estimates.cpu).to.equals(instance.cpu.toString());
+            expect(estimates.mem).toBe(instance.mem.toString());
+            expect(estimates.vcpus).toBe(instance.vcpus.toString());
+            expect(estimates.cpu).toBe(instance.cpu.toString());
         };
 
         const estimates_small = await deriveRenderedAwsEstimate("1.0000000", "9.0000000", "2048.0000000");
 
-        expect(estimates_small.name).to.equals("t2.small");
-        expect(estimates_small.cost).to.equals("0.00 USD");
+        expect(estimates_small.name).toBe("t2.small");
+        expect(estimates_small.cost).toBe("0.00 USD");
         assertAwsInstance(estimates_small);
 
         const estimates_large = await deriveRenderedAwsEstimate("40.0000000", "18000.0000000", "194560.0000000");
-        expect(estimates_large.name).to.equals("m5d.12xlarge");
-        expect(estimates_large.cost).to.equals("16.32 USD");
+        expect(estimates_large.name).toBe("m5d.12xlarge");
+        expect(estimates_large.cost).toBe("16.32 USD");
         assertAwsInstance(estimates_large);
 
         const estimates_not_available = await deriveRenderedAwsEstimate(
@@ -124,6 +130,6 @@ describe("JobMetrics/JobMetrics.vue", () => {
             "18000.0000000",
             "99999.0000000"
         );
-        expect(estimates_not_available).to.equals(false);
+        expect(estimates_not_available).toBe(false);
     });
 });
