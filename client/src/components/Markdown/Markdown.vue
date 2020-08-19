@@ -14,7 +14,7 @@
                 </span>
             </div>
             <b-badge variant="info" class="w-100 rounded mb-3">
-                <div class="float-left m-1">Created with Galaxy {{ getVersion }} on {{ getTime }} UTC</div>
+                <div class="float-left m-1">Created with Galaxy {{ getVersion }} on {{ getTime }}</div>
                 <div class="float-right m-1">Identifier {{ markdownConfig.id }}</div>
             </b-badge>
             <div v-for="(obj, index) in markdownObjects" :key="index">
@@ -141,7 +141,14 @@ export default {
         getTime() {
             const generateTime = this.markdownConfig.generate_time;
             if (generateTime) {
-                return `${generateTime.substr(0, 10)} at ${generateTime.substr(11, 5)}`;
+                const date = new Date(generateTime);
+                return date.toLocaleString("default", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                    minute: "numeric",
+                    hour: "numeric",
+                });
             }
             return "unavailable";
         },
