@@ -1,5 +1,4 @@
 import os
-import time
 import uuid
 
 from psycopg2 import connect, sql
@@ -9,9 +8,22 @@ from galaxy.util import directory_hash_id
 
 def copy_files_to_irods(start_dataset_id, end_dataset_id, object_store_info={"files1" : "/Users/kxk302/workspace/galaxy/database/files1", "files2" : "/Users/kxk302/workspace/galaxy/database/files2"}, irods_home="/tempZone/home/rods", connection_info={"dbname" : "galaxy", "user" : "postgres", "host" : "localhost", "password" : "password"}):
     conn = None
+    cursor = None
+    sql_statement = None
+    sql_object = None
+    uuid_without_dash = None
+    uuid_with_dash = None
+    objectid = None
+    object_store_id = None
+    disk_sub_folder = None
+    disk_file_path = None
+    irods_sub_folder = None
+    irods_file_path = None
+    icommand_mkdir = None
+    icommand_put = None
 
-    if start_dataset_id >= end_dataset_id:
-        print("start_dataset_id %d must be smaller than end_dataset_id %d", start_dataset_id, end_dataset_id)
+    if start_dataset_id > end_dataset_id:
+        print("start_dataset_id %d cannot be larger than end_dataset_id %d", start_dataset_id, end_dataset_id)
         return
 
     try:
@@ -28,28 +40,17 @@ def copy_files_to_irods(start_dataset_id, end_dataset_id, object_store_info={"fi
         print(e)
         return
 
-    for dataset_id in range(start_dataset_id, end_dataset_id):
-        copy_file_to_irods(dataset_id, object_store_info, irods_home, conn)
+    osi_keys = list(object_store_info.keys())
+    osi_keys_quoted = ["'" + key + "'" for key in osi_keys]
 
-    conn.close()
-
-
-def copy_file_to_irods(dataset_id, object_store_info, irods_home, conn):
-    cursor = None
-    sql_statement = None
-    sql_object = None
-    uuid_without_dash = None
-    uuid_with_dash = None
-    objectid = None
-    object_store_id = None
-    disk_sub_folder = None
-    disk_file_path = None
-    irods_sub_folder = None
-    irods_file_path = None
-    icommand_mkdir = None
-    icommand_put = None
-
-    sql_statement = "SELECT id, object_store_id, uuid FROM dataset WHERE state = \'ok\' AND deleted = False AND purged = False AND id = {};".format(dataset_id)
+    sql_statement = """SELECT id, object_store_id, uuid
+                       FROM dataset
+                       WHERE state = \'ok\'
+                       AND NOT deleted
+                       AND NOT purged
+                       AND id >= {}
+                       AND id <= {}
+                       AND object_store_id in ({})""".format(start_dataset_id, end_dataset_id, ",".join(osi_keys_quoted))
     print(sql_statement)
     try:
         cursor = conn.cursor()
@@ -102,7 +103,10 @@ def copy_file_to_irods(dataset_id, object_store_info, irods_home, conn):
     except Exception as e:
         print(e)
         conn.rollback()
+        cursor.close()
+        conn.close()
         return
 
     conn.commit()
     cursor.close()
+    conn.close()
