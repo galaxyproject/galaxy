@@ -1,6 +1,7 @@
 import os
 from collections import namedtuple
 from datetime import timedelta
+from unittest.mock import patch
 
 import pytest
 
@@ -280,9 +281,10 @@ def get_test_data_with_default_values():
 
 def get_test_data_with_set_values():
     """GalaxyAppConfiguration loaded with user-set values."""
-    appconfig = config.GalaxyAppConfiguration(**SET_CONFIG)
+    # Prevent GalaxyAppConfiguration from trying to load a nonexistant file
+    with patch.object(config.GalaxyAppConfiguration, '_load_list_from_file'):
+        appconfig = config.GalaxyAppConfiguration(**SET_CONFIG)
     evp = ExpectedValuesProvider(appconfig)
-
     for key, data in appconfig.schema.app_schema.items():
         if key not in DO_NOT_TEST and key in SET_CONFIG:
             set_value = SET_CONFIG.get(key)
@@ -329,8 +331,6 @@ SET_CONFIG = {
     # 'dependency_resolvers_config_file': 'dependency_resolvers_conf.xml',  # cause: parse_config_file_options
     # 'disable_library_comptypes': 'None',
     # 'dynamic_proxy_session_map': 'session_map.sqlite',
-    # 'email_domain_allowlist_file': 'None',
-    # 'email_domain_blocklist_file': 'None',
     # 'enable_beta_gdpr': True,  TODO
     # 'file_path': 'objects',  # cause: parse_config_file_options
     # 'ftp_upload_dir_template': 'None',
@@ -453,6 +453,8 @@ SET_CONFIG = {
     'dynamic_proxy_golang_noaccess': 61,
     'dynamic_proxy_manage': False,
     'dynamic_proxy_prefix': 'gie_proxy_new',
+    'email_domain_allowlist_file': 'None',
+    'email_domain_blocklist_file': 'None',
     'email_from': 'email_from_new',
     'enable_beta_containers_interface': True,
     'enable_beta_markdown_export': True,
