@@ -1,9 +1,6 @@
 import Vuex from "vuex";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import { mount, createLocalVue } from "@vue/test-utils";
 import { createStore } from "../../store";
-import flushPromises from "flush-promises";
 import JobDestinationParams from "./JobDestinationParams";
 import jobDestinationResponse from "./testData/jobDestinationResponse";
 

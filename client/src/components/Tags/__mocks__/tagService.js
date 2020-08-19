@@ -14,7 +14,7 @@ import { map, filter, debounceTime, switchMap, distinctUntilChanged } from "rxjs
 
 //import axios from "axios";
 //jest.mock("axios");
-//axios.get.mockResolvedValue({ response: { status: 200 } }); 
+//axios.get.mockResolvedValue({ response: { status: 200 } });
 export class TagService {
     constructor({ id, itemClass, context, debounceInterval = 150 }) {
         this.id = id;
