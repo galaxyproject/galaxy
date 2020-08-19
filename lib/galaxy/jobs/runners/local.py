@@ -24,6 +24,9 @@ from .util.process_groups import (
 )
 
 log = logging.getLogger(__name__)
+import pynvml as nvml
+nvml.nvmlInit()
+gpu_count = nvml.nvmlDeviceGetCount()
 
 __all__ = ('LocalJobRunner', )
 
@@ -63,9 +66,11 @@ class LocalJobRunner(BaseJobRunner):
         # is going to work with other job runners.
         slots = job_wrapper.job_destination.params.get("local_slots", None) or os.environ.get("GALAXY_SLOTS", None)
         if slots:
-            slots_statement = 'GALAXY_SLOTS="%d"; export GALAXY_SLOTS; GALAXY_SLOTS_CONFIGURED="1"; export GALAXY_SLOTS_CONFIGURED;' % (int(slots))
+            slots_statement = 'GALAXY_SLOTS="%d"; export GALAXY_SLOTS; GALAXY_SLOTS_CONFIGURED="1"; export GALAXY_SLOTS_CONFIGURED; export GALAXY_GPU_ENABLED;' % (int(slots))
+            #slots_statement = 'GALAXY_SLOTS="%d"; export GALAXY_SLOTS; GALAXY_SLOTS_CONFIGURED="1"; export GALAXY_SLOTS_CONFIGURED;' % (int(slots))
         else:
-            slots_statement = 'GALAXY_SLOTS="1"; export GALAXY_SLOTS;'
+            slots_statement = 'GALAXY_SLOTS="1"; export GALAXY_SLOTS; export GALAXY_GPU_ENABLED;'
+            #slots_statement = 'GALAXY_SLOTS="1"; export GALAXY_SLOTS;'
 
         job_id = job_wrapper.get_id_tag()
         job_file = JobState.default_job_file(job_wrapper.working_directory, job_id)

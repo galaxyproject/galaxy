@@ -118,6 +118,10 @@ from .execute import (
 
 log = logging.getLogger(__name__)
 
+import pynvml as nvml
+nvml.nvmlInit()
+gpu_count = nvml.nvmlDeviceGetCount()
+
 REQUIRES_JS_RUNTIME_MESSAGE = ("The tool [%s] requires a nodejs runtime to execute "
                                "but node or nodejs could not be found. Please contact the Galaxy adminstrator")
 
@@ -800,6 +804,20 @@ class Tool(Dictifiable):
                     break
         self.home_target = home_target
         self.tmp_target = tmp_target
+
+        requirements, containers = tool_source.parse_requirements_and_containers()
+        flag = 0
+        reqmnts = requirements
+        for req in reqmnts:
+            if req.type == "compute" and req.name == "gpu":
+                flag = 1
+        if gpu_count > 0 and flag == 1:
+            log.info("**************************GPU ENABLED**********************************************")
+            os.environ['GALAXY_GPU_ENABLED'] = "true"
+        else:
+            log.info("**************************GPU DISABLED*********************************************")
+            os.environ['GALAXY_GPU_ENABLED'] = "false"
+
         self.docker_env_pass_through = tool_source.parse_docker_env_pass_through()
         if self.environment_variables:
             if not self.docker_env_pass_through:

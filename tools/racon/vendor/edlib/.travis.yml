@@ -1,0 +1,40 @@
+language: cpp
+
+compiler:
+  - gcc
+  - clang
+
+os:
+  - linux
+  - osx
+
+dist: trusty
+
+addons:
+  apt:
+    packages:
+      clang
+
+install:
+  - if [ $TRAVIS_OS_NAME == "linux" ]; then sudo apt-get install valgrind; fi
+  - sudo -H pip install cython  # Needed to build Python module.
+
+before_script:
+  # Build C/C++ library and apps.
+  - mkdir -p build && cd build && cmake .. && make && cd ..
+
+  # Build Python source distribution and install Edlib from it.
+  - cd bindings/python && make sdist && cd ../..
+  - sudo -H pip install bindings/python/dist/edlib*.tar.gz
+
+script:
+  # Test C/C++ library.
+  - build/bin/runTests
+  # Check for memory leaks. Returns 2 if there was a memory leak/error, otherwise returns runTests exit code,
+  # which is 0 if all went fine or 1 if some of the tests failed. I test for memory leaks only on linux because
+  # osx returns errors from system libraries, which I would have to supress.
+  # This is run only on smaller number of tests, since executing on valgrind is slow.
+  - if [ $TRAVIS_OS_NAME == "linux" ]; then valgrind --quiet --error-exitcode=2 --tool=memcheck --leak-check=full build/bin/runTests 2; fi
+
+  # Test Python module.
+  - sudo -H python bindings/python/test.py

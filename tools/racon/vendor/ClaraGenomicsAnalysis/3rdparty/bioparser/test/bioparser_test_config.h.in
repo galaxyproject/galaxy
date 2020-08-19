@@ -1,0 +1,9 @@
+/*!
+ * @file bioparser_test_config.h.in
+ *
+ * @brief Bioparser test configuration file
+ */
+
+#include <string>
+
+const std::string bioparser_test_data_path = "@bioparser_test_data_path@";

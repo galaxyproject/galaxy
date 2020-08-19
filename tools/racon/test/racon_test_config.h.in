@@ -1,0 +1,9 @@
+/*!
+ * @file racon_test_config.h.in
+ *
+ * @brief Racon test configuration file
+ */
+
+#include <string>
+
+const std::string racon_test_data_path = "@racon_test_data_path@";

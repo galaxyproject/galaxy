@@ -925,6 +925,20 @@ class Registry:
             rval['auto'] = rval['txt']
         return rval
 
+    def get_gpu_val(self, context, group, tool):
+        self.log.debug("Hello from tool %s" % (tool.id))
+        rval = {}
+        inputs = []
+        if os.environ['GALAXY_GPU_ENABLED'] == "true":
+            inputs.append('<param argument="-c" type="integer" name="c" value="1" label="Number of batches for CUDA accelerated polishing" />')
+            inputs.append('<param argument="-b" type="boolean" name="b" value="" truevalue="-b" falsevalue="" label="Use banding approximation for polishing on GPU." />')
+        rval['true'] = "\n".join(inputs)
+        rval['false'] = ['']
+
+        self.log.debug("RACON PARAM for %s is %s" % ('true',rval['true']))
+
+        return rval
+
     @property
     def edam_formats(self):
         """

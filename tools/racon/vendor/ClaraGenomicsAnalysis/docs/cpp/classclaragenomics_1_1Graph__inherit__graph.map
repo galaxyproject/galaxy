@@ -1,0 +1,5 @@
+<map id="claragenomics::Graph" name="claragenomics::Graph">
+<area shape="rect" id="node1" title="Object representing a generic graph structure." alt="" coords="135,5,285,32"/>
+<area shape="rect" id="node2" href="$classclaragenomics_1_1DirectedGraph.html" title="DirectedGraph Object representing a directed graph structure." alt="" coords="5,87,204,114"/>
+<area shape="rect" id="node3" href="$classclaragenomics_1_1UndirectedGraph.html" title="UndirectedGraph Object representing an undirected graph structure." alt="" coords="228,80,405,121"/>
+</map>

@@ -3,6 +3,11 @@ import logging
 import os
 import tempfile
 
+import pynvml as nvml
+log = logging.getLogger(__name__)
+nvml.nvmlInit()
+gpu_count = nvml.nvmlDeviceGetCount()
+from six import string_types
 
 from galaxy import model
 from galaxy.files import ProvidesUserFileSourcesUserContext
@@ -141,7 +146,30 @@ class ToolEvaluator:
         if self._history:
             param_dict['__history_id__'] = self.app.security.encode_id(self._history.id)
         param_dict['__galaxy_url__'] = self.compute_environment.galaxy_url()
+
         param_dict.update(self.tool.template_macro_params)
+
+	    os.environ['GALAXY_GPU_ENABLED'] = "false"
+        flag = 0
+        if self.tool:
+            reqmnts = self.tool.requirements
+            for req in reqmnts:
+                if req.type == "compute" and req.name == "gpu":
+                    flag = 1
+            if gpu_count > 0 and flag == 1:
+                log.info("**************************GPU ENABLED!!!!!**********************************************")
+                os.environ['GALAXY_GPU_ENABLED'] = "true"
+            else:
+                log.info("**************************GPU DISABLED!!!!!*********************************************")
+                os.environ['GALAXY_GPU_ENABLED'] = "false"
+
+
+        param_dict['__galaxy_gpu_enabled__'] = os.environ['GALAXY_GPU_ENABLED']
+
+
+	param_dict.update(self.tool.template_macro_params)
+
+
         # All parameters go into the param_dict
         param_dict.update(incoming)
 

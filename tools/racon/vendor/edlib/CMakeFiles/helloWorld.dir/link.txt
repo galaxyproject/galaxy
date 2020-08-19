@@ -1,0 +1,1 @@
+/usr/bin/c++   -Wall -Wextra -pedantic -Wall -Wextra -pedantic -O3 -DNDEBUG  -rdynamic CMakeFiles/helloWorld.dir/apps/hello-world/helloWorld.c.o  -o ../../bin/helloWorld ../../lib/libedlib_static.a 

@@ -164,6 +164,10 @@ def build_docker_run_command(
         command_parts.append("--rm")
     if run_extra_arguments:
         command_parts.append(run_extra_arguments)
+
+    if os.environ['GALAXY_GPU_ENABLED'] == "true":
+        command_parts.append("--gpus all")
+    
     if set_user:
         user = set_user
         if set_user == DEFAULT_SET_USER:

@@ -27,6 +27,11 @@ log = getLogger(__name__)
 DOCKER_CONTAINER_TYPE = "docker"
 SINGULARITY_CONTAINER_TYPE = "singularity"
 
+import pynvml as nvml
+nvml.nvmlInit()
+gpu_count = nvml.nvmlDeviceGetCount()
+
+
 LOAD_CACHED_IMAGE_COMMAND_TEMPLATE = r'''
 python << EOF
 from __future__ import print_function
@@ -267,6 +272,19 @@ class DockerContainer(Container, HasDockerLikeVolumes):
 
     def containerize_command(self, command):
         env_directives = []
+
+        if self.tool_info:
+            reqmnts = self.tool_info.requirements
+            for req in reqmnts:
+                if req.type == "compute" and req.name == "gpu":
+                    flag = 1
+            if gpu_count > 0 and flag == 1:
+                log.info("**************************GPU ENABLED DOCKER**********************************************")
+                os.environ['GALAXY_GPU_ENABLED'] = "true"
+            else:
+                log.info("**************************GPU DISABLED DOCKER*********************************************")
+                os.environ['GALAXY_GPU_ENABLED'] = "false"
+
         for pass_through_var in self.tool_info.env_pass_through:
             env_directives.append('"{}=${}"'.format(pass_through_var, pass_through_var))
 
@@ -277,6 +295,8 @@ class DockerContainer(Container, HasDockerLikeVolumes):
             if key.startswith("docker_env_"):
                 env = key[len("docker_env_"):]
                 env_directives.append('"{}={}"'.format(env, value))
+
+        env_directives.append("GALAXY_GPU_ENABLED='%s'" % os.environ['GALAXY_GPU_ENABLED'])
 
         working_directory = self.job_info.working_directory
         if not working_directory:
@@ -386,6 +406,20 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
     def containerize_command(self, command):
 
         env = []
+
+        if self.tool_info:
+            reqmnts = self.tool_info.requirements
+            for req in reqmnts:
+                if req.type == "compute" and req.name == "gpu":
+                    flag = 1
+            if gpu_count > 0 and flag == 1:
+                log.info("**************************GPU ENABLED SINGULARITY**********************************************")
+                os.environ['GALAXY_GPU_ENABLED'] = "true"
+            else:
+                log.info("**************************GPU DISABLED SINGULARITY*********************************************")
+                os.environ['GALAXY_GPU_ENABLED'] = "false"
+
+
         for pass_through_var in self.tool_info.env_pass_through:
             env.append((pass_through_var, "$%s" % pass_through_var))
 
@@ -396,6 +430,8 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
             if key.startswith("singularity_env_"):
                 real_key = key[len("singularity_env_"):]
                 env.append((real_key, value))
+        
+        #env.append("GALAXY_GPU_ENABLED='%s'" % os.environ['GALAXY_GPU_ENABLED'])
 
         working_directory = self.job_info.working_directory
         if not working_directory:
@@ -404,11 +440,21 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
         volumes_raw = self._expand_volume_str(self.destination_info.get("singularity_volumes", "$defaults"))
         preprocessed_volumes_list = preprocess_volumes(volumes_raw, self.container_type)
         volumes = [DockerVolume.from_str(v) for v in preprocessed_volumes_list]
+        
+        #singularity gives error when :rw and :ro is there, so replacing them (hack)
+        vols_str = []
+        for vol in volumes:
+            new_str = vol.__str__().replace(":rw","")
+            new_str = new_str.replace(":ro", "")
+            vols_str.append(new_str)
 
+        volumes2 = []
+        for vol in vols_str:
+            volumes2.append(DockerVolume.from_str(vol))
         run_command = singularity_util.build_singularity_run_command(
             command,
             self.container_id,
-            volumes=volumes,
+            volumes=volumes2,
             env=env,
             working_directory=working_directory,
             run_extra_arguments=self.prop("run_extra_arguments", singularity_util.DEFAULT_RUN_EXTRA_ARGUMENTS),

@@ -1,0 +1,9 @@
+libdir=/home/gulsum/galaxy/tools/racon/install/lib
+includedir=/home/gulsum/galaxy/tools/racon/install/include
+
+Name: Spoa
+Description: Spoa (SIMD POA) is a C++ implementation of the partial order alignment (POA) algorithm
+Version: 3.0.0
+
+Libs: -L${libdir} -lspoa
+Cflags: -I${includedir}

@@ -1,0 +1,26 @@
+# Compiled Object files
+*.slo
+*.lo
+*.o
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+
+# Build directory
+build/*
+!build/README.md
+
+# Documentation
+docs/
+
+callgrind.out.*
+
+core
+
+TAGS

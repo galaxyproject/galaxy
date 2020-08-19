@@ -1,0 +1,9 @@
+/*!
+ * @file spoa_test_config.h.in
+ *
+ * @brief Spoa test configuration file
+ */
+
+#include <string>
+
+const std::string spoa_test_data_path = "@spoa_test_data_path@";

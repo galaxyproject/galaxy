@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../lib/libcudapoa.a  CMakeFiles/cudapoa.dir/src/cudapoa.cpp.o CMakeFiles/cudapoa.dir/src/batch.cpp.o CMakeFiles/cudapoa.dir/src/cudapoa_batch.cpp.o CMakeFiles/cudapoa.dir/src/allocate_block.cpp.o CMakeFiles/cudapoa.dir/src/cudapoa_generated_cudapoa_kernels.cu.o
+/usr/bin/ranlib ../../lib/libcudapoa.a
