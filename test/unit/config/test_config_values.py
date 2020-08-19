@@ -307,6 +307,8 @@ def test_default_config(test_data):
 
 @pytest.mark.parametrize('test_data', get_test_data_with_set_values(), ids=get_key)
 def test_set_config(test_data):
+    if test_data.key == 'data_dir':
+        print(test_data)
     assert test_data.expected == test_data.loaded
 
 
@@ -317,67 +319,44 @@ def test_set_config(test_data):
 # Commented values indicate failing tests and require fixing. In many cases it's a bug
 # (i.e., a property is not correctly set). Ideally, none should be commented out.
 SET_CONFIG = {
-    # 'amqp_internal_connection': 'sqlalchemy+sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE_new', TODO
-    # 'auth_config_file': 'auth_conf_new.xml',  # cause: parse_config_file_options TODO
+    # 'amqp_internal_connection': 'sqlalchemy+sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE_new',
+    # 'auth_config_file': 'auth_conf_new.xml',  # cause: parse_config_file_options
     # 'build_sites_config_file': 'build_sites.yml_new',  # cause: parse_config_file_options
-    # 'builds_file_path': 'shared/ucsc/builds.txt',
-    # 'citation_cache_data_dir': 'citations/data',
-    # 'citation_cache_lock_dir': 'citations/locks',
-    # 'cluster_files_directory': 'pbs',
     # 'containers_resolvers_config_file': 'None',  # cause: parse_config_file_options
-    # 'data_dir': 'data_new', TODO
     # 'data_manager_config_file': 'config/data_manager_conf.xml',  # cause: parse_config_file_options
     # 'database_connection': 'database_connection',
     # 'dependency_resolvers_config_file': 'dependency_resolvers_conf.xml',  # cause: parse_config_file_options
     # 'disable_library_comptypes': 'None',
-    # 'dynamic_proxy_session_map': 'session_map.sqlite',
-    # 'enable_beta_gdpr': True,  TODO
+    # 'enable_beta_gdpr': True,
     # 'file_path': 'objects',  # cause: parse_config_file_options
     # 'ftp_upload_dir_template': 'None',
-    # 'galaxy_data_manager_data_path': 'None',
-    # 'integrated_tool_panel_config': 'integrated_tool_panel.xml',
-    # 'interactive_environment_plugins_directory': 'None',
-    # 'interactivetools_map': 'interactivetools_map.sqlite',
-    # 'interactivetools_proxy_host': 'None',
-    # 'involucro_path': 'involucro',
+    # 'interactive_environment_plugins_directory': 'new',
+    # 'interactivetools_map': 'interactivetools_map.sqlite_new',
+    # 'interactivetools_proxy_host': 'new',
     # 'job_config_file': 'config/job_conf.xml',  # cause: parse_config_file_options
     # 'job_metrics_config_file': 'job_metrics_conf.xml',  # cause: parse_config_file_options
     # 'job_resource_params_file': 'job_resource_params_conf.xml',  # cause: parse_config_file_options
-    # 'len_file_path': 'shared/ucsc/chrom',
     # 'markdown_export_css': 'markdown_export.css',  # cause: parse_config_file_options
-    # 'markdown_export_css_invocation_reports': 'markdown_export_invocation_reports.css',
-    # 'markdown_export_css_pages': 'markdown_export_pages.css',  # cause: parse_config_file_options
+    # 'markdown_export_css_invocation_reports': 'markdown_export_invocation_reports.css_new',
+    # 'markdown_export_css_pages': 'markdown_export_pages.css_new',  # cause: parse_config_file_options
     # 'migrated_tools_config': 'migrated_tools_conf.xml',  # cause: parse_config_file_options
-    # 'mulled_resolution_cache_data_dir': 'mulled/data',
-    # 'mulled_resolution_cache_lock_dir': 'mulled/locks',
-    # 'new_file_path': 'tmp',
-    # 'nginx_upload_store': 'None',
+    # 'nginx_upload_store': 'new',
     # 'object_store_config_file': 'object_store_conf.xml',  # cause: parse_config_file_options
-    # 'object_store_store_by': 'None',
+    # 'object_store_store_by': 'new',
     # 'oidc_backends_config_file': 'oidc_backends_config.xml',  # cause: parse_config_file_options
     # 'oidc_config_file': 'oidc_config.xml',  # cause: parse_config_file_options
-    # 'openid_consumer_cache_path': 'openid_consumer_cache',
-    # 'sanitize_allowlist_file': 'sanitize_allowlist.txt',
     # 'shed_data_manager_config_file': 'shed_data_manager_conf.xml',  # cause: parse_config_file_options
     # 'shed_tool_config_file': 'shed_tool_conf.xml',  # cause: parse_config_file_options
-    # 'shed_tool_data_path': 'None',
     # 'shed_tool_data_table_config': 'shed_tool_data_table_conf.xml',  # cause: parse_config_file_options
-    # 'single_user': 'single_user_new',
     # 'statsd_host': 'None',
-    # 'template_cache_path': 'compiled_templates',
-    # 'tool_cache_data_dir': 'tool_cache',
     # 'tool_config_file': config/tool_conf.xml,
-    # 'tool_data_path': 'tool-data',
     # 'tool_data_table_config_path': 'config/tool_data_table_conf.xml',
-    # 'tool_path': 'tools',
-    # 'tool_search_index_dir': 'tool_search_index',
     # 'tool_sheds_config_file': 'tool_sheds_conf.xml',  # cause: parse_config_file_options
-    # 'tool_test_data_directories': 'test-data',
+    # 'tool_test_data_directories': 'test-data_new',
     # 'use_remote_user': True,
-    # 'user_library_import_dir_auto_creation': True,
     # 'user_preferences_extra_conf_path': 'user_preferences_extra_conf.yml',  # cause: parse_config_file_options
     # 'workflow_resource_params_file': 'workflow_resource_params_conf.xml',  # cause: parse_config_file_options
-    # 'workflow_resource_params_mapper': 'None',
+    # 'workflow_resource_params_mapper': 'new',
     # 'workflow_schedulers_config_file': 'workflow_schedulers_conf.xml',  # cause: parse_config_file_options
     'activation_grace_period': 2,
     'admin_tool_recommendations_path': 'tool_recommendations_overwrite_new.yml',
@@ -393,15 +372,19 @@ SET_CONFIG = {
     'auto_configure_logging': False,
     'aws_estimate': True,
     'brand': 'brand_new',
+    'builds_file_path': 'shared/ucsc/builds.txt_new',
     'cache_user_job_count': True,
     'check_job_script_integrity': False,
     'check_job_script_integrity_count': 34,
     'check_job_script_integrity_sleep': 0.24,
     'check_migrate_tools': True,
     'chunk_upload_size': 104857601,
+    'citation_cache_data_dir': 'citations/data_new',
+    'citation_cache_lock_dir': 'citations/locks_new',
     'citation_cache_type': 'file_new',
     'citation_url': 'https://galaxyproject.org/citing-galaxy/new',
     'cleanup_job': 'never',
+    'cluster_files_directory': 'pbs_new',
     'communication_server_host': 'http://localhost_new',
     'communication_server_port': 7071,
     'conda_auto_init': False,
@@ -414,6 +397,7 @@ SET_CONFIG = {
     'conda_use_local': True,
     'config_dir': 'config_new',
     'cookie_domain': 'cookie_domain_new',
+    'data_dir': 'data_new',
     'database_auto_migrate': True,
     'database_engine_option_echo': True,
     'database_engine_option_echo_pool': True,
@@ -453,6 +437,7 @@ SET_CONFIG = {
     'dynamic_proxy_golang_noaccess': 61,
     'dynamic_proxy_manage': False,
     'dynamic_proxy_prefix': 'gie_proxy_new',
+    'dynamic_proxy_session_map': 'session_map.sqlite_new',
     'email_domain_allowlist_file': 'None',
     'email_domain_blocklist_file': 'None',
     'email_from': 'email_from_new',
@@ -490,6 +475,7 @@ SET_CONFIG = {
     'ftp_upload_purge': False,
     'ftp_upload_site': 'ftp_upload_site_new',
     'ga_code': 'ga_code_new',
+    'galaxy_data_manager_data_path': 'new',
     'galaxy_infrastructure_url': 'http://localhost:8081',
     'galaxy_infrastructure_web_port': 8082,
     'heartbeat_interval': 21,
@@ -501,11 +487,14 @@ SET_CONFIG = {
     'inactivity_box_content': 'inactivity_box_content_new',
     'install_database_connection': 'install_database_connection_new',
     'instance_resource_url': 'instance_resource_url_new',
+    'integrated_tool_panel_config': 'integrated_tool_panel.xml_new',
     'interactivetools_enable': True,
     'involucro_auto_init': False,
+    'involucro_path': 'involucro_new',
     'job_config': 'job_config_new',
     'job_working_directory': 'jobs_directory_new',
     'legacy_eager_objectstore_initialization': True,
+    'len_file_path': 'shared/ucsc/chrom_new',
     'library_import_dir': 'library_import_dir_new',
     'local_task_queue_workers': 3,
     'log_actions': True,
@@ -531,14 +520,18 @@ SET_CONFIG = {
     'message_box_visible': True,
     'monitor_thread_join_timeout': 31,
     'mulled_channels': 'conda-forge,bioconda_new',
+    'mulled_resolution_cache_data_dir': 'mulled/data_new',
+    'mulled_resolution_cache_lock_dir': 'mulled/locks_new',
     'mulled_resolution_cache_type': 'file_new',
     'myexperiment_target_url': 'www.myexperiment.org:81',
+    'new_file_path': 'tmp_new',
     'new_user_dataset_access_role_default_private': True,
     'nginx_upload_job_files_path': 'nginx_upload_job_files_path_new',
     'nginx_upload_job_files_store': 'nginx_upload_job_files_store_new',
     'nginx_upload_path': 'nginx_upload_path_new',
     'nginx_x_accel_redirect_base': 'nginx_x_accel_redirect_base_new',
     'normalize_remote_user_email': True,
+    'openid_consumer_cache_path': 'openid_consumer_cache_new',
     'outputs_to_working_directory': True,
     'overwrite_model_recommendations': True,
     'parallelize_workflow_scheduling_within_histories': True,
@@ -559,6 +552,7 @@ SET_CONFIG = {
     'retry_job_output_collection': 1,
     'retry_metadata_internally': False,
     'sanitize_all_html': False,
+    'sanitize_allowlist_file': 'sanitize_allowlist.txt_new',
     'screencasts_url': 'https://vimeo.com/galaxyproject/new',
     'search_url': 'https://galaxyproject.org/search/new',
     'select_type_workflow_threshold': 0,
@@ -566,8 +560,10 @@ SET_CONFIG = {
     'sentry_sloreq_threshold': 0.1,
     'serve_xss_vulnerable_mimetypes': True,
     'session_duration': 1,
+    'shed_tool_data_path': 'new',
     'show_user_prepopulate_form': True,
     'show_welcome_with_login': True,
+    'single_user': 'single_user_new',
     'slow_query_log_threshold': 0.1,
     'smtp_password': 'smtp_password_new',
     'smtp_server': 'smtp_server_new',
@@ -586,7 +582,10 @@ SET_CONFIG = {
     'statsd_port': 8126,
     'statsd_prefix': 'galaxy_new',
     'support_url': 'https://galaxyproject.org/support/new',
+    'template_cache_path': 'compiled_templates_new',
     'terms_url': 'terms_url_new',
+    'tool_cache_data_dir': 'tool_cache_new',
+    'tool_data_path': 'tool-data_new',
     'tool_dependency_cache_dir': 'tool_dependency_cache_dir_new',
     'tool_dependency_dir': 'dependencies_new',
     'tool_description_boost': 2.1,
@@ -598,7 +597,9 @@ SET_CONFIG = {
     'tool_name_boost': 9.1,
     'tool_ngram_maxsize': 5,
     'tool_ngram_minsize': 4,
+    'tool_path': 'tools_new',
     'tool_recommendation_model_path': 'tool_recommendation_model_path_new',
+    'tool_search_index_dir': 'tool_search_index_new',
     'tool_search_limit': 21,
     'tool_section_boost': 3.1,
     'tool_section_filters': 'tool_section_filters_new',
@@ -620,6 +621,7 @@ SET_CONFIG = {
     'user_activation_on': True,
     'user_library_import_check_permissions': True,
     'user_library_import_dir': 'user_library_import_dir_new',
+    'user_library_import_dir_auto_creation': True,
     'user_library_import_symlink_allowlist': 'user_library_import_symlink_allowlist_new',
     'user_tool_filters': 'examples:restrict_upload_to_admins, examples:restrict_encode_new',
     'user_tool_label_filters': 'examples:restrict_upload_to_admins, examples:restrict_encode_new',
