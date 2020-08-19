@@ -1,7 +1,5 @@
 <template>
-    <div :class="getClass" :history_dataset_id="args.history_dataset_id">
-        <pre><code>{{ content }}</code></pre>
-    </div>
+    <pre><code class="text-normalwrap">{{ content }}</code></pre>
 </template>
 
 <script>

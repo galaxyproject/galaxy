@@ -35,7 +35,7 @@
             <b-card-body>
                 <LoadingSpan v-if="loading" message="Loading Dataset" />
                 <div v-else class="embedded-dataset content-height">
-                    <pre><code class="code-wrap">{{ itemContent.item_data }}</code></pre>
+                    <pre><code class="text-normalwrap">{{ itemContent.item_data }}</code></pre>
                     <b-link v-if="itemContent.truncated" :href="itemContent.item_url">
                         Show More...
                     </b-link>
@@ -109,8 +109,5 @@ export default {
 <style scoped>
 .content-height {
     max-height: 15rem;
-}
-.code-wrap {
-    word-wrap: normal;
 }
 </style>

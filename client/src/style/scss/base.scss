@@ -89,6 +89,10 @@ body {
     @include clearfix();
 }
 
+.text-normalwrap {
+    word-wrap: normal;
+}
+
 // ==== Page layout styles ====
 
 .full-content {

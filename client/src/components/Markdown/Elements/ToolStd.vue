@@ -2,7 +2,7 @@
     <div class="w-50 p-2 float-left">
         <b-card nobody class="content-height">
             <div :class="name" :job_id="args.job_id">
-                <pre><code class="code-wrap">{{ jobContent }}</code></pre>
+                <pre><code class="text-normalwrap">{{ jobContent }}</code></pre>
             </div>
         </b-card>
     </div>
@@ -35,8 +35,5 @@ export default {
 <style scoped>
 .content-height {
     max-height: 15rem;
-}
-.code-wrap {
-    word-wrap: normal;
 }
 </style>
