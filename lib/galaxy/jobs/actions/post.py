@@ -11,7 +11,6 @@ from galaxy.util import (
     send_mail,
     unicodify,
 )
-
 from galaxy.util.custom_logging import get_logger
 
 log = get_logger(__name__)
