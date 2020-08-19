@@ -135,7 +135,7 @@ class BaseAppConfiguration:
     def is_set(self, key):
         if property not in self._raw_config:
             log.warning("Configuration option does not exist: '%s'" % key)
-        return self._raw_config[key] != self.schema.defaults.get(key)
+        return self._raw_config.get(key) != self.schema.defaults.get(key)
 
     def resolve_path(self, path):
         """Resolve a path relative to Galaxy's root."""
@@ -783,7 +783,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     def parse_config_file_options(self, kwargs):
         """Backwards compatibility for config files moved to the config/ dir."""
         defaults = dict(
-            auth_config_file=[self._in_config_dir('auth_conf.xml')],
             build_sites_config_file=[self._in_config_dir('build_sites.yml'), self._in_sample_dir('build_sites.yml.sample')],
             containers_config_file=[self._in_config_dir('containers_conf.yml')],
             data_manager_config_file=[self._in_config_dir('data_manager_conf.xml')],

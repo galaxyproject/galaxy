@@ -2389,13 +2389,12 @@ mapping:
       auth_config_file:
         type: str
         default: auth_conf.xml
+        path_resolves_to: config_dir
         required: false
         desc: |
           XML config file that allows the use of different authentication providers
           (e.g. LDAP) instead or in addition to local authentication (.sample is used
           if default does not exist).
-
-          The value of this option will be resolved with respect to <config_dir>.
 
       api_allow_run_as:
         type: str

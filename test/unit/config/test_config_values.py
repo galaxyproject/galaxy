@@ -320,7 +320,6 @@ def test_set_config(test_data):
 # (i.e., a property is not correctly set). Ideally, none should be commented out.
 SET_CONFIG = {
     # 'amqp_internal_connection': 'sqlalchemy+sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE_new',
-    # 'auth_config_file': 'auth_conf_new.xml',  # cause: parse_config_file_options
     # 'build_sites_config_file': 'build_sites.yml_new',  # cause: parse_config_file_options
     # 'containers_resolvers_config_file': 'None',  # cause: parse_config_file_options
     # 'data_manager_config_file': 'config/data_manager_conf.xml',  # cause: parse_config_file_options
@@ -369,6 +368,7 @@ SET_CONFIG = {
     'allowed_origin_hostnames': 'allowed_origin_hostnames_new',
     'apache_xsendfile': True,
     'api_allow_run_as': 'api_allow_run_as_new',
+    'auth_config_file': 'auth_conf_new.xml',
     'auto_configure_logging': False,
     'aws_estimate': True,
     'brand': 'brand_new',
