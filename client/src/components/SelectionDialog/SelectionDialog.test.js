@@ -22,8 +22,8 @@ describe("SelectionDialog.vue", () => {
                 search: "<cool-search />",
             },
             stubs: {
-                "tree-options": "<div id='tree-options'/>",
-                "cool-search": "<div id='cool-search'/>",
+                "tree-options": { template: "<div id='tree-options'/>" },
+                "cool-search": { template: "<div id='cool-search'/>" },
             },
             propsData: mockOptions,
             localVue,
