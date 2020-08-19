@@ -184,7 +184,7 @@ export default {
                         const galaxyEndIndex = galaxyEnd + 4;
                         const galaxySection = digest.substr(galaxyStart, galaxyEndIndex);
                         sections.push(this.getArgs(galaxySection));
-                        digest = digest.substr(galaxyStart + galaxyEndIndex + 1);
+                        digest = digest.substr(galaxyStart + galaxyEndIndex);
                     }
                 } else {
                     sections.push({
