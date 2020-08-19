@@ -185,6 +185,8 @@ export default {
                         const galaxySection = digest.substr(galaxyStart, galaxyEndIndex);
                         sections.push(this.getArgs(galaxySection));
                         digest = digest.substr(galaxyStart + galaxyEndIndex);
+                    } else {
+                        digest = digest.substr(galaxyStart + 1);
                     }
                 } else {
                     sections.push({
@@ -194,7 +196,6 @@ export default {
                     break;
                 }
             }
-
             return sections;
         },
         getArgs(content) {
