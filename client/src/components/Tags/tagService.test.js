@@ -41,15 +41,15 @@ describe("Tags/tagService.js", () => {
         it("should save a string tag", async () => {
             stub = sinon.stub(mockAxios, "get").resolves({ status: 200 });
             const savedTag = await svc.save(testLabel);
-            expect(savedTag.text).to.equal(testLabel);
-            assert(stub.calledWith(expectedSaveUrl));
+            expect(savedTag.text).toBe(testLabel);
+            expect(stub.calledWith(expectedSaveUrl)).toBeTruthy();
         });
 
         it("should save an object tag", async () => {
             stub = sinon.stub(mockAxios, "get").resolves({ status: 200 });
             const savedTag = await svc.save(testTag);
-            expect(savedTag.text).to.equal(testLabel);
-            assert(stub.calledWith(expectedSaveUrl));
+            expect(savedTag.text).toBe(testLabel);
+            expect(stub.calledWith(expectedSaveUrl)).toBeTruthy();
         });
 
         // TODO: test error conditions
@@ -65,15 +65,15 @@ describe("Tags/tagService.js", () => {
         it("should delete a text tag", async () => {
             stub = sinon.stub(mockAxios, "get").resolves({ status: 200 });
             const result = await svc.delete(testTag);
-            assert(result);
-            assert(stub.calledWith(expectedDeleteUrl));
+            expect(result).toBeTruthy();
+            expect(stub.calledWith(expectedDeleteUrl)).toBeTruthy();
         });
 
         it("should delete an object tag", async () => {
             stub = sinon.stub(mockAxios, "get").resolves({ status: 200 });
             const result = await svc.delete(testTag);
-            assert(result);
-            assert(stub.calledWith(expectedDeleteUrl));
+            expect(result).toBeTruthy();
+            expect(stub.calledWith(expectedDeleteUrl)).toBeTruthy();
         });
 
         // TODO: test error conditions
@@ -90,11 +90,11 @@ describe("Tags/tagService.js", () => {
         };
 
         const checkAutocompleteResult = (result) => {
-            assert(result);
-            assert(result instanceof Array);
-            assert(result.length == 2);
-            assert(result[0] instanceof Object);
-            assert((result[0].text = "abc"));
+            expect(result).toBeTruthy();
+            expect(result instanceof Array).toBeTruthy();
+            expect(result.length == 2).toBeTruthy();
+            expect(result[0] instanceof Object).toBeTruthy();
+            expect((result[0].text = "abc")).toBeTruthy();
         };
 
         // straight ajax request, unused in practice, but it's easier to
@@ -102,7 +102,7 @@ describe("Tags/tagService.js", () => {
         it("ajax call should return tag objects", async () => {
             stub = sinon.stub(mockAxios, "get").resolves(successResponse);
             const result = await svc.autocomplete(searchString);
-            assert(stub.calledWith(expectedSearchUrl), "Called with wrong search url");
+            expect(stub.calledWith(expectedSearchUrl)).toBeTruthy();
             checkAutocompleteResult(result);
         });
 
@@ -123,8 +123,8 @@ describe("Tags/tagService.js", () => {
                 (result) => (searchResult = result),
                 (err) => console.log("error", err),
                 () => {
-                    assert(stub.called, "Ajax call not made");
-                    assert(stub.callCount == 1, `Wrong number of ajax calls: ${stub.callCount}`);
+                    expect(stub.called).toBeTruthy();
+                    expect(stub.callCount == 1).toBeTruthy();
                     checkAutocompleteResult(searchResult);
                     done();
                 }

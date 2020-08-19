@@ -70,7 +70,7 @@ module.exports = {
     // ],
 
     // An array of file extensions your modules use
-    moduleFileExtensions: ["js", "json", "vue", "yml"],
+    moduleFileExtensions: ["js", "json", "vue", "yml", "txt"],
 
     modulePaths: ["<rootDir>/src/", "<rootDir>/node_modules/", "<rootDir>/tests/"],
 
@@ -173,6 +173,7 @@ module.exports = {
         ".*\\.(vue)$": "vue-jest",
         "^.+\\.js$": "babel-jest",
         "\\.yml$": "yaml-jest",
+        "\\.txt$": "jest-raw-loader",
     },
 
     // An array of regexp pattern strings that are matched against all source file paths, matched files will skip transformation
