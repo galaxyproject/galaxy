@@ -113,3 +113,23 @@ def test_set_renamed_option_not_overridden_by_old_option(mock_init):
     config = GalaxyAppConfiguration(old_property1='b', property1='c')
 
     assert config._raw_config['property1'] == 'c'
+
+
+def test_is_set(mock_init):
+    # if an option is set from kwargs, is_set() returns True, otherwise False
+    # Note: is_set() here means 'value is set by user', which includes setting to None.
+    config = GalaxyAppConfiguration(property1='b', property2=None, property4=False, property6=None)
+
+    assert len(config._raw_config) == 6
+
+    assert config._raw_config['property1'] == 'b'
+    assert config._raw_config['property2'] is None
+    assert config._raw_config['property3'] == 1.0
+    assert config._raw_config['property4'] is False
+    assert config._raw_config['property6'] is None
+
+    assert config.is_set('property1')  # 'b' overwrites 'a'
+    assert config.is_set('property2')  # None overwrites 1
+    assert not config.is_set('property3')  # default 1.0 preserved
+    assert config.is_set('property4')  # False overwrites True
+    assert not config.is_set('property6')  # supplied value is same as default (None)

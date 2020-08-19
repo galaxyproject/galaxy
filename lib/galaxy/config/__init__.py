@@ -132,6 +132,11 @@ class BaseAppConfiguration:
                 if old in kwargs and new not in kwargs:
                     kwargs[new] = kwargs[old]
 
+    def is_set(self, key):
+        if property not in self._raw_config:
+            log.warning("Configuration option does not exist: '%s'" % key)
+        return self._raw_config[key] != self.schema.defaults.get(key)
+
     def resolve_path(self, path):
         """Resolve a path relative to Galaxy's root."""
         return self._in_root_dir(path)
