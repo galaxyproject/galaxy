@@ -1,6 +1,7 @@
 import getopt
 import os
 import uuid
+import subprocess
 import sys
 
 import irods.keywords as kw
@@ -17,17 +18,26 @@ def copy_files_to_irods(start_dataset_id,
                         irods_info={"home" : "/tempZone/home/rods", "host" : "localhost", "port" : "1247", "user" : "rods", "password" : "rods", "zone" : "tempZone", "timeout" : "30"},
                         connection_info={"dbname" : "galaxy", "user" : "postgres", "host" : "localhost", "password" : "password"}):
     conn = None
-    cursor = None
+    session = None
+    osi_keys = None
     sql_statement = None
-    uuid_without_dash = None
-    uuid_with_dash = None
+    cursor = None
+    args = None
+    table_data = None
     objectid = None
     object_store_id = None
+    uuid_without_dash = None
+    uuid_with_dash = None
+    object_store_path = None
     disk_sub_folder = None
-    disk_file_path = None
     irods_sub_folder = None
+    disk_file_path = None
+    disk_folder_path = None
     irods_file_path = None
-    session = None
+    irods_file_collection_path = None
+    irods_folder_collection_path = None
+    options = None
+    iput_command = None
 
     if start_dataset_id > end_dataset_id:
         print("start_dataset_id %d cannot be larger than end_dataset_id %d", start_dataset_id, end_dataset_id)
@@ -100,17 +110,32 @@ def copy_files_to_irods(start_dataset_id,
 
             disk_file_path = os.path.join(object_store_path, disk_sub_folder, "dataset_" + str(objectid) + ".dat")
             print("disk_file_path: ", disk_file_path)
+            disk_folder_path = os.path.join(object_store_path, disk_sub_folder, "dataset_" + str(objectid) + "_files")
+            print("disk_folder_path: ", disk_folder_path)
             irods_file_path = os.path.join(irods_info["home"], irods_sub_folder, "dataset_" + str(uuid_with_dash) + ".dat")
             print("irods_file_path: ", irods_file_path)
-            irods_collection_path = os.path.join(irods_info["home"], irods_sub_folder)
-            print("irods_collection_path: ", irods_collection_path)
+            irods_file_collection_path = os.path.join(irods_info["home"], irods_sub_folder)
+            print("irods_file_collection_path: ", irods_file_collection_path)
+            irods_folder_collection_path = os.path.join(irods_file_collection_path, "dataset_" + str(uuid_with_dash) + "_files")
+            print("irods_folder_collection_path: ", irods_folder_collection_path)
 
             # Create the collection
-            session.collections.create(irods_collection_path)
+            session.collections.create(irods_file_collection_path)
 
             # Add disk file to collection
             options = {kw.DEST_RESC_NAME_KW: 'demoResc'}
             session.data_objects.put(disk_file_path, irods_file_path, **options)
+
+            if os.path.isdir(disk_folder_path):
+                # Create the collection
+                # session.collections.create(irods_folder_collection_path)
+                iput_command = "imkdir -p " + irods_folder_collection_path
+                print("iput_command: ", iput_command)
+                subprocess.run(iput_command)
+
+                iput_command = "iput -r " + disk_folder_path + "/* " + irods_folder_collection_path
+                print("iput_command: ", iput_command)
+                subprocess.run(iput_command)
 
     except Exception as e:
         print(e)
