@@ -187,11 +187,7 @@ DO_NOT_TEST = [
     'library_import_dir',  # broken: default overridden
     'logging',  # mapping loaded in config/
     'managed_config_dir',  # depends on config_dir: see note above
-    'markdown_export_css',  # default not used?
-    'markdown_export_css_pages',  # default not used?
-    'markdown_export_css_invocation_reports',  # default not used?
     'master_api_key',  # broken: default value assigned outside of config/
-    'migrated_tools_config',  # needs more work (should work)
     'monitor_thread_join_timeout',  # broken: default overridden
     'new_file_path',  # value overridden for testing
     'object_store_store_by',  # broken: default overridden
