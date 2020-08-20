@@ -3,21 +3,21 @@
   <command detect_errors="exit_code">
     $__tool_directory__/../amp_json_schema/amp_stt_to_draftjs.py $input_transcript $input_segmentation $original_draftjs_transcript;
     $__tool_directory__/hmgm_main.py Transcript $__root_dir__ $original_draftjs_transcript $corrected_draftjs_transcript $task_info '$context_json';
-    $__tool_directory__/../amp_json_schema/bbcEditor_to_schema.py $corrected_draftjs_transcript $amp_transcript $input_transcript
+    $__tool_directory__/../amp_json_schema/bbcEditor_to_schema.py $corrected_draftjs_transcript $output_transcript $input_transcript
   </command>
   <inputs>
-    <param name="input_transcript" type="data" format="json" label="Input AMP Transcript JSON file" help="AMP JSON file for the transcript to be corrected "/>
-    <param name="input_segmentation" type="data" optional = "true" format="json" label="Input AMP Segmentation JSON file" help="AMP JSON Segmentation file for the transcript to be corrected "/>
-    <param name="context_json" type="text" label="Human MGM Task Context" help="JSON string containing context information needed for creating Human MGM task">
+    <param name="input_transcript" type="data" format="json" label="Input Transcript JSON" help="Original AMP JSON file for the transcript to be corrected"/>
+    <param name="input_segmentation" type="data" optional = "true" format="json" label="Input Segmentation JSON" help="AMP JSON Segmentation file for the transcript to be corrected "/>
+    <param name="context_json" type="text" label="HMGM Task Context" help="JSON string containing context information needed for creating Human MGM task">
     	<sanitizer sanitize="false">
     	</sanitizer>
 	</param>
   </inputs>
   <outputs>
-    <data  name="original_draftjs_transcript" format="json" />
-    <data  name="corrected_draftjs_transcript" format="json" />
-    <data  name="task_info" format="json" />
-    <data  name="amp_transcript" format="json" />
+    <data name="original_draftjs_transcript" format="json" label="Original Transcript DraftJS" help="DarftJS file converted from the original AMP Transcript JSON file" />
+    <data name="corrected_draftjs_transcript" format="json" label="Corrected Transcript DraftJS" help="DarftJS file with corrected transcript"  />
+    <data name="output_transcript" format="json" label="Output Transcript JSON" help="AMP JSON file with corrected transcript converted from the corrected DraftJS file" />
+    <data name="task_info" format="json" label="HMGM Task Info" help="Information about the Human MMGM task created for Transcript Correction" />
   </outputs>
   <tests>
   </tests>

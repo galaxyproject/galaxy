@@ -176,7 +176,7 @@ def get_editor_input_path(config, dataset_file):
 # Create subclass of task manager instance based on task platform specified in the given context.
 def get_task_manager(config, context):
     manager = context["taskManager"]
-    assert manager in (JIRA, OPEN_PROJECT, REDMINE)
+    assert manager in (JIRA, OPEN_PROJECT, REDMINE), f"taskManager {taskManager} is not one of ({JIRA}, {OPEN_PROJECT}, {REDMINE})" 
     
     # create subclass of task instance based on task platform specified in context
     if manager == JIRA:
