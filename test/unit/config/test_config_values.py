@@ -332,7 +332,6 @@ SET_CONFIG = {
     # 'interactivetools_map': 'interactivetools_map.sqlite_new',
     # 'interactivetools_proxy_host': 'new',
     # 'job_metrics_config_file': 'job_metrics_conf.xml',  # cause: parse_config_file_options
-    # 'migrated_tools_config': 'migrated_tools_conf.xml',  # cause: parse_config_file_options
     # 'nginx_upload_store': 'new',
     # 'object_store_config_file': 'object_store_conf.xml',  # cause: parse_config_file_options
     # 'object_store_store_by': 'new',
@@ -518,6 +517,7 @@ SET_CONFIG = {
     'message_box_class': 'message_box_class_new',
     'message_box_content': 'message_box_content_new',
     'message_box_visible': True,
+    'migrated_tools_config': 'migrated_tools_conf.xml_new',
     'monitor_thread_join_timeout': 31,
     'mulled_channels': 'conda-forge,bioconda_new',
     'mulled_resolution_cache_data_dir': 'mulled/data_new',

@@ -248,13 +248,12 @@ mapping:
       migrated_tools_config:
         type: str
         default: migrated_tools_conf.xml
+        path_resolves_to: managed_config_dir
         required: false
         desc: |
           Tool config maintained by tool migration scripts.  If you use the migration
           scripts to install tools that have been migrated to the tool shed upon a new
           release, they will be added to this tool config file.
-
-          The value of this option will be resolved with respect to <managed_config_dir>.
 
       integrated_tool_panel_config:
         type: str
