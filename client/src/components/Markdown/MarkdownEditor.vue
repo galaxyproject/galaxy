@@ -85,10 +85,6 @@ export default {
             type: String,
             default: null,
         },
-        toolbar: {
-            type: Boolean,
-            default: false,
-        },
         showMarkdownHelp: {
             // only used if toolbar is True - waiting on a general toolbar refactor
             type: Function,

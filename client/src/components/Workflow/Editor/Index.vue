@@ -14,9 +14,8 @@
                 />
             </template>
         </SidePanel>
-
-        <div v-if="!isCanvas" id="center" class="workflow-center">
-            <MarkdownEditor :markdown-text="markdownText" :title="name" :toolbar="false" @onUpdate="onReportUpdate">
+        <div v-if="!isCanvas" id="center" class="workflow-center workflow-markdown-editor">
+            <MarkdownEditor :markdown-text="markdownText" :title="name" @onUpdate="onReportUpdate">
                 <template v-slot:buttons>
                     <b-button
                         id="workflow-canvas-button"
@@ -31,7 +30,6 @@
                 </template>
             </MarkdownEditor>
         </div>
-
         <div id="center" class="workflow-center inbound" v-show="isCanvas">
             <div class="unified-panel-header" unselectable="on">
                 <div class="unified-panel-header-inner">
@@ -74,7 +72,7 @@
                 </div>
             </div>
         </div>
-        <SidePanel id="right" side="right">
+        <SidePanel id="right" side="right" v-show="isCanvas">
             <template v-slot:panel>
                 <div class="unified-panel workflow-panel">
                     <div class="unified-panel-header" unselectable="on">
@@ -388,3 +386,8 @@ export default {
     },
 };
 </script>
+<style scoped>
+.workflow-markdown-editor {
+    right: 0px !important;
+}
+</style>

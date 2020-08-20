@@ -2,7 +2,6 @@
     <div class="unified-panel-body editor-body">
         <markdown-editor
             :markdown-text="markdownText"
-            :toolbar="true"
             :title="title"
             :show-markdown-help="showMarkdownHelp"
             @onUpdate="onUpdate"
