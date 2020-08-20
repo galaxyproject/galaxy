@@ -292,8 +292,6 @@ galaxy:
   # Conda if available. See
   # https://github.com/galaxyproject/galaxy/blob/dev/doc/source/admin/dependency_resolvers.rst
   # for more information on these options.
-  # The value of this option will be resolved with respect to
-  # <config_dir>.
   #dependency_resolvers_config_file: dependency_resolvers_conf.xml
 
   # conda_prefix is the location on the filesystem where Conda packages

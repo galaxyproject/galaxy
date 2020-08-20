@@ -381,8 +381,6 @@
     then use Conda if available. See
     https://github.com/galaxyproject/galaxy/blob/dev/doc/source/admin/dependency_resolvers.rst
     for more information on these options.
-    The value of this option will be resolved with respect to
-    <config_dir>.
 :Default: ``dependency_resolvers_conf.xml``
 :Type: str
 

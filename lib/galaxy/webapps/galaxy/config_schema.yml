@@ -295,6 +295,7 @@ mapping:
       dependency_resolvers_config_file:
         type: str
         default: dependency_resolvers_conf.xml
+        path_resolves_to: config_dir
         required: false
         desc: |
           The dependency resolvers config file specifies an ordering and options for how
@@ -303,8 +304,6 @@ mapping:
           Galaxy packages, and then use Conda if available.
           See https://github.com/galaxyproject/galaxy/blob/dev/doc/source/admin/dependency_resolvers.rst
           for more information on these options.
-
-          The value of this option will be resolved with respect to <config_dir>.
 
       conda_prefix:
         type: str

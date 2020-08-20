@@ -324,7 +324,6 @@ SET_CONFIG = {
     # 'containers_resolvers_config_file': 'None',  # cause: parse_config_file_options
     # 'data_manager_config_file': 'config/data_manager_conf.xml',  # cause: parse_config_file_options
     # 'database_connection': 'database_connection',
-    # 'dependency_resolvers_config_file': 'dependency_resolvers_conf.xml',  # cause: parse_config_file_options
     # 'disable_library_comptypes': 'None',
     # 'enable_beta_gdpr': True,
     # 'file_path': 'objects',  # cause: parse_config_file_options
@@ -418,6 +417,7 @@ SET_CONFIG = {
     'delay_tool_initialization': True,
     'dependency_resolution': 'dependency_resolution_new',
     'dependency_resolvers': 'dependency_resolvers_new',
+    'dependency_resolvers_config_file': 'dependency_resolvers_conf.xml_new',
     'display_chunk_size': 65537,
     'display_galaxy_brand': False,
     'display_servers': 'display_servers_new',
