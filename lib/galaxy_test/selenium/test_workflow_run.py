@@ -183,7 +183,7 @@ steps:
 
     @selenium_test
     @managed_history
-    def test_execution_with_custom_invocation_repoprt(self):
+    def test_execution_with_custom_invocation_report(self):
         history_id, inputs = self.workflow_run_setup_inputs(WORKFLOW_WITH_CUSTOM_REPORT_1_TEST_DATA)
         self.open_in_workflow_run(WORKFLOW_WITH_CUSTOM_REPORT_1)
         self.workflow_run_specify_inputs(inputs)
@@ -196,7 +196,7 @@ steps:
 
         invocation_0 = self.workflow_populator.history_invocations(history_id)[0]
         self.get("workflows/invocations/report?id=%s" % invocation_0["id"])
-        self.wait_for_selector_visible(".embedded-item.dataset")
+        self.wait_for_selector_visible(".embedded-dataset")
         self.screenshot("workflow_report_custom_1")
 
     def open_in_workflow_run(self, yaml_content):
