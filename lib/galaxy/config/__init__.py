@@ -808,7 +808,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             user_preferences_extra_conf_path=[self._in_config_dir('user_preferences_extra_conf.yml')],
             workflow_resource_params_file=[self._in_config_dir('workflow_resource_params_conf.xml')],
             workflow_schedulers_config_file=[self._in_config_dir('workflow_schedulers_conf.xml')],
-            markdown_export_css_pages=[self._in_config_dir('markdown_export_pages.css')],
             # self.file_path set to self._in_data_dir('objects') by schema
             file_path=[self._in_data_dir('files'), self.file_path],
         )

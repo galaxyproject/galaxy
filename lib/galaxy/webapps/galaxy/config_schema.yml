@@ -2878,6 +2878,7 @@ mapping:
       markdown_export_css_pages:
         type: str
         default: markdown_export_pages.css
+        path_resolves_to: config_dir
         required: false
         desc: |
           CSS file to apply to "Galaxy Page" exports to PDF. Generally prefer
