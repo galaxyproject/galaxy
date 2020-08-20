@@ -16,12 +16,23 @@
         </SidePanel>
 
         <div v-if="!isCanvas" id="center" class="workflow-center">
-            <div class="unified-panel-body workflow-report-body">
-                <MarkdownEditor :markdown-text="markdownText" :toolbar="false" @onUpdate="onReportUpdate" />
-            </div>
+            <MarkdownEditor :markdown-text="markdownText" :title="name" :toolbar="false" @onUpdate="onReportUpdate">
+                <template v-slot:buttons>
+                    <b-button
+                        id="workflow-canvas-button"
+                        title="Return to Workflow"
+                        variant="link"
+                        role="button"
+                        v-b-tooltip.hover.bottom
+                        @click="onEdit"
+                    >
+                        <span class="fa fa-times" />
+                    </b-button>
+                </template>
+            </MarkdownEditor>
         </div>
 
-        <div v-else id="center" class="workflow-center inbound">
+        <div id="center" class="workflow-center inbound" v-show="isCanvas">
             <div class="unified-panel-header" unselectable="on">
                 <div class="unified-panel-header-inner">
                     <span class="sr-only">Workflow Editor</span>
@@ -63,7 +74,7 @@
                 </div>
             </div>
         </div>
-        <SidePanel v-if="isCanvas" id="right" side="right">
+        <SidePanel id="right" side="right">
             <template v-slot:panel>
                 <div class="unified-panel workflow-panel">
                     <div class="unified-panel-header" unselectable="on">
