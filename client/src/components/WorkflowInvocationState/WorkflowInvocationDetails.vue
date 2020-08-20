@@ -1,30 +1,34 @@
 <template>
-    <div v-if="invocation" class="mb-3">
+    <div v-if="invocation">
         <div v-if="Object.keys(invocation.input_step_parameters).length > 0">
-            <details><summary><b>Invocation Parameters</b></summary>
+            <details
+                ><summary><b>Invocation Parameters</b></summary>
                 <div v-for="parameter in invocation.input_step_parameters" v-bind:key="parameter.id">
-                    {{parameter}}
+                    {{ parameter }}
                 </div>
             </details>
         </div>
         <div v-if="Object.keys(invocation.outputs).length > 0">
-            <details><summary><b>Invocation Outputs</b></summary>
+            <details
+                ><summary><b>Invocation Outputs</b></summary>
                 <div v-for="output in invocation.outputs" v-bind:key="output.id">
-                    <WorkflowInvocationOutputs v-bind:dataset_id="output.id"/>
+                    <WorkflowInvocationOutputs v-bind:dataset_id="output.id" />
                 </div>
             </details>
         </div>
         <div v-if="Object.keys(invocation.output_collections).length > 0">
-            <details><summary><b>Invocation Output Collections</b></summary>
+            <details
+                ><summary><b>Invocation Output Collections</b></summary>
                 <div v-for="output in invocation.output_collections" v-bind:key="output.id">
-                    <WorkflowInvocationOutputs v-bind:dataset_collection_id="output.id"/>
+                    <WorkflowInvocationOutputs v-bind:dataset_collection_id="output.id" />
                 </div>
             </details>
         </div>
-        <div>
-            <details><summary><b>Invocation Steps</b></summary>
+        <div v-if="Object.keys(invocation.steps).length > 0">
+            <details
+                ><summary><b>Invocation Steps</b></summary>
                 <div v-for="step in invocation.steps" v-bind:key="step.id">
-                    {{step}}
+                    {{ step }}
                 </div>
             </details>
         </div>
@@ -34,12 +38,12 @@
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
-import {Dataset} from "components/History/ContentItem/Dataset";
+import { Dataset } from "components/History/ContentItem/Dataset";
 import WorkflowInvocationOutputs from "./WorkflowInvocationOutputs";
 import ListMixin from "components/History/ListMixin";
 
 import { getAppRoot } from "onload/loadConfig";
-import axios from "axios"
+import axios from "axios";
 
 import { getRootFromIndexLink } from "onload";
 import { mapGetters, mapActions } from "vuex";
@@ -51,12 +55,12 @@ Vue.use(BootstrapVue);
 export default {
     mixins: [ListMixin],
     components: {
-        WorkflowInvocationOutputs
+        WorkflowInvocationOutputs,
     },
     props: {
         invocation: {
             required: true,
-        }
+        },
     },
-}
+};
 </script>

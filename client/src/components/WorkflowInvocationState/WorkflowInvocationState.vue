@@ -44,7 +44,7 @@
         <span v-if="invocationAndJobTerminal">
             <a :href="bcoJSON"><b>Download BioCompute Object</b></a>
         </span>
-        <WorkflowInvocationDetails v-bind:invocation="invocation"/>
+        <WorkflowInvocationDetails v-if="invocation" v-bind:invocation="invocation" />
     </div>
 </template>
 <script>
