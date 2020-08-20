@@ -1,6 +1,6 @@
 // $LastChangedDate$
 // $LastChangedBy$
-// $LastChangedRevision$
+// 
 
 // -----------------------------------------------------------------------------
 // Peptide sequence and modifications
