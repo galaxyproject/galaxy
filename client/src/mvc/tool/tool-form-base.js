@@ -15,6 +15,7 @@ import Citations from "components/Citations.vue";
 import xrefs from "components/xrefs.vue";
 import Vue from "vue";
 import axios from "axios";
+import { Toast } from "ui/toast";
 
 export default FormBase.extend({
     initialize: function (options) {
@@ -183,12 +184,20 @@ export default FormBase.extend({
         });
         menu_button.addMenu({
             icon: "fa-share",
-            title: _l("Share"),
+            title: _l("Get link"),
             onclick: function () {
-                prompt(
-                    "Copy to clipboard: Ctrl+C, Enter",
-                    `${window.location.origin + getAppRoot()}root?tool_id=${options.id}`
-                );
+                if (navigator.clipboard) {
+                    navigator.clipboard
+                        .writeText(`${window.location.origin + getAppRoot()}root?tool_id=${options.id}`)
+                        .then(() => {
+                            Toast.info("Link is copied to your clipboard");
+                        });
+                } else {
+                    prompt(
+                        "Copy to clipboard: Ctrl+C, Enter",
+                        `${window.location.origin + getAppRoot()}root?tool_id=${options.id}`
+                    );
+                }
             },
         });
 
