@@ -120,6 +120,7 @@ history_panel:
       dbkey: '${_} .dbkey .value'
       info: '${_} .info .value'
       peek: '${_} .dataset-peek'
+      toolhelp_title: '${_} .toolhelp strong'
 
       # Title buttons...
       display_button: '${_} .icon-btn.display-btn'
@@ -129,6 +130,7 @@ history_panel:
       # Action buttons...
       download_button: '${_} .icon-btn.download-btn'
       info_button: '${_} .icon-btn.params-btn'
+      dbkey_button: '${_} .fa.fa-question'
       rerun_button: '${_} .icon-btn.rerun-btn'
       nametags: '${_} .nametags .badge-tags'
 
@@ -197,12 +199,27 @@ history_panel:
     new_name: 'Unnamed history'
     new_size: '(empty)'
 
+
 history_structure:
   selectors:
     _: '.tool'
     header: '.tool > .header.clickable'
     dataset: '.tool div.list-item.dataset.history-content'
     details: '.tool .details'
+
+edit_dataset_attributes:
+  selectors:
+    database_build_dropdown: '[data-label="Database/Build"]'
+    save_btn: '#submit_attributes'
+
+  dbkey_dropdown_results:
+    selectors:
+      _:  '#select2-drop  > .select2-results'
+      dbkey_dropdown_option:
+        type: xpath
+        selector: '//li[normalize-space() = "${dbkey_text}"]'
+
+
 
 tool_panel:
 
