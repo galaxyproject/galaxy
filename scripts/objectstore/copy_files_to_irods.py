@@ -127,15 +127,14 @@ def copy_files_to_irods(start_dataset_id,
             session.data_objects.put(disk_file_path, irods_file_path, **options)
 
             if os.path.isdir(disk_folder_path):
-                # Create the collection
-                # session.collections.create(irods_folder_collection_path)
-                iput_command = "imkdir -p " + irods_folder_collection_path
-                print("iput_command: ", iput_command)
-                subprocess.run(iput_command)
+                disk_folder_path_all_files = disk_folder_path + "/*"
+                print("disk_folder_path_all_files: ", disk_folder_path_all_files)
 
-                iput_command = "iput -r " + disk_folder_path + "/* " + irods_folder_collection_path
-                print("iput_command: ", iput_command)
-                subprocess.run(iput_command)
+                # Create the collection
+                session.collections.create(irods_folder_collection_path)
+
+                iput_command = "iput -r " + disk_folder_path_all_files + " " + irods_folder_collection_path
+                subprocess.call(iput_command, shell=True)
 
     except Exception as e:
         print(e)
