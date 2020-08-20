@@ -117,19 +117,30 @@ def test_set_renamed_option_not_overridden_by_old_option(mock_init):
 
 def test_is_set(mock_init):
     # if an option is set from kwargs, is_set() returns True, otherwise False
-    # Note: is_set() here means 'value is set by user', which includes setting to None.
-    config = GalaxyAppConfiguration(property1='b', property2=None, property4=False, property6=None)
+    # Note: is_set() here means 'value is set by user', which includes setting
+    # to None or setting to the same value as the schema default.
 
-    assert len(config._raw_config) == 6
+    # First, test that none are set
+    config = GalaxyAppConfiguration()
+    assert not config.is_set('property1')
+    assert not config.is_set('property2')
+    assert not config.is_set('property3')
+    assert not config.is_set('property4')
+    assert not config.is_set('property5')
+    assert not config.is_set('property6')
 
-    assert config._raw_config['property1'] == 'b'
-    assert config._raw_config['property2'] is None
-    assert config._raw_config['property3'] == 1.0
-    assert config._raw_config['property4'] is False
-    assert config._raw_config['property6'] is None
+    # Now set all values, including setting to None and setting to the schema default
+    config = GalaxyAppConfiguration(
+        property1='b',    # default = 'a'  (overwrites default w/'a')
+        property2=None,   # default = 1    (overwrites default w/None)
+        property3=1.0,    # default = 1.0  (same as default: 1.0)
+        property4=True,   # default = True (same as default: True)
+        property5=None,   # default = None (same as default: None)
+        property6=1)      # default = None (overwrites default w/None)
 
-    assert config.is_set('property1')  # 'b' overwrites 'a'
-    assert config.is_set('property2')  # None overwrites 1
-    assert not config.is_set('property3')  # default 1.0 preserved
-    assert config.is_set('property4')  # False overwrites True
-    assert not config.is_set('property6')  # supplied value is same as default (None)
+    assert config.is_set('property1')
+    assert config.is_set('property2')
+    assert config.is_set('property3')
+    assert config.is_set('property4')
+    assert config.is_set('property4')
+    assert config.is_set('property6')
