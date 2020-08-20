@@ -2,27 +2,32 @@
     <span>
         <div class="unified-panel-header" unselectable="on">
             <div class="unified-panel-header-inner">
-                Page Editor: {{ title }}
-                <a
-                    id="save-button"
-                    class="btn btn-secondary fa fa-save float-right"
-                    href="javascript:void(0)"
-                    @click="saveContent(false)"
-                ></a>
-                <a
-                    id="view-button"
-                    class="btn btn-secondary fa fa-eye float-right"
-                    href="javascript:void(0)"
-                    @click="saveContent(true)"
-                ></a>
+                <div class="panel-header-buttons">
+                    <b-button
+                        id="save-button"
+                        title="Save"
+                        variant="link"
+                        role="button"
+                        v-b-tooltip.hover.bottom
+                        @click="saveContent(false)"
+                    >
+                        <span class="fa fa-save" />
+                    </b-button>
+                    <b-button
+                        id="view-button"
+                        title="Save & View"
+                        variant="link"
+                        role="button"
+                        v-b-tooltip.hover.bottom
+                        @click="saveContent(true)"
+                    >
+                        <span class="fa fa-eye" />
+                    </b-button>
+                </div>
+                {{ title }}
             </div>
         </div>
-        <page-editor-html
-            v-if="contentFormat == 'html'"
-            :page-id="pageId"
-            :content="content"
-            @onUpdate="onUpdate"
-        />
+        <page-editor-html v-if="contentFormat == 'html'" :page-id="pageId" :content="content" @onUpdate="onUpdate" />
         <page-editor-markdown
             v-if="contentFormat == 'markdown'"
             :page-id="pageId"
@@ -38,7 +43,6 @@ import { getAppRoot } from "onload/loadConfig";
 import { save } from "./util";
 import PageEditorHtml from "./PageEditorHtml";
 import PageEditorMarkdown from "./PageEditorMarkdown";
-
 
 export default {
     props: {
@@ -69,13 +73,14 @@ export default {
         },
         saveContent(showResult) {
             save(this.pageId, this.content, !showResult)
-            .then(() => {
-                if (showResult) {
-                    window.location = `${getAppRoot()}${this.publicUrl}`;
-                }
-            }).catch((error) => {
-                Toast.error(`Failed to save page: ${error}`);
-            });
+                .then(() => {
+                    if (showResult) {
+                        window.location = `${getAppRoot()}${this.publicUrl}`;
+                    }
+                })
+                .catch((error) => {
+                    Toast.error(`Failed to save page: ${error}`);
+                });
         },
     },
     components: {

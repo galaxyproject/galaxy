@@ -1,10 +1,6 @@
 <template>
     <markdown v-if="!edit" :markdown-config="markdownConfig" />
-    <markdown-editor
-        v-else
-        :markdown-text="markdownConfig.invocation_markdown"
-        @onUpdate="onUpdate"
-    />
+    <markdown-editor v-else :markdown-text="markdownConfig.invocation_markdown" @onUpdate="onUpdate" />
 </template>
 
 <script>

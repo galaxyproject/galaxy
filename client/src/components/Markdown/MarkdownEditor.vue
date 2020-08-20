@@ -83,12 +83,12 @@ export default {
             // only used if toolbar is True - waiting on a general toolbar refactor
             type: Function,
             default: null,
-        }
+        },
     },
     data() {
         return {
             content: this.markdownText,
-        }
+        };
     },
     watch: {
         markdownText() {

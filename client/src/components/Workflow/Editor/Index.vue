@@ -56,7 +56,7 @@
                 </div>
             </div>
             <div class="unified-panel-body workflow-report-body" v-show="!isCanvas">
-                <MarkdownEditor :markdown-text="markdownText" :toolbar="false" @onUpdate="onReportUpdate"/>
+                <MarkdownEditor :markdown-text="markdownText" :toolbar="false" @onUpdate="onReportUpdate" />
             </div>
         </div>
         <SidePanel id="right" side="right">
