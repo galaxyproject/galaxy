@@ -1,30 +1,28 @@
 <template>
-    <div class="unified-panel-body editor-body">
-        <markdown-editor :markdown-text="markdownText" :title="title" @onUpdate="onUpdate">
-            <template v-slot:buttons>
-                <b-button
-                    id="save-button"
-                    title="Save"
-                    variant="link"
-                    role="button"
-                    v-b-tooltip.hover.bottom
-                    @click="saveContent(false)"
-                >
-                    <span class="fa fa-save" />
-                </b-button>
-                <b-button
-                    id="view-button"
-                    title="Save & View"
-                    variant="link"
-                    role="button"
-                    v-b-tooltip.hover.bottom
-                    @click="saveContent(true)"
-                >
-                    <span class="fa fa-eye" />
-                </b-button>
-            </template>
-        </markdown-editor>
-    </div>
+    <markdown-editor :markdown-text="markdownText" :title="title" @onUpdate="onUpdate">
+        <template v-slot:buttons>
+            <b-button
+                id="save-button"
+                title="Save"
+                variant="link"
+                role="button"
+                v-b-tooltip.hover.bottom
+                @click="saveContent(false)"
+            >
+                <span class="fa fa-save" />
+            </b-button>
+            <b-button
+                id="view-button"
+                title="Save & View"
+                variant="link"
+                role="button"
+                v-b-tooltip.hover.bottom
+                @click="saveContent(true)"
+            >
+                <span class="fa fa-eye" />
+            </b-button>
+        </template>
+    </markdown-editor>
 </template>
 
 <script>
@@ -78,9 +76,3 @@ export default {
     },
 };
 </script>
-
-<style scoped>
-.editor-body {
-    display: flex;
-}
-</style>

@@ -1,5 +1,5 @@
 <template>
-    <div style="display: flex; flex: 1; flex-direction: column;">
+    <div class="markdown-editor h-100">
         <div class="unified-panel-header" unselectable="on">
             <div class="unified-panel-header-inner">
                 <div class="panel-header-buttons">
@@ -50,16 +50,20 @@
                     </b-button>
                     <slot name="buttons" />
                 </div>
-                {{ title }}
+                <div class="my-1">
+                    {{ title }}
+                </div>
             </div>
         </div>
-        <textarea
-            class="markdown-textarea"
-            id="workflow-report-editor"
-            v-model="content"
-            @input="onUpdate"
-            ref="text-area"
-        />
+        <div class="unified-panel-body d-flex">
+            <textarea
+                class="markdown-textarea"
+                id="workflow-report-editor"
+                v-model="content"
+                @input="onUpdate"
+                ref="text-area"
+            />
+        </div>
     </div>
 </template>
 
@@ -149,6 +153,11 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.markdown-editor {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+}
 .markdown-text {
     font: 16px/1.7 Menlo, Consolas, Monaco, "Andale Mono", monospace;
 }
