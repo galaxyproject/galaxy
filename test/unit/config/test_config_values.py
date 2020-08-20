@@ -331,7 +331,6 @@ SET_CONFIG = {
     # 'interactive_environment_plugins_directory': 'new',
     # 'interactivetools_map': 'interactivetools_map.sqlite_new',
     # 'interactivetools_proxy_host': 'new',
-    # 'job_config_file': 'config/job_conf.xml',  # cause: parse_config_file_options
     # 'job_metrics_config_file': 'job_metrics_conf.xml',  # cause: parse_config_file_options
     # 'job_resource_params_file': 'job_resource_params_conf.xml',  # cause: parse_config_file_options
     # 'migrated_tools_config': 'migrated_tools_conf.xml',  # cause: parse_config_file_options
@@ -489,6 +488,7 @@ SET_CONFIG = {
     'involucro_auto_init': False,
     'involucro_path': 'involucro_new',
     'job_config': 'job_config_new',
+    'job_config_file': 'config/job_conf.xml_new',
     'job_working_directory': 'jobs_directory_new',
     'legacy_eager_objectstore_initialization': True,
     'len_file_path': 'shared/ucsc/chrom_new',

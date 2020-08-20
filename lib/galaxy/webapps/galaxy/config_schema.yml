@@ -2604,7 +2604,8 @@ mapping:
 
       job_config_file:
         type: str
-        default: config/job_conf.xml
+        default: job_conf.xml
+        path_resolves_to: config_dir
         required: false
         desc: |
           To increase performance of job execution and the web interface, you can
