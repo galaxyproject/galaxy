@@ -2887,6 +2887,7 @@ mapping:
       markdown_export_css_invocation_reports:
         type: str
         default: markdown_export_invocation_reports.css
+        path_resolves_to: config_dir
         required: false
         desc: |
           CSS file to apply to invocation report exports to PDF. Generally prefer
