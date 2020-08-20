@@ -1,5 +1,5 @@
 <template>
-    <DatasetUI v-if="dataset" v-bind="$attrs" v-on="$listeners" :dataset="dataset" />
+    <DatasetUI v-if="dataset" v-bind="$attrs" v-on="$listeners" :dataset="dataset" :showTags="true"/>
 </template>
 <script>
 import DatasetUI from "./DatasetUI";
