@@ -794,7 +794,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             file_sources_config_file=[self._in_config_dir('file_sources_conf.yml')],
             local_conda_mapping_file=[self._in_config_dir('local_conda_mapping.yml')],
             modules_mapping_files=[self._in_config_dir('environment_modules_mapping.yml')],
-            shed_data_manager_config_file=[self._in_managed_config_dir('shed_data_manager_conf.xml')],
             shed_tool_config_file=[self._in_managed_config_dir('shed_tool_conf.xml')],
             shed_tool_data_table_config=[self._in_managed_config_dir('shed_tool_data_table_conf.xml')],
             tool_destinations_config_file=[self._in_config_dir('tool_destinations.yml')],

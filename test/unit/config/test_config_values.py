@@ -15,8 +15,8 @@ TestData = namedtuple('TestData', ('key', 'expected', 'loaded'))
 DO_NOT_TEST = {
     'allowed_origin_hostnames',
     'data_manager_config_file',     # fix schema
-    'datatypes_config_file',        # fix schema
-    'job_config_file',              # fix schema
+    'datatypes_config_file',        # fix schema  TODO!!!!!!!!!!
+    'job_config_file',              # fix schema  TODO!!!!!!!!!!
     'tool_config_file',             # fix schema
     'tool_data_table_config_path',  # fix schema
 }
@@ -334,7 +334,6 @@ SET_CONFIG = {
     # 'job_metrics_config_file': 'job_metrics_conf.xml',  # cause: parse_config_file_options
     # 'nginx_upload_store': 'new',
     # 'object_store_store_by': 'new',
-    # 'shed_data_manager_config_file': 'shed_data_manager_conf.xml',  # cause: parse_config_file_options
     # 'shed_tool_config_file': 'shed_tool_conf.xml',  # cause: parse_config_file_options
     # 'shed_tool_data_table_config': 'shed_tool_data_table_conf.xml',  # cause: parse_config_file_options
     # 'statsd_host': 'None',
@@ -560,6 +559,7 @@ SET_CONFIG = {
     'sentry_sloreq_threshold': 0.1,
     'serve_xss_vulnerable_mimetypes': True,
     'session_duration': 1,
+    'shed_data_manager_config_file': 'shed_data_manager_conf.xml_new',
     'shed_tool_data_path': 'new',
     'show_user_prepopulate_form': True,
     'show_welcome_with_login': True,
