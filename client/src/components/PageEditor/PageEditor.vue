@@ -7,13 +7,13 @@
                     id="save-button"
                     class="btn btn-secondary fa fa-save float-right"
                     href="javascript:void(0)"
-                    @click="saveContent"
+                    @click="saveContent(false)"
                 ></a>
                 <a
                     id="view-button"
                     class="btn btn-secondary fa fa-eye float-right"
                     href="javascript:void(0)"
-                    @click="viewContent"
+                    @click="saveContent(true)"
                 ></a>
             </div>
         </div>
@@ -33,6 +33,7 @@
 </template>
 
 <script>
+import { Toast } from "ui/toast";
 import { getAppRoot } from "onload/loadConfig";
 import { save } from "./util";
 import PageEditorHtml from "./PageEditorHtml";
@@ -63,21 +64,18 @@ export default {
         },
     },
     methods: {
-        onUpdate: function (newContent) {
+        onUpdate(newContent) {
             this.content = newContent;
         },
-        saveContent: function () {
-            save(this.pageId, this.content);
-        },
-        viewContent: function () {
-            // TODO: Future iteration, contentEditor should have an entry point that can decide
-            // if it has changed content.
-            const r = window.confirm(
-                "This will leave the current page editor, if you have unsaved changes they will be lost. Do you wish to continue?"
-            );
-            if (r === true) {
-                window.location = `${getAppRoot()}${this.publicUrl}`;
-            }
+        saveContent(showResult) {
+            save(this.pageId, this.content, !showResult)
+            .then(() => {
+                if (showResult) {
+                    window.location = `${getAppRoot()}${this.publicUrl}`;
+                }
+            }).catch((error) => {
+                Toast.error(`Failed to save page: ${error}`);
+            });
         },
     },
     components: {
