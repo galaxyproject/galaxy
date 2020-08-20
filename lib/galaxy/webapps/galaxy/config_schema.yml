@@ -2378,10 +2378,9 @@ mapping:
         type: str
         default: oidc_backends_config.xml
         required: false
+        path_resolves_to: config_dir
         desc: |
           Sets the path to OIDC backends configuration file.
-
-          The value of this option will be resolved with respect to <config_dir>.
 
       auth_config_file:
         type: str

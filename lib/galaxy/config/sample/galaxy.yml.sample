@@ -1581,8 +1581,6 @@ galaxy:
   #oidc_config_file: oidc_config.xml
 
   # Sets the path to OIDC backends configuration file.
-  # The value of this option will be resolved with respect to
-  # <config_dir>.
   #oidc_backends_config_file: oidc_backends_config.xml
 
   # XML config file that allows the use of different authentication

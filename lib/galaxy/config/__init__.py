@@ -443,7 +443,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.len_file_path = os.path.join(self.tool_data_path, self.len_file_path)
         # Galaxy OIDC settings.
         self.oidc_config = kwargs.get("oidc_config_file", self.oidc_config_file)
-        self.oidc_backends_config = kwargs.get("oidc_backends_config_file", self.oidc_backends_config_file)
         self.oidc = {}
         self.integrated_tool_panel_config = self._in_managed_config_dir(self.integrated_tool_panel_config)
         integrated_tool_panel_tracking_directory = kwargs.get('integrated_tool_panel_tracking_directory')
@@ -796,7 +795,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             file_sources_config_file=[self._in_config_dir('file_sources_conf.yml')],
             local_conda_mapping_file=[self._in_config_dir('local_conda_mapping.yml')],
             modules_mapping_files=[self._in_config_dir('environment_modules_mapping.yml')],
-            oidc_backends_config_file=[self._in_config_dir('oidc_backends_config.xml')],
             oidc_config_file=[self._in_config_dir('oidc_config.xml')],
             shed_data_manager_config_file=[self._in_managed_config_dir('shed_data_manager_conf.xml')],
             shed_tool_config_file=[self._in_managed_config_dir('shed_tool_conf.xml')],
