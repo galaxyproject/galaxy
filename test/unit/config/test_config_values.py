@@ -334,7 +334,6 @@ SET_CONFIG = {
     # 'job_metrics_config_file': 'job_metrics_conf.xml',  # cause: parse_config_file_options
     # 'nginx_upload_store': 'new',
     # 'object_store_store_by': 'new',
-    # 'oidc_config_file': 'oidc_config.xml',  # cause: parse_config_file_options
     # 'shed_data_manager_config_file': 'shed_data_manager_conf.xml',  # cause: parse_config_file_options
     # 'shed_tool_config_file': 'shed_tool_conf.xml',  # cause: parse_config_file_options
     # 'shed_tool_data_table_config': 'shed_tool_data_table_conf.xml',  # cause: parse_config_file_options
@@ -531,6 +530,7 @@ SET_CONFIG = {
     'normalize_remote_user_email': True,
     'object_store_config_file': 'object_store_conf.xml_new',
     'oidc_backends_config_file': 'oidc_backends_config.xml_new',
+    'oidc_config_file': 'oidc_config.xml_new',
     'openid_consumer_cache_path': 'openid_consumer_cache_new',
     'outputs_to_working_directory': True,
     'overwrite_model_recommendations': True,
