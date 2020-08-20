@@ -3,9 +3,7 @@
         <div v-if="Object.keys(invocation.input_step_parameters).length > 0">
             <details
                 ><summary><b>Invocation Parameters</b></summary>
-                <div v-for="parameter in invocation.input_step_parameters" v-bind:key="parameter.id">
-                    {{ parameter }}
-                </div>
+                <b-table small caption-top :fields="['label', 'parameter_value']" :items="Object.values(invocation.input_step_parameters)"/>
             </details>
         </div>
         <div v-if="Object.keys(invocation.outputs).length > 0">
