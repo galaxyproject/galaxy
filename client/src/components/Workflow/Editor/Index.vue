@@ -14,14 +14,21 @@
                 />
             </template>
         </SidePanel>
-        <div id="center" class="workflow-center inbound">
+
+        <div v-if="!isCanvas" id="center" class="workflow-center">
+            <div class="unified-panel-body workflow-report-body">
+                <MarkdownEditor :markdown-text="markdownText" :toolbar="false" @onUpdate="onReportUpdate" />
+            </div>
+        </div>
+
+        <div v-else id="center" class="workflow-center inbound">
             <div class="unified-panel-header" unselectable="on">
                 <div class="unified-panel-header-inner">
                     <span class="sr-only">Workflow Editor</span>
                     {{ name }}
                 </div>
             </div>
-            <div id="workflow-canvas" class="unified-panel-body workflow-canvas" v-show="isCanvas">
+            <div id="workflow-canvas" class="unified-panel-body workflow-canvas">
                 <ZoomControl :zoom-level="zoomLevel" @onZoom="onZoom" />
                 <div id="canvas-viewport">
                     <div ref="canvas" id="canvas-container">
@@ -55,40 +62,41 @@
                     </div>
                 </div>
             </div>
-            <div class="unified-panel-body workflow-report-body" v-show="!isCanvas">
-                <MarkdownEditor :markdown-text="markdownText" :toolbar="false" @onUpdate="onReportUpdate" />
-            </div>
         </div>
-        <SidePanel id="right" side="right">
+        <SidePanel v-if="isCanvas" id="right" side="right">
             <template v-slot:panel>
-                <EditorPanel :canvas="isCanvas" class="workflow-panel">
-                    <template v-slot:attributes>
-                        <WorkflowAttributes
-                            :id="id"
-                            :name="name"
-                            :tags="tags"
-                            :parameters="parameters"
-                            :annotation="annotation"
-                            :version="version"
-                            :versions="versions"
-                            @onVersion="onVersion"
-                            @onRename="onRename"
-                        />
-                    </template>
-                    <template v-slot:buttons>
-                        <WorkflowOptions
-                            :canvas="isCanvas"
-                            @onSave="onSave"
-                            @onSaveAs="onSaveAs"
-                            @onRun="onRun"
-                            @onDownload="onDownload"
-                            @onReport="onReport"
-                            @onLayout="onLayout"
-                            @onEdit="onEdit"
-                            @onAttributes="onAttributes"
-                        />
-                    </template>
-                </EditorPanel>
+                <div class="unified-panel workflow-panel">
+                    <div class="unified-panel-header" unselectable="on">
+                        <div class="unified-panel-header-inner">
+                            <WorkflowOptions
+                                @onSave="onSave"
+                                @onSaveAs="onSaveAs"
+                                @onRun="onRun"
+                                @onDownload="onDownload"
+                                @onReport="onReport"
+                                @onLayout="onLayout"
+                                @onEdit="onEdit"
+                                @onAttributes="onAttributes"
+                            />
+                        </div>
+                    </div>
+                    <div class="unified-panel-body workflow-right">
+                        <div class="m-1">
+                            <WorkflowAttributes
+                                :id="id"
+                                :name="name"
+                                :tags="tags"
+                                :parameters="parameters"
+                                :annotation="annotation"
+                                :version="version"
+                                :versions="versions"
+                                @onVersion="onVersion"
+                                @onRename="onRename"
+                            />
+                            <div id="right-content" class="right-content" />
+                        </div>
+                    </div>
+                </div>
             </template>
         </SidePanel>
     </div>
@@ -113,7 +121,6 @@ import ToolBoxWorkflow from "components/Panels/ToolBoxWorkflow";
 import SidePanel from "components/Panels/SidePanel";
 import { getAppRoot } from "onload/loadConfig";
 import reportDefault from "./reportDefault";
-import EditorPanel from "./EditorPanel";
 import { hide_modal, show_message, show_modal } from "layout/modal";
 import WorkflowAttributes from "./Attributes";
 import ZoomControl from "./ZoomControl";
@@ -122,7 +129,6 @@ import Vue from "vue";
 
 export default {
     components: {
-        EditorPanel,
         MarkdownEditor,
         SidePanel,
         ToolBoxWorkflow,
