@@ -1,26 +1,27 @@
 // Simple dataset provider, looks at api for result, renders to slot prop
 import axios from "axios";
-import { prependPath } from "utils/redirect"
-
-
+import { prependPath } from "utils/redirect";
 
 export default {
     props: {
-        id: { type: String, required: true }
+        id: { type: String, required: true },
     },
     data() {
         return {
             loading: false,
-            dataset: null
-        }
+            dataset: null,
+        };
     },
     computed: {
         // Without knowing how this fits into yoru requirements, I'm not sure
         // exactly what IDs you have access to , but all you'd really need to
         // change is the input props (above) and this url generation
         url() {
-            return prependPath(`/api/dataset/${this.id}`);
-        }
+            return prependPath(`/api/datasets/${this.id}`);
+        },
+    },
+    created: function () {
+        this.load()
     },
     watch: {
         watch: {
@@ -30,9 +31,9 @@ export default {
                     if (newVal !== oldVal) {
                         this.load();
                     }
-                }
-            }
-        }
+                },
+            },
+        },
     },
     methods: {
         async load() {
@@ -52,7 +53,7 @@ export default {
         return this.$scopedSlots.default({
             loading: this.loading,
             dataset: this.dataset,
-            save: this.save
+            save: this.save,
         });
     },
-}
+};
