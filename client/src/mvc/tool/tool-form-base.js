@@ -186,11 +186,18 @@ export default FormBase.extend({
             icon: "fa-share",
             title: _l("Get link"),
             onclick: function () {
-                navigator.clipboard
-                    .writeText(`${window.location.origin + getAppRoot()}root?tool_id=${options.id}`)
-                    .then(() => {
-                        Toast.info("Link is copied to your clipboard");
-                    });
+                if (navigator.clipboard) {
+                    navigator.clipboard
+                        .writeText(`${window.location.origin + getAppRoot()}root?tool_id=${options.id}`)
+                        .then(() => {
+                            Toast.info("Link is copied to your clipboard");
+                        });
+                } else {
+                    prompt(
+                        "Copy to clipboard: Ctrl+C, Enter",
+                        `${window.location.origin + getAppRoot()}root?tool_id=${options.id}`
+                    );
+                }
             },
         });
 
