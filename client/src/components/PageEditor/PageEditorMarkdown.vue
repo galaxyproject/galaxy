@@ -70,10 +70,10 @@ export default {
     },
     methods: {
         onUpdate(newContent) {
-            this.content = newContent;
+            this.markdownText = newContent;
         },
         saveContent(showResult) {
-            save(this.pageId, this.content, !showResult)
+            save(this.pageId, this.markdownText, !showResult)
                 .then(() => {
                     if (showResult) {
                         window.location = `${getAppRoot()}${this.publicUrl}`;

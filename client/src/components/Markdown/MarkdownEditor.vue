@@ -111,9 +111,10 @@ export default {
         }, 300),
         insertMarkdown(markdown) {
             const textArea = this.$refs["text-area"];
+            textArea.focus();
             const cursorPosition = textArea.selectionStart;
             let newContent = this.content.substr(0, cursorPosition);
-            newContent += markdown;
+            newContent += `\r\n${markdown.trim()}\r\n`;
             newContent += this.content.substr(cursorPosition);
             this.$emit("onUpdate", newContent);
         },
