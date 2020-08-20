@@ -6,6 +6,16 @@
                 <i class="fa fa-3x fa-download" />
             </a>
             <div>
+                <b-button
+                    class="float-right"
+                    title="Edit Markdown"
+                    variant="link"
+                    role="button"
+                    v-b-tooltip.hover.bottom
+                    @click="$emit('onEdit')"
+                >
+                    <span class="fa fa-edit" />
+                </b-button>
                 <h3 class="float-right align-middle mr-1 mt-2">Galaxy {{ markdownConfig.model_class }}</h3>
                 <span class="float-left font-weight-light mb-3">
                     <small>Title: {{ markdownConfig.title || markdownConfig.model_class }}</small

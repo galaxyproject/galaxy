@@ -32,7 +32,7 @@ const View = Backbone.View.extend({
         this.center = new Panel.CenterPanel();
 
         // display helper
-        Galaxy.display = this.display = (view) => {
+        Galaxy.display = this.display = (view, noPadding) => {
             if (view.title) {
                 Utils.setWindowTitle(view.title);
                 view.allow_title_display = false;
@@ -43,7 +43,7 @@ const View = Backbone.View.extend({
             if (view.active_tab) {
                 this.masthead.highlight(view.active_tab);
             }
-            this.center.display(view);
+            this.center.display(view, noPadding);
         };
 
         // build page template

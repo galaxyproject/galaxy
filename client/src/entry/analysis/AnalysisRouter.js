@@ -102,13 +102,13 @@ export const getAnalysisRouter = (Galaxy) =>
             return (Galaxy.user && Galaxy.user.id) || this.require_login.indexOf(name) == -1;
         },
 
-        _display_vue_helper: function (component, propsData = {}, active_tab = null) {
+        _display_vue_helper: function (component, propsData = {}, active_tab = null, noPadding = false) {
             const instance = Vue.extend(component);
             const container = document.createElement("div");
             if (active_tab) {
                 container.active_tab = active_tab;
             }
-            this.page.display(container);
+            this.page.display(container, noPadding);
             new instance({ store, propsData }).$mount(container);
         },
 
@@ -196,7 +196,7 @@ export const getAnalysisRouter = (Galaxy) =>
 
         show_workflow_invocation_report: function () {
             const invocationId = QueryStringParsing.get("id");
-            this._display_vue_helper(WorkflowInvocationReport, { invocationId: invocationId });
+            this._display_vue_helper(WorkflowInvocationReport, { invocationId: invocationId }, null, true);
         },
 
         show_workflow_invocations: function () {

@@ -1,18 +1,6 @@
 <template>
-    <div v-if="!edit">
-        <b-button
-            class="float-right"
-            title="Edit Report"
-            variant="link"
-            role="button"
-            v-b-tooltip.hover.bottom
-            @click="onEdit"
-        >
-            <span class="fa fa-edit" />
-        </b-button>
-        <div>
-            <markdown :markdown-config="markdownConfig" />
-        </div>
+    <div v-if="!edit" class="p-3">
+        <markdown :markdown-config="markdownConfig" @onEdit="onEdit" />
     </div>
     <markdown-editor v-else :markdown-text="markdownConfig.invocation_markdown" @onUpdate="onUpdate">
         <template v-slot:buttons>
