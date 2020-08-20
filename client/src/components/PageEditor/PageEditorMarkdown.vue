@@ -39,3 +39,9 @@ export default {
     },
 };
 </script>
+
+<style scoped>
+.editor-body {
+    display: flex;
+}
+</style>

@@ -48,7 +48,13 @@
                 ></a>
             </li>
         </ul>
-        <textarea class="markdown-textarea" id="workflow-report-editor" v-model="content" @input="onUpdate" />
+        <textarea
+            class="markdown-textarea"
+            id="workflow-report-editor"
+            v-model="content"
+            @input="onUpdate"
+            ref="text-area"
+        />
     </div>
 </template>
 
@@ -63,30 +69,11 @@ import { dialog, datasetCollectionDialog, workflowDialog } from "utils/data";
 
 const FENCE = "```";
 
-// https://stackoverflow.com/questions/11076975/insert-text-into-textarea-at-cursor-position-javascript
-function _insertAtCursor(myField, myValue) {
-    //IE support
-    if (document.selection) {
-        myField.focus();
-        var sel = document.selection.createRange();
-        sel.text = myValue;
-    }
-    //MOZILLA and others
-    else if (myField.selectionStart || myField.selectionStart == "0") {
-        var startPos = myField.selectionStart;
-        var endPos = myField.selectionEnd;
-        myField.value =
-            myField.value.substring(0, startPos) + myValue + myField.value.substring(endPos, myField.value.length);
-    } else {
-        myField.value += myValue;
-    }
-}
-
 export default {
     props: {
         markdownText: {
-            required: true,
             type: String,
+            default: null,
         },
         toolbar: {
             type: Boolean,
@@ -113,13 +100,12 @@ export default {
             this.$emit("onUpdate", this.content);
         }, 300),
         insertMarkdown(markdown) {
-            // return
-            const editorTextarea = this.$refs["editor"];
-            _insertAtCursor(editorTextarea, markdown);
-            Vue.nextTick(() => {
-                const event = new Event("input");
-                editorTextarea.dispatchEvent(event);
-            });
+            const textArea = this.$refs["text-area"];
+            const cursorPosition = textArea.selectionStart;
+            let newContent = this.content.substr(0, cursorPosition);
+            newContent += markdown;
+            newContent += this.content.substr(cursorPosition);
+            this.$emit("onUpdate", newContent);
         },
         insertGalaxyMarkdownBlock(block) {
             this.insertMarkdown(`${FENCE}galaxy\n${block}\n${FENCE}\n`);
