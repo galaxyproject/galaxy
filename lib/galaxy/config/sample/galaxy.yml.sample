@@ -828,8 +828,6 @@ galaxy:
 
   # Location of the configuration file containing extra user
   # preferences.
-  # The value of this option will be resolved with respect to
-  # <config_dir>.
   #user_preferences_extra_conf_path: user_preferences_extra_conf.yml
 
   # Default localization for Galaxy UI. Allowed values are listed at the

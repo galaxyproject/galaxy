@@ -341,7 +341,6 @@ SET_CONFIG = {
     # 'tool_data_table_config_path': 'config/tool_data_table_conf.xml',
     # 'tool_test_data_directories': 'test-data_new',
     # 'use_remote_user': True,
-    # 'user_preferences_extra_conf_path': 'user_preferences_extra_conf.yml',  # cause: parse_config_file_options
     # 'workflow_resource_params_file': 'workflow_resource_params_conf.xml',  # cause: parse_config_file_options
     # 'workflow_resource_params_mapper': 'new',
     # 'workflow_schedulers_config_file': 'workflow_schedulers_conf.xml',  # cause: parse_config_file_options
@@ -623,6 +622,7 @@ SET_CONFIG = {
     'user_library_import_dir': 'user_library_import_dir_new',
     'user_library_import_dir_auto_creation': True,
     'user_library_import_symlink_allowlist': 'user_library_import_symlink_allowlist_new',
+    'user_preferences_extra_conf_path': 'user_preferences_extra_conf.yml_new',
     'user_tool_filters': 'examples:restrict_upload_to_admins, examples:restrict_encode_new',
     'user_tool_label_filters': 'examples:restrict_upload_to_admins, examples:restrict_encode_new',
     'user_tool_section_filters': 'examples:restrict_text_new',
