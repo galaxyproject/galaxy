@@ -2,7 +2,12 @@
     <div v-if="!edit" class="p-3">
         <markdown :markdown-config="markdownConfig" @onEdit="onEdit" />
     </div>
-    <markdown-editor v-else :markdown-text="markdownConfig.invocation_markdown" @onUpdate="onUpdate">
+    <markdown-editor
+        v-else
+        :markdown-text="markdownConfig.invocation_markdown"
+        :markdown-config="markdownConfig"
+        @onUpdate="onUpdate"
+    >
         <template v-slot:buttons>
             <b-button
                 id="workflow-canvas-button"

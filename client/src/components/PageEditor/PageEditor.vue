@@ -13,6 +13,7 @@
             :page-id="pageId"
             :public-url="publicUrl"
             :content="content"
+            :content-data="contentData"
         />
     </span>
 </template>
@@ -38,6 +39,10 @@ export default {
         contentFormat: {
             type: String,
             default: "html",
+        },
+        contentData: {
+            type: Object,
+            default: null,
         },
         title: {
             type: String,

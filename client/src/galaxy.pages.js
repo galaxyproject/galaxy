@@ -18,6 +18,7 @@ export default function pagesEditorOnload() {
                     pageId: pageId,
                     content: data.content,
                     contentFormat: data.content_format,
+                    contentData: data,
                     title: data.title,
                 },
                 el: "#page-editor-content",

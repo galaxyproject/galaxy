@@ -1,5 +1,5 @@
 <template>
-    <markdown-editor :markdown-text="markdownText" :title="title" @onUpdate="onUpdate">
+    <markdown-editor :title="title" :markdown-text="markdownText" :markdown-config="contentData" @onUpdate="onUpdate">
         <template v-slot:buttons>
             <b-button
                 id="save-button"
@@ -55,6 +55,10 @@ export default {
         },
         content: {
             type: String,
+            default: null,
+        },
+        contentData: {
+            type: Object,
             default: null,
         },
     },

@@ -15,7 +15,11 @@
             </template>
         </SidePanel>
         <div v-if="!isCanvas" id="center" class="workflow-center workflow-markdown-editor">
-            <MarkdownEditor :markdown-text="markdownText" :title="name" @onUpdate="onReportUpdate">
+            <MarkdownEditor
+                :markdown-text="markdownText"
+                :markdown-config="markdownConfig"
+                :title="name"
+                @onUpdate="onReportUpdate">
                 <template v-slot:buttons>
                     <b-button
                         id="workflow-canvas-button"
@@ -187,6 +191,7 @@ export default {
     data() {
         return {
             isCanvas: true,
+            markdownConfig: null,
             markdownText: null,
             versions: [],
             parameters: [],
@@ -363,7 +368,7 @@ export default {
                     const report = data.report || {};
                     const markdown = report.markdown || reportDefault;
                     this.markdownText = markdown;
-                    console.log(markdown);
+                    this.markdownConfig = report;
                     showUpgradeMessage(data);
                     getVersions(this.id).then((versions) => {
                         this.versions = versions;

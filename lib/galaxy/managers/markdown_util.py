@@ -37,7 +37,7 @@ from galaxy.managers.jobs import (
 from galaxy.model.item_attrs import get_item_annotation_str
 from galaxy.model.orm.now import now
 from galaxy.util.sanitize_html import sanitize_html
-from .markdown_parse import GALAXY_MARKDOWN_FUNCTION_CALL_LINE, validate_galaxy_markdown
+from .markdown_parse import GALAXY_MARKDOWN_FUNCTION_CALL_LINE, validate_galaxy_markdown, VALID_ARGUMENTS
 
 log = logging.getLogger(__name__)
 
@@ -311,6 +311,7 @@ def ready_galaxy_markdown_for_export(trans, internal_galaxy_markdown):
     custom container tags.
     """
     extra_rendering_data = {
+        "valid_arguments": VALID_ARGUMENTS,
         "generate_time": now().isoformat(),
         "generate_version": trans.app.config.version_major,
     }

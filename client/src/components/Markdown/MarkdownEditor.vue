@@ -85,6 +85,10 @@ export default {
             type: String,
             default: null,
         },
+        markdownConfig: {
+            type: Object,
+            default: null,
+        },
         title: {
             type: String,
             default: null,
@@ -100,6 +104,9 @@ export default {
         markdownText() {
             this.content = this.markdownText;
         },
+    },
+    created() {
+        console.log(this.markdownConfig);
     },
     methods: {
         onUpdate: _.debounce(function (e) {
