@@ -3,7 +3,6 @@
         <markdown-editor
             :markdown-text="markdownText"
             :title="title"
-            :show-markdown-help="showMarkdownHelp"
             @onUpdate="onUpdate"
         >
             <template v-slot:buttons>
@@ -34,7 +33,6 @@
 
 <script>
 import MarkdownEditor from "components/Markdown/MarkdownEditor";
-import { showMarkdownHelp } from "./markdownHelp";
 import { Toast } from "ui/toast";
 import { getAppRoot } from "onload/loadConfig";
 import { save } from "./util";
@@ -45,7 +43,6 @@ export default {
     },
     data: function () {
         return {
-            showMarkdownHelp: showMarkdownHelp,
             markdownText: this.content,
         };
     },

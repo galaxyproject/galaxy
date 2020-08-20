@@ -40,7 +40,6 @@
                         <span class="fa fa-image" />
                     </b-button>
                     <b-button
-                        v-if="showMarkdownHelp != null"
                         title="Show Markup Help"
                         variant="link"
                         role="button"
@@ -68,6 +67,7 @@
 import _ from "underscore";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import { showMarkdownHelp } from "./markdownHelp";
 
 Vue.use(BootstrapVue);
 
@@ -84,16 +84,12 @@ export default {
         title: {
             type: String,
             default: null,
-        },
-        showMarkdownHelp: {
-            // only used if toolbar is True - waiting on a general toolbar refactor
-            type: Function,
-            default: null,
-        },
+        }
     },
     data() {
         return {
             content: this.markdownText,
+            showMarkdownHelp: showMarkdownHelp,
         };
     },
     watch: {
