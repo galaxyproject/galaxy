@@ -796,7 +796,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             file_sources_config_file=[self._in_config_dir('file_sources_conf.yml')],
             local_conda_mapping_file=[self._in_config_dir('local_conda_mapping.yml')],
             modules_mapping_files=[self._in_config_dir('environment_modules_mapping.yml')],
-            object_store_config_file=[self._in_config_dir('object_store_conf.xml')],
             oidc_backends_config_file=[self._in_config_dir('oidc_backends_config.xml')],
             oidc_config_file=[self._in_config_dir('oidc_config.xml')],
             shed_data_manager_config_file=[self._in_managed_config_dir('shed_data_manager_conf.xml')],

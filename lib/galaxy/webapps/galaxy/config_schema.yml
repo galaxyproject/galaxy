@@ -845,12 +845,11 @@ mapping:
       object_store_config_file:
         type: str
         default: object_store_conf.xml
+        path_resolves_to: config_dir
         required: false
         desc: |
           Configuration file for the object store
           If this is set and exists, it overrides any other objectstore settings.
-
-          The value of this option will be resolved with respect to <config_dir>.
 
       object_store_store_by:
         type: str

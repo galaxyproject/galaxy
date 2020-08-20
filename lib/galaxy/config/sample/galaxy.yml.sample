@@ -641,8 +641,6 @@ galaxy:
 
   # Configuration file for the object store If this is set and exists,
   # it overrides any other objectstore settings.
-  # The value of this option will be resolved with respect to
-  # <config_dir>.
   #object_store_config_file: object_store_conf.xml
 
   # What Dataset attribute is used to reference files in an ObjectStore

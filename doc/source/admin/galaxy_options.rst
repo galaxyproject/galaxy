@@ -1137,8 +1137,6 @@
 :Description:
     Configuration file for the object store If this is set and exists,
     it overrides any other objectstore settings.
-    The value of this option will be resolved with respect to
-    <config_dir>.
 :Default: ``object_store_conf.xml``
 :Type: str
 

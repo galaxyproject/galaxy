@@ -333,7 +333,6 @@ SET_CONFIG = {
     # 'interactivetools_proxy_host': 'new',
     # 'job_metrics_config_file': 'job_metrics_conf.xml',  # cause: parse_config_file_options
     # 'nginx_upload_store': 'new',
-    # 'object_store_config_file': 'object_store_conf.xml',  # cause: parse_config_file_options
     # 'object_store_store_by': 'new',
     # 'oidc_backends_config_file': 'oidc_backends_config.xml',  # cause: parse_config_file_options
     # 'oidc_config_file': 'oidc_config.xml',  # cause: parse_config_file_options
@@ -531,6 +530,7 @@ SET_CONFIG = {
     'nginx_upload_path': 'nginx_upload_path_new',
     'nginx_x_accel_redirect_base': 'nginx_x_accel_redirect_base_new',
     'normalize_remote_user_email': True,
+    'object_store_config_file': 'object_store_conf.xml_new',
     'openid_consumer_cache_path': 'openid_consumer_cache_new',
     'outputs_to_working_directory': True,
     'overwrite_model_recommendations': True,
