@@ -4,10 +4,10 @@
   	$__tool_directory__/../amp_json_schema/ner_to_iiif.py $input_ner $original_iiif '$context_json';
   	$__tool_directory__/hmgm_main.py NER $__root_dir__ $original_iiif $corrected_iiif $task_info '$context_json';
     $__tool_directory__/../amp_json_schema/iiif_to_ner.py $corrected_iiif $input_ner $output_ner
-</command>                                    
+  </command>                                    
   <inputs>
     <param name="input_ner" type="data" format="json" label="Input Named Entities JSON" help="Original AMP JSON file for Named Entity Extraction correction" />
-    <param name="context_json" type="text" label="HMGM Task Context" help="JSON string containing context information needed for creating Human MGM task" />
+    <param name="context_json" type="text" label="HMGM Task Context" help="JSON string containing context information needed for creating Human MGM task" >
     	<sanitizer sanitize="false">
     	</sanitizer>
 	</param>

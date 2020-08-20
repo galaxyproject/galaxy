@@ -4,6 +4,7 @@
   	$__tool_directory__/../amp_json_schema/segment_to_structmeta.py $input_segment $original_structmeta '$context_json';
   	$__tool_directory__/hmgm_main.py Segmentation $__root_dir__ $original_structmeta $corrected_structmeta $task_info '$context_json';
     $__tool_directory__/../amp_json_schema/structmeta_to_segment.py $corrected_structmeta $input_segment $output_segment
+  </command>
   <inputs>
     <param name="input_segment" type="data" format="json" label="Input Segmentation JSON" help="Original AMP JSON file for the segmentation to be corrected "/>
     <param name="context_json" type="text" label="Human MGM Task Context" help="JSON string containing context information needed for creating Human MGM task">
