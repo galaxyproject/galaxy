@@ -1,6 +1,33 @@
 <template>
-    <markdown v-if="!edit" :markdown-config="markdownConfig" />
-    <markdown-editor v-else :markdown-text="markdownConfig.invocation_markdown" @onUpdate="onUpdate" />
+    <div v-if="!edit">
+        <b-button
+            class="float-right"
+            title="Edit Report"
+            variant="link"
+            role="button"
+            v-b-tooltip.hover.bottom
+            @click="onEdit"
+        >
+            <span class="fa fa-edit" />
+        </b-button>
+        <div>
+            <markdown :markdown-config="markdownConfig" />
+        </div>
+    </div>
+    <markdown-editor v-else :markdown-text="markdownConfig.invocation_markdown" @onUpdate="onUpdate">
+        <template v-slot:buttons>
+            <b-button
+                id="workflow-canvas-button"
+                title="Return to Workflow"
+                variant="link"
+                role="button"
+                v-b-tooltip.hover.bottom
+                @click="onView"
+            >
+                <span class="fa fa-times" />
+            </b-button>
+        </template>
+    </markdown-editor>
 </template>
 
 <script>
@@ -27,36 +54,21 @@ export default {
             edit: false,
         };
     },
-    created: function () {
+    created() {
         this.loadMarkdownConfig();
-        window.addEventListener("keyup", this.keyListener);
-    },
-    destroyed: function () {
-        window.removeEventListener("keyup", this.keyListener);
     },
     methods: {
-        keyListener: function (event) {
-            const which = event.which || event.keyCode;
-            // ctrl + e
-            if (event.ctrlKey && which == 69) {
-                if (this.edit) {
-                    this.viewReport();
-                } else {
-                    this.editReport();
-                }
-            }
+        onEdit() {
+            this.edit = true;
         },
-        viewReport: function () {
+        onView() {
             this.edit = false;
             this.loadMarkdownConfig();
         },
-        editReport: function () {
-            this.edit = true;
-        },
-        onUpdate: function (newMarkdown) {
+        onUpdate(newMarkdown) {
             this.invocationMarkdown = newMarkdown;
         },
-        loadMarkdownConfig: function () {
+        loadMarkdownConfig() {
             const invocationId = this.invocationId;
             const url = getAppRoot() + `api/invocations/${invocationId}/report`;
             const params = {};
