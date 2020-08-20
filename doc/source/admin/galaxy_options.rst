@@ -3985,8 +3985,6 @@
 :Description:
     Optional configuration file similar to `job_config_file` to
     specify which Galaxy processes should schedule workflows.
-    The value of this option will be resolved with respect to
-    <config_dir>.
 :Default: ``workflow_schedulers_conf.xml``
 :Type: str
 

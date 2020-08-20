@@ -342,7 +342,6 @@ SET_CONFIG = {
     # 'tool_test_data_directories': 'test-data_new',
     # 'use_remote_user': True,
     # 'workflow_resource_params_mapper': 'new',
-    # 'workflow_schedulers_config_file': 'workflow_schedulers_conf.xml',  # cause: parse_config_file_options
     'activation_grace_period': 2,
     'admin_tool_recommendations_path': 'tool_recommendations_overwrite_new.yml',
     'admin_users': 'admin_users_new',
@@ -636,5 +635,6 @@ SET_CONFIG = {
     'welcome_url': '/static/welcome_new.html',
     'wiki_url': 'https://galaxyproject.org/new',
     'workflow_resource_params_file': 'workflow_resource_params_conf.xml_new',
+    'workflow_schedulers_config_file': 'workflow_schedulers_conf.xml_new',
     'x_frame_options': 'SAMEORIGIN_new',
 }
