@@ -1,53 +1,59 @@
 <template>
     <div style="display: flex; flex: 1; flex-direction: column;">
-        <ul class="galaxymark-toolbar" ref="menu" v-if="toolbar">
-            <li>
-                <a
-                    href="#"
-                    class="fa-2x fa fa-file"
-                    @click="selectDataset"
-                    v-b-tooltip.hover
-                    title="Insert Dataset"
-                ></a>
-            </li>
-            <li>
-                <a
-                    href="#"
-                    class="fa-2x fa fa-folder"
-                    @click="selectDatasetCollection"
-                    v-b-tooltip.hover
-                    title="Insert Dataset Collection"
-                ></a>
-            </li>
-            <li>
-                <a
-                    href="#"
-                    class="fa-2x fa fa-sitemap fa-rotate-270"
-                    @click="selectWorkflow"
-                    v-b-tooltip.hover
-                    title="Inseert Workflow Preview"
-                ></a>
-            </li>
-            <li>
-                <a
-                    href="#"
-                    class="fa-2x fa fa-image"
-                    @click="selectDatasetForImage"
-                    v-b-tooltip.hover
-                    title="Insert Dataset as an Image"
-                ></a>
-            </li>
-            <li>
-                <a
-                    href="#"
-                    class="fa-2x fa fa-question"
-                    @click="showMarkdownHelp"
-                    v-if="showMarkdownHelp != null"
-                    v-b-tooltip.hover
-                    title="Show Galaxy Markdown Help"
-                ></a>
-            </li>
-        </ul>
+        <div class="unified-panel-header" unselectable="on">
+            <div class="unified-panel-header-inner">
+                <div class="panel-header-buttons">
+                    <b-button
+                        title="Insert Dataset"
+                        variant="link"
+                        role="button"
+                        v-b-tooltip.hover.bottom
+                        @click="selectDataset"
+                    >
+                        <span class="fa fa-file" />
+                    </b-button>
+                    <b-button
+                        title="Insert Dataset Collection"
+                        variant="link"
+                        role="button"
+                        v-b-tooltip.hover.bottom
+                        @click="selectDatasetCollection"
+                    >
+                        <span class="fa fa-folder" />
+                    </b-button>
+                    <b-button
+                        title="Insert Workflow Display"
+                        variant="link"
+                        role="button"
+                        v-b-tooltip.hover.bottom
+                        @click="selectWorkflow"
+                    >
+                        <span class="fa fa-sitemap fa-rotate-270" />
+                    </b-button>
+                    <b-button
+                        title="Insert Dataset as Image"
+                        variant="link"
+                        role="button"
+                        v-b-tooltip.hover.bottom
+                        @click="selectDatasetForImage"
+                    >
+                        <span class="fa fa-image" />
+                    </b-button>
+                    <b-button
+                        v-if="showMarkdownHelp != null"
+                        title="Show Markup Help"
+                        variant="link"
+                        role="button"
+                        v-b-tooltip.hover.bottom
+                        @click="showMarkdownHelp"
+                    >
+                        <span class="fa fa-question" />
+                    </b-button>
+                    <slot name="buttons" />
+                </div>
+                {{ title }}
+            </div>
+        </div>
         <textarea
             class="markdown-textarea"
             id="workflow-report-editor"
@@ -72,6 +78,10 @@ const FENCE = "```";
 export default {
     props: {
         markdownText: {
+            type: String,
+            default: null,
+        },
+        title: {
             type: String,
             default: null,
         },
@@ -146,44 +156,9 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.galaxymark-toolbar {
-    background: #fff;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-    display: block;
-    width: 100%;
-    margin-top: 0;
-    margin-bottom: 0;
-    padding-left: 0;
-    padding-right: 0;
-}
-
-.galaxymark-toolbar li {
-    display: inline-block;
-    position: relative;
-    z-index: 1;
-}
-
-.galaxymark-toolbar li a {
-    color: #888;
-    cursor: pointer;
-    display: block;
-    font-size: 16px;
-    height: 40px;
-    line-height: 40px;
-    text-align: center;
-    transition: color 0.2s linear;
-    width: 40px;
-}
-
-.galaxymark-toolbar li a:hover {
-    color: #000;
-    text-decoration: none;
-}
-
 .markdown-text {
     font: 16px/1.7 Menlo, Consolas, Monaco, "Andale Mono", monospace;
 }
-
 .markdown-textarea {
     border: none;
     border-right: 1px solid #ccc;

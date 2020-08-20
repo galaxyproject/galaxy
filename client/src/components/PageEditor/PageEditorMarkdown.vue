@@ -3,15 +3,42 @@
         <markdown-editor
             :markdown-text="markdownText"
             :toolbar="true"
+            :title="title"
             :show-markdown-help="showMarkdownHelp"
             @onUpdate="onUpdate"
-        />
+        >
+            <template v-slot:buttons>
+                <b-button
+                    id="save-button"
+                    title="Save"
+                    variant="link"
+                    role="button"
+                    v-b-tooltip.hover.bottom
+                    @click="saveContent(false)"
+                >
+                    <span class="fa fa-save" />
+                </b-button>
+                <b-button
+                    id="view-button"
+                    title="Save & View"
+                    variant="link"
+                    role="button"
+                    v-b-tooltip.hover.bottom
+                    @click="saveContent(true)"
+                >
+                    <span class="fa fa-eye" />
+                </b-button>
+            </template>
+        </markdown-editor>
     </div>
 </template>
 
 <script>
 import MarkdownEditor from "components/Markdown/MarkdownEditor";
 import { showMarkdownHelp } from "./markdownHelp";
+import { Toast } from "ui/toast";
+import { getAppRoot } from "onload/loadConfig";
+import { save } from "./util";
 
 export default {
     components: {
@@ -20,6 +47,7 @@ export default {
     data: function () {
         return {
             showMarkdownHelp: showMarkdownHelp,
+            markdownText: this.content,
         };
     },
     props: {
@@ -27,14 +55,33 @@ export default {
             required: true,
             type: String,
         },
-        markdownText: {
+        publicUrl: {
+            required: true,
             type: String,
-            default: "",
+        },
+        title: {
+            type: String,
+            default: null,
+        },
+        content: {
+            type: String,
+            default: null,
         },
     },
     methods: {
         onUpdate(newContent) {
-            this.$emit("onUpdate", newContent);
+            this.content = newContent;
+        },
+        saveContent(showResult) {
+            save(this.pageId, this.content, !showResult)
+                .then(() => {
+                    if (showResult) {
+                        window.location = `${getAppRoot()}${this.publicUrl}`;
+                    }
+                })
+                .catch((error) => {
+                    Toast.error(`Failed to save page: ${error}`);
+                });
         },
     },
 };
