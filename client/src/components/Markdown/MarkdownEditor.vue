@@ -84,7 +84,7 @@ export default {
         title: {
             type: String,
             default: null,
-        }
+        },
     },
     data() {
         return {

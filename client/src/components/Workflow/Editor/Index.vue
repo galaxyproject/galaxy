@@ -309,6 +309,7 @@ export default {
         onReportUpdate(markdown) {
             this.hasChanges = true;
             this.report.markdown = markdown;
+            this.markdownText = markdown;
         },
         onRun() {
             window.location = `${getAppRoot()}workflows/run?id=${this.id}`;

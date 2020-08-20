@@ -1,10 +1,6 @@
 <template>
     <div class="unified-panel-body editor-body">
-        <markdown-editor
-            :markdown-text="markdownText"
-            :title="title"
-            @onUpdate="onUpdate"
-        >
+        <markdown-editor :markdown-text="markdownText" :title="title" @onUpdate="onUpdate">
             <template v-slot:buttons>
                 <b-button
                     id="save-button"
