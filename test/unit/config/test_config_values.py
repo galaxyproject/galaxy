@@ -335,7 +335,6 @@ SET_CONFIG = {
     # 'job_config_file': 'config/job_conf.xml',  # cause: parse_config_file_options
     # 'job_metrics_config_file': 'job_metrics_conf.xml',  # cause: parse_config_file_options
     # 'job_resource_params_file': 'job_resource_params_conf.xml',  # cause: parse_config_file_options
-    # 'markdown_export_css': 'markdown_export.css',  # cause: parse_config_file_options
     # 'markdown_export_css_invocation_reports': 'markdown_export_invocation_reports.css_new',
     # 'markdown_export_css_pages': 'markdown_export_pages.css_new',  # cause: parse_config_file_options
     # 'migrated_tools_config': 'migrated_tools_conf.xml',  # cause: parse_config_file_options
@@ -505,6 +504,7 @@ SET_CONFIG = {
     'mailing_join_addr': 'mailing_join_addr_new',
     'mailing_lists_url': 'https://galaxyproject.org/mailing-lists/new',
     'managed_config_dir': 'managed_config_new',
+    'markdown_export_css': 'markdown_export.css_new',
     'markdown_export_epilogue': 'markdown_export_epilogue_new',
     'markdown_export_epilogue_invocation_reports': 'markdown_export_epilogue_invocation_reports_new',
     'markdown_export_epilogue_pages': 'markdown_export_epilogue_pages_new',
