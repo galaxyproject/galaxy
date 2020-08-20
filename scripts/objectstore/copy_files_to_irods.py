@@ -5,7 +5,7 @@ import sys
 
 import irods.keywords as kw
 from irods.session import iRODSSession
-from psycopg2 import connect, sql
+from psycopg2 import connect
 
 
 from galaxy.util import directory_hash_id
@@ -19,7 +19,6 @@ def copy_files_to_irods(start_dataset_id,
     conn = None
     cursor = None
     sql_statement = None
-    sql_object = None
     uuid_without_dash = None
     uuid_with_dash = None
     objectid = None
@@ -51,25 +50,23 @@ def copy_files_to_irods(start_dataset_id,
     session = iRODSSession(host=irods_info["host"], port=irods_info["port"], user=irods_info["user"], password=irods_info["password"], zone=irods_info["zone"])
     session.connection_timeout = int(irods_info["timeout"])
 
-    osi_keys = list(object_store_info.keys())
-    osi_keys_quoted = ["'" + key + "'" for key in osi_keys]
-
+    osi_keys = tuple(object_store_info.keys())
+    print("osi_keys(): ", osi_keys)
     sql_statement = """SELECT id, object_store_id, uuid
                        FROM dataset
-                       WHERE state = \'ok\'
+                       WHERE state = %s
                        AND NOT deleted
                        AND NOT purged
-                       AND id >= {}
-                       AND id <= {}
-                       AND object_store_id in ({})""".format(start_dataset_id, end_dataset_id, ",".join(osi_keys_quoted))
-    print(sql_statement)
+                       AND id >= %s
+                       AND id <= %s
+                       AND object_store_id IN %s"""
     try:
         cursor = conn.cursor()
+        args = ('ok', start_dataset_id, end_dataset_id, osi_keys)
+        print(cursor.mogrify(sql_statement, args))
+        print(sql_statement)
 
-        sql_object = sql.SQL(
-            sql_statement
-        )
-        cursor.execute(sql_object)
+        cursor.execute(sql_statement, args)
         print("cursor.execute() completed")
 
         table_data = cursor.fetchall()
