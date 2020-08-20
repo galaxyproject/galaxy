@@ -14,9 +14,9 @@
 	</param>
   </inputs>
   <outputs>
-    <data name="original_draftjs_transcript" format="json" label="Original Transcript DraftJS" help="DarftJS file converted from the original AMP Transcript JSON file" />
-    <data name="corrected_draftjs_transcript" format="json" label="Corrected Transcript DraftJS" help="DarftJS file with corrected transcript"  />
-    <data name="output_transcript" format="json" label="Output Transcript JSON" help="AMP JSON file with corrected transcript converted from the corrected DraftJS file" />
+    <data name="original_draftjs_transcript" format="json" label="Original DraftJS" help="DarftJS file converted from the original AMP Transcript JSON file" />
+    <data name="corrected_draftjs_transcript" format="json" label="Corrected DraftJS" help="DarftJS file with corrected transcript"  />
+    <data name="output_transcript" format="json" label="Output Transcript" help="AMP JSON file with corrected transcript converted from the corrected DraftJS file" />
     <data name="task_info" format="json" label="HMGM Task Info" help="Information about the Human MMGM task created for Transcript Correction" />
   </outputs>
   <tests>
