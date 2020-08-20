@@ -48,8 +48,7 @@
                 ></a>
             </li>
         </ul>
-        <textarea class="markdown-textarea" id="workflow-report-editor" v-model="input" @input="update" ref="editor">
-        </textarea>
+        <textarea class="markdown-textarea" id="workflow-report-editor" v-model="content" @input="onUpdate" />
     </div>
 </template>
 
@@ -85,7 +84,7 @@ function _insertAtCursor(myField, myValue) {
 
 export default {
     props: {
-        initialMarkdown: {
+        markdownText: {
             required: true,
             type: String,
         },
@@ -96,24 +95,25 @@ export default {
         showMarkdownHelp: {
             // only used if toolbar is True - waiting on a general toolbar refactor
             type: Function,
-            required: false,
-        },
-        onupdate: {
-            type: Function,
-        },
+            default: null,
+        }
     },
-    data: function () {
+    data() {
         return {
-            input: this.initialMarkdown,
-        };
+            content: this.markdownText,
+        }
+    },
+    watch: {
+        markdownText() {
+            this.content = this.markdownText;
+        },
     },
     methods: {
-        update: _.debounce(function (e) {
-            if (this.onupdate) {
-                this.onupdate(this.input);
-            }
+        onUpdate: _.debounce(function (e) {
+            this.$emit("onUpdate", this.content);
         }, 300),
         insertMarkdown(markdown) {
+            // return
             const editorTextarea = this.$refs["editor"];
             _insertAtCursor(editorTextarea, markdown);
             Vue.nextTick(() => {

@@ -56,7 +56,7 @@
                 </div>
             </div>
             <div class="unified-panel-body workflow-report-body" v-show="!isCanvas">
-                <MarkdownEditor ref="report-editor" initial-markdown="" :onupdate="onReportUpdate" :toolbar="false" />
+                <MarkdownEditor :markdown-text="markdownText" :toolbar="false" @onUpdate="onReportUpdate"/>
             </div>
         </div>
         <SidePanel id="right" side="right">
@@ -172,6 +172,7 @@ export default {
     data() {
         return {
             isCanvas: true,
+            markdownText: null,
             versions: [],
             parameters: [],
             zoomLevel: 7,
@@ -345,7 +346,8 @@ export default {
                 .then((data) => {
                     const report = data.report || {};
                     const markdown = report.markdown || reportDefault;
-                    this.$refs["report-editor"].input = markdown;
+                    this.markdownText = markdown;
+                    console.log(markdown);
                     showUpgradeMessage(data);
                     getVersions(this.id).then((versions) => {
                         this.versions = versions;

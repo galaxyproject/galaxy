@@ -1,10 +1,10 @@
 <template>
-    <markdown :markdown-config="markdownConfig" v-if="!edit"></markdown>
+    <markdown v-if="!edit" :markdown-config="markdownConfig" />
     <markdown-editor
-        :initial-markdown="markdownConfig.invocation_markdown"
-        :onupdate="onupdate"
         v-else
-    ></markdown-editor>
+        :markdown-text="markdownConfig.invocation_markdown"
+        @onUpdate="onUpdate"
+    />
 </template>
 
 <script>
@@ -57,7 +57,7 @@ export default {
         editReport: function () {
             this.edit = true;
         },
-        onupdate: function (newMarkdown) {
+        onUpdate: function (newMarkdown) {
             this.invocationMarkdown = newMarkdown;
         },
         loadMarkdownConfig: function () {

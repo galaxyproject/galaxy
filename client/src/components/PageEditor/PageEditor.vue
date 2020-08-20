@@ -17,20 +17,27 @@
                 ></a>
             </div>
         </div>
-        <page-editor-html :page-id="pageId" :content="content" v-if="contentFormat == 'html'" ref="contentEditor" />
-        <page-editor-markdown
+        <page-editor-html
+            v-if="contentFormat == 'html'"
             :page-id="pageId"
-            :initial-content="content"
+            :content="content"
+            @onUpdate="onUpdate"
+        />
+        <page-editor-markdown
             v-if="contentFormat == 'markdown'"
-            ref="contentEditor"
+            :page-id="pageId"
+            :markdown-text="content"
+            @onUpdate="onUpdate"
         />
     </span>
 </template>
 
 <script>
 import { getAppRoot } from "onload/loadConfig";
+import { save } from "./util";
 import PageEditorHtml from "./PageEditorHtml";
 import PageEditorMarkdown from "./PageEditorMarkdown";
+
 
 export default {
     props: {
@@ -44,6 +51,7 @@ export default {
         },
         content: {
             type: String,
+            default: "",
         },
         contentFormat: {
             type: String,
@@ -51,12 +59,15 @@ export default {
         },
         title: {
             type: String,
+            default: "",
         },
     },
-    computed: {},
     methods: {
+        onUpdate: function (newContent) {
+            this.content = newContent;
+        },
         saveContent: function () {
-            this.$refs.contentEditor.saveContent();
+            save(this.pageId, this.content);
         },
         viewContent: function () {
             // TODO: Future iteration, contentEditor should have an entry point that can decide
