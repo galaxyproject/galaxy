@@ -339,7 +339,6 @@ SET_CONFIG = {
     # 'statsd_host': 'None',
     # 'tool_config_file': config/tool_conf.xml,
     # 'tool_data_table_config_path': 'config/tool_data_table_conf.xml',
-    # 'tool_sheds_config_file': 'tool_sheds_conf.xml',  # cause: parse_config_file_options
     # 'tool_test_data_directories': 'test-data_new',
     # 'use_remote_user': True,
     # 'user_preferences_extra_conf_path': 'user_preferences_extra_conf.yml',  # cause: parse_config_file_options
@@ -603,6 +602,7 @@ SET_CONFIG = {
     'tool_search_limit': 21,
     'tool_section_boost': 3.1,
     'tool_section_filters': 'tool_section_filters_new',
+    'tool_sheds_config_file': 'tool_sheds_conf.xml_new',
     'tool_stub_boost': 5.1,
     'toolbox_filter_base_modules': 'galaxy.tools.filters,galaxy.tools.toolbox.filters_new',
     'topk_recommendations': 11,

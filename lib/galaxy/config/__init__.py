@@ -797,8 +797,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             shed_tool_config_file=[self._in_managed_config_dir('shed_tool_conf.xml')],
             shed_tool_data_table_config=[self._in_managed_config_dir('shed_tool_data_table_conf.xml')],
             tool_destinations_config_file=[self._in_config_dir('tool_destinations.yml')],
-            tool_sheds_config_file=[self._in_config_dir('tool_sheds_conf.xml')],
-            trs_servers_config_file=[self._in_config_dir('trs_servers_conf.yml')],
             user_preferences_extra_conf_path=[self._in_config_dir('user_preferences_extra_conf.yml')],
             workflow_resource_params_file=[self._in_config_dir('workflow_resource_params_conf.xml')],
             workflow_schedulers_config_file=[self._in_config_dir('workflow_schedulers_conf.xml')],
