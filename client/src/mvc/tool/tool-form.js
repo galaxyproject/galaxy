@@ -14,6 +14,7 @@ import Webhooks from "mvc/webhooks";
 import Vue from "vue";
 import ToolEntryPoints from "components/ToolEntryPoints/ToolEntryPoints";
 import ToolRecommendation from "components/ToolRecommendation";
+import { Toast } from "ui/toast";
 
 const View = Backbone.View.extend({
     initialize: function (options) {
@@ -49,6 +50,20 @@ const View = Backbone.View.extend({
                                     window.location = getAppRoot();
                                     return;
                                 }
+
+                                const user_version = options.id.replace(/.*\//, "");
+                                if (!data.versions.includes(user_version)) {
+                                    Toast.error(
+                                        `Specified version is not found! Using ${data.version} instead`,
+                                        "Error",
+                                        {
+                                            closeButton: true,
+                                            timeOut: 10000,
+                                            tapToDismiss: false,
+                                        }
+                                    );
+                                }
+
                                 form.model.set(data);
                                 this._customize(form);
                                 Galaxy.emit.debug("tool-form-base::_buildModel()", "Initial tool model ready.", data);
