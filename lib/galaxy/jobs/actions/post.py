@@ -47,10 +47,7 @@ class EmailAction(DefaultJobAction):
         try:
             frm = app.config.email_from
             history_id_encoded = app.security.encode_id(job.history_id)
-            try:
-                link = app.config.galaxy_infrastructure_url + "/histories/view?id=" + history_id_encoded
-            except Exception:
-                pass
+            link = app.config.galaxy_infrastructure_url + "/histories/view?id=" + history_id_encoded
             if frm is None:
                 if action.action_arguments and 'host' in action.action_arguments:
                     host = action.action_arguments['host']
@@ -60,10 +57,7 @@ class EmailAction(DefaultJobAction):
             to = job.user.email
             subject = "Galaxy job completion notification from history '%s'" % (job.history.name)
             outdata = ',\n'.join(ds.dataset.display_name() for ds in job.output_datasets)
-            if link:
-                body = "Your Galaxy job generating dataset(s):\n\n{}\n\nis complete as of {}. Click the link below to access your data: \n{}".format(outdata, datetime.datetime.now().strftime("%I:%M"), link)
-            else:
-                body = "Your Galaxy job generating dataset(s):\n\n{}\n\nis complete as of {}.".format(outdata, datetime.datetime.now().strftime("%I:%M"))
+            body = "Your Galaxy job generating dataset(s):\n\n{}\n\nis complete as of {}. Click the link below to access your data: \n{}".format(outdata, datetime.datetime.now().strftime("%I:%M"), link)
             send_mail(frm, to, subject, body, app.config)
         except Exception as e:
             log.error("EmailAction PJA Failed, exception: %s", unicodify(e))
