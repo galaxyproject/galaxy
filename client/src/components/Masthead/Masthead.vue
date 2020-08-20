@@ -19,7 +19,7 @@
                 :active-tab="activeTab"
                 :key="`tab-${idx}`"
                 :app-root="appRoot"
-                :galaxy="Galaxy"
+                :galaxy="galaxy"
                 v-show="!(tab.hidden === undefined ? false : tab.hidden)"
             >
             </masthead-item>
@@ -60,7 +60,7 @@ export default {
         appRoot: {
             type: String,
         },
-        Galaxy: {
+        galaxy: {
             type: Object,
         },
         menuOptions: {

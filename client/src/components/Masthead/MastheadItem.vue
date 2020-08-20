@@ -75,7 +75,7 @@ export default {
         appRoot: {
             type: String,
         },
-        Galaxy: {
+        galaxy: {
             type: Object,
         },
     },
@@ -150,11 +150,11 @@ export default {
                 }, 3000);
             } else if (!tab.menu) {
                 event.preventDefault();
-                if (tab.target === "__use_router__" && typeof this.Galaxy.page !== "undefined") {
-                    this.Galaxy.page.router.executeUseRouter(this.formatUrl(tab.url));
+                if (tab.target === "__use_router__" && typeof this.galaxy.page !== "undefined") {
+                    this.galaxy.page.router.executeUseRouter(this.formatUrl(tab.url));
                 } else {
                     try {
-                        this.Galaxy.frame.add({ ...tab, url: this.formatUrl(tab.url) });
+                        this.galaxy.frame.add({ ...tab, url: this.formatUrl(tab.url) });
                     } catch (err) {
                         console.warn("Missing frame element on galaxy instance", err);
                     }
