@@ -322,7 +322,7 @@ SET_CONFIG = {
     # 'amqp_internal_connection': 'sqlalchemy+sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE_new',
     # 'build_sites_config_file': 'build_sites.yml_new',  # cause: parse_config_file_options
     # 'containers_resolvers_config_file': 'None',  # cause: parse_config_file_options
-    # 'data_manager_config_file': 'config/data_manager_conf.xml',  # cause: parse_config_file_options
+    # 'data_manager_config_file': 'config/data_manager_conf.xml',  # TODO: driver_util causes further errors
     # 'database_connection': 'database_connection',
     # 'disable_library_comptypes': 'None',
     # 'enable_beta_gdpr': True,
@@ -332,7 +332,6 @@ SET_CONFIG = {
     # 'interactivetools_map': 'interactivetools_map.sqlite_new',
     # 'interactivetools_proxy_host': 'new',
     # 'job_metrics_config_file': 'job_metrics_conf.xml',  # cause: parse_config_file_options
-    # 'job_resource_params_file': 'job_resource_params_conf.xml',  # cause: parse_config_file_options
     # 'migrated_tools_config': 'migrated_tools_conf.xml',  # cause: parse_config_file_options
     # 'nginx_upload_store': 'new',
     # 'object_store_config_file': 'object_store_conf.xml',  # cause: parse_config_file_options
@@ -489,6 +488,7 @@ SET_CONFIG = {
     'involucro_path': 'involucro_new',
     'job_config': 'job_config_new',
     'job_config_file': 'config/job_conf.xml_new',
+    'job_resource_params_file': 'job_resource_params_conf.xml_new',
     'job_working_directory': 'jobs_directory_new',
     'legacy_eager_objectstore_initialization': True,
     'len_file_path': 'shared/ucsc/chrom_new',

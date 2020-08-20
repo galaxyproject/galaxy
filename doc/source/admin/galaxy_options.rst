@@ -3954,8 +3954,6 @@
     definition. These fields will be presented to users in the tool
     forms and allow them to overwrite default job resources such as
     number of processors, memory and walltime.
-    The value of this option will be resolved with respect to
-    <config_dir>.
 :Default: ``job_resource_params_conf.xml``
 :Type: str
 
