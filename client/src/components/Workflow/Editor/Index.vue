@@ -19,7 +19,8 @@
                 :markdown-text="markdownText"
                 :markdown-config="markdownConfig"
                 :title="name"
-                @onUpdate="onReportUpdate">
+                @onUpdate="onReportUpdate"
+            >
                 <template v-slot:buttons>
                     <b-button
                         id="workflow-canvas-button"

@@ -3,8 +3,8 @@
         <div class="unified-panel-header" unselectable="on">
             <div class="unified-panel-header-inner">
                 <div class="panel-header-buttons">
-                    <MarkdownToolbar @onInsert="onInsert"/>
-                    <slot name="buttons"/>
+                    <MarkdownToolbar :valid-arguments="markdownConfig.valid_arguments" @onInsert="onInsert" />
+                    <slot name="buttons" />
                 </div>
                 <div class="my-1">
                     {{ title }}
