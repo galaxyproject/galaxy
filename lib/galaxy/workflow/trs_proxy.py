@@ -20,9 +20,7 @@ DEFAULT_TRS_SERVERS = [
         "doc": "Dockstore is an open platform used by the GA4GH for sharing Docker-based tools and workflows.",
     },
 ]
-# Switch to "Galaxy" after Dockstore bug fixed, deployed:
-# https://github.com/dockstore/dockstore/issues/3670
-GA4GH_GALAXY_DESCRIPTOR = "GXFORMAT2"
+GA4GH_GALAXY_DESCRIPTOR = "GALAXY"
 
 
 class TrsProxy(object):
