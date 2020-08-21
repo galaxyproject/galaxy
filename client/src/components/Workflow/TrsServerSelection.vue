@@ -19,7 +19,7 @@
                     class="dropdown-item"
                     href="javascript:void(0)"
                     role="button"
-                    @click.prevent="onUrlSelection(selection)"
+                    @click.prevent="onTrsSelection(selection)"
                     >{{ selection.label }}</a
                 >
             </div>
