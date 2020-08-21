@@ -76,7 +76,8 @@ class Mkv(Video):
         if which('ffprobe'):
             metadata, streams = ffprobe(filename)
             return 'matroska' in metadata['format_name'].split(',')
-
+        else:
+            return False
 
 class Mp4(Video):
     """Class that reads MP4 video file
@@ -95,7 +96,8 @@ class Mp4(Video):
         if which('ffprobe'):
             metadata, streams = ffprobe(filename)
             return 'mp4' in metadata['format_name'].split(',')
-
+        else:
+            return False
 
 class Flv(Video):
     file_ext = "flv"
@@ -104,7 +106,8 @@ class Flv(Video):
         if which('ffprobe'):
             metadata, streams = ffprobe(filename)
             return 'flv' in metadata['format_name'].split(',')
-
+        else:
+            return False
 
 class Mpg(Video):
     file_ext = "mpg"
@@ -113,7 +116,8 @@ class Mpg(Video):
         if which('ffprobe'):
             metadata, streams = ffprobe(filename)
             return 'mpegvideo' in metadata['format_name'].split(',')
-
+        else:
+            return False
 
 class Mp3(Audio):
     """Class that reads MP3 audio file
@@ -131,7 +135,8 @@ class Mp3(Audio):
         if which('ffprobe'):
             metadata, streams = ffprobe(filename)
             return 'mp3' in metadata['format_name'].split(',')
-
+        else:
+            return False
 
 class WAV(Binary):
     """Class that reads WAV audio file
@@ -175,6 +180,8 @@ class WAV(Binary):
             fp = wave.open(filename, 'rb')
             fp.close()
             return True
+        else:
+            return False
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         """Set the metadata for this dataset from the file contents
