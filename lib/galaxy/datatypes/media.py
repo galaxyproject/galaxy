@@ -1,15 +1,18 @@
 """Video classes"""
 import json
 import subprocess
-import wave
+try:
+    import wave
+except ImportError:
+    wave = None
 
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.metadata import ListParameter, MetadataElement
-from galaxy.util import unicodify
+from galaxy.util import which
 
 
 def ffprobe(path):
-    data = json.loads(unicodify(subprocess.check_output(['ffprobe', '-loglevel', 'quiet', '-show_format', '-show_streams', '-of', 'json', path])))
+    data = json.loads(subprocess.check_output(['ffprobe', '-loglevel', 'quiet', '-show_format', '-show_streams', '-of', 'json', path]))
     return data['format'], data['streams']
 
 
@@ -21,12 +24,13 @@ class Audio(Binary):
     MetadataElement(name="audio_streams", default=0, desc="Number of audio streams", readonly=True, visible=True, optional=True, no_value=0)
 
     def set_meta(self, dataset, **kwd):
-        metadata, streams = ffprobe(dataset.file_name)
+        if which('ffprobe'):
+            metadata, streams = ffprobe(dataset.file_name)
 
-        dataset.metadata.duration = metadata['duration']
-        dataset.metadata.audio_codecs = [stream['codec_name'] for stream in streams if stream['codec_type'] == 'audio']
-        dataset.metadata.sample_rates = [stream['sample_rate'] for stream in streams if stream['codec_type'] == 'audio']
-        dataset.metadata.audio_streams = len([stream for stream in streams if stream['codec_type'] == 'audio'])
+            dataset.metadata.duration = metadata['duration']
+            dataset.metadata.audio_codecs = [stream['codec_name'] for stream in streams if stream['codec_type'] == 'audio']
+            dataset.metadata.sample_rates = [stream['sample_rate'] for stream in streams if stream['codec_type'] == 'audio']
+            dataset.metadata.audio_streams = len([stream for stream in streams if stream['codec_type'] == 'audio'])
 
 
 class Video(Binary):
@@ -51,25 +55,27 @@ class Video(Binary):
         return w, h, fps
 
     def set_meta(self, dataset, **kwd):
-        metadata, streams = ffprobe(dataset.file_name)
-        (w, h, fps) = self._get_resolution(streams)
-        dataset.metadata.resolution_w = w
-        dataset.metadata.resolution_h = h
-        dataset.metadata.fps = fps
+        if which('ffprobe'):
+            metadata, streams = ffprobe(dataset.file_name)
+            (w, h, fps) = self._get_resolution(streams)
+            dataset.metadata.resolution_w = w
+            dataset.metadata.resolution_h = h
+            dataset.metadata.fps = fps
 
-        dataset.metadata.audio_codecs = [stream['codec_name'] for stream in streams if stream['codec_type'] == 'audio']
-        dataset.metadata.video_codecs = [stream['codec_name'] for stream in streams if stream['codec_type'] == 'video']
+            dataset.metadata.audio_codecs = [stream['codec_name'] for stream in streams if stream['codec_type'] == 'audio']
+            dataset.metadata.video_codecs = [stream['codec_name'] for stream in streams if stream['codec_type'] == 'video']
 
-        dataset.metadata.audio_streams = len([stream for stream in streams if stream['codec_type'] == 'audio'])
-        dataset.metadata.video_streams = len([stream for stream in streams if stream['codec_type'] == 'video'])
+            dataset.metadata.audio_streams = len([stream for stream in streams if stream['codec_type'] == 'audio'])
+            dataset.metadata.video_streams = len([stream for stream in streams if stream['codec_type'] == 'video'])
 
 
 class Mkv(Video):
     file_ext = "mkv"
 
     def sniff(self, filename):
-        metadata, streams = ffprobe(filename)
-        return 'matroska' in metadata['format_name'].split(',')
+        if which('ffprobe'):
+            metadata, streams = ffprobe(filename)
+            return 'matroska' in metadata['format_name'].split(',')
 
 
 class Mp4(Video):
@@ -86,50 +92,27 @@ class Mp4(Video):
     file_ext = "mp4"
 
     def sniff(self, filename):
-        metadata, streams = ffprobe(filename)
-        return 'mp4' in metadata['format_name'].split(',')
+        if which('ffprobe'):
+            metadata, streams = ffprobe(filename)
+            return 'mp4' in metadata['format_name'].split(',')
 
 
 class Flv(Video):
     file_ext = "flv"
 
     def sniff(self, filename):
-        metadata, streams = ffprobe(filename)
-        return 'flv' in metadata['format_name'].split(',')
+        if which('ffprobe'):
+            metadata, streams = ffprobe(filename)
+            return 'flv' in metadata['format_name'].split(',')
 
 
 class Mpg(Video):
     file_ext = "mpg"
 
     def sniff(self, filename):
-        metadata, streams = ffprobe(filename)
-        return 'mpegvideo' in metadata['format_name'].split(',')
-
-
-class Mov(Video):
-    file_ext = "mov"
-
-    def sniff(self, filename):
-        metadata, streams = ffprobe(filename)
-        return 'mov' in metadata['format_name'].split(',')
-
-
-class Avi(Video):
-    file_ext = "avi"
-
-    def sniff(self, filename):
-        metadata, streams = ffprobe(filename)
-        return 'avi' in metadata['format_name'].split(',')
-
-
-class Ogv(Video):
-    file_ext = "ogv"
-
-    def sniff(self, filename):
-        metadata, streams = ffprobe(filename)
-        # Must be ogg format in metadata plus must include at least one 'video' stream
-        return 'ogg' in metadata['format_name'].split(',') and \
-            any([stream['codec_type'] == 'video' for stream in streams])
+        if which('ffprobe'):
+            metadata, streams = ffprobe(filename)
+            return 'mpegvideo' in metadata['format_name'].split(',')
 
 
 class Mp3(Audio):
@@ -145,19 +128,9 @@ class Mp3(Audio):
     file_ext = "mp3"
 
     def sniff(self, filename):
-        metadata, streams = ffprobe(filename)
-        return 'mp3' in metadata['format_name'].split(',')
-
-
-class Oga(Audio):
-    file_ext = "oga"
-
-    def sniff(self, filename):
-        metadata, streams = ffprobe(filename)
-        # Must be ogg format in metadata plus must include at least one 'video' stream
-        return 'ogg' in metadata['format_name'].split(',') and \
-            not any([stream['codec_type'] == 'video' for stream in streams]) and \
-            any([stream['codec_type'] == 'audio' for stream in streams])
+        if which('ffprobe'):
+            metadata, streams = ffprobe(filename)
+            return 'mp3' in metadata['format_name'].split(',')
 
 
 class WAV(Binary):
@@ -198,10 +171,10 @@ class WAV(Binary):
         >>> WAV().sniff(fname)
         False
         """
-
-        with open(filename, 'rb') as fh:
-            wave.open(fh)
-        return True
+        if wave:
+            fp = wave.open(filename, 'rb')
+            fp.close()
+            return True
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         """Set the metadata for this dataset from the file contents
