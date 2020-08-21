@@ -1,0 +1,10 @@
+{
+    "home" : "/tempZone/home/rods", 
+    "host" : "localhost", 
+    "port" : "1247", 
+    "user" : "rods", 
+    "password" : "rods", 
+    "zone" : "tempZone", 
+    "timeout" : "30",
+    "object_store_id": "corral_irods"
+}

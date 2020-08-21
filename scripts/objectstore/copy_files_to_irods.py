@@ -17,8 +17,9 @@ def copy_files_to_irods(start_dataset_id, end_dataset_id, object_store_info_file
     conn = None
     session = None
     osi_keys = None
-    sql_statement = None
-    cursor = None
+    read_sql_statement = None
+    update_sql_statement = None
+    read_cursor = None
     args = None
     table_data = None
     objectid = None
@@ -75,25 +76,28 @@ def copy_files_to_irods(start_dataset_id, end_dataset_id, object_store_info_file
 
     osi_keys = tuple(object_store_info.keys())
     print("osi_keys(): ", osi_keys)
-    sql_statement = """SELECT id, object_store_id, uuid
-                       FROM dataset
-                       WHERE state = %s
-                       AND NOT deleted
-                       AND NOT purged
-                       AND id >= %s
-                       AND id <= %s
-                       AND object_store_id IN %s"""
+    read_sql_statement = """SELECT id, object_store_id, uuid
+                            FROM dataset
+                            WHERE state = %s
+                            AND NOT deleted
+                            AND NOT purged
+                            AND id >= %s
+                            AND id <= %s
+                            AND object_store_id IN %s"""
+    update_sql_statement = """UPDATE dataset
+                              SET object_store_id = %s
+                              WHERE id = %s"""
     try:
-        cursor = conn.cursor()
+        read_cursor = conn.cursor()
         args = ('ok', start_dataset_id, end_dataset_id, osi_keys)
-        print(cursor.mogrify(sql_statement, args))
-        print(sql_statement)
+        print(read_cursor.mogrify(read_sql_statement, args))
+        print(read_sql_statement)
 
-        cursor.execute(sql_statement, args)
-        print("cursor.execute() completed")
+        read_cursor.execute(read_sql_statement, args)
+        print("read_cursor.execute() completed")
 
-        table_data = cursor.fetchall()
-        print("cursor.fetchall() completed")
+        table_data = read_cursor.fetchall()
+        print("read_cursor.fetchall() completed")
         for num, row in enumerate(table_data):
             print("row: ", row)
             print("\n")
@@ -149,17 +153,25 @@ def copy_files_to_irods(start_dataset_id, end_dataset_id, object_store_info_file
                 iput_command = "iput -r " + disk_folder_path_all_files + " " + irods_folder_collection_path
                 subprocess.call(iput_command, shell=True)
 
+            # Update object store id
+            update_cursor = conn.cursor()
+            print("irods object store id: ", irods_info["object_store_id"])
+            update_cursor.execute(update_sql_statement, (irods_info["object_store_id"], objectid))
+            updated_rows = update_cursor.rowcount
+            print("updated_rows: ", updated_rows)
+            update_cursor.close()
+
     except Exception as e:
         print(e)
         session.cleanup()
         conn.rollback()
-        cursor.close()
+        read_cursor.close()
         conn.close()
         return
 
     session.cleanup()
     conn.commit()
-    cursor.close()
+    read_cursor.close()
     conn.close()
 
 
