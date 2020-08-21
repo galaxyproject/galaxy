@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div v-for="contentItem in collectionContents" :index="1" :key="contentItem.id">
+        <div v-for="contentItem in collectionContents" :index="1" :key="contentItem.id" style="margin-left: 2em;">
             <DatasetProvider
                 v-if="contentItem.element_type === 'hda'"
                 :id="contentItem.object.id"
