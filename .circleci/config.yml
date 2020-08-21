@@ -18,7 +18,7 @@ variables:
   install_tox: &install_tox
     run: sudo pip install tox
   install_ffprobe: &install_ffprobe
-    run: sudp apt update && suo apt install ffmpeg -y
+    run: sudp apt-get update && sudo apt-get install ffmpeg -y
   install_wave: &install_wave
     run: sudo pip install wave
   set_workdir: &set_workdir
