@@ -163,6 +163,15 @@ def copy_files_to_irods(start_dataset_id, end_dataset_id, object_store_info_file
     conn.close()
 
 
+def print_help_msg():
+    print("\nLong form input parameter specification:")
+    print("copy_files_to_irods --start_dataset_id=2 --end_dataset_id=3 --object_store_info_file=object_store_info.json --irods_info_file=irods_info_file.json --db_connection_info_file=db_connection_info_file.json")
+    print("\nOR")
+    print("\nShort form input parameter specification:")
+    print("copy_files_to_irods -s 2 -e 3 -o object_store_info.json -i irods_info_file.json -d db_connection_info_file.json")
+    print("\n")
+
+
 if __name__ == '__main__':
     start_dataset_id = None
     end_dataset_id = None
@@ -173,12 +182,12 @@ if __name__ == '__main__':
     try:
         opts, args = getopt.getopt(sys.argv[1:], "hs:e:o:i:d:", ["start_dataset_id=", "end_dataset_id=", "object_store_info_file=", "irods_info_file=", "db_connection_info_file="])
     except getopt.GetoptError:
-        print("copy_files_to_irods --start_dataset_id=2 --end_dataset_id=3 --object_store_info_file=object_store_info.json --irods_info_file=irods_info_file.json --db_connection_info_file=db_connection_info_file.json")
+        print_help_msg()
         sys.exit(2)
 
     for opt, arg in opts:
         if opt == '-h':
-            print("copy_files_to_irods -s 2 -e 3")
+            print_help_msg()
             sys.exit(2)
         elif opt in ("-s", "--start_dataset_id"):
             start_dataset_id = arg
@@ -190,5 +199,10 @@ if __name__ == '__main__':
             irods_info_file = arg
         elif opt in ("-d", "--db_connection-info-file"):
             db_connection_info_file = arg
+
+    if start_dataset_id is None or end_dataset_id is None or object_store_info_file is None or irods_info_file is None or db_connection_info_file is None:
+        print("Did not specify one of the required input parameters!")
+        print_help_msg()
+        sys.exit(2)
 
     copy_files_to_irods(start_dataset_id=start_dataset_id, end_dataset_id=end_dataset_id, object_store_info_file=object_store_info_file, irods_info_file=irods_info_file, db_connection_info_file=db_connection_info_file)
