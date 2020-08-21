@@ -13,7 +13,6 @@ TestData = namedtuple('TestData', ('key', 'expected', 'loaded'))
 
 
 DO_NOT_TEST = {
-    'allowed_origin_hostnames',
     'data_manager_config_file',     # fix schema
     'datatypes_config_file',        # fix schema  TODO!!!!!!!!!!
     'job_config_file',              # fix schema  TODO!!!!!!!!!!
@@ -108,6 +107,7 @@ class ExpectedValuesProvider:
             """
             self._resolvers_callables = {
                 'admin_tool_recommendations_path': self._in_config_dir,
+                'allowed_origin_hostnames': config.GalaxyAppConfiguration._parse_allowed_origin_hostnames,
                 'amqp_internal_connection': self._resolve_amqp_internal_connection,
                 'auth_config_file': self._in_config_dir,
                 'builds_file_path': self._in_tool_data_dir,
@@ -349,7 +349,7 @@ SET_CONFIG = {
     'allow_user_dataset_purge': False,
     'allow_user_deletion': True,
     'allow_user_impersonation': True,
-    'allowed_origin_hostnames': 'allowed_origin_hostnames_new',
+    'allowed_origin_hostnames': 'allowed_origin_hostnames_new1, allowed_origin_hostnames_new2',
     'apache_xsendfile': True,
     'api_allow_run_as': 'api_allow_run_as_new',
     'auth_config_file': 'auth_conf_new.xml',
