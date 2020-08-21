@@ -58,7 +58,7 @@ jobs:
     - name: Install wave
       run: pip install wave
     - name: Install ffmpeg
-      run: apt get install ffmpeg
+      run: apt-get install ffmpeg
     - name: Run tests
       run: './run_tests.sh -integration test/integration -- -k "${{ matrix.subset }}"'
       working-directory: 'galaxy root'
