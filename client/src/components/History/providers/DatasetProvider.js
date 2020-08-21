@@ -13,18 +13,13 @@ var SimpleProviderMixin = {
             item: null,
         };
     },
-    created: function () {
-        this.load()
-    },
     watch: {
-        watch: {
-            id: {
-                immediate: true,
-                handler(newVal, oldVal) {
-                    if (newVal !== oldVal) {
-                        this.load();
-                    }
-                },
+        id: {
+            immediate: true,
+            handler(newVal, oldVal) {
+                if (newVal !== oldVal) {
+                    this.load();
+                }
             },
         },
     },
