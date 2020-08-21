@@ -338,7 +338,6 @@ SET_CONFIG = {
     # 'job_metrics_config_file': 'job_metrics_conf.xml',  # cause: parse_config_file_options
     # 'nginx_upload_store': 'new',
     # 'object_store_store_by': 'new',
-    # 'shed_tool_config_file': 'shed_tool_conf.xml',  # cause: parse_config_file_options
     # 'shed_tool_data_table_config': 'shed_tool_data_table_conf.xml',  # cause: parse_config_file_options
     # 'statsd_host': 'None',
     # 'tool_config_file': config/tool_conf.xml,
@@ -559,6 +558,7 @@ SET_CONFIG = {
     'serve_xss_vulnerable_mimetypes': True,
     'session_duration': 1,
     'shed_data_manager_config_file': 'shed_data_manager_conf.xml_new',
+    'shed_tool_config_file': 'shed_tool_conf.xml_new',
     'shed_tool_data_path': 'new',
     'show_user_prepopulate_form': True,
     'show_welcome_with_login': True,

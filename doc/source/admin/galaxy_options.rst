@@ -285,8 +285,6 @@
     this option is preferable. This file will be created automatically
     upon tool installation, whereas Galaxy will fail to start if any
     files in tool_config_file cannot be read.
-    The value of this option will be resolved with respect to
-    <managed_config_dir>.
 :Default: ``shed_tool_conf.xml``
 :Type: str
 
