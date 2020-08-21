@@ -79,6 +79,7 @@ class Mkv(Video):
         else:
             return False
 
+
 class Mp4(Video):
     """Class that reads MP4 video file
     >>> from galaxy.datatypes.sniff import get_test_fname
@@ -99,6 +100,7 @@ class Mp4(Video):
         else:
             return False
 
+
 class Flv(Video):
     file_ext = "flv"
 
@@ -109,6 +111,7 @@ class Flv(Video):
         else:
             return False
 
+
 class Mpg(Video):
     file_ext = "mpg"
 
@@ -118,6 +121,7 @@ class Mpg(Video):
             return 'mpegvideo' in metadata['format_name'].split(',')
         else:
             return False
+
 
 class Mp3(Audio):
     """Class that reads MP3 audio file
@@ -137,6 +141,7 @@ class Mp3(Audio):
             return 'mp3' in metadata['format_name'].split(',')
         else:
             return False
+
 
 class WAV(Binary):
     """Class that reads WAV audio file
