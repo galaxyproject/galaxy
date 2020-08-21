@@ -3,7 +3,11 @@
         <div class="unified-panel-header" unselectable="on">
             <div class="unified-panel-header-inner">
                 <div class="panel-header-buttons">
-                    <MarkdownToolbar :valid-arguments="markdownConfig.valid_arguments" @onInsert="onInsert" />
+                    <MarkdownToolbar
+                        :valid-arguments="markdownConfig.valid_arguments"
+                        :nodes="nodes"
+                        @onInsert="onInsert"
+                    />
                     <slot name="buttons" />
                 </div>
                 <div class="my-1">
@@ -27,7 +31,6 @@
 import _ from "underscore";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { showMarkdownHelp } from "./markdownHelp";
 import MarkdownToolbar from "./MarkdownToolbar";
 
 Vue.use(BootstrapVue);
@@ -47,6 +50,10 @@ export default {
             type: Object,
             default: null,
         },
+        nodes: {
+            type: Object,
+            default: null,
+        },
         title: {
             type: String,
             default: null,
@@ -55,7 +62,6 @@ export default {
     data() {
         return {
             content: this.markdownText,
-            showMarkdownHelp: showMarkdownHelp,
         };
     },
     watch: {

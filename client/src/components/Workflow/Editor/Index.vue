@@ -19,6 +19,7 @@
                 :markdown-text="markdownText"
                 :markdown-config="markdownConfig"
                 :title="name"
+                :nodes="nodes"
                 @onUpdate="onReportUpdate"
             >
                 <template v-slot:buttons>
@@ -205,6 +206,7 @@ export default {
             datatypes: [],
             report: {},
             activeNode: null,
+            labels: {},
         };
     },
     created() {
