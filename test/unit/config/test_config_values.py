@@ -13,7 +13,6 @@ TestData = namedtuple('TestData', ('key', 'expected', 'loaded'))
 
 
 DO_NOT_TEST = {
-    'data_manager_config_file',     # fix schema+
     'datatypes_config_file',        # fix schema; parse_config_files
     'tool_config_file',             # fix schema; parse_config_files
     'tool_data_table_config_path',  # fix schema; parse_config_files
@@ -115,6 +114,7 @@ class ExpectedValuesProvider:
                 'cluster_files_directory': self._in_data_dir,
                 'config_dir': self._resolve_config_dir,
                 'data_dir': self._resolve_data_dir,
+                'data_manager_config_file': self._in_config_dir, 
                 'database_connection': self._resolve_database_connection,
                 'dependency_resolvers_config_file': self._in_config_dir,
                 'dynamic_proxy_session_map': self._in_data_dir,
