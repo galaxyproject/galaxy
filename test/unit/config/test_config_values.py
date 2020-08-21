@@ -166,6 +166,7 @@ class ExpectedValuesProvider:
                 'user_tool_filters': listify_strip,
                 'user_tool_label_filters': listify_strip,
                 'user_tool_section_filters': listify_strip,
+                'workflow_resource_params_mapper': self._resolve_workflow_resource_params_mapper,
                 'workflow_resource_params_file': self._in_config_dir,
                 'workflow_schedulers_config_file': self._in_config_dir,
             }
@@ -249,6 +250,11 @@ class ExpectedValuesProvider:
             return self._in_root_dir(path)
         return self._tool_data_path
 
+    def _resolve_workflow_resource_params_mapper(self, value=None):
+        if value:
+            return self._in_root_dir(value)
+        return None
+
     def get_expected_value(self, key, set_value=None):
         default_value = self.schema_defaults.get(key)
         # If value not set, use schema default
@@ -307,8 +313,6 @@ def test_default_config(test_data):
 
 @pytest.mark.parametrize('test_data', get_test_data_with_set_values(), ids=get_key)
 def test_set_config(test_data):
-    if test_data.key == 'data_dir':
-        print(test_data)
     assert test_data.expected == test_data.loaded
 
 
@@ -341,7 +345,6 @@ SET_CONFIG = {
     # 'tool_data_table_config_path': 'config/tool_data_table_conf.xml',
     # 'tool_test_data_directories': 'test-data_new',
     # 'use_remote_user': True,
-    # 'workflow_resource_params_mapper': 'new',
     'activation_grace_period': 2,
     'admin_tool_recommendations_path': 'tool_recommendations_overwrite_new.yml',
     'admin_users': 'admin_users_new',
