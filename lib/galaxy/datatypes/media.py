@@ -12,7 +12,7 @@ from galaxy.util import which
 
 
 def ffprobe(path):
-    data = json.loads(subprocess.check_output(['ffprobe', '-loglevel', 'quiet', '-show_format', '-show_streams', '-of', 'json', path]))
+    data = json.loads(subprocess.check_output(['ffprobe', '-loglevel', 'quiet', '-show_format', '-show_streams', '-of', 'json', path]).decode("utf-8"))
     return data['format'], data['streams']
 
 

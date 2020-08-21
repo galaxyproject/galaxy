@@ -139,6 +139,8 @@ jobs:
     steps:
       - *restore_repo_cache
       - *install_tox
+      - *install_wave
+      - *install_ffprobe
       - run: tox -e test_galaxy_packages
   js_unit:
     docker:
