@@ -3,52 +3,8 @@
         <div class="unified-panel-header" unselectable="on">
             <div class="unified-panel-header-inner">
                 <div class="panel-header-buttons">
-                    <b-button
-                        title="Insert Dataset"
-                        variant="link"
-                        role="button"
-                        v-b-tooltip.hover.bottom
-                        @click="selectDataset"
-                    >
-                        <span class="fa fa-file" />
-                    </b-button>
-                    <b-button
-                        title="Insert Dataset Collection"
-                        variant="link"
-                        role="button"
-                        v-b-tooltip.hover.bottom
-                        @click="selectDatasetCollection"
-                    >
-                        <span class="fa fa-folder" />
-                    </b-button>
-                    <b-button
-                        title="Insert Workflow Display"
-                        variant="link"
-                        role="button"
-                        v-b-tooltip.hover.bottom
-                        @click="selectWorkflow"
-                    >
-                        <span class="fa fa-sitemap fa-rotate-270" />
-                    </b-button>
-                    <b-button
-                        title="Insert Dataset as Image"
-                        variant="link"
-                        role="button"
-                        v-b-tooltip.hover.bottom
-                        @click="selectDatasetForImage"
-                    >
-                        <span class="fa fa-image" />
-                    </b-button>
-                    <b-button
-                        title="Show Markup Help"
-                        variant="link"
-                        role="button"
-                        v-b-tooltip.hover.bottom
-                        @click="showMarkdownHelp"
-                    >
-                        <span class="fa fa-question" />
-                    </b-button>
-                    <slot name="buttons" />
+                    <MarkdownToolbar @onInsert="onInsert"/>
+                    <slot name="buttons"/>
                 </div>
                 <div class="my-1">
                     {{ title }}
@@ -72,14 +28,16 @@ import _ from "underscore";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { showMarkdownHelp } from "./markdownHelp";
+import MarkdownToolbar from "./MarkdownToolbar";
 
 Vue.use(BootstrapVue);
-
-import { dialog, datasetCollectionDialog, workflowDialog } from "utils/data";
 
 const FENCE = "```";
 
 export default {
+    components: {
+        MarkdownToolbar,
+    },
     props: {
         markdownText: {
             type: String,
@@ -105,14 +63,9 @@ export default {
             this.content = this.markdownText;
         },
     },
-    created() {
-        console.log(this.markdownConfig);
-    },
     methods: {
-        onUpdate: _.debounce(function (e) {
-            this.$emit("onUpdate", this.content);
-        }, 300),
-        insertMarkdown(markdown) {
+        onInsert(markdown) {
+            markdown = `${FENCE}galaxy\n${markdown}\n${FENCE}\n`;
             const textArea = this.$refs["text-area"];
             textArea.focus();
             const cursorPosition = textArea.selectionStart;
@@ -121,40 +74,9 @@ export default {
             newContent += this.content.substr(cursorPosition);
             this.$emit("onUpdate", newContent);
         },
-        insertGalaxyMarkdownBlock(block) {
-            this.insertMarkdown(`${FENCE}galaxy\n${block}\n${FENCE}\n`);
-        },
-        _selectDataset(galaxyCall) {
-            dialog(
-                (response) => {
-                    const datasetId = response.id;
-                    this.insertGalaxyMarkdownBlock(`${galaxyCall}(history_dataset_id=${datasetId})`);
-                },
-                {
-                    multiple: false,
-                    format: null,
-                    library: false, // TODO: support?
-                }
-            );
-        },
-        selectDataset() {
-            this._selectDataset("history_dataset_display");
-        },
-        selectDatasetForImage() {
-            this._selectDataset("history_dataset_as_image");
-        },
-        selectDatasetCollection() {
-            datasetCollectionDialog((response) => {
-                this.insertGalaxyMarkdownBlock(
-                    `history_dataset_collection_display(history_dataset_collection_id=${response.id})`
-                );
-            }, {});
-        },
-        selectWorkflow() {
-            workflowDialog((response) => {
-                this.insertGalaxyMarkdownBlock(`workflow_display(workflow_id=${response.id})`);
-            }, {});
-        },
+        onUpdate: _.debounce(function (e) {
+            this.$emit("onUpdate", this.content);
+        }, 300),
     },
 };
 </script>
