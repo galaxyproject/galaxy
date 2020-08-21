@@ -605,7 +605,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.object_store_cache_path = self._in_root_dir(kwargs.get("object_store_cache_path", self._in_data_dir("object_store_cache")))
         if self.object_store_store_by is None:
             self.object_store_store_by = 'id'
-            if not self.file_path_set and self.file_path.endswith('objects'):
+            if not self.is_set('file_path') and self.file_path.endswith('objects'):
                 self.object_store_store_by = 'uuid'
         assert self.object_store_store_by in ['id', 'uuid'], "Invalid value for object_store_store_by [%s]" % self.object_store_store_by
         # Handle AWS-specific config options for backward compatibility
@@ -793,8 +793,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             local_conda_mapping_file=[self._in_config_dir('local_conda_mapping.yml')],
             modules_mapping_files=[self._in_config_dir('environment_modules_mapping.yml')],
             tool_destinations_config_file=[self._in_config_dir('tool_destinations.yml')],
-            # self.file_path set to self._in_data_dir('objects') by schema
-            file_path=[self._in_data_dir('files'), self.file_path],
         )
         listify_defaults = {
             'tool_data_table_config_path': [

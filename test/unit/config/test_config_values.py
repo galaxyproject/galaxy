@@ -329,7 +329,6 @@ SET_CONFIG = {
     # 'database_connection': 'database_connection',
     # 'disable_library_comptypes': 'None',
     # 'enable_beta_gdpr': True,
-    # 'file_path': 'objects',  # cause: parse_config_file_options
     # 'ftp_upload_dir_template': 'None',
     # 'interactive_environment_plugins_directory': 'new',
     # 'interactivetools_map': 'interactivetools_map.sqlite_new',
@@ -452,6 +451,7 @@ SET_CONFIG = {
     'expose_user_name': True,
     'external_chown_script': 'external_chown_script_new',
     'fetch_url_allowlist': '10.10.10.10',
+    'file_path': 'objects_new',
     'fluent_host': 'localhost_new',
     'fluent_log': True,
     'fluent_port': 24225,
