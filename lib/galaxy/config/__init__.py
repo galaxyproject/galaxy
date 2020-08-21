@@ -793,7 +793,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             job_metrics_config_file=[self._in_config_dir('job_metrics_conf.xml'), self._in_sample_dir('job_metrics_conf.xml.sample')],
             local_conda_mapping_file=[self._in_config_dir('local_conda_mapping.yml')],
             modules_mapping_files=[self._in_config_dir('environment_modules_mapping.yml')],
-            shed_tool_data_table_config=[self._in_managed_config_dir('shed_tool_data_table_conf.xml')],
             tool_destinations_config_file=[self._in_config_dir('tool_destinations.yml')],
             # self.file_path set to self._in_data_dir('objects') by schema
             file_path=[self._in_data_dir('files'), self.file_path],
@@ -1080,7 +1079,7 @@ class ConfiguresGalaxyMixin:
                                                         from_shed_config=from_shed_config)
         except OSError as exc:
             # Missing shed_tool_data_table_config is okay if it's the default
-            if exc.errno != errno.ENOENT or self.config.shed_tool_data_table_config_set:
+            if exc.errno != errno.ENOENT or self.config.is_set('shed_tool_data_table_config'):
                 raise
 
     def _configure_datatypes_registry(self, installed_repository_manager=None):
