@@ -13,11 +13,10 @@ TestData = namedtuple('TestData', ('key', 'expected', 'loaded'))
 
 
 DO_NOT_TEST = {
-    'data_manager_config_file',     # fix schema
-    'datatypes_config_file',        # fix schema  TODO!!!!!!!!!!
-    'job_config_file',              # fix schema  TODO!!!!!!!!!!
-    'tool_config_file',             # fix schema
-    'tool_data_table_config_path',  # fix schema
+    'data_manager_config_file',     # fix schema+
+    'datatypes_config_file',        # fix schema; parse_config_files
+    'tool_config_file',             # fix schema; parse_config_files
+    'tool_data_table_config_path',  # fix schema; parse_config_files
 }
 
 
@@ -126,6 +125,7 @@ class ExpectedValuesProvider:
                 'integrated_tool_panel_config': self._in_managed_config_dir,
                 'interactivetools_map': self._in_data_dir,
                 'involucro_path': self._in_root_dir,
+                'job_config_file': self._in_config_dir,
                 'job_resource_params_file': self._in_config_dir,
                 'len_file_path': self._in_tool_data_dir,
                 'managed_config_dir': self._resolve_managed_config_dir,
@@ -479,7 +479,7 @@ SET_CONFIG = {
     'involucro_auto_init': False,
     'involucro_path': 'involucro_new',
     'job_config': 'job_config_new',
-    'job_config_file': 'config/job_conf.xml_new',
+    'job_config_file': 'job_conf.xml_new',
     'job_resource_params_file': 'job_resource_params_conf.xml_new',
     'job_working_directory': 'jobs_directory_new',
     'legacy_eager_objectstore_initialization': True,
