@@ -1,4 +1,5 @@
 import getopt
+import json
 import os
 import uuid
 import subprocess
@@ -14,9 +15,9 @@ from galaxy.util import directory_hash_id
 
 def copy_files_to_irods(start_dataset_id,
                         end_dataset_id,
-                        object_store_info={"files1" : "/Users/kxk302/workspace/galaxy/database/files1", "files2" : "/Users/kxk302/workspace/galaxy/database/files2"},
+                        object_store_info_file,
                         irods_info={"home" : "/tempZone/home/rods", "host" : "localhost", "port" : "1247", "user" : "rods", "password" : "rods", "zone" : "tempZone", "timeout" : "30"},
-                        connection_info={"dbname" : "galaxy", "user" : "postgres", "host" : "localhost", "password" : "password"}):
+                        db_connection_info={"dbname" : "galaxy", "user" : "postgres", "host" : "localhost", "password" : "password"}):
     conn = None
     session = None
     osi_keys = None
@@ -38,18 +39,26 @@ def copy_files_to_irods(start_dataset_id,
     irods_folder_collection_path = None
     options = None
     iput_command = None
+    object_store_info = None
+    # irods_info = None
+    # db_connection_info = None
 
     if start_dataset_id > end_dataset_id:
         print("start_dataset_id %d cannot be larger than end_dataset_id %d", start_dataset_id, end_dataset_id)
         return
 
+    # read object_store_info file
+    with open(object_store_info_file, mode="r") as osi:
+        object_store_info = json.load(osi)
+    osi_keys = tuple(object_store_info.keys())
+
     try:
         # declare a new PostgreSQL connection object
         conn = connect(
-            dbname=connection_info["dbname"],
-            user=connection_info["user"],
-            host=connection_info["host"],
-            password=connection_info["password"]
+            dbname=db_connection_info["dbname"],
+            user=db_connection_info["user"],
+            host=db_connection_info["host"],
+            password=db_connection_info["password"]
         )
         conn.cursor()
 
@@ -151,25 +160,31 @@ def copy_files_to_irods(start_dataset_id,
 
 
 if __name__ == '__main__':
-    print("Number of arguments: " + str(len(sys.argv)))
-    print("Arguments list: " + str(sys.argv))
-
     start_dataset_id = None
     end_dataset_id = None
+    object_store_info_file = None
+    irods_info_file = None
+    db_connection_info_file = None
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hs:e:", ["start-dataset-id=", "end-dataset-id="])
+        opts, args = getopt.getopt(sys.argv[1:], "hs:e:o:i:d:", ["start_dataset_id=", "end_dataset_id=", "object_store_info_file=", "irods_info_file=", "db_connection_info_file="])
     except getopt.GetoptError:
-        print("copy_files_to_irods -s 2 -e 3")
+        print("copy_files_to_irods --start_dataset_id=2 --end_dataset_id=3 --object_store_info_file=object_store_info.json --irods_info_file=irods_info_file.json --db_connection_info_file=db_connection_info_file.json")
         sys.exit(2)
 
     for opt, arg in opts:
         if opt == '-h':
             print("copy_files_to_irods -s 2 -e 3")
             sys.exit(2)
-        elif opt in ("-s", "--start-dataset-id"):
+        elif opt in ("-s", "--start_dataset_id"):
             start_dataset_id = arg
-        elif opt in ("-e", "--end-datset-id"):
+        elif opt in ("-e", "--end_datset_id"):
             end_dataset_id = arg
+        elif opt in ("-o", "--object_store_info_file"):
+            object_store_info_file = arg
+        elif opt in ("-i", "--irods_info_file"):
+            irods_info_file = arg
+        elif opt in ("-d", "--db_connection-info-file"):
+            db_connection_info_file = arg
 
-    copy_files_to_irods(start_dataset_id=start_dataset_id, end_dataset_id=end_dataset_id)
+    copy_files_to_irods(start_dataset_id=start_dataset_id, end_dataset_id=end_dataset_id, object_store_info_file=object_store_info_file)
