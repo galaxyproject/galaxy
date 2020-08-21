@@ -184,11 +184,10 @@ class WAV(Binary):
         if wave:
             try:
                 fp = wave.open(filename, 'rb')
+                fp.close()
                 return True
             except Exception:
                 pass
-            finally:
-                fp.close()
         else:
             return False
 
