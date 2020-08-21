@@ -64,4 +64,14 @@ var DatasetCollectionProvider = Vue.extend({
     }
 })
 
-export { DatasetProvider, DatasetCollectionProvider };
+var DatasetCollectionContentProvider = Vue.extend({
+    mixins: [SimpleProviderMixin],
+    computed: {
+        url() {
+            // ugh ...
+            return prependPath(this.id);
+        }
+    }
+})
+
+export { DatasetProvider, DatasetCollectionProvider, DatasetCollectionContentProvider };
