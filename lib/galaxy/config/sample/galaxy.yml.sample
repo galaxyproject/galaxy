@@ -399,8 +399,6 @@ galaxy:
   #legacy_eager_objectstore_initialization: false
 
   # Configured FileSource plugins.
-  # The value of this option will be resolved with respect to
-  # <config_dir>.
   #file_sources_config_file: file_sources_conf.yml
 
   # Enable Galaxy to fetch containers registered with quay.io generated

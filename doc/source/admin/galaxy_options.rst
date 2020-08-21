@@ -615,8 +615,6 @@
 
 :Description:
     Configured FileSource plugins.
-    The value of this option will be resolved with respect to
-    <config_dir>.
 :Default: ``file_sources_conf.yml``
 :Type: str
 
