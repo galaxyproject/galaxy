@@ -94,10 +94,7 @@ either through the props, and make updates through the events -->
                         </span>
                     </div>
                 </div>
-
-                <div class="peekContainer">
-                    <pre v-if="dataset.peek" class="dataset-peek p-1" v-html="dataset.peek"></pre>
-                </div>
+                <pre v-if="dataset.peek" class="dataset-peek p-1" v-html="dataset.peek"></pre>
             </div>
         </header>
     </div>

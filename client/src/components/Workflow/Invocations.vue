@@ -20,6 +20,7 @@
                 striped
                 caption-top
                 :busy="loading"
+                fixed
             >
                 <template v-slot:row-details="row">
                     <b-card>
