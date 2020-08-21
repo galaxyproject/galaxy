@@ -19,9 +19,13 @@ export default {
     },
     props: {
         item: { type: Object, required: true },
+        element_identifier: { type: String, required: false, default: '' }
     },
     computed: {
         dataset() {
+            if (this.element_identifier) {
+                this.item.name = this.element_identifier;
+            }
             return new Dataset(this.item);
         },
     },

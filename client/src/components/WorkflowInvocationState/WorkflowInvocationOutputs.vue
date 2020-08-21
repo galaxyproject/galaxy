@@ -27,7 +27,7 @@
                 loading,
             }">
             <div>
-                <loading-span v-if="loading" message="Loading datasets" />
+                <loading-span v-if="loading" message="Loading collections" />
                 <DatasetCollectionUIWrapper
                    v-if="item"
                    :item="item"
