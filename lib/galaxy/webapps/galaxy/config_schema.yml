@@ -2570,7 +2570,8 @@ mapping:
 
       data_manager_config_file:
         type: str
-        default: config/data_manager_conf.xml
+        default: data_manager_conf.xml
+        path_resolves_to: config_dir
         required: false
         desc: |
           File where Data Managers are configured (.sample used if default does not

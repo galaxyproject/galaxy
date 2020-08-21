@@ -1685,7 +1685,7 @@ galaxy:
 
   # File where Data Managers are configured (.sample used if default
   # does not exist).
-  #data_manager_config_file: config/data_manager_conf.xml
+  #data_manager_config_file: data_manager_conf.xml
 
   # File where Tool Shed based Data Managers are configured. This file
   # will be created automatically upon data manager installation.

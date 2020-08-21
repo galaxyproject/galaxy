@@ -326,7 +326,6 @@ SET_CONFIG = {
     # 'amqp_internal_connection': 'sqlalchemy+sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE_new',
     # 'build_sites_config_file': 'build_sites.yml_new',  # cause: parse_config_file_options
     # 'containers_resolvers_config_file': 'None',  # cause: parse_config_file_options
-    # 'data_manager_config_file': 'config/data_manager_conf.xml',  # TODO: driver_util causes further errors
     # 'database_connection': 'database_connection',
     # 'disable_library_comptypes': 'None',
     # 'enable_beta_gdpr': True,
@@ -384,6 +383,7 @@ SET_CONFIG = {
     'config_dir': 'config_new',
     'cookie_domain': 'cookie_domain_new',
     'data_dir': 'data_new',
+    'data_manager_config_file': 'data_manager_conf.xml_new',
     'database_auto_migrate': True,
     'database_engine_option_echo': True,
     'database_engine_option_echo_pool': True,

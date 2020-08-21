@@ -163,7 +163,7 @@ DO_NOT_TEST = [
     'conda_auto_init',  # broken: default overridden
     'config_dir',  # value overridden for testing
     'data_dir',  # value overridden for testing
-    'data_manager_config_file',  # broken: remove 'config/' prefix from schema
+    'data_manager_config_file',  # value overidden for testing
     'database_connection',  # untestable; refactor config/__init__ to test
     'database_engine_option_max_overflow',  # overridden for tests running on non-sqlite databases
     'database_engine_option_pool_size',  # overridden for tests runnign on non-sqlite databases
