@@ -13,11 +13,7 @@ from psycopg2 import connect
 from galaxy.util import directory_hash_id
 
 
-def copy_files_to_irods(start_dataset_id,
-                        end_dataset_id,
-                        object_store_info_file,
-                        irods_info={"home" : "/tempZone/home/rods", "host" : "localhost", "port" : "1247", "user" : "rods", "password" : "rods", "zone" : "tempZone", "timeout" : "30"},
-                        db_connection_info={"dbname" : "galaxy", "user" : "postgres", "host" : "localhost", "password" : "password"}):
+def copy_files_to_irods(start_dataset_id, end_dataset_id, object_store_info_file, irods_info_file, db_connection_info_file):
     conn = None
     session = None
     osi_keys = None
@@ -40,8 +36,8 @@ def copy_files_to_irods(start_dataset_id,
     options = None
     iput_command = None
     object_store_info = None
-    # irods_info = None
-    # db_connection_info = None
+    irods_info = None
+    db_connection_info = None
 
     if start_dataset_id > end_dataset_id:
         print("start_dataset_id %d cannot be larger than end_dataset_id %d", start_dataset_id, end_dataset_id)
@@ -51,6 +47,14 @@ def copy_files_to_irods(start_dataset_id,
     with open(object_store_info_file, mode="r") as osi:
         object_store_info = json.load(osi)
     osi_keys = tuple(object_store_info.keys())
+
+    # read irods_info_file
+    with open(irods_info_file, mode="r") as ii:
+        irods_info = json.load(ii)
+
+    # read db_connectin_info file
+    with open(db_connection_info_file, mode="r") as dci:
+        db_connection_info = json.load(dci)
 
     try:
         # declare a new PostgreSQL connection object
@@ -187,4 +191,4 @@ if __name__ == '__main__':
         elif opt in ("-d", "--db_connection-info-file"):
             db_connection_info_file = arg
 
-    copy_files_to_irods(start_dataset_id=start_dataset_id, end_dataset_id=end_dataset_id, object_store_info_file=object_store_info_file)
+    copy_files_to_irods(start_dataset_id=start_dataset_id, end_dataset_id=end_dataset_id, object_store_info_file=object_store_info_file, irods_info_file=irods_info_file, db_connection_info_file=db_connection_info_file)
