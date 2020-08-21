@@ -5,7 +5,7 @@
 <script>
 import Form from "mvc/form/form-view";
 import { invokeWorkflow } from "./services";
-import isWorkflowInput from "components/Workflow/constants";
+import { isWorkflowInput } from "components/Workflow/constants";
 
 export default {
     props: {
