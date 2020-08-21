@@ -32,7 +32,7 @@ def main():
         start = float(kept_segment)
         end = adj_data[kept_segment]
         # If the start of this segment is after the last end, we have a gap
-        if(start > last_end):
+        if(start >= last_end):
             # Keep track of the gap in segments
             current_adj = current_adj + (start - last_end)
             # Add it to a list of adjustments
