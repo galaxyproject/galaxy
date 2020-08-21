@@ -8,16 +8,14 @@
             }"
         >
             <div>
-            <loading-span v-if="loading" message="Loading datasets" />
-            <DatasetUIWrapper
-               v-if="item"
-               :item="item"
-               v-bind:expanded="expanded"
-               v-bind:index="1"
-               v-bind:showTags="true"
-               v-on:update:expanded="expand"
-               >
-            </DatasetUIWrapper>
+                <loading-span v-if="loading" message="Loading datasets" />
+                <DatasetUIWrapper
+                   v-if="item"
+                   :item="item"
+                   v-bind:index="1"
+                   v-bind:showTags="true"
+                   >
+                </DatasetUIWrapper>
             </div>
         </DatasetProvider>
     </div>
@@ -28,15 +26,16 @@
                 item,
                 loading,
             }">
-            <DatasetCollectionUIWrapper
-               v-if="item"
-               :item="item"
-               v-bind:expanded="expanded"
-               v-bind:index="1"
-               v-bind:showTags="true"
-               v-on:update:expanded="expand"
-               >
-            </DatasetCollectionUIWrapper>
+            <div>
+                <loading-span v-if="loading" message="Loading datasets" />
+                <DatasetCollectionUIWrapper
+                   v-if="item"
+                   :item="item"
+                   v-bind:index="1"
+                   v-bind:showTags="true"
+                   >
+                </DatasetCollectionUIWrapper>
+            </div>
          </DatasetCollectionProvider>
     </div>
 </template>
@@ -84,14 +83,7 @@ export default {
     data() {
         return {
             dataset_collection: null,
-            expanded: false,
         };
-    },
-    methods: {
-        expand(event) {
-            console.log("Exapnding");
-            this.expanded = !this.expanded;
-        },
     },
 };
 </script>
