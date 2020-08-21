@@ -114,7 +114,7 @@ class ExpectedValuesProvider:
                 'cluster_files_directory': self._in_data_dir,
                 'config_dir': self._resolve_config_dir,
                 'data_dir': self._resolve_data_dir,
-                'data_manager_config_file': self._in_config_dir, 
+                'data_manager_config_file': self._in_config_dir,
                 'database_connection': self._resolve_database_connection,
                 'dependency_resolvers_config_file': self._in_config_dir,
                 'dynamic_proxy_session_map': self._in_data_dir,
