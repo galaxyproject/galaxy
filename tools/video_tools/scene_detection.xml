@@ -2,9 +2,10 @@
   <description>Runs scene detection on a video</description>
     <requirements>
     </requirements>
-  <command detect_errors="exit_code"> $__tool_directory__/scene_detection.py $input $amp_scenes $scene_detect_stats</command>
+  <command detect_errors="exit_code"> $__tool_directory__/scene_detection.py $input $threshold $amp_scenes $scene_detect_stats</command>
   <inputs>
 	<param name="input" type="data" format="video" label="Video File" help="A video file input for scene detection"/>
+	<param name="threshold" type="integer" label="(Optional) Threshold" value="30" optional="true" help="Sensitivity of the scene detection. The default is 30"/>
   </inputs>
   <outputs>
     <data format="json" name="amp_scenes" />
@@ -13,7 +14,7 @@
   <help>
 .. class:: infomark
 
-Run PySceneDetect on a video
+Run PySceneDetect on a video to create a list of scenes
 
   </help>
 </tool>

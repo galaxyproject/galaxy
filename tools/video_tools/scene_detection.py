@@ -15,9 +15,13 @@ from scenedetect.detectors.content_detector import ContentDetector
 
 
 def main():
-    (input_file, output_json, output_csv) = sys.argv[1:4]
+    (input_file, threshold, output_json, output_csv) = sys.argv[1:5]
     # Get a list of scenes as tuples (start, end) 
-    scenes = find_scenes(input_file, output_csv)
+    if threshold is None or isinstance(threshold, int) == False:
+        threshold = 30
+        print("Setting threshold to default because it wasn't a valid integer")
+
+    scenes = find_scenes(input_file, output_csv, threshold)
 
     # Print for debugging purposes
     for scene in scenes:
@@ -31,7 +35,7 @@ def get_duration(scenes):
     return scenes[len(scenes) - 1][1].get_timecode()
 
 # Find a list of scenes using pyscenedetect api
-def find_scenes(video_path, stats_file):
+def find_scenes(video_path, stats_file, threshold):
     video_manager = VideoManager([video_path])
     stats_manager = StatsManager()
     # Construct our SceneManager and pass it our StatsManager.
@@ -39,7 +43,7 @@ def find_scenes(video_path, stats_file):
 
     # Add ContentDetector algorithm (each detector's constructor
     # takes detector options, e.g. threshold).
-    scene_manager.add_detector(ContentDetector())
+    scene_manager.add_detector(ContentDetector(threshold=threshold))
     base_timecode = video_manager.get_base_timecode()
 
     scene_list = []
