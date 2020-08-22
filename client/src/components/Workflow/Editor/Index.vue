@@ -320,14 +320,21 @@ export default {
             this.markdownText = markdown;
         },
         onRun() {
-            window.location = `${getAppRoot()}workflows/run?id=${this.id}`;
+            const runUrl = `${getAppRoot()}workflows/run?id=${this.id}`;
+            if (this.hasChanges) {
+                this.onSave(true).then(() => {
+                    window.location = runUrl;
+                });
+            } else {
+                window.location = runUrl;
+            }
         },
         onZoom(zoomLevel) {
             this.zoomLevel = this.canvasManager.setZoom(zoomLevel);
         },
-        onSave() {
-            show_message("Saving workflow...", "progress");
-            saveWorkflow(this)
+        onSave(hideProgress = false) {
+            !hideProgress && show_message("Saving workflow...", "progress");
+            return saveWorkflow(this)
                 .then((data) => {
                     showWarnings(data);
                     getVersions(this.id).then((versions) => {

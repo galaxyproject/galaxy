@@ -86,26 +86,3 @@ export default {
     },
 };
 </script>
-
-<style lang="scss" scoped>
-.markdown-editor {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-}
-.markdown-text {
-    font: 16px/1.7 Menlo, Consolas, Monaco, "Andale Mono", monospace;
-}
-.markdown-textarea {
-    border: none;
-    border-right: 1px solid #ccc;
-    border-left: 1px solid #ccc;
-    resize: none;
-    outline: none;
-    background-color: #f6f6f6;
-    @extend .markdown-text;
-    padding: 20px;
-    width: 100%;
-    flex: 1;
-}
-</style>
