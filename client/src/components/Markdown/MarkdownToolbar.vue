@@ -122,6 +122,8 @@ export default {
                 history_dataset_display: "fa-file-o",
                 history_dataset_collection_display: "fa-folder-o",
                 history_dataset_as_image: "fa-image",
+                history_dataset_link: "fa-link",
+                history_dataset_info: "fa-info",
                 invocation_time: "fa-clock",
                 tool_stderr: "fa-bug",
                 tool_stdout: "fa-quote-right",
