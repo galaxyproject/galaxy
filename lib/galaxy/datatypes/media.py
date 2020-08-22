@@ -188,8 +188,7 @@ class WAV(Binary):
                 return True
             except Exception:
                 pass
-        else:
-            return False
+        return False
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         """Set the metadata for this dataset from the file contents
