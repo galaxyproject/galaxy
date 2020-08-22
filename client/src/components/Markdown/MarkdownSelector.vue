@@ -72,7 +72,6 @@ export default {
     },
     methods: {
         onOk() {
-            this.modalShow = false;
             this.$emit("onOk", this.initialValue, this.labels[this.selectedValue]);
         },
         onCancel() {

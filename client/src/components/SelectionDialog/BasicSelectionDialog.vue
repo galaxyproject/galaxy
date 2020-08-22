@@ -3,7 +3,7 @@
         :error-message="errorMessage"
         :options-show="optionsShow"
         :modal-show="modalShow"
-        :hide-modal="() => (modalShow = false)"
+        :hide-modal="onCancel"
     >
         <template v-slot:search>
             <data-dialog-search v-model="filter" :title="title" />
@@ -17,7 +17,7 @@
                 :filter="filter"
                 :leaf-icon="leafIcon"
                 :show-details="!!detailsKey"
-                @clicked="onSelect"
+                @clicked="onOk"
                 @load="load"
             />
         </template>
@@ -74,9 +74,11 @@ export default {
         this.load();
     },
     methods: {
-        onSelect(record) {
-            this.modalShow = false;
-            this.$emit("onSelect", record);
+        onOk(record) {
+            this.$emit("onOk", record);
+        },
+        onCancel() {
+            this.$emit("onCancel");
         },
         async load() {
             this.filter = null;

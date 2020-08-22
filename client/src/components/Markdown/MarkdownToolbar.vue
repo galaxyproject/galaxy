@@ -38,7 +38,8 @@
             :is-encoded="true"
             title="Job"
             label-key="id"
-            @onSelect="onJob"
+            @onOk="onJob"
+            @onCancel="onJobCancel"
         />
         <BasicSelectionDialog
             v-if="invocationShow"
@@ -46,7 +47,8 @@
             :is-encoded="true"
             title="Invocation"
             label-key="id"
-            @onSelect="onInvocation"
+            @onOk="onInvocation"
+            @onCancel="onInvocationCancel"
         />
         <BasicSelectionDialog
             v-if="workflowShow"
@@ -54,7 +56,8 @@
             title="Workflow"
             leaf-icon="fa fa-sitemap fa-rotate-270"
             label-key="name"
-            @onSelect="onWorkflow"
+            @onOk="onWorkflow"
+            @onCancel="onWorkflowCancel"
         />
     </span>
 </template>
@@ -271,6 +274,15 @@ export default {
         },
         onCancel() {
             this.selectedShow = false;
+        },
+        onWorkflowCancel() {
+            this.workflowShow = false;
+        },
+        onJobCancel() {
+            this.jobShow = false;
+        },
+        onInvocationCancel() {
+            this.invocationShow = false;
         },
         onInsert(argumentName) {
             this.selectedArgumentName = argumentName;
