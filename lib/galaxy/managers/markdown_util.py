@@ -37,7 +37,7 @@ from galaxy.managers.jobs import (
 from galaxy.model.item_attrs import get_item_annotation_str
 from galaxy.model.orm.now import now
 from galaxy.util.sanitize_html import sanitize_html
-from .markdown_parse import GALAXY_MARKDOWN_FUNCTION_CALL_LINE, validate_galaxy_markdown, VALID_ARGUMENTS
+from .markdown_parse import GALAXY_MARKDOWN_FUNCTION_CALL_LINE, VALID_ARGUMENTS, validate_galaxy_markdown
 
 log = logging.getLogger(__name__)
 

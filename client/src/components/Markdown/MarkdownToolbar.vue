@@ -26,9 +26,10 @@
         <MarkdownSelector
             v-if="selectedShow"
             :initial-value="selectedType"
+            :argument-name="selectedArgumentName"
             :labels="selectedLabels"
-            :label-title="selectorConfig[selectedType].labelTitle"
-            :select-title="selectorConfig[selectedType].selectTitle"
+            :label-title="selectedLabelTitle"
+            :select-title="selectedSelectTitle"
             @onOk="onOk"
             @onCancel="onCancel"
         />
@@ -168,6 +169,14 @@ export default {
         hasNodes() {
             return !!this.nodes;
         },
+        selectedLabelTitle() {
+            const config = this.selectorConfig[this.selectedType];
+            return (config && config.labelTitle) || "Select Label";
+        },
+        selectedSelectTitle() {
+            const config = this.selectorConfig[this.selectedType];
+            return (config && config.selectTitle) || "Select Item";
+        },
     },
     created() {
         for (const argumentName in this.validArguments) {
@@ -293,7 +302,7 @@ export default {
                 this.workflowShow = true;
             } else if (arg.includes("job_id")) {
                 if (this.hasNodes) {
-                    this.selectedType = "jobId";
+                    this.selectedType = "job_id";
                     this.selectedLabels = this.getSteps();
                     this.selectedShow = true;
                 } else {

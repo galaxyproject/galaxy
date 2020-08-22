@@ -34,10 +34,6 @@ Vue.use(BootstrapVue);
 
 export default {
     props: {
-        title: {
-            type: String,
-            default: "Select",
-        },
         selectTitle: {
             type: String,
             default: "Search Entries",
@@ -66,6 +62,9 @@ export default {
         };
     },
     computed: {
+        title() {
+            return `Insert '${this.argumentName}'`;
+        },
         hasLabels() {
             return this.labels && this.labels.length > 0;
         },
