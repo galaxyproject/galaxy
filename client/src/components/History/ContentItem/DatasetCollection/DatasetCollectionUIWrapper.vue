@@ -45,7 +45,6 @@ export default {
     },
     methods: {
         expandCollection(coll) {
-            console.log(coll);
             const index = this.expandedCollections.indexOf(coll);
             if (index > -1) {
                 this.expandedCollections.splice(index, 1);
