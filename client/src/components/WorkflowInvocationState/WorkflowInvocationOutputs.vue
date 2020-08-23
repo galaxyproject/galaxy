@@ -1,43 +1,22 @@
 <template>
-    <div v-if="dataset_id">
-        <DatasetProvider
-            :id="dataset_id"
-            v-slot="{
-                item,
-                loading,
-            }"
-        >
-            <div>
-                <loading-span v-if="loading" message="Loading datasets" />
-                <DatasetUIWrapper
-                   v-if="item"
-                   :item="item"
-                   v-bind:index="1"
-                   v-bind:showTags="true"
-                   >
-                </DatasetUIWrapper>
-            </div>
-        </DatasetProvider>
-    </div>
-    <div v-else-if="dataset_collection_id">
-        <DatasetCollectionProvider
-            :id="dataset_collection_id"
-            v-slot="{
-                item,
-                loading,
-            }">
-            <div>
-                <loading-span v-if="loading" message="Loading collections" />
-                <DatasetCollectionUIWrapper
-                   v-if="item"
-                   :item="item"
-                   v-bind:index="1"
-                   v-bind:showTags="true"
-                   >
-                </DatasetCollectionUIWrapper>
-            </div>
-         </DatasetCollectionProvider>
-    </div>
+    <component :is="providerComponent"
+        :id="data_item.id"
+        v-slot="{
+            item,
+            loading,
+        }"
+    >
+        <div>
+            <loading-span v-if="loading" message="Loading dataset" />
+            <component :is="renderComponent"
+               v-if="item"
+               :item="item"
+               v-bind:index="1"
+               v-bind:showTags="true"
+               >
+            </component>
+        </div>
+    </component>
 </template>
 <script>
 import BootstrapVue from "bootstrap-vue";
@@ -70,20 +49,20 @@ export default {
         HistoryContentItem,
     },
     props: {
-        dataset_id: {
-            required: false,
+        data_item: {
+            required: true,
         },
-        dataset_collection_id: {
-            required: false,
+    },
+    computed: {
+        renderComponent() {
+            return {hda: 'DatasetUIWrapper', hdca: 'DatasetCollectionUIWrapper'}[this.data_item.src];
         },
+        providerComponent() {
+            return {hda: 'DatasetProvider', hdca: 'DatasetCollectionProvider'}[this.data_item.src];
+        }
     },
     provide: {
         STATES,
-    },
-    data() {
-        return {
-            dataset_collection: null,
-        };
     },
 };
 </script>

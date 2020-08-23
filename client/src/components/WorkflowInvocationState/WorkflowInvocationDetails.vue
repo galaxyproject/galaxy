@@ -6,11 +6,19 @@
                 <b-table small caption-top :fields="['label', 'parameter_value']" :items="Object.values(invocation.input_step_parameters)"/>
             </details>
         </div>
+        <div v-if="Object.keys(invocation.inputs).length > 0">
+            <details
+                ><summary><b>Invocation Inputs</b></summary>
+                <div v-for="input in invocation.inputs" v-bind:key="input.id">
+                    <WorkflowInvocationOutputs v-bind:data_item="input" />
+                </div>
+            </details>
+        </div>
         <div v-if="Object.keys(invocation.outputs).length > 0">
             <details
                 ><summary><b>Invocation Outputs</b></summary>
                 <div v-for="output in invocation.outputs" v-bind:key="output.id">
-                    <WorkflowInvocationOutputs v-bind:dataset_id="output.id" />
+                    <WorkflowInvocationOutputs v-bind:data_item="output" />
                 </div>
             </details>
         </div>
@@ -18,7 +26,7 @@
             <details
                 ><summary><b>Invocation Output Collections</b></summary>
                 <div v-for="output in invocation.output_collections" v-bind:key="output.id">
-                    <WorkflowInvocationOutputs v-bind:dataset_collection_id="output.id" />
+                    <WorkflowInvocationOutputs v-bind:data_item="output" />
                 </div>
             </details>
         </div>
