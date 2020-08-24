@@ -7,13 +7,16 @@ import HDA_LI_EDIT from "mvc/history/hda-li-edit";
 import HDCA_LI_EDIT from "mvc/history/hdca-li-edit";
 import { mountModelTags } from "components/Tags";
 import ANNOTATIONS from "mvc/annotation";
-import LIST_COLLECTION_CREATOR from "mvc/collection/list-collection-creator";
+import LIST_COLLECTION_CREATOR from "mvc/collection/ListCollectionCreator";
 import PAIR_COLLECTION_CREATOR from "mvc/collection/pair-collection-creator";
 import LIST_OF_PAIRS_COLLECTION_CREATOR from "mvc/collection/list-of-pairs-collection-creator";
 import faIconButton from "ui/fa-icon-button";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
 import "ui/editable-text";
+import Vue from "vue";
+
+import ListCollectionCreatorModal from "mvc/collection/ListCollectionCreatorModal"
 
 var $ = jQuery;
 
@@ -372,7 +375,10 @@ var HistoryViewEdit = _super.extend(
             hideSourceItems = hideSourceItems || false;
             var createFunc;
             if (collectionType == "list") {
-                createFunc = LIST_COLLECTION_CREATOR.createListCollection;
+                var ListCollectionCreatorModalClass = Vue.extend(ListCollectionCreatorModal);
+                var inst = new ListCollectionCreatorModalClass();
+                inst.$mount();
+                createFunc = inst.createListCollection;
             } else if (collectionType == "paired") {
                 createFunc = PAIR_COLLECTION_CREATOR.createPairCollection;
             } else if (collectionType == "list:paired") {
