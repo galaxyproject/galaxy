@@ -71,7 +71,7 @@ export default {
     },
     methods: {
         onOk() {
-            this.$emit("onOk", this.initialValue, this.labels[this.selectedValue]);
+            this.$emit("onOk", this.labels[this.selectedValue]);
         },
         onCancel() {
             this.$emit("onCancel");

@@ -17,67 +17,34 @@
                 v-for="argumentName in categories[categoryKey]"
                 :key="argumentName"
                 href="#"
-                @click="onInsert(argumentName)"
+                @click="onDropdownClick(argumentName)"
             >
                 <span :class="['fa fa-fw mr-1', icons[argumentName]]" />
                 {{ titles[argumentName] }}
             </b-dropdown-item>
         </b-dropdown>
-        <MarkdownSelector
+        <MarkdownDialog
             v-if="selectedShow"
-            :initial-value="selectedType"
+            :argument-type="selectedType"
             :argument-name="selectedArgumentName"
             :labels="selectedLabels"
-            :label-title="selectedLabelTitle"
-            :select-title="selectedSelectTitle"
-            @onOk="onOk"
+            :is-workflow="hasNodes"
+            @onInsert="onInsert"
             @onCancel="onCancel"
-        />
-        <BasicSelectionDialog
-            v-if="jobShow"
-            :get-data="getJobs"
-            :is-encoded="true"
-            title="Job"
-            label-key="id"
-            @onOk="onJob"
-            @onCancel="onJobCancel"
-        />
-        <BasicSelectionDialog
-            v-if="invocationShow"
-            :get-data="getInvocations"
-            :is-encoded="true"
-            title="Invocation"
-            label-key="id"
-            @onOk="onInvocation"
-            @onCancel="onInvocationCancel"
-        />
-        <BasicSelectionDialog
-            v-if="workflowShow"
-            :get-data="getWorkflows"
-            title="Workflow"
-            leaf-icon="fa fa-sitemap fa-rotate-270"
-            label-key="name"
-            @onOk="onWorkflow"
-            @onCancel="onWorkflowCancel"
         />
     </span>
 </template>
 
 <script>
-import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { getAppRoot } from "onload/loadConfig";
-import MarkdownSelector from "./MarkdownSelector";
-import { dialog, datasetCollectionDialog } from "utils/data";
-import BasicSelectionDialog from "components/SelectionDialog/BasicSelectionDialog";
+import MarkdownDialog from "./MarkdownDialog";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
-        MarkdownSelector,
-        BasicSelectionDialog,
+        MarkdownDialog,
     },
     props: {
         validArguments: {
@@ -155,29 +122,15 @@ export default {
                 },
             },
             titles: {},
-            jobsUrl: `${getAppRoot()}api/jobs`,
-            workflowsUrl: `${getAppRoot()}api/workflows`,
-            invocationsUrl: `${getAppRoot()}api/invocations`,
-            selectedShow: false,
-            workflowShow: false,
-            jobShow: false,
-            invocationShow: false,
             selectedArgumentName: null,
             selectedType: null,
-            selectedLabel: null,
+            selectedLabels: null,
+            selectedShow: false,
         };
     },
     computed: {
         hasNodes() {
             return !!this.nodes;
-        },
-        selectedLabelTitle() {
-            const config = this.selectorConfig[this.selectedType];
-            return (config && config.labelTitle) || "Select Label";
-        },
-        selectedSelectTitle() {
-            const config = this.selectorConfig[this.selectedType];
-            return (config && config.selectTitle) || "Select Item";
         },
     },
     created() {
@@ -201,29 +154,6 @@ export default {
         }
     },
     methods: {
-        onJob(response) {
-            this.jobShow = false;
-            const argument = this.selectedArgumentName;
-            this.$emit("onInsert", `${argument}(job_id=${response.id})`);
-        },
-        onInvocation(response) {
-            this.invocationShow = false;
-            const argument = this.selectedArgumentName;
-            this.$emit("onInsert", `${argument}(invocation_id=${response.id})`);
-        },
-        onWorkflow(response) {
-            this.workflowShow = false;
-            this.$emit("onInsert", `workflow_display(workflow_id=${response.id})`);
-        },
-        getInvocations() {
-            return axios.get(this.invocationsUrl);
-        },
-        getJobs() {
-            return axios.get(this.jobsUrl);
-        },
-        getWorkflows() {
-            return axios.get(this.workflowsUrl);
-        },
         getSteps() {
             const steps = [];
             this.nodes &&
@@ -254,107 +184,40 @@ export default {
                 })
             );
         },
-        onOk(argumentType, selectedLabel) {
+        onInsert(markdownBlock) {
+            this.$emit("onInsert", markdownBlock);
             this.selectedShow = false;
-            const argumentName = this.selectedArgumentName;
-            if (argumentType == "history_dataset_id") {
-                if (selectedLabel) {
-                    this.$emit("onInsert", `${argumentName}(output="${selectedLabel}")`);
-                } else {
-                    this.selectDataset(argumentName);
-                }
-            } else if (argumentType == "history_dataset_collection_id") {
-                if (selectedLabel) {
-                    this.$emit("onInsert", `${argumentName}(output="${selectedLabel}")`);
-                } else {
-                    this.selectDatasetCollection(argumentName);
-                }
-            } else if (argumentType == "job_id") {
-                if (selectedLabel) {
-                    this.$emit("onInsert", `${argumentName}(step="${selectedLabel}")`);
-                } else {
-                    this.jobShow = true;
-                }
-            } else if (argumentType == "invocation_id") {
-                if (selectedLabel) {
-                    this.$emit("onInsert", `${argumentName}(step="${selectedLabel}")`);
-                } else {
-                    this.invocationShow = true;
-                }
-            }
         },
         onCancel() {
             this.selectedShow = false;
         },
-        onWorkflowCancel() {
-            this.workflowShow = false;
-        },
-        onJobCancel() {
-            this.jobShow = false;
-        },
-        onInvocationCancel() {
-            this.invocationShow = false;
-        },
-        onInsert(argumentName) {
+        onDropdownClick(argumentName) {
             this.selectedArgumentName = argumentName;
             const arg = this.validArguments[argumentName];
             if (arg.length == 0) {
                 this.$emit("onInsert", `${argumentName}()`);
             } else if (arg.includes("workflow_id")) {
-                this.workflowShow = true;
+                this.selectedType = "workflow_id";
+                this.selectedShow = true;
             } else if (arg.includes("job_id")) {
-                if (this.hasNodes) {
-                    this.selectedType = "job_id";
-                    this.selectedLabels = this.getSteps();
-                    this.selectedShow = true;
-                } else {
-                    this.onOk("job_id");
-                }
+                this.selectedType = "job_id";
+                this.selectedLabels = this.getSteps();
+                this.selectedShow = true;
             } else if (arg.includes("invocation_id")) {
-                if (this.hasNodes) {
-                    this.selectedType = "invocation_id";
-                    this.selectedLabels = this.getSteps();
-                    this.selectedShow = true;
-                } else {
-                    this.onOk("invocation_id");
-                }
+                this.selectedType = "invocation_id";
+                this.selectedLabels = this.getSteps();
+                this.selectedShow = true;
             } else if (arg.includes("history_dataset_id")) {
-                if (this.hasNodes) {
-                    this.selectedType = "history_dataset_id";
-                    this.selectedLabels = this.getOutputs();
-                    this.selectedShow = true;
-                } else {
-                    this.onOk("history_dataset_id");
-                }
+                this.selectedType = "history_dataset_id";
+                this.selectedLabels = this.getOutputs();
+                this.selectedShow = true;
             } else if (arg.includes("history_dataset_collection_id")) {
-                if (this.hasNodes) {
-                    this.selectedType = "history_dataset_collection_id";
-                    this.selectedLabels = this.getOutputs();
-                    this.selectedShow = true;
-                } else {
-                    this.onOk("history_dataset_collection_id");
-                }
+                this.selectedType = "history_dataset_collection_id";
+                this.selectedLabels = this.getOutputs();
+                this.selectedShow = true;
             } else {
                 this.$emit("onInsert", `${argumentName}(${arg.join(", ")}=<ENTER A VALUE>)`);
             }
-        },
-        selectDataset(galaxyCall) {
-            dialog(
-                (response) => {
-                    const datasetId = response.id;
-                    this.$emit("onInsert", `${galaxyCall}(history_dataset_id=${datasetId})`);
-                },
-                {
-                    multiple: false,
-                    format: null,
-                    library: false,
-                }
-            );
-        },
-        selectDatasetCollection(galaxyCall) {
-            datasetCollectionDialog((response) => {
-                this.$emit("onInsert", `${galaxyCall}(history_dataset_collection_id=${response.id})`);
-            }, {});
         },
     },
 };
