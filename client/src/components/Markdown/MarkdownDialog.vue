@@ -10,6 +10,20 @@
             @onOk="onOk"
             @onCancel="onCancel"
         />
+        <DataDialog
+            v-if="dataShow"
+            :history="dataHistoryId"
+            format="id"
+            @onOk="onData"
+            @onCancel="onCancel"
+        />
+        <DatasetCollectionDialog
+            v-if="dataCollectionShow"
+            :history="dataHistoryId"
+            format="id"
+            @onOk="onDataCollection"
+            @onCancel="onCancel"
+        />
         <BasicSelectionDialog
             v-if="jobShow"
             :get-data="getJobs"
@@ -45,8 +59,10 @@ import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { getAppRoot } from "onload/loadConfig";
-import { dialog, datasetCollectionDialog } from "utils/data";
+import { getCurrentGalaxyHistory } from "utils/data";
 import MarkdownSelector from "./MarkdownSelector";
+import DataDialog from "components/DataDialog/DataDialog";
+import DatasetCollectionDialog from "components/SelectionDialog/DatasetCollectionDialog";
 import BasicSelectionDialog from "components/SelectionDialog/BasicSelectionDialog";
 
 Vue.use(BootstrapVue);
@@ -55,6 +71,8 @@ export default {
     components: {
         MarkdownSelector,
         BasicSelectionDialog,
+        DatasetCollectionDialog,
+        DataDialog,
     },
     props: {
         argumentName: {
@@ -69,7 +87,7 @@ export default {
             type: Array,
             default: null,
         },
-        isWorkflow: {
+        useLabel: {
             type: Boolean,
             default: false,
         },
@@ -101,6 +119,8 @@ export default {
             workflowShow: false,
             jobShow: false,
             invocationShow: false,
+            dataShow: false,
+            dataCollectionShow: false,
         };
     },
     computed: {
@@ -117,13 +137,35 @@ export default {
         if (this.argumentType == "workflow_id") {
             this.workflowShow = true;
         } else if (this.argumentType == "history_dataset_id") {
-            this.selectedShow = true;
+            if (this.useLabel) {
+                this.selectedShow = true;
+            } else {
+                getCurrentGalaxyHistory().then((historyId) => {
+                    this.dataShow = true;
+                    this.dataHistoryId = historyId;
+                });
+            }
         } else if (this.argumentType == "history_dataset_collection_id") {
-            this.selectedShow = true;
+            if (this.useLabel) {
+                this.selectedShow = true;
+            } else {
+                getCurrentGalaxyHistory().then((historyId) => {
+                    this.dataCollectionShow = true;
+                    this.dataHistoryId = historyId;
+                });
+            }
         } else if (this.argumentType == "invocation_id") {
-            this.invocationShow = true;
+            if (this.useLabel) {
+                this.selectedShow = true;
+            } else {
+                this.invocationShow = true;
+            }
         } else if (this.argumentType == "job_id") {
-            this.jobShow = true;
+            if (this.useLabel) {
+                this.selectedShow = true;
+            } else {
+                this.jobShow = true;
+            }
         }
     },
     methods: {
@@ -136,74 +178,69 @@ export default {
         getWorkflows() {
             return axios.get(this.workflowsUrl);
         },
+        onData(response) {
+            this.dataShow = false;
+            this.$emit("onInsert", `${this.argumentName}(history_dataset_id=${response})`);
+        },
+        onDataCollection(response) {
+            this.dataCollectionShow = false;
+            this.$emit("onInsert", `${this.argumentName}(history_dataset_collection_id=${response})`);
+        },
         onJob(response) {
             this.jobShow = false;
-            const argument = this.argumentName;
-            this.$emit("onInsert", `${argument}(job_id=${response.id})`);
+            this.$emit("onInsert", `${this.argumentName}(job_id=${response.id})`);
         },
         onInvocation(response) {
             this.invocationShow = false;
-            const argument = this.argumentName;
-            this.$emit("onInsert", `${argument}(invocation_id=${response.id})`);
+            this.$emit("onInsert", `${this.argumentName}(invocation_id=${response.id})`);
         },
         onWorkflow(response) {
             this.workflowShow = false;
             this.$emit("onInsert", `workflow_display(workflow_id=${response.id})`);
         },
         onOk(selectedLabel) {
-            const argumentType = this.argumentType;
             this.selectedShow = false;
-            const argumentName = this.argumentName;
-            if (argumentType == "history_dataset_id") {
+            if (this.argumentType == "history_dataset_id") {
                 if (selectedLabel) {
-                    this.$emit("onInsert", `${argumentName}(output="${selectedLabel}")`);
+                    this.$emit("onInsert", `${this.argumentName}(output="${selectedLabel}")`);
                 } else {
-                    this.selectDataset(argumentName);
+                    getCurrentGalaxyHistory().then((historyId) => {
+                        this.dataShow = true;
+                        this.dataHistoryId = historyId;
+                    });
                 }
-            } else if (argumentType == "history_dataset_collection_id") {
+            } else if (this.argumentType == "history_dataset_collection_id") {
                 if (selectedLabel) {
-                    this.$emit("onInsert", `${argumentName}(output="${selectedLabel}")`);
+                    this.$emit("onInsert", `${this.argumentName}(output="${selectedLabel}")`);
                 } else {
-                    this.selectDatasetCollection(argumentName);
+                    getCurrentGalaxyHistory().then((historyId) => {
+                        this.dataCollectionShow = true;
+                        this.dataHistoryId = historyId;
+                    });
                 }
-            } else if (argumentType == "job_id") {
+            } else if (this.argumentType == "job_id") {
                 if (selectedLabel) {
-                    this.$emit("onInsert", `${argumentName}(step="${selectedLabel}")`);
+                    this.$emit("onInsert", `${this.argumentName}(step="${selectedLabel}")`);
                 } else {
                     this.jobShow = true;
                 }
-            } else if (argumentType == "invocation_id") {
+            } else if (this.argumentType == "invocation_id") {
                 if (selectedLabel) {
-                    this.$emit("onInsert", `${argumentName}(step="${selectedLabel}")`);
+                    this.$emit("onInsert", `${this.argumentName}(step="${selectedLabel}")`);
                 } else {
                     this.invocationShow = true;
                 }
             }
         },
         onCancel() {
+            this.data = false;
+            this.dataCollectionShow = false;
             this.selectedShow = false;
             this.workflowShow = false;
             this.jobShow = false;
             this.invocationShow = false;
+            this.dataShow = false;
             this.$emit("onCancel");
-        },
-        selectDataset(galaxyCall) {
-            dialog(
-                (response) => {
-                    const datasetId = response.id;
-                    this.$emit("onInsert", `${galaxyCall}(history_dataset_id=${datasetId})`);
-                },
-                {
-                    multiple: false,
-                    format: null,
-                    library: false,
-                }
-            );
-        },
-        selectDatasetCollection(galaxyCall) {
-            datasetCollectionDialog((response) => {
-                this.$emit("onInsert", `${galaxyCall}(history_dataset_collection_id=${response.id})`);
-            }, {});
         },
     },
 };

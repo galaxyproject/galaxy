@@ -28,7 +28,7 @@
             :argument-type="selectedType"
             :argument-name="selectedArgumentName"
             :labels="selectedLabels"
-            :is-workflow="hasNodes"
+            :use-labels="useLabels"
             @onInsert="onInsert"
             @onCancel="onCancel"
         />
@@ -129,7 +129,7 @@ export default {
         };
     },
     computed: {
-        hasNodes() {
+        useLabels() {
             return !!this.nodes;
         },
     },
