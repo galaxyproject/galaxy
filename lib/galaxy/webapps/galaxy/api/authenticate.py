@@ -30,7 +30,7 @@ log = logging.getLogger(__name__)
 class AuthenticationController(BaseAPIController):
 
     def __init__(self, app):
-        super(AuthenticationController, self).__init__(app)
+        super().__init__(app)
         self.api_keys_manager = api_keys.ApiKeyManager(app)
 
     @expose_api_anonymous_and_sessionless

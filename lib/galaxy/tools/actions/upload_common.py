@@ -330,7 +330,7 @@ def create_paramfile(trans, uploaded_datasets):
         except Exception as e:
             log.debug('Failed to construct command to change ownership %s' %
                       unicodify(e))
-        log.debug('Changing ownership of %s with: %s' % (path, ' '.join(cmd)))
+        log.debug('Changing ownership of {} with: {}'.format(path, ' '.join(cmd)))
         try:
             commands.execute(cmd)
         except commands.CommandLineException as e:
@@ -355,7 +355,7 @@ def create_paramfile(trans, uploaded_datasets):
                           metadata=uploaded_dataset.metadata,
                           primary_file=uploaded_dataset.primary_file,
                           composite_file_paths=uploaded_dataset.composite_files,
-                          composite_files=dict((k, v.__dict__) for k, v in data.datatype.get_composite_files(data).items()))
+                          composite_files={k: v.__dict__ for k, v in data.datatype.get_composite_files(data).items()})
         else:
             try:
                 is_binary = uploaded_dataset.datatype.is_binary

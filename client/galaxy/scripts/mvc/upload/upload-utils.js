@@ -1,6 +1,7 @@
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
+import { rethrowSimple } from "utils/simple-error";
 
 const AUTO_EXTENSION = {
     id: "auto",
@@ -72,6 +73,17 @@ function getUploadGenomes(callback, defaultGenome) {
         });
 }
 
+async function getRemoteFilesAt(target) {
+    const url = `${getAppRoot()}api/remote_files?target=${target}`;
+    try {
+        const response = await axios.get(url);
+        const files = response.data;
+        return files;
+    } catch (e) {
+        rethrowSimple(e);
+    }
+}
+
 function getRemoteFiles(success, error) {
     return $.ajax({
         url: `${getAppRoot()}api/remote_files`,
@@ -86,6 +98,7 @@ export default {
     DEFAULT_GENOME,
     DEFAULT_EXTENSION,
     getRemoteFiles,
+    getRemoteFilesAt,
     getUploadDatatypes,
     getUploadGenomes,
 };

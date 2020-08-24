@@ -330,7 +330,8 @@ def populate_api_routes(webapp, app):
     webapp.mapper.resource('role', 'roles', path_prefix='/api')
     webapp.mapper.resource('upload', 'uploads', path_prefix='/api')
     webapp.mapper.connect('/api/ftp_files', controller='remote_files')
-    webapp.mapper.resource('remote_file', 'remote_files', path_prefix='/api')
+    webapp.mapper.connect('/api/remote_files', action='index', controller='remote_files', conditions=dict(method=["GET"]))
+    webapp.mapper.connect('/api/remote_files/plugins', action='plugins', controller='remote_files', conditions=dict(method=["GET"]))
     webapp.mapper.resource('group', 'groups', path_prefix='/api')
     webapp.mapper.resource_with_deleted('quota', 'quotas', path_prefix='/api')
 
@@ -565,7 +566,7 @@ def populate_api_routes(webapp, app):
         "usage": "_deprecated",
     }
     for noun, suffix in invoke_names.items():
-        name = "%s%s" % (noun, suffix)
+        name = "{}{}".format(noun, suffix)
         webapp.mapper.connect(
             'list_workflow_%s' % name,
             '/api/workflows/{workflow_id}/%s' % noun,
@@ -872,7 +873,7 @@ def populate_api_routes(webapp, app):
                           conditions=dict(method=["DELETE"]))
 
     webapp.mapper.connect('download_ld_items',
-                          '/api/libraries/datasets/download/{format}',
+                          '/api/libraries/datasets/download/{archive_format}',
                           controller='library_datasets',
                           action='download',
                           conditions=dict(method=["POST", "GET"]))

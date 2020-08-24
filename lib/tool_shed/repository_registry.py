@@ -10,7 +10,7 @@ from tool_shed.webapp import model
 log = logging.getLogger(__name__)
 
 
-class Registry(object):
+class Registry:
 
     def __init__(self, app):
         log.debug("Loading the repository registry...")

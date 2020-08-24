@@ -152,7 +152,7 @@ def _expand_macro(element, expand_el, macros, tokens):
     # require this parent_map data structure but elementtree does not
     # track parents or recognize .find('..').
     # TODO fix this now that we're not using elementtree
-    parent_map = dict((c, p) for p in element.iter() for c in p)
+    parent_map = {c: p for p in element.iter() for c in p}
     _xml_replace(expand_el, expanded_elements, parent_map)
 
 
@@ -161,7 +161,7 @@ def _expand_yield_statements(macro_def, expand_el):
 
     expand_el_children = list(expand_el)
     macro_def_parent_map = \
-        dict((c, p) for macro_def_el in macro_def for p in macro_def_el.iter() for c in p)
+        {c: p for macro_def_el in macro_def for p in macro_def_el.iter() for c in p}
 
     for yield_el in yield_els:
         _xml_replace(yield_el, expand_el_children, macro_def_parent_map)
@@ -273,7 +273,7 @@ def _xml_replace(query, targets, parent_map):
     parent_el.remove(query)
 
 
-class XmlMacroDef(object):
+class XmlMacroDef:
 
     def __init__(self, el):
         self.elements = list(el)
@@ -300,7 +300,7 @@ class XmlMacroDef(object):
             if token_value is REQUIRED_PARAMETER:
                 message = "Failed to expand macro - missing required parameter [%s]."
                 raise ValueError(message % key)
-            token_name = "%s%s%s" % (wrap_char, key.upper(), wrap_char)
+            token_name = "{}{}{}".format(wrap_char, key.upper(), wrap_char)
             tokens[token_name] = token_value
         return tokens
 

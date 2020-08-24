@@ -3,7 +3,6 @@
 A 'handler' is a named Python process running the Galaxy application responsible
 for some activity such as queuing up jobs or scheduling workflows.
 """
-from __future__ import absolute_import
 
 import logging
 import os
@@ -31,10 +30,9 @@ HANDLER_ASSIGNMENT_METHODS = namedtuple('JOB_HANDLER_ASSIGNMENT_METHODS', _handl
 class HandlerAssignmentSkip(Exception):
     """Exception for handler assignment methods to raise if the next method should be tried.
     """
-    pass
 
 
-class ConfiguresHandlers(object):
+class ConfiguresHandlers:
     DEFAULT_HANDLER_TAG = '_default_'
     DEFAULT_BASE_HANDLER_POOLS = ()
     UNSUPPORTED_HANDLER_ASSIGNMENT_METHODS = ()
@@ -115,7 +113,7 @@ class ConfiguresHandlers(object):
             for method in handling_config_dict.get("assign", []):
                 method = method.lower()
                 assert method in HANDLER_ASSIGNMENT_METHODS, \
-                    "Invalid job handler assignment method '%s', must be one of: %s" % (
+                    "Invalid job handler assignment method '{}', must be one of: {}".format(
                         method, ', '.join(HANDLER_ASSIGNMENT_METHODS))
                 try:
                     self.handler_assignment_methods.append(method)
@@ -216,7 +214,7 @@ class ConfiguresHandlers(object):
         for elem in parent.findall(match):
             for attrib in attribs:
                 if attrib not in elem.attrib:
-                    log.warning("required '%s' attribute is missing from <%s> element" % (attrib, match))
+                    log.warning("required '{}' attribute is missing from <{}> element".format(attrib, match))
                     break
             else:
                 rval.append(elem)
@@ -280,7 +278,7 @@ class ConfiguresHandlers(object):
 
     # If these get to be any more complex we should probably modularize them, or at least move to a separate class
 
-    def _assign_handler_direct(self, obj, configured):
+    def _assign_handler_direct(self, obj, configured, flush=True):
         """Directly assign a handler if the object has been preconfigured to a known single static handler.
 
         :param obj:             Same as :method:`ConfiguresHandlers.assign_handler()`.
@@ -295,11 +293,12 @@ class ConfiguresHandlers(object):
                 handlers = None
             if handlers == (configured,):
                 obj.set_handler(configured)
-                _timed_flush_obj(obj)
+                if flush:
+                    _timed_flush_obj(obj)
                 return configured
         return False
 
-    def _assign_mem_self_handler(self, obj, method, configured, queue_callback=None, **kwargs):
+    def _assign_mem_self_handler(self, obj, method, configured, queue_callback=None, flush=True, **kwargs):
         """Assign object to this handler using this process's in-memory queue.
 
         This method ignores all handler configuration.
@@ -319,11 +318,12 @@ class ConfiguresHandlers(object):
             log.warning("(%s) Ignoring handler assignment to '%s' because configured handler assignment method"
                         " '' overrides per-tool handler assignment", obj.log_str(),
                         HANDLER_ASSIGNMENT_METHODS.MEM_SELF, configured)
-        _timed_flush_obj(obj)
+        if flush():
+            _timed_flush_obj(obj)
         queue_callback()
         return self.app.config.server_name
 
-    def _assign_db_self_handler(self, obj, method, configured, **kwargs):
+    def _assign_db_self_handler(self, obj, method, configured, flush=True, **kwargs):
         """Assign object to this process by setting its ``handler`` column in the database to this process.
 
         This only occurs if there is not an explicitly configured handler assignment for the object. Otherwise, it is
@@ -340,10 +340,11 @@ class ConfiguresHandlers(object):
                 obj, method, configured, **kwargs
             )
         obj.set_handler(self.app.config.server_name)
-        _timed_flush_obj(obj)
+        if flush:
+            _timed_flush_obj(obj)
         return self.app.config.server_name
 
-    def _assign_db_preassign_handler(self, obj, method, configured, index=None, **kwargs):
+    def _assign_db_preassign_handler(self, obj, method, configured, index=None, flush=True, **kwargs):
         """Assign object to a handler by setting its ``handler`` column in the database to a handler selected at random
         from the known handlers in the appropriate tag.
 
@@ -372,10 +373,11 @@ class ConfiguresHandlers(object):
             log.debug("(%s) Selected handler '%s' by random choice from handler tag '%s'", obj.log_str(),
                       handler_id, handler)
         obj.set_handler(handler_id)
-        _timed_flush_obj(obj)
+        if flush:
+            _timed_flush_obj(obj)
         return handler_id
 
-    def _assign_db_tag(self, obj, method, configured, **kwargs):
+    def _assign_db_tag(self, obj, method, configured, flush=True, **kwargs):
         """Assign object to a handler by setting its ``handler`` column in the database to either the configured handler
         ID or tag, or to the default tag (or ``_default_``)
 
@@ -389,10 +391,11 @@ class ConfiguresHandlers(object):
         if handler is None:
             handler = self.default_handler_id or self.DEFAULT_HANDLER_TAG
         obj.set_handler(handler)
-        _timed_flush_obj(obj)
+        if flush:
+            _timed_flush_obj(obj)
         return handler
 
-    def _assign_uwsgi_mule_message_handler(self, obj, method, configured, message_callback=None, **kwargs):
+    def _assign_uwsgi_mule_message_handler(self, obj, method, configured, message_callback=None, flush=True, **kwargs):
         """Assign object to a handler by sending a setup message to the appropriate handler pool (farm), where a handler
         (mule) will receive the message and assign itself.
 
@@ -415,7 +418,8 @@ class ConfiguresHandlers(object):
             log.debug("(%s) No handler pool (uWSGI farm) for '%s' found", obj.log_str(), tag)
             raise HandlerAssignmentSkip()
         else:
-            _timed_flush_obj(obj)
+            if flush:
+                _timed_flush_obj(obj)
             message = message_callback()
             self.app.application_stack.send_message(pool, message)
         return pool
@@ -438,8 +442,8 @@ class ConfiguresHandlers(object):
         # that's currently the best place for it. It's worth noting that this method is also part of the
         # WorkflowSchedulingManager, which acts like a combined JobConfiguration and JobManager. Combining those two
         # classes would probably be reasonable (and would remove the need for the queue callback).
-        if self._assign_handler_direct(obj, configured):
-            log.info("(%s) Skipped handler assignment logic due to explicit configuration to a single handler: %s",
+        if self._assign_handler_direct(obj, configured, flush=kwargs.get('flush', True)):
+            log.info("(%s) Skipped handler assignment logic due to explicit configuration` to a single handler: %s",
                      obj.log_str(), configured)
             return True
         for method in self.handler_assignment_methods:
@@ -464,4 +468,4 @@ def _timed_flush_obj(obj):
     obj_flush_timer = ExecutionTimer()
     sa_session = object_session(obj)
     sa_session.flush()
-    log.info("Flushed transaction for %s %s" % (obj.log_str(), obj_flush_timer))
+    log.info("Flushed transaction for {} {}".format(obj.log_str(), obj_flush_timer))

@@ -2,7 +2,6 @@
 OAuth 2.0 and OpenID Connect Authentication and Authorization Controller.
 """
 
-from __future__ import absolute_import
 
 import json
 import logging

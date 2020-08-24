@@ -43,7 +43,7 @@ class UnlinkedToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResol
     resolver_type = "unlinked_tool_shed_packages"
 
     def __init__(self, dependency_manager, **kwds):
-        super(UnlinkedToolShedPackageDependencyResolver, self).__init__(dependency_manager, **kwds)
+        super().__init__(dependency_manager, **kwds)
         # Provide a list of preferred owners whose dependency to use
         self.preferred_owners = kwds.get('preferred_owners', PREFERRED_OWNERS).split(",")
         # Option to ignore owner and just use last modified time

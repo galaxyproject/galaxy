@@ -1,7 +1,6 @@
 """Utilities for loading and reasoning about unparsed tools in directories."""
 import fnmatch
 import glob
-import io
 import logging
 import os
 import re
@@ -48,7 +47,7 @@ def find_possible_tools_from_path(
                 possible_tool_file,
                 enable_beta_formats=enable_beta_formats
             )
-        except IOError:
+        except OSError:
             # Some problem reading the tool file, skip.
             continue
 
@@ -171,7 +170,7 @@ def looks_like_xml(path, regex=TOOL_REGEX):
        checkers.is_zip(full_path)):
         return False
 
-    with io.open(path, "r", encoding='utf-8') as f:
+    with open(path, encoding='utf-8') as f:
         try:
             start_contents = f.read(5 * 1024)
         except UnicodeDecodeError:
@@ -197,7 +196,7 @@ def is_a_yaml_with_class(path, classes):
     if not _has_extension(path, YAML_EXTENSIONS):
         return False
 
-    with open(path, "r") as f:
+    with open(path) as f:
         try:
             as_dict = yaml.safe_load(f)
         except Exception:
@@ -220,7 +219,7 @@ def looks_like_a_cwl_artifact(path, classes=None):
     if not _has_extension(path, CWL_EXTENSIONS):
         return False
 
-    with open(path, "r") as f:
+    with open(path) as f:
         try:
             as_dict = yaml.safe_load(f)
         except Exception:

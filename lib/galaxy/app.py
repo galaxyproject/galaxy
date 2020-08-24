@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import logging
 import signal
 import sys
@@ -13,6 +11,7 @@ import galaxy.security
 from galaxy import config, job_metrics, jobs
 from galaxy.config_watchers import ConfigWatchers
 from galaxy.containers import build_container_interfaces
+from galaxy.files import ConfiguredFileSources
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.hdas import HDAManager
@@ -109,6 +108,9 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self.library_folder_manager = FolderManager()
         self.library_manager = LibraryManager()
         self.dynamic_tool_manager = DynamicToolManager(self)
+
+        # ConfiguredFileSources
+        self.file_sources = ConfiguredFileSources.from_app_config(self.config)
 
         # Tool Data Tables
         self._configure_tool_data_tables(from_shed_config=False)
@@ -341,14 +343,14 @@ class StatsdStructuredExecutionTimer(StructuredExecutionTimer):
 
     def __init__(self, galaxy_statsd_client, *args, **kwds):
         self.galaxy_statsd_client = galaxy_statsd_client
-        super(StatsdStructuredExecutionTimer, self).__init__(*args, **kwds)
+        super().__init__(*args, **kwds)
 
     def to_str(self, **kwd):
         self.galaxy_statsd_client.timing(self.timer_id, self.elapsed * 1000., kwd)
-        return super(StatsdStructuredExecutionTimer, self).to_str(**kwd)
+        return super().to_str(**kwd)
 
 
-class ExecutionTimerFactory(object):
+class ExecutionTimerFactory:
 
     def __init__(self, config):
         statsd_host = getattr(config, "statsd_host", None)

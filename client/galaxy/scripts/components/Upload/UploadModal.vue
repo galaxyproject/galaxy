@@ -6,23 +6,25 @@
         modal-class="ui-modal"
         dialog-class="upload-dialog"
         body-class="upload-dialog-body"
+        ref="modal"
         no-enforce-focus
         hide-footer
+        :id="id"
     >
         <template v-slot:modal-header>
             <h4 class="title" tabindex="0">{{ title }}</h4>
         </template>
         <b-tabs v-if="ready">
-            <b-tab title="Regular" id="regular" button-id="tab-title-link-regular">
-                <default :app="this" :lazy-load-max="50" />
+            <b-tab title="Regular" id="regular" button-id="tab-title-link-regular" v-if="showRegular">
+                <default :app="this" :lazy-load-max="50" :multiple="multiple" />
             </b-tab>
-            <b-tab title="Composite" id="composite" button-id="tab-title-link-composite">
+            <b-tab title="Composite" id="composite" button-id="tab-title-link-composite" v-if="showComposite">
                 <composite :app="this" />
             </b-tab>
-            <b-tab title="Collection" id="collection" button-id="tab-title-link-collection">
+            <b-tab title="Collection" id="collection" button-id="tab-title-link-collection" v-if="showCollection">
                 <collection :app="this" />
             </b-tab>
-            <b-tab title="Rule-based" id="rule-based" button-id="tab-title-link-rule-based">
+            <b-tab title="Rule-based" id="rule-based" button-id="tab-title-link-rule-based" v-if="showRules">
                 <rules-input :app="this" />
             </b-tab>
         </b-tabs>
@@ -40,6 +42,7 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { getGalaxyInstance } from "app";
 import UploadUtils from "mvc/upload/upload-utils";
+import { getDatatypesMapper } from "components/Datatypes";
 import Composite from "./Composite";
 import Collection from "./Collection";
 import Default from "./Default";
@@ -77,6 +80,10 @@ export default {
             type: String,
             default: "n/a",
         },
+        fileSourcesConfigured: {
+            type: Boolean,
+            default: false,
+        },
         defaultGenome: {
             type: String,
             default: UploadUtils.DEFAULT_GENOME,
@@ -89,6 +96,20 @@ export default {
             type: Boolean,
             default: false,
         },
+        formats: {
+            type: Array,
+            default: null,
+        },
+        multiple: {
+            // Restrict the forms to a single dataset upload if false
+            type: Boolean,
+            default: true,
+        },
+        callback: {
+            // Return uploads when done if supplied.
+            type: Function,
+            default: null,
+        },
         auto: {
             type: Object,
             default: function () {
@@ -98,6 +119,7 @@ export default {
     },
     data: function () {
         return {
+            id: "",
             title: _l("Download from web or upload from disk"),
             historyAvailable: false,
             currentUser: null,
@@ -105,6 +127,8 @@ export default {
             listExtensions: [],
             genomesSet: false,
             extensionsSet: false,
+            datatypesMapper: null,
+            datatypesMapperReady: true,
         };
     },
     created: function () {
@@ -134,11 +158,67 @@ export default {
         }, this.defaultGenome);
 
         this.initStateWhenHistoryReady();
+        if (this.formats !== null) {
+            this.datatypesMapperReady = false;
+            getDatatypesMapper().then((datatypesMapper) => {
+                this.datatypesMapper = datatypesMapper;
+                this.datatypesMapperReady = true;
+            });
+        } else {
+            this.datatypesMapperReady = true;
+        }
     },
     computed: {
         ready() {
-            return this.genomesSet && this.extensionsSet && this.historyAvailable;
+            return this.genomesSet && this.extensionsSet && this.historyAvailable && this.datatypesMapperReady;
         },
+        unrestricted() {
+            return this.formats === null && this.multiple;
+        },
+        effectiveExtensions() {
+            if (this.formats === null || !this.datatypesMapperReady) {
+                return this.listExtensions;
+            }
+            const effectiveExtensions = [];
+            this.listExtensions.forEach((extension) => {
+                if (extension && extension.id == "auto") {
+                    effectiveExtensions.push(extension);
+                } else if (this.datatypesMapper.isSubTypeOfAny(extension.id, this.formats)) {
+                    effectiveExtensions.push(extension);
+                }
+            });
+            return effectiveExtensions;
+        },
+        formatRestricted() {
+            return this.formats !== null;
+        },
+        showComposite() {
+            if (!this.formatRestricted) {
+                return true;
+            }
+            return this.effectiveExtensions.some((extension) => !!extension.composite_files);
+        },
+        showRegular() {
+            if (!this.formatRestricted) {
+                return true;
+            }
+            return this.effectiveExtensions.some((extension) => !extension.composite_files);
+        },
+        showCollection() {
+            if (this.unrestricted) {
+                return true;
+            }
+            return false;
+        },
+        showRules() {
+            if (this.unrestricted) {
+                return true;
+            }
+            return this.multiple;
+        },
+    },
+    mounted() {
+        this.id = String(this._uid);
     },
     methods: {
         show() {
@@ -147,6 +227,21 @@ export default {
         },
         hide() {
             this.modalShow = false;
+        },
+        cancel() {
+            this.hide();
+            this.$nextTick(() => {
+                this.$bvModal.hide(this.id, "cancel");
+                this.$destroy();
+            });
+        },
+        dismiss() {
+            // hide or cancel based on whether this is a singleton
+            if (this.callback) {
+                this.cancel();
+            } else {
+                this.hide();
+            }
         },
         initStateWhenHistoryReady() {
             const Galaxy = getGalaxyInstance();
@@ -204,12 +299,19 @@ export default {
                         inputs[`${prefix}to_posix_lines`] = (it.get("to_posix_lines") && "Yes") || null;
                         inputs[`${prefix}dbkey`] = it.get("genome", null);
                         inputs[`${prefix}file_type`] = it.get("extension", null);
+                        let uri;
+                        let how;
                         switch (it.get("file_mode")) {
                             case "new":
                                 inputs[`${prefix}url_paste`] = it.get("url_paste");
                                 break;
                             case "ftp":
-                                inputs[`${prefix}ftp_files`] = it.get("file_path");
+                                uri = it.get("file_path");
+                                how = "ftp_files";
+                                if (uri.indexOf("://") >= 0) {
+                                    how = "url_paste";
+                                }
+                                inputs[`${prefix}${how}`] = uri;
                                 break;
                             case "local":
                                 data.files.push({
@@ -234,12 +336,4 @@ export default {
 };
 </script>
 
-<style>
-.upload-dialog {
-    width: 900px;
-}
-.upload-dialog-body {
-    height: 500px;
-    overflow: hidden;
-}
-</style>
+<style></style>

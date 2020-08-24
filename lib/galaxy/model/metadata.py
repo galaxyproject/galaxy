@@ -13,7 +13,6 @@ import weakref
 from collections import OrderedDict
 from os.path import abspath
 
-from six import string_types
 from sqlalchemy.orm import object_session
 
 import galaxy.model
@@ -32,7 +31,7 @@ log = logging.getLogger(__name__)
 STATEMENTS = "__galaxy_statements__"  # this is the name of the property in a Datatype class where new metadata spec element Statements are stored
 
 
-class Statement(object):
+class Statement:
     """
     This class inserts its target into a list in the surrounding
     class.  the data.Data class has a metaclass which executes these
@@ -57,7 +56,7 @@ class Statement(object):
             statement.target(element, *args, **kwargs)  # statement.target is MetadataElementSpec, element is a Datatype class
 
 
-class MetadataCollection(object):
+class MetadataCollection:
     """
     MetadataCollection is not a collection at all, but rather a proxy
     to the real metadata which is stored as a Dictionary. This class
@@ -157,12 +156,12 @@ class MetadataCollection(object):
     def from_JSON_dict(self, filename=None, path_rewriter=None, json_dict=None):
         dataset = self.parent
         if filename is not None:
-            log.debug('loading metadata from file for: %s %s' % (dataset.__class__.__name__, dataset.id))
+            log.debug('loading metadata from file for: {} {}'.format(dataset.__class__.__name__, dataset.id))
             with open(filename) as fh:
                 JSONified_dict = json.load(fh)
         elif json_dict is not None:
-            log.debug('loading metadata from dict for: %s %s' % (dataset.__class__.__name__, dataset.id))
-            if isinstance(json_dict, string_types):
+            log.debug('loading metadata from dict for: {} {}'.format(dataset.__class__.__name__, dataset.id))
+            if isinstance(json_dict, str):
                 JSONified_dict = json.loads(json_dict)
             elif isinstance(json_dict, dict):
                 JSONified_dict = json_dict
@@ -232,7 +231,7 @@ class MetadataSpecCollection(OrderedDict):
     """
 
     def __init__(self, *args, **kwds):
-        super(MetadataSpecCollection, self).__init__(*args, **kwds)
+        super().__init__(*args, **kwds)
 
     def append(self, item):
         self[item.name] = item
@@ -247,7 +246,7 @@ class MetadataSpecCollection(OrderedDict):
         return ', '.join(item.__str__() for item in self.values())
 
 
-class MetadataParameter(object):
+class MetadataParameter:
     def __init__(self, spec):
         self.spec = spec
 
@@ -277,7 +276,6 @@ class MetadataParameter(object):
         """
         Throw an exception if the value is invalid.
         """
-        pass
 
     def unwrap(self, form_value):
         """
@@ -306,7 +304,7 @@ class MetadataParameter(object):
         return value
 
 
-class MetadataElementSpec(object):
+class MetadataElementSpec:
     """
     Defines a metadata element and adds it to the metadata_spec (which
     is a MetadataSpecCollection) of datatype.
@@ -427,7 +425,7 @@ class DBKeyParameter(SelectParameter):
             values = kwd['trans'].app.genome_builds.get_genome_build_names(kwd['trans'])
         except KeyError:
             pass
-        return super(DBKeyParameter, self).get_field(value, context, other_values, values, **kwd)
+        return super().get_field(value, context, other_values, values, **kwd)
 
 
 class RangeParameter(SelectParameter):
@@ -530,7 +528,11 @@ class FileParameter(MetadataParameter):
 
     def make_copy(self, value, target_context, source_context):
         value = self.wrap(value, object_session(target_context.parent))
-        if value:
+        target_dataset = target_context.parent.dataset
+        if value and target_dataset.object_store.exists(target_dataset):
+            # Only copy MetadataFile if the target dataset has been created in an object store.
+            # All current datatypes re-generate MetadataFile objects when setting metadata,
+            # so this would ultimately get overwritten anyway.
             new_value = galaxy.model.MetadataFile(dataset=target_context.parent, name=self.spec.name)
             object_session(target_context.parent).add(new_value)
             object_session(target_context.parent).flush()
@@ -601,7 +603,7 @@ class FileParameter(MetadataParameter):
 
 
 # This class is used when a database file connection is not available
-class MetadataTempFile(object):
+class MetadataTempFile:
     tmp_dir = 'database/tmp'  # this should be overwritten as necessary in calling scripts
 
     def __init__(self, **kwds):

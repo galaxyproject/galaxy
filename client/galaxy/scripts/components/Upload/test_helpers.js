@@ -10,7 +10,7 @@ export function mountWithApp(component, options = {}, propsData_ = {}) {
             return "ftp://localhost";
         },
         model: new Backbone.Model(),
-        listExtensions: [
+        effectiveExtensions: [
             { id: "ab1", text: "ab1", description: "A binary sequence file in 'ab1' format with a '.ab1'" },
             {
                 id: "affybatch",

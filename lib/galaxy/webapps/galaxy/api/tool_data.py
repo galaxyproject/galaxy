@@ -85,7 +85,7 @@ class ToolData(BaseAPIController):
 
         if len(split_values) != len(data_table.get_column_name_list()):
             trans.response.status = 400
-            return "Invalid data table item ( %s ) specified. Wrong number of columns (%s given, %s required)." % (str(values), str(len(split_values)), str(len(data_table.get_column_name_list())))
+            return "Invalid data table item ( {} ) specified. Wrong number of columns ({} given, {} required).".format(str(values), str(len(split_values)), str(len(data_table.get_column_name_list())))
 
         data_table.remove_entry(split_values)
         trans.app.queue_worker.send_control_task(
@@ -118,7 +118,7 @@ class ToolData(BaseAPIController):
     def _data_table_field(self, id, value):
         out = self._data_table(id).get_field(value)
         if out is None:
-            raise exceptions.ObjectNotFound("No such field %s in data table %s." % (value, id))
+            raise exceptions.ObjectNotFound("No such field {} in data table {}.".format(value, id))
         return out
 
     def _data_table(self, id):

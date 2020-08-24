@@ -30,7 +30,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
     """
 
     def __init__(self, app):
-        super(ToolsController, self).__init__(app)
+        super().__init__(app)
         self.history_manager = managers.histories.HistoryManager(app)
         self.hda_manager = managers.hdas.HDAManager(app)
 
@@ -410,6 +410,8 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         """Adapt clean API to tool-constrained API.
         """
         request_version = '1'
+        if "history_id" not in payload:
+            raise exceptions.RequestParameterMissingException("history_id must be specified")
         history_id = payload.pop("history_id")
         clean_payload = {}
         files_payload = {}

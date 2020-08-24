@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import json
 import logging
 import os
@@ -12,7 +10,6 @@ from gxformat2 import (
     ImportOptions,
     python_to_workflow,
 )
-from six import string_types
 from sqlalchemy import and_
 from sqlalchemy.orm import joinedload, subqueryload
 
@@ -50,7 +47,7 @@ from .executables import artifact_class
 log = logging.getLogger(__name__)
 
 
-class WorkflowsManager(object):
+class WorkflowsManager:
     """ Handle CRUD type operations related to workflows. More interesting
     stuff regarding workflow execution, step sorting, etc... can be found in
     the galaxy.workflow module.
@@ -307,7 +304,7 @@ class WorkflowContentsManager(UsesAnnotations):
         trans.workflow_building_mode = workflow_building_modes.ENABLED
         # If there's a source, put it in the workflow name.
         if source:
-            name = "%s (imported from %s)" % (data['name'], source)
+            name = "{} (imported from {})".format(data['name'], source)
         else:
             name = data['name']
         workflow, missing_tool_tups = self._workflow_from_raw_description(
@@ -395,7 +392,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def _workflow_from_raw_description(self, trans, raw_workflow_description, name, **kwds):
         data = raw_workflow_description.as_dict
-        if isinstance(data, string_types):
+        if isinstance(data, str):
             data = json.loads(data)
 
         # Create new workflow from source data
@@ -787,7 +784,7 @@ class WorkflowContentsManager(UsesAnnotations):
                         collection_type = map_over
                         step_data_output['collection'] = True
                         if step_data_output.get('collection_type'):
-                            collection_type = "%s:%s" % (map_over, step_data_output['collection_type'])
+                            collection_type = "{}:{}".format(map_over, step_data_output['collection_type'])
                         step_data_output['collection_type'] = collection_type
         return steps
 
@@ -1210,7 +1207,7 @@ class WorkflowContentsManager(UsesAnnotations):
                         raise exceptions.MessageException(message)
                     external_id = conn_dict['id']
                     if external_id not in steps_by_external_id:
-                        raise KeyError("Failed to find external id %s in %s" % (external_id, steps_by_external_id.keys()))
+                        raise KeyError("Failed to find external id {} in {}".format(external_id, steps_by_external_id.keys()))
                     output_step = steps_by_external_id[external_id]
 
                     output_name = conn_dict["output_name"]
@@ -1238,7 +1235,7 @@ class MissingToolsException(exceptions.MessageException):
         self.errors = errors
 
 
-class RawWorkflowDescription(object):
+class RawWorkflowDescription:
 
     def __init__(self, as_dict, workflow_path=None):
         self.as_dict = as_dict

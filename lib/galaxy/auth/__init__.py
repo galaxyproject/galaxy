@@ -10,7 +10,7 @@ from galaxy.util import string_as_bool
 log = logging.getLogger(__name__)
 
 
-class AuthManager(object):
+class AuthManager:
 
     def __init__(self, app):
         self.__app = app

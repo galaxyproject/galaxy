@@ -2,8 +2,10 @@ import $ from "jquery";
 import axios from "axios";
 import Vue from "vue";
 import DataDialog from "components/DataDialog/DataDialog.vue";
+import { FilesDialog } from "components/FilesDialog";
 import WorkflowDialog from "components/SelectionDialog/WorkflowDialog.vue";
 import DatasetCollectionDialog from "components/SelectionDialog/DatasetCollectionDialog.vue";
+import { mountUploadModal } from "components/Upload";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
 
@@ -43,7 +45,12 @@ export function dialog(callback, options = {}) {
             root: galaxy.root,
             host: host,
         });
-        _mountSelectionDialog(DataDialog, options);
+        if (options.new) {
+            options.modalShow = true;
+            mountUploadModal(options);
+        } else {
+            _mountSelectionDialog(DataDialog, options);
+        }
     });
 }
 
@@ -70,6 +77,13 @@ export function datasetCollectionDialog(callback, options = {}) {
         });
         _mountSelectionDialog(DatasetCollectionDialog, options);
     });
+}
+
+export function filesDialog(callback, options = {}) {
+    Object.assign(options, {
+        callback: callback,
+    });
+    _mountSelectionDialog(FilesDialog, options);
 }
 
 function _mountSelectionDialog(clazz, options) {

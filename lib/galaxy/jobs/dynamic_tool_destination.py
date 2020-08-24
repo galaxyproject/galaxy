@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import argparse
 import collections
 import copy
@@ -76,7 +74,7 @@ def get_keys_from_dict(dl, keys_list):
             get_keys_from_dict(x, keys_list)
 
 
-class RuleValidator(object):
+class RuleValidator:
     """
     This class is the primary facility for validating configs. It's always
     called in map_tool_to_destination and it's called for validating config
@@ -744,7 +742,7 @@ def parse_yaml(path="/config/tool_destinations.yml",
             else:
                 opt_file = path
 
-            with open(opt_file, 'r') as stream:
+            with open(opt_file) as stream:
                 config = yaml.safe_load(stream)
 
         # Test imported file
@@ -1022,7 +1020,7 @@ def validate_config(obj, app=None, return_bool=False,):
                                     (tool, curr['default_destination']))
                                 if is_valid:
                                     new_config['tools'][tool]['default_destination'] = (
-                                        (curr['default_destination']))
+                                        curr['default_destination'])
                                     tool_has_default = True
                                 else:
                                     valid_config = False
@@ -1221,8 +1219,8 @@ def bytes_to_str(size, unit="YB"):
         i = 0
 
     try:
-        return_str = "%.2f %s" % (size_changer, units[i])
-    except TypeError:
+        return_str = "{:.2f} {}".format(size_changer, units[i])
+    except (ValueError, TypeError):
         return_str = "%s" % (size_changer)
 
     return return_str
@@ -1291,7 +1289,7 @@ def importer(test):
     global JobDestination
     global JobMappingException
     if test:
-        class JobDestination(object):
+        class JobDestination:
             def __init__(self, *kwd):
                 self.id = kwd.get('id')
                 self.nativeSpec = kwd.get('params')['nativeSpecification']
@@ -1342,7 +1340,7 @@ def map_tool_to_destination(
         raise JobMappingException(e)
 
     # Get all inputs from tool and databases
-    inp_data = dict([(da.name, da.dataset) for da in job.input_datasets])
+    inp_data = {da.name: da.dataset for da in job.input_datasets}
     inp_data.update([(da.name, da.dataset) for da in job.input_library_datasets])
 
     if config is not None and str(tool.old_id) in config['tools']:

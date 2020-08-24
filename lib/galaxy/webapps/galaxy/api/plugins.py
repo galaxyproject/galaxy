@@ -17,7 +17,7 @@ class PluginsController(BaseAPIController):
     """
 
     def __init__(self, app):
-        super(PluginsController, self).__init__(app)
+        super().__init__(app)
         self.hda_manager = hdas.HDAManager(app)
         self.history_manager = histories.HistoryManager(app)
 

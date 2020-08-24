@@ -32,7 +32,7 @@ class Image(data.Data):
     file_ext = ''
 
     def __init__(self, **kwd):
-        super(Image, self).__init__(**kwd)
+        super().__init__(**kwd)
         self.image_formats = [self.file_ext.upper()]
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -52,7 +52,7 @@ class Image(data.Data):
         name = hda.name or ''
         with open(dataset.file_name, "rb") as f:
             base64_image_data = base64.b64encode(f.read()).decode("utf-8")
-        return "![%s](data:image/%s;base64,%s)" % (name, self.file_ext, base64_image_data)
+        return "![{}](data:image/{};base64,{})".format(name, self.file_ext, base64_image_data)
 
 
 class Jpg(Image):
@@ -60,7 +60,7 @@ class Jpg(Image):
     file_ext = "jpg"
 
     def __init__(self, **kwd):
-        super(Jpg, self).__init__(**kwd)
+        super().__init__(**kwd)
         self.image_formats = ['JPEG']
 
 
@@ -172,19 +172,19 @@ class Pdf(Image):
 
 def create_applet_tag_peek(class_name, archive, params):
     text = """
-<object classid="java:%s"
+<object classid="java:{}"
       type="application/x-java-applet"
       height="30" width="200" align="center" >
-      <param name="archive" value="%s"/>""" % (class_name, archive)
+      <param name="archive" value="{}"/>""".format(class_name, archive)
     for name, value in params.items():
-        text += """<param name="%s" value="%s"/>""" % (name, value)
+        text += """<param name="{}" value="{}"/>""".format(name, value)
     text += """
 <object classid="clsid:8AD9C840-044E-11D1-B3E9-00805F499D93"
         height="30" width="200" >
-        <param name="code" value="%s" />
-        <param name="archive" value="%s"/>""" % (class_name, archive)
+        <param name="code" value="{}" />
+        <param name="archive" value="{}"/>""".format(class_name, archive)
     for name, value in params.items():
-        text += """<param name="%s" value="%s"/>""" % (name, value)
+        text += """<param name="{}" value="{}"/>""".format(name, value)
     text += """<div class="errormessage">You must install and enable Java in your browser in order to access this applet.<div></object>
 </object>
 """
@@ -206,7 +206,7 @@ class Gmaj(data.Data):
                     "nobutton": "false",
                     "urlpause": "100",
                     "debug": "false",
-                    "posturl": "history_add_to?%s" % "&".join("%s=%s" % (x[0], quote_plus(str(x[1]))) for x in [('copy_access_from', dataset.id), ('history_id', dataset.history_id), ('ext', 'maf'), ('name', 'GMAJ Output on data %s' % dataset.hid), ('info', 'Added by GMAJ'), ('dbkey', dataset.dbkey)])
+                    "posturl": "history_add_to?%s" % "&".join("{}={}".format(x[0], quote_plus(str(x[1]))) for x in [('copy_access_from', dataset.id), ('history_id', dataset.history_id), ('ext', 'maf'), ('name', 'GMAJ Output on data %s' % dataset.hid), ('info', 'Added by GMAJ'), ('dbkey', dataset.dbkey)])
                 }
                 class_name = "edu.psu.bx.gmaj.MajApplet.class"
                 archive = "/static/gmaj/gmaj.jar"
@@ -265,7 +265,7 @@ class Laj(data.Text):
                     "alignfile1": "display?id=%s" % dataset.id,
                     "buttonlabel": "Launch LAJ",
                     "title": "LAJ in Galaxy",
-                    "posturl": quote_plus("history_add_to?%s" % "&".join("%s=%s" % (key, value) for key, value in {'history_id': dataset.history_id, 'ext': 'lav', 'name': 'LAJ Output', 'info': 'Added by LAJ', 'dbkey': dataset.dbkey, 'copy_access_from': dataset.id}.items())),
+                    "posturl": quote_plus("history_add_to?%s" % "&".join("{}={}".format(key, value) for key, value in {'history_id': dataset.history_id, 'ext': 'lav', 'name': 'LAJ Output', 'info': 'Added by LAJ', 'dbkey': dataset.dbkey, 'copy_access_from': dataset.id}.items())),
                     "noseq": "true"
                 }
                 class_name = "edu.psu.cse.bio.laj.LajApplet.class"

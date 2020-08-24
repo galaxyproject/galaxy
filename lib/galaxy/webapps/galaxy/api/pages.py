@@ -27,7 +27,7 @@ class PagesController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotati
     """
 
     def __init__(self, app):
-        super(PagesController, self).__init__(app)
+        super().__init__(app)
         self.manager = PageManager(app)
         self.serializer = PageSerializer(app)
 

@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import textwrap
 
 from galaxy_test.base.populators import (
@@ -12,7 +10,7 @@ from ._framework import ApiTestCase
 class DatasetsApiTestCase(ApiTestCase):
 
     def setUp(self):
-        super(DatasetsApiTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
         self.history_id = self.dataset_populator.new_history()
@@ -115,7 +113,7 @@ class DatasetsApiTestCase(ApiTestCase):
         """)
         hda1 = self.dataset_populator.new_dataset(self.history_id, content=contents)
         self.dataset_populator.wait_for_history(self.history_id)
-        display_response = self._get("histories/%s/contents/%s/display" % (self.history_id, hda1["id"]), {
+        display_response = self._get("histories/{}/contents/{}/display".format(self.history_id, hda1["id"]), {
             'raw': 'True'
         })
         self._assert_status_code_is(display_response, 200)

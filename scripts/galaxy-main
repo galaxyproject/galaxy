@@ -179,7 +179,7 @@ def find_config(supplied_config, galaxy_root):
     return guess
 
 
-class GalaxyConfigBuilder(object):
+class GalaxyConfigBuilder:
     """ Generate paste-like configuration from supplied command-line arguments.
     """
 

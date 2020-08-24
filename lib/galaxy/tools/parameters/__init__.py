@@ -1,7 +1,6 @@
 """
 Classes encapsulating Galaxy tool parameters.
 """
-from __future__ import print_function
 
 from json import dumps
 
@@ -121,8 +120,8 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
             'input'             : input,
             'parent'            : input_values,
             'value'             : value,
-            'prefixed_name'     : '%s%s' % (name_prefix, input.name),
-            'prefixed_label'    : '%s%s' % (label_prefix, input.label or input.name),
+            'prefixed_name'     : '{}{}'.format(name_prefix, input.name),
+            'prefixed_label'    : '{}{}'.format(label_prefix, input.label or input.name),
             'prefix'            : parent_prefix,
             'context'           : context,
             'error'             : error
@@ -346,7 +345,6 @@ def populate_state(request_context, inputs, incoming, state, errors={}, prefix='
                     group_state['__current_case__'] = current_case
                 except Exception:
                     errors[test_param_key] = 'The selected case is unavailable/invalid.'
-                    pass
             group_state[input.test_param.name] = value
         elif input.type == 'section':
             populate_state(request_context, input.inputs, incoming, group_state, errors, prefix=group_prefix, context=context, check=check)

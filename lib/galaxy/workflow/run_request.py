@@ -15,7 +15,7 @@ INPUT_STEP_TYPES = ['data_input', 'data_collection_input', 'parameter_input']
 log = logging.getLogger(__name__)
 
 
-class WorkflowRunConfig(object):
+class WorkflowRunConfig:
     """ Wrapper around all the ways a workflow execution can be parameterized.
 
     :param target_history: History to execute workflow in.
@@ -89,7 +89,7 @@ def _normalize_inputs(steps, inputs, inputs_by):
         # start to ensure tool state is being preserved and loaded in a type safe way.
         assert isinstance(optional, bool)
         if not inputs_key and default_value is None and not optional:
-            message = "Workflow cannot be run because an expected input step '%s' (%s) is not optional and no input." % (step.id, step.label)
+            message = "Workflow cannot be run because an expected input step '{}' ({}) is not optional and no input.".format(step.id, step.label)
             raise exceptions.MessageException(message)
         if inputs_key:
             normalized_inputs[step.id] = inputs[inputs_key]
@@ -178,7 +178,7 @@ def _flatten_step_params(param_dict, prefix=""):
     new_params = {}
     for key in list(param_dict.keys()):
         if prefix:
-            effective_key = "%s|%s" % (prefix, key)
+            effective_key = "{}|{}".format(prefix, key)
         else:
             effective_key = key
         value = param_dict[key]
@@ -214,9 +214,9 @@ def _get_target_history(trans, workflow, payload, param_keys=None, index=0):
         ids = param_keys[index]
         nids = len(ids)
         if nids == 1:
-            nh_name = '%s on %s' % (nh_name, ids[0])
+            nh_name = '{} on {}'.format(nh_name, ids[0])
         elif nids > 1:
-            nh_name = '%s on %s and %s' % (nh_name, ', '.join(ids[0:-1]), ids[-1])
+            nh_name = '{} on {} and {}'.format(nh_name, ', '.join(ids[0:-1]), ids[-1])
         new_history = trans.app.model.History(user=trans.user, name=nh_name)
         trans.sa_session.add(new_history)
         target_history = new_history
@@ -497,5 +497,5 @@ def __decode_id(trans, workflow_id, model_type="workflow"):
     try:
         return trans.security.decode_id(workflow_id)
     except Exception:
-        message = "Malformed %s id ( %s ) specified, unable to decode" % (model_type, workflow_id)
+        message = "Malformed {} id ( {} ) specified, unable to decode".format(model_type, workflow_id)
         raise exceptions.MalformedId(message)

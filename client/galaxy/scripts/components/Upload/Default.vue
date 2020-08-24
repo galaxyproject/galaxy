@@ -34,7 +34,7 @@
             </select2>
         </template>
         <template v-slot:buttons>
-            <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="app.hide()">
+            <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="app.dismiss()">
                 {{ btnCloseTitle }}
             </b-button>
             <b-button
@@ -54,6 +54,16 @@
                 :disabled="counterRunning == 0"
             >
                 {{ btnStopTitle }}
+            </b-button>
+            <b-button
+                ref="btnBuild"
+                class="ui-button-default"
+                id="btn-build"
+                @click="_eventSelect"
+                :disabled="!enableBuild"
+                :variant="enableBuild ? 'primary' : ''"
+            >
+                {{ btnSelectTitle }}
             </b-button>
             <b-button
                 ref="btnStart"
@@ -78,11 +88,11 @@
                 ref="btnFtp"
                 class="ui-button-default"
                 id="btn-ftp"
-                @click="_eventFtp"
+                @click="_eventRemoteFiles"
                 :disabled="!enableSources"
-                v-if="ftpUploadSite"
+                v-if="remoteFiles"
             >
-                <span class="fa fa-folder-open-o"></span>{{ btnFtpTitle }}
+                <span class="fa fa-folder-open-o"></span>{{ btnFilesTitle }}
             </b-button>
             <b-button
                 ref="btnLocal"
@@ -111,6 +121,12 @@ Vue.use(BootstrapVue);
 
 export default {
     mixins: [UploadBoxMixin],
+    props: {
+        multiple: {
+            type: Boolean,
+            default: true,
+        },
+    },
     data() {
         return {
             topInfo: "",
@@ -118,6 +134,7 @@ export default {
             showHelper: true,
             extension: this.app.defaultExtension,
             genome: this.app.defaultGenome,
+            callback: this.app.callback,
             listExtensions: [],
             listGenomes: [],
             running: false,
@@ -129,15 +146,16 @@ export default {
             uploadSize: 0,
             uploadCompleted: 0,
             enableReset: false,
+            enableBuild: false,
             enableStart: false,
             enableSources: false,
             btnLocalTitle: _l("Choose local files"),
             btnCreateTitle: _l("Paste/Fetch data"),
-            btnFtpTitle: _l("Choose FTP files"),
             btnStartTitle: _l("Start"),
             btnStopTitle: _l("Pause"),
             btnResetTitle: _l("Reset"),
-            btnCloseTitle: _l("Close"),
+            btnCloseTitle: this.app.callback ? _l("Cancel") : _l("Close"),
+            btnSelectTitle: _l("Select"),
         };
     },
     created() {
@@ -150,6 +168,7 @@ export default {
         // file upload
         this.initUploadbox({
             url: this.app.uploadPath,
+            multiple: this.multiple,
             announce: (index, file) => {
                 this._eventAnnounce(index, file);
             },
@@ -201,6 +220,17 @@ export default {
         },
     },
     methods: {
+        _eventSelect: function () {
+            const models = this.getUploadedModels();
+            const asDict = models.map((model) => {
+                return {
+                    id: model.attributes.id, // model.id has datatype prefix
+                    src: model.src,
+                };
+            });
+            this.callback(asDict);
+            this.app.cancel();
+        },
         _newUploadModelProps: function (index, file) {
             return {
                 id: index,
@@ -214,8 +244,9 @@ export default {
 
         /** Success */
         _eventSuccess: function (index, message) {
+            var hids = _.pluck(message["outputs"], "hid");
             var it = this.collection.get(index);
-            it.set({ percentage: 100, status: "success" });
+            it.set({ percentage: 100, status: "success", hids: hids });
             this._updateStateForSuccess(it);
         },
 

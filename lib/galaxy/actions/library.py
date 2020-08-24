@@ -65,7 +65,7 @@ def validate_path_upload(trans):
         raise AdminRequiredException('Uploading files via filesystem paths can only be performed by administrators')
 
 
-class LibraryActions(object):
+class LibraryActions:
     """
     Mixin for controllers that provide library functionality.
     """
@@ -169,7 +169,7 @@ class LibraryActions(object):
                 if os.path.isfile(path):
                     files.append(path)
         except Exception as e:
-            message = "Unable to get file list for configured %s, error: %s" % (import_dir_desc, util.unicodify(e))
+            message = "Unable to get file list for configured {}, error: {}".format(import_dir_desc, util.unicodify(e))
             response_code = 500
             return None, response_code, message
         if not files:
@@ -313,7 +313,7 @@ class LibraryActions(object):
                     item_type = 'folder'
                 else:
                     item_type = '(unknown item type)'
-                message = "You do not have permission to access the %s with id (%s)." % (escape(item_type), str(item.id))
+                message = "You do not have permission to access the {} with id ({}).".format(escape(item_type), str(item.id))
                 can_access = False
         if not can_access:
             return 400, message

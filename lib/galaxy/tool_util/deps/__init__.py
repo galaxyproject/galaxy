@@ -94,7 +94,7 @@ def build_dependency_manager(app_config_dict=None, resolution_config_dict=None, 
     return dependency_manager
 
 
-class DependencyManager(object):
+class DependencyManager:
     """
     A DependencyManager attempts to resolve named and versioned dependencies by
     searching for them under a list of directories. Directories should be
@@ -158,7 +158,7 @@ class DependencyManager(object):
             explicit_resolver_options = {}
         default = resolver.config_options.get(key)
         config_prefix = resolver.resolver_type
-        global_key = "%s_%s" % (config_prefix, key)
+        global_key = "{}_{}".format(config_prefix, key)
         value = explicit_resolver_options.get(key, CONFIG_VAL_NOT_FOUND)
         if value is CONFIG_VAL_NOT_FOUND:
             value = self.get_app_option(global_key, default)
@@ -299,7 +299,7 @@ class DependencyManager(object):
         return any(map(lambda r: isinstance(r, ToolShedPackageDependencyResolver), self.dependency_resolvers))
 
     def find_dep(self, name, version=None, type='package', **kwds):
-        log.debug('Find dependency %s version %s' % (name, version))
+        log.debug('Find dependency {} version {}'.format(name, version))
         requirements = ToolRequirements([ToolRequirement(name=name, version=version, type=type)])
         dep_dict = self._requirements_to_dependencies_dict(requirements, **kwds)
         if len(dep_dict) > 0:
@@ -351,7 +351,7 @@ class CachedDependencyManager(DependencyManager):
     cached = True
 
     def __init__(self, default_base_path, **kwd):
-        super(CachedDependencyManager, self).__init__(default_base_path=default_base_path, **kwd)
+        super().__init__(default_base_path=default_base_path, **kwd)
         self.tool_dependency_cache_dir = self.get_app_option("tool_dependency_cache_dir") or os.path.join(default_base_path, "_cache")
 
     def build_cache(self, requirements, **kwds):

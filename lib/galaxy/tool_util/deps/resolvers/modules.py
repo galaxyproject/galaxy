@@ -94,7 +94,7 @@ class ModuleDependencyResolver(DependencyResolver, MappableDependencyResolver):
         return self.module_checker.has_module(name, version)
 
 
-class DirectoryModuleChecker(object):
+class DirectoryModuleChecker:
     """Finds module by path.
 
     Searches the paths listed in modulepath to for a file or directory matching the module name.
@@ -122,7 +122,7 @@ class DirectoryModuleChecker(object):
         return has_module
 
 
-class AvailModuleChecker(object):
+class AvailModuleChecker:
     """Finds modules by searching output of 'module avail'.
 
     Parses the Environment Modules 'module avail' output, splitting
@@ -208,8 +208,8 @@ class ModuleDependency(Dependency):
     def shell_commands(self):
         module_to_load = self.module_name
         if self.module_version:
-            module_to_load = '%s/%s' % (self.module_name, self.module_version)
-        command = 'MODULEPATH=%s; export MODULEPATH; eval `%s sh load %s`' % (self.module_dependency_resolver.modulepath,
+            module_to_load = '{}/{}'.format(self.module_name, self.module_version)
+        command = 'MODULEPATH={}; export MODULEPATH; eval `{} sh load {}`'.format(self.module_dependency_resolver.modulepath,
                                                                               self.module_dependency_resolver.modulecmd,
                                                                               module_to_load)
         return command

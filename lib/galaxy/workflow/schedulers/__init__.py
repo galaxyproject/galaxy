@@ -7,11 +7,8 @@ from abc import (
     abstractmethod
 )
 
-import six
 
-
-@six.add_metaclass(ABCMeta)
-class WorkflowSchedulingPlugin(object):
+class WorkflowSchedulingPlugin(metaclass=ABCMeta):
     """ A plugin defining how Galaxy should schedule plugins. By default
     plugins are passive and should monitor Galaxy's work queue for
     WorkflowRequests. Inherit from ActiveWorkflowSchedulingPlugin instead if
@@ -34,8 +31,7 @@ class WorkflowSchedulingPlugin(object):
         """
 
 
-@six.add_metaclass(ABCMeta)
-class ActiveWorkflowSchedulingPlugin(WorkflowSchedulingPlugin):
+class ActiveWorkflowSchedulingPlugin(WorkflowSchedulingPlugin, metaclass=ABCMeta):
 
     @abstractmethod
     def schedule(self, workflow_invocation):

@@ -16,7 +16,6 @@ import mako.runtime
 from babel import Locale
 from babel.support import Translations
 from Cheetah.Template import Template
-from six import string_types
 from six.moves.http_cookies import CookieError
 from six.moves.urllib.parse import urlparse
 from sqlalchemy import and_, true
@@ -304,7 +303,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
 
         # singular match
         def matches_allowed_origin(origin, allowed_origin):
-            if isinstance(allowed_origin, string_types):
+            if isinstance(allowed_origin, str):
                 return origin == allowed_origin
             match = allowed_origin.match(origin)
             return match and match.group() == origin
@@ -375,7 +374,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         try:
             self.response.cookies[name]['httponly'] = True
         except CookieError as e:
-            log.warning("Error setting httponly attribute in cookie '%s': %s" % (name, e))
+            log.warning("Error setting httponly attribute in cookie '{}': {}".format(name, e))
         if self.app.config.cookie_domain is not None:
             self.response.cookies[name]['domain'] = self.app.config.cookie_domain
 
@@ -550,7 +549,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             if self.app.datatypes_registry.get_display_sites('ucsc') and self.request.path == display_as:
                 try:
                     host = socket.gethostbyaddr(self.environ['REMOTE_ADDR'])[0]
-                except(socket.error, socket.herror, socket.gaierror, socket.timeout):
+                except(OSError, socket.herror, socket.gaierror, socket.timeout):
                     host = None
                 if host in UCSC_SERVERS:
                     return
@@ -966,7 +965,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         def render(environ, start_response):
             response_write = start_response(self.response.wsgi_status(), self.response.wsgi_headeritems())
 
-            class StreamBuffer(object):
+            class StreamBuffer:
                 def write(self, d):
                     response_write(d.encode('utf-8'))
             buffer = StreamBuffer()

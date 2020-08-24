@@ -28,7 +28,7 @@ from galaxy.util import (
 log = logging.getLogger(__name__)
 
 
-class InstallEnvironment(object):
+class InstallEnvironment:
     """Object describing the environment built up as part of the process of building and installing a package."""
 
     def __init__(self, app, tool_shed_repository_install_dir, install_dir):
@@ -63,7 +63,7 @@ class InstallEnvironment(object):
             try:
                 fd.close()
                 break
-            except IOError as e:
+            except OSError as e:
                 # Undoubtedly close() was called during a concurrent operation on the same file object.
                 log.debug('Error closing file descriptor: %s' % str(e))
                 time.sleep(.5)
@@ -100,7 +100,7 @@ class InstallEnvironment(object):
                 for env_setting in open(env_shell_file_path):
                     cmds.append(env_setting.strip('\n'))
             else:
-                log.debug('Invalid file %s specified, ignoring %s action.' % (str(env_shell_file_path), str(action_type)))
+                log.debug('Invalid file {} specified, ignoring {} action.'.format(str(env_shell_file_path), str(action_type)))
         return cmds
 
     def environment_dict(self, action_type='template_command'):

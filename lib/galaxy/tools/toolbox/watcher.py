@@ -67,7 +67,7 @@ class ToolFileEventHandler(FileSystemEventHandler):
                     self.tool_watcher.tool_file_ids[tool_file] = tool_id
 
 
-class ToolConfWatcher(object):
+class ToolConfWatcher:
 
     def __init__(self, reload_callback, tool_cache=None):
         self.paths = {}
@@ -131,7 +131,7 @@ class ToolConfWatcher(object):
                             hashes[path] = new_hash
                             log.debug("The file '%s' has changes.", path)
                             do_reload = True
-                except IOError:
+                except OSError:
                     # in rare cases `path` may be deleted between `os.path.exists` calls
                     # and reading the file from the filesystem. We do not want the watcher
                     # thread to die in these cases.
@@ -170,7 +170,7 @@ class ToolConfWatcher(object):
 class ToolWatcher(BaseWatcher):
 
     def __init__(self, observer_class, even_handler_class, toolbox):
-        super(ToolWatcher, self).__init__(observer_class, even_handler_class)
+        super().__init__(observer_class, even_handler_class)
         self.toolbox = toolbox
         self.tool_file_ids = {}
         self.tool_dir_callbacks = {}

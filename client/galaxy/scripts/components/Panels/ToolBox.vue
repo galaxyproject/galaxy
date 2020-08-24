@@ -11,13 +11,15 @@
         </div>
         <div class="unified-panel-controls">
             <tool-search :query="query" placeholder="search tools" @onQuery="onQuery" @onResults="onResults" />
-
             <div class="py-2" v-if="hasResults">
-                <b-button @click="onToggle">{{ buttonText }}</b-button>
+                <b-button @click="onToggle" size="sm" class="w-100">
+                    <span :class="buttonIcon" />
+                    <span class="mr-1">{{ buttonText }}</span>
+                </b-button>
             </div>
             <div class="py-2" v-else-if="query">
-                <span v-if="query.length < 3" class="font-weight-bold">***Search string too short***</span>
-                <span v-else class="font-weight-bold">***No Results Found***</span>
+                <b-badge v-if="query.length < 3" class="w-100">Search string too short!</b-badge>
+                <b-badge v-else class="w-100">No results found!</b-badge>
             </div>
         </div>
         <div class="unified-panel-body">
@@ -70,6 +72,7 @@ export default {
             queryFilter: null,
             showSections: false,
             buttonText: "",
+            buttonIcon: "",
         };
     },
     props: {
@@ -149,6 +152,7 @@ export default {
         },
         setButtonText() {
             this.buttonText = this.showSections ? "Hide Sections" : "Show Sections";
+            this.buttonIcon = this.showSections ? "fa fa-eye-slash" : "fa fa-eye";
         },
     },
 };

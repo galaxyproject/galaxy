@@ -10,6 +10,14 @@ const getters = {
     getWorkflowByInstanceId: (state) => (workflowId) => {
         return state.workflowsByInstanceId[workflowId];
     },
+    getWorkflowNameByInstanceId: (state) => (workflowId) => {
+        const details = state.workflowsByInstanceId[workflowId];
+        if (details && details.name) {
+            return details.name;
+        } else {
+            return "...";
+        }
+    },
 };
 
 const actions = {

@@ -28,12 +28,12 @@ def _report_status_code_error(response, expected_status_code):
 
 def assert_has_keys(response, *keys):
     for key in keys:
-        assert key in response, "Response [%s] does not contain key [%s]" % (response, key)
+        assert key in response, "Response [{}] does not contain key [{}]".format(response, key)
 
 
 def assert_not_has_keys(response, *keys):
     for key in keys:
-        assert key not in response, "Response [%s] contains invalid key [%s]" % (response, key)
+        assert key not in response, "Response [{}] contains invalid key [{}]".format(response, key)
 
 
 def assert_error_code_is(response, error_code):
@@ -54,6 +54,14 @@ def assert_object_id_error(response):
         assert_error_code_is(response, 400009)
     else:
         assert_error_code_is(response, 404001)
+
+
+def assert_error_message_contains(response, expected_contains):
+    if hasattr(response, "json"):
+        response = response.json()
+    assert_has_keys(response, "err_msg")
+    err_msg = response["err_msg"]
+    assert expected_contains in err_msg
 
 
 assert_has_key = assert_has_keys

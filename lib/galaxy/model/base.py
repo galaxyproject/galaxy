@@ -36,7 +36,7 @@ class ModelMapping(Bunch):
             m_obs = dict([m for m in m_obs if m[1].__module__ == module.__name__])
             model_classes.update(m_obs)
 
-        super(ModelMapping, self).__init__(**model_classes)
+        super().__init__(**model_classes)
 
         context.remove()
         context.configure(bind=engine)

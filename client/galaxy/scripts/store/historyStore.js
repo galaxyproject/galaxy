@@ -12,11 +12,11 @@ const getters = {
         return state.historyById[historyId];
     },
     getHistoryNameById: (state) => (historyId) => {
-        const details = state.historyDetailsById[historyId];
+        const details = state.historyById[historyId];
         if (details && details.name) {
             return details.name;
         } else {
-            return "Unavailable";
+            return "...";
         }
     },
 };

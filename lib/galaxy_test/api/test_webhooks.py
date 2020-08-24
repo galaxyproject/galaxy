@@ -4,7 +4,7 @@ from ._framework import ApiTestCase
 class WebhooksApiTestCase(ApiTestCase):
 
     def setUp(self):
-        super(WebhooksApiTestCase, self).setUp()
+        super().setUp()
 
     def test_get_all(self):
         response = self._get('webhooks')

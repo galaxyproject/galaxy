@@ -22,7 +22,6 @@ from collections import OrderedDict
 
 import markdown
 import pkg_resources
-import six
 try:
     import weasyprint
 except Exception:
@@ -77,8 +76,7 @@ def ready_galaxy_markdown_for_import(trans, external_galaxy_markdown):
     return internal_markdown
 
 
-@six.add_metaclass(abc.ABCMeta)
-class GalaxyInternalMarkdownDirectiveHandler(object):
+class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
 
     def walk(self, trans, internal_galaxy_markdown):
         hda_manager = trans.app.hda_manager
@@ -93,7 +91,7 @@ class GalaxyInternalMarkdownDirectiveHandler(object):
             if id_match:
                 object_id = int(id_match.group(2))
                 encoded_id = trans.security.encode_id(object_id)
-                line = line.replace(id_match.group(), "%s=%s" % (id_match.group(1), encoded_id))
+                line = line.replace(id_match.group(), "{}={}".format(id_match.group(1), encoded_id))
 
             if container == "history_dataset_display":
                 assert object_id is not None
@@ -359,7 +357,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         name = hda.name or ''
         with open(dataset.file_name, "rb") as f:
             base64_image_data = base64.b64encode(f.read()).decode("utf-8")
-        rval = ("![%s](data:image/png;base64,%s)" % (name, base64_image_data), True)
+        rval = ("![{}](data:image/png;base64,{})".format(name, base64_image_data), True)
         return rval
 
     def handle_dataset_peek(self, line, hda):
@@ -387,7 +385,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         # it requires module_injector and such.
         for order_index, step in enumerate(stored_workflow.latest_workflow.steps):
             annotation = get_item_annotation_str(self.trans.sa_session, self.trans.user, step) or ''
-            markdown += "|%s|%s|\n" % (step.label or "Step %d" % (order_index + 1), annotation)
+            markdown += "|{}|{}|\n".format(step.label or "Step %d" % (order_index + 1), annotation)
         markdown += "\n---\n"
         return (markdown, True)
 
@@ -402,7 +400,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
                     walk_elements(element.child_collection, element_prefix + element.element_identifier + ":")
             else:
                 for element in collection.elements:
-                    markdown_wrapper[0] += "**Element:** %s%s\n\n" % (element_prefix, element.element_identifier)
+                    markdown_wrapper[0] += "**Element:** {}{}\n\n".format(element_prefix, element.element_identifier)
                     markdown_wrapper[0] += self._display_dataset_content(element.hda, header="Element Contents")
         walk_elements(hdca.collection)
         markdown = '---\n%s\n---\n' % markdown_wrapper[0]
@@ -429,7 +427,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
             markdown += "**%s**\n\n" % metric_plugin
             markdown += "|   |   |\n|---|--|\n"
             for title, value in metrics_for_plugin.items():
-                markdown += "| %s | %s |\n" % (title, value)
+                markdown += "| {} | {} |\n".format(title, value)
         return (markdown, True)
 
     def handle_job_parameters(self, line, job):
@@ -447,7 +445,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
             markdown += " | "
             value = parameter["value"]
             if isinstance(value, list):
-                markdown += ", ".join("%s: %s" % (p["hid"], p["name"]) for p in value)
+                markdown += ", ".join("{}: {}".format(p["hid"], p["name"]) for p in value)
             else:
                 markdown += value
             markdown += " |\n"
@@ -484,7 +482,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         return (content, True)
 
 
-class MarkdownFormatHelpers(object):
+class MarkdownFormatHelpers:
     """Inject common markdown formatting helpers for per-datatype rendering."""
 
     @staticmethod
@@ -526,7 +524,7 @@ def to_pdf(trans, basic_markdown, css_paths=[]):
         html = weasyprint.HTML(filename=index)
         stylesheets = [weasyprint.CSS(string=pkg_resources.resource_string(__name__, 'markdown_export_base.css'))]
         for css_path in css_paths:
-            with open(css_path, "r") as f:
+            with open(css_path) as f:
                 css_content = f.read()
             css = weasyprint.CSS(string=css_content)
             stylesheets.append(css)
@@ -582,34 +580,34 @@ def resolve_invocation_markdown(trans, invocation, workflow_markdown):
                     continue
 
                 if output_assoc.history_content_type == "dataset":
-                    section_markdown += """#### Output Dataset: %s
+                    section_markdown += """#### Output Dataset: {}
 ```galaxy
-history_dataset_display(output="%s")
+history_dataset_display(output="{}")
 ```
-""" % (output_assoc.workflow_output.label, output_assoc.workflow_output.label)
+""".format(output_assoc.workflow_output.label, output_assoc.workflow_output.label)
                 else:
-                    section_markdown += """#### Output Dataset Collection: %s
+                    section_markdown += """#### Output Dataset Collection: {}
 ```galaxy
-history_dataset_collection_display(output="%s")
+history_dataset_collection_display(output="{}")
 ```
-""" % (output_assoc.workflow_output.label, output_assoc.workflow_output.label)
+""".format(output_assoc.workflow_output.label, output_assoc.workflow_output.label)
         elif container == "invocation_inputs":
             for input_assoc in invocation.input_associations:
                 if not input_assoc.workflow_step.label:
                     continue
 
                 if input_assoc.history_content_type == "dataset":
-                    section_markdown += """#### Input Dataset: %s
+                    section_markdown += """#### Input Dataset: {}
 ```galaxy
-history_dataset_display(input="%s")
+history_dataset_display(input="{}")
 ```
-""" % (input_assoc.workflow_step.label, input_assoc.workflow_step.label)
+""".format(input_assoc.workflow_step.label, input_assoc.workflow_step.label)
                 else:
-                    section_markdown += """#### Input Dataset Collection: %s
+                    section_markdown += """#### Input Dataset Collection: {}
 ```galaxy
-history_dataset_collection_display(input=%s)
+history_dataset_collection_display(input={})
 ```
-""" % (input_assoc.workflow_step.label, input_assoc.workflow_step.label)
+""".format(input_assoc.workflow_step.label, input_assoc.workflow_step.label)
         else:
             return line, False
         return section_markdown, True
@@ -653,7 +651,7 @@ history_dataset_collection_display(input=%s)
                     ref_object_type = "history_dataset"
                 else:
                     ref_object_type = "history_dataset_collection"
-            line = line.replace(target_match.group(), "%s_id=%s" % (ref_object_type, ref_object.id))
+            line = line.replace(target_match.group(), "{}_id={}".format(ref_object_type, ref_object.id))
         return (line, False)
 
     workflow_markdown = _remap_galaxy_markdown_calls(

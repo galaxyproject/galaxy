@@ -137,7 +137,7 @@ def handle_bz2(repository, uploaded_file_name):
     while 1:
         try:
             chunk = bzipped_file.read(basic_util.CHUNK_SIZE)
-        except IOError:
+        except OSError:
             os.close(fd)
             os.remove(uncompressed)
             log.exception('Problem uncompressing bz2 data "%s"', uploaded_file_name)
@@ -237,7 +237,7 @@ def handle_gzip(repository, uploaded_file_name):
     while 1:
         try:
             chunk = gzipped_file.read(basic_util.CHUNK_SIZE)
-        except IOError:
+        except OSError:
             os.close(fd)
             os.remove(uncompressed)
             log.exception('Problem uncompressing gz data "%s"', uploaded_file_name)

@@ -23,7 +23,7 @@ def clone_repository(repository_clone_url, repository_file_dir, ctx_rev=None):
     if not os.path.exists(repository_file_dir):
         os.makedirs(repository_file_dir)
     try:
-        subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+        subprocess.check_output(cmd, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL)
         return True, None
     except Exception as e:
         error_message = 'Error cloning repository: %s' % unicodify(e)
@@ -112,7 +112,7 @@ def pull_repository(repo_path, repository_clone_url, ctx_rev):
     try:
         subprocess.check_output(['hg', 'pull', '-r', ctx_rev, repository_clone_url], stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
-        error_message = "Error pulling revision '%s': %s" % (ctx_rev, unicodify(e))
+        error_message = "Error pulling revision '{}': {}".format(ctx_rev, unicodify(e))
         if isinstance(e, subprocess.CalledProcessError):
             error_message += "\nOutput was:\n%s" % unicodify(e.output)
         raise Exception(error_message)

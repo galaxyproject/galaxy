@@ -43,14 +43,14 @@ def get_or_create_index(index_dir, schema):
     return index.create_in(index_dir, schema=schema)
 
 
-class ToolBoxSearch(object):
+class ToolBoxSearch:
     """
     Support searching tools in a toolbox. This implementation uses
     the Whoosh search library.
     """
 
     def __init__(self, toolbox, index_dir=None, index_help=True):
-        self.schema = Schema(id=ID(stored=True),
+        self.schema = Schema(id=ID(stored=True, unique=True),
                              stub=KEYWORD,
                              name=TEXT(analyzer=analysis.SimpleAnalyzer()),
                              description=TEXT,
@@ -89,7 +89,7 @@ class ToolBoxSearch(object):
                 tool = tool_cache.get_tool_by_id(tool_id)
                 if tool and tool.is_latest_version:
                     add_doc_kwds = self._create_doc(tool_id=tool_id, tool=tool, index_help=index_help)
-                    writer.add_document(**add_doc_kwds)
+                    writer.update_document(**add_doc_kwds)
         log.debug("Toolbox index finished %s", execution_timer)
 
     def _create_doc(self, tool_id, tool, index_help=True):

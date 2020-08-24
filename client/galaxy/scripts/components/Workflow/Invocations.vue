@@ -6,11 +6,9 @@
         <b-alert variant="info" show v-if="headerMessage">
             {{ headerMessage }}
         </b-alert>
-        <b-alert v-if="loading" variant="info" show>
-            <loading-span message="Loading workflow invocation job data" />
-        </b-alert>
+        <loading-span v-if="loading" message="Loading workflow invocations" />
         <div v-else>
-            <b-alert v-if="!invocationItemsComputed.length" variant="secondary" show>
+            <b-alert v-if="!invocationItemsComputed.length" variant="info" show>
                 {{ noInvocationsMessage }}
             </b-alert>
             <b-table
@@ -23,47 +21,42 @@
                 caption-top
                 :busy="loading"
             >
-                <template v-slot:table-caption>
-                    These invocations are not finished scheduling - one or more steps are waiting on others steps to be
-                    complete before the full structure of the jobs in the workflow can be determined.
-                </template>
                 <template v-slot:row-details="row">
                     <b-card>
-                        <!-- set provideContext to false, since the table itself provides this information -->
-                        <workflow-invocation-state :invocation-id="row.item.id" :provide-context="false" />
+                        <small class="float-right">
+                            <b>Invocation: {{ row.item.id }}</b>
+                        </small>
+                        <workflow-invocation-state :invocation-id="row.item.id" />
                     </b-card>
                 </template>
-                <template v-slot:cell(details)="data">
-                    <b-button
-                        v-b-tooltip.hover.bottom
-                        title="Show Invocation Details"
-                        class="btn-sm fa fa-chevron-down"
-                        v-if="!data.detailsShowing"
-                        @click.stop="swapRowDetails(data)"
-                    />
-                    <b-button
-                        v-b-tooltip.hover.bottom
-                        title="Hide Invocation Details"
-                        class="btn-sm fa fa-chevron-up"
-                        v-if="data.detailsShowing"
-                        @click.stop="swapRowDetails(data)"
-                    />
-                </template>
                 <template v-slot:cell(workflow_id)="data">
-                    <div v-if="!ownerGrid || !getWorkflowByInstanceId(data.item.workflow_id)">
-                        {{ data.item.workflow_id }}
-                    </div>
-                    <div v-else>
-                        <workflow-dropdown :workflow="getWorkflowByInstanceId(data.item.workflow_id)" />
-                    </div>
+                    <b-link v-b-tooltip title="Show Invocation details" href="#" @click.stop="swapRowDetails(data)">
+                        <b>{{ getWorkflowNameByInstanceId(data.item.workflow_id) }}</b>
+                    </b-link>
                 </template>
                 <template v-slot:cell(history_id)="data">
-                    <div v-if="!ownerGrid || !getHistoryById(data.item.history_id)">
-                        {{ data.item.history_id }}
-                    </div>
-                    <div v-else>
-                        <history-dropdown :history="getHistoryById(data.item.history_id)" />
-                    </div>
+                    <b-link
+                        v-b-tooltip
+                        title="Switch to History"
+                        href="#"
+                        @click.stop="switchHistory(data.item.history_id)"
+                    >
+                        <b>{{ getHistoryNameById(data.item.history_id) }}</b>
+                    </b-link>
+                </template>
+                <template v-slot:cell(create_time)="data">
+                    <UtcDate :date="data.value" mode="elapsed" />
+                </template>
+                <template v-slot:cell(update_time)="data">
+                    <UtcDate :date="data.value" mode="elapsed" />
+                </template>
+                <template v-slot:cell(execute)="data">
+                    <b-button
+                        v-b-tooltip.hover.bottom
+                        title="Run Workflow"
+                        class="workflow-run btn-sm btn-primary fa fa-play"
+                        @click.stop="executeWorkflow(getWorkflowByInstanceId(data.item.workflow_id).id)"
+                    />
                 </template>
             </b-table>
         </div>
@@ -71,37 +64,35 @@
 </template>
 
 <script>
-import { getRootFromIndexLink } from "onload";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import { WorkflowInvocationState } from "components/WorkflowInvocationState";
+import UtcDate from "components/UtcDate";
 import LoadingSpan from "components/LoadingSpan";
-import WorkflowDropdown from "components/Workflow/WorkflowDropdown";
-import HistoryDropdown from "components/History/HistoryDropdown";
 import { mapCacheActions } from "vuex-cache";
 import { mapGetters } from "vuex";
 
 export default {
     components: {
+        UtcDate,
         WorkflowInvocationState,
         LoadingSpan,
-        WorkflowDropdown,
-        HistoryDropdown,
     },
     props: {
         invocationItems: { type: Array, default: () => [] },
         loading: { type: Boolean, default: true },
-        noInvocationsMessage: { type: String },
+        noInvocationsMessage: { type: String, default: "" },
         headerMessage: { type: String, default: "" },
         ownerGrid: { type: Boolean, default: true },
     },
     data() {
         const fields = [
-            { key: "details", label: "" },
             { key: "workflow_id", label: "Workflow" },
             { key: "history_id", label: "History" },
-            { key: "id", label: "Invocation ID" },
+            { key: "create_time", label: "Invoked" },
+            { key: "update_time", label: "Updated" },
             { key: "state" },
-            { key: "update_time", label: "Last Update" },
-            { key: "create_time", label: "Invocation Time" },
+            { key: "execute", label: "" },
         ];
         return {
             invocationItemsModel: [],
@@ -110,16 +101,13 @@ export default {
         };
     },
     computed: {
-        ...mapGetters(["getWorkflowByInstanceId", "getHistoryById"]),
+        ...mapGetters(["getWorkflowNameByInstanceId", "getWorkflowByInstanceId", "getHistoryNameById"]),
         invocationItemsComputed() {
             return this.computeItems(this.invocationItems);
         },
     },
     methods: {
         ...mapCacheActions(["fetchWorkflowForInstanceId", "fetchHistoryForId"]),
-        editLink(workflowId) {
-            return getRootFromIndexLink() + "workflow/editor?id=" + this.getWorkflowByInstanceId(workflowId).id;
-        },
         computeItems(items) {
             return items.map((invocation) => {
                 if (this.ownerGrid) {
@@ -140,8 +128,12 @@ export default {
         swapRowDetails(row) {
             row.toggleDetails();
         },
-        handleError(error) {
-            console.error(error);
+        executeWorkflow: function (workflowId) {
+            window.location = `${getAppRoot()}workflows/run?id=${workflowId}`;
+        },
+        switchHistory(historyId) {
+            const Galaxy = getGalaxyInstance();
+            Galaxy.currHistoryPanel.switchToHistory(historyId);
         },
     },
 };

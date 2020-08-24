@@ -2,7 +2,6 @@
 This migration script changes certain values in the history_dataset_association.extension
 column, specifically 'qual' is changed to be 'qual454'.
 """
-from __future__ import print_function
 
 import logging
 

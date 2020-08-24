@@ -2,7 +2,6 @@
 
 More information on Pulsar can be found at https://pulsar.readthedocs.io/ .
 """
-from __future__ import absolute_import  # Need to import pulsar_client absolutely.
 
 import errno
 import logging
@@ -12,7 +11,6 @@ from time import sleep
 
 import packaging.version
 import pulsar.core
-import six
 import yaml
 from pulsar.client import (
     build_client_manager,
@@ -193,7 +191,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
 
     def __init__(self, app, nworkers, **kwds):
         """Start the job runner."""
-        super(PulsarJobRunner, self).__init__(app, nworkers, runner_param_specs=PULSAR_PARAM_SPECS, **kwds)
+        super().__init__(app, nworkers, runner_param_specs=PULSAR_PARAM_SPECS, **kwds)
         self._init_worker_threads()
         galaxy_url = self.runner_params.galaxy_url
         if not galaxy_url:
@@ -247,7 +245,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 log.info("Creating a Pulsar app with default configuration (no pulsar_conf specified).")
             else:
                 log.info("Loading Pulsar app configuration from %s" % pulsar_conf_path)
-                with open(pulsar_conf_path, "r") as f:
+                with open(pulsar_conf_path) as f:
                     conf.update(yaml.safe_load(f) or {})
         if "job_metrics_config_file" not in conf:
             conf["job_metrics"] = self.app.job_metrics
@@ -539,12 +537,12 @@ class PulsarJobRunner(AsynchronousJobRunner):
     def get_client_from_wrapper(self, job_wrapper):
         job_id = job_wrapper.job_id
         if hasattr(job_wrapper, 'task_id'):
-            job_id = "%s_%s" % (job_id, job_wrapper.task_id)
+            job_id = "{}_{}".format(job_id, job_wrapper.task_id)
         params = job_wrapper.job_destination.params.copy()
         user = job_wrapper.get_job().user
         if user:
             for key, value in params.items():
-                if value and isinstance(value, six.string_types):
+                if value and isinstance(value, str):
                     params[key] = model.User.expand_user_properties(user, value)
 
         env = getattr(job_wrapper.job_destination, "env", [])
@@ -685,7 +683,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             # Remote kill
             pulsar_url = job.job_runner_name
             job_id = job.job_runner_external_id
-            log.debug("Attempt remote Pulsar kill of job with url %s and id %s" % (pulsar_url, job_id))
+            log.debug("Attempt remote Pulsar kill of job with url {} and id {}".format(pulsar_url, job_id))
             client = self.get_client(job.destination_params, job_id)
             client.kill()
 
@@ -701,7 +699,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             self.monitor_queue.put(job_state)
 
     def shutdown(self):
-        super(PulsarJobRunner, self).shutdown()
+        super().shutdown()
         self.client_manager.shutdown()
 
     def _job_state(self, job, job_wrapper):
@@ -905,7 +903,7 @@ class PulsarKubernetesJobRunner(PulsarMQJobRunner):
     poll = True  # Poll so we can check API for pod IP for ITs.
 
     def _populate_parameter_defaults(self, job_destination):
-        super(PulsarKubernetesJobRunner, self)._populate_parameter_defaults(job_destination)
+        super()._populate_parameter_defaults(job_destination)
         params = job_destination.params
         # Set some sensible defaults for Pulsar application that runs in staging container.
         if "pulsar_app_config" not in params:
@@ -1010,7 +1008,7 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         # first but that adds untested logic that wouln't ever be used.
         remote_input_path = self.path_mapper.remote_input_path_rewrite(metadata_val, client_input_path_type=CLIENT_INPUT_PATH_TYPES.INPUT_METADATA_PATH)
         if remote_input_path:
-            log.info("input_metadata_rewrite is %s from %s" % (remote_input_path, metadata_val))
+            log.info("input_metadata_rewrite is {} from {}".format(remote_input_path, metadata_val))
             self.path_rewrites_input_metadata[metadata_val] = remote_input_path
             return remote_input_path
 
@@ -1066,4 +1064,4 @@ class PulsarComputeEnvironment(ComputeEnvironment):
 class UnsupportedPulsarException(Exception):
 
     def __init__(self, needed):
-        super(UnsupportedPulsarException, self).__init__(UPGRADE_PULSAR_ERROR % needed)
+        super().__init__(UPGRADE_PULSAR_ERROR % needed)

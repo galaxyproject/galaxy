@@ -2,7 +2,6 @@
 Migration script to create column and table for importing histories from
 file archives.
 """
-from __future__ import print_function
 
 import logging
 
