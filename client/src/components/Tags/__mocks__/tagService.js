@@ -12,9 +12,6 @@ import { createTag } from "../model";
 import { Subject } from "rxjs";
 import { map, filter, debounceTime, switchMap, distinctUntilChanged } from "rxjs/operators";
 
-//import axios from "axios";
-//jest.mock("axios");
-//axios.get.mockResolvedValue({ response: { status: 200 } });
 export class TagService {
     constructor({ id, itemClass, context, debounceInterval = 150 }) {
         this.id = id;
@@ -60,18 +57,3 @@ export class TagService {
         return [txt].map(createTag);
     }
 }
-
-/**
- * Utility function parser for the archaic result format in the current API. See
- * testData/autocompleteResponse.txt for a sample.
- * @param {string} rawResponse
-export function parseAutocompleteResults(rawResponse) {
-    return rawResponse
-        .split("\n")
-        .filter((line) => line.includes("|"))
-        .map((line) => line.split("|")[0])
-        .filter((label) => label.length)
-        .filter((label) => label !== "#Header");
-}
-
- */
