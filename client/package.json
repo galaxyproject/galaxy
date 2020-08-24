@@ -82,7 +82,7 @@
     "test": "yarn run test-qunit && yarn run jest",
     "jest": "jest --config tests/jest/jest.config.js",
     "jest-watch": "jest --config tests/jest/jest.config.js --watch",
-    "test-qunit": "karma start tests/karma/karma.config.qunit.js",
+    "qunit": "karma start tests/karma/karma.config.qunit.js",
     "eslint": "eslint -c .eslintrc.js src --ext .js,.vue"
   },
   "devDependencies": {
