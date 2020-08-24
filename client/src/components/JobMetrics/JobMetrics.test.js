@@ -5,13 +5,15 @@ import ec2 from "./ec2.json";
 import Vuex from "vuex";
 import createCache from "vuex-cache";
 import { jobMetricsStore } from "store/jobMetricsStore";
-import axios from "axios";
 
 const JOB_ID = "moo";
 
 // Ignore all axios calls, data is mocked locally -- just say "OKAY!"
-jest.mock("axios");
-axios.get.mockResolvedValue({ response: { status: 200 } });
+jest.mock("axios", () => ({
+    get: async () => {
+        return { response: { status: 200 } };
+    },
+}));
 
 const localVue = createLocalVue();
 localVue.use(Vuex);

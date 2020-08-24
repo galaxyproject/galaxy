@@ -3,10 +3,11 @@ import axios from "axios";
 import WorkflowDialog from "./WorkflowDialog.vue";
 import { __RewireAPI__ as rewire } from "components/Workflow/services";
 import SelectionDialog from "./SelectionDialog.vue";
-import { setupTestGalaxy } from "qunit/test-app";
 import flushPromises from "flush-promises";
 
 import { shallowMount, createLocalVue } from "@vue/test-utils";
+
+jest.mock("app");
 
 const mockOptions = {
     callback: () => {},
@@ -20,7 +21,6 @@ describe("WorkflowDialog.vue", () => {
 
     beforeEach(() => {
         axiosMock = new MockAdapter(axios);
-        setupTestGalaxy();
         rewire.__Rewire__("_addAttributes", (workflow) => workflow);
         localVue = createLocalVue();
     });

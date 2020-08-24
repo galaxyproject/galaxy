@@ -1,9 +1,10 @@
 import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
 import UploadModal from "./UploadModal.vue";
-import { setupTestGalaxy } from "qunit/test-app";
 
 import { shallowMount, createLocalVue } from "@vue/test-utils";
+
+jest.mock("app");
 
 const propsData = {
     chunkUploadSize: 1024,
@@ -34,7 +35,6 @@ describe("UploadModal.vue", () => {
         axiosMock.onGet(`/api/genomes`).reply(200, genomesResponse);
 
         localVue = createLocalVue();
-        setupTestGalaxy();
         wrapper = shallowMount(UploadModal, {
             propsData: propsData,
             localVue: localVue,

@@ -1,11 +1,12 @@
 import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
 import DatasetCollectionDialog from "./DatasetCollectionDialog.vue";
-import { setupTestGalaxy } from "qunit/test-app";
 import SelectionDialog from "./SelectionDialog.vue";
 import flushPromises from "flush-promises";
 
 import { shallowMount, createLocalVue } from "@vue/test-utils";
+
+jest.mock("app");
 
 const mockOptions = {
     callback: () => {},
@@ -20,7 +21,6 @@ describe("DatasetCollectionDialog.vue", () => {
 
     beforeEach(() => {
         axiosMock = new MockAdapter(axios);
-        setupTestGalaxy();
         localVue = createLocalVue();
     });
 

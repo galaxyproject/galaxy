@@ -4,17 +4,16 @@ import { __RewireAPI__ as rewire } from "./WorkflowRun";
 import WorkflowRun from "./WorkflowRun.vue";
 import { mount, createLocalVue } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { setupTestGalaxy } from "qunit/test-app";
 
 import sampleRunData1 from "./testdata/run1.json";
 
+jest.mock("app");
 const run1WorkflowId = "ebab00128497f9d7";
 
 describe("WorkflowRun.vue", () => {
     let axiosMock;
     let wrapper;
     let localVue;
-    setupTestGalaxy();
 
     beforeEach(() => {
         axiosMock = new MockAdapter(axios);

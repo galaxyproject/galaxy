@@ -1,16 +1,11 @@
 import Vue from "vue";
 import { mount } from "@vue/test-utils";
 import Node from "./Node";
-import { setupTestGalaxy } from "qunit/test-app";
 import { getNewAttachNode } from "jest/helpers";
 
-describe("Node", () => {
-    beforeEach(() => {
-        // TODO: Move setupTestGalaxy to a single pretest setup, mock, or fix all the test requiring it.
-        setupTestGalaxy();
-    });
+jest.mock("app");
 
-    setupTestGalaxy();
+describe("Node", () => {
     it("test attributes", async () => {
         const wrapper = mount(Node, {
             propsData: {
