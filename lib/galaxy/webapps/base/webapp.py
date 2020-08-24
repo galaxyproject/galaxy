@@ -286,12 +286,17 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             del self.response.headers['Access-Control-Allow-Origin']
 
     def set_cors_headers(self):
-        """Allow CORS requests if configured to do so by echoing back the request's
-        'Origin' header (if any) as the response header 'Access-Control-Allow-Origin'
+        """Allow CORS requests if configured to do so by echoing back the
+        request's 'Origin' header (if any) as the response header
+        'Access-Control-Allow-Origin'
+
+        Preflight OPTIONS requests to the API work by routing all OPTIONS
+        requests to a single method in the authenticate API (options method),
+        setting CORS headers, and responding OK.
+
+        NOTE: raising some errors (such as httpexceptions), will remove the
+        header (e.g. client will get both CORS error and 404 inside that)
         """
-        # TODO: in order to use these, we need preflight to work, and to do that we
-        # need the OPTIONS method on all api calls (or everywhere we can POST/PUT)
-        # ALLOWED_METHODS = ( 'POST', 'PUT' )
 
         # do not set any access control headers if not configured for it (common case)
         if not self.app.config.get('allowed_origin_hostnames', None):
@@ -323,11 +328,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         # check against the list of allowed strings/regexp hostnames, echo original if cleared
         if is_allowed_origin(origin):
             self.set_cors_origin(origin=origin_header)
-            # TODO: see the to do on ALLOWED_METHODS above
-            # self.response.headers[ 'Access-Control-Allow-Methods' ] = ', '.join( ALLOWED_METHODS )
-
-        # NOTE: raising some errors (such as httpexceptions), will remove the header
-        # (e.g. client will get both cors error and 404 inside that)
 
     def get_user(self):
         """Return the current user if logged in or None."""

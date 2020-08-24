@@ -256,6 +256,11 @@ def populate_api_routes(webapp, app):
                           controller="datasets",
                           action="extra_files",
                           conditions=dict(method=["GET"]))
+    webapp.mapper.connect("history_content_as_text",
+                          "/api/datasets/{dataset_id}/get_content_as_text",
+                          controller="datasets",
+                          action="get_content_as_text",
+                          conditions=dict(method=["GET"]))
     webapp.mapper.connect("history_contents_metadata_file",
                           "/api/histories/{history_id}/contents/{history_content_id}/metadata_file",
                           controller="datasets",
@@ -630,6 +635,13 @@ def populate_api_routes(webapp, app):
                           controller='authenticate',
                           action='get_api_key',
                           conditions=dict(method=["GET"]))
+
+    # API OPTIONS RESPONSE
+    webapp.mapper.connect('options',
+                          '/api/{path_info:.*?}',
+                          controller='authenticate',
+                          action='options',
+                          conditions={'method': ['OPTIONS']})
 
     # ======================================
     # ====== DISPLAY APPLICATIONS API ======

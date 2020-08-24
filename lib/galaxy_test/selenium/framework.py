@@ -44,6 +44,8 @@ DEFAULT_SELENIUM_REMOTE_HOST = "127.0.0.1"
 DEFAULT_SELENIUM_HEADLESS = "auto"
 DEFAULT_ADMIN_USER = "test@bx.psu.edu"
 DEFAULT_ADMIN_PASSWORD = "testpass"
+DEFAULT_DOWNLOAD_PATH = driver_factory.DEFAULT_DOWNLOAD_PATH
+
 
 TIMEOUT_MULTIPLIER = float(os.environ.get("GALAXY_TEST_TIMEOUT_MULTIPLIER", DEFAULT_TIMEOUT_MULTIPLIER))
 GALAXY_TEST_ERRORS_DIRECTORY = os.environ.get("GALAXY_TEST_ERRORS_DIRECTORY", DEFAULT_TEST_ERRORS_DIRECTORY)
@@ -260,6 +262,11 @@ class TestWithSeleniumMixin(NavigatesGalaxy, UsesApiTestCaseMixin):
             return
 
         self.driver.save_screenshot(target)
+
+    def get_download_path(self):
+        """Returns default download path
+        """
+        return DEFAULT_DOWNLOAD_PATH
 
     def api_interactor_for_logged_in_user(self):
         api_key = self.get_api_key(force=True)

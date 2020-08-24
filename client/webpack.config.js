@@ -6,10 +6,10 @@ const OptimizeCssAssetsPlugin = require("optimize-css-assets-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const DuplicatePackageCheckerPlugin = require("duplicate-package-checker-webpack-plugin");
 
-const scriptsBase = path.join(__dirname, "galaxy/scripts");
+const scriptsBase = path.join(__dirname, "src");
+const testsBase = path.join(__dirname, "tests");
 const libsBase = path.join(scriptsBase, "libs");
-const styleBase = path.join(__dirname, "galaxy/style");
-const imageBase = path.join(__dirname, "../static/style");
+const styleBase = path.join(scriptsBase, "style");
 
 module.exports = (env = {}, argv = {}) => {
     // environment name based on -d, -p, webpack flag
@@ -30,7 +30,7 @@ module.exports = (env = {}, argv = {}) => {
         },
         resolve: {
             extensions: ["*", ".js", ".json", ".vue", ".scss"],
-            modules: [scriptsBase, "node_modules", styleBase, imageBase],
+            modules: [scriptsBase, "node_modules", styleBase, testsBase],
             alias: {
                 jquery$: `${libsBase}/jquery.custom.js`,
                 jqueryVendor$: `${libsBase}/jquery/jquery.js`,
@@ -39,7 +39,7 @@ module.exports = (env = {}, argv = {}) => {
                 moment: path.resolve(__dirname, "node_modules/moment"),
                 underscore: path.resolve(__dirname, "node_modules/underscore"),
                 // client-side application config
-                config$: path.join(__dirname, "galaxy", "config", targetEnv) + ".js",
+                config$: path.join(scriptsBase, "config", targetEnv) + ".js",
             },
         },
         optimization: {
@@ -167,7 +167,10 @@ module.exports = (env = {}, argv = {}) => {
                             options: {
                                 sourceMap: true,
                                 sassOptions: {
-                                    includePaths: ["galaxy/style/scss", path.resolve(__dirname, "./node_modules")],
+                                    includePaths: [
+                                        path.join(styleBase, "scss"),
+                                        path.resolve(__dirname, "./node_modules"),
+                                    ],
                                 },
                             },
                         },

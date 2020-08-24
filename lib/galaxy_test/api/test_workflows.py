@@ -216,12 +216,43 @@ class BaseWorkflowsApiTestCase(ApiTestCase):
         assert tool_state_value["__class__"] == "RuntimeValue"
 
 
+class ChangeDatatypeTestCase(object):
+
+    def test_assign_column_pja(self):
+        with self.dataset_populator.test_history() as history_id:
+            self.workflow_populator.run_workflow("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: input1
+    outputs:
+      out_file1:
+        change_datatype: bed
+        set_columns:
+          chromCol: 1
+          endCol: 2
+          startCol: 3
+""", test_data="""
+input1:
+  value: 1.bed
+  type: File
+""", history_id=history_id)
+            details_dataset_new_col = self.dataset_populator.get_history_dataset_details(history_id, hid=2, wait=True, assert_ok=True)
+            assert details_dataset_new_col["history_content_type"] == "dataset", details_dataset_new_col
+            assert details_dataset_new_col['metadata_endCol'] == 2
+            assert details_dataset_new_col['metadata_startCol'] == 3
+
+
 # Workflow API TODO:
 # - Allow history_id as param to workflow run action. (hist_id)
 # - Allow post to workflows/<workflow_id>/run in addition to posting to
 #    /workflows with id in payload.
 # - Much more testing obviously, always more testing.
-class WorkflowsApiTestCase(BaseWorkflowsApiTestCase):
+class WorkflowsApiTestCase(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
 
     def test_show_valid(self):
         workflow_id = self.workflow_populator.simple_workflow("dummy")
@@ -1117,7 +1148,7 @@ test_data:
 
     def test_run_subworkflow_simple(self):
         with self.dataset_populator.test_history() as history_id:
-            self._run_jobs(WORKFLOW_NESTED_SIMPLE, test_data="""
+            run_response = self._run_jobs(WORKFLOW_NESTED_SIMPLE, test_data="""
 outer_input:
   value: 1.bed
   type: File
@@ -1125,6 +1156,13 @@ outer_input:
 
             content = self.dataset_populator.get_history_dataset_content(history_id)
             self.assertEqual("chrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\nchrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n", content)
+            steps = self.workflow_populator.get_invocation(run_response.invocation_id)['steps']
+            assert sum(1 for step in steps if step['subworkflow_invocation_id'] is None) == 3
+            subworkflow_invocation_id = [step['subworkflow_invocation_id'] for step in steps if step['subworkflow_invocation_id']][0]
+            subworkflow_invocation = self.workflow_populator.get_invocation(subworkflow_invocation_id)
+            # inner_input should be step 0, random_lines should be step 1, but step order gets lost on python < 3.6
+            assert [step for step in subworkflow_invocation['steps'] if step['workflow_step_label'] == 'inner_input']
+            assert [step for step in subworkflow_invocation['steps'] if step['workflow_step_label'] == 'random_lines']
 
     @skip_without_tool("random_lines1")
     def test_run_subworkflow_runtime_parameters(self):
@@ -3215,35 +3253,6 @@ input1:
             assert details1["history_content_type"] == "dataset_collection"
             assert details1["tags"][0] == "name:foo", details1
 
-    @skip_without_tool("cat")
-    def test_assign_column_pja(self):
-        with self.dataset_populator.test_history() as history_id:
-            self._run_jobs("""
-class: GalaxyWorkflow
-inputs:
-  input1: data
-steps:
-  first_cat:
-    tool_id: cat
-    in:
-      input1: input1
-    outputs:
-      out_file1:
-        change_datatype: bed
-        set_columns:
-          chromCol: 1
-          endCol: 2
-          startCol: 3
-""", test_data="""
-input1:
-  value: 1.bed
-  type: File
-""", history_id=history_id)
-            details_dataset_new_col = self.dataset_populator.get_history_dataset_details(history_id, hid=2, wait=True, assert_ok=True)
-            assert details_dataset_new_col["history_content_type"] == "dataset", details_dataset_new_col
-            assert details_dataset_new_col['metadata_endCol'] == 2
-            assert details_dataset_new_col['metadata_startCol'] == 3
-
     @skip_without_tool("collection_creates_pair")
     @skip_without_tool("cat")
     def test_run_remove_tag_on_collection_output(self):
@@ -3503,6 +3512,50 @@ steps:
             workflow_request = {
                 "history_id" : history_id,
                 "batch"      : True,
+                "parameters_normalized": True,
+                "parameters" : dumps(parameters),
+            }
+            invocation_response = self._post("workflows/%s/usage" % workflow_id, data=workflow_request)
+            self._assert_status_code_is(invocation_response, 200)
+            time.sleep(5)
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            r1 = "1 2 3\t1\n1 2 3\t2\n"
+            r2 = "4 5 6\t1\n1 2 3\t2\n"
+            r3 = "7 8 9\t1\n1 2 3\t2\n"
+            r4 = "10 11 12\t1\n1 2 3\t2\n"
+            t1 = self.dataset_populator.get_history_dataset_content(history_id, hid=7)
+            t2 = self.dataset_populator.get_history_dataset_content(history_id, hid=10)
+            t3 = self.dataset_populator.get_history_dataset_content(history_id, hid=13)
+            t4 = self.dataset_populator.get_history_dataset_content(history_id, hid=16)
+            self.assertEqual(r1, t1)
+            self.assertEqual(r2, t2)
+            self.assertEqual(r3, t3)
+            self.assertEqual(r4, t4)
+
+    @skip_without_tool("cat1")
+    @skip_without_tool("addValue")
+    def test_run_batch_inputs(self):
+        workflow = self.workflow_populator.load_workflow_from_resource("test_workflow_batch")
+        workflow_id = self.workflow_populator.create_workflow(workflow)
+        with self.dataset_populator.test_history() as history_id:
+            hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3")
+            hda2 = self.dataset_populator.new_dataset(history_id, content="4 5 6")
+            hda3 = self.dataset_populator.new_dataset(history_id, content="7 8 9")
+            hda4 = self.dataset_populator.new_dataset(history_id, content="10 11 12")
+            inputs = {
+                "coolinput": {"batch": True, "values": [{"id" : hda1.get("id"), "hid": hda1.get("hid"), "src": "hda"},
+                                                        {"id" : hda2.get("id"), "hid": hda2.get("hid"), "src": "hda"},
+                                                        {"id" : hda3.get("id"), "hid": hda2.get("hid"), "src": "hda"},
+                                                        {"id" : hda4.get("id"), "hid": hda2.get("hid"), "src": "hda"}]}
+            }
+            parameters = {
+                "1": {"input": {"batch": False, "values": [{"id" : hda1.get("id"), "hid": hda1.get("hid"), "src": "hda"}]}, "exp": "2"}
+            }
+            workflow_request = {
+                "history_id" : history_id,
+                "batch"      : True,
+                "inputs"     : dumps(inputs),
+                "inputs_by"  : "name",
                 "parameters_normalized": True,
                 "parameters" : dumps(parameters),
             }

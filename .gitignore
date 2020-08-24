@@ -140,7 +140,6 @@ test/unit/**.log
 .vscode
 client/**/jsconfig.json
 
-
 # Chrom len files
 *.len
 
@@ -153,8 +152,9 @@ static/plugins
 static/scripts
 node_modules
 bower_components
-client/galaxy/scripts/libs/*
-client/galaxy/style/less/*
+client/src/libs/*
+# Old galaxy client location
+client/galaxy
 
 # Documentation build files.
 doc/build

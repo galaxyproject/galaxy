@@ -1,9 +1,3 @@
-# Common test data for rule testing meant to be shared between API and Selenium tests.
-from pkg_resources import resource_string
-
-from galaxy.util import unicodify
-
-RULES_DSL_SPEC_STR = unicodify(resource_string(__name__, "data/rules_dsl_spec.yml"))
 
 
 def check_example_1(hdca, dataset_populator):

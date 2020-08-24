@@ -30,9 +30,9 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
         self.hda_manager = managers.hdas.HDAManager(app)
 
     @expose_api_anonymous
-    def index(self, trans, folder_id, **kwd):
+    def index(self, trans, folder_id, limit=None, offset=None, **kwd):
         """
-        GET /api/folders/{encoded_folder_id}/contents
+        GET /api/folders/{encoded_folder_id}/contents?limit={limit}&offset={offset}
 
         Displays a collection (list) of a folder's contents
         (files and folders). Encoded folder ID is prepended
@@ -41,7 +41,18 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
         response as a separate object providing data for
         breadcrumb path building.
 
+        ..example:
+            limit and offset can be combined. Skip the first two and return five:
+                '?limit=3&offset=5'
+
         :param  folder_id: encoded ID of the folder which
+            contents should be library_dataset_dict
+        :type   folder_id: encoded string
+
+        :param  offset: offset for returned library folder datasets
+        :type   folder_id: encoded string
+
+        :param  limit: limit   for returned library folder datasets
             contents should be library_dataset_dict
         :type   folder_id: encoded string
 
@@ -79,7 +90,7 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
         update_time = ''
         create_time = ''
         #  Go through every accessible item (folders, datasets) in the folder and include its metadata.
-        for content_item in self._load_folder_contents(trans, folder, deleted):
+        for content_item in self._load_folder_contents(trans, folder, deleted, offset, limit):
             return_item = {}
             encoded_id = trans.security.encode_id(content_item.id)
             create_time = content_item.create_time.strftime("%Y-%m-%d %I:%M %p")
@@ -186,7 +197,7 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
             path_to_root.extend(self.build_path(trans, upper_folder))
         return path_to_root
 
-    def _load_folder_contents(self, trans, folder, include_deleted):
+    def _load_folder_contents(self, trans, folder, include_deleted, offset=None, limit=None):
         """
         Loads all contents of the folder (folders and data sets) but only
         in the first level. Include deleted if the flag is set and if the
@@ -232,7 +243,19 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
                 #         subfolder.api_type = 'folder'
                 #         content_items.append( subfolder )
 
-        for dataset in folder.datasets:
+        datasets_size = len(folder.datasets)
+        if offset is None or limit is None:
+            current_folder_datasets = folder.datasets
+
+        else:
+            offset = int(offset)
+            limit = int(limit)
+            if datasets_size < offset + limit:
+                current_folder_datasets = folder.datasets[offset: datasets_size]
+            else:
+                current_folder_datasets = folder.datasets[offset:offset + limit]
+
+        for dataset in current_folder_datasets:
             if dataset.deleted:
                 if include_deleted:
                     if is_admin:

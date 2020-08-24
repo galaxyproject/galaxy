@@ -97,7 +97,7 @@ Changing Styles/CSS
 
 Galaxy uses Sass for its styling, which is a superset of CSS that compiles down
 to regular CSS.  Most Galaxy styling source (.scss) files are kept in
-`client/galaxy/style/scss.  There are additionally style blocks alongside some
+`client/src/style/scss.  There are additionally style blocks alongside some
 Vue components -- styles that are particular to that individual component and
 do not apply site-wide.
 
@@ -175,7 +175,7 @@ following commands.
 ## Writing a test file
 
 The karma configs are setup to look at any file ending in "*.test.js". Please
-place your test files inside client/galaxy/scripts folders right next to
+place your test files inside client/src folders right next to
 whatever files that they are testing.
 
 ```javascript
@@ -301,13 +301,13 @@ broken up into easily testable chunks.
 
 ## Specific test scenarios & examples
 
-[Mocking an imported dependency](https://github.com/galaxyproject/galaxy/blob/dev/client/galaxy/scripts/components/Tags/tagService.test.js)
+[Mocking an imported dependency](https://github.com/galaxyproject/galaxy/blob/dev/client/src/components/Tags/tagService.test.js)
 
-[Testing async operations](https://github.com/galaxyproject/galaxy/blob/dev/client/galaxy/scripts/components/Tags/tagService.test.js)
+[Testing async operations](https://github.com/galaxyproject/galaxy/blob/dev/client/src/components/Tags/tagService.test.js)
 
-[Testing a Vue component for expected rendering output](https://github.com/galaxyproject/galaxy/blob/dev/client/galaxy/scripts/components/Tags/StatelessTags.test.js)
+[Testing a Vue component for expected rendering output](https://github.com/galaxyproject/galaxy/blob/dev/client/src/components/Tags/StatelessTags.test.js)
 
-[Firing an event against a shallow mounted vue component](https://github.com/galaxyproject/galaxy/blob/dev/client/galaxy/scripts/components/Tags/StatelessTags.test.js)
+[Firing an event against a shallow mounted vue component](https://github.com/galaxyproject/galaxy/blob/dev/client/src/components/Tags/StatelessTags.test.js)
 
 
 ## The dirty secret about testing
