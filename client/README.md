@@ -79,7 +79,8 @@ after a client build, and the second starts a Galaxy server like usual, but
 with extra mappings that redirect client artifact requests to the mentioned
 webpack dev server.
 
-    make client-dev-server GALAXY_CLIENT_DEV_SERVER=1 sh run.sh
+    make client-dev-server
+    GALAXY_CLIENT_DEV_SERVER=1 sh run.sh
 
 Note that this only works under uWSGI due to the extra internal routing rules
 employed. If you're using the older Paste-based galaxy webserver you'll need to
