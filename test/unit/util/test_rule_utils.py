@@ -1,11 +1,8 @@
-import yaml
-
 from galaxy.util import rules_dsl
-from galaxy_test.base import rules_test_data
 
 
 def test_rules():
-    for test_case in yaml.safe_load(rules_test_data.RULES_DSL_SPEC_STR):
+    for test_case in rules_dsl.get_rules_specification():
         rule_set = rules_dsl.RuleSet(test_case)
         if "initial" in test_case:
             initial = test_case["initial"]
