@@ -79,7 +79,7 @@
     "prettier-check": "prettier --check 'src/style/scss/**/*.scss' 'src/**/{*.js,*.vue}' '!src/libs/**'",
     "styleguide": "vue-styleguidist server",
     "styleguide:build": "vue-styleguidist build",
-    "test": "yarn run test-qunit && yarn run jest",
+    "test": "yarn run qunit && yarn run jest",
     "jest": "jest --config tests/jest/jest.config.js",
     "jest-watch": "jest --config tests/jest/jest.config.js --watch",
     "qunit": "karma start tests/karma/karma.config.qunit.js",
