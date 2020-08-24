@@ -1,43 +1,32 @@
-import sinon from "sinon";
 import flushPromises from "flush-promises";
 import { shallowMount, createLocalVue } from "@vue/test-utils";
 
-import { default as CloudAuth, __RewireAPI__ as rewire } from "./CloudAuth";
+import { default as CloudAuth } from "./CloudAuth";
 import CloudAuthItem from "./CloudAuthItem";
-import { Credential } from "./model";
 
 import _l from "utils/localization";
 import BootstrapVue from "bootstrap-vue";
 
-// test data
-import listCredentials from "./testdata/listCredentials.json";
 import { getNewAttachNode } from "jest/helpers";
+
+jest.mock("./model/service", () => ({
+    listCredentials: async () => {
+        const listCredentials = require("./testdata/listCredentials.json");
+        const Credential = require("./model").Credential;
+        return listCredentials.map(Credential.create);
+    },
+}));
 
 const localVue = createLocalVue();
 localVue.use(BootstrapVue);
 localVue.filter("localize", (value) => _l(value));
 
 describe("CloudAuth component", () => {
-    let stub;
     let wrapper;
 
-    const mockSvc = {
-        listCredentials: async () => null,
-    };
-
-    rewire.__Rewire__("svc", mockSvc);
-
     beforeEach(async () => {
-        const creds = listCredentials.map(Credential.create);
-        stub = sinon.stub(mockSvc, "listCredentials").resolves(creds);
         wrapper = shallowMount(CloudAuth, { localVue, attachTo: getNewAttachNode() });
         await flushPromises();
-    });
-
-    afterEach(() => {
-        if (stub) {
-            stub.restore();
-        }
     });
 
     describe("initialization", () => {
