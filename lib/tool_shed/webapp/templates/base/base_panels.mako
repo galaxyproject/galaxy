@@ -29,16 +29,16 @@
 ## TODO: remove when all libs are required directly in modules
 <%def name="javascripts()">
     <!--- base/base_panels.mako javascripts() -->
-    ${h.js(
-        'bundled/libs.chunk',
-        'bundled/base.chunk'
+    ${h.dist_js(
+        'libs.chunk',
+        'base.chunk'
     )}
     ${ javascript_entry() }
 </%def>
 
 <%def name="javascript_entry()">
     <!-- base/base_panels.mako javascript_entry -->
-    ${ h.js('bundled/generic.bundled')}
+    ${ h.dist_js('generic.bundled')}
 </%def>
 
 <%def name="javascript_app()">
