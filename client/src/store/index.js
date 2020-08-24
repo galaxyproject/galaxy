@@ -16,6 +16,7 @@ import { historyStore } from "./historyStore";
 import { userStore } from "./userStore";
 import { configStore } from "./configStore";
 import { workflowStore } from "./workflowStore";
+import { toolStore } from "./toolStore";
 import { datasetPathDestinationStore } from "./datasetPathDestinationStore";
 import { datasetExtFilesStore } from "./datasetExtFilesStore";
 import { datasetsStore } from "./datasetsStore";
@@ -47,6 +48,7 @@ export function createStore() {
             datasetExtFiles: datasetExtFilesStore,
             invocations: invocationStore,
             workflows: workflowStore,
+            tools: toolStore,
             datasets: datasetsStore,
             informationStore: jobStore,
         },
