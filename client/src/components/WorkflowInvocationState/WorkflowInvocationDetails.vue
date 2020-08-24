@@ -36,20 +36,14 @@
         <div v-if="Object.keys(invocation.steps).length > 0">
             <details
                 ><summary><b>Invocation Steps</b></summary>
-                <div v-for="step in this.orderedSteps" v-bind:key="step.id">
-                    Step {{step.order_index + 1}}: {{getToolNameByInstanceId(workflow.steps[step.order_index].tool_id)}}
-                    <p>
-                    {{ step }}
-                    </p>
-                    Workflow:
-                    <p>{{workflow}}</p>
-                </div>
+                <workflow-invocation-step v-for="step in orderedSteps" :key="step.id" :workflow="workflow" :step="step"/>
             </details>
         </div>
     </div>
 </template>
 <script>
 import WorkflowInvocationDataContents from "./WorkflowInvocationDataContents";
+import WorkflowInvocationStep from "./WorkflowInvocationStep";
 import ListMixin from "components/History/ListMixin";
 
 import { getAppRoot } from "onload/loadConfig";
@@ -65,6 +59,7 @@ export default {
     mixins: [ListMixin],
     components: {
         WorkflowInvocationDataContents,
+        WorkflowInvocationStep,
     },
     props: {
         invocation: {
@@ -72,7 +67,7 @@ export default {
         },
     },
     computed: {
-        ...mapGetters(["getWorkflowByInstanceId", "getToolForId", "getToolNameByInstanceId"]),
+        ...mapGetters(["getWorkflowByInstanceId"]),
         orderedSteps() {
             return _.orderBy(this.invocation.steps, ['order_index']);
         },
@@ -81,44 +76,7 @@ export default {
         },
 
     },
-    mounted() {
-        this.fetchTools();
-    },
     methods: {
-        ...mapCacheActions(["fetchWorkflowForInstanceId", "fetchToolForId"]),
-        fetchTools() {
-            Object.values(this.workflow.steps).map((step) => {
-                console.log(step);
-                if (step.tool_id) {
-                    this.fetchToolForId(step.tool_id)
-                }
-            })
-        },
-        stepLabel(step) {
-            const stepIndex = step.order_index + 1;
-            if (step.workflow_step_label) {
-                return `Step ${stepIndex}: ${step.workflow_step_label}`;
-            }
-            const workflowStepType = this.workflow.steps[step.order_index].type;
-            switch (workflowStepType) {
-                case "tool":
-                    return this.toolStepLabel(step);
-                case "subworkflow":
-                    return this.subWorkflowStepLabel(step);
-                case "parameter_input":
-                    return `Step ${stepIndex}: Parameter input`;
-                case "data_input":
-                    `Step ${stepIndex}: Data input`
-                case "data_collection_input":
-                    return `Step ${stepIndex}: Data collection input`
-                default:
-                    return `Step ${stepIndex}: Unknown step type '${workflowStepType}'`;
-            }
-        },
-        subWorkflowStepLabel(step) {
-            const subworkflow = this.getWorkflowByInstanceId(this.workflow.steps[step.order_index].workflow_id)
-            return `Step ${step.order_index + 1}: ${subworkflow.name}`
-        },
         dataInputStepLabel(key, input) {
             let label = this.orderedSteps[key].workflow_step_label;
             if (!label) {

@@ -7,10 +7,10 @@ import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 
 const getters = {
-    getToolForId: state => toolId => {
+    getToolForId: (state) => (toolId) => {
         return state.toolById[toolId];
     },
-    getToolNameByInstanceId: (state) => (toolId) => {
+    getToolNameById: (state) => (toolId) => {
         const details = state.toolById[toolId];
         if (details && details.name) {
             return details.name;
