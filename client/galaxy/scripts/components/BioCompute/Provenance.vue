@@ -27,28 +27,30 @@
             <td></td>
         </tr>
         <tr v-for="(object, index) in item.review" :key="object">
-            <td></td>
             <!-- Source:  https://stackoverflow.com/questions/51953173/how-do-i-pass-input-text-using-v-onchange-to-my-vue-method -->
+            <td><button>Remove</button></td>
             <td><textarea :data-jpath="`provenance_domain.review[${index}].status`" v-on:input='event => store_input(event)' v-model="object.status"/></td>
             <td><textarea v-on:input='event => store_input(event)' v-model="object.date"/></textarea></td>
             <td><textarea v-on:input='event => store_input(event)' v-model="object.reviewer.name"/></textarea></td>
-            <td><textarea v-on:input='event => store_input(event)'  v-model="object.reviewer.email" /></textarea></td>
+            <td><textarea v-on:input='event => store_input(event)' v-model="object.reviewer.email" /></textarea></td>
             <td><textarea v-on:input='event => store_input(event)' v-model="object.reviewer.affiliation"/></textarea></td>
             <td><textarea v-on:input='event => store_input(event)' v-model="object.reviewer_comment"/></textarea></td>
-            <td><button>Remove</button></td>
         </tr>
         <tr>
-        <td></td>
-        <td colspan=6>
-        <button>Add Review Step</button>
-        </td>
+          <td colspan=5>
+            <button>Add Review Step</button>
+          </td>
         <tr>
             <td colspan=8>
             </td>
         </tr>
+          <tr>
+              <td>Derived From</td>
+              <td>{{ item.derived_from }}</td>
+          </tr>
         <tr>
             <td>Obsolete After</td>
-            <td></td>
+            <td>{{ item.obsolete_after }}</td>
         </tr>
         <tr>
             <td colspan=8>
