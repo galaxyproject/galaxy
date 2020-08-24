@@ -6,6 +6,9 @@ import subprocess
 import sys
 
 import irods.keywords as kw
+from irods.exception import CollectionDoesNotExist
+from irods.exception import DataObjectDoesNotExist
+from irods.exception import NetworkException
 from irods.session import iRODSSession
 from psycopg2 import connect
 
@@ -140,8 +143,30 @@ def copy_files_to_irods(start_dataset_id, end_dataset_id, object_store_info_file
             session.collections.create(irods_file_collection_path)
 
             # Add disk file to collection
-            options = {kw.DEST_RESC_NAME_KW: 'demoResc'}
+            options = {kw.DEST_RESC_NAME_KW: 'demoResc', kw.REG_CHKSUM_KW : ''}
             session.data_objects.put(disk_file_path, irods_file_path, **options)
+
+            # Calculate disk file checksum before uploading it to irods
+            # After disk file is uploaded to irods, we get the file checksum from irods and compare it with the calculated disk file checksum
+            # Note that disk file checksum is ASCII, whereas irods file checksum is Unicode
+            disk_file_checksum = get_file_checksum(disk_file_path)
+            print("disk_file_checksum: ", disk_file_checksum)
+            # Now get the file from irods
+            try:
+                obj = session.data_objects.get(irods_file_path)
+                print("obj.checksum: ", obj.checksum)
+                # obj.checksum is prepended with 'sha2:'. Remove that so we can compare it to disk file checksum
+                irods_file_checksum = obj.checksum[5:]
+                print("irods_file_checksum: ", irods_file_checksum)
+                if irods_file_checksum != disk_file_checksum:
+                    print("irods file checksum {} does not match disk file checksum {}".format(irods_file_checksum, disk_file_checksum))
+                    return
+            except (DataObjectDoesNotExist, CollectionDoesNotExist) as e:
+                print(e)
+                continue
+            except NetworkException as e:
+                print(e)
+                continue
 
             if os.path.isdir(disk_folder_path):
                 disk_folder_path_all_files = disk_folder_path + "/*"
@@ -173,6 +198,20 @@ def copy_files_to_irods(start_dataset_id, end_dataset_id, object_store_info_file
     conn.commit()
     read_cursor.close()
     conn.close()
+
+
+def get_file_checksum(disk_file_path):
+    checksum_cmd = "shasum -a 256 {} | xxd -r -p | base64".format(disk_file_path)
+    print("checksum_cmd: ", checksum_cmd)
+    disk_file_checksum = subprocess.check_output(checksum_cmd, shell=True)
+    # remove '\n' from the end of disk_file_checksum
+    print("disk_file_checksum: ", disk_file_checksum)
+    disk_file_checksum_len = len(disk_file_checksum)
+    print("disk_file_checksum_len: ", disk_file_checksum_len)
+    disk_file_checksum_trimmed = disk_file_checksum[0:(disk_file_checksum_len - 1)]
+    print("disk_file_checksum_trimmed: ", disk_file_checksum_trimmed)
+    # Return Unicode string
+    return disk_file_checksum_trimmed.decode("utf-8")
 
 
 def print_help_msg():
