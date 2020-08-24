@@ -4,9 +4,8 @@
             <span id="invocations-title">BioCompute Object for Invocation {{ invocationId }}</span>
         </h2>
         <bco-header :objectid="bco.object_id" :etag="bco.etag" :specversion="bco.spec_version" />
-        <usability :usability="bco.usability_domain" />
-        <span> {{ bco }} </span>
-        <!-- <provenance-domain :item="bco.provenance_domain" /> -->
+        <provenance :item="bco.provenance_domain" :invokeId=invocationId />
+        <usability-domain :usability="bco.usability_domain" />
     </div>
 </template>
 
@@ -15,8 +14,8 @@
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 import BcoHeader from "components/BioCompute/BcoHeader.vue";
+import Provenance from "components/BioCompute/Provenance.vue";
 import Usability from "components/BioCompute/Usability.vue";
-// import ProvenanceDomain from "components/BioCompute/Provenance.vue";
 
 
 export default {
@@ -24,7 +23,7 @@ export default {
     components: {
         BcoHeader,
         Usability,
-        // ProvenanceDomain
+        Provenance
     },
     props: {
         invocationId: {
@@ -36,15 +35,6 @@ export default {
         return {
             bco: {},
         };
-    },
-    created() {
-        const invocationId = this.invocationId;
-        const url = getAppRoot() + `api/invocations/${this.invocationId}/export_bco`;
-        axios.get(url).then((response) => {
-            this.bco = response.data}).catch((e) => {
-                    console.error(e);
-                });
-        return this.bco
     },
     methods: {
         onScroll({
@@ -62,6 +52,55 @@ export default {
             }
         },
     },
+    mounted: function () {
+        
+        // Call only after everything has loaded.
+        // Source: https://vuejs.org/v2/api/#mounted
+
+        // Context helper.
+        var context_helper = this;
+
+        this.$nextTick(function () {
+
+            // Define the invocation ID.
+            const invocationId = context_helper.invocationId;
+
+            // Fetch the BCO.
+            const url = getAppRoot() + `api/invocations/${invocationId}/export_bco`;
+            axios.get(url).then((response) => {
+                
+                // Set the BCO.
+                context_helper.bco = response.data;
+
+                // Set the session information.
+
+                // Original values.
+                sessionStorage.setItem(invocationId, JSON.stringify(response.data));
+
+                // User-modifiable values.
+                sessionStorage.setItem(invocationId + '-USER', JSON.stringify(response.data));
+
+            }).catch((e) => {
+                console.error(e);
+            });
+
+            // Create a context handler.
+            //var this_helper = this;
+            
+            // Loop over the response and assign values to new
+            // objects.
+            
+            //for (var key of Object.keys(response.data)) {
+            
+                // Vue-wide object.
+                //this_helper[key] = response.data[key]
+            //}
+            //console.log(this);
+            //console.log(this.embargo.start_time);
+
+            
+      })
+    }
 };
 </script>
 <style>
