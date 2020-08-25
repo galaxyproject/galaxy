@@ -6,7 +6,7 @@
                     <favorites-button @onFavorites="onFavorites" v-if="isUser" />
                     <upload-button />
                 </div>
-                <div class="panel-header-text">Tools</div>
+                <div class="panel-header-text">AnVIL Tools</div>
             </div>
         </div>
         <div class="unified-panel-controls">
