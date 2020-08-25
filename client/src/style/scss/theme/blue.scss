@@ -1,13 +1,14 @@
 // Brand colors
-$brand-primary: #25537b;
+$brand-primary: #035c94; // anvil primary
 $brand-secondary: #dee2e6;
+//$brand-secondary: #aeebf2; // anvil accent blue-light  (tried this, didn't work well at all)
 $brand-success: #66cc66;
 $brand-info: #2077b3;
 $brand-warning: #fe7f02;
 $brand-danger: #e31a1e;
-$brand-light: #f8f9fa;
-$brand-dark: #2c3143;
-$brand-toggle: gold;
+$brand-light: #f6f7f4; // anvil shade light
+$brand-dark: #012840; // anvil shade dark
+$brand-toggle: #e0dd10; // anvil accent mustard
 
 // Masthead colors
 $brand-masthead: $brand-dark;
