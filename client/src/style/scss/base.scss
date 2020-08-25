@@ -390,6 +390,7 @@ body {
             display: inline;
             margin-right: 0.3rem;
             border: none;
+            max-height: $masthead-logo-height;
         }
         .navbar-brand-title {
             color: $brand-masthead-text;
