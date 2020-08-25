@@ -10,13 +10,7 @@
             @onOk="onOk"
             @onCancel="onCancel"
         />
-        <DataDialog
-            v-if="dataShow"
-            :history="dataHistoryId"
-            format="id"
-            @onOk="onData"
-            @onCancel="onCancel"
-        />
+        <DataDialog v-if="dataShow" :history="dataHistoryId" format="id" @onOk="onData" @onCancel="onCancel" />
         <DatasetCollectionDialog
             v-if="dataCollectionShow"
             :history="dataHistoryId"
@@ -87,7 +81,7 @@ export default {
             type: Array,
             default: null,
         },
-        useLabel: {
+        useLabels: {
             type: Boolean,
             default: false,
         },
@@ -137,7 +131,7 @@ export default {
         if (this.argumentType == "workflow_id") {
             this.workflowShow = true;
         } else if (this.argumentType == "history_dataset_id") {
-            if (this.useLabel) {
+            if (this.useLabels) {
                 this.selectedShow = true;
             } else {
                 getCurrentGalaxyHistory().then((historyId) => {
@@ -146,7 +140,7 @@ export default {
                 });
             }
         } else if (this.argumentType == "history_dataset_collection_id") {
-            if (this.useLabel) {
+            if (this.useLabels) {
                 this.selectedShow = true;
             } else {
                 getCurrentGalaxyHistory().then((historyId) => {
@@ -155,13 +149,13 @@ export default {
                 });
             }
         } else if (this.argumentType == "invocation_id") {
-            if (this.useLabel) {
+            if (this.useLabels) {
                 this.selectedShow = true;
             } else {
                 this.invocationShow = true;
             }
         } else if (this.argumentType == "job_id") {
-            if (this.useLabel) {
+            if (this.useLabels) {
                 this.selectedShow = true;
             } else {
                 this.jobShow = true;
