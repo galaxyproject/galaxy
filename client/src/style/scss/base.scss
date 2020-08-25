@@ -385,10 +385,11 @@ body {
         color: $brand-masthead-text-active;
         text-decoration: none;
         .navbar-brand-image {
+            @extend .align-middle;
             display: inline;
             margin-right: 0.3rem;
             border: none;
-            max-height: 2rem;
+            max-height: $masthead-logo-height;
         }
         .navbar-brand-title {
             color: $brand-masthead-text;
