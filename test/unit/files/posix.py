@@ -14,6 +14,7 @@ from ._util import (
     list_root,
     serialize_and_recover,
     user_context_fixture,
+    write_from,
 )
 
 EMAIL = 'alice@galaxyproject.org'
@@ -93,6 +94,23 @@ def test_posix_per_user():
 
     res = list_root(file_sources, "gxfiles://test1", recursive=False, user_context=user_context)
     assert find_file_a(res)
+
+
+def test_posix_per_user_writable():
+    file_sources = _configured_file_sources(per_user=True, writable=True)
+    user_context = user_context_fixture()
+
+    res = list_root(file_sources, "gxfiles://test1", recursive=False, user_context=user_context)
+    b = find(res, name="b")
+    assert b is None
+
+    write_from(file_sources, "gxfiles://test1/b", "my test content", user_context=user_context)
+
+    res = list_root(file_sources, "gxfiles://test1", recursive=False, user_context=user_context)
+    b = find(res, name="b")
+    assert b is not None, b
+
+    assert_realizes_as(file_sources, "gxfiles://test1/b", "my test content", user_context=user_context)
 
 
 def test_posix_per_user_serialized():
@@ -208,7 +226,7 @@ def test_user_import_dir_implicit_config():
     assert_realizes_as(file_sources, "gxuserimport://a", "a\n", user_context=user_context)
 
 
-def _configured_file_sources(include_allowlist=False, plugin_extra_config=None, per_user=False):
+def _configured_file_sources(include_allowlist=False, plugin_extra_config=None, per_user=False, writable=None):
     tmp, root = _setup_root()
     config_kwd = {}
     if include_allowlist:
@@ -218,6 +236,8 @@ def _configured_file_sources(include_allowlist=False, plugin_extra_config=None, 
         'type': 'posix',
         'id': 'test1',
     }
+    if writable is not None:
+        plugin['writable'] = writable
     if per_user:
         plugin['root'] = "%s/${user.username}" % root
         # setup files just for alice

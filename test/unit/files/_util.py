@@ -66,7 +66,22 @@ def assert_realizes_as(file_sources, uri, expected, user_context=None):
     file_source_path.file_source.realize_to(file_source_path.path, temp_name, user_context=user_context)
     try:
         with open(temp_name, "r") as f:
-            assert f.read() == expected
+            realized_contents = f.read()
+        if realized_contents != expected:
+            message = "Expected to realize contents at [{}] as [{}], instead found [{}]".format(
+                uri,
+                expected,
+                realized_contents,
+            )
+            raise AssertionError(message)
     finally:
         os.remove(temp_name)
     return temp_name
+
+
+def write_from(file_sources, uri, content, user_context=None):
+    file_source_path = file_sources.get_file_source_path(uri)
+    fd, temp_name = tempfile.mkstemp()
+    with open(fd, 'w') as f:
+        f.write(content)
+    file_source_path.file_source.write_from(file_source_path.path, temp_name, user_context=user_context)

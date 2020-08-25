@@ -18,6 +18,8 @@ USER_EMAIL = 'user@bx.psu.edu'
 
 class RemoteFilesIntegrationTestCase(integration_util.IntegrationTestCase):
 
+    framework_tool_and_types = True
+
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         root = os.path.realpath(mkdtemp())
@@ -108,6 +110,20 @@ class RemoteFilesIntegrationTestCase(integration_util.IntegrationTestCase):
             assert content == "a\n", content
 
         assert not os.path.exists(os.path.join(ftp_dir, "a"))
+
+    def test_write_to_files(self):
+        dataset_populator = self.dataset_populator
+        ftp_dir = os.path.join(self.ftp_upload_dir, USER_EMAIL)
+        _write_file_fixtures(self.root, ftp_dir)
+        with dataset_populator.test_history() as history_id:
+            inputs = {
+                "d_uri": "gxftp://",
+            }
+            response = dataset_populator.run_tool("directory_uri", inputs, history_id)
+            dataset_populator.wait_for_job(response["jobs"][0]["id"])
+            assert 'helloworld' in os.listdir(ftp_dir)
+            with open(os.path.join(ftp_dir, 'helloworld'), 'r') as f:
+                assert 'hello world!\n' == f.read()
 
     def _assert_index_empty(self, index):
         assert len(index) == 0

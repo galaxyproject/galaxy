@@ -42,6 +42,10 @@ class PyFilesystem2FilesSource(BaseFilesSource):
         with open(native_path, 'wb') as write_file:
             self._open_fs(user_context=user_context).download(source_path, write_file)
 
+    def _write_from(self, target_path, native_path, user_context=None):
+        with open(native_path, 'rb') as read_file:
+            self._open_fs(user_context=user_context).upload(target_path, read_file)
+
     def _resource_info_to_dict(self, dir_path, resource_info):
         name = resource_info.name
         path = os.path.join(dir_path, name)
