@@ -3,9 +3,9 @@ import CollectionCreatorModalMixin from "./mixins/CollectionCreatorModalMixin";
 import PairCollectionCreator from "./PairCollectionCreator";
 import _l from "utils/localization";
 export default {
-    mixins: {
+    mixins: [
         CollectionCreatorModalMixin,
-    },
+    ],
     methods: {
         pairCollectionCreatorModal: function (elements, options) {
             options = options || {};

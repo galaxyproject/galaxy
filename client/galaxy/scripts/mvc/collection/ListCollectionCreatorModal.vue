@@ -1,31 +1,30 @@
 <script>
 import CollectionCreatorModalMixin from "./mixins/CollectionCreatorModalMixin";
-import ListCollectionCreator from "./ListCollectionCreator";
 import _l from "utils/localization";
 import Vue from "vue";
 export default {
-    mixins: [
-        CollectionCreatorModalMixin,
-    ],
+    mixins: [CollectionCreatorModalMixin],
     methods: {
         listCollectionCreatorModal: function (elements, options) {
             options = options || {};
             options.title = _l("Create a collection from a list of datasets");
             const { deferred, creatorOptions, showEl } = this.collectionCreatorModalSetup(options); // eslint-disable-line no-unused-vars
-
-            var vm = document.createElement("div");
-            showEl(vm);
-            var listCollectionCreatorClass = Vue.extend(ListCollectionCreator);
-            var listinstance = new listCollectionCreatorClass({
-                propsData: {
-                    creationFn: options.creationFn,
-                    oncancel: options.oncancel,
-                    oncreate: options.oncreate,
-                    //TODO : autoscollDist, highlightClr
-                },
-            });
-            listinstance.$mount(vm);
-            return deferred;
+            return import(/* webpackChunkName: "ListCollectionCreator" */ "./ListCollectionCreator.vue").then(
+                (module) => {
+                    var listCollectionCreatorInstance = Vue.extend(module.default);
+                    var vm = document.createElement("div");
+                    showEl(vm);
+                    new listCollectionCreatorInstance({
+                        propsData: {
+                            creationFn: options.creationFn,
+                            oncancel: options.oncancel,
+                            oncreate: options.oncreate,
+                            //TODO : autoscollDist, highlightClr
+                        },
+                    }).$mount(vm);
+                    return deferred;
+                }
+            );
         },
         /** Use a modal to create a list collection, then add it to the given history contents.
          *  @returns {Deferred} resolved when the collection is added to the history.

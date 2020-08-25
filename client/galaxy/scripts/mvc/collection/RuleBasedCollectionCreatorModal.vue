@@ -1,12 +1,12 @@
 <script>
-import CollectionCreatorModalMixin from "./CollectionCreatorModalMixin";
+import CollectionCreatorModalMixin from "./mixins/CollectionCreatorModalMixin";
 import _ from "underscore";
 import _l from "utils/localization";
 import Vue from "vue";
 export default {
-        mixins: {
+    mixins: [
         CollectionCreatorModalMixin,
-    },
+    ],
     methods: {
         ruleBasedCollectionCreatorModal: function (elements, elementsType, importType, options) {
             // importType in [datasets, collection]
