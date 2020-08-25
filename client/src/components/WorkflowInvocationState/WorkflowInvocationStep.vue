@@ -1,19 +1,18 @@
 <template>
-    <div>
-        <div class="ui-portlet-section">
+    <div class="d-flex">
+        <div class="ui-portlet-section" style="width: 100%">
             <div class="portlet-header portlet-title portlet-operations" v-on:click="toggleStep">
-                <i class="'portlet-title-icon fa mr-1 ' + stepIcon" style="display: inline;"></i>
-                <span class="portlet-title-text no-highlight collapsible">
-                    {{stepLabel}}
+                <i :class="'portlet-title-icon fa mr-1 ' + stepIcon"></i>
+                <span class="portlet-title-text">
+                    <u>{{stepLabel}}</u>
                 </span>
             </div>
             <div class="portlet-content" v-show="expanded">
-                <div class="portlet-body">
-                    {{ step }}
-                    <p></p>
-                    Workflow:
-                    <p>{{workflow}}</p>
+                <div style="min-width: 1;"/>
+                <div class="portlet-body" style="width: 100%; overflow-x: auto;">
+                    <b-table small caption-top :items="stepDetails.jobs" v-if="stepDetails"/>
                 </div>
+                <div style="min-width: 1;"/>
             </div>
         </div>
     </div>
@@ -37,24 +36,32 @@ export default {
         };
     },
     mounted() {
-        this.fetchTools();
+        this.fetchTool();
+        this.fetchInvocationStepById(this.step.id)
     },
     computed: {
-        ...mapGetters(["getToolForId", "getToolNameById", "getWorkflowByInstanceId"]),
-        workflowStepType() {
+        ...mapGetters(["getToolForId", "getToolNameById", "getWorkflowByInstanceId", "getInvocationStepById"]),
+        workflowStep() {
             return this.workflow.steps[this.step.order_index];
         },
+        workflowStepType() {
+            return this.workflowStep.type;
+        },
         stepIcon() {
+            console.log(this.workflowStepType);
             switch (this.workflowStepType) {
                 case "data_input":
                     return 'fa-file';
                 case "data_collection_input":
                     return 'fa-folder-o';
-                case "pencil-square":
-                    return 'pencil-square';
+                case "parameter_input":
+                    return 'fa-pencil';
                 default:
                     return 'fa-wrench';
             }
+        },
+        stepDetails() {
+            return this.getInvocationStepById(this.step.id)
         },
         stepLabel() {
             const stepIndex = this.step.order_index + 1;
@@ -80,13 +87,11 @@ export default {
         },
     },
     methods: {
-        ...mapCacheActions(["fetchToolForId"]),
-        fetchTools() {
-            Object.values(this.workflow.steps).map((step) => {
-                if (step.tool_id && !this.getToolForId(step.tool_id)) {
-                    this.fetchToolForId(step.tool_id)
+        ...mapCacheActions(["fetchToolForId", "fetchInvocationStepById"]),
+        fetchTool() {
+            if (this.workflowStep.tool_id && !this.getToolForId(this.workflowStep.tool_id)) {
+                    this.fetchToolForId(this.workflowStep.tool_id)
                 }
-            })
         },
         toggleStep() {
             this.expanded = !this.expanded;
