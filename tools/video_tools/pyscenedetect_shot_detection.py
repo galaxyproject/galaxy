@@ -21,21 +21,21 @@ def main():
         threshold = 30
         print("Setting threshold to default because it wasn't a valid integer")
 
-    scenes = find_scenes(input_file, output_csv, threshold)
+    shots = find_shots(input_file, output_csv, threshold)
 
     # Print for debugging purposes
-    for scene in scenes:
-        print("start: " + str(scene[0]) + "  end: " + str(scene[1]))
+    for shot in shots:
+        print("start: " + str(shot[0]) + "  end: " + str(shot[1]))
     
     # Convert the result to json, save the file
-    convert_to_json(scenes, input_file, output_json)
+    convert_to_json(shots, input_file, output_json)
 
 # Get the duration based on the last output
-def get_duration(scenes):
-    return scenes[len(scenes) - 1][1].get_timecode()
+def get_duration(shots):
+    return shots[len(shots) - 1][1].get_timecode()
 
-# Find a list of scenes using pyscenedetect api
-def find_scenes(video_path, stats_file, threshold):
+# Find a list of shots using pyscenedetect api
+def find_shots(video_path, stats_file, threshold):
     video_manager = VideoManager([video_path])
     stats_manager = StatsManager()
     # Construct our SceneManager and pass it our StatsManager.
@@ -61,9 +61,9 @@ def find_scenes(video_path, stats_file, threshold):
 
         # Obtain list of detected scenes.
         scene_list = scene_manager.get_scene_list(base_timecode)
-        # Each scene is a tuple of (start, end) FrameTimecodes.
 
-        print('List of scenes obtained:')
+        # Each scene is a tuple of (start, end) FrameTimecodes.
+        print('List of shots obtained:')
         for i, scene in enumerate(scene_list):
             print(
                 'Scene %2d: Start %s / Frame %d, End %s / Frame %d' % (
@@ -75,15 +75,17 @@ def find_scenes(video_path, stats_file, threshold):
         if stats_manager.is_save_required():
             with open(stats_file, 'w') as stats_file:
                 stats_manager.save_to_csv(stats_file, base_timecode)
-
+    except Exception as err:
+        print(err)
+        
     finally:
         video_manager.release()
 
     return scene_list
 
 
-def convert_to_json(scenes, input_file, output_json):
-    duration = get_duration(scenes)
+def convert_to_json(shots, input_file, output_json):
+    duration = get_duration(shots)
     outputDict = {
         "media": {
             "filename": input_file,
@@ -92,11 +94,11 @@ def convert_to_json(scenes, input_file, output_json):
         "shots": []
     }
 
-    for scene in scenes:
+    for s in shots:
         shot = {
             "type": "shot",
-            "start": scene[0].get_timecode(),
-            "end": scene[1].get_timecode()
+            "start": s[0].get_timecode(),
+            "end": s[1].get_timecode()
         }
         outputDict["shots"].append(shot)
 
