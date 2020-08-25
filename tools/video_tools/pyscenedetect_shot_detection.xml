@@ -1,4 +1,4 @@
-<tool id="shot_detection" name="PySceneDetect" version="1.0.0">
+<tool id="PySceneDetect_shot_detection" name="PySceneDetect" version="1.0.0">
   <description>Runs shot detection on a video</description>
     <requirements>
     </requirements>
