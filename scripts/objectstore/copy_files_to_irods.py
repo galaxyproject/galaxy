@@ -146,7 +146,7 @@ def copy_files_to_irods(start_dataset_id, end_dataset_id, object_store_info_file
                 # Create the collection
                 session.collections.create(irods_folder_collection_path)
 
-                iput_command = "iput -r " + disk_folder_path_all_files + " " + irods_folder_collection_path
+                iput_command = "iput -rk " + disk_folder_path_all_files + " " + irods_folder_collection_path
                 subprocess.call(iput_command, shell=True)
 
     except Exception as e:

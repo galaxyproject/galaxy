@@ -158,6 +158,40 @@ def verify_irods_checksum(start_dataset_id, end_dataset_id, object_store_info_fi
                 print(e)
                 continue
 
+            # Recursively verify that the checksum of all files in this folder matches that in irods
+            if os.path.isdir(disk_folder_path):
+                # Recursively traverse the files in this folder
+                for root, dirs, files in os.walk(disk_folder_path):
+                    for file_name in files:
+                        print(os.path.join(root, file_name))
+                        # Get checksum for disk file
+                        disk_file_checksum = get_file_checksum(os.path.join(root, file_name))
+                        print("disk_file_checksum: ", disk_file_checksum)
+
+                        # Construct iords path for this disk file, so can get the file from irods, and compare its checksum with disk file checksum
+                        # This is to extract the subfoler name for irods from the full disk path
+                        sub_folder = root.replace(disk_folder_path + "/", "")
+                        print("sub_folder: ", sub_folder)
+                        irods_file_path = irods_folder_collection_path + "/" + sub_folder + "/" + file_name
+                        print("irods_file_path: ", irods_file_path)
+
+                        # Now get the file from irods
+                        try:
+                            obj = session.data_objects.get(irods_file_path)
+                            print("obj.checksum: ", obj.checksum)
+                            # obj.checksum is prepended with 'sha2:'. Remove that so we can compare it to disk file checksum
+                            irods_file_checksum = obj.checksum[5:]
+                            print("irods_file_checksum: ", irods_file_checksum)
+                            if irods_file_checksum != disk_file_checksum:
+                                print("irods file checksum {} does not match disk file checksum {}".format(irods_file_checksum, disk_file_checksum))
+                                continue
+                        except (DataObjectDoesNotExist, CollectionDoesNotExist) as e:
+                            print(e)
+                            continue
+                        except NetworkException as e:
+                            print(e)
+                            continue
+
             # Update object store id
             update_cursor = conn.cursor()
             print("irods object store id: ", irods_info["object_store_id"])
@@ -185,14 +219,10 @@ def verify_irods_checksum(start_dataset_id, end_dataset_id, object_store_info_fi
 
 def get_file_checksum(disk_file_path):
     checksum_cmd = "shasum -a 256 {} | xxd -r -p | base64".format(disk_file_path)
-    print("checksum_cmd: ", checksum_cmd)
     disk_file_checksum = subprocess.check_output(checksum_cmd, shell=True)
     # remove '\n' from the end of disk_file_checksum
-    print("disk_file_checksum: ", disk_file_checksum)
     disk_file_checksum_len = len(disk_file_checksum)
-    print("disk_file_checksum_len: ", disk_file_checksum_len)
     disk_file_checksum_trimmed = disk_file_checksum[0:(disk_file_checksum_len - 1)]
-    print("disk_file_checksum_trimmed: ", disk_file_checksum_trimmed)
     # Return Unicode string
     return disk_file_checksum_trimmed.decode("utf-8")
 
