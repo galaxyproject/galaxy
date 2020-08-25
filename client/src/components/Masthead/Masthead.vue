@@ -8,7 +8,7 @@
         class="justify-content-center"
     >
         <b-navbar-brand href="https://anvil.terra.bio" aria-label="homepage">
-            <img alt="Galaxy Logo" class="navbar-brand-image align-middle" src="/static/images/galaxy_project_logo_white.png" />
+            <img alt="Galaxy Logo" class="navbar-brand-image align-middle" src="/static/images/galaxy_project_logo_white_square.png" />
             <img alt="Anvil Logo" class="navbar-brand-image align-middle" src="/static/images/anvilwhite.png" />
         </b-navbar-brand>
 
