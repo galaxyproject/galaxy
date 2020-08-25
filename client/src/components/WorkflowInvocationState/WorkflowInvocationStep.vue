@@ -10,7 +10,23 @@
             <div class="portlet-content" v-show="expanded">
                 <div style="min-width: 1;"/>
                 <div class="portlet-body" style="width: 100%; overflow-x: auto;">
-                    <b-table small caption-top :items="stepDetails.jobs" v-if="stepDetails"/>
+                    <b-table small caption-top :items="stepDetails.jobs" :fields="jobFields" v-if="stepDetails" @row-clicked="item=>$set(item, '_showDetails', !item._showDetails)">
+                        <template v-slot:row-details="row">
+                            <b-card>
+                                <small class="float-right">
+                                    <b>Job ID: {{ row.item.id }}</b>
+                                </small>
+                                {{row.item}}
+                                <job-parameters :jobId="row.item.id" />
+                            </b-card>
+                        </template>
+                        <template v-slot:cell(create_time)="data">
+                            <UtcDate :date="data.value" mode="elapsed" />
+                        </template>
+                        <template v-slot:cell(update_time)="data">
+                            <UtcDate :date="data.value" mode="elapsed" />
+                        </template>
+                    </b-table>
                 </div>
                 <div style="min-width: 1;"/>
             </div>
@@ -22,10 +38,16 @@ import { mapCacheActions } from "vuex-cache";
 import { mapGetters, mapActions } from "vuex"
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import { JobParameters } from "components/JobParameters"
+import UtcDate from "components/UtcDate";
 
 Vue.use(BootstrapVue);
 
 export default {
+    components: {
+        UtcDate,
+        JobParameters,
+    },
     props: {
         step: Object,
         workflow: Object,
@@ -59,6 +81,14 @@ export default {
                 default:
                     return 'fa-wrench';
             }
+        },
+        jobFields() {
+            return [
+                'state',
+                'exit_code',
+                {key: 'update_time', label: 'Updated'},
+                {key: 'create_time', label: 'Created'},
+            ]
         },
         stepDetails() {
             return this.getInvocationStepById(this.step.id)
