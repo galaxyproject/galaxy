@@ -101,7 +101,7 @@ describe("Tags/tagService.js", () => {
 
             // ends subscription to observable so test doesn't go on forever
             const spamCount = Math.floor(Math.random() * 10);
-            const timer = interval(1500).pipe(take(1));
+            const timer = interval(5000).pipe(take(1));
 
             // stub ajax request to return the success response if the
             // searchString is the expected input
