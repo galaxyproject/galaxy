@@ -9,7 +9,7 @@
                 v-b-tooltip.hover.bottom
                 @click="saveContent(false)"
             >
-                <span class="fa fa-save" />
+                <font-awesome-icon icon="save" />
             </b-button>
             <b-button
                 id="view-button"
@@ -19,21 +19,31 @@
                 v-b-tooltip.hover.bottom
                 @click="saveContent(true)"
             >
-                <span class="fa fa-eye" />
+                <font-awesome-icon icon="eye" />
             </b-button>
         </template>
     </markdown-editor>
 </template>
 
 <script>
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faEye, faSave } from "@fortawesome/free-solid-svg-icons";
 import MarkdownEditor from "components/Markdown/MarkdownEditor";
 import { Toast } from "ui/toast";
 import { getAppRoot } from "onload/loadConfig";
 import { save } from "./util";
 
+Vue.use(BootstrapVue);
+
+library.add(faEye, faSave);
+
 export default {
     components: {
         MarkdownEditor,
+        FontAwesomeIcon,
     },
     data: function () {
         return {
