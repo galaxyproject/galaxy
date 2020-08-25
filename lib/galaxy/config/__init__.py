@@ -137,7 +137,7 @@ class BaseAppConfiguration:
         """Check if a configuration option has been explicitly set."""
         # NOTE: This will check all supplied keyword arguments, including those not in the schema.
         # To check only schema options, change the line below to `if property not in self._raw_config:`
-        if property not in self._kwargs:
+        if key not in self._raw_config:
             log.warning("Configuration option does not exist: '%s'" % key)
         return key in self._kwargs
 
