@@ -12,5 +12,4 @@
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
     <template>mvpapp.mako</template>
-    <render_target>_blank</render_target>
 </visualization>

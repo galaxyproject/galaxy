@@ -10,7 +10,7 @@ const glob = require("glob");
  * un-built visualizations in the repository; for performance and
  * simplicity just add them one at a time until we upgrade older viz's.
  */
-const PLUGIN_BUILD_DIRS = ["annotate_image", "hyphyvision", "openlayers", "chiraviz", "editor", "media_player"];
+const PLUGIN_BUILD_DIRS = ["annotate_image", "hyphyvision", "openlayers", "chiraviz", "editor", "media_player", "mvpapp"];
 
 const paths = {
     node_modules: "./node_modules",
