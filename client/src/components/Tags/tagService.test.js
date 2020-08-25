@@ -4,13 +4,11 @@ import { TagService } from "./tagService";
 import { createTag } from "./model";
 //import { interval } from "rxjs";
 //import { take, takeUntil } from "rxjs/operators";
-
 // test response
 import autocompleteResponse from "./testData/autocompleteResponse.txt";
 
-const axiosMock = new MockAdapter(axios);
-
 describe("Tags/tagService.js", () => {
+    const axiosMock = new MockAdapter(axios);
     const svcParams = {
         id: 123,
         itemClass: "fooClass",
@@ -19,6 +17,9 @@ describe("Tags/tagService.js", () => {
     };
 
     const svc = new TagService(svcParams);
+    beforeEach(() => {
+        axiosMock.onAny().reply(200, autocompleteResponse);
+    });
 
     afterEach(() => {
         axiosMock.reset();
@@ -32,14 +33,12 @@ describe("Tags/tagService.js", () => {
         const expectedSaveUrl = `/tag/add_tag_async?item_id=${id}&item_class=${itemClass}&context=${context}&new_tag=${testLabel}`;
 
         it("should save a string tag", async () => {
-            axiosMock.onAny().reply(200);
             const savedTag = await svc.save(testLabel);
             expect(savedTag.text).toBe(testLabel);
             expect(axiosMock.history.get[0].url).toBe(expectedSaveUrl);
         });
 
         it("should save an object tag", async () => {
-            axiosMock.onAny().reply(200);
             const savedTag = await svc.save(testTag);
             expect(savedTag.text).toBe(testLabel);
             expect(axiosMock.history.get[0].url).toBe(expectedSaveUrl);
@@ -55,14 +54,12 @@ describe("Tags/tagService.js", () => {
         const expectedDeleteUrl = `/tag/remove_tag_async?item_id=${id}&item_class=${itemClass}&context=${context}&tag_name=${testLabel}`;
 
         it("should delete a text tag", async () => {
-            axiosMock.onAny().reply(200);
             const result = await svc.delete(testTag);
             expect(result).toBeTruthy();
             expect(axiosMock.history.get[0].url).toBe(expectedDeleteUrl);
         });
 
         it("should delete an object tag", async () => {
-            axiosMock.onAny().reply(200);
             const result = await svc.delete(testTag);
             expect(result).toBeTruthy();
             expect(axiosMock.history.get[0].url).toBe(expectedDeleteUrl);
@@ -87,7 +84,6 @@ describe("Tags/tagService.js", () => {
         // straight ajax request, unused in practice, but it's easier to
         // test this call if we just expose it
         it("ajax call should return tag objects", async () => {
-            axiosMock.onGet().reply(200, autocompleteResponse);
             const result = await svc.autocomplete(searchString);
             expect(axiosMock.history.get[0].url).toBe(expectedSearchUrl);
             checkAutocompleteResult(result);
@@ -98,7 +94,6 @@ describe("Tags/tagService.js", () => {
         //it("should debounce autocomplete search inputs", (done) => {
         //    // stub ajax request to return the success response if the
         //    // searchString is the expected input
-        //    axiosMock.onAny().reply(200, autocompleteResponse);
 
         //    // take first emission, debouncing should guarantee the first
         //    // emission is the last thing we sent, should be searchString
