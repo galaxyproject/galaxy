@@ -11,13 +11,13 @@
         <template v-slot:buttons>
             <b-button
                 id="workflow-canvas-button"
-                title="Return to Workflow"
+                title="View Report"
                 variant="link"
                 role="button"
                 v-b-tooltip.hover.bottom
                 @click="onView"
             >
-                <span class="fa fa-times" />
+                <font-awesome-icon icon="eye" />
             </b-button>
         </template>
     </markdown-editor>
@@ -28,11 +28,21 @@ import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import Markdown from "components/Markdown/Markdown.vue";
 import MarkdownEditor from "components/Markdown/MarkdownEditor.vue";
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faEye } from "@fortawesome/free-solid-svg-icons";
+
+Vue.use(BootstrapVue);
+
+library.add(faEye);
 
 export default {
     components: {
         Markdown,
         MarkdownEditor,
+        FontAwesomeIcon,
     },
     props: {
         invocationId: {
