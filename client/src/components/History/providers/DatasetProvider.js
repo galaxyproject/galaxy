@@ -74,4 +74,13 @@ var DatasetCollectionContentProvider = Vue.extend({
     }
 })
 
-export { DatasetProvider, DatasetCollectionProvider, DatasetCollectionContentProvider };
+var JobProvider = Vue.extend({
+    mixins: [SimpleProviderMixin],
+    computed: {
+        url() {
+            return prependPath(`api/jobs/${this.id}`)
+        }
+    }
+})
+
+export { DatasetProvider, DatasetCollectionProvider, DatasetCollectionContentProvider, JobProvider };

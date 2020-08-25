@@ -132,7 +132,7 @@
                     </b-link>
                 </template>
                 <template v-slot:row-details="row">
-                    <job-details :command-line="row.item.command_line" :job-id="row.item.jobId" />
+                    <job-details :job="row.item"/>
                 </template>
             </b-table>
             <b-alert v-if="!recentJobsItemsComputed.length" variant="secondary" show>

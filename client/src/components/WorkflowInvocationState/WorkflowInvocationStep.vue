@@ -12,13 +12,14 @@
                 <div class="portlet-body" style="width: 100%; overflow-x: auto;">
                     <b-table small caption-top :items="stepDetails.jobs" :fields="jobFields" v-if="stepDetails" @row-clicked="item=>$set(item, '_showDetails', !item._showDetails)">
                         <template v-slot:row-details="row">
-                            <b-card>
-                                <small class="float-right">
-                                    <b>Job ID: {{ row.item.id }}</b>
-                                </small>
-                                {{row.item}}
-                                <job-parameters :jobId="row.item.id" />
-                            </b-card>
+                                <job-provider
+                                    :id="row.item.id"
+                                    v-slot="{
+                                        item,
+                                        loading,
+                                    }">
+                                    <job-details :job="item" v-if="item"/>
+                                </job-provider>
                         </template>
                         <template v-slot:cell(create_time)="data">
                             <UtcDate :date="data.value" mode="elapsed" />
@@ -38,7 +39,8 @@ import { mapCacheActions } from "vuex-cache";
 import { mapGetters, mapActions } from "vuex"
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { JobParameters } from "components/JobParameters"
+import { JobProvider } from "components/History/providers/DatasetProvider"
+import JobDetails from "components/admin/JobDetails"
 import UtcDate from "components/UtcDate";
 
 Vue.use(BootstrapVue);
@@ -46,7 +48,8 @@ Vue.use(BootstrapVue);
 export default {
     components: {
         UtcDate,
-        JobParameters,
+        JobProvider,
+        JobDetails,
     },
     props: {
         step: Object,
