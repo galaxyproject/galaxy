@@ -14,12 +14,11 @@ export function userLogout(logoutAll = false) {
     const galaxy = getGalaxyInstance();
     const session_csrf_token = galaxy.session_csrf_token;
     const url = `${galaxy.root}user/logout?session_csrf_token=${session_csrf_token}&logout_all=${logoutAll}`;
-    
+
     var identities;
-    getIdentityProviders()
-        .then((results) => {
-            identities = results;
-        });
+    getIdentityProviders().then((results) => {
+        identities = results;
+    });
     axios
         .get(url)
         .then(() => {
