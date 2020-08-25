@@ -387,6 +387,7 @@ body {
         color: $brand-masthead-text-active;
         text-decoration: none;
         .navbar-brand-image {
+            @extend .align-middle;
             display: inline;
             margin-right: 0.3rem;
             border: none;
