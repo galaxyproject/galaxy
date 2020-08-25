@@ -2,101 +2,101 @@
     <span>
         <b-dropdown no-caret right role="button" variant="link" title="Insert Datasets" v-b-tooltip.hover.bottom>
             <template v-slot:button-content>
-                <span class="fa fa-file" />
+                <font-awesome-icon icon="file" />
             </template>
             <b-dropdown-item href="#" @click="onDropdownClick('history_dataset_display')">
-                <span class="fa fa-fw mr-1 fa-file-o" />
+                <font-awesome-icon class="mr-1" icon="file" fixed-width />
                 History Dataset Display
             </b-dropdown-item>
             <b-dropdown-item href="#" @click="onDropdownClick('history_dataset_collection_display')">
-                <span class="fa fa-fw mr-1 fa-folder-o" />
+                <font-awesome-icon class="mr-1" icon="folder" fixed-width />
                 History Dataset Collection Display
             </b-dropdown-item>
             <b-dropdown-item href="#" @click="onDropdownClick('history_dataset_as_image')">
-                <span class="fa fa-fw mr-1 fa-image" />
+                <font-awesome-icon class="mr-1" icon="image" fixed-width />
                 History Dataset As Image
             </b-dropdown-item>
             <b-dropdown-item href="#" @click="onDropdownClick('history_dataset_index')">
-                <span class="fa fa-fw mr-1" />
+                <font-awesome-icon class="mr-1" icon="list-alt" fixed-width />
                 History Dataset Index
             </b-dropdown-item>
             <b-dropdown-item href="#" @click="onDropdownClick('history_dataset_embedded')">
-                <span class="fa fa-fw mr-1" />
+                <font-awesome-icon class="mr-1" icon="clone" fixed-width />
                 History Dataset Embedded
             </b-dropdown-item>
             <b-dropdown-item href="#" @click="onDropdownClick('history_dataset_type')">
-                <span class="fa fa-fw mr-1" />
+                <font-awesome-icon class="mr-1" icon="flag" fixed-width />
                 History Dataset Type
             </b-dropdown-item>
             <b-dropdown-item href="#" @click="onDropdownClick('history_dataset_link')">
-                <span class="fa fa-fw mr-1 fa-link" />
+                <font-awesome-icon class="mr-1" icon="link" fixed-width />
                 History Dataset Link
             </b-dropdown-item>
             <b-dropdown-item href="#" @click="onDropdownClick('history_dataset_info')">
-                <span class="fa fa-fw mr-1 fa-info" />
+                <font-awesome-icon class="mr-1" icon="info" fixed-width />
                 History Dataset Information
             </b-dropdown-item>
             <b-dropdown-item href="#" @click="onDropdownClick('history_dataset_name')">
-                <span class="fa fa-fw mr-1 fa-signature" />
+                <font-awesome-icon class="mr-1" icon="signature" fixed-width />
                 History Dataset Name
             </b-dropdown-item>
             <b-dropdown-item href="#" @click="onDropdownClick('history_dataset_peek')">
-                <span class="fa fa-fw mr-1" />
+                <font-awesome-icon class="mr-1" icon="search-location" fixed-width />
                 History Dataset Peek
             </b-dropdown-item>
         </b-dropdown>
         <b-dropdown no-caret right role="button" variant="link" title="Insert Jobs" v-b-tooltip.hover.bottom>
             <template v-slot:button-content>
-                <span class="fa fa-wrench" />
+                <font-awesome-icon icon="wrench" />
             </template>
             <b-dropdown-item href="#" @click="onDropdownClick('job_metrics')">
-                <span class="fa fa-fw mr-1 fa-tachometer-alt" />
+                <font-awesome-icon class="mr-1" icon="tachometer-alt" fixed-width />
                 Job Metrics
             </b-dropdown-item>
             <b-dropdown-item href="#" @click="onDropdownClick('job_parameters')">
-                <span class="fa fa-fw mr-1 fa-tasks" />
+                <font-awesome-icon class="mr-1" icon="tasks" fixed-width />
                 Job Parameters
             </b-dropdown-item>
             <b-dropdown-item href="#" @click="onDropdownClick('tool_stdout')">
-                <span class="fa fa-fw mr-1 fa-quote-right" />
+                <font-awesome-icon class="mr-1" icon="quote-right" fixed-width />
                 Tool Standard Output
             </b-dropdown-item>
             <b-dropdown-item href="#" @click="onDropdownClick('tool_stderr')">
-                <span class="fa fa-fw mr-1 fa-bug" />
+                <font-awesome-icon class="mr-1" icon="bug" fixed-width />
                 Tool Error Output
             </b-dropdown-item>
         </b-dropdown>
         <b-dropdown no-caret right role="button" variant="link" title="Insert Workflows" v-b-tooltip.hover.bottom>
             <template v-slot:button-content>
-                <span class="fa fa-sitemap fa-rotate-270" />
+                <font-awesome-icon icon="sitemap" rotation="270" />
             </template>
             <b-dropdown-item href="#" @click="onDropdownClick('invocation_inputs')">
-                <span class="fa fa-fw mr-1 fa-arrow-right" />
+                <font-awesome-icon class="mr-1" icon="arrow-right" fixed-width />
                 Invocation Inputs
             </b-dropdown-item>
             <b-dropdown-item href="#" @click="onDropdownClick('invocation_outputs')">
-                <span class="fa fa-fw mr-1 fa-arrow-left" />
+                <font-awesome-icon class="mr-1" icon="arrow-left" fixed-width />
                 Invocation Outputs
             </b-dropdown-item>
             <b-dropdown-item href="#" @click="onDropdownClick('invocation_time')">
-                <span class="fa fa-fw mr-1 fa-clock" />
+                <font-awesome-icon class="mr-1" icon="clock" fixed-width />
                 Invocation Time
             </b-dropdown-item>
             <b-dropdown-item href="#" @click="onDropdownClick('workflow_display')">
-                <span class="fa fa-fw mr-1 fa-sitemap fa-rotate-270" />
+                <font-awesome-icon class="mr-1" icon="sitemap" fixed-width rotation="270" />
                 Workflow Display
             </b-dropdown-item>
         </b-dropdown>
         <b-dropdown no-caret right role="button" variant="link" title="Insert Others" v-b-tooltip.hover.bottom>
             <template v-slot:button-content>
-                <span class="fa fa-tools" />
+                <font-awesome-icon icon="tools" />
             </template>
             <b-dropdown-item href="#" @click="onDropdownClick('generate_galaxy_version')">
-                <span class="fa fa-fw mr-1" />
+                <font-awesome-icon class="mr-1" icon="certificate" fixed-width />
                 Galaxy Version
             </b-dropdown-item>
             <b-dropdown-item href="#" @click="onDropdownClick('generate_time')">
-                <span class="fa fa-fw mr-1" />
+                <font-awesome-icon class="mr-1" fixed-width rotation="270" icon="clock" />
                 Time Stamp
             </b-dropdown-item>
         </b-dropdown>
@@ -115,12 +115,63 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import {
+    faClock,
+    faCertificate,
+    faSitemap,
+    faInfo,
+    faFile,
+    faFolder,
+    faLink,
+    faSignature,
+    faImage,
+    faWrench,
+    faTools,
+    faBug,
+    faArrowRight,
+    faQuoteRight,
+    faArrowLeft,
+    faTachometerAlt,
+    faTasks,
+    faSearchLocation,
+    faListAlt,
+    faClone,
+    faFlag,
+} from "@fortawesome/free-solid-svg-icons";
+
 import MarkdownDialog from "./MarkdownDialog";
 
 Vue.use(BootstrapVue);
 
+library.add(
+    faClock,
+    faSitemap,
+    faFile,
+    faFolder,
+    faLink,
+    faInfo,
+    faSignature,
+    faImage,
+    faWrench,
+    faTools,
+    faBug,
+    faArrowRight,
+    faArrowLeft,
+    faQuoteRight,
+    faTachometerAlt,
+    faTasks,
+    faCertificate,
+    faSearchLocation,
+    faListAlt,
+    faClone,
+    faFlag,
+);
+
 export default {
     components: {
+        FontAwesomeIcon,
         MarkdownDialog,
     },
     props: {
