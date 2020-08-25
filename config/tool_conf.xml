@@ -38,8 +38,8 @@
     <tool file="aws/aws_comprehend.xml"/>
   </section>
 
-  <section id="scene_detection" name="Video Scene Detection">
-    <tool file="video_tools/scene_detection.xml"/>
+  <section id="shot_detection" name="Video Shot Detection">
+    <tool file="video_tools/pyscenedetect_shot_detection.xml"/>
   </section>
 
   <section id="video_ocr" name="Video OCR">
