@@ -178,7 +178,7 @@ export default {
         },
         onDataCollection(response) {
             this.dataCollectionShow = false;
-            this.$emit("onInsert", `${this.argumentName}(history_dataset_collection_id=${response})`);
+            this.$emit("onInsert", `${this.argumentName}(history_dataset_collection_id=${response.id})`);
         },
         onJob(response) {
             this.jobShow = false;

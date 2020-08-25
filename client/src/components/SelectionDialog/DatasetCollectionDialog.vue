@@ -54,6 +54,7 @@ export default {
         clicked: function (record) {
             this.modalShow = false;
             this.callback(record);
+            this.$emit("onOk", record);
         },
         /** Called when the modal is hidden */
         onCancel() {

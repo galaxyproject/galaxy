@@ -4,43 +4,43 @@
             <template v-slot:button-content>
                 <font-awesome-icon icon="file" />
             </template>
-            <b-dropdown-item href="#" @click="onDropdownClick('history_dataset_display')">
+            <b-dropdown-item href="#" @click="onHistoryId('history_dataset_display')">
                 <font-awesome-icon class="mr-1" icon="file" fixed-width />
                 History Dataset Display
             </b-dropdown-item>
-            <b-dropdown-item href="#" @click="onDropdownClick('history_dataset_collection_display')">
+            <b-dropdown-item href="#" @click="onHistoryCollectionId('history_dataset_collection_display')">
                 <font-awesome-icon class="mr-1" icon="folder" fixed-width />
                 History Dataset Collection Display
             </b-dropdown-item>
-            <b-dropdown-item href="#" @click="onDropdownClick('history_dataset_as_image')">
+            <b-dropdown-item href="#" @click="onHistoryId('history_dataset_as_image')">
                 <font-awesome-icon class="mr-1" icon="image" fixed-width />
                 History Dataset As Image
             </b-dropdown-item>
-            <b-dropdown-item href="#" @click="onDropdownClick('history_dataset_index')">
+            <b-dropdown-item href="#" @click="onHistoryId('history_dataset_index')">
                 <font-awesome-icon class="mr-1" icon="list-alt" fixed-width />
                 History Dataset Index
             </b-dropdown-item>
-            <b-dropdown-item href="#" @click="onDropdownClick('history_dataset_embedded')">
+            <b-dropdown-item href="#" @click="onHistoryId('history_dataset_embedded')">
                 <font-awesome-icon class="mr-1" icon="clone" fixed-width />
                 History Dataset Embedded
             </b-dropdown-item>
-            <b-dropdown-item href="#" @click="onDropdownClick('history_dataset_type')">
+            <b-dropdown-item href="#" @click="onHistoryId('history_dataset_type')">
                 <font-awesome-icon class="mr-1" icon="flag" fixed-width />
                 History Dataset Type
             </b-dropdown-item>
-            <b-dropdown-item href="#" @click="onDropdownClick('history_dataset_link')">
+            <b-dropdown-item href="#" @click="onHistoryId('history_dataset_link')">
                 <font-awesome-icon class="mr-1" icon="link" fixed-width />
                 History Dataset Link
             </b-dropdown-item>
-            <b-dropdown-item href="#" @click="onDropdownClick('history_dataset_info')">
+            <b-dropdown-item href="#" @click="onHistoryId('history_dataset_info')">
                 <font-awesome-icon class="mr-1" icon="info" fixed-width />
                 History Dataset Information
             </b-dropdown-item>
-            <b-dropdown-item href="#" @click="onDropdownClick('history_dataset_name')">
+            <b-dropdown-item href="#" @click="onHistoryId('history_dataset_name')">
                 <font-awesome-icon class="mr-1" icon="signature" fixed-width />
                 History Dataset Name
             </b-dropdown-item>
-            <b-dropdown-item href="#" @click="onDropdownClick('history_dataset_peek')">
+            <b-dropdown-item href="#" @click="onHistoryId('history_dataset_peek')">
                 <font-awesome-icon class="mr-1" icon="search-location" fixed-width />
                 History Dataset Peek
             </b-dropdown-item>
@@ -49,19 +49,19 @@
             <template v-slot:button-content>
                 <font-awesome-icon icon="wrench" />
             </template>
-            <b-dropdown-item href="#" @click="onDropdownClick('job_metrics')">
+            <b-dropdown-item href="#" @click="onJobId('job_metrics')">
                 <font-awesome-icon class="mr-1" icon="tachometer-alt" fixed-width />
                 Job Metrics
             </b-dropdown-item>
-            <b-dropdown-item href="#" @click="onDropdownClick('job_parameters')">
+            <b-dropdown-item href="#" @click="onJobId('job_parameters')">
                 <font-awesome-icon class="mr-1" icon="tasks" fixed-width />
                 Job Parameters
             </b-dropdown-item>
-            <b-dropdown-item href="#" @click="onDropdownClick('tool_stdout')">
+            <b-dropdown-item href="#" @click="onJobId('tool_stdout')">
                 <font-awesome-icon class="mr-1" icon="quote-right" fixed-width />
                 Tool Standard Output
             </b-dropdown-item>
-            <b-dropdown-item href="#" @click="onDropdownClick('tool_stderr')">
+            <b-dropdown-item href="#" @click="onJobId('tool_stderr')">
                 <font-awesome-icon class="mr-1" icon="bug" fixed-width />
                 Tool Error Output
             </b-dropdown-item>
@@ -70,19 +70,19 @@
             <template v-slot:button-content>
                 <font-awesome-icon icon="sitemap" rotation="270" />
             </template>
-            <b-dropdown-item href="#" @click="onDropdownClick('invocation_inputs')">
+            <b-dropdown-item v-if="useLabels" href="#" @click="onNoParameter('invocation_inputs')">
                 <font-awesome-icon class="mr-1" icon="arrow-right" fixed-width />
                 Invocation Inputs
             </b-dropdown-item>
-            <b-dropdown-item href="#" @click="onDropdownClick('invocation_outputs')">
+            <b-dropdown-item v-if="useLabels" href="#" @click="onNoParameter('invocation_outputs')">
                 <font-awesome-icon class="mr-1" icon="arrow-left" fixed-width />
                 Invocation Outputs
             </b-dropdown-item>
-            <b-dropdown-item href="#" @click="onDropdownClick('invocation_time')">
+            <b-dropdown-item href="#" @click="onInvocationId('invocation_time')">
                 <font-awesome-icon class="mr-1" icon="clock" fixed-width />
                 Invocation Time
             </b-dropdown-item>
-            <b-dropdown-item href="#" @click="onDropdownClick('workflow_display')">
+            <b-dropdown-item href="#" @click="onWorkflowId('workflow_display')">
                 <font-awesome-icon class="mr-1" icon="sitemap" fixed-width rotation="270" />
                 Workflow Display
             </b-dropdown-item>
@@ -91,11 +91,11 @@
             <template v-slot:button-content>
                 <font-awesome-icon icon="tools" />
             </template>
-            <b-dropdown-item href="#" @click="onDropdownClick('generate_galaxy_version')">
+            <b-dropdown-item href="#" @click="onNoParameter('generate_galaxy_version')">
                 <font-awesome-icon class="mr-1" icon="certificate" fixed-width />
                 Galaxy Version
             </b-dropdown-item>
-            <b-dropdown-item href="#" @click="onDropdownClick('generate_time')">
+            <b-dropdown-item href="#" @click="onNoParameter('generate_time')">
                 <font-awesome-icon class="mr-1" fixed-width rotation="270" icon="clock" />
                 Time Stamp
             </b-dropdown-item>
@@ -166,7 +166,7 @@ library.add(
     faSearchLocation,
     faListAlt,
     faClone,
-    faFlag,
+    faFlag
 );
 
 export default {
@@ -175,10 +175,6 @@ export default {
         MarkdownDialog,
     },
     props: {
-        validArguments: {
-            type: Object,
-            default: null,
-        },
         nodes: {
             type: Object,
             default: null,
@@ -235,33 +231,37 @@ export default {
         onCancel() {
             this.selectedShow = false;
         },
-        onDropdownClick(argumentName) {
+        onNoParameter(argumentName) {
+            this.onInsert(`${argumentName}()`);
+        },
+        onHistoryId(argumentName) {
             this.selectedArgumentName = argumentName;
-            const arg = this.validArguments[argumentName];
-            if (arg.length == 0) {
-                this.$emit("onInsert", `${argumentName}()`);
-            } else if (arg.includes("workflow_id")) {
-                this.selectedType = "workflow_id";
-                this.selectedShow = true;
-            } else if (arg.includes("job_id")) {
-                this.selectedType = "job_id";
-                this.selectedLabels = this.getSteps();
-                this.selectedShow = true;
-            } else if (arg.includes("invocation_id")) {
-                this.selectedType = "invocation_id";
-                this.selectedLabels = this.getSteps();
-                this.selectedShow = true;
-            } else if (arg.includes("history_dataset_id")) {
-                this.selectedType = "history_dataset_id";
-                this.selectedLabels = this.getOutputs();
-                this.selectedShow = true;
-            } else if (arg.includes("history_dataset_collection_id")) {
-                this.selectedType = "history_dataset_collection_id";
-                this.selectedLabels = this.getOutputs();
-                this.selectedShow = true;
-            } else {
-                this.$emit("onInsert", `${argumentName}(${arg.join(", ")}=<ENTER A VALUE>)`);
-            }
+            this.selectedType = "history_dataset_id";
+            this.selectedLabels = this.getOutputs();
+            this.selectedShow = true;
+        },
+        onHistoryCollectionId(argumentName) {
+            this.selectedArgumentName = argumentName;
+            this.selectedType = "history_dataset_collection_id";
+            this.selectedLabels = this.getOutputs();
+            this.selectedShow = true;
+        },
+        onWorkflowId(argumentName) {
+            this.selectedArgumentName = argumentName;
+            this.selectedType = "workflow_id";
+            this.selectedShow = true;
+        },
+        onJobId(argumentName) {
+            this.selectedArgumentName = argumentName;
+            this.selectedType = "job_id";
+            this.selectedLabels = this.getSteps();
+            this.selectedShow = true;
+        },
+        onInvocationId(argumentName) {
+            this.selectedArgumentName = argumentName;
+            this.selectedType = "invocation_id";
+            this.selectedLabels = this.getSteps();
+            this.selectedShow = true;
         },
     },
 };

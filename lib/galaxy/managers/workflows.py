@@ -19,7 +19,6 @@ from galaxy import (
     util
 )
 from galaxy.jobs.actions.post import ActionBox
-from galaxy.managers.markdown_parse import VALID_ARGUMENTS
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.tools.parameters import (
     params_to_incoming,
@@ -710,7 +709,6 @@ class WorkflowContentsManager(UsesAnnotations):
         data['steps'] = {}
         data['upgrade_messages'] = {}
         data['report'] = workflow.reports_config or {}
-        data['report']['valid_arguments'] = VALID_ARGUMENTS
 
         input_step_types = set(workflow.input_step_types)
         # For each step, rebuild the form and encode the state
