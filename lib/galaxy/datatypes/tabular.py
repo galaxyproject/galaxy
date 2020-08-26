@@ -309,7 +309,8 @@ class Tabular(TabularData):
 
         def is_int(column_text):
             try:
-                if any(c in ['_'] for c in column_text):
+                # Don't allow underscores in numeric literals (PEP 515)
+                if '_' in column_text:
                     return False
                 int(column_text)
                 return True
