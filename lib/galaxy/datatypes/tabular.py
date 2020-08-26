@@ -308,20 +308,20 @@ class Tabular(TabularData):
             raise ValueError("Tried to compare unknown column types: {} and {}".format(column_type1, column_type2))
 
         def is_int(column_text):
+            # Don't allow underscores in numeric literals (PEP 515)
+            if '_' in column_text:
+                return False
             try:
-                # Don't allow underscores in numeric literals (PEP 515)
-                if '_' in column_text:
-                    return False
                 int(column_text)
                 return True
             except ValueError:
                 return False
 
         def is_float(column_text):
+            # Don't allow underscores in numeric literals (PEP 515)
+            if '_' in column_text:
+                return False
             try:
-                # Don't allow underscores in numeric literals (PEP 515)
-                if '_' in column_text:
-                    return False
                 float(column_text)
                 return True
             except ValueError:
@@ -976,6 +976,9 @@ class BaseCSV(TabularData):
     big_peek_size = 10240  # Large File chunk used for sniffing CSV dialect
 
     def is_int(self, column_text):
+        # Don't allow underscores in numeric literals (PEP 515)
+        if '_' in column_text:
+            return False
         try:
             int(column_text)
             return True
@@ -983,6 +986,9 @@ class BaseCSV(TabularData):
             return False
 
     def is_float(self, column_text):
+        # Don't allow underscores in numeric literals (PEP 515)
+        if '_' in column_text:
+            return False
         try:
             float(column_text)
             return True
