@@ -10,8 +10,6 @@ jest.mock("app");
 
 const mockOptions = {
     callback: () => {},
-    host: "host",
-    root: "root",
     history: "history",
     modalStatic: true,
 };

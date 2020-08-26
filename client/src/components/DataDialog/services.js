@@ -47,6 +47,7 @@ export class Services {
 
     /** Populate record data from raw record source **/
     getRecord(record) {
+        const host = `${window.location.protocol}//${window.location.hostname}:${window.location.port}`;
         record.details = record.extension || record.description;
         record.time = record.update_time || record.create_time;
         record.isLeaf = this.isDataset(record);
@@ -59,12 +60,12 @@ export class Services {
             return record;
         } else if (record.hid) {
             record.label = `${record.hid}: ${record.name}`;
-            record.download = `${getAppRoot()}api/histories/${record.history_id}/contents/${record.id}/display`;
+            record.download = `${host}${getAppRoot()}api/histories/${record.history_id}/contents/${record.id}/display`;
             return record;
         } else if (record.type == "file") {
             record.src = "ldda";
             record.label = record.name;
-            record.download = `${getAppRoot()}api/libraries/datasets/download/uncompressed?ld_ids=${record.id}`;
+            record.download = `${host}${getAppRoot()}api/libraries/datasets/download/uncompressed?ld_ids=${record.id}`;
             return record;
         }
     }
