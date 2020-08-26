@@ -319,7 +319,8 @@ class Tabular(TabularData):
 
         def is_float(column_text):
             try:
-                if any(c in ['_'] for c in column_text):
+                # Don't allow underscores in numeric literals (PEP 515)
+                if '_' in column_text:
                     return False
                 float(column_text)
                 return True
