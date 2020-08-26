@@ -38,6 +38,10 @@
     <tool file="aws/aws_comprehend.xml"/>
   </section>
 
+  <section id="shot_detection" name="Video Shot Detection">
+    <tool file="video_tools/pyscenedetect_shot_detection.xml"/>
+  </section>
+
   <section id="video_ocr" name="Video OCR">
     <tool file="video_tools/tesseract.xml"/>
     <tool file="video_tools/azure_video_indexer.xml"/>
