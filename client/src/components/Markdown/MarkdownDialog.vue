@@ -230,7 +230,6 @@ export default {
             }
         },
         onCancel() {
-            this.data = false;
             this.dataCollectionShow = false;
             this.selectedShow = false;
             this.workflowShow = false;
