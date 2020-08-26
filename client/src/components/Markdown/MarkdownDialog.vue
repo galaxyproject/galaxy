@@ -128,39 +128,7 @@ export default {
         },
     },
     created() {
-        if (this.argumentType == "workflow_id") {
-            this.workflowShow = true;
-        } else if (this.argumentType == "history_dataset_id") {
-            if (this.useLabels) {
-                this.selectedShow = true;
-            } else {
-                getCurrentGalaxyHistory().then((historyId) => {
-                    this.dataShow = true;
-                    this.dataHistoryId = historyId;
-                });
-            }
-        } else if (this.argumentType == "history_dataset_collection_id") {
-            if (this.useLabels) {
-                this.selectedShow = true;
-            } else {
-                getCurrentGalaxyHistory().then((historyId) => {
-                    this.dataCollectionShow = true;
-                    this.dataHistoryId = historyId;
-                });
-            }
-        } else if (this.argumentType == "invocation_id") {
-            if (this.useLabels) {
-                this.selectedShow = true;
-            } else {
-                this.invocationShow = true;
-            }
-        } else if (this.argumentType == "job_id") {
-            if (this.useLabels) {
-                this.selectedShow = true;
-            } else {
-                this.jobShow = true;
-            }
-        }
+        this.onCreate();
     },
     methods: {
         getInvocations() {
@@ -191,6 +159,41 @@ export default {
         onWorkflow(response) {
             this.workflowShow = false;
             this.$emit("onInsert", `workflow_display(workflow_id=${response.id})`);
+        },
+        onCreate() {
+            if (this.argumentType == "workflow_id") {
+                this.workflowShow = true;
+            } else if (this.argumentType == "history_dataset_id") {
+                if (this.useLabels) {
+                    this.selectedShow = true;
+                } else {
+                    getCurrentGalaxyHistory().then((historyId) => {
+                        this.dataShow = true;
+                        this.dataHistoryId = historyId;
+                    });
+                }
+            } else if (this.argumentType == "history_dataset_collection_id") {
+                if (this.useLabels) {
+                    this.selectedShow = true;
+                } else {
+                    getCurrentGalaxyHistory().then((historyId) => {
+                        this.dataCollectionShow = true;
+                        this.dataHistoryId = historyId;
+                    });
+                }
+            } else if (this.argumentType == "invocation_id") {
+                if (this.useLabels) {
+                    this.selectedShow = true;
+                } else {
+                    this.invocationShow = true;
+                }
+            } else if (this.argumentType == "job_id") {
+                if (this.useLabels) {
+                    this.selectedShow = true;
+                } else {
+                    this.jobShow = true;
+                }
+            }
         },
         onOk(selectedLabel) {
             this.selectedShow = false;
