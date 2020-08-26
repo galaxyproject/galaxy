@@ -8,9 +8,6 @@
                 <a class="fa fa-print ml-1" :href="invocationPdfLink" v-b-tooltip title="Download PDF" />
             </span>
             <span>
-                <a :href="bcoLink" class="btn btn-secondary">Edit BioCompute Object</a>
-            </span>
-            <span>
                 <a :href="bcoJSON" class="btn btn-secondary">Download BioCompute Object</a>
             </span>
         </div>
@@ -129,9 +126,6 @@ export default {
         },
         bcoJSON: function () {
             return getUrl(`api/invocations/${this.invocationId}/get_bco`);
-        },
-        bcoLink: function () {
-            return getUrl(`workflows/invocations/view_bco?id=${(this.invocationId)}`);
         },
         invocationPdfLink: function () {
             return getUrl(`api/invocations/${this.invocationId}/report.pdf`);

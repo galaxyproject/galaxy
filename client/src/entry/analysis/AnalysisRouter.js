@@ -42,7 +42,6 @@ import DatasetError from "mvc/dataset/dataset-error";
 import DatasetEditAttributes from "mvc/dataset/dataset-edit-attributes";
 import Citations from "components/Citations.vue";
 import DisplayStructure from "components/DisplayStructured.vue";
-import BioComputeObject from "components/BioCompute/BioComputeObject.vue";
 import { CloudAuth } from "components/User/CloudAuth";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
 import Vue from "vue";
@@ -194,11 +193,6 @@ export const getAnalysisRouter = (Galaxy) =>
         show_workflow_invocation_report: function () {
             const invocationId = QueryStringParsing.get("id");
             this._display_vue_helper(WorkflowInvocationReport, { invocationId: invocationId });
-        },
-
-        show_invocation_bco: function () {
-            const invocationId = QueryStringParsing.get("id");
-            this._display_vue_helper(BioComputeObject, { invocationId: invocationId });
         },
 
         show_workflow_invocations: function () {

@@ -15,7 +15,6 @@ import { historyStore } from "./historyStore";
 import { userStore } from "./userStore";
 import { configStore } from "./configStore";
 import { workflowStore } from "./workflowStore";
-import { biocomputeStore } from "./biocomputeStore";
 import { datasetPathDestinationStore } from "./datasetPathDestinationStore";
 import { datasetExtFilesStore } from "./datasetExtFilesStore";
 
@@ -32,7 +31,6 @@ export function createStore() {
         ],
         modules: {
             gridSearch: gridSearchStore,
-            biocompute: biocomputeStore,
             histories: historyStore,
             tags: tagStore,
             jobMetrics: jobMetricsStore,
