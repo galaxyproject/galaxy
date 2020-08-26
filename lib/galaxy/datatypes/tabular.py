@@ -312,6 +312,7 @@ class Tabular(TabularData):
                 if any(c in ['_'] for c in column_text):
                     return False
                 int(column_text)
+                return True
             except ValueError:
                 return False
 
