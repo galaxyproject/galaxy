@@ -228,7 +228,7 @@ def get_file_checksum(disk_file_path):
 
 
 def print_help_msg():
-    print("This script copies datasets from Disk to Irods. It operates on a range of dataset IDs (start_dataset_id and end_dtatset_id, both inclusive).")
+    print("\nThis script copies datasets from Disk to Irods. It operates on a range of dataset IDs (start_dataset_id and end_dtatset_id, both inclusive).")
     print("It also takes in the name of 3 JSON configuration files (A sample JSON configuration file is provided in the Python script folder).")
     print("1) object_store_info_file: Has Disk object store info (e.g. files info).")
     print("2) irods_info_file: irods connection info, and misc. info (zone, home, obejct store ID, etc.).")
@@ -238,7 +238,7 @@ def print_help_msg():
     print("If checksum: for all datasets from start_dataset_id to end_dataset_id, it calculates the disk file checksum, gets the irods file, and compares the disk file checksum to irods file checksum.")
     print("If checksums match, it updates object_store_id dataset table (so Galaxy starts using the irods version of the file), then DELETES the file from disk.")
     print("If the checksumdoes NOT match: it prints and error message, does NOT update the dataset table or delete the disk file, and continues with the next dataset in dataset ID range.")
-    print("Long-form input parameter specification:")
+    print("\nLong-form input parameter specification:")
     print("copy_files_to_irods --start_dataset_id=2 --end_dataset_id=3 --object_store_info_file=object_store_info.json --irods_info_file=irods_info_file.json --db_connection_info_file=db_connection_info_file.json --cop_or_checksum=<copy|checksum>")
     print("\nOR")
     print("\nShort-form input parameter specification:")
@@ -277,7 +277,7 @@ if __name__ == '__main__':
         elif opt in ("-c", "--copy_or_checksum"):
             copy_or_checksum = arg
 
-    if start_dataset_id is None or end_dataset_id is None or object_store_info_file is None or irods_info_file is None or db_connection_info_file is None:
+    if start_dataset_id is None or end_dataset_id is None or object_store_info_file is None or irods_info_file is None or db_connection_info_file is None or copy_or_checksum is None:
         print("Error: Did not specify one of the required input parameters!")
         print_help_msg()
         sys.exit(2)
