@@ -87,6 +87,7 @@ def copy_files_to_irods(start_dataset_id, end_dataset_id, object_store_info_file
                             AND id >= %s
                             AND id <= %s
                             AND object_store_id IN %s"""
+
     update_sql_statement = """UPDATE dataset
                               SET object_store_id = %s
                               WHERE id = %s"""
@@ -144,7 +145,7 @@ def copy_files_to_irods(start_dataset_id, end_dataset_id, object_store_info_file
                 session.collections.create(irods_file_collection_path)
 
                 # Add disk file to collection
-                options = {kw.DEST_RESC_NAME_KW: 'demoResc', kw.REG_CHKSUM_KW : ''}
+                options = {kw.REG_CHKSUM_KW : ''}
                 session.data_objects.put(disk_file_path, irods_file_path, **options)
 
                 if os.path.isdir(disk_folder_path):
