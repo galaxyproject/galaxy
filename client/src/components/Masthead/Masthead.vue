@@ -8,8 +8,8 @@
         class="justify-content-center"
     >
         <b-navbar-brand href="https://anvil.terra.bio" aria-label="homepage">
-            <img alt="Galaxy Logo" style="padding-top:.4rem;" class="navbar-brand-image" src="/static/images/galaxy_project_logo_white_square.png" />
-            <img alt="Anvil Logo" class="navbar-brand-image" src="/static/images/anvilwhite.png" />
+            <img alt="Galaxy Logo" style="padding-top: 0.4rem;" class="navbar-brand-image" :src="galaxyLogoSrc" />
+            <img alt="Anvil Logo" class="navbar-brand-image" :src="anvilLogoSrc" />
         </b-navbar-brand>
 
         <b-navbar-nav>
@@ -118,6 +118,12 @@ export default {
             const scratchbookTabs = [this.mastheadState.frame.buttonActive, this.mastheadState.frame.buttonLoad];
             const tabs = [].concat(this.baseTabs, scratchbookTabs, this.extensionTabs);
             return tabs.map(this._tabToJson);
+        },
+        anvilLogoSrc() {
+            return `${this.appRoot}static/images/anvilwhite.png`;
+        },
+        galaxyLogoSrc() {
+            return `${this.appRoot}static/images/galaxy_project_logo_white_square.png`;
         },
     },
     created() {
