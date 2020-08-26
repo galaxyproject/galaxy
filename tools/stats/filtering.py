@@ -74,6 +74,8 @@ def check_expression(text):
     True
     >>> check_expression("c3=='chr1' and c5>5")
     True
+    >>> check_expression("c3=='chr1' and c5>-5 and c5<+5")  # Unary +/-
+    True
     >>> check_expression("c3=='chr1' and d5>5")  # Invalid d5 reference
     False
     >>> check_expression("c3=='chr1' and c5>5 or exec")
