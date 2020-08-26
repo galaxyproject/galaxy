@@ -78,7 +78,7 @@ var JobProvider = Vue.extend({
     mixins: [SimpleProviderMixin],
     computed: {
         url() {
-            return prependPath(`api/jobs/${this.id}`)
+            return prependPath(`api/jobs/${this.id}?full=true`)
         }
     }
 })
