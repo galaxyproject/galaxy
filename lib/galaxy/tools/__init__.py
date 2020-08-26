@@ -2547,7 +2547,7 @@ class SetMetadataTool(Tool):
             job, base_dir='job_work', dir_only=True, obj_dir=True
         )
         for name, dataset in inp_data.items():
-            external_metadata = get_metadata_compute_strategy(app.config, job.id)
+            external_metadata = get_metadata_compute_strategy(app.config, job.id, tool_id=self.id)
             sa_session = app.model.context
             metadata_set_successfully = external_metadata.external_metadata_set_successfully(dataset, name, sa_session, working_directory=working_directory)
             if metadata_set_successfully:
