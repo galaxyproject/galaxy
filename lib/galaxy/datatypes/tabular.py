@@ -309,13 +309,16 @@ class Tabular(TabularData):
 
         def is_int(column_text):
             try:
+                if any(c in ['_'] for c in column_text):
+                    return False
                 int(column_text)
-                return True
             except ValueError:
                 return False
 
         def is_float(column_text):
             try:
+                if any(c in ['_'] for c in column_text):
+                    return False
                 float(column_text)
                 return True
             except ValueError:
