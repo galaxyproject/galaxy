@@ -23,7 +23,7 @@ var View = Backbone.View.extend({
             tooltip: _l("Edit Rules"),
             onclick: () => {
                 if (view.target) {
-                    view._fetcCollectionAndEdit();
+                    view._fetchCollectionAndEdit();
                 } else {
                     view._showRuleEditor(null);
                 }
@@ -55,7 +55,7 @@ var View = Backbone.View.extend({
         this.collapsible_disabled = true;
     },
 
-    _fetcCollectionAndEdit: function () {
+    _fetchCollectionAndEdit: function () {
         const view = this;
         const url = `${getAppRoot()}api/dataset_collections/${view.target.id}?instance_type=history`;
         axios
