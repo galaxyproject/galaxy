@@ -14,7 +14,7 @@
                     v-b-tooltip.hover.bottom
                     @click="$emit('onEdit')"
                 >
-                    <span class="fa fa-edit" />
+                    <font-awesome-icon icon="edit" />
                 </b-button>
                 <h3 class="float-right align-middle mr-1 mt-2">Galaxy {{ markdownConfig.model_class }}</h3>
                 <span class="float-left font-weight-light mb-3">
@@ -78,9 +78,14 @@
 </template>
 
 <script>
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
 import store from "store";
 import { getGalaxyInstance } from "app";
 import MarkdownIt from "markdown-it";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faEdit } from "@fortawesome/free-solid-svg-icons";
 
 import LoadingSpan from "components/LoadingSpan";
 import HistoryDatasetAsImage from "./Elements/HistoryDatasetAsImage";
@@ -102,6 +107,10 @@ const FUNCTION_CALL_LINE_TEMPLATE = new RegExp(FUNCTION_CALL_LINE, "m");
 
 const md = MarkdownIt();
 
+Vue.use(BootstrapVue);
+
+library.add(faEdit);
+
 export default {
     store: store,
     components: {
@@ -117,6 +126,7 @@ export default {
         ToolStd,
         WorkflowDisplay,
         InvocationTime,
+        FontAwesomeIcon,
     },
     props: {
         markdownConfig: {
