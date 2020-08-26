@@ -9,25 +9,21 @@
             </div>
             <div class="portlet-content" v-show="expanded">
                 <div style="min-width: 1;"/>
+                <details v-if="stepDetails && Object.values(stepDetails.outputs).length > 0"><summary><b>Step Output Datasets</b></summary>
+                   <div v-for="(value, name) in stepDetails.outputs" v-bind:key="value.id">
+                        <b>{{name}}</b>
+                    <workflow-invocation-data-contents v-bind:data_item="value" />
+                    </div>
+                </details>
+                <details v-if="stepDetails && Object.values(stepDetails.output_collections).length > 0"><summary><b>Step Output Dataset Collections</b></summary>
+                   <div v-for="(value, name) in stepDetails.output_collections" v-bind:key="value.id">
+                        <b>{{name}}</b>
+                    <workflow-invocation-data-contents v-bind:data_item="value" />
+                </div>
+                </details>
                 <div class="portlet-body" style="width: 100%; overflow-x: auto;">
-                    <b-table small caption-top :items="stepDetails.jobs" :fields="jobFields" v-if="stepDetails" @row-clicked="item=>$set(item, '_showDetails', !item._showDetails)">
-                        <template v-slot:row-details="row">
-                                <job-provider
-                                    :id="row.item.id"
-                                    v-slot="{
-                                        item,
-                                        loading,
-                                    }">
-                                    <job-details :job="item" v-if="item"/>
-                                </job-provider>
-                        </template>
-                        <template v-slot:cell(create_time)="data">
-                            <UtcDate :date="data.value" mode="elapsed" />
-                        </template>
-                        <template v-slot:cell(update_time)="data">
-                            <UtcDate :date="data.value" mode="elapsed" />
-                        </template>
-                    </b-table>
+                    <step-jobs :jobs="stepDetails.jobs" v-if="stepDetails && stepDetails.jobs.length > 0"/>
+                    <workflow-invocation-state :invocationId="stepDetails.subworkflow_invocation_id" v-if="stepDetails && stepDetails.subworkflow_invocation_id"/>
                 </div>
                 <div style="min-width: 1;"/>
             </div>
@@ -36,20 +32,15 @@
 </template>
 <script>
 import { mapCacheActions } from "vuex-cache";
-import { mapGetters, mapActions } from "vuex"
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-import { JobProvider } from "components/History/providers/DatasetProvider"
-import JobDetails from "components/admin/JobDetails"
-import UtcDate from "components/UtcDate";
-
-Vue.use(BootstrapVue);
+import { mapGetters, mapActions } from "vuex";
+import WorkflowInvocationDataContents from "./WorkflowInvocationDataContents";
+import StepJobs from "./StepJobs";
 
 export default {
     components: {
-        UtcDate,
-        JobProvider,
-        JobDetails,
+        StepJobs,
+        WorkflowInvocationDataContents,
+        WorkflowInvocationState: () => import("components/WorkflowInvocationState/WorkflowInvocationState"),
     },
     props: {
         step: Object,
@@ -72,8 +63,10 @@ export default {
         workflowStepType() {
             return this.workflowStep.type;
         },
+        isDataStep() {
+            return ['data_input', 'data_collection_input'].includes(this.workflowStepType);
+        },
         stepIcon() {
-            console.log(this.workflowStepType);
             switch (this.workflowStepType) {
                 case "data_input":
                     return 'fa-file';
@@ -84,14 +77,6 @@ export default {
                 default:
                     return 'fa-wrench';
             }
-        },
-        jobFields() {
-            return [
-                'state',
-                'exit_code',
-                {key: 'update_time', label: 'Updated'},
-                {key: 'create_time', label: 'Created'},
-            ]
         },
         stepDetails() {
             return this.getInvocationStepById(this.step.id)
