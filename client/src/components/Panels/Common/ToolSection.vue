@@ -65,6 +65,7 @@ export default {
         },
         queryFilter: {
             type: String,
+            default: "",
         },
         disableFilter: {
             type: Boolean,
@@ -74,12 +75,15 @@ export default {
         },
         operationTitle: {
             type: String,
+            default: "",
         },
         operationIcon: {
             type: String,
+            default: "",
         },
         toolKey: {
             type: String,
+            default: ""
         },
         sectionName: {
             type: String,
