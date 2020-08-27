@@ -1,5 +1,5 @@
 <template>
-    <b-card title="TRS Import">
+    <b-card title="GA4GH Tool Registry Server (TRS) Workflow Import">
         <b-alert :show="hasErrorMessage" variant="danger">{{ errorMessage }}</b-alert>
         <div>
             <b>TRS Server:</b>
@@ -15,25 +15,20 @@
             <b-form-input v-model="toolId" />
         </div>
 
-        <trs-tool :trs-tool="trsTool" v-if="trsTool != null" @onImport="importVersion" />
+        <trs-tool :trs-tool="trsTool" v-if="trsTool != null" @onImport="importVersion(trsTool.id, $event)" />
     </b-card>
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import TrsServerSelection from "./TrsServerSelection";
-import TrsTool from "./TrsTool";
 import { Services } from "./services";
+import TrsMixin from "./trsMixin";
 
 Vue.use(BootstrapVue);
 
 export default {
-    components: {
-        TrsServerSelection,
-        TrsTool,
-    },
+    mixins: [TrsMixin],
     properties: {
         queryTrsServer: {
             type: String,
@@ -91,17 +86,6 @@ export default {
                 .catch((errorMessage) => {
                     this.trsTool = null;
                     this.errorMessage = errorMessage;
-                });
-        },
-        importVersion(version) {
-            this.services
-                .importTrsTool(this.trsSelection.id, this.toolId, version.name)
-                .then((response_data) => {
-                    // copied from the WorkflowImport, de-duplicate somehow
-                    window.location = `${getAppRoot()}workflows/list?message=${response_data.message}&status=success`;
-                })
-                .catch((errorMessage) => {
-                    this.errorMessage = errorMessage || "Import failed for an unknown reason.";
                 });
         },
     },

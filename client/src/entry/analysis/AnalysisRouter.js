@@ -27,6 +27,7 @@ import GridView from "mvc/grid/grid-view";
 import GridShared from "mvc/grid/grid-shared";
 import WorkflowImport from "components/Workflow/WorkflowImport.vue";
 import TrsImport from "components/Workflow/TrsImport.vue";
+import TrsSearch from "components/Workflow/TrsSearch.vue";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools.vue";
 import WorkflowList from "components/Workflow/WorkflowList.vue";
 import HistoryImport from "components/HistoryImport.vue";
@@ -71,6 +72,7 @@ export const getAnalysisRouter = (Galaxy) =>
             "(/)visualizations/(:action_id)": "show_visualizations",
             "(/)workflows/import": "show_workflows_import",
             "(/)workflows/trs_import": "show_workflows_trs_import",
+            "(/)workflows/trs_search": "show_workflows_trs_search",
             "(/)workflows/run(/)": "show_workflows_run",
             "(/)workflows(/)list": "show_workflows",
             "(/)workflows/invocations": "show_workflow_invocations",
@@ -330,6 +332,10 @@ export const getAnalysisRouter = (Galaxy) =>
                 queryTrsId,
             };
             this._display_vue_helper(TrsImport, propsData);
+        },
+
+        show_workflows_trs_search: function () {
+            this._display_vue_helper(TrsSearch);
         },
 
         show_custom_builds: function () {
