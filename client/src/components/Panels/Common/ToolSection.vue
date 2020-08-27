@@ -126,7 +126,26 @@ export default {
 };
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+@import "~bootstrap/scss/functions";
+@import "~bootstrap/scss/variables";
+@import "~bootstrap/scss/mixins";
+@import "~bootstrap/scss/utilities/spacing";
+
+@import "scss/theme/blue.scss";
+@import "scss/mixins";
+
+.toolPanelLabel {
+    @extend .pb-3;
+    @extend .pt-3;
+    @extend .px-3;
+    font-weight: bold;
+    font-size: $h5-font-size;
+    color: $text-light;
+    text-transform: uppercase;
+    text-decoration: underline;
+}
+
 .slide-enter-active {
     -moz-transition-duration: 0.2s;
     -webkit-transition-duration: 0.2s;
