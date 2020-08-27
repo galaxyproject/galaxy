@@ -1,10 +1,10 @@
 import unittest
 
-from galaxy.web.framework.base import WebApplication
+import routes
 
 
 class VisualizationsBase_TestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        WebApplication()
+        routes.Mapper()
