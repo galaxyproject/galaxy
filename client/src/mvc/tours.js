@@ -49,7 +49,6 @@ const TOURPAGE_TEMPLATE = `
     </div>
 </div>`;
 
-
 const TOUR_RESUME_DELAY = 1000; // one second delay after pageload before a tour resume happens
 
 const DEFAULT_TOUR_OPTIONS = {
@@ -58,14 +57,14 @@ const DEFAULT_TOUR_OPTIONS = {
     storage: window.sessionStorage,
     onEnd: function () {
         window.sessionStorage.removeItem("activeGalaxyTour");
-    }
+    },
 };
 
-var hooked_tour_from_data = data => {
-    data.steps.forEach(step => {
+var hooked_tour_from_data = (data) => {
+    data.steps.forEach((step) => {
         if (step.preclick) {
             step.onShow = () => {
-                step.preclick.forEach(preclick => {
+                step.preclick.forEach((preclick) => {
                     // TODO: click delay between clicks
                     $(preclick).click();
                 });
@@ -73,7 +72,7 @@ var hooked_tour_from_data = data => {
         }
         if (step.postclick) {
             step.onHide = () => {
-                step.postclick.forEach(postclick => {
+                step.postclick.forEach((postclick) => {
                     // TODO: click delay between clicks
                     $(postclick).click();
                 });
@@ -112,7 +111,7 @@ var Tours = Backbone.Collection.extend({
 
 export var ToursView = Backbone.View.extend({
     title: _l("Tours"),
-    initialize: function() {
+    initialize: function () {
         this.setElement("<div/>");
         this.model = new Tours();
         this.model.fetch({
@@ -130,7 +129,7 @@ export var ToursView = Backbone.View.extend({
         var tpl = _.template(TOURPAGE_TEMPLATE);
 
         var tourtags = {};
-        this.model.models.forEach(tour => {
+        this.model.models.forEach((tour) => {
             tour.attributes.tags_lc = [];
             if (tour.attributes.tags === null) {
                 if (tourtags.Untagged === undefined) {
@@ -138,7 +137,7 @@ export var ToursView = Backbone.View.extend({
                 }
                 tourtags.Untagged.tours.push(tour);
             } else {
-                tour.attributes.tags.forEach(otag => {
+                tour.attributes.tags.forEach((otag) => {
                     var tag = otag.charAt(0).toUpperCase() + otag.slice(1);
                     if (tourtags[tag] === undefined) {
                         tourtags[tag] = { name: tag, tours: [] };
