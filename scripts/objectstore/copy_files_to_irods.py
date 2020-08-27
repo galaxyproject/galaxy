@@ -243,7 +243,7 @@ def print_help_msg():
     print("\tpip3 install psycopg2")
     print("\tpip3 install python_irodsclient")
     print("\nLong-form input parameter specification:")
-    print("copy_files_to_irods --start_dataset_id=2 --end_dataset_id=3 --object_store_info_file=object_store_info.json --irods_info_file=irods_info_file.json --db_connection_info_file=db_connection_info_file.json --cop_or_checksum=<copy|checksum>")
+    print("copy_files_to_irods --start_dataset_id=2 --end_dataset_id=3 --object_store_info_file=object_store_info.json --irods_info_file=irods_info_file.json --db_connection_info_file=db_connection_info_file.json --copy_or_checksum=<copy|checksum>")
     print("\nOR")
     print("\nShort-form input parameter specification:")
     print("copy_files_to_irods -s 2 -e 3 -o object_store_info.json -i irods_info_file.json -d db_connection_info_file.json -c <copy|checksum>")
