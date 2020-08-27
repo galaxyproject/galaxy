@@ -26,6 +26,7 @@ import Tours from "mvc/tours";
 import GridView from "mvc/grid/grid-view";
 import GridShared from "mvc/grid/grid-shared";
 import WorkflowImport from "components/Workflow/WorkflowImport.vue";
+import TrsImport from "components/Workflow/TrsImport.vue";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools.vue";
 import WorkflowList from "components/Workflow/WorkflowList.vue";
 import HistoryImport from "components/HistoryImport.vue";
@@ -69,6 +70,7 @@ export const getAnalysisRouter = (Galaxy) =>
             "(/)visualizations(/)sharing(/)": "show_visualizations_sharing",
             "(/)visualizations/(:action_id)": "show_visualizations",
             "(/)workflows/import": "show_workflows_import",
+            "(/)workflows/trs_import": "show_workflows_trs_import",
             "(/)workflows/run(/)": "show_workflows_run",
             "(/)workflows(/)list": "show_workflows",
             "(/)workflows/invocations": "show_workflow_invocations",
@@ -318,6 +320,10 @@ export const getAnalysisRouter = (Galaxy) =>
 
         show_workflows_import: function () {
             this._display_vue_helper(WorkflowImport);
+        },
+
+        show_workflows_trs_import: function () {
+            this._display_vue_helper(TrsImport);
         },
 
         show_custom_builds: function () {

@@ -102,6 +102,7 @@ class ExpectedValues:
             'tool_search_index_dir': self._in_data_dir('tool_search_index'),
             'tool_sheds_config_file': self._in_config_dir('tool_sheds_conf.xml'),
             'tool_test_data_directories': self._in_root_dir('test-data'),
+            'trs_servers_config_file': self._in_config_dir('trs_servers_conf.yml'),
             'user_preferences_extra_conf_path': self._in_config_dir('user_preferences_extra_conf.yml'),
             'workflow_resource_params_file': self._in_config_dir('workflow_resource_params_conf.xml'),
             'workflow_schedulers_config_file': self._in_config_dir('workflow_schedulers_conf.xml'),

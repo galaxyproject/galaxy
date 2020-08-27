@@ -158,6 +158,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/workflows/create')
     webapp.add_client_route('/workflows/run')
     webapp.add_client_route('/workflows/import')
+    webapp.add_client_route('/workflows/trs_import')
     webapp.add_client_route('/workflows/invocations')
     webapp.add_client_route('/workflows/invocations/report')
     webapp.add_client_route('/custom_builds')
@@ -549,6 +550,42 @@ def populate_api_routes(webapp, app):
                           controller='workflows',
                           action='import_shared_workflow_deprecated',
                           conditions=dict(method=['POST']))
+
+    webapp.mapper.connect(
+        'trs_consume_get_servers',
+        '/api/trs_consume/servers',
+        controller='trs_consumer',
+        action="get_servers",
+        conditions=dict(method=['GET'])
+    )
+    webapp.mapper.connect(
+        'trs_consume_get_tool',
+        '/api/trs_consume/{trs_server}/tools/{tool_id}',
+        controller='trs_consumer',
+        action="get_tool",
+        conditions=dict(method=['GET'])
+    )
+    webapp.mapper.connect(
+        'trs_consume_get_tool_versions',
+        '/api/trs_consume/{trs_server}/tools/{tool_id}/versions',
+        controller='trs_consumer',
+        action="get_tool_versions",
+        conditions=dict(method=['GET'])
+    )
+    webapp.mapper.connect(
+        'trs_consume_get_tool_version',
+        '/api/trs_consume/{trs_server}/tools/{tool_id}/versions/{version_id}',
+        controller='trs_consumer',
+        action="get_tool_version",
+        conditions=dict(method=['GET'])
+    )
+    webapp.mapper.connect(
+        'trs_consume_import_tool_version',
+        '/api/trs_consume/{trs_server}/tools/{tool_id}/versions/{version_id}/import',
+        controller='trs_consumer',
+        action="import_tool_version",
+        conditions=dict(method=['POST'])
+    )
 
     # route for creating/getting converted datasets
     webapp.mapper.connect('/api/datasets/{dataset_id}/converted', controller='datasets', action='converted', ext=None)

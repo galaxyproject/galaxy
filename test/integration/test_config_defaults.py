@@ -89,6 +89,7 @@ PATH_CONFIG_PROPERTIES = [
     'tool_dependency_cache_dir',
     'tool_path',
     'tool_sheds_config_file',
+    'trs_servers_config_file',
     'user_preferences_extra_conf_path',
     'webhooks_dir',
     'workflow_resource_params_file',
@@ -117,6 +118,7 @@ RESOLVE = {
     'object_store_config_file': 'config_dir',
     'oidc_backends_config_file': 'config_dir',
     'oidc_config_file': 'config_dir',
+    'trs_servers_config_file': 'config_dir',
     'sanitize_allowlist_file': 'managed_config_dir',
     'shed_data_manager_config_file': 'managed_config_dir',
     'shed_tool_config_file': 'managed_config_dir',
@@ -201,6 +203,7 @@ DO_NOT_TEST = [
     'tool_config_file',  # default not used; may or may not be testable
     'tool_data_table_config_path',  # broken: remove 'config/' prefix from schema
     'tool_test_data_directories',  # untestable; refactor config/__init__ to test
+    'trs_servers_config_file',  # default not used?
     'use_remote_user',  # broken: default overridden
     'use_tasked_jobs',  # broken: default overridden
     'user_library_import_dir',  # broken: default overridden
