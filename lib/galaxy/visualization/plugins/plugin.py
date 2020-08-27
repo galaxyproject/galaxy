@@ -19,7 +19,7 @@ from galaxy.web import url_for
 log = logging.getLogger(__name__)
 
 
-class ServesTemplatesPluginMixin(object):
+class ServesTemplatesPluginMixin:
     """
     An object that renders (mako) template files from the server.
     """
@@ -234,7 +234,7 @@ class InteractiveEnvironmentPlugin(VisualizationPlugin):
     def __init__(self, app, path, name, config, context=None, **kwargs):
         # TODO: this is a hack until we can get int envs seperated from the vis reg and into their own framework
         context['base_url'] = 'interactive_environments'
-        super(InteractiveEnvironmentPlugin, self).__init__(app, path, name, config, context=context, **kwargs)
+        super().__init__(app, path, name, config, context=context, **kwargs)
 
     def _error_template(self, trans):
         return trans.fill_template('message.mako',
@@ -335,5 +335,5 @@ class StaticFileVisualizationPlugin(VisualizationPlugin):
 
         static_file_path = self.config['entry_point']['file']
         static_file_path = os.path.join(self.path, static_file_path)
-        with open(static_file_path, 'r') as outfile:
+        with open(static_file_path) as outfile:
             return outfile.read()

@@ -38,7 +38,7 @@ TOOL_DATA_TABLE_CONF_XML = """<?xml version="1.0"?>
 """
 
 
-class ToolDataPathFiles(object):
+class ToolDataPathFiles:
 
     def __init__(self, tool_data_path):
         self.tool_data_path = os.path.abspath(tool_data_path)
@@ -67,7 +67,7 @@ class ToolDataPathFiles(object):
             return os.path.exists(path)
 
 
-class ToolDataTableManager(object):
+class ToolDataTableManager:
     """Manages a collection of tool data tables"""
 
     def __init__(self, tool_data_path, config_filename=None, tool_data_table_config_path_set=None, other_config_dict=None, app=None):
@@ -161,7 +161,7 @@ class ToolDataTableManager(object):
                                                      tool_data_path=tool_data_path,
                                                      from_shed_config=True)
         except Exception as e:
-            error_message = 'Error attempting to parse file %s: %s' % (str(os.path.split(config_filename)[1]), util.unicodify(e))
+            error_message = 'Error attempting to parse file {}: {}'.format(str(os.path.split(config_filename)[1]), util.unicodify(e))
             log.debug(error_message, exc_info=True)
             table_elems = []
         if persist:
@@ -186,7 +186,7 @@ class ToolDataTableManager(object):
         try:
             try:
                 tree = util.parse_xml(full_path)
-            except (OSError, IOError) as e:
+            except OSError as e:
                 if e.errno == errno.ENOENT:
                     with open(full_path, 'w') as fh:
                         fh.write(TOOL_DATA_TABLE_CONF_XML)
@@ -241,7 +241,7 @@ class ToolDataTableManager(object):
         return list(table_names)
 
 
-class ToolDataTable(object):
+class ToolDataTable:
 
     @classmethod
     def from_elem(cls, table_elem, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=None, app=None):
@@ -329,7 +329,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
     type_key = 'tabular'
 
     def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None, other_config_dict=None, app=None):
-        super(TabularToolDataTable, self).__init__(config_element, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=other_config_dict)
+        super.__init__(config_element, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=other_config_dict)
         self.config_element = config_element
         self.data = []
         self.configure_and_load(config_element, tool_data_path, from_shed_config)
@@ -421,7 +421,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                 # warnings about missing location files that would otherwise be
                 # empty and we don't care about unless the admin chooses to
                 # populate them.
-                log.warning("Cannot find index file '%s' for tool data table '%s'" % (filename, self.name))
+                log.warning("Cannot find index file '{}' for tool data table '{}'".format(filename, self.name))
 
             if filename not in self.filenames or not self.filenames[filename]['found']:
                 self.filenames[filename] = dict(found=found, filename=filename, from_shed_config=from_shed_config, tool_data_path=tool_data_path,
@@ -433,7 +433,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                 tmp_file.close()
 
     def merge_tool_data_table(self, other_table, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd):
-        assert self.columns == other_table.columns, "Merging tabular data tables with non matching columns is not allowed: %s:%s != %s:%s" % (self.name, self.columns, other_table.name, other_table.columns)
+        assert self.columns == other_table.columns, "Merging tabular data tables with non matching columns is not allowed: {}:{} != {}:{}".format(self.name, self.columns, other_table.name, other_table.columns)
         # merge filename info
         for filename, info in other_table.filenames.items():
             if filename not in self.filenames:
@@ -651,7 +651,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                 log.debug("Persisting changes to file: %s", filename)
                 try:
                     data_table_fh = open(filename, 'r+b')
-                except IOError as e:
+                except OSError as e:
                     log.warning('Error opening data table file (%s) with r+b, assuming file does not exist and will open as wb: %s', filename, e)
                     data_table_fh = open(filename, 'wb')
                 if os.stat(filename).st_size != 0:
@@ -673,7 +673,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                 values = self._replace_field_separators(values)
                 self.filter_file_fields(filename, values)
             else:
-                log.warning("Cannot find index file '%s' for tool data table '%s'" % (filename, self.name))
+                log.warning("Cannot find index file '{}' for tool data table '{}'".format(filename, self.name))
 
         self.reload_from_files()
 
@@ -736,7 +736,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
         return util.xml_to_string(self.config_element)
 
     def to_dict(self, view='collection'):
-        rval = super(TabularToolDataTable, self).to_dict()
+        rval = super().to_dict()
         if view == 'element':
             rval['columns'] = sorted(self.columns.keys(), key=lambda x: self.columns[x])
             rval['fields'] = self.get_fields()
@@ -786,7 +786,7 @@ class TabularToolDataField(Dictifiable):
         return sha1.hexdigest()
 
     def to_dict(self):
-        rval = super(TabularToolDataField, self).to_dict()
+        rval = super().to_dict()
         rval['name'] = self.data['value']
         rval['fields'] = self.data
         rval['base_dir'] = self.get_base_dir(),
@@ -811,7 +811,7 @@ class RefgenieToolDataTable(TabularToolDataTable):
     type_key = 'refgenie'
 
     def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None, other_config_dict=None, app=None):
-        super(RefgenieToolDataTable, self).__init__(config_element, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=other_config_dict)
+        super.__init__(config_element, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=other_config_dict)
         self.config_element = config_element
         self.data = []
         self.configure_and_load(config_element, tool_data_path, from_shed_config)
@@ -819,7 +819,7 @@ class RefgenieToolDataTable(TabularToolDataTable):
     def configure_and_load(self, config_element, tool_data_path, from_shed_config=False, url_timeout=10):
         self.rg_asset = config_element.get('asset', None)
         assert self.rg_asset, ValueError('You must specify an asset attribute.')
-        super(RefgenieToolDataTable, self).configure_and_load(config_element, tool_data_path, from_shed_config=from_shed_config, url_timeout=url_timeout)
+        super().configure_and_load(config_element, tool_data_path, from_shed_config=from_shed_config, url_timeout=url_timeout)
 
     def parse_column_spec(self, config_element):
         self.columns = {}
@@ -858,8 +858,8 @@ class RefgenieToolDataTable(TabularToolDataTable):
                 if asset != self.rg_asset:
                     continue
                 digest = rgc.id(genome, asset, tag=tag)
-                uuid = 'refgenie:%s/%s:%s@%s' % (genome, self.rg_asset, tag, digest)
-                display_name = description or '%s/%s' % (genome, tagged_asset)
+                uuid = 'refgenie:{}/{}:{}@{}'.format(genome, self.rg_asset, tag, digest)
+                display_name = description or '{}/{}'.format(genome, tagged_asset)
 
                 def _seek_key(key):
                     return rgc.seek(genome, asset, tag_name=tag, seek_key=key)
@@ -910,7 +910,7 @@ class DatabaseToolDataTable(ToolDataTable, Dictifiable):
     datatable_id = None
 
     def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None, other_config_dict=None, app=None):
-        super(DatabaseToolDataTable, self).__init__(config_element, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=other_config_dict)
+        super.__init__(config_element, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=other_config_dict)
         self.config_element = config_element
         self.data = []
         if app is not None and app.name != "tool_shed":
@@ -1226,4 +1226,4 @@ def expand_here_template(content, here=None):
 
 
 # Registry of tool data types by type_key
-tool_data_table_types = dict([(cls.type_key, cls) for cls in [TabularToolDataTable, RefgenieToolDataTable, DatabaseToolDataTable]])
+tool_data_table_types = {cls.type_key: cls for cls in [TabularToolDataTable, RefgenieToolDataTable, DatabaseToolDataTable]}

@@ -267,9 +267,9 @@ class ToolShedRepositoriesController(BaseAPIController):
         errors = irm.uninstall_repository(repository=repository, remove_from_disk=remove_from_disk)
         if not errors:
             action = 'removed' if remove_from_disk else 'deactivated'
-            return {'message': 'The repository named %s has been %s.' % (repository.name, action)}
+            return {'message': 'The repository named {} has been {}.'.format(repository.name, action)}
         else:
-            raise Exception('Attempting to uninstall tool dependencies for repository named %s resulted in errors: %s' % (repository.name, errors))
+            raise Exception('Attempting to uninstall tool dependencies for repository named {} resulted in errors: {}'.format(repository.name, errors))
 
     def __parse_repository_from_payload(self, payload, include_changeset=False):
         # Get the information about the repository to be installed from the payload.

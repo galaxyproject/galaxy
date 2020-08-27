@@ -45,3 +45,18 @@
 #  to:
 #    name: pipits_pipeline
 #    version: 1.4.0
+#
+#
+# ## WARNING ##
+# 
+# YAML is a typed language, and types are inferred. Thus, the unquoted version 1.10 (for example) will be read by the YAML parser as the floating
+# point number 1.1, which will not match module version 1.10 on your system. To avoid type inference, such values should be quoted with single (')
+# or double (") quotes like so:
+#
+#- from:
+#    name: bcftools
+#    version: "1.10"
+#  to:
+#    name: biotools/bcftools
+#
+# Values that cannot be inferred as numbers (such as 1.4.0) do not need to be quoted, but can be, if you prefer.

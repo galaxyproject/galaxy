@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import re
 
 from galaxy.util import (
@@ -60,7 +58,7 @@ def assert_element_text_matches(output, path, expression):
     path matches the specified regular expression."""
     text = xml_find_text(output, path)
     if re.match(expression, text) is None:
-        errmsg = "Expected element with path '%s' to contain text matching '%s', instead text '%s' was found." % (path, expression, text)
+        errmsg = "Expected element with path '{}' to contain text matching '{}', instead text '{}' was found.".format(path, expression, text)
         raise AssertionError(errmsg)
 
 
@@ -76,7 +74,7 @@ def assert_attribute_matches(output, path, attribute, expression):
     xml = xml_find(output, path)
     attribute_value = xml.attrib[attribute]
     if re.match(expression, attribute_value) is None:
-        errmsg = "Expected attribute '%s' on element with path '%s' to match '%s', instead attribute value was '%s'." % (attribute, path, expression, attribute_value)
+        errmsg = "Expected attribute '{}' on element with path '{}' to match '{}', instead attribute value was '{}'.".format(attribute, path, expression, attribute_value)
         raise AssertionError(errmsg)
 
 

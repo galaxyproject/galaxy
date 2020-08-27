@@ -17,7 +17,7 @@ FILE_MD5 = "37b59762b59fff860460522d271bc111"
 class LibrariesApiTestCase(ApiTestCase, TestsDatasets):
 
     def setUp(self):
-        super(LibrariesApiTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
         self.library_populator = LibraryPopulator(self.galaxy_interactor)

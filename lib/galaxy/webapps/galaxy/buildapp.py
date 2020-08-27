@@ -14,7 +14,7 @@ import galaxy.datatypes.registry
 import galaxy.model
 import galaxy.model.mapping
 import galaxy.web.framework
-import galaxy.web.framework.webapp
+import galaxy.webapps.base.webapp
 from galaxy import util
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
@@ -27,7 +27,7 @@ from galaxy.webapps.util import wrap_if_allowed
 log = logging.getLogger(__name__)
 
 
-class GalaxyWebApplication(galaxy.web.framework.webapp.WebApplication):
+class GalaxyWebApplication(galaxy.webapps.base.webapp.WebApplication):
     pass
 
 
@@ -158,6 +158,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/workflows/create')
     webapp.add_client_route('/workflows/run')
     webapp.add_client_route('/workflows/import')
+    webapp.add_client_route('/workflows/trs_import')
     webapp.add_client_route('/workflows/invocations')
     webapp.add_client_route('/workflows/invocations/report')
     webapp.add_client_route('/custom_builds')
@@ -196,7 +197,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
 
 
 def uwsgi_app():
-    return galaxy.web.framework.webapp.build_native_uwsgi_app(app_factory, "galaxy")
+    return galaxy.webapps.base.webapp.build_native_uwsgi_app(app_factory, "galaxy")
 
 
 # For backwards compatibility
@@ -254,6 +255,11 @@ def populate_api_routes(webapp, app):
                           "/api/histories/{history_id}/contents/{history_content_id}/extra_files",
                           controller="datasets",
                           action="extra_files",
+                          conditions=dict(method=["GET"]))
+    webapp.mapper.connect("history_content_as_text",
+                          "/api/datasets/{dataset_id}/get_content_as_text",
+                          controller="datasets",
+                          action="get_content_as_text",
                           conditions=dict(method=["GET"]))
     webapp.mapper.connect("history_contents_metadata_file",
                           "/api/histories/{history_id}/contents/{history_content_id}/metadata_file",
@@ -329,7 +335,8 @@ def populate_api_routes(webapp, app):
     webapp.mapper.resource('role', 'roles', path_prefix='/api')
     webapp.mapper.resource('upload', 'uploads', path_prefix='/api')
     webapp.mapper.connect('/api/ftp_files', controller='remote_files')
-    webapp.mapper.resource('remote_file', 'remote_files', path_prefix='/api')
+    webapp.mapper.connect('/api/remote_files', action='index', controller='remote_files', conditions=dict(method=["GET"]))
+    webapp.mapper.connect('/api/remote_files/plugins', action='plugins', controller='remote_files', conditions=dict(method=["GET"]))
     webapp.mapper.resource('group', 'groups', path_prefix='/api')
     webapp.mapper.resource_with_deleted('quota', 'quotas', path_prefix='/api')
 
@@ -459,7 +466,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.resource('datatype',
                            'datatypes',
                            path_prefix='/api',
-                           collection={'sniffers': 'GET', 'mapping': 'GET', 'converters': 'GET', 'edam_data': 'GET', 'edam_formats': 'GET'},
+                           collection={'sniffers': 'GET', 'mapping': 'GET', 'converters': 'GET', 'edam_data': 'GET', 'edam_formats': 'GET', 'types_and_mapping': 'GET'},
                            parent_resources=dict(member_name='datatype', collection_name='datatypes'))
     webapp.mapper.resource('search', 'search', path_prefix='/api')
     webapp.mapper.connect('/api/pages/{id}.pdf', action='show_pdf', controller="pages", conditions=dict(method=["GET"]))
@@ -544,6 +551,42 @@ def populate_api_routes(webapp, app):
                           action='import_shared_workflow_deprecated',
                           conditions=dict(method=['POST']))
 
+    webapp.mapper.connect(
+        'trs_consume_get_servers',
+        '/api/trs_consume/servers',
+        controller='trs_consumer',
+        action="get_servers",
+        conditions=dict(method=['GET'])
+    )
+    webapp.mapper.connect(
+        'trs_consume_get_tool',
+        '/api/trs_consume/{trs_server}/tools/{tool_id}',
+        controller='trs_consumer',
+        action="get_tool",
+        conditions=dict(method=['GET'])
+    )
+    webapp.mapper.connect(
+        'trs_consume_get_tool_versions',
+        '/api/trs_consume/{trs_server}/tools/{tool_id}/versions',
+        controller='trs_consumer',
+        action="get_tool_versions",
+        conditions=dict(method=['GET'])
+    )
+    webapp.mapper.connect(
+        'trs_consume_get_tool_version',
+        '/api/trs_consume/{trs_server}/tools/{tool_id}/versions/{version_id}',
+        controller='trs_consumer',
+        action="get_tool_version",
+        conditions=dict(method=['GET'])
+    )
+    webapp.mapper.connect(
+        'trs_consume_import_tool_version',
+        '/api/trs_consume/{trs_server}/tools/{tool_id}/versions/{version_id}/import',
+        controller='trs_consumer',
+        action="import_tool_version",
+        conditions=dict(method=['POST'])
+    )
+
     # route for creating/getting converted datasets
     webapp.mapper.connect('/api/datasets/{dataset_id}/converted', controller='datasets', action='converted', ext=None)
     webapp.mapper.connect('/api/datasets/{dataset_id}/converted/{ext}', controller='datasets', action='converted')
@@ -564,7 +607,7 @@ def populate_api_routes(webapp, app):
         "usage": "_deprecated",
     }
     for noun, suffix in invoke_names.items():
-        name = "%s%s" % (noun, suffix)
+        name = "{}{}".format(noun, suffix)
         webapp.mapper.connect(
             'list_workflow_%s' % name,
             '/api/workflows/{workflow_id}/%s' % noun,
@@ -625,6 +668,13 @@ def populate_api_routes(webapp, app):
                           controller='authenticate',
                           action='get_api_key',
                           conditions=dict(method=["GET"]))
+
+    # API OPTIONS RESPONSE
+    webapp.mapper.connect('options',
+                          '/api/{path_info:.*?}',
+                          controller='authenticate',
+                          action='options',
+                          conditions={'method': ['OPTIONS']})
 
     # ======================================
     # ====== DISPLAY APPLICATIONS API ======
@@ -868,7 +918,7 @@ def populate_api_routes(webapp, app):
                           conditions=dict(method=["DELETE"]))
 
     webapp.mapper.connect('download_ld_items',
-                          '/api/libraries/datasets/download/{format}',
+                          '/api/libraries/datasets/download/{archive_format}',
                           controller='library_datasets',
                           action='download',
                           conditions=dict(method=["POST", "GET"]))
@@ -1249,5 +1299,5 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
 
 
 def wrap_in_static(app, global_conf, plugin_frameworks=None, **local_conf):
-    urlmap, cache_time = galaxy.web.framework.webapp.build_url_map(app, global_conf, local_conf)
+    urlmap, cache_time = galaxy.webapps.base.webapp.build_url_map(app, global_conf, local_conf)
     return urlmap

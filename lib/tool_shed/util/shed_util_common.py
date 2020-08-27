@@ -202,13 +202,13 @@ def get_repository_file_contents(app, file_path, repository_id, is_admin=False):
         return '<br/>Binary file<br/>'
     else:
         for i, line in enumerate(open(file_path)):
-            safe_str = '%s%s' % (safe_str, basic_util.to_html_string(line))
+            safe_str = '{}{}'.format(safe_str, basic_util.to_html_string(line))
             # Stop reading after string is larger than MAX_CONTENT_SIZE.
             if len(safe_str) > MAX_CONTENT_SIZE:
                 large_str = \
                     '<br/>File contents truncated because file size is larger than maximum viewing size of %s<br/>' % \
                     util.nice_size(MAX_CONTENT_SIZE)
-                safe_str = '%s%s' % (safe_str, large_str)
+                safe_str = '{}{}'.format(safe_str, large_str)
                 break
 
         if len(safe_str) > basic_util.MAX_DISPLAY_SIZE:
@@ -347,7 +347,7 @@ def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_al
         admin_body = string.Template(template).safe_substitute(host=host,
                                                                sharable_link=sharable_link,
                                                                repository_name=repository.name,
-                                                               revision='%s:%s' % (str(ctx.rev()), ctx),
+                                                               revision='{}:{}'.format(str(ctx.rev()), ctx),
                                                                display_date=display_date,
                                                                description=ctx.description(),
                                                                username=username,
@@ -355,7 +355,7 @@ def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_al
         body = string.Template(template).safe_substitute(host=host,
                                                          sharable_link=sharable_link,
                                                          repository_name=repository.name,
-                                                         revision='%s:%s' % (str(ctx.rev()), ctx),
+                                                         revision='{}:{}'.format(str(ctx.rev()), ctx),
                                                          display_date=display_date,
                                                          description=ctx.description(),
                                                          username=username,

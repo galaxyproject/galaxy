@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import logging
 
 import mako.exceptions
@@ -55,7 +53,7 @@ def wrap_if_allowed(app, stack, wrap, name=None, args=None, kwargs=None):
     """
     Wrap the application with the given method if the application stack allows for it.
 
-    :type   app:    :class:`galaxy.web.framework.webapp.WebApplication` subclass
+    :type   app:    :class:`galaxy.webapps.base.webapp.WebApplication` subclass
     :param  app:    application to wrap
     :type   stack:  :class:`galaxy.web_stack.ApplicationStack` subclass
     :param  stack:  instance of application stack implementing `allowed_middleware()` method

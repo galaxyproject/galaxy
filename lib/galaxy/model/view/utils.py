@@ -7,7 +7,7 @@ from sqlalchemy.ext import compiler
 from sqlalchemy_utils import view
 
 
-class View(object):
+class View:
     is_view = True
 
 

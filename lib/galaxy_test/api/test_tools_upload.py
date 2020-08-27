@@ -5,11 +5,13 @@ from galaxy_test.base.constants import (
     ONE_TO_SIX_ON_WINDOWS,
     ONE_TO_SIX_WITH_SPACES,
     ONE_TO_SIX_WITH_TABS,
+    ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE,
 )
 from galaxy_test.base.populators import (
     DatasetPopulator,
     skip_if_site_down,
     skip_without_datatype,
+    stage_inputs,
     uses_test_history,
 )
 from ._framework import ApiTestCase
@@ -18,7 +20,7 @@ from ._framework import ApiTestCase
 class ToolsUploadTestCase(ApiTestCase):
 
     def setUp(self):
-        super(ToolsUploadTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
     def test_upload1_paste(self):
@@ -58,6 +60,30 @@ class ToolsUploadTestCase(ApiTestCase):
     def test_fetch_post_lines_option(self):
         windows_content = ONE_TO_SIX_ON_WINDOWS
         result_content = self._upload_and_get_content(windows_content, api="fetch", to_posix_lines=True)
+        self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS)
+
+    # Test how trailing new lines are added
+    # - upload1 adds by default because to_posix_lines is on by default
+    # - fetch doesn't add by default because to_posix_lines is off by default
+    # - fetch does add trailing newline if to_posix_lines is enabled
+    def test_post_lines_trailing(self):
+        input_content = ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE
+        result_content = self._upload_and_get_content(input_content)
+        self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS)
+
+    def test_post_lines_trailing_off(self):
+        input_content = ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE
+        result_content = self._upload_and_get_content(input_content, to_posix_lines=False)
+        self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE)
+
+    def test_fetch_post_lines_trailing_off_by_default(self):
+        input_content = ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE
+        result_content = self._upload_and_get_content(input_content, api="fetch")
+        self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE)
+
+    def test_fetch_post_lines_trailing_if_to_posix(self):
+        input_content = ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE
+        result_content = self._upload_and_get_content(input_content, api="fetch", to_posix_lines=True)
         self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS)
 
     def test_upload_tab_to_space_off_by_default(self):
@@ -195,6 +221,42 @@ class ToolsUploadTestCase(ApiTestCase):
             tiff_metadata = self._upload_and_get_details(fh, file_type="auto")
         self.assertEqual(tiff_metadata["file_ext"], "tiff")
 
+    @uses_test_history(require_new=False)
+    def test_newlines_stage_fetch(self, history_id):
+        job = {
+            "input1": {
+                "class": "File",
+                "format": "txt",
+                "path": "test-data/simple_line_no_newline.txt",
+            }
+        }
+        inputs, datasets = stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False)
+        dataset = datasets[0][0]
+        content = self.dataset_populator.get_history_dataset_content(
+            history_id=history_id,
+            dataset=dataset
+        )
+        # By default this appends the newline.
+        self.assertEqual(content, "This is a line of text.\n")
+
+    @uses_test_history(require_new=False)
+    def test_newlines_stage_fetch_configured(self, history_id):
+        job = {
+            "input1": {
+                "class": "File",
+                "format": "txt",
+                "path": "test-data/simple_line_no_newline.txt",
+            }
+        }
+        inputs, datasets = stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False, to_posix_lines=False)
+        dataset = datasets[0][0]
+        content = self.dataset_populator.get_history_dataset_content(
+            history_id=history_id,
+            dataset=dataset
+        )
+        # By default this appends the newline.
+        self.assertEqual(content, "This is a line of text.")
+
     @skip_without_datatype("velvet")
     def test_composite_datatype(self):
         with self.dataset_populator.test_history() as history_id:
@@ -209,20 +271,83 @@ class ToolsUploadTestCase(ApiTestCase):
             assert roadmaps_content.strip() == "roadmaps content", roadmaps_content
 
     @skip_without_datatype("velvet")
-    def test_composite_datatype_space_to_tab(self):
+    @uses_test_history(require_new=False)
+    def test_composite_datatype_fetch(self, history_id):
+        destination = {"type": "hdas"}
+        targets = [{
+            "destination": destination,
+            "items": [{
+                "src": "composite",
+                "ext": "velvet",
+                "composite": {
+                    "items": [
+                        {"src": "pasted", "paste_content": "sequences content"},
+                        {"src": "pasted", "paste_content": "roadmaps content"},
+                        {"src": "pasted", "paste_content": "log content"},
+                    ]
+                },
+            }],
+        }]
+        payload = {
+            "history_id": history_id,
+            "targets": json.dumps(targets),
+        }
+        fetch_response = self.dataset_populator.fetch(payload)
+        self._assert_status_code_is(fetch_response, 200)
+        outputs = fetch_response.json()["outputs"]
+        assert len(outputs) == 1
+        output = outputs[0]
+
+        roadmaps_content = self._get_roadmaps_content(history_id, output)
+        assert roadmaps_content.strip() == "roadmaps content", roadmaps_content
+
+    @skip_without_datatype("velvet")
+    @uses_test_history(require_new=False)
+    def test_composite_datatype_stage_fetch(self, history_id):
+        job = {
+            "input1": {
+                "class": "File",
+                "format": "velvet",
+                "composite_data": [
+                    "test-data/simple_line.txt",
+                    "test-data/simple_line_alternative.txt",
+                    "test-data/simple_line_x2.txt",
+                ]
+            }
+        }
+        inputs, datsets = stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False)
+
+    @skip_without_datatype("velvet")
+    @uses_test_history(require_new=False)
+    def test_composite_datatype_stage_upload1(self, history_id):
+        job = {
+            "input1": {
+                "class": "File",
+                "format": "velvet",
+                "composite_data": [
+                    "test-data/simple_line.txt",
+                    "test-data/simple_line_alternative.txt",
+                    "test-data/simple_line_x2.txt",
+                ]
+            }
+        }
+        inputs, datsets = stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False, use_fetch_api=False)
+
+    @skip_without_datatype("velvet")
+    @uses_test_history(require_new=False)
+    def test_composite_datatype_space_to_tab(self, history_id):
         # Like previous test but set one upload with space_to_tab to True to
         # verify that works.
-        with self.dataset_populator.test_history() as history_id:
-            dataset = self._velvet_upload(history_id, extra_inputs={
-                "files_1|url_paste": "roadmaps content",
-                "files_1|type": "upload_dataset",
-                "files_1|space_to_tab": "Yes",
-                "files_2|url_paste": "log content",
-                "files_2|type": "upload_dataset",
-            })
+        dataset = self._velvet_upload(history_id, extra_inputs={
+            "files_1|url_paste": "roadmaps content",
+            "files_1|type": "upload_dataset",
+            "files_1|space_to_tab": "Yes",
+            "files_2|url_paste": "log content",
+            "files_2|type": "upload_dataset",
+        })
 
-            roadmaps_content = self._get_roadmaps_content(history_id, dataset)
-            assert roadmaps_content.strip() == "roadmaps\tcontent", roadmaps_content
+        roadmaps_content = self._get_roadmaps_content(history_id, dataset)
+        assert roadmaps_content.strip() == "roadmaps\tcontent", roadmaps_content
 
     @skip_without_datatype("velvet")
     def test_composite_datatype_posix_lines(self):
@@ -247,6 +372,94 @@ class ToolsUploadTestCase(ApiTestCase):
         assert details["state"] == "ok"
         assert details["file_ext"] == "isa-tab", details
         assert details["file_size"] == 85, details
+
+    @uses_test_history(require_new=False)
+    def test_upload_composite_as_tar(self, history_id):
+        tar_path = self.test_data_resolver.get_filename("testdir.tar")
+        with open(tar_path, "rb") as tar_f:
+            payload = self.dataset_populator.upload_payload(history_id, "Test123",
+                extra_inputs={
+                    "files_1|file_data": tar_f,
+                    "files_1|NAME": "composite",
+                    "file_count": "2",
+                    "force_composite": "True",
+                }
+            )
+            run_response = self.dataset_populator.tools_post(payload)
+            self.dataset_populator.wait_for_tool_run(history_id, run_response)
+            dataset = run_response.json()["outputs"][0]
+            self._check_testdir_composite(dataset, history_id)
+
+    @uses_test_history(require_new=False)
+    def test_upload_composite_as_tar_fetch(self, history_id):
+        tar_path = self.test_data_resolver.get_filename("testdir.tar")
+        with open(tar_path, "rb") as tar_f:
+            destination = {"type": "hdas"}
+            targets = [{
+                "destination": destination,
+                "items": [{
+                    "src": "pasted",
+                    "paste_content": "Test123\n",
+                    "ext": "txt",
+                    "extra_files": {
+                        "items_from": "archive",
+                        "src": "files",
+                        # Prevent Galaxy from checking for a single file in
+                        # a directory and re-interpreting the archive
+                        "fuzzy_root": False,
+                    }
+                }],
+            }]
+            payload = {
+                "history_id": history_id,
+                "targets": json.dumps(targets),
+            }
+            payload["__files"] = {"files_0|file_data": tar_f}
+            fetch_response = self.dataset_populator.fetch(payload)
+            self._assert_status_code_is(fetch_response, 200)
+            outputs = fetch_response.json()["outputs"]
+            assert len(outputs) == 1
+            output = outputs[0]
+            self._check_testdir_composite(output, history_id)
+
+    def _check_testdir_composite(self, dataset, history_id):
+        content = self.dataset_populator.get_history_dataset_content(history_id, dataset=dataset)
+        assert content.strip() == "Test123"
+        extra_files = self.dataset_populator.get_history_dataset_extra_files(history_id, dataset_id=dataset["id"])
+        assert len(extra_files) == 5, extra_files
+        expected_contents = {
+            "testdir": "Directory",
+            "testdir/c": "Directory",
+            "testdir/a": "File",
+            "testdir/b": "File",
+            "testdir/c/d": "File",
+        }
+        found_files = set()
+        for extra_file in extra_files:
+            path = extra_file["path"]
+            assert path in expected_contents
+            assert extra_file["class"] == expected_contents[path]
+            found_files.add(path)
+
+        assert len(found_files) == 5, found_files
+
+    @uses_test_history(require_new=False)
+    def test_upload_composite_from_bad_tar(self, history_id):
+        tar_path = self.test_data_resolver.get_filename("unsafe.tar")
+        with open(tar_path, "rb") as tar_f:
+            payload = self.dataset_populator.upload_payload(history_id, "Test123",
+                extra_inputs={
+                    "files_1|file_data": tar_f,
+                    "files_1|NAME": "composite",
+                    "file_count": "2",
+                    "force_composite": "True",
+                }
+            )
+            run_response = self.dataset_populator.tools_post(payload)
+            self.dataset_populator.wait_for_tool_run(history_id, run_response, assert_ok=False)
+            dataset = run_response.json()["outputs"][0]
+            details = self.dataset_populator.get_history_dataset_details(history_id, dataset=dataset, assert_ok=False)
+            assert details["state"] == "error"
 
     def test_upload_dbkey(self):
         with self.dataset_populator.test_history() as history_id:

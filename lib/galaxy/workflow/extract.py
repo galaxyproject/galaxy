@@ -103,7 +103,7 @@ def extract_steps(trans, history=None, job_ids=None, dataset_ids=None, dataset_c
     # Tool steps
     for job_id in job_ids:
         if job_id not in summary.job_id2representative_job:
-            log.warning("job_id %s not found in job_id2representative_job %s" % (job_id, summary.job_id2representative_job))
+            log.warning("job_id {} not found in job_id2representative_job {}".format(job_id, summary.job_id2representative_job))
             raise AssertionError("Attempt to create workflow with job not connected to current history")
         job = summary.job_id2representative_job[job_id]
         tool_inputs, associations = step_inputs(trans, job)
@@ -157,7 +157,7 @@ def extract_steps(trans, history=None, job_ids=None, dataset_ids=None, dataset_c
     return steps
 
 
-class FakeJob(object):
+class FakeJob:
     """
     Fake job object for datasets that have no creating_job_associations,
     they will be treated as "input" datasets.
@@ -168,7 +168,7 @@ class FakeJob(object):
         self.id = "fake_%s" % dataset.id
 
 
-class DatasetCollectionCreationJob(object):
+class DatasetCollectionCreationJob:
 
     def __init__(self, dataset_collection):
         self.is_fake = True
@@ -192,7 +192,7 @@ def summarize(trans, history=None):
     return summary.jobs, summary.warnings
 
 
-class WorkflowSummary(object):
+class WorkflowSummary:
 
     def __init__(self, trans, history):
         if not history:
@@ -365,10 +365,10 @@ def __cleanup_param_values(inputs, values):
                 if input.name in values:
                     group_values = values[input.name]
                     current_case = group_values['__current_case__']
-                    cleanup("%s%s|" % (prefix, key), input.cases[current_case].inputs, group_values)
+                    cleanup("{}{}|".format(prefix, key), input.cases[current_case].inputs, group_values)
             elif isinstance(input, Section):
                 if input.name in values:
-                    cleanup("%s%s|" % (prefix, key), input.inputs, values[input.name])
+                    cleanup("{}{}|".format(prefix, key), input.inputs, values[input.name])
     cleanup("", inputs, values)
     return associations
 

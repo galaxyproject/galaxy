@@ -1,4 +1,3 @@
-import io
 import logging
 import os
 import subprocess
@@ -115,7 +114,7 @@ def write_script(path, contents, config, mode=RWXR_XR_X):
     if not os.path.exists(dir):
         os.makedirs(dir)
 
-    with io.open(path, 'w', encoding='utf-8') as f:
+    with open(path, 'w', encoding='utf-8') as f:
         f.write(unicodify(contents))
     os.chmod(path, mode)
     _handle_script_integrity(path, config)
@@ -128,7 +127,7 @@ def _handle_script_integrity(path, config):
     script_integrity_verified = False
     count = getattr(config, "check_job_script_integrity_count", DEFAULT_INTEGRITY_COUNT)
     sleep_amt = getattr(config, "check_job_script_integrity_sleep", DEFAULT_INTEGRITY_SLEEP)
-    for i in range(count):
+    for _ in range(count):
         try:
             returncode = subprocess.call([path], env={"ABC_TEST_JOB_SCRIPT_INTEGRITY_XYZ": "1"})
             if returncode == 42:

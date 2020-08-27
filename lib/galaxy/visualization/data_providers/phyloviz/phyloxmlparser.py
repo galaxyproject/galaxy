@@ -10,7 +10,7 @@ class Phyloxml_Parser(Base_Parser):
     """Parses a phyloxml file into a json file that will be passed to PhyloViz for display"""
 
     def __init__(self):
-        super(Phyloxml_Parser, self).__init__()
+        super().__init__()
         self.phyloTree = PhyloTree()
         self.tagsOfInterest = {
             "clade": "",

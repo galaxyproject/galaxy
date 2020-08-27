@@ -1,1 +1,11 @@
+babel
 galaxy-data
+galaxy-util
+galaxy-web-stack
+MarkupSafe
+paste
+requests
+Routes
+six
+SQLAlchemy
+WebOb

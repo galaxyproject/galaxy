@@ -167,7 +167,7 @@ def read_lengths(fileName):
             raise Exception("bad lengths line (%s:%d): %s" % (fileName, lineNumber, line))
 
         if chrom in chromToLength:
-            raise Exception("%s appears more than once (%s:%d): %s" % (chrom, fileName, lineNumber))
+            raise Exception("%s appears more than once (%s:%d): %s" % (chrom, fileName, lineNumber, line))
 
         chromToLength[chrom] = length
 

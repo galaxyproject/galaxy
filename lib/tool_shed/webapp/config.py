@@ -35,7 +35,7 @@ class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         return AppSchema(TOOLSHED_CONFIG_SCHEMA_PATH, TOOLSHED_APP_NAME)
 
     def __init__(self, **kwargs):
-        super(ToolShedAppConfiguration, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self._process_config(kwargs)
 
     @property
@@ -101,10 +101,8 @@ class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         # Galaxy flavor Docker Image
         self.user_activation_on = None
         self.registration_warning_message = kwargs.get('registration_warning_message')
-        self.blacklist_location = kwargs.get('blacklist_file')
-        self.blacklist_content = None
-        self.whitelist_location = kwargs.get('whitelist_file')
-        self.whitelist_content = None
+        self.email_domain_blocklist_content = None
+        self.email_domain_allowlist_content = None
         self.template_path = templates_path
         self.template_cache_path = self._in_root_dir(kwargs.get('template_cache_path', 'database/compiled_templates/community'))
         self.error_email_to = kwargs.get('error_email_to')

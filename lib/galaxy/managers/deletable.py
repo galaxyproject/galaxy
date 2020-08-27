@@ -10,7 +10,7 @@ attribute 'purged'.
 """
 
 
-class DeletableManagerMixin(object):
+class DeletableManagerMixin:
     """
     A mixin/interface for a model that is deletable (i.e. has a 'deleted' attr).
 
@@ -32,14 +32,14 @@ class DeletableManagerMixin(object):
         return self._session_setattr(item, 'deleted', False, flush=flush)
 
 
-class DeletableSerializerMixin(object):
+class DeletableSerializerMixin:
 
     def add_serializers(self):
         self.serializable_keyset.add('deleted')
 
 
 # TODO: these are of questionable value if we don't want to enable users to delete/purge via update
-class DeletableDeserializerMixin(object):
+class DeletableDeserializerMixin:
 
     def add_deserializers(self):
         self.deserializers['deleted'] = self.deserialize_deleted
@@ -59,7 +59,7 @@ class DeletableDeserializerMixin(object):
         return item.deleted
 
 
-class DeletableFiltersMixin(object):
+class DeletableFiltersMixin:
 
     def _add_parsers(self):
         self.orm_filter_parsers.update({

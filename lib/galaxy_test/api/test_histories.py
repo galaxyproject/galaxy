@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import time
 
 from requests import (
@@ -17,7 +16,7 @@ from ._framework import ApiTestCase
 class HistoriesApiTestCase(ApiTestCase):
 
     def setUp(self):
-        super(HistoriesApiTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
 
@@ -109,7 +108,7 @@ class HistoriesApiTestCase(ApiTestCase):
         show_response = self._show(history_id)
         assert show_response["name"] == "New Name"
 
-        unicode_name = u'桜ゲノム'
+        unicode_name = '桜ゲノム'
         self._update(history_id, {"name": unicode_name})
         show_response = self._show(history_id)
         assert show_response["name"] == unicode_name, show_response

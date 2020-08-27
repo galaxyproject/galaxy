@@ -2,7 +2,6 @@
 Job state trigger syncs update_time in hdca table.
 Add job-state-summary view for hdca elements
 """
-from __future__ import print_function
 
 import logging
 

@@ -6,9 +6,9 @@ import socket
 import tempfile
 from collections import OrderedDict
 from json import dump, dumps
+from urllib.parse import urlparse
 
 from six import StringIO
-from six.moves.urllib.parse import urlparse
 from sqlalchemy.orm import eagerload_all
 from webob.compat import cgi_FieldStorage
 
@@ -32,11 +32,13 @@ def validate_datatype_extension(datatypes_registry, ext):
         raise RequestParameterInvalidException("Requested extension '%s' unknown, cannot upload dataset." % ext)
 
 
-def validate_url(url, ip_whitelist):
+def validate_url(url, ip_allowlist):
     # If it doesn't look like a URL, ignore it.
     if not (url.lstrip().startswith('http://') or url.lstrip().startswith('https://')):
         return url
 
+    # Strip leading whitespace before passing url to urlparse()
+    url = url.lstrip()
     # Extract hostname component
     parsed_url = urlparse(url).netloc
     # If credentials are in this URL, we need to strip those.
@@ -94,17 +96,17 @@ def validate_url(url, ip_whitelist):
         # If this is a private address
         if ip.is_private:
             results = []
-            # If this IP is not anywhere in the whitelist
-            for whitelisted in ip_whitelist:
+            # If this IP is not anywhere in the allowlist
+            for allowlisted in ip_allowlist:
                 # If it's an IP address range (rather than a single one...)
-                if hasattr(whitelisted, 'subnets'):
-                    results.append(ip in whitelisted)
+                if hasattr(allowlisted, 'subnets'):
+                    results.append(ip in allowlisted)
                 else:
-                    results.append(ip == whitelisted)
+                    results.append(ip == allowlisted)
 
             if any(results):
                 # If we had any True, then THIS (and ONLY THIS) IP address that
-                # that specific DNS entry resolved to is in whitelisted and
+                # that specific DNS entry resolved to is in allowlisted and
                 # safe to access. But we cannot exit here, we must ensure that
                 # all IPs that that DNS entry resolves to are likewise safe.
                 pass
@@ -133,7 +135,7 @@ def persist_uploads(params, trans):
                 raise Exception('Uploaded file was encoded in a way not understood by Galaxy.')
             if 'url_paste' in upload_dataset and upload_dataset['url_paste'] and upload_dataset['url_paste'].strip() != '':
                 upload_dataset['url_paste'] = datatypes.sniff.stream_to_file(
-                    StringIO(validate_url(upload_dataset['url_paste'], trans.app.config.fetch_url_whitelist_ips)),
+                    StringIO(validate_url(upload_dataset['url_paste'], trans.app.config.fetch_url_allowlist_ips)),
                     prefix="strio_url_paste_"
                 )
             else:
@@ -328,7 +330,7 @@ def create_paramfile(trans, uploaded_datasets):
         except Exception as e:
             log.debug('Failed to construct command to change ownership %s' %
                       unicodify(e))
-        log.debug('Changing ownership of %s with: %s' % (path, ' '.join(cmd)))
+        log.debug('Changing ownership of {} with: {}'.format(path, ' '.join(cmd)))
         try:
             commands.execute(cmd)
         except commands.CommandLineException as e:
@@ -353,7 +355,7 @@ def create_paramfile(trans, uploaded_datasets):
                           metadata=uploaded_dataset.metadata,
                           primary_file=uploaded_dataset.primary_file,
                           composite_file_paths=uploaded_dataset.composite_files,
-                          composite_files=dict((k, v.__dict__) for k, v in data.datatype.get_composite_files(data).items()))
+                          composite_files={k: v.__dict__ for k, v in data.datatype.get_composite_files(data).items()})
         else:
             try:
                 is_binary = uploaded_dataset.datatype.is_binary

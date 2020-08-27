@@ -27,7 +27,7 @@ from galaxy.util.tool_shed import encoding_util
 log = logging.getLogger(__name__)
 
 
-class RepositoryDependencyInstallManager(object):
+class RepositoryDependencyInstallManager:
 
     def __init__(self, app):
         self.app = app

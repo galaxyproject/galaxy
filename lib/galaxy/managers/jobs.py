@@ -2,7 +2,6 @@ import json
 import logging
 
 from boltons.iterutils import remap
-from six import string_types
 from sqlalchemy import and_, false, func, or_
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql import select
@@ -39,13 +38,13 @@ def get_path_key(path_tuple):
             # we remove the last 2 items of the path tuple (values and list index)
             return path_key
         if path_key:
-            path_key = "%s%s%s" % (path_key, sep, p)
+            path_key = "{}{}{}".format(path_key, sep, p)
         else:
             path_key = p
     return path_key
 
 
-class JobManager(object):
+class JobManager:
 
     def __init__(self, app):
         self.app = app
@@ -76,7 +75,7 @@ class JobManager(object):
             return False
 
 
-class JobSearch(object):
+class JobSearch:
     """Search for jobs using tool inputs or other jobs"""
     def __init__(self, app):
         self.app = app
@@ -151,7 +150,7 @@ class JobSearch(object):
                                      model.Job.states.OK])
             )
         else:
-            if isinstance(job_state, string_types):
+            if isinstance(job_state, str):
                 conditions.append(model.Job.state == job_state)
             elif isinstance(job_state, list):
                 o = []

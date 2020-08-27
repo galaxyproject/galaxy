@@ -32,6 +32,7 @@ TEST_DIR = 'tests'
 PACKAGES = [
     'galaxy',
     'galaxy.tool_util',
+    'galaxy.tool_util.client',
     'galaxy.tool_util.cwl',
     'galaxy.tool_util.deps',
     'galaxy.tool_util.deps.container_resolvers',
@@ -76,9 +77,7 @@ else:
     requirements = []
 
 
-test_requirements = [
-    # TODO: put package test requirements here
-]
+test_requirements = open("test-requirements.txt").read().split("\n")
 
 
 setup(
@@ -97,7 +96,12 @@ setup(
     include_package_data=True,
     install_requires=requirements,
     extras_require={
-        'condatesting': ['jinja2'],
+        'mulled': [
+            'conda',
+            'cytoolz',  # cytoolz is an undeclared dependency of the conda package on PyPI
+            'jinja2',
+            'Whoosh',
+        ],
     },
     license="AFL",
     zip_safe=False,

@@ -1445,7 +1445,7 @@ class HostAgent(RBACAgent):
                 try:
                     if socket.gethostbyname(server) == addr:
                         break  # remote host is in the server list
-                except (socket.error, socket.gaierror):
+                except (OSError, socket.gaierror):
                     pass  # can't resolve, try next
             else:
                 log.debug('Denying access to private dataset with hda: %i.  Remote addr is not a valid server for site: %s.' % (hda.id, hdadaa.site))

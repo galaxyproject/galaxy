@@ -4,6 +4,7 @@ Object Store plugin for the Integrated Rule-Oriented Data Store (iRODS)
 import logging
 import os
 import shutil
+from contextlib import contextmanager
 from datetime import datetime
 from functools import partial
 try:
@@ -79,7 +80,7 @@ def parse_config_xml(config_xml):
         e_xml = config_xml.findall('extra_dir')
         if not e_xml:
             _config_xml_error('extra_dir')
-        extra_dirs = [dict(((k, e.get(k)) for k in attrs)) for e in e_xml]
+        extra_dirs = [{k: e.get(k) for k in attrs} for e in e_xml]
 
         return {
             'auth': {
@@ -108,6 +109,31 @@ def parse_config_xml(config_xml):
         # Toss it back up after logging, we can't continue loading at this point.
         log.exception("Malformed iRODS ObjectStore Configuration XML -- unable to continue.")
         raise
+
+
+def acquire_session(host='localhost', port='1247', user='rods', password='rods', zone='tempZone', timeout='30'):
+    session = iRODSSession(host=host, port=port, user=user, password=password, zone=zone)
+    # Set connection timeout
+    session.connection_timeout = timeout
+    return session
+
+
+def release_session(session):
+    # This call will cleanup all the connections in the connection pool
+    # OSError sometimes happens on GitHub Actions, after the test has successfully completed. Ignore it if it happens.
+    try:
+        session.cleanup()
+    except OSError:
+        pass
+
+
+@contextmanager
+def managed_session(host='localhost', port='1247', user='rods', password='rods', zone='tempZone', timeout='30'):
+    session = acquire_session(host=host, port=port, user=user, password=password, zone=zone, timeout=timeout)
+    try:
+        yield session
+    finally:
+        release_session(session)
 
 
 class CloudConfigMixin(object):
@@ -147,7 +173,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
     def __init__(self, config, config_dict):
         reload_timer = ExecutionTimer()
-        super(IRODSObjectStore, self).__init__(config, config_dict)
+        super().__init__(config, config_dict)
 
         auth_dict = config_dict.get('auth')
         if auth_dict is None:
@@ -200,60 +226,23 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         if self.staging_path is None:
             _config_dict_error('cache->path')
 
-        extra_dirs = dict((e['type'], e['path']) for e in config_dict.get('extra_dirs', []))
+        extra_dirs = {e['type']: e['path'] for e in config_dict.get('extra_dirs', [])}
         if not extra_dirs:
             _config_dict_error('extra_dirs')
         self.extra_dirs.update(extra_dirs)
 
-        self._initialize()
-        log.debug("irods __init__ %s", reload_timer)
-
-    def shutdown(self):
-        # This call will cleanup all the connections in the connection pool
-        log.debug("In __shutdown__ Number of active connections: %s, Number of idle connections: %s", len(self.session.pool.active), len(self.session.pool.idle))
-        # OSError sometimes happens on GitHub Actions, after the test has successfully completed. Ignore it if it happens.
-        try:
-            self.session.cleanup()
-        except OSError:
-            pass
-
-    def _initialize(self):
-        reload_timer = ExecutionTimer()
         if irods is None:
             raise Exception(IRODS_IMPORT_MESSAGE)
 
         self.home = "/" + self.zone + "/home/" + self.username
-
-        self.session = self._configure_connection(host=self.host, port=self.port, user=self.username, password=self.password, zone=self.zone)
-        log.debug("irods _initialize %s", reload_timer)
-
-    def _configure_connection(self, host='localhost', port='1247', user='rods', password='rods', zone='tempZone'):
-        self.connections = []
-        reload_timer_1 = ExecutionTimer()
-        reload_timer_2 = ExecutionTimer()
-        session = iRODSSession(host=host, port=port, user=user, password=password, zone=zone)
-        log.debug("irods _configure_connection, iRODSSession call %s", reload_timer_2)
-        # Set connection timeout
-        session.connection_timeout = self.timeout
-        # Throws NetworkException if connection fails
-        try:
-            # We will create as many conections as poolsize.
-            for idx in range(self.poolsize):
-                reload_timer_2 = ExecutionTimer()
-                self.connections.append(session.pool.get_connection())
-                log.debug("irods _configure_connection, session.pool.get_connection()  %s", reload_timer_2)
-        except NetworkException as e:
-            log.error('Could not create iRODS session: ' + str(e))
-            raise
-        log.debug("irods _configure_connection %s", reload_timer_1)
-        return session
+        log.debug("irods __init__ %s", reload_timer)
 
     @classmethod
     def parse_xml(cls, config_xml):
         return parse_config_xml(config_xml)
 
     def to_dict(self):
-        as_dict = super(IRODSObjectStore, self).to_dict()
+        as_dict = super().to_dict()
         as_dict.update(self._config_to_dict())
         return as_dict
 
@@ -306,40 +295,43 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
     # rel_path is file or folder?
     def _get_size_in_irods(self, rel_path):
-        p = Path(rel_path)
-        data_object_name = p.stem + p.suffix
-        subcollection_name = p.parent
+        with managed_session(host=self.host, port=self.port, user=self.username, password=self.password, zone=self.zone, timeout=self.timeout) as session:
+            p = Path(rel_path)
+            data_object_name = p.stem + p.suffix
+            subcollection_name = p.parent
 
-        collection_path = self.home + "/" + str(subcollection_name)
-        data_object_path = collection_path + "/" + str(data_object_name)
+            collection_path = self.home + "/" + str(subcollection_name)
+            data_object_path = collection_path + "/" + str(data_object_name)
 
-        log.debug("In _get_size_in_irods(): Number of active connections: %s, Number of idle connections: %s", len(self.session.pool.active), len(self.session.pool.idle))
-        try:
-            data_obj = self.session.data_objects.get(data_object_path)
-            return data_obj.__sizeof__()
-        except (DataObjectDoesNotExist, CollectionDoesNotExist):
-            log.warn("Collection or data object (%s) does not exist", data_object_path)
-            return -1
+            try:
+                data_obj = session.data_objects.get(data_object_path)
+                return data_obj.__sizeof__()
+            except (DataObjectDoesNotExist, CollectionDoesNotExist):
+                log.warn("Collection or data object (%s) does not exist", data_object_path)
+                return -1
+            except NetworkException as e:
+                log.exception(e)
+                return -1
 
     # rel_path is file or folder?
     def _data_object_exists(self, rel_path):
-        p = Path(rel_path)
-        data_object_name = p.stem + p.suffix
-        subcollection_name = p.parent
+        with managed_session(host=self.host, port=self.port, user=self.username, password=self.password, zone=self.zone, timeout=self.timeout) as session:
+            p = Path(rel_path)
+            data_object_name = p.stem + p.suffix
+            subcollection_name = p.parent
 
-        collection_path = self.home + "/" + str(subcollection_name)
-        data_object_path = collection_path + "/" + str(data_object_name)
+            collection_path = self.home + "/" + str(subcollection_name)
+            data_object_path = collection_path + "/" + str(data_object_name)
 
-        log.debug("In _data_object_exists(): Number of active connections: %s, Number of idle connections: %s", len(self.session.pool.active), len(self.session.pool.idle))
-        try:
-            self.session.data_objects.get(data_object_path)
-            return True
-        except (DataObjectDoesNotExist, CollectionDoesNotExist):
-            log.debug("Collection or data object (%s) does not exist", data_object_path)
-            return False
-        except Exception as e:
-            log.exception(e)
-            return False
+            try:
+                session.data_objects.get(data_object_path)
+                return True
+            except (DataObjectDoesNotExist, CollectionDoesNotExist):
+                log.debug("Collection or data object (%s) does not exist", data_object_path)
+                return False
+            except NetworkException as e:
+                log.exception(e)
+                return False
 
     def _in_cache(self, rel_path):
         """ Check if the given dataset is in the local cache and return True if so. """
@@ -357,34 +349,37 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         return file_ok
 
     def _download(self, rel_path):
-        log.debug("Pulling data object '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
+        with managed_session(host=self.host, port=self.port, user=self.username, password=self.password, zone=self.zone, timeout=self.timeout) as session:
+            log.debug("Pulling data object '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
 
-        p = Path(rel_path)
-        data_object_name = p.stem + p.suffix
-        subcollection_name = p.parent
+            p = Path(rel_path)
+            data_object_name = p.stem + p.suffix
+            subcollection_name = p.parent
 
-        collection_path = self.home + "/" + str(subcollection_name)
-        data_object_path = collection_path + "/" + str(data_object_name)
-        data_obj = None
+            collection_path = self.home + "/" + str(subcollection_name)
+            data_object_path = collection_path + "/" + str(data_object_name)
+            data_obj = None
 
-        log.debug("In _download(): Number of active connections: %s, Number of idle connections: %s", len(self.session.pool.active), len(self.session.pool.idle))
-        try:
-            data_obj = self.session.data_objects.get(data_object_path)
-        except (DataObjectDoesNotExist, CollectionDoesNotExist):
-            log.warn("Collection or data object (%s) does not exist", data_object_path)
-            return False
+            try:
+                data_obj = session.data_objects.get(data_object_path)
+            except (DataObjectDoesNotExist, CollectionDoesNotExist):
+                log.warn("Collection or data object (%s) does not exist", data_object_path)
+                return False
+            except NetworkException as e:
+                log.exception(e)
+                return False
 
-        if self.cache_size > 0 and data_obj.__sizeof__() > self.cache_size:
-            log.critical("File %s is larger (%s) than the cache size (%s). Cannot download.",
-                         rel_path, data_obj.__sizeof__(), self.cache_size)
-            return False
+            if self.cache_size > 0 and data_obj.__sizeof__() > self.cache_size:
+                log.critical("File %s is larger (%s) than the cache size (%s). Cannot download.",
+                            rel_path, data_obj.__sizeof__(), self.cache_size)
+                return False
 
-        log.debug("Pulled data object '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
+            log.debug("Pulled data object '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
 
-        with data_obj.open('r') as data_obj_fp, open(self._get_cache_path(rel_path), "wb") as cache_fp:
-            for chunk in iter(partial(data_obj_fp.read, CHUNK_SIZE), b''):
-                cache_fp.write(chunk)
-        return True
+            with data_obj.open('r') as data_obj_fp, open(self._get_cache_path(rel_path), "wb") as cache_fp:
+                for chunk in iter(partial(data_obj_fp.read, CHUNK_SIZE), b''):
+                    cache_fp.write(chunk)
+            return True
 
     def _push_to_irods(self, rel_path, source_file=None, from_string=None):
         """
@@ -395,52 +390,54 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         still using ``rel_path`` for collection and object store names.
         If ``from_string`` is provided, set contents of the file to the value of the string.
         """
-        p = Path(rel_path)
-        data_object_name = p.stem + p.suffix
-        subcollection_name = p.parent
+        with managed_session(host=self.host, port=self.port, user=self.username, password=self.password, zone=self.zone, timeout=self.timeout) as session:
+            p = Path(rel_path)
+            data_object_name = p.stem + p.suffix
+            subcollection_name = p.parent
 
-        source_file = source_file if source_file else self._get_cache_path(rel_path)
-        options = {kw.FORCE_FLAG_KW: ''}
+            source_file = source_file if source_file else self._get_cache_path(rel_path)
+            options = {kw.FORCE_FLAG_KW: ''}
 
-        log.debug("In _push_to_irods(): Number of active connections: %s, Number of idle connections: %s", len(self.session.pool.active), len(self.session.pool.idle))
-        if os.path.exists(source_file):
-            # Check if the data object exists in iRODS
-            collection_path = self.home + "/" + str(subcollection_name)
-            data_object_path = collection_path + "/" + str(data_object_name)
-            exists = False
-            try:
-                exists = self.session.data_objects.exists(data_object_path)
-            except NetworkException as e:
-                log.exception(e)
-            if os.path.getsize(source_file) == 0 and exists:
-                log.debug("Wanted to push file '%s' to iRODS collection '%s' but its size is 0; skipping.", source_file, rel_path)
-                return True
-            if from_string:
-                data_obj = self.session.data_objects.create(data_object_path, self.resource, **options)
-                with data_obj.open('w') as data_obj_fp:
-                    data_obj_fp.write(from_string)
-                log.debug("Pushed data from string '%s' to collection '%s'", from_string, data_object_path)
-            else:
-                start_time = datetime.now()
-                log.debug("Pushing cache file '%s' of size %s bytes to collection '%s'", source_file, os.path.getsize(source_file), rel_path)
+            if os.path.exists(source_file):
+                # Check if the data object exists in iRODS
+                collection_path = self.home + "/" + str(subcollection_name)
+                data_object_path = collection_path + "/" + str(data_object_name)
+                exists = False
+                try:
+                    exists = session.data_objects.exists(data_object_path)
 
-                # Create sub-collection first
-                self.session.collections.create(collection_path, recurse=True)
-                data_obj = self.session.data_objects.create(data_object_path, self.resource, **options)
+                    if os.path.getsize(source_file) == 0 and exists:
+                        log.debug("Wanted to push file '%s' to iRODS collection '%s' but its size is 0; skipping.", source_file, rel_path)
+                        return True
 
-                # Write to file in subcollection created above
-                with open(source_file, 'rb') as content_file, data_obj.open('w') as data_obj_fp:
-                    for chunk in iter(partial(content_file.read, CHUNK_SIZE), b''):
-                        data_obj_fp.write(chunk)
+                    if from_string:
+                        data_obj = session.data_objects.create(data_object_path, self.resource, **options)
+                        with data_obj.open('w') as data_obj_fp:
+                            data_obj_fp.write(from_string)
+                        log.debug("Pushed data from string '%s' to collection '%s'", from_string, data_object_path)
+                    else:
+                        start_time = datetime.now()
+                        log.debug("Pushing cache file '%s' of size %s bytes to collection '%s'", source_file, os.path.getsize(source_file), rel_path)
 
-                end_time = datetime.now()
-                log.debug("Pushed cache file '%s' to collection '%s' (%s bytes transfered in %s sec)",
-                          source_file, rel_path, os.path.getsize(source_file), end_time - start_time)
-            return True
-        else:
-            log.error("Tried updating key '%s' from source file '%s', but source file does not exist.",
-                      rel_path, source_file)
-        return False
+                        # Create sub-collection first
+                        session.collections.create(collection_path, recurse=True)
+                        data_obj = session.data_objects.create(data_object_path, self.resource, **options)
+
+                        # Write to file in subcollection created above
+                        with open(source_file, 'rb') as content_file, data_obj.open('w') as data_obj_fp:
+                            for chunk in iter(partial(content_file.read, CHUNK_SIZE), b''):
+                                data_obj_fp.write(chunk)
+
+                        end_time = datetime.now()
+                        log.debug("Pushed cache file '%s' to collection '%s' (%s bytes transfered in %s sec)",
+                                source_file, rel_path, os.path.getsize(source_file), end_time - start_time)
+                    return True
+                except NetworkException as e:
+                    log.exception(e)
+                    return False
+
+            log.error("Tried updating key '%s' from source file '%s', but source file does not exist.", rel_path, source_file)
+            return False
 
     def file_ready(self, obj, **kwargs):
         """
@@ -457,35 +454,21 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         return False
 
     def _exists(self, obj, **kwargs):
-        in_cache = in_irods = False
         rel_path = self._construct_path(obj, **kwargs)
 
-        # Check cache
-        if self._in_cache(rel_path):
-            in_cache = True
-        # Check iRODS
-        in_irods = self._data_object_exists(rel_path)
+        # Check cache and irods
+        if self._in_cache(rel_path) or self._data_object_exists(rel_path):
+            return True
 
         # dir_only does not get synced so shortcut the decision
         dir_only = kwargs.get('dir_only', False)
         base_dir = kwargs.get('base_dir', None)
-        if dir_only:
-            if in_cache or in_irods:
-                return True
+        if dir_only and base_dir:
             # for JOB_WORK directory
-            elif base_dir:
-                if not os.path.exists(rel_path):
-                    os.makedirs(rel_path)
-                return True
-            else:
-                return False
-
-        if in_cache and not in_irods:
+            if not os.path.exists(rel_path):
+                os.makedirs(rel_path)
             return True
-        elif in_irods:
-            return True
-        else:
-            return False
+        return False
 
     def _create(self, obj, **kwargs):
         if not self._exists(obj, **kwargs):
@@ -535,69 +518,76 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         return 0
 
     def _delete(self, obj, entire_dir=False, **kwargs):
-        rel_path = self._construct_path(obj, **kwargs)
-        extra_dir = kwargs.get('extra_dir', None)
-        base_dir = kwargs.get('base_dir', None)
-        dir_only = kwargs.get('dir_only', False)
-        obj_dir = kwargs.get('obj_dir', False)
+        with managed_session(host=self.host, port=self.port, user=self.username, password=self.password, zone=self.zone, timeout=self.timeout) as session:
+            rel_path = self._construct_path(obj, **kwargs)
+            extra_dir = kwargs.get('extra_dir', None)
+            base_dir = kwargs.get('base_dir', None)
+            dir_only = kwargs.get('dir_only', False)
+            obj_dir = kwargs.get('obj_dir', False)
 
-        log.debug("In _delete(): Number of active connections: %s, Number of idle connections: %s", len(self.session.pool.active), len(self.session.pool.idle))
-        try:
-            # Remove temparory data in JOB_WORK directory
-            if base_dir and dir_only and obj_dir:
-                shutil.rmtree(os.path.abspath(rel_path))
-                return True
-
-            # For the case of extra_files, because we don't have a reference to
-            # individual files we need to remove the entire directory structure
-            # with all the files in it. This is easy for the local file system,
-            # but requires iterating through each individual key in irods and deleing it.
-            if entire_dir and extra_dir:
-                shutil.rmtree(self._get_cache_path(rel_path))
-
-                col_path = self.home + "/" + str(rel_path)
-                col = None
-                try:
-                    col = self.session.collections.get(col_path)
-                except CollectionDoesNotExist:
-                    log.warn("Collection (%s) does not exist!", col_path)
-                    return False
-
-                cols = col.walk()
-                # Traverse the tree only one level deep
-                for _ in range(2):
-                    # get next result
-                    _, _, data_objects = next(cols)
-
-                    # Delete data objects
-                    for data_object in data_objects:
-                        data_object.unlink(force=True)
-
-                return True
-
-            else:
-                # Delete from cache first
-                os.unlink(self._get_cache_path(rel_path))
-                # Delete from irods as well
-                p = Path(rel_path)
-                data_object_name = p.stem + p.suffix
-                subcollection_name = p.parent
-
-                collection_path = self.home + "/" + str(subcollection_name)
-                data_object_path = collection_path + "/" + str(data_object_name)
-
-                try:
-                    data_obj = self.session.data_objects.get(data_object_path)
-                    # remove object
-                    data_obj.unlink(force=True)
-                    return True
-                except (DataObjectDoesNotExist, CollectionDoesNotExist):
-                    log.info("Collection or data object (%s) does not exist", data_object_path)
+            try:
+                # Remove temparory data in JOB_WORK directory
+                if base_dir and dir_only and obj_dir:
+                    shutil.rmtree(os.path.abspath(rel_path))
                     return True
 
-        except OSError:
-            log.exception('%s delete error', self._get_filename(obj, **kwargs))
-        return False
+                # For the case of extra_files, because we don't have a reference to
+                # individual files we need to remove the entire directory structure
+                # with all the files in it. This is easy for the local file system,
+                # but requires iterating through each individual key in irods and deleing it.
+                if entire_dir and extra_dir:
+                    shutil.rmtree(self._get_cache_path(rel_path))
+
+                    col_path = self.home + "/" + str(rel_path)
+                    col = None
+                    try:
+                        col = session.collections.get(col_path)
+                    except CollectionDoesNotExist:
+                        log.warn("Collection (%s) does not exist!", col_path)
+                        return False
+                    except NetworkException as e:
+                        log.exception(e)
+                        return False
+
+                    cols = col.walk()
+                    # Traverse the tree only one level deep
+                    for _ in range(2):
+                        # get next result
+                        _, _, data_objects = next(cols)
+
+                        # Delete data objects
+                        for data_object in data_objects:
+                            data_object.unlink(force=True)
+
+                    return True
+
+                else:
+                    # Delete from cache first
+                    os.unlink(self._get_cache_path(rel_path))
+                    # Delete from irods as well
+                    p = Path(rel_path)
+                    data_object_name = p.stem + p.suffix
+                    subcollection_name = p.parent
+
+                    collection_path = self.home + "/" + str(subcollection_name)
+                    data_object_path = collection_path + "/" + str(data_object_name)
+
+                    try:
+                        data_obj = session.data_objects.get(data_object_path)
+                        # remove object
+                        data_obj.unlink(force=True)
+                        return True
+                    except (DataObjectDoesNotExist, CollectionDoesNotExist):
+                        log.info("Collection or data object (%s) does not exist", data_object_path)
+                        return True
+                    except NetworkException as e:
+                        log.exception(e)
+                        return False
+            except OSError:
+                log.exception('%s delete error', self._get_filename(obj, **kwargs))
+            except NetworkException as e:
+                log.exception(e)
+            return False
 
     def _get_data(self, obj, start=0, count=-1, **kwargs):
         rel_path = self._construct_path(obj, **kwargs)
@@ -605,7 +595,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         if not self._in_cache(rel_path):
             self._pull_into_cache(rel_path)
         # Read the file content from cache
-        data_file = open(self._get_cache_path(rel_path), 'r')
+        data_file = open(self._get_cache_path(rel_path))
         data_file.seek(start)
         content = data_file.read(count)
         data_file.close()

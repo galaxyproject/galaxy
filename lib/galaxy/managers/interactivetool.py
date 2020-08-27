@@ -2,7 +2,6 @@ import logging
 import sqlite3
 
 
-from six import string_types
 from sqlalchemy import or_
 
 
@@ -18,7 +17,7 @@ log = logging.getLogger(__name__)
 DATABASE_TABLE_NAME = 'gxitproxy'
 
 
-class InteractiveToolSqlite(object):
+class InteractiveToolSqlite:
 
     def __init__(self, sqlite_filename, encode_id):
         self.sqlite_filename = sqlite_filename
@@ -128,7 +127,7 @@ class InteractiveToolSqlite(object):
         return self.remove(key=self.encode_id(entry_point.id), key_type=entry_point.__class__.__name__.lower())
 
 
-class InteractiveToolManager(object):
+class InteractiveToolManager:
     """
     Manager for dealing with InteractiveTools
     """
@@ -194,7 +193,7 @@ class InteractiveToolManager(object):
 
         def build_and_apply_filters(query, objects, filter_func):
             if objects is not None:
-                if isinstance(objects, string_types):
+                if isinstance(objects, str):
                     query = query.filter(filter_func(objects))
                 elif isinstance(objects, list):
                     t = []
@@ -265,10 +264,10 @@ class InteractiveToolManager(object):
             entry_point_class = entry_point.__class__.__name__.lower()
             entry_point_prefix = self.app.config.interactivetools_prefix
             interactivetools_proxy_host = self.app.config.interactivetools_proxy_host or request_host
-            rval = '%s//%s-%s.%s.%s.%s/' % (protocol, entry_point_encoded_id,
+            rval = '{}//{}-{}.{}.{}.{}/'.format(protocol, entry_point_encoded_id,
                     entry_point.token, entry_point_class, entry_point_prefix, interactivetools_proxy_host)
             if entry_point.entry_url:
-                rval = '%s/%s' % (rval.rstrip('/'), entry_point.entry_url.lstrip('/'))
+                rval = '{}/{}'.format(rval.rstrip('/'), entry_point.entry_url.lstrip('/'))
             return rval
 
     def access_entry_point_target(self, trans, entry_point_id):

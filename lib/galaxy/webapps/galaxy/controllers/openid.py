@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 class OpenID(BaseUIController):
 
     def __init__(self, app):
-        super(OpenID, self).__init__(app)
+        super().__init__(app)
         if app.config.enable_openid:
             self.openid_manager = OpenIDManager(app.config.openid_consumer_cache_path)
             self.openid_providers = OpenIDProviders.from_file('lib/galaxy/openid/openid_conf.xml')
@@ -70,4 +70,4 @@ class OpenID(BaseUIController):
             openid_provider_obj.post_authentication(trans, self.openid_manager, info)
             return trans.show_message("Processed OpenID authentication. %s" % return_link)
         else:
-            return trans.show_error_message("Authentication via OpenID failed: %s. %s" % (info.message, return_link))
+            return trans.show_error_message("Authentication via OpenID failed: {}. {}".format(info.message, return_link))

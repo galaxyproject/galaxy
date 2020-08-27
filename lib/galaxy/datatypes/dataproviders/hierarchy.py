@@ -23,7 +23,7 @@ class HierarchalDataProvider(line.BlockDataProvider):
 
     def __init__(self, source, **kwargs):
         # TODO: (and defer to better (than I can write) parsers for each subtype)
-        super(HierarchalDataProvider, self).__init__(source, **kwargs)
+        super().__init__(source, **kwargs)
 
 
 # ----------------------------------------------------------------------------- xml
@@ -49,7 +49,7 @@ class XMLDataProvider(HierarchalDataProvider):
         self.max_depth = max_depth
         self.namespaces = {}
 
-        super(XMLDataProvider, self).__init__(source, **kwargs)
+        super().__init__(source, **kwargs)
 
     def matches_selector(self, element, selector=None):
         """

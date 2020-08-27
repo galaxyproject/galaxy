@@ -3,7 +3,7 @@ import logging
 import six
 
 
-class TraceLogger(object):
+class TraceLogger:
 
     def __init__(self, name):
         self.name = name

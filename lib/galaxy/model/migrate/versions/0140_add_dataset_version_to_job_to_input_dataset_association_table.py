@@ -1,7 +1,6 @@
 """
 Add dataset_version column to job_to_input_dataset table
 """
-from __future__ import print_function
 
 import logging
 

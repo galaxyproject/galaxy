@@ -1,7 +1,6 @@
 """Module for searching the toolshed repositories"""
 import logging
 import re
-import sys
 
 import whoosh.index
 from whoosh import scoring
@@ -11,9 +10,6 @@ from whoosh.query import And, Every, Term
 
 from galaxy import exceptions
 from galaxy.exceptions import ObjectNotFound
-
-if sys.version_info > (3,):
-    long = int
 
 log = logging.getLogger(__name__)
 
@@ -45,7 +41,7 @@ class RepoWeighting(scoring.BM25F):
         reasonable_hits = 100.0
 
         stored_times_downloaded = searcher.stored_fields(docnum)["times_downloaded"]
-        if not isinstance(stored_times_downloaded, (int, long)):
+        if not isinstance(stored_times_downloaded, int):
             times_downloaded = int(stored_times_downloaded)
         else:
             times_downloaded = stored_times_downloaded
@@ -62,7 +58,7 @@ class RepoWeighting(scoring.BM25F):
         return final_score
 
 
-class RepoSearch(object):
+class RepoSearch:
 
     def search(self, trans, search_term, page, page_size, boosts):
         """

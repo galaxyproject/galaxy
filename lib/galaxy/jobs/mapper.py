@@ -43,7 +43,7 @@ STOCK_RULES = dict(
 )
 
 
-class JobRunnerMapper(object):
+class JobRunnerMapper:
     """
     This class is responsible to managing the mapping of jobs
     (in the form of job_wrappers) to job runner url strings.

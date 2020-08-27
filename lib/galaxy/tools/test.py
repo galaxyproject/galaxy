@@ -2,7 +2,6 @@ import logging
 import os
 import os.path
 
-from six import string_types
 
 import galaxy.tools.parameters.basic
 import galaxy.tools.parameters.grouping
@@ -245,7 +244,7 @@ def _add_uploaded_dataset(name, value, extra, input_parameter, required_files):
 
 
 def _split_if_str(value):
-    split = isinstance(value, string_types)
+    split = isinstance(value, str)
     if split:
         value = value.split(",")
     return value
@@ -282,7 +281,7 @@ def require_file(name, value, extra, required_files):
     return value
 
 
-class ParamContext(object):
+class ParamContext:
 
     def __init__(self, name, index=None, parent_context=None):
         self.parent_context = parent_context
@@ -293,7 +292,7 @@ class ParamContext(object):
         name = self.name if self.index is None else "%s_%d" % (self.name, self.index)
         parent_for_state = self.parent_context.for_state()
         if parent_for_state:
-            return "%s|%s" % (parent_for_state, name)
+            return "{}|{}".format(parent_for_state, name)
         else:
             return name
 
@@ -305,7 +304,7 @@ class ParamContext(object):
             if self.index is not None:
                 yield "%s|%s_%d" % (parent_context_param, self.name, self.index)
             else:
-                yield "%s|%s" % (parent_context_param, self.name)
+                yield "{}|{}".format(parent_context_param, self.name)
         if self.index is not None:
             yield "%s_%d" % (self.name, self.index)
         else:
@@ -331,7 +330,7 @@ class ParamContext(object):
             return None
 
 
-class RootParamContext(object):
+class RootParamContext:
 
     def __init__(self):
         pass

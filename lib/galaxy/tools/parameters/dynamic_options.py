@@ -20,7 +20,7 @@ from . import validation
 log = logging.getLogger(__name__)
 
 
-class Filter(object):
+class Filter:
     """
     A filter takes the current options list and modifies it.
     """
@@ -502,7 +502,7 @@ filter_types = dict(data_meta=DataMetaFilter,
                     sort_by=SortByColumnFilter)
 
 
-class DynamicOptions(object):
+class DynamicOptions:
     """Handles dynamically generated SelectToolParameter options"""
 
     def __init__(self, elem, tool_param):
@@ -661,7 +661,7 @@ class DynamicOptions(object):
             else:
                 # Pass just the first megabyte to parse_file_fields.
                 log.warning("Attempting to load options from large file, reading just first megabyte")
-                with open(path, 'r') as fh:
+                with open(path) as fh:
                     contents = fh.read(1048576)
                 options = self.parse_file_fields(StringIO(contents))
         elif self.tool_data_table:

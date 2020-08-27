@@ -1,9 +1,7 @@
 """
 API operations for Workflows
 """
-from __future__ import absolute_import
 
-import io
 import json
 import logging
 import os
@@ -55,7 +53,7 @@ log = logging.getLogger(__name__)
 class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnnotations, SharableMixin):
 
     def __init__(self, app):
-        super(WorkflowsAPIController, self).__init__(app)
+        super().__init__(app)
         self.history_manager = histories.HistoryManager(app)
         self.workflow_manager = workflows.WorkflowsManager(app)
         self.workflow_contents_manager = workflows.WorkflowContentsManager(app)
@@ -330,7 +328,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             if not os.path.exists(installed_repository_file):
                 raise exceptions.RequestParameterInvalidException("Workflow file '%s' not found" % installed_repository_file)
             elif os.path.getsize(os.path.abspath(installed_repository_file)) > 0:
-                with io.open(installed_repository_file, encoding='utf-8') as f:
+                with open(installed_repository_file, encoding='utf-8') as f:
                     workflow_data = f.read()
                 return self.__api_import_from_archive(trans, workflow_data)
             else:
@@ -347,6 +345,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                     workflow_src = {"src": "from_path", "path": archive_source[len("file://"):]}
                     payload["workflow"] = workflow_src
                     return self.__api_import_new_workflow(trans, payload, **kwd)
+                elif archive_source == "trs_tool":
+                    trs_server = payload.get("trs_server")
+                    trs_tool_id = payload.get("trs_tool_id")
+                    trs_version_id = payload.get("trs_version_id")
+                    archive_data = self.app.trs_proxy.get_version_descriptor(trs_server, trs_tool_id, trs_version_id)
                 else:
                     try:
                         archive_data = requests.get(archive_source).text
@@ -477,7 +480,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 extension = "ga"
             else:
                 extension = "gxwf.json"
-            trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy-Workflow-%s.%s"' % (sname, extension)
+            trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy-Workflow-{}.{}"'.format(sname, extension)
             trans.response.set_content_type('application/galaxy-archive')
 
         if style == "format2" and download_format != 'json-download':
@@ -813,10 +816,13 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 trans=trans,
                 workflow=workflow,
                 workflow_run_config=run_config,
-                request_params=work_request_params
+                request_params=work_request_params,
+                flush=False,
             )
-            invocation = self.encode_all_ids(trans, workflow_invocation.to_dict(), recursive=True)
-            invocations.append(invocation)
+            invocations.append(workflow_invocation)
+
+        trans.sa_session.flush()
+        invocations = [self.encode_all_ids(trans, invocation.to_dict(), recursive=True) for invocation in invocations]
 
         if is_batch:
             return invocations

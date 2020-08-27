@@ -1,7 +1,6 @@
 """
 This script adds tables needed for Galaxy cloud functionality.
 """
-from __future__ import print_function
 
 import datetime
 import logging

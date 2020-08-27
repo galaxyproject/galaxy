@@ -35,7 +35,7 @@ def get_authenticators(auth_config_file, auth_config_file_set):
     try:
         ct = parse_xml(auth_config_file)
         conf_root = ct.getroot()
-    except (OSError, IOError) as exc:
+    except OSError as exc:
         if exc.errno == errno.ENOENT and not auth_config_file_set:
             conf_root = parse_xml_string(AUTH_CONF_XML)
         else:
@@ -47,7 +47,7 @@ def get_authenticators(auth_config_file, auth_config_file_set):
         type_elem_text = auth_elem.find('type').text
         plugin_class = __plugins_dict.get(type_elem_text)
         if not plugin_class:
-            raise Exception("Authenticator type '%s' not recognized, should be one of %s" % (type_elem_text, ', '.join(__plugins_dict)))
+            raise Exception("Authenticator type '{}' not recognized, should be one of {}".format(type_elem_text, ', '.join(__plugins_dict)))
         plugin = plugin_class()
 
         # check filterelem
@@ -86,7 +86,7 @@ def parse_auth_results(trans, auth_results, options):
             i += 1
         else:
             raise Conflict("Cannot make unique username")
-    log.debug("Email: %s, auto-register with username: %s" % (auto_email, auto_username))
+    log.debug("Email: {}, auto-register with username: {}".format(auto_email, auto_username))
     auth_return["auto_reg"] = string_as_bool(options.get('auto-register', False))
     auth_return["email"] = auto_email
     auth_return["username"] = auto_username

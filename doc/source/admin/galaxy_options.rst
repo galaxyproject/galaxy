@@ -616,6 +616,18 @@
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``file_sources_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Configured FileSource plugins.
+    The value of this option will be resolved with respect to
+    <config_dir>.
+:Default: ``file_sources_conf.yml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``enable_mulled_containers``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1254,35 +1266,39 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~
-``blacklist_file``
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``email_domain_blocklist_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    E-mail domains blacklist is used for filtering out users that are
+    E-mail domains blocklist is used for filtering out users that are
     using disposable email addresses at registration.  If their
-    address domain matches any domain on the list, they are refused
-    registration.
-    Example value 'email_blacklist.conf'
+    address's base domain matches any domain on the list, they are
+    refused registration. Address subdomains are ignored (both
+    'name@spam.com' and 'name@foo.spam.com' will match 'spam.com').
+    Example value 'email_blocklist.conf'
     The value of this option will be resolved with respect to
     <config_dir>.
 :Default: ``None``
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~
-``whitelist_file``
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``email_domain_allowlist_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    E-mail domains whitelist is used to specify allowed email address
+    E-mail domains allowlist is used to specify allowed email address
     domains. If the list is non-empty and a user attempts registration
     using an email address belonging to a domain that is not on the
-    list, registration will be denied. This is a more restrictive
-    option than <blacklist_file>, and therefore, in case
-    <whitelist_file> is set and is not empty, <blacklist_file> will be
-    ignored.
-    Example value 'email_whitelist.conf'
+    list, registration will be denied. Unlike
+    <email_domain_allowlist_file> which matches the address's base
+    domain, here email addresses are matched against the full domain
+    (base + subdomain). This is a more restrictive option than
+    <email_domain_blocklist_file>, and therefore, in case
+    <email_domain_allowlist_file> is set and is not empty,
+    <email_domain_blocklist_file> will be ignored.
+    Example value 'email_allowlist.conf'
     The value of this option will be resolved with respect to
     <config_dir>.
 :Default: ``None``
@@ -1559,10 +1575,10 @@
 
 :Description:
     Default localization for Galaxy UI. Allowed values are listed at
-    the end of client/galaxy/scripts/nls/locale.js. With the default
-    value (auto), the locale will be automatically adjusted to the
-    user's navigator language. Users can override this settings in
-    their user preferences if the localization settings are enabled in
+    the end of client/src/nls/locale.js. With the default value
+    (auto), the locale will be automatically adjusted to the user's
+    navigator language. Users can override this settings in their user
+    preferences if the localization settings are enabled in
     user_preferences_extra_conf.yml
 :Default: ``auto``
 :Type: str
@@ -2231,17 +2247,17 @@
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``sanitize_whitelist_file``
+``sanitize_allowlist_file``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Whitelist sanitization file. Datasets created by tools listed in
-    this file are trusted and will not have their HTML sanitized on
-    display.  This can be manually edited or manipulated through the
-    Admin control panel -- see "Manage Display Whitelist"
+    Datasets created by tools listed in this file are trusted and will
+    not have their HTML sanitized on display.  This can be manually
+    edited or manipulated through the Admin control panel -- see
+    "Manage Allowlist"
     The value of this option will be resolved with respect to
     <mutable_config_dir>.
-:Default: ``sanitize_whitelist.txt``
+:Default: ``sanitize_allowlist.txt``
 :Type: str
 
 
@@ -2512,7 +2528,7 @@
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``user_library_import_symlink_whitelist``
+``user_library_import_symlink_allowlist``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
@@ -2914,6 +2930,22 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``upload_from_form_button``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    If 'always-on', add another button to tool form data inputs that
+    allow uploading data from the tool form in fewer clicks (at the
+    expense of making the form more complicated). This applies to
+    workflows as well.
+    Avoiding making this a boolean because we may add options such as
+    'in-single-form-view' or 'in-simplified-workflow-views'.
+    https://github.com/galaxyproject/galaxy/pull/9809/files#r461889109
+:Default: ``always-off``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``allow_user_dataset_purge``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2976,11 +3008,11 @@
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~
-``fetch_url_whitelist``
+``fetch_url_allowlist``
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Whitelist for local network addresses for "Upload from URL"
+    List of allowed local network addresses for "Upload from URL"
     dialog. By default, Galaxy will deny access to the local network
     address space, to prevent users making requests to services which
     the administrator did not intend to expose. Previously, you could
@@ -3567,6 +3599,22 @@
     same database.
 :Default: ``true``
 :Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~
+``metadata_strategy``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Determines how metadata will be set. Valid values are `directory`,
+    `extended` and `legacy`. In extended mode jobs will decide if a
+    tool run failed, the object stores configuration is serialized and
+    made available to the job and is used for writing output datasets
+    to the object store as part of the job and dynamic output
+    discovery (e.g. discovered datasets <discover_datasets>,
+    unpopulated collections, etc) happens as part of the job.
+:Default: ``directory``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

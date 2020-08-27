@@ -405,7 +405,7 @@ class MergedCondaDependency(Dependency):
             # On explicit testing the only such requirement I am aware of is samtools - and it seems to work
             # fine with just appending the PATH as done below. Other tools may require additional
             # variables in the future.
-            return """export PATH=$PATH:'%s/bin' """ % (
+            return """export PATH=$PATH:'{}/bin' """.format(
                 self.environment_path,
             )
         else:
@@ -474,7 +474,7 @@ class CondaDependency(Dependency):
             # On explicit testing the only such requirement I am aware of is samtools - and it seems to work
             # fine with just appending the PATH as done below. Other tools may require additional
             # variables in the future.
-            return """export PATH=$PATH:'%s/bin' """ % (
+            return """export PATH=$PATH:'{}/bin' """.format(
                 self.environment_path,
             )
         else:

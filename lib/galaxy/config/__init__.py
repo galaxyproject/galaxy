@@ -2,7 +2,6 @@
 Universe configuration builder.
 """
 # absolute_import needed for tool_shed package.
-from __future__ import absolute_import
 
 import collections
 import errno
@@ -23,7 +22,6 @@ from datetime import timedelta
 import yaml
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
-from six import string_types
 from six.moves import configparser
 
 from galaxy.config.schema import AppSchema
@@ -107,12 +105,14 @@ def find_root(kwargs):
     return os.path.abspath(kwargs.get('root_dir', '.'))
 
 
-class BaseAppConfiguration(object):
+class BaseAppConfiguration:
     # Override in subclasses (optional): {KEY: config option, VALUE: deprecated directory name}
     # If VALUE == first directory in a user-supplied path that resolves to KEY, it will be stripped from that path
+    renamed_options = None
     deprecated_dirs = None
 
     def __init__(self, **kwargs):
+        self._process_renamed_options(kwargs)
         self.config_dict = kwargs
         self.root = find_root(kwargs)
         self._set_config_base(kwargs)
@@ -121,6 +121,16 @@ class BaseAppConfiguration(object):
         self._update_raw_config_from_kwargs(kwargs)  # Overwrite raw_config with values passed in kwargs
         self._create_attributes_from_raw_config()  # Create attributes based on raw_config
         self._resolve_paths()  # Overwrite attribute values with resolved paths
+
+    def _process_renamed_options(self, kwargs):
+        """Update kwargs to set any unset renamed options to values of old-named options, if set.
+
+        Does not remove the old options from kwargs so that deprecated option usage can be logged.
+        """
+        if self.renamed_options is not None:
+            for old, new in self.renamed_options.items():
+                if old in kwargs and new not in kwargs:
+                    kwargs[new] = kwargs[old]
 
     def resolve_path(self, path):
         """Resolve a path relative to Galaxy's root."""
@@ -140,7 +150,7 @@ class BaseAppConfiguration(object):
             else:
                 try:
                     self.global_conf_parser.read(self.config_file)
-                except (IOError, OSError):
+                except OSError:
                     raise
                 except Exception:
                     pass  # Not an INI file
@@ -314,7 +324,7 @@ class BaseAppConfiguration(object):
             setattr(self, var, [root_join(x) for x in paths])
 
 
-class CommonConfigurationMixin(object):
+class CommonConfigurationMixin:
     """Shared configuration settings code for Galaxy and ToolShed."""
 
     @property
@@ -358,16 +368,24 @@ class CommonConfigurationMixin(object):
             try:
                 os.makedirs(path)
             except Exception as e:
-                raise ConfigurationError("Unable to create missing directory: %s\n%s" % (path, unicodify(e)))
+                raise ConfigurationError("Unable to create missing directory: {}\n{}".format(path, unicodify(e)))
 
 
 class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
-    deprecated_options = ('database_file', 'track_jobs_in_database')
+    deprecated_options = ('database_file', 'track_jobs_in_database', 'blacklist_file', 'whitelist_file',
+                          'sanitize_whitelist_file', 'user_library_import_symlink_whitelist', 'fetch_url_whitelist')
+    renamed_options = {
+        'blacklist_file': 'email_domain_blocklist_file',
+        'whitelist_file': 'email_domain_allowlist_file',
+        'sanitize_whitelist_file': 'sanitize_allowlist_file',
+        'user_library_import_symlink_whitelist': 'user_library_import_symlink_allowlist',
+        'fetch_url_whitelist': 'fetch_url_allowlist',
+    }
     default_config_file_name = 'galaxy.yml'
     deprecated_dirs = {'config_dir': 'config', 'data_dir': 'database'}
 
     def __init__(self, **kwargs):
-        super(GalaxyAppConfiguration, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self._override_tempdir(kwargs)
         self._process_config(kwargs)
 
@@ -438,7 +456,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             self.shed_tool_data_path = self.tool_data_path
 
         self.running_functional_tests = string_as_bool(kwargs.get('running_functional_tests', False))
-        if isinstance(self.hours_between_check, string_types):
+        if isinstance(self.hours_between_check, str):
             self.hours_between_check = float(self.hours_between_check)
         try:
             if isinstance(self.hours_between_check, int):
@@ -461,11 +479,11 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.tool_secret = kwargs.get("tool_secret", "")
         self.metadata_strategy = kwargs.get("metadata_strategy", "directory")
         self.use_remote_user = self.use_remote_user or self.single_user
-        self.fetch_url_whitelist_ips = [
+        self.fetch_url_allowlist_ips = [
             ipaddress.ip_network(unicodify(ip.strip()))  # If it has a slash, assume 127.0.0.1/24 notation
             if '/' in ip else
             ipaddress.ip_address(unicodify(ip.strip()))  # Otherwise interpret it as an ip address.
-            for ip in kwargs.get("fetch_url_whitelist", "").split(',')
+            for ip in kwargs.get("fetch_url_allowlist", "").split(',')
             if len(ip.strip()) > 0
         ]
         self.template_path = self._in_root_dir(kwargs.get("template_path", "templates"))
@@ -488,8 +506,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         activation_email = kwargs.get('activation_email')
         self.email_from = self.email_from or activation_email
 
-        self.blacklist_content = self._load_list_from_file(self._in_config_dir(self.blacklist_file)) if self.blacklist_file else None
-        self.whitelist_content = self._load_list_from_file(self._in_config_dir(self.whitelist_file)) if self.whitelist_file else None
+        self.email_domain_blocklist_content = self._load_list_from_file(self._in_config_dir(self.email_domain_blocklist_file)) if self.email_domain_blocklist_file else None
+        self.email_domain_allowlist_content = self._load_list_from_file(self._in_config_dir(self.email_domain_allowlist_file)) if self.email_domain_allowlist_file else None
 
         self.persistent_communication_rooms = listify(self.persistent_communication_rooms, do_strip=True)
         # The transfer manager and deferred job queue
@@ -507,15 +525,18 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.pbs_dataset_path = kwargs.get('pbs_dataset_path', "")
         self.pbs_stage_path = kwargs.get('pbs_stage_path', "")
 
-        _sanitize_whitelist_path = self._in_managed_config_dir(self.sanitize_whitelist_file)
-        if not os.path.isfile(_sanitize_whitelist_path):  # then check old default location
-            deprecated = self._in_root_dir('config/sanitize_whitelist.txt')
-            if os.path.isfile(deprecated):
-                log.warning("The path '%s' for the 'sanitize_whitelist_file' config option is "
-                    "deprecated and will be no longer checked in a future release. Please consult "
-                    "the latest version of the sample configuration file." % deprecated)
-                _sanitize_whitelist_path = deprecated
-        self.sanitize_whitelist_file = _sanitize_whitelist_path
+        _sanitize_allowlist_path = self._in_managed_config_dir(self.sanitize_allowlist_file)
+        if not os.path.isfile(_sanitize_allowlist_path):  # then check old default location
+            for deprecated in (
+                    self._in_managed_config_dir('sanitize_whitelist.txt'),
+                    self._in_root_dir('config/sanitize_whitelist.txt')):
+                if os.path.isfile(deprecated):
+                    log.warning("The path '%s' for the 'sanitize_allowlist_file' config option is "
+                        "deprecated and will be no longer checked in a future release. Please consult "
+                        "the latest version of the sample configuration file." % deprecated)
+                    _sanitize_allowlist_path = deprecated
+                    break
+        self.sanitize_allowlist_file = _sanitize_allowlist_path
 
         self.allowed_origin_hostnames = self._parse_allowed_origin_hostnames(kwargs)
         if "trust_jupyter_notebook_conversion" not in kwargs:
@@ -524,7 +545,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             self.trust_jupyter_notebook_conversion = string_as_bool(kwargs.get('trust_ipython_notebook_conversion', _default))
         # Configuration for the message box directly below the masthead.
         self.blog_url = kwargs.get('blog_url')
-        self.user_library_import_symlink_whitelist = listify(self.user_library_import_symlink_whitelist, do_strip=True)
+        self.user_library_import_symlink_allowlist = listify(self.user_library_import_symlink_allowlist, do_strip=True)
         self.user_library_import_dir_auto_creation = self.user_library_import_dir_auto_creation if self.user_library_import_dir else False
         # Searching data libraries
         self.ftp_upload_dir_template = kwargs.get('ftp_upload_dir_template', '${ftp_upload_dir}%s${ftp_upload_dir_identifier}' % os.path.sep)
@@ -641,7 +662,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             self.amqp_internal_connection = "sqlalchemy+sqlite:///%s?isolation_level=IMMEDIATE" % self._in_data_dir("control.sqlite")
         self.pretty_datetime_format = expand_pretty_datetime_format(self.pretty_datetime_format)
         try:
-            with open(self.user_preferences_extra_conf_path, 'r') as stream:
+            with open(self.user_preferences_extra_conf_path) as stream:
                 self.user_preferences_extra = yaml.safe_load(stream)
         except Exception:
             if self.user_preferences_extra_conf_path_set:
@@ -763,6 +784,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             job_config_file=[self._in_config_dir('job_conf.xml')],
             job_metrics_config_file=[self._in_config_dir('job_metrics_conf.xml'), self._in_sample_dir('job_metrics_conf.xml.sample')],
             job_resource_params_file=[self._in_config_dir('job_resource_params_conf.xml')],
+            file_sources_config_file=[self._in_config_dir('file_sources_conf.yml')],
             local_conda_mapping_file=[self._in_config_dir('local_conda_mapping.yml')],
             migrated_tools_config=[self._in_managed_config_dir('migrated_tools_conf.xml')],
             modules_mapping_files=[self._in_config_dir('environment_modules_mapping.yml')],
@@ -774,6 +796,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             shed_tool_data_table_config=[self._in_managed_config_dir('shed_tool_data_table_conf.xml')],
             tool_destinations_config_file=[self._in_config_dir('tool_destinations.yml')],
             tool_sheds_config_file=[self._in_config_dir('tool_sheds_conf.xml')],
+            trs_servers_config_file=[self._in_config_dir('trs_servers_conf.yml')],
             user_preferences_extra_conf_path=[self._in_config_dir('user_preferences_extra_conf.yml')],
             workflow_resource_params_file=[self._in_config_dir('workflow_resource_params_conf.xml')],
             workflow_schedulers_config_file=[self._in_config_dir('workflow_schedulers_conf.xml')],
@@ -798,16 +821,16 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.datatypes_config = self.datatypes_config_file
         self.tool_configs = self.tool_config_file
 
-    def reload_sanitize_whitelist(self, explicit=True):
-        self.sanitize_whitelist = []
+    def reload_sanitize_allowlist(self, explicit=True):
+        self.sanitize_allowlist = []
         try:
-            with open(self.sanitize_whitelist_file, 'rt') as f:
+            with open(self.sanitize_allowlist_file) as f:
                 for line in f.readlines():
                     if not line.startswith("#"):
-                        self.sanitize_whitelist.append(line.strip())
-        except IOError:
+                        self.sanitize_allowlist.append(line.strip())
+        except OSError:
             if explicit:
-                log.warning("Sanitize log file explicitly specified as '%s' but does not exist, continuing with no tools whitelisted.", self.sanitize_whitelist_file)
+                log.warning("Sanitize log file explicitly specified as '%s' but does not exist, continuing with no tools allowlisted.", self.sanitize_allowlist_file)
 
     def ensure_tempdir(self):
         self._ensure_directory(self.new_file_path)
@@ -966,7 +989,7 @@ def configure_logging(config):
         register_postfork_function(root.addHandler, sentry_handler)
 
 
-class ConfiguresGalaxyMixin(object):
+class ConfiguresGalaxyMixin:
     """Shared code for configuring Galaxy-like app objects."""
 
     def _configure_genome_builds(self, data_table_name="__dbkeys__", load_old_style=True):
@@ -1008,7 +1031,7 @@ class ConfiguresGalaxyMixin(object):
         self._toolbox_lock = threading.RLock()
         self.toolbox = tools.ToolBox(self.config.tool_configs, self.config.tool_path, self)
         galaxy_root_dir = os.path.abspath(self.config.root)
-        file_path = os.path.abspath(getattr(self.config, "file_path"))
+        file_path = os.path.abspath(self.config.file_path)
         app_info = AppInfo(
             galaxy_root_dir=galaxy_root_dir,
             default_file_path=file_path,
@@ -1063,7 +1086,7 @@ class ConfiguresGalaxyMixin(object):
             self.tool_data_tables.load_from_config_file(config_filename=self.config.shed_tool_data_table_config,
                                                         tool_data_path=self.tool_data_tables.tool_data_path,
                                                         from_shed_config=from_shed_config)
-        except (OSError, IOError) as exc:
+        except OSError as exc:
             # Missing shed_tool_data_table_config is okay if it's the default
             if exc.errno != errno.ENOENT or self.config.shed_tool_data_table_config_set:
                 raise

@@ -2,7 +2,6 @@
 OAuth 2.0 and OpenID Connect Authentication and Authorization Controller.
 """
 
-from __future__ import absolute_import
 
 import json
 import logging
@@ -30,7 +29,7 @@ class OIDC(JSAppLauncher):
         GET /authnz/
             returns a list of third-party identities associated with the user.
 
-        :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
+        :type  trans: galaxy.webapps.base.webapp.GalaxyWebTransaction
         :param trans: Galaxy web transaction.
 
         :param kwargs: empty dict

@@ -11,7 +11,7 @@ from paste import httpexceptions
 from routes.middleware import RoutesMiddleware
 from six.moves.urllib.parse import parse_qs
 
-import galaxy.web.framework.webapp
+import galaxy.webapps.base.webapp
 import tool_shed.webapp.model
 import tool_shed.webapp.model.mapping
 from galaxy import util
@@ -22,7 +22,7 @@ from galaxy.webapps.util import wrap_if_allowed
 log = logging.getLogger(__name__)
 
 
-class CommunityWebApplication(galaxy.web.framework.webapp.WebApplication):
+class CommunityWebApplication(galaxy.webapps.base.webapp.WebApplication):
     pass
 
 
@@ -271,7 +271,7 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
 
 
 def wrap_in_static(app, global_conf, **local_conf):
-    urlmap, _ = galaxy.web.framework.webapp.build_url_map(app, global_conf, local_conf)
+    urlmap, _ = galaxy.webapps.base.webapp.build_url_map(app, global_conf, local_conf)
     return urlmap
 
 
@@ -292,4 +292,4 @@ def _map_redirects(mapper):
 
 
 def uwsgi_app():
-    return galaxy.web.framework.webapp.build_native_uwsgi_app(app_factory, "tool_shed")
+    return galaxy.webapps.base.webapp.build_native_uwsgi_app(app_factory, "tool_shed")

@@ -1,9 +1,9 @@
+import bz2
 import gzip
 import json
 import logging
 import os
 import shutil
-import sys
 import tempfile
 from collections import namedtuple
 
@@ -14,11 +14,6 @@ from galaxy.util import checkers
 from galaxy.util.path import safe_relpath
 from tool_shed.tools.data_table_manager import ShedToolDataTableManager
 from tool_shed.util import basic_util, hg_util, shed_util_common as suc
-
-if sys.version_info < (3, 3):
-    import bz2file as bz2
-else:
-    import bz2
 
 log = logging.getLogger(__name__)
 
@@ -46,13 +41,14 @@ def check_archive(repository, archive):
             undesirable_files.append(member)
             continue
         head = tail = member.name
-        try:
-            while tail:
-                head, tail = os.path.split(head)
-                if tail in UNDESIRABLE_DIRS:
-                    undesirable_dirs.append(member)
-                    assert False
-        except AssertionError:
+        found_undesirable_dir = False
+        while tail:
+            head, tail = os.path.split(head)
+            if tail in UNDESIRABLE_DIRS:
+                undesirable_dirs.append(member)
+                found_undesirable_dir = True
+                break
+        if found_undesirable_dir:
             continue
         if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION and member.name != rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
             errors.append('Repositories of type <b>Repository suite definition</b> can contain only a single file named <b>repository_dependencies.xml</b>.')
@@ -141,7 +137,7 @@ def handle_bz2(repository, uploaded_file_name):
     while 1:
         try:
             chunk = bzipped_file.read(basic_util.CHUNK_SIZE)
-        except IOError:
+        except OSError:
             os.close(fd)
             os.remove(uncompressed)
             log.exception('Problem uncompressing bz2 data "%s"', uploaded_file_name)
@@ -241,7 +237,7 @@ def handle_gzip(repository, uploaded_file_name):
     while 1:
         try:
             chunk = gzipped_file.read(basic_util.CHUNK_SIZE)
-        except IOError:
+        except OSError:
             os.close(fd)
             os.remove(uncompressed)
             log.exception('Problem uncompressing gz data "%s"', uploaded_file_name)

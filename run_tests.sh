@@ -42,7 +42,7 @@ The main test types are as follows:
 - Unit: These are Python unit tests either defined as doctests or inside of
    test/unit. These should generally not require a Galaxy instance and should
    quickly test just a component or a few components of Galaxy's backend code.
-- QUnit: These are JavaScript unit tests defined in client/galaxy/scripts/qunit.
+- QUnit: These are JavaScript unit tests defined in client/src/qunit.
 - Selenium: These are full stack tests meant to test the Galaxy UI with real
    browsers and are located in lib/galaxy_test/selenium.
 - ToolShed: These are web tests that use the older Python web testing

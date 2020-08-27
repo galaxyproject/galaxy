@@ -10,7 +10,7 @@ from paste import httpexceptions
 
 import galaxy.model
 import galaxy.model.mapping
-import galaxy.web.framework.webapp
+import galaxy.webapps.base.webapp
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
 from galaxy.webapps.util import wrap_if_allowed
@@ -18,7 +18,7 @@ from galaxy.webapps.util import wrap_if_allowed
 log = logging.getLogger(__name__)
 
 
-class ReportsWebApplication(galaxy.web.framework.webapp.WebApplication):
+class ReportsWebApplication(galaxy.webapps.base.webapp.WebApplication):
     pass
 
 
@@ -127,9 +127,9 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
 
 
 def wrap_in_static(app, global_conf, **local_conf):
-    urlmap, _ = galaxy.web.framework.webapp.build_url_map(app, global_conf, local_conf)
+    urlmap, _ = galaxy.webapps.base.webapp.build_url_map(app, global_conf, local_conf)
     return urlmap
 
 
 def uwsgi_app():
-    return galaxy.web.framework.webapp.build_native_uwsgi_app(app_factory, "reports")
+    return galaxy.webapps.base.webapp.build_native_uwsgi_app(app_factory, "reports")
