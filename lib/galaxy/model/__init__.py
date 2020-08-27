@@ -52,8 +52,13 @@ import galaxy.util
 from galaxy.model.item_attrs import get_item_annotation_str, UsesAnnotations
 from galaxy.security import get_permitted_actions
 from galaxy.security.validate_user_input import validate_password_str
-from galaxy.util import (directory_hash_id, ready_name_for_url,
-                         unicodify, unique_id)
+from galaxy.util import (
+    directory_hash_id,
+    listify,
+    ready_name_for_url,
+    unicodify,
+    unique_id,
+)
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import dict_for, Dictifiable
 from galaxy.util.form_builder import (AddressField, CheckboxField, HistoryField,
@@ -4655,19 +4660,21 @@ class UCI:
 
 class StoredWorkflow(HasTags, Dictifiable, RepresentById):
 
-    dict_collection_visible_keys = ['id', 'name', 'create_time', 'update_time', 'published', 'deleted']
-    dict_element_visible_keys = ['id', 'name', 'create_time', 'update_time', 'published', 'deleted']
+    dict_collection_visible_keys = ['id', 'name', 'create_time', 'update_time', 'published', 'deleted', 'hidden']
+    dict_element_visible_keys = ['id', 'name', 'create_time', 'update_time', 'published', 'deleted', 'hidden']
 
-    def __init__(self):
+    def __init__(self, user=None, name=None, slug=None, create_time=None, update_time=None, published=False, latest_workflow_id=None, workflow=None, hidden=False):
         self.id = None
-        self.user = None
-        self.name = None
-        self.slug = None
-        self.create_time = None
-        self.update_time = None
-        self.published = False
+        self.user = user
+        self.name = name
+        self.slug = slug
+        self.create_time = create_time
+        self.update_time = update_time
+        self.published = published
         self.latest_workflow_id = None
-        self.workflows = []
+        self.latest_workflow = workflow
+        self.workflows = listify(workflow)
+        self.hidden = hidden
 
     def get_internal_version(self, version):
         if version is None:

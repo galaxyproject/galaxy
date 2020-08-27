@@ -81,6 +81,12 @@ class WorkflowsManager:
                                                  joinedload('tags'),
                                                  subqueryload('latest_workflow').joinedload('steps').joinedload('*')).first()
         if stored_workflow is None:
+            if not by_stored_id:
+                # May have a subworkflow without attached StoredWorkflow object, this was the default prior to 20.09 release.
+                workflow = trans.sa_session.query(trans.app.model.Workflow).get(workflow_id)
+                stored_workflow = self.attach_stored_workflow(trans=trans, workflow=workflow)
+                if stored_workflow:
+                    return stored_workflow
             raise exceptions.ObjectNotFound("No such workflow found.")
         return stored_workflow
 
@@ -97,6 +103,17 @@ class WorkflowsManager:
                 raise exceptions.ItemAccessibilityException(message)
 
         return stored_workflow
+
+    def attach_stored_workflow(self, trans, workflow):
+        """Attach and return stored workflow if possible."""
+        # Imported Subworkflows are not created with a StoredWorkflow association
+        # To properly serialize them we do need a StoredWorkflow, so we create and attach one here.
+        # We hide the new StoredWorkflow to avoid cluttering the default workflow view.
+        if workflow and workflow.stored_workflow is None and self.check_security(trans, has_workflow=workflow):
+            stored_workflow = trans.app.model.StoredWorkflow(user=trans.user, name=workflow.name, workflow=workflow, hidden=True)
+            trans.sa_session.add(stored_workflow)
+            trans.sa_session.flush()
+            return stored_workflow
 
     def get_owned_workflow(self, trans, encoded_workflow_id):
         """ Get a workflow (non-stored) from a encoded workflow id and
@@ -294,7 +311,7 @@ class WorkflowContentsManager(UsesAnnotations):
         source=None,
         add_to_menu=False,
         publish=False,
-        create_stored_workflow=True,
+        hidden=False,
         exact_tools=True,
         fill_defaults=False,
         from_tool_form=False,
@@ -318,35 +335,30 @@ class WorkflowContentsManager(UsesAnnotations):
         if 'uuid' in data:
             workflow.uuid = data['uuid']
 
-        if create_stored_workflow:
-            # Connect up
-            stored = model.StoredWorkflow()
-            stored.from_path = raw_workflow_description.workflow_path
-            stored.name = workflow.name
-            workflow.stored_workflow = stored
-            stored.latest_workflow = workflow
-            stored.user = trans.user
-            stored.published = publish
-            if data['annotation']:
-                annotation = sanitize_html(data['annotation'])
-                self.add_item_annotation(trans.sa_session, stored.user, stored, annotation)
-            workflow_tags = data.get('tags', [])
-            trans.app.tag_handler.set_tags_from_list(user=trans.user, item=stored, new_tags_list=workflow_tags)
+        # Connect up
+        stored = model.StoredWorkflow()
+        stored.from_path = raw_workflow_description.workflow_path
+        stored.name = workflow.name
+        workflow.stored_workflow = stored
+        stored.latest_workflow = workflow
+        stored.user = trans.user
+        stored.published = publish
+        stored.hidden = hidden
+        if data['annotation']:
+            annotation = sanitize_html(data['annotation'])
+            self.add_item_annotation(trans.sa_session, stored.user, stored, annotation)
+        workflow_tags = data.get('tags', [])
+        trans.app.tag_handler.set_tags_from_list(user=trans.user, item=stored, new_tags_list=workflow_tags)
 
-            # Persist
-            trans.sa_session.add(stored)
+        # Persist
+        trans.sa_session.add(stored)
 
-            if add_to_menu:
-                if trans.user.stored_workflow_menu_entries is None:
-                    trans.user.stored_workflow_menu_entries = []
-                menuEntry = model.StoredWorkflowMenuEntry()
-                menuEntry.stored_workflow = stored
-                trans.user.stored_workflow_menu_entries.append(menuEntry)
-
-        else:
-            stored = None
-            # Persist
-            trans.sa_session.add(workflow)
+        if add_to_menu:
+            if trans.user.stored_workflow_menu_entries is None:
+                trans.user.stored_workflow_menu_entries = []
+            menuEntry = model.StoredWorkflowMenuEntry()
+            menuEntry.stored_workflow = stored
+            trans.user.stored_workflow_menu_entries.append(menuEntry)
 
         trans.sa_session.flush()
 
@@ -1284,7 +1296,7 @@ class WorkflowContentsManager(UsesAnnotations):
     def __build_embedded_subworkflow(self, trans, data, **kwds):
         raw_workflow_description = self.ensure_raw_description(data)
         subworkflow = self.build_workflow_from_raw_description(
-            trans, raw_workflow_description, create_stored_workflow=False, fill_defaults=kwds.get("fill_defaults", False)
+            trans, raw_workflow_description, hidden=True, fill_defaults=kwds.get("fill_defaults", False)
         ).workflow
         return subworkflow
 
