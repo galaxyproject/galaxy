@@ -552,6 +552,13 @@ def populate_api_routes(webapp, app):
                           conditions=dict(method=['POST']))
 
     webapp.mapper.connect(
+        'trs_search',
+        '/api/trs_search',
+        controller='trs_search',
+        action="index",
+        conditions=dict(method=['GET'])
+    )
+    webapp.mapper.connect(
         'trs_consume_get_servers',
         '/api/trs_consume/servers',
         controller='trs_consumer',
