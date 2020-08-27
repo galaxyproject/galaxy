@@ -329,7 +329,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
     type_key = 'tabular'
 
     def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None, other_config_dict=None, app=None):
-        super.__init__(config_element, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=other_config_dict)
+        super().__init__(config_element, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=other_config_dict)
         self.config_element = config_element
         self.data = []
         self.configure_and_load(config_element, tool_data_path, from_shed_config)
@@ -811,7 +811,7 @@ class RefgenieToolDataTable(TabularToolDataTable):
     type_key = 'refgenie'
 
     def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None, other_config_dict=None, app=None):
-        super.__init__(config_element, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=other_config_dict)
+        super().__init__(config_element, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=other_config_dict)
         self.config_element = config_element
         self.data = []
         self.configure_and_load(config_element, tool_data_path, from_shed_config)
@@ -910,7 +910,7 @@ class DatabaseToolDataTable(ToolDataTable, Dictifiable):
     datatable_id = None
 
     def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None, other_config_dict=None, app=None):
-        super.__init__(config_element, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=other_config_dict)
+        super().__init__(config_element, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=other_config_dict)
         self.config_element = config_element
         self.data = []
         if app is not None and app.name != "tool_shed":
