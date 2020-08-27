@@ -80,7 +80,7 @@ export default {
             type: Array,
             required: true,
         },
-        stored_workflow_menu_entries: {
+        storedWorkflowMenuEntries: {
             type: Array,
             required: true,
         },
@@ -108,7 +108,7 @@ export default {
                     href: `${getAppRoot()}workflows/list`,
                     id: "list",
                 },
-                ...this.stored_workflow_menu_entries.map((menuEntry) => {
+                ...this.storedWorkflowMenuEntries.map((menuEntry) => {
                     return {
                         id: menuEntry.id,
                         title: menuEntry.name,
