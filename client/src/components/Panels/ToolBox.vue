@@ -33,9 +33,9 @@
                         @onClick="onOpen"
                     />
                 </div>
-                <div class="toolPanelLabel" id="title_XXinternalXXworkflow">
-                    <a>{{ workflowTitle }}</a>
-                </div>
+
+                <tool-section :category="{ text: workflowTitle }" />
+
                 <div id="internal-workflows" class="toolSectionBody">
                     <div class="toolSectionBg" />
                     <div class="toolTitle" v-for="wf in workflows" :key="wf.id">
