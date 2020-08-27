@@ -323,7 +323,13 @@ export const getAnalysisRouter = (Galaxy) =>
         },
 
         show_workflows_trs_import: function () {
-            this._display_vue_helper(TrsImport);
+            const queryTrsServer = QueryStringParsing.get("trs_server");
+            const queryTrsId = QueryStringParsing.get("trs_id");
+            const propsData = {
+                queryTrsServer,
+                queryTrsId,
+            };
+            this._display_vue_helper(TrsImport, propsData);
         },
 
         show_custom_builds: function () {
