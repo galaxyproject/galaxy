@@ -308,6 +308,31 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
         self._assert_status_code_is(index_response, 200)
         assert isinstance(index_response.json(), list)
 
+    def test_index_deleted(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_delete")
+        workflow_index = self._get("workflows").json()
+        assert [w for w in workflow_index if w['id'] == workflow_id]
+        workflow_url = self._api_url("workflows/%s" % workflow_id, use_key=True)
+        delete_response = delete(workflow_url)
+        self._assert_status_code_is(delete_response, 200)
+        workflow_index = self._get("workflows").json()
+        assert not [w for w in workflow_index if w['id'] == workflow_id]
+        workflow_index = self._get("workflows?show_deleted=true").json()
+        assert [w for w in workflow_index if w['id'] == workflow_id]
+
+    def test_index_hidden(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_delete")
+        workflow_index = self._get("workflows").json()
+        workflow = [w for w in workflow_index if w['id'] == workflow_id][0]
+        workflow['hidden'] = True
+        update_response = self.workflow_populator.update_workflow(workflow_id, workflow)
+        self._assert_status_code_is(update_response, 200)
+        assert update_response.json()['hidden']
+        workflow_index = self._get("workflows").json()
+        assert not [w for w in workflow_index if w['id'] == workflow_id]
+        workflow_index = self._get("workflows?show_hidden=true").json()
+        assert [w for w in workflow_index if w['id'] == workflow_id]
+
     def test_upload(self):
         self.__test_upload(use_deprecated_route=False)
 
@@ -528,6 +553,12 @@ test_data:
 
         workflow_id = self._upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE, publish=True)
         subworkflow_content_id = get_subworkflow_content_id(workflow_id)
+        instance_response = self._get("workflows/%s?instance=true" % subworkflow_content_id)
+        self._assert_status_code_is(instance_response, 200)
+        subworkflow = instance_response.json()
+        assert subworkflow['inputs']['0']['label'] == 'inner_input'
+        assert subworkflow['name'] == 'Workflow'
+        assert subworkflow['hidden']
         with self._different_user():
             other_import_response = self.__import_workflow(workflow_id)
             self._assert_status_code_is(other_import_response, 200)
