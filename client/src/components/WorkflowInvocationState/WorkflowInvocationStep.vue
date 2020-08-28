@@ -53,6 +53,7 @@ export default {
     },
     mounted() {
         this.fetchTool();
+        this.fetchSubworkflow;
         this.fetchInvocationStepById(this.step.id)
     },
     computed: {
@@ -105,11 +106,16 @@ export default {
         },
     },
     methods: {
-        ...mapCacheActions(["fetchToolForId", "fetchInvocationStepById"]),
+        ...mapCacheActions(["fetchToolForId", "fetchInvocationStepById", 'fetchWorkflowForInstanceId']),
         fetchTool() {
             if (this.workflowStep.tool_id && !this.getToolForId(this.workflowStep.tool_id)) {
                     this.fetchToolForId(this.workflowStep.tool_id)
                 }
+        },
+        fetchSubworkflow() {
+            if (this.workflowStep.workflow_id) {
+                this.fetchWorkflowForInstanceId(this.workflowStep.workflow_id);
+            }
         },
         toggleStep() {
             this.expanded = !this.expanded;
@@ -120,7 +126,7 @@ export default {
         },
         subWorkflowStepLabel(workflowStep) {
             const subworkflow = this.getWorkflowByInstanceId(workflowStep.workflow_id)
-            return `Step ${this.step.order_index + 1}: ${subworkflow.name}`
+            return `Step ${this.step.order_index + 1}: ${(subworkflow && subworkflow.name)}`
         },
     },    
 }

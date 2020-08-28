@@ -34,8 +34,7 @@
             </details>
         </div>
         <div v-if="Object.keys(invocation.steps).length > 0">
-            <details
-                ><summary><b>Invocation Steps</b></summary>
+            <details v-if="workflow"><summary><b>Invocation Steps</b></summary>
                 <workflow-invocation-step v-for="step in orderedSteps" :key="step.id" :workflow="workflow" :step="step"/>
             </details>
         </div>
