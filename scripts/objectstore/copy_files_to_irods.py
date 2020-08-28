@@ -90,6 +90,40 @@ def copy_files_to_irods(start_dataset_id, end_dataset_id, object_store_info_file
     update_sql_statement = """UPDATE dataset
                               SET object_store_id = %s
                               WHERE id = %s"""
+
+    last_accessed_sql_statement = """SELECT iq.dataset_id, MAX(iq.create_time)
+                                     FROM (SELECT ds.id as dataset_id, j.create_time
+                                     FROM dataset ds
+                                     INNER JOIN history_dataset_association hda
+                                     ON ds.id = hda.dataset_id
+                                     INNER JOIN job_to_input_dataset jtid
+                                     ON hda.id = jtid.dataset_id
+                                     INNER JOIN job j
+                                     ON jtid.job_id = j.id
+                                     WHERE ds.state = %s
+                                     AND ds.deleted = False
+                                     AND ds.purged = False
+                                     AND ds.id >= %s
+                                     AND ds.id <= %s
+                                     AND ds.object_store_id IN %s
+                                     UNION
+                                     SELECT ds.id as dataset_id, j.create_time
+                                     FROM dataset ds
+                                     INNER JOIN history_dataset_association hda
+                                     ON ds.id = hda.dataset_id
+                                     INNER JOIN job_to_output_dataset jtod
+                                     ON hda.id = jtod.dataset_id
+                                     INNER JOIN job j
+                                     ON jtod.job_id = j.id
+                                     WHERE ds.state = %s
+                                     AND ds.deleted = False
+                                     AND ds.purged = False
+                                     AND ds.id >= %s
+                                     AND ds.id <= %s
+                                     AND ds.object_store_id IN %s) AS iq
+                                     GROUP BY iq.dataset_id
+                                     """
+
     try:
         read_cursor = conn.cursor()
         args = ('ok', start_dataset_id, end_dataset_id, osi_keys)
