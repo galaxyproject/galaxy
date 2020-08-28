@@ -14,6 +14,9 @@ import _l from "utils/localization";
 export default {
     props: {
         //TODO: do we need a prop for attributes?
+        element: {
+            required: true
+        }
     },
     data: function () {
         return {

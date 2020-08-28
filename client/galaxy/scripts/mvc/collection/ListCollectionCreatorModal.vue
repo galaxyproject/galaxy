@@ -16,9 +16,11 @@ export default {
                     showEl(vm);
                     new listCollectionCreatorInstance({
                         propsData: {
+                            initialElements: elements,
                             creationFn: options.creationFn,
                             oncancel: options.oncancel,
                             oncreate: options.oncreate,
+                            defaultHideSourceItems: options.defaultHideSourceItems,
                             //TODO : autoscollDist, highlightClr
                         },
                     }).$mount(vm);

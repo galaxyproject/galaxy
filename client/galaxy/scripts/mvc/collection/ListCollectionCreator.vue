@@ -1,9 +1,9 @@
 <template>
     <collection-creator>
-        <template v-slot: help-content>
+        <template v-slot:help-content>
             <p>
                 {{
-                    _l(
+                    l(
                         [
                             "Collections of datasets are permanent, ordered lists of datasets that can be passed to tools ",
                             "and workflows in order to have analyses done on each member of the entire group. This interface allows ",
@@ -14,43 +14,76 @@
             </p>
             <ul>
                 <li>
-                    _l("Rename elements in the list by clicking on
-                    <i data-target=".collection-element .name">the existing name</i>.")
+                    {{ l("Rename elements in the list by clicking on") }}
+                    <i data-target=".collection-element .name">
+                        {{ l("the existing name") }}
+                    </i>
+                    {{ l(".") }}
                 </li>
                 <li>
-                    _l("Discard elements from the final created list by clicking on the
-                    <i data-target=".collection-element .discard">"Discard"</i> button.")
+                    {{ l("Discard elements from the final created list by clicking on the ") }}
+                    <i data-target=".collection-element .discard">
+                        {{ l("Discard") }}
+                    </i>
+                    {{ l("button.") }}
                 </li>
                 <li>
-                    _l("Reorder the list by clicking and dragging elements. Select multiple elements by clicking on
-                    <i data-target=".collection-element">them</i> and you can then move those selected by dragging the
-                    entire group. Deselect them by clicking them again or by clicking the the
-                    <i data-target=".clear-selected">"Clear selected"</i> link.")
+                    {{
+                        l("Reorder the list by clicking and dragging elements. Select multiple elements by clicking on")
+                    }}
+                    <i data-target=".collection-element">
+                        {{ l("them") }}
+                    </i>
+                    {{
+                        l(
+                            "and you can then move those selected by dragging the entire group. Deselect them by clicking them again or by clicking the"
+                        )
+                    }}
+                    <i data-target=".clear-selected">
+                        {{ l("Clear selected") }}
+                    </i>
+                    {{ l("link.") }}
                 </li>
                 <li>
-                    _l("Click the <i data-target=".reset">"Start over"</i> link to begin again as if you had just opened
-                    the interface.)
+                    {{ l("Click the") }}
+                    <i data-target=".reset">
+                        {{ l("Start over") }}
+                    </i>
+                    {{ l("link to begin again as if you had just opened the interface.") }}
                 </li>
-                <li>_l("Click the <i data-target=".cancel-create">"Cancel"</i> button to exit the interface.")</li>
+                <li>
+                    {{ l("Click the") }}
+                    <i data-target=".cancel-create">
+                        {{ l("Cancel") }}
+                    </i>
+                    {{ l("button to exit the interface.") }}
+                </li>
             </ul>
             <br />
             <p>
-                _l("Once your collection is complete, enter a <i data-target=".collection-name">name</i> and click
-                <i data-target=".create-collection">"Create list"</i>.")
+                {{ l("Once your collection is complete, enter a ") }}
+                <i data-target=".collection-name">
+                    {{ l("name") }}
+                </i>
+                {{ l("and click") }}
+                <i data-target=".create-collection">
+                    {{ l("Create list") }}
+                </i>
+                {{ l(".") }}
             </p>
-            <a class="less-help" href="javascript:void(0);" role="button"> _l("Less")_ </a
-            ><span class="alert-message"></span>
         </template>
         <template v-slot:middle-content>
             <div class="collection-elements-controls">
-                <a class="reset" href="javascript:void(0);" role="button" title="titleUndoButton">
-                    _l("Start over")
+                <a class="reset" href="javascript:void(0);" role="button" :title="titleUndoButton">
+                    {{ l("Start over") }}
                 </a>
-                <a class="clear-selected" href="javascript:void(0);" role="button" title="titleDeselectButton">
-                    _l("Clear selected")
+                <a class="clear-selected" href="javascript:void(0);" role="button" :title="titleDeselectButton">
+                    {{ l("Clear selected") }}
                 </a>
             </div>
-            <div class="collection-elements scroll-container flex-row"></div>
+            <div class="collection-elements scroll-container flex-row">
+                <dataset-collection-element-view v-for="element in initialElements" :key="element.id" :element="element"/>
+            </div>
         </template>
     </collection-creator>
     <!-- <div>
@@ -70,7 +103,6 @@
           <v-on:change.collection-name="_changeName"/>
           <v-on:keydown.collection-name="_nameCheckForEnter"/>
           <v-on:change.hide-originals="_changeHideOriginals"/>
-        </div>
     </div> -->
 </template>
 
@@ -84,8 +116,6 @@ import _l from "utils/localization";
 import STATES from "mvc/dataset/states";
 import "ui/hoverhighlight";
 
-
-
 export default {
     data: function () {
         return {
@@ -96,14 +126,16 @@ export default {
             footerSettings: {
                 ".hide-originals": "hideOriginals",
             },
-            titleMoreHelp: _l("Close and show more help"),
             titleUndoButton: _l("Undo all reordering and discards"),
             titleDeselectButton: _l("De-select all selected datasets"),
-            placeholderEnterName: _l("Enter a name for your new collection"),
-        }
+        };
     },
-    mixins: [ CollectionCreatorMixin ],
+    mixins: [CollectionCreatorMixin],
     props: {
+        initialElements: {
+            required: false,
+            default: [],
+        },
         creationFn: {
             type: Function,
             required: true,
@@ -132,9 +164,18 @@ export default {
             required: false,
             default: "rgba( 64, 255, 255, 1.0 )",
         },
+        defaultHideSourceItems: {
+            type: Boolean,
+            required: false,
+            default: true,
+        },
     },
     computed: {},
     methods: {
+        l(str) {
+            // _l conflicts private methods of Vue internals, expose as l instead
+            return _l(str);
+        },
         /** set up instance vars */
         _instanceSetUp: function () {
             /** Ids of elements that have been selected by the user - to preserve over renders */
@@ -644,25 +685,10 @@ export default {
             this.$dragging = null;
         },
     },
-    created: {
-        /** set up initial options, instance vars, behaviors */
-        initialize: function (attributes) {
-            this.metric("ListCollectionCreator.initialize", attributes);
-            var creator = this;
-
-            _.each(this.defaultAttributes, (value, key) => {
-                value = attributes[key] || value;
-                creator[key] = value;
-            });
-
-            /** unordered, original list - cache to allow reversal */
-            creator.initialElements = attributes.elements || [];
-
-            this._setUpCommonSettings(attributes);
-            this._instanceSetUp();
-            this._elementsSetUp();
-            this._setUpBehaviors();
-        },
+    created(attributes) {
+        this._setUpCommonSettings(this.$props);
+        this._instanceSetUp();
+        this._elementsSetUp();
     },
     watch: {},
     components: { DatasetCollectionElementView },
