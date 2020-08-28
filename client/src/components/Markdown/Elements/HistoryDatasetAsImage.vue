@@ -7,7 +7,12 @@
 </template>
 
 <script>
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
 import { getAppRoot } from "onload/loadConfig";
+
+Vue.use(BootstrapVue);
+
 export default {
     props: {
         args: {

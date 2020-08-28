@@ -6,7 +6,6 @@
             :argument-name="argumentName"
             :labels="labels"
             :label-title="selectedLabelTitle"
-            :select-title="selectedSelectTitle"
             @onOk="onOk"
             @onCancel="onCancel"
         />
@@ -90,20 +89,16 @@ export default {
         return {
             selectorConfig: {
                 job_id: {
-                    labelTitle: "Select Step Label",
-                    selectTitle: "Select Job by Identifier",
+                    labelTitle: "Step",
                 },
                 invocation_id: {
-                    labelTitle: "Select Step Label",
-                    selectTitle: "Select Invocation by Identifier",
+                    labelTitle: "Step",
                 },
                 history_dataset_id: {
-                    labelTitle: "Select Output Label",
-                    selectTitle: "Select Dataset from History",
+                    labelTitle: "Output",
                 },
                 history_dataset_collection_id: {
-                    labelTitle: "Select Output Label",
-                    selectTitle: "Select Dataset Collection from History",
+                    labelTitle: "Output",
                 },
             },
             jobsUrl: `${getAppRoot()}api/jobs`,
@@ -121,10 +116,6 @@ export default {
         selectedLabelTitle() {
             const config = this.selectorConfig[this.argumentType];
             return (config && config.labelTitle) || "Select Label";
-        },
-        selectedSelectTitle() {
-            const config = this.selectorConfig[this.argumentType];
-            return (config && config.selectTitle) || "Select Item";
         },
     },
     created() {

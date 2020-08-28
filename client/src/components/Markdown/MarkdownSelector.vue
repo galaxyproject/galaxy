@@ -2,10 +2,7 @@
     <span>
         <b-modal v-model="modalShow" :title="title" ok-title="Continue" @ok="onOk" @cancel="onCancel">
             <div class="ml-2">
-                <b-form-radio v-model="selectedValue" name="labels" :value="initialValue">
-                    <b>{{ selectTitle }}</b>
-                </b-form-radio>
-                <h5 class="mt-3">{{ labelTitle }}:</h5>
+                <h5 class="mb-3">Select {{ labelTitle }} Label:</h5>
                 <div v-if="hasLabels">
                     <b-form-radio
                         v-for="(label, index) in labels"
@@ -17,6 +14,7 @@
                     >
                         {{ label }}
                     </b-form-radio>
+                    <p class="mt-3 text-muted">You may add new Labels by selecting a Step in the Workflow Editor and then editing the Label field in the Step form.</p>
                 </div>
                 <b-alert v-else show variant="info">
                     No Labels found. Please specify Labels in the Workflow Editor.
@@ -34,20 +32,12 @@ Vue.use(BootstrapVue);
 
 export default {
     props: {
-        selectTitle: {
-            type: String,
-            default: "Search Entries",
-        },
         labelTitle: {
             type: String,
-            default: "Select by Label",
+            default: "",
         },
         labels: {
             type: Array,
-            default: null,
-        },
-        initialValue: {
-            type: String,
             default: null,
         },
         argumentName: {
@@ -57,7 +47,7 @@ export default {
     },
     data() {
         return {
-            selectedValue: this.initialValue,
+            selectedValue: 0,
             modalShow: true,
         };
     },
