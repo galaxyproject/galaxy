@@ -18,7 +18,7 @@
             <MarkdownEditor
                 :markdown-text="markdownText"
                 :markdown-config="markdownConfig"
-                :title="name"
+                :title="'Workflow Report: ' + name"
                 :nodes="nodes"
                 @onUpdate="onReportUpdate"
             >
