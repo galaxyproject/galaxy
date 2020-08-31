@@ -820,6 +820,14 @@ galaxy:
   # format string as specified by ISO 8601 international   standard).
   #pretty_datetime_format: $locale (UTC)
 
+  # Allow import of workflows from the TRS servers configured in the
+  # specified YAML or JSON file. The file should be a list with 'id',
+  # 'label', and 'api_url' for each entry. Optionally, 'link_url' and
+  # 'doc' may be be specified as well for each entry.
+  # If this is null (the default), a simple configuration containing
+  # just Dockstore will be used.
+  #trs_servers_config_file: trs_servers_conf.yml
+
   # Location of the configuration file containing extra user
   # preferences.
   #user_preferences_extra_conf_path: user_preferences_extra_conf.yml
