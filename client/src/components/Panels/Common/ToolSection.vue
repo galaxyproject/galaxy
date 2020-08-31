@@ -1,5 +1,5 @@
 <template>
-    <div v-if="isSection && hasElements">
+    <div v-if="isSection && hasElements" class="tool-panel-section">
         <div :class="['toolSectionTitle', `tool-menu-section-${sectionName}`]">
             <a @click="toggleMenu" href="javascript:void(0)" role="button">
                 <span class="name">
@@ -10,7 +10,7 @@
         <transition name="slide">
             <div v-if="opened">
                 <template v-for="[key, el] in category.elems.entries()">
-                    <div v-if="el.text" class="tool-panel-label ml-3" :key="key">
+                    <div v-if="el.text" class="tool-panel-label" :key="key">
                         {{ el.text }}
                     </div>
                     <tool
@@ -30,7 +30,7 @@
         </transition>
     </div>
     <div v-else>
-        <div v-if="category.text" class="tool-panel-label px-3">
+        <div v-if="category.text" class="tool-panel-label">
             {{ category.text }}
         </div>
         <tool
@@ -136,12 +136,14 @@ export default {
 }
 
 div.tool-panel-label {
-    background: darken($panel-bg-color, 10%);
+    background: darken($panel-bg-color, 5%);
+    border-left: 0.25rem solid darken($panel-bg-color, 25%);
+    padding-left: 0.75rem;
 }
 
-span.tool-panel-label {
-    padding-left: 1rem;
-    background: darken($panel-bg-color, 5%);
+.tool-panel-section .tool-panel-label {
+    /* labels within subsections */
+    margin-left: 1.5rem;
 }
 
 .slide-enter-active {
