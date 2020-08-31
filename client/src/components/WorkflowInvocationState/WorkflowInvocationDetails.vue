@@ -65,6 +65,9 @@ export default {
             required: true,
         },
     },
+    created: function() {
+        this.fetchWorkflowForInstanceId(this.invocation.workflow_id);
+    },
     computed: {
         ...mapGetters(["getWorkflowByInstanceId"]),
         orderedSteps() {
@@ -76,6 +79,7 @@ export default {
 
     },
     methods: {
+        ...mapCacheActions(['fetchWorkflowForInstanceId']),
         dataInputStepLabel(key, input) {
             let label = this.orderedSteps[key].workflow_step_label;
             if (!label) {

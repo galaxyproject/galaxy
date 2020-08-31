@@ -23,6 +23,20 @@
                 </details>
                 <div class="portlet-body" style="width: 100%; overflow-x: auto;">
                     <step-jobs :jobs="stepDetails.jobs" v-if="stepDetails && stepDetails.jobs.length > 0"/>
+                    <div v-if="stepDetails && workflowStep">
+                        <p></p>
+                        {{stepDetails}}
+                        <p></p>
+                        {{workflowStep}}
+                    </div>
+                    <div v-else-if="stepDetails && !stepDetails.subworkflow_invocation_id">
+                        Jobs for this step are not yet scheduled.
+                        <p></p>
+                        This step consumes outputs from these Steps:
+                        <ul v-if="workflowStep">
+                            <li v-for="stepInput in Object.values(workflowStep.input_steps)" :key="stepInput.source_step">{{labelForWorkflowStep(stepInput.source_step)}}</li>
+                        </ul>
+                    </div>
                     <workflow-invocation-state :invocationId="stepDetails.subworkflow_invocation_id" v-if="stepDetails && stepDetails.subworkflow_invocation_id"/>
                 </div>
                 <div style="min-width: 1;"/>
@@ -43,6 +57,7 @@ export default {
         WorkflowInvocationState: () => import("components/WorkflowInvocationState/WorkflowInvocationState"),
     },
     props: {
+        invocation: Object,
         step: Object,
         workflow: Object,
     },
@@ -51,9 +66,9 @@ export default {
             expanded: false,
         };
     },
-    mounted() {
+    created() {
         this.fetchTool();
-        this.fetchSubworkflow;
+        this.fetchSubworkflow();
         this.fetchInvocationStepById(this.step.id)
     },
     computed: {
@@ -83,27 +98,9 @@ export default {
             return this.getInvocationStepById(this.step.id)
         },
         stepLabel() {
-            const stepIndex = this.step.order_index + 1;
-            if (this.step.workflow_step_label) {
-                return `Step ${stepIndex}: ${this.step.workflow_step_label}`;
-            }
-            const workflowStep = this.workflow.steps[this.step.order_index]
-            const workflowStepType = workflowStep.type;
-            switch (workflowStepType) {
-                case "tool":
-                    return this.toolStepLabel(workflowStep);
-                case "subworkflow":
-                    return this.subWorkflowStepLabel(workflowStep);
-                case "parameter_input":
-                    return `Step ${stepIndex}: Parameter input`;
-                case "data_input":
-                    `Step ${stepIndex}: Data input`
-                case "data_collection_input":
-                    return `Step ${stepIndex}: Data collection input`
-                default:
-                    return `Step ${stepIndex}: Unknown step type '${workflowStepType}'`;
-            }
+            return this.labelForWorkflowStep(this.step.order_index);
         },
+
     },
     methods: {
         ...mapCacheActions(["fetchToolForId", "fetchInvocationStepById", 'fetchWorkflowForInstanceId']),
@@ -120,13 +117,28 @@ export default {
         toggleStep() {
             this.expanded = !this.expanded;
         },
-        toolStepLabel(workflowStep) {
-            const name = this.getToolNameById(workflowStep.tool_id);
-            return `Step ${this.step.order_index +1}: ${name}`;
-        },
-        subWorkflowStepLabel(workflowStep) {
-            const subworkflow = this.getWorkflowByInstanceId(workflowStep.workflow_id)
-            return `Step ${this.step.order_index + 1}: ${(subworkflow && subworkflow.name)}`
+        labelForWorkflowStep(stepIndex) {
+            const invocationStep = this.invocation.steps[stepIndex];
+            const workflowStep = this.workflow.steps[stepIndex]
+            const oneBasedStepIndex = stepIndex + 1;
+            if (invocationStep && invocationStep.workflow_step_label) {
+                return `Step ${oneBasedStepIndex}: ${invocationStep.workflow_step_label}`;
+            }
+            const workflowStepType = workflowStep.type;
+            switch (workflowStepType) {
+                case "tool":
+                    return `Step ${oneBasedStepIndex}: ${this.getToolNameById(workflowStep.tool_id)}`;
+                case "subworkflow":
+                    return `Step ${oneBasedStepIndex}: ${this.getWorkflowByInstanceId(workflowStep.workflow_id).name}`;
+                case "parameter_input":
+                    return `Step ${oneBasedStepIndex}: Parameter input`;
+                case "data_input":
+                    `Step ${oneBasedStepIndex}: Data input`
+                case "data_collection_input":
+                    return `Step ${oneBasedStepIndex}: Data collection input`
+                default:
+                    return `Step ${oneBasedStepIndex}: Unknown step type '${workflowStepType}'`;
+            }
         },
     },    
 }
