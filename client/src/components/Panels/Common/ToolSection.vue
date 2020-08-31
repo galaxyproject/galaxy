@@ -12,9 +12,9 @@
                 <transition name="slide">
                     <div v-if="opened">
                         <template v-for="[key, el] in category.elems.entries()">
-                            <span v-if="el.text" class="label toolPanelLabel ml-2" :key="key">
+                            <div v-if="el.text" class="tool-panel-label ml-3" :key="key">
                                 {{ el.text }}
-                            </span>
+                            </div>
                             <tool
                                 v-else
                                 class="ml-2"
@@ -33,9 +33,9 @@
             </div>
         </div>
         <div v-else>
-            <span v-if="category.text" class="label toolPanelLabel">
+            <div v-if="category.text" class="tool-panel-label px-3">
                 {{ category.text }}
-            </span>
+            </div>
             <tool
                 v-else
                 :tool="category"
@@ -130,24 +130,22 @@ export default {
 };
 </script>
 
-<style lang="scss" scoped>
-@import "~bootstrap/scss/functions";
-@import "~bootstrap/scss/variables";
-@import "~bootstrap/scss/mixins";
-@import "~bootstrap/scss/utilities/spacing";
-
+<style lang="scss">
 @import "scss/theme/blue.scss";
-@import "scss/mixins";
 
-.toolPanelLabel {
-    @extend .pb-3;
-    @extend .pt-3;
-    @extend .px-3;
-    font-weight: bold;
-    font-size: $h5-font-size;
-    color: $text-light;
+.tool-panel-label {
+    font-weight: 600;
+    font-size: $h4-font-size;
     text-transform: uppercase;
-    text-decoration: underline;
+}
+
+div.tool-panel-label {
+    background: darken($panel-bg-color, 10%);
+}
+
+span.tool-panel-label {
+    padding-left: 1rem;
+    background: darken($panel-bg-color, 5%);
 }
 
 .slide-enter-active {
