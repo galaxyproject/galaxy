@@ -4,43 +4,43 @@
             <template v-slot:button-content>
                 <font-awesome-icon icon="file" />
             </template>
-            <b-dropdown-item href="#" @click="onHistoryId('history_dataset_display')">
+            <b-dropdown-item @click="onHistoryId('history_dataset_display')">
                 <font-awesome-icon class="mr-1" :icon="['far', 'file']" fixed-width />
                 History Dataset Display
             </b-dropdown-item>
-            <b-dropdown-item href="#" @click="onHistoryCollectionId('history_dataset_collection_display')">
+            <b-dropdown-item @click="onHistoryCollectionId('history_dataset_collection_display')">
                 <font-awesome-icon class="mr-1" :icon="['far', 'folder']" fixed-width />
                 History Dataset Collection Display
             </b-dropdown-item>
-            <b-dropdown-item href="#" @click="onHistoryId('history_dataset_as_image')">
+            <b-dropdown-item @click="onHistoryId('history_dataset_as_image')">
                 <font-awesome-icon class="mr-1" :icon="['far', 'image']" fixed-width />
                 History Dataset As Image
             </b-dropdown-item>
-            <b-dropdown-item href="#" @click="onHistoryId('history_dataset_index')">
+            <b-dropdown-item @click="onHistoryId('history_dataset_index')">
                 <font-awesome-icon class="mr-1" :icon="['far', 'list-alt']" fixed-width />
                 History Dataset Index
             </b-dropdown-item>
-            <b-dropdown-item href="#" @click="onHistoryId('history_dataset_embedded')">
+            <b-dropdown-item @click="onHistoryId('history_dataset_embedded')">
                 <font-awesome-icon class="mr-1" :icon="['far', 'clone']" fixed-width />
                 History Dataset Embedded
             </b-dropdown-item>
-            <b-dropdown-item href="#" @click="onHistoryId('history_dataset_type')">
+            <b-dropdown-item @click="onHistoryId('history_dataset_type')">
                 <font-awesome-icon class="mr-1" :icon="['far', 'flag']" fixed-width />
                 History Dataset Type
             </b-dropdown-item>
-            <b-dropdown-item href="#" @click="onHistoryId('history_dataset_link')">
+            <b-dropdown-item @click="onHistoryId('history_dataset_link')">
                 <font-awesome-icon class="mr-1" icon="link" fixed-width />
                 History Dataset Link
             </b-dropdown-item>
-            <b-dropdown-item href="#" @click="onHistoryId('history_dataset_info')">
+            <b-dropdown-item @click="onHistoryId('history_dataset_info')">
                 <font-awesome-icon class="mr-1" icon="info" fixed-width />
                 History Dataset Information
             </b-dropdown-item>
-            <b-dropdown-item href="#" @click="onHistoryId('history_dataset_name')">
+            <b-dropdown-item @click="onHistoryId('history_dataset_name')">
                 <font-awesome-icon class="mr-1" icon="signature" fixed-width />
                 History Dataset Name
             </b-dropdown-item>
-            <b-dropdown-item href="#" @click="onHistoryId('history_dataset_peek')">
+            <b-dropdown-item @click="onHistoryId('history_dataset_peek')">
                 <font-awesome-icon class="mr-1" icon="search-location" fixed-width />
                 History Dataset Peek
             </b-dropdown-item>
@@ -49,19 +49,19 @@
             <template v-slot:button-content>
                 <font-awesome-icon icon="wrench" />
             </template>
-            <b-dropdown-item href="#" @click="onJobId('job_metrics')">
+            <b-dropdown-item @click="onJobId('job_metrics')">
                 <font-awesome-icon class="mr-1" icon="tachometer-alt" fixed-width />
                 Job Metrics
             </b-dropdown-item>
-            <b-dropdown-item href="#" @click="onJobId('job_parameters')">
+            <b-dropdown-item @click="onJobId('job_parameters')">
                 <font-awesome-icon class="mr-1" icon="tasks" fixed-width />
                 Job Parameters
             </b-dropdown-item>
-            <b-dropdown-item href="#" @click="onJobId('tool_stdout')">
+            <b-dropdown-item @click="onJobId('tool_stdout')">
                 <font-awesome-icon class="mr-1" icon="quote-right" fixed-width />
                 Tool Standard Output
             </b-dropdown-item>
-            <b-dropdown-item href="#" @click="onJobId('tool_stderr')">
+            <b-dropdown-item @click="onJobId('tool_stderr')">
                 <font-awesome-icon class="mr-1" icon="bug" fixed-width />
                 Tool Error Output
             </b-dropdown-item>
@@ -70,40 +70,43 @@
             <template v-slot:button-content>
                 <font-awesome-icon icon="sitemap" rotation="270" />
             </template>
-            <b-dropdown-item v-if="isWorkflow" href="#" @click="onNoParameter('workflow_display')">
-                <font-awesome-icon class="mr-1" icon="sitemap" fixed-width rotation="270" />
-                Current Workflow
-            </b-dropdown-item>
-            <b-dropdown-item v-else href="#" @click="onWorkflowId('workflow_display')">
-                <font-awesome-icon class="mr-1" icon="sitemap" fixed-width rotation="270" />
-                Workflow Display
-            </b-dropdown-item>
-            <b-dropdown-item v-if="isWorkflow" href="#" @click="onNoParameter('invocation_inputs')">
+            <b-dropdown-item v-if="isWorkflow" @click="onNoParameter('invocation_inputs')">
                 <font-awesome-icon class="mr-1" icon="arrow-right" fixed-width />
                 Invocation Inputs
             </b-dropdown-item>
-            <b-dropdown-item v-if="isWorkflow" href="#" @click="onNoParameter('invocation_outputs')">
+            <b-dropdown-item v-if="isWorkflow" @click="onNoParameter('invocation_outputs')">
                 <font-awesome-icon class="mr-1" icon="arrow-left" fixed-width />
                 Invocation Outputs
             </b-dropdown-item>
-            <b-dropdown-item href="#" @click="onInvocationId('invocation_time')">
+            <b-dropdown-item @click="onInvocationId('invocation_time')">
                 <font-awesome-icon class="mr-1" icon="clock" fixed-width />
                 Invocation Time
+            </b-dropdown-item>
+            <b-dropdown-item v-if="isWorkflow" @click="onNoParameter('workflow_display')">
+                <font-awesome-icon class="mr-1" icon="sitemap" fixed-width rotation="270" />
+                Current Workflow
+            </b-dropdown-item>
+            <b-dropdown-item v-else @click="onWorkflowId('workflow_display')">
+                <font-awesome-icon class="mr-1" icon="sitemap" fixed-width rotation="270" />
+                Workflow Display
             </b-dropdown-item>
         </b-dropdown>
         <b-dropdown no-caret right role="button" variant="link" title="Insert Others" v-b-tooltip.hover.bottom>
             <template v-slot:button-content>
                 <font-awesome-icon icon="tools" />
             </template>
-            <b-dropdown-item href="#" @click="onNoParameter('generate_galaxy_version')">
+            <b-dropdown-item @click="onNoParameter('generate_galaxy_version')">
                 <font-awesome-icon class="mr-1" icon="certificate" fixed-width />
                 Galaxy Version
             </b-dropdown-item>
-            <b-dropdown-item href="#" @click="onNoParameter('generate_time')">
+            <b-dropdown-item @click="onNoParameter('generate_time')">
                 <font-awesome-icon class="mr-1" fixed-width rotation="270" icon="clock" />
                 Time Stamp
             </b-dropdown-item>
         </b-dropdown>
+        <b-button variant="link" @click="onHelp" title="Show Galaxy Markdown Help" v-b-tooltip.hover.bottom>
+            <font-awesome-icon icon="question" />
+        </b-button>
         <MarkdownDialog
             v-if="selectedShow"
             :argument-type="selectedType"
@@ -138,6 +141,7 @@ import {
     faTachometerAlt,
     faTasks,
     faSearchLocation,
+    faQuestion,
 } from "@fortawesome/free-solid-svg-icons";
 
 import {
@@ -150,6 +154,7 @@ import {
 } from "@fortawesome/free-regular-svg-icons";
 
 import MarkdownDialog from "./MarkdownDialog";
+import { showMarkdownHelp } from "./markdownHelp";
 
 Vue.use(BootstrapVue);
 
@@ -175,7 +180,8 @@ library.add(
     faSearchLocation,
     faListAlt,
     faClone,
-    faFlag
+    faFlag,
+    faQuestion
 );
 
 export default {
@@ -271,6 +277,9 @@ export default {
             this.selectedType = "invocation_id";
             this.selectedLabels = this.getSteps();
             this.selectedShow = true;
+        },
+        onHelp() {
+            showMarkdownHelp();
         },
     },
 };
