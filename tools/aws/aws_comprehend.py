@@ -92,7 +92,7 @@ def main():
                 for wordPos in range(lastPos, sttWords):
                     # If it matches, set the time offset.
                     word = stt.result.words[wordPos]
-                    if word.text == entityPart:
+                    if clean_entity_word(word.text) == entityPart:
                         # Keep track of last position to save iterations
                         lastPos = wordPos
                         # Set start if we haven't set it yet
@@ -100,8 +100,11 @@ def main():
                             start = word.start
                         end = word.end
                         break
+                    else:
+                        start = None
+                        end = None
             
-            if clean_text(entity_type) not in ignore_cats_list:
+            if clean_text(entity_type) not in ignore_cats_list and start is not None:
                 result.addEntity(entity_type, text, None, None, "relevance", float(entity["Score"]), start, None)  #AMP-636 removed startOffset=endOffset=end=None
 
 
@@ -121,6 +124,12 @@ def create_temp_transcript_file(jobName, transcript):
         tmpfile.write(transcript)
     return tmpfile
 
+def clean_entity_word(entity_word):
+    cleaned_word = entity_word 
+    if(entity_word.endswith('\'s')):
+        cleaned_word = entity_word.replace('\'s', '')
+    return cleaned_word
+    
 # Serialize obj and write it to output file
 def write_json_file(obj, output_file):
     # Serialize the object
