@@ -92,8 +92,6 @@ def main():
                 for wordPos in range(lastPos, sttWords):
                     # If it matches, set the time offset.
                     word = stt.result.words[wordPos]
-                    if wordPos < 62:
-                        print("Entity: " + entityPart + " Word: " + clean_entity_word(word.text))
                     if clean_entity_word(word.text) == entityPart:
                         # Keep track of last position to save iterations
                         lastPos = wordPos
