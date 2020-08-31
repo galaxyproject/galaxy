@@ -5,27 +5,27 @@
                 <font-awesome-icon icon="file" />
             </template>
             <b-dropdown-item href="#" @click="onHistoryId('history_dataset_display')">
-                <font-awesome-icon class="mr-1" icon="file" fixed-width />
+                <font-awesome-icon class="mr-1" :icon="['far', 'file']" fixed-width />
                 History Dataset Display
             </b-dropdown-item>
             <b-dropdown-item href="#" @click="onHistoryCollectionId('history_dataset_collection_display')">
-                <font-awesome-icon class="mr-1" icon="folder" fixed-width />
+                <font-awesome-icon class="mr-1" :icon="['far', 'folder']" fixed-width />
                 History Dataset Collection Display
             </b-dropdown-item>
             <b-dropdown-item href="#" @click="onHistoryId('history_dataset_as_image')">
-                <font-awesome-icon class="mr-1" icon="image" fixed-width />
+                <font-awesome-icon class="mr-1" :icon="['far', 'image']" fixed-width />
                 History Dataset As Image
             </b-dropdown-item>
             <b-dropdown-item href="#" @click="onHistoryId('history_dataset_index')">
-                <font-awesome-icon class="mr-1" icon="list-alt" fixed-width />
+                <font-awesome-icon class="mr-1" :icon="['far', 'list-alt']" fixed-width />
                 History Dataset Index
             </b-dropdown-item>
             <b-dropdown-item href="#" @click="onHistoryId('history_dataset_embedded')">
-                <font-awesome-icon class="mr-1" icon="clone" fixed-width />
+                <font-awesome-icon class="mr-1" :icon="['far', 'clone']" fixed-width />
                 History Dataset Embedded
             </b-dropdown-item>
             <b-dropdown-item href="#" @click="onHistoryId('history_dataset_type')">
-                <font-awesome-icon class="mr-1" icon="flag" fixed-width />
+                <font-awesome-icon class="mr-1" :icon="['far', 'flag']" fixed-width />
                 History Dataset Type
             </b-dropdown-item>
             <b-dropdown-item href="#" @click="onHistoryId('history_dataset_link')">
@@ -70,21 +70,25 @@
             <template v-slot:button-content>
                 <font-awesome-icon icon="sitemap" rotation="270" />
             </template>
-            <b-dropdown-item v-if="useLabels" href="#" @click="onNoParameter('invocation_inputs')">
+            <b-dropdown-item v-if="isWorkflow" href="#" @click="onNoParameter('workflow_display')">
+                <font-awesome-icon class="mr-1" icon="sitemap" fixed-width rotation="270" />
+                Current Workflow
+            </b-dropdown-item>
+            <b-dropdown-item v-else href="#" @click="onWorkflowId('workflow_display')">
+                <font-awesome-icon class="mr-1" icon="sitemap" fixed-width rotation="270" />
+                Workflow Display
+            </b-dropdown-item>
+            <b-dropdown-item v-if="isWorkflow" href="#" @click="onNoParameter('invocation_inputs')">
                 <font-awesome-icon class="mr-1" icon="arrow-right" fixed-width />
                 Invocation Inputs
             </b-dropdown-item>
-            <b-dropdown-item v-if="useLabels" href="#" @click="onNoParameter('invocation_outputs')">
+            <b-dropdown-item v-if="isWorkflow" href="#" @click="onNoParameter('invocation_outputs')">
                 <font-awesome-icon class="mr-1" icon="arrow-left" fixed-width />
                 Invocation Outputs
             </b-dropdown-item>
             <b-dropdown-item href="#" @click="onInvocationId('invocation_time')">
                 <font-awesome-icon class="mr-1" icon="clock" fixed-width />
                 Invocation Time
-            </b-dropdown-item>
-            <b-dropdown-item href="#" @click="onWorkflowId('workflow_display')">
-                <font-awesome-icon class="mr-1" icon="sitemap" fixed-width rotation="270" />
-                Workflow Display
             </b-dropdown-item>
         </b-dropdown>
         <b-dropdown no-caret right role="button" variant="link" title="Insert Others" v-b-tooltip.hover.bottom>
@@ -105,7 +109,7 @@
             :argument-type="selectedType"
             :argument-name="selectedArgumentName"
             :labels="selectedLabels"
-            :use-labels="useLabels"
+            :use-labels="isWorkflow"
             @onInsert="onInsert"
             @onCancel="onCancel"
         />
@@ -123,10 +127,8 @@ import {
     faSitemap,
     faInfo,
     faFile,
-    faFolder,
     faLink,
     faSignature,
-    faImage,
     faWrench,
     faTools,
     faBug,
@@ -136,10 +138,16 @@ import {
     faTachometerAlt,
     faTasks,
     faSearchLocation,
+} from "@fortawesome/free-solid-svg-icons";
+
+import {
     faListAlt,
+    faFile as faFileRegular,
+    faFolder,
+    faImage,
     faClone,
     faFlag,
-} from "@fortawesome/free-solid-svg-icons";
+} from "@fortawesome/free-regular-svg-icons";
 
 import MarkdownDialog from "./MarkdownDialog";
 
@@ -149,6 +157,7 @@ library.add(
     faClock,
     faSitemap,
     faFile,
+    faFileRegular,
     faFolder,
     faLink,
     faInfo,
@@ -189,7 +198,7 @@ export default {
         };
     },
     computed: {
-        useLabels() {
+        isWorkflow() {
             return !!this.nodes;
         },
     },
