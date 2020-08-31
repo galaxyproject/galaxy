@@ -29,7 +29,7 @@
     <param name="s3_directory" type="text" label="S3 Directory Path" help="S3 directory inside S3 bucket for input files"/>
   </inputs>
   <outputs>
-    <data format="json" name="aws_transcribe_transcript" label='AWS Transcribe Transcript' />
+    <data format="json" name="aws_transcribe_transcript" label='AWS Transcript' />
     <data format="json" name="amp_transcript" label='AMPPD Transcript' />
     <data format="json" name="amp_diarization" label='AMPPD Diarization' />
   </outputs>
