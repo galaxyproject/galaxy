@@ -1,7 +1,7 @@
 <tool id="hmgm_segmentation" name="HMGM Segmentation Correction" version="1.0.0">
   <description>Manual segmentation correction by a human</description>
   <command detect_errors="exit_code">
-  	$__tool_directory__/hmgm_main.py Segmentation $__root_dir__ $original_structmeta $corrected_structmeta $task_info '$context_json';
+	'$__tool_directory__/hmgm_main.py' 'Segmentation' '$__root_dir__' '$original_structmeta' '$corrected_structmeta' '$task_info' '$context_json';
   </command>
   <inputs>
     <param name="input_segment" type="data" format="json" label="Input Segmentation JSON" help="Original AMP JSON file for the segmentation to be corrected "/>

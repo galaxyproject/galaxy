@@ -7,7 +7,7 @@
   </command>
   <inputs>
     <param name="input_transcript" type="data" format="json" label="Input Transcript JSON" help="Original AMP JSON file for the transcript to be corrected"/>
-    <param name="input_segmentation" type="data" optional = "true" format="json" label="Input Segmentation JSON" help="AMP JSON Segmentation file for the transcript to be corrected "/>
+    <param name="input_segmentation" type="data" optional = "true" format="json" label="Input Diarization JSON" help="AMP JSON Diarization file for the transcript to be corrected "/>
     <param name="context_json" type="text" label="HMGM Task Context" help="JSON string containing context information needed for creating Human MGM task">
     	<sanitizer sanitize="false">
     	</sanitizer>
