@@ -1,17 +1,17 @@
-name: Client Unit Tests (Jest)
+name: Client Unit Testing
 on: [push, pull_request]
 jobs:
-  build:
+  jest:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [12.x]
+        node: [12]
     steps:
     - uses: actions/checkout@v2
-    - name: Use Node.js ${{ matrix.node-version }}
+    - name: Setup node
       uses: actions/setup-node@v1
       with:
-        node-version: ${{ matrix.node-version }}
+        node-version: ${{ matrix.node}}
     - run: yarn install
       working-directory: client
     - run: yarn jest
