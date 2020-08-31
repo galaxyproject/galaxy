@@ -1,51 +1,47 @@
 <template>
-    <div>
-        <div v-if="isSection">
-            <div v-if="hasElements">
-                <div :class="['toolSectionTitle', `tool-menu-section-${sectionName}`]">
-                    <a @click="toggleMenu" href="javascript:void(0)" role="button">
-                        <span class="name">
-                            {{ this.name }}
-                        </span>
-                    </a>
-                </div>
-                <transition name="slide">
-                    <div v-if="opened">
-                        <template v-for="[key, el] in category.elems.entries()">
-                            <div v-if="el.text" class="tool-panel-label ml-3" :key="key">
-                                {{ el.text }}
-                            </div>
-                            <tool
-                                v-else
-                                class="ml-2"
-                                :tool="el"
-                                :key="key"
-                                :tool-key="toolKey"
-                                :hide-name="hideName"
-                                :operation-title="operationTitle"
-                                :operation-icon="operationIcon"
-                                @onOperation="onOperation"
-                                @onClick="onClick"
-                            />
-                        </template>
+    <div v-if="isSection && hasElements">
+        <div :class="['toolSectionTitle', `tool-menu-section-${sectionName}`]">
+            <a @click="toggleMenu" href="javascript:void(0)" role="button">
+                <span class="name">
+                    {{ this.name }}
+                </span>
+            </a>
+        </div>
+        <transition name="slide">
+            <div v-if="opened">
+                <template v-for="[key, el] in category.elems.entries()">
+                    <div v-if="el.text" class="tool-panel-label ml-3" :key="key">
+                        {{ el.text }}
                     </div>
-                </transition>
+                    <tool
+                        v-else
+                        class="ml-2"
+                        :tool="el"
+                        :key="key"
+                        :tool-key="toolKey"
+                        :hide-name="hideName"
+                        :operation-title="operationTitle"
+                        :operation-icon="operationIcon"
+                        @onOperation="onOperation"
+                        @onClick="onClick"
+                    />
+                </template>
             </div>
+        </transition>
+    </div>
+    <div v-else>
+        <div v-if="category.text" class="tool-panel-label px-3">
+            {{ category.text }}
         </div>
-        <div v-else>
-            <div v-if="category.text" class="tool-panel-label px-3">
-                {{ category.text }}
-            </div>
-            <tool
-                v-else
-                :tool="category"
-                :hide-name="hideName"
-                :operation-title="operationTitle"
-                :operation-icon="operationIcon"
-                @onOperation="onOperation"
-                @onClick="onClick"
-            />
-        </div>
+        <tool
+            v-else
+            :tool="category"
+            :hide-name="hideName"
+            :operation-title="operationTitle"
+            :operation-icon="operationIcon"
+            @onOperation="onOperation"
+            @onClick="onClick"
+        />
     </div>
 </template>
 
@@ -83,7 +79,7 @@ export default {
         },
         toolKey: {
             type: String,
-            default: ""
+            default: "",
         },
         sectionName: {
             type: String,
