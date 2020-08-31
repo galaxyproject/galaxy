@@ -89,7 +89,6 @@ describe("Tags/tagService.js", () => {
             checkAutocompleteResult(result);
         });
 
-
         /*
 
         // hit the search input with multiple entries, only one ajax call
@@ -125,6 +124,5 @@ describe("Tags/tagService.js", () => {
         });
 
         */
-
     });
 });

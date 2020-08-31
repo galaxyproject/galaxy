@@ -67,7 +67,7 @@ export class Services {
 
     _addAttributes(workflow) {
         const Galaxy = getGalaxyInstance();
-        workflow.shared = workflow.owner !== Galaxy.user.username;
+        workflow.shared = workflow.owner !== Galaxy.user.attributes.username;
         workflow.description = "";
         if (workflow.annotations && workflow.annotations.length > 0) {
             const description = workflow.annotations[0].trim();
