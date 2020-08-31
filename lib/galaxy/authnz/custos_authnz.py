@@ -1,6 +1,5 @@
 import base64
 import hashlib
-import json
 import logging
 import os
 from datetime import datetime, timedelta
@@ -44,7 +43,10 @@ class CustosAuthnz(IdentityProvider):
 
     def authenticate(self, trans, idphint=None):
         base_authorize_url = self.config['authorization_endpoint']
-        oauth2_session = self._create_oauth2_session(scope=('openid', 'email', 'profile', 'org.cilogon.userinfo'))
+        scopes = ['openid', 'email', 'profile']
+        if self.config['provider'] in ['custos', 'cilogon']:
+            scopes.append('org.cilogon.userinfo')
+        oauth2_session = self._create_oauth2_session(scope=scopes)
         nonce = generate_nonce()
         nonce_hash = self._hash_nonce(nonce)
         extra_params = {"nonce": nonce_hash}
