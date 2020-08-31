@@ -2,8 +2,8 @@ import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { TagService } from "./tagService";
 import { createTag } from "./model";
-//import { interval } from "rxjs";
-//import { take, takeUntil } from "rxjs/operators";
+import { interval } from "rxjs";
+import { take, takeUntil } from "rxjs/operators";
 // test response
 import autocompleteResponse from "./testData/autocompleteResponse.txt";
 
@@ -91,34 +91,34 @@ describe("Tags/tagService.js", () => {
 
         // hit the search input with multiple entries, only one ajax call
         // should result because of debouncing
-        //it("should debounce autocomplete search inputs", (done) => {
-        //    // stub ajax request to return the success response if the
-        //    // searchString is the expected input
+        it("should debounce autocomplete search inputs", (done) => {
+            // stub ajax request to return the success response if the
+            // searchString is the expected input
 
-        //    // take first emission, debouncing should guarantee the first
-        //    // emission is the last thing we sent, should be searchString
-        //    const timer$ = interval(100).pipe(take(1));
-        //    const option$ = svc.autocompleteOptions.pipe(takeUntil(timer$));
+            // take first emission, debouncing should guarantee the first
+            // emission is the last thing we sent, should be searchString
+            const timer$ = interval(100).pipe(take(1));
+            const option$ = svc.autocompleteOptions.pipe(takeUntil(timer$));
 
-        //    const nextHandler = jest.fn();
+            const nextHandler = jest.fn();
 
-        //    option$.subscribe({
-        //        next: nextHandler,
-        //        error: (err) => console.warn("error", err),
-        //        complete: () => {
-        //            expect(nextHandler).toHaveBeenCalledTimes(1);
-        //            expect(axiosMock.history.get.length).toBe(1);
-        //            done();
-        //        },
-        //    });
+            option$.subscribe({
+                next: nextHandler,
+                error: (err) => console.warn("error", err),
+                complete: () => {
+                    expect(nextHandler).toHaveBeenCalledTimes(1);
+                    expect(axiosMock.history.get.length).toBe(1);
+                    done();
+                },
+            });
 
-        //    // spam a bunch of key inputs followed by the correct input
-        //    const spamCount = 2 + Math.floor(Math.random() * 10);
-        //    for (let i = 0; i < spamCount; i++) {
-        //        const spamVal = new String(Math.random());
-        //        svc.autocompleteSearchText = spamVal;
-        //    }
-        //    svc.autocompleteSearchText = searchString;
-        //});
+            // spam a bunch of key inputs followed by the correct input
+            const spamCount = 2 + Math.floor(Math.random() * 10);
+            for (let i = 0; i < spamCount; i++) {
+                const spamVal = new String(Math.random());
+                svc.autocompleteSearchText = spamVal;
+            }
+            svc.autocompleteSearchText = searchString;
+        });
     });
 });
