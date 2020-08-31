@@ -34,7 +34,7 @@ const ToolPanel = Backbone.View.extend({
 
     mountVueComponent: function (el) {
         const Galaxy = getGalaxyInstance();
-        return this.component = mountVueComponent(SidePanel)(
+        return (this.component = mountVueComponent(SidePanel)(
             {
                 side: "left",
                 currentPanel: ToolBox,
@@ -44,7 +44,7 @@ const ToolPanel = Backbone.View.extend({
                 },
             },
             el
-        );
+        ));
     },
 
     toString: function () {

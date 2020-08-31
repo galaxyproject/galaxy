@@ -131,7 +131,7 @@ export default {
 
 .tool-panel-label {
     font-weight: 600;
-    font-size: $h4-font-size;
+    font-size: $h5-font-size;
     text-transform: uppercase;
 }
 
