@@ -23,19 +23,19 @@
                 </details>
                 <div class="portlet-body" style="width: 100%; overflow-x: auto;">
                     <step-jobs :jobs="stepDetails.jobs" v-if="stepDetails && stepDetails.jobs.length > 0"/>
-                    <div v-if="stepDetails && workflowStep">
-                        <p></p>
-                        {{stepDetails}}
-                        <p></p>
-                        {{workflowStep}}
-                    </div>
                     <div v-else-if="stepDetails && !stepDetails.subworkflow_invocation_id">
                         Jobs for this step are not yet scheduled.
                         <p></p>
-                        This step consumes outputs from these Steps:
+                        This step consumes outputs from these steps:
                         <ul v-if="workflowStep">
                             <li v-for="stepInput in Object.values(workflowStep.input_steps)" :key="stepInput.source_step">{{labelForWorkflowStep(stepInput.source_step)}}</li>
                         </ul>
+                    </div>
+                    <div v-else-if="invocation.steps.length === 0">
+                        This invocation has not been scheduled yet, step information is unavailable
+                        <!-- Probably a subworkflow invocation, could walk back to parent and show
+                             why step is not scheduled, but that's not necessary for a forst pass, I think
+                        -->
                     </div>
                     <workflow-invocation-state :invocationId="stepDetails.subworkflow_invocation_id" v-if="stepDetails && stepDetails.subworkflow_invocation_id"/>
                 </div>
@@ -58,26 +58,34 @@ export default {
     },
     props: {
         invocation: Object,
-        step: Object,
+        workflowStep: Object,
         workflow: Object,
     },
     data() {
         return {
             expanded: false,
+
         };
     },
     created() {
         this.fetchTool();
         this.fetchSubworkflow();
-        this.fetchInvocationStepById(this.step.id)
+        if (this.invocationStepId) {
+            this.fetchInvocationStepById(this.invocationStepId);
+        }
     },
     computed: {
         ...mapGetters(["getToolForId", "getToolNameById", "getWorkflowByInstanceId", "getInvocationStepById"]),
-        workflowStep() {
-            return this.workflow.steps[this.step.order_index];
+        invocationStepId() {
+            if (this.invocation.steps[this.workflowStep.id]) {
+                return this.invocation.steps[this.workflowStep.id].id
+            }
         },
         workflowStepType() {
             return this.workflowStep.type;
+        },
+        step() {
+            return this.invocation.steps[this.workflowStep.id]
         },
         isDataStep() {
             return ['data_input', 'data_collection_input'].includes(this.workflowStepType);
@@ -95,10 +103,12 @@ export default {
             }
         },
         stepDetails() {
-            return this.getInvocationStepById(this.step.id)
+            if (this.step) {
+                return this.getInvocationStepById(this.step.id)
+            }
         },
         stepLabel() {
-            return this.labelForWorkflowStep(this.step.order_index);
+            return this.labelForWorkflowStep(this.workflowStep.id);
         },
 
     },
