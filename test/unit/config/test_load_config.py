@@ -113,3 +113,34 @@ def test_set_renamed_option_not_overridden_by_old_option(mock_init):
     config = GalaxyAppConfiguration(old_property1='b', property1='c')
 
     assert config._raw_config['property1'] == 'c'
+
+
+def test_is_set(mock_init):
+    # if an option is set from kwargs, is_set() returns True, otherwise False
+    # Note: is_set() here means 'value is set by user', which includes setting
+    # to None or setting to the same value as the schema default.
+
+    # First, test that none are set
+    config = GalaxyAppConfiguration()
+    assert not config.is_set('property1')
+    assert not config.is_set('property2')
+    assert not config.is_set('property3')
+    assert not config.is_set('property4')
+    assert not config.is_set('property5')
+    assert not config.is_set('property6')
+
+    # Now set all values, including setting to None and setting to the schema default
+    config = GalaxyAppConfiguration(
+        property1='b',    # default = 'a'  (overwrites default w/'a')
+        property2=None,   # default = 1    (overwrites default w/None)
+        property3=1.0,    # default = 1.0  (same as default: 1.0)
+        property4=True,   # default = True (same as default: True)
+        property5=None,   # default = None (same as default: None)
+        property6=1)      # default = None (overwrites default w/None)
+
+    assert config.is_set('property1')
+    assert config.is_set('property2')
+    assert config.is_set('property3')
+    assert config.is_set('property4')
+    assert config.is_set('property4')
+    assert config.is_set('property6')

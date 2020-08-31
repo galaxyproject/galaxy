@@ -113,6 +113,7 @@ class BaseAppConfiguration:
 
     def __init__(self, **kwargs):
         self._process_renamed_options(kwargs)
+        self._kwargs = kwargs  # Save these as a record of explicitly set options
         self.config_dict = kwargs
         self.root = find_root(kwargs)
         self._set_config_base(kwargs)
@@ -131,6 +132,14 @@ class BaseAppConfiguration:
             for old, new in self.renamed_options.items():
                 if old in kwargs and new not in kwargs:
                     kwargs[new] = kwargs[old]
+
+    def is_set(self, key):
+        """Check if a configuration option has been explicitly set."""
+        # NOTE: This will check all supplied keyword arguments, including those not in the schema.
+        # To check only schema options, change the line below to `if property not in self._raw_config:`
+        if key not in self._raw_config:
+            log.warning("Configuration option does not exist: '%s'" % key)
+        return key in self._kwargs
 
     def resolve_path(self, path):
         """Resolve a path relative to Galaxy's root."""
