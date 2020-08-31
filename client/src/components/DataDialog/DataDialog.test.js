@@ -3,7 +3,7 @@ import SelectionDialog from "components/SelectionDialog/SelectionDialog.vue";
 import { Model } from "./model";
 import { UrlTracker } from "./utilities";
 import { Services } from "./services";
-import { mount, shallowMount, createLocalVue } from "@vue/test-utils";
+import { shallowMount, createLocalVue } from "@vue/test-utils";
 import { getNewAttachNode } from "jest/helpers";
 
 jest.mock("app");
