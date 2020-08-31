@@ -23,7 +23,14 @@ export function getGalaxyInstance() {
             tags_used: ["test"],
             model_class: "User",
             id: "f2db41e1fa331b3e",
+            attributes: {},
         },
         root: "/",
+        emit: {
+            debug: function () {},
+            error: function (v) {
+                window.console.error(v);
+            },
+        },
     };
 }

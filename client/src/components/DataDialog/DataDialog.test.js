@@ -1,11 +1,12 @@
 import DataDialog from "./DataDialog.vue";
 import SelectionDialog from "components/SelectionDialog/SelectionDialog.vue";
-import { __RewireAPI__ as rewire } from "./DataDialog";
 import { Model } from "./model";
 import { UrlTracker } from "./utilities";
 import { Services } from "./services";
-import { mount, createLocalVue } from "@vue/test-utils";
+import { mount, shallowMount, createLocalVue } from "@vue/test-utils";
 import { getNewAttachNode } from "jest/helpers";
+
+jest.mock("app");
 
 const mockOptions = {
     callback: () => {},
@@ -36,6 +37,7 @@ describe("model.js", () => {
         expect(result.id).toBe(2);
         expect(result.tag).toBe("tag");
     });
+
     it("Model operations for multiple, with format", () => {
         const model = new Model({ multiple: true, format: "tag" });
         model.add({ id: 1, tag: "tag_1" });
@@ -128,19 +130,13 @@ describe("DataDialog.vue", () => {
     ];
     */
 
-    beforeEach(() => {
-        rewire.__Rewire__("getGalaxyInstance", () => {
-            "root";
-        });
+    it("loads correctly, embeds a SelectionDialog", () => {
         const localVue = createLocalVue();
-        wrapper = mount(DataDialog, {
+        wrapper = shallowMount(DataDialog, {
             propsData: mockOptions,
             attachTo: getNewAttachNode(),
             localVue,
         });
-    });
-
-    it("loads correctly, embeds a SelectionDialog", async () => {
         expect(wrapper.findComponent(SelectionDialog).exists()).toBe(true);
         // Cannot get nested slot templates to render into the wrapper
         ///  Lots of open issues around this
