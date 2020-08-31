@@ -65,7 +65,6 @@ class CustosAuthnz(IdentityProvider):
         state_cookie = trans.get_cookie(name=STATE_COOKIE_NAME)
         oauth2_session = self._create_oauth2_session(state=state_cookie)
         token = self._fetch_token(oauth2_session, trans)
-        log.debug("token={}".format(json.dumps(token, indent=True)))
         access_token = token['access_token']
         id_token = token['id_token']
         refresh_token = token['refresh_token'] if 'refresh_token' in token else None
@@ -84,7 +83,6 @@ class CustosAuthnz(IdentityProvider):
             userinfo = id_token_decoded
         else:
             userinfo = self._get_userinfo(oauth2_session)
-        log.debug("userinfo={}".format(json.dumps(userinfo, indent=True)))
         email = userinfo['email']
         # Check if username if already taken
         username = userinfo.get('preferred_username', self._generate_username(trans, email))
