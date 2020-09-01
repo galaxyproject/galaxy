@@ -316,8 +316,6 @@
     migration scripts to install tools that have been migrated to the
     tool shed upon a new release, they will be added to this tool
     config file.
-    The value of this option will be resolved with respect to
-    <managed_config_dir>.
 :Default: ``migrated_tools_conf.xml``
 :Type: str
 

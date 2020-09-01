@@ -255,8 +255,6 @@ galaxy:
   # migration scripts to install tools that have been migrated to the
   # tool shed upon a new release, they will be added to this tool config
   # file.
-  # The value of this option will be resolved with respect to
-  # <managed_config_dir>.
   #migrated_tools_config: migrated_tools_conf.xml
 
   # File that contains the XML section and tool tags from all tool panel
