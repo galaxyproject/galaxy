@@ -469,11 +469,10 @@ mapping:
       file_sources_config_file:
         type: str
         default: file_sources_conf.yml        
+        path_resolves_to: config_dir
         required: false
         desc: |
           Configured FileSource plugins.
-
-          The value of this option will be resolved with respect to <config_dir>.
 
       enable_mulled_containers:
         type: bool
