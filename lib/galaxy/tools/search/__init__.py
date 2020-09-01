@@ -166,13 +166,11 @@ class ToolBoxSearch:
         og = OrGroup.factory(0.9)
         self.parser = MultifieldParser(['name', 'description', 'section', 'help', 'labels', 'stub'], schema=self.schema, group=og)
         cleaned_query = q.lower()
-        # Replace hyphens, since they are wildcards in Whoosh causing false positives
-        if cleaned_query.find('-') != -1:
-            cleaned_query = (' ').join(token.text for token in self.rex(to_unicode(cleaned_query)))
         if tool_enable_ngram_search is True:
             rval = self._search_ngrams(cleaned_query, tool_ngram_minsize, tool_ngram_maxsize, tool_search_limit)
             return rval
         else:
+            cleaned_query = ' '.join(token.text for token in self.rex(cleaned_query))
             # Use asterisk Whoosh wildcard so e.g. 'bow' easily matches 'bowtie'
             parsed_query = self.parser.parse(cleaned_query + '*')
             hits = self.searcher.search(parsed_query, limit=float(tool_search_limit), sortedby='')
