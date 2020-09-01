@@ -2969,12 +2969,11 @@ mapping:
       workflow_schedulers_config_file:
         type: str
         default: workflow_schedulers_conf.xml
+        path_resolves_to: config_dir
         required: false
         desc: |
           Optional configuration file similar to `job_config_file` to specify
           which Galaxy processes should schedule workflows.
-
-          The value of this option will be resolved with respect to <config_dir>.
 
       cache_user_job_count:
         type: bool
