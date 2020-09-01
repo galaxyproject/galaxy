@@ -128,10 +128,7 @@ def copy_files_to_irods(start_dataset_id, end_dataset_id, object_store_info_file
     try:
         read_cursor = conn.cursor()
         args = ('ok', start_dataset_id, end_dataset_id, osi_keys)
-        print(read_cursor.mogrify(read_sql_statement, args))
-
         read_cursor.execute(read_sql_statement, args)
-
         rows = read_cursor.fetchall()
         for num, row in enumerate(rows):
             objectid = row[0]
@@ -145,7 +142,6 @@ def copy_files_to_irods(start_dataset_id, end_dataset_id, object_store_info_file
                 raise Exception
 
             irods_resc = get_irods_resource(conn, objectid, object_store_id, irods_info)
-            print("irods_resc: ", irods_resc)
 
             disk_sub_folder = os.path.join(*directory_hash_id(objectid))
             irods_sub_folder = os.path.join(*directory_hash_id(uuid_with_dash))
@@ -161,7 +157,6 @@ def copy_files_to_irods(start_dataset_id, end_dataset_id, object_store_info_file
 
                 # Add disk file to collection
                 options = {kw.REG_CHKSUM_KW : '', kw.RESC_NAME_KW: irods_resc}
-                print("options: " , options)
                 session.data_objects.put(disk_file_path, irods_file_path, **options)
                 print("Copied disk file {} to irods {}".format(disk_file_path, irods_file_path))
 
@@ -264,15 +259,8 @@ def get_irods_resource(conn, objectid, object_store_id, irods_info):
         # Convert string to datetime
         irods_tape_resc_cuttoff_dt = datetime.strptime(irods_tape_resc_cuttoff, "%m/%d/%Y")
 
-        print("irods_resc: ", irods_resc)
-        print("irods_tape_resc: ", irods_tape_resc)
-        print("irods_tape_resc_cuttoff: ", irods_tape_resc_cuttoff)
-        print("irods_tape_resc_cuttoff_dt: ", irods_tape_resc_cuttoff_dt)
-
         read_cursor = conn.cursor()
         args = ('ok', objectid, objectid, tuple([object_store_id]), 'ok', objectid, objectid, tuple([object_store_id]))
-        print(read_cursor.mogrify(last_accessed_sql_statement, args))
-
         read_cursor.execute(last_accessed_sql_statement, args)
         row = read_cursor.fetchone()
         if row is None:
