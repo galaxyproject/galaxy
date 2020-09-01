@@ -35,7 +35,7 @@
         </div>
         <div v-if="workflow">
             <details v-if="workflow"><summary><b>Invocation Steps</b></summary>
-                <workflow-invocation-step v-for="step in Object.values(workflow.steps)" :invocation="invocation" :key="step.id" :workflow="workflow" :workflowStep="step"/>
+                <workflow-invocation-step v-for="step in Object.values(workflow.steps)" :invocation="invocation" :orderedSteps="orderedSteps" :key="step.id" :workflow="workflow" :workflowStep="step"/>
             </details>
         </div>
     </div>
@@ -81,7 +81,8 @@ export default {
     methods: {
         ...mapCacheActions(['fetchWorkflowForInstanceId']),
         dataInputStepLabel(key, input) {
-            let label = this.orderedSteps[key].workflow_step_label;
+            const invocationStep = this.orderedSteps[key]
+            let label = invocationStep && invocationStep.workflow_step_label;
             if (!label) {
                 if (input.src === 'hda' || input.src === 'ldda') {
                     label = 'Input dataset'

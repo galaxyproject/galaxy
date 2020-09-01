@@ -58,6 +58,7 @@ export default {
     },
     props: {
         invocation: Object,
+        orderedSteps: Array,
         workflowStep: Object,
         workflow: Object,
     },
@@ -70,22 +71,30 @@ export default {
     created() {
         this.fetchTool();
         this.fetchSubworkflow();
-        if (this.invocationStepId) {
-            this.fetchInvocationStepById(this.invocationStepId);
-        }
     },
     computed: {
         ...mapGetters(["getToolForId", "getToolNameById", "getWorkflowByInstanceId", "getInvocationStepById"]),
+        invocationSteps() {
+            return this.orderedSteps;
+        },
         invocationStepId() {
-            if (this.invocation.steps[this.workflowStep.id]) {
-                return this.invocation.steps[this.workflowStep.id].id
+            if (this.invocationSteps[this.workflowStep.id]) {
+                return this.invocationSteps[this.workflowStep.id].id
             }
+        },
+        invocationStep() {
+            const invocationStep = this.getInvocationStepById(this.invocationStepId)
+            if (!invocationStep && this.invocationStepId) {
+                console.log("Triggering delayed fetch");
+                this.fetchInvocationStepById(this.invocationStepId)
+            }
+            return invocationStep
         },
         workflowStepType() {
             return this.workflowStep.type;
         },
         step() {
-            return this.invocation.steps[this.workflowStep.id]
+            return this.invocationStep;
         },
         isDataStep() {
             return ['data_input', 'data_collection_input'].includes(this.workflowStepType);
@@ -104,8 +113,10 @@ export default {
         },
         stepDetails() {
             if (this.step) {
-                return this.getInvocationStepById(this.step.id)
+                console.log(this.getInvocationStepById(this.step.id));
+                return this.getInvocationStepById(this.step.id);
             }
+            console.log('No Step Details');
         },
         stepLabel() {
             return this.labelForWorkflowStep(this.workflowStep.id);
@@ -128,7 +139,7 @@ export default {
             this.expanded = !this.expanded;
         },
         labelForWorkflowStep(stepIndex) {
-            const invocationStep = this.invocation.steps[stepIndex];
+            const invocationStep = this.invocationSteps[stepIndex];
             const workflowStep = this.workflow.steps[stepIndex]
             const oneBasedStepIndex = stepIndex + 1;
             if (invocationStep && invocationStep.workflow_step_label) {
@@ -139,7 +150,9 @@ export default {
                 case "tool":
                     return `Step ${oneBasedStepIndex}: ${this.getToolNameById(workflowStep.tool_id)}`;
                 case "subworkflow":
-                    return `Step ${oneBasedStepIndex}: ${this.getWorkflowByInstanceId(workflowStep.workflow_id).name}`;
+                    const subworkflow = this.getWorkflowByInstanceId(workflowStep.workflow_id)
+                    const label = subworkflow ? subworkflow.name : 'Subworkflow'
+                    return `Step ${oneBasedStepIndex}: ${label}`;
                 case "parameter_input":
                     return `Step ${oneBasedStepIndex}: Parameter input`;
                 case "data_input":
