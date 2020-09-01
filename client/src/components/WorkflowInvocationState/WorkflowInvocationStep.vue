@@ -52,6 +52,8 @@ import { mapGetters, mapActions } from "vuex";
 import WorkflowInvocationDataContents from "./WorkflowInvocationDataContents";
 import StepJobs from "./StepJobs";
 
+const TERMINAL_STATES = ['ok', 'error', 'deleted', 'paused'];
+
 export default {
     components: {
         StepJobs,
@@ -116,7 +118,13 @@ export default {
             return this.labelForWorkflowStep(this.workflowStep.id);
         },
         stepIsTerminal() {
-            return (this.stepDetails && ['scheduled', 'cancelled', 'failed'].includes(this.stepDetails.state))
+            return (
+                this.stepDetails &&
+                ['scheduled', 'cancelled', 'failed'].includes(this.stepDetails.state) &&
+                // may seem odd to check for job state, but keeps the StepJobs component up to date.
+                // TODO: refactor StepJobs to listen for job updates?
+                this.stepDetails.jobs.every(job => TERMINAL_STATES.includes(job.state))
+                )
         }
 
     },
