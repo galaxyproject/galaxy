@@ -3191,8 +3191,6 @@
 
 :Description:
     Sets the path to OIDC configuration file.
-    The value of this option will be resolved with respect to
-    <config_dir>.
 :Default: ``oidc_config.xml``
 :Type: str
 

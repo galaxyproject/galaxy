@@ -1574,8 +1574,6 @@ galaxy:
   #enable_oidc: false
 
   # Sets the path to OIDC configuration file.
-  # The value of this option will be resolved with respect to
-  # <config_dir>.
   #oidc_config_file: oidc_config.xml
 
   # Sets the path to OIDC backends configuration file.

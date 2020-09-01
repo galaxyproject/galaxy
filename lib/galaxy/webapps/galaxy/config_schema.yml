@@ -2364,11 +2364,10 @@ mapping:
       oidc_config_file:
         type: str
         default: oidc_config.xml
+        path_resolves_to: config_dir
         required: false
         desc: |
           Sets the path to OIDC configuration file.
-
-          The value of this option will be resolved with respect to <config_dir>.
 
       oidc_backends_config_file:
         type: str
