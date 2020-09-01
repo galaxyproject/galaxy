@@ -130,20 +130,21 @@ export default {
 @import "scss/theme/blue.scss";
 
 .tool-panel-label {
-    font-weight: 600;
-    font-size: $h5-font-size;
-    text-transform: uppercase;
-}
-
-div.tool-panel-label {
     background: darken($panel-bg-color, 5%);
     border-left: 0.25rem solid darken($panel-bg-color, 25%);
+    font-size: $h5-font-size;
+    font-weight: 600;
     padding-left: 0.75rem;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+    text-transform: uppercase;
 }
 
 .tool-panel-section .tool-panel-label {
     /* labels within subsections */
     margin-left: 1.5rem;
+    padding-top: 0.125rem;
+    padding-bottom: 0.125rem;
 }
 
 .slide-enter-active {
