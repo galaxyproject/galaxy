@@ -166,7 +166,7 @@ def copy_files_to_irods(start_dataset_id, end_dataset_id, object_store_info_file
                     # Create the collection
                     session.collections.create(irods_folder_collection_path)
 
-                    iput_command = "iput -R " + irods_resc + " -rk " + disk_folder_path_all_files + irods_folder_collection_path
+                    iput_command = "iput -R " + irods_resc + " -rk " + disk_folder_path_all_files + " " + irods_folder_collection_path
                     subprocess.call(iput_command, shell=True)
                     print("Copied disk folder {} to irods {}".format(disk_folder_path, irods_folder_collection_path))
 
