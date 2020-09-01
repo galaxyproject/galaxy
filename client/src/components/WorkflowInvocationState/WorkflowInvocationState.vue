@@ -184,8 +184,11 @@ export default {
         onError: function (e) {
             console.error(e);
         },
+        onCancel() {
+            this.$emit('invocation-cancelled');
+        },
         cancelWorkflowScheduling: function () {
-            cancelWorkflowScheduling(this.invocationId).catch(this.onError);
+            cancelWorkflowScheduling(this.invocationId).then(this.onCancel).catch(this.onError);
         },
     },
     beforeDestroy: function () {

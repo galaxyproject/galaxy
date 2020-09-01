@@ -27,7 +27,7 @@
                         <small class="float-right">
                             <b>Invocation: {{ row.item.id }}</b>
                         </small>
-                        <workflow-invocation-state :invocation-id="row.item.id" />
+                        <workflow-invocation-state :invocation-id="row.item.id" @invocation-cancelled="$emit('reload-invocations')"/>
                     </b-card>
                 </template>
                 <template v-slot:cell(workflow_id)="data">
