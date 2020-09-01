@@ -441,8 +441,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             self.tool_data_path = self._in_data_dir(self.schema.defaults['tool_data_path'])
         self.builds_file_path = os.path.join(self.tool_data_path, self.builds_file_path)
         self.len_file_path = os.path.join(self.tool_data_path, self.len_file_path)
-        # Galaxy OIDC settings.
-        self.oidc_backends_config = kwargs.get("oidc_backends_config_file", self.oidc_backends_config_file)
         self.oidc = {}
         self.integrated_tool_panel_config = self._in_managed_config_dir(self.integrated_tool_panel_config)
         integrated_tool_panel_tracking_directory = kwargs.get('integrated_tool_panel_tracking_directory')
@@ -793,7 +791,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             job_metrics_config_file=[self._in_config_dir('job_metrics_conf.xml'), self._in_sample_dir('job_metrics_conf.xml.sample')],
             local_conda_mapping_file=[self._in_config_dir('local_conda_mapping.yml')],
             modules_mapping_files=[self._in_config_dir('environment_modules_mapping.yml')],
-            oidc_backends_config_file=[self._in_config_dir('oidc_backends_config.xml')],
             tool_destinations_config_file=[self._in_config_dir('tool_destinations.yml')],
         )
         listify_defaults = {
