@@ -88,6 +88,18 @@ class ToolBoxSearch(object):
             for tool_id in tool_cache._new_tool_ids - indexed_tool_ids:
                 tool = tool_cache.get_tool_by_id(tool_id)
                 if tool and tool.is_latest_version:
+                    if tool.hidden:
+                        # we check if there is an older tool we can return
+                        if tool.lineage:
+                            for tool_version in reversed(tool.lineage.get_versions()):
+                                tool = tool_cache.get_tool_by_id(tool_version.id)
+                                if tool and not tool.hidden:
+                                    tool_id = tool.id
+                                    break
+                            else:
+                                continue
+                        else:
+                            continue
                     add_doc_kwds = self._create_doc(tool_id=tool_id, tool=tool, index_help=index_help)
                     writer.update_document(**add_doc_kwds)
         log.debug("Toolbox index finished %s", execution_timer)
