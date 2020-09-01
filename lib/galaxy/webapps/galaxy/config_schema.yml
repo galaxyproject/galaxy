@@ -406,12 +406,11 @@ mapping:
       tool_sheds_config_file:
         type: str
         default: tool_sheds_conf.xml
+        path_resolves_to: config_dir
         required: false
         desc: |
           File containing the Galaxy Tool Sheds that should be made available to
           install from in the admin interface (.sample used if default does not exist).
-
-          The value of this option will be resolved with respect to <config_dir>.
 
       watch_tools:
         type: str

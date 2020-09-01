@@ -528,8 +528,6 @@
     File containing the Galaxy Tool Sheds that should be made
     available to install from in the admin interface (.sample used if
     default does not exist).
-    The value of this option will be resolved with respect to
-    <config_dir>.
 :Default: ``tool_sheds_conf.xml``
 :Type: str
 
