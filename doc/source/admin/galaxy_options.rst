@@ -737,8 +737,6 @@
     installation, these entries are automatically added to the
     following file, which is parsed and applied to the
     ToolDataTableManager at server start up.
-    The value of this option will be resolved with respect to
-    <managed_config_dir>.
 :Default: ``shed_tool_data_table_conf.xml``
 :Type: str
 

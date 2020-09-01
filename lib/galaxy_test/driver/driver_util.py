@@ -208,8 +208,6 @@ def setup_galaxy_config(
     if shed_tool_conf is not None:
         tool_conf = "{},{}".format(tool_conf, shed_tool_conf)
 
-    shed_tool_data_table_config = default_shed_tool_data_table_config
-
     config = dict(
         admin_users='test@bx.psu.edu',
         allow_library_path_paste=True,
@@ -239,7 +237,6 @@ def setup_galaxy_config(
         override_tempdir=False,
         master_api_key=master_api_key,
         running_functional_tests=True,
-        shed_tool_data_table_config=shed_tool_data_table_config,
         template_cache_path=template_cache_path,
         template_path='templates',
         tool_config_file=tool_conf,
@@ -256,6 +253,8 @@ def setup_galaxy_config(
         object_store_store_by="uuid",
         simplified_workflow_run_ui="off",
     )
+    if default_shed_tool_data_table_config:
+        config["shed_tool_data_table_config"] = default_shed_tool_data_table_config
     if not use_shared_connection_for_amqp:
         config["amqp_internal_connection"] = "sqlalchemy+sqlite:///%s?isolation_level=IMMEDIATE" % os.path.join(tmpdir, "control.sqlite")
 

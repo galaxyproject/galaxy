@@ -797,7 +797,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             modules_mapping_files=[self._in_config_dir('environment_modules_mapping.yml')],
             oidc_backends_config_file=[self._in_config_dir('oidc_backends_config.xml')],
             oidc_config_file=[self._in_config_dir('oidc_config.xml')],
-            shed_tool_data_table_config=[self._in_managed_config_dir('shed_tool_data_table_conf.xml')],
             tool_destinations_config_file=[self._in_config_dir('tool_destinations.yml')],
             trs_servers_config_file=[self._in_config_dir('trs_servers_conf.yml')],
             # self.file_path set to self._in_data_dir('objects') by schema
@@ -1085,7 +1084,7 @@ class ConfiguresGalaxyMixin:
                                                         from_shed_config=from_shed_config)
         except OSError as exc:
             # Missing shed_tool_data_table_config is okay if it's the default
-            if exc.errno != errno.ENOENT or self.config.shed_tool_data_table_config_set:
+            if exc.errno != errno.ENOENT or self.config.is_set('shed_tool_data_table_config'):
                 raise
 
     def _configure_datatypes_registry(self, installed_repository_manager=None):
