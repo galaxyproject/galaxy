@@ -15,8 +15,8 @@
                         {{ label }}
                     </b-form-radio>
                     <p class="mt-3 text-muted">
-                        You may add new Labels by selecting a Step in the Workflow Editor and then editing the
-                        corresponding Label field in the Step form.
+                        You may add new labels by selecting a step in the workflow editor and then editing the
+                        corresponding label field in the step form.
                     </p>
                 </div>
                 <b-alert v-else show variant="info">
