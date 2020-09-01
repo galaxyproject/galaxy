@@ -3503,8 +3503,6 @@
 :Description:
     File where Tool Shed based Data Managers are configured. This file
     will be created automatically upon data manager installation.
-    The value of this option will be resolved with respect to
-    <managed_config_dir>.
 :Default: ``shed_data_manager_conf.xml``
 :Type: str
 

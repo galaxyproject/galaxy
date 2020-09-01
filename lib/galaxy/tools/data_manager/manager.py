@@ -32,7 +32,7 @@ class DataManagers:
             try:
                 self.load_from_xml(self.app.config.shed_data_manager_config_file, store_tool_path=True)
             except OSError as exc:
-                if exc.errno != errno.ENOENT or self.app.config.shed_data_manager_config_file_set:
+                if exc.errno != errno.ENOENT or self.app.config.is_set('shed_data_manager_config_file'):
                     raise
 
     def load_from_xml(self, xml_filename, store_tool_path=True):

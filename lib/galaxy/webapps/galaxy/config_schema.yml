@@ -2586,12 +2586,11 @@ mapping:
       shed_data_manager_config_file:
         type: str
         default: shed_data_manager_conf.xml
+        path_resolves_to: managed_config_dir
         required: false
         desc: |
           File where Tool Shed based Data Managers are configured. This file will be created
           automatically upon data manager installation.
-
-          The value of this option will be resolved with respect to <managed_config_dir>.
 
       galaxy_data_manager_data_path:
         type: str
