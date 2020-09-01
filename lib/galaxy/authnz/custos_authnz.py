@@ -115,8 +115,6 @@ class CustosAuthnz(IdentityProvider):
                     user = trans.app.user_manager.create(email=email, username=username)
                     if trans.app.config.user_activation_on:
                         trans.app.user_manager.send_activation_email(trans, email, username)
-                    trans.sa_session.add(user)
-                    trans.sa_session.flush()
             custos_authnz_token = CustosAuthnzToken(user=user,
                                    external_user_id=user_id,
                                    provider=self.config['provider'],
