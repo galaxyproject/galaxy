@@ -220,6 +220,7 @@ mapping:
       shed_tool_config_file:
         type: str
         default: shed_tool_conf.xml
+        path_resolves_to: managed_config_dir
         required: false
         desc: |
           Tool config file for tools installed from the Galaxy Tool Shed. Must
@@ -231,8 +232,6 @@ mapping:
           preferable. This file will be created automatically upon tool
           installation, whereas Galaxy will fail to start if any files in
           tool_config_file cannot be read.
-
-          The value of this option will be resolved with respect to <managed_config_dir>.
 
       check_migrate_tools:
         type: bool

@@ -262,7 +262,7 @@ class ToolBox(BaseGalaxyToolBox):
         )
 
     def can_load_config_file(self, config_filename):
-        if config_filename == self.app.config.shed_tool_config_file and not self.app.config.shed_tool_config_file_set:
+        if config_filename == self.app.config.shed_tool_config_file and not self.app.config.is_set('shed_tool_config_file'):
             if self.dynamic_confs():
                 # Do not load or create a default shed_tool_config_file if another shed_tool_config file has already been loaded
                 return False

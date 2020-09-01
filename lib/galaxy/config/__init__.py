@@ -797,7 +797,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             modules_mapping_files=[self._in_config_dir('environment_modules_mapping.yml')],
             oidc_backends_config_file=[self._in_config_dir('oidc_backends_config.xml')],
             oidc_config_file=[self._in_config_dir('oidc_config.xml')],
-            shed_tool_config_file=[self._in_managed_config_dir('shed_tool_conf.xml')],
             shed_tool_data_table_config=[self._in_managed_config_dir('shed_tool_data_table_conf.xml')],
             tool_destinations_config_file=[self._in_config_dir('tool_destinations.yml')],
             trs_servers_config_file=[self._in_config_dir('trs_servers_conf.yml')],
