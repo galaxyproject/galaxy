@@ -2869,6 +2869,7 @@ mapping:
       markdown_export_css:
         type: str
         default: markdown_export.css
+        path_resolves_to: config_dir
         required: false
         desc: |
           CSS file to apply to all Markdown exports to PDF - currently used by
