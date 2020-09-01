@@ -1570,8 +1570,6 @@
 :Description:
     Location of the configuration file containing extra user
     preferences.
-    The value of this option will be resolved with respect to
-    <config_dir>.
 :Default: ``user_preferences_extra_conf.yml``
 :Type: str
 

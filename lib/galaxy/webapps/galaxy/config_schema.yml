@@ -1167,11 +1167,10 @@ mapping:
       user_preferences_extra_conf_path:
         type: str
         default: 'user_preferences_extra_conf.yml'
+        path_resolves_to: config_dir
         required: false
         desc: |
           Location of the configuration file containing extra user preferences.
-
-          The value of this option will be resolved with respect to <config_dir>.
 
       default_locale:
         type: str
