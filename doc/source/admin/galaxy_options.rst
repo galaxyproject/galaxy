@@ -3973,8 +3973,6 @@
     requires both a description of the fields available (which
     defaults to the definitions in job_resource_params_file if not
     set).
-    The value of this option will be resolved with respect to
-    <config_dir>.
 :Default: ``workflow_resource_params_conf.xml``
 :Type: str
 

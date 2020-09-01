@@ -2944,14 +2944,13 @@ mapping:
       workflow_resource_params_file:
         type: str
         default: workflow_resource_params_conf.xml
+        path_resolves_to: config_dir
         required: false
         desc: |
           Similar to the above parameter, workflows can describe parameters used to
           influence scheduling of jobs within the workflow. This requires both a description
           of the fields available (which defaults to the definitions in
           job_resource_params_file if not set).
-
-          The value of this option will be resolved with respect to <config_dir>.
 
       workflow_resource_params_mapper:
         type: str
