@@ -30,7 +30,7 @@
                     </details>
                     <div class="portlet-body" style="width: 100%; overflow-x: auto;">
                         <step-jobs :jobs="stepDetails.jobs" v-if="stepDetails && stepDetails.jobs.length > 0"/>
-                        <div v-else-if="!stepDetails.subworkflow_invocation_id">
+                        <div v-else-if="!stepDetails.subworkflow_invocation_id && !isDataStep">
                             Jobs for this step are not yet scheduled.
                             <p></p>
                             This step consumes outputs from these steps:
