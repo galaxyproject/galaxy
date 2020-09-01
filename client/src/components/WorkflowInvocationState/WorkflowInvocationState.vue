@@ -12,7 +12,7 @@
             <span class="fa fa-spinner fa-spin" />
             <span>Invocation {{ index + 1 }}...</span>
             <span
-                v-if="stepCount && !invocationSchedulingTerminal"
+                v-if="!invocationSchedulingTerminal"
                 v-b-tooltip.hover
                 title="Cancel scheduling of workflow invocation"
                 class="fa fa-times"
