@@ -39,7 +39,7 @@ class DataManagers:
         try:
             tree = util.parse_xml(xml_filename)
         except OSError as e:
-            if e.errno != errno.ENOENT or self.app.config.data_manager_config_file_set:
+            if e.errno != errno.ENOENT or self.app.config.is_set('data_manager_config_file'):
                 raise
             return  # default config option and it doesn't exist, which is fine
         except Exception as e:

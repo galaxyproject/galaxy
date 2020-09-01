@@ -3482,7 +3482,7 @@
 :Description:
     File where Data Managers are configured (.sample used if default
     does not exist).
-:Default: ``config/data_manager_conf.xml``
+:Default: ``data_manager_conf.xml``
 :Type: str
 
 
