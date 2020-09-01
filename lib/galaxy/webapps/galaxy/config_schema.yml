@@ -1151,6 +1151,7 @@ mapping:
       trs_servers_config_file:
         type: str
         default: 'trs_servers_conf.yml'
+        path_resolves_to: config_dir
         required: false
         desc: |
           Allow import of workflows from the TRS servers configured in

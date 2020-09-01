@@ -797,7 +797,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             oidc_backends_config_file=[self._in_config_dir('oidc_backends_config.xml')],
             oidc_config_file=[self._in_config_dir('oidc_config.xml')],
             tool_destinations_config_file=[self._in_config_dir('tool_destinations.yml')],
-            trs_servers_config_file=[self._in_config_dir('trs_servers_conf.yml')],
         )
         listify_defaults = {
             'tool_data_table_config_path': [
