@@ -7,37 +7,39 @@
                     <u>{{stepLabel}}</u>
                 </span>
             </div>
-            <div class="portlet-content" v-show="expanded">
+            <div class="portlet-content" v-if="expanded">
                 <div style="min-width: 1;"/>
-                <details v-if="stepDetails && Object.values(stepDetails.outputs).length > 0"><summary><b>Step Output Datasets</b></summary>
-                   <div v-for="(value, name) in stepDetails.outputs" v-bind:key="value.id">
-                        <b>{{name}}</b>
-                    <workflow-invocation-data-contents v-bind:data_item="value" />
-                    </div>
-                </details>
-                <details v-if="stepDetails && Object.values(stepDetails.output_collections).length > 0"><summary><b>Step Output Dataset Collections</b></summary>
-                   <div v-for="(value, name) in stepDetails.output_collections" v-bind:key="value.id">
-                        <b>{{name}}</b>
-                    <workflow-invocation-data-contents v-bind:data_item="value" />
+                <div v-if="!stepDetails">
+                    This invocation has not been scheduled yet, step information is unavailable
+                    <!-- Probably a subworkflow invocation, could walk back to parent and show
+                         why step is not scheduled, but that's not necessary for a forst pass, I think
+                    -->
                 </div>
-                </details>
-                <div class="portlet-body" style="width: 100%; overflow-x: auto;">
-                    <step-jobs :jobs="stepDetails.jobs" v-if="stepDetails && stepDetails.jobs.length > 0"/>
-                    <div v-else-if="stepDetails && !stepDetails.subworkflow_invocation_id">
-                        Jobs for this step are not yet scheduled.
-                        <p></p>
-                        This step consumes outputs from these steps:
-                        <ul v-if="workflowStep">
-                            <li v-for="stepInput in Object.values(workflowStep.input_steps)" :key="stepInput.source_step">{{labelForWorkflowStep(stepInput.source_step)}}</li>
-                        </ul>
+                <div v-else>
+                    <details v-if="Object.values(stepDetails.outputs).length > 0"><summary><b>Step Output Datasets</b></summary>
+                       <div v-for="(value, name) in stepDetails.outputs" v-bind:key="value.id">
+                            <b>{{name}}</b>
+                        <workflow-invocation-data-contents v-bind:data_item="value" />
+                        </div>
+                    </details>
+                    <details v-if="Object.values(stepDetails.output_collections).length > 0"><summary><b>Step Output Dataset Collections</b></summary>
+                       <div v-for="(value, name) in stepDetails.output_collections" v-bind:key="value.id">
+                            <b>{{name}}</b>
+                        <workflow-invocation-data-contents v-bind:data_item="value" />
                     </div>
-                    <div v-else-if="invocation.steps.length === 0">
-                        This invocation has not been scheduled yet, step information is unavailable
-                        <!-- Probably a subworkflow invocation, could walk back to parent and show
-                             why step is not scheduled, but that's not necessary for a forst pass, I think
-                        -->
+                    </details>
+                    <div class="portlet-body" style="width: 100%; overflow-x: auto;">
+                        <step-jobs :jobs="stepDetails.jobs" v-if="stepDetails && stepDetails.jobs.length > 0"/>
+                        <div v-else-if="!stepDetails.subworkflow_invocation_id">
+                            Jobs for this step are not yet scheduled.
+                            <p></p>
+                            This step consumes outputs from these steps:
+                            <ul v-if="workflowStep">
+                                <li v-for="stepInput in Object.values(workflowStep.input_steps)" :key="stepInput.source_step">{{labelForWorkflowStep(stepInput.source_step)}}</li>
+                            </ul>
+                        </div>
+                        <workflow-invocation-state :invocationId="stepDetails.subworkflow_invocation_id" v-if="stepDetails && stepDetails.subworkflow_invocation_id"/>
                     </div>
-                    <workflow-invocation-state :invocationId="stepDetails.subworkflow_invocation_id" v-if="stepDetails && stepDetails.subworkflow_invocation_id"/>
                 </div>
                 <div style="min-width: 1;"/>
             </div>
@@ -65,12 +67,14 @@ export default {
     data() {
         return {
             expanded: false,
+            polling: null,
 
         };
     },
     created() {
         this.fetchTool();
         this.fetchSubworkflow();
+        this.pollStepDetailsUntilTerminal();
     },
     computed: {
         ...mapGetters(["getToolForId", "getToolNameById", "getWorkflowByInstanceId", "getInvocationStepById"]),
@@ -78,23 +82,15 @@ export default {
             return this.orderedSteps;
         },
         invocationStepId() {
-            if (this.invocationSteps[this.workflowStep.id]) {
-                return this.invocationSteps[this.workflowStep.id].id
+            if (this.step) {
+                return this.step.id
             }
-        },
-        invocationStep() {
-            const invocationStep = this.getInvocationStepById(this.invocationStepId)
-            if (!invocationStep && this.invocationStepId) {
-                console.log("Triggering delayed fetch");
-                this.fetchInvocationStepById(this.invocationStepId)
-            }
-            return invocationStep
         },
         workflowStepType() {
             return this.workflowStep.type;
         },
         step() {
-            return this.invocationStep;
+            return this.invocationSteps[this.workflowStep.id];
         },
         isDataStep() {
             return ['data_input', 'data_collection_input'].includes(this.workflowStepType);
@@ -113,18 +109,20 @@ export default {
         },
         stepDetails() {
             if (this.step) {
-                console.log(this.getInvocationStepById(this.step.id));
                 return this.getInvocationStepById(this.step.id);
             }
-            console.log('No Step Details');
         },
         stepLabel() {
             return this.labelForWorkflowStep(this.workflowStep.id);
         },
+        stepIsTerminal() {
+            return (this.stepDetails && ['scheduled', 'cancelled', 'failed'].includes(this.stepDetails.state))
+        }
 
     },
     methods: {
-        ...mapCacheActions(["fetchToolForId", "fetchInvocationStepById", 'fetchWorkflowForInstanceId']),
+        ...mapCacheActions(["fetchToolForId", 'fetchWorkflowForInstanceId']),
+        ...mapActions(["fetchInvocationStepById"]),
         fetchTool() {
             if (this.workflowStep.tool_id && !this.getToolForId(this.workflowStep.tool_id)) {
                     this.fetchToolForId(this.workflowStep.tool_id)
@@ -134,6 +132,18 @@ export default {
             if (this.workflowStep.workflow_id) {
                 this.fetchWorkflowForInstanceId(this.workflowStep.workflow_id);
             }
+        },
+        pollStepDetailsUntilTerminal: function () {
+            clearInterval(this.polling);
+            if (!this.stepIsTerminal) {
+                if (this.step) {
+                    this.fetchInvocationStepById(this.step.id);
+                }
+                this.polling = setInterval(this.pollStepDetailsUntilTerminal, 3000);
+            }
+        },
+        beforeDestroy () {
+            clearInterval(this.polling)
         },
         toggleStep() {
             this.expanded = !this.expanded;
