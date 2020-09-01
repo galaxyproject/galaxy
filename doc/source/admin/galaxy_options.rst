@@ -3539,7 +3539,7 @@
     Jobs are run locally on the system on which Galaxy is started.
     Advanced job running capabilities can be configured through the
     job configuration file.
-:Default: ``config/job_conf.xml``
+:Default: ``job_conf.xml``
 :Type: str
 
 

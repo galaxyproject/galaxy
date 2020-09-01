@@ -1733,7 +1733,7 @@ galaxy:
   # are run locally on the system on which Galaxy is started.  Advanced
   # job running capabilities can be configured through the job
   # configuration file.
-  #job_config_file: config/job_conf.xml
+  #job_config_file: job_conf.xml
 
   # Description of job running configuration, can be embedded into
   # Galaxy configuration or loaded from an additional file with the
