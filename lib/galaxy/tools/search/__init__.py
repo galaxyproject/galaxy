@@ -82,12 +82,31 @@ class ToolBoxSearch:
             # Index ocasionally contains empty stored fields
             indexed_tool_ids = {f['id'] for f in reader.all_stored_fields() if f}
         tool_ids_to_remove = (indexed_tool_ids - set(tool_cache._tool_paths_by_id.keys())).union(tool_cache._removed_tool_ids)
+        for indexed_tool_id in indexed_tool_ids:
+            indexed_tool = tool_cache.get_tool_by_id(indexed_tool_id)
+            if not indexed_tool:
+                tool_ids_to_remove.add(indexed_tool_id)
+                continue
+            if not indexed_tool.is_latest_version and not indexed_tool.latest_version.hidden:
+                tool_ids_to_remove.add(indexed_tool_id)
         with AsyncWriter(self.index) as writer:
             for tool_id in tool_ids_to_remove:
                 writer.delete_by_term('id', tool_id)
             for tool_id in tool_cache._new_tool_ids - indexed_tool_ids:
                 tool = tool_cache.get_tool_by_id(tool_id)
                 if tool and tool.is_latest_version:
+                    if tool.hidden:
+                        # we check if there is an older tool we can return
+                        if tool.lineage:
+                            for tool_version in reversed(tool.lineage.get_versions()):
+                                tool = tool_cache.get_tool_by_id(tool_version.id)
+                                if tool and not tool.hidden:
+                                    tool_id = tool.id
+                                    break
+                            else:
+                                continue
+                        else:
+                            continue
                     add_doc_kwds = self._create_doc(tool_id=tool_id, tool=tool, index_help=index_help)
                     writer.update_document(**add_doc_kwds)
         log.debug("Toolbox index finished %s", execution_timer)
@@ -154,13 +173,11 @@ class ToolBoxSearch:
         og = OrGroup.factory(0.9)
         self.parser = MultifieldParser(['name', 'description', 'section', 'help', 'labels', 'stub'], schema=self.schema, group=og)
         cleaned_query = q.lower()
-        # Replace hyphens, since they are wildcards in Whoosh causing false positives
-        if cleaned_query.find('-') != -1:
-            cleaned_query = (' ').join(token.text for token in self.rex(to_unicode(cleaned_query)))
         if tool_enable_ngram_search is True:
             rval = self._search_ngrams(cleaned_query, tool_ngram_minsize, tool_ngram_maxsize, tool_search_limit)
             return rval
         else:
+            cleaned_query = ' '.join(token.text for token in self.rex(cleaned_query))
             # Use asterisk Whoosh wildcard so e.g. 'bow' easily matches 'bowtie'
             parsed_query = self.parser.parse(cleaned_query + '*')
             hits = self.searcher.search(parsed_query, limit=float(tool_search_limit), sortedby='')
