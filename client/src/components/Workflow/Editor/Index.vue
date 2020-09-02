@@ -1,28 +1,27 @@
 <template>
-    <div id="columns" class="workflow-client">
-        <div v-if="!isCanvas" id="center" class="workflow-center workflow-markdown-editor">
-            <MarkdownEditor
-                :markdown-text="markdownText"
-                :markdown-config="markdownConfig"
-                :title="'Workflow Report: ' + name"
-                :nodes="nodes"
-                @onUpdate="onReportUpdate"
+    <MarkdownEditor
+        v-if="!isCanvas"
+        :markdown-text="markdownText"
+        :markdown-config="markdownConfig"
+        :title="'Workflow Report: ' + name"
+        :nodes="nodes"
+        @onUpdate="onReportUpdate"
+    >
+        <template v-slot:buttons>
+            <b-button
+                id="workflow-canvas-button"
+                title="Return to Workflow"
+                variant="link"
+                role="button"
+                v-b-tooltip.hover.bottom
+                @click="onEdit"
             >
-                <template v-slot:buttons>
-                    <b-button
-                        id="workflow-canvas-button"
-                        title="Return to Workflow"
-                        variant="link"
-                        role="button"
-                        v-b-tooltip.hover.bottom
-                        @click="onEdit"
-                    >
-                        <span class="fa fa-times" />
-                    </b-button>
-                </template>
-            </MarkdownEditor>
-        </div>
-        <SidePanel v-else id="left" side="left">
+                <span class="fa fa-times" />
+            </b-button>
+        </template>
+    </MarkdownEditor>
+    <div v-else id="columns" class="workflow-client">
+        <SidePanel id="left" side="left">
             <template v-slot:panel>
                 <ToolBoxWorkflow
                     :toolbox="toolbox"

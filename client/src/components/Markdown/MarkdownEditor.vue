@@ -1,24 +1,32 @@
 <template>
-    <div class="markdown-editor h-100">
-        <div class="unified-panel-header" unselectable="on">
-            <div class="unified-panel-header-inner">
-                <div class="panel-header-buttons">
-                    <MarkdownToolbar :nodes="nodes" @onInsert="onInsert" />
-                    <slot name="buttons" />
+    <div id="columns" class="workflow-client">
+        <SidePanel id="left" side="left">
+            <template v-slot:panel>
+                <MarkdownToolBox :nodes="nodes" @onInsert="onInsert" />
+            </template>
+        </SidePanel>
+        <div id="center" class="workflow-center workflow-markdown-editor">
+            <div class="markdown-editor h-100">
+                <div class="unified-panel-header" unselectable="on">
+                    <div class="unified-panel-header-inner">
+                        <div class="panel-header-buttons">
+                            <slot name="buttons" />
+                        </div>
+                        <div class="my-1">
+                            {{ title }}
+                        </div>
+                    </div>
                 </div>
-                <div class="my-1">
-                    {{ title }}
+                <div class="unified-panel-body d-flex">
+                    <textarea
+                        class="markdown-textarea"
+                        id="workflow-report-editor"
+                        v-model="content"
+                        @input="onUpdate"
+                        ref="text-area"
+                    />
                 </div>
             </div>
-        </div>
-        <div class="unified-panel-body d-flex">
-            <textarea
-                class="markdown-textarea"
-                id="workflow-report-editor"
-                v-model="content"
-                @input="onUpdate"
-                ref="text-area"
-            />
         </div>
     </div>
 </template>
@@ -27,7 +35,8 @@
 import _ from "underscore";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import MarkdownToolbar from "./MarkdownToolbar";
+import MarkdownToolBox from "./MarkdownToolBox";
+import SidePanel from "components/Panels/SidePanel";
 
 Vue.use(BootstrapVue);
 
@@ -35,7 +44,8 @@ const FENCE = "```";
 
 export default {
     components: {
-        MarkdownToolbar,
+        MarkdownToolBox,
+        SidePanel,
     },
     props: {
         markdownText: {
