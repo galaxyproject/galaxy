@@ -123,6 +123,7 @@ class ExpectedValues:
             'job_metrics_config_file': self._in_sample_dir('job_metrics_conf.xml.sample'),
             'job_resource_params_file': self._in_config_dir('job_resource_params_conf.xml'),
             'len_file_path': self._in_root_dir('tool-data/shared/ucsc/chrom'),
+            'local_conda_mapping_file': self._in_config_dir('local_conda_mapping.yml'),
             'managed_config_dir': self._in_managed_config_dir(),
             'markdown_export_css': self._in_config_dir('markdown_export.css'),
             'markdown_export_css_invocation_reports': self._in_config_dir('markdown_export_invocation_reports.css'),

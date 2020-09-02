@@ -787,7 +787,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             build_sites_config_file=[self._in_config_dir('build_sites.yml'), self._in_sample_dir('build_sites.yml.sample')],
             datatypes_config_file=[self._in_config_dir('datatypes_conf.xml'), self._in_sample_dir('datatypes_conf.xml.sample')],
             job_metrics_config_file=[self._in_config_dir('job_metrics_conf.xml'), self._in_sample_dir('job_metrics_conf.xml.sample')],
-            local_conda_mapping_file=[self._in_config_dir('local_conda_mapping.yml')],
             modules_mapping_files=[self._in_config_dir('environment_modules_mapping.yml')],
         )
         listify_defaults = {

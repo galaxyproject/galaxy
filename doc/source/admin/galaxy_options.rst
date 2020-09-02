@@ -474,6 +474,18 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``local_conda_mapping_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Path to a file that provides a mapping from abstract packages to
+    concrete conda packages. See
+    `config/local_conda_mapping.yml.sample` for examples.
+:Default: ``local_conda_mapping.yml``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``use_cached_dependency_manager``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

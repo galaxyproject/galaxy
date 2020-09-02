@@ -326,6 +326,11 @@ galaxy:
   # and extra time spent copying packages.
   #conda_copy_dependencies: false
 
+  # Path to a file that provides a mapping from abstract packages to
+  # concrete conda packages. See `config/local_conda_mapping.yml.sample`
+  # for examples.
+  #local_conda_mapping_file: local_conda_mapping.yml
+
   # Certain dependency resolvers (namely Conda) take a considerable
   # amount of time to build an isolated job environment in the
   # job_working_directory if the job working directory is on a network
