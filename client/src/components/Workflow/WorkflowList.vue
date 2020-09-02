@@ -102,8 +102,6 @@ library.add(faPlus);
 library.add(faUpload);
 library.add(faSpinner);
 library.add(faGlobe);
-library.add(faUserLock);
-
 export default {
     components: {
         FontAwesomeIcon,
