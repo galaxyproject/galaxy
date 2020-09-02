@@ -145,6 +145,7 @@ class ExpectedValues:
             'tool_config_file': self._in_sample_dir('tool_conf.xml.sample'),
             'tool_data_path': self._in_root_dir('tool-data'),
             'tool_data_table_config_path': self._in_sample_dir('tool_data_table_conf.xml.sample'),
+            'tool_destinations_config_file': self._in_config_dir('tool_destinations.yml'),
             'tool_path': self._in_root_dir('tools'),
             'tool_search_index_dir': self._in_data_dir('tool_search_index'),
             'tool_sheds_config_file': self._in_config_dir('tool_sheds_conf.xml'),

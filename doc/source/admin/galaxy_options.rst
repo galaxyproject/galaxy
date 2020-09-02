@@ -4289,4 +4289,14 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_destinations_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Path to dynamic tool destinations configuration file.
+:Default: ``tool_destinations.yml``
+:Type: str
+
+
 

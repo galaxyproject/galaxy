@@ -2076,3 +2076,6 @@ galaxy:
   # option is set.
   #containers_config_file: containers_conf.yml
 
+  # Path to dynamic tool destinations configuration file.
+  #tool_destinations_config_file: tool_destinations.yml
+
