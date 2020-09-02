@@ -2,6 +2,9 @@
 
 import os
 import re
+import string
+import tempfile
+import time
 from json import dumps
 
 from galaxy_test.base.populators import (
@@ -12,8 +15,16 @@ from galaxy_test.driver import integration_util
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 WORKFLOW_HANDLER_CONFIGURATION_JOB_CONF = os.path.join(SCRIPT_DIRECTORY, "workflow_handler_configuration_job_conf.xml")
-WORKFLOW_HANDLER_CONFIGURATION_WORKFLOW_SCHEDULER_CONF = os.path.join(SCRIPT_DIRECTORY, "workflow_handler_configuration_workflow_scheduler_conf.xml")
 
+WORKFLOW_SCHEDULERS_CONFIG_TEMPLATE = string.Template("""
+<workflow_schedulers default="core">
+  <core id="core" />
+  <handlers default="workflow_handlers" $assign_with>
+    <handler id="work1" tags="workflow_handlers" />
+    <handler id="work2" tags="workflow_handlers" />
+  </handlers>
+</workflow_schedulers>
+""")
 JOB_HANDLER_PATTERN = re.compile(r"handler\d")
 WORKFLOW_SCHEDULER_HANDLER_PATTERN = re.compile(r"work\d")
 
@@ -28,6 +39,16 @@ steps:
     input:
     - test_input
 """
+
+
+def workflow_schedulers_config_file(assign_with=''):
+    fd, path = tempfile.mkstemp(suffix=".xml", prefix="workflow_handler_config_")
+    os.close(fd)
+    with open(path, 'w') as config:
+        if assign_with:
+            assign_with = 'assign_with="{}"'.format(assign_with)
+        config.write(WORKFLOW_SCHEDULERS_CONFIG_TEMPLATE.substitute(assign_with=assign_with))
+    return path
 
 
 class BaseWorkflowHandlerConfigurationTestCase(integration_util.IntegrationTestCase):
@@ -114,7 +135,7 @@ class WorkflowSchedulerHandlerAssignment(BaseWorkflowHandlerConfigurationTestCas
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         BaseWorkflowHandlerConfigurationTestCase.handle_galaxy_config_kwds(config)
-        config["workflow_schedulers_config_file"] = WORKFLOW_HANDLER_CONFIGURATION_WORKFLOW_SCHEDULER_CONF
+        config["workflow_schedulers_config_file"] = workflow_schedulers_config_file()
 
     def test_handler_assignment(self):
         self._invoke_n_workflows(1)
@@ -163,14 +184,34 @@ class DefaultWorkflowHandlerIfJobHandlerOffTestCase(BaseWorkflowHandlerConfigura
 
 class ExplicitWorkflowHandlersOnTestCase(BaseWorkflowHandlerConfigurationTestCase):
 
+    assign_with = ""
+
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         BaseWorkflowHandlerConfigurationTestCase.handle_galaxy_config_kwds(config)
-        config["workflow_schedulers_config_file"] = WORKFLOW_HANDLER_CONFIGURATION_WORKFLOW_SCHEDULER_CONF
+        config["workflow_schedulers_config_file"] = workflow_schedulers_config_file(cls.assign_with)
         config["server_name"] = "work1"
 
-    def test_workflows_spread_across_multiple_handlers(self):
+    def test_app_is_workflow_scheduler(self):
         assert self.is_app_workflow_scheduler
+
+
+@integration_util.skip_unless_postgres()
+class WorkflowSchedulerHandlerAssignmentDbSkipLocked(ExplicitWorkflowHandlersOnTestCase):
+
+    assign_with = 'db-skip-locked'
+
+    def test_handler_assignment(self):
+        self._invoke_n_workflows(1)
+        time.sleep(2)
+        workflow_invocations = self._get_workflow_invocations()
+        assert WORKFLOW_SCHEDULER_HANDLER_PATTERN.match(workflow_invocations[0].handler)
+
+
+@integration_util.skip_unless_postgres()
+class WorkflowSchedulerHandlerAssignmentDbTransactionIsolation(WorkflowSchedulerHandlerAssignmentDbSkipLocked):
+
+    assign_with = 'db-transaction-isolation'
 
 
 class ExplicitWorkflowHandlersOffTestCase(BaseWorkflowHandlerConfigurationTestCase):
@@ -178,8 +219,8 @@ class ExplicitWorkflowHandlersOffTestCase(BaseWorkflowHandlerConfigurationTestCa
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         BaseWorkflowHandlerConfigurationTestCase.handle_galaxy_config_kwds(config)
-        config["workflow_schedulers_config_file"] = WORKFLOW_HANDLER_CONFIGURATION_WORKFLOW_SCHEDULER_CONF
+        config["workflow_schedulers_config_file"] = workflow_schedulers_config_file()
         config["server_name"] = "handler0"  # Configured as a job handler but not a workflow handler.
 
-    def test_workflows_spread_across_multiple_handlers(self):
+    def test_app_is_not_workflow_scheduler(self):
         assert not self.is_app_workflow_scheduler
