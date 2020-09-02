@@ -56,7 +56,6 @@
                     </template>
                     <template v-slot:cell(published)="row">
                         <font-awesome-icon v-if="row.item.published" icon="globe" />
-                        <font-awesome-icon v-else icon="user-lock" />
                     </template>
                     <template v-slot:cell(show_in_tool_panel)="row">
                         <b-form-checkbox v-model="row.item.show_in_tool_panel" @change="bookmarkWorkflow(row.item)" />
