@@ -56,6 +56,7 @@
                     </template>
                     <template v-slot:cell(published)="row">
                         <font-awesome-icon v-if="row.item.published" icon="globe" />
+                        <font-awesome-icon v-if="row.item.shared" icon="share-alt" />
                     </template>
                     <template v-slot:cell(show_in_tool_panel)="row">
                         <b-form-checkbox v-model="row.item.show_in_tool_panel" @change="bookmarkWorkflow(row.item)" />
@@ -90,7 +91,7 @@ import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { faUpload } from "@fortawesome/free-solid-svg-icons";
 import { faGlobe } from "@fortawesome/free-solid-svg-icons";
-import { faUserLock } from "@fortawesome/free-solid-svg-icons";
+import { faShareAlt } from "@fortawesome/free-solid-svg-icons";
 
 import { getAppRoot } from "onload/loadConfig";
 import { Services } from "./services";
@@ -102,6 +103,7 @@ library.add(faPlus);
 library.add(faUpload);
 library.add(faSpinner);
 library.add(faGlobe);
+library.add(faShareAlt);
 export default {
     components: {
         FontAwesomeIcon,
@@ -127,7 +129,7 @@ export default {
                     sortable: true,
                 },
                 {
-                    label: "Published",
+                    label: "Sharing",
                     key: "published",
                     sortable: true,
                 },
