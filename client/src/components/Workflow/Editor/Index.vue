@@ -1,19 +1,5 @@
 <template>
     <div id="columns" class="workflow-client">
-        <SidePanel id="left" side="left">
-            <template v-slot:panel>
-                <ToolBoxWorkflow
-                    :toolbox="toolbox"
-                    :module-sections="moduleSections"
-                    :data-managers="dataManagers"
-                    :workflows="workflows"
-                    @onInsertTool="onInsertTool"
-                    @onInsertModule="onInsertModule"
-                    @onInsertWorkflow="onInsertWorkflow"
-                    @onInsertWorkflowSteps="onInsertWorkflowSteps"
-                />
-            </template>
-        </SidePanel>
         <div v-if="!isCanvas" id="center" class="workflow-center workflow-markdown-editor">
             <MarkdownEditor
                 :markdown-text="markdownText"
@@ -36,6 +22,20 @@
                 </template>
             </MarkdownEditor>
         </div>
+        <SidePanel v-else id="left" side="left">
+            <template v-slot:panel>
+                <ToolBoxWorkflow
+                    :toolbox="toolbox"
+                    :module-sections="moduleSections"
+                    :data-managers="dataManagers"
+                    :workflows="workflows"
+                    @onInsertTool="onInsertTool"
+                    @onInsertModule="onInsertModule"
+                    @onInsertWorkflow="onInsertWorkflow"
+                    @onInsertWorkflowSteps="onInsertWorkflowSteps"
+                />
+            </template>
+        </SidePanel>
         <div id="center" class="workflow-center inbound" v-show="isCanvas">
             <div class="unified-panel-header" unselectable="on">
                 <div class="unified-panel-header-inner">
