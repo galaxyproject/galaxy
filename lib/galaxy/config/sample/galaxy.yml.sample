@@ -2068,3 +2068,6 @@ galaxy:
   # deep learning model are shown.
   #overwrite_model_recommendations: false
 
+  # Path to error reports configuration file.
+  #error_report_file: error_report.yml
+

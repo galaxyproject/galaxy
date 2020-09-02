@@ -111,6 +111,7 @@ class ExpectedValues:
             'datatypes_config_file': self._in_sample_dir('datatypes_conf.xml.sample'),
             'dependency_resolvers_config_file': self._in_config_dir('dependency_resolvers_conf.xml'),
             'dynamic_proxy_session_map': self._in_data_dir('session_map.sqlite'),
+            'error_report_file': self._in_config_dir('error_report.yml'),
             'file_path': self._in_data_dir('objects'),
             'file_sources_config_file': self._in_config_dir('file_sources_conf.yml'),
             'galaxy_data_manager_data_path': self._in_root_dir('tool-data'),

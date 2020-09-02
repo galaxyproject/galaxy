@@ -3153,3 +3153,11 @@ mapping:
           Overwrite or append to the tool recommendations by the deep learning model. When set to true, all the recommendations by the deep learning model
           are overwritten by the recommendations set by an admin in a config file 'tool_recommendations_overwrite.yml'. When set to false, the recommended tools
           by admins and predicted by the deep learning model are shown.
+
+      error_report_file:
+        type: str
+        default: 'error_report.yml'
+        path_resolves_to: config_dir
+        required: false
+        desc: |
+          Path to error reports configuration file.

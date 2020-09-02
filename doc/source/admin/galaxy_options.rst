@@ -4267,4 +4267,14 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~
+``error_report_file``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Path to error reports configuration file.
+:Default: ``error_report.yml``
+:Type: str
+
+
 
