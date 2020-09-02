@@ -785,7 +785,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         """Backwards compatibility for config files moved to the config/ dir."""
         defaults = dict(
             build_sites_config_file=[self._in_config_dir('build_sites.yml'), self._in_sample_dir('build_sites.yml.sample')],
-            containers_config_file=[self._in_config_dir('containers_conf.yml')],
             datatypes_config_file=[self._in_config_dir('datatypes_conf.xml'), self._in_sample_dir('datatypes_conf.xml.sample')],
             job_metrics_config_file=[self._in_config_dir('job_metrics_conf.xml'), self._in_sample_dir('job_metrics_conf.xml.sample')],
             local_conda_mapping_file=[self._in_config_dir('local_conda_mapping.yml')],

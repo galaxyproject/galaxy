@@ -3161,3 +3161,12 @@ mapping:
         required: false
         desc: |
           Path to error reports configuration file.
+
+      containers_config_file:
+        type: str
+        default: 'containers_conf.yml'
+        path_resolves_to: config_dir
+        required: false
+        desc: |
+          Path to container interface configuration file. The containers interface is only used if
+          `enable_beta_containers_interface` config option is set.

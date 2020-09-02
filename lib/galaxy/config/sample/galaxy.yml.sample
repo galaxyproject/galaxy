@@ -2071,3 +2071,8 @@ galaxy:
   # Path to error reports configuration file.
   #error_report_file: error_report.yml
 
+  # Path to container interface configuration file. The containers
+  # interface is only used if `enable_beta_containers_interface` config
+  # option is set.
+  #containers_config_file: containers_conf.yml
+

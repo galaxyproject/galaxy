@@ -4277,4 +4277,16 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``containers_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Path to container interface configuration file. The containers
+    interface is only used if `enable_beta_containers_interface`
+    config option is set.
+:Default: ``containers_conf.yml``
+:Type: str
+
+
 
