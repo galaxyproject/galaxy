@@ -486,6 +486,18 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~
+``modules_mapping_files``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Path to a file that provides a mapping from abstract packages to
+    locally installed modules. See
+    `config/environment_modules_mapping.yml.sample` for examples.
+:Default: ``environment_modules_mapping.yml``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``use_cached_dependency_manager``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

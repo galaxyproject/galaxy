@@ -129,6 +129,7 @@ class ExpectedValues:
             'markdown_export_css_invocation_reports': self._in_config_dir('markdown_export_invocation_reports.css'),
             'markdown_export_css_pages': self._in_config_dir('markdown_export_pages.css'),
             'migrated_tools_config': self._in_managed_config_dir('migrated_tools_conf.xml'),
+            'modules_mapping_files': self._in_config_dir('environment_modules_mapping.yml'),
             'mulled_resolution_cache_data_dir': self._in_data_dir('mulled/data'),
             'mulled_resolution_cache_lock_dir': self._in_data_dir('mulled/locks'),
             'new_file_path': self._in_data_dir('tmp'),

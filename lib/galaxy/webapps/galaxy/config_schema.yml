@@ -377,6 +377,15 @@ mapping:
           Path to a file that provides a mapping from abstract packages to concrete conda packages.
           See `config/local_conda_mapping.yml.sample` for examples.
 
+      modules_mapping_files:
+        type: str
+        default: 'environment_modules_mapping.yml'
+        path_resolves_to: config_dir
+        required: false
+        desc: |
+          Path to a file that provides a mapping from abstract packages to locally installed modules.
+          See `config/environment_modules_mapping.yml.sample` for examples.
+
       use_cached_dependency_manager:
         type: bool
         default: false
