@@ -592,6 +592,13 @@ def build_galaxy_app(simple_kwargs):
     galaxy_context = app.model.context
     install_context = app.install_model.context
 
+    # Toolbox indexing happens via the work queue out of band recently, and,
+    # beyond potentially running async after tests execute doesn't execute
+    # without building a uwsgi app (app.is_webapp = False for this test kit).
+    # We need to ensure to build an index for the test galaxy app -- this is
+    # pretty fast with the limited toolset
+    app.reindex_tool_search()
+
     return app
 
 
