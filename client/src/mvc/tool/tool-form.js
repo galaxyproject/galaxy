@@ -52,7 +52,7 @@ const View = Backbone.View.extend({
                                 }
 
                                 const user_version = options.id.replace(/.*\//, "");
-                                if (!data.versions.includes(user_version)) {
+                                if (data.versions && !data.versions.includes(user_version)) {
                                     Toast.warning(
                                         `Specified version is not found! Using ${data.version} instead`,
                                         "Error",
