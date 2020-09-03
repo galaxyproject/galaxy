@@ -7,7 +7,7 @@
             aria-haspopup="true"
             aria-expanded="false"
         >
-            <font-awesome-icon v-if="!workflow.shared" v icon="caret-down" />
+            <font-awesome-icon icon="caret-down" />
             <span>{{ workflow.name }}</span>
         </b-link>
         <p v-if="workflow.description">{{ workflow.description }}</p>
