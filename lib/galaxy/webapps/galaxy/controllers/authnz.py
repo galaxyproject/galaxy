@@ -98,12 +98,13 @@ class OIDC(JSAppLauncher):
 
     @web.expose
     @web.require_login("authenticate against the selected identity provider")
-    def disconnect(self, trans, provider, **kwargs):
+    def disconnect(self, trans, provider, email=None, **kwargs):
         if trans.user is None:
             # Only logged in users are allowed here.
             return
         success, message, redirect_url = trans.app.authnz_manager.disconnect(provider,
                                                                              trans,
+                                                                             email,
                                                                              disconnect_redirect_url=url_for('/'))
         if success is False:
             return trans.show_error_message(message)

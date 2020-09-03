@@ -325,11 +325,13 @@ class AuthnzManager:
             log.exception(msg)
             return False, msg, None
 
-    def disconnect(self, provider, trans, disconnect_redirect_url=None, idphint=None):
+    def disconnect(self, provider, trans, email=None, disconnect_redirect_url=None, idphint=None):
         try:
             success, message, backend = self._get_authnz_backend(provider, idphint=idphint)
             if success is False:
                 return False, message, None
+            elif provider in KEYCLOAK_BACKENDS:
+                return backend.disconnect(provider, trans, email, disconnect_redirect_url)
             return backend.disconnect(provider, trans, disconnect_redirect_url)
         except Exception:
             msg = 'An error occurred when disconnecting authentication with `{}` identity provider for user `{}`' \
