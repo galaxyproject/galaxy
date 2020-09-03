@@ -119,3 +119,41 @@ export class Services {
         }
     }
 }
+
+import { Observable, Subject } from "rxjs";
+import { debounceTime, map } from "rxjs/operators";
+import { AxiosSubscriber } from "./rxjsAxios";
+
+export class TrsSearchService {
+    constructor({ debounceInterval = 1000 }) {
+        this.debounceInterval = debounceInterval;
+        // Buffer for search query
+        this._searchText = new Subject();
+        this._trsServer = null;
+    }
+
+    get searchResults() {
+        return this._searchText.pipe(
+            debounceTime(this.debounceInterval),
+            map((query) => {
+                return [
+                    query,
+                    new Observable((observer) => {
+                        return new AxiosSubscriber(
+                            observer,
+                            `/api/trs_search?query=${query}&trs_server=${this._trsServer}`
+                        );
+                    }),
+                ];
+            })
+        );
+    }
+
+    set searchQuery(query) {
+        this._searchText.next(query);
+    }
+
+    set trsServer(trsServer) {
+        this._trsServer = trsServer;
+    }
+}

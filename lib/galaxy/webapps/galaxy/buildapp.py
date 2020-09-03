@@ -159,6 +159,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/workflows/run')
     webapp.add_client_route('/workflows/import')
     webapp.add_client_route('/workflows/trs_import')
+    webapp.add_client_route('/workflows/trs_search')
     webapp.add_client_route('/workflows/invocations')
     webapp.add_client_route('/workflows/invocations/report')
     webapp.add_client_route('/custom_builds')
@@ -551,6 +552,13 @@ def populate_api_routes(webapp, app):
                           action='import_shared_workflow_deprecated',
                           conditions=dict(method=['POST']))
 
+    webapp.mapper.connect(
+        'trs_search',
+        '/api/trs_search',
+        controller='trs_search',
+        action="index",
+        conditions=dict(method=['GET'])
+    )
     webapp.mapper.connect(
         'trs_consume_get_servers',
         '/api/trs_consume/servers',
