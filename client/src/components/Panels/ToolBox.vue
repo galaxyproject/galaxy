@@ -33,9 +33,9 @@
                         @onClick="onOpen"
                     />
                 </div>
-                <div class="toolPanelLabel" id="title_XXinternalXXworkflow">
-                    <a>{{ workflowTitle }}</a>
-                </div>
+
+                <tool-section :category="{ text: workflowTitle }" />
+
                 <div id="internal-workflows" class="toolSectionBody">
                     <div class="toolSectionBg" />
                     <div class="toolTitle" v-for="wf in workflows" :key="wf.id">
@@ -80,7 +80,7 @@ export default {
             type: Array,
             required: true,
         },
-        stored_workflow_menu_entries: {
+        storedWorkflowMenuEntries: {
             type: Array,
             required: true,
         },
@@ -108,7 +108,7 @@ export default {
                     href: `${getAppRoot()}workflows/list`,
                     id: "list",
                 },
-                ...this.stored_workflow_menu_entries.map((menuEntry) => {
+                ...this.storedWorkflowMenuEntries.map((menuEntry) => {
                     return {
                         id: menuEntry.id,
                         title: menuEntry.name,

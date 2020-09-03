@@ -235,7 +235,7 @@ export const getAnalysisRouter = (Galaxy) =>
         },
 
         show_tools_view: function () {
-            this.page.toolPanel.getVueComponent().hide();
+            this.page.toolPanel?.component.hide();
             this.page.panels.right.hide();
             this._display_vue_helper(ToolsView);
         },
@@ -243,6 +243,7 @@ export const getAnalysisRouter = (Galaxy) =>
         show_tools_json: function () {
             this._display_vue_helper(ToolsJson);
         },
+
         show_histories_permissions: function () {
             this.page.display(
                 new FormWrapper.View({
