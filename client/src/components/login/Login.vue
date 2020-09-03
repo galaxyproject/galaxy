@@ -186,12 +186,12 @@ export default {
         },
     },
     methods: {
-        toggleLogin: function () {
+        toggleLogin() {
             if (this.$root.toggleLogin) {
                 this.$root.toggleLogin();
             }
         },
-        submitGalaxyLogin: function (method) {
+        submitGalaxyLogin(method) {
             const rootUrl = getAppRoot();
             axios
                 .post(`${rootUrl}user/login`, this.$data)
@@ -213,7 +213,7 @@ export default {
                     this.messageText = message || "Login failed for an unknown reason.";
                 });
         },
-        submitOIDCLogin: function (idp) {
+        submitOIDCLogin(idp) {
             const rootUrl = getAppRoot();
             axios
                 .post(`${rootUrl}authnz/${idp}/login`)
@@ -252,7 +252,7 @@ export default {
                     }
                 });
         },
-        reset: function (ev) {
+        reset(ev) {
             const rootUrl = getAppRoot();
             ev.preventDefault();
             axios

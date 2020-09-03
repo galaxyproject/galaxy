@@ -209,7 +209,7 @@ export default {
                     this.messageText = message || "Login failed for an unknown reason.";
                 });
         },
-        getCILogonIdps: function () {
+        getCILogonIdps() {
             const rootUrl = getAppRoot();
             axios.get(`${rootUrl}authnz/get_cilogon_idps`).then((response) => {
                 this.cilogon_idps = response.data;
