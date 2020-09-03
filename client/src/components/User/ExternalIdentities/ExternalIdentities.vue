@@ -80,15 +80,63 @@
         <div class="external-subheading" v-if="enable_oidc">
             <h3>Connect Other External Identities</h3>
             <b-button
-                v-for="(idp_info, idp) in oidc_idps"
-                :key="idp"
-                class="d-block mt-3"
-                @click="submitOIDCLogin(idp)"
+                v-if="Object.prototype.hasOwnProperty.call(oidc_idps, 'cilogon')"
+                @click="toggleCILogon('cilogon')"
+                >Sign in with Institutional Credentials*</b-button
             >
-                <i :class="idp_info['icon']" />
-                Sign in with
-                {{ idp.charAt(0).toUpperCase() + idp.slice(1) }}
-            </b-button>
+            
+            <b-button
+                v-if="Object.prototype.hasOwnProperty.call(oidc_idps, 'custos')"
+                @click="toggleCILogon('custos')"
+                >Sign in with Custos*</b-button
+            >
+
+            <div v-if="toggle_cilogon">
+                <!-- OIDC login-->
+                <hr class="my-4" />
+                <div class="cilogon">
+                    <!--Only Display if CILogon/Custos is configured-->
+                    <b-form-group>
+                        <multiselect
+                            placeholder="Select your institution"
+                            v-model="selected"
+                            :options="cilogon_idps"
+                            label="DisplayName"
+                            track-by="EntityID"
+                        >
+                        </multiselect>
+                    </b-form-group>
+
+                    <b-button class="d-block mt-3" @click="submitOIDCLogin(cilogonOrCustos)" :disabled="selected === null">
+                        Login
+                    </b-button>
+                    
+                    <p class="mt-3">
+                        <small class="text-muted">
+                            * Galaxy uses CILogon via Custos to enable you to log in from this
+                            organization. By clicking 'Sign In', you agree to the
+                            <a href="https://ca.cilogon.org/policy/privacy">CILogon</a> privacy policy
+                            and you agree to share your username, email address, and affiliation with
+                            CILogon, Custos, and Galaxy.
+                        </small>
+                    </p>
+                </div>
+            </div>
+
+            <div v-for="(idp_info, idp) in filtered_oidc_idps" :key="idp" class="m-1">
+                <span v-if="idp_info['icon']">
+                    <b-button variant="link" class="d-block mt-3" @click="submitOIDCLogin(idp)">
+                        <img :src="idp_info['icon']" height="45" :alt="idp" />
+                    </b-button>
+                </span>
+                <span v-else>
+                    <b-button class="d-block mt-3" @click="submitOIDCLogin(idp)">
+                        <i :class="oidc_idps[idp]" />
+                        Sign in with
+                        {{ idp.charAt(0).toUpperCase() + idp.slice(1) }}
+                    </b-button>
+                </span>
+            </div>
         </div>
     </section>
 </template>
@@ -96,6 +144,7 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import Multiselect from "vue-multiselect";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import svc from "./service";
@@ -105,6 +154,9 @@ import { logoutClick } from "layout/menu";
 Vue.use(BootstrapVue);
 
 export default {
+    components: {
+        Multiselect,
+    },
     data() {
         const galaxy = getGalaxyInstance();
         const oidc_idps = galaxy.config.oidc;
@@ -117,6 +169,8 @@ export default {
             enable_oidc: galaxy.config.enable_oidc,
             oidc_idps: oidc_idps,
             cilogon_idps: [],
+            cilogonOrCustos: null,
+            toggle_cilogon: false,
             selected: "",
             cilogonSelected: false,
         };
@@ -133,6 +187,12 @@ export default {
             // tries to set this property for unfathomable reasons
             set() {},
         },
+        filtered_oidc_idps() {
+            const filtered = Object.assign({}, this.oidc_idps);
+            delete filtered.custos;
+            delete filtered.cilogon;
+            return filtered;
+        },
     },
     watch: {
         showDeleted(deleted) {
@@ -145,6 +205,7 @@ export default {
             svc.getIdentityProviders()
                 .then((results) => {
                     this.items = results;
+                    console.log("ITEMS: ", this.items);
                 })
                 .catch(this.setError("Unable to load connected external identities."))
                 .finally(() => (this.loading = false));
@@ -217,11 +278,11 @@ export default {
                 this.cilogon_idps.sort((a, b) => (a.DisplayName > b.DisplayName ? 1 : -1));
             });
         },
-        submitCILogon: function () {
+        submitCILogon(idp) {
             const rootUrl = getAppRoot();
-
+            
             axios
-                .post(`${rootUrl}authnz/cilogon/login/?idphint=${this.selected}`)
+                .post(`${rootUrl}authnz/${idp}/login/?idphint=${this.selected.EntityID}`)
                 .then((response) => {
                     if (response.data.redirect_uri) {
                         window.location = response.data.redirect_uri;
@@ -232,6 +293,10 @@ export default {
                     const message = error.response.data && error.response.data.err_msg;
                     this.messageText = message || "Login failed for an unknown reason.";
                 });
+        },
+        toggleCILogon(idp) {
+            this.toggle_cilogon = !this.toggle_cilogon;
+            this.cilogonOrCustos = this.toggle_cilogon ? idp : null;
         },
         setError(msg) {
             return (err) => {
