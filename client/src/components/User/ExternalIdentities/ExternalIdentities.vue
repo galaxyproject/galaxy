@@ -145,6 +145,11 @@ export default {
             svc.getIdentityProviders()
                 .then((results) => {
                     this.items = results;
+                    this.items.forEach((item) => {
+                        if (item.provider.toLowerCase() === "google-openidconnect") {
+                            item.provider = "Google";
+                        }
+                    });
                 })
                 .catch(this.setError("Unable to load connected external identities."))
                 .finally(() => (this.loading = false));
