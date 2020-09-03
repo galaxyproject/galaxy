@@ -1,21 +1,13 @@
 <template>
-    <span>
-        <page-editor-html
-            v-if="contentFormat == 'html'"
-            :title="title"
-            :page-id="pageId"
-            :public-url="publicUrl"
-            :content="content"
-        />
-        <page-editor-markdown
-            v-if="contentFormat == 'markdown'"
-            :title="title"
-            :page-id="pageId"
-            :public-url="publicUrl"
-            :content="content"
-            :content-data="contentData"
-        />
-    </span>
+    <page-editor-markdown
+        v-if="contentFormat == 'markdown'"
+        :title="title"
+        :page-id="pageId"
+        :public-url="publicUrl"
+        :content="content"
+        :content-data="contentData"
+    />
+    <page-editor-html v-else :title="title" :page-id="pageId" :public-url="publicUrl" :content="content" />
 </template>
 
 <script>
