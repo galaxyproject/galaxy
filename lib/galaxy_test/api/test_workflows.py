@@ -308,6 +308,31 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
         self._assert_status_code_is(index_response, 200)
         assert isinstance(index_response.json(), list)
 
+    def test_index_deleted(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_delete")
+        workflow_index = self._get("workflows").json()
+        assert [w for w in workflow_index if w['id'] == workflow_id]
+        workflow_url = self._api_url("workflows/%s" % workflow_id, use_key=True)
+        delete_response = delete(workflow_url)
+        self._assert_status_code_is(delete_response, 200)
+        workflow_index = self._get("workflows").json()
+        assert not [w for w in workflow_index if w['id'] == workflow_id]
+        workflow_index = self._get("workflows?show_deleted=true").json()
+        assert [w for w in workflow_index if w['id'] == workflow_id]
+
+    def test_index_hidden(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_delete")
+        workflow_index = self._get("workflows").json()
+        workflow = [w for w in workflow_index if w['id'] == workflow_id][0]
+        workflow['hidden'] = True
+        update_response = self.workflow_populator.update_workflow(workflow_id, workflow)
+        self._assert_status_code_is(update_response, 200)
+        assert update_response.json()['hidden']
+        workflow_index = self._get("workflows").json()
+        assert not [w for w in workflow_index if w['id'] == workflow_id]
+        workflow_index = self._get("workflows?show_hidden=true").json()
+        assert [w for w in workflow_index if w['id'] == workflow_id]
+
     def test_upload(self):
         self.__test_upload(use_deprecated_route=False)
 
@@ -528,6 +553,12 @@ test_data:
 
         workflow_id = self._upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE, publish=True)
         subworkflow_content_id = get_subworkflow_content_id(workflow_id)
+        instance_response = self._get("workflows/%s?instance=true" % subworkflow_content_id)
+        self._assert_status_code_is(instance_response, 200)
+        subworkflow = instance_response.json()
+        assert subworkflow['inputs']['0']['label'] == 'inner_input'
+        assert subworkflow['name'] == 'Workflow'
+        assert subworkflow['hidden']
         with self._different_user():
             other_import_response = self.__import_workflow(workflow_id)
             self._assert_status_code_is(other_import_response, 200)
@@ -1133,7 +1164,7 @@ test_data:
 
     def test_run_subworkflow_simple(self):
         with self.dataset_populator.test_history() as history_id:
-            self._run_jobs(WORKFLOW_NESTED_SIMPLE, test_data="""
+            run_response = self._run_jobs(WORKFLOW_NESTED_SIMPLE, test_data="""
 outer_input:
   value: 1.bed
   type: File
@@ -1141,6 +1172,13 @@ outer_input:
 
             content = self.dataset_populator.get_history_dataset_content(history_id)
             self.assertEqual("chrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\nchrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n", content)
+            steps = self.workflow_populator.get_invocation(run_response.invocation_id)['steps']
+            assert sum(1 for step in steps if step['subworkflow_invocation_id'] is None) == 3
+            subworkflow_invocation_id = [step['subworkflow_invocation_id'] for step in steps if step['subworkflow_invocation_id']][0]
+            subworkflow_invocation = self.workflow_populator.get_invocation(subworkflow_invocation_id)
+            # inner_input should be step 0, random_lines should be step 1, but step order gets lost on python < 3.6
+            assert [step for step in subworkflow_invocation['steps'] if step['workflow_step_label'] == 'inner_input']
+            assert [step for step in subworkflow_invocation['steps'] if step['workflow_step_label'] == 'random_lines']
 
     @skip_without_tool("random_lines1")
     def test_run_subworkflow_runtime_parameters(self):

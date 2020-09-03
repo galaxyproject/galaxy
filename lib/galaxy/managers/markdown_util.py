@@ -287,10 +287,10 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
         pass
 
     def handle_generate_galaxy_version(self, line, generate_version):
-        self.extra_rendering_data["generate_version"] = generate_version
+        pass
 
     def handle_generate_time(self, line, generate_time):
-        self.extra_rendering_data["generate_time"] = generate_time.isoformat()
+        pass
 
     def handle_invocation_time(self, line, invocation):
         self.ensure_rendering_data_for("invocations", invocation)["create_time"] = invocation.create_time.isoformat()
@@ -310,7 +310,10 @@ def ready_galaxy_markdown_for_export(trans, internal_galaxy_markdown):
     external links. Return expanded markdown and extra data useful for rendering
     custom container tags.
     """
-    extra_rendering_data = {}
+    extra_rendering_data = {
+        "generate_time": now().isoformat(),
+        "generate_version": trans.app.config.version_major,
+    }
     # Walk Galaxy directives inside the Galaxy Markdown and collect dict-ified data
     # needed to render this efficiently.
     directive_handler = ReadyForExportMarkdownDirectiveHandler(trans, extra_rendering_data)

@@ -1155,6 +1155,19 @@ mapping:
           - $iso8601 (complete format string as specified by ISO 8601 international
             standard).
 
+      trs_servers_config_file:
+        type: str
+        default: 'trs_servers_conf.yml'
+        required: false
+        desc: |
+          Allow import of workflows from the TRS servers configured in
+          the specified YAML or JSON file. The file should be a list with
+          'id', 'label', and 'api_url' for each entry. Optionally,
+          'link_url' and 'doc' may be be specified as well for each entry.
+
+          If this is null (the default), a simple configuration containing
+          just Dockstore will be used.
+
       user_preferences_extra_conf_path:
         type: str
         default: 'user_preferences_extra_conf.yml'
@@ -1986,7 +1999,7 @@ mapping:
 
       tool_enable_ngram_search:
         type: bool
-        default: false
+        default: true
         required: false
         reloadable: true
         desc: |

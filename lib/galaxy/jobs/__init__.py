@@ -918,7 +918,7 @@ class JobWrapper(HasResourceParameters):
             metadata_strategy_override = None
         if job.tasks:
             metadata_strategy_override = "directory"
-        self.external_output_metadata = get_metadata_compute_strategy(self.app.config, job.id, metadata_strategy_override=metadata_strategy_override)
+        self.external_output_metadata = get_metadata_compute_strategy(self.app.config, job.id, metadata_strategy_override=metadata_strategy_override, tool_id=job.tool_id)
 
         self.__commands_in_new_shell = True
         self.__user_system_pwent = None
@@ -1288,7 +1288,12 @@ class JobWrapper(HasResourceParameters):
                 dataset.mark_unhidden()
                 if dataset.ext == 'auto':
                     dataset.extension = 'data'
-                self.__update_output(job, dataset)
+                try:
+                    self.__update_output(job, dataset)
+                except Exception:
+                    # Failure to update the output of a failed job should not prevent completion of the failure method
+                    log.exception("(%s) fail(): Failed to update job output dataset with id: %s", self.get_id_tag(),
+                                  dataset.dataset.id)
                 # Pause any dependent jobs (and those jobs' outputs)
                 for dep_job_assoc in dataset.dependent_jobs:
                     self.pause(dep_job_assoc.job, "Execution of this dataset's job is paused because its input datasets are in an error state.")

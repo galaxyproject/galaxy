@@ -987,6 +987,7 @@ model.StoredWorkflow.table = Table(
         ForeignKey("workflow.id", use_alter=True, name='stored_workflow_latest_workflow_id_fk'), index=True),
     Column("name", TEXT),
     Column("deleted", Boolean, default=False),
+    Column("hidden", Boolean, default=False),
     Column("importable", Boolean, default=False),
     Column("slug", TEXT),
     Column("from_path", TEXT),
@@ -2587,7 +2588,14 @@ mapper(model.WorkflowInvocationToSubworkflowInvocationAssociation, model.Workflo
 simple_mapping(model.WorkflowInvocationStep,
     workflow_step=relation(model.WorkflowStep),
     job=relation(model.Job, backref=backref('workflow_invocation_step', uselist=False), uselist=False),
-    implicit_collection_jobs=relation(model.ImplicitCollectionJobs, backref=backref('workflow_invocation_step', uselist=False), uselist=False),)
+    implicit_collection_jobs=relation(model.ImplicitCollectionJobs, backref=backref('workflow_invocation_step', uselist=False), uselist=False),
+    subworkflow_invocation_id=column_property(
+        select([(model.WorkflowInvocationToSubworkflowInvocationAssociation.table.c.subworkflow_invocation_id)]).where(and_(
+            model.WorkflowInvocationToSubworkflowInvocationAssociation.table.c.workflow_invocation_id == model.WorkflowInvocationStep.table.c.workflow_invocation_id,
+            model.WorkflowInvocationToSubworkflowInvocationAssociation.table.c.workflow_step_id == model.WorkflowInvocationStep.table.c.workflow_step_id,
+        )),
+    ),
+)
 
 
 simple_mapping(model.WorkflowRequestInputParameter,

@@ -21,11 +21,11 @@ log = getLogger(__name__)
 SET_METADATA_SCRIPT = 'from galaxy_ext.metadata.set_metadata import set_metadata; set_metadata()'
 
 
-def get_metadata_compute_strategy(config, job_id, metadata_strategy_override=None):
+def get_metadata_compute_strategy(config, job_id, metadata_strategy_override=None, tool_id=None):
     metadata_strategy = metadata_strategy_override or config.metadata_strategy
     if metadata_strategy == "legacy":
         return JobExternalOutputMetadataWrapper(job_id)
-    elif metadata_strategy == "extended":
+    elif metadata_strategy == "extended" and tool_id != "__SET_METADATA__":
         return ExtendedDirectoryMetadataGenerator(job_id)
     else:
         return PortableDirectoryMetadataGenerator(job_id)

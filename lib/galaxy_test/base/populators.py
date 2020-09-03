@@ -808,6 +808,11 @@ class BaseWorkflowPopulator:
         self.wait_for_invocation(workflow_id, invocation_id, timeout=timeout)
         self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=assert_ok, timeout=timeout)
 
+    def get_invocation(self, invocation_id):
+        r = self._get("invocations/%s" % invocation_id)
+        r.raise_for_status()
+        return r.json()
+
     def invoke_workflow_raw(self, workflow_id, request):
         url = "workflows/%s/usage" % (workflow_id)
         invocation_response = self._post(url, data=request)

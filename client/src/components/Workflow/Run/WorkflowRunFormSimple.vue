@@ -5,6 +5,7 @@
 <script>
 import Form from "mvc/form/form-view";
 import { invokeWorkflow } from "./services";
+import { isWorkflowInput } from "components/Workflow/constants";
 
 export default {
     props: {
@@ -54,12 +55,9 @@ export default {
 
             // Add actual input modules.
             this.model.steps.forEach((step, i) => {
-                const is_input =
-                    ["data_input", "data_collection_input", "parameter_input"].indexOf(step.step_type) != -1;
-                if (!is_input) {
+                if (!isWorkflowInput(step.step_type)) {
                     return;
                 }
-
                 const stepName = new String(step.step_index);
                 const stepLabel = step.step_label || new String(step.step_index + 1);
                 const help = step.annotation;
@@ -85,7 +83,7 @@ export default {
                 const inputType = this.inputTypes[inputName];
                 if (inputType == "replacement_parameter") {
                     replacementParams[inputName] = value;
-                } else if (inputType == "data_input" || inputType == "data_collection_input") {
+                } else if (isWorkflowInput(inputType)) {
                     inputs[inputName] = value;
                 }
             }
