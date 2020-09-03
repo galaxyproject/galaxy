@@ -414,7 +414,7 @@ def disconnect(name=None, user=None, user_storage=None, strategy=None,
     if user_authnz is None:
         return {'success': False, 'message': 'Not authenticated by any identity providers.'}
     # option A
-    strategy.trans.sa_session.delete(user_authnz)
+    sa_session.delete(user_authnz)
     # option B
     # user_authnz.extra_data = None
-    strategy.trans.sa_session.flush()
+    sa_session.flush()
