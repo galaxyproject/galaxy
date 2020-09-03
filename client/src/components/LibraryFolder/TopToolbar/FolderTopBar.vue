@@ -15,9 +15,7 @@
                             type="search"
                             id="filterInput"
                             placeholder="Search"
-                        >
-                            >
-                        </b-form-input>
+                        />
                     </b-input-group>
                     <button
                         v-if="metadata.can_add_library_item"

@@ -34,7 +34,7 @@
                 @filtered="onFiltered"
                 show-empty
             >
-                <template v-slot:empty="">
+                <template v-slot:empty>
                     <div class="empty-folder-message">
                         This folder is either empty or you do not have proper access permissions to see the contents. If
                         you expected something to show up please consult the
@@ -44,16 +44,20 @@
                     </div>
                 </template>
                 <template v-slot:head(selected)="">
-                    <span class="cursor-pointer" title="Check to select all datasets" @click="toggleSelect"
-                        >&check;</span
-                    >
+                    <font-awesome-icon
+                        @click="toggleSelect"
+                        class="selected-checkbox cursor-pointer"
+                        size="lg"
+                        title="Check to select all datasets"
+                        :icon="isCheckedAll() ? ['far', 'check-square'] : ['far', 'square']"
+                    />
                 </template>
                 <template v-slot:cell(selected)="{ rowSelected }">
                     <template v-if="rowSelected">
-                        <span aria-hidden="true">&check;</span>
+                        <font-awesome-icon class="selected-checkbox" size="lg" :icon="['far', 'check-square']" />
                     </template>
                     <template v-else>
-                        <span class="lib-folder-checkbox" aria-hidden="true">&nbsp;</span>
+                        <font-awesome-icon class="selected-checkbox" size="lg" :icon="['far', 'square']" />
                     </template>
                 </template>
                 <!-- Name -->
@@ -346,16 +350,22 @@ export default {
                 }
             });
         },
-        toggleSelect() {
+        isCheckedAll() {
+            if (!this.$refs.folder_content_table) return false;
+
             // Since we cannot select new folders, toggle should clear all if all rows match, expect new folders
             let unselectable = 0;
+
             this.$refs.folder_content_table.computedItems.forEach((row) => {
                 if (row.isNewFolder || row.deleted) unselectable++;
             });
-            if (this.selected.length + unselectable < this.$refs.folder_content_table.computedItems.length) {
-                this.selectAllRows();
-            } else {
+            return this.selected.length + unselectable == this.$refs.folder_content_table.computedItems.length;
+        },
+        toggleSelect() {
+            if (this.isCheckedAll()) {
                 this.clearSelected();
+            } else {
+                this.selectAllRows();
             }
         },
         onRowSelected(items) {

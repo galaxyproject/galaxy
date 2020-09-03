@@ -26,3 +26,7 @@ th:focus {
 .empty-folder-message {
     text-align: center;
 }
+
+.selected-checkbox {
+    color: navy;
+}
