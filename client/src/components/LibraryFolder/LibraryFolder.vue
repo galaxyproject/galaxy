@@ -14,7 +14,7 @@
                 :folder_id="folder_id"
                 :selected="selected"
                 :metadata="folder_metadata"
-            ></FolderTopBar>
+            />
             <a class="btn btn-secondary btn-sm btn_open_folder" :href="parentFolder">..</a>
 
             <b-table
@@ -53,12 +53,11 @@
                     />
                 </template>
                 <template v-slot:cell(selected)="{ rowSelected }">
-                    <template v-if="rowSelected">
-                        <font-awesome-icon class="selected-checkbox" size="lg" :icon="['far', 'check-square']" />
-                    </template>
-                    <template v-else>
-                        <font-awesome-icon class="selected-checkbox" size="lg" :icon="['far', 'square']" />
-                    </template>
+                    <font-awesome-icon
+                        class="selected-checkbox"
+                        size="lg"
+                        :icon="rowSelected ? ['far', 'check-square'] : ['far', 'square']"
+                    />
                 </template>
                 <!-- Name -->
                 <template v-slot:cell(name)="row">
@@ -70,21 +69,21 @@
                             :ref="'name' + row.item.id"
                             v-model="row.item.name"
                             rows="3"
-                        ></textarea>
+                        />
                         <textarea
                             v-else
                             class="form-control"
                             :ref="'name' + row.item.id"
                             :value="row.item.name"
                             rows="3"
-                        ></textarea>
+                        />
                     </div>
                     <div v-else-if="!row.item.deleted">
                         <a :href="createContentLink(row.item)">{{ row.item.name }}</a>
                     </div>
                     <!-- Deleted Item-->
                     <div v-else>
-                        <div style="color: grey;">{{ row.item.name }}</div>
+                        <div class="deleted-item">{{ row.item.name }}</div>
                     </div>
                 </template>
 

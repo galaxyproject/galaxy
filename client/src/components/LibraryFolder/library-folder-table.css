@@ -30,3 +30,7 @@ th:focus {
 .selected-checkbox {
     color: navy;
 }
+
+.deleted-item {
+    color: grey;
+}

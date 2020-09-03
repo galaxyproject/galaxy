@@ -136,7 +136,7 @@
                         <b-form-checkbox
                             id="checkbox-1"
                             :checked="include_deleted"
-                            v-on:input="toggle_include_deleted($event)"
+                            @input="toggle_include_deleted($event)"
                             name="checkbox-1"
                         >
                             include deleted
@@ -210,13 +210,12 @@ export default {
             auto: {
                 id: "auto",
                 text: "Auto-detect",
-                description:
-                    "This system will try to detect the file type automatically." +
-                    " If your file is not detected properly as one of the known formats," +
-                    " it most likely means that it has some format problems (e.g., different" +
-                    " number of columns on different rows). You can still coerce the system" +
-                    " to set your data to the format you think it should be." +
-                    " You can also upload compressed files, which will automatically be decompressed.",
+                description: `This system will try to detect the file type automatically.
+                     If your file is not detected properly as one of the known formats,
+                     it most likely means that it has some format problems (e.g., different
+                     number of columns on different rows). You can still coerce the system
+                     to set your data to the format you think it should be.
+                     You can also upload compressed files, which will automatically be decompressed`,
             },
         };
     },
@@ -233,7 +232,7 @@ export default {
         ) {
             this.multiple_add_dataset_options = true;
         }
-        const contains_file_or_folder = this.folderContents.find((el) => el.type === "folder" || el.type === "file");
+        const contains_file_or_folder = this.folderContents.find((el) => el.type == "folder" || el.type == "file");
 
         // logic from legacy code
         if (contains_file_or_folder) {
@@ -281,7 +280,7 @@ export default {
         },
         downloadData(format) {
             const { datasets, folders } = this.findCheckedItems();
-            if (this.selected.length === 0) {
+            if (this.selected.length == 0) {
                 Toast.info("You must select at least one dataset to download");
                 return;
             }
