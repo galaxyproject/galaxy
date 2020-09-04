@@ -35,7 +35,7 @@
                 aria-label="Disconnect External Identity"
                 title="Disconnect External Identity"
                 v-for="item in items"
-                :key="item.provider"
+                :key="item.email"
                 class="d-block mt-3"
             >
                 Disconnect {{ item.provider.charAt(0).toUpperCase() + item.provider.slice(1) }} - {{ item.email }}
@@ -205,7 +205,6 @@ export default {
             svc.getIdentityProviders()
                 .then((results) => {
                     this.items = results;
-                    console.log("ITEMS: ", this.items);
                 })
                 .catch(this.setError("Unable to load connected external identities."))
                 .finally(() => (this.loading = false));
