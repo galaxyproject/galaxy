@@ -98,7 +98,7 @@ class BaseFilesSource(FilesSource):
 
     def _evaluate_prop(self, prop_val, user_context):
         rval = prop_val
-        if "$" in prop_val:
+        if isinstance(prop_val, str) and "$" in prop_val:
             template_context = dict(
                 user=user_context,
                 environ=os.environ,
