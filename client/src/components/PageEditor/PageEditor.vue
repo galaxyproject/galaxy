@@ -1,7 +1,7 @@
 <template>
     <LoadingSpan v-if="loading" message="Loading Page" class="m-3" />
     <page-editor-markdown
-        v-else-if="!loading && contentFormat == 'markdown'"
+        v-else-if="contentFormat == 'markdown'"
         :title="title"
         :page-id="pageId"
         :public-url="publicUrl"

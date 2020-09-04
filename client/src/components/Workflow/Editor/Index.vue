@@ -1,118 +1,120 @@
 <template>
-    <MarkdownEditor
-        v-if="!isCanvas"
-        :markdown-text="markdownText"
-        :markdown-config="markdownConfig"
-        :title="'Workflow Report: ' + name"
-        :nodes="nodes"
-        @onUpdate="onReportUpdate"
-    >
-        <template v-slot:buttons>
-            <b-button
-                id="workflow-canvas-button"
-                title="Return to Workflow"
-                variant="link"
-                role="button"
-                v-b-tooltip.hover.bottom
-                @click="onEdit"
-            >
-                <span class="fa fa-times" />
-            </b-button>
-        </template>
-    </MarkdownEditor>
-    <div v-else id="columns" class="workflow-client">
-        <SidePanel id="left" side="left">
-            <template v-slot:panel>
-                <ToolBoxWorkflow
-                    :toolbox="toolbox"
-                    :module-sections="moduleSections"
-                    :data-managers="dataManagers"
-                    :workflows="workflows"
-                    @onInsertTool="onInsertTool"
-                    @onInsertModule="onInsertModule"
-                    @onInsertWorkflow="onInsertWorkflow"
-                    @onInsertWorkflowSteps="onInsertWorkflowSteps"
-                />
+    <div id="columns" class="workflow-client">
+        <MarkdownEditor
+            v-if="!isCanvas"
+            :markdown-text="markdownText"
+            :markdown-config="markdownConfig"
+            :title="'Workflow Report: ' + name"
+            :nodes="nodes"
+            @onUpdate="onReportUpdate"
+        >
+            <template v-slot:buttons>
+                <b-button
+                    id="workflow-canvas-button"
+                    title="Return to Workflow"
+                    variant="link"
+                    role="button"
+                    v-b-tooltip.hover.bottom
+                    @click="onEdit"
+                >
+                    <span class="fa fa-times" />
+                </b-button>
             </template>
-        </SidePanel>
-        <div id="center" class="workflow-center inbound" v-show="isCanvas">
-            <div class="unified-panel-header" unselectable="on">
-                <div class="unified-panel-header-inner">
-                    <span class="sr-only">Workflow Editor</span>
-                    {{ name }}
-                </div>
-            </div>
-            <div id="workflow-canvas" class="unified-panel-body workflow-canvas">
-                <ZoomControl :zoom-level="zoomLevel" @onZoom="onZoom" />
-                <div id="canvas-viewport">
-                    <div ref="canvas" id="canvas-container">
-                        <WorkflowNode
-                            v-for="(step, key) in steps"
-                            :id="key"
-                            :name="step.name"
-                            :type="step.type"
-                            :content-id="step.content_id"
-                            :step="step"
-                            :key="key"
-                            :datatypes-mapper="datatypesMapper"
-                            :get-manager="getManager"
-                            :get-canvas-manager="getCanvasManager"
-                            @onAdd="onAdd"
-                            @onUpdate="onUpdate"
-                            @onClone="onClone"
-                            @onCreate="onInsertTool"
-                            @onChange="onChange"
-                            @onActivate="onActivate"
-                            @onRemove="onRemove"
-                        />
+        </MarkdownEditor>
+        <div v-show="isCanvas">
+            <SidePanel id="left" side="left">
+                <template v-slot:panel>
+                    <ToolBoxWorkflow
+                        :toolbox="toolbox"
+                        :module-sections="moduleSections"
+                        :data-managers="dataManagers"
+                        :workflows="workflows"
+                        @onInsertTool="onInsertTool"
+                        @onInsertModule="onInsertModule"
+                        @onInsertWorkflow="onInsertWorkflow"
+                        @onInsertWorkflowSteps="onInsertWorkflowSteps"
+                    />
+                </template>
+            </SidePanel>
+            <div id="center" class="workflow-center">
+                <div class="unified-panel-header" unselectable="on">
+                    <div class="unified-panel-header-inner">
+                        <span class="sr-only">Workflow Editor</span>
+                        {{ name }}
                     </div>
                 </div>
-                <div class="workflow-overview" aria-hidden="true">
-                    <div class="workflow-overview-body">
-                        <div id="overview-container">
-                            <canvas width="0" height="0" id="overview-canvas" />
-                            <div id="overview-viewport" />
+                <div id="workflow-canvas" class="unified-panel-body workflow-canvas">
+                    <ZoomControl :zoom-level="zoomLevel" @onZoom="onZoom" />
+                    <div id="canvas-viewport">
+                        <div ref="canvas" id="canvas-container">
+                            <WorkflowNode
+                                v-for="(step, key) in steps"
+                                :id="key"
+                                :name="step.name"
+                                :type="step.type"
+                                :content-id="step.content_id"
+                                :step="step"
+                                :key="key"
+                                :datatypes-mapper="datatypesMapper"
+                                :get-manager="getManager"
+                                :get-canvas-manager="getCanvasManager"
+                                @onAdd="onAdd"
+                                @onUpdate="onUpdate"
+                                @onClone="onClone"
+                                @onCreate="onInsertTool"
+                                @onChange="onChange"
+                                @onActivate="onActivate"
+                                @onRemove="onRemove"
+                            />
+                        </div>
+                    </div>
+                    <div class="workflow-overview" aria-hidden="true">
+                        <div class="workflow-overview-body">
+                            <div id="overview-container">
+                                <canvas width="0" height="0" id="overview-canvas" />
+                                <div id="overview-viewport" />
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+            <SidePanel id="right" side="right">
+                <template v-slot:panel>
+                    <div class="unified-panel workflow-panel">
+                        <div class="unified-panel-header" unselectable="on">
+                            <div class="unified-panel-header-inner">
+                                <WorkflowOptions
+                                    @onSave="onSave"
+                                    @onSaveAs="onSaveAs"
+                                    @onRun="onRun"
+                                    @onDownload="onDownload"
+                                    @onReport="onReport"
+                                    @onLayout="onLayout"
+                                    @onEdit="onEdit"
+                                    @onAttributes="onAttributes"
+                                />
+                            </div>
+                        </div>
+                        <div class="unified-panel-body workflow-right">
+                            <div class="m-1">
+                                <WorkflowAttributes
+                                    :id="id"
+                                    :name="name"
+                                    :tags="tags"
+                                    :parameters="parameters"
+                                    :annotation="annotation"
+                                    :version="version"
+                                    :versions="versions"
+                                    @onVersion="onVersion"
+                                    @onRename="onRename"
+                                />
+                                <div id="right-content" class="right-content" />
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </SidePanel>
         </div>
-        <SidePanel id="right" side="right" v-show="isCanvas">
-            <template v-slot:panel>
-                <div class="unified-panel workflow-panel">
-                    <div class="unified-panel-header" unselectable="on">
-                        <div class="unified-panel-header-inner">
-                            <WorkflowOptions
-                                @onSave="onSave"
-                                @onSaveAs="onSaveAs"
-                                @onRun="onRun"
-                                @onDownload="onDownload"
-                                @onReport="onReport"
-                                @onLayout="onLayout"
-                                @onEdit="onEdit"
-                                @onAttributes="onAttributes"
-                            />
-                        </div>
-                    </div>
-                    <div class="unified-panel-body workflow-right">
-                        <div class="m-1">
-                            <WorkflowAttributes
-                                :id="id"
-                                :name="name"
-                                :tags="tags"
-                                :parameters="parameters"
-                                :annotation="annotation"
-                                :version="version"
-                                :versions="versions"
-                                @onVersion="onVersion"
-                                @onRename="onRename"
-                            />
-                            <div id="right-content" class="right-content" />
-                        </div>
-                    </div>
-                </div>
-            </template>
-        </SidePanel>
     </div>
 </template>
 

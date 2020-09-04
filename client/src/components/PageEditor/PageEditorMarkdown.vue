@@ -1,28 +1,35 @@
 <template>
-    <markdown-editor :title="title" :markdown-text="markdownText" :markdown-config="contentData" @onUpdate="onUpdate">
-        <template v-slot:buttons>
-            <b-button
-                id="save-button"
-                title="Save"
-                variant="link"
-                role="button"
-                v-b-tooltip.hover.bottom
-                @click="saveContent(false)"
-            >
-                <font-awesome-icon icon="save" />
-            </b-button>
-            <b-button
-                id="view-button"
-                title="Save & View"
-                variant="link"
-                role="button"
-                v-b-tooltip.hover.bottom
-                @click="saveContent(true)"
-            >
-                <font-awesome-icon icon="eye" />
-            </b-button>
-        </template>
-    </markdown-editor>
+    <div id="columns">
+        <markdown-editor
+            :title="title"
+            :markdown-text="markdownText"
+            :markdown-config="contentData"
+            @onUpdate="onUpdate"
+        >
+            <template v-slot:buttons>
+                <b-button
+                    id="save-button"
+                    title="Save"
+                    variant="link"
+                    role="button"
+                    v-b-tooltip.hover.bottom
+                    @click="saveContent(false)"
+                >
+                    <font-awesome-icon icon="save" />
+                </b-button>
+                <b-button
+                    id="view-button"
+                    title="Save & View"
+                    variant="link"
+                    role="button"
+                    v-b-tooltip.hover.bottom
+                    @click="saveContent(true)"
+                >
+                    <font-awesome-icon icon="eye" />
+                </b-button>
+            </template>
+        </markdown-editor>
+    </div>
 </template>
 
 <script>

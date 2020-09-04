@@ -1,11 +1,11 @@
 <template>
-    <div id="columns" class="workflow-client">
+    <div>
         <SidePanel id="left" side="left">
             <template v-slot:panel>
                 <MarkdownToolBox :nodes="nodes" @onInsert="onInsert" />
             </template>
         </SidePanel>
-        <div id="center" class="workflow-center workflow-markdown-editor">
+        <div id="center" class="workflow-markdown-editor">
             <div class="markdown-editor h-100">
                 <div class="unified-panel-header" unselectable="on">
                     <div class="unified-panel-header-inner">
