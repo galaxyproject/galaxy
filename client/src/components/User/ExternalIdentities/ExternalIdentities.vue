@@ -84,10 +84,8 @@
                 @click="toggleCILogon('cilogon')"
                 >Sign in with Institutional Credentials*</b-button
             >
-            
-            <b-button
-                v-if="Object.prototype.hasOwnProperty.call(oidc_idps, 'custos')"
-                @click="toggleCILogon('custos')"
+
+            <b-button v-if="Object.prototype.hasOwnProperty.call(oidc_idps, 'custos')" @click="toggleCILogon('custos')"
                 >Sign in with Custos*</b-button
             >
 
@@ -107,17 +105,20 @@
                         </multiselect>
                     </b-form-group>
 
-                    <b-button class="d-block mt-3" @click="submitOIDCLogin(cilogonOrCustos)" :disabled="selected === null">
+                    <b-button
+                        class="d-block mt-3"
+                        @click="submitOIDCLogin(cilogonOrCustos)"
+                        :disabled="selected === null"
+                    >
                         Login
                     </b-button>
-                    
+
                     <p class="mt-3">
                         <small class="text-muted">
-                            * Galaxy uses CILogon via Custos to enable you to log in from this
-                            organization. By clicking 'Sign In', you agree to the
-                            <a href="https://ca.cilogon.org/policy/privacy">CILogon</a> privacy policy
-                            and you agree to share your username, email address, and affiliation with
-                            CILogon, Custos, and Galaxy.
+                            * Galaxy uses CILogon via Custos to enable you to log in from this organization. By clicking
+                            'Sign In', you agree to the
+                            <a href="https://ca.cilogon.org/policy/privacy">CILogon</a> privacy policy and you agree to
+                            share your username, email address, and affiliation with CILogon, Custos, and Galaxy.
                         </small>
                     </p>
                 </div>
@@ -279,7 +280,7 @@ export default {
         },
         submitCILogon(idp) {
             const rootUrl = getAppRoot();
-            
+
             axios
                 .post(`${rootUrl}authnz/${idp}/login/?idphint=${this.selected.EntityID}`)
                 .then((response) => {

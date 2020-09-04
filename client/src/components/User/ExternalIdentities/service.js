@@ -6,12 +6,12 @@ const getUrl = (path) => getRootFromIndexLink() + path;
 export async function disconnectIdentity(doomed) {
     if (doomed) {
         var url;
-        if (doomed.provider === 'custos' || doomed.provider === 'cilogon') {
+        if (doomed.provider === "custos" || doomed.provider === "cilogon") {
             url = getUrl(`authnz/${doomed.provider}/disconnect/${doomed.email}`);
         } else {
             url = getUrl(`authnz/${doomed.provider}/disconnect/`);
         }
-        
+
         const response = await axios.delete(url);
         if (response.status != 200) {
             throw new Error("Delete failure.");
