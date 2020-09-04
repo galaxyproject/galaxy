@@ -1,6 +1,7 @@
 <template>
+    <LoadingSpan v-if="loading" message="Loading Page" class="m-3" />
     <page-editor-markdown
-        v-if="contentFormat == 'markdown'"
+        v-else-if="!loading && contentFormat == 'markdown'"
         :title="title"
         :page-id="pageId"
         :public-url="publicUrl"
@@ -11,6 +12,11 @@
 </template>
 
 <script>
+import axios from "axios";
+import { Toast } from "ui/toast";
+import { getAppRoot } from "onload/loadConfig";
+import { rethrowSimple } from "utils/simple-error";
+import LoadingSpan from "components/LoadingSpan";
 import PageEditorHtml from "./PageEditorHtml";
 import PageEditorMarkdown from "./PageEditorMarkdown";
 
@@ -20,30 +26,46 @@ export default {
             required: true,
             type: String,
         },
-        publicUrl: {
-            required: true,
-            type: String,
-        },
-        content: {
-            type: String,
-            default: "",
-        },
-        contentFormat: {
-            type: String,
-            default: "html",
-        },
-        contentData: {
-            type: Object,
-            default: null,
-        },
-        title: {
-            type: String,
-            default: "",
-        },
+    },
+    data() {
+        return {
+            title: null,
+            contentFormat: null,
+            contentData: null,
+            content: null,
+            publicUrl: null,
+            loading: true,
+        };
     },
     components: {
         PageEditorHtml,
         PageEditorMarkdown,
+        LoadingSpan,
+    },
+    created() {
+        this.getPage(this.pageId)
+            .then((data) => {
+                this.publicUrl = `${getAppRoot()}u/${data.username}/p/${data.slug}`;
+                this.content = data.content;
+                this.contentFormat = data.content_format;
+                this.contentData = data;
+                this.title = data.title;
+                this.loading = false;
+            })
+            .catch((error) => {
+                Toast.error(`Failed to load page: ${error}`);
+            });
+    },
+    methods: {
+        /** Page data request helper **/
+        async getPage(id) {
+            try {
+                const { data } = await axios.get(`${getAppRoot()}api/pages/${id}`);
+                return data;
+            } catch (e) {
+                rethrowSimple(e);
+            }
+        },
     },
 };
 </script>

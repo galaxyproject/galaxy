@@ -16,7 +16,6 @@ import Circster from "viz/circster";
 export { PhylovizView as phyloviz } from "viz/phyloviz";
 export { SweepsterVisualization, SweepsterVisualizationView } from "viz/sweepster";
 import GalaxyLibrary from "galaxy.library";
-export { default as pages } from "galaxy.pages";
 export { createTabularDatasetChunkedView } from "mvc/dataset/data";
 import { HistoryCollection } from "mvc/history/history-model";
 export { History } from "mvc/history/history-model";
@@ -94,6 +93,7 @@ export { mountMakoTags } from "components/Tags";
 export { mountJobMetrics } from "components/JobMetrics";
 export { mountJobParameters } from "components/JobParameters";
 export { mountWorkflowEditor } from "components/Workflow/Editor/mount";
+export { mountPageEditor } from "components/PageEditor/mount";
 export { mountPageDisplay } from "components/PageDisplay";
 export { mountDestinationParams } from "components/JobDestinationParams";
 

@@ -33,7 +33,6 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEye, faSave } from "@fortawesome/free-solid-svg-icons";
 import MarkdownEditor from "components/Markdown/MarkdownEditor";
 import { Toast } from "ui/toast";
-import { getAppRoot } from "onload/loadConfig";
 import { save } from "./util";
 
 Vue.use(BootstrapVue);
@@ -80,7 +79,7 @@ export default {
             save(this.pageId, this.markdownText, !showResult)
                 .then(() => {
                     if (showResult) {
-                        window.location = `${getAppRoot()}${this.publicUrl}`;
+                        window.location = this.publicUrl;
                     }
                 })
                 .catch((error) => {
