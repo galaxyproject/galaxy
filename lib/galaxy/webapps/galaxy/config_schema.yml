@@ -2558,11 +2558,10 @@ mapping:
       job_metrics_config_file:
         type: str
         default: job_metrics_conf.xml
+        path_resolves_to: config_dir
         required: false
         desc: |
           XML config file that contains the job metric collection configuration.
-
-          The value of this option will be resolved with respect to <config_dir>.
 
       expose_potentially_sensitive_job_metrics:
         type: bool

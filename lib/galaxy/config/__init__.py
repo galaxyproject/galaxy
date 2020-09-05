@@ -420,7 +420,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     add_sample_file_to_defaults = {
         'build_sites_config_file',
         # 'datatypes_config_file',  # TODO: handle all items in this set, one commit at a time.
-        # 'job_metrics_config_file',
+        'job_metrics_config_file',
         # 'tool_data_table_config_path',
         # 'tool_config_file',
     }
@@ -843,7 +843,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         """Backwards compatibility for config files moved to the config/ dir."""
         defaults = dict(
             datatypes_config_file=[self._in_config_dir('datatypes_conf.xml'), self._in_sample_dir('datatypes_conf.xml.sample')],
-            job_metrics_config_file=[self._in_config_dir('job_metrics_conf.xml'), self._in_sample_dir('job_metrics_conf.xml.sample')],
         )
         listify_defaults = {
             'tool_data_table_config_path': [
