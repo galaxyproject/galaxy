@@ -619,12 +619,11 @@ mapping:
       build_sites_config_file:
         type: str
         default: build_sites.yml
+        path_resolves_to: config_dir
         required: false
         desc: |
           File that defines the builds (dbkeys) available at sites used by display applications
           and the URL to those sites.
-
-          The value of this option will be resolved with respect to <config_dir>.
 
       builds_file_path:
         type: str

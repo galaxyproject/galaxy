@@ -28,6 +28,8 @@ def mock_init(monkeypatch):
     monkeypatch.setattr(GalaxyAppConfiguration, '_process_config', lambda a, b: None)
     monkeypatch.setattr(GalaxyAppConfiguration, '_override_tempdir', lambda a, b: None)
     monkeypatch.setattr(GalaxyAppConfiguration, 'renamed_options', MOCK_RENAMED_OPTIONS)
+    monkeypatch.setattr(GalaxyAppConfiguration, 'add_sample_file_to_defaults', set())
+    monkeypatch.setattr(GalaxyAppConfiguration, 'listify_options', set())
 
 
 def test_load_config_from_schema(mock_init):

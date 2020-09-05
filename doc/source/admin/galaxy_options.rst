@@ -826,8 +826,6 @@
 :Description:
     File that defines the builds (dbkeys) available at sites used by
     display applications and the URL to those sites.
-    The value of this option will be resolved with respect to
-    <config_dir>.
 :Default: ``build_sites.yml``
 :Type: str
 
