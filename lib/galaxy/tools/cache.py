@@ -1,22 +1,15 @@
-import json
 import logging
 import os
 from collections import defaultdict
 from threading import Lock
 
-from dogpile.cache import make_region
-from dogpile.cache.api import (
-    CachedValue,
-    NO_VALUE,
-)
-from dogpile.cache.proxy import ProxyBackend
+from diskcache import Cache, JSONDisk
 from lxml import etree
 from sqlalchemy.orm import (
     defer,
     joinedload,
 )
 
-from galaxy.tool_util.parser import get_tool_source
 from galaxy.util import unicodify
 from galaxy.util.hash_util import md5_hash_file
 
@@ -25,65 +18,42 @@ log = logging.getLogger(__name__)
 CURRENT_TOOL_CACHE_VERSION = 2
 
 
-class JSONBackend(ProxyBackend):
-
-    def set(self, key, value):
-        with self.proxied._dbm_file(True) as dbm:
-            dbm[key] = json.dumps({
-                'metadata': value.metadata,
-                'payload': self.value_encode(value),
-                'macro_paths': value.payload.macro_paths,
-                'paths_and_modtimes': value.payload.paths_and_modtimes(),
-                'tool_cache_version': CURRENT_TOOL_CACHE_VERSION
-            })
-
-    def get(self, key):
-        with self.proxied._dbm_file(False) as dbm:
-            if hasattr(dbm, "get"):
-                value = dbm.get(key, NO_VALUE)
-            else:
-                # gdbm objects lack a .get method
-                try:
-                    value = dbm[key]
-                except KeyError:
-                    value = NO_VALUE
-            if value is not NO_VALUE:
-                value = self.value_decode(key, value)
-            return value
-
-    def value_decode(self, k, v):
-        if not v or v is NO_VALUE:
-            return NO_VALUE
-        # v is returned as bytestring, so we need to `unicodify` on python < 3.6 before we can use json.loads
-        v = json.loads(unicodify(v))
-        if v.get('tool_cache_version', 0) != CURRENT_TOOL_CACHE_VERSION:
-            return NO_VALUE
-        for path, modtime in v['paths_and_modtimes'].items():
-            if os.path.getmtime(path) != modtime:
-                return NO_VALUE
-        payload = get_tool_source(
-            config_file=k,
-            xml_tree=etree.ElementTree(etree.fromstring(v['payload'].encode('utf-8'))),
-            macro_paths=v['macro_paths']
-        )
-        return CachedValue(metadata=v['metadata'], payload=payload)
-
-    def value_encode(self, v):
-        return unicodify(v.payload.to_string())
-
-
 def create_cache_region(tool_cache_data_dir):
     if not os.path.exists(tool_cache_data_dir):
         os.makedirs(tool_cache_data_dir)
-    region = make_region()
-    region.configure(
-        'dogpile.cache.dbm',
-        arguments={"filename": os.path.join(tool_cache_data_dir, "cache.dbm")},
-        expiration_time=-1,
-        wrap=[JSONBackend],
-        replace_existing_backend=True,
-    )
-    return region
+    return Cache(tool_cache_data_dir, disk=JSONDisk, timeout=3600)
+
+
+def is_valid_cache_entry(tool_document):
+    if tool_document.get('tool_cache_version', 0) != CURRENT_TOOL_CACHE_VERSION:
+        return False
+    for path, modtime in tool_document['paths_and_modtimes'].items():
+        if os.path.getmtime(path) != modtime:
+            return False
+    return True
+
+
+def get_or_create_cached_tool_source(cache, config_file, creator):
+    if config_file.endswith('.xml'):
+        tool_document = cache.get(config_file)
+        if tool_document and is_valid_cache_entry(tool_document):
+            tool_source = creator(
+                config_file=config_file,
+                xml_tree=etree.ElementTree(etree.fromstring(tool_document['document'].encode('utf-8'))),
+                macro_paths=tool_document['macro_paths']
+            )
+        else:
+            tool_source = creator(config_file)
+            to_persist = {
+                'document': tool_source.to_string(),
+                'macro_paths': tool_source.macro_paths,
+                'paths_and_modtimes': tool_source.paths_and_modtimes(),
+                'tool_cache_version': CURRENT_TOOL_CACHE_VERSION,
+            }
+            cache.set(config_file, to_persist)
+    else:
+        tool_source = creator(config_file)
+    return tool_source
 
 
 class ToolCache:
