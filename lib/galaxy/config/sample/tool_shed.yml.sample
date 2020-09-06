@@ -419,3 +419,10 @@ tool_shed:
   # up.
   #shed_tool_data_table_config: shed_tool_data_table_conf.xml
 
+  # Datatypes config file(s), defines what data (file) types are
+  # available in Galaxy (.sample is used if default does not exist).  If
+  # a datatype appears in multiple files, the last definition is used
+  # (though the first sniffer is used so limit sniffer definitions to
+  # one file).
+  #datatypes_config_file: datatypes_conf.xml
+
