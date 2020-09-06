@@ -446,9 +446,9 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
     add_sample_file_to_defaults = {
         'build_sites_config_file',
-        # 'datatypes_config_file',  # TODO: handle all items in this set, one commit at a time.
+        'datatypes_config_file',
         'job_metrics_config_file',
-        # 'tool_data_table_config_path',
+        # 'tool_data_table_config_path',  # TODO: handle all items in this set, one commit at a time.
         # 'tool_config_file',
     }
 
@@ -838,9 +838,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
     def parse_config_file_options(self, kwargs):
         """Backwards compatibility for config files moved to the config/ dir."""
-        defaults = dict(
-            datatypes_config_file=[self._in_config_dir('datatypes_conf.xml'), self._in_sample_dir('datatypes_conf.xml.sample')],
-        )
         listify_defaults = {
             'tool_data_table_config_path': [
                 self._in_config_dir('tool_data_table_conf.xml'),
@@ -850,7 +847,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                 self._in_sample_dir('tool_conf.xml.sample')]
         }
 
-        self._parse_config_file_options(defaults, listify_defaults, kwargs)
+        self._parse_config_file_options(dict(), listify_defaults, kwargs)
 
         # Backwards compatibility for names used in too many places to fix
         self.datatypes_config = self.datatypes_config_file

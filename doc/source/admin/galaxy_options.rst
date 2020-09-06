@@ -865,7 +865,7 @@
     If a datatype appears in multiple files, the last definition is
     used (though the first sniffer is used so limit sniffer
     definitions to one file).
-:Default: ``config/datatypes_conf.xml``
+:Default: ``datatypes_conf.xml``
 :Type: str
 
 

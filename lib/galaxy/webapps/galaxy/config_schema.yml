@@ -645,7 +645,8 @@ mapping:
 
       datatypes_config_file:
         type: str
-        default: config/datatypes_conf.xml
+        default: datatypes_conf.xml
+        path_resolves_to: config_dir
         required: false
         desc: |
           Datatypes config file(s), defines what data (file) types are available in
