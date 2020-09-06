@@ -7,11 +7,16 @@
         </div>
         <div class="unified-panel-body">
             <div class="toolMenuContainer">
-                <tool-section :category="historySection" @onClick="onClick" />
-                <tool-section :category="jobSection" @onClick="onClick" />
-                <tool-section v-if="isWorkflow" :category="workflowInEditorSection" @onClick="onClick" />
-                <tool-section v-else :category="workflowSection" @onClick="onClick" />
-                <tool-section :category="otherSection" @onClick="onClick" />
+                <tool-section :category="historySection" @onClick="onClick" :expanded="true" />
+                <tool-section :category="jobSection" @onClick="onClick" :expanded="true" />
+                <tool-section
+                    v-if="isWorkflow"
+                    :category="workflowInEditorSection"
+                    @onClick="onClick"
+                    :expanded="true"
+                />
+                <tool-section v-else :category="workflowSection" @onClick="onClick" :expanded="true" />
+                <tool-section :category="otherSection" @onClick="onClick" :expanded="true" />
             </div>
         </div>
         <MarkdownDialog
@@ -59,61 +64,51 @@ export default {
                     {
                         id: "history_dataset_display",
                         name: "Dataset",
-                        description: "from histories",
                         emitter: "onHistoryId",
                     },
                     {
                         id: "history_collection_display",
                         name: "Collection",
-                        description: "from histories",
                         emitter: "onHistoryCollectionId",
                     },
                     {
                         id: "history_dataset_as_image",
                         name: "Image",
-                        description: "from histories",
                         emitter: "onHistoryId",
                     },
                     {
                         id: "history_dataset_index",
                         name: "Dataset Index",
-                        description: "from histories",
                         emitter: "onHistoryId",
                     },
                     {
                         id: "history_dataset_embedded",
                         name: "Embedded Dataset",
-                        description: "from histories",
                         emitter: "onHistoryId",
                     },
                     {
                         id: "history_dataset_type",
                         name: "Dataset Type",
-                        description: "from histories",
                         emitter: "onHistoryId",
                     },
                     {
                         id: "history_dataset_link",
                         name: "Link to Dataset",
-                        description: "from histories",
                         emitter: "onHistoryId",
                     },
                     {
                         id: "history_dataset_name",
                         name: "Name of Dataset",
-                        description: "from histories",
                         emitter: "onHistoryId",
                     },
                     {
                         id: "history_dataset_peek",
-                        name: "Peek",
-                        description: "of a dataset",
+                        name: "Peek into Dataset",
                         emitter: "onHistoryId",
                     },
                     {
                         id: "history_dataset_info",
-                        name: "Information",
-                        description: "of a dataset",
+                        name: "Dataset Details",
                         emitter: "onHistoryId",
                     },
                 ],
