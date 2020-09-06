@@ -745,7 +745,7 @@
     XML config file that contains data table entries for the
     ToolDataTableManager.  This file is manually # maintained by the
     Galaxy administrator (.sample used if default does not exist).
-:Default: ``config/tool_data_table_conf.xml``
+:Default: ``tool_data_table_conf.xml``
 :Type: str
 
 

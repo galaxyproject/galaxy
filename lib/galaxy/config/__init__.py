@@ -125,7 +125,7 @@ class BaseAppConfiguration:
         self._create_attributes_from_raw_config()  # Create attributes based on raw_config
         self._preprocess_paths_to_resolve()  # Any preprocessing steps that need to happen before paths are resolved
         self._resolve_paths()  # Overwrite attribute values with resolved paths
-        self._select_one_path_from_list()  # Select one value from a list of values
+        self._postprocess_paths_to_resolve()  # Any steps that need to happen after paths are resolved
 
     def _process_renamed_options(self, kwargs):
         """Update kwargs to set any unset renamed options to values of old-named options, if set.
@@ -228,14 +228,14 @@ class BaseAppConfiguration:
                     defaults.append(sample)
                     setattr(self, key, defaults)
 
-    def _select_one_path_from_list(self):
-        # To process: options with a sample file added to defaults except options that can have multiple values.
-        # If value is not set, check each path in list; set to first path that exists;
-        # if none exist, set to last path in list.
-        if self.add_sample_file_to_defaults:
+    def _postprocess_paths_to_resolve(self):
+
+        def select_one_path_from_list():
+            # To consider: options with a sample file added to defaults except options that can have multiple values.
+            # If value is not set, check each path in list; set to first path that exists; if none exist, set to last path in list.
             keys = self.add_sample_file_to_defaults - self.listify_options if self.listify_options else self.add_sample_file_to_defaults
             for key in keys:
-                if not self.is_set(key):  # TODO: this check is not needed.
+                if not self.is_set(key):
                     paths = getattr(self, key)
                     for path in paths:
                         if self._path_exists(path):
@@ -243,6 +243,22 @@ class BaseAppConfiguration:
                             break
                     else:
                         setattr(self, key, paths[-1])  # TODO: we assume it exists; but we've already checked in the loop! Raise error instead?
+
+        def select_one_or_all_paths_from_list():
+            # Values for these options are lists of paths. If value is not set, use defaults if all paths in list exist;
+            # otherwise, set to last path in list.
+            for key in self.listify_options:
+                if not self.is_set(key):
+                    paths = getattr(self, key)
+                    for path in paths:
+                        if not self._path_exists(path):
+                            setattr(self, key, [paths[-1]])  # value is a list
+                            break
+
+        if self.add_sample_file_to_defaults:  # Currently, this is the ONLY case when we need to pick one file from a list
+            select_one_path_from_list()
+        if self.listify_options:
+            select_one_or_all_paths_from_list()
 
     def _path_exists(self, path):  # factored out so we can mock it in tests
         return os.path.exists(path)
@@ -448,8 +464,13 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         'build_sites_config_file',
         'datatypes_config_file',
         'job_metrics_config_file',
-        # 'tool_data_table_config_path',  # TODO: handle all items in this set, one commit at a time.
-        # 'tool_config_file',
+        'tool_data_table_config_path',
+        # 'tool_config_file',  # TODO: last man standing!
+    }
+
+    listify_options = {
+        'tool_data_table_config_path',
+        # 'tool_config_file',  # TODO: last man standing!
     }
 
     def __init__(self, **kwargs):
@@ -839,9 +860,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     def parse_config_file_options(self, kwargs):
         """Backwards compatibility for config files moved to the config/ dir."""
         listify_defaults = {
-            'tool_data_table_config_path': [
-                self._in_config_dir('tool_data_table_conf.xml'),
-                self._in_sample_dir('tool_data_table_conf.xml.sample')],
             'tool_config_file': [
                 self._in_config_dir('tool_conf.xml'),
                 self._in_sample_dir('tool_conf.xml.sample')]

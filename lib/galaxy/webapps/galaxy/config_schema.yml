@@ -561,7 +561,8 @@ mapping:
 
       tool_data_table_config_path:
         type: str
-        default: config/tool_data_table_conf.xml
+        default: tool_data_table_conf.xml
+        path_resolves_to: config_dir
         required: false
         desc: |
           XML config file that contains data table entries for the

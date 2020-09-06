@@ -32,7 +32,12 @@ MOCK_SCHEMA = {
     'path3': {
         'type': 'str',
         'default': 'my-other-files',
-    }
+    },
+    'path4': {
+        'type': 'str',
+        'default': 'conf1, conf2, conf3',
+        'path_resolves_to': 'my_config_dir',
+    },
 }
 
 
@@ -45,17 +50,19 @@ def mock_init(monkeypatch):
     monkeypatch.setattr(BaseAppConfiguration, '_load_schema', lambda a: AppSchema(None, '_'))
     monkeypatch.setattr(AppSchema, '_read_schema', lambda a, b: get_schema(MOCK_SCHEMA))
     monkeypatch.setattr(BaseAppConfiguration, 'deprecated_dirs', MOCK_DEPRECATED_DIRS)
+    monkeypatch.setattr(BaseAppConfiguration, 'listify_options', {'path4'})
 
 
 def test_mock_schema_is_loaded(mock_init):
     # Check that mock is loaded as expected
     config = BaseAppConfiguration()
-    assert len(config._raw_config) == 5
+    assert len(config._raw_config) == 6
     assert config._raw_config['my_config_dir'] == 'my-config'
     assert config._raw_config['my_data_dir'] == 'my-data'
     assert config._raw_config['path1'] == 'my-config-files'
     assert config._raw_config['path2'] == 'my-data-files'
     assert config._raw_config['path3'] == 'my-other-files'
+    assert config._raw_config['path4'] == 'conf1, conf2, conf3'
 
 
 def test_no_kwargs(mock_init):
@@ -64,6 +71,7 @@ def test_no_kwargs(mock_init):
     assert config.path1 == 'my-config/my-config-files'  # resolved
     assert config.path2 == 'my-data/my-data-files'  # resolved
     assert config.path3 == 'my-other-files'  # no change
+    assert config.path4 == ['my-config/conf3']  # last value resolved and listified; others dropped as files do not exist
 
 
 def test_kwargs_relative_path(mock_init):
@@ -134,15 +142,18 @@ def test_kwargs_set_to_null(mock_init):
 
 
 def test_add_sample_file(mock_init, monkeypatch):
-    # Expected: sample file appended to list of defaults, then selected
+    # Expected: sample file appended to list of defaults:
     # - resolved w.r.t sample-dir (_in_sample_dir mocked)
     # - has ".sample" suffix
-    monkeypatch.setattr(BaseAppConfiguration, 'add_sample_file_to_defaults', {'path1'})
+    # Last value (sample file) resolved and listified; others dropped as files do not exist
+    monkeypatch.setattr(BaseAppConfiguration, 'add_sample_file_to_defaults', {'path1', 'path4'})
     monkeypatch.setattr(BaseAppConfiguration, '_in_sample_dir', lambda a, path: '/sample-dir/%s' % path)
     config = BaseAppConfiguration()
 
     assert config._raw_config['path1'] == 'my-config-files'
     assert config.path1 == '/sample-dir/my-config-files.sample'
+    assert config._raw_config['path4'] == 'conf1, conf2, conf3'
+    assert config.path4 == ['/sample-dir/conf3.sample']
 
 
 def test_select_one_path_from_list(mock_init, monkeypatch):
@@ -163,3 +174,29 @@ def test_select_one_path_from_list_all_files_exist(mock_init, monkeypatch):
 
     assert config._raw_config['path1'] == 'my-config-files'
     assert config.path1 == 'my-config/my-config-files'
+
+
+def test_no_kwargs_listify(mock_init, monkeypatch):
+    # Expected: last value resolved and listified; others dropped as files do not exist
+    config = BaseAppConfiguration()
+
+    assert config._raw_config['path4'] == 'conf1, conf2, conf3'
+    assert config.path4 == ['my-config/conf3']
+
+
+def test_no_kwargs_listify_all_files_exist(mock_init, monkeypatch):
+    # Expected: each value resolved and listified (mock: all files exist)
+    monkeypatch.setattr(BaseAppConfiguration, '_path_exists', lambda a, b: True)
+    config = BaseAppConfiguration()
+
+    assert config._raw_config['path4'] == 'conf1, conf2, conf3'
+    assert config.path4 == ['my-config/conf1', 'my-config/conf2', 'my-config/conf3']
+
+
+def test_kwargs_listify(mock_init, monkeypatch):
+    # Expected: use values from kwargs; each value resolved and listified
+    new_path4 = 'new1, new2'
+    config = BaseAppConfiguration(path4=new_path4)
+
+    assert config._raw_config['path4'] == 'new1, new2'
+    assert config.path4 == ['my-config/new1', 'my-config/new2']
