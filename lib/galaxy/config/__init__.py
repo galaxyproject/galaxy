@@ -110,6 +110,7 @@ class BaseAppConfiguration:
     # If VALUE == first directory in a user-supplied path that resolves to KEY, it will be stripped from that path
     renamed_options = None
     deprecated_dirs = None
+    add_sample_file_to_defaults = None  # for these options, add sample config files to their defaults
     listify_options = None  # values for these options are processed as lists of values
 
     def __init__(self, **kwargs):
@@ -124,6 +125,7 @@ class BaseAppConfiguration:
         self._create_attributes_from_raw_config()  # Create attributes based on raw_config
         self._preprocess_paths_to_resolve()  # Any preprocessing steps that need to happen before paths are resolved
         self._resolve_paths()  # Overwrite attribute values with resolved paths
+        self._select_one_path_from_list()  # Select one value from a list of values
 
     def _process_renamed_options(self, kwargs):
         """Update kwargs to set any unset renamed options to values of old-named options, if set.
@@ -216,8 +218,34 @@ class BaseAppConfiguration:
         raise Exception('Not implemented')
 
     def _preprocess_paths_to_resolve(self):
-        # Override in subclasses (optional).
-        pass
+        # For these options, if option is not set, listify its defaults and add a sample config file.
+        if self.add_sample_file_to_defaults:
+            for key in self.add_sample_file_to_defaults:
+                if not self.is_set(key):
+                    defaults = listify(getattr(self, key), do_strip=True)
+                    sample = '%s.sample' % defaults[-1]  # if there are multiple defaults, use last as template
+                    sample = self._in_sample_dir(sample)  # resolve w.r.t sample_dir
+                    defaults.append(sample)
+                    setattr(self, key, defaults)
+
+    def _select_one_path_from_list(self):
+        # To process: options with a sample file added to defaults except options that can have multiple values.
+        # If value is not set, check each path in list; set to first path that exists;
+        # if none exist, set to last path in list.
+        if self.add_sample_file_to_defaults:
+            keys = self.add_sample_file_to_defaults - self.listify_options if self.listify_options else self.add_sample_file_to_defaults
+            for key in keys:
+                if not self.is_set(key):  # TODO: this check is not needed.
+                    paths = getattr(self, key)
+                    for path in paths:
+                        if self._path_exists(path):
+                            setattr(self, key, path)
+                            break
+                    else:
+                        setattr(self, key, paths[-1])  # TODO: we assume it exists; but we've already checked in the loop! Raise error instead?
+
+    def _path_exists(self, path):  # factored out so we can mock it in tests
+        return os.path.exists(path)
 
     def _update_raw_config_from_kwargs(self, kwargs):
 
@@ -416,7 +444,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     default_config_file_name = 'galaxy.yml'
     deprecated_dirs = {'config_dir': 'config', 'data_dir': 'database'}
 
-    # If these options are not set, add sample config files to their defaults.
     add_sample_file_to_defaults = {
         'build_sites_config_file',
         # 'datatypes_config_file',  # TODO: handle all items in this set, one commit at a time.
@@ -437,37 +464,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         if string_as_bool(kwargs.get("override_tempdir", "True")):
             tempfile.tempdir = self.new_file_path
 
-    def _preprocess_paths_to_resolve(self):
-        # For these options, if option is not set, listify its defaults and add a sample config file.
-        for key in self.add_sample_file_to_defaults:
-            if not self.is_set(key):
-                defaults = listify(getattr(self, key), do_strip=True)
-                sample = '%s.sample' % defaults[-1]  # if there are multiple defaults, use last as template
-                sample = self._in_sample_dir(sample)  # resolve w.r.t sample_dir
-                defaults.append(sample)
-                setattr(self, key, defaults)
-
-    def _select_one_path_from_list(self):
-        # To process: options with a sample file added to defaults except options that can have multiple values.
-        # If value is not set, check each path in list; set to first path that exists;
-        # if none exist, set to last path in list.
-        keys = self.add_sample_file_to_defaults - self.listify_options if self.listify_options else self.add_sample_file_to_defaults
-        for key in keys:
-            if not self.is_set(key):  # TODO: this check is not needed.
-                paths = getattr(self, key)
-                for path in paths:
-                    if self._path_exists(path):
-                        setattr(self, key, path)
-                        break
-                else:
-                    setattr(self, key, paths[-1])  # TODO: we assume it exists; but we've already checked in the loop! Raise error instead?
-
-    def _path_exists(self, path):  # factored out so we can mock it in tests
-        return os.path.exists(path)
-
     def _process_config(self, kwargs):
-        self._select_one_path_from_list()
-
         # Resolve paths of other config files
         self.parse_config_file_options(kwargs)  # TODO: this is going away
 

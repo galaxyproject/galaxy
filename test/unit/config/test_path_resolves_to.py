@@ -146,29 +146,22 @@ def test_kwargs_set_to_null(mock_init):
     assert config.path3 == 'my-other-files'  # no change
 
 
-def mock_process_config(config_instance, _):
-    config_instance._select_one_path_from_list()
-
-
 def test_add_sample_file(mock_init, monkeypatch):
-    # Expected: sample file appended to list of defaults:
+    # Expected: sample file appended to list of defaults, then selected
     # - resolved w.r.t sample-dir (_in_sample_dir mocked)
     # - has ".sample" suffix
-    # - if defaults was one value, it's listified
-    # - if defaults was a list, then the last item is used as template for sample: foo >> foo.sample
     monkeypatch.setattr(GalaxyAppConfiguration, 'add_sample_file_to_defaults', {'path1'})
     monkeypatch.setattr(GalaxyAppConfiguration, '_in_sample_dir', lambda a, path: '/sample-dir/%s' % path)
     config = GalaxyAppConfiguration()
 
     assert config._raw_config['path1'] == 'my-config-files'
-    assert config.path1 == ['my-config/my-config-files', '/sample-dir/my-config-files.sample']
+    assert config.path1 == '/sample-dir/my-config-files.sample'
 
 
 def test_select_one_path_from_list(mock_init, monkeypatch):
     # Expected: files do not exist, so use last file in list (would be sample file); value is not a list
     monkeypatch.setattr(GalaxyAppConfiguration, 'add_sample_file_to_defaults', {'path1'})
     monkeypatch.setattr(GalaxyAppConfiguration, '_in_sample_dir', lambda a, path: '/sample-dir/%s' % path)
-    monkeypatch.setattr(GalaxyAppConfiguration, '_process_config', mock_process_config)
     config = GalaxyAppConfiguration()
 
     assert config._raw_config['path1'] == 'my-config-files'
@@ -179,7 +172,6 @@ def test_select_one_path_from_list_all_files_exist(mock_init, monkeypatch):
     # Expected: all files exist, so use first file in list; value is not a list
     monkeypatch.setattr(GalaxyAppConfiguration, 'add_sample_file_to_defaults', {'path1'})
     monkeypatch.setattr(GalaxyAppConfiguration, '_path_exists', lambda a, b: True)
-    monkeypatch.setattr(GalaxyAppConfiguration, '_process_config', mock_process_config)
     config = GalaxyAppConfiguration()
 
     assert config._raw_config['path1'] == 'my-config-files'
