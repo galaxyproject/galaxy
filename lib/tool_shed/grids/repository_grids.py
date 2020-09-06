@@ -1188,6 +1188,10 @@ class ToolDependenciesGrid(RepositoryMetadataGrid):
 
 class ToolsGrid(RepositoryMetadataGrid):
 
+    allow_fetching_all_results = False
+    num_rows_per_page = 50
+    use_paging = True
+
     class ToolsColumn(grids.TextColumn):
 
         def get_value(self, trans, grid, repository_metadata):

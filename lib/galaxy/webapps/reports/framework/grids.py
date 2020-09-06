@@ -37,6 +37,7 @@ class Grid(object):
     use_paging = False
     num_rows_per_page = 25
     num_page_links = 10
+    allow_fetching_all_results = True
     # Set preference names.
     cur_filter_pref_name = ".filter"
     cur_sort_key_pref_name = ".sort_key"
@@ -194,6 +195,11 @@ class Grid(object):
             if 'page' in kwargs:
                 if kwargs['page'] == 'all':
                     page_num = 0
+                    if self.allow_fetching_all_results:
+                        page_num = 0
+                    else:
+                        # Should make it harder to return all results at once
+                        page_num = 1
                 else:
                     page_num = int(kwargs['page'])
             else:
@@ -273,6 +279,7 @@ class Grid(object):
                                    cur_page_num=page_num,
                                    num_pages=num_pages,
                                    num_page_links=self.num_page_links,
+                                   allow_fetching_all_results=self.allow_fetching_all_results,
                                    default_filter_dict=self.default_filter,
                                    cur_filter_dict=cur_filter_dict,
                                    sort_key=sort_key,
