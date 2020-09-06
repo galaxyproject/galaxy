@@ -44,9 +44,7 @@ class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
     def parse_config_file_options(self, kwargs):
         defaults = dict(
-            auth_config_file=[self._in_config_dir('config/auth_conf.xml')],
             datatypes_config_file=[self._in_config_dir('datatypes_conf.xml'), self._in_sample_dir('datatypes_conf.xml.sample')],
-            shed_tool_data_table_config=[self._in_managed_config_dir('shed_tool_data_table_conf.xml')],
         )
         self._parse_config_file_options(defaults, dict(), kwargs)
         # Backwards compatibility for names used in too many places to fix
