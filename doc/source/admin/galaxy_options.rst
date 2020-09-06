@@ -267,7 +267,7 @@
     config/tool_conf.xml does not exist). Can be a single file, a list
     of files, or (for backwards compatibility) a comma-separated list
     of files.
-:Default: ``config/tool_conf.xml``
+:Default: ``tool_conf.xml``
 :Type: any
 
 

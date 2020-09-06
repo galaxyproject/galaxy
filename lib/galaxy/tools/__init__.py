@@ -266,7 +266,7 @@ class ToolBox(BaseGalaxyToolBox):
             if self.dynamic_confs():
                 # Do not load or create a default shed_tool_config_file if another shed_tool_config file has already been loaded
                 return False
-        elif self.app.config.tool_config_file_set:
+        elif self.app.config.is_set('tool_config_file'):
             log.warning(
                 "The default shed tool config file (%s) has been added to the tool_config_file option, if this is "
                 "not the desired behavior, please set shed_tool_config_file to your primary shed-enabled tool "

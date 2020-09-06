@@ -228,7 +228,7 @@ galaxy:
   # config/tool_conf.xml does not exist). Can be a single file, a list
   # of files, or (for backwards compatibility) a comma-separated list of
   # files.
-  #tool_config_file: config/tool_conf.xml
+  #tool_config_file: tool_conf.xml
 
   # Tool config file for tools installed from the Galaxy Tool Shed. Must
   # be writable by Galaxy and generally should not be edited by hand. In

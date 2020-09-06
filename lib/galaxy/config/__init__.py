@@ -357,48 +357,6 @@ class BaseAppConfiguration:
     def _in_dir(self, _dir, path):
         return os.path.join(_dir, path) if path else None
 
-    def _parse_config_file_options(self, defaults, listify_defaults, config_kwargs):
-
-        def root_join(val):
-            try:
-                return os.path.join(self.root, val)
-            except TypeError:
-                template = "Failed to set configuration variable %s, value %s of wrong type %s"
-                message = template % (var, val, type(val))
-                raise ConfigurationError(message)
-
-        for var, values in defaults.items():
-            if config_kwargs.get(var) is not None:
-                path = config_kwargs.get(var)
-                setattr(self, var + '_set', True)
-            else:
-                for value in values:
-                    if os.path.exists(value):
-                        path = value
-                        break
-                else:
-                    path = values[-1]
-                setattr(self, var + '_set', False)
-            setattr(self, var, root_join(path))
-
-        for var, values in listify_defaults.items():
-            paths = []
-            if config_kwargs.get(var) is not None:
-                paths = listify(config_kwargs.get(var))
-                setattr(self, var + '_set', True)
-            else:
-                for value in values:
-                    for path in listify(value):
-                        if not os.path.exists(path):
-                            break
-                    else:
-                        paths = listify(value)
-                        break
-                else:
-                    paths = listify(values[-1])
-                setattr(self, var + '_set', False)
-            setattr(self, var, [root_join(x) for x in paths])
-
 
 class CommonConfigurationMixin:
     """Shared configuration settings code for Galaxy and ToolShed."""
@@ -465,12 +423,12 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         'datatypes_config_file',
         'job_metrics_config_file',
         'tool_data_table_config_path',
-        # 'tool_config_file',  # TODO: last man standing!
+        'tool_config_file',
     }
 
     listify_options = {
         'tool_data_table_config_path',
-        # 'tool_config_file',  # TODO: last man standing!
+        'tool_config_file',
     }
 
     def __init__(self, **kwargs):
@@ -486,8 +444,9 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             tempfile.tempdir = self.new_file_path
 
     def _process_config(self, kwargs):
-        # Resolve paths of other config files
-        self.parse_config_file_options(kwargs)  # TODO: this is going away
+        # Backwards compatibility for names used in too many places to fix
+        self.datatypes_config = self.datatypes_config_file
+        self.tool_configs = self.tool_config_file
 
         # Collect the umask and primary gid from the environment
         self.umask = os.umask(0o77)  # get the current umask
@@ -856,20 +815,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             self.galaxy_infrastructure_url = string.Template(self.galaxy_infrastructure_url).safe_substitute({
                 'UWSGI_PORT': port
             })
-
-    def parse_config_file_options(self, kwargs):
-        """Backwards compatibility for config files moved to the config/ dir."""
-        listify_defaults = {
-            'tool_config_file': [
-                self._in_config_dir('tool_conf.xml'),
-                self._in_sample_dir('tool_conf.xml.sample')]
-        }
-
-        self._parse_config_file_options(dict(), listify_defaults, kwargs)
-
-        # Backwards compatibility for names used in too many places to fix
-        self.datatypes_config = self.datatypes_config_file
-        self.tool_configs = self.tool_config_file
 
     def reload_sanitize_allowlist(self, explicit=True):
         self.sanitize_allowlist = []

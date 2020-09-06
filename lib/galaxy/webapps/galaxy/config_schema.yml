@@ -208,7 +208,8 @@ mapping:
 
       tool_config_file:
         type: any
-        default: config/tool_conf.xml
+        default: tool_conf.xml
+        path_resolves_to: config_dir
         required: false
         desc: |
           Tool config files, defines what tools are available in Galaxy.
