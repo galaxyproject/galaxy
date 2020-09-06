@@ -1,6 +1,6 @@
 import pytest
 
-from galaxy.config import GalaxyAppConfiguration
+from galaxy.config import BaseAppConfiguration
 from galaxy.config.schema import AppSchema
 
 
@@ -37,32 +37,19 @@ MOCK_SCHEMA = {
 
 
 def get_schema(app_mapping):
-    return {'mapping': {'galaxy': {'mapping': app_mapping}}}
-
-
-def test_deprecated_prefixes_set_correctly(monkeypatch):
-    # Before we mock them, check that correct values are assigned
-    monkeypatch.setattr(AppSchema, '_read_schema', lambda a, b: get_schema(MOCK_SCHEMA))
-    monkeypatch.setattr(GalaxyAppConfiguration, '_process_config', lambda a, b: None)
-    monkeypatch.setattr(GalaxyAppConfiguration, '_override_tempdir', lambda a, b: None)
-    monkeypatch.setattr(GalaxyAppConfiguration, 'add_sample_file_to_defaults', [])
-
-    config = GalaxyAppConfiguration()
-    assert config.deprecated_dirs == {'config_dir': 'config', 'data_dir': 'database'}
+    return {'mapping': {'_': {'mapping': app_mapping}}}
 
 
 @pytest.fixture
 def mock_init(monkeypatch):
+    monkeypatch.setattr(BaseAppConfiguration, '_load_schema', lambda a: AppSchema(None, '_'))
     monkeypatch.setattr(AppSchema, '_read_schema', lambda a, b: get_schema(MOCK_SCHEMA))
-    monkeypatch.setattr(GalaxyAppConfiguration, '_process_config', lambda a, b: None)
-    monkeypatch.setattr(GalaxyAppConfiguration, '_override_tempdir', lambda a, b: None)
-    monkeypatch.setattr(GalaxyAppConfiguration, 'deprecated_dirs', MOCK_DEPRECATED_DIRS)
-    monkeypatch.setattr(GalaxyAppConfiguration, 'add_sample_file_to_defaults', set())
+    monkeypatch.setattr(BaseAppConfiguration, 'deprecated_dirs', MOCK_DEPRECATED_DIRS)
 
 
 def test_mock_schema_is_loaded(mock_init):
     # Check that mock is loaded as expected
-    config = GalaxyAppConfiguration()
+    config = BaseAppConfiguration()
     assert len(config._raw_config) == 5
     assert config._raw_config['my_config_dir'] == 'my-config'
     assert config._raw_config['my_data_dir'] == 'my-data'
@@ -73,7 +60,7 @@ def test_mock_schema_is_loaded(mock_init):
 
 def test_no_kwargs(mock_init):
     # Expected: use default from schema, then resolve
-    config = GalaxyAppConfiguration()
+    config = BaseAppConfiguration()
     assert config.path1 == 'my-config/my-config-files'  # resolved
     assert config.path2 == 'my-data/my-data-files'  # resolved
     assert config.path3 == 'my-other-files'  # no change
@@ -83,7 +70,7 @@ def test_kwargs_relative_path(mock_init):
     # Expected: use value from kwargs, then resolve
     new_path1 = 'foo1/bar'
     new_path2 = 'foo2/bar'
-    config = GalaxyAppConfiguration(path1=new_path1, path2=new_path2)
+    config = BaseAppConfiguration(path1=new_path1, path2=new_path2)
 
     assert config.path1 == 'my-config/' + new_path1  # resolved
     assert config.path2 == 'my-data/' + new_path2  # resolved
@@ -94,7 +81,7 @@ def test_kwargs_ablsolute_path(mock_init):
     # Expected: use value from kwargs, do NOT resolve
     new_path1 = '/foo1/bar'
     new_path2 = '/foo2/bar'
-    config = GalaxyAppConfiguration(path1=new_path1, path2=new_path2)
+    config = BaseAppConfiguration(path1=new_path1, path2=new_path2)
 
     assert config.path1 == new_path1  # NOT resolved
     assert config.path2 == new_path2  # NOT resolved
@@ -105,7 +92,7 @@ def test_kwargs_relative_path_old_prefix(mock_init):
     # Expect: use value from kwargs, strip old prefix, then resolve
     new_path1 = 'old-config/foo1/bar'
     new_path2 = 'old-database/foo2/bar'
-    config = GalaxyAppConfiguration(path1=new_path1, path2=new_path2)
+    config = BaseAppConfiguration(path1=new_path1, path2=new_path2)
 
     assert config.path1 == 'my-config/foo1/bar'  # stripped of old prefix, resolved
     assert config.path2 == 'my-data/foo2/bar'  # stripped of old prefix, resolved
@@ -118,7 +105,7 @@ def test_kwargs_relative_path_old_prefix_for_other_option(mock_init):
     # (deprecated for the config_dir option) if it's used for another option
     new_path1 = 'old-database/foo1/bar'
     new_path2 = 'old-config/foo2/bar'
-    config = GalaxyAppConfiguration(path1=new_path1, path2=new_path2)
+    config = BaseAppConfiguration(path1=new_path1, path2=new_path2)
 
     assert config.path1 == 'my-config/' + new_path1  # resolved
     assert config.path2 == 'my-data/' + new_path2  # resolved
@@ -128,7 +115,7 @@ def test_kwargs_relative_path_old_prefix_for_other_option(mock_init):
 def test_kwargs_relative_path_old_prefix_empty_after_strip(mock_init):
     # Expect: use value from kwargs, strip old prefix, then resolve
     new_path1 = 'old-config'
-    config = GalaxyAppConfiguration(path1=new_path1)
+    config = BaseAppConfiguration(path1=new_path1)
 
     assert config.path1 == 'my-config/'  # stripped of old prefix, then resolved
     assert config.path2 == 'my-data/my-data-files'  # stripped of old prefix, then resolved
@@ -139,7 +126,7 @@ def test_kwargs_set_to_null(mock_init):
     # Expected: allow overriding with null, then resolve
     # This is not a common scenario, but it does happen: one example is
     # `job_config` set to `None` when testing
-    config = GalaxyAppConfiguration(path1=None)
+    config = BaseAppConfiguration(path1=None)
 
     assert config.path1 == 'my-config'  # resolved
     assert config.path2 == 'my-data/my-data-files'  # resolved
@@ -150,9 +137,9 @@ def test_add_sample_file(mock_init, monkeypatch):
     # Expected: sample file appended to list of defaults, then selected
     # - resolved w.r.t sample-dir (_in_sample_dir mocked)
     # - has ".sample" suffix
-    monkeypatch.setattr(GalaxyAppConfiguration, 'add_sample_file_to_defaults', {'path1'})
-    monkeypatch.setattr(GalaxyAppConfiguration, '_in_sample_dir', lambda a, path: '/sample-dir/%s' % path)
-    config = GalaxyAppConfiguration()
+    monkeypatch.setattr(BaseAppConfiguration, 'add_sample_file_to_defaults', {'path1'})
+    monkeypatch.setattr(BaseAppConfiguration, '_in_sample_dir', lambda a, path: '/sample-dir/%s' % path)
+    config = BaseAppConfiguration()
 
     assert config._raw_config['path1'] == 'my-config-files'
     assert config.path1 == '/sample-dir/my-config-files.sample'
@@ -160,9 +147,9 @@ def test_add_sample_file(mock_init, monkeypatch):
 
 def test_select_one_path_from_list(mock_init, monkeypatch):
     # Expected: files do not exist, so use last file in list (would be sample file); value is not a list
-    monkeypatch.setattr(GalaxyAppConfiguration, 'add_sample_file_to_defaults', {'path1'})
-    monkeypatch.setattr(GalaxyAppConfiguration, '_in_sample_dir', lambda a, path: '/sample-dir/%s' % path)
-    config = GalaxyAppConfiguration()
+    monkeypatch.setattr(BaseAppConfiguration, 'add_sample_file_to_defaults', {'path1'})
+    monkeypatch.setattr(BaseAppConfiguration, '_in_sample_dir', lambda a, path: '/sample-dir/%s' % path)
+    config = BaseAppConfiguration()
 
     assert config._raw_config['path1'] == 'my-config-files'
     assert config.path1 == '/sample-dir/my-config-files.sample'
@@ -170,9 +157,9 @@ def test_select_one_path_from_list(mock_init, monkeypatch):
 
 def test_select_one_path_from_list_all_files_exist(mock_init, monkeypatch):
     # Expected: all files exist, so use first file in list; value is not a list
-    monkeypatch.setattr(GalaxyAppConfiguration, 'add_sample_file_to_defaults', {'path1'})
-    monkeypatch.setattr(GalaxyAppConfiguration, '_path_exists', lambda a, b: True)
-    config = GalaxyAppConfiguration()
+    monkeypatch.setattr(BaseAppConfiguration, 'add_sample_file_to_defaults', {'path1'})
+    monkeypatch.setattr(BaseAppConfiguration, '_path_exists', lambda a, b: True)
+    config = BaseAppConfiguration()
 
     assert config._raw_config['path1'] == 'my-config-files'
     assert config.path1 == 'my-config/my-config-files'
