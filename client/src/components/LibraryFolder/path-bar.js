@@ -1,5 +1,6 @@
 import _ from "underscore";
 import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 
 var PathBar = Backbone.View.extend({
     el: "#path-bar",
@@ -13,7 +14,7 @@ var PathBar = Backbone.View.extend({
         return _.template(
             `<ol class="breadcrumb">
                 <li class="breadcrumb-item">
-                    <a title="Return to the list of libraries" href="/library/list">Libraries</a>
+                    <a title="Return to the list of libraries" href="<%- libRootPath %>">Libraries</a>
                 </li>
                 <% _.each(path, function(path_item) { %>
                     <% if (path_item[0] != id) { %>
@@ -49,6 +50,7 @@ var PathBar = Backbone.View.extend({
         }
         this.$el.html(
             template({
+                libRootPath: `${getAppRoot()}library/list`,
                 path: options.full_path,
                 id: options.id,
                 parent_library_id: options.parent_library_id,
