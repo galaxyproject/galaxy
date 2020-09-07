@@ -232,7 +232,7 @@ export default {
         ) {
             this.multiple_add_dataset_options = true;
         }
-        const contains_file_or_folder = this.folderContents.find((el) => el.type == "folder" || el.type == "file");
+        const contains_file_or_folder = this.folderContents.find((el) => el.type === "folder" || el.type === "file");
 
         // logic from legacy code
         if (contains_file_or_folder) {
@@ -280,7 +280,7 @@ export default {
         },
         downloadData(format) {
             const { datasets, folders } = this.findCheckedItems();
-            if (this.selected.length == 0) {
+            if (this.selected.length === 0) {
                 Toast.info("You must select at least one dataset to download");
                 return;
             }
