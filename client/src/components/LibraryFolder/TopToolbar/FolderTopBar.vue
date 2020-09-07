@@ -3,7 +3,7 @@
         <div id="path-bar" />
 
         <div class="form-inline d-flex align-items-center mb-2">
-            <a class="mr-1 btn btn-secondary" href="/library/list" data-toggle="tooltip" title="Go to first page">
+            <a class="mr-1 btn btn-secondary" :href="getHomeUrl" data-toggle="tooltip" title="Go to first page">
                 <font-awesome-icon icon="home" />
             </a>
             <div>
@@ -253,6 +253,9 @@ export default {
         });
     },
     computed: {
+        getHomeUrl: () => {
+            return `${getAppRoot()}library/list`;
+        },
         allDatasets: function () {
             return this.folderContents.filter((element) => element.type === "file");
         },
