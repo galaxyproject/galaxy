@@ -19,7 +19,7 @@ export const fields = [
         sortable: false,
     },
     {
-        label: "Data Type",
+        label: "Type",
         key: "type",
         sortable: true,
     },
@@ -29,7 +29,7 @@ export const fields = [
         sortable: true,
     },
     {
-        label: "Date Updated (UTC)",
+        label: "Updated",
         key: "update_time",
         sortable: true,
     },

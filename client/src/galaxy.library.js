@@ -3,12 +3,10 @@
 // MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
 /* global ga */
-import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 // import mod_utils from "utils/utils";
-import { Toast } from "ui/toast";
 import mod_baseMVC from "mvc/base-mvc";
 // import mod_library_model from "mvc/library/library-model";
 import mod_librarylist_view from "mvc/library/library-librarylist-view";
