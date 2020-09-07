@@ -1,7 +1,7 @@
 import Vue from "vue";
 import { mount } from "@vue/test-utils";
 import SavedRulesSelector from "components/RuleBuilder/SavedRulesSelector";
-import { getNewAttachNode } from "../../../tests/jest/helpers";
+import { getNewAttachNode } from "jest/helpers";
 
 describe("SavedRulesSelector", () => {
     let wrapper;

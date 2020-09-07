@@ -1,6 +1,6 @@
 import { mount } from "@vue/test-utils";
 import DatasetName from "./DatasetName";
-import { getNewAttachNode } from "../../../tests/jest/helpers";
+import { getNewAttachNode } from "jest/helpers";
 
 describe("Dataset Name", () => {
     it("test dataset default", async () => {
