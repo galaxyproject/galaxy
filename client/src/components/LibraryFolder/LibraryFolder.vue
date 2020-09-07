@@ -179,34 +179,35 @@
                         </button>
                     </div>
                     <div v-else>
-                        <a v-if="row.item.can_manage && !row.item.deleted && row.item.type === 'folder'">
-                            <button
-                                @click="toggleEditMode(row.item)"
-                                data-toggle="tooltip"
-                                data-placement="top"
-                                class="primary-button btn-sm permission_folder_btn edit_folder_btn"
-                                :title="'Edit ' + row.item.name"
-                            >
-                                <font-awesome-icon icon="pencil-alt" />
-                                Edit
-                            </button>
-                        </a>
-                        <a v-if="row.item.can_manage && !row.item.deleted" :href="createPermissionLink(row.item)">
-                            <button
-                                data-toggle="tooltip"
-                                data-placement="top"
-                                class="primary-button btn-sm permission_folder_btn"
-                                :title="'Permissions of ' + row.item.name"
-                            >
-                                <font-awesome-icon icon="users" />
-                                Manage
-                            </button>
-                        </a>
+                        <b-button
+                            v-if="row.item.can_manage && !row.item.deleted && row.item.type === 'folder'"
+                            @click="toggleEditMode(row.item)"
+                            data-toggle="tooltip"
+                            data-placement="top"
+                            size="sm"
+                            class="lib-btn permission_folder_btn edit_folder_btn"
+                            :title="'Edit ' + row.item.name"
+                        >
+                            <font-awesome-icon icon="pencil-alt" />
+                            Edit
+                        </b-button>
+                        <b-button
+                            v-if="row.item.can_manage && !row.item.deleted"
+                            :href="createPermissionLink(row.item)"
+                            data-toggle="tooltip"
+                            data-placement="top"
+                            size="sm"
+                            class="lib-btn permission_folder_btn"
+                            :title="'Permissions of ' + row.item.name"
+                        >
+                            <font-awesome-icon icon="users" />
+                            Manage
+                        </b-button>
                         <button
                             @click="undelete(row.item)"
                             v-if="row.item.deleted"
                             :title="'Undelete ' + row.item.name"
-                            class="primary-button btn-sm undelete_dataset_btn"
+                            class="lib-btn primary-button btn-sm undelete_dataset_btn"
                             type="button"
                         >
                             <font-awesome-icon icon="unlock" />

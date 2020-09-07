@@ -34,3 +34,7 @@ th:focus {
 .deleted-item {
     color: grey;
 }
+
+.lib-btn {
+    margin-bottom: 2%
+}
