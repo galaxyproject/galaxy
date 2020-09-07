@@ -235,7 +235,8 @@ class RepositoryGrid(grids.Grid):
     standard_filters = []
     default_filter = dict(deleted="False")
     num_rows_per_page = 50
-    use_paging = False
+    use_paging = True
+    allow_fetching_all_results = False
 
     def build_initial_query(self, trans, **kwd):
         filter = trans.app.repository_grid_filter_manager.get_filter(trans)
