@@ -52,11 +52,12 @@
                         :icon="isCheckedAll() ? ['far', 'check-square'] : ['far', 'square']"
                     />
                 </template>
-                <template v-slot:cell(selected)="{ rowSelected }">
+                <template v-slot:cell(selected)="row">
                     <font-awesome-icon
                         class="selected-checkbox"
                         size="lg"
-                        :icon="rowSelected ? ['far', 'check-square'] : ['far', 'square']"
+                        v-if="!row.item.isNewFolder && !row.item.deleted"
+                        :icon="row.rowSelected ? ['far', 'check-square'] : ['far', 'square']"
                     />
                 </template>
                 <!-- Name -->
