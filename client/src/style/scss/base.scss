@@ -152,11 +152,13 @@ body {
     @extend .unified-panel;
     left: 0px;
     width: $panel-width;
+    overflow: unset !important;
 }
 #right {
     @extend .unified-panel;
     right: 0px;
     width: $panel-width;
+    overflow: unset !important;
 }
 #right > .unified-panel-footer {
     .drag {
@@ -1264,16 +1266,6 @@ div.permissionContainer {
 div.toolSectionTitle {
     font-weight: 500;
     font-size: $h4-font-size;
-}
-
-.toolPanelLabel {
-    @extend .pb-1;
-    @extend .pt-2;
-    @extend .px-3;
-    font-weight: bold;
-    font-size: $h5-font-size;
-    color: $text-light;
-    text-transform: uppercase;
 }
 
 div.toolTitle,

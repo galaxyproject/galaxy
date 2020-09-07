@@ -604,6 +604,13 @@ class Tool(Dictifiable):
         return not tool_versions or self.version == self.tool_versions[-1]
 
     @property
+    def latest_version(self):
+        if self.is_latest_version:
+            return self
+        else:
+            return self.app.tool_cache.get_tool_by_id(self.lineage.get_versions()[-1].id)
+
+    @property
     def is_datatype_converter(self):
         return self in self.app.datatypes_registry.converter_tools
 

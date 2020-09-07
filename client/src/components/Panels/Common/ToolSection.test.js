@@ -43,7 +43,7 @@ describe("ToolSection", () => {
         await Vue.nextTick();
         const $names = wrapper.findAll(".name");
         expect($names.at(1).text()).toBe("name");
-        const $label = wrapper.find(".label");
+        const $label = wrapper.find(".tool-panel-label");
         expect($label.text()).toBe("text");
         $sectionName.trigger("click");
         await Vue.nextTick();

@@ -1556,6 +1556,21 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``trs_servers_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Allow import of workflows from the TRS servers configured in the
+    specified YAML or JSON file. The file should be a list with 'id',
+    'label', and 'api_url' for each entry. Optionally, 'link_url' and
+    'doc' may be be specified as well for each entry.
+    If this is null (the default), a simple configuration containing
+    just Dockstore will be used.
+:Default: ``trs_servers_conf.yml``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``user_preferences_extra_conf_path``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2699,7 +2714,7 @@
     Enable/ disable Ngram-search for tools. It makes tool search
     results tolerant for spelling mistakes in the query by dividing
     the query into multiple ngrams and search for each ngram
-:Default: ``false``
+:Default: ``true``
 :Type: bool
 
 
@@ -3294,6 +3309,47 @@
     the workflow.
 :Default: ``false``
 :Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``simplified_workflow_run_ui``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    If set to 'off' by default, always use the traditional workflow
+    form that renders all steps in the GUI and serializes the tool
+    state of all steps during invocation. Set to 'prefer' to default
+    to a simplified workflow UI that only renders the inputs if
+    possible (the workflow must have no disconnected runtime inputs
+    and not replacement parameters within tool steps). In the future
+    'force' may be added an option for Galaskio-style servers that
+    should only render simplified workflows.
+:Default: ``prefer``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``simplified_workflow_run_ui_target_history``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    When the simplified workflow run form is rendered, should the
+    invocation outputs be sent to the 'current' history or a 'new'
+    history.
+:Default: ``current``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``simplified_workflow_run_ui_job_cache``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    When the simplified workflow run form is rendered, should the
+    invocation use job caching. This isn't a boolean so an option for
+    'show-selection' can be added later.
+:Default: ``off``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~

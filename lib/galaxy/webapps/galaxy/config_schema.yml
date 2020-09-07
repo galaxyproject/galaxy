@@ -1999,7 +1999,7 @@ mapping:
 
       tool_enable_ngram_search:
         type: bool
-        default: false
+        default: true
         required: false
         reloadable: true
         desc: |
