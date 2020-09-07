@@ -8,6 +8,7 @@ import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import { updateProgress } from "./delete-selected";
 import mod_select from "mvc/ui/ui-select";
+import "libs/jquery/jstree";
 
 var AddDatasets = Backbone.View.extend({
     options: null,
