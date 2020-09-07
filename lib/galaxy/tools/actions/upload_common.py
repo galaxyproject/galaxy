@@ -234,12 +234,12 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, state
                                                             sa_session=trans.sa_session)
     if uploaded_dataset.get('tag_using_filenames', False):
         tag_from_filename = os.path.splitext(os.path.basename(uploaded_dataset.name))[0]
-        tag_manager = tags.GalaxyTagHandler(trans.sa_session)
+        tag_manager = tags.GalaxyTagHandlerSession(trans.sa_session)
         tag_manager.apply_item_tag(item=ldda, user=trans.user, name='name', value=tag_from_filename)
 
     tags_list = uploaded_dataset.get('tags', False)
     if tags_list:
-        tag_manager = tags.GalaxyTagHandler(trans.sa_session)
+        tag_manager = tags.GalaxyTagHandlerSession(trans.sa_session)
         for tag in tags_list:
             tag_manager.apply_item_tag(item=ldda, user=trans.user, name='name', value=tag)
 
