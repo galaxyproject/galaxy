@@ -46,7 +46,7 @@
                 <template v-slot:head(selected)="">
                     <font-awesome-icon
                         @click="toggleSelect"
-                        class="selected-checkbox cursor-pointer"
+                        class="select-checkbox cursor-pointer"
                         size="lg"
                         title="Check to select all datasets"
                         :icon="isCheckedAll() ? ['far', 'check-square'] : ['far', 'square']"
@@ -54,7 +54,7 @@
                 </template>
                 <template v-slot:cell(selected)="row">
                     <font-awesome-icon
-                        class="selected-checkbox"
+                        class="select-checkbox lib-folder-checkbox"
                         size="lg"
                         v-if="!row.item.isNewFolder && !row.item.deleted"
                         :icon="row.rowSelected ? ['far', 'check-square'] : ['far', 'square']"
