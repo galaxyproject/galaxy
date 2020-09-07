@@ -3,7 +3,10 @@ import os
 from collections import defaultdict
 from threading import Lock
 
-from diskcache import Cache, JSONDisk
+from diskcache import (
+    Cache,
+    JSONDisk
+)
 from lxml import etree
 from sqlalchemy.orm import (
     defer,
@@ -15,7 +18,7 @@ from galaxy.util.hash_util import md5_hash_file
 
 log = logging.getLogger(__name__)
 
-CURRENT_TOOL_CACHE_VERSION = 2
+CURRENT_TOOL_CACHE_VERSION = 1
 
 
 def create_cache_region(tool_cache_data_dir):
