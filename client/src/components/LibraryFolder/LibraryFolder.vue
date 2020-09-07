@@ -108,11 +108,11 @@
                     </div>
                     <div v-else>
                         <div class="description-field" v-if="getMessage(row.item)">
-                            <div v-if="getMessage(row.item).length > 40 && !expandedMessage.includes(row.item.id)">
+                            <div v-if="getMessage(row.item).length > maxDescriptionLength && !expandedMessage.includes(row.item.id)">
                                 <span
                                     class="shrinked-description"
                                     :title="getMessage(row.item)"
-                                    v-html="linkify(getMessage(row.item).substring(0, 40))"
+                                    v-html="linkify(getMessage(row.item).substring(0, maxDescriptionLength))"
                                 >
                                 </span>
                                 <span :title="getMessage(row.item)"> ...</span>
@@ -293,6 +293,7 @@ export default {
             folderContents: [],
             hasLoaded: false,
             perPage: 15,
+            maxDescriptionLength: 40,
             filter: null,
             include_deleted: false,
             filterOn: [],
