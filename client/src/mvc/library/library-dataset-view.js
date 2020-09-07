@@ -672,7 +672,7 @@ var LibraryDatasetView = Backbone.View.extend({
                     <% _.each(item.get("full_path"), function(path_item) { %>
                         <% if (path_item[0] != item.id) { %>
                             <li class="breadcrumb-item">
-                                <a title="Return to this folder" href="<% rootPath %>library/folders/<%- path_item[0] %>">
+                                <a title="Return to this folder" href="<% rootPath %>folders/<%- path_item[0] %>">
                                     <%- path_item[1] %>
                                 </a>
                             </li>
@@ -859,7 +859,7 @@ var LibraryDatasetView = Backbone.View.extend({
                     <% _.each(item.get("full_path"), function(path_item) { %>
                         <% if (path_item[0] != item.id) { %>
                             <li class="breadcrumb-item">
-                                <a title="Return to this folder" href="<% rootPath %>library/folders/<%- path_item[0] %>">
+                                <a title="Return to this folder" href="<% rootPath %>folders/<%- path_item[0] %>">
                                     <%- path_item[1] %>
                                 </a>
                             </li>
@@ -992,7 +992,7 @@ var LibraryDatasetView = Backbone.View.extend({
                     <% _.each(item.get("full_path"), function(path_item) { %>
                         <% if (path_item[0] != item.id) { %>
                             <li class="breadcrumb-item">
-                                <a title="Return to this folder" href="<% rootPath %>library/folders/<%- path_item[0] %>">
+                                <a title="Return to this folder" href="<% rootPath %>folders/<%- path_item[0] %>">
                                     <%- path_item[1] %>
                                 </a>
                             </li>
@@ -1133,7 +1133,7 @@ var LibraryDatasetView = Backbone.View.extend({
                     <% _.each(item.get("full_path"), function(path_item) { %>
                         <% if (path_item[0] != item.id) { %>
                             <li class="breadcrumb-item">
-                                <a title="Return to this folder" href="<% rootPath %>library/folders/<%- path_item[0] %>">
+                                <a title="Return to this folder" href="<% rootPath %>folders/<%- path_item[0] %>">
                                     <%- path_item[1] %>
                                 </a>
                             </li>
