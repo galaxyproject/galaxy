@@ -740,6 +740,7 @@
     <datatype extension="blastdbn" type="galaxy.datatypes.blast:BlastNucDb" mimetype="text/html" display_in_upload="false"/>
     <datatype extension="blastdbp" type="galaxy.datatypes.blast:BlastProtDb" mimetype="text/html" display_in_upload="false"/>
     <datatype extension="blastdbd" type="galaxy.datatypes.blast:BlastDomainDb" mimetype="text/html" display_in_upload="false"/>
+    <datatype extension="lastdb" type="galaxy.datatypes.blast:LastDb" mimetype="text/html" display_in_upload="false"/>
     <datatype extension="maskinfo-asn1" type="galaxy.datatypes.data:GenericAsn1" mimetype="text/plain" subclass="true" display_in_upload="true"/>
     <datatype extension="maskinfo-asn1-binary" type="galaxy.datatypes.binary:GenericAsn1Binary" mimetype="application/octet-stream" subclass="true" display_in_upload="true"/>
     <datatype extension="pssm-asn1" type="galaxy.datatypes.data:GenericAsn1" mimetype="text/plain" subclass="true" display_in_upload="true"/>
@@ -791,7 +792,6 @@
     <datatype extension="dada2_sequencetable" type="galaxy.datatypes.tabular:Tabular" mimetype="application/text" subclass="true" display_in_upload="true" />
     <datatype extension="dada2_uniques" type="galaxy.datatypes.tabular:Tabular" mimetype="application/text" subclass="true" display_in_upload="true" />
     <datatype extension="ckpt" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true" />
-    <datatype extension="lastdb" type="galaxy.datatypes.last:LastDb" mimetype="text/html" display_in_upload="false"/>
   </registration>
   <sniffers>
     <!--
