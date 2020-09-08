@@ -8255,7 +8255,7 @@ latex-parser@^0.6.2:
   dependencies:
     parsimmon "^1.6.2"
 
-latex-to-unicode-converter@^0.5.2:
+latex-to-unicode-converter@0.5.2:
   version "0.5.2"
   resolved "https://registry.yarnpkg.com/latex-to-unicode-converter/-/latex-to-unicode-converter-0.5.2.tgz#6c3702f66ab7362fb6ec3dcfeb8bbbf28cf3b945"
   integrity sha512-hpVh9tYWikQINRbIU0uUwTZypKOMYYi1p7qwypHpKdknxbdaBhKl7tRj0VzgbrV4jBW2XzbxV/QT/TcWcG84kw==
