@@ -36,7 +36,7 @@
     "jquery.complexify": "^0.5.2",
     "jquery.cookie": "^1.4.1",
     "latex-parser": "^0.6.2",
-    "latex-to-unicode-converter": "^0.5.2",
+    "latex-to-unicode-converter": "0.5.2",
     "markdown-it": "^8.4.2",
     "moment": "2.20.1",
     "popper.js": "^1.14.7",
