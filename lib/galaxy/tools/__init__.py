@@ -579,7 +579,7 @@ class Tool(Dictifiable):
         source_path = self.tool_source._source_path
         if source_path:
             for region in self.app.toolbox.cache_regions.values():
-                region.delete(source_path)
+                region.pop(source_path, None)
 
     @property
     def history_manager(self):

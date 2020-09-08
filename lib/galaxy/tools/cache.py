@@ -4,7 +4,7 @@ from collections import defaultdict
 from threading import Lock
 
 from diskcache import (
-    Cache,
+    Index,
     JSONDisk
 )
 from sqlalchemy.orm import (
@@ -23,7 +23,7 @@ CURRENT_TOOL_CACHE_VERSION = 1
 def create_cache_region(tool_cache_data_dir):
     if not os.path.exists(tool_cache_data_dir):
         os.makedirs(tool_cache_data_dir)
-    return Cache(tool_cache_data_dir, disk=JSONDisk, timeout=3600)
+    return Index(tool_cache_data_dir, disk=JSONDisk, timeout=3600)
 
 
 def get_cached_tool_source(cache, config_file):
@@ -45,7 +45,7 @@ def set_cached_tool_source(cache, config_file, tool_source):
         'paths_and_modtimes': tool_source.paths_and_modtimes(),
         'tool_cache_version': CURRENT_TOOL_CACHE_VERSION,
     }
-    cache.set(config_file, to_persist)
+    cache[config_file] = to_persist
 
 
 class ToolCache:
