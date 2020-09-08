@@ -197,7 +197,7 @@ def __new_history_upload(trans, uploaded_dataset, history=None, state=None):
     return hda
 
 
-def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, state=None):
+def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_handler, state=None):
     current_user_roles = trans.get_current_user_roles()
     if not ((trans.user_is_admin and cntrller in ['library_admin', 'api']) or trans.app.security_agent.can_add_library_item(current_user_roles, library_bunch.folder)):
         # This doesn't have to be pretty - the only time this should happen is if someone's being malicious.
@@ -232,15 +232,14 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, state
                                                             user=trans.user,
                                                             create_dataset=True,
                                                             sa_session=trans.sa_session)
-    tag_manager = tags.GalaxyTagHandlerSession(trans.sa_session)
     if uploaded_dataset.get('tag_using_filenames', False):
         tag_from_filename = os.path.splitext(os.path.basename(uploaded_dataset.name))[0]
-        tag_manager.apply_item_tag(item=ldda, user=trans.user, name='name', value=tag_from_filename)
+        tag_handler.apply_item_tag(item=ldda, user=trans.user, name='name', value=tag_from_filename)
 
     tags_list = uploaded_dataset.get('tags', False)
     if tags_list:
         for tag in tags_list:
-            tag_manager.apply_item_tag(item=ldda, user=trans.user, name='name', value=tag)
+            tag_handler.apply_item_tag(item=ldda, user=trans.user, name='name', value=tag)
 
     trans.sa_session.add(ldda)
     if state:
@@ -291,17 +290,18 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, state
 
 
 def new_upload(trans, cntrller, uploaded_dataset, library_bunch=None, history=None, state=None, tag_list=None):
+    tag_handler = tags.GalaxyTagHandlerSession(trans.sa_session)
     if library_bunch:
-        upload_target_dataset_instance = __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, state)
+        upload_target_dataset_instance = __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_handler, state)
         if library_bunch.tags and not uploaded_dataset.tags:
-            new_tags = trans.app.tag_handler.parse_tags_list(library_bunch.tags)
+            new_tags = tag_handler.parse_tags_list(library_bunch.tags)
             for tag in new_tags:
-                trans.app.tag_handler.apply_item_tag(user=trans.user, item=upload_target_dataset_instance, name=tag[0], value=tag[1])
+                tag_handler.apply_item_tag(user=trans.user, item=upload_target_dataset_instance, name=tag[0], value=tag[1])
     else:
         upload_target_dataset_instance = __new_history_upload(trans, uploaded_dataset, history=history, state=state)
 
     if tag_list:
-        trans.app.tag_handler.add_tags_from_list(trans.user, upload_target_dataset_instance, tag_list)
+        tag_handler.add_tags_from_list(trans.user, upload_target_dataset_instance, tag_list)
 
     return upload_target_dataset_instance
 
