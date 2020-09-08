@@ -1,19 +1,19 @@
 import { jobMetricsStore } from "./jobMetricsStore";
 
 describe("store/jobMetricsStore.js", () => {
-    it("getter should return empty list for unfetched job IDs", () => {
+    test("getter should return empty list for unfetched job IDs", () => {
         const state = {
             jobMetricsByJobId: {},
         };
-        let metrics = jobMetricsStore.getters.getJobMetricsByJobId(state)("123");
-        assert(metrics.length == 0);
+        const metrics = jobMetricsStore.getters.getJobMetricsByJobId(state)("123");
+        expect(metrics.length == 0).toBeTruthy();
     });
 
-    it("should simply return fetched metrics list for job ID", () => {
+    test("should simply return fetched metrics list for job ID", () => {
         const state = {
             jobMetricsByJobId: { "123": [{ plugin: "core", value: 123 }] },
         };
-        let metrics = jobMetricsStore.getters.getJobMetricsByJobId(state)("123");
-        assert(metrics.length == 1);
+        const metrics = jobMetricsStore.getters.getJobMetricsByJobId(state)("123");
+        expect(metrics.length == 1).toBeTruthy();
     });
 });

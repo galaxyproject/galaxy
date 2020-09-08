@@ -22,8 +22,8 @@ describe("SelectionDialog.vue", () => {
                 search: "<cool-search />",
             },
             stubs: {
-                "tree-options": "<div id='tree-options'/>",
-                "cool-search": "<div id='cool-search'/>",
+                "tree-options": { template: "<div id='tree-options'/>" },
+                "cool-search": { template: "<div id='cool-search'/>" },
             },
             propsData: mockOptions,
             localVue,
@@ -31,27 +31,27 @@ describe("SelectionDialog.vue", () => {
     });
 
     it("loads correctly in loading state, shows options when optionsShow becomes true", async () => {
-        expect(wrapper.find(".fa-spinner").text()).to.equals("");
-        expect(wrapper.contains(".fa-spinner")).to.equals(true);
-        expect(wrapper.contains("#tree-options")).to.equals(false);
+        expect(wrapper.get(".fa-spinner"));
+        expect(wrapper.get(".fa-spinner").text()).toBe("");
+        //expect(wrapper.get("#tree-options")).toThrow();
         wrapper.setProps({ optionsShow: true });
         await localVue.nextTick();
-        expect(wrapper.contains(".fa-spinner")).to.equals(false);
-        expect(wrapper.contains("#tree-options")).to.equals(true);
+        expect(() => wrapper.get(".fa-spinner")).toThrow();
+        expect(wrapper.get("#tree-options"));
     });
 
     it("loads search correctly", async () => {
         await localVue.nextTick();
-        expect(wrapper.contains("#cool-search")).to.equals(true);
+        expect(wrapper.get("#cool-search"));
     });
 
     it("hideModal called on click cancel", async () => {
-        expect(calledHide).to.equals(false);
-        expect(wrapper.contains(".selection-dialog-modal-cancel")).to.equals(true);
+        expect(calledHide).toBe(false);
+        expect(wrapper.get(".selection-dialog-modal-cancel"));
         wrapper.setProps({ optionsShow: true });
         await localVue.nextTick();
         wrapper.find(".selection-dialog-modal-cancel").trigger("click");
         await localVue.nextTick();
-        expect(calledHide).to.equals(true);
+        expect(calledHide).toBe(true);
     });
 });
