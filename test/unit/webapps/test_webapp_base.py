@@ -24,7 +24,8 @@ class CORSParsingMockConfig(galaxy_mock.MockAppConfig):
 
     @staticmethod
     def _parse_allowed_origin_hostnames(kwargs):
-        return galaxy.config.Configuration._parse_allowed_origin_hostnames(kwargs)
+        hostnames = kwargs.get('allowed_origin_hostnames')
+        return galaxy.config.Configuration._parse_allowed_origin_hostnames(hostnames)
 
 
 class GalaxyWebTransaction_Headers_TestCase(unittest.TestCase):

@@ -199,8 +199,8 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         if self.config.enable_oidc:
             from galaxy.authnz import managers
             self.authnz_manager = managers.AuthnzManager(self,
-                                                         self.config.oidc_config,
-                                                         self.config.oidc_backends_config)
+                                                         self.config.oidc_config_file,
+                                                         self.config.oidc_backends_config_file)
 
         self.sentry_client = None
         if self.config.sentry_dsn:

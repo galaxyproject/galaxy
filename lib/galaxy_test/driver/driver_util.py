@@ -186,7 +186,7 @@ def setup_galaxy_config(
     for data_manager_config in ['config/data_manager_conf.xml', 'data_manager_conf.xml']:
         if os.path.exists(data_manager_config):
             default_data_manager_config = data_manager_config
-    data_manager_config_file = "test/functional/tools/sample_data_manager_conf.xml"
+    data_manager_config_file = 'test/functional/tools/sample_data_manager_conf.xml'
     if default_data_manager_config is not None:
         data_manager_config_file = "{},{}".format(default_data_manager_config, data_manager_config_file)
     master_api_key = get_master_api_key()
@@ -208,7 +208,11 @@ def setup_galaxy_config(
     if shed_tool_conf is not None:
         tool_conf = "{},{}".format(tool_conf, shed_tool_conf)
 
-    shed_tool_data_table_config = default_shed_tool_data_table_config
+    # Resolve these paths w.r.t. galaxy root; otherwise galaxy's config system will resolve them w.r.t.
+    # their parent directories, as per schema.
+    data_manager_config_file = _resolve_relative_config_paths(data_manager_config_file)
+    tool_config_file = _resolve_relative_config_paths(tool_conf)
+    tool_data_table_config_path = _resolve_relative_config_paths(tool_data_table_config_path)
 
     config = dict(
         admin_users='test@bx.psu.edu',
@@ -239,10 +243,9 @@ def setup_galaxy_config(
         override_tempdir=False,
         master_api_key=master_api_key,
         running_functional_tests=True,
-        shed_tool_data_table_config=shed_tool_data_table_config,
         template_cache_path=template_cache_path,
         template_path='templates',
-        tool_config_file=tool_conf,
+        tool_config_file=tool_config_file,
         tool_data_table_config_path=tool_data_table_config_path,
         tool_parse_help=False,
         tool_path=tool_path,
@@ -256,6 +259,8 @@ def setup_galaxy_config(
         object_store_store_by="uuid",
         simplified_workflow_run_ui="off",
     )
+    if default_shed_tool_data_table_config:
+        config["shed_tool_data_table_config"] = default_shed_tool_data_table_config
     if not use_shared_connection_for_amqp:
         config["amqp_internal_connection"] = "sqlalchemy+sqlite:///%s?isolation_level=IMMEDIATE" % os.path.join(tmpdir, "control.sqlite")
 
@@ -305,16 +310,26 @@ backends:
     return config
 
 
+def _resolve_relative_config_paths(config_option):
+    # If option is not None, split into paths, resolve each w.r.t. root, then rebuild as csv string.
+    if config_option is not None:
+        resolved = []
+        for path in config_option.split(','):
+            resolved.append(os.path.join(galaxy_root, path.strip()))
+        return ','.join(resolved)
+
+
 def _tool_data_table_config_path(default_tool_data_table_config_path=None):
     tool_data_table_config_path = os.environ.get('GALAXY_TEST_TOOL_DATA_TABLE_CONF', default_tool_data_table_config_path)
     if tool_data_table_config_path is None:
-        # ... otherise find whatever Galaxy would use as the default and
-        # the sample data for fucntional tests to that.
+        # ... otherwise find whatever Galaxy would use as the default and
+        # the sample data for functional tests to that.
         default_tool_data_config = 'lib/galaxy/config/sample/tool_data_table_conf.xml.sample'
         for tool_data_config in ['config/tool_data_table_conf.xml', 'tool_data_table_conf.xml']:
             if os.path.exists(tool_data_config):
                 default_tool_data_config = tool_data_config
-        tool_data_table_config_path = '%s,test/functional/tool-data/sample_tool_data_tables.xml' % default_tool_data_config
+        test_tool_data_config = 'test/functional/tool-data/sample_tool_data_tables.xml'
+        tool_data_table_config_path = '%s,%s' % (default_tool_data_config, test_tool_data_config)
     return tool_data_table_config_path
 
 
