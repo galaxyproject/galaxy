@@ -85,7 +85,7 @@ export default {
                 }, 250);
             }
         },
-        hide(timeout=250) {
+        hide(timeout = 250) {
             this.show = false;
             document.getElementById("center").style.transition = `${this.side} 200ms linear`;
             document.getElementById("center").style[this.side] = "0";

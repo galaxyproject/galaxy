@@ -108,7 +108,12 @@
                     </div>
                     <div v-else>
                         <div class="description-field" v-if="getMessage(row.item)">
-                            <div v-if="getMessage(row.item).length > maxDescriptionLength && !expandedMessage.includes(row.item.id)">
+                            <div
+                                v-if="
+                                    getMessage(row.item).length > maxDescriptionLength &&
+                                    !expandedMessage.includes(row.item.id)
+                                "
+                            >
                                 <span
                                     class="shrinked-description"
                                     :title="getMessage(row.item)"
