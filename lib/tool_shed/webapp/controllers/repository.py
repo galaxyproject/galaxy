@@ -75,6 +75,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
     matched_repository_grid = repository_grids.MatchedRepositoryGrid()
     my_writable_repositories_grid = repository_grids.MyWritableRepositoriesGrid()
     my_writable_repositories_missing_tool_test_components_grid = repository_grids.MyWritableRepositoriesMissingToolTestComponentsGrid()
+    my_writable_repositories_with_invalid_tools_grid = repository_grids.MyWritableRepositoriesWithInvalidToolsGrid()
     repositories_by_user_grid = repository_grids.RepositoriesByUserGrid()
     repositories_i_own_grid = repository_grids.RepositoriesIOwnGrid()
     repositories_i_can_administer_grid = repository_grids.RepositoriesICanAdministerGrid()
