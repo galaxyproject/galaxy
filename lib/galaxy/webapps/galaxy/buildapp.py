@@ -618,7 +618,6 @@ def populate_api_routes(webapp, app):
     connect_invocation_endpoint('show_report', '/report', action='show_invocation_report')
     connect_invocation_endpoint('show_report_pdf', '/report.pdf', action='show_invocation_report_pdf')
     connect_invocation_endpoint('get_bco', '/get_bco', action='download_invocation_bco')
-    connect_invocation_endpoint('aws_estimate', '/aws_estimate', action='export_aws_estimate')
     connect_invocation_endpoint('export_bco', '/export_bco', action='export_invocation_bco')
     connect_invocation_endpoint('jobs_summary', '/jobs_summary', action='invocation_jobs_summary')
     connect_invocation_endpoint('step_jobs_summary', '/step_jobs_summary', action='invocation_step_jobs_summary')
