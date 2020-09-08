@@ -1043,7 +1043,7 @@ class GalaxyTestDriver(TestDriver):
             return test_classes
         return functional.test_toolbox
 
-    def run_tool_test(self, tool_id, index=0, resource_parameters=None):
+    def run_tool_test(self, tool_id, index=0, resource_parameters=None, **kwd):
         if resource_parameters is None:
             resource_parameters = {}
         host, port, url = target_url_parts()
@@ -1058,7 +1058,8 @@ class GalaxyTestDriver(TestDriver):
             tool_id=tool_id,
             test_index=index,
             galaxy_interactor=galaxy_interactor,
-            resource_parameters=resource_parameters
+            resource_parameters=resource_parameters,
+            **kwd
         )
 
 
