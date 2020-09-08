@@ -26,6 +26,8 @@ import Tours from "mvc/tours";
 import GridView from "mvc/grid/grid-view";
 import GridShared from "mvc/grid/grid-shared";
 import WorkflowImport from "components/Workflow/WorkflowImport.vue";
+import TrsImport from "components/Workflow/TrsImport.vue";
+import TrsSearch from "components/Workflow/TrsSearch.vue";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools.vue";
 import WorkflowList from "components/Workflow/WorkflowList.vue";
 import HistoryImport from "components/HistoryImport.vue";
@@ -69,6 +71,8 @@ export const getAnalysisRouter = (Galaxy) =>
             "(/)visualizations(/)sharing(/)": "show_visualizations_sharing",
             "(/)visualizations/(:action_id)": "show_visualizations",
             "(/)workflows/import": "show_workflows_import",
+            "(/)workflows/trs_import": "show_workflows_trs_import",
+            "(/)workflows/trs_search": "show_workflows_trs_search",
             "(/)workflows/run(/)": "show_workflows_run",
             "(/)workflows(/)list": "show_workflows",
             "(/)workflows/invocations": "show_workflow_invocations",
@@ -234,7 +238,7 @@ export const getAnalysisRouter = (Galaxy) =>
         },
 
         show_tools_view: function () {
-            this.page.toolPanel.getVueComponent().hide();
+            this.page.toolPanel?.component.hide();
             this.page.panels.right.hide();
             this._display_vue_helper(ToolsView);
         },
@@ -242,6 +246,7 @@ export const getAnalysisRouter = (Galaxy) =>
         show_tools_json: function () {
             this._display_vue_helper(ToolsJson);
         },
+
         show_histories_permissions: function () {
             this.page.display(
                 new FormWrapper.View({
@@ -319,6 +324,20 @@ export const getAnalysisRouter = (Galaxy) =>
 
         show_workflows_import: function () {
             this._display_vue_helper(WorkflowImport);
+        },
+
+        show_workflows_trs_import: function () {
+            const queryTrsServer = QueryStringParsing.get("trs_server");
+            const queryTrsId = QueryStringParsing.get("trs_id");
+            const propsData = {
+                queryTrsServer,
+                queryTrsId,
+            };
+            this._display_vue_helper(TrsImport, propsData);
+        },
+
+        show_workflows_trs_search: function () {
+            this._display_vue_helper(TrsSearch);
         },
 
         show_custom_builds: function () {

@@ -25,13 +25,13 @@ describe("Attributes", () => {
             },
         });
         const name = wrapper.find("#workflow-name");
-        expect(name.element.value).to.equal("workflow_name");
+        expect(name.element.value).toBe("workflow_name");
         wrapper.setProps({ name: "new_workflow_name" });
         await Vue.nextTick();
-        expect(name.element.value).to.equal("new_workflow_name");
+        expect(name.element.value).toBe("new_workflow_name");
         const parameters = wrapper.findAll(".list-group-item");
-        expect(parameters.length).to.equal(2);
-        expect(parameters.at(0).text()).to.equal("1: workflow_parameter_0");
-        expect(parameters.at(1).text()).to.equal("2: workflow_parameter_1");
+        expect(parameters.length).toBe(2);
+        expect(parameters.at(0).text()).toBe("1: workflow_parameter_0");
+        expect(parameters.at(1).text()).toBe("2: workflow_parameter_1");
     });
 });

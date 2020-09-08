@@ -987,6 +987,7 @@ model.StoredWorkflow.table = Table(
         ForeignKey("workflow.id", use_alter=True, name='stored_workflow_latest_workflow_id_fk'), index=True),
     Column("name", TEXT),
     Column("deleted", Boolean, default=False),
+    Column("hidden", Boolean, default=False),
     Column("importable", Boolean, default=False),
     Column("slug", TEXT),
     Column("from_path", TEXT),

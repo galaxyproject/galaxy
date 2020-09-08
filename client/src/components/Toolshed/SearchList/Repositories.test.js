@@ -37,16 +37,16 @@ describe("Repositories", () => {
             },
         });
         // Test initial state prior to the data fetch tick -- should be loading.
-        expect(wrapper.find(".loading-message").text()).to.equal("Loading repositories...");
+        expect(wrapper.find(".loading-message").text()).toBe("Loading repositories...");
         await Vue.nextTick();
         const links = wrapper.findAll("a");
-        expect(links.length).to.equal(2);
-        expect(links.at(0).text()).to.equal("name_0");
-        expect(links.at(1).text()).to.equal("name_1");
+        expect(links.length).toBe(2);
+        expect(links.at(0).text()).toBe("name_0");
+        expect(links.at(1).text()).toBe("name_1");
         // Reset repositories and state to test empty.
         wrapper.vm.repositories = [];
         wrapper.vm.pageState = 2; // COMPLETE is '2'
         await Vue.nextTick();
-        expect(wrapper.find(".unavailable-message").text()).to.equal("No matching repositories found.");
+        expect(wrapper.find(".unavailable-message").text()).toBe("No matching repositories found.");
     });
 });

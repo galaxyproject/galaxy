@@ -110,9 +110,12 @@ class BaseAppConfiguration:
     # If VALUE == first directory in a user-supplied path that resolves to KEY, it will be stripped from that path
     renamed_options = None
     deprecated_dirs = None
+    add_sample_file_to_defaults = None  # for these options, add sample config files to their defaults
+    listify_options = None  # values for these options are processed as lists of values
 
     def __init__(self, **kwargs):
         self._process_renamed_options(kwargs)
+        self._kwargs = kwargs  # Save these as a record of explicitly set options
         self.config_dict = kwargs
         self.root = find_root(kwargs)
         self._set_config_base(kwargs)
@@ -120,7 +123,9 @@ class BaseAppConfiguration:
         self._raw_config = self.schema.defaults.copy()  # Save schema defaults as initial config values (raw_config)
         self._update_raw_config_from_kwargs(kwargs)  # Overwrite raw_config with values passed in kwargs
         self._create_attributes_from_raw_config()  # Create attributes based on raw_config
+        self._preprocess_paths_to_resolve()  # Any preprocessing steps that need to happen before paths are resolved
         self._resolve_paths()  # Overwrite attribute values with resolved paths
+        self._postprocess_paths_to_resolve()  # Any steps that need to happen after paths are resolved
 
     def _process_renamed_options(self, kwargs):
         """Update kwargs to set any unset renamed options to values of old-named options, if set.
@@ -131,6 +136,14 @@ class BaseAppConfiguration:
             for old, new in self.renamed_options.items():
                 if old in kwargs and new not in kwargs:
                     kwargs[new] = kwargs[old]
+
+    def is_set(self, key):
+        """Check if a configuration option has been explicitly set."""
+        # NOTE: This will check all supplied keyword arguments, including those not in the schema.
+        # To check only schema options, change the line below to `if property not in self._raw_config:`
+        if key not in self._raw_config:
+            log.warning("Configuration option does not exist: '%s'" % key)
+        return key in self._kwargs
 
     def resolve_path(self, path):
         """Resolve a path relative to Galaxy's root."""
@@ -164,7 +177,13 @@ class BaseAppConfiguration:
                 self.config_dir = os.path.abspath(self.config_dir)
 
             self.data_dir = config_kwargs.get('data_dir')
+            if self.data_dir:
+                self.data_dir = os.path.abspath(self.data_dir)
+
             self.sample_config_dir = os.path.join(os.path.dirname(__file__), 'sample')
+            if self.sample_config_dir:
+                self.sample_config_dir = os.path.abspath(self.sample_config_dir)
+
             self.managed_config_dir = config_kwargs.get('managed_config_dir')
             if self.managed_config_dir:
                 self.managed_config_dir = os.path.abspath(self.managed_config_dir)
@@ -197,6 +216,52 @@ class BaseAppConfiguration:
     def _load_schema(self):
         # Override in subclasses
         raise Exception('Not implemented')
+
+    def _preprocess_paths_to_resolve(self):
+        # For these options, if option is not set, listify its defaults and add a sample config file.
+        if self.add_sample_file_to_defaults:
+            for key in self.add_sample_file_to_defaults:
+                if not self.is_set(key):
+                    defaults = listify(getattr(self, key), do_strip=True)
+                    sample = '%s.sample' % defaults[-1]  # if there are multiple defaults, use last as template
+                    sample = self._in_sample_dir(sample)  # resolve w.r.t sample_dir
+                    defaults.append(sample)
+                    setattr(self, key, defaults)
+
+    def _postprocess_paths_to_resolve(self):
+
+        def select_one_path_from_list():
+            # To consider: options with a sample file added to defaults except options that can have multiple values.
+            # If value is not set, check each path in list; set to first path that exists; if none exist, set to last path in list.
+            keys = self.add_sample_file_to_defaults - self.listify_options if self.listify_options else self.add_sample_file_to_defaults
+            for key in keys:
+                if not self.is_set(key):
+                    paths = getattr(self, key)
+                    for path in paths:
+                        if self._path_exists(path):
+                            setattr(self, key, path)
+                            break
+                    else:
+                        setattr(self, key, paths[-1])  # TODO: we assume it exists; but we've already checked in the loop! Raise error instead?
+
+        def select_one_or_all_paths_from_list():
+            # Values for these options are lists of paths. If value is not set, use defaults if all paths in list exist;
+            # otherwise, set to last path in list.
+            for key in self.listify_options:
+                if not self.is_set(key):
+                    paths = getattr(self, key)
+                    for path in paths:
+                        if not self._path_exists(path):
+                            setattr(self, key, [paths[-1]])  # value is a list
+                            break
+
+        if self.add_sample_file_to_defaults:  # Currently, this is the ONLY case when we need to pick one file from a list
+            select_one_path_from_list()
+        if self.listify_options:
+            select_one_or_all_paths_from_list()
+
+    def _path_exists(self, path):  # factored out so we can mock it in tests
+        return os.path.exists(path)
 
     def _update_raw_config_from_kwargs(self, kwargs):
 
@@ -261,7 +326,18 @@ class BaseAppConfiguration:
 
         _cache = {}
         for key in self.schema.paths_to_resolve:
-            resolve(key)
+            value = getattr(self, key)
+            # Check if value is a list or should be listified; if so, listify and resolve each item separately.
+            if type(value) == list or (self.listify_options and key in self.listify_options):
+                saved_values = listify(getattr(self, key), do_strip=True)  # listify and save original value
+                setattr(self, key, '_')  # replace value with temporary placeholder
+                resolve(key)  # resolve temporary value (`_` becomes `parent-path/_`)
+                resolved_base = getattr(self, key)[:-1]  # get rid of placeholder in resolved path
+                # apply resolved base to saved values
+                resolved_paths = [os.path.join(resolved_base, value) for value in saved_values]
+                setattr(self, key, resolved_paths)  # set config.key to a list of resolved paths
+            else:
+                resolve(key)
 
     def _in_root_dir(self, path):
         return self._in_dir(self.root, path)
@@ -280,48 +356,6 @@ class BaseAppConfiguration:
 
     def _in_dir(self, _dir, path):
         return os.path.join(_dir, path) if path else None
-
-    def _parse_config_file_options(self, defaults, listify_defaults, config_kwargs):
-
-        def root_join(val):
-            try:
-                return os.path.join(self.root, val)
-            except TypeError:
-                template = "Failed to set configuration variable %s, value %s of wrong type %s"
-                message = template % (var, val, type(val))
-                raise ConfigurationError(message)
-
-        for var, values in defaults.items():
-            if config_kwargs.get(var) is not None:
-                path = config_kwargs.get(var)
-                setattr(self, var + '_set', True)
-            else:
-                for value in values:
-                    if os.path.exists(value):
-                        path = value
-                        break
-                else:
-                    path = values[-1]
-                setattr(self, var + '_set', False)
-            setattr(self, var, root_join(path))
-
-        for var, values in listify_defaults.items():
-            paths = []
-            if config_kwargs.get(var) is not None:
-                paths = listify(config_kwargs.get(var))
-                setattr(self, var + '_set', True)
-            else:
-                for value in values:
-                    for path in listify(value):
-                        if not os.path.exists(path):
-                            break
-                    else:
-                        paths = listify(value)
-                        break
-                else:
-                    paths = listify(values[-1])
-                setattr(self, var + '_set', False)
-            setattr(self, var, [root_join(x) for x in paths])
 
 
 class CommonConfigurationMixin:
@@ -384,6 +418,19 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     default_config_file_name = 'galaxy.yml'
     deprecated_dirs = {'config_dir': 'config', 'data_dir': 'database'}
 
+    add_sample_file_to_defaults = {
+        'build_sites_config_file',
+        'datatypes_config_file',
+        'job_metrics_config_file',
+        'tool_data_table_config_path',
+        'tool_config_file',
+    }
+
+    listify_options = {
+        'tool_data_table_config_path',
+        'tool_config_file',
+    }
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._override_tempdir(kwargs)
@@ -397,8 +444,9 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             tempfile.tempdir = self.new_file_path
 
     def _process_config(self, kwargs):
-        # Resolve paths of other config files
-        self.parse_config_file_options(kwargs)
+        # Backwards compatibility for names used in too many places to fix
+        self.datatypes_config = self.datatypes_config_file
+        self.tool_configs = self.tool_config_file
 
         # Collect the umask and primary gid from the environment
         self.umask = os.umask(0o77)  # get the current umask
@@ -428,9 +476,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             self.tool_data_path = self._in_data_dir(self.schema.defaults['tool_data_path'])
         self.builds_file_path = os.path.join(self.tool_data_path, self.builds_file_path)
         self.len_file_path = os.path.join(self.tool_data_path, self.len_file_path)
-        # Galaxy OIDC settings.
-        self.oidc_config = kwargs.get("oidc_config_file", self.oidc_config_file)
-        self.oidc_backends_config = kwargs.get("oidc_backends_config_file", self.oidc_backends_config_file)
         self.oidc = {}
         self.integrated_tool_panel_config = self._in_managed_config_dir(self.integrated_tool_panel_config)
         integrated_tool_panel_tracking_directory = kwargs.get('integrated_tool_panel_tracking_directory')
@@ -538,7 +583,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                     break
         self.sanitize_allowlist_file = _sanitize_allowlist_path
 
-        self.allowed_origin_hostnames = self._parse_allowed_origin_hostnames(kwargs)
+        self.allowed_origin_hostnames = self._parse_allowed_origin_hostnames(self.allowed_origin_hostnames)
         if "trust_jupyter_notebook_conversion" not in kwargs:
             # if option not set, check IPython-named alternative, falling back to schema default if not set either
             _default = self.trust_jupyter_notebook_conversion
@@ -594,7 +639,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.object_store_cache_path = self._in_root_dir(kwargs.get("object_store_cache_path", self._in_data_dir("object_store_cache")))
         if self.object_store_store_by is None:
             self.object_store_store_by = 'id'
-            if not self.file_path_set and self.file_path.endswith('objects'):
+            if not self.is_set('file_path') and self.file_path.endswith('objects'):
                 self.object_store_store_by = 'uuid'
         assert self.object_store_store_by in ['id', 'uuid'], "Invalid value for object_store_store_by [%s]" % self.object_store_store_by
         # Handle AWS-specific config options for backward compatibility
@@ -665,7 +710,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             with open(self.user_preferences_extra_conf_path) as stream:
                 self.user_preferences_extra = yaml.safe_load(stream)
         except Exception:
-            if self.user_preferences_extra_conf_path_set:
+            if self.is_set('user_preferences_extra_conf_path'):
                 log.warning('Config file (%s) could not be found or is malformed.' % self.user_preferences_extra_conf_path)
             self.user_preferences_extra = {'preferences': {}}
 
@@ -771,55 +816,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                 'UWSGI_PORT': port
             })
 
-    def parse_config_file_options(self, kwargs):
-        """Backwards compatibility for config files moved to the config/ dir."""
-        defaults = dict(
-            auth_config_file=[self._in_config_dir('auth_conf.xml')],
-            build_sites_config_file=[self._in_config_dir('build_sites.yml'), self._in_sample_dir('build_sites.yml.sample')],
-            containers_config_file=[self._in_config_dir('containers_conf.yml')],
-            data_manager_config_file=[self._in_config_dir('data_manager_conf.xml')],
-            datatypes_config_file=[self._in_config_dir('datatypes_conf.xml'), self._in_sample_dir('datatypes_conf.xml.sample')],
-            dependency_resolvers_config_file=[self._in_config_dir('dependency_resolvers_conf.xml')],
-            error_report_file=[self._in_config_dir('error_report.yml')],
-            job_config_file=[self._in_config_dir('job_conf.xml')],
-            job_metrics_config_file=[self._in_config_dir('job_metrics_conf.xml'), self._in_sample_dir('job_metrics_conf.xml.sample')],
-            job_resource_params_file=[self._in_config_dir('job_resource_params_conf.xml')],
-            file_sources_config_file=[self._in_config_dir('file_sources_conf.yml')],
-            local_conda_mapping_file=[self._in_config_dir('local_conda_mapping.yml')],
-            migrated_tools_config=[self._in_managed_config_dir('migrated_tools_conf.xml')],
-            modules_mapping_files=[self._in_config_dir('environment_modules_mapping.yml')],
-            object_store_config_file=[self._in_config_dir('object_store_conf.xml')],
-            oidc_backends_config_file=[self._in_config_dir('oidc_backends_config.xml')],
-            oidc_config_file=[self._in_config_dir('oidc_config.xml')],
-            shed_data_manager_config_file=[self._in_managed_config_dir('shed_data_manager_conf.xml')],
-            shed_tool_config_file=[self._in_managed_config_dir('shed_tool_conf.xml')],
-            shed_tool_data_table_config=[self._in_managed_config_dir('shed_tool_data_table_conf.xml')],
-            tool_destinations_config_file=[self._in_config_dir('tool_destinations.yml')],
-            tool_sheds_config_file=[self._in_config_dir('tool_sheds_conf.xml')],
-            user_preferences_extra_conf_path=[self._in_config_dir('user_preferences_extra_conf.yml')],
-            workflow_resource_params_file=[self._in_config_dir('workflow_resource_params_conf.xml')],
-            workflow_schedulers_config_file=[self._in_config_dir('workflow_schedulers_conf.xml')],
-            markdown_export_css=[self._in_config_dir('markdown_export.css')],
-            markdown_export_css_pages=[self._in_config_dir('markdown_export_pages.css')],
-            markdown_export_css_invocation_reports=[self._in_config_dir('markdown_export_invocation_reports.css')],
-            # self.file_path set to self._in_data_dir('objects') by schema
-            file_path=[self._in_data_dir('files'), self.file_path],
-        )
-        listify_defaults = {
-            'tool_data_table_config_path': [
-                self._in_config_dir('tool_data_table_conf.xml'),
-                self._in_sample_dir('tool_data_table_conf.xml.sample')],
-            'tool_config_file': [
-                self._in_config_dir('tool_conf.xml'),
-                self._in_sample_dir('tool_conf.xml.sample')]
-        }
-
-        self._parse_config_file_options(defaults, listify_defaults, kwargs)
-
-        # Backwards compatibility for names used in too many places to fix
-        self.datatypes_config = self.datatypes_config_file
-        self.tool_configs = self.tool_config_file
-
     def reload_sanitize_allowlist(self, explicit=True):
         self.sanitize_allowlist = []
         try:
@@ -864,13 +860,13 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                 log.warning("Config option '%s' is deprecated and will be removed in a future release.  Please consult the latest version of the sample configuration file." % key)
 
     @staticmethod
-    def _parse_allowed_origin_hostnames(kwargs):
+    def _parse_allowed_origin_hostnames(allowed_origin_hostnames):
         """
         Parse a CSV list of strings/regexp of hostnames that should be allowed
         to use CORS and will be sent the Access-Control-Allow-Origin header.
         """
-        allowed_origin_hostnames = listify(kwargs.get('allowed_origin_hostnames'))
-        if not allowed_origin_hostnames:
+        allowed_origin_hostnames_list = listify(allowed_origin_hostnames)
+        if not allowed_origin_hostnames_list:
             return None
 
         def parse(string):
@@ -880,7 +876,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                 return re.compile(string, flags=(re.UNICODE))
             return string
 
-        return [parse(v) for v in allowed_origin_hostnames if v]
+        return [parse(v) for v in allowed_origin_hostnames_list if v]
 
 
 # legacy naming
@@ -1087,7 +1083,7 @@ class ConfiguresGalaxyMixin:
                                                         from_shed_config=from_shed_config)
         except OSError as exc:
             # Missing shed_tool_data_table_config is okay if it's the default
-            if exc.errno != errno.ENOENT or self.config.shed_tool_data_table_config_set:
+            if exc.errno != errno.ENOENT or self.config.is_set('shed_tool_data_table_config'):
                 raise
 
     def _configure_datatypes_registry(self, installed_repository_manager=None):

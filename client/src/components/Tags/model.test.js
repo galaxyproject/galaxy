@@ -1,4 +1,3 @@
-/* global expect */
 import { createTag, diffTags } from "./model";
 
 describe("Tags/model.js", () => {
@@ -6,11 +5,11 @@ describe("Tags/model.js", () => {
 
     describe("tag model", () => {
         it("should have a string representation equal to text prop", () => {
-            let testLabel = "abc";
-            let model = createTag(testLabel);
-            assert.equal(model, testLabel);
-            assert.equal(model.text, testLabel);
-            assert.equal(model.toString(), testLabel);
+            const testLabel = "abc";
+            const model = createTag(testLabel);
+            expect(model == testLabel).toBeTruthy();
+            expect(model.text).toEqual(testLabel);
+            expect(model.toString()).toEqual(testLabel);
         });
     });
 
@@ -18,15 +17,15 @@ describe("Tags/model.js", () => {
 
     describe("createTag", () => {
         it("should build a model from a string", () => {
-            let label = "floob";
-            let model = createTag(label);
-            expect(model.text).to.equal(label);
+            const label = "floob";
+            const model = createTag(label);
+            expect(model.text).toBe(label);
         });
 
         it("should build a model from an object", () => {
-            let data = { text: "floob" };
-            let model = createTag(data);
-            expect(model.text).to.equal(data.text);
+            const data = { text: "floob" };
+            const model = createTag(data);
+            expect(model.text).toBe(data.text);
         });
     });
 
@@ -34,7 +33,8 @@ describe("Tags/model.js", () => {
     // selected items from a list of returned autocomplete options
 
     describe("diffTags", () => {
-        let source, selected;
+        let source;
+        let selected;
 
         beforeEach(() => {
             source = ["a", "b", "c", "d"].map(createTag);
@@ -42,23 +42,23 @@ describe("Tags/model.js", () => {
         });
 
         it("should remove duplicates from a passed array", () => {
-            let result = diffTags(source, selected);
-            expect(result.length).to.equal(2);
-            assert(result[0].equals(source[1]), true);
-            assert(result[0].equals(createTag("b")), true);
-            assert(result[1].equals(source[2]), true);
-            assert(result[1].equals(createTag("c")), true);
+            const result = diffTags(source, selected);
+            expect(result.length).toBe(2);
+            expect(result[0].equals(source[1])).toBeTruthy();
+            expect(result[0].equals(createTag("b"))).toBeTruthy();
+            expect(result[1].equals(source[2])).toBeTruthy();
+            expect(result[1].equals(createTag("c"))).toBeTruthy();
         });
     });
 
     describe("handles name tags", () => {
         it("should accept a #label", () => {
-            let testLabel = "#abc";
-            let expectedLabel = "name:abc";
-            let model = createTag(testLabel);
-            assert.equal(model, expectedLabel);
-            assert.equal(model.text, expectedLabel);
-            assert.equal(model.toString(), expectedLabel);
+            const testLabel = "#abc";
+            const expectedLabel = "name:abc";
+            const model = createTag(testLabel);
+            expect(model == expectedLabel).toBeTruthy();
+            expect(model.text).toEqual(expectedLabel);
+            expect(model.toString()).toEqual(expectedLabel);
         });
     });
 });

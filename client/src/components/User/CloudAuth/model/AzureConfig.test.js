@@ -2,57 +2,57 @@ import { AzureConfig } from "./AzureConfig";
 
 describe("AzureConfig", () => {
     it("should instantiate", () => {
-        let instance = new AzureConfig();
-        assert(instance);
-        assert(!instance.dirty);
-        assert(!instance.valid);
+        const instance = new AzureConfig();
+        expect(instance).toBeTruthy();
+        expect(!instance.dirty).toBeTruthy();
+        expect(!instance.valid).toBeTruthy();
     });
 
     describe("client_secret", () => {
         it("should validate client_secret", () => {
-            let instance = new AzureConfig();
+            const instance = new AzureConfig();
             instance.client_secret = "abc";
-            assert(instance.fieldValid("client_secret"));
+            expect(instance.fieldValid("client_secret")).toBeTruthy();
         });
 
         it("should invalidate client_secret", () => {
-            let instance = new AzureConfig();
+            const instance = new AzureConfig();
             instance.client_secret = "";
-            assert(!instance.fieldValid("client_secret"));
+            expect(!instance.fieldValid("client_secret")).toBeTruthy();
         });
     });
 
     describe("tenant_id", () => {
         it("should validate tenant_id", () => {
-            let validTenantId = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx";
-            let instance = new AzureConfig();
+            const validTenantId = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx";
+            const instance = new AzureConfig();
             instance.tenant_id = validTenantId;
-            assert(instance.fieldValid("tenant_id"));
+            expect(instance.fieldValid("tenant_id")).toBeTruthy();
         });
 
         it("should invalidate tenant_id", () => {
-            let instance = new AzureConfig();
+            const instance = new AzureConfig();
             instance.tenant_id = "";
-            assert(!instance.fieldValid("tenant_id"));
+            expect(!instance.fieldValid("tenant_id")).toBeTruthy();
             instance.tenant_id = "asdfa";
-            assert(!instance.fieldValid("tenant_id"));
+            expect(!instance.fieldValid("tenant_id")).toBeTruthy();
         });
     });
 
     describe("client_id", () => {
         it("should validate client_id", () => {
-            let validClientId = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx";
-            let instance = new AzureConfig();
+            const validClientId = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx";
+            const instance = new AzureConfig();
             instance.client_id = validClientId;
-            assert(instance.fieldValid("client_id"));
+            expect(instance.fieldValid("client_id")).toBeTruthy();
         });
 
         it("should invalidate client_id", () => {
-            let instance = new AzureConfig();
+            const instance = new AzureConfig();
             instance.client_id = "";
-            assert(!instance.fieldValid("client_id"));
+            expect(!instance.fieldValid("client_id")).toBeTruthy();
             instance.client_id = "asdf";
-            assert(!instance.fieldValid("client_id"));
+            expect(!instance.fieldValid("client_id")).toBeTruthy();
         });
     });
 });

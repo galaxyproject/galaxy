@@ -113,7 +113,12 @@ class PageAllPublishedGrid(grids.Grid):
 
     def build_initial_query(self, trans, **kwargs):
         # See optimization description comments and TODO for tags in matching public histories query.
-        return trans.sa_session.query(self.model_class).join("user").options(eagerload("user").load_only("username"), eagerload("annotations"), undefer("average_rating"))
+        return trans.sa_session.query(self.model_class).join("user").filter(
+            model.User.deleted == false()).options(
+                eagerload("user").load_only("username"),
+                eagerload("annotations"),
+                undefer("average_rating")
+        )
 
     def apply_query_filter(self, trans, query, **kwargs):
         return query.filter(self.model_class.deleted == false()).filter(self.model_class.published == true())

@@ -48,15 +48,15 @@ class DatasetCollectionManager:
         self.tag_handler = tags.GalaxyTagHandler(app.model.context)
         self.ldda_manager = lddas.LDDAManager(app)
 
-    def precreate_dataset_collection_instance(self, trans, parent, name, structure, implicit_inputs=None, implicit_output_name=None, tags=None):
+    def precreate_dataset_collection_instance(self, trans, parent, name, structure, implicit_inputs=None, implicit_output_name=None, tags=None, completed_collection=None):
         # TODO: prebuild all required HIDs and send them in so no need to flush in between.
-        dataset_collection = self.precreate_dataset_collection(structure, allow_unitialized_element=implicit_output_name is not None)
+        dataset_collection = self.precreate_dataset_collection(structure, allow_unitialized_element=implicit_output_name is not None, completed_collection=completed_collection, implicit_output_name=implicit_output_name)
         instance = self._create_instance_for_collection(
             trans, parent, name, dataset_collection, implicit_inputs=implicit_inputs, implicit_output_name=implicit_output_name, flush=False, tags=tags
         )
         return instance
 
-    def precreate_dataset_collection(self, structure, allow_unitialized_element=True):
+    def precreate_dataset_collection(self, structure, allow_unitialized_element=True, completed_collection=None, implicit_output_name=None):
         has_structure = not structure.is_leaf and structure.children_known
         if not has_structure and allow_unitialized_element:
             dataset_collection = model.DatasetCollectionElement.UNINITIALIZED_ELEMENT
@@ -71,10 +71,17 @@ class DatasetCollectionManager:
             elements = []
             for index, (identifier, substructure) in enumerate(structure.children):
                 # TODO: Open question - populate these now or later?
-                if substructure.is_leaf:
-                    element = model.DatasetCollectionElement.UNINITIALIZED_ELEMENT
-                else:
-                    element = self.precreate_dataset_collection(substructure, allow_unitialized_element=allow_unitialized_element)
+                element = None
+                if completed_collection and implicit_output_name:
+                    job = completed_collection[index]
+                    if job:
+                        it = (jtiodca.dataset_collection for jtiodca in job.output_dataset_collections if jtiodca.name == implicit_output_name)
+                        element = next(it, None)
+                if element is None:
+                    if substructure.is_leaf:
+                        element = model.DatasetCollectionElement.UNINITIALIZED_ELEMENT
+                    else:
+                        element = self.precreate_dataset_collection(substructure, allow_unitialized_element=allow_unitialized_element)
 
                 element = model.DatasetCollectionElement(
                     element=element,
@@ -90,7 +97,7 @@ class DatasetCollectionManager:
     def create(self, trans, parent, name, collection_type, element_identifiers=None,
                elements=None, implicit_collection_info=None, trusted_identifiers=None,
                hide_source_items=False, tags=None, copy_elements=False, history=None,
-               set_hid=True, flush=True):
+               set_hid=True, flush=True, completed_job=None, output_name=None):
         """
         PRECONDITION: security checks on ability to add to parent
         occurred during load.
@@ -102,15 +109,19 @@ class DatasetCollectionManager:
         if element_identifiers and not trusted_identifiers:
             validate_input_element_identifiers(element_identifiers)
 
-        dataset_collection = self.create_dataset_collection(
-            trans=trans,
-            collection_type=collection_type,
-            element_identifiers=element_identifiers,
-            elements=elements,
-            hide_source_items=hide_source_items,
-            copy_elements=copy_elements,
-            history=history,
-        )
+        if completed_job and output_name:
+            jtodca = next(a for a in completed_job.output_dataset_collection_instances if a.name == output_name)
+            dataset_collection = jtodca.dataset_collection_instance.collection
+        else:
+            dataset_collection = self.create_dataset_collection(
+                trans=trans,
+                collection_type=collection_type,
+                element_identifiers=element_identifiers,
+                elements=elements,
+                hide_source_items=hide_source_items,
+                copy_elements=copy_elements,
+                history=history,
+            )
 
         implicit_inputs = []
         if implicit_collection_info:

@@ -1,6 +1,6 @@
 <template>
     <div class="invocation-time" :invocation_id="args.invocation_id">
-        <pre><code>{{content}}</code></pre>
+        <pre><code>{{ content }}</code></pre>
     </div>
 </template>
 
