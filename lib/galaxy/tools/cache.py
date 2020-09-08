@@ -7,7 +7,6 @@ from diskcache import (
     Cache,
     JSONDisk
 )
-from lxml import etree
 from sqlalchemy.orm import (
     defer,
     joinedload,
@@ -27,36 +26,26 @@ def create_cache_region(tool_cache_data_dir):
     return Cache(tool_cache_data_dir, disk=JSONDisk, timeout=3600)
 
 
-def is_valid_cache_entry(tool_document):
+def get_cached_tool_source(cache, config_file):
+    tool_document = cache.get(config_file)
+    if not tool_document:
+        return None
     if tool_document.get('tool_cache_version', 0) != CURRENT_TOOL_CACHE_VERSION:
-        return False
+        return None
     for path, modtime in tool_document['paths_and_modtimes'].items():
         if os.path.getmtime(path) != modtime:
-            return False
-    return True
+            return None
+    return tool_document
 
 
-def get_or_create_cached_tool_source(cache, config_file, creator):
-    if config_file.endswith('.xml'):
-        tool_document = cache.get(config_file)
-        if tool_document and is_valid_cache_entry(tool_document):
-            tool_source = creator(
-                config_file=config_file,
-                xml_tree=etree.ElementTree(etree.fromstring(tool_document['document'].encode('utf-8'))),
-                macro_paths=tool_document['macro_paths']
-            )
-        else:
-            tool_source = creator(config_file)
-            to_persist = {
-                'document': tool_source.to_string(),
-                'macro_paths': tool_source.macro_paths,
-                'paths_and_modtimes': tool_source.paths_and_modtimes(),
-                'tool_cache_version': CURRENT_TOOL_CACHE_VERSION,
-            }
-            cache.set(config_file, to_persist)
-    else:
-        tool_source = creator(config_file)
-    return tool_source
+def set_cached_tool_source(cache, config_file, tool_source):
+    to_persist = {
+        'document': tool_source.to_string(),
+        'macro_paths': tool_source.macro_paths,
+        'paths_and_modtimes': tool_source.paths_and_modtimes(),
+        'tool_cache_version': CURRENT_TOOL_CACHE_VERSION,
+    }
+    cache.set(config_file, to_persist)
 
 
 class ToolCache:

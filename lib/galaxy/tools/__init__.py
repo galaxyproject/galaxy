@@ -19,6 +19,7 @@ except ImportError:
 
 import packaging.version
 import webob.exc
+from lxml import etree
 from mako.template import Template
 from six.moves.urllib.parse import unquote_plus
 from webob.compat import cgi_FieldStorage
@@ -57,7 +58,8 @@ from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
 from galaxy.tools.cache import (
     create_cache_region,
-    get_or_create_cached_tool_source,
+    get_cached_tool_source,
+    set_cached_tool_source,
 )
 from galaxy.tools.parameters import (
     check_param,
@@ -295,7 +297,19 @@ class ToolBox(BaseGalaxyToolBox):
 
     def create_tool(self, config_file, tool_cache_data_dir=None, **kwds):
         cache = self.get_cache_region(tool_cache_data_dir or self.app.config.tool_cache_data_dir)
-        tool_source = get_or_create_cached_tool_source(cache, config_file, self.get_expanded_tool_source)
+        if config_file.endswith('.xml'):
+            tool_document = get_cached_tool_source(cache, config_file)
+            if tool_document:
+                tool_source = self.get_expanded_tool_source(
+                    config_file=config_file,
+                    xml_tree=etree.ElementTree(etree.fromstring(tool_document['document'].encode('utf-8'))),
+                    macro_paths=tool_document['macro_paths']
+                )
+            else:
+                tool_source = self.get_expanded_tool_source(config_file)
+                set_cached_tool_source(cache, config_file, tool_source)
+        else:
+            tool_source = self.get_expanded_tool_source(config_file)
         tool = self._create_tool_from_source(tool_source, config_file=config_file, **kwds)
         if not self.app.config.delay_tool_initialization:
             tool.assert_finalized(raise_if_invalid=True)
