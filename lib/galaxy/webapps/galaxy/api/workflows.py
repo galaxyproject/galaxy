@@ -1146,7 +1146,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 }
                 input_subdomain.append(input_obj)
 
-
             if step.workflow_step.type == 'data_collection_input':
                 encoded_dataset_id = trans.security.encode_id(step.workflow_step.id)
                 input_obj = {
@@ -1185,8 +1184,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             ],
             'environment_variables': kwd.get('environment_variables', {})
         }
-
-        # aws_estimate = {}
 
         extension = [
             {
