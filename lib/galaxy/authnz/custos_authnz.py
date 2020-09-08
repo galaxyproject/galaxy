@@ -112,9 +112,23 @@ class CustosAuthnz(IdentityProvider):
                         log.exception(message)
                         raise exceptions.AuthenticationFailed(message)
                 else:
-                    user = trans.app.user_manager.create(email=email, username=username)
-                    if trans.app.config.user_activation_on:
-                        trans.app.user_manager.send_activation_email(trans, email, username)
+                    print("\n\n\nn\\nNEW USER: ", email, username)  # testing
+                    # return for confirmation, maybe return to confirmation page instead of login_redirect_url
+                    # return login_redirect_url, custos_authnz_token.user
+
+                    # is there a better was to do this storage?
+                    self.new_user = {'email': email,
+                                     'username': username,
+                                     'token': token,
+                                     'user_id': user_id}
+
+                    print("\n\n\nn\\nNEW USER AGAIN: ", self.new_user, self.new_user.get('email'), self.new_user.get('username'))  # testing
+                    return login_redirect_url + 'login/confirm', None
+                    return self.create_user(trans, login_redirect_url)
+
+                    # user = trans.app.user_manager.create(email=email, username=username)
+                    # trans.sa_session.add(user)
+                    # trans.sa_session.flush()
             custos_authnz_token = CustosAuthnzToken(user=user,
                                    external_user_id=user_id,
                                    provider=self.config['provider'],
@@ -129,6 +143,36 @@ class CustosAuthnz(IdentityProvider):
             custos_authnz_token.refresh_token = refresh_token
             custos_authnz_token.expiration_time = expiration_time
             custos_authnz_token.refresh_expiration_time = refresh_expiration_time
+        trans.sa_session.add(custos_authnz_token)
+        trans.sa_session.flush()
+        return login_redirect_url, custos_authnz_token.user
+
+    def create_user(self, trans, login_redirect_url):
+        print("\n\n\nn\\nCREATE NEW USER: ", login_redirect_url)  # testing
+        user = trans.app.user_manager.create(email=self.new_user.get('email'),
+                                             username=self.new_user.get('username'))
+        trans.sa_session.add(user)
+        trans.sa_session.flush()  # might not need this extra flush
+
+        user_id = self.new_user.get('user_id')
+        token = self.new_user.get('token')
+        access_token = token['access_token']
+        id_token = token['id_token']
+        refresh_token = token['refresh_token'] if 'refresh_token' in token else None
+        expiration_time = datetime.now() + timedelta(seconds=token.get('expires_in', 3600))
+        refresh_expiration_time = (datetime.now() + timedelta(seconds=token['refresh_expires_in'])) if 'refresh_expires_in' in token else None
+
+        print("\n\n\nn\\nCREATE NEW USER AGAIN: ", user_id)  # testing
+
+        custos_authnz_token = CustosAuthnzToken(user=user,
+                                external_user_id=user_id,
+                                provider=self.config['provider'],
+                                access_token=access_token,
+                                id_token=id_token,
+                                refresh_token=refresh_token,
+                                expiration_time=expiration_time,
+                                refresh_expiration_time=refresh_expiration_time)
+
         trans.sa_session.add(custos_authnz_token)
         trans.sa_session.flush()
         return login_redirect_url, custos_authnz_token.user

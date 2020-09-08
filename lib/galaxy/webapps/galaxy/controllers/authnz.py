@@ -86,6 +86,11 @@ class OIDC(JSAppLauncher):
             raise
         if success is False:
             return trans.show_error_message(message)
+        if redirect_url == "/login/confirm":
+            print("\n\n\n\nURL: ", redirect_url)
+            self.provider = provider
+            return trans.response.send_redirect(url_for(redirect_url))
+
         user = user if user is not None else trans.user
         if user is None:
             return trans.show_error_message("An unknown error occurred when handling the callback from `{}` "
@@ -94,6 +99,25 @@ class OIDC(JSAppLauncher):
         trans.handle_user_login(user)
         # Record which idp provider was logged into, so we can logout of it later
         trans.set_cookie(value=provider, name=PROVIDER_COOKIE_NAME)
+        return trans.response.send_redirect(url_for('/'))
+
+    @web.expose
+    def create_user(self, trans, **kwargs):
+        try:
+            success, message, (redirect_url, user) = trans.app.authnz_manager.create_user(self.provider, trans, login_redirect_url=url_for('/'))
+        except exceptions.AuthenticationFailed as e:
+            return trans.response.send_redirect(trans.request.base + url_for('/') + 'root/login?message=' + (e.message or "Duplicate Email"))
+
+        if success is False:
+            return trans.show_error_message(message)
+        user = user if user is not None else trans.user
+        if user is None:
+            return trans.show_error_message("An unknown error occurred when handling the callback from `{}` "
+                                            "identity provider. Please try again, and if the problem persists, "
+                                            "contact the Galaxy instance admin.".format(provider))
+        trans.handle_user_login(user)
+        # Record which idp provider was logged into, so we can logout of it later
+        trans.set_cookie(value=self.provider, name=PROVIDER_COOKIE_NAME)
         return trans.response.send_redirect(url_for('/'))
 
     @web.expose

@@ -301,6 +301,21 @@ class AuthnzManager:
         except exceptions.AuthenticationFailed:
             raise
         except Exception as e:
+            print("\n\n\n\n\n\nMANAGER CALLBACK EXCEPTION")
+            msg = 'The following error occurred when handling callback from `{}` identity provider: ' \
+                  '{}'.format(provider, str(e))
+            log.exception(msg)
+            return False, msg, (None, None)
+
+    def create_user(self, provider, trans, login_redirect_url):
+        print("\n\n\n\n\n\nMANAGER CREATE USER")
+        try:
+            success, message, backend = self._get_authnz_backend(provider)
+            return success, message, backend.create_user(trans, login_redirect_url)
+        except exceptions.AuthenticationFailed as e:
+            log.exception(e.message)
+            raise exceptions.AuthenticationFailed(e.message)
+        except Exception as e:
             msg = 'The following error occurred when handling callback from `{}` identity provider: ' \
                   '{}'.format(provider, str(e))
             log.exception(msg)

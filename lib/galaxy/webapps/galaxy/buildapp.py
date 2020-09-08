@@ -73,6 +73,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_route('/authnz/{provider}/callback', controller='authnz', action='callback', provider=None)
     webapp.add_route('/authnz/{provider}/disconnect/{email}', controller='authnz', action='disconnect', provider=None, email=None)
     webapp.add_route('/authnz/{provider}/logout', controller='authnz', action='logout', provider=None)
+    webapp.add_route('/authnz/create_user', controller='authnz', action='create_user')
     # Returns the provider specific logout url for currently logged in provider
     webapp.add_route('/authnz/logout', controller='authnz', action='get_logout_url')
     webapp.add_route('/authnz/get_cilogon_idps', controller='authnz', action='get_cilogon_idps')
@@ -124,6 +125,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/admin/quotas', 'admin')
     webapp.add_client_route('/admin/form/{form_id}', 'admin')
     webapp.add_client_route('/admin/api_keys', 'admin')
+    webapp.add_client_route('/login/confirm')
     webapp.add_client_route('/tools/view')
     webapp.add_client_route('/tools/json')
     webapp.add_client_route('/tours')
