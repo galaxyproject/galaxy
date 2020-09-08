@@ -128,7 +128,7 @@ export default {
             return getUrl(`workflows/invocations/report?id=${this.invocationId}`);
         },
         bcoJSON: function () {
-            return getUrl(`api/invocations/${this.invocationId}/get_bco`);
+            return getUrl(`api/invocations/${this.invocationId}/biocompute/download`);
         },
         invocationPdfLink: function () {
             return getUrl(`api/invocations/${this.invocationId}/report.pdf`);

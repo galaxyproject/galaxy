@@ -1237,7 +1237,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     @expose_api
     def export_invocation_bco(self, trans, invocation_id, **kwd):
         '''
-        GET /api/invocations/{invocations_id}/export_bco
+        GET /api/invocations/{invocations_id}/biocompute
         Return a BioCompute Object for the workflow invocation.
         '''
         return self._generate_invocation_bco(trans, invocation_id, **kwd)
@@ -1245,7 +1245,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     @expose_api_raw
     def download_invocation_bco(self, trans, invocation_id, **kwd):
         """
-        GET /api/invocations/{invocations_id}/get_bco
+        GET /api/invocations/{invocations_id}/biocompute/download
 
         Returns a selected BioCompute Object.
 
