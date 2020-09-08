@@ -4413,6 +4413,14 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
         object_session(self).flush()
         return hdca
 
+    @property
+    def waiting_for_elements(self):
+        summary = self.job_state_summary
+        if summary.all_jobs > 0 and summary.deleted + summary.error + summary.failed + summary.ok == summary.all_jobs:
+            return False
+        else:
+            return self.collection.waiting_for_elements
+
     def contains_collection(self, collection_id):
         """Checks to see that the indicated collection is a member of the
         hdca by using a recursive CTE sql query to find the collection's parents
