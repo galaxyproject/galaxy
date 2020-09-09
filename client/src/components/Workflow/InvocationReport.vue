@@ -1,21 +1,30 @@
 <template>
-    <div v-if="!edit" class="p-3">
-        <markdown :markdown-config="markdownConfig" @onEdit="onEdit" />
+    <div id="columns">
+        <div v-if="!edit" id="center">
+            <div class="h-100 overflow-auto p-3">
+                <markdown :markdown-config="markdownConfig" @onEdit="onEdit" />
+            </div>
+        </div>
+        <markdown-editor
+            v-else
+            :markdown-text="invocationMarkdown"
+            :markdown-config="markdownConfig"
+            @onUpdate="onUpdate"
+        >
+            <template v-slot:buttons>
+                <b-button
+                    id="workflow-canvas-button"
+                    title="View Report"
+                    variant="link"
+                    role="button"
+                    v-b-tooltip.hover.bottom
+                    @click="onView"
+                >
+                    <font-awesome-icon icon="eye" />
+                </b-button>
+            </template>
+        </markdown-editor>
     </div>
-    <markdown-editor v-else :markdown-text="invocationMarkdown" :markdown-config="markdownConfig" @onUpdate="onUpdate">
-        <template v-slot:buttons>
-            <b-button
-                id="workflow-canvas-button"
-                title="View Report"
-                variant="link"
-                role="button"
-                v-b-tooltip.hover.bottom
-                @click="onView"
-            >
-                <font-awesome-icon icon="eye" />
-            </b-button>
-        </template>
-    </markdown-editor>
 </template>
 
 <script>

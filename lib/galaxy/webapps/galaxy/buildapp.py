@@ -161,7 +161,6 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/workflows/trs_import')
     webapp.add_client_route('/workflows/trs_search')
     webapp.add_client_route('/workflows/invocations')
-    webapp.add_client_route('/workflows/invocations/report')
     # webapp.add_client_route('/workflows/invocations/view_bco')
     webapp.add_client_route('/custom_builds')
     webapp.add_client_route('/interactivetool_entry_points/list')
