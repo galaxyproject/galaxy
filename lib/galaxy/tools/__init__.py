@@ -57,8 +57,8 @@ from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
 from galaxy.tools.cache import (
-    create_cache_region,
     get_cached_tool_source,
+    persist_cache_region,
     set_cached_tool_source,
 )
 from galaxy.tools.parameters import (
@@ -263,6 +263,8 @@ class ToolBox(BaseGalaxyToolBox):
             app=app,
             save_integrated_tool_panel=save_integrated_tool_panel,
         )
+        for cache_dir, cache_dict in self.cache_regions.items():
+            persist_cache_region(cache_dir, cache_dict)
 
     def can_load_config_file(self, config_filename):
         if config_filename == self.app.config.shed_tool_config_file and not self.app.config.shed_tool_config_file_set:
@@ -292,7 +294,11 @@ class ToolBox(BaseGalaxyToolBox):
 
     def get_cache_region(self, tool_cache_data_dir):
         if tool_cache_data_dir not in self.cache_regions:
-            self.cache_regions[tool_cache_data_dir] = create_cache_region(tool_cache_data_dir)
+            try:
+                with open(os.path.join(tool_cache_data_dir, 'cache.json')) as cache_file:
+                    self.cache_regions[tool_cache_data_dir] = json.load(cache_file)
+            except OSError:
+                self.cache_regions[tool_cache_data_dir] = {}
         return self.cache_regions[tool_cache_data_dir]
 
     def create_tool(self, config_file, tool_cache_data_dir=None, **kwds):

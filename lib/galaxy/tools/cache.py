@@ -1,12 +1,9 @@
+import json
 import logging
 import os
 from collections import defaultdict
 from threading import Lock
 
-from diskcache import (
-    Index,
-    JSONDisk
-)
 from sqlalchemy.orm import (
     defer,
     joinedload,
@@ -14,16 +11,19 @@ from sqlalchemy.orm import (
 
 from galaxy.util import unicodify
 from galaxy.util.hash_util import md5_hash_file
+from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
 
 log = logging.getLogger(__name__)
 
 CURRENT_TOOL_CACHE_VERSION = 1
 
 
-def create_cache_region(tool_cache_data_dir):
+def persist_cache_region(tool_cache_data_dir, cache_dict):
     if not os.path.exists(tool_cache_data_dir):
         os.makedirs(tool_cache_data_dir)
-    return Index(tool_cache_data_dir, disk=JSONDisk, timeout=3600)
+    path = os.path.join(tool_cache_data_dir, 'cache.json')
+    with RenamedTemporaryFile(path, mode='w') as cache_file:
+        json.dump(cache_dict, cache_file)
 
 
 def get_cached_tool_source(cache, config_file):
