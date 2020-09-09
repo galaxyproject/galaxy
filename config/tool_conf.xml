@@ -30,7 +30,7 @@
     <tool file="ina_speech_segmenter/remove_silence_music.xml"/>
     <tool file="ina_speech_segmenter/remove_silence_speech.xml"/>
     <tool file="amp_json_schema/adjust_timestamps.xml"/>
-    <tool file="amp_json_schema/adjust_segmentation_timestamps.xml"/>
+    <tool file="amp_json_schema/adjust_diarization_timestamps.xml"/>
   </section>
   
   <section id="nlp" name="Natural Language Processing">
