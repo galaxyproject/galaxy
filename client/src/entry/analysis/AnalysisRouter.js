@@ -77,6 +77,7 @@ export const getAnalysisRouter = (Galaxy) =>
             "(/)workflows(/)list": "show_workflows",
             "(/)workflows/invocations": "show_workflow_invocations",
             "(/)workflows/invocations/report": "show_workflow_invocation_report",
+            // "(/)workflows/invocations/view_bco": "show_invocation_bco",
             "(/)workflows/list_published(/)": "show_workflows_published",
             "(/)workflows/create(/)": "show_workflows_create",
             "(/)histories(/)citations(/)": "show_history_citations",

@@ -162,6 +162,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/workflows/trs_search')
     webapp.add_client_route('/workflows/invocations')
     webapp.add_client_route('/workflows/invocations/report')
+    # webapp.add_client_route('/workflows/invocations/view_bco')
     webapp.add_client_route('/custom_builds')
     webapp.add_client_route('/interactivetool_entry_points/list')
 
@@ -661,6 +662,8 @@ def populate_api_routes(webapp, app):
     connect_invocation_endpoint('show', '', action='show_invocation')
     connect_invocation_endpoint('show_report', '/report', action='show_invocation_report')
     connect_invocation_endpoint('show_report_pdf', '/report.pdf', action='show_invocation_report_pdf')
+    connect_invocation_endpoint('biocompute/download', '/biocompute/download', action='download_invocation_bco')
+    connect_invocation_endpoint('biocompute', '/biocompute', action='export_invocation_bco')
     connect_invocation_endpoint('jobs_summary', '/jobs_summary', action='invocation_jobs_summary')
     connect_invocation_endpoint('step_jobs_summary', '/step_jobs_summary', action='invocation_step_jobs_summary')
     connect_invocation_endpoint('cancel', '', action='cancel_invocation', conditions=dict(method=['DELETE']))

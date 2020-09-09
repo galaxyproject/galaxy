@@ -39,6 +39,21 @@ from galaxy_test.base.workflow_fixtures import (
 from ._framework import ApiTestCase
 
 
+WORKFLOW_SIMPLE = """
+class: GalaxyWorkflow
+name: Simple Workflow
+inputs:
+  input1: data
+outputs:
+  wf_output_1:
+    outputSource: first_cat/out_file1
+steps:
+  first_cat:
+    tool_id: cat1
+    in:
+      input1: input1
+"""
+
 NESTED_WORKFLOW_AUTO_LABELS_MODERN_SYNTAX = """
 class: GalaxyWorkflow
 inputs:
@@ -1180,6 +1195,9 @@ outer_input:
             assert [step for step in subworkflow_invocation['steps'] if step['workflow_step_label'] == 'inner_input']
             assert [step for step in subworkflow_invocation['steps'] if step['workflow_step_label'] == 'random_lines']
 
+            bco = self.workflow_populator.get_biocompute_object(run_response.invocation_id)
+            self.workflow_populator.validate_biocompute_object(bco)
+
     @skip_without_tool("random_lines1")
     def test_run_subworkflow_runtime_parameters(self):
         with self.dataset_populator.test_history() as history_id:
@@ -1196,7 +1214,7 @@ outer_input:
             assert len([x for x in content.split("\n") if x]) == 2
 
     @skip_without_tool("cat")
-    def test_run_subworkflow_replacment_parameters(self):
+    def test_run_subworkflow_replacement_parameters(self):
         with self.dataset_populator.test_history() as history_id:
             test_data = """
 replacement_parameters:
@@ -1369,7 +1387,7 @@ input_1:
   type: File
 """
         with self.dataset_populator.test_history() as history_id:
-            summary = self._run_jobs(r"""
+            summary = self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
   input_1: data
@@ -1416,6 +1434,15 @@ steps:
             assert "\n```galaxy\nhistory_dataset_display(history_dataset_id=" in markdown_content
             assert "## Workflow Inputs" in markdown_content
             assert "## About This Report" in markdown_content
+
+    @skip_without_tool("cat1")
+    def test_export_invocation_bco(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_jobs(WORKFLOW_SIMPLE, test_data={"input1": "hello world"}, history_id=history_id)
+            invocation_id = summary.invocation_id
+            bco = self.workflow_populator.get_biocompute_object(invocation_id)
+            self.workflow_populator.validate_biocompute_object(bco)
+            self.assertEqual(bco['provenance_domain']['name'], "Simple Workflow")
 
     @skip_without_tool("__APPLY_RULES__")
     def test_workflow_run_apply_rules(self):
@@ -1483,19 +1510,7 @@ input_c:
 
     def test_workflow_output_dataset(self):
         with self.dataset_populator.test_history() as history_id:
-            summary = self._run_jobs("""
-class: GalaxyWorkflow
-inputs:
-  input1: data
-outputs:
-  wf_output_1:
-    outputSource: first_cat/out_file1
-steps:
-  first_cat:
-    tool_id: cat1
-    in:
-      input1: input1
-""", test_data={"input1": "hello world"}, history_id=history_id)
+            summary = self._run_jobs(WORKFLOW_SIMPLE, test_data={"input1": "hello world"}, history_id=history_id)
             workflow_id = summary.workflow_id
             invocation_id = summary.invocation_id
             invocation_response = self._get("workflows/{}/invocations/{}".format(workflow_id, invocation_id))
@@ -2595,7 +2610,7 @@ outer_input:
         for workflow_file in ["test_workflow_topoambigouity", "test_workflow_topoambigouity_auto_laidout"]:
             workflow = self.workflow_populator.load_workflow_from_resource(workflow_file)
             last_step_map = self._step_map(workflow)
-            for i in range(num_tests):
+            for _ in range(num_tests):
                 uploaded_workflow_id = self.workflow_populator.create_workflow(workflow)
                 downloaded_workflow = self._download_workflow(uploaded_workflow_id)
                 step_map = self._step_map(downloaded_workflow)
@@ -3454,19 +3469,7 @@ steps:
     @skip_without_tool("cat1")
     def test_validated_post_job_action_unvalidated_default(self):
         with self.dataset_populator.test_history() as history_id:
-            self._run_jobs("""
-class: GalaxyWorkflow
-inputs:
-  input1: data
-outputs:
-  wf_output_1:
-    outputSource: first_cat/out_file1
-steps:
-  first_cat:
-    tool_id: cat1
-    in:
-      input1: input1
-""", test_data={"input1": {"type": "File", "file_type": "fastqsanger", "value": "1.fastqsanger"}}, history_id=history_id)
+            self._run_jobs(WORKFLOW_SIMPLE, test_data={"input1": {"type": "File", "file_type": "fastqsanger", "value": "1.fastqsanger"}}, history_id=history_id)
             hda2 = self.dataset_populator.get_history_dataset_details(history_id, hid=2)
             assert hda2["validated_state"] == "unknown"
 
@@ -3975,7 +3978,7 @@ input_c:
 
     def _wait_for_invocation_non_new(self, workflow_id, invocation_id):
         target_state_reached = False
-        for i in range(50):
+        for _ in range(50):
             invocation = self._invocation_details(workflow_id, invocation_id)
             if invocation['state'] != 'new':
                 target_state_reached = True
@@ -3991,7 +3994,7 @@ input_c:
 
     def _wait_for_invocation_state(self, workflow_id, invocation_id, target_state):
         target_state_reached = False
-        for i in range(25):
+        for _ in range(25):
             invocation = self._invocation_details(workflow_id, invocation_id)
             if invocation['state'] == target_state:
                 target_state_reached = True
