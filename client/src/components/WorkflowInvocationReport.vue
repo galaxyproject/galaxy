@@ -2,12 +2,7 @@
     <div v-if="!edit" class="p-3">
         <markdown :markdown-config="markdownConfig" @onEdit="onEdit" />
     </div>
-    <markdown-editor
-        v-else
-        :markdown-text="markdownConfig.invocation_markdown"
-        :markdown-config="markdownConfig"
-        @onUpdate="onUpdate"
-    >
+    <markdown-editor v-else :markdown-text="invocationMarkdown" :markdown-config="markdownConfig" @onUpdate="onUpdate">
         <template v-slot:buttons>
             <b-button
                 id="workflow-canvas-button"
@@ -24,8 +19,10 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
+import { Toast } from "ui/toast";
+import { getAppRoot } from "onload/loadConfig";
+import { rethrowSimple } from "utils/simple-error";
 import Markdown from "components/Markdown/Markdown.vue";
 import MarkdownEditor from "components/Markdown/MarkdownEditor.vue";
 import Vue from "vue";
@@ -72,20 +69,28 @@ export default {
             this.invocationMarkdown = newMarkdown;
         },
         loadMarkdownConfig() {
-            const invocationId = this.invocationId;
-            const url = getAppRoot() + `api/invocations/${invocationId}/report`;
+            this.getMarkdown(this.invocationId)
+                .then((response) => {
+                    this.markdownConfig = response;
+                    this.invocationMarkdown = this.markdownConfig.invocation_markdown;
+                })
+                .catch((error) => {
+                    Toast.error(`Failed to load invocation markdown: ${error}`);
+                });
+        },
+        /** Markdown data request helper **/
+        async getMarkdown(id) {
+            const url = getAppRoot() + `api/invocations/${id}/report`;
             const params = {};
             if (this.invocationMarkdown) {
                 params.invocation_markdown = this.invocationMarkdown;
             }
-            axios
-                .get(url, { params: params })
-                .then((response) => {
-                    this.markdownConfig = response.data;
-                })
-                .catch((e) => {
-                    console.error(e);
-                });
+            try {
+                const { data } = await axios.get(url, { params: params });
+                return data;
+            } catch (e) {
+                rethrowSimple(e);
+            }
         },
     },
 };
