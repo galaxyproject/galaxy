@@ -98,3 +98,11 @@ class SmartTarget:
 
     def wait_for_and_send_keys(self, text):
         self.wait_for_visible().send_keys(text)
+
+    def hack_js_click(self):
+        """Hack to force click at JavaScript level (bypassing screen interactions).
+
+        This should generally be avoided.
+        """
+        elem = self._has_driver.driver.find_element(*self._target.element_locator)
+        self._has_driver.driver.execute_script("arguments[0].click();", elem)

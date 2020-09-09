@@ -408,6 +408,9 @@ admin:
   manage_jobs:
     selectors:
       job_lock: '#prevent-job-dispatching'
+      job_lock_label:
+        type: xpath
+        selector: "//label[@for='prevent-job-dispatching']/strong"
       cutoff: '#cutoff'
 
   toolshed:
