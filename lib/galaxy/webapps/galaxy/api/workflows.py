@@ -1020,7 +1020,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         # h_contents = self.history_contents_manager.contained(history)
 
-        spec_version = kwd.get('spec_version', 'https://w3id.org/biocompute/1.4.0/')
+        spec_version = kwd.get('spec_version', 'https://w3id.org/ieee/ieee-2791-schema/2791object.json')
 
         # listing the versions of the workflow for 'version' and 'derived_from'
         versions = []
