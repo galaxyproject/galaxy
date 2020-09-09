@@ -200,3 +200,36 @@ def test_kwargs_listify(mock_init, monkeypatch):
 
     assert config._raw_config['path4'] == 'new1, new2'
     assert config.path4 == ['my-config/new1', 'my-config/new2']
+
+
+@pytest.fixture
+def mock_check_against_root(mock_init, monkeypatch):
+
+    def path_exists(_, path):
+        return True if path == 'root/foo' else False
+
+    monkeypatch.setattr(BaseAppConfiguration, '_path_exists', path_exists)
+    monkeypatch.setattr(BaseAppConfiguration, '_in_root_dir', lambda _, path: 'root/%s' % path)
+    monkeypatch.setattr(BaseAppConfiguration, 'paths_to_check_against_root', {'path1', 'path4'})
+
+
+def test_check_against_root_single_path(mock_check_against_root):
+    # 1. Set path1='foo'
+    # 2. It is resolved to 'my-config/foo'
+    # 3. path1 is in paths to check against root
+    # 4. 'my-config/foo' does not exist, so 'foo' is re-resolved w.r.t root
+    # 5. 'root/foo' exists, so config.path1 is set to 'root/foo'
+    config = BaseAppConfiguration(path1='foo')
+
+    assert config.path1 == 'root/foo'
+
+
+def test_check_against_root_list_of_paths(mock_check_against_root):
+    # 1. Set path4='foo, bar'
+    # 2. It is resolved to ['my-config/foo', 'my-config/bar']
+    # 3. path4 is in paths to check against root
+    # 4. both paths do not exist, so both are re-resolved w.r.t root
+    # 5. 'root/foo' exists, so config.path4 is set to ['root/foo', 'my-config/bar']
+    config = BaseAppConfiguration(path4='foo, bar')
+
+    assert config.path4 == ['root/foo', 'my-config/bar']

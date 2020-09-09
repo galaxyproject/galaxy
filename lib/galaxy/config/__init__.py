@@ -110,6 +110,7 @@ class BaseAppConfiguration:
     # If VALUE == first directory in a user-supplied path that resolves to KEY, it will be stripped from that path
     renamed_options = None
     deprecated_dirs = None
+    paths_to_check_against_root = None  # backward compatibility: if resolved path doesn't exist, try resolving w.r.t root
     add_sample_file_to_defaults = None  # for these options, add sample config files to their defaults
     listify_options = None  # values for these options are processed as lists of values
 
@@ -328,7 +329,7 @@ class BaseAppConfiguration:
         for key in self.schema.paths_to_resolve:
             value = getattr(self, key)
             # Check if value is a list or should be listified; if so, listify and resolve each item separately.
-            if type(value) == list or (self.listify_options and key in self.listify_options):
+            if type(value) is list or (self.listify_options and key in self.listify_options):
                 saved_values = listify(getattr(self, key), do_strip=True)  # listify and save original value
                 setattr(self, key, '_')  # replace value with temporary placeholder
                 resolve(key)  # resolve temporary value (`_` becomes `parent-path/_`)
@@ -338,6 +339,39 @@ class BaseAppConfiguration:
                 setattr(self, key, resolved_paths)  # set config.key to a list of resolved paths
             else:
                 resolve(key)
+            # Check options that have been set and may need to be resolved w.r.t. root
+            if self.is_set(key) and self.paths_to_check_against_root and key in self.paths_to_check_against_root:
+                self._check_against_root(key)
+
+    def _check_against_root(self, key):
+
+        def get_path(current_path, initial_path):
+            # if path does not exist and was set as relative:
+            if not self._path_exists(current_path) and not os.path.isabs(initial_path):
+                new_path = self._in_root_dir(initial_path)
+                if self._path_exists(new_path):  # That's a bingo!
+                    resolves_to = self.schema.paths_to_resolve.get(key)
+                    log.warning(
+                        "Paths for the '{0}' option should be relative to '{1}'. To suppress this warning, "
+                        "move '{0}' into '{1}', or set it's value to an absolute path.".format(key, resolves_to)
+                    )
+                    return new_path
+            return current_path
+
+        current_value = getattr(self, key)  # resolved path or list of resolved paths
+        if type(current_value) is list:
+            initial_paths = listify(self._raw_config[key], do_strip=True)  # initial unresolved paths
+            updated_paths = []
+            # check and, if needed, update each path in the list
+            for current_path, initial_path in zip(current_value, initial_paths):
+                path = get_path(current_path, initial_path)
+                updated_paths.append(path)  # add to new list regardless of whether path has changed or not
+            setattr(self, key, updated_paths)  # update: one or more paths may have changed
+        else:
+            initial_path = self._raw_config[key]  # initial unresolved path
+            path = get_path(current_value, initial_path)
+            if path != current_value:
+                setattr(self, key, path)  # update if path has changed
 
     def _in_root_dir(self, path):
         return self._in_dir(self.root, path)
@@ -417,6 +451,39 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     }
     default_config_file_name = 'galaxy.yml'
     deprecated_dirs = {'config_dir': 'config', 'data_dir': 'database'}
+
+    paths_to_check_against_root = {
+        'auth_config_file',
+        'build_sites_config_file',
+        'containers_config_file',
+        'data_manager_config_file',
+        'datatypes_config_file',
+        'dependency_resolvers_config_file',
+        'error_report_file',
+        'job_config_file',
+        'job_metrics_config_file',
+        'job_resource_params_file',
+        'local_conda_mapping_file',
+        'migrated_tools_config',
+        'modules_mapping_files',
+        'object_store_config_file',
+        'oidc_backends_config_file',
+        'oidc_config_file',
+        'shed_data_manager_config_file',
+        'shed_tool_config_file',
+        'shed_tool_data_table_config',
+        'tool_destinations_config_file',
+        'tool_sheds_config_file',
+        'user_preferences_extra_conf_path',
+        'workflow_resource_params_file',
+        'workflow_schedulers_config_file',
+        'markdown_export_css',
+        'markdown_export_css_pages',
+        'markdown_export_css_invocation_reports',
+        'file_path',
+        'tool_data_table_config_path',
+        'tool_config_file',
+    }
 
     add_sample_file_to_defaults = {
         'build_sites_config_file',
