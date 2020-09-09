@@ -106,13 +106,13 @@ class AdminAppTestCase(SeleniumTestCase):
         lock_label = manage_jobs.job_lock_label
         original_label = lock_label.wait_for_text()
         lock = manage_jobs.job_lock
-        lock.hack_js_click()
+        lock_label.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_TRANSITION)
         # Make sure the job lock has been toggled.
         new_label = lock_label.wait_for_text()
         self.assertNotEqual(new_label, original_label)
         self.screenshot("admin_jobs_locked")
-        lock.hack_js_click()
+        lock_label.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_TRANSITION)
         self.screenshot("admin_jobs_unlocked")
         # And confirm that it has toggled back to what it was.
