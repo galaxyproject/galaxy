@@ -134,16 +134,6 @@ jobs:
       - *restore_repo_cache
       - *install_tox
       - run: tox -e test_galaxy_packages
-  check_py3_compatibility:
-    docker:
-      - image: circleci/python:3.5
-    <<: *set_workdir
-    steps:
-      - *restore_repo_cache
-      - run: sudo apt-get update
-      - run: sudo apt-get install -y ack-grep
-      - *install_tox
-      - run: tox -e check_py3_compatibility
   js_unit:
     docker:
       - image: circleci/node:12-browsers
@@ -157,7 +147,7 @@ jobs:
           command: cd client && yarn run build
           environment:
               NODE_OPTIONS: --max_old_space_size=4096
-      - run: cd client && yarn run test
+      - run: cd client && yarn run qunit
   js_lint:
     docker:
       - image: circleci/node:12-browsers
@@ -184,8 +174,6 @@ workflows:
       - test_galaxy_packages:
           <<: *requires_get_code
       - validate_test_tools:
-          <<: *requires_get_code
-      - check_py3_compatibility:
           <<: *requires_get_code
       - js_unit:
           <<: *requires_get_code

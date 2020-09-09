@@ -8,7 +8,7 @@ import galaxy.util
 log = logging.getLogger(__name__)
 
 
-class NoQuotaAgent(object):
+class NoQuotaAgent:
     """Base quota agent, always returns no quota"""
 
     def __init__(self, model):
@@ -156,7 +156,13 @@ class QuotaAgent(NoQuotaAgent):
         except ZeroDivisionError:
             return 100
 
-    def set_entity_quota_associations(self, quotas=[], users=[], groups=[], delete_existing_assocs=True):
+    def set_entity_quota_associations(self, quotas=None, users=None, groups=None, delete_existing_assocs=True):
+        if quotas is None:
+            quotas = []
+        if users is None:
+            users = []
+        if groups is None:
+            groups = []
         for quota in quotas:
             if delete_existing_assocs:
                 flush_needed = False

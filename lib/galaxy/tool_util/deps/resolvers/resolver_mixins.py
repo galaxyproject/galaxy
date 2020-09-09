@@ -11,7 +11,7 @@ from ..brew_exts import (
 )
 
 
-class UsesHomebrewMixin(object):
+class UsesHomebrewMixin:
 
     def _init_homebrew(self, **kwds):
         cellar_root = kwds.get('cellar', None)
@@ -47,13 +47,13 @@ class UsesHomebrewMixin(object):
         return [n for n in names if os.path.isdir(os.path.join(recipe_base_path, n))]
 
 
-class UsesToolDependencyDirMixin(object):
+class UsesToolDependencyDirMixin:
 
     def _init_base_path(self, dependency_manager, **kwds):
         self.base_path = os.path.abspath(kwds.get('base_path', dependency_manager.default_base_path))
 
 
-class UsesInstalledRepositoriesMixin(object):
+class UsesInstalledRepositoriesMixin:
 
     def _get_installed_dependency(self, name, type, version=None, **kwds):
         installed_tool_dependencies = kwds.get("installed_tool_dependencies") or []

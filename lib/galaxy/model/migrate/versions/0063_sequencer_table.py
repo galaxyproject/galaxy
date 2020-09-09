@@ -1,7 +1,6 @@
 """
 Migration script to create a new 'sequencer' table
 """
-from __future__ import print_function
 
 import datetime
 import logging

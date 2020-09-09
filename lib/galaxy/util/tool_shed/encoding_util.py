@@ -36,6 +36,6 @@ def tool_shed_encode(val):
         value = json.dumps(val)
     else:
         value = val
-    a = hmac_new(b'ToolShedAndGalaxyMustHaveThisSameKey', smart_str(value))
+    a = hmac_new(b'ToolShedAndGalaxyMustHaveThisSameKey', value)
     b = unicodify(binascii.hexlify(smart_str(value)))
-    return "%s:%s" % (a, b)
+    return "{}:{}".format(a, b)

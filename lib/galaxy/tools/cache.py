@@ -86,7 +86,7 @@ def create_cache_region(tool_cache_data_dir):
     return region
 
 
-class ToolCache(object):
+class ToolCache:
     """
     Cache tool definitions to allow quickly reloading the whole
     toolbox.
@@ -140,7 +140,6 @@ class ToolCache(object):
             log.debug("Exception while checking tools to remove from cache: %s", unicodify(e))
             # If by chance the file is being removed while calculating the hash or modtime
             # we don't want the thread to die.
-            pass
         if removed_tool_ids:
             log.debug("Removed the following tools from cache: %s" % removed_tool_ids)
         return removed_tool_ids
@@ -209,7 +208,7 @@ class ToolCache(object):
             self._removed_tools_by_path = {}
 
 
-class ToolHash(object):
+class ToolHash:
 
     def __init__(self, path, modtime=None, lazy_hash=False):
         self.path = path
@@ -225,7 +224,7 @@ class ToolHash(object):
         return self._tool_hash
 
 
-class ToolShedRepositoryCache(object):
+class ToolShedRepositoryCache:
     """
     Cache installed ToolShedRepository objects.
     """

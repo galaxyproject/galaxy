@@ -1,4 +1,3 @@
-
 from markupsafe import escape
 from sqlalchemy import (
     and_,
@@ -114,7 +113,12 @@ class PageAllPublishedGrid(grids.Grid):
 
     def build_initial_query(self, trans, **kwargs):
         # See optimization description comments and TODO for tags in matching public histories query.
-        return trans.sa_session.query(self.model_class).join("user").options(eagerload("user").load_only("username"), eagerload("annotations"), undefer("average_rating"))
+        return trans.sa_session.query(self.model_class).join("user").filter(
+            model.User.deleted == false()).options(
+                eagerload("user").load_only("username"),
+                eagerload("annotations"),
+                undefer("average_rating")
+        )
 
     def apply_query_filter(self, trans, query, **kwargs):
         return query.filter(self.model_class.deleted == false()).filter(self.model_class.published == true())
@@ -266,7 +270,7 @@ class PageController(BaseUIController, SharableMixin,
     _visualization_selection_grid = VisualizationSelectionGrid()
 
     def __init__(self, app):
-        super(PageController, self).__init__(app)
+        super().__init__(app)
         self.page_manager = PageManager(app)
         self.history_manager = HistoryManager(app)
         self.history_serializer = HistorySerializer(self.app)
@@ -445,7 +449,7 @@ class PageController(BaseUIController, SharableMixin,
                 session.flush()
                 page_title = escape(page.title)
                 other_email = escape(other.email)
-                trans.set_message("Page '%s' shared with user '%s'" % (page_title, other_email))
+                trans.set_message("Page '{}' shared with user '{}'".format(page_title, other_email))
                 return trans.response.send_redirect(url_for("/pages/sharing?id=%s" % id))
         return trans.fill_template("/ind_share_base.mako",
                                    message=msg,

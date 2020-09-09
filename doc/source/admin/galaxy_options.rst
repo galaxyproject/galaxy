@@ -267,7 +267,7 @@
     config/tool_conf.xml does not exist). Can be a single file, a list
     of files, or (for backwards compatibility) a comma-separated list
     of files.
-:Default: ``config/tool_conf.xml``
+:Default: ``tool_conf.xml``
 :Type: any
 
 
@@ -285,8 +285,6 @@
     this option is preferable. This file will be created automatically
     upon tool installation, whereas Galaxy will fail to start if any
     files in tool_config_file cannot be read.
-    The value of this option will be resolved with respect to
-    <managed_config_dir>.
 :Default: ``shed_tool_conf.xml``
 :Type: str
 
@@ -316,8 +314,6 @@
     migration scripts to install tools that have been migrated to the
     tool shed upon a new release, they will be added to this tool
     config file.
-    The value of this option will be resolved with respect to
-    <managed_config_dir>.
 :Default: ``migrated_tools_conf.xml``
 :Type: str
 
@@ -381,8 +377,6 @@
     then use Conda if available. See
     https://github.com/galaxyproject/galaxy/blob/dev/doc/source/admin/dependency_resolvers.rst
     for more information on these options.
-    The value of this option will be resolved with respect to
-    <config_dir>.
 :Default: ``dependency_resolvers_conf.xml``
 :Type: str
 
@@ -480,6 +474,30 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``local_conda_mapping_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Path to a file that provides a mapping from abstract packages to
+    concrete conda packages. See
+    `config/local_conda_mapping.yml.sample` for examples.
+:Default: ``local_conda_mapping.yml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~
+``modules_mapping_files``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Path to a file that provides a mapping from abstract packages to
+    locally installed modules. See
+    `config/environment_modules_mapping.yml.sample` for examples.
+:Default: ``environment_modules_mapping.yml``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``use_cached_dependency_manager``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -532,8 +550,6 @@
     File containing the Galaxy Tool Sheds that should be made
     available to install from in the admin interface (.sample used if
     default does not exist).
-    The value of this option will be resolved with respect to
-    <config_dir>.
 :Default: ``tool_sheds_conf.xml``
 :Type: str
 
@@ -613,6 +629,16 @@
     https://github.com/galaxyproject/galaxy/issues/6513.
 :Default: ``false``
 :Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``file_sources_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Configured FileSource plugins.
+:Default: ``file_sources_conf.yml``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -719,7 +745,7 @@
     XML config file that contains data table entries for the
     ToolDataTableManager.  This file is manually # maintained by the
     Galaxy administrator (.sample used if default does not exist).
-:Default: ``config/tool_data_table_conf.xml``
+:Default: ``tool_data_table_conf.xml``
 :Type: str
 
 
@@ -735,8 +761,6 @@
     installation, these entries are automatically added to the
     following file, which is parsed and applied to the
     ToolDataTableManager at server start up.
-    The value of this option will be resolved with respect to
-    <managed_config_dir>.
 :Default: ``shed_tool_data_table_conf.xml``
 :Type: str
 
@@ -802,8 +826,6 @@
 :Description:
     File that defines the builds (dbkeys) available at sites used by
     display applications and the URL to those sites.
-    The value of this option will be resolved with respect to
-    <config_dir>.
 :Default: ``build_sites.yml``
 :Type: str
 
@@ -843,7 +865,7 @@
     If a datatype appears in multiple files, the last definition is
     used (though the first sniffer is used so limit sniffer
     definitions to one file).
-:Default: ``config/datatypes_conf.xml``
+:Default: ``datatypes_conf.xml``
 :Type: str
 
 
@@ -1129,8 +1151,6 @@
 :Description:
     Configuration file for the object store If this is set and exists,
     it overrides any other objectstore settings.
-    The value of this option will be resolved with respect to
-    <config_dir>.
 :Default: ``object_store_conf.xml``
 :Type: str
 
@@ -1254,35 +1274,39 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~
-``blacklist_file``
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``email_domain_blocklist_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    E-mail domains blacklist is used for filtering out users that are
+    E-mail domains blocklist is used for filtering out users that are
     using disposable email addresses at registration.  If their
-    address domain matches any domain on the list, they are refused
-    registration.
-    Example value 'email_blacklist.conf'
+    address's base domain matches any domain on the list, they are
+    refused registration. Address subdomains are ignored (both
+    'name@spam.com' and 'name@foo.spam.com' will match 'spam.com').
+    Example value 'email_blocklist.conf'
     The value of this option will be resolved with respect to
     <config_dir>.
 :Default: ``None``
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~
-``whitelist_file``
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``email_domain_allowlist_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    E-mail domains whitelist is used to specify allowed email address
+    E-mail domains allowlist is used to specify allowed email address
     domains. If the list is non-empty and a user attempts registration
     using an email address belonging to a domain that is not on the
-    list, registration will be denied. This is a more restrictive
-    option than <blacklist_file>, and therefore, in case
-    <whitelist_file> is set and is not empty, <blacklist_file> will be
-    ignored.
-    Example value 'email_whitelist.conf'
+    list, registration will be denied. Unlike
+    <email_domain_allowlist_file> which matches the address's base
+    domain, here email addresses are matched against the full domain
+    (base + subdomain). This is a more restrictive option than
+    <email_domain_blocklist_file>, and therefore, in case
+    <email_domain_allowlist_file> is set and is not empty,
+    <email_domain_blocklist_file> will be ignored.
+    Example value 'email_allowlist.conf'
     The value of this option will be resolved with respect to
     <config_dir>.
 :Default: ``None``
@@ -1540,6 +1564,21 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``trs_servers_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Allow import of workflows from the TRS servers configured in the
+    specified YAML or JSON file. The file should be a list with 'id',
+    'label', and 'api_url' for each entry. Optionally, 'link_url' and
+    'doc' may be be specified as well for each entry.
+    If this is null (the default), a simple configuration containing
+    just Dockstore will be used.
+:Default: ``trs_servers_conf.yml``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``user_preferences_extra_conf_path``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1547,8 +1586,6 @@
 :Description:
     Location of the configuration file containing extra user
     preferences.
-    The value of this option will be resolved with respect to
-    <config_dir>.
 :Default: ``user_preferences_extra_conf.yml``
 :Type: str
 
@@ -1559,10 +1596,10 @@
 
 :Description:
     Default localization for Galaxy UI. Allowed values are listed at
-    the end of client/galaxy/scripts/nls/locale.js. With the default
-    value (auto), the locale will be automatically adjusted to the
-    user's navigator language. Users can override this settings in
-    their user preferences if the localization settings are enabled in
+    the end of client/src/nls/locale.js. With the default value
+    (auto), the locale will be automatically adjusted to the user's
+    navigator language. Users can override this settings in their user
+    preferences if the localization settings are enabled in
     user_preferences_extra_conf.yml
 :Default: ``auto``
 :Type: str
@@ -2231,17 +2268,17 @@
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``sanitize_whitelist_file``
+``sanitize_allowlist_file``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Whitelist sanitization file. Datasets created by tools listed in
-    this file are trusted and will not have their HTML sanitized on
-    display.  This can be manually edited or manipulated through the
-    Admin control panel -- see "Manage Display Whitelist"
+    Datasets created by tools listed in this file are trusted and will
+    not have their HTML sanitized on display.  This can be manually
+    edited or manipulated through the Admin control panel -- see
+    "Manage Allowlist"
     The value of this option will be resolved with respect to
     <mutable_config_dir>.
-:Default: ``sanitize_whitelist.txt``
+:Default: ``sanitize_allowlist.txt``
 :Type: str
 
 
@@ -2512,7 +2549,7 @@
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``user_library_import_symlink_whitelist``
+``user_library_import_symlink_allowlist``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
@@ -2683,7 +2720,7 @@
     Enable/ disable Ngram-search for tools. It makes tool search
     results tolerant for spelling mistakes in the query by dividing
     the query into multiple ngrams and search for each ngram
-:Default: ``false``
+:Default: ``true``
 :Type: bool
 
 
@@ -2914,6 +2951,22 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``upload_from_form_button``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    If 'always-on', add another button to tool form data inputs that
+    allow uploading data from the tool form in fewer clicks (at the
+    expense of making the form more complicated). This applies to
+    workflows as well.
+    Avoiding making this a boolean because we may add options such as
+    'in-single-form-view' or 'in-simplified-workflow-views'.
+    https://github.com/galaxyproject/galaxy/pull/9809/files#r461889109
+:Default: ``always-off``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``allow_user_dataset_purge``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2976,11 +3029,11 @@
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~
-``fetch_url_whitelist``
+``fetch_url_allowlist``
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Whitelist for local network addresses for "Upload from URL"
+    List of allowed local network addresses for "Upload from URL"
     dialog. By default, Galaxy will deny access to the local network
     address space, to prevent users making requests to services which
     the administrator did not intend to expose. Previously, you could
@@ -3160,8 +3213,6 @@
 
 :Description:
     Sets the path to OIDC configuration file.
-    The value of this option will be resolved with respect to
-    <config_dir>.
 :Default: ``oidc_config.xml``
 :Type: str
 
@@ -3172,8 +3223,6 @@
 
 :Description:
     Sets the path to OIDC backends configuration file.
-    The value of this option will be resolved with respect to
-    <config_dir>.
 :Default: ``oidc_backends_config.xml``
 :Type: str
 
@@ -3186,8 +3235,6 @@
     XML config file that allows the use of different authentication
     providers (e.g. LDAP) instead or in addition to local
     authentication (.sample is used if default does not exist).
-    The value of this option will be resolved with respect to
-    <config_dir>.
 :Default: ``auth_conf.xml``
 :Type: str
 
@@ -3262,6 +3309,47 @@
     the workflow.
 :Default: ``false``
 :Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``simplified_workflow_run_ui``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    If set to 'off' by default, always use the traditional workflow
+    form that renders all steps in the GUI and serializes the tool
+    state of all steps during invocation. Set to 'prefer' to default
+    to a simplified workflow UI that only renders the inputs if
+    possible (the workflow must have no disconnected runtime inputs
+    and not replacement parameters within tool steps). In the future
+    'force' may be added an option for Galaskio-style servers that
+    should only render simplified workflows.
+:Default: ``prefer``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``simplified_workflow_run_ui_target_history``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    When the simplified workflow run form is rendered, should the
+    invocation outputs be sent to the 'current' history or a 'new'
+    history.
+:Default: ``current``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``simplified_workflow_run_ui_job_cache``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    When the simplified workflow run form is rendered, should the
+    invocation use job caching. This isn't a boolean so an option for
+    'show-selection' can be added later.
+:Default: ``off``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3368,8 +3456,6 @@
 :Description:
     XML config file that contains the job metric collection
     configuration.
-    The value of this option will be resolved with respect to
-    <config_dir>.
 :Default: ``job_metrics_conf.xml``
 :Type: str
 
@@ -3412,7 +3498,7 @@
 :Description:
     File where Data Managers are configured (.sample used if default
     does not exist).
-:Default: ``config/data_manager_conf.xml``
+:Default: ``data_manager_conf.xml``
 :Type: str
 
 
@@ -3423,8 +3509,6 @@
 :Description:
     File where Tool Shed based Data Managers are configured. This file
     will be created automatically upon data manager installation.
-    The value of this option will be resolved with respect to
-    <managed_config_dir>.
 :Default: ``shed_data_manager_conf.xml``
 :Type: str
 
@@ -3455,7 +3539,7 @@
     Jobs are run locally on the system on which Galaxy is started.
     Advanced job running capabilities can be configured through the
     job configuration file.
-:Default: ``config/job_conf.xml``
+:Default: ``job_conf.xml``
 :Type: str
 
 
@@ -3567,6 +3651,22 @@
     same database.
 :Default: ``true``
 :Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~
+``metadata_strategy``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Determines how metadata will be set. Valid values are `directory`,
+    `extended` and `legacy`. In extended mode jobs will decide if a
+    tool run failed, the object stores configuration is serialized and
+    made available to the job and is used for writing output datasets
+    to the object store as part of the job and dynamic output
+    discovery (e.g. discovered datasets <discover_datasets>,
+    unpopulated collections, etc) happens as part of the job.
+:Default: ``directory``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3869,8 +3969,6 @@
     definition. These fields will be presented to users in the tool
     forms and allow them to overwrite default job resources such as
     number of processors, memory and walltime.
-    The value of this option will be resolved with respect to
-    <config_dir>.
 :Default: ``job_resource_params_conf.xml``
 :Type: str
 
@@ -3885,8 +3983,6 @@
     requires both a description of the fields available (which
     defaults to the definitions in job_resource_params_file if not
     set).
-    The value of this option will be resolved with respect to
-    <config_dir>.
 :Default: ``workflow_resource_params_conf.xml``
 :Type: str
 
@@ -3918,8 +4014,6 @@
 :Description:
     Optional configuration file similar to `job_config_file` to
     specify which Galaxy processes should schedule workflows.
-    The value of this option will be resolved with respect to
-    <config_dir>.
 :Default: ``workflow_schedulers_conf.xml``
 :Type: str
 
@@ -4191,6 +4285,38 @@
     by the deep learning model are shown.
 :Default: ``false``
 :Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~
+``error_report_file``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Path to error reports configuration file.
+:Default: ``error_report.yml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``containers_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Path to container interface configuration file. The containers
+    interface is only used if `enable_beta_containers_interface`
+    config option is set.
+:Default: ``containers_conf.yml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_destinations_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Path to dynamic tool destinations configuration file.
+:Default: ``tool_destinations.yml``
+:Type: str
 
 
 

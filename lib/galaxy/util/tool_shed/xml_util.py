@@ -1,4 +1,3 @@
-import io
 import logging
 import os
 import tempfile
@@ -17,7 +16,7 @@ def create_and_write_tmp_file(elem):
     tmp_str = xml_to_string(elem, pretty=True)
     with tempfile.NamedTemporaryFile(prefix="tmp-toolshed-cawrf", delete=False) as fh:
         tmp_filename = fh.name
-    with io.open(tmp_filename, mode='w', encoding='utf-8') as fh:
+    with open(tmp_filename, mode='w', encoding='utf-8') as fh:
         fh.write(tmp_str)
     return tmp_filename
 
@@ -73,10 +72,10 @@ def parse_xml(file_name, check_exists=True):
         return None, "File does not exist %s" % str(file_name)
     try:
         tree = galaxy_parse_xml(file_name, remove_comments=False, strip_whitespace=False)
-    except (IOError, OSError):
+    except OSError:
         raise
     except Exception as e:
-        error_message = "Exception attempting to parse %s: %s" % (str(file_name), unicodify(e))
+        error_message = "Exception attempting to parse {}: {}".format(str(file_name), unicodify(e))
         log.exception(error_message)
         return None, error_message
     return tree, error_message

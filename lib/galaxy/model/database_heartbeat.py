@@ -10,7 +10,7 @@ from galaxy.model.orm.now import now
 log = logging.getLogger(__name__)
 
 
-class DatabaseHeartbeat(object):
+class DatabaseHeartbeat:
 
     def __init__(self, application_stack, heartbeat_interval=60):
         self.application_stack = application_stack
@@ -90,7 +90,7 @@ class DatabaseHeartbeat(object):
         # We only want a single process watching the various config files on the file system.
         # We just pick the max server name for simplicity
         is_config_watcher = self.server_name == max(
-            (p.server_name for p in self.get_active_processes(self.heartbeat_interval + 1)))
+            p.server_name for p in self.get_active_processes(self.heartbeat_interval + 1))
         if is_config_watcher != self.is_config_watcher:
             self.is_config_watcher = is_config_watcher
 

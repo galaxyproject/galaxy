@@ -2,7 +2,6 @@
 Migration script to create table for associating sessions and users with
 OpenIDs.
 """
-from __future__ import print_function
 
 import datetime
 import logging

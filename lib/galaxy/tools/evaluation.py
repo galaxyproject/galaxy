@@ -1,12 +1,11 @@
-import io
 import json
 import logging
 import os
 import tempfile
 
-from six import string_types
 
 from galaxy import model
+from galaxy.files import ProvidesUserFileSourcesUserContext
 from galaxy.job_execution.setup import ensure_configs_directory
 from galaxy.model.none_like import NoneDataset
 from galaxy.tools import global_tool_errors
@@ -49,7 +48,7 @@ from galaxy.work.context import WorkRequestContext
 log = logging.getLogger(__name__)
 
 
-class ToolEvaluator(object):
+class ToolEvaluator:
     """ An abstraction linking together a tool and a job runtime to evaluate
     tool inputs in an isolated, testable manner.
     """
@@ -68,11 +67,12 @@ class ToolEvaluator(object):
         self.compute_environment = compute_environment
 
         job = self.job
-        incoming = dict([(p.name, p.value) for p in job.parameters])
+        incoming = {p.name: p.value for p in job.parameters}
         incoming = self.tool.params_from_strings(incoming, self.app)
 
         # Full parameter validation
         request_context = WorkRequestContext(app=self.app, user=self._user, history=self._history)
+        self.request_context = request_context
 
         def validate_inputs(input, value, context, **kwargs):
             value = input.from_json(value, request_context, context)
@@ -88,7 +88,7 @@ class ToolEvaluator(object):
             # uses a Dataset rather than an HDA or LDA, it's necessary to set up a
             # fake dataset association that provides the needed attributes for
             # preparing a job.
-            class FakeDatasetAssociation (object):
+            class FakeDatasetAssociation :
                 fake_dataset_association = True
 
                 def __init__(self, dataset=None):
@@ -334,7 +334,7 @@ class ToolEvaluator(object):
                 if not output_def.implicit:
                     dataset_wrapper = wrapper[element_identifier]
                     param_dict[output_def.name] = dataset_wrapper
-                    log.info("Updating param_dict for %s with %s" % (output_def.name, dataset_wrapper))
+                    log.info("Updating param_dict for {} with {}".format(output_def.name, dataset_wrapper))
 
     def __populate_output_dataset_wrappers(self, param_dict, output_datasets, job_working_directory):
         for name, hda in output_datasets.items():
@@ -590,22 +590,31 @@ class ToolEvaluator(object):
                     if not isinstance(value, list):
                         value = [value]
                     for elem in value:
-                        f.write('%s=%s\n' % (key, elem))
+                        f.write('{}={}\n'.format(key, elem))
             self.__register_extra_file('param_file', param_filename)
             return param_filename
         else:
             return None
 
     def __build_config_file_text(self, content):
-        if isinstance(content, string_types):
+        if isinstance(content, str):
             return content, True
 
-        content_format = content["format"]
-        handle_files = content["handle_files"]
-        if content_format != "json":
-            template = "Galaxy can only currently convert inputs to json, format [%s] is unhandled"
-            message = template % content_format
-            raise Exception(message)
+        config_type = content.get("type", "inputs")
+        if config_type == "inputs":
+            content_format = content["format"]
+            handle_files = content["handle_files"]
+            if content_format != "json":
+                template = "Galaxy can only currently convert inputs to json, format [%s] is unhandled"
+                message = template % content_format
+                raise Exception(message)
+        elif config_type == "files":
+            user_context = ProvidesUserFileSourcesUserContext(self.request_context)
+            file_sources_dict = self.app.file_sources.to_dict(for_serialization=True, user_context=user_context)
+            rval = json.dumps(file_sources_dict)
+            return rval, False
+        else:
+            raise Exception("Unknown config file type %s" % config_type)
 
         return json.dumps(wrapped_json.json_wrap(self.tool.inputs,
                                                  self.param_dict,
@@ -622,7 +631,7 @@ class ToolEvaluator(object):
             value = unicodify(content)
         if strip:
             value = value.strip()
-        with io.open(config_filename, "w", encoding='utf-8') as f:
+        with open(config_filename, "w", encoding='utf-8') as f:
             f.write(value)
         # For running jobs as the actual user, ensure the config file is globally readable
         os.chmod(config_filename, RW_R__R__)

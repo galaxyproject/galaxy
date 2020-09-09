@@ -6,9 +6,9 @@ import socket
 import tempfile
 from collections import OrderedDict
 from json import dump, dumps
+from urllib.parse import urlparse
 
 from six import StringIO
-from six.moves.urllib.parse import urlparse
 from sqlalchemy.orm import eagerload_all
 from webob.compat import cgi_FieldStorage
 
@@ -32,11 +32,13 @@ def validate_datatype_extension(datatypes_registry, ext):
         raise RequestParameterInvalidException("Requested extension '%s' unknown, cannot upload dataset." % ext)
 
 
-def validate_url(url, ip_whitelist):
+def validate_url(url, ip_allowlist):
     # If it doesn't look like a URL, ignore it.
     if not (url.lstrip().startswith('http://') or url.lstrip().startswith('https://')):
         return url
 
+    # Strip leading whitespace before passing url to urlparse()
+    url = url.lstrip()
     # Extract hostname component
     parsed_url = urlparse(url).netloc
     # If credentials are in this URL, we need to strip those.
@@ -94,17 +96,17 @@ def validate_url(url, ip_whitelist):
         # If this is a private address
         if ip.is_private:
             results = []
-            # If this IP is not anywhere in the whitelist
-            for whitelisted in ip_whitelist:
+            # If this IP is not anywhere in the allowlist
+            for allowlisted in ip_allowlist:
                 # If it's an IP address range (rather than a single one...)
-                if hasattr(whitelisted, 'subnets'):
-                    results.append(ip in whitelisted)
+                if hasattr(allowlisted, 'subnets'):
+                    results.append(ip in allowlisted)
                 else:
-                    results.append(ip == whitelisted)
+                    results.append(ip == allowlisted)
 
             if any(results):
                 # If we had any True, then THIS (and ONLY THIS) IP address that
-                # that specific DNS entry resolved to is in whitelisted and
+                # that specific DNS entry resolved to is in allowlisted and
                 # safe to access. But we cannot exit here, we must ensure that
                 # all IPs that that DNS entry resolves to are likewise safe.
                 pass
@@ -133,7 +135,7 @@ def persist_uploads(params, trans):
                 raise Exception('Uploaded file was encoded in a way not understood by Galaxy.')
             if 'url_paste' in upload_dataset and upload_dataset['url_paste'] and upload_dataset['url_paste'].strip() != '':
                 upload_dataset['url_paste'] = datatypes.sniff.stream_to_file(
-                    StringIO(validate_url(upload_dataset['url_paste'], trans.app.config.fetch_url_whitelist_ips)),
+                    StringIO(validate_url(upload_dataset['url_paste'], trans.app.config.fetch_url_allowlist_ips)),
                     prefix="strio_url_paste_"
                 )
             else:
@@ -195,7 +197,7 @@ def __new_history_upload(trans, uploaded_dataset, history=None, state=None):
     return hda
 
 
-def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, state=None):
+def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_handler, state=None):
     current_user_roles = trans.get_current_user_roles()
     if not ((trans.user_is_admin and cntrller in ['library_admin', 'api']) or trans.app.security_agent.can_add_library_item(current_user_roles, library_bunch.folder)):
         # This doesn't have to be pretty - the only time this should happen is if someone's being malicious.
@@ -232,14 +234,12 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, state
                                                             sa_session=trans.sa_session)
     if uploaded_dataset.get('tag_using_filenames', False):
         tag_from_filename = os.path.splitext(os.path.basename(uploaded_dataset.name))[0]
-        tag_manager = tags.GalaxyTagHandler(trans.sa_session)
-        tag_manager.apply_item_tag(item=ldda, user=trans.user, name='name', value=tag_from_filename)
+        tag_handler.apply_item_tag(item=ldda, user=trans.user, name='name', value=tag_from_filename)
 
     tags_list = uploaded_dataset.get('tags', False)
     if tags_list:
-        tag_manager = tags.GalaxyTagHandler(trans.sa_session)
         for tag in tags_list:
-            tag_manager.apply_item_tag(item=ldda, user=trans.user, name='name', value=tag)
+            tag_handler.apply_item_tag(item=ldda, user=trans.user, name='name', value=tag)
 
     trans.sa_session.add(ldda)
     if state:
@@ -290,17 +290,18 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, state
 
 
 def new_upload(trans, cntrller, uploaded_dataset, library_bunch=None, history=None, state=None, tag_list=None):
+    tag_handler = tags.GalaxyTagHandlerSession(trans.sa_session)
     if library_bunch:
-        upload_target_dataset_instance = __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, state)
+        upload_target_dataset_instance = __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_handler, state)
         if library_bunch.tags and not uploaded_dataset.tags:
-            new_tags = trans.app.tag_handler.parse_tags_list(library_bunch.tags)
+            new_tags = tag_handler.parse_tags_list(library_bunch.tags)
             for tag in new_tags:
-                trans.app.tag_handler.apply_item_tag(user=trans.user, item=upload_target_dataset_instance, name=tag[0], value=tag[1])
+                tag_handler.apply_item_tag(user=trans.user, item=upload_target_dataset_instance, name=tag[0], value=tag[1])
     else:
         upload_target_dataset_instance = __new_history_upload(trans, uploaded_dataset, history=history, state=state)
 
     if tag_list:
-        trans.app.tag_handler.add_tags_from_list(trans.user, upload_target_dataset_instance, tag_list)
+        tag_handler.add_tags_from_list(trans.user, upload_target_dataset_instance, tag_list)
 
     return upload_target_dataset_instance
 
@@ -328,7 +329,7 @@ def create_paramfile(trans, uploaded_datasets):
         except Exception as e:
             log.debug('Failed to construct command to change ownership %s' %
                       unicodify(e))
-        log.debug('Changing ownership of %s with: %s' % (path, ' '.join(cmd)))
+        log.debug('Changing ownership of {} with: {}'.format(path, ' '.join(cmd)))
         try:
             commands.execute(cmd)
         except commands.CommandLineException as e:
@@ -353,7 +354,7 @@ def create_paramfile(trans, uploaded_datasets):
                           metadata=uploaded_dataset.metadata,
                           primary_file=uploaded_dataset.primary_file,
                           composite_file_paths=uploaded_dataset.composite_files,
-                          composite_files=dict((k, v.__dict__) for k, v in data.datatype.get_composite_files(data).items()))
+                          composite_files={k: v.__dict__ for k, v in data.datatype.get_composite_files(data).items()})
         else:
             try:
                 is_binary = uploaded_dataset.datatype.is_binary

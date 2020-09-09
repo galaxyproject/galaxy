@@ -1,54 +1,49 @@
+import bz2
 import gzip
+import io
 import re
-import sys
 import tarfile
 import zipfile
 
-from six import BytesIO
+from six import (
+    BytesIO,
+    StringIO
+)
 from six.moves import filter
 
 from galaxy import util
 from galaxy.util.image_util import image_type
 
-if sys.version_info < (3, 3):
-    gzip.GzipFile.read1 = gzip.GzipFile.read  # workaround for https://bugs.python.org/issue12591
-    try:
-        import bz2file as bz2
-    except ImportError:
-        # If bz2file is unavailable, just fallback to not having pbzip2 support.
-        import bz2
-else:
-    import bz2
-
 HTML_CHECK_LINES = 100
+CHUNK_SIZE = 2 ** 15  # 32Kb
+HTML_REGEXPS = (
+    re.compile(r"<A\s+[^>]*HREF[^>]+>", re.I),
+    re.compile(r"<IFRAME[^>]*>", re.I),
+    re.compile(r"<FRAMESET[^>]*>", re.I),
+    re.compile(r"<META[\W][^>]*>", re.I),
+    re.compile(r"<SCRIPT[^>]*>", re.I),
+)
 
 
-def check_html(file_path, chunk=None):
-    if chunk is None:
-        temp = open(file_path, mode='rb')
-    elif hasattr(chunk, "splitlines"):
-        temp = chunk.splitlines()
+def check_html(name, file_path=True):
+    """
+    Returns True if the file/string contains HTML code.
+    """
+    # Handles files if file_path is True or text if file_path is False
+    if file_path:
+        temp = io.open(name, "r", encoding='utf-8')
     else:
-        temp = chunk
-    regexp1 = re.compile(r"<A\s+[^>]*HREF[^>]+>", re.I)
-    regexp2 = re.compile(r"<IFRAME[^>]*>", re.I)
-    regexp3 = re.compile(r"<FRAMESET[^>]*>", re.I)
-    regexp4 = re.compile(r"<META[\W][^>]*>", re.I)
-    regexp5 = re.compile(r"<SCRIPT[^>]*>", re.I)
-    lineno = 0
-    # TODO: Potentially reading huge lines into string here, this should be
-    # reworked.
-    for line in temp:
-        line = util.unicodify(line)
-        lineno += 1
-        matches = regexp1.search(line) or regexp2.search(line) or regexp3.search(line) or regexp4.search(line) or regexp5.search(line)
-        if matches:
-            if chunk is None:
-                temp.close()
-            return True
-        if HTML_CHECK_LINES and (lineno > HTML_CHECK_LINES):
-            break
-    if chunk is None:
+        temp = StringIO(util.unicodify(name))
+    try:
+        for _ in range(HTML_CHECK_LINES):
+            line = temp.readline(CHUNK_SIZE)
+            if not line:
+                break
+            if any(regexp.search(line) for regexp in HTML_REGEXPS):
+                return True
+    except UnicodeDecodeError:
+        return False
+    finally:
         temp.close()
     return False
 
@@ -89,12 +84,10 @@ def check_gzip(file_path, check_content=True):
     if not check_content:
         return (True, True)
 
-    CHUNK_SIZE = 2 ** 15  # 32Kb
-    gzipped_file = gzip.GzipFile(file_path, mode='rb')
-    chunk = gzipped_file.read(CHUNK_SIZE)
-    gzipped_file.close()
+    with gzip.open(file_path, mode='rb') as gzipped_file:
+        chunk = gzipped_file.read(CHUNK_SIZE)
     # See if we have a compressed HTML file
-    if check_html(file_path, chunk=chunk):
+    if check_html(chunk, file_path=False):
         return (True, False)
     return (True, True)
 
@@ -111,12 +104,10 @@ def check_bz2(file_path, check_content=True):
     if not check_content:
         return (True, True)
 
-    CHUNK_SIZE = 2 ** 15  # reKb
-    bzipped_file = bz2.BZ2File(file_path, mode='rb')
-    chunk = bzipped_file.read(CHUNK_SIZE)
-    bzipped_file.close()
+    with bz2.BZ2File(file_path, mode='rb') as bzipped_file:
+        chunk = bzipped_file.read(CHUNK_SIZE)
     # See if we have a compressed HTML file
-    if check_html(file_path, chunk=chunk):
+    if check_html(chunk, file_path=False):
         return (True, False)
     return (True, True)
 
@@ -128,12 +119,11 @@ def check_zip(file_path, check_content=True, files=1):
     if not check_content:
         return (True, True)
 
-    CHUNK_SIZE = 2 ** 15  # 32Kb
     chunk = None
     for filect, member in enumerate(iter_zip(file_path)):
         handle, name = member
         chunk = handle.read(CHUNK_SIZE)
-        if chunk and check_html(file_path, chunk):
+        if chunk and check_html(chunk, file_path=False):
             return (True, False)
         if filect >= files:
             break
@@ -156,7 +146,7 @@ def is_zip(file_path):
 
 
 def is_single_file_zip(file_path):
-    for i, member in enumerate(iter_zip(file_path)):
+    for i, _ in enumerate(iter_zip(file_path)):
         if i > 1:
             return False
     return True

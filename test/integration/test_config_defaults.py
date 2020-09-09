@@ -46,7 +46,7 @@ PATH_CONFIG_PROPERTIES = [
     'managed_config_dir',
     'data_dir',
     'auth_config_file',
-    'blacklist_file',
+    'email_domain_blocklist_file',
     'builds_file_path',
     'citation_cache_data_dir',
     'citation_cache_lock_dir',
@@ -56,6 +56,7 @@ PATH_CONFIG_PROPERTIES = [
     'datatypes_config_file',
     'dependency_resolvers_config_file',
     'file_path',
+    'file_sources_config_file',
     'ftp_upload_dir',
     'galaxy_data_manager_data_path',
     'integrated_tool_panel_config',
@@ -78,7 +79,7 @@ PATH_CONFIG_PROPERTIES = [
     'oidc_backends_config_file',
     'oidc_config_file',
     'openid_consumer_cache_path',
-    'sanitize_whitelist_file',
+    'sanitize_allowlist_file',
     'shed_data_manager_config_file',
     'shed_tool_config_file',
     'shed_tool_data_path',
@@ -88,6 +89,7 @@ PATH_CONFIG_PROPERTIES = [
     'tool_dependency_cache_dir',
     'tool_path',
     'tool_sheds_config_file',
+    'trs_servers_config_file',
     'user_preferences_extra_conf_path',
     'webhooks_dir',
     'workflow_resource_params_file',
@@ -110,12 +112,14 @@ RESOLVE = {
     'dependency_resolvers_config_file': 'config_dir',
     'integrated_tool_panel_config': 'managed_config_dir',
     'involucro_path': 'root_dir',
+    'file_sources_config_file': 'config_dir',
     'job_resource_params_file': 'config_dir',
     'len_file_path': 'tool_data_path',
     'object_store_config_file': 'config_dir',
     'oidc_backends_config_file': 'config_dir',
     'oidc_config_file': 'config_dir',
-    'sanitize_whitelist_file': 'managed_config_dir',
+    'trs_servers_config_file': 'config_dir',
+    'sanitize_allowlist_file': 'managed_config_dir',
     'shed_data_manager_config_file': 'managed_config_dir',
     'shed_tool_config_file': 'managed_config_dir',
     'shed_tool_data_path': 'tool_data_path',
@@ -139,7 +143,7 @@ CUSTOM = {
     'password_expiration_period': timedelta,
     'toolbox_filter_base_modules': listify,
     'mulled_channels': listify,
-    'user_library_import_symlink_whitelist': listify,
+    'user_library_import_symlink_allowlist': listify,
     'tool_filters': listify,
     'tool_label_filters': listify,
     'tool_section_filters': listify,
@@ -193,11 +197,13 @@ DO_NOT_TEST = [
     'object_store_store_by',  # broken: default overridden
     'pretty_datetime_format',  # untestable; refactor config/__init__ to test
     'retry_metadata_internally',  # broken: default overridden
+    'simplified_workflow_run_ui',  # set to off in testing
     'statsd_host',  # broken: default overridden with empty string
     'template_cache_path',  # may or may not be able to test; may be broken
     'tool_config_file',  # default not used; may or may not be testable
     'tool_data_table_config_path',  # broken: remove 'config/' prefix from schema
     'tool_test_data_directories',  # untestable; refactor config/__init__ to test
+    'trs_servers_config_file',  # default not used?
     'use_remote_user',  # broken: default overridden
     'use_tasked_jobs',  # broken: default overridden
     'user_library_import_dir',  # broken: default overridden

@@ -118,7 +118,7 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
     def _message_callback(self, workflow_invocation):
         return WorkflowSchedulingMessage(task='setup', workflow_invocation_id=workflow_invocation.id)
 
-    def _assign_handler(self, workflow_invocation):
+    def _assign_handler(self, workflow_invocation, flush=True):
         # Use random-ish integer history_id to produce a consistent index to pick
         # job handler with.
         random_index = workflow_invocation.history.id
@@ -128,7 +128,7 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
             random_index = None
         return self.__handlers_config.assign_handler(
             workflow_invocation, configured=None, index=random_index, queue_callback=queue_callback,
-            message_callback=message_callback)
+            message_callback=message_callback, flush=flush)
 
     def shutdown(self):
         exception = None
@@ -148,15 +148,15 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
         if exception:
             raise exception
 
-    def queue(self, workflow_invocation, request_params):
+    def queue(self, workflow_invocation, request_params, flush=True):
         workflow_invocation.state = model.WorkflowInvocation.states.NEW
         workflow_invocation.scheduler = request_params.get("scheduler", None) or self.default_scheduler_id
         sa_session = self.app.model.context
         sa_session.add(workflow_invocation)
 
-        # Assign handler (also performs the flush)
+        # Assign handler
         try:
-            self._assign_handler(workflow_invocation)
+            self._assign_handler(workflow_invocation, flush=flush)
         except HandlerAssignmentError:
             raise RuntimeError("Unable to set a handler for workflow invocation '%s'" % workflow_invocation.id)
 
@@ -178,7 +178,7 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
     def __init_schedulers(self):
         config_file = self.app.config.workflow_schedulers_config_file
         use_default_scheduler = False
-        if not config_file or (not os.path.exists(config_file) and not self.app.config.workflow_schedulers_config_file_set):
+        if not config_file or (not os.path.exists(config_file) and not self.app.config.is_set('workflow_schedulers_config_file')):
             log.info("No workflow schedulers plugin config file defined, using default scheduler.")
             use_default_scheduler = True
         elif not os.path.exists(config_file):

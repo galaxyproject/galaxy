@@ -36,7 +36,7 @@ NO_CLOUDBRIDGE_ERROR_MESSAGE = (
 )
 
 
-class CloudConfigMixin(object):
+class CloudConfigMixin:
 
     def _config_to_dict(self):
         return {
@@ -69,7 +69,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
     store_type = 'cloud'
 
     def __init__(self, config, config_dict):
-        super(Cloud, self).__init__(config, config_dict)
+        super().__init__(config, config_dict)
         self.transfer_progress = 0
 
         bucket_dict = config_dict['bucket']
@@ -217,7 +217,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
                 if not os.path.isfile(cre):
                     msg = "The following file specified for GCP credentials not found: {}".format(cre)
                     log.error(msg)
-                    raise IOError(msg)
+                    raise OSError(msg)
                 if cre is None:
                     missing_config.append("credentials_file")
                 config["auth"] = {
@@ -239,7 +239,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
             raise
 
     def to_dict(self):
-        as_dict = super(Cloud, self).to_dict()
+        as_dict = super().to_dict()
         as_dict.update(self._config_to_dict())
         return as_dict
 
@@ -439,7 +439,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
                 log.debug("Parallel pulled key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
                 ncores = multiprocessing.cpu_count()
                 url = key.generate_url(7200)
-                ret_code = subprocess.call("axel -a -n %s '%s'" % (ncores, url))
+                ret_code = subprocess.call("axel -a -n {} '{}'".format(ncores, url))
                 if ret_code == 0:
                     return True
             else:
@@ -635,7 +635,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
         if not self._in_cache(rel_path):
             self._pull_into_cache(rel_path)
         # Read the file content from cache
-        data_file = open(self._get_cache_path(rel_path), 'r')
+        data_file = open(self._get_cache_path(rel_path))
         data_file.seek(start)
         content = data_file.read(count)
         data_file.close()

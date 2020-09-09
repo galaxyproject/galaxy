@@ -3,7 +3,6 @@
 import difflib
 import filecmp
 import hashlib
-import io
 import logging
 import os
 import os.path
@@ -141,8 +140,8 @@ def verify(
             else:
                 raise Exception('Unimplemented Compare type: %s' % compare)
         except AssertionError as err:
-            errmsg = '%s different than expected, difference (using %s):\n' % (item_label, compare)
-            errmsg += "( %s v. %s )\n" % (local_name, temp_name)
+            errmsg = '{} different than expected, difference (using {}):\n'.format(item_label, compare)
+            errmsg += "( {} v. {} )\n".format(local_name, temp_name)
             errmsg += unicodify(err)
             raise AssertionError(errmsg)
         finally:
@@ -295,9 +294,9 @@ def files_re_match(file1, file2, attributes=None):
     join_char = ''
     to_strip = os.linesep
     try:
-        with io.open(file2, encoding='utf-8') as fh:
+        with open(file2, encoding='utf-8') as fh:
             history_data = fh.readlines()
-        with io.open(file1, encoding='utf-8') as fh:
+        with open(file1, encoding='utf-8') as fh:
             local_file = fh.readlines()
     except UnicodeDecodeError:
         join_char = b''
@@ -319,7 +318,7 @@ def files_re_match(file1, file2, attributes=None):
         data_line = data_line.rstrip(to_strip)
         if not re.match(regex_line, data_line):
             line_diff_count += 1
-            diffs.append('Regular Expression: %s, Data file: %s\n' % (regex_line, data_line))
+            diffs.append('Regular Expression: {}, Data file: {}\n'.format(regex_line, data_line))
     if line_diff_count > lines_diff:
         raise AssertionError("Regular expression did not match data file (allowed variants=%i):\n%s" % (lines_diff, "".join(diffs)))
 
@@ -328,9 +327,9 @@ def files_re_match_multiline(file1, file2, attributes=None):
     """Check the contents of 2 files for differences using re.match in multiline mode."""
     join_char = ''
     try:
-        with io.open(file2, encoding='utf-8') as fh:
+        with open(file2, encoding='utf-8') as fh:
             history_data = fh.readlines()
-        with io.open(file1, encoding='utf-8') as fh:
+        with open(file1, encoding='utf-8') as fh:
             local_file = fh.read()
     except UnicodeDecodeError:
         join_char = b''
@@ -352,9 +351,9 @@ def files_contains(file1, file2, attributes=None):
     # TODO: allow forcing ordering of contains
     to_strip = os.linesep
     try:
-        with io.open(file2, encoding='utf-8') as fh:
+        with open(file2, encoding='utf-8') as fh:
             history_data = fh.read()
-        with io.open(file1, encoding='utf-8') as fh:
+        with open(file1, encoding='utf-8') as fh:
             local_file = fh.readlines()
     except UnicodeDecodeError:
         to_strip = os.linesep.encode('utf-8')

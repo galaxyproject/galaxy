@@ -7,7 +7,6 @@ from subprocess import (
 from tempfile import TemporaryFile
 from time import sleep
 
-import six
 
 from galaxy.util.bunch import Bunch
 from . import BaseShellExec
@@ -18,7 +17,7 @@ from ....util.process_groups import (
 
 log = getLogger(__name__)
 
-TIMEOUT_ERROR_MESSAGE = u'Execution timed out'
+TIMEOUT_ERROR_MESSAGE = 'Execution timed out'
 TIMEOUT_RETURN_CODE = -1
 DEFAULT_TIMEOUT = 60
 DEFAULT_TIMEOUT_CHECK_INTERVAL = 3
@@ -51,19 +50,19 @@ class LocalShell(BaseShellExec):
         pass
 
     def execute(self, cmd, persist=False, timeout=DEFAULT_TIMEOUT, timeout_check_interval=DEFAULT_TIMEOUT_CHECK_INTERVAL, **kwds):
-        is_cmd_string = isinstance(cmd, six.string_types)
+        is_cmd_string = isinstance(cmd, str)
         outf = TemporaryFile()
         p = Popen(cmd, stdin=None, stdout=outf, stderr=PIPE, shell=is_cmd_string, preexec_fn=os.setpgrp)
         # check process group until timeout
 
-        for i in range(int(timeout / timeout_check_interval)):
+        for _ in range(int(timeout / timeout_check_interval)):
             sleep(0.1)  # For fast returning commands
             if not check_pg(p.pid):
                 break
             sleep(timeout_check_interval)
         else:
             kill_pg(p.pid)
-            return Bunch(stdout=u'', stderr=TIMEOUT_ERROR_MESSAGE, returncode=TIMEOUT_RETURN_CODE)
+            return Bunch(stdout='', stderr=TIMEOUT_ERROR_MESSAGE, returncode=TIMEOUT_RETURN_CODE)
         outf.seek(0)
         # Need to poll once to establish return code
         p.poll()

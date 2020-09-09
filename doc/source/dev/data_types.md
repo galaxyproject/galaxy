@@ -404,8 +404,8 @@ class BasicComposite(Text):
 These files can be specified on the command line in the following fashion:
 
 ```xml
-<command>someTool.sh '$input1' '${os.path.join(input1.extra_files_path, 'results.txt')}'
-'${os.path.join(input1.extra_files_path, 'results.dat')}' '$output1'</command>
+<command>someTool.sh '$input1' '${os.path.join($input1.extra_files_path, 'results.txt')}'
+'${os.path.join($input1.extra_files_path, 'results.dat')}' '$output1'</command>
 ```
 
 If a tool is aware of the file names for a datatype, then only `input1.extra_files_path` needs to be provided.
@@ -443,7 +443,7 @@ class AutoPrimaryComposite(Text):
 
 These files can be specified on the command line in the following fashion:
 ```xml
-<command>someTool.sh ${os.path.join(input1.extra_files_path, 'results.txt')} ${os.path.join(input1.extra_files_path, 'results.dat')} $output1</command>
+<command>someTool.sh ${os.path.join($input1.extra_files_path, 'results.txt')} ${os.path.join($input1.extra_files_path, 'results.dat')} $output1</command>
 ```
 
 
@@ -477,7 +477,7 @@ class Lped(Text):
         return "\n".join(rval)
 ```
 
-The file specified as `%s.ped` is found at `os.path.join(input1.extra_files_path, '%s.ped' % input1.metadata.base_name)`.
+The file specified as `%s.ped` is found at `${os.path.join($input1.extra_files_path, '%s.ped' % input1.metadata.base_name)}`.
 
 It should be noted that changing the datatype of datasets which use this substitution method will cause an error if the metadata parameter 'base_name' does not exist in a datatype that the dataset is set to. This is because the value within 'base_name' will be lost -- if the datatype is set back to the original datatype, the default metadata value will be used and the filenames might not match the basename.
 

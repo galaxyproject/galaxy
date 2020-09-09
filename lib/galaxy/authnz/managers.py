@@ -21,7 +21,10 @@ from galaxy.util import (
     string_as_bool,
     unicodify,
 )
-from .custos_authnz import CustosAuthnz
+from .custos_authnz import (
+    CustosAuthnz,
+    KEYCLOAK_BACKENDS,
+)
 from .psa_authnz import (
     BACKENDS_NAME,
     on_the_fly_config,
@@ -41,7 +44,7 @@ DEFAULT_OIDC_IDP_ICONS = {
 }
 
 
-class AuthnzManager(object):
+class AuthnzManager:
 
     def __init__(self, app, oidc_config_file, oidc_backends_config_file):
         """
@@ -113,7 +116,7 @@ class AuthnzManager(object):
                     self.oidc_backends_config[idp] = self._parse_idp_config(child)
                     self.oidc_backends_implementation[idp] = 'psa'
                     self.app.config.oidc[idp] = {'icon': self._get_idp_icon(idp)}
-                elif idp == 'custos' or idp == 'cilogon':
+                elif idp in KEYCLOAK_BACKENDS:
                     self.oidc_backends_config[idp] = self._parse_custos_config(child)
                     self.oidc_backends_implementation[idp] = 'custos'
                     self.app.config.oidc[idp] = {'icon': self._get_idp_icon(idp)}
@@ -149,12 +152,9 @@ class AuthnzManager(object):
             'client_id': config_xml.find('client_id').text,
             'client_secret': config_xml.find('client_secret').text,
             'redirect_uri': config_xml.find('redirect_uri').text,
-            'realm': config_xml.find('realm').text,
             'enable_idp_logout': asbool(config_xml.findtext('enable_idp_logout', 'false'))}
         if config_xml.find('credential_url') is not None:
             rtv['credential_url'] = config_xml.find('credential_url').text
-        if config_xml.find('well_known_oidc_config_uri') is not None:
-            rtv['well_known_oidc_config_uri'] = config_xml.find('well_known_oidc_config_uri').text
         if config_xml.find('idphint') is not None:
             rtv['idphint'] = config_xml.find('idphint').text
         if config_xml.find('ca_bundle') is not None:
@@ -177,7 +177,7 @@ class AuthnzManager(object):
             provider = unified_provider_name
             identity_provider_class = self._get_identity_provider_class(self.oidc_backends_implementation[provider])
             try:
-                if (provider == 'cilogon' or provider == 'custos'):
+                if provider in KEYCLOAK_BACKENDS:
                     return True, "", identity_provider_class(unified_provider_name, self.oidc_config, self.oidc_backends_config[unified_provider_name], idphint=idphint)
                 else:
                     return True, "", identity_provider_class(unified_provider_name, self.oidc_config, self.oidc_backends_config[unified_provider_name])
@@ -240,7 +240,7 @@ class AuthnzManager(object):
         ID does not exist, or the configuration is defined for a another
         user than trans.user.
 
-        :type  trans:       galaxy.web.framework.webapp.GalaxyWebTransaction
+        :type  trans:       galaxy.webapps.base.webapp.GalaxyWebTransaction
         :param trans:       Galaxy web transaction
 
         :type  authz_id:    int
@@ -273,7 +273,7 @@ class AuthnzManager(object):
             success, message, backend = self._get_authnz_backend(provider, idphint=idphint)
             if success is False:
                 return False, message, None
-            elif (provider == 'cilogon' or provider == 'custos'):
+            elif provider in KEYCLOAK_BACKENDS:
                 return True, "Redirecting to the `{}` identity provider for authentication".format(provider), backend.authenticate(trans, idphint)
             return True, "Redirecting to the `{}` identity provider for authentication".format(provider), backend.authenticate(trans)
         except Exception:
@@ -292,7 +292,7 @@ class AuthnzManager(object):
             raise exceptions.AuthenticationFailed(e.message)
         except Exception as e:
             msg = 'The following error occurred when handling callback from `{}` identity provider: ' \
-                  '{}'.format(provider, e.message)
+                  '{}'.format(provider, str(e))
             log.exception(msg)
             return False, msg, (None, None)
 
@@ -321,7 +321,7 @@ class AuthnzManager(object):
             return True, message, backend.logout(trans, post_logout_redirect_url)
         except Exception as e:
             msg = 'The following error occurred when logging out from `{}` identity provider: ' \
-                  '{}'.format(provider, e.message)
+                  '{}'.format(provider, str(e))
             log.exception(msg)
             return False, msg, None
 

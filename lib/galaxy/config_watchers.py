@@ -11,7 +11,7 @@ from galaxy.util.watcher import get_watcher
 log = logging.getLogger(__name__)
 
 
-class ConfigWatchers(object):
+class ConfigWatchers:
     """Contains ToolConfWatcher, ToolWatcher and ToolDataWatcher objects."""
 
     def __init__(self, app):

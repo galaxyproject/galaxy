@@ -72,7 +72,7 @@ def parse_config_xml(config_xml):
             msg = 'No {tag} element in XML tree'.format(tag=tag)
             log.error(msg)
             raise Exception(msg)
-        extra_dirs = [dict(((k, e.get(k)) for k in attrs)) for e in extra_dirs]
+        extra_dirs = [{k: e.get(k) for k in attrs} for e in extra_dirs]
 
         return {
             'auth': {
@@ -103,7 +103,7 @@ def parse_config_xml(config_xml):
         raise
 
 
-class CloudConfigMixin(object):
+class CloudConfigMixin:
 
     def _config_to_dict(self):
         return {
@@ -139,7 +139,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
     store_type = 's3'
 
     def __init__(self, config, config_dict):
-        super(S3ObjectStore, self).__init__(config, config_dict)
+        super().__init__(config, config_dict)
 
         self.transfer_progress = 0
 
@@ -165,8 +165,8 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         self.cache_size = cache_dict.get('size', -1)
         self.staging_path = cache_dict.get('path') or self.config.object_store_cache_path
 
-        extra_dirs = dict(
-            (e['type'], e['path']) for e in config_dict.get('extra_dirs', []))
+        extra_dirs = {
+            e['type']: e['path'] for e in config_dict.get('extra_dirs', [])}
         self.extra_dirs.update(extra_dirs)
 
         self._initialize()
@@ -214,7 +214,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         return parse_config_xml(config_xml)
 
     def to_dict(self):
-        as_dict = super(S3ObjectStore, self).to_dict()
+        as_dict = super().to_dict()
         as_dict.update(self._config_to_dict())
         return as_dict
 
@@ -635,7 +635,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         if not self._in_cache(rel_path):
             self._pull_into_cache(rel_path)
         # Read the file content from cache
-        data_file = open(self._get_cache_path(rel_path), 'r')
+        data_file = open(self._get_cache_path(rel_path))
         data_file.seek(start)
         content = data_file.read(count)
         data_file.close()

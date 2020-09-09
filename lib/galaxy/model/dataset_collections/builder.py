@@ -30,7 +30,7 @@ def set_collection_elements(dataset_collection, type, dataset_instances):
     return dataset_collection
 
 
-class CollectionBuilder(object):
+class CollectionBuilder:
     """ Purely functional builder pattern for building a dataset collection. """
 
     def __init__(self, collection_type_description):
@@ -108,7 +108,7 @@ class BoundCollectionBuilder(CollectionBuilder):
             raise Exception("Cannot reset elements of an already populated dataset collection.")
         collection_type = dataset_collection.collection_type
         collection_type_description = COLLECTION_TYPE_DESCRIPTION_FACTORY.for_collection_type(collection_type)
-        super(BoundCollectionBuilder, self).__init__(collection_type_description)
+        super().__init__(collection_type_description)
 
     def populate(self):
         elements = self.build_elements()

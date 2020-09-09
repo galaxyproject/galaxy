@@ -1,6 +1,12 @@
 <?xml version="1.0"?>
 <toolbox tool_path="${tool_conf_dir}" is_shed_conf="false">
   <tool file="upload.xml"/>
+  <section id="test" name="Test Section">
+    <tool file="multi_data_optional.xml" />
+    <tool file="paths_as_file.xml" />
+    <tool file="param_text_option.xml" />
+    <tool file="column_param.xml" />
+  </section>
   <tool file="test_data_source.xml"/>
   <tool file="simple_constructs.xml" />
   <tool file="color_param.xml" />
@@ -51,6 +57,7 @@
   <tool file="metadata_column_names.xml" />
   <tool file="strict_shell.xml" />
   <tool file="strict_shell_default_off.xml" />
+  <tool file="strict_shell_profile.xml" />
   <tool file="detect_errors.xml" />
   <tool file="detect_errors_aggressive.xml" />
   <tool file="qc_stdout.xml" />
@@ -191,6 +198,7 @@
   <tool file="for_workflows/count_list.xml" />
   <tool file="for_workflows/count_multi_file.xml" />
   <tool file="for_workflows/create_input_collection.xml" />
+  <tool file="for_workflows/randomlines.xml" />
 
   <section id="filter" name="For Tours">
     <tool file="for_tours/filtering.xml" />

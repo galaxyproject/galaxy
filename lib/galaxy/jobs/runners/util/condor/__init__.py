@@ -58,7 +58,7 @@ def build_submit_description(executable, output, error, user_log, query_params):
 
     submit_description = []
     for key, value in all_query_params.items():
-        submit_description.append('%s = %s' % (key, value))
+        submit_description.append('{} = {}'.format(key, value))
     submit_description.append('executable = ' + executable)
     submit_description.append('output = ' + output)
     submit_description.append('error = ' + error)
@@ -105,7 +105,7 @@ def summarize_condor_log(log_file, external_id):
     """
     log_job_id = external_id.zfill(3)
     s1 = s4 = s7 = s5 = s9 = False
-    with open(log_file, 'r') as log_handle:
+    with open(log_file) as log_handle:
         for line in log_handle:
             if '001 (' + log_job_id + '.' in line:
                 s1 = True

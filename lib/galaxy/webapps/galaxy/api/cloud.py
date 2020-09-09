@@ -22,7 +22,7 @@ class CloudController(BaseAPIController):
     """
 
     def __init__(self, app):
-        super(CloudController, self).__init__(app)
+        super().__init__(app)
         self.cloud_manager = cloud.CloudManager(app)
         self.datasets_serializer = datasets.DatasetSerializer(app)
 
@@ -44,7 +44,7 @@ class CloudController(BaseAPIController):
         """
         * POST /api/cloud/storage/get
             gets given objects from a given cloud-based bucket to a Galaxy history.
-        :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
+        :type  trans: galaxy.webapps.base.webapp.GalaxyWebTransaction
         :param trans: Galaxy web transaction
 
         :type  payload: dict
@@ -142,7 +142,7 @@ class CloudController(BaseAPIController):
             using the label assigned to the dataset in the given history (see `HistoryDatasetAssociation.name`).
             If no dataset ID is given, this API sends all the datasets belonging to a given history to a given
             cloud-based bucket.
-        :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
+        :type  trans: galaxy.webapps.base.webapp.GalaxyWebTransaction
         :param trans: Galaxy web transaction
 
         :type  payload: dictionary

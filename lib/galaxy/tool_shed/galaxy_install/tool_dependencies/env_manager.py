@@ -7,7 +7,7 @@ from galaxy.util.tool_shed.common_util import remove_protocol_from_tool_shed_url
 log = logging.getLogger(__name__)
 
 
-class EnvManager(object):
+class EnvManager:
 
     def __init__(self, app):
         self.app = app

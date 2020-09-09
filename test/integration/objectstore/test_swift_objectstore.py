@@ -89,8 +89,7 @@ class SwiftObjectStoreIntegrationTestCase(integration_util.IntegrationTestCase):
         cls.object_stores_parent = temp_directory
         config_path = os.path.join(temp_directory, "object_store_conf.xml")
         config["object_store_store_by"] = "uuid"
-        # This doesn't quite work yet, fails with extra_files_path
-        # config["metadata_strategy"] = "extended"
+        config["metadata_strategy"] = "extended"
         config["outpus_to_working_dir"] = True
         config["retry_metadata_internally"] = False
         with open(config_path, "w") as f:

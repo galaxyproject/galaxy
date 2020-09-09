@@ -2,7 +2,6 @@
 This script adds 3 indexes to table columns: library_folder.name,
 library_dataset.name, library_dataset_dataset_association.name.
 """
-from __future__ import print_function
 
 import logging
 

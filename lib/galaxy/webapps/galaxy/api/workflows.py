@@ -1,9 +1,7 @@
 """
 API operations for Workflows
 """
-from __future__ import absolute_import
 
-import io
 import json
 import logging
 import os
@@ -55,7 +53,7 @@ log = logging.getLogger(__name__)
 class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnnotations, SharableMixin):
 
     def __init__(self, app):
-        super(WorkflowsAPIController, self).__init__(app)
+        super().__init__(app)
         self.history_manager = histories.HistoryManager(app)
         self.workflow_manager = workflows.WorkflowsManager(app)
         self.workflow_contents_manager = workflows.WorkflowContentsManager(app)
@@ -72,7 +70,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         """
         GET /api/workflows
         """
-        return self.get_workflows_list(trans, kwd)
+        return self.get_workflows_list(trans, **kwd)
 
     @expose_api
     def get_workflow_menu(self, trans, **kwd):
@@ -84,7 +82,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         ids_in_menu = [x.stored_workflow_id for x in user.stored_workflow_menu_entries]
         return {
             'ids_in_menu': ids_in_menu,
-            'workflows': self.get_workflows_list(trans, kwd)
+            'workflows': self.get_workflows_list(trans, **kwd)
         }
 
     @expose_api
@@ -126,31 +124,31 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         trans.set_message(message)
         return {'message': message, 'status': 'done'}
 
-    def get_workflows_list(self, trans, kwd):
+    def get_workflows_list(self, trans, missing_tools=False, show_published=None, show_hidden=False, show_deleted=False, **kwd):
         """
         Displays a collection of workflows.
 
         :param  show_published:      if True, show also published workflows
         :type   show_published:      boolean
+        :param  show_hidden:         if True, show hidden workflows
+        :type   show_hidden:         boolean
+        :param  show_deleted:        if True, show deleted workflows
+        :type   show_deleted:        boolean
         :param  missing_tools:       if True, include a list of missing tools per workflow
         :type   missing_tools:       boolean
         """
-        missing_tools = util.string_as_bool(kwd.get('missing_tools', 'False'))
         rval = []
-        filter1 = (trans.app.model.StoredWorkflow.user == trans.user)
+        filter1 = trans.app.model.StoredWorkflow.user == trans.user
         user = trans.get_user()
-        if user is None:
-            show_published = util.string_as_bool(kwd.get('show_published', 'True'))
-        else :
-            show_published = util.string_as_bool(kwd.get('show_published', 'False'))
-        if show_published:
+        if show_published or user is None and show_published is None:
             filter1 = or_(filter1, (trans.app.model.StoredWorkflow.published == true()))
-        for wf in trans.sa_session.query(trans.app.model.StoredWorkflow).options(
-                joinedload("annotations")).options(
-                joinedload("latest_workflow").undefer("step_count").lazyload("steps")).options(
-                joinedload("tags")).filter(
-                    filter1, trans.app.model.StoredWorkflow.table.c.deleted == false()).order_by(
-                    desc(trans.app.model.StoredWorkflow.table.c.update_time)).all():
+        query = trans.sa_session.query(trans.app.model.StoredWorkflow).options(
+            joinedload("annotations")).options(
+            joinedload("latest_workflow").undefer("step_count").lazyload("steps")).options(
+            joinedload("tags")
+        ).filter(filter1)
+        query = query.filter_by(hidden=true() if show_hidden else false(), deleted=true() if show_deleted else false())
+        for wf in query.order_by(desc(trans.app.model.StoredWorkflow.table.c.update_time)).all():
             item = wf.to_dict(value_mapper={'id': trans.security.encode_id})
             encoded_id = trans.security.encode_id(wf.id)
             item['annotations'] = [x.annotation for x in wf.annotations]
@@ -330,7 +328,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             if not os.path.exists(installed_repository_file):
                 raise exceptions.RequestParameterInvalidException("Workflow file '%s' not found" % installed_repository_file)
             elif os.path.getsize(os.path.abspath(installed_repository_file)) > 0:
-                with io.open(installed_repository_file, encoding='utf-8') as f:
+                with open(installed_repository_file, encoding='utf-8') as f:
                     workflow_data = f.read()
                 return self.__api_import_from_archive(trans, workflow_data)
             else:
@@ -347,6 +345,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                     workflow_src = {"src": "from_path", "path": archive_source[len("file://"):]}
                     payload["workflow"] = workflow_src
                     return self.__api_import_new_workflow(trans, payload, **kwd)
+                elif archive_source == "trs_tool":
+                    trs_server = payload.get("trs_server")
+                    trs_tool_id = payload.get("trs_tool_id")
+                    trs_version_id = payload.get("trs_version_id")
+                    archive_data = self.app.trs_proxy.get_version_descriptor(trs_server, trs_tool_id, trs_version_id)
                 else:
                     try:
                         archive_data = requests.get(archive_source).text
@@ -477,7 +480,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 extension = "ga"
             else:
                 extension = "gxwf.json"
-            trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy-Workflow-%s.%s"' % (sname, extension)
+            trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy-Workflow-{}.{}"'.format(sname, extension)
             trans.response.set_content_type('application/galaxy-archive')
 
         if style == "format2" and download_format != 'json-download':
@@ -573,6 +576,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 stored_workflow.name = sanitized_name
                 stored_workflow.latest_workflow = workflow
                 trans.sa_session.add(workflow, stored_workflow)
+                trans.sa_session.flush()
+
+            if 'hidden' in workflow_dict and stored_workflow.hidden != workflow_dict['hidden']:
+                stored_workflow.hidden = workflow_dict['hidden']
                 trans.sa_session.flush()
 
             if 'annotation' in workflow_dict:
@@ -813,10 +820,13 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 trans=trans,
                 workflow=workflow,
                 workflow_run_config=run_config,
-                request_params=work_request_params
+                request_params=work_request_params,
+                flush=False,
             )
-            invocation = self.encode_all_ids(trans, workflow_invocation.to_dict(), recursive=True)
-            invocations.append(invocation)
+            invocations.append(workflow_invocation)
+
+        trans.sa_session.flush()
+        invocations = [self.encode_all_ids(trans, invocation.to_dict(), recursive=True) for invocation in invocations]
 
         if is_batch:
             return invocations

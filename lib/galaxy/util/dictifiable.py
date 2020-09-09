@@ -10,7 +10,7 @@ def dict_for(obj, **kwds):
     )
 
 
-class Dictifiable(object):
+class Dictifiable:
     """ Mixin that enables objects to be converted to dictionaries. This is useful
         when for sharing objects across boundaries, such as the API, tool scripts,
         and JavaScript code. """

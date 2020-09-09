@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 class PageRevisionsController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotations, SharableMixin):
 
     def __init__(self, app):
-        super(PageRevisionsController, self).__init__(app)
+        super().__init__(app)
         self.manager = PageManager(app)
 
     @expose_api

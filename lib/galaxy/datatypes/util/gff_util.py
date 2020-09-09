@@ -461,8 +461,7 @@ def read_unordered_gtf(iterator, strict=False):
     # FIXME: comments can appear anywhere in file, not just the beginning.
     # Ideally, then comments would be associated with features and output
     # just before feature/line.
-    for comment in comments:
-        yield comment
+    yield from comments
 
     for chrom_features in chroms_features_sorted:
         for feature in chrom_features:

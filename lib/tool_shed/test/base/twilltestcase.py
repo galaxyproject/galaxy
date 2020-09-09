@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import logging
 import os
 import re
@@ -23,7 +21,7 @@ import galaxy.util
 from galaxy.security import idencoding
 from galaxy.util import smart_str, unicodify
 from galaxy_test.base.api_util import get_master_api_key
-from galaxy_test.driver.testcase import FunctionalTestCase
+from galaxy_test.driver.testcase import DrivenFunctionalTestCase
 from tool_shed.util import (
     hg_util,
     hgweb_config,
@@ -40,7 +38,7 @@ log = logging.getLogger(__name__)
 tc.options['equiv_refresh_interval'] = 0
 
 
-class ShedTwillTestCase(FunctionalTestCase):
+class ShedTwillTestCase(DrivenFunctionalTestCase):
 
     def setUp(self):
         # Security helper
@@ -52,10 +50,10 @@ class ShedTwillTestCase(FunctionalTestCase):
         self.tool_shed_test_tmp_dir = os.environ.get('TOOL_SHED_TEST_TMP_DIR', None)
         self.host = os.environ.get('TOOL_SHED_TEST_HOST')
         self.port = os.environ.get('TOOL_SHED_TEST_PORT')
-        self.url = "http://%s:%s" % (self.host, self.port)
+        self.url = "http://{}:{}".format(self.host, self.port)
         self.galaxy_host = os.environ.get('GALAXY_TEST_HOST')
         self.galaxy_port = os.environ.get('GALAXY_TEST_PORT')
-        self.galaxy_url = "http://%s:%s" % (self.galaxy_host, self.galaxy_port)
+        self.galaxy_url = "http://{}:{}".format(self.galaxy_host, self.galaxy_port)
         self.shed_tool_data_table_conf = os.environ.get('TOOL_SHED_TEST_TOOL_DATA_TABLE_CONF')
         self.file_dir = os.environ.get('TOOL_SHED_TEST_FILE_DIR', None)
         self.tool_data_path = os.environ.get('GALAXY_TEST_TOOL_DATA_PATH')
@@ -88,7 +86,7 @@ class ShedTwillTestCase(FunctionalTestCase):
         page = unicodify(self.last_page())
         if page.find(patt) == -1:
             fname = self.write_temp_file(page)
-            errmsg = "no match to '%s'\npage content written to '%s'\npage: [[%s]]" % (patt, fname, page)
+            errmsg = "no match to '{}'\npage content written to '{}'\npage: [[{}]]".format(patt, fname, page)
             raise AssertionError(errmsg)
 
     def check_string_not_in_page(self, patt):
@@ -96,7 +94,7 @@ class ShedTwillTestCase(FunctionalTestCase):
         page = self.last_page()
         if page.find(patt) != -1:
             fname = self.write_temp_file(page)
-            errmsg = "string (%s) incorrectly displayed in page.\npage content written to '%s'" % (patt, fname)
+            errmsg = "string ({}) incorrectly displayed in page.\npage content written to '{}'".format(patt, fname)
             raise AssertionError(errmsg)
 
     # Functions associated with user accounts
@@ -202,9 +200,9 @@ class ShedTwillTestCase(FunctionalTestCase):
             params = dict()
         parsed_url = urlparse(url)
         if len(parsed_url.netloc) == 0:
-            url = 'http://%s:%s%s' % (self.host, self.port, parsed_url.path)
+            url = 'http://{}:{}{}'.format(self.host, self.port, parsed_url.path)
         else:
-            url = '%s://%s%s' % (parsed_url.scheme, parsed_url.netloc, parsed_url.path)
+            url = '{}://{}{}'.format(parsed_url.scheme, parsed_url.netloc, parsed_url.path)
         if parsed_url.query:
             for query_parameter in parsed_url.query.split('&'):
                 key, value = query_parameter.split('=')
@@ -379,7 +377,7 @@ class ShedTwillTestCase(FunctionalTestCase):
         repository_metadata = self.get_repository_metadata_by_changeset_revision(repository, changeset_revision)
         metadata = repository_metadata.metadata
         if 'tools' not in metadata:
-            raise AssertionError('No tools in %s revision %s.' % (repository.name, changeset_revision))
+            raise AssertionError('No tools in {} revision {}.'.format(repository.name, changeset_revision))
         for tool_dict in metadata['tools']:
             tool_id = tool_dict['id']
             tool_xml = tool_dict['tool_config']
@@ -423,12 +421,12 @@ class ShedTwillTestCase(FunctionalTestCase):
             raise AssertionError(errmsg)
 
     def clone_repository(self, repository, destination_path):
-        url = '%s/repos/%s/%s' % (self.url, repository.user.username, repository.name)
+        url = '{}/repos/{}/{}'.format(self.url, repository.user.username, repository.name)
         success, message = hg_util.clone_repository(url, destination_path, self.get_repository_tip(repository))
         assert success is True, message
 
     def commit_and_push(self, repository, hgrepo, options, username, password):
-        url = 'http://%s:%s@%s:%s/repos/%s/%s' % (username, password, self.host, self.port, repository.user.username, repository.name)
+        url = 'http://{}:{}@{}:{}/repos/{}/{}'.format(username, password, self.host, self.port, repository.user.username, repository.name)
         commands.commit(ui.ui(), hgrepo, **options)
         #  Try pushing multiple times as it transiently fails on Jenkins.
         #  TODO: Figure out why that happens
@@ -470,7 +468,7 @@ class ShedTwillTestCase(FunctionalTestCase):
         else:
             for toolshed_url, name, owner, changeset_revision in repository_tuples:
                 repository_names.append(name)
-            dependency_description = '%s depends on %s.' % (repository.name, ', '.join(repository_names))
+            dependency_description = '{} depends on {}.'.format(repository.name, ', '.join(repository_names))
             filename = 'repository_dependencies.xml'
             self.generate_simple_dependency_xml(repository_tuples=repository_tuples,
                                                 filename=filename,
@@ -600,7 +598,7 @@ class ShedTwillTestCase(FunctionalTestCase):
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def display_repository_clone_page(self, owner_name, repository_name, strings_displayed=None, strings_not_displayed=None):
-        url = '/repos/%s/%s' % (owner_name, repository_name)
+        url = '/repos/{}/{}'.format(owner_name, repository_name)
         self.visit_url(url)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
@@ -613,7 +611,7 @@ class ShedTwillTestCase(FunctionalTestCase):
         else:
             relative_path = basepath
         repository_file_list = self.get_repository_file_list(repository=repository, base_path=relative_path, current_path=None)
-        assert filename in repository_file_list, 'File %s not found in the repository under %s.' % (filename, relative_path)
+        assert filename in repository_file_list, 'File {} not found in the repository under {}.'.format(filename, relative_path)
         params = dict(file_path=os.path.join(relative_path, filename), repository_id=self.security.encode_id(repository.id))
         url = '/repository/get_file_contents'
         self.visit_url(url, params=params)
@@ -869,11 +867,11 @@ class ShedTwillTestCase(FunctionalTestCase):
 
     def get_repo_path(self, repository):
         # An entry in the hgweb.config file looks something like: repos/test/mira_assembler = database/community_files/000/repo_123
-        lhs = "repos/%s/%s" % (repository.user.username, repository.name)
+        lhs = "repos/{}/{}".format(repository.user.username, repository.name)
         try:
             return self.hgweb_config_manager.get_entry(lhs)
         except Exception:
-            raise Exception("Entry for repository %s missing in hgweb config file %s." % (lhs, self.hgweb_config_manager.hgweb_config))
+            raise Exception("Entry for repository {} missing in hgweb config file {}.".format(lhs, self.hgweb_config_manager.hgweb_config))
 
     def get_repository_changelog_tuples(self, repository):
         repo = self.get_hg_repo(self.get_repo_path(repository))
@@ -1083,7 +1081,7 @@ class ShedTwillTestCase(FunctionalTestCase):
             )
             tc.browser.result = ResultWrapper(r)
         else:
-            assert len(submit_button) == 1, 'Expected to find a single submit button, found %s (%s)' % (len(submit_button), ','.join(submit_button))
+            assert len(submit_button) == 1, 'Expected to find a single submit button, found {} ({})'.format(len(submit_button), ','.join(submit_button))
             submit_button = submit_button[0]
             self.submit_form(form=form, button=submit_button, **kwds)
         self.check_for_strings(post_submit_strings_displayed, strings_not_displayed)
@@ -1101,7 +1099,7 @@ class ShedTwillTestCase(FunctionalTestCase):
                          strings_not_displayed=None,
                          strings_displayed_in_iframe=[],
                          strings_not_displayed_in_iframe=[]):
-        url = '%s/view/%s' % (self.url, username)
+        url = '{}/view/{}'.format(self.url, username)
         # If repository name is passed in, append that to the url.
         if repository_name:
             url += '/%s' % repository_name
@@ -1323,7 +1321,7 @@ class ShedTwillTestCase(FunctionalTestCase):
         form_id = form.attrib.get('id')
         controls = [control for control in form.inputs if str(control.name) == field_name]
         if len(controls) > 0:
-            log.debug('Setting field %s of form %s to %s.' % (field_name, form_id, str(field_value)))
+            log.debug('Setting field {} of form {} to {}.'.format(field_name, form_id, str(field_value)))
             tc.formvalue(form_id, field_name, str(field_value))
             kwd[field_name] = str(field_value)
         else:
@@ -1498,7 +1496,7 @@ class ShedTwillTestCase(FunctionalTestCase):
             galaxy_repository = test_db_util.get_installed_repository_by_name_owner(repository_name, repository_owner)
             if galaxy_repository:
                 assert galaxy_repository.status == 'Installed', \
-                    'Repository %s should be installed, but is %s' % (repository_name, galaxy_repository.status)
+                    'Repository {} should be installed, but is {}'.format(repository_name, galaxy_repository.status)
 
     def verify_installed_repository_metadata_unchanged(self, name, owner):
         installed_repository = test_db_util.get_installed_repository_by_name_owner(name, owner)
@@ -1564,7 +1562,7 @@ class ShedTwillTestCase(FunctionalTestCase):
                 break
         # We better have an entry like: <table comment_char="#" name="sam_fa_indexes"> in our parsed data_tables
         # or we know that the repository was not correctly installed!
-        assert found, 'No entry for %s in %s.' % (required_data_table_entry, self.shed_tool_data_table_conf)
+        assert found, 'No entry for {} in {}.'.format(required_data_table_entry, self.shed_tool_data_table_conf)
 
     def verify_repository_reviews(self, repository, reviewer=None, strings_displayed=None, strings_not_displayed=None):
         changeset_revision = self.get_repository_tip(repository)
@@ -1605,7 +1603,7 @@ class ShedTwillTestCase(FunctionalTestCase):
         assert old_metadata == new_metadata, 'Metadata changed after reset on repository %s.' % repository.name
 
     def visit_galaxy_url(self, url, params=None, doseq=False, allowed_codes=[200]):
-        url = '%s%s' % (self.galaxy_url, url)
+        url = '{}{}'.format(self.galaxy_url, url)
         self.visit_url(url, params=params, doseq=doseq, allowed_codes=allowed_codes)
 
     def wait_for_repository_installation(self, repository_ids):

@@ -3,7 +3,6 @@ import logging
 from collections import OrderedDict
 from copy import deepcopy
 
-from six import string_types
 from six.moves.urllib.parse import quote_plus
 
 from galaxy.util import (
@@ -28,7 +27,7 @@ def quote_plus_string(value, **kwds):
     return quote_plus(str(value), **kwds)
 
 
-class DisplayApplicationLink(object):
+class DisplayApplicationLink:
     @classmethod
     def from_elem(cls, elem, display_application, other_values=None):
         rval = DisplayApplicationLink(display_application)
@@ -104,7 +103,7 @@ class DisplayApplicationLink(object):
         return True
 
 
-class DynamicDisplayApplicationBuilder(object):
+class DynamicDisplayApplicationBuilder:
 
     def __init__(self, elem, display_application, build_sites):
         filename = None
@@ -170,7 +169,7 @@ class DynamicDisplayApplicationBuilder(object):
             display_application.add_data_table_watch(data_table.name, version)
         links = []
         for line in data_iter:
-            if isinstance(line, string_types):
+            if isinstance(line, str):
                 if not skip_startswith or not line.startswith(skip_startswith):
                     line = line.rstrip('\n\r')
                     if not line:
@@ -193,14 +192,14 @@ class DynamicDisplayApplicationBuilder(object):
                 # now populate
                 links.append(DisplayApplicationLink.from_elem(new_elem, display_application, other_values=dynamic_values))
             else:
-                log.warning('Invalid dynamic display application link specified in %s: "%s"' % (filename, line))
+                log.warning('Invalid dynamic display application link specified in {}: "{}"'.format(filename, line))
         self.links = links
 
     def __iter__(self):
         return iter(self.links)
 
 
-class PopulatedDisplayApplicationLink(object):
+class PopulatedDisplayApplicationLink:
     def __init__(self, display_application_link, data, dataset_hash, user_hash, trans, app_kwds):
         self.link = display_application_link
         self.data = data
@@ -264,7 +263,7 @@ class PopulatedDisplayApplicationLink(object):
         return self.link.allow_cors
 
 
-class DisplayApplication(object):
+class DisplayApplication:
     @classmethod
     def from_file(cls, filename, app):
         return cls.from_elem(parse_xml(filename).getroot(), app, filename=filename)

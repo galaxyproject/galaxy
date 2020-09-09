@@ -27,11 +27,11 @@ def file_dict_to_description(file_dict):
         return PathDirectoryDescription(_possible_uri_to_path(location))
 
 
-class FileDescription(object):
+class FileDescription:
     pass
 
 
-class PathFileDescription(object):
+class PathFileDescription:
 
     def __init__(self, path):
         self.path = path
@@ -41,7 +41,7 @@ class PathFileDescription(object):
         shutil.copy(self.path, destination)
 
 
-class PathDirectoryDescription(object):
+class PathDirectoryDescription:
 
     def __init__(self, path):
         self.path = path
@@ -50,7 +50,7 @@ class PathDirectoryDescription(object):
         shutil.copytree(self.path, destination)
 
 
-class LiteralFileDescription(object):
+class LiteralFileDescription:
 
     def __init__(self, content):
         self.content = content
@@ -76,9 +76,9 @@ def handle_outputs(job_directory=None):
     metadata_directory = os.path.join(job_directory, "metadata")
     metadata_params_path = os.path.join(metadata_directory, "params.json")
     try:
-        with open(metadata_params_path, "r") as f:
+        with open(metadata_params_path) as f:
             metadata_params = json.load(f)
-    except IOError:
+    except OSError:
         raise Exception("Failed to find params.json from metadata directory [%s]" % metadata_directory)
 
     cwl_job_file = os.path.join(job_directory, JOB_JSON_FILE)
@@ -200,7 +200,7 @@ def handle_outputs(job_directory=None):
         elif isinstance(output, dict):
             prefix = "%s|__part__|" % output_name
             for record_key, record_value in output.items():
-                record_value_output_key = "%s%s" % (prefix, record_key)
+                record_value_output_key = "{}{}".format(prefix, record_key)
                 if isinstance(record_value, dict) and "class" in record_value:
                     handle_known_output(record_value, record_value_output_key, output_name)
                 else:
@@ -214,7 +214,7 @@ def handle_outputs(job_directory=None):
                     output_path = _possible_uri_to_path(el["location"])
                     elements.append({"name": str(index), "filename": output_path, "created_from_basename": el["basename"]})
                 else:
-                    target_path = "%s____%s" % (output_name, str(index))
+                    target_path = "{}____{}".format(output_name, str(index))
                     with open(target_path, "w") as f:
                         f.write(json.dumps(el))
                     elements.append({"name": str(index), "filename": target_path, "ext": "expression.json"})

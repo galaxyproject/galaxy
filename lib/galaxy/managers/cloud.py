@@ -51,7 +51,7 @@ class CloudManager(sharable.SharableModelManager):
     model_class = model.History
 
     def __init__(self, app, *args, **kwargs):
-        super(CloudManager, self).__init__(app, *args, **kwargs)
+        super().__init__(app, *args, **kwargs)
 
     @staticmethod
     def configure_provider(provider, credentials):
@@ -206,7 +206,7 @@ class CloudManager(sharable.SharableModelManager):
         which leverages CloudAuthz (https://github.com/galaxyproject/cloudauthz) and automatically
         requests temporary credentials to access the defined resources.
 
-        :type  trans:       galaxy.web.framework.webapp.GalaxyWebTransaction
+        :type  trans:       galaxy.webapps.base.webapp.GalaxyWebTransaction
         :param trans:       Galaxy web transaction
 
         :type  history_id:  string
@@ -288,7 +288,7 @@ class CloudManager(sharable.SharableModelManager):
         Implements the logic of sending dataset(s) from a given history to a given cloud-based storage
         (e.g., Amazon S3).
 
-        :type  trans:               galaxy.web.framework.webapp.GalaxyWebTransaction
+        :type  trans:               galaxy.webapps.base.webapp.GalaxyWebTransaction
         :param trans:               Galaxy web transaction
 
         :type  history_id:          string

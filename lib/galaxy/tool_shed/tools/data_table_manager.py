@@ -9,7 +9,7 @@ from galaxy.util.tool_shed import xml_util
 log = logging.getLogger(__name__)
 
 
-class ShedToolDataTableManager(object):
+class ShedToolDataTableManager:
 
     def __init__(self, app):
         self.app = app

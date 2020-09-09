@@ -45,8 +45,8 @@ def validate_server_directory_upload(trans, server_dir):
     unsafe = None
     if safe_relpath(server_dir):
         username = trans.user.username if trans.app.config.user_library_import_check_permissions else None
-        if import_dir_desc == 'user_library_import_dir' and safe_contains(import_dir, full_dir, whitelist=trans.app.config.user_library_import_symlink_whitelist):
-            for unsafe in unsafe_walk(full_dir, whitelist=[import_dir] + trans.app.config.user_library_import_symlink_whitelist, username=username):
+        if import_dir_desc == 'user_library_import_dir' and safe_contains(import_dir, full_dir, allowlist=trans.app.config.user_library_import_symlink_allowlist):
+            for unsafe in unsafe_walk(full_dir, allowlist=[import_dir] + trans.app.config.user_library_import_symlink_allowlist, username=username):
                 log.error('User attempted to import a path that resolves to a path outside of their import dir: %s -> %s', unsafe, os.path.realpath(unsafe))
     else:
         log.error('User attempted to import a directory path that resolves to a path outside of their import dir: %s -> %s', server_dir, os.path.realpath(full_dir))
@@ -65,7 +65,7 @@ def validate_path_upload(trans):
         raise AdminRequiredException('Uploading files via filesystem paths can only be performed by administrators')
 
 
-class LibraryActions(object):
+class LibraryActions:
     """
     Mixin for controllers that provide library functionality.
     """
@@ -169,7 +169,7 @@ class LibraryActions(object):
                 if os.path.isfile(path):
                     files.append(path)
         except Exception as e:
-            message = "Unable to get file list for configured %s, error: %s" % (import_dir_desc, util.unicodify(e))
+            message = "Unable to get file list for configured {}, error: {}".format(import_dir_desc, util.unicodify(e))
             response_code = 500
             return None, response_code, message
         if not files:
@@ -313,7 +313,7 @@ class LibraryActions(object):
                     item_type = 'folder'
                 else:
                     item_type = '(unknown item type)'
-                message = "You do not have permission to access the %s with id (%s)." % (escape(item_type), str(item.id))
+                message = "You do not have permission to access the {} with id ({}).".format(escape(item_type), str(item.id))
                 can_access = False
         if not can_access:
             return 400, message

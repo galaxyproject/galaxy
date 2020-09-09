@@ -102,7 +102,7 @@ class JobExportHistoryArchiveWrapper:
         options = "--galaxy-version '%s'" % VERSION_MAJOR
         if jeha.compressed:
             options += " -G"
-        return "%s %s" % (options, temp_output_dir)
+        return "{} {}".format(options, temp_output_dir)
 
     def cleanup_after_job(self):
         """ Remove temporary directory and attribute files generated during setup for this job. """
@@ -113,4 +113,4 @@ class JobExportHistoryArchiveWrapper:
             try:
                 shutil.rmtree(temp_dir)
             except Exception as e:
-                log.debug('Error deleting directory containing attribute files (%s): %s' % (temp_dir, e))
+                log.debug('Error deleting directory containing attribute files ({}): {}'.format(temp_dir, e))

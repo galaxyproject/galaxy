@@ -1,5 +1,4 @@
 """Provides utilities for working with image files."""
-from __future__ import absolute_import
 
 import imghdr
 import logging

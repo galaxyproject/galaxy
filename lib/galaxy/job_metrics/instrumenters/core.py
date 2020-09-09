@@ -92,7 +92,7 @@ class CorePlugin(InstrumentPlugin):
     def __read_integer(self, path):
         value = None
         try:
-            value = int(open(path, "r").read())
+            value = int(open(path).read())
         except Exception:
             pass
         return value

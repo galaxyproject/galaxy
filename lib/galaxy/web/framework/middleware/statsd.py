@@ -1,7 +1,6 @@
 """
 Middleware for sending request statistics to statsd.
 """
-from __future__ import absolute_import
 
 import time
 
@@ -9,7 +8,7 @@ from galaxy.model.orm.engine_factory import QUERY_COUNT_LOCAL
 from galaxy.web.statsd_client import GalaxyStatsdClient
 
 
-class StatsdMiddleware(object):
+class StatsdMiddleware:
     """
     This middleware will log request durations to the configured statsd
     instance.

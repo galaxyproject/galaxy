@@ -4,7 +4,6 @@ API operations on the contents of a history dataset.
 import logging
 import os
 
-from six import string_types
 
 from galaxy import (
     exceptions as galaxy_exceptions,
@@ -34,7 +33,7 @@ log = logging.getLogger(__name__)
 class DatasetsController(BaseAPIController, UsesVisualizationMixin):
 
     def __init__(self, app):
-        super(DatasetsController, self).__init__(app)
+        super().__init__(app)
         self.history_manager = managers.histories.HistoryManager(app)
         self.hda_manager = managers.hdas.HDAManager(app)
         self.hda_serializer = managers.hdas.HDASerializer(app)
@@ -47,7 +46,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
     def _parse_serialization_params(self, kwd, default_view):
         view = kwd.get('view', None)
         keys = kwd.get('keys')
-        if isinstance(keys, string_types):
+        if isinstance(keys, str):
             keys = keys.split(',')
         return dict(view=view, keys=keys, default_view=default_view)
 
@@ -145,6 +144,8 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
             rval = self.get_new_track_config(trans, dataset)
         elif data_type == 'genome_data':
             rval = self._get_genome_data(trans, dataset, kwd.get('dbkey', None))
+        elif data_type == 'in_use_state':
+            rval = self._dataset_in_use_state(dataset)
         else:
             # Default: return dataset as dict.
             if hda_ldda == 'hda':
@@ -173,6 +174,12 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
         else:
             self.ldda_manager.update_permissions(trans, dataset_assoc, **kwd)
             return self.ldda_manager.serialize_dataset_association_roles(trans, dataset_assoc)
+
+    def _dataset_in_use_state(self, dataset):
+        """
+        Return True if dataset is currently used as an input or output. False otherwise.
+        """
+        return not self.hda_manager.ok_to_edit_metadata(dataset.id)
 
     def _dataset_state(self, trans, dataset, **kwargs):
         """
@@ -420,6 +427,22 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
             rval = "Could not get display data for dataset: %s" % util.unicodify(e)
         return rval
 
+    @web.expose_api
+    def get_content_as_text(self, trans, dataset_id):
+        """ Returns item content as Text. """
+        decoded_id = self.decode_id(dataset_id)
+        dataset = self.hda_manager.get_accessible(decoded_id, trans.user)
+        dataset = self.hda_manager.error_if_uploading(dataset)
+        if dataset is None:
+            raise galaxy_exceptions.MessageException("Dataset not found.")
+        truncated, dataset_data = self.hda_manager.text_data(dataset, preview=True)
+        item_url = web.url_for(controller='dataset', action='display_by_username_and_slug', username=dataset.history.user.username, slug=trans.security.encode_id(dataset.id), preview=False)
+        return {
+            "item_data": dataset_data,
+            "truncated": truncated,
+            "item_url": item_url,
+        }
+
     @web.legacy_expose_api_raw_anonymous
     def get_metadata_file(self, trans, history_content_id, history_id, metadata_file=None, **kwd):
         """
@@ -432,7 +455,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
             file_ext = hda.metadata.spec.get(metadata_file).get("file_ext", metadata_file)
             fname = ''.join(c in util.FILENAME_VALID_CHARS and c or '_' for c in hda.name)[0:150]
             trans.response.headers["Content-Type"] = "application/octet-stream"
-            trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (hda.hid, fname, file_ext)
+            trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy{}-[{}].{}"'.format(hda.hid, fname, file_ext)
             return open(hda.metadata.get(metadata_file).file_name, 'rb')
         except Exception as e:
             log.exception("Error getting metadata_file (%s) for dataset (%s) from history (%s)",
