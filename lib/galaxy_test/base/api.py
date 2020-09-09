@@ -19,6 +19,7 @@ from .api_util import (
     TEST_USER,
 )
 from .interactor import TestCaseGalaxyInteractor as BaseInteractor
+from .testcase import FunctionalTestCase
 
 
 class UsesApiTestCaseMixin:
