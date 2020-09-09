@@ -308,6 +308,39 @@ class BlastDomainDb(_BlastDb, Data):
         self.add_composite_file('blastdb.aux', is_binary=True, optional=True)
 
 
+class LastDb(Data):
+    """Class for LAST database files."""
+    file_ext = 'lastdb'
+    allow_datatype_change = False
+    composite_type = 'basic'
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        """Set the peek and blurb text."""
+        if not dataset.dataset.purged:
+            dataset.peek = "LAST database (multiple files)"
+            dataset.blurb = "LAST database (multiple files)"
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        """Create HTML content, used for displaying peek."""
+        try:
+            return dataset.peek
+        except Exception:
+            return "LAST database (multiple files)"
+
+    def __init__(self, **kwd):
+        Data.__init__(self, **kwd)
+        self.add_composite_file('lastdb.bck', is_binary=True)
+        self.add_composite_file('lastdb.des', description="Description file", is_binary=False)
+        self.add_composite_file('lastdb.prj', description="Project resume file", is_binary=False)
+        self.add_composite_file('lastdb.sds', is_binary=True)
+        self.add_composite_file('lastdb.ssp', is_binary=True)
+        self.add_composite_file('lastdb.suf', is_binary=True)
+        self.add_composite_file('lastdb.tis', is_binary=True)
+
+
 class BlastNucDb5(_BlastDb, Data):
     """Class for nucleotide BLAST database files."""
     file_ext = 'blastdbn5'
