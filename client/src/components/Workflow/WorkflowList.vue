@@ -55,8 +55,8 @@
                         <Tags :index="row.index" :tags="row.item.tags" @input="onTags" />
                     </template>
                     <template v-slot:cell(published)="row">
-                        <font-awesome-icon v-if="row.item.published" icon="globe" />
-                        <font-awesome-icon v-if="row.item.shared" icon="share-alt" />
+                        <font-awesome-icon v-if="row.item.published" v-b-tooltip.hover title="Published" icon="globe" />
+                        <font-awesome-icon v-if="row.item.shared" v-b-tooltip.hover title="Shared" icon="share-alt" />
                     </template>
                     <template v-slot:cell(show_in_tool_panel)="row">
                         <b-form-checkbox v-model="row.item.show_in_tool_panel" @change="bookmarkWorkflow(row.item)" />
