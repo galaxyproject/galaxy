@@ -144,6 +144,8 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
             rval = self.get_new_track_config(trans, dataset)
         elif data_type == 'genome_data':
             rval = self._get_genome_data(trans, dataset, kwd.get('dbkey', None))
+        elif data_type == 'in_use_state':
+            rval = self._dataset_in_use_state(dataset)
         else:
             # Default: return dataset as dict.
             if hda_ldda == 'hda':
@@ -172,6 +174,12 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
         else:
             self.ldda_manager.update_permissions(trans, dataset_assoc, **kwd)
             return self.ldda_manager.serialize_dataset_association_roles(trans, dataset_assoc)
+
+    def _dataset_in_use_state(self, dataset):
+        """
+        Return True if dataset is currently used as an input or output. False otherwise.
+        """
+        return not self.hda_manager.ok_to_edit_metadata(dataset.id)
 
     def _dataset_state(self, trans, dataset, **kwargs):
         """

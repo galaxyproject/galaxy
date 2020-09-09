@@ -1,14 +1,11 @@
 <template>
     <div class="mb-3">
-        <div v-if="invocationSchedulingTerminal && jobStatesTerminal">
+        <div v-if="invocationAndJobTerminal">
             <span>
                 <a :href="invocationLink"
                     ><b>View Report {{ index + 1 }}</b></a
                 >
                 <a class="fa fa-print ml-1" :href="invocationPdfLink" v-b-tooltip title="Download PDF" />
-            </span>
-            <span>
-                <a :href="bcoJSON" class="btn btn-secondary">Download BioCompute Object</a>
             </span>
         </div>
         <div v-else>
@@ -44,6 +41,9 @@
             :error-count="errorCount"
         />
         <progress-bar v-else note="Loading job summary..." :loading="true" />
+        <span v-if="invocationAndJobTerminal">
+            <a :href="bcoJSON"><b>Download BioCompute Object</b></a>
+        </span>
     </div>
 </template>
 <script>
@@ -121,11 +121,14 @@ export default {
             }
             return stepStates;
         },
+        invocationAndJobTerminal: function () {
+            return this.invocationSchedulingTerminal && this.jobStatesTerminal;
+        },
         invocationLink: function () {
             return getUrl(`workflows/invocations/report?id=${this.invocationId}`);
         },
         bcoJSON: function () {
-            return getUrl(`api/invocations/${this.invocationId}/get_bco`);
+            return getUrl(`api/invocations/${this.invocationId}/biocompute/download`);
         },
         invocationPdfLink: function () {
             return getUrl(`api/invocations/${this.invocationId}/report.pdf`);

@@ -1,6 +1,5 @@
 """Module for searching the toolshed repositories"""
 import logging
-import re
 
 import whoosh.index
 from whoosh import scoring
@@ -10,6 +9,7 @@ from whoosh.query import And, Every, Term
 
 from galaxy import exceptions
 from galaxy.exceptions import ObjectNotFound
+from galaxy.util.search import parse_filters
 
 log = logging.getLogger(__name__)
 
@@ -180,19 +180,12 @@ class RepoSearch:
         >>> rs._parse_reserved_filters("meaningoflife:42")
         (None, 'meaningoflife:42')
         """
-        allow_terms = []
-        search_term_without_filters = None
-        search_space = search_term.replace('"', "'")
-        reserved = re.compile(r"(category|c|owner|o):(\w+|\'.*?\')")
-        while True:
-            match = reserved.search(search_space)
-            if match is None:
-                search_term_without_filters = ' '.join(search_space.split())
-                break
-            if match.groups()[0] in ["category", "c"]:
-                allow_terms.append(Term('categories', match.groups()[1].strip().replace("'", "")))
-            elif match.groups()[0] in ["owner", "o"]:
-                allow_terms.append(Term('repo_owner_username', match.groups()[1].strip().replace("'", "")))
-            search_space = search_space[0:match.start()] + search_space[match.end():]
-        allow_query = And(allow_terms) if allow_terms else None
+        filters = {
+            "category": "categories",
+            "c": "categories",
+            "owner": "repo_owner_username",
+            "o": "repo_owner_username",
+        }
+        allow_query, search_term_without_filters = parse_filters(search_term, filters)
+        allow_query = And([Term(t, v) for (t, v) in allow_query] if len(allow_query) > 0 else None) if allow_query else None
         return allow_query, search_term_without_filters

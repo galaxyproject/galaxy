@@ -577,6 +577,14 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         })
         self._job_search(tool_id='multi_data_param', history_id=history_id, inputs=inputs)
 
+    @uses_test_history(require_new=True)
+    def test_search_with_hdca_list_pair_collection_mapped_over_pair_input(self, history_id):
+        list_id_a = self.__history_with_ok_collection(collection_type='list:pair', history_id=history_id)
+        inputs = json.dumps({
+            'f1': {'batch': True, 'values': [{'src': 'hdca', 'id': list_id_a, 'map_over_type': 'paired'}]},
+        })
+        self._job_search(tool_id='collection_paired_test', history_id=history_id, inputs=inputs)
+
     def _get_simple_rerun_params(self, history_id, private=False):
         list_id_a = self.__history_with_ok_collection(collection_type='list:pair', history_id=history_id)
         inputs = {'f1': {'batch': True, 'values': [{'src': 'hdca', 'id': list_id_a, 'map_over_type': 'paired'}]}}
