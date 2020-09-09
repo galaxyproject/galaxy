@@ -340,7 +340,7 @@ class LastDb(Data):
         self.add_composite_file('lastdb.suf', is_binary=True)
         self.add_composite_file('lastdb.tis', is_binary=True)
 
-        
+
 class BlastNucDb5(_BlastDb, Data):
     """Class for nucleotide BLAST database files."""
     file_ext = 'blastdbn5'
