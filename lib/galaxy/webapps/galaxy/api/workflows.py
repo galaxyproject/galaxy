@@ -1238,7 +1238,13 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     def export_invocation_bco(self, trans, invocation_id, **kwd):
         '''
         GET /api/invocations/{invocations_id}/biocompute
+
         Return a BioCompute Object for the workflow invocation.
+
+        The BioCompute Object endpoints are in beta - important details such
+        as how inputs and outputs are represented, how the workflow is encoded,
+        and how author and version information is encoded, and how URLs are
+        generated will very likely change in important ways over time.
         '''
         return self._generate_invocation_bco(trans, invocation_id, **kwd)
 
@@ -1247,8 +1253,13 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         """
         GET /api/invocations/{invocations_id}/biocompute/download
 
-        Returns a selected BioCompute Object.
+        Returns a selected BioCompute Object as a file for download (HTTP
+        headers configured with filename and such).
 
+        The BioCompute Object endpoints are in beta - important details such
+        as how inputs and outputs are represented, how the workflow is encoded,
+        and how author and version information is encoded, and how URLs are
+        generated will very likely change in important ways over time.
         """
         ret_dict = self._generate_invocation_bco(trans, invocation_id, **kwd)
         trans.response.headers["Content-Disposition"] = 'attachment; filename="bco_%s.json"' % invocation_id
