@@ -89,8 +89,12 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
         folder_contents = []
         update_time = ''
         create_time = ''
+
+        valid_datasets = self.refine_deleted(folder.datasets, deleted)
+        valid_folders = self.refine_deleted(folder.folders, deleted)
+
         #  Go through every accessible item (folders, datasets) in the folder and include its metadata.
-        for content_item in self._load_folder_contents(trans, folder, deleted, offset, limit):
+        for content_item in self._load_folder_contents(trans, valid_folders, valid_datasets, offset, limit):
             return_item = {}
             encoded_id = trans.security.encode_id(content_item.id)
             create_time = content_item.create_time.strftime("%Y-%m-%d %I:%M %p")
@@ -166,7 +170,10 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
         if folder.parent_library is not None:
             parent_library_id = trans.security.encode_id(folder.parent_library.id)
 
+        total_rows = len(valid_folders) + len(valid_datasets)
+
         metadata = dict(full_path=full_path,
+                        total_rows=total_rows,
                         can_add_library_item=can_add_library_item,
                         can_modify_folder=can_modify_folder,
                         folder_name=folder.name,
@@ -197,7 +204,7 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
             path_to_root.extend(self.build_path(trans, upper_folder))
         return path_to_root
 
-    def _load_folder_contents(self, trans, folder, include_deleted, offset=None, limit=None):
+    def _load_folder_contents(self, trans, folders, datasets, offset=None, limit=None):
         """
         Loads all contents of the folder (folders and data sets) but only
         in the first level. Include deleted if the flag is set and if the
@@ -216,19 +223,21 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
         current_user_roles = trans.get_current_user_roles()
         is_admin = trans.user_is_admin
         content_items = []
-        for subfolder in folder.folders:
+
+        current_folders = self.calculate_pagination(folders, offset, limit)
+
+        for subfolder in current_folders:
             if subfolder.deleted:
-                if include_deleted:
-                    if is_admin:
-                        # Admins can see all deleted folders.
+                if is_admin:
+                    # Admins can see all deleted folders.
+                    subfolder.api_type = 'folder'
+                    content_items.append(subfolder)
+                else:
+                    # Users with MODIFY permissions can see deleted folders.
+                    can_modify = trans.app.security_agent.can_modify_library_item(current_user_roles, subfolder)
+                    if can_modify:
                         subfolder.api_type = 'folder'
                         content_items.append(subfolder)
-                    else:
-                        # Users with MODIFY permissions can see deleted folders.
-                        can_modify = trans.app.security_agent.can_modify_library_item(current_user_roles, subfolder)
-                        if can_modify:
-                            subfolder.api_type = 'folder'
-                            content_items.append(subfolder)
             else:
                 # Undeleted folders are non-restricted for now. The contents are not.
                 # TODO decide on restrictions
@@ -243,31 +252,29 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
                 #         subfolder.api_type = 'folder'
                 #         content_items.append( subfolder )
 
-        datasets_size = len(folder.datasets)
-        if offset is None or limit is None:
-            current_folder_datasets = folder.datasets
-
-        else:
+        if limit is not None:
+            limit = int(limit) - len(content_items)
+        if offset is not None:
             offset = int(offset)
-            limit = int(limit)
-            if datasets_size < offset + limit:
-                current_folder_datasets = folder.datasets[offset: datasets_size]
+            if offset - len(folders) > 0:
+                offset = offset - len(folders)
             else:
-                current_folder_datasets = folder.datasets[offset:offset + limit]
+                offset = 0
 
-        for dataset in current_folder_datasets:
+        current_datasets = self.calculate_pagination(datasets, offset, limit)
+
+        for dataset in current_datasets:
             if dataset.deleted:
-                if include_deleted:
-                    if is_admin:
-                        # Admins can see all deleted datasets.
+                if is_admin:
+                    # Admins can see all deleted datasets.
+                    dataset.api_type = 'file'
+                    content_items.append(dataset)
+                else:
+                    # Users with MODIFY permissions on the item can see the deleted item.
+                    can_modify = trans.app.security_agent.can_modify_library_item(current_user_roles, dataset)
+                    if can_modify:
                         dataset.api_type = 'file'
                         content_items.append(dataset)
-                    else:
-                        # Users with MODIFY permissions on the item can see the deleted item.
-                        can_modify = trans.app.security_agent.can_modify_library_item(current_user_roles, dataset)
-                        if can_modify:
-                            dataset.api_type = 'file'
-                            content_items.append(dataset)
             else:
                 if is_admin:
                     dataset.api_type = 'file'
@@ -279,6 +286,28 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
                         content_items.append(dataset)
 
         return content_items
+
+    def calculate_pagination(self, array, offset, limit):
+
+        datasets_size = len(array)
+        if offset is None or limit is None:
+            paginated_array = array
+        else:
+            offset = int(offset)
+            limit = int(limit)
+            if datasets_size < offset + limit:
+                paginated_array = array[offset: datasets_size]
+            else:
+                paginated_array = array[offset:offset + limit]
+
+        return paginated_array
+
+    def refine_deleted(self, array, include_deleted):
+        if include_deleted:
+            refined_array = array
+        else:
+            refined_array = [data for data in array if data.deleted == include_deleted]
+        return refined_array
 
     @expose_api
     def create(self, trans, encoded_folder_id, payload, **kwd):

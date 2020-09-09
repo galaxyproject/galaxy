@@ -26,7 +26,6 @@
                 :fields="fields"
                 :items="folderContents"
                 :per-page="perPage"
-                :current-page="currentPage"
                 selectable
                 :select-mode="selectMode"
                 @row-selected="onRowSelected"
@@ -226,7 +225,7 @@
                     <b-col md="auto">
                         <b-pagination
                             v-model="currentPage"
-                            :total-rows="rows"
+                            :total-rows="total_rows"
                             :per-page="perPage"
                             aria-controls="folder_list_body"
                         >
@@ -245,7 +244,7 @@
                                     />
                                 </td>
                                 <td class="text-muted ml-1 paginator-text">
-                                    <span class="pagination-total-pages-text">per page, {{ rows }} total</span>
+                                    <span class="pagination-total-pages-text">per page, {{ total_rows }} total</span>
                                 </td>
                             </tr>
                         </table>
@@ -305,9 +304,6 @@ export default {
         };
     },
     computed: {
-        rows() {
-            return this.folderContents.length;
-        },
         parentFolder() {
             const path = this.folder_metadata.full_path;
             if (path.length === 1) {
@@ -328,10 +324,14 @@ export default {
             this.include_deleted = include_deleted;
             this.hasLoaded = false;
             this.services
-                .getFolderContents(this.folder_id, include_deleted)
+                .getFolderContents(this.folder_id, include_deleted, this.perPage, (this.currentPage -1) * this.perPage)
                 .then((response) => {
                     this.folderContents = response.folder_contents;
+                    console.log("length")
+                    console.log("length")
+                    console.log(this.folderContents)
                     this.folder_metadata = response.metadata;
+                    this.total_rows = response.metadata.total_rows;
                     this.hasLoaded = true;
                 })
                 .catch((error) => {
@@ -521,6 +521,13 @@ export default {
             } else {
                 Toast.info("Nothing has changed.");
             }
+        },
+    },
+    watch: {
+        currentPage: {
+            handler: function (value) {
+                this.fetchFolderContents();
+            },
         },
     },
 };
