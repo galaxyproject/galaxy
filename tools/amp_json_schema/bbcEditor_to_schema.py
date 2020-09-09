@@ -84,16 +84,28 @@ def main():
         print(len(res[0]))
 
         i = j= 0
+        word_count = len(words)
+        original_item_count = len(original_items)
         for ele in res:
             if ele.startswith("- "):
                 i += 1
             elif len(ele) > 2 and ele[0:2] == "+ ":
                 words[j].score.scoreValue = 1.0
                 j += 1
+            # If we have reached the end of the original items
+            elif i >= original_item_count:
+                # But the item exists in the new text
+                if j < word_count:
+                    # Set the value to 1
+                    words[j].score.scoreValue = 1.0
             elif words[j].text == original_items[i]["text"]:
                 words[j].score.scoreValue = float(original_items[i]["score"]["scoreValue"])
                 i += 1
                 j += 1
+
+            # IF they are both at their end, exit
+            if i >= original_item_count and j >= word_count:
+                break
 
     #Standardizing AWS Transcribe file
     elif "jobName" in data.keys() and "results" in data.keys():
