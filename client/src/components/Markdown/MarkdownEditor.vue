@@ -11,6 +11,15 @@
                     <div class="unified-panel-header-inner">
                         <div class="panel-header-buttons">
                             <slot name="buttons" />
+                            <b-button
+                                title="Help"
+                                variant="link"
+                                role="button"
+                                v-b-tooltip.hover.bottom
+                                @click="onHelp"
+                            >
+                                <font-awesome-icon icon="question" />
+                            </b-button>
                         </div>
                         <div class="my-1">
                             {{ title }}
@@ -35,10 +44,16 @@
 import _ from "underscore";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faQuestion } from "@fortawesome/free-solid-svg-icons";
 import MarkdownToolBox from "./MarkdownToolBox";
 import SidePanel from "components/Panels/SidePanel";
+import { showMarkdownHelp } from "./markdownHelp";
 
 Vue.use(BootstrapVue);
+
+library.add(faQuestion);
 
 const FENCE = "```";
 
@@ -46,6 +61,7 @@ export default {
     components: {
         MarkdownToolBox,
         SidePanel,
+        FontAwesomeIcon,
     },
     props: {
         markdownText: {
@@ -89,6 +105,9 @@ export default {
         onUpdate: _.debounce(function (e) {
             this.$emit("onUpdate", this.content);
         }, 300),
+        onHelp() {
+            showMarkdownHelp();
+        },
     },
 };
 </script>
