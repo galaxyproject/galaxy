@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import json
 import os
 
@@ -19,7 +17,7 @@ WORKFLOWS_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 class WorkflowsFromYamlApiTestCase(BaseWorkflowsApiTestCase):
 
     def setUp(self):
-        super(WorkflowsFromYamlApiTestCase, self).setUp()
+        super().setUp()
 
     def _upload_and_download(self, yaml_workflow, **kwds):
         style = None

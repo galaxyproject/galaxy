@@ -1,7 +1,6 @@
 import json
 
 import requests
-import six
 from social_core.actions import do_auth, do_complete, do_disconnect
 from social_core.backends.utils import get_backend
 from social_core.strategy import BaseStrategy
@@ -46,7 +45,7 @@ AUTH_PIPELINE = (
     'social_core.pipeline.social_auth.social_uid',
 
     # Verifies that the current auth process is valid within the current
-    # project, this is where emails and domains whitelists are applied (if
+    # project, this is where emails and domains allowlists are applied (if
     # defined).
     'social_core.pipeline.social_auth.auth_allowed',
 
@@ -175,7 +174,7 @@ class PSAAuthnz(IdentityProvider):
         strategy = Strategy(trans.request, trans.session, Storage, self.config)
         backend = self._load_backend(strategy, self.config['redirect_uri'])
         response = do_disconnect(backend, trans.user, association_id)
-        if isinstance(response, six.string_types):
+        if isinstance(response, str):
             return True, "", response
         return response.get('success', False), response.get('message', ""), ""
 
@@ -188,7 +187,7 @@ class Strategy(BaseStrategy):
         self.config = config
         self.config['SOCIAL_AUTH_REDIRECT_IS_HTTPS'] = True if self.request and self.request.host.startswith('https:') else False
         self.config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_EXTRA_DATA'] = ['id_token']
-        super(Strategy, self).__init__(storage, tpl)
+        super().__init__(storage, tpl)
 
     def get_setting(self, name):
         return self.config[name]
@@ -251,7 +250,7 @@ class Strategy(BaseStrategy):
         return self.backend.continue_pipeline(*args, **kwargs)
 
 
-class Storage(object):
+class Storage:
     user = UserAuthnzToken
     nonce = PSANonce
     association = PSAAssociation
@@ -388,7 +387,6 @@ def allowed_to_disconnect(name=None, user=None, user_storage=None, strategy=None
     :type details: dict
     :return: empty dict
     """
-    pass
 
 
 def disconnect(name=None, user=None, user_storage=None, strategy=None,
@@ -409,8 +407,10 @@ def disconnect(name=None, user=None, user_storage=None, strategy=None,
     Additionally, returning any value except for a(n) (empty) dictionary, will break the
     disconnect pipeline, and that value will be returned as a result of calling the `do_disconnect` function.
     """
-    user_authnz = strategy.trans.sa_session.query(user_storage).filter(user_storage.table.c.user_id == user.id,
-                                                                       user_storage.table.c.provider == name).first()
+
+    sa_session = user_storage.sa_session
+    user_authnz = sa_session.query(user_storage).filter(user_storage.table.c.user_id == user.id,
+                                                        user_storage.table.c.provider == name).first()
     if user_authnz is None:
         return {'success': False, 'message': 'Not authenticated by any identity providers.'}
     # option A

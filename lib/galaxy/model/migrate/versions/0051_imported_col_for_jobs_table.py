@@ -1,7 +1,6 @@
 """
 Migration script to add imported column for jobs table.
 """
-from __future__ import print_function
 
 import logging
 

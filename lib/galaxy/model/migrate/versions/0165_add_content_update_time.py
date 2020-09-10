@@ -2,7 +2,6 @@
 Adds timestamps to hdca table. Adds triggers to dataset, hda, hdca tables
 to update history.update_time when contents are changed.
 """
-from __future__ import print_function
 
 import logging
 

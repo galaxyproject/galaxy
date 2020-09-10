@@ -16,7 +16,7 @@ from galaxy.tools.parameters import dynamic_options
 log = logging.getLogger(__name__)
 
 
-class ToolValidator(object):
+class ToolValidator:
 
     def __init__(self, app):
         self.app = app

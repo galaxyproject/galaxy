@@ -162,10 +162,13 @@ def validate_and_normalize_targets(trans, payload):
                     looks_like_url = True
                     break
 
+            if not looks_like_url and trans.app.file_sources.looks_like_uri(url):
+                looks_like_url = True
+
             if not looks_like_url:
                 raise RequestParameterInvalidException("Invalid URL [%s] found in src definition." % url)
 
-            validate_url(url, trans.app.config.fetch_url_whitelist_ips)
+            validate_url(url, trans.app.config.fetch_url_allowlist_ips)
             item["in_place"] = run_as_real_user
         elif src == "files":
             item["in_place"] = run_as_real_user

@@ -1,7 +1,6 @@
 """
 This script drops tables that were associated with the old Galaxy Cloud functionality.
 """
-from __future__ import print_function
 
 import datetime
 import logging

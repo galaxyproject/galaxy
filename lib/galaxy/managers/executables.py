@@ -12,7 +12,7 @@ def artifact_class(trans, as_dict):
             raise exceptions.AdminRequiredException()
 
         workflow_path = as_dict.get("path")
-        with open(workflow_path, "r") as f:
+        with open(workflow_path) as f:
             as_dict = ordered_load(f)
 
     artifact_class = as_dict.get("class", None)

@@ -3,7 +3,6 @@ This script creates a request.folder_id column which is a foreign
 key to the library_folder table. This also adds a 'type' and 'layout' column
 to the form_definition table.
 """
-from __future__ import print_function
 
 import logging
 

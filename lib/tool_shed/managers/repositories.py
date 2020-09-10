@@ -12,13 +12,13 @@ log = logging.getLogger(__name__)
 
 
 # =============================================================================
-class RepoManager(object):
+class RepoManager:
     """
     Interface/service object for interacting with TS repositories.
     """
 
     def __init__(self, *args, **kwargs):
-        super(RepoManager, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def get(self, trans, decoded_repo_id):
         """

@@ -15,7 +15,7 @@ from galaxy.util.tool_shed.encoding_util import tool_shed_decode
 log = logging.getLogger(__name__)
 
 
-class UpdateRepositoryManager(object):
+class UpdateRepositoryManager:
 
     def __init__(self, app):
         self.app = app
@@ -62,7 +62,7 @@ class UpdateRepositoryManager(object):
             changeset_revision_dict['changeset_revision'] = changeset_revision
             changeset_revision_dict['ctx_rev'] = ctx_rev
         except Exception as e:
-            log.debug("Error getting change set revision for update from the tool shed for repository '%s': %s" % (repository.name, str(e)))
+            log.debug("Error getting change set revision for update from the tool shed for repository '{}': {}".format(repository.name, str(e)))
             changeset_revision_dict['includes_data_managers'] = False
             changeset_revision_dict['includes_datatypes'] = False
             changeset_revision_dict['includes_tools'] = False
@@ -127,7 +127,7 @@ class UpdateRepositoryManager(object):
         return repository
 
 
-class Sleeper(object):
+class Sleeper:
     """
     Provides a 'sleep' method that sleeps for a number of seconds *unless* the notify method
     is called (from a different thread).

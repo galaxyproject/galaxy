@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 class MetricsController(BaseAPIController):
 
     def __init__(self, app):
-        super(MetricsController, self).__init__(app)
+        super().__init__(app)
         #: set to true to send additional debugging info to the log
         self.debugging = True
 

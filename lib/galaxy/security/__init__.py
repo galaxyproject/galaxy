@@ -5,14 +5,14 @@ Galaxy Security
 from galaxy.util.bunch import Bunch
 
 
-class Action(object):
+class Action:
     def __init__(self, action, description, model):
         self.action = action
         self.description = description
         self.model = model
 
 
-class RBACAgent(object):
+class RBACAgent:
     """Class that handles galaxy security"""
     permitted_actions = Bunch(
         DATASET_MANAGE_PERMISSIONS=Action("manage permissions", "Users having associated role can manage the roles associated with permissions on this dataset.", "grant"),
@@ -35,7 +35,7 @@ class RBACAgent(object):
         return list(self.permitted_actions.__dict__.values())
 
     def get_item_actions(self, action, item):
-        raise Exception('No valid method of retrieving action (%s) for item %s.' % (action, item))
+        raise Exception('No valid method of retrieving action ({}) for item {}.'.format(action, item))
 
     def guess_derived_permissions_for_datasets(self, datasets=[]):
         raise Exception("Unimplemented Method")

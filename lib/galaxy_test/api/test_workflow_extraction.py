@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import functools
 import operator
 from collections import namedtuple
@@ -12,7 +10,7 @@ from .test_workflows import BaseWorkflowsApiTestCase
 class WorkflowExtractionApiTestCase(BaseWorkflowsApiTestCase):
 
     def setUp(self):
-        super(WorkflowExtractionApiTestCase, self).setUp()
+        super().setUp()
         self.history_id = self.dataset_populator.new_history()
 
     @skip_without_tool("cat1")
@@ -538,7 +536,7 @@ test_data:
         return sorted(steps, key=operator.itemgetter("id"))
 
     def __job_id(self, history_id, dataset_id):
-        url = "histories/%s/contents/%s/provenance" % (history_id, dataset_id)
+        url = "histories/{}/contents/{}/provenance".format(history_id, dataset_id)
         prov_response = self._get(url, data=dict(follow=False))
         self._assert_status_code_is(prov_response, 200)
         return prov_response.json()["job_id"]

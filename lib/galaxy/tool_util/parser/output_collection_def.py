@@ -69,7 +69,7 @@ def dataset_collection_description(**kwargs):
         return FilePatternDatasetCollectionDescription(**kwargs)
 
 
-class DatasetCollectionDescription(object):
+class DatasetCollectionDescription:
 
     def __init__(self, **kwargs):
         self.default_dbkey = kwargs.get("dbkey", INPUT_DBKEY_TOKEN)
@@ -103,7 +103,7 @@ class FilePatternDatasetCollectionDescription(DatasetCollectionDescription):
     discover_via = "pattern"
 
     def __init__(self, **kwargs):
-        super(FilePatternDatasetCollectionDescription, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         pattern = kwargs.get("pattern", "__default__")
         self.recurse = asbool(kwargs.get("recurse", False))
         if pattern in NAMED_PATTERNS:
@@ -130,7 +130,7 @@ class FilePatternDatasetCollectionDescription(DatasetCollectionDescription):
         self.sort_comp = sort_comp
 
     def to_dict(self):
-        as_dict = super(FilePatternDatasetCollectionDescription, self).to_dict()
+        as_dict = super().to_dict()
         as_dict.update({
             "sort_key": self.sort_key,
             "sort_comp": self.sort_comp,

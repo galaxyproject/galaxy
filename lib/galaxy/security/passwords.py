@@ -18,6 +18,8 @@ def hash_password(password):
     """
     Hash a password, currently will use the PBKDF2 scheme.
     """
+    if password is None:
+        raise Exception("password cannot be None")
     return hash_password_PBKDF2(password)
 
 
@@ -44,7 +46,7 @@ def hash_password_PBKDF2(password):
     hashed_password = pbkdf2_bin(password, salt, COST_FACTOR, KEY_LENGTH, HASH_FUNCTION)
     encoded_password = unicodify(b64encode(hashed_password))
     # Format
-    return 'PBKDF2${0}${1}${2}${3}'.format(HASH_FUNCTION, COST_FACTOR, unicodify(salt), encoded_password)
+    return 'PBKDF2${}${}${}${}'.format(HASH_FUNCTION, COST_FACTOR, unicodify(salt), encoded_password)
 
 
 def check_password_PBKDF2(guess, hashed):

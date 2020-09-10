@@ -11,7 +11,7 @@ Subpackages
 
 .. toctree::
 
-    galaxy.util.logging
+    galaxy.util.custom_logging
     galaxy.util.pastescript
     galaxy.util.path
     galaxy.util.tool_shed

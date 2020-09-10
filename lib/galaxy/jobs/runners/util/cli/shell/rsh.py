@@ -21,7 +21,7 @@ __all__ = ('RemoteShell', 'SecureShell', 'GlobusSecureShell', 'ParamikoShell')
 class RemoteShell(LocalShell):
 
     def __init__(self, rsh='rsh', rcp='rcp', hostname='localhost', username=None, options=None, **kwargs):
-        super(RemoteShell, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.rsh = rsh
         self.rcp = rcp
         self.hostname = hostname
@@ -37,7 +37,7 @@ class RemoteShell(LocalShell):
         if self.username:
             fullcmd.extend(["-l", self.username])
         fullcmd.extend([self.hostname, cmd])
-        return super(RemoteShell, self).execute(fullcmd, persist, timeout)
+        return super().execute(fullcmd, persist, timeout)
 
 
 class SecureShell(RemoteShell):
@@ -51,10 +51,10 @@ class SecureShell(RemoteShell):
             options.extend(['-i', private_key])
         if port:
             options.extend(['-p', str(port)])
-        super(SecureShell, self).__init__(rsh=rsh, rcp=rcp, options=options, **kwargs)
+        super().__init__(rsh=rsh, rcp=rcp, options=options, **kwargs)
 
 
-class ParamikoShell(object):
+class ParamikoShell:
 
     def __init__(self, username, hostname, password=None, private_key=None, port=22, timeout=60, strict_host_key_checking=True, **kwargs):
         self.username = username
@@ -103,4 +103,4 @@ class ParamikoShell(object):
 class GlobusSecureShell(SecureShell):
 
     def __init__(self, rsh='gsissh', rcp='gsiscp', **kwargs):
-        super(GlobusSecureShell, self).__init__(rsh=rsh, rcp=rcp, **kwargs)
+        super().__init__(rsh=rsh, rcp=rcp, **kwargs)

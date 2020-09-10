@@ -1,0 +1,20 @@
+# List GA4GH Tool Registry Services to connect Galaxy with.
+# 'id' is used to key API interactions and should be unique, the backend uses 'api_url'
+# to build requests. The remaining fields 'label', 'link_url', and 'doc' are used to render
+# information in the user interface.
+
+# By default only dockstore is configured.
+- id: dockstore
+  api_url: https://dockstore.org/api
+  link_url: https://dockstore.org
+  label: Dockstore
+  doc: |
+    Dockstore is an open platform used by the GA4GH for sharing Docker-based tools and workflows.
+
+# Staging variant of dockstore can be configured.
+#- id: staging_dockstore
+#  api_url: https://staging.dockstore.org/api
+#  link_url: https://staging.dockstore.org
+#  label: Staging Dockstore
+#  doc: |
+#    Staging variant of Dockstore for testing.

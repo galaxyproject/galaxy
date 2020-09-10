@@ -15,7 +15,7 @@ from tool_shed.utility_containers import utility_container_manager
 log = logging.getLogger(__name__)
 
 
-class DependencyDisplayer(object):
+class DependencyDisplayer:
 
     def __init__(self, app):
         self.app = app

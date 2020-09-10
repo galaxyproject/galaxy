@@ -1,0 +1,485 @@
+- doc: add_column_basename functions properly on absolute and relative paths
+  rules:
+    - type: add_column_basename
+      target_column: 0
+  initial:
+    data: [['/path/to/moo.txt'], ['moo.txt']]
+    sources: [1, 2]
+  final:
+    data:
+      - [/path/to/moo.txt, moo.txt]
+      - [moo.txt, moo.txt]
+- doc: add_column_regex works with simple captures by default
+  rules:
+    - type: add_column_regex
+      target_column: 0
+      expression: '(o)+'
+  initial:
+    data: [[foo], [cow]]
+    sources: [1,2]
+  final:
+    data: [[foo, oo], [cow, o]]
+- doc: add_column_regex works with replacements if supplied
+  rules:
+    - type: add_column_regex
+      target_column: 0
+      expression: '(o+)'
+      replacement: 'the os \1'
+  initial:
+    data: [[foo], [cow]]
+    sources: [1,2]
+  final:
+    data: [["foo", "the os oo"], ["cow", "the os o"]]
+- doc: add_column_regex works with multiple groups when group_count specified
+  rules:
+    - type: add_column_regex
+      target_column: 0
+      expression: '.*(o)(o)'
+      group_count: 2
+  initial:
+    data: [[foo], [boo]]
+    sources: [1,2]
+  final:
+    data: [["foo", "o", "o"], ["boo", "o", "o"]]
+- doc: add_column_substr works for keeping a fixed length prefix
+  rules:
+    - type: add_column_substr
+      target_column: 0
+      substr_type: keep_prefix
+      length: 2
+  initial:
+    data: [[foo], [cow], [ba], [d]]
+    sources: [1, 2]
+  final:
+    data: [[foo, fo], [cow, co], [ba, ba], [d, d]]
+- doc: add_column_substr works for keeping a fixed length suffix
+  rules:
+    - type: add_column_substr
+      target_column: 0
+      substr_type: keep_suffix
+      length: 2
+  initial:
+    data: [[foo], [cow], [ba], [d]]
+    sources: [1, 2]
+  final:
+    data: [[foo, oo], [cow, ow], [ba, ba], [d, d]]
+- doc: add_column_substr works for dropping a fixed length prefix
+  rules:
+    - type: add_column_substr
+      target_column: 0
+      substr_type: drop_prefix
+      length: 2
+  initial:
+    data: [[foo], [cow], [ba], [d]]
+    sources: [1, 2]
+  final:
+    data: [[foo, o], [cow, w], [ba, ""], [d, ""]]
+- doc: add_column_substr works for dropping a fixed length suffix
+  rules:
+    - type: add_column_substr
+      target_column: 0
+      substr_type: drop_suffix
+      length: 2
+  initial:
+    data: [[foo], [cow], [ba], [d]]
+    sources: [1, 2]
+  final:
+    data: [[foo, f], [cow, c], [ba, ""], [d, ""]]
+- rules:
+    - type: add_column_rownum
+      start: 1
+  initial:
+    data: [[foo], [cow], [ba], [d]]
+    sources: [1, 2, 3, 4]
+  final:
+    data: [[foo, "1"], [cow, "2"], [ba, "3"], [d, "4"]]
+- rules:
+    - type: add_column_rownum
+      start: 0
+  initial:
+    data: [[foo], [cow], [ba], [d]]
+    sources: [1, 2, 3, 4]
+  final:
+    data: [[foo, "0"], [cow, "1"], [ba, "2"], [d, "3"]]
+- rules:
+    - type: add_column_value
+      value: "moo"
+  initial:
+    data: [[foo], [cow]]
+    sources: [1, 2]
+  final:
+    data: [[foo, moo], [cow, moo]]
+- rules:
+    - type: remove_columns
+      target_columns: [0, 1]
+  initial:
+    data: [[a, b, c], [e, f, g]]
+    sources: [1, 2]
+  final:
+    data: [[c], [g]]
+- rules:
+    - type: remove_columns
+      target_columns: [2]
+  initial:
+    data: [[a, b, c], [e, f, g]]
+    sources: [1, 2]
+  final:
+    data: [[a, b], [e, f]]
+- rules:
+    - type: add_filter_regex
+      target_column: 0
+      expression: '(a+)'
+      invert: false
+  initial:
+    data: [[a, b, c], [e, f, g]]
+    sources: [1, 2]
+  final:
+    data: [[a, b, c]]
+- rules:
+    - type: add_filter_regex
+      target_column: 2
+      expression: '(c+)'
+      invert: true
+  initial:
+    data: [[a, b, c], [e, f, g]]
+    sources: [1, 2]
+  final:
+    data: [[e, f, g]]
+    sources: [2]
+- rules:
+    - type: add_filter_count
+      count: 1
+      which: first
+      invert: false
+  initial:
+    data: [[a, b, c], [e, f, g], [h, i, j]]
+    sources: [1, 2, 3]
+  final:
+    data: [[e, f, g], [h, i, j]]
+    sources: [2, 3]
+- rules:
+    - type: add_filter_count
+      count: 0
+      which: first
+      invert: false
+  initial:
+    data: [[a, b, c], [e, f, g], [h, i, j]]
+    sources: [1, 2, 3]
+  final:
+    data: [[a, b, c], [e, f, g], [h, i, j]]
+    sources: [1, 2, 3]
+- rules:
+    - type: add_filter_count
+      count: 1
+      which: last
+      invert: false
+  initial:
+    data: [[a, b, c], [e, f, g], [h, i, j]]
+    sources: [1, 2, 3]
+  final:
+    data: [[a, b, c], [e, f, g]]
+    sources: [1, 2]
+- rules:
+    - type: add_filter_count
+      count: 1
+      which: last
+      invert: true
+  initial:
+    data: [[a, b, c], [e, f, g], [h, i, j]]
+    sources: [1, 2, 3]
+  final:
+    data: [[h, i, j]]
+    sources: [3]
+- rules:
+   - type: add_filter_empty
+     target_column: 0
+     invert: false
+  initial:
+    data: [["", "b", "c"], ["a", "b", "c"]]
+    sources: [1, 2]
+  final:
+    data: [["a", "b", "c"]]
+    sources: [2]
+- rules:
+   - type: add_filter_empty
+     target_column: 0
+     invert: true
+  initial:
+    data: [["", "b", "c"], ["a", "b", "c"]]
+    sources: [moo, cow]
+  final:
+    data: [["", "b", "c"]]
+    sources: [moo]
+
+- rules:
+    - type: add_filter_matches
+      value: a
+      target_column: 0
+      invert: false
+  initial:
+    data: [[a, b, c],
+           [e, f, g],
+           [h, i, j]]
+    sources: [1, 2, 3]
+  final:
+    data: [[a, b, c]]
+    sources: [1]
+
+- rules:
+    - type: add_filter_matches
+      value: a
+      target_column: 0
+      invert: true
+  initial:
+    data: [[a, b, c],
+           [e, f, g],
+           [h, i, j]]
+    sources: [1, 2, 3]
+  final:
+    data: [[e, f, g],
+           [h, i, j]]
+    sources: [2, 3]
+
+- rules:
+    - type: add_filter_matches
+      value: p
+      target_column: 1
+      invert: false
+  initial:
+    data: [[a, b, c],
+           [e, f, g],
+           [h, i, j]]
+    sources: [1, 2, 3]
+  final:
+    data: []
+    sources: []
+
+- rules:
+    - type: add_filter_matches
+      value: a
+      target_column: 1
+      invert: false
+  initial:
+    data: [['a ', b, c],
+           [e, f, g],
+           [h, i, j]]
+    sources: [1, 2, 3]
+  final:
+    data: []
+    sources: []
+
+- rules:
+    - type: add_filter_matches
+      value: 'a '
+      target_column: 1
+      invert: false
+  initial:
+    data: [[a, b, c],
+           [e, f, g],
+           [h, i, j]]
+    sources: [1, 2, 3]
+  final:
+    data: []
+    sources: []
+
+- rules:
+    - type: add_filter_matches
+      value: p
+      target_column: 1
+      invert: true
+  initial:
+    data: [[a, b, c],
+           [e, f, g],
+           [h, i, j]]
+    sources: [1, 2, 3]
+  final:
+    data: [[a, b, c],
+           [e, f, g],
+           [h, i, j]]
+    sources: [1, 2, 3]
+
+- rules:
+    - type: add_filter_compare
+      target_column: 0
+      value: 13
+      compare_type: less_than
+  initial:
+    data: [["1", "moo"], ["10", "cow"], ["13", "rat"], ["20", "dog"], ["30", "cat"]]
+    sources: [1, 2, 3, 4, 5]
+  final:
+    data: [["1", "moo"], ["10", "cow"]]
+    sources: [1, 2]
+
+- rules:
+    - type: add_filter_compare
+      target_column: 0
+      value: 13
+      compare_type: less_than_equal
+  initial:
+    data: [["1", "moo"], ["10", "cow"], ["13", "rat"], ["20", "dog"], ["30", "cat"]]
+    sources: [1, 2, 3, 4, 5]
+  final:
+    data: [["1", "moo"], ["10", "cow"], ["13", "rat"]]
+    sources: [1, 2, 3]
+
+- rules:
+    - type: add_filter_compare
+      target_column: 0
+      value: 13
+      compare_type: greater_than
+  initial:
+    data: [["1", "moo"], ["10", "cow"], ["13", "rat"], ["20", "dog"], ["30", "cat"]]
+    sources: [1, 2, 3, 4, 5]
+  final:
+    data: [["20", "dog"], ["30", "cat"]]
+    sources: [4, 5]
+
+- rules:
+    - type: add_filter_compare
+      target_column: 0
+      value: 13
+      compare_type: greater_than_equal
+  initial:
+    data: [["1", "moo"], ["10", "cow"], ["13", "rat"], ["20", "dog"], ["30", "cat"]]
+    sources: [1, 2, 3, 4, 5]
+  final:
+    data: [["13", "rat"], ["20", "dog"], ["30", "cat"]]
+    sources: [3, 4, 5]
+
+- rules:
+    - type: sort
+      numeric: false
+      target_column: 0
+  initial:
+    data: [["moo", "cow"], ["meow", "cat"], ["bark", "dog"]]
+    sources: [1, 2, 3]
+  final:
+    data: [["bark", "dog"], ["meow", "cat"], ["moo", "cow"]]
+    sources: [3, 2, 1]
+
+- rules:
+    - type: sort
+      numeric: false
+      target_column: 1
+  initial:
+    data: [["moo", "cow"], ["meow", "cat"], ["bark", "dog"]]
+    sources: [1, 2, 3]
+  final:
+    data: [["meow", "cat"], ["moo", "cow"], ["bark", "dog"]]
+    sources: [2, 1, 3]
+
+- rules:
+    - type: sort
+      numeric: false
+      target_column: 1
+  initial:
+    data: [["moo", "cow"], ["meow", "cat"], ["bark", "Dog"]]
+    sources: [1, 2, 3]
+  final:
+    data: [["bark", "Dog"], ["meow", "cat"], ["moo", "cow"]]
+    sources: [3, 2, 1]
+
+- rules:
+    - type: swap_columns
+      target_column_0: 0
+      target_column_1: 1
+  initial:
+    data: [["moo", "cow"], ["meow", "cat"], ["bark", "Dog"]]
+    sources: [1, 2, 3]
+  final:
+    data: [["cow", "moo"], ["cat", "meow"], ["Dog", "bark"]]
+    sources: [1, 2, 3]
+
+- rules:
+    - type: split_columns
+      target_columns_0: [0]
+      target_columns_1: [1]
+  initial:
+    data: [["moo", "cow", "A"], ["meow", "cat", "B"], ["bark", "Dog", "C"]]
+    sources: [1, 2, 3]
+  final:
+    data: [["moo", "A"], ["cow", "A"], ["meow", "B"], ["cat", "B"], ["bark", "C"], ["Dog", "C"]]
+    sources: [1, 1, 2, 2, 3, 3]
+
+- rules:
+    - type: add_column_metadata
+      value: identifier0
+  initial:
+    data: [["moo"], ["meow"], ["bark"]]
+    sources: [{"identifiers": ["cow"]}, {"identifiers": ["cat"]}, {"identifiers": ["dog"]}]
+  final:
+    data: [["moo", "cow"], ["meow", "cat"], ["bark", "dog"]]
+
+- rules:
+    - type: add_column_metadata
+      value: tags
+  initial:
+    data: [["moo"], ["meow"], ["bark"]]
+    sources: [{"identifiers": ["cow"], "tags": ["farm"]}, {"identifiers": ["cat"], "tags": ["house"]}, {"identifiers": ["dog"], "tags": ["house", "firestation"]}]
+  final:
+    data: [["moo", "farm"], ["meow", "house"], ["bark", "firestation,house"]]
+
+- rules:
+    - type: add_column_group_tag_value
+      value: where
+      default_value: ''
+  initial:
+    data: [["moo"], ["meow"], ["bark"]]
+    sources: [{"identifiers": ["cow"], "tags": ["group:where:farm"]}, {"identifiers": ["cat"], "tags": ["group:where:house"]}, {"identifiers": ["dog"], "tags": ["group:where:house"]}]
+  final:
+    data: [["moo", "farm"], ["meow", "house"], ["bark", "house"]]
+
+- doc: add_column_group_tag_value uses default value
+  rules:
+    - type: add_column_group_tag_value
+      value: where
+      default_value: 'barn'
+  initial:
+    data: [["moo"], ["meow"], ["bark"]]
+    sources: [{"identifiers": ["cow"], "tags": []}, {"identifiers": ["cat"], "tags": ["group:where:house"]}, {"identifiers": ["dog"], "tags": ["group:where:firestation"]}]
+  final:
+    data: [["moo", "barn"], ["meow", "house"], ["bark", "firestation"]]
+
+- doc: add_column_group_tag_value sorts and grabs first tag value if multiple present
+  rules:
+    - type: add_column_group_tag_value
+      value: where
+      default_value: 'barn'
+  initial:
+    data: [["moo"], ["meow"], ["bark"]]
+    sources: [{"identifiers": ["cow"], "tags": []}, {"identifiers": ["cat"], "tags": ["group:where:house", "group:where:kittenpile"]}, {"identifiers": ["dog"], "tags": ["group:where:house", "group:where:firestation"]}]
+  final:
+    data: [["moo", "barn"], ["meow", "house"], ["bark", "firestation"]]
+
+- rules:
+    - type: invalid_rule_type
+  error: true
+
+- rules:
+    - type: add_filter_compare
+      target_column: 0
+      value: 13
+      compare_type: invalid_compare_type
+  error: true
+
+- rules:
+    - type: add_column_concatenate
+      target_column: 0
+  error: true
+
+- rules:
+    - type: add_column_basename
+      target_column_0: 0
+  error: true
+
+- rules:
+    - type: add_column_regex
+      target_column: 0
+      regex: '(o)+'
+  error: true
+
+- rules:
+    - type: add_column_regex
+      target_column: 0
+      expression: '(o+'
+  error: true

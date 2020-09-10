@@ -1312,9 +1312,14 @@ When this attribute is true and ``compare`` is set to ``diff``, try to decompres
 ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="delta" type="xs:integer">
+    <xs:attribute name="delta" type="xs:integer" default="10000">
       <xs:annotation>
-        <xs:documentation xml:lang="en">If ``compare`` is set to ``sim_size``, this is the number of bytes different allowed (default 10000).</xs:documentation>
+        <xs:documentation xml:lang="en">If ``compare`` is set to ``sim_size``, this is the maximum allowed absolute size difference (in bytes) between the data set that is generated in the test and the file in ``test-data/`` that is referenced by the ``file`` attribute. Default value is 10000 bytes. Can be combined with ``delta_frac``.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="delta_frac" type="xs:float">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">If ``compare`` is set to ``sim_size``, this is the maximum allowed relative size difference between the data set that is generated in the test and the file in ``test-data/`` that is referenced by the ``file`` attribute. A value of 0.1 means that the file that is generated in the test can differ by at most 10% of the file in ``test-data``. The default is not to check for  relative size difference. Can be combined with ``delta``.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -1659,7 +1664,7 @@ module.
     <xs:choice>
       <xs:element name="has_text" type="xs:anyType">
         <xs:annotation>
-          <xs:documentation><![CDATA[Asserts the specified ``text`` appears in the output (e.g. ``<has_text text="chr7">``).]]>
+          <xs:documentation><![CDATA[Asserts the specified ``text`` appears in the output (e.g. ``<has_text text="chr7">``). If the ``text`` is expected to occur a particular number of times, this value can be specified using ``n``.]]>
           </xs:documentation>
         </xs:annotation>
       </xs:element>
@@ -1677,7 +1682,7 @@ module.
       </xs:element>
       <xs:element name="has_line" type="xs:anyType">
         <xs:annotation>
-          <xs:documentation><![CDATA[Asserts a line matching the specified string (``line``) appears in the output (e.g. ``<has_line line="A full example line." />``).]]>
+          <xs:documentation><![CDATA[Asserts a line matching the specified string (``line``) appears in the output (e.g. ``<has_line line="A full example line." />``). If the ``line`` is expected to occur a particular number of times, this value can be specified using ``n``.]]>
           </xs:documentation>
         </xs:annotation>
       </xs:element>
@@ -2884,7 +2889,7 @@ Prior to Galaxy release 19.01 the stdio block has only been used for non-legacy 
         </xs:attribute>
         <xs:attribute name="strict" type="xs:boolean">
           <xs:annotation>
-            <xs:documentation xml:lang="en">This boolean forces the ``#set -e`` directive on in shell scripts - so that in a multi-part command if any part fails the job exits with a non-zero exit code. This is enabled by default for tools with ``profile>=16.04`` and disabled on legacy tools.</xs:documentation>
+            <xs:documentation xml:lang="en">This boolean forces the ``#set -e`` directive on in shell scripts - so that in a multi-part command if any part fails the job exits with a non-zero exit code. This is enabled by default for tools with ``profile>=20.09`` and disabled on legacy tools.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
@@ -3918,7 +3923,7 @@ types where the order of the columns is not set.</xs:documentation>
       <xs:annotation>
         <xs:documentation xml:lang="en">Relative path to a file produced by the
 tool in its working directory. Output's contents are set to this file's
-contents.</xs:documentation>
+contents. The behaviour when this file does not exist in the working directory is undefined; the resulting dataset could be empty or the tool execution could fail.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="hidden" type="xs:boolean" default="false">
@@ -4754,6 +4759,7 @@ to setup configuration files for use by tools.]]></xs:documentation>
   <xs:group name="ConfigFilesElement">
     <xs:choice>
       <xs:element name="inputs" type="ConfigInputs"/>
+      <xs:element name="file_sources" type="ConfigFileSources"/>
       <xs:element name="configfile" type="ConfigFile"/>
     </xs:choice>
   </xs:group>
@@ -4860,6 +4866,8 @@ A contrived example of a tool that uses this is the test tool
 
 By default this file will not contain paths for data or collection inputs. To include simple
 paths for data parameters set the ``data_style`` attribute to ``paths`` (see [inputs_as_json_with_paths.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/inputs_as_json_with_paths.xml) for an example).
+
+For tools with profile >= 20.05 a select with ``multiple="true"`` is rendered as an array which is empty if nothing is selected. For older profile versions select lists are rendered as comma separated strings or a literal ``null`` in case nothing is selected.
 ]]></xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
@@ -4880,6 +4888,30 @@ response to this directive.
         <xs:attribute name="data_style" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">Set to 'paths' to include dataset paths in the resulting file.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:complexType name="ConfigFileSources">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="name" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en"><![CDATA[
+Cheetah variable to populate the path to the inputs JSON file created in
+response to this directive.
+]]></xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="filename" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Path relative to the working directory of the tool for the file sources JSON configuration file created in response to this directive.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>

@@ -42,10 +42,10 @@ def send_local_control_task(app, task, get_response=False, kwargs=None):
     """
     if kwargs is None:
         kwargs = {}
-    log.info("Queuing %s task %s for %s." % ("sync" if get_response else "async", task, app.config.server_name))
+    log.info("Queuing {} task {} for {}.".format("sync" if get_response else "async", task, app.config.server_name))
     payload = {'task': task,
                'kwargs': kwargs}
-    routing_key = 'control.%s@%s' % (app.config.server_name, socket.gethostname())
+    routing_key = 'control.{}@{}'.format(app.config.server_name, socket.gethostname())
     control_task = ControlTask(app.queue_worker)
     return control_task.send_task(payload, routing_key, local=True, get_response=get_response)
 
@@ -70,7 +70,7 @@ def send_control_task(app, task, noop_self=False, get_response=False, routing_ke
     return control_task.send_task(payload=payload, routing_key=routing_key, get_response=get_response)
 
 
-class ControlTask(object):
+class ControlTask:
 
     def __init__(self, queue_worker):
         self.queue_worker = queue_worker
@@ -219,9 +219,9 @@ def reload_display_application(app, **kwargs):
     app.datatypes_registry.reload_display_applications(display_application_ids)
 
 
-def reload_sanitize_whitelist(app):
-    log.debug("Executing reload sanitize whitelist control task.")
-    app.config.reload_sanitize_whitelist()
+def reload_sanitize_allowlist(app):
+    log.debug("Executing reload sanitize allowlist control task.")
+    app.config.reload_sanitize_allowlist()
 
 
 def recalculate_user_disk_usage(app, **kwargs):
@@ -320,7 +320,7 @@ control_message_to_task = {
     'reload_tool_data_tables': reload_tool_data_tables,
     'reload_job_rules': reload_job_rules,
     'admin_job_lock': admin_job_lock,
-    'reload_sanitize_whitelist': reload_sanitize_whitelist,
+    'reload_sanitize_allowlist': reload_sanitize_allowlist,
     'recalculate_user_disk_usage': recalculate_user_disk_usage,
     'rebuild_toolbox_search_index': rebuild_toolbox_search_index,
     'reconfigure_watcher': reconfigure_watcher,
@@ -337,7 +337,7 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
     """
 
     def __init__(self, app, task_mapping=None):
-        super(GalaxyQueueWorker, self).__init__()
+        super().__init__()
         log.info("Initializing %s Galaxy Queue Worker on %s", app.config.server_name, util.mask_password_from_url(app.config.amqp_internal_connection))
         self.daemon = True
         self.connection = app.amqp_internal_connection_obj

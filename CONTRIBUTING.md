@@ -6,7 +6,9 @@ repository](https://github.com/galaxyproject/galaxy).
 For information on contributing more broadly to the Galaxy ecosystem and a
 deeper discussion of some of these points - please see the
 [Develop](https://galaxyproject.org/develop) section of the [Galaxy Community
-Hub](https://galaxyproject.org).
+Hub](https://galaxyproject.org) and the [Galaxy Code
+Architecture](https://training.galaxyproject.org/training-material/topics/dev/tutorials/architecture/slides.html#1) slides that are part of the [Galaxy Training
+Materials](https://training.galaxyproject.org/).
 
 ## Before you Begin
 

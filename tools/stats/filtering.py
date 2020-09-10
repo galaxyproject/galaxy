@@ -12,7 +12,8 @@ AST_NODE_TYPE_WHITELIST = [
     'Expr', 'Load', 'Str', 'Num', 'BoolOp', 'Compare', 'And', 'Eq', 'NotEq',
     'Or', 'GtE', 'LtE', 'Lt', 'Gt', 'BinOp', 'Add', 'Div', 'Sub', 'Mult', 'Mod',
     'Pow', 'LShift', 'GShift', 'BitAnd', 'BitOr', 'BitXor', 'UnaryOp', 'Invert',
-    'Not', 'NotIn', 'In', 'Is', 'IsNot', 'List', 'Index', 'Subscript',
+    'Not', 'UAdd', 'USub', 'NotIn', 'In', 'Is', 'IsNot', 'List', 'Index',
+    'Subscript',
     # Further checks
     'Name', 'Call', 'Attribute',
 ]
@@ -72,6 +73,8 @@ def check_expression(text):
     >>> check_expression("'x' in [1,2,3]")
     True
     >>> check_expression("c3=='chr1' and c5>5")
+    True
+    >>> check_expression("c3=='chr1' and c5>-5 and c5<+5")  # Unary +/-
     True
     >>> check_expression("c3=='chr1' and d5>5")  # Invalid d5 reference
     False

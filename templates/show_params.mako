@@ -69,6 +69,14 @@
                     (${job.id})
                 %endif
             </td></tr>
+            %if job.copied_from_job_id:
+            <tr><td>Copied from Job API ID:</td>
+            <td>${trans.security.encode_id( job.copied_from_job_id )}
+                %if trans.user_is_admin:
+                    (${job.copied_from_job_id})
+                %endif
+            </td></tr>
+            %endif
         %endif
         <tr><td>History API ID:</td>
         <td>${encoded_history_id}

@@ -30,7 +30,7 @@ its section) modify that file and restart Galaxy.
 """
 
 
-class ManagesIntegratedToolPanelMixin(object):
+class ManagesIntegratedToolPanelMixin:
 
     def _init_integrated_tool_panel(self, config):
         self.update_integrated_tool_panel = config.update_integrated_tool_panel
@@ -84,12 +84,12 @@ $INTEGRATED_TOOL_PANEL
                     label_id = item.id or ''
                     label_text = item.text or ''
                     label_version = item.version or ''
-                    integrated_tool_panel.append('    <label id="%s" text="%s" version="%s" />\n' % (label_id, label_text, label_version))
+                    integrated_tool_panel.append('    <label id="{}" text="{}" version="{}" />\n'.format(label_id, label_text, label_version))
                 elif item_type == panel_item_types.SECTION:
                     section_id = item.id or ''
                     section_name = item.name or ''
                     section_version = item.version or ''
-                    integrated_tool_panel.append('    <section id="%s" name="%s" version="%s">\n' % (escape(section_id), escape(section_name), section_version))
+                    integrated_tool_panel.append('    <section id="{}" name="{}" version="{}">\n'.format(escape(section_id), escape(section_name), section_version))
                     for section_key, section_item_type, section_item in item.panel_items_iter():
                         if section_item_type == panel_item_types.TOOL:
                             if section_item:
@@ -102,7 +102,7 @@ $INTEGRATED_TOOL_PANEL
                                 label_id = section_item.id or ''
                                 label_text = section_item.text or ''
                                 label_version = section_item.version or ''
-                                integrated_tool_panel.append('        <label id="%s" text="%s" version="%s" />\n' % (label_id, label_text, label_version))
+                                integrated_tool_panel.append('        <label id="{}" text="{}" version="{}" />\n'.format(label_id, label_text, label_version))
                     integrated_tool_panel.append('    </section>\n')
         tool_panel_description = '\n    '.join(l for l in INTEGRATED_TOOL_PANEL_DESCRIPTION.split("\n") if l)
         tp_string = template.substitute(INTEGRATED_TOOL_PANEL_DESCRIPTION=tool_panel_description,

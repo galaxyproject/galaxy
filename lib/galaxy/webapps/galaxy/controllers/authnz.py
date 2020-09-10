@@ -2,12 +2,15 @@
 OAuth 2.0 and OpenID Connect Authentication and Authorization Controller.
 """
 
-from __future__ import absolute_import
 
+import json
 import logging
+
+import jwt
 
 from galaxy import exceptions
 from galaxy import web
+from galaxy.util import url_get
 from galaxy.web import url_for
 from galaxy.webapps.base.controller import JSAppLauncher
 
@@ -26,7 +29,7 @@ class OIDC(JSAppLauncher):
         GET /authnz/
             returns a list of third-party identities associated with the user.
 
-        :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
+        :type  trans: galaxy.webapps.base.webapp.GalaxyWebTransaction
         :param trans: Galaxy web transaction.
 
         :param kwargs: empty dict
@@ -36,24 +39,28 @@ class OIDC(JSAppLauncher):
         """
         rtv = []
         for authnz in trans.user.social_auth:
-            rtv.append({'id': trans.app.security.encode_id(authnz.id), 'provider': authnz.provider})
+            rtv.append({'id': trans.app.security.encode_id(authnz.id), 'provider': authnz.provider, 'email': authnz.uid})
+        # Add cilogon and custos identities
+        for token in trans.user.custos_auth:
+            userinfo = jwt.decode(token.id_token, verify=False)
+            rtv.append({'id': trans.app.security.encode_id(token.id), 'provider': token.provider, 'email': userinfo['email']})
         return rtv
 
     @web.json
     @web.expose
-    def login(self, trans, provider):
+    def login(self, trans, provider, idphint=None):
         if not trans.app.config.enable_oidc:
             msg = "Login to Galaxy using third-party identities is not enabled on this Galaxy instance."
             log.debug(msg)
             return trans.show_error_message(msg)
-        success, message, redirect_uri = trans.app.authnz_manager.authenticate(provider, trans)
+        success, message, redirect_uri = trans.app.authnz_manager.authenticate(provider, trans, idphint=idphint)
         if success:
             return {"redirect_uri": redirect_uri}
         else:
             raise exceptions.AuthenticationFailed(message)
 
     @web.expose
-    def callback(self, trans, provider, **kwargs):
+    def callback(self, trans, provider, idphint=None, **kwargs):
         user = trans.user.username if trans.user is not None else 'anonymous'
         if not bool(kwargs):
             log.error("OIDC callback received no data for provider `{}` and user `{}`".format(provider, user))
@@ -68,11 +75,15 @@ class OIDC(JSAppLauncher):
             return trans.show_error_message('Failed to handle authentication callback from {}. '
                                             'Please try again, and if the problem persists, contact '
                                             'the Galaxy instance admin'.format(provider))
-        success, message, (redirect_url, user) = trans.app.authnz_manager.callback(provider,
-                                                                                   kwargs['state'],
-                                                                                   kwargs['code'],
-                                                                                   trans,
-                                                                                   login_redirect_url=url_for('/'))
+        try:
+            success, message, (redirect_url, user) = trans.app.authnz_manager.callback(provider,
+                                                                                kwargs.get('state', ' '),
+                                                                                kwargs['code'],
+                                                                                trans,
+                                                                                login_redirect_url=url_for('/'),
+                                                                                idphint=idphint)
+        except exceptions.AuthenticationFailed as e:
+            return trans.response.send_redirect(trans.request.base + url_for('/') + 'root/login?message=' + (e.message or "Duplicate Email"))
         if success is False:
             return trans.show_error_message(message)
         user = user if user is not None else trans.user
@@ -116,3 +127,11 @@ class OIDC(JSAppLauncher):
         idp_provider = trans.get_cookie(name=PROVIDER_COOKIE_NAME)
         if idp_provider:
             return trans.response.send_redirect(url_for(controller='authnz', action='logout', provider=idp_provider))
+
+    @web.expose
+    @web.json
+    def get_cilogon_idps(self, trans, **kwargs):
+        try:
+            return json.loads(url_get('https://cilogon.org/idplist/', params=dict(kwargs)))
+        except Exception as e:
+            raise Exception("Invalid server response. %s." % str(e))

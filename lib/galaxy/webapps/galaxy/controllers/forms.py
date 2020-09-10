@@ -2,7 +2,6 @@ import copy
 import logging
 import re
 
-import six
 from markupsafe import escape
 
 from galaxy import model, util
@@ -136,19 +135,19 @@ class Forms(BaseUIController):
                     row = line.split(',')
                     if len(row) >= 6:
                         prefix = 'fields_%i|' % index
-                        payload['%s%s' % (prefix, 'name')] = '%i_imported_field' % (index + 1)
-                        payload['%s%s' % (prefix, 'label')] = row[0]
-                        payload['%s%s' % (prefix, 'helptext')] = row[1]
-                        payload['%s%s' % (prefix, 'type')] = row[2]
-                        payload['%s%s' % (prefix, 'default')] = row[3]
-                        payload['%s%s' % (prefix, 'selectlist')] = row[4].split(',')
-                        payload['%s%s' % (prefix, 'required')] = row[5].lower() == 'true'
+                        payload['{}{}'.format(prefix, 'name')] = '%i_imported_field' % (index + 1)
+                        payload['{}{}'.format(prefix, 'label')] = row[0]
+                        payload['{}{}'.format(prefix, 'helptext')] = row[1]
+                        payload['{}{}'.format(prefix, 'type')] = row[2]
+                        payload['{}{}'.format(prefix, 'default')] = row[3]
+                        payload['{}{}'.format(prefix, 'selectlist')] = row[4].split(',')
+                        payload['{}{}'.format(prefix, 'required')] = row[5].lower() == 'true'
                     index = index + 1
             new_form, message = self.save_form_definition(trans, None, payload)
             if new_form is None:
                 return self.message_exception(trans, message)
             imported = (' with %i imported fields' % index) if index > 0 else ''
-            message = 'The form \'%s\' has been created%s.' % (payload.get('name'), imported)
+            message = 'The form \'{}\' has been created{}.'.format(payload.get('name'), imported)
             return {'message': util.sanitize_text(message)}
 
     @web.legacy_expose_api
@@ -246,12 +245,12 @@ class Forms(BaseUIController):
         index = 0
         while True:
             prefix = 'fields_%i|' % index
-            if '%s%s' % (prefix, 'label') in payload:
+            if '{}{}'.format(prefix, 'label') in payload:
                 field_attributes = ['name', 'label', 'helptext', 'required', 'type', 'selectlist', 'default']
-                field_dict = {attr: payload.get('%s%s' % (prefix, attr)) for attr in field_attributes}
+                field_dict = {attr: payload.get('{}{}'.format(prefix, attr)) for attr in field_attributes}
                 field_dict['visible'] = True
                 field_dict['required'] = field_dict['required'] == 'true'
-                if isinstance(field_dict['selectlist'], six.string_types):
+                if isinstance(field_dict['selectlist'], str):
                     field_dict['selectlist'] = field_dict['selectlist'].split(',')
                 else:
                     field_dict['selectlist'] = []

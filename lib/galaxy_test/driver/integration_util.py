@@ -11,7 +11,7 @@ import pytest
 
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.util.commands import which
-from .api import UsesApiTestCaseMixin
+from galaxy_test.base.api import UsesApiTestCaseMixin
 from .driver_util import GalaxyTestDriver
 
 NO_APP_MESSAGE = "test_case._app called though no Galaxy has been configured."
@@ -104,7 +104,7 @@ class IntegrationInstance(UsesApiTestCaseMixin):
         server_wrapper = self._test_driver.server_wrappers[0]
         host = server_wrapper.host
         port = server_wrapper.port
-        self.url = "http://%s:%s" % (host, port)
+        self.url = "http://{}:{}".format(host, port)
         self._setup_interactor()
 
     def restart(self, handle_reconfig=None):

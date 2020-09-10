@@ -16,8 +16,6 @@
 # code here, stripping out uneeded functionality.
 
 # All top level imports from each package moved here and organized
-from __future__ import absolute_import
-from __future__ import print_function
 
 import atexit
 import errno
@@ -135,12 +133,12 @@ class BadCommand(Exception):
     message = property(_get_message, _set_message)
 
 
-class NoDefault(object):
+class NoDefault:
     pass
 
 
 # run and invoke methods moved below ServeCommand
-class Command(object):
+class Command:
 
     def __init__(self, name):
         self.command_name = name
@@ -238,7 +236,7 @@ class Command(object):
             usage = ' ' + self.usage
         else:
             usage = ''
-        self.parser.usage = "%%prog [options]%s\n%s" % (
+        self.parser.usage = "%prog [options]{}\n{}".format(
             usage, self.summary)
         self.parser.prog = self._prog_name()
         if self.description:
@@ -248,7 +246,7 @@ class Command(object):
         self.options, self.args = self.parser.parse_args(args)
 
     def _prog_name(self):
-        return '%s %s' % (os.path.basename(sys.argv[0]), self.command_name)
+        return '{} {}'.format(os.path.basename(sys.argv[0]), self.command_name)
 
     ########################################
     # Utility methods
@@ -380,7 +378,7 @@ class NotFoundCommand(Command):
         print('Known commands:')
         longest = max([len(n) for n, c in commands])
         for name, command in commands:
-            print('  %s  %s' % (self.pad(name, length=longest),
+            print('  {}  {}'.format(self.pad(name, length=longest),
                                 command.load().summary))
         return 2
 
@@ -597,7 +595,7 @@ class ServeCommand(Command):
         if self.options.log_file:
             try:
                 writeable_log_file = open(self.options.log_file, 'a')
-            except IOError as ioe:
+            except OSError as ioe:
                 msg = 'Error: Unable to write to log file: %s' % ioe
                 raise BadCommand(msg)
             writeable_log_file.close()
@@ -606,7 +604,7 @@ class ServeCommand(Command):
         if self.options.pid_file:
             try:
                 writeable_pid_file = open(self.options.pid_file, 'a')
-            except IOError as ioe:
+            except OSError as ioe:
                 msg = 'Error: Unable to write to pid file: %s' % ioe
                 raise BadCommand(msg)
             writeable_pid_file.close()
@@ -666,7 +664,7 @@ class ServeCommand(Command):
             except AttributeError as e:
                 # Capturing bad error response from paste
                 if str(e) == "'WSGIThreadPoolServer' object has no attribute 'thread_pool'":
-                    raise socket.error(98, 'Address already in use')
+                    raise OSError(98, 'Address already in use')
                 else:
                     raise AttributeError(e)
 
@@ -724,7 +722,7 @@ class ServeCommand(Command):
     def record_pid(self, pid_file):
         pid = os.getpid()
         if self.verbose > 1:
-            print('Writing PID %s to %s' % (pid, pid_file))
+            print('Writing PID {} to {}'.format(pid, pid_file))
         f = open(pid_file, 'w')
         f.write(str(pid))
         f.close()
@@ -744,7 +742,7 @@ class ServeCommand(Command):
             print("PID in %s is not valid (deleting)" % pid_file)
             try:
                 os.unlink(pid_file)
-            except (OSError, IOError) as e:
+            except OSError as e:
                 print("Could not delete: %s" % e)
                 return 2
             return 1
@@ -771,7 +769,7 @@ class ServeCommand(Command):
             return 1
         pid = live_pidfile(pid_file)
         if not pid:
-            print('PID %s in %s is not running' % (pid, pid_file))
+            print('PID {} in {} is not running'.format(pid, pid_file))
             return 1
         print('Server running in PID %s' % pid)
         return 0
@@ -808,7 +806,7 @@ class ServeCommand(Command):
                 if proc is not None and hasattr(os, 'kill'):
                     try:
                         os.kill(proc.pid, signal.SIGTERM)
-                    except (OSError, IOError):
+                    except OSError:
                         pass
 
             if reloader:
@@ -847,7 +845,7 @@ class ServeCommand(Command):
                 gid = entry.pw_gid
             uid = entry.pw_uid
         if self.verbose > 0:
-            print('Changing user to %s:%s (%s:%s)' % (
+            print('Changing user to {}:{} ({}:{})'.format(
                 user, group or '(unknown)', uid, gid))
         if hasattr(os, 'initgroups'):
             os.initgroups(user, gid)
@@ -860,7 +858,7 @@ class ServeCommand(Command):
             os.setuid(uid)
 
 
-class LazyWriter(object):
+class LazyWriter:
 
     """
     File-like object that opens a file lazily when it is first written
@@ -921,7 +919,7 @@ def read_pidfile(filename):
             content = f.read()
             f.close()
             return int(content.strip())
-        except (ValueError, IOError):
+        except (ValueError, OSError):
             return None
     else:
         return None
@@ -944,7 +942,7 @@ def _remove_pid_file(written_pid, filename, verbosity):
         pass
     else:
         if pid_in_file != current_pid:
-            print("PID file %s contains %s, not expected PID %s" % (
+            print("PID file {} contains {}, not expected PID {}".format(
                 filename, pid_in_file, current_pid))
             return
     if verbosity > 0:
@@ -961,7 +959,7 @@ def _remove_pid_file(written_pid, filename, verbosity):
         f.write('')
         f.close()
     except OSError as e:
-        print('Stale PID left in file: %s (%e)' % (filename, e))
+        print('Stale PID left in file: {} ({:e})'.format(filename, e))
     else:
         print('Stale PID removed')
 
@@ -987,7 +985,7 @@ def _cleanup_ports(bound_addresses, maxtries=30, sleeptime=2):
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             try:
                 sock.connect(bound_address)
-            except socket.error as e:
+            except OSError as e:
                 if e.errno != errno.ECONNREFUSED:
                     raise
                 break

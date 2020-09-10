@@ -13,29 +13,38 @@ GALAXY_FLAVORED_MARKDOWN_CONTAINER_LINE_PATTERN = re.compile(
     r"```\s*galaxy\s*"
 )
 VALID_CONTAINER_END_PATTERN = re.compile(r"^```\s*$")
-GALAXY_FLAVORED_MARKDOWN_CONTAINERS = [
-    "history_dataset_display",
-    "history_dataset_embedded",
-    "history_dataset_collection_display",
-    "history_dataset_as_image",
-    "history_dataset_peek",
-    "history_dataset_info",
-    "workflow_display",
-    "job_metrics",
-    "job_parameters",
-    "tool_stderr",
-    "tool_stdout",
-]
-INVOCATION_SECTIONS = [
-    "invocation_inputs",
-    "invocation_outputs",
-]
-ALL_CONTAINER_TYPES = GALAXY_FLAVORED_MARKDOWN_CONTAINERS + INVOCATION_SECTIONS
-GALAXY_FLAVORED_MARKDOWN_CONTAINER_REGEX = "(%s)" % "|".join(ALL_CONTAINER_TYPES)
+VALID_ARGUMENTS = {
+    "history_dataset_display": ["input", "output", "history_dataset_id"],
+    "history_dataset_embedded": ["input", "output", "history_dataset_id"],
+    "history_dataset_as_image": ["input", "output", "history_dataset_id", "path"],
+    "history_dataset_peek": ["input", "output", "history_dataset_id"],
+    "history_dataset_info": ["input", "output", "history_dataset_id"],
+    "history_dataset_link": ["input", "output", "history_dataset_id", "path", "label"],
+    "history_dataset_index": ["input", "output", "history_dataset_id", "path"],
+    "history_dataset_name": ["input", "output", "history_dataset_id"],
+    "history_dataset_type": ["input", "output", "history_dataset_id"],
+    "history_dataset_collection_display": ["input", "output", "history_dataset_collection_id"],
+    "workflow_display": ["workflow_id"],
+    "job_metrics": ["step", "job_id"],
+    "job_parameters": ["step", "job_id"],
+    "tool_stderr": ["step", "job_id"],
+    "tool_stdout": ["step", "job_id"],
+    "generate_galaxy_version": [],
+    "generate_time": [],
+    "invocation_time": ["invocation_id"],
+    # Invocation Flavored Markdown
+    "invocation_outputs": [],
+    "invocation_inputs": [],
+}
+GALAXY_FLAVORED_MARKDOWN_CONTAINERS = list(VALID_ARGUMENTS.keys())
+GALAXY_FLAVORED_MARKDOWN_CONTAINER_REGEX = r'(?P<container>%s)' % "|".join(GALAXY_FLAVORED_MARKDOWN_CONTAINERS)
 
 ARG_VAL_REGEX = r'''[\w_\-]+|\"[^\"]+\"|\'[^\']+\''''
 FUNCTION_ARG = r'\s*\w+\s*=\s*(?:%s)\s*' % ARG_VAL_REGEX
-FUNCTION_CALL_LINE_TEMPLATE = r'\s*%s\s*\((?:' + FUNCTION_ARG + r')?\)\s*'
+# embed commas between arguments
+FUNCTION_MULTIPLE_ARGS = r'(?P<firstargcall>{})(?P<restargcalls>(?:,{})*)'.format(FUNCTION_ARG, FUNCTION_ARG)
+FUNCTION_MULTIPLE_ARGS_PATTERN = re.compile(FUNCTION_MULTIPLE_ARGS)
+FUNCTION_CALL_LINE_TEMPLATE = r'\s*%s\s*\((?:' + FUNCTION_MULTIPLE_ARGS + r')?\)\s*'
 GALAXY_MARKDOWN_FUNCTION_CALL_LINE = re.compile(FUNCTION_CALL_LINE_TEMPLATE % GALAXY_FLAVORED_MARKDOWN_CONTAINER_REGEX)
 WHITE_SPACE_ONLY_PATTERN = re.compile(r"^[\s]+$")
 
@@ -75,10 +84,32 @@ def validate_galaxy_markdown(galaxy_markdown, internal=True):
             expecting_container_close_for = line
             continue
         elif fenced and line and expecting_container_close_for:
-            if GALAXY_MARKDOWN_FUNCTION_CALL_LINE.match(line):
+            func_call_match = GALAXY_MARKDOWN_FUNCTION_CALL_LINE.match(line)
+            if func_call_match:
                 function_calls += 1
                 if function_calls > 1:
                     invalid_line("Only one Galaxy directive is allowed per fenced Galaxy block (```galaxy)")
+                container = func_call_match.group("container")
+                valid_args = VALID_ARGUMENTS[container]
+                first_arg_call = func_call_match.group("firstargcall")
+
+                def _validate_arg(arg_str):
+                    if arg_str is not None:
+                        arg_name = arg_str.split("=", 1)[0].strip()
+                        if arg_name not in valid_args:
+                            invalid_line("Invalid argument to Galaxy directive [{argument}]", argument=arg_name)
+
+                _validate_arg(first_arg_call)
+                rest = func_call_match.group("restargcalls")
+                while rest:
+                    rest = rest.strip().split(",", 1)[1]
+                    arg_match = FUNCTION_MULTIPLE_ARGS_PATTERN.match(rest)
+                    if not arg_match:
+                        break
+                    first_arg_call = arg_match.group("firstargcall")
+                    _validate_arg(first_arg_call)
+                    rest = arg_match.group("restargcalls")
+
                 continue
             else:
                 invalid_line("Invalid embedded Galaxy markup line [{line}]", line=line)

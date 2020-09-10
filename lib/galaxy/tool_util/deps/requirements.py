@@ -1,6 +1,5 @@
 import copy
 
-import six
 
 from galaxy.util import (
     asbool,
@@ -13,8 +12,7 @@ DEFAULT_REQUIREMENT_TYPE = "package"
 DEFAULT_REQUIREMENT_VERSION = None
 
 
-@six.python_2_unicode_compatible
-class ToolRequirement(object):
+class ToolRequirement:
     """
     Represents an external requirement that must be available for the tool to
     run (for example, a program, package, or library).  Requirements can
@@ -52,12 +50,12 @@ class ToolRequirement(object):
         return hash((self.name, self.type, self.version, frozenset(self.specs)))
 
     def __str__(self):
-        return "ToolRequirement[%s,version=%s,type=%s,specs=%s]" % (self.name, self.version, self.type, self.specs)
+        return "ToolRequirement[{},version={},type={},specs={}]".format(self.name, self.version, self.type, self.specs)
 
     __repr__ = __str__
 
 
-class RequirementSpecification(object):
+class RequirementSpecification:
     """Refine a requirement using a URI."""
 
     def __init__(self, uri, version=None):
@@ -91,7 +89,7 @@ class RequirementSpecification(object):
         return hash((self.uri, self.version))
 
 
-class ToolRequirements(object):
+class ToolRequirements:
     """
     Represents all requirements (packages, env vars) needed to run a tool.
     """
@@ -131,8 +129,7 @@ class ToolRequirements(object):
         return not self.__eq__(other)
 
     def __iter__(self):
-        for r in self.tool_requirements:
-            yield r
+        yield from self.tool_requirements
 
     def __getitem__(self, ii):
         return list(self.tool_requirements)[ii]
@@ -156,8 +153,7 @@ DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES = False
 DEFAULT_CONTAINER_SHELL = "/bin/sh"  # Galaxy assumes bash, but containers are usually thinner.
 
 
-@six.python_2_unicode_compatible
-class ContainerDescription(object):
+class ContainerDescription:
 
     def __init__(
         self,
@@ -166,7 +162,8 @@ class ContainerDescription(object):
         resolve_dependencies=DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES,
         shell=DEFAULT_CONTAINER_SHELL,
     ):
-        self.identifier = identifier
+        # Force to lowercase because container image names must be lowercase
+        self.identifier = identifier.lower() if identifier else None
         self.type = type
         self.resolve_dependencies = resolve_dependencies
         self.shell = shell
@@ -194,7 +191,7 @@ class ContainerDescription(object):
         )
 
     def __str__(self):
-        return "ContainerDescription[identifier=%s,type=%s]" % (self.identifier, self.type)
+        return "ContainerDescription[identifier={},type={}]".format(self.identifier, self.type)
 
 
 def parse_requirements_from_dict(root_dict):
@@ -206,11 +203,11 @@ def parse_requirements_from_dict(root_dict):
 def parse_requirements_from_xml(xml_root):
     """
 
-    >>> from xml.etree import ElementTree
-    >>> def load_requirements( contents ):
+    >>> from galaxy.util import parse_xml_string
+    >>> def load_requirements(contents):
     ...     contents_document = '''<tool><requirements>%s</requirements></tool>'''
-    ...     root = ElementTree.fromstring( contents_document % contents )
-    ...     return parse_requirements_from_xml( root )
+    ...     root = parse_xml_string(contents_document % contents)
+    ...     return parse_requirements_from_xml(root)
     >>> reqs, containers = load_requirements('''<requirement>bwa</requirement>''')
     >>> reqs[0].name
     'bwa'

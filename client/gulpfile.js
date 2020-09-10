@@ -27,23 +27,21 @@ const paths = {
         // not be necessary.
         backbone: ["backbone.js", "backbone.js"],
         "bootstrap-tour": ["build/js/bootstrap-tour.js", "bootstrap-tour.js"],
-        "bibtex-parse-js": ["bibtexParse.js", "bibtexParse.js"],
         jquery: ["dist/jquery.js", "jquery/jquery.js"],
         "jquery.complexify": ["jquery.complexify.js", "jquery/jquery.complexify.js"],
         "jquery.cookie": ["jquery.cookie.js", "jquery/jquery.cookie.js"],
         "jquery-migrate": ["dist/jquery-migrate.js", "jquery/jquery.migrate.js"],
         "jquery-mousewheel": ["jquery.mousewheel.js", "jquery/jquery.mousewheel.js"],
-        "raven-js": ["dist/raven.js", "raven.js"],
         requirejs: ["require.js", "require.js"],
         underscore: ["underscore.js", "underscore.js"],
     },
-    libs: ["galaxy/scripts/libs/**/*.js"],
+    libs: ["src/libs/**/*.js"],
 };
 
 function stageLibs(callback) {
     Object.keys(paths.lib_locs).forEach((lib) => {
         var p1 = path.resolve(path.join(paths.node_modules, lib, paths.lib_locs[lib][0]));
-        var p2 = path.resolve(path.join("galaxy", "scripts", "libs", paths.lib_locs[lib][1]));
+        var p2 = path.resolve(path.join("src", "libs", paths.lib_locs[lib][1]));
         if (fs.existsSync(p1)) {
             del.sync(p2);
             fs.createReadStream(p1).pipe(fs.createWriteStream(p2));

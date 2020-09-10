@@ -25,7 +25,7 @@ class GroupsController(BaseAPIController):
     """RESTful controller for interactions with groups in the Tool Shed."""
 
     def __init__(self, app):
-        super(GroupsController, self).__init__(app)
+        super().__init__(app)
         self.group_manager = groups.GroupManager()
 
     def __get_value_mapper(self, trans):

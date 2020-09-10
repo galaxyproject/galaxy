@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import logging
 import os
 from collections import OrderedDict
@@ -20,11 +18,11 @@ class OrderedLoader(SafeLoader):
     # mocking __init__ in a unit test.
     def __init__(self, stream):
         self._root = os.path.split(stream.name)[0]
-        super(OrderedLoader, self).__init__(stream)
+        super().__init__(stream)
 
     def include(self, node):
         filename = os.path.join(self._root, self.construct_scalar(node))
-        with open(filename, 'r') as f:
+        with open(filename) as f:
             return yaml.load(f, OrderedLoader)
 
 

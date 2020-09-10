@@ -96,7 +96,7 @@ def check_output(stdio_regexes, stdio_exit_codes, stdout, stderr, tool_exit_code
                             'code_desc': code_desc,
                             'error_level': stdio_exit_code.error_level,
                         }
-                        log.info("Job %s: %s" % (job_id_tag, reason))
+                        log.info("Job {}: {}".format(job_id_tag, reason))
                         job_messages.append(reason)
                         max_error_level = max(max_error_level,
                                               stdio_exit_code.error_level)
@@ -148,7 +148,7 @@ def check_output(stdio_regexes, stdio_exit_codes, stdout, stderr, tool_exit_code
 
         if state != DETECTED_JOB_STATE.OK:
             peak = stderr[0:ERROR_PEAK] if stderr else ""
-            log.debug("job failed, detected state %s, standard error is - [%s]" % (state, peak))
+            log.debug("job failed, detected state {}, standard error is - [{}]".format(state, peak))
     except Exception:
         log.exception("Job state check encountered unexpected exception; assuming execution successful")
 

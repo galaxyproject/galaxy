@@ -236,7 +236,8 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
         contained_ids = id_map[self.contained_class_type_name]
         id_map[self.contained_class_type_name] = self._contained_id_map(contained_ids)
         subcontainer_ids = id_map[self.subcontainer_class_type_name]
-        id_map[self.subcontainer_class_type_name] = self._subcontainer_id_map(subcontainer_ids)
+        serialization_params = kwargs.get('serialization_params', None)
+        id_map[self.subcontainer_class_type_name] = self._subcontainer_id_map(subcontainer_ids, serialization_params=serialization_params)
 
         # cycle back over the union query to create an ordered list of the objects returned in queries 2 & 3 above
         contents = []
@@ -396,9 +397,9 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
             .options(eagerload('dataset.actions'))
             .options(eagerload('tags'))
             .options(eagerload('annotations')))
-        return dict((row.id, row) for row in query.all())
+        return {row.id: row for row in query.all()}
 
-    def _subcontainer_id_map(self, id_list):
+    def _subcontainer_id_map(self, id_list, serialization_params=None):
         """Return an id to model map of all subcontainer-type models in the id_list."""
         if not id_list:
             return []
@@ -408,7 +409,15 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
             .options(eagerload('collection'))
             .options(eagerload('tags'))
             .options(eagerload('annotations')))
-        return dict((row.id, row) for row in query.all())
+
+        # This will conditionally join a potentially costly job_state summary
+        # All the paranoia if-checking makes me wonder if serialization_params
+        # should really be a property of the manager class instance
+        if serialization_params and serialization_params['keys']:
+            if 'job_state_summary' in serialization_params['keys']:
+                query = query.options(eagerload('job_state_summary'))
+
+        return {row.id: row for row in query.all()}
 
 
 class HistoryContentsSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
@@ -418,7 +427,7 @@ class HistoryContentsSerializer(base.ModelSerializer, deletable.PurgableSerializ
     model_manager_class = HistoryContentsManager
 
     def __init__(self, app, **kwargs):
-        super(HistoryContentsSerializer, self).__init__(app, **kwargs)
+        super().__init__(app, **kwargs)
 
         self.default_view = 'summary'
         self.add_view('summary', [
@@ -440,7 +449,7 @@ class HistoryContentsSerializer(base.ModelSerializer, deletable.PurgableSerializ
 
     # assumes: outgoing to json.dumps and sanitized
     def add_serializers(self):
-        super(HistoryContentsSerializer, self).add_serializers()
+        super().add_serializers()
         deletable.PurgableSerializerMixin.add_serializers(self)
 
         self.serializers.update({
@@ -514,7 +523,7 @@ class HistoryContentsFilters(base.ModelFilterParser,
         column_filter = get_filter(attr, op, val)
         if column_filter is not None:
             return self.parsed_filter(filter_type='orm', filter=column_filter)
-        return super(HistoryContentsFilters, self)._parse_orm_filter(attr, op, val)
+        return super()._parse_orm_filter(attr, op, val)
 
     def decode_type_id(self, type_id):
         TYPE_ID_SEP = '-'
@@ -528,7 +537,7 @@ class HistoryContentsFilters(base.ModelFilterParser,
         return [self.decode_type_id(type_id) for type_id in type_id_list_string.split(sep)]
 
     def _add_parsers(self):
-        super(HistoryContentsFilters, self)._add_parsers()
+        super()._add_parsers()
         annotatable.AnnotatableFilterMixin._add_parsers(self)
         deletable.PurgableFiltersMixin._add_parsers(self)
         taggable.TaggableFilterMixin._add_parsers(self)

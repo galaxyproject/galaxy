@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 VALID_JOB_HASH_STRATEGIES = ["job", "user", "history", "workflow_invocation"]
 
 
-class RuleHelper(object):
+class RuleHelper:
     """ Utility to allow job rules to interface cleanly with the rest of
     Galaxy and shield them from low-level details of models, metrics, etc....
 
@@ -187,7 +187,7 @@ class RuleHelper(object):
         invocation for jobs outside of workflows.
         """
         if hash_by not in VALID_JOB_HASH_STRATEGIES:
-            message = "Do not know how to hash jobs by %s, must be one of %s" % (hash_by, VALID_JOB_HASH_STRATEGIES)
+            message = "Do not know how to hash jobs by {}, must be one of {}".format(hash_by, VALID_JOB_HASH_STRATEGIES)
             raise Exception(message)
 
         if hash_by == "workflow_invocation":

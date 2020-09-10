@@ -82,7 +82,7 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
             params (limit, offset, etc.) are also applicable here.
         """
         # TODO: other columnar formats: csv, etc.
-        super(ColumnarDataProvider, self).__init__(source, **kwargs)
+        super().__init__(source, **kwargs)
 
         # IMPLICIT: if no indeces, column_count, or column_types passed: return all columns
         self.selected_column_indeces = indeces
@@ -250,7 +250,7 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
         }
 
     def filter(self, line):
-        line = super(ColumnarDataProvider, self).filter(line)
+        line = super().filter(line)
         if line is None:
             return line
         columns = self.parse_columns_from_line(line)
@@ -347,11 +347,11 @@ class DictDataProvider(ColumnarDataProvider):
         :type column_names:
         """
         # TODO: allow passing in a map instead of name->index { 'name1': index1, ... }
-        super(DictDataProvider, self).__init__(source, **kwargs)
+        super().__init__(source, **kwargs)
         self.column_names = column_names or []
 
     def __iter__(self):
-        parent_gen = super(DictDataProvider, self).__iter__()
+        parent_gen = super().__iter__()
         for column_values in parent_gen:
             map = dict(zip(self.column_names, column_values))
             yield map

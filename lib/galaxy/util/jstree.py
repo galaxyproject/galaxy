@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import copy
 import os
 from collections import namedtuple
@@ -59,7 +57,7 @@ class Node(dictobj.DictionaryObject):
       >>> assert node._items == {'text': 'a', 'id': 5, 'state': dictobj.DictionaryObject({'opened': True}), 'children': dictobj.MutableDictionaryObject({}), 'li_attr': dictobj.DictionaryObject({'id': 5}), 'icon': 'folder'}
       >>> assert node.jsonData() == {'text': 'a', 'state': {'opened': True}, 'id': 5, 'li_attr': {'id': 5}, 'icon': 'folder'}
     """
-    super(Node, self).__init__()
+    super().__init__()
 
     children = kwargs.get('children', {})
     if len([key for key in children if not isinstance(children[key], Node)]):
@@ -112,7 +110,7 @@ class JSTree(dictobj.DictionaryObject):
       raise TypeError(
         "All paths must be instances of '%s'" % Path.__name__)
 
-    super(JSTree, self).__init__()
+    super().__init__()
 
     root = Node('', None, **kwargs)
     for path in sorted(paths):

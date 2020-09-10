@@ -3,7 +3,6 @@ Migration script to create the repository_role_association table, insert name-sp
 repository administrative roles into the role table and associate each repository and
 owner with the appropriate name-spaced role.
 """
-from __future__ import print_function
 
 import datetime
 import logging
@@ -35,7 +34,7 @@ RepositoryRoleAssociation_table = Table("repository_role_association", metadata,
 
 def nextval(migrate_engine, table, col='id'):
     if migrate_engine.name in ['postgresql', 'postgres']:
-        return "nextval('%s_%s_seq')" % (table, col)
+        return "nextval('{}_{}_seq')".format(table, col)
     elif migrate_engine.name in ['mysql', 'sqlite']:
         return "null"
     else:
@@ -80,7 +79,7 @@ def upgrade(migrate_engine):
         user_id = row[2]
         username = row[3]
         repository_ids.append(int(repository_id))
-        role_names.append('%s_%s_admin' % (str(name), str(username)))
+        role_names.append('{}_{}_admin'.format(str(name), str(username)))
         user_ids.append(int(user_id))
     # Insert a new record into the role table for each new role.
     for tup in zip(repository_ids, user_ids, role_names):
@@ -96,7 +95,7 @@ def upgrade(migrate_engine):
         cmd += ");"
         migrate_engine.execute(cmd)
         # Get the id of the new role.
-        cmd = "SELECT id FROM role WHERE name = '%s' and type = '%s';" % (role_name, ROLE_TYPE)
+        cmd = "SELECT id FROM role WHERE name = '{}' and type = '{}';".format(role_name, ROLE_TYPE)
         row = migrate_engine.execute(cmd).fetchone()
         if row:
             role_id = row[0]
@@ -133,7 +132,7 @@ def downgrade(migrate_engine):
     for row in migrate_engine.execute(cmd):
         name = row[0]
         username = row[1]
-        role_names.append('%s_%s_admin' % (str(name), str(username)))
+        role_names.append('{}_{}_admin'.format(str(name), str(username)))
     # Delete each role as well as all users associated with each role.
     for role_name in role_names:
         # Select the id of the record associated with the current role_name from the role table.

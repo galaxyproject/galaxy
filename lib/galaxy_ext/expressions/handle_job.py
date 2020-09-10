@@ -30,7 +30,7 @@ def run(environment_path=None):
 
     if environment_path is None:
         environment_path = os.environ.get("GALAXY_EXPRESSION_INPUTS")
-    with open(environment_path, "r") as f:
+    with open(environment_path) as f:
         raw_inputs = json.load(f)
 
     outputs = raw_inputs["outputs"]

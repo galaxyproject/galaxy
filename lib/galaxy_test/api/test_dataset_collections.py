@@ -3,6 +3,7 @@ import tarfile
 
 from six import BytesIO
 
+from galaxy_test.base.api_asserts import assert_object_id_error
 from galaxy_test.base.populators import DatasetCollectionPopulator, DatasetPopulator, skip_if_github_down
 from ._framework import ApiTestCase
 
@@ -10,7 +11,7 @@ from ._framework import ApiTestCase
 class DatasetCollectionApiTestCase(ApiTestCase):
 
     def setUp(self):
-        super(DatasetCollectionApiTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
         self.history_id = self.dataset_populator.new_history()
@@ -104,7 +105,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         assert len(namelist) == 3, "Expected 3 elements in [%s]" % namelist
         collection_name = dataset_collection['name']
         for element, zip_path in zip(returned_dce, namelist):
-            assert "%s/%s.%s" % (collection_name, element['element_identifier'], element['object']['file_ext']) == zip_path
+            assert "{}/{}.{}".format(collection_name, element['element_identifier'], element['object']['file_ext']) == zip_path
 
     def test_pair_download(self):
         fetch_response = self.dataset_collection_populator.create_pair_in_history(self.history_id, direct_upload=True).json()
@@ -119,7 +120,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         assert len(namelist) == 2, "Expected 2 elements in [%s]" % namelist
         collection_name = dataset_collection['name']
         for element, zip_path in zip(returned_dce, namelist):
-            assert "%s/%s.%s" % (collection_name, element['element_identifier'], element['object']['file_ext']) == zip_path
+            assert "{}/{}.{}".format(collection_name, element['element_identifier'], element['object']['file_ext']) == zip_path
 
     def test_list_pair_download(self):
         fetch_response = self.dataset_collection_populator.create_list_of_pairs_in_history(self.history_id).json()
@@ -135,7 +136,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         assert len(namelist) == 2, "Expected 2 elements in [%s]" % namelist
         pair_collection_name = pair['element_identifier']
         for element, zip_path in zip(pair['object']['elements'], namelist):
-            assert "%s/%s/%s.%s" % (list_collection_name, pair_collection_name, element['element_identifier'], element['object']['file_ext']) == zip_path
+            assert "{}/{}/{}.{}".format(list_collection_name, pair_collection_name, element['element_identifier'], element['object']['file_ext']) == zip_path
 
     def test_list_list_download(self):
         dataset_collection = self.dataset_collection_populator.create_list_of_list_in_history(self.history_id).json()
@@ -262,7 +263,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         hdca = contents[0]
         assert hdca["history_content_type"] == "dataset_collection"
         hdca_id = hdca["id"]
-        collection_response = self._get("histories/%s/contents/dataset_collections/%s" % (self.history_id, hdca_id))
+        collection_response = self._get("histories/{}/contents/dataset_collections/{}".format(self.history_id, hdca_id))
         self._assert_status_code_is(collection_response, 200)
         return collection_response.json()
 
@@ -273,4 +274,86 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         return dataset_collection
 
     def _download_dataset_collection(self, history_id, hdca_id):
-        return self._get("histories/%s/contents/dataset_collections/%s/download" % (history_id, hdca_id))
+        return self._get("histories/{}/contents/dataset_collections/{}/download".format(history_id, hdca_id))
+
+    def test_collection_contents_security(self):
+        # request contents on an hdca that doesn't belong to user
+        hdca, contents_url = self._create_collection_contents_pair()
+        with self._different_user():
+            contents_response = self._get(contents_url)
+            self._assert_status_code_is(contents_response, 403)
+
+    def test_collection_contents_invalid_collection(self):
+        # request an invalid collection from a valid hdca, should get 404
+        hdca, contents_url = self._create_collection_contents_pair()
+        response = self._get(contents_url)
+        self._assert_status_code_is(response, 200)
+        fake_collection_id = '5d7db0757a2eb7ef'
+        fake_contents_url = '/api/dataset_collections/{}/contents/{}'.format(hdca['id'], fake_collection_id)
+        error_response = self._get(fake_contents_url)
+        assert_object_id_error(error_response)
+
+    def test_show_dataset_collection_contents(self):
+        # Get contents_url from history contents, use it to show the first level
+        # of collection contents in the created HDCA, then use it again to drill
+        # down into the nested collection contents
+        hdca = self.dataset_collection_populator.create_list_of_list_in_history(self.history_id).json()
+        root_contents_url = self._get_contents_url_for_hdca(hdca)
+
+        # check root contents for this collection
+        root_contents = self._get(root_contents_url).json()
+        assert len(root_contents) == len(hdca['elements'])
+        self._compare_collection_contents_elements(root_contents, hdca['elements'])
+
+        # drill down, retrieve nested collection contents
+        assert 'object' in root_contents[0]
+        assert 'contents_url' in root_contents[0]['object']
+        drill_contents_url = root_contents[0]['object']['contents_url']
+        drill_contents = self._get(drill_contents_url).json()
+        assert len(drill_contents) == len(hdca['elements'][0]['object']['elements'])
+        self._compare_collection_contents_elements(drill_contents, hdca['elements'][0]['object']['elements'])
+
+    def test_collection_contents_limit_offset(self):
+        # check limit/offset params for collection contents endpoint
+        hdca, root_contents_url = self._create_collection_contents_pair()
+
+        # check limit
+        limited_contents = self._get(root_contents_url + '?limit=1').json()
+        assert len(limited_contents) == 1
+        assert limited_contents[0]['element_index'] == 0
+
+        # check offset
+        offset_contents = self._get(root_contents_url + '?offset=1').json()
+        assert len(offset_contents) == 1
+        assert offset_contents[0]['element_index'] == 1
+
+    def _compare_collection_contents_elements(self, contents_elements, hdca_elements):
+        # compare collection api results to existing hdca element contents
+        fields = ['element_identifier', 'element_index', 'element_type', 'id', 'model_class']
+        for (content_element, hdca_element) in zip(contents_elements, hdca_elements):
+            for f in fields:
+                assert content_element[f] == hdca_element[f]
+
+    def _create_collection_contents_pair(self):
+        # Create a simple collection, return hdca and contents_url
+        payload = self.dataset_collection_populator.create_pair_payload(self.history_id, instance_type="history")
+        create_response = self._post("dataset_collections", payload)
+        hdca = self._check_create_response(create_response)
+        root_contents_url = self._get_contents_url_for_hdca(hdca)
+        return hdca, root_contents_url
+
+    def _get_contents_url_for_hdca(self, hdca):
+        # look up the history contents using optional serialization key
+        history_contents_url = "histories/%s/contents?v=dev&view=summary&keys=contents_url" % (self.history_id)
+        json = self._get(history_contents_url).json()
+
+        # filter out the collection we just made id = hdca.id
+        # make sure the contents_url appears
+        def find_hdca(c):
+            return c['history_content_type'] == 'dataset_collection' and c['id'] == hdca['id']
+
+        matches = list(filter(find_hdca, json))
+        assert len(matches) == 1
+        assert 'contents_url' in matches[0]
+
+        return matches[0]['contents_url']

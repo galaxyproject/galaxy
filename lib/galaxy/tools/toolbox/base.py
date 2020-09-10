@@ -8,7 +8,6 @@ from collections import (
     OrderedDict
 )
 from errno import ENOENT
-from xml.etree.ElementTree import ParseError
 
 from markupsafe import escape
 from six.moves.urllib.parse import urlparse
@@ -24,6 +23,7 @@ from galaxy.tool_util.deps import (
 )
 from galaxy.tool_util.loader_directory import looks_like_a_tool
 from galaxy.util import (
+    etree,
     ExecutionTimer,
     listify,
     parse_xml,
@@ -143,7 +143,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 continue
             try:
                 self._init_tools_from_config(config_filename)
-            except ParseError:
+            except etree.ParseError:
                 # Occasionally we experience "Missing required parameter 'shed_tool_conf'."
                 # This happens if parsing the shed_tool_conf fails, so we just sleep a second and try again.
                 # TODO: figure out why this fails occasionally (try installing hundreds of tools in batch ...).
@@ -178,7 +178,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         log.info("Parsing the tool configuration %s" % config_filename)
         try:
             tool_conf_source = get_toolbox_parser(config_filename)
-        except (OSError, IOError) as exc:
+        except OSError as exc:
             dynamic_confs = (self.app.config.shed_tool_config_file, self.app.config.migrated_tools_config)
             if config_filename in dynamic_confs and exc.errno == errno.ENOENT:
                 log.info("Shed-enabled tool configuration file does not exist, but will be created on demand: %s",
@@ -350,7 +350,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                     new_tool_id=tool_id,
                     tool=tool,
                 )
-                log_msg = "Loaded tool id: %s, version: %s into tool panel." % (tool.id, tool.version)
+                log_msg = "Loaded tool id: {}, version: {} into tool panel.".format(tool.id, tool.version)
         else:
             inserted = False
             index = self._integrated_tool_panel.index_of_tool_id(tool_id)
@@ -382,7 +382,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                         # integrated_tool_panel.xml, so append it to the tool
                         # panel.
                         panel_dict.append_tool(tool)
-                        log_msg = "Loaded tool id: %s, version: %s into tool panel.." % (tool.id, tool.version)
+                        log_msg = "Loaded tool id: {}, version: {} into tool panel..".format(tool.id, tool.version)
                     else:
                         # We are in the process of installing the tool or we are reloading the whole toolbox.
                         tool_lineage = self._lineage_map.get(tool_id)
@@ -390,7 +390,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                         if not already_loaded:
                             # If the tool is not defined in integrated_tool_panel.xml, append it to the tool panel.
                             panel_dict.append_tool(tool)
-                            log_msg = "Loaded tool id: %s, version: %s into tool panel...." % (tool.id, tool.version)
+                            log_msg = "Loaded tool id: {}, version: {} into tool panel....".format(tool.id, tool.version)
         if log_msg and (not hasattr(self.app, 'tool_cache') or tool_id in self.app.tool_cache._new_tool_ids):
             log.debug(log_msg)
 
@@ -407,7 +407,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 if workflow_id in self._workflows_by_id:
                     workflow = self._workflows_by_id[workflow_id]
                     self._tool_panel[key] = workflow
-                    log.debug("Loaded workflow: %s %s" % (workflow_id, workflow.name))
+                    log.debug("Loaded workflow: {} {}".format(workflow_id, workflow.name))
             elif item_type == panel_item_types.LABEL:
                 self._tool_panel[key] = val
             elif item_type == panel_item_types.SECTION:
@@ -429,7 +429,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                         if workflow_id in self._workflows_by_id:
                             workflow = self._workflows_by_id[workflow_id]
                             section.elems[section_key] = workflow
-                            log.debug("Loaded workflow: %s %s" % (workflow_id, workflow.name))
+                            log.debug("Loaded workflow: {} {}".format(workflow_id, workflow.name))
                     elif section_item_type == panel_item_types.LABEL:
                         if section_val:
                             section.elems[section_key] = section_val
@@ -636,7 +636,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             concrete_path = os.path.join(tool_path, path)
             if not os.path.exists(concrete_path):
                 # This is a lot faster than attempting to load a non-existing tool
-                raise IOError(ENOENT, os.strerror(ENOENT))
+                raise OSError(ENOENT, os.strerror(ENOENT))
             tool_shed_repository = None
             can_load_into_panel_dict = True
 
@@ -678,8 +678,12 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             labels = item.labels
             if labels is not None:
                 tool.labels = labels
-        except (IOError, OSError) as exc:
-            log.error("Error reading tool configuration file from path '%s': %s", path, unicodify(exc))
+        except OSError as exc:
+            msg = "Error reading tool configuration file from path '%s': %s", path, unicodify(exc)
+            if exc.errno == ENOENT:
+                log.error(msg)
+            else:
+                log.exception(msg)
         except Exception:
             log.exception("Error reading tool from path: %s", path)
 
@@ -1134,7 +1138,7 @@ def _filter_for_panel(item, item_type, filters, context):
                 if not filter_method(context, filter_item):
                     return False
             except Exception as e:
-                raise MessageException("Toolbox filter exception from '%s': %s." % (filter_method.__name__, unicodify(e)))
+                raise MessageException("Toolbox filter exception from '{}': {}.".format(filter_method.__name__, unicodify(e)))
         return True
     if item_type == panel_item_types.TOOL:
         if _apply_filter(item, filters['tool']):
@@ -1189,7 +1193,7 @@ class BaseGalaxyToolBox(AbstractToolBox):
     """
 
     def __init__(self, config_filenames, tool_root_dir, app, save_integrated_tool_panel=True):
-        super(BaseGalaxyToolBox, self).__init__(config_filenames, tool_root_dir, app, save_integrated_tool_panel)
+        super().__init__(config_filenames, tool_root_dir, app, save_integrated_tool_panel)
         old_toolbox = getattr(app, 'toolbox', None)
         if old_toolbox:
             self.dependency_manager = old_toolbox.dependency_manager
