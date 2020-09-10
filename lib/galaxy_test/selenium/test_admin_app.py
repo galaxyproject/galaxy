@@ -105,7 +105,6 @@ class AdminAppTestCase(SeleniumTestCase):
         manage_jobs = admin_component.manage_jobs
         lock_label = manage_jobs.job_lock_label
         original_label = lock_label.wait_for_text()
-        lock = manage_jobs.job_lock
         lock_label.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_TRANSITION)
         # Make sure the job lock has been toggled.
