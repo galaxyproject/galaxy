@@ -27,7 +27,7 @@ INITIAL_CHANGELOG_HASH = '000000000000'
 
 def add_changeset(repo_path, path_to_filename_in_archive):
     try:
-        subprocess.check_output(['hg', 'add', path_to_filename_in_archive], stderr=subprocess.STDOUT, cwd=repo_path)
+        subprocess.check_output(['hg', 'add', '--cwd', repo_path, path_to_filename_in_archive], stderr=subprocess.STDOUT, close_fds=False)
     except Exception as e:
         error_message = "Error adding '%s' to repository: %s" % (path_to_filename_in_archive, unicodify(e))
         if isinstance(e, subprocess.CalledProcessError):
@@ -39,7 +39,7 @@ def archive_repository_revision(app, repository, archive_dir, changeset_revision
     '''Create an un-versioned archive of a repository.'''
     repo_path = repository.repo_path(app)
     try:
-        subprocess.check_output(['hg', 'archive', '-r', changeset_revision, archive_dir], stderr=subprocess.STDOUT, cwd=repo_path)
+        subprocess.check_output(['hg', 'archive', '--cwd', repo_path, '-r', changeset_revision, archive_dir], stderr=subprocess.STDOUT, close_fds=False)
     except Exception as e:
         error_message = "Error attempting to archive revision '%s' of repository '%s': %s" % (changeset_revision, repository.name, unicodify(e))
         if isinstance(e, subprocess.CalledProcessError):
@@ -50,7 +50,7 @@ def archive_repository_revision(app, repository, archive_dir, changeset_revision
 
 def commit_changeset(repo_path, full_path_to_changeset, username, message):
     try:
-        subprocess.check_output(['hg', 'commit', '-u', username, '-m', message, full_path_to_changeset], stderr=subprocess.STDOUT, cwd=repo_path)
+        subprocess.check_output(['hg', 'commit', '--cwd', repo_path, '-u', username, '-m', message, full_path_to_changeset], stderr=subprocess.STDOUT, close_fds=False)
     except Exception as e:
         error_message = "Error committing '%s' to repository: %s" % (full_path_to_changeset, unicodify(e))
         if isinstance(e, subprocess.CalledProcessError):
@@ -210,12 +210,12 @@ def get_rev_label_from_changeset_revision(repo, changeset_revision, include_date
 
 
 def remove_file(repo_path, selected_file, force=True):
-    cmd = ['hg', 'remove']
+    cmd = ['hg', 'remove', '--cwd', repo_path]
     if force:
         cmd.append('--force')
     cmd.append(selected_file)
     try:
-        subprocess.check_output(cmd, stderr=subprocess.STDOUT, cwd=repo_path)
+        subprocess.check_output(cmd, stderr=subprocess.STDOUT, close_fds=False)
     except Exception as e:
         error_message = "Error removing file '%s': %s" % (selected_file, unicodify(e))
         if isinstance(e, subprocess.CalledProcessError):
@@ -228,7 +228,7 @@ def init_repository(repo_path):
     Create a new Mercurial repository in the given directory.
     """
     try:
-        subprocess.check_output(['hg', 'init'], stderr=subprocess.STDOUT, cwd=repo_path)
+        subprocess.check_output(['hg', 'init', '--cwd', repo_path], stderr=subprocess.STDOUT, close_fds=False)
     except Exception as e:
         error_message = 'Error initializing repository: %s' % unicodify(e)
         if isinstance(e, subprocess.CalledProcessError):
@@ -241,7 +241,7 @@ def changeset2rev(repo_path, changeset_revision):
     Return the revision number (as an int) corresponding to a specified changeset revision.
     """
     try:
-        rev = subprocess.check_output(['hg', 'id', '-r', changeset_revision, '-n'], stderr=subprocess.STDOUT, cwd=repo_path)
+        rev = subprocess.check_output(['hg', 'id', '--cwd', repo_path, '-r', changeset_revision, '-n'], stderr=subprocess.STDOUT, close_fds=False)
     except Exception as e:
         error_message = "Error looking for changeset '%s': %s" % (changeset_revision, unicodify(e))
         if isinstance(e, subprocess.CalledProcessError):

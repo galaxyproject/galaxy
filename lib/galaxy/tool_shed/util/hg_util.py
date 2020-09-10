@@ -110,7 +110,7 @@ def get_file_context_from_ctx(ctx, filename):
 def pull_repository(repo_path, repository_clone_url, ctx_rev):
     """Pull changes from a remote repository to a local one."""
     try:
-        subprocess.check_output(['hg', 'pull', '-r', ctx_rev, repository_clone_url], stderr=subprocess.STDOUT, cwd=repo_path)
+        subprocess.check_output(['hg', 'pull', '--cwd', repo_path, '-r', ctx_rev, repository_clone_url], stderr=subprocess.STDOUT, close_fds=False)
     except Exception as e:
         error_message = "Error pulling revision '%s': %s" % (ctx_rev, unicodify(e))
         if isinstance(e, subprocess.CalledProcessError):
