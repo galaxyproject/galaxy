@@ -47,7 +47,7 @@ class ToolDocumentCache:
         tool_document = self._cache.get(config_file)
         if not tool_document:
             return None
-        if tool_document.get('tool_cache_version', 0) != CURRENT_TOOL_CACHE_VERSION:
+        if tool_document.get('tool_cache_version') != CURRENT_TOOL_CACHE_VERSION:
             return None
         for path, modtime in tool_document['paths_and_modtimes'].items():
             if os.path.getmtime(path) != modtime:
