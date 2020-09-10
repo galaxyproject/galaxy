@@ -13,6 +13,7 @@ from galaxy.tool_shed.util.hg_util import (
     get_config_from_disk,
     get_ctx_file_path_from_manifest,
     get_file_context_from_ctx,
+    HG_EXECUTABLE_PATH,
     pull_repository,
     reversed_lower_upper_bounded_changelog,
     reversed_upper_bounded_changelog,
@@ -27,7 +28,7 @@ INITIAL_CHANGELOG_HASH = '000000000000'
 
 def add_changeset(repo_path, path_to_filename_in_archive):
     try:
-        subprocess.check_output(['hg', 'add', '--cwd', repo_path, path_to_filename_in_archive], stderr=subprocess.STDOUT, close_fds=False)
+        subprocess.check_output([HG_EXECUTABLE_PATH, 'add', '--cwd', repo_path, path_to_filename_in_archive], stderr=subprocess.STDOUT, close_fds=False)
     except Exception as e:
         error_message = "Error adding '%s' to repository: %s" % (path_to_filename_in_archive, unicodify(e))
         if isinstance(e, subprocess.CalledProcessError):
@@ -39,7 +40,7 @@ def archive_repository_revision(app, repository, archive_dir, changeset_revision
     '''Create an un-versioned archive of a repository.'''
     repo_path = repository.repo_path(app)
     try:
-        subprocess.check_output(['hg', 'archive', '--cwd', repo_path, '-r', changeset_revision, archive_dir], stderr=subprocess.STDOUT, close_fds=False)
+        subprocess.check_output([HG_EXECUTABLE_PATH, 'archive', '--cwd', repo_path, '-r', changeset_revision, archive_dir], stderr=subprocess.STDOUT, close_fds=False)
     except Exception as e:
         error_message = "Error attempting to archive revision '%s' of repository '%s': %s" % (changeset_revision, repository.name, unicodify(e))
         if isinstance(e, subprocess.CalledProcessError):
@@ -50,7 +51,7 @@ def archive_repository_revision(app, repository, archive_dir, changeset_revision
 
 def commit_changeset(repo_path, full_path_to_changeset, username, message):
     try:
-        subprocess.check_output(['hg', 'commit', '--cwd', repo_path, '-u', username, '-m', message, full_path_to_changeset], stderr=subprocess.STDOUT, close_fds=False)
+        subprocess.check_output([HG_EXECUTABLE_PATH, 'commit', '--cwd', repo_path, '-u', username, '-m', message, full_path_to_changeset], stderr=subprocess.STDOUT, close_fds=False)
     except Exception as e:
         error_message = "Error committing '%s' to repository: %s" % (full_path_to_changeset, unicodify(e))
         if isinstance(e, subprocess.CalledProcessError):
@@ -210,7 +211,7 @@ def get_rev_label_from_changeset_revision(repo, changeset_revision, include_date
 
 
 def remove_file(repo_path, selected_file, force=True):
-    cmd = ['hg', 'remove', '--cwd', repo_path]
+    cmd = [HG_EXECUTABLE_PATH, 'remove', '--cwd', repo_path]
     if force:
         cmd.append('--force')
     cmd.append(selected_file)
@@ -228,7 +229,7 @@ def init_repository(repo_path):
     Create a new Mercurial repository in the given directory.
     """
     try:
-        subprocess.check_output(['hg', 'init', '--cwd', repo_path], stderr=subprocess.STDOUT, close_fds=False)
+        subprocess.check_output([HG_EXECUTABLE_PATH, 'init', '--cwd', repo_path], stderr=subprocess.STDOUT, close_fds=False)
     except Exception as e:
         error_message = 'Error initializing repository: %s' % unicodify(e)
         if isinstance(e, subprocess.CalledProcessError):
@@ -241,7 +242,7 @@ def changeset2rev(repo_path, changeset_revision):
     Return the revision number (as an int) corresponding to a specified changeset revision.
     """
     try:
-        rev = subprocess.check_output(['hg', 'id', '--cwd', repo_path, '-r', changeset_revision, '-n'], stderr=subprocess.STDOUT, close_fds=False)
+        rev = subprocess.check_output([HG_EXECUTABLE_PATH, 'id', '--cwd', repo_path, '-r', changeset_revision, '-n'], stderr=subprocess.STDOUT, close_fds=False)
     except Exception as e:
         error_message = "Error looking for changeset '%s': %s" % (changeset_revision, unicodify(e))
         if isinstance(e, subprocess.CalledProcessError):

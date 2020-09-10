@@ -3,11 +3,15 @@ import os
 import subprocess
 
 from galaxy.tool_shed.util import basic_util
-from galaxy.util import unicodify
+from galaxy.util import (
+    unicodify,
+    which,
+)
 
 log = logging.getLogger(__name__)
 
 INITIAL_CHANGELOG_HASH = '000000000000'
+HG_EXECUTABLE_PATH = which('hg') or 'hg'
 
 
 def clone_repository(repository_clone_url, repository_file_dir, ctx_rev=None):
@@ -15,7 +19,7 @@ def clone_repository(repository_clone_url, repository_file_dir, ctx_rev=None):
     Clone the repository up to the specified changeset_revision.  No subsequent revisions will be
     present in the cloned repository.
     """
-    cmd = ['hg', 'clone']
+    cmd = [HG_EXECUTABLE_PATH, 'clone']
     if ctx_rev:
         cmd.extend(['-r', str(ctx_rev)])
     cmd.extend([repository_clone_url, repository_file_dir])
@@ -110,7 +114,7 @@ def get_file_context_from_ctx(ctx, filename):
 def pull_repository(repo_path, repository_clone_url, ctx_rev):
     """Pull changes from a remote repository to a local one."""
     try:
-        subprocess.check_output(['hg', 'pull', '--cwd', repo_path, '-r', ctx_rev, repository_clone_url], stderr=subprocess.STDOUT, close_fds=False)
+        subprocess.check_output([HG_EXECUTABLE_PATH, 'pull', '--cwd', repo_path, '-r', ctx_rev, repository_clone_url], stderr=subprocess.STDOUT, close_fds=False)
     except Exception as e:
         error_message = "Error pulling revision '%s': %s" % (ctx_rev, unicodify(e))
         if isinstance(e, subprocess.CalledProcessError):
@@ -168,7 +172,7 @@ def update_repository(repo_path, ctx_rev=None):
     # I = ignored
     # It would be nice if we could use mercurial's purge extension to remove untracked files.  The problem is that
     # purging is not supported by the mercurial API.
-    cmd = ['hg', 'update']
+    cmd = [HG_EXECUTABLE_PATH, 'update']
     if ctx_rev:
         cmd.extend(['-r', ctx_rev])
     try:
