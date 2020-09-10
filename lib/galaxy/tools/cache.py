@@ -1,14 +1,16 @@
 import json
 import logging
 import os
+import sqlite3
+import zlib
 from collections import defaultdict
 from threading import Lock
 
-import h5py
 from sqlalchemy.orm import (
     defer,
     joinedload,
 )
+from sqlitedict import SqliteDict
 
 from galaxy.util import unicodify
 from galaxy.util.hash_util import md5_hash_file
@@ -19,18 +21,28 @@ log = logging.getLogger(__name__)
 CURRENT_TOOL_CACHE_VERSION = 0
 
 
+def encoder(obj):
+    return sqlite3.Binary(zlib.compress(json.dumps(obj).encode('utf-8')))
+
+
+def decoder(obj):
+    return json.loads(zlib.decompress(bytes(obj)).decode('utf-8'))
+
+
 class ToolDocumentCache:
 
     def __init__(self, cache_dir):
         self.cache_dir = cache_dir
-        cache_file = os.path.join(self.cache_dir, 'cache.hdf5')
-        self._cache = h5py.File(cache_file, 'r', swmr=True)
+        cache_file = os.path.join(self.cache_dir, 'cache.sqlite')
+        self._cache = SqliteDict(cache_file, encode=encoder, decode=decoder, autocommit=True)
 
     def get(self, config_file):
-        tool_document = self._cache.get(config_file)
+        try:
+            tool_document = self._cache.get(config_file)
+        except Exception:
+            return None
         if not tool_document:
             return None
-        tool_document = json.loads(tool_document[()])
         if tool_document.get('tool_cache_version', 0) != CURRENT_TOOL_CACHE_VERSION:
             return None
         for path, modtime in tool_document['paths_and_modtimes'].items():
@@ -45,10 +57,16 @@ class ToolDocumentCache:
             'paths_and_modtimes': tool_source.paths_and_modtimes(),
             'tool_cache_version': CURRENT_TOOL_CACHE_VERSION,
         }
-        self._cache[config_file] = json.dumps(to_persist)
+        try:
+            self._cache[config_file] = to_persist
+        except Exception:
+            return None
 
     def delete(self, config_file):
-        del cache['config_file']
+        try:
+            del cache['config_file']
+        except Exception:
+            return None
 
 
 class ToolCache:
