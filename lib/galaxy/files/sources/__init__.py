@@ -12,12 +12,12 @@ class FilesSource(object):
     """
     """
 
-    @abc.abstractproperty
+    @abc.abstractmethod
     def get_uri_root(self):
         """Return a prefix for the root (e.g. gxfiles://prefix/)."""
 
-    @abc.abstractproperty
-    def get_schema(self):
+    @abc.abstractmethod
+    def get_scheme(self):
         """Return a prefix for the root (e.g. the gxfiles in gxfiles://prefix/path)."""
 
     # TODO: off-by-default
@@ -43,13 +43,13 @@ class BaseFilesSource(FilesSource):
     def get_prefix(self):
         return self.id
 
-    def get_schema(self):
+    def get_scheme(self):
         return "gxfiles"
 
     def get_uri_root(self):
         prefix = self.get_prefix()
-        schema = self.get_schema()
-        root = "%s://" % schema
+        scheme = self.get_scheme()
+        root = "%s://" % scheme
         if prefix:
             root = uri_join(root, prefix)
         return root
@@ -63,7 +63,7 @@ class BaseFilesSource(FilesSource):
         self.id = kwd.pop("id")
         self.label = kwd.pop("label", None) or self.id
         self.doc = kwd.pop("doc", None)
-        self.schema = kwd.pop("schema", "gxfiles")
+        self.scheme = kwd.pop("scheme", "gxfiles")
         # If coming from to_dict, strip API helper values
         kwd.pop("uri_root", None)
         kwd.pop("type", None)
