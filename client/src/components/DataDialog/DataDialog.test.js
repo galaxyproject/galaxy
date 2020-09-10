@@ -100,7 +100,7 @@ describe("services.js/Services", () => {
         expect(items.length).toBe(1);
         const first = items[0];
         expect(first.label).toBe("1: name_1");
-        expect(first.download).toBe("host/api/histories/0/contents/1/display");
+        expect(first.download).toBe("http://localhost:/api/histories/0/contents/1/display");
     });
 });
 
