@@ -1,6 +1,6 @@
 """
 Actions to be run at job completion (or output hda creation, as in the case of
-immediate_actions listed below.  Currently only used in workflows.
+immediate_actions listed below.
 """
 import datetime
 import socket
@@ -46,6 +46,8 @@ class EmailAction(DefaultJobAction):
     def execute(cls, app, sa_session, action, job, replacement_dict):
         try:
             frm = app.config.email_from
+            history_id_encoded = app.security.encode_id(job.history_id)
+            link = app.config.galaxy_infrastructure_url + "/histories/view?id=" + history_id_encoded
             if frm is None:
                 if action.action_arguments and 'host' in action.action_arguments:
                     host = action.action_arguments['host']
@@ -54,8 +56,8 @@ class EmailAction(DefaultJobAction):
                 frm = 'galaxy-no-reply@%s' % host
             to = job.user.email
             subject = "Galaxy job completion notification from history '%s'" % (job.history.name)
-            outdata = ', '.join(ds.dataset.display_name() for ds in job.output_datasets)
-            body = "Your Galaxy job generating dataset '{}' is complete as of {}.".format(outdata, datetime.datetime.now().strftime("%I:%M"))
+            outdata = ',\n'.join(ds.dataset.display_name() for ds in job.output_datasets)
+            body = "Your Galaxy job generating dataset(s):\n\n{}\n\nis complete as of {}. Click the link below to access your data: \n{}".format(outdata, datetime.datetime.now().strftime("%I:%M"), link)
             send_mail(frm, to, subject, body, app.config)
         except Exception as e:
             log.error("EmailAction PJA Failed, exception: %s", unicodify(e))
