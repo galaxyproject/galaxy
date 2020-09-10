@@ -102,20 +102,20 @@ class AdminAppTestCase(SeleniumTestCase):
         self.screenshot("admin_jobs_landing")
         # Since both get_property and get_attribute always return true, use the
         # label for the job lock toggle to verify that job locking actually happens
-        label = self.driver.find_element_by_xpath("//label[@for='prevent-job-dispatching']/strong")
-        lock = self.driver.find_element_by_id("prevent-job-dispatching")
-        original_label = label.text
-        self.action_chains().move_to_element_with_offset(lock, -20, 5).click().perform()
+        manage_jobs = admin_component.manage_jobs
+        lock_label = manage_jobs.job_lock_label
+        original_label = lock_label.wait_for_text()
+        lock_label.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_TRANSITION)
         # Make sure the job lock has been toggled.
-        label = self.driver.find_element_by_xpath("//label[@for='prevent-job-dispatching']/strong")
-        self.assertNotEqual(label.text, original_label)
+        new_label = lock_label.wait_for_text()
+        self.assertNotEqual(new_label, original_label)
         self.screenshot("admin_jobs_locked")
-        self.action_chains().move_to_element_with_offset(lock, -20, 5).click().perform()
+        lock_label.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_TRANSITION)
         self.screenshot("admin_jobs_unlocked")
         # And confirm that it has toggled back to what it was.
-        self.assertEqual(label.text, original_label)
+        self.assertEqual(lock_label.wait_for_text(), original_label)
 
     @selenium_test
     def test_admin_server_display(self):
