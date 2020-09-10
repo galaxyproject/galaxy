@@ -64,7 +64,17 @@ def test_posix_link_security():
         sniff.stream_url_to_file("gxfiles://test1/unsafe", file_sources=file_sources)
     except Exception as ex:
         e = ex
-    assert e is not None
+    _assert_access_prohibited(e)
+
+
+def test_posix_link_security_write():
+    file_sources = _configured_file_sources(writable=True)
+    e = None
+    try:
+        write_from(file_sources, "gxfiles://test1/unsafe", "my test content")
+    except Exception as ex:
+        e = ex
+    _assert_access_prohibited(e)
 
 
 def test_posix_link_security_allowlist():
@@ -77,6 +87,13 @@ def test_posix_link_security_allowlist():
         os.remove(tmp_name)
 
 
+def test_posix_link_security_allowlist_write():
+    file_sources = _configured_file_sources(include_allowlist=True, writable=True)
+    write_from(file_sources, "gxfiles://test1/unsafe", "my test content")
+    with open(os.path.join(file_sources.test_root, "unsafe"), "r") as f:
+        assert f.read() == "my test content"
+
+
 def test_posix_disable_link_security():
     file_sources = _configured_file_sources(plugin_extra_config={"enforce_symlink_security": False})
     tmp_name = sniff.stream_url_to_file("gxfiles://test1/unsafe", file_sources=file_sources)
@@ -85,6 +102,17 @@ def test_posix_disable_link_security():
             assert f.read() == "b\n"
     finally:
         os.remove(tmp_name)
+
+
+def test_posix_nonexistent_parent_write():
+    file_sources = _configured_file_sources(include_allowlist=True, writable=True)
+    e = None
+    try:
+        write_from(file_sources, "gxfiles://test1/notreal/myfile", "my test content")
+    except Exception as ex:
+        e = ex
+    assert e is not None
+    assert "Parent" in str(e)
 
 
 def test_posix_per_user():
@@ -247,7 +275,9 @@ def _configured_file_sources(include_allowlist=False, plugin_extra_config=None, 
         plugin['root'] = root
     plugin.update(plugin_extra_config or {})
     _write_file_fixtures(tmp, root)
-    return ConfiguredFileSources(file_sources_config, conf_dict=[plugin])
+    file_sources = ConfiguredFileSources(file_sources_config, conf_dict=[plugin])
+    file_sources.test_root = root
+    return file_sources
 
 
 def _setup_root():
@@ -286,3 +316,8 @@ def _download_and_check_file(file_sources):
         assert a_contents == "a\n"
     finally:
         os.remove(tmp_name)
+
+
+def _assert_access_prohibited(e):
+    assert e is not None
+    assert "Operation not allowed" in str(e)

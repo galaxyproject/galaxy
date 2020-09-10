@@ -65,11 +65,17 @@ class PosixFilesSource(BaseFilesSource):
     def _write_from(self, target_path, native_path, user_context=None):
         effective_root = self._effective_root(user_context)
         target_native_path = self._to_native_path(target_path, user_context=user_context)
-        # TODO: enforce_symlink_security
-        target_native_path = os.path.normpath(target_native_path)
-        assert target_native_path.startswith(os.path.normpath(effective_root))
+        if self.enforce_symlink_security:
+            if not safe_contains(effective_root, target_native_path, allowlist=self._allowlist):
+                raise Exception("Operation not allowed.")
+        else:
+            target_native_path = os.path.normpath(target_native_path)
+            assert target_native_path.startswith(os.path.normpath(effective_root))
 
-        # TODO: ensure directory exists, etc...
+        target_native_path_parent = os.path.dirname(target_native_path)
+        if not os.path.exists(target_native_path_parent):
+            raise Exception("Parent directory does not exist.")
+
         shutil.copyfile(native_path, target_native_path)
 
     def _to_native_path(self, source_path, user_context=None):
