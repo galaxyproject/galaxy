@@ -4,6 +4,7 @@ import os
 from collections import defaultdict
 from threading import Lock
 
+import h5py
 from sqlalchemy.orm import (
     defer,
     joinedload,
@@ -15,37 +16,39 @@ from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
 
 log = logging.getLogger(__name__)
 
-CURRENT_TOOL_CACHE_VERSION = 1
+CURRENT_TOOL_CACHE_VERSION = 0
 
 
-def persist_cache_region(tool_cache_data_dir, cache_dict):
-    if not os.path.exists(tool_cache_data_dir):
-        os.makedirs(tool_cache_data_dir)
-    path = os.path.join(tool_cache_data_dir, 'cache.json')
-    with RenamedTemporaryFile(path, mode='w') as cache_file:
-        json.dump(cache_dict, cache_file)
+class ToolDocumentCache:
 
+    def __init__(self, cache_dir):
+        self.cache_dir = cache_dir
+        cache_file = os.path.join(self.cache_dir, 'cache.hdf5')
+        self._cache = h5py.File(cache_file, 'r', swmr=True)
 
-def get_cached_tool_source(cache, config_file):
-    tool_document = cache.get(config_file)
-    if not tool_document:
-        return None
-    if tool_document.get('tool_cache_version', 0) != CURRENT_TOOL_CACHE_VERSION:
-        return None
-    for path, modtime in tool_document['paths_and_modtimes'].items():
-        if os.path.getmtime(path) != modtime:
+    def get(self, config_file):
+        tool_document = self._cache.get(config_file)
+        if not tool_document:
             return None
-    return tool_document
+        tool_document = json.loads(tool_document[()])
+        if tool_document.get('tool_cache_version', 0) != CURRENT_TOOL_CACHE_VERSION:
+            return None
+        for path, modtime in tool_document['paths_and_modtimes'].items():
+            if os.path.getmtime(path) != modtime:
+                return None
+        return tool_document
 
+    def set(self, config_file, tool_source):
+        to_persist = {
+            'document': tool_source.to_string(),
+            'macro_paths': tool_source.macro_paths,
+            'paths_and_modtimes': tool_source.paths_and_modtimes(),
+            'tool_cache_version': CURRENT_TOOL_CACHE_VERSION,
+        }
+        self._cache[config_file] = json.dumps(to_persist)
 
-def set_cached_tool_source(cache, config_file, tool_source):
-    to_persist = {
-        'document': tool_source.to_string(),
-        'macro_paths': tool_source.macro_paths,
-        'paths_and_modtimes': tool_source.paths_and_modtimes(),
-        'tool_cache_version': CURRENT_TOOL_CACHE_VERSION,
-    }
-    cache[config_file] = to_persist
+    def delete(self, config_file):
+        del cache['config_file']
 
 
 class ToolCache:

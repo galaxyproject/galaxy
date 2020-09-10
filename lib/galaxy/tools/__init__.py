@@ -56,11 +56,7 @@ from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
-from galaxy.tools.cache import (
-    get_cached_tool_source,
-    persist_cache_region,
-    set_cached_tool_source,
-)
+from galaxy.tools.cache import ToolDocumentCache
 from galaxy.tools.parameters import (
     check_param,
     params_from_strings,
@@ -263,8 +259,6 @@ class ToolBox(BaseGalaxyToolBox):
             app=app,
             save_integrated_tool_panel=save_integrated_tool_panel,
         )
-        for cache_dir, cache_dict in self.cache_regions.items():
-            persist_cache_region(cache_dir, cache_dict)
 
     def can_load_config_file(self, config_filename):
         if config_filename == self.app.config.shed_tool_config_file and not self.app.config.shed_tool_config_file_set:
@@ -294,17 +288,13 @@ class ToolBox(BaseGalaxyToolBox):
 
     def get_cache_region(self, tool_cache_data_dir):
         if tool_cache_data_dir not in self.cache_regions:
-            try:
-                with open(os.path.join(tool_cache_data_dir, 'cache.json')) as cache_file:
-                    self.cache_regions[tool_cache_data_dir] = json.load(cache_file)
-            except OSError:
-                self.cache_regions[tool_cache_data_dir] = {}
+            self.cache_regions[tool_cache_data_dir] = ToolDocumentCache(cache_dir=tool_cache_data_dir)
         return self.cache_regions[tool_cache_data_dir]
 
     def create_tool(self, config_file, tool_cache_data_dir=None, **kwds):
-        cache = self.get_cache_region(tool_cache_data_dir or self.app.config.tool_cache_data_dir)
         if config_file.endswith('.xml'):
-            tool_document = get_cached_tool_source(cache, config_file)
+            cache = self.get_cache_region(tool_cache_data_dir or self.app.config.tool_cache_data_dir)
+            tool_document = cache.get(config_file)
             if tool_document:
                 tool_source = self.get_expanded_tool_source(
                     config_file=config_file,
@@ -313,7 +303,7 @@ class ToolBox(BaseGalaxyToolBox):
                 )
             else:
                 tool_source = self.get_expanded_tool_source(config_file)
-                set_cached_tool_source(cache, config_file, tool_source)
+                cache.set(config_file, tool_source)
         else:
             tool_source = self.get_expanded_tool_source(config_file)
         tool = self._create_tool_from_source(tool_source, config_file=config_file, **kwds)
@@ -585,7 +575,7 @@ class Tool(Dictifiable):
         source_path = self.tool_source._source_path
         if source_path:
             for region in self.app.toolbox.cache_regions.values():
-                region.pop(source_path, None)
+                region.delete(source_path)
 
     @property
     def history_manager(self):
