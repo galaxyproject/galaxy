@@ -410,7 +410,6 @@ class MyWritableRepositoriesGrid(RepositoryGrid):
                                               visible=False,
                                               filterable="standard"))
     operations = []
-    use_paging = False
 
     def build_initial_query(self, trans, **kwd):
         # TODO: improve performance by adding a db table associating users with repositories for which they have write access.
@@ -453,8 +452,6 @@ class RepositoriesByUserGrid(RepositoryGrid):
     operations = []
     standard_filters = []
     default_filter = dict(deleted="False")
-    num_rows_per_page = 50
-    use_paging = False
 
     def build_initial_query(self, trans, **kwd):
         decoded_user_id = trans.security.decode_id(kwd['user_id'])
@@ -595,7 +592,6 @@ class RepositoriesIOwnGrid(RepositoryGrid):
                                               visible=False,
                                               filterable="standard"))
     operations = []
-    use_paging = False
 
     def build_initial_query(self, trans, **kwd):
         return trans.sa_session.query(model.Repository) \
@@ -623,7 +619,6 @@ class RepositoriesICanAdministerGrid(RepositoryGrid):
                                               visible=False,
                                               filterable="standard"))
     operations = []
-    use_paging = False
 
     def build_initial_query(self, trans, **kwd):
         """
@@ -673,7 +668,6 @@ class RepositoriesMissingToolTestComponentsGrid(RepositoryGrid):
                                               visible=False,
                                               filterable="standard"))
     operations = []
-    use_paging = False
 
     def build_initial_query(self, trans, **kwd):
         # Filter by latest installable revisions that contain tools with missing tool test components.
@@ -702,7 +696,6 @@ class MyWritableRepositoriesMissingToolTestComponentsGrid(RepositoriesMissingToo
     title = "Repositories I can change with missing tool test components"
     columns = [col for col in RepositoriesMissingToolTestComponentsGrid.columns]
     operations = []
-    use_paging = False
 
     def build_initial_query(self, trans, **kwd):
         # First get all repositories that the current user is authorized to update.
@@ -760,7 +753,6 @@ class DeprecatedRepositoriesIOwnGrid(RepositoriesIOwnGrid):
                                               key="free-text-search",
                                               visible=False,
                                               filterable="standard"))
-    use_paging = False
 
     def build_initial_query(self, trans, **kwd):
         return trans.sa_session.query(model.Repository) \
@@ -812,7 +804,6 @@ class RepositoriesWithInvalidToolsGrid(RepositoryGrid):
                                   attach_popup=False)
     ]
     operations = []
-    use_paging = False
 
     def build_initial_query(self, trans, **kwd):
         # Filter by latest metadata revisions that contain invalid tools.
@@ -841,7 +832,6 @@ class MyWritableRepositoriesWithInvalidToolsGrid(RepositoriesWithInvalidToolsGri
     title = "Repositories I can change with invalid tools"
     columns = [col for col in RepositoriesWithInvalidToolsGrid.columns]
     operations = []
-    use_paging = False
 
     def build_initial_query(self, trans, **kwd):
         # First get all repositories that the current user is authorized to update.
@@ -974,7 +964,8 @@ class RepositoryMetadataGrid(grids.Grid):
     standard_filters = []
     default_filter = dict(malicious="False")
     num_rows_per_page = 50
-    use_paging = False
+    use_paging = True
+    allow_fetching_all_results = False
 
     def build_initial_query(self, trans, **kwd):
         return trans.sa_session.query(model.RepositoryMetadata) \
@@ -1189,10 +1180,6 @@ class ToolDependenciesGrid(RepositoryMetadataGrid):
 
 class ToolsGrid(RepositoryMetadataGrid):
 
-    allow_fetching_all_results = False
-    num_rows_per_page = 50
-    use_paging = True
-
     class ToolsColumn(grids.TextColumn):
 
         def get_value(self, trans, grid, repository_metadata):
@@ -1361,7 +1348,6 @@ class ValidRepositoryGrid(RepositoryGrid):
                                               visible=False,
                                               filterable="standard"))
     operations = []
-    use_paging = False
 
     def build_initial_query(self, trans, **kwd):
         filter = trans.app.repository_grid_filter_manager.get_filter(trans)
