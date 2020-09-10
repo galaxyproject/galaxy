@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import shutil
 import sqlite3
 import zlib
 from collections import defaultdict
@@ -33,14 +34,17 @@ class ToolDocumentCache:
 
     def __init__(self, cache_dir):
         self.cache_dir = cache_dir
-        cache_file = os.path.join(self.cache_dir, 'cache.sqlite')
-        self._cache = SqliteDict(cache_file, encode=encoder, decode=decoder, autocommit=True)
+        if not os.path.exists(self.cache_dir):
+            os.makedirs(self.cache_dir)
+        self.cache_file = os.path.join(self.cache_dir, 'cache.sqlite')
+        self.writeable_cache_file = None
+        # Create database if necessary using 'c' flag
+        self._cache = SqliteDict(self.cache_file, flag='c', encode=encoder, decode=decoder, autocommit=False)
+        # Switch SqliteDict back to readonly
+        self._cache.flag = 'r'
 
     def get(self, config_file):
-        try:
-            tool_document = self._cache.get(config_file)
-        except Exception:
-            return None
+        tool_document = self._cache.get(config_file)
         if not tool_document:
             return None
         if tool_document.get('tool_cache_version', 0) != CURRENT_TOOL_CACHE_VERSION:
@@ -50,23 +54,36 @@ class ToolDocumentCache:
                 return None
         return tool_document
 
+    def make_writable(self):
+        if not self.writeable_cache_file:
+            self.writeable_cache_file = RenamedTemporaryFile(self.cache_file)
+            if os.path.exists(self.cache_file):
+                shutil.copy(self.cache_file, self.writeable_cache_file.tmpfile.name)
+            self._cache = SqliteDict(self.writeable_cache_file.tmpfile.name, flag='c', encode=encoder, decode=decoder, autocommit=False)
+
+    def persist(self):
+        if self.writeable_cache_file:
+            self._cache.commit()
+            self.writeable_cache_file.close()
+            self.writeable_cache_file = None
+            self._cache = SqliteDict(self.cache_file, flag='r', encode=encoder, decode=decoder, autocommit=False)
+
     def set(self, config_file, tool_source):
+        self.make_writable()
         to_persist = {
             'document': tool_source.to_string(),
             'macro_paths': tool_source.macro_paths,
             'paths_and_modtimes': tool_source.paths_and_modtimes(),
             'tool_cache_version': CURRENT_TOOL_CACHE_VERSION,
         }
-        try:
-            self._cache[config_file] = to_persist
-        except Exception:
-            return None
+        self._cache[config_file] = to_persist
 
     def delete(self, config_file):
+        self.make_writable()
         try:
-            del cache['config_file']
-        except Exception:
-            return None
+            del self._cache[config_file]
+        except KeyError:
+            pass
 
 
 class ToolCache:

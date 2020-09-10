@@ -260,6 +260,10 @@ class ToolBox(BaseGalaxyToolBox):
             save_integrated_tool_panel=save_integrated_tool_panel,
         )
 
+    def persist_cache(self):
+        for region in self.cache_regions.values():
+            region.persist()
+
     def can_load_config_file(self, config_filename):
         if config_filename == self.app.config.shed_tool_config_file and not self.app.config.shed_tool_config_file_set:
             if self.dynamic_confs():
