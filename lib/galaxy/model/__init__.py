@@ -3252,6 +3252,12 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         """
         return self.dataset.get_access_roles(trans)
 
+    def purge_usage_from_quota(self, user):
+        """Remove this HDA's quota_amount from user's quota.
+        """
+        if user:
+            user.adjust_total_disk_usage(-self.quota_amount(user))
+
     def quota_amount(self, user):
         """
         Return the disk space used for this HDA relevant to user quotas.
