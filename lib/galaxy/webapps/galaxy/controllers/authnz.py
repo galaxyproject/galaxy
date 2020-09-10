@@ -82,7 +82,7 @@ class OIDC(JSAppLauncher):
                                                                                 trans,
                                                                                 login_redirect_url=url_for('/'),
                                                                                 idphint=idphint)
-        except exceptions.AuthenticationFailed as e:
+        except exceptions.AuthenticationFailed:
             raise
         if success is False:
             return trans.show_error_message(message)
