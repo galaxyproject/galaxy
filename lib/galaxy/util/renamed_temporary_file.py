@@ -4,7 +4,7 @@ import os
 import tempfile
 
 
-class RenamedTemporaryFile(object):
+class RenamedTemporaryFile:
     """
     A temporary file object which will be renamed to the specified
     path on exit.
@@ -36,10 +36,7 @@ class RenamedTemporaryFile(object):
         self.tmpfile.__enter__()
         return self
 
-    def close(self):
-        return self.__exit__()
-
-    def __exit__(self, exc_type=None, exc_val=None, exc_tb=None):
+    def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_type is None:
             self.tmpfile.flush()
             result = self.tmpfile.__exit__(exc_type, exc_val, exc_tb)

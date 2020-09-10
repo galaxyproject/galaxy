@@ -3,6 +3,7 @@ import logging
 import os
 import shutil
 import sqlite3
+import tempfile
 import zlib
 from collections import defaultdict
 from threading import Lock
@@ -15,7 +16,6 @@ from sqlitedict import SqliteDict
 
 from galaxy.util import unicodify
 from galaxy.util.hash_util import md5_hash_file
-from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
 
 log = logging.getLogger(__name__)
 
@@ -56,17 +56,17 @@ class ToolDocumentCache:
 
     def make_writable(self):
         if not self.writeable_cache_file:
-            self.writeable_cache_file = RenamedTemporaryFile(self.cache_file)
+            self.writeable_cache_file = tempfile.NamedTemporaryFile(dir=self.cache_dir, suffix='cache.sqlite.tmp', delete=False)
             if os.path.exists(self.cache_file):
-                shutil.copy(self.cache_file, self.writeable_cache_file.tmpfile.name)
-            self._cache = SqliteDict(self.writeable_cache_file.tmpfile.name, flag='c', encode=encoder, decode=decoder, autocommit=False)
+                shutil.copy(self.cache_file, self.writeable_cache_file.name)
+            self._cache = SqliteDict(self.writeable_cache_file.name, flag='c', encode=encoder, decode=decoder, autocommit=False)
 
     def persist(self):
         if self.writeable_cache_file:
             self._cache.commit()
-            self.writeable_cache_file.close()
-            self.writeable_cache_file = None
+            os.rename(self.writeable_cache_file.name, self.cache_file)
             self._cache = SqliteDict(self.cache_file, flag='r', encode=encoder, decode=decoder, autocommit=False)
+            self.writeable_cache_file = None
 
     def set(self, config_file, tool_source):
         self.make_writable()
@@ -84,6 +84,13 @@ class ToolDocumentCache:
             del self._cache[config_file]
         except KeyError:
             pass
+
+    def __del__(self):
+        if self.writeable_cache_file:
+            try:
+                os.unlink(self.writeable_cache_file.name)
+            except Exception:
+                pass
 
 
 class ToolCache:
