@@ -50,6 +50,14 @@ class QuotaAgent(metaclass=abc.ABCMeta):
             usage = user.total_disk_usage
         return usage
 
+    def is_over_quota(self, app, job, job_destination):
+        """Return True if the user or history is over quota for specified job.
+
+        job_destination unused currently but an important future application will
+        be admins and/or users dynamically specifying which object stores to use
+        and that will likely come in through the job destination.
+        """
+
 
 class NoQuotaAgent(QuotaAgent):
     """Base quota agent, always returns no quota"""
@@ -66,6 +74,9 @@ class NoQuotaAgent(QuotaAgent):
 
     def get_percent(self, trans=None, user=False, history=False, usage=False, quota=False):
         return None
+
+    def is_over_quota(self, app, job, job_destination):
+        return False
 
 
 class DatabaseQuotaAgent(QuotaAgent):
@@ -204,6 +215,17 @@ class DatabaseQuotaAgent(QuotaAgent):
                 gqa = self.model.GroupQuotaAssociation(group, quota)
                 self.sa_session.add(gqa)
             self.sa_session.flush()
+
+    def is_over_quota(self, app, job, job_destination):
+        quota = self.get_quota(job.user)
+        if quota is not None:
+            try:
+                usage = self.get_usage(user=job.user, history=job.history)
+                if usage > quota:
+                    return True
+            except AssertionError:
+                pass  # No history, should not happen with an anon user
+        return False
 
 
 def get_quota_agent(config, model):
