@@ -1,10 +1,10 @@
 <template>
-    <div>
-        <a class="name" title="titleElementName" href="javascript:void(0)" role="button">
+    <div class="element-in-list" v-bind:class="{ selected: isSelected }" @click="selectElement">
+        <a class="name" title="titleElementName" href="javascript:void(0)" role="button" @click="clickName">
             {{ element.name }}
         </a>
-        <button class="discard btn btn-sm" title="titleDiscardButton">
-            _l("Discard")
+        <button class="discard-btn btn-sm" title="titleDiscardButton">
+            {{ l("Discard") }}
         </button>
     </div>
 </template>
@@ -15,8 +15,8 @@ export default {
     props: {
         //TODO: do we need a prop for attributes?
         element: {
-            required: true
-        }
+            required: true,
+        },
     },
     data: function () {
         return {
@@ -27,84 +27,87 @@ export default {
             className: "collection-element",
             titleDiscardButton: _l("Remove this dataset from the list"),
             titleElementName: _l("Click to rename"),
+            isSelected: false,
         };
     },
+    computed: {},
     methods: {
-        /** select when the li is clicked */
-        _click(ev) {
-            ev.stopPropagation();
-            this.select(ev);
-        },
-        /** discard when the discard button is clicked */
-        _clickDiscard(ev) {
-            ev.stopPropagation();
-            this.discard();
-        },
-        /** rename a pair when the name is clicked */
-        _clickName(ev) {
-            ev.stopPropagation();
-            ev.preventDefault();
-
-            var response = prompt(`${_l("Enter a new name for the element")}:`, this.element.name);
+        clickName: function () {
+            var response = prompt(_l("Enter a new name for the element"), this.element.name);
 
             if (response) {
                 this.element.name = response;
-                this.render();
             }
-            //TODO: cancelling with ESC leads to closure of the creator...
+            return this.element.name;
         },
-        /** remove the DOM and any listeners */
-        destroy() {
-            this.off();
-            this.$el.remove();
+        selectElement: function () {
+            this.isSelected = !this.isSelected;
+            console.log(this.element.name + "clicked");
+            return this.isSelected;
         },
-        /** animate the removal of this element and pub */
-        discard() {
-            var view = this;
-            var parentWidth = this.$el.parent().width();
-            this.$el.animate({ "margin-right": parentWidth }, "fast", () => {
-                view.trigger("discard", {
-                    source: view,
-                });
-                view.destroy();
-            });
+        l(str) {
+            // _l conflicts private methods of Vue internals, expose as l instead
+            return _l(str);
         },
-        /** dragging for re-ordering */
-        _dragend(ev) {
-            this.$el.removeClass("dragging");
-            this.$el.parent().trigger("collection-element.dragend", [this]);
-        },
-        /** dragging pairs for re-ordering */
-        _dragstart(ev) {
-            if (ev.originalEvent) {
-                ev = ev.originalEvent;
-            }
-            ev.dataTransfer.effectAllowed = "move";
-            ev.dataTransfer.setData("text/plain", JSON.stringify(this.element));
+        //move to computed after this is written.
+        // discard: function () {
 
-            this.$el.addClass("dragging");
-            this.$el.parent().trigger("collection-element.dragstart", [this]);
-        },
-        /** select this element and pub */
-        select(toggle) {
-            this.$el.toggleClass("selected", toggle);
-            this.trigger("select", { source: this, selected: this.$el.hasClass("selected") });
-        },
-        /** manually bubble up an event to the parent/container */
-        _sendToParent(ev) {
-            this.$el.parent().trigger(ev);
-        },
-        /** string rep */
-        toString() {
-            return "DatasetCollectionElementView()";
-        },
+        // },
+        //TODO: template, rendering, OR conditional rendering (i.e. belongs in template)
+        // /** dragging for re-ordering */
+        // _dragend(ev) {
+        //     this.$el.removeClass("dragging");
+        //     this.$el.parent().trigger("collection-element.dragend", [this]);
+        // },
+        // /** dragging pairs for re-ordering */
+        // _dragstart(ev) {
+        //     if (ev.originalEvent) {
+        //         ev = ev.originalEvent;
+        //     }
+        //     ev.dataTransfer.effectAllowed = "move";
+        //     ev.dataTransfer.setData("text/plain", JSON.stringify(this.element));
+
+        //     this.$el.addClass("dragging");
+        //     this.$el.parent().trigger("collection-element.dragstart", [this]);
+        // },
+
+        //TODO: actual method - must be rewritten, assess whether methods/created/computed/etc.
+        // /** remove the DOM and any listeners */
+        // destroy() {
+        //     this.off();
+        //     this.$el.remove();
+        // },
+        // /** animate the removal of this element and pub */
+        // discard() {
+        //     var view = this;
+        //     var parentWidth = this.$el.parent().width();
+        //     this.$el.animate({ "margin-right": parentWidth }, "fast", () => {
+        //         view.trigger("discard", {
+        //             source: view,
+        //         });
+        //         view.destroy();
+        //     });
+        // },
+        // /** manually bubble up an event to the parent/container */
+        // _sendToParent(ev) {
+        //     this.$el.parent().trigger(ev);
+        // },
+        // /** string rep */
+        // toString() {
+        //     return "DatasetCollectionElementView()";
+        // },
     },
     //initialize method
-    created: {
-        initialize: function (attributes) {
-            this.element = attributes.element || {};
-            this.selected = attributes.selected || false;
-        },
-    },
 };
 </script>
+
+
+<style>
+.element-in-list{
+    border-width: 1px 0px 1px 0px;
+}
+.discard-btn{
+    float: right;
+}
+
+</style>

@@ -1,22 +1,39 @@
 <template>
-    <div>
+    <div class="collection-creator">
         <div class="header flex-row no-flex">
-            <div class="main-help well clear">
-                <!-- <a class="more-help" href="javascript:void(0);" role="button">
-                    {{ l("More help") }}
-                </a> -->
+            <div class="main-help well clear" v-bind:class="{ expanded: isExpanded }">
+                <a
+                    class="more-help"
+                    href="javascript:void(0);"
+                    role="button"
+                    @click="_clickForHelp"
+                    :title="titleForHelp"
+                >
+                    <div v-if="!isExpanded">
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </a>
                 <div class="help-content">
                     <!-- each collection that extends this will add their own help content -->
                     <slot name="help-content"></slot>
-                    <!-- <a class="less-help" href="javascript:void(0);" role="button"> {{ l("Less") }} </a>
-                    <span class="alert-message"></span> -->
+                    <a
+                        class="more-help"
+                        href="javascript:void(0);"
+                        role="button"
+                        @click="_clickForHelp"
+                        :title="titleForHelp"
+                    >
+                        <div v-if="isExpanded"> 
+                            <i class="fas fa-chevron-up"></i>
+                        </div>
+                    </a>
                 </div>
             </div>
-            <div class="alert alert-dismissable">
+            <!-- <div class="alert alert-dismissable">
                 <button type="button" class="close" data-dismiss="alert" :title="titleMoreHelp" aria-hidden="true">
                     &times;
                 </button>
-            </div>
+            </div> -->
         </div>
         <div class="middle flex-row flex-row-container">
             <slot name="middle-content"></slot>
@@ -47,9 +64,7 @@
                             <span class="caret"></span>
                         </button> -->
                         <b-dropdown text="l('Create a different kind of collection')">
-                            <b-dropdown-item>
-                                {{ l("Create a <i>single</i> pair") }}
-                            </b-dropdown-item>
+                            <b-dropdown-item> {{ l("Create a <i>single</i> pair") }} </b-dropdown-item>
                         </b-dropdown>
                         <!-- <div class="dropdown-menu" role="menu">
                             <a class="dropdown-item" href="javascript:void(0)" role="button">
@@ -67,21 +82,29 @@
         </div>
     </div>
 </template>
+
 <script>
 import _l from "utils/localization";
-import BootstrapVue from "bootstrap-vue";
 export default {
     data: function () {
         return {
+            titleForHelp: _l("Expand or Close Help"),
             titleMoreHelp: _l("Close and show more help"),
             placeholderEnterName: _l("Enter a name for your new collection"),
             dropdownText: _l("Create a <i>single</> pair"),
+            isExpanded: false,
         };
     },
     methods: {
         l(str) {
             // _l conflicts private methods of Vue internals, expose as l instead
             return _l(str);
+        },
+        // ........................................................................ header
+        /** expand help */
+        _clickForHelp: function () {
+            this.isExpanded = !this.isExpanded;
+            return this.isExpanded;
         },
     },
 };

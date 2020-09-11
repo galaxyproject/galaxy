@@ -21,7 +21,6 @@ export default {
                             oncancel: options.oncancel,
                             oncreate: options.oncreate,
                             defaultHideSourceItems: options.defaultHideSourceItems,
-                            //TODO : autoscollDist, highlightClr
                         },
                     }).$mount(vm);
                     return deferred;
