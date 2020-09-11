@@ -67,7 +67,7 @@ class MockApp(object):
         self.security_agent = self.model.security_agent
         self.visualizations_registry = MockVisualizationsRegistry()
         self.tag_handler = tags.GalaxyTagHandler(self.model.context)
-        self.quota_agent = quota.QuotaAgent(self.model)
+        self.quota_agent = quota.DatabaseQuotaAgent(self.model)
         self.init_datatypes()
         self.job_config = Bunch(
             dynamic_params=None,
