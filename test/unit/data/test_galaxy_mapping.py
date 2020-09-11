@@ -12,7 +12,41 @@ datatypes_registry.load_datatypes()
 galaxy.model.set_datatypes_registry(datatypes_registry)
 
 
-class MappingTests(unittest.TestCase):
+class BaseModelTestCase(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        # Start the database and connect the mapping
+        cls.model = mapping.init("/tmp", "sqlite:///:memory:", create_tables=True, object_store=MockObjectStore())
+        assert cls.model.engine is not None
+
+    @classmethod
+    def query(cls, type):
+        return cls.model.session.query(type)
+
+    @classmethod
+    def persist(cls, *args, **kwargs):
+        session = cls.session()
+        flush = kwargs.get('flush', True)
+        for arg in args:
+            session.add(arg)
+            if flush:
+                session.flush()
+        if kwargs.get('expunge', not flush):
+            cls.expunge()
+        return arg  # Return last or only arg.
+
+    @classmethod
+    def session(cls):
+        return cls.model.session
+
+    @classmethod
+    def expunge(cls):
+        cls.model.session.flush()
+        cls.model.session.expunge_all()
+
+
+class MappingTests(BaseModelTestCase):
 
     def test_annotations(self):
         model = self.model
@@ -544,37 +578,6 @@ class MappingTests(unittest.TestCase):
 
     def new_hda(self, history, **kwds):
         return history.add_dataset(self.model.HistoryDatasetAssociation(create_dataset=True, sa_session=self.model.session, **kwds))
-
-    @classmethod
-    def setUpClass(cls):
-        # Start the database and connect the mapping
-        cls.model = mapping.init("/tmp", "sqlite:///:memory:", create_tables=True, object_store=MockObjectStore())
-        assert cls.model.engine is not None
-
-    @classmethod
-    def query(cls, type):
-        return cls.model.session.query(type)
-
-    @classmethod
-    def persist(cls, *args, **kwargs):
-        session = cls.session()
-        flush = kwargs.get('flush', True)
-        for arg in args:
-            session.add(arg)
-            if flush:
-                session.flush()
-        if kwargs.get('expunge', not flush):
-            cls.expunge()
-        return arg  # Return last or only arg.
-
-    @classmethod
-    def session(cls):
-        return cls.model.session
-
-    @classmethod
-    def expunge(cls):
-        cls.model.session.flush()
-        cls.model.session.expunge_all()
 
 
 class MockObjectStore:
