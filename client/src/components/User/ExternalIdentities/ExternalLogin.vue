@@ -5,7 +5,6 @@
             <!-- OIDC login-->
             <hr class="my-4" />
             <div class="cilogon" v-if="cilogonListShow">
-                
                 <div v-if="login_page">
                     <!--Only Display if CILogon/Custos is configured-->
                     <b-form-group label="Use existing institutional login">
@@ -25,10 +24,7 @@
                         </b-form-checkbox>
                     </b-form-group>
 
-                    <b-button
-                        v-if="cilogon_enabled"
-                        @click="submitCILogon('cilogon')"
-                        :disabled="selected === null"
+                    <b-button v-if="cilogon_enabled" @click="submitCILogon('cilogon')" :disabled="selected === null"
                         >Sign in with Institutional Credentials*</b-button
                     >
                     <!--convert to v-else-if to allow only one or the other. if both enabled, put the one that should be default first-->
@@ -41,16 +37,12 @@
                 </div>
 
                 <div v-else>
-                    <b-button
-                        v-if="cilogon_enabled"
-                        @click="toggleCILogon('cilogon')"
+                    <b-button v-if="cilogon_enabled" @click="toggleCILogon('cilogon')"
                         >Sign in with Institutional Credentials*</b-button
                     >
 
-                    <b-button v-if="custos_enabled" @click="toggleCILogon('custos')"
-                        >Sign in with Custos*</b-button
-                    >
-                    
+                    <b-button v-if="custos_enabled" @click="toggleCILogon('custos')">Sign in with Custos*</b-button>
+
                     <b-form-group v-if="toggle_cilogon">
                         <multiselect
                             placeholder="Select your institution"
@@ -72,11 +64,10 @@
 
                 <p class="mt-3">
                     <small class="text-muted">
-                        * Galaxy uses CILogon via Custos to enable you to log in from this
-                        organization. By clicking 'Sign In', you agree to the
-                        <a href="https://ca.cilogon.org/policy/privacy">CILogon</a> privacy policy
-                        and you agree to share your username, email address, and affiliation with
-                        CILogon, Custos, and Galaxy.
+                        * Galaxy uses CILogon via Custos to enable you to log in from this organization. By clicking
+                        'Sign In', you agree to the
+                        <a href="https://ca.cilogon.org/policy/privacy">CILogon</a> privacy policy and you agree to
+                        share your username, email address, and affiliation with CILogon, Custos, and Galaxy.
                     </small>
                 </p>
             </div>
@@ -118,25 +109,12 @@ export default {
             type: Boolean,
             required: false,
         },
-        
-        // show_welcome_with_login: {
-        //     type: Boolean,
-        //     required: false,
-        // },
-        // welcome_url: {
-        //     type: String,
-        //     required: false,
-        // },
     },
     data() {
         const galaxy = getGalaxyInstance();
         return {
-            // url: null,
-            // provider: null,
             messageText: null,
             messageVariant: null,
-            // redirect: galaxy.params.redirect,
-            // session_csrf_token: galaxy.session_csrf_token,
             enable_oidc: galaxy.config.enable_oidc,
             oidc_idps: galaxy.config.oidc,
             cilogon_idps: [],
@@ -163,10 +141,10 @@ export default {
             return this.messageText != null;
         },
         cilogon_enabled() {
-            return Object.prototype.hasOwnProperty.call(this.oidc_idps, 'cilogon');
+            return Object.prototype.hasOwnProperty.call(this.oidc_idps, "cilogon");
         },
         custos_enabled() {
-            return Object.prototype.hasOwnProperty.call(this.oidc_idps, 'custos');
+            return Object.prototype.hasOwnProperty.call(this.oidc_idps, "custos");
         },
     },
     methods: {
