@@ -7,11 +7,12 @@ import uuid
 from datetime import datetime
 
 import irods.keywords as kw
-from galaxy.util import directory_hash_id
 from irods.exception import (CollectionDoesNotExist, DataObjectDoesNotExist,
                              NetworkException)
 from irods.session import iRODSSession
 from psycopg2 import connect
+
+from galaxy.util import directory_hash_id
 
 last_accessed_sql_statement = """SELECT iq.dataset_id, MAX(iq.create_time) AS max_create_time
                                  FROM (SELECT ds.id as dataset_id, j.create_time
