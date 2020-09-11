@@ -6,7 +6,6 @@ import time
 import galaxy.model
 import galaxy.model.security
 import galaxy.queues
-import galaxy.quota
 import galaxy.security
 from galaxy import config, job_metrics, jobs
 from galaxy.config_watchers import ConfigWatchers
@@ -27,6 +26,7 @@ from galaxy.queue_worker import (
     GalaxyQueueWorker,
     send_local_control_task,
 )
+from galaxy.quota import get_quota_agent
 from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from galaxy.tool_shed.galaxy_install.update_repository_manager import UpdateRepositoryManager
 from galaxy.tool_util.deps.views import DependencyResolversView
@@ -175,10 +175,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
             model=self.security_agent.model,
             permitted_actions=self.security_agent.permitted_actions)
         # Load quota management.
-        if self.config.enable_quotas:
-            self.quota_agent = galaxy.quota.QuotaAgent(self.model)
-        else:
-            self.quota_agent = galaxy.quota.NoQuotaAgent(self.model)
+        self.quota_agent = get_quota_agent(self.config, self.model)
         # Heartbeat for thread profiling
         self.heartbeat = None
         from galaxy import auth
