@@ -1,9 +1,9 @@
 import argparse
-from datetime import datetime
 import json
+from datetime import datetime
 import os
-import uuid
 import shutil
+import uuid
 import subprocess
 
 import irods.keywords as kw
