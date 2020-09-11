@@ -60,3 +60,15 @@ class QuotaTestCase(BaseModelTestCase):
 
     def _assert_user_quota_is(self, user, amount):
         assert amount == self.quota_agent.get_quota(user)
+        if amount is None:
+            user.total_disk_usage = 1000
+            job = self.model.Job()
+            job.user = user
+            assert not self.quota_agent.is_over_quota(None, job, None)
+        else:
+            job = self.model.Job()
+            job.user = user
+            user.total_disk_usage = amount - 1
+            assert not self.quota_agent.is_over_quota(None, job, None)
+            user.total_disk_usage = amount + 1
+            assert self.quota_agent.is_over_quota(None, job, None)
