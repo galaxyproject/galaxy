@@ -43,9 +43,17 @@ class QuotaTestCase(BaseModelTestCase):
         self._add_group_quota(u, quota)
         self._assert_user_quota_is(u, 97)
 
-        quota = model.Quota(name="quota quota bigger base", amount=100, operation="=")
+        quota = model.Quota(name="group quota bigger base", amount=100, operation="=")
         self._add_group_quota(u, quota)
         self._assert_user_quota_is(u, 127)
+
+        quota.deleted = True
+        self.persist(quota)
+        self._assert_user_quota_is(u, 97)
+
+        quota = model.Quota(name="group quota unlimited", amount=-1, operation="=")
+        self._add_group_quota(u, quota)
+        self._assert_user_quota_is(u, None)
 
     def _add_group_quota(self, user, quota):
         group = self.model.Group()
