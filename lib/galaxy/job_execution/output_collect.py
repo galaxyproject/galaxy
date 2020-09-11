@@ -379,8 +379,17 @@ def collect_primary_datasets(job_context, output, input_ext):
                 # Before I guess pop() would just have thrown an IndexError
                 raise Exception("Problem parsing metadata fields for file %s" % filename)
             designation = fields_match.designation
+            ext = fields_match.ext
+            if ext == "input":
+                ext = input_ext
+            dbkey = fields_match.dbkey
+            if dbkey == INPUT_DBKEY_TOKEN:
+                dbkey = job_context.input_dbkey
             if filename_index == 0 and extra_file_collector.assign_primary_output and output_index == 0:
                 new_outdata_name = fields_match.name or "{} ({})".format(outdata.name, designation)
+                outdata.change_datatype(ext)
+                outdata.dbkey = dbkey
+                outdata.designation = designation
                 outdata.dataset.external_filename = None  # resets filename_override
                 # Move data from temp location to dataset location
                 job_context.object_store.update_from_file(outdata.dataset, file_name=filename, create=True)
@@ -389,12 +398,6 @@ def collect_primary_datasets(job_context, output, input_ext):
             if name not in primary_datasets:
                 primary_datasets[name] = OrderedDict()
             visible = fields_match.visible
-            ext = fields_match.ext
-            if ext == "input":
-                ext = input_ext
-            dbkey = fields_match.dbkey
-            if dbkey == INPUT_DBKEY_TOKEN:
-                dbkey = job_context.input_dbkey
             # Create new primary dataset
             new_primary_name = fields_match.name or "{} ({})".format(outdata.name, designation)
             info = outdata.info

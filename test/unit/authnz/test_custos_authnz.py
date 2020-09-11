@@ -10,7 +10,7 @@ from six.moves.urllib.parse import parse_qs, quote, urlparse
 
 from galaxy.authnz import custos_authnz
 from galaxy.model import CustosAuthnzToken, User
-from ..unittest_utils.galaxy_mock import MockApp
+from ..unittest_utils.galaxy_mock import MockTrans
 
 
 class CustosAuthnzTestCase(unittest.TestCase):
@@ -189,13 +189,16 @@ class CustosAuthnzTestCase(unittest.TestCase):
             def query(self, cls):
                 return self._query
 
-        class Trans:
-            cookies = {}
-            cookies_args = {}
-            request = Request()
-            sa_session = Session()
-            app = MockApp()
-            user = None
+        class Trans(MockTrans):
+
+            def __init__(self, app=None, user=None, history=None, **kwargs):
+                super().__init__(app, user, history, **kwargs)
+                self.cookies = {}
+                self.cookies_args = {}
+                self.request = Request()
+                self.session = self.sa_session
+                self.sa_session = Session()
+                self.user = None
 
             def set_cookie(self, value, name=None, **kwargs):
                 self.cookies[name] = value
@@ -315,16 +318,17 @@ class CustosAuthnzTestCase(unittest.TestCase):
             state_token="xxx",
             authz_code=self.test_code, trans=self.trans,
             login_redirect_url="http://localhost:8000/")
+        self.trans.set_user(user)
         self.assertTrue(self._fetch_token_called)
         self.assertTrue(self._get_userinfo_called)
-        self.assertEqual(2, len(self.trans.sa_session.items), "Session has new User and new CustosAuthnzToken")
-        added_user = self.trans.sa_session.items[0]
+        self.assertEqual(1, len(self.trans.sa_session.items), "Session has new CustosAuthnzToken")
+        added_user = self.trans.get_user()
         self.assertIsInstance(added_user, User)
         self.assertEqual(self.test_username, added_user.username)
         self.assertEqual(self.test_email, added_user.email)
         self.assertIsNotNone(added_user.password)
         # Verify added_custos_authnz_token
-        added_custos_authnz_token = self.trans.sa_session.items[1]
+        added_custos_authnz_token = self.trans.sa_session.items[0]
         self.assertIsInstance(added_custos_authnz_token, CustosAuthnzToken)
         self.assertIs(user, added_custos_authnz_token.user)
         self.assertEqual(self.test_access_token, added_custos_authnz_token.access_token)

@@ -1,10 +1,20 @@
 import base64
+from os import environ
 
+import pytest
 import yaml
 
 from galaxy.workflow.trs_proxy import (
     GA4GH_GALAXY_DESCRIPTOR,
+    parse_search_kwds,
     TrsProxy,
+)
+
+# search test is very brittle (depends on production values) and is very slow.
+# still good to know search is working though - even if manually
+search_test = pytest.mark.skipif(
+    not environ.get('GALAXY_TEST_INCLUDE_DOCKSTORE_SEARCH'),
+    reason="GALAXY_TEST_INCLUDE_DOCKSTORE_SEARCH not set"
 )
 
 
@@ -33,3 +43,27 @@ def test_proxy():
     descriptor = proxy.get_version_descriptor("dockstore", tool_id, version_id)
     content = yaml.safe_load(descriptor)
     assert "inputs" in content
+
+
+@search_test
+def test_search():
+    proxy = TrsProxy()
+
+    search_kwd = parse_search_kwds("documentation")
+    response = proxy.get_tools("dockstore", **search_kwd)
+    assert len(response) == 1
+
+    search_kwd = parse_search_kwds("n:example")
+    response = proxy.get_tools("dockstore", **search_kwd)
+    assert len(response) == 2
+
+    search_kwd = parse_search_kwds("organization:jmchilton")
+    response = proxy.get_tools("dockstore", **search_kwd)
+    assert len(response) == 2
+
+    search_kwd = parse_search_kwds("organization:jmchiltonx")
+    response = proxy.get_tools("dockstore", **search_kwd)
+    assert len(response) == 0
+
+    response = proxy.get_tools("dockstore", descriptorType="GALAXY")
+    assert len(response) == 2

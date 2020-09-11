@@ -3252,6 +3252,12 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         """
         return self.dataset.get_access_roles(trans)
 
+    def purge_usage_from_quota(self, user):
+        """Remove this HDA's quota_amount from user's quota.
+        """
+        if user:
+            user.adjust_total_disk_usage(-self.quota_amount(user))
+
     def quota_amount(self, user):
         """
         Return the disk space used for this HDA relevant to user quotas.
@@ -4412,6 +4418,14 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
         object_session(self).add(hdca)
         object_session(self).flush()
         return hdca
+
+    @property
+    def waiting_for_elements(self):
+        summary = self.job_state_summary
+        if summary.all_jobs > 0 and summary.deleted + summary.error + summary.failed + summary.ok == summary.all_jobs:
+            return False
+        else:
+            return self.collection.waiting_for_elements
 
     def contains_collection(self, collection_id):
         """Checks to see that the indicated collection is a member of the

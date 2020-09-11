@@ -1,5 +1,6 @@
 """The module defines the abstract interface for dealing tool dependency resolution plugins."""
 import errno
+import os.path
 from abc import (
     ABCMeta,
     abstractmethod,
@@ -86,9 +87,23 @@ class MappableDependencyResolver:
         mapping_files = dependency_manager.get_resolver_option(self, "mapping_files", explicit_resolver_options=kwds)
         mappings = []
         if mapping_files:
+            search_dirs = [os.getcwd()]
+            if isinstance(dependency_manager.default_base_path, str):
+                search_dirs.append(dependency_manager.default_base_path)
+
+            def candidates(path):
+                if os.path.isabs(path):
+                    yield path
+                else:
+                    for search_dir in search_dirs:
+                        yield os.path.join(search_dir, path)
+
             mapping_files = listify(mapping_files)
             for mapping_file in mapping_files:
-                mappings.extend(MappableDependencyResolver._mapping_file_to_list(mapping_file))
+                for full_path in candidates(mapping_file):
+                    if os.path.exists(full_path):
+                        mappings.extend(MappableDependencyResolver._mapping_file_to_list(full_path))
+                        break
         self._mappings = mappings
 
     @staticmethod

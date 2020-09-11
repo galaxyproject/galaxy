@@ -11,6 +11,51 @@ from galaxy.web.formatting import expand_pretty_datetime_format
 TestData = namedtuple('TestData', ('key', 'expected', 'loaded'))
 
 
+@pytest.fixture(scope='module')
+def appconfig():
+    return config.GalaxyAppConfiguration()
+
+
+@pytest.fixture
+def mock_config_file(monkeypatch):
+    # Patch this; otherwise tempfile.tempdir will be set, which is a global variable that
+    # defines the value of the default `dir` argument to the functions in Python's
+    # tempfile module - which breaks multiple tests.
+    monkeypatch.setattr(config.GalaxyAppConfiguration, '_override_tempdir', lambda a, b: None)
+    # Set this to return None to force the creation of base config directories
+    # in _set_config_directories(). Used to test the values of these directories only.
+    monkeypatch.setattr(config, 'find_config_file', lambda x: None)
+
+
+def test_root(appconfig):
+    assert appconfig.root == os.path.abspath('.')
+
+
+def test_common_base_config(appconfig):
+    assert appconfig.shed_tools_dir == os.path.join(appconfig.data_dir, 'shed_tools')
+    assert appconfig.sample_config_dir == os.path.join(appconfig.root, 'lib', 'galaxy', 'config', 'sample')
+
+
+def test_base_config_if_running_from_source(monkeypatch, mock_config_file):
+    # Simulated condition: running from source, config_file is None.
+    monkeypatch.setattr(config, 'running_from_source', True)
+    appconfig = config.GalaxyAppConfiguration()
+    assert not appconfig.config_file
+    assert appconfig.config_dir == os.path.join(appconfig.root, 'config')
+    assert appconfig.data_dir == os.path.join(appconfig.root, 'database')
+    assert appconfig.managed_config_dir == appconfig.config_dir
+
+
+def test_base_config_if_running_not_from_source(monkeypatch, mock_config_file):
+    # Simulated condition: running not from source, config_file is None.
+    monkeypatch.setattr(config, 'running_from_source', False)
+    appconfig = config.GalaxyAppConfiguration()
+    assert not appconfig.config_file
+    assert appconfig.config_dir == os.getcwd()
+    assert appconfig.data_dir == os.path.join(appconfig.config_dir, 'data')
+    assert appconfig.managed_config_dir == os.path.join(appconfig.data_dir, 'config')
+
+
 def listify_strip(value):
     return listify(value, do_strip=True)
 
@@ -61,11 +106,13 @@ class ExpectedValues:
             'citation_cache_lock_dir': self._in_data_dir('citations/locks'),
             'cluster_files_directory': self._in_data_dir('pbs'),
             'config_dir': self._in_config_dir(),
+            'containers_config_file': self._in_config_dir('containers_conf.yml'),
             'data_dir': self._in_data_dir(),
             'data_manager_config_file': self._in_config_dir('data_manager_conf.xml'),
             'datatypes_config_file': self._in_sample_dir('datatypes_conf.xml.sample'),
             'dependency_resolvers_config_file': self._in_config_dir('dependency_resolvers_conf.xml'),
             'dynamic_proxy_session_map': self._in_data_dir('session_map.sqlite'),
+            'error_report_file': self._in_config_dir('error_report.yml'),
             'file_path': self._in_data_dir('objects'),
             'file_sources_config_file': self._in_config_dir('file_sources_conf.yml'),
             'galaxy_data_manager_data_path': self._in_root_dir('tool-data'),
@@ -76,11 +123,13 @@ class ExpectedValues:
             'job_metrics_config_file': self._in_sample_dir('job_metrics_conf.xml.sample'),
             'job_resource_params_file': self._in_config_dir('job_resource_params_conf.xml'),
             'len_file_path': self._in_root_dir('tool-data/shared/ucsc/chrom'),
+            'local_conda_mapping_file': self._in_config_dir('local_conda_mapping.yml'),
             'managed_config_dir': self._in_managed_config_dir(),
             'markdown_export_css': self._in_config_dir('markdown_export.css'),
             'markdown_export_css_invocation_reports': self._in_config_dir('markdown_export_invocation_reports.css'),
             'markdown_export_css_pages': self._in_config_dir('markdown_export_pages.css'),
             'migrated_tools_config': self._in_managed_config_dir('migrated_tools_conf.xml'),
+            'modules_mapping_files': self._in_config_dir('environment_modules_mapping.yml'),
             'mulled_resolution_cache_data_dir': self._in_data_dir('mulled/data'),
             'mulled_resolution_cache_lock_dir': self._in_data_dir('mulled/locks'),
             'new_file_path': self._in_data_dir('tmp'),
@@ -98,6 +147,7 @@ class ExpectedValues:
             'tool_config_file': self._in_sample_dir('tool_conf.xml.sample'),
             'tool_data_path': self._in_root_dir('tool-data'),
             'tool_data_table_config_path': self._in_sample_dir('tool_data_table_conf.xml.sample'),
+            'tool_destinations_config_file': self._in_config_dir('tool_destinations.yml'),
             'tool_path': self._in_root_dir('tools'),
             'tool_search_index_dir': self._in_data_dir('tool_search_index'),
             'tool_sheds_config_file': self._in_config_dir('tool_sheds_conf.xml'),
@@ -155,54 +205,6 @@ class ExpectedValues:
 
     def get_expected_amqp_internal_connection(self, value):
         return 'sqlalchemy+sqlite:///{}/control.sqlite?isolation_level=IMMEDIATE'.format(self._config.data_dir)
-
-
-@pytest.fixture
-def mock_config_file(monkeypatch):
-    # Set this to return None to force the creation of base config directories
-    # in _set_config_directories(). Used to test the values of these directories only.
-    monkeypatch.setattr(config, 'find_config_file', lambda x: None)
-
-
-@pytest.fixture
-def mock_config_running_from_source(monkeypatch, mock_config_file):
-    # Simulated condition: running from source, config_file is None.
-    monkeypatch.setattr(config, 'running_from_source', True)
-
-
-@pytest.fixture
-def mock_config_running_not_from_source(monkeypatch, mock_config_file):
-    # Simulated condition: running not from source, config_file is None.
-    monkeypatch.setattr(config, 'running_from_source', False)
-
-
-@pytest.fixture
-def appconfig(monkeypatch):
-    monkeypatch.setattr(config.GalaxyAppConfiguration, '_override_tempdir', lambda a, b: None)
-    return config.GalaxyAppConfiguration()
-
-
-def test_root(appconfig):
-    assert appconfig.root == os.path.abspath('.')
-
-
-def test_base_config_if_running_from_source(mock_config_running_from_source, appconfig):
-    assert not appconfig.config_file
-    assert appconfig.config_dir == os.path.join(appconfig.root, 'config')
-    assert appconfig.data_dir == os.path.join(appconfig.root, 'database')
-    assert appconfig.managed_config_dir == appconfig.config_dir
-
-
-def test_base_config_if_running_not_from_source(mock_config_running_not_from_source, appconfig):
-    assert not appconfig.config_file
-    assert appconfig.config_dir == os.getcwd()
-    assert appconfig.data_dir == os.path.join(appconfig.config_dir, 'data')
-    assert appconfig.managed_config_dir == os.path.join(appconfig.data_dir, 'config')
-
-
-def test_common_base_config(appconfig):
-    assert appconfig.shed_tools_dir == os.path.join(appconfig.data_dir, 'shed_tools')
-    assert appconfig.sample_config_dir == os.path.join(appconfig.root, 'lib', 'galaxy', 'config', 'sample')
 
 
 def get_config_data():

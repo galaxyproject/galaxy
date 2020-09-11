@@ -34,26 +34,17 @@ const ToolPanel = Backbone.View.extend({
 
     mountVueComponent: function (el) {
         const Galaxy = getGalaxyInstance();
-        return mountVueComponent(SidePanel)(
+        return (this.component = mountVueComponent(SidePanel)(
             {
                 side: "left",
                 currentPanel: ToolBox,
-                currentPanelProperties: Galaxy.config,
+                currentPanelProperties: {
+                    storedWorkflowMenuEntries: Galaxy.config.stored_workflow_menu_entries,
+                    toolbox: Galaxy.config.toolbox,
+                },
             },
             el
-        );
-    },
-
-    getVueComponent: function () {
-        const Galaxy = getGalaxyInstance();
-        const SidePanelClass = Vue.extend(SidePanel);
-        return new SidePanelClass({
-            propsData: {
-                side: "left",
-                currentPanel: ToolBox,
-                currentPanelProperties: Galaxy.config,
-            },
-        });
+        ));
     },
 
     toString: function () {

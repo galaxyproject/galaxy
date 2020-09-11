@@ -112,12 +112,12 @@ export default {
         },
     },
     methods: {
-        toggleLogin: function () {
+        toggleLogin() {
             if (this.$root.toggleLogin) {
                 this.$root.toggleLogin();
             }
         },
-        submitGalaxyLogin: function (method) {
+        submitGalaxyLogin(method) {
             const rootUrl = getAppRoot();
             axios
                 .post(`${rootUrl}user/login`, this.$data)
@@ -139,7 +139,7 @@ export default {
                     this.messageText = message || "Login failed for an unknown reason.";
                 });
         },
-        reset: function (ev) {
+        reset(ev) {
             const rootUrl = getAppRoot();
             ev.preventDefault();
             axios

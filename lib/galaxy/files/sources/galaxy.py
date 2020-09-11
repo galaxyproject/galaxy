@@ -22,7 +22,7 @@ class UserFtpFilesSource(PosixFilesSource):
     def get_prefix(self):
         return None
 
-    def get_schema(self):
+    def get_scheme(self):
         return "gxftp"
 
 
@@ -42,7 +42,7 @@ class LibraryImportFilesSource(PosixFilesSource):
     def get_prefix(self):
         return None
 
-    def get_schema(self):
+    def get_scheme(self):
         return "gximport"
 
 
@@ -62,7 +62,7 @@ class UserLibraryImportFilesSource(PosixFilesSource):
     def get_prefix(self):
         return None
 
-    def get_schema(self):
+    def get_scheme(self):
         return "gxuserimport"
 
 

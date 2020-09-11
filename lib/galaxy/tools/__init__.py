@@ -262,11 +262,11 @@ class ToolBox(BaseGalaxyToolBox):
         )
 
     def can_load_config_file(self, config_filename):
-        if config_filename == self.app.config.shed_tool_config_file and not self.app.config.shed_tool_config_file_set:
+        if config_filename == self.app.config.shed_tool_config_file and not self.app.config.is_set('shed_tool_config_file'):
             if self.dynamic_confs():
                 # Do not load or create a default shed_tool_config_file if another shed_tool_config file has already been loaded
                 return False
-        elif self.app.config.tool_config_file_set:
+        elif self.app.config.is_set('tool_config_file'):
             log.warning(
                 "The default shed tool config file (%s) has been added to the tool_config_file option, if this is "
                 "not the desired behavior, please set shed_tool_config_file to your primary shed-enabled tool "
@@ -602,6 +602,13 @@ class Tool(Dictifiable):
     def is_latest_version(self):
         tool_versions = self.tool_versions
         return not tool_versions or self.version == self.tool_versions[-1]
+
+    @property
+    def latest_version(self):
+        if self.is_latest_version:
+            return self
+        else:
+            return self.app.tool_cache.get_tool_by_id(self.lineage.get_versions()[-1].id)
 
     @property
     def is_datatype_converter(self):
@@ -1532,7 +1539,7 @@ class Tool(Dictifiable):
             else:
                 # Update state for all inputs on the current page taking new
                 # values from `incoming`.
-                populate_state(request_context, self.inputs, expanded_incoming, params, errors)
+                populate_state(request_context, self.inputs, expanded_incoming, params, errors, simple_errors=False)
                 # If the tool provides a `validate_input` hook, call it.
                 validate_input = self.get_hook('validate_input')
                 if validate_input:
@@ -1555,8 +1562,17 @@ class Tool(Dictifiable):
         all_params, all_errors, rerun_remap_job_id, collection_info = self.expand_incoming(trans=trans, incoming=incoming, request_context=request_context)
         # If there were errors, we stay on the same page and display them
         if any(all_errors):
-            err_data = {key: value for d in all_errors for (key, value) in d.items()}
-            raise exceptions.MessageException(', '.join(msg for msg in err_data.values()), err_data=err_data)
+            # simple param_key -> message string for tool form.
+            err_data = {key: unicodify(value) for d in all_errors for (key, value) in d.items()}
+            param_errors = {}
+            for d in all_errors:
+                for key, value in d.items():
+                    if hasattr(value, 'to_dict'):
+                        value_obj = value.to_dict()
+                    else:
+                        value_obj = {"message": unicodify(value)}
+                    param_errors[key] = value_obj
+            raise exceptions.RequestParameterInvalidException(', '.join(msg for msg in err_data.values()), err_data=err_data, param_errors=param_errors)
         else:
             mapping_params = MappingParameters(incoming, all_params)
             completed_jobs = {}

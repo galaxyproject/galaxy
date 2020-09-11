@@ -1,6 +1,5 @@
 import base64
 import hashlib
-import json
 import logging
 import os
 from datetime import datetime, timedelta
@@ -44,7 +43,10 @@ class CustosAuthnz(IdentityProvider):
 
     def authenticate(self, trans, idphint=None):
         base_authorize_url = self.config['authorization_endpoint']
-        oauth2_session = self._create_oauth2_session(scope=('openid', 'email', 'profile', 'org.cilogon.userinfo'))
+        scopes = ['openid', 'email', 'profile']
+        if self.config['provider'] in ['custos', 'cilogon']:
+            scopes.append('org.cilogon.userinfo')
+        oauth2_session = self._create_oauth2_session(scope=scopes)
         nonce = generate_nonce()
         nonce_hash = self._hash_nonce(nonce)
         extra_params = {"nonce": nonce_hash}
@@ -65,7 +67,6 @@ class CustosAuthnz(IdentityProvider):
         state_cookie = trans.get_cookie(name=STATE_COOKIE_NAME)
         oauth2_session = self._create_oauth2_session(state=state_cookie)
         token = self._fetch_token(oauth2_session, trans)
-        log.debug("token={}".format(json.dumps(token, indent=True)))
         access_token = token['access_token']
         id_token = token['id_token']
         refresh_token = token['refresh_token'] if 'refresh_token' in token else None
@@ -84,7 +85,6 @@ class CustosAuthnz(IdentityProvider):
             userinfo = id_token_decoded
         else:
             userinfo = self._get_userinfo(oauth2_session)
-        log.debug("userinfo={}".format(json.dumps(userinfo, indent=True)))
         email = userinfo['email']
         # Check if username if already taken
         username = userinfo.get('preferred_username', self._generate_username(trans, email))
@@ -113,8 +113,8 @@ class CustosAuthnz(IdentityProvider):
                         raise exceptions.AuthenticationFailed(message)
                 else:
                     user = trans.app.user_manager.create(email=email, username=username)
-                    trans.sa_session.add(user)
-                    trans.sa_session.flush()
+                    if trans.app.config.user_activation_on:
+                        trans.app.user_manager.send_activation_email(trans, email, username)
             custos_authnz_token = CustosAuthnzToken(user=user,
                                    external_user_id=user_id,
                                    provider=self.config['provider'],

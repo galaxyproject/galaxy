@@ -362,7 +362,7 @@ steps:
         # parse workflow table
         table_elements = self.workflow_index_table_elements()
         self.sleep_for(self.wait_types.UX_RENDER)
-        bookmark_td = table_elements[0].find_elements_by_tag_name('td')[3]
+        bookmark_td = table_elements[0].find_elements_by_tag_name('td')[4]
 
         # get bookmark pseudo element
         # https://stackoverflow.com/questions/45427223/click-on-pseudo-element-using-selenium
