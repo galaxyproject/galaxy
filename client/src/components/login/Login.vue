@@ -24,9 +24,11 @@
                             </div>
                             <div v-if="enable_oidc">
                                 <!-- OIDC login-->
-                                <hr class="my-4" />
+                                <external-login :login_page="true" />
+
+                                <!-- <hr class="my-4" />
                                 <div class="cilogon" v-if="cilogonListShow">
-                                    <!--Only Display if CILogon/Custos is configured-->
+                                    <!--Only Display if CILogon/Custos is configured--/>
                                     <b-form-group label="Use existing institutional login">
                                         <multiselect
                                             placeholder="Select your institution"
@@ -50,7 +52,7 @@
                                         :disabled="selected === null"
                                         >Sign in with Institutional Credentials*</b-button
                                     >
-                                    <!--convert to v-else-if to allow only one or the other. if both enabled, put the one that should be default first-->
+                                    <!--convert to v-else-if to allow only one or the other. if both enabled, put the one that should be default first--/>
                                     <b-button
                                         v-if="Object.prototype.hasOwnProperty.call(oidc_idps, 'custos')"
                                         @click="submitCILogon('custos')"
@@ -82,7 +84,7 @@
                                             {{ idp.charAt(0).toUpperCase() + idp.slice(1) }}
                                         </b-button>
                                     </span>
-                                </div>
+                                </div> -->
                             </div>
                         </b-card-body>
                         <b-card-footer>
@@ -128,16 +130,18 @@
 <script>
 import axios from "axios";
 import Vue from "vue";
-import Multiselect from "vue-multiselect";
+// import Multiselect from "vue-multiselect";
 import BootstrapVue from "bootstrap-vue";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
+import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
-        Multiselect,
+        // Multiselect,
+        ExternalLogin,
     },
     props: {
         show_welcome_with_login: {
@@ -155,32 +159,32 @@ export default {
             login: null,
             password: null,
             url: null,
-            provider: null,
+            // provider: null,
             messageText: null,
             messageVariant: null,
             allowUserCreation: galaxy.config.allow_user_creation,
             redirect: galaxy.params.redirect,
             session_csrf_token: galaxy.session_csrf_token,
             enable_oidc: galaxy.config.enable_oidc,
-            oidc_idps: galaxy.config.oidc,
-            cilogon_idps: [],
-            selected: null,
-            rememberIdp: false,
+            // oidc_idps: galaxy.config.oidc,
+            // cilogon_idps: [],
+            // selected: null,
+            // rememberIdp: false,
         };
     },
     computed: {
-        filtered_oidc_idps() {
-            const filtered = Object.assign({}, this.oidc_idps);
-            delete filtered.custos;
-            delete filtered.cilogon;
-            return filtered;
-        },
-        cilogonListShow() {
-            return (
-                Object.prototype.hasOwnProperty.call(this.oidc_idps, "cilogon") ||
-                Object.prototype.hasOwnProperty.call(this.oidc_idps, "custos")
-            );
-        },
+        // filtered_oidc_idps() {
+        //     const filtered = Object.assign({}, this.oidc_idps);
+        //     delete filtered.custos;
+        //     delete filtered.cilogon;
+        //     return filtered;
+        // },
+        // cilogonListShow() {
+        //     return (
+        //         Object.prototype.hasOwnProperty.call(this.oidc_idps, "cilogon") ||
+        //         Object.prototype.hasOwnProperty.call(this.oidc_idps, "custos")
+        //     );
+        // },
         messageShow() {
             return this.messageText != null;
         },
@@ -213,45 +217,45 @@ export default {
                     this.messageText = message || "Login failed for an unknown reason.";
                 });
         },
-        submitOIDCLogin: function (idp) {
-            const rootUrl = getAppRoot();
-            axios
-                .post(`${rootUrl}authnz/${idp}/login`)
-                .then((response) => {
-                    if (response.data.redirect_uri) {
-                        window.location = response.data.redirect_uri;
-                    }
-                })
-                .catch((error) => {
-                    this.messageVariant = "danger";
-                    const message = error.response.data && error.response.data.err_msg;
-                    this.messageText = message || "Login failed for an unknown reason.";
-                });
-        },
-        submitCILogon(idp) {
-            const rootUrl = getAppRoot();
-            this.setIdpPreference();
-            axios
-                .post(`${rootUrl}authnz/${idp}/login/?idphint=${this.selected.EntityID}`)
-                .then((response) => {
-                    if (response.data.redirect_uri) {
-                        window.location = response.data.redirect_uri;
-                    }
-                })
-                .catch((error) => {
-                    this.messageVariant = "danger";
-                    const message = error.response.data && error.response.data.err_msg;
+        // submitOIDCLogin: function (idp) {
+        //     const rootUrl = getAppRoot();
+        //     axios
+        //         .post(`${rootUrl}authnz/${idp}/login`)
+        //         .then((response) => {
+        //             if (response.data.redirect_uri) {
+        //                 window.location = response.data.redirect_uri;
+        //             }
+        //         })
+        //         .catch((error) => {
+        //             this.messageVariant = "danger";
+        //             const message = error.response.data && error.response.data.err_msg;
+        //             this.messageText = message || "Login failed for an unknown reason.";
+        //         });
+        // },
+        // submitCILogon(idp) {
+        //     const rootUrl = getAppRoot();
+        //     this.setIdpPreference();
+        //     axios
+        //         .post(`${rootUrl}authnz/${idp}/login/?idphint=${this.selected.EntityID}`)
+        //         .then((response) => {
+        //             if (response.data.redirect_uri) {
+        //                 window.location = response.data.redirect_uri;
+        //             }
+        //         })
+        //         .catch((error) => {
+        //             this.messageVariant = "danger";
+        //             const message = error.response.data && error.response.data.err_msg;
 
-                    this.messageText = message || "Login failed for an unknown reason.";
-                })
-                .finally(() => {
-                    var urlParams = new URLSearchParams(window.location.search);
+        //             this.messageText = message || "Login failed for an unknown reason.";
+        //         })
+        //         .finally(() => {
+        //             var urlParams = new URLSearchParams(window.location.search);
 
-                    if (urlParams.has("message") && urlParams.get("message") == "Duplicate Email") {
-                        this.$refs.duplicateEmail.show();
-                    }
-                });
-        },
+        //             if (urlParams.has("message") && urlParams.get("message") == "Duplicate Email") {
+        //                 this.$refs.duplicateEmail.show();
+        //             }
+        //         });
+        // },
         reset: function (ev) {
             const rootUrl = getAppRoot();
             ev.preventDefault();
@@ -267,37 +271,37 @@ export default {
                     this.messageText = message || "Password reset failed for an unknown reason.";
                 });
         },
-        getCILogonIdps() {
-            const rootUrl = getAppRoot();
-            axios
-                .get(`${rootUrl}authnz/get_cilogon_idps`)
-                .then((response) => {
-                    this.cilogon_idps = response.data;
-                    //List is originally sorted by OrganizationName which can be different from DisplayName
-                    this.cilogon_idps.sort((a, b) => (a.DisplayName > b.DisplayName ? 1 : -1));
-                })
-                .then(() => {
-                    const preferredIdp = this.getIdpPreference();
-                    if (preferredIdp) {
-                        this.selected = this.cilogon_idps.find((idp) => idp.EntityID === preferredIdp);
-                    }
-                });
-        },
-        setIdpPreference() {
-            if (this.rememberIdp) {
-                localStorage.setItem("galaxy-remembered-idp", this.selected.EntityID);
-            } else {
-                localStorage.removeItem("galaxy-remembered-idp");
-            }
-        },
-        getIdpPreference() {
-            return localStorage.getItem("galaxy-remembered-idp");
-        },
+        // getCILogonIdps() {
+        //     const rootUrl = getAppRoot();
+        //     axios
+        //         .get(`${rootUrl}authnz/get_cilogon_idps`)
+        //         .then((response) => {
+        //             this.cilogon_idps = response.data;
+        //             //List is originally sorted by OrganizationName which can be different from DisplayName
+        //             this.cilogon_idps.sort((a, b) => (a.DisplayName > b.DisplayName ? 1 : -1));
+        //         })
+        //         .then(() => {
+        //             const preferredIdp = this.getIdpPreference();
+        //             if (preferredIdp) {
+        //                 this.selected = this.cilogon_idps.find((idp) => idp.EntityID === preferredIdp);
+        //             }
+        //         });
+        // },
+        // setIdpPreference() {
+        //     if (this.rememberIdp) {
+        //         localStorage.setItem("galaxy-remembered-idp", this.selected.EntityID);
+        //     } else {
+        //         localStorage.removeItem("galaxy-remembered-idp");
+        //     }
+        // },
+        // getIdpPreference() {
+        //     return localStorage.getItem("galaxy-remembered-idp");
+        // },
     },
-    created() {
-        this.rememberIdp = this.getIdpPreference() !== null;
-        this.getCILogonIdps();
-    },
+    // created() {
+    //     this.rememberIdp = this.getIdpPreference() !== null;
+    //     this.getCILogonIdps();
+    // },
 };
 </script>
 <style scoped>

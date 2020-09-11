@@ -79,21 +79,22 @@
 
         <div class="external-subheading" v-if="enable_oidc">
             <h3>Connect Other External Identities</h3>
-            <b-button
-                v-if="Object.prototype.hasOwnProperty.call(oidc_idps, 'cilogon')"
+            <external-login :login_page="false" />
+            <!-- <b-button
+                v-if="cilogon_enabled"
                 @click="toggleCILogon('cilogon')"
                 >Sign in with Institutional Credentials*</b-button
             >
 
-            <b-button v-if="Object.prototype.hasOwnProperty.call(oidc_idps, 'custos')" @click="toggleCILogon('custos')"
+            <b-button v-if="custos_enabled" @click="toggleCILogon('custos')"
                 >Sign in with Custos*</b-button
             >
 
             <div v-if="toggle_cilogon">
-                <!-- OIDC login-->
+                <!-- OIDC login--/>
                 <hr class="my-4" />
                 <div class="cilogon">
-                    <!--Only Display if CILogon/Custos is configured-->
+                    <!--Only Display if CILogon/Custos is configured--/>
                     <b-form-group>
                         <multiselect
                             placeholder="Select your institution"
@@ -107,7 +108,7 @@
 
                     <b-button
                         class="d-block mt-3"
-                        @click="submitOIDCLogin(cilogonOrCustos)"
+                        @click="submitCILogin(cilogonOrCustos)"
                         :disabled="selected === null"
                     >
                         Login
@@ -122,9 +123,9 @@
                         </small>
                     </p>
                 </div>
-            </div>
+            </div> -->
 
-            <div v-for="(idp_info, idp) in filtered_oidc_idps" :key="idp" class="m-1">
+            <!-- <div v-for="(idp_info, idp) in filtered_oidc_idps" :key="idp" class="m-1">
                 <span v-if="idp_info['icon']">
                     <b-button variant="link" class="d-block mt-3" @click="submitOIDCLogin(idp)">
                         <img :src="idp_info['icon']" height="45" :alt="idp" />
@@ -137,7 +138,7 @@
                         {{ idp.charAt(0).toUpperCase() + idp.slice(1) }}
                     </b-button>
                 </span>
-            </div>
+            </div> -->
         </div>
     </section>
 </template>
@@ -151,16 +152,18 @@ import { getAppRoot } from "onload";
 import svc from "./service";
 import axios from "axios";
 import { logoutClick } from "layout/menu";
+import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
         Multiselect,
+        ExternalLogin,
     },
     data() {
         const galaxy = getGalaxyInstance();
-        const oidc_idps = galaxy.config.oidc;
+        // const oidc_idps = galaxy.config.oidc;
         return {
             items: [],
             showHelp: true,
@@ -168,12 +171,12 @@ export default {
             doomedItem: null,
             errorMessage: null,
             enable_oidc: galaxy.config.enable_oidc,
-            oidc_idps: oidc_idps,
-            cilogon_idps: [],
+            // oidc_idps: oidc_idps,
+            // cilogon_idps: [],
             cilogonOrCustos: null,
-            toggle_cilogon: false,
-            selected: "",
-            cilogonSelected: false,
+            // toggle_cilogon: false,
+            // selected: "",
+            // cilogonSelected: false,
         };
     },
     computed: {
@@ -188,12 +191,18 @@ export default {
             // tries to set this property for unfathomable reasons
             set() {},
         },
-        filtered_oidc_idps() {
-            const filtered = Object.assign({}, this.oidc_idps);
-            delete filtered.custos;
-            delete filtered.cilogon;
-            return filtered;
-        },
+        // filtered_oidc_idps() {
+        //     const filtered = Object.assign({}, this.oidc_idps);
+        //     delete filtered.custos;
+        //     delete filtered.cilogon;
+        //     return filtered;
+        // },
+        // custos_enabled() {
+        //     return Object.prototype.hasOwnProperty.call(this.oidc_idps, 'custos');
+        // },
+        // cilogon_enabled() {
+        //     return Object.prototype.hasOwnProperty.call(this.oidc_idps, 'cilogon');
+        // },
     },
     watch: {
         showDeleted(deleted) {
@@ -257,47 +266,47 @@ export default {
         removeItem(item) {
             this.items = this.items.filter((o) => o != item);
         },
-        submitOIDCLogin(idp) {
-            svc.saveIdentity(idp)
-                .then((response) => {
-                    if (response.data.redirect_uri) {
-                        window.location = response.data.redirect_uri;
-                    }
-                })
-                .catch((error) => {
-                    this.messageVariant = "danger";
-                    const message = error.response.data && error.response.data.err_msg;
-                    this.messageText = message || "Login failed for an unknown reason.";
-                });
-        },
-        getCILogonIdps: function () {
-            const rootUrl = getAppRoot();
-            axios.get(`${rootUrl}authnz/get_cilogon_idps`).then((response) => {
-                this.cilogon_idps = response.data;
-                //List is originally sorted by OrganizationName which can be different from DisplayName
-                this.cilogon_idps.sort((a, b) => (a.DisplayName > b.DisplayName ? 1 : -1));
-            });
-        },
-        submitCILogon(idp) {
-            const rootUrl = getAppRoot();
+        // submitOIDCLogin(idp) {
+        //     svc.saveIdentity(idp)
+        //         .then((response) => {
+        //             if (response.data.redirect_uri) {
+        //                 window.location = response.data.redirect_uri;
+        //             }
+        //         })
+        //         .catch((error) => {
+        //             this.messageVariant = "danger";
+        //             const message = error.response.data && error.response.data.err_msg;
+        //             this.messageText = message || "Login failed for an unknown reason.";
+        //         });
+        // },
+        // getCILogonIdps: function () {
+        //     const rootUrl = getAppRoot();
+        //     axios.get(`${rootUrl}authnz/get_cilogon_idps`).then((response) => {
+        //         this.cilogon_idps = response.data;
+        //         //List is originally sorted by OrganizationName which can be different from DisplayName
+        //         this.cilogon_idps.sort((a, b) => (a.DisplayName > b.DisplayName ? 1 : -1));
+        //     });
+        // },
+        // submitCILogon(idp) {
+        //     const rootUrl = getAppRoot();
 
-            axios
-                .post(`${rootUrl}authnz/${idp}/login/?idphint=${this.selected.EntityID}`)
-                .then((response) => {
-                    if (response.data.redirect_uri) {
-                        window.location = response.data.redirect_uri;
-                    }
-                })
-                .catch((error) => {
-                    this.messageVariant = "danger";
-                    const message = error.response.data && error.response.data.err_msg;
-                    this.messageText = message || "Login failed for an unknown reason.";
-                });
-        },
-        toggleCILogon(idp) {
-            this.toggle_cilogon = !this.toggle_cilogon;
-            this.cilogonOrCustos = this.toggle_cilogon ? idp : null;
-        },
+        //     axios
+        //         .post(`${rootUrl}authnz/${idp}/login/?idphint=${this.selected.EntityID}`)
+        //         .then((response) => {
+        //             if (response.data.redirect_uri) {
+        //                 window.location = response.data.redirect_uri;
+        //             }
+        //         })
+        //         .catch((error) => {
+        //             this.messageVariant = "danger";
+        //             const message = error.response.data && error.response.data.err_msg;
+        //             this.messageText = message || "Login failed for an unknown reason.";
+        //         });
+        // },
+        // toggleCILogon(idp) {
+        //     this.toggle_cilogon = !this.toggle_cilogon;
+        //     this.cilogonOrCustos = this.toggle_cilogon ? idp : null;
+        // },
         setError(msg) {
             return (err) => {
                 this.errorMessage = msg;
@@ -306,7 +315,7 @@ export default {
         },
     },
     created() {
-        this.loadIdentities(), this.getCILogonIdps();
+        this.loadIdentities();//, this.getCILogonIdps();
     },
 };
 </script>
