@@ -99,7 +99,8 @@ class QuotaTestCase(BaseModelTestCase):
         self.persist(quota, uqa, user)
 
     def _assert_user_quota_is(self, user, amount):
-        assert amount == self.quota_agent.get_quota(user)
+        actual_quota = self.quota_agent.get_quota(user)
+        assert amount == actual_quota, "Expected quota [%s], got [%s]" % (amount, actual_quota)
         if amount is None:
             user.total_disk_usage = 1000
             job = self.model.Job()
