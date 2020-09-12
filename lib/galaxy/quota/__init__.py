@@ -2,6 +2,8 @@
 import abc
 import logging
 
+from sqlalchemy.sql import text
+
 import galaxy.util
 
 log = logging.getLogger(__name__)
@@ -99,50 +101,61 @@ class DatabaseQuotaAgent(QuotaAgent):
                quotas.
         """
         if not user:
-            return self.default_unregistered_quota
-        quotas = []
-        for group in [uga.group for uga in user.groups]:
-            for quota in [gqa.quota for gqa in group.quotas]:
-                if quota not in quotas:
-                    quotas.append(quota)
-        for quota in [uqa.quota for uqa in user.quotas]:
-            if quota not in quotas:
-                quotas.append(quota)
-        use_default = True
-        max = 0
-        adjustment = 0
-        rval = 0
-        for quota in quotas:
-            if quota.deleted:
-                continue
-            if quota.operation == '=' and quota.bytes == -1:
-                rval = None
-                break
-            elif quota.operation == '=':
-                use_default = False
-                if quota.bytes > max:
-                    max = quota.bytes
-            elif quota.operation == '+':
-                adjustment += quota.bytes
-            elif quota.operation == '-':
-                adjustment -= quota.bytes
-        if use_default:
-            max = self.default_registered_quota
-            if max is None:
-                rval = None
-        if rval is not None:
-            rval = max + adjustment
-            if rval <= 0:
-                rval = 0
-        return rval
+            return self._default_unregistered_quota
+        query = text("""
+SELECT (
+        COALESCE(MAX(CASE WHEN union_quota.operation = '='
+                          THEN union_quota.bytes
+                          ELSE NULL
+                          END),
+                 (SELECT default_quota.bytes
+                  FROM quota as default_quota
+                      LEFT JOIN default_quota_association on default_quota.id = default_quota_association.quota_id
+                      WHERE default_quota_association.type == 'registered'
+                          AND default_quota.deleted != :is_true))
+        +
+        (CASE WHEN SUM(CASE WHEN union_quota.operation = '=' AND union_quota.bytes = -1
+                            THEN 1 ELSE 0
+                            END) > 0
+              THEN NULL
+              ELSE 0 END)
+        +
+        (COALESCE(SUM(
+                CASE WHEN union_quota.operation = '+' THEN union_quota.bytes
+                     WHEN union_quota.operation = '-' THEN -1 * union_quota.bytes
+                     ELSE 0
+                     END
+              ), 0))
+       )
+FROM (
+    SELECT user_quota.operation as operation, user_quota.bytes as bytes
+    FROM galaxy_user as user
+        LEFT JOIN user_quota_association as uqa on user.id = uqa.user_id
+        LEFT JOIN quota as user_quota on user_quota.id = uqa.quota_id
+    WHERE user_quota.deleted != :is_true
+        AND user.id = :user_id
+    UNION ALL
+    SELECT group_quota.operation as operation, group_quota.bytes as bytes
+    FROM galaxy_user as user
+        LEFT JOIN user_group_association as uga on user.id = uga.user_id
+        LEFT JOIN galaxy_group on galaxy_group.id = uga.group_id
+        LEFT JOIN group_quota_association as gqa on galaxy_group.id = gqa.group_id
+        LEFT JOIN quota as group_quota on group_quota.id = gqa.quota_id
+    WHERE group_quota.deleted != :is_true
+        AND user.id = :user_id
+) as union_quota
+""")
+        conn = self.sa_session.connection()
+        with conn.begin():
+            res = conn.execute(query, is_true=True, user_id=user.id).fetchone()
+            if res:
+                return res[0]
+            else:
+                return None
 
     @property
-    def default_unregistered_quota(self):
+    def _default_unregistered_quota(self):
         return self._default_quota(self.model.DefaultQuotaAssociation.types.UNREGISTERED)
-
-    @property
-    def default_registered_quota(self):
-        return self._default_quota(self.model.DefaultQuotaAssociation.types.REGISTERED)
 
     def _default_quota(self, default_type):
         dqa = self.sa_session.query(self.model.DefaultQuotaAssociation).filter(self.model.DefaultQuotaAssociation.table.c.type == default_type).first()
