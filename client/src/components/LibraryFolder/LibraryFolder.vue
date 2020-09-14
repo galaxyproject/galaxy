@@ -324,12 +324,9 @@ export default {
             this.include_deleted = include_deleted;
             this.hasLoaded = false;
             this.services
-                .getFolderContents(this.folder_id, include_deleted, this.perPage, (this.currentPage -1) * this.perPage)
+                .getFolderContents(this.folder_id, include_deleted, this.perPage, (this.currentPage - 1) * this.perPage)
                 .then((response) => {
                     this.folderContents = response.folder_contents;
-                    console.log("length")
-                    console.log("length")
-                    console.log(this.folderContents)
                     this.folder_metadata = response.metadata;
                     this.total_rows = response.metadata.total_rows;
                     this.hasLoaded = true;
