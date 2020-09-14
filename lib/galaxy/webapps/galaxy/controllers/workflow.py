@@ -253,6 +253,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         stored_workflow.annotation = self.get_item_annotation_str(trans.sa_session, stored_workflow.user, stored_workflow)
         for step in stored_workflow.latest_workflow.steps:
             step.annotation = self.get_item_annotation_str(trans.sa_session, stored_workflow.user, step)
+        user_is_owner = True if trans.user == stored_workflow.user else False
         # Get rating data.
         user_item_rating = 0
         if trans.get_user():
@@ -262,8 +263,13 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             else:
                 user_item_rating = 0
         ave_item_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, stored_workflow)
-        return trans.fill_template_mako("workflow/display.mako", item=stored_workflow, item_data=stored_workflow.latest_workflow.steps,
-                                        user_item_rating=user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings)
+        return trans.fill_template_mako("workflow/display.mako",
+                                        item=stored_workflow,
+                                        item_data=stored_workflow.latest_workflow.steps,
+                                        user_item_rating=user_item_rating,
+                                        ave_item_rating=ave_item_rating,
+                                        num_ratings=num_ratings,
+                                        user_is_owner=user_is_owner)
 
     @web.expose
     def get_item_content_async(self, trans, id):
