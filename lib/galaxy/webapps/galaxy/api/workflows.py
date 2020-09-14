@@ -1005,12 +1005,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         # pull in the user info from those who the history and workflow has been shared with
         contributing_users = [stored_workflow.user]
-        for association in trans.sa_session.query(model.StoredWorkflowUserShareAssociation):
-            if association.user not in contributing_users:
-                contributing_users.append(association.user)
-        for h_association in trans.sa_session.query(model.HistoryUserShareAssociation):
-            if h_association.user not in contributing_users:
-                contributing_users.append(h_association.user)
 
         # may want to extend this to have more reviewers.
         reviewing_users = [stored_workflow.user]
