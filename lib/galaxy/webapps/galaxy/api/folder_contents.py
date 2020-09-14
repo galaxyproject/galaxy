@@ -30,7 +30,7 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
         self.hda_manager = managers.hdas.HDAManager(app)
 
     @expose_api_anonymous
-    def index(self, trans, folder_id, limit=None, offset=None, **kwd):
+    def index(self, trans, folder_id, limit=None, offset=None, search_text=None, **kwd):
         """
         GET /api/folders/{encoded_folder_id}/contents?limit={limit}&offset={offset}
 
@@ -94,7 +94,7 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
         valid_folders = self.refine_deleted(folder.folders, deleted)
 
         #  Go through every accessible item (folders, datasets) in the folder and include its metadata.
-        for content_item in self._load_folder_contents(trans, valid_folders, valid_datasets, offset, limit):
+        for content_item in self._load_folder_contents(trans, valid_folders, valid_datasets, offset, limit, search_text):
             return_item = {}
             encoded_id = trans.security.encode_id(content_item.id)
             create_time = content_item.create_time.strftime("%Y-%m-%d %I:%M %p")
@@ -204,7 +204,7 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
             path_to_root.extend(self.build_path(trans, upper_folder))
         return path_to_root
 
-    def _load_folder_contents(self, trans, folders, datasets, offset=None, limit=None):
+    def _load_folder_contents(self, trans, folders, datasets, offset=None, limit=None, search_text=None):
         """
         Loads all contents of the folder (folders and data sets) but only
         in the first level. Include deleted if the flag is set and if the
@@ -227,6 +227,10 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
         current_folders = self.calculate_pagination(folders, offset, limit)
 
         for subfolder in current_folders:
+            if search_text is not None:
+                if search_text not in subfolder.name or search_text not in subfolder.description:
+                    continue
+
             if subfolder.deleted:
                 if is_admin:
                     # Admins can see all deleted folders.
@@ -264,6 +268,9 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
         current_datasets = self.calculate_pagination(datasets, offset, limit)
 
         for dataset in current_datasets:
+            if search_text is not None:
+                if search_text not in dataset.name or search_text not in dataset.message:
+                 continue
             if dataset.deleted:
                 if is_admin:
                     # Admins can see all deleted datasets.
