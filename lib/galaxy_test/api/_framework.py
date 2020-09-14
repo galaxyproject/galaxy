@@ -1,3 +1,5 @@
+from unittest import TestCase
+
 from galaxy_test.base.api import UsesApiTestCaseMixin
 from galaxy_test.base.testcase import FunctionalTestCase
 try:
@@ -8,7 +10,7 @@ except ImportError:
     GalaxyTestDriver = None
 
 
-class ApiTestCase(FunctionalTestCase, UsesApiTestCaseMixin):
+class ApiTestCase(FunctionalTestCase, UsesApiTestCaseMixin, TestCase):
     galaxy_driver_class = GalaxyTestDriver
 
     def setUp(self):

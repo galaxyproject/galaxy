@@ -4,7 +4,10 @@ import tempfile
 from collections import OrderedDict
 
 from galaxy.tools.actions import ToolAction
-from galaxy.tools.imp_exp import JobExportHistoryArchiveWrapper
+from galaxy.tools.imp_exp import (
+    JobExportHistoryArchiveWrapper,
+    JobImportHistoryArchiveWrapper
+)
 
 log = logging.getLogger(__name__)
 
@@ -47,6 +50,9 @@ class ImportHistoryToolAction(ToolAction):
         archive_dir = os.path.abspath(tempfile.mkdtemp())
         jiha = trans.app.model.JobImportHistoryArchive(job=job, archive_dir=archive_dir)
         trans.sa_session.add(jiha)
+
+        job_wrapper = JobImportHistoryArchiveWrapper(trans.app, job)
+        job_wrapper.setup_job(jiha, incoming['__ARCHIVE_SOURCE__'], incoming["__ARCHIVE_TYPE__"])
 
         #
         # Add parameters to job_parameter table.

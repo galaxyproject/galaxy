@@ -4,6 +4,7 @@
 import errno
 import imp
 import logging
+import shlex
 from functools import partial
 try:
     from grp import getgrgid
@@ -338,6 +339,31 @@ extensions = Extensions({
     'json': ['json'],
     'yaml': ['yaml', 'yml'],
 })
+
+
+def external_chown(path, pwent, external_chown_script, description="file"):
+    """
+    call the external chown script (if not None) to change
+    the user and group of the given path, and additional description
+    of the file/path for the log message can be given
+
+    return
+    - None if external_chown_script is None
+    - True in case of success
+    - False in case of failure
+    """
+    if external_chown_script is None:
+        return None
+
+    try:
+        cmd = shlex.split(external_chown_script)
+        cmd.extend([path, pwent[0], str(pwent[3])])
+        log.debug('Changing ownership of {} with: {}'.format(path, ' '.join(cmd)))
+        galaxy.util.commands.execute(cmd)
+        return True
+    except galaxy.util.commands.CommandLineException as e:
+        log.warning('Changing ownership of {} {} failed: {}'.format(description, path, galaxy.util.unicodify(e)))
+        return False
 
 
 def __listify(item):
