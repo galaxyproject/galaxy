@@ -44,10 +44,6 @@ def lint_inputs(tool_xml, lint_ctx):
             if dynamic_options is None and len(select_options) == 0:
                 message = "No options defined for select [%s]" % param_name
                 lint_ctx.warn(message)
-        elif param_type in ["hidden", "hidden_data"]:
-            if "value" not in param_attrib and ('optional' not in option.attrib or option.attrib['optional'] == 'false'):
-                lint_ctx.error("Hidden non-optional param [%s] has no value (make it optional or provide a value)", param_name)
-
         # TODO: Validate type, much more...
 
     conditional_selects = tool_xml.findall("./inputs//conditional")
