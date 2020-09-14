@@ -20,14 +20,6 @@
     </data>
   </outputs>
   <tests>
-    <!-- note: this test is only checking for bugs in the sorting functions
-         but not for the actual sorting, since the.
-         even if the test lists the discovered datasets in the correct order
-         the order is currently not tested
-         - test is only if the elements listed in the test
-           are in the list of generated elements
-         - furthermore the order of the elements listed in the test
-           is not preserved in the test functions -->
     <test expect_num_outputs="4">
       <param name="input1" value="tinywga.fam" />
       <output_collection name="collection_numeric_name" type="list" count="3">
