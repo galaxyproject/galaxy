@@ -80,7 +80,7 @@ jsonpatch==1.25
 jsonpointer==2.0
 jsonschema==3.2.0
 keystoneauth1==4.0.0
-kombu==4.6.8
+kombu==4.6.11
 lockfile==0.12.2
 lxml==4.5.0
 mako==1.1.2
