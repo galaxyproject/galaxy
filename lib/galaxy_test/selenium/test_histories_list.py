@@ -267,6 +267,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         filter_input = self.wait_for_selector_clickable(selector)
         filter_input.send_keys(value)
         self.send_enter(filter_input)
+        self.sleep_for(self.wait_types.UX_RENDER)
 
     def unset_filter(self, filter_key, filter_value):
         close_button_selector = 'a[filter_key="%s"][filter_val="%s"]' % \
