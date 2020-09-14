@@ -19,7 +19,6 @@ from galaxy import (
 )
 from galaxy.managers import (
     histories,
-    history_contents,
     workflows
 )
 from galaxy.managers.jobs import fetch_job_states, invocation_job_source_iter, summarize_job_metrics
@@ -57,7 +56,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     def __init__(self, app):
         super().__init__(app)
         self.history_manager = histories.HistoryManager(app)
-        self.history_contents_manager = history_contents.HistoryContentsManager(app)
         self.workflow_manager = workflows.WorkflowsManager(app)
         self.workflow_contents_manager = workflows.WorkflowContentsManager(app)
         self.tool_recommendations = recommendations.ToolRecommendations()
@@ -1012,21 +1010,20 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         encoded_history_id = trans.security.encode_id(history.id)
         dict_workflow = json.loads(self.workflow_dict(trans, encoded_workflow_id))
 
-        # h_contents = self.history_contents_manager.contained(history)
-
         spec_version = kwd.get('spec_version', 'https://w3id.org/ieee/ieee-2791-schema/2791object.json')
 
         # listing the versions of the workflow for 'version' and 'derived_from'
         versions = []
-        workflow_versions = self.workflow_manager.get_stored_accessible_workflow(trans, encoded_workflow_id)
-        for i, w in enumerate(reversed(workflow_versions.workflows)):
+        for i, w in enumerate(reversed(stored_workflow.workflows)):
             version = {
                 'version': i,
                 'update_time': str(w.update_time),
-                'steps': len(w.steps),
+                'steps': w.step_count,
                 'version_id': trans.security.encode_id(w.stored_workflow.id),
             }
             versions.append(version)
+            if workflow == w:
+                break
         current_version = versions[-1]['version']
 
         contributors = []
@@ -1113,12 +1110,12 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                                 }
                             }
                             output_subdomain.append(output)
-                current_tool = dict_workflow['steps'][str(i)]
+                current_step = dict_workflow['steps'][str(i)]
                 pipeline_step = {
                     'step_number': i,
-                    'name': current_tool['name'],
-                    'description': current_tool['annotation'],
-                    'version': current_tool['tool_version'],
+                    'name': current_step['name'],
+                    'description': current_step['annotation'],
+                    'version': current_step['tool_version'],
                     'prerequisite': kwd.get('prerequisite', []),
                     'input_list': input_list,
                     'output_list': output_list
@@ -1126,11 +1123,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 pipeline_steps.append(pipeline_step)
                 try:
                     software_prerequisite = {
-                        'name': current_tool['tool_shed_repository']['name'],
-                        'version': current_tool['tool_version'],
+                        'name': current_step['tool_shed_repository']['name'],
+                        'version': current_step['tool_version'],
                         'uri': {
-                            'uri': current_tool['content_id'],
-                            'access_time': current_tool['uuid']
+                            'uri': current_step['content_id'],
+                            'access_time': current_step['uuid']
                         }
                     }
                     if software_prerequisite['uri']['uri'] not in tools:
@@ -1194,6 +1191,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 'galaxy_extension': {
                     'galaxy_url': url_for('/', qualified=True),
                     'galaxy_version': VERSION,
+                    # TODO:
                     # 'aws_estimate': aws_estimate,
                     # 'job_metrics': metrics
                 }
