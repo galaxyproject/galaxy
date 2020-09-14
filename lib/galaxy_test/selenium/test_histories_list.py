@@ -168,12 +168,16 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         search_input.send_keys(self.history2_name)
         self.send_enter(search_input)
 
+        self.sleep_for(self.wait_types.UX_RENDER)
+
         self.assert_grid_histories_are([self.history2_name])
 
         self.unset_filter('free-text-search', self.history2_name)
         search_input = self.components.grids.free_text_search.wait_for_visible()
         search_input.send_keys(self.history4_name)
         self.send_enter(search_input)
+
+        self.sleep_for(self.wait_types.UX_RENDER)
 
         self.assert_grid_histories_are([])
 
@@ -216,6 +220,8 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         tag_area.click()
         tag_area.send_keys(self.history2_tags[0])
         self.send_enter(tag_area)
+
+        self.sleep_for(self.wait_types.UX_RENDER)
 
         # Search by tag
         tags_cell = self.get_history_tags_cell(self.history2_name)
