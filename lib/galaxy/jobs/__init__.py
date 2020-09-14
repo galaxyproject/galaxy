@@ -1930,9 +1930,6 @@ class JobWrapper(HasResourceParameters):
         for (hda, dataset_path) in self.output_hdas_and_paths.values():
             if hda == dataset:
                 return dataset_path
-#         if getattr(dataset, "fake_dataset_association", False):
-#             log.error("GET_OUTPUT_PATH FAKE %s" %(dataset.file_name))
-#             return dataset.file_name
         raise KeyError("Couldn't find job output for [{}] in [{}]".format(dataset, self.output_hdas_and_paths.values()))
 
     def get_mutable_output_fnames(self):
