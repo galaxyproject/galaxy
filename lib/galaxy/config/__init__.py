@@ -276,14 +276,17 @@ class BaseAppConfiguration:
         def strip_deprecated_dir(key, value):
             resolves_to = self.schema.paths_to_resolve.get(key)
             if resolves_to:  # value is a path that will be resolved
-                first_dir = value.split(os.sep)[0]  # get first directory component
-                if first_dir == self.deprecated_dirs.get(resolves_to):  # first_dir is deprecated for this option
-                    ignore = first_dir + os.sep
-                    log.warning(
-                        "Paths for the '%s' option are now relative to '%s', remove the leading '%s' "
-                        "to suppress this warning: %s", key, resolves_to, ignore, value
-                    )
-                    return value[len(ignore):]
+                paths = value.split(',')
+                for i, path in enumerate(paths):
+                    first_dir = path.split(os.sep)[0]  # get first directory component
+                    if first_dir == self.deprecated_dirs.get(resolves_to):  # first_dir is deprecated for this option
+                        ignore = first_dir + os.sep
+                        log.warning(
+                            "Paths for the '%s' option are now relative to '%s', remove the leading '%s' "
+                            "to suppress this warning: %s", key, resolves_to, ignore, path
+                        )
+                        paths[i] = path[len(ignore):]
+                return ','.join(paths)
             return value
 
         type_converters = {'bool': string_as_bool, 'int': int, 'float': float, 'str': str}
