@@ -368,7 +368,9 @@ class GalaxyInteractorApi:
         assert len(outputs) > 0, "Invalid response from server [%s], expecting an output dataset." % submit_response
         dataset = outputs[0]
         hid = dataset['id']
-        self.uploads[os.path.basename(fname)] = self.uploads[fname] = self.uploads[name] = {"src": "hda", "id": hid}
+        self.uploads[name] = {"src": "hda", "id": hid}
+        if fname:
+            self.uploads[os.path.basename(fname)] = self.uploads[fname] = self.uploads[name]
         assert "jobs" in submit_response, "Invalid response from server [%s], expecting jobs in response." % submit_response
         jobs = submit_response["jobs"]
         assert len(jobs) > 0, "Invalid response from server [%s], expecting a job." % submit_response
