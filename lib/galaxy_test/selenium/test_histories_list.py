@@ -259,7 +259,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         for row in grid.find_elements_by_tag_name('tr'):
             td = row.find_elements_by_tag_name('td')
             name = td[1].text if td[0].text == '' else td[0].text
-            if name != "No Items":
+            if name != "No items":
                 names.append(name)
         return names
 
