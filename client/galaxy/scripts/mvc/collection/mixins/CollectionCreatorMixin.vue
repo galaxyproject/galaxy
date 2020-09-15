@@ -77,18 +77,6 @@ export default {
             this.hideOriginals = attributes.defaultHideSourceItems || false;
         },
 
-        /** render the footer, completion controls, and cancel controls */
-        _renderFooter: function (speed, callback) {
-            var self = this;
-            var $footer = this.$(".footer").empty().html(this.templates.footer());
-            _.each(this.footerSettings, (property, selector) => {
-                self.$(selector).prop("checked", self[property]);
-            });
-            if (typeof this.oncancel === "function") {
-                this.$(".cancel-create.btn").show();
-            }
-            return $footer;
-        },
     },
 };
 </script>

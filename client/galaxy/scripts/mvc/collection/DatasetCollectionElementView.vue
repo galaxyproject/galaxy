@@ -1,5 +1,9 @@
 <template>
-    <div class="element-in-list" v-bind:class="{ selected: isSelected }" @click="selectElement">
+    <div
+        class="collection-element"
+        v-bind:class="{ selected: isSelected }"
+        @click="selectElement()"
+    >
         <a class="name" title="titleElementName" href="javascript:void(0)" role="button" @click="clickName">
             {{ element.name }}
         </a>
@@ -17,6 +21,10 @@ export default {
         element: {
             required: true,
         },
+        canHighlight: {
+            type: Boolean,
+            default: false
+        }
     },
     data: function () {
         return {
@@ -41,9 +49,9 @@ export default {
             return this.element.name;
         },
         selectElement: function () {
-            this.isSelected = !this.isSelected;
-            console.log(this.element.name + "clicked");
-            return this.isSelected;
+            this.isSelected = this.canHighlight && !this.isSelected;
+            this.$emit('element-is-selected', this.element);
+            console.log("selected " + this.element.name + " & emitted " + this.isSelected);
         },
         l(str) {
             // _l conflicts private methods of Vue internals, expose as l instead
@@ -101,13 +109,11 @@ export default {
 };
 </script>
 
-
 <style>
-.element-in-list{
+.element-in-list {
     border-width: 1px 0px 1px 0px;
 }
-.discard-btn{
+.discard-btn {
     float: right;
 }
-
 </style>

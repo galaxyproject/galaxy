@@ -1,95 +1,107 @@
 <template>
-    <collection-creator >
-        <template v-slot:help-content>
-            <p>
-                {{
-                    l(
-                        [
-                            "Collections of datasets are permanent, ordered lists of datasets that can be passed to tools ",
-                            "and workflows in order to have analyses done on each member of the entire group. This interface allows ",
-                            "you to create a collection and re-order the final collection.",
-                        ].join("")
-                    )
-                }}
-            </p>
-            <ul>
-                <li>
-                    {{ l("Rename elements in the list by clicking on") }}
-                    <i data-target=".collection-element .name">
-                        {{ l("the existing name") }}
-                    </i>
-                    {{ l(".") }}
-                </li>
-                <li>
-                    {{ l("Discard elements from the final created list by clicking on the ") }}
-                    <i data-target=".collection-element .discard">
-                        {{ l("Discard") }}
-                    </i>
-                    {{ l("button.") }}
-                </li>
-                <li>
-                    {{
-                        l("Reorder the list by clicking and dragging elements. Select multiple elements by clicking on")
-                    }}
-                    <i data-target=".collection-element">
-                        {{ l("them") }}
-                    </i>
+    <div class="list-collection-creator">
+        <collection-creator>
+            <template v-slot:help-content>
+                <p>
                     {{
                         l(
-                            "and you can then move those selected by dragging the entire group. Deselect them by clicking them again or by clicking the"
+                            [
+                                "Collections of datasets are permanent, ordered lists of datasets that can be passed to tools ",
+                                "and workflows in order to have analyses done on each member of the entire group. This interface allows ",
+                                "you to create a collection and re-order the final collection.",
+                            ].join("")
                         )
                     }}
-                    <i data-target=".clear-selected">
-                        {{ l("Clear selected") }}
+                </p>
+                <ul>
+                    <li>
+                        {{ l("Rename elements in the list by clicking on") }}
+                        <i data-target=".collection-element .name">
+                            {{ l("the existing name") }}
+                        </i>
+                        {{ l(".") }}
+                    </li>
+                    <li>
+                        {{ l("Discard elements from the final created list by clicking on the ") }}
+                        <i data-target=".collection-element .discard">
+                            {{ l("Discard") }}
+                        </i>
+                        {{ l("button.") }}
+                    </li>
+                    <li>
+                        {{
+                            l(
+                                "Reorder the list by clicking and dragging elements. Select multiple elements by clicking on"
+                            )
+                        }}
+                        <i data-target=".collection-element">
+                            {{ l("them") }}
+                        </i>
+                        {{
+                            l(
+                                "and you can then move those selected by dragging the entire group. Deselect them by clicking them again or by clicking the"
+                            )
+                        }}
+                        <i data-target=".clear-selected">
+                            {{ l("Clear selected") }}
+                        </i>
+                        {{ l("link.") }}
+                    </li>
+                    <li>
+                        {{ l("Click the") }}
+                        <i data-target=".reset">
+                            {{ l("Start over") }}
+                        </i>
+                        {{ l("link to begin again as if you had just opened the interface.") }}
+                    </li>
+                    <li>
+                        {{ l("Click the") }}
+                        <i data-target=".cancel-create">
+                            {{ l("Cancel") }}
+                        </i>
+                        {{ l("button to exit the interface.") }}
+                    </li>
+                </ul>
+                <br />
+                <p>
+                    {{ l("Once your collection is complete, enter a ") }}
+                    <i data-target=".collection-name">
+                        {{ l("name") }}
                     </i>
-                    {{ l("link.") }}
-                </li>
-                <li>
-                    {{ l("Click the") }}
-                    <i data-target=".reset">
+                    {{ l("and click") }}
+                    <i data-target=".create-collection">
+                        {{ l("Create list") }}
+                    </i>
+                    {{ l(".") }}
+                </p>
+            </template>
+            <template v-slot:middle-content>
+                <div class="collection-elements-controls">
+                    <a class="reset" href="javascript:void(0);" role="button" :title="titleUndoButton">
                         {{ l("Start over") }}
-                    </i>
-                    {{ l("link to begin again as if you had just opened the interface.") }}
-                </li>
-                <li>
-                    {{ l("Click the") }}
-                    <i data-target=".cancel-create">
-                        {{ l("Cancel") }}
-                    </i>
-                    {{ l("button to exit the interface.") }}
-                </li>
-            </ul>
-            <br />
-            <p>
-                {{ l("Once your collection is complete, enter a ") }}
-                <i data-target=".collection-name">
-                    {{ l("name") }}
-                </i>
-                {{ l("and click") }}
-                <i data-target=".create-collection">
-                    {{ l("Create list") }}
-                </i>
-                {{ l(".") }}
-            </p>
-        </template>
-        <template v-slot:middle-content>
-            <div class="collection-elements-controls">
-                <a class="reset" href="javascript:void(0);" role="button" :title="titleUndoButton">
-                    {{ l("Start over") }}
-                </a>
-                <a class="clear-selected" href="javascript:void(0);" role="button" :title="titleDeselectButton">
-                    {{ l("Clear selected") }}
-                </a>
-            </div>
-            <div class="collection-elements scroll-container flex-row">
-                <dataset-collection-element-view
-                    v-for="element in initialElements"
-                    :key="element.id"
-                    :element="element"
-                />
-            </div>
-        </template>
-    </collection-creator>
+                    </a>
+                    <a
+                        class="clear-selected"
+                        v-if="atLeastOneDatasetIsSelected"
+                        href="javascript:void(0);"
+                        role="button"
+                        :title="titleDeselectButton"
+                    >
+                        {{ l("Clear selected") }}
+                    </a>
+                </div>
+                <div class="collection-elements scroll-container flex-row">
+                    <dataset-collection-element-view
+                        v-for="element in initialElements"
+                        :key="element.id"
+                        @element-is-selected="elementSelected"
+                        :canHighlight="true"
+                        :element="element"
+                    />
+                </div>
+            </template>
+        </collection-creator>
+    </div>
     <!-- <div>
           <v-on:click.less-help="_clickLessHelp">
           <v-on:click.main-help="_toggleHelp"/>
@@ -131,6 +143,7 @@ export default {
             },
             titleUndoButton: _l("Undo all reordering and discards"),
             titleDeselectButton: _l("De-select all selected datasets"),
+            selectedDatasetElems: [],
         };
     },
     mixins: [CollectionCreatorMixin],
@@ -173,8 +186,21 @@ export default {
             default: true,
         },
     },
-    computed: {},
+    computed: {
+        atLeastOneDatasetIsSelected() {
+            return this.selectedDatasetElems.length > 0;
+        },
+    },
     methods: {
+        elementSelected(e) {
+            console.log("element was selected ", e.id);
+
+            if (!this.selectedDatasetElems.includes(e.id)) {
+                this.selectedDatasetElems.push(e.id);
+            } else {
+                this.selectedDatasetElems.splice(this.selectedDatasetElems.indexOf(e.id), 1);
+            }
+        },
         l(str) {
             // _l conflicts private methods of Vue internals, expose as l instead
             return _l(str);
@@ -689,89 +715,92 @@ export default {
 };
 </script>
 
-<style scoped lang="scss">
-// ======================================================================== list
-.footer {
-    margin-top: 8px;
-}
-
-.main-help {
-    cursor: pointer;
-}
-
-.collection-elements-controls {
-    margin-bottom: 8px;
-
-    .clear-selected {
-        @extend .float-right !optional;
-        display: none;
+<style lang="scss">
+.list-collection-creator {
+    // ======================================================================== list
+    .footer {
+        margin-top: 8px;
     }
-}
-.collection-elements {
-    max-height: 400px;
-    border: 0px solid lightgrey;
-    overflow-y: auto;
-    overflow-x: hidden;
-}
 
-// TODO: taken from .dataset above - swap these out
-.collection-element {
-    height: 32px;
-    margin: 2px 4px 0px 4px;
-    opacity: 1;
-    border: 1px solid lightgrey;
-    border-radius: 3px;
-    padding: 0 8px 0 8px;
-    line-height: 28px;
-    cursor: pointer;
-    overflow: hidden;
+    .main-help {
+        cursor: pointer;
+    }
 
-    &:last-of-type {
-        margin-bottom: 2px;
-    }
-    &:hover {
-        border-color: black;
-    }
-    &.selected {
-        border-color: black;
-        background: black;
-        color: white;
-        a {
-            color: white;
+    .collection-elements-controls {
+        margin-bottom: 8px;
+
+        .clear-selected {
+            //remove @extend; just write css to float right. :P
+            float: right !important;
+            //display: none;
         }
     }
-    &.dragging {
-        opacity: 0.4;
-        button {
-            display: none;
-        }
+    .collection-elements {
+        max-height: 400px;
+        border: 0px solid lightgrey;
+        overflow-y: auto;
+        overflow-x: hidden;
     }
 
-    .name {
+    // TODO: taken from .dataset above - swap these out
+    .collection-element {
+        height: 32px;
+        margin: 2px 4px 0px 4px;
+        opacity: 1;
+        border: 1px solid lightgrey;
+        border-radius: 3px;
+        padding: 0 8px 0 8px;
+        line-height: 28px;
+        cursor: pointer;
+        overflow: hidden;
+
+        &:last-of-type {
+            margin-bottom: 2px;
+        }
         &:hover {
-            text-decoration: underline;
+            border-color: black;
+        }
+        &.selected {
+            border-color: black;
+            background: rgb(118, 119, 131);
+            color: white;
+            a {
+                color: white;
+            }
+        }
+        &.dragging {
+            opacity: 0.4;
+            button {
+                display: none;
+            }
+        }
+
+        .name {
+            &:hover {
+                text-decoration: underline;
+            }
+        }
+        button {
+            margin-top: 3px;
+        }
+        .discard {
+            @extend .float-right !optional;
         }
     }
-    button {
-        margin-top: 3px;
+    .element-drop-placeholder {
+        margin-left: 8px;
+        &:before {
+            margin: -8.5px 0px 0px -8px;
+        }
     }
-    .discard {
-        @extend .float-right !optional;
+    .empty-message {
+        margin: 8px;
+        color: grey;
+        font-style: italic;
+        text-align: center;
     }
-}
-.element-drop-placeholder {
-    margin-left: 8px;
-    &:before {
-        margin: -8.5px 0px 0px -8px;
+    .no-elements-left-message {
+        text-align: left;
     }
-}
-.empty-message {
-    margin: 8px;
-    color: grey;
-    font-style: italic;
-    text-align: center;
-}
-.no-elements-left-message {
-    text-align: left;
 }
 </style>

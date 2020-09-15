@@ -12,6 +12,9 @@
                     <div v-if="!isExpanded">
                         <i class="fas fa-chevron-down"></i>
                     </div>
+                    <div v-else>
+                        <i class="fas fa-chevron-up"></i>
+                    </div>
                 </a>
                 <div class="help-content">
                     <!-- each collection that extends this will add their own help content -->
@@ -23,9 +26,6 @@
                         @click="_clickForHelp"
                         :title="titleForHelp"
                     >
-                        <div v-if="isExpanded"> 
-                            <i class="fas fa-chevron-up"></i>
-                        </div>
                     </a>
                 </div>
             </div>
@@ -42,7 +42,7 @@
             <div class="attributes clear">
                 <div class="clear">
                     <label class="setting-prompt float-right">
-                        {{ buttonClearText }}
+                        {{ hideOriginalsText }}
                         <input class="hide-originals float-right" type="checkbox" />
                     </label>
                 </div>
@@ -54,23 +54,15 @@
                 </div>
             </div>
             <div class="actions clear vertically-spaced">
-                <div class="other-options float-left">
+                <div class="float-left">
                     <button class="cancel-create btn" tabindex="-1">
                         {{ l("Cancel") }}
                     </button>
-                    <div class="create-other btn-group dropup">
-                        <!-- <button class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">
+                    <div class="other-options create-other btn-group dropup">
+                        <button class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">
                             {{ l("Create a different kind of collection") }}
                             <span class="caret"></span>
-                        </button> -->
-                        <b-dropdown text="l('Create a different kind of collection')">
-                            <b-dropdown-item> {{ l("Create a <i>single</i> pair") }} </b-dropdown-item>
-                        </b-dropdown>
-                        <!-- <div class="dropdown-menu" role="menu">
-                            <a class="dropdown-item" href="javascript:void(0)" role="button">
-                                {{ l("Create a <i>single</i> pair") }}
-                            </a>
-                        </div> -->
+                        </button>
                     </div>
                 </div>
                 <div class="main-options float-right">
@@ -89,10 +81,12 @@ export default {
     data: function () {
         return {
             titleForHelp: _l("Expand or Close Help"),
+            hideOriginalsText: _l("Hide original elements?"),
             titleMoreHelp: _l("Close and show more help"),
             placeholderEnterName: _l("Enter a name for your new collection"),
             dropdownText: _l("Create a <i>single</> pair"),
             isExpanded: false,
+
         };
     },
     methods: {
