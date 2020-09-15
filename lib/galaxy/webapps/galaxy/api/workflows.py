@@ -21,7 +21,6 @@ from galaxy import (
 )
 from galaxy.managers import (
     histories,
-    history_contents,
     workflows
 )
 from galaxy.managers.jobs import fetch_job_states, invocation_job_source_iter, summarize_job_metrics
