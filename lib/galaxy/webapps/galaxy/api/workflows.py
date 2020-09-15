@@ -75,7 +75,6 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
     def __init__(self, app: StructuredApp):
         super().__init__(app)
         self.history_manager = app.history_manager
-        self.history_contents_manager = history_contents.HistoryContentsManager(app)
         self.workflow_manager = app.workflow_manager
         self.workflow_contents_manager = app.workflow_contents_manager
         self.tool_recommendations = recommendations.ToolRecommendations()
