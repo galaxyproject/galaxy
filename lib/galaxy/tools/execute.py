@@ -84,8 +84,9 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
         for job, hdas in job_output_datasets.items():
             trans.sa_session.add(job)
             for hda in hdas:
-                hda.dataset.job_id = job.id  # TODO: can't add attr to Dataset in __init__(). Why?
-                trans.sa_session.add(hda.dataset)
+                if type(hda) == 'HistoryDatasetAssociation':  # temporary/debugging
+                    hda.dataset.job_id = job.id  # TODO: can't add attr to Dataset in __init__(). Why?
+                    trans.sa_session.add(hda.dataset)
         trans.sa_session.flush()  # TODO: do we need this here? Or let the next flush handle this?
 
     tool_action = tool.tool_action
