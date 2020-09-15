@@ -2,7 +2,7 @@
     <command><![CDATA[
         mkdir '$output.extra_files_path' &&
         cp '$input.extra_files_path'/* '$output.extra_files_path' &&
-        touch '$output' &&
+        cp '$input' '$output' &&
         echo "select_in: $select_in"
     ]]>
     </command>
@@ -18,16 +18,16 @@
     </outputs>
     <tests>
         <test>
-            <param name="input" value="blastdb" ftype="blastdbp" >
-                <composite_data value="blastdb.phr"/>
-                <composite_data value="blastdb.pin"/>
-                <composite_data value="blastdb.psq"/>
+            <param name="input" value="blastdbp/blastdbp.db" ftype="blastdbp" >
+                <composite_data name="blastdb.phr" value="blastdbp/prefix_blastdb.phr"/>
+                <composite_data name="blastdb.pin" value="blastdbp/prefix_blastdb.pin"/>
+                <composite_data name="blastdb.psq" value="blastdbp/prefix_blastdb.psq"/>
             </param>
             <param name="select_in" value="B" />
-            <output name="output" value="blastdb" ftype="blastdbp">
-                <extra_files type="file" name="blastdb.phr" value="blastdb.phr"/>
-                <extra_files type="file" name="blastdb.pin" value="blastdb.pin"/>
-                <extra_files type="file" name="blastdb.psq" value="blastdb.psq"/>
+            <output name="output" value="blastdbp/blastdbp.db" ftype="blastdbp">
+                <composite_data type="file" name="blastdb.psq" value="blastdbp/prefix_blastdb.psq"/>
+                <composite_data type="file" name="blastdb.phr" value="blastdbp/prefix_blastdb.phr"/>
+                <composite_data type="file" name="blastdb.pin" value="blastdbp/prefix_blastdb.pin"/>
             </output>
             <assert_stdout>
                 <has_text text="select_in: B"/>
