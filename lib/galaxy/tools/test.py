@@ -134,7 +134,6 @@ def _process_raw_inputs(tool, tool_inputs, raw_inputs, required_files, parent_co
                 if isinstance(value, galaxy.tools.parameters.basic.DataToolParameter):
                     if not isinstance(param_value, list):
                         param_value = [param_value]
-                    processed_value = []
                     for v in param_value:
                         _add_uploaded_dataset(context.for_state(), v, param_extra, value, required_files)
                     processed_value = param_value
