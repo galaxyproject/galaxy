@@ -33,6 +33,8 @@ from galaxy.util.checkers import is_bz2, is_gzip
 from . import data, dataproviders
 
 log = logging.getLogger(__name__)
+# pysam 0.16.0.1 emits logs containing the word 'Error', this can confuse the stdout/stderr checkers.
+# Can be be removed once https://github.com/pysam-developers/pysam/issues/939 is resolved.
 pysam.set_verbosity(0)
 
 # Currently these supported binary data types must be manually set on upload
