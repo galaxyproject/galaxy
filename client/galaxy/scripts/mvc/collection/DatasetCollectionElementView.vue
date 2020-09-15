@@ -1,7 +1,6 @@
 <template>
     <div
         class="collection-element"
-        v-bind:class="{ selected: isSelected }"
         @click="selectElement()"
     >
         <a class="name" title="titleElementName" href="javascript:void(0)" role="button" @click="clickName">
@@ -21,10 +20,6 @@ export default {
         element: {
             required: true,
         },
-        canHighlight: {
-            type: Boolean,
-            default: false
-        }
     },
     data: function () {
         return {
@@ -35,7 +30,6 @@ export default {
             className: "collection-element",
             titleDiscardButton: _l("Remove this dataset from the list"),
             titleElementName: _l("Click to rename"),
-            isSelected: false,
         };
     },
     computed: {},
@@ -49,9 +43,7 @@ export default {
             return this.element.name;
         },
         selectElement: function () {
-            this.isSelected = this.canHighlight && !this.isSelected;
             this.$emit('element-is-selected', this.element);
-            console.log("selected " + this.element.name + " & emitted " + this.isSelected);
         },
         l(str) {
             // _l conflicts private methods of Vue internals, expose as l instead

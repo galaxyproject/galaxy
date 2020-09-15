@@ -86,6 +86,7 @@
                         href="javascript:void(0);"
                         role="button"
                         :title="titleDeselectButton"
+                        @click="clickClearAll"
                     >
                         {{ l("Clear selected") }}
                     </a>
@@ -96,6 +97,7 @@
                         :key="element.id"
                         @element-is-selected="elementSelected"
                         :canHighlight="true"
+                        :class="{selected: selectedDatasetElems.includes(element.id)}"
                         :element="element"
                     />
                 </div>
@@ -103,8 +105,6 @@
         </collection-creator>
     </div>
     <!-- <div>
-          <v-on:click.less-help="_clickLessHelp">
-          <v-on:click.main-help="_toggleHelp"/>
           <v-on:click.header.alert button="_hideAlert"/>
           <v-on:click.collection-elements="clearSelectedElements"/>
           <v-on:click.reset="reset"/>
@@ -190,16 +190,20 @@ export default {
         atLeastOneDatasetIsSelected() {
             return this.selectedDatasetElems.length > 0;
         },
+        selectedDatasetElems() {
+            return this.selectedDatasetElems;
+        }
     },
     methods: {
         elementSelected(e) {
-            console.log("element was selected ", e.id);
-
             if (!this.selectedDatasetElems.includes(e.id)) {
                 this.selectedDatasetElems.push(e.id);
             } else {
                 this.selectedDatasetElems.splice(this.selectedDatasetElems.indexOf(e.id), 1);
             }
+        },
+        clickClearAll() {
+            this.selectedDatasetElems = [];
         },
         l(str) {
             // _l conflicts private methods of Vue internals, expose as l instead
@@ -730,9 +734,7 @@ export default {
         margin-bottom: 8px;
 
         .clear-selected {
-            //remove @extend; just write css to float right. :P
             float: right !important;
-            //display: none;
         }
     }
     .collection-elements {
