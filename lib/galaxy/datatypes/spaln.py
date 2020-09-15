@@ -2,7 +2,6 @@
 spaln Composite Dataset
 """
 
-import io
 import logging
 import os.path
 
@@ -28,7 +27,7 @@ class _SpalnDb(Data):
     )
 
     def __init__(self, **kwd):
-        super(_SpalnDb, self).__init__(**kwd)
+        super().__init__(**kwd)
         self.add_composite_file(
             "%s.ent",
             is_binary=True,
@@ -90,7 +89,7 @@ class _SpalnDb(Data):
         for i, fname in enumerate(flist):
             sfname = os.path.split(fname)[-1]
             f, e = os.path.splitext(fname)
-            rval.append('<li><a href="%s">%s</a></li>' % (sfname, sfname))
+            rval.append('<li><a href="{}">{}</a></li>'.format(sfname, sfname))
         rval.append("</ul></body></html>")
         with open(dataset.file_name, "w") as f:
             f.write("\n".join(rval))
@@ -128,7 +127,7 @@ class _SpalnDb(Data):
         If preview is `False` triggers download.
         """
         if not preview:
-            return super(_SpalnDb, self).display_data(
+            return super().display_data(
                 trans,
                 data=data,
                 preview=preview,
@@ -150,7 +149,7 @@ class _SpalnDb(Data):
         msg = ""
         try:
             # Try to use any text recorded in the dummy index file:
-            with io.open(data.file_name, "rU", encoding="utf-8") as handle:
+            with open(data.file_name, encoding="utf-8") as handle:
                 msg = handle.read().strip()
         except Exception:
             pass
@@ -173,7 +172,7 @@ class _SpalnDb(Data):
         raise NotImplementedError("Can't split spaln database")
 
     def set_meta(self, dataset, **kwd):
-        super(_SpalnDb, self).set_meta(dataset, **kwd)
+        super().set_meta(dataset, **kwd)
         efp = dataset.extra_files_path
         for filename in os.listdir(efp):
             if filename.endswith(".ent"):
@@ -185,7 +184,7 @@ class SpalnNuclDb(_SpalnDb):
     file_ext = "spalndbnp"
 
     def __init__(self, **kwd):
-        super(SpalnNuclDb, self).__init__(**kwd)
+        super().__init__(**kwd)
         self.add_composite_file(
             "%s.bkn",
             is_binary=True,
@@ -204,7 +203,7 @@ class SpalnProtDb(_SpalnDb):
     file_ext = "spalndba"
 
     def __init__(self, **kwd):
-        super(SpalnProtDb, self).__init__(**kwd)
+        super().__init__(**kwd)
         self.add_composite_file(
             "%s.bka",
             is_binary=True,

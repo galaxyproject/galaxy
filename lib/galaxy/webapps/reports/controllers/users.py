@@ -106,7 +106,7 @@ class Users(BaseUIController, ReportQueryBuilder):
                       order_by=[galaxy.model.User.table.c.email])
         users = []
         for row in q.execute():
-            users.append((row.email))
+            users.append(row.email)
         return trans.fill_template('/webapps/reports/registered_users_specified_date.mako',
                                    specified_date=start_date,
                                    day_label=day_label,

@@ -51,7 +51,7 @@ class CloudManager(sharable.SharableModelManager):
     model_class = model.History
 
     def __init__(self, app, *args, **kwargs):
-        super(CloudManager, self).__init__(app, *args, **kwargs)
+        super().__init__(app, *args, **kwargs)
 
     @staticmethod
     def configure_provider(provider, credentials):

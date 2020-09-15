@@ -1,4 +1,4 @@
-class XForwardedHostMiddleware(object):
+class XForwardedHostMiddleware:
     """
     A WSGI middleware that changes the HTTP host header in the WSGI environ
     based on the X-Forwarded-Host header IF found

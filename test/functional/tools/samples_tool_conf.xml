@@ -198,6 +198,7 @@
   <tool file="for_workflows/count_list.xml" />
   <tool file="for_workflows/count_multi_file.xml" />
   <tool file="for_workflows/create_input_collection.xml" />
+  <tool file="for_workflows/randomlines.xml" />
 
   <section id="filter" name="For Tours">
     <tool file="for_tours/filtering.xml" />

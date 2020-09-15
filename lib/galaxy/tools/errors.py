@@ -129,7 +129,7 @@ This is an automated message. Do not reply to this address.
 """
 
 
-class ErrorReporter(object):
+class ErrorReporter:
     def __init__(self, hda, app):
         # Get the dataset
         sa_session = app.model.context
@@ -251,7 +251,7 @@ class EmailErrorReporter(ErrorReporter):
             to = to_address
         subject = "Galaxy tool error report from %s" % email
         try:
-            subject = "%s (%s)" % (subject, self.app.toolbox.get_tool(self.job.tool_id, self.job.tool_version).old_id)
+            subject = "{} ({})".format(subject, self.app.toolbox.get_tool(self.job.tool_id, self.job.tool_version).old_id)
         except Exception:
             pass
 

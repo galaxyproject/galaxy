@@ -42,9 +42,9 @@ class GalaxyPackageDependency(Dependency):
     def shell_commands(self):
         base_path = self.path
         if self.type == 'package' and self.script is None:
-            commands = 'PACKAGE_BASE=%s; export PACKAGE_BASE; PATH="%s/bin:$PATH"; export PATH' % (base_path, base_path)
+            commands = 'PACKAGE_BASE={}; export PACKAGE_BASE; PATH="{}/bin:$PATH"; export PATH'.format(base_path, base_path)
         else:
-            commands = 'PACKAGE_BASE=%s; export PACKAGE_BASE; . %s' % (base_path, self.script)
+            commands = 'PACKAGE_BASE={}; export PACKAGE_BASE; . {}'.format(base_path, self.script)
         return commands
 
 
@@ -106,12 +106,12 @@ class GalaxyPackageDependencyResolver(BaseGalaxyPackageDependencyResolver, Lista
     resolver_type = "galaxy_packages"
 
     def __init__(self, dependency_manager, **kwds):
-        super(GalaxyPackageDependencyResolver, self).__init__(dependency_manager, **kwds)
+        super().__init__(dependency_manager, **kwds)
         self._setup_mapping(dependency_manager, **kwds)
 
     def resolve(self, requirement, **kwds):
         requirement = self._expand_mappings(requirement)
-        return super(GalaxyPackageDependencyResolver, self).resolve(requirement, **kwds)
+        return super().resolve(requirement, **kwds)
 
     def list_dependencies(self):
         base_path = self.base_path

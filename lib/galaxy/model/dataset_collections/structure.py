@@ -2,13 +2,11 @@
 """
 import logging
 
-import six
 
 log = logging.getLogger(__name__)
 
 
-@six.python_2_unicode_compatible
-class Leaf(object):
+class Leaf:
     children_known = True
 
     def __len__(self):
@@ -34,13 +32,12 @@ class Leaf(object):
 leaf = Leaf()
 
 
-class BaseTree(object):
+class BaseTree:
 
     def __init__(self, collection_type_description):
         self.collection_type_description = collection_type_description
 
 
-@six.python_2_unicode_compatible
 class UninitializedTree(BaseTree):
     children_known = False
 
@@ -65,12 +62,11 @@ class UninitializedTree(BaseTree):
         return "UninitializedTree[collection_type=%s]" % self.collection_type_description
 
 
-@six.python_2_unicode_compatible
 class Tree(BaseTree):
     children_known = True
 
     def __init__(self, children, collection_type_description):
-        super(Tree, self).__init__(collection_type_description)
+        super().__init__(collection_type_description)
         self.children = children
 
     @staticmethod
@@ -141,7 +137,7 @@ class Tree(BaseTree):
         return Tree(cloned_children, self.collection_type_description)
 
     def __str__(self):
-        return "Tree[collection_type=%s,children=%s]" % (self.collection_type_description, ",".join(map(lambda identifier_and_element: "%s=%s" % (identifier_and_element[0], identifier_and_element[1]), self.children)))
+        return "Tree[collection_type={},children={}]".format(self.collection_type_description, ",".join(map(lambda identifier_and_element: "{}={}".format(identifier_and_element[0], identifier_and_element[1]), self.children)))
 
 
 def tool_output_to_structure(get_sliced_input_collection_structure, tool_output, collections_manager):
@@ -177,7 +173,7 @@ def tool_output_to_structure(get_sliced_input_collection_structure, tool_output,
 
 
 def dict_map(func, input_dict):
-    return dict((k, func(v)) for k, v in input_dict.items())
+    return {k: func(v) for k, v in input_dict.items()}
 
 
 def get_structure(dataset_collection_instance, collection_type_description, leaf_subcollection_type=None):

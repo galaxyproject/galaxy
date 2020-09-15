@@ -184,7 +184,7 @@ class XmlToolSource(ToolSource):
             return ["GALAXY_SLOTS"]
         else:
             # Pass home, etc...
-            return super(XmlToolSource, self).parse_docker_env_pass_through()
+            return super().parse_docker_env_pass_through()
 
     def parse_interpreter(self):
         interpreter = None
@@ -753,7 +753,7 @@ def __pull_up_params(parent_elem, child_elem):
 
 def __prefix_join(prefix, name, index=None):
     name = name if index is None else "%s_%d" % (name, index)
-    return name if not prefix else "%s|%s" % (prefix, name)
+    return name if not prefix else "{}|{}".format(prefix, name)
 
 
 def _copy_to_dict_if_present(elem, rval, attributes):
@@ -818,7 +818,7 @@ def __parse_param_elem(param_elem, i=0):
     }
 
 
-class StdioParser(object):
+class StdioParser:
 
     def __init__(self, root):
         try:
@@ -1007,7 +1007,7 @@ class XmlPagesSource(PagesSource):
             pages_elem = self.input_elem.findall("page")
             for page in (pages_elem or [self.input_elem]):
                 page_sources.append(XmlPageSource(page))
-        super(XmlPagesSource, self).__init__(page_sources)
+        super().__init__(page_sources)
 
     @property
     def inputs_defined(self):
@@ -1124,7 +1124,7 @@ class XmlInputSource(InputSource):
         return sources
 
 
-class ParallelismInfo(object):
+class ParallelismInfo:
     """
     Stores the information (if any) for running multiple instances of the tool in parallel
     on the same set of inputs.

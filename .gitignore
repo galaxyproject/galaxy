@@ -40,6 +40,7 @@ database/test_errors
 database/tmp
 database/tool_cache
 database/tool_search_index
+database/tool_recommendation_model.hdf5
 
 
 # Python bytecode
@@ -140,7 +141,6 @@ test/unit/**.log
 .vscode
 client/**/jsconfig.json
 
-
 # Chrom len files
 *.len
 
@@ -153,8 +153,9 @@ static/plugins
 static/scripts
 node_modules
 bower_components
-client/galaxy/scripts/libs/*
-client/galaxy/style/less/*
+client/src/libs/*
+# Old galaxy client location
+client/galaxy
 
 # Documentation build files.
 doc/build

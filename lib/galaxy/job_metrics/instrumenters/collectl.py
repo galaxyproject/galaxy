@@ -48,7 +48,7 @@ class CollectlFormatter(formatting.JobMetricFormatter):
             else:
                 value_str = str(value)
             resource_title = FORMATTED_RESOURCE_TITLES.get(resource_type, resource_type)
-            return ("%s (%s)" % (resource_title, stat_type), value_str)
+            return ("{} ({})".format(resource_title, stat_type), value_str)
 
 
 class CollectlPlugin(InstrumentPlugin):
@@ -96,13 +96,13 @@ class CollectlPlugin(InstrumentPlugin):
         return commands
 
     def job_properties(self, job_id, job_directory):
-        pid = open(self.__pid_file(job_directory), "r").read().strip()
+        pid = open(self.__pid_file(job_directory)).read().strip()
         contents = os.listdir(job_directory)
         try:
             rel_path = filter(self._is_instrumented_collectl_log, contents)[0]
             path = os.path.join(job_directory, rel_path)
         except IndexError:
-            message = "Failed to find collectl log in directory %s, files were %s" % (job_directory, contents)
+            message = "Failed to find collectl log in directory {}, files were {}".format(job_directory, contents)
             raise Exception(message)
 
         properties = dict(
@@ -190,7 +190,7 @@ class CollectlPlugin(InstrumentPlugin):
             redirect_to = self._instrument_file_path(job_directory, "program_output")
         else:
             redirect_to = "/dev/null"
-        return "%s > %s 2>&1 &" % (
+        return "{} > {} 2>&1 &".format(
             collectl_cli.build_command_line(),
             redirect_to,
         )

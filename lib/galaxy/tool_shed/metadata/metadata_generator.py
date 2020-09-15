@@ -36,7 +36,7 @@ from galaxy.web import url_for
 log = logging.getLogger(__name__)
 
 
-class MetadataGenerator(object):
+class MetadataGenerator:
 
     def __init__(self, app, repository=None, changeset_revision=None, repository_clone_url=None,
                  shed_config_dict=None, relative_install_dir=None, repository_files_dir=None,
@@ -296,7 +296,7 @@ class MetadataGenerator(object):
 
     def generate_guid_for_object(self, guid_type, obj_id, version):
         tmp_url = remove_protocol_and_user_from_clone_url(self.repository_clone_url)
-        return '%s/%s/%s/%s' % (tmp_url, guid_type, obj_id, version)
+        return '{}/{}/{}/{}'.format(tmp_url, guid_type, obj_id, version)
 
     def generate_metadata_for_changeset_revision(self):
         """
@@ -565,7 +565,7 @@ class MetadataGenerator(object):
                                                     self.handle_repository_elem(repository_elem=sub_action_elem,
                                                                                 only_if_compiling_contained_td=True)
         if requirements_dict:
-            dependency_key = '%s/%s' % (package_name, package_version)
+            dependency_key = '{}/{}'.format(package_name, package_version)
             if repository_dependency_is_valid:
                 valid_tool_dependencies_dict[dependency_key] = requirements_dict
             else:
@@ -643,7 +643,7 @@ class MetadataGenerator(object):
                 required_files = []
                 for required_file in ttb.required_files:
                     value, extra = required_file
-                    required_files.append((value))
+                    required_files.append(value)
                 inputs = []
                 for param_name, values in ttb.inputs.items():
                     # Handle improperly defined or strange test parameters and values.
@@ -727,7 +727,7 @@ class MetadataGenerator(object):
             return metadata_dict, error_message
         root = tree.getroot()
 
-        class RecurserValueStore(object):
+        class RecurserValueStore:
             pass
         rvs = RecurserValueStore()
         rvs.valid_tool_dependencies_dict = {}
@@ -766,7 +766,7 @@ class MetadataGenerator(object):
                                  only_if_compiling_contained_td,
                                  message)
                             invalid_repository_dependency_tups.append(repository_dependency_tup)
-                            error_messages.append('%s  %s' % (error_message, message))
+                            error_messages.append('{}  {}'.format(error_message, message))
                 elif elem.tag == 'set_environment':
                     rvs.valid_tool_dependencies_dict = \
                         self.generate_environment_dependency_metadata(elem, rvs.valid_tool_dependencies_dict)

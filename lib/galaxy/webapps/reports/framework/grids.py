@@ -4,7 +4,6 @@ from collections import OrderedDict
 from json import dumps, loads
 
 from markupsafe import escape
-from six import string_types, text_type
 from sqlalchemy.sql.expression import and_, false, func, null, or_, true
 
 from galaxy.model.item_attrs import get_foreign_key, UsesAnnotations, UsesItemRatings
@@ -16,7 +15,7 @@ from galaxy.web.framework.helpers import iff
 log = logging.getLogger(__name__)
 
 
-class Grid(object):
+class Grid:
     """
     Specifies the content and format of a grid (data table).
     """
@@ -37,6 +36,7 @@ class Grid(object):
     use_paging = False
     num_rows_per_page = 25
     num_page_links = 10
+    allow_fetching_all_results = True
     # Set preference names.
     cur_filter_pref_name = ".filter"
     cur_sort_key_pref_name = ".sort_key"
@@ -102,16 +102,16 @@ class Grid(object):
                 # Method (1) combines a mix of strings and lists of strings into a single string and (2) attempts to de-jsonify all strings.
                 def loads_recurse(item):
                     decoded_list = []
-                    if isinstance(item, string_types):
+                    if isinstance(item, str):
                         try:
                             # Not clear what we're decoding, so recurse to ensure that we catch everything.
                             decoded_item = loads(item)
                             if isinstance(decoded_item, list):
                                 decoded_list = loads_recurse(decoded_item)
                             else:
-                                decoded_list = [text_type(decoded_item)]
+                                decoded_list = [str(decoded_item)]
                         except ValueError:
-                            decoded_list = [text_type(item)]
+                            decoded_list = [str(item)]
                     elif isinstance(item, list):
                         for element in item:
                             a_list = loads_recurse(element)
@@ -125,7 +125,7 @@ class Grid(object):
                         if len(column_filter) == 1:
                             column_filter = column_filter[0]
                     # Interpret ',' as a separator for multiple terms.
-                    if isinstance(column_filter, string_types) and column_filter.find(',') != -1:
+                    if isinstance(column_filter, str) and column_filter.find(',') != -1:
                         column_filter = column_filter.split(',')
 
                     # Check if filter is empty
@@ -134,7 +134,7 @@ class Grid(object):
                         column_filter = [x for x in column_filter if x != '']
                         if len(column_filter) == 0:
                             continue
-                    elif isinstance(column_filter, string_types):
+                    elif isinstance(column_filter, str):
                         # If filter criterion is empty, do nothing.
                         if column_filter == '':
                             continue
@@ -148,12 +148,12 @@ class Grid(object):
                     # that we can encode to UTF-8 and thus handle user input to filters.
                     if isinstance(column_filter, list):
                         # Filter is a list; process each item.
-                        column_filter = [text_type(_).encode('utf-8') if not isinstance(_, string_types) else _ for _ in column_filter]
+                        column_filter = [str(_).encode('utf-8') if not isinstance(_, str) else _ for _ in column_filter]
                         extra_url_args["f-" + column.key] = dumps(column_filter)
                     else:
                         # Process singleton filter.
-                        if not isinstance(column_filter, string_types):
-                            column_filter = text_type(column_filter)
+                        if not isinstance(column_filter, str):
+                            column_filter = str(column_filter)
                         extra_url_args["f-" + column.key] = column_filter.encode("utf-8")
         # Process sort arguments.
         sort_key = None
@@ -194,6 +194,11 @@ class Grid(object):
             if 'page' in kwargs:
                 if kwargs['page'] == 'all':
                     page_num = 0
+                    if self.allow_fetching_all_results:
+                        page_num = 0
+                    else:
+                        # Should make it harder to return all results at once
+                        page_num = 1
                 else:
                     page_num = int(kwargs['page'])
             else:
@@ -218,7 +223,7 @@ class Grid(object):
         self.cur_filter_dict = cur_filter_dict
 
         # Log grid view.
-        context = text_type(self.__class__.__name__)
+        context = str(self.__class__.__name__)
         params = cur_filter_dict.copy()
         params['sort'] = sort_key
         params['async'] = ('async' in kwargs)
@@ -273,6 +278,7 @@ class Grid(object):
                                    cur_page_num=page_num,
                                    num_pages=num_pages,
                                    num_page_links=self.num_page_links,
+                                   allow_fetching_all_results=self.allow_fetching_all_results,
                                    default_filter_dict=self.default_filter,
                                    cur_filter_dict=cur_filter_dict,
                                    sort_key=sort_key,
@@ -290,7 +296,7 @@ class Grid(object):
                                    # Pass back kwargs so that grid template can set and use args without
                                    # grid explicitly having to pass them.
                                    kwargs=kwargs)
-        trans.log_action(trans.get_user(), text_type("grid.view"), context, params)
+        trans.log_action(trans.get_user(), "grid.view", context, params)
         return page
 
     def get_ids(self, **kwargs):
@@ -324,7 +330,7 @@ class Grid(object):
         return query
 
 
-class GridColumn(object):
+class GridColumn:
     def __init__(self, label, key=None, model_class=None, method=None, format=None,
                  link=None, attach_popup=False, visible=True, nowrap=False,
                  # Valid values for filterable are ['standard', 'advanced', None]
@@ -411,7 +417,7 @@ class TextColumn(GridColumn):
 
     def get_filter(self, trans, user, column_filter):
         """ Returns a SQLAlchemy criterion derived from column_filter. """
-        if isinstance(column_filter, string_types):
+        if isinstance(column_filter, str):
             return self.get_single_filter(user, column_filter)
         elif isinstance(column_filter, list):
             clause_list = []
@@ -778,7 +784,7 @@ class SharingStatusColumn(GridColumn):
         return accepted_filters
 
 
-class GridOperation(object):
+class GridOperation:
     def __init__(self, label, key=None, condition=None, allow_multiple=True, allow_popup=True,
                  target=None, url_args=None, async_compatible=False, confirm=None,
                  global_operation=None):
@@ -823,14 +829,14 @@ class DisplayByUsernameAndSlugGridOperation(GridOperation):
         return {'action' : 'display_by_username_and_slug', 'username' : item.user.username, 'slug' : item.slug}
 
 
-class GridAction(object):
+class GridAction:
     def __init__(self, label=None, url_args=None, target=None):
         self.label = label
         self.url_args = url_args
         self.target = target
 
 
-class GridColumnFilter(object):
+class GridColumnFilter:
     def __init__(self, label, args=None):
         self.label = label
         self.args = args

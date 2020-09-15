@@ -25,7 +25,7 @@ class DatasetCollectionsController(
 ):
 
     def __init__(self, app):
-        super(DatasetCollectionsController, self).__init__(app)
+        super().__init__(app)
         self.history_manager = managers.histories.HistoryManager(app)
 
     @expose_api

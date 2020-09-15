@@ -11,10 +11,11 @@ from galaxy.visualization.plugins import (
     resource_parser,
     utils as vis_utils
 )
+from . import VisualizationsBase_TestCase
 from ...unittest_utils import galaxy_mock
 
 
-class VisualizationsPlugin_TestCase(unittest.TestCase):
+class VisualizationsPlugin_TestCase(VisualizationsBase_TestCase):
     plugin_class = vis_plugin.VisualizationPlugin
 
     def test_default_init(self):

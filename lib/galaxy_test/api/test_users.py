@@ -175,7 +175,7 @@ class UsersApiTestCase(ApiTestCase):
         return [r[attr] for r in response["inputs"] if r["name"] == name][0]
 
     def __url(self, action, user):
-        return self._api_url("users/%s/%s" % (user["id"], action), params=dict(key=self.master_api_key))
+        return self._api_url("users/{}/{}".format(user["id"], action), params=dict(key=self.master_api_key))
 
     def __show(self, user):
         return self._get("users/%s" % (user['id']))

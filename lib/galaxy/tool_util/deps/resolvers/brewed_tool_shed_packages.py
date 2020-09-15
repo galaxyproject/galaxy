@@ -85,7 +85,7 @@ class HomebrewToolShedDependencyResolver(
         return dep
 
 
-class RawDependencies(object):
+class RawDependencies:
 
     def __init__(self, dependencies_file):
         self.root = parse_xml(dependencies_file).getroot()
@@ -109,7 +109,7 @@ class RawDependencies(object):
         return target_dependency
 
 
-class RawDependency(object):
+class RawDependency:
 
     def __init__(self, dependencies, package_el, repository_el):
         self.dependencies = dependencies
@@ -146,7 +146,7 @@ def build_recipe_name(package_name, package_version, repository_owner, repositor
     owner = repository_owner.replace("-", "")
     name = repository_name
     name = name.replace("_", "").replace("-", "")
-    base = "%s_%s" % (owner, name)
+    base = "{}_{}".format(owner, name)
     return base
 
 

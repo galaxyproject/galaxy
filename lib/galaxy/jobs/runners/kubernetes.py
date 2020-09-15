@@ -77,7 +77,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         kwargs['runner_param_specs'].update(runner_param_specs)
 
         """Start the job runner parent object """
-        super(KubernetesJobRunner, self).__init__(app, nworkers, **kwargs)
+        super().__init__(app, nworkers, **kwargs)
 
         self._pykube_api = pykube_client_from_dict(self.runner_params)
         self._galaxy_instance_id = self.__get_galaxy_instance_id()
@@ -473,7 +473,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             try:
                 with open(job_state.error_file, 'w') as error_file:
                     error_file.write("No Kubernetes Jobs are available under expected selector app=%s\n" % job_state.job_id)
-            except EnvironmentError as e:
+            except OSError as e:
                 # Python 2/3 compatible handling of FileNotFoundError
                 if e.errno == errno.ENOENT:
                     log.error("Job directory already cleaned up. Assuming already handled for selector app=%s", job_state.job_id)
@@ -487,7 +487,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             try:
                 with open(job_state.error_file, 'w') as error_file:
                     error_file.write("More than one Kubernetes Job associated with job id '%s'\n" % job_state.job_id)
-            except EnvironmentError as e:
+            except OSError as e:
                 # Python 2/3 compatible handling of FileNotFoundError
                 if e.errno == errno.ENOENT:
                     log.error("Job directory already cleaned up. Assuming already handled for selector app=%s", job_state.job_id)
@@ -555,9 +555,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 self.__cleanup_k8s_job(job_to_delete)
             # TODO assert whether job parallelism == 0
             # assert not job_to_delete.exists(), "Could not delete job,"+job.job_runner_external_id+" it still exists"
-            log.debug("(%s/%s) Terminated at user's request" % (job.id, job.job_runner_external_id))
+            log.debug("({}/{}) Terminated at user's request".format(job.id, job.job_runner_external_id))
         except Exception as e:
-            log.exception("(%s/%s) User killed running job, but error encountered during termination: %s" % (
+            log.exception("({}/{}) User killed running job, but error encountered during termination: {}".format(
                 job.id, job.job_runner_external_id, e))
 
     def recover(self, job, job_wrapper):
@@ -573,20 +573,20 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         ajs.job_wrapper = job_wrapper
         ajs.job_destination = job_wrapper.job_destination
         if job.state == model.Job.states.RUNNING:
-            log.debug("(%s/%s) is still in running state, adding to the runner monitor queue" % (
+            log.debug("({}/{}) is still in running state, adding to the runner monitor queue".format(
                 job.id, job.job_runner_external_id))
             ajs.old_state = model.Job.states.RUNNING
             ajs.running = True
             self.monitor_queue.put(ajs)
         elif job.state == model.Job.states.QUEUED:
-            log.debug("(%s/%s) is still in queued state, adding to the runner monitor queue" % (
+            log.debug("({}/{}) is still in queued state, adding to the runner monitor queue".format(
                 job.id, job.job_runner_external_id))
             ajs.old_state = model.Job.states.QUEUED
             ajs.running = False
             self.monitor_queue.put(ajs)
 
     def finish_job(self, job_state):
-        super(KubernetesJobRunner, self).finish_job(job_state)
+        super().finish_job(job_state)
         jobs = Job.objects(self._pykube_api).filter(selector="app=" + job_state.job_id,
                                                     namespace=self.runner_params['k8s_namespace'])
         if len(jobs.response['items']) != 1:

@@ -1,5 +1,3 @@
-from six import string_types
-
 from galaxy.datatypes.data import Newick, Nexus
 from galaxy.datatypes.interval import (
     Bed,
@@ -17,7 +15,7 @@ from galaxy.visualization.data_providers.basic import ColumnDataProvider
 from galaxy.visualization.data_providers.phyloviz import PhylovizDataProvider
 
 
-class DataProviderRegistry(object):
+class DataProviderRegistry:
     """
     Registry for data providers that enables listing and lookup.
     """
@@ -106,7 +104,7 @@ class DataProviderRegistry(object):
                                                            original_dataset=original_dataset)
                 else:
                     source_list = data_provider_mapping[source]
-                    if isinstance(source_list, string_types):
+                    if isinstance(source_list, str):
                         source_list = [source_list]
 
                     # Find a valid data provider in the source list.

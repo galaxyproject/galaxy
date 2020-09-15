@@ -72,10 +72,10 @@ class CgroupPlugin(InstrumentPlugin):
         return metrics
 
     def __record_cgroup_cpu_usage(self, job_directory):
-        return """if [ `command -v cgget` ] && [ -e /proc/$$/cgroup ]; then cat /proc/$$/cgroup | awk -F':' '$2=="cpuacct,cpu"{print $2":"$3}' | xargs -I{} cgget -g {} > %(metrics)s ; else echo "" > %(metrics)s; fi""" % {"metrics": self.__cgroup_metrics_file(job_directory)}
+        return """if [ `command -v cgget` ] && [ -e /proc/$$/cgroup ]; then cat /proc/$$/cgroup | awk -F':' '$2=="cpuacct,cpu"{{print $2":"$3}}' | xargs -I{{}} cgget -g {{}} > {metrics} ; else echo "" > {metrics}; fi""".format(metrics=self.__cgroup_metrics_file(job_directory))
 
     def __record_cgroup_memory_usage(self, job_directory):
-        return """if [ `command -v cgget` ] && [ -e /proc/$$/cgroup ]; then cat /proc/$$/cgroup | awk -F':' '$2=="memory"{print $2":"$3}' | xargs -I{} cgget -g {} >> %(metrics)s ; else echo "" > %(metrics)s; fi""" % {"metrics": self.__cgroup_metrics_file(job_directory)}
+        return """if [ `command -v cgget` ] && [ -e /proc/$$/cgroup ]; then cat /proc/$$/cgroup | awk -F':' '$2=="memory"{{print $2":"$3}}' | xargs -I{{}} cgget -g {{}} >> {metrics} ; else echo "" > {metrics}; fi""".format(metrics=self.__cgroup_metrics_file(job_directory))
 
     def __cgroup_metrics_file(self, job_directory):
         return self._instrument_file_path(job_directory, "_metrics")
@@ -83,7 +83,7 @@ class CgroupPlugin(InstrumentPlugin):
     def __read_metrics(self, path):
         metrics = {}
         prev_metric = None
-        with open(path, "r") as infile:
+        with open(path) as infile:
             for line in infile:
                 try:
                     metric, prev_metric = self.__read_key_value(line, prev_metric)

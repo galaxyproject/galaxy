@@ -411,6 +411,7 @@
     <datatype extension="vcf_bgzip" type="galaxy.datatypes.tabular:VcfGz" display_in_upload="true">
       <display file="igv/vcf.xml"/>
       <converter file="vcf_bgzip_to_tabix_converter.xml" target_datatype="tabix"/>
+      <converter file="gz_to_uncompressed.xml" target_datatype="vcf"/>
     </datatype>
     <datatype extension="bus" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true" />
     <datatype extension="kallisto.idx" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true" />
@@ -742,6 +743,9 @@
     <datatype extension="blastdbn" type="galaxy.datatypes.blast:BlastNucDb" mimetype="text/html" display_in_upload="false"/>
     <datatype extension="blastdbp" type="galaxy.datatypes.blast:BlastProtDb" mimetype="text/html" display_in_upload="false"/>
     <datatype extension="blastdbd" type="galaxy.datatypes.blast:BlastDomainDb" mimetype="text/html" display_in_upload="false"/>
+    <datatype extension="blastdbn5" type="galaxy.datatypes.blast:BlastNucDb5" mimetype="text/html" display_in_upload="false"/>
+    <datatype extension="blastdbp5" type="galaxy.datatypes.blast:BlastProtDb5" mimetype="text/html" display_in_upload="false"/>
+    <datatype extension="blastdbd5" type="galaxy.datatypes.blast:BlastDomainDb5" mimetype="text/html" display_in_upload="false"/>
     <datatype extension="maskinfo-asn1" type="galaxy.datatypes.data:GenericAsn1" mimetype="text/plain" subclass="true" display_in_upload="true"/>
     <datatype extension="maskinfo-asn1-binary" type="galaxy.datatypes.binary:GenericAsn1Binary" mimetype="application/octet-stream" subclass="true" display_in_upload="true"/>
     <datatype extension="pssm-asn1" type="galaxy.datatypes.data:GenericAsn1" mimetype="text/plain" subclass="true" display_in_upload="true"/>
@@ -793,6 +797,7 @@
     <datatype extension="dada2_sequencetable" type="galaxy.datatypes.tabular:Tabular" mimetype="application/text" subclass="true" display_in_upload="true" />
     <datatype extension="dada2_uniques" type="galaxy.datatypes.tabular:Tabular" mimetype="application/text" subclass="true" display_in_upload="true" />
     <datatype extension="ckpt" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true" />
+    <datatype extension="tgz" type="galaxy.datatypes.binary:Binary" subclass="true" mimetype="multipart/x-gzip" display_in_upload="true" />
   </registration>
   <sniffers>
     <!--

@@ -11,6 +11,7 @@ from galaxy import model
 from galaxy.util import clean_multiline_string
 from galaxy.visualization.plugins import plugin
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
+from . import VisualizationsBase_TestCase
 from ...unittest_utils import galaxy_mock
 
 glx_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, os.pardir))
@@ -37,7 +38,7 @@ config1 = """\
 """
 
 
-class VisualizationsRegistry_TestCase(unittest.TestCase):
+class VisualizationsRegistry_TestCase(VisualizationsBase_TestCase):
 
     def test_plugin_load_from_repo(self):
         """should attempt load if criteria met"""

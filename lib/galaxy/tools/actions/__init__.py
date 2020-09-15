@@ -5,7 +5,6 @@ import re
 from collections import OrderedDict
 from json import dumps
 
-from six import string_types
 
 from galaxy import model
 from galaxy.exceptions import ItemAccessibilityException
@@ -24,7 +23,7 @@ from galaxy.web import url_for
 log = logging.getLogger(__name__)
 
 
-class ToolExecutionCache(object):
+class ToolExecutionCache:
     """ An object mean to cache calculation caused by repeatedly evaluting
     the same tool by the same user with slightly different parameters.
     """
@@ -48,7 +47,7 @@ class ToolExecutionCache(object):
         return chrom_info_pair
 
 
-class ToolAction(object):
+class ToolAction:
     """
     The actions to be taken when a tool is run (after parameters have
     been converted and validated).
@@ -59,7 +58,7 @@ class ToolAction(object):
         raise TypeError("Abstract method")
 
 
-class DefaultToolAction(object):
+class DefaultToolAction:
     """Default tool action is to run an external command"""
     produces_real_jobs = True
 
@@ -130,7 +129,7 @@ class DefaultToolAction(object):
                                 input_datasets[prefix + conversion_name + str(i + 1)] = new_data
                                 conversions.append((conversion_name, new_data))
                             else:
-                                raise Exception('A path for explicit datatype conversion has not been found: %s --/--> %s' % (input_datasets[prefix + input.name + str(i + 1)].extension, conversion_extensions))
+                                raise Exception('A path for explicit datatype conversion has not been found: {} --/--> {}'.format(input_datasets[prefix + input.name + str(i + 1)].extension, conversion_extensions))
                         if parent:
                             parent[input.name][i] = input_datasets[prefix + input.name + str(i + 1)]
                             for conversion_name, conversion_data in conversions:
@@ -150,7 +149,7 @@ class DefaultToolAction(object):
                             input_datasets[prefix + conversion_name] = new_data
                             conversions.append((conversion_name, new_data))
                         else:
-                            raise Exception('A path for explicit datatype conversion has not been found: %s --/--> %s' % (input_datasets[prefix + input.name].extension, conversion_extensions))
+                            raise Exception('A path for explicit datatype conversion has not been found: {} --/--> {}'.format(input_datasets[prefix + input.name].extension, conversion_extensions))
                     target_dict = parent
                     if not target_dict:
                         target_dict = param_values
@@ -342,7 +341,7 @@ class DefaultToolAction(object):
         wrapped_params = self._wrapped_params(trans, tool, incoming, inp_data)
 
         out_data = OrderedDict()
-        input_collections = dict((k, v[0][0]) for k, v in inp_dataset_collections.items())
+        input_collections = {k: v[0][0] for k, v in inp_dataset_collections.items()}
         output_collections = OutputCollections(
             trans,
             history,
@@ -426,7 +425,7 @@ class DefaultToolAction(object):
             # or an actual object to copy.
             metadata_source = output.metadata_source
             if metadata_source:
-                if isinstance(metadata_source, string_types):
+                if isinstance(metadata_source, str):
                     metadata_source = inp_data.get(metadata_source)
 
             if metadata_source is not None:
@@ -461,6 +460,9 @@ class DefaultToolAction(object):
             if not filter_output(output, incoming):
                 handle_output_timer = ExecutionTimer()
                 if output.collection:
+                    if completed_job and dataset_collection_elements and name in dataset_collection_elements:
+                        # Output collection is mapped over and has already been copied from original job
+                        continue
                     collections_manager = app.dataset_collections_service
                     element_identifiers = []
                     known_outputs = output.known_outputs(input_collections, collections_manager.type_registry)
@@ -474,7 +476,7 @@ class DefaultToolAction(object):
                         for parent_id in (output_part_def.parent_ids or []):
                             # TODO: replace following line with formal abstractions for doing this.
                             current_collection_type = ":".join(current_collection_type.split(":")[1:])
-                            name_to_index = dict((value["name"], index) for (index, value) in enumerate(current_element_identifiers))
+                            name_to_index = {value["name"]: index for (index, value) in enumerate(current_element_identifiers)}
                             if parent_id not in name_to_index:
                                 if parent_id not in current_element_identifiers:
                                     index = len(current_element_identifiers)
@@ -512,14 +514,15 @@ class DefaultToolAction(object):
                         name=name,
                         set_hid=True if flush_job else False,
                         flush=flush_job,
+                        completed_job=completed_job,
                         **element_kwds
                     )
                     if hdca:
                         datasets_to_persist.append(hdca)
-                    log.info("Handled collection output named %s for tool %s %s" % (name, tool.id, handle_output_timer))
+                    log.info("Handled collection output named {} for tool {} {}".format(name, tool.id, handle_output_timer))
                 else:
                     handle_output(name, output)
-                    log.info("Handled output named %s for tool %s %s" % (name, tool.id, handle_output_timer))
+                    log.info("Handled output named {} for tool {} {}".format(name, tool.id, handle_output_timer))
 
         add_datasets_timer = tool.app.execution_timer_factory.get_timer(
             'internals.galaxy.tools.actions.add_datasets',
@@ -561,7 +564,7 @@ class DefaultToolAction(object):
                                      current_job=job,
                                      out_data=out_data)
             datasets_to_persist = []
-        log.info("Setup for job %s complete, ready to be enqueued %s" % (job.log_str(), job_setup_timer))
+        log.info("Setup for job {} complete, ready to be enqueued {}".format(job.log_str(), job_setup_timer))
 
         # Some tools are not really executable, but jobs are still created for them ( for record keeping ).
         # Examples include tools that redirect to other applications ( epigraph ).  These special tools must
@@ -590,7 +593,7 @@ class DefaultToolAction(object):
                 history.add_datasets(trans.sa_session, datasets_to_persist, set_hid=set_output_hid, quota=False, flush=False)
                 job_flush_timer = ExecutionTimer()
                 trans.sa_session.flush()
-                log.info("Flushed transaction for job %s %s" % (job.log_str(), job_flush_timer))
+                log.info("Flushed transaction for job {} {}".format(job.log_str(), job_flush_timer))
 
                 # Dispatch to a job handler. enqueue() is responsible for flushing the job
                 app.job_manager.enqueue(job, tool=tool)
@@ -607,14 +610,14 @@ class DefaultToolAction(object):
         """
         try:
             old_job = trans.sa_session.query(trans.app.model.Job).get(rerun_remap_job_id)
-            assert old_job is not None, '(%s/%s): Old job id is invalid' % (rerun_remap_job_id, current_job.id)
-            assert old_job.tool_id == current_job.tool_id, '(%s/%s): Old tool id (%s) does not match rerun tool id (%s)' % (old_job.id, current_job.id, old_job.tool_id, current_job.tool_id)
+            assert old_job is not None, '({}/{}): Old job id is invalid'.format(rerun_remap_job_id, current_job.id)
+            assert old_job.tool_id == current_job.tool_id, '({}/{}): Old tool id ({}) does not match rerun tool id ({})'.format(old_job.id, current_job.id, old_job.tool_id, current_job.tool_id)
             if trans.user is not None:
-                assert old_job.user_id == trans.user.id, '(%s/%s): Old user id (%s) does not match rerun user id (%s)' % (old_job.id, current_job.id, old_job.user_id, trans.user.id)
+                assert old_job.user_id == trans.user.id, '({}/{}): Old user id ({}) does not match rerun user id ({})'.format(old_job.id, current_job.id, old_job.user_id, trans.user.id)
             elif trans.user is None and type(galaxy_session) == trans.model.GalaxySession:
-                assert old_job.session_id == galaxy_session.id, '(%s/%s): Old session id (%s) does not match rerun session id (%s)' % (old_job.id, current_job.id, old_job.session_id, galaxy_session.id)
+                assert old_job.session_id == galaxy_session.id, '({}/{}): Old session id ({}) does not match rerun session id ({})'.format(old_job.id, current_job.id, old_job.session_id, galaxy_session.id)
             else:
-                raise Exception('(%s/%s): Remapping via the API is not (yet) supported' % (old_job.id, current_job.id))
+                raise Exception('({}/{}): Remapping via the API is not (yet) supported'.format(old_job.id, current_job.id))
             # Duplicate PJAs before remap.
             for pjaa in old_job.post_job_actions:
                 current_job.add_post_job_action(pjaa.post_job_action)
@@ -662,7 +665,7 @@ class DefaultToolAction(object):
         return remapped_hdas
 
     def __remap_parameters(self, job_to_remap, jtid, jtod, out_data):
-        input_values = dict([(p.name, json.loads(p.value)) for p in job_to_remap.parameters])
+        input_values = {p.name: json.loads(p.value) for p in job_to_remap.parameters}
         old_dataset_id = jtod.dataset_id
         new_dataset_id = out_data[jtod.name].id
         input_values = update_dataset_ids(input_values, {old_dataset_id: new_dataset_id}, src='hda')
@@ -670,7 +673,7 @@ class DefaultToolAction(object):
             p.value = json.dumps(input_values[p.name])
         jtid.dataset = out_data[jtod.name]
         jtid.dataset.hid = jtod.dataset.hid
-        log.info('Job %s input HDA %s remapped to new HDA %s' % (job_to_remap.id, jtod.dataset.id, jtid.dataset.id))
+        log.info('Job {} input HDA {} remapped to new HDA {}'.format(job_to_remap.id, jtod.dataset.id, jtid.dataset.id))
 
     def _wrapped_params(self, trans, tool, incoming, input_datasets=None):
         wrapped_params = WrappedParameters(trans, tool, incoming, input_datasets=input_datasets)
@@ -795,7 +798,7 @@ class DefaultToolAction(object):
         return name
 
 
-class OutputCollections(object):
+class OutputCollections:
     """ Keeps track of collections (DC or HDCA) created by actions.
 
     Actions do fairly different things depending on whether we are creating
@@ -818,7 +821,7 @@ class OutputCollections(object):
         self.out_collection_instances = {}
         self.tags = tags
 
-    def create_collection(self, output, name, collection_type=None, set_hid=True, flush=True, **element_kwds):
+    def create_collection(self, output, name, collection_type=None, set_hid=True, flush=True, completed_job=None, **element_kwds):
         input_collections = self.input_collections
         collections_manager = self.trans.app.dataset_collections_service
         collection_type = collection_type or output.structure.collection_type
@@ -899,6 +902,8 @@ class OutputCollections(object):
                 tags=self.tags,
                 set_hid=set_hid,
                 flush=flush,
+                completed_job=completed_job,
+                output_name=name,
                 **element_kwds
             )
             # name here is name of the output element - not name
@@ -1006,7 +1011,6 @@ def determine_output_format(output, parameter_context, input_datasets, input_dat
                 ext = get_ext_or_implicit_ext(input_dataset)
             except Exception as e:
                 log.debug("Exception while trying to determine format_source: %s", e)
-                pass
 
     # process change_format tags
     if output.change_format is not None:

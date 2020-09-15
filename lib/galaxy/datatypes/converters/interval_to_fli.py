@@ -35,9 +35,9 @@ def main():
 
         # Create reader.
         if input_format == 'gff':
-            in_reader = GFFReaderWrapper(open(in_fname, 'r'))
+            in_reader = GFFReaderWrapper(open(in_fname))
         else:  # input_format == 'gtf'
-            in_reader = read_unordered_gtf(open(in_fname, 'r'))
+            in_reader = read_unordered_gtf(open(in_fname))
 
         for feature in in_reader:
             if isinstance(feature, (Header, Comment)):
@@ -67,7 +67,7 @@ def main():
                             loc['end'] = feature.end
     elif input_format == 'bed':
         # BED format.
-        for line in open(in_fname, 'r'):
+        for line in open(in_fname):
             # Ignore track lines.
             if line.startswith("track"):
                 continue
@@ -90,7 +90,7 @@ def main():
     entries = []
     for name in sorted(name_loc_dict.keys()):
         loc = name_loc_dict[name]
-        entry = '%s\t%s\t%s' % (name.lower(), name, '%s:%i-%i' % (loc['contig'], loc['start'], loc['end']))
+        entry = '{}\t{}\t{}'.format(name.lower(), name, '%s:%i-%i' % (loc['contig'], loc['start'], loc['end']))
         if len(entry) > max_len:
             max_len = len(entry)
         entries.append(entry)

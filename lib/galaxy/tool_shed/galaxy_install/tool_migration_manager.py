@@ -39,7 +39,7 @@ MIGRATED_TOOLS_CONF_XML = """<?xml version="1.0"?>
 """
 
 
-class ToolMigrationManager(object):
+class ToolMigrationManager:
 
     def __init__(self, app, latest_migration_script_number, tool_shed_install_config, migrated_tools_config,
                  install_dependencies):
@@ -69,7 +69,7 @@ class ToolMigrationManager(object):
         # setting from migrated_tools_config.
         try:
             tree, error_message = parse_xml(migrated_tools_config)
-        except (IOError, OSError) as exc:
+        except OSError as exc:
             if exc.errno == errno.ENOENT:
                 with open(migrated_tools_config, 'w') as fh:
                     fh.write(MIGRATED_TOOLS_CONF_XML.format(shed_tools_dir=self.app.config.shed_tools_dir))

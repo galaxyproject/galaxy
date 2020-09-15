@@ -13,7 +13,6 @@ from collections import (
     OrderedDict
 )
 
-import six
 
 import galaxy.model
 from galaxy import util
@@ -31,8 +30,7 @@ log = logging.getLogger(__name__)
 UNSET = object()
 
 
-@six.add_metaclass(abc.ABCMeta)
-class ModelPersistenceContext(object):
+class ModelPersistenceContext(metaclass=abc.ABCMeta):
     """Class for creating datasets while finding files.
 
     This class implement the create_dataset method that takes care of populating metadata
@@ -282,7 +280,7 @@ class ModelPersistenceContext(object):
 
             # Associate new dataset with job
             element_identifier_str = ":".join(element_identifiers)
-            association_name = '__new_primary_file_%s|%s__' % (name, element_identifier_str)
+            association_name = '__new_primary_file_{}|{}__'.format(name, element_identifier_str)
             self.add_output_dataset_association(association_name, dataset)
 
         self.flush()
@@ -352,8 +350,7 @@ class ModelPersistenceContext(object):
         """If database bound, flush the persisted objects to ensure IDs."""
 
 
-@six.add_metaclass(abc.ABCMeta)
-class PermissionProvider(object):
+class PermissionProvider(metaclass=abc.ABCMeta):
     """Interface for working with permissions while importing datasets with ModelPersistenceContext."""
 
     @property
@@ -380,8 +377,7 @@ class UnusedPermissionProvider(PermissionProvider):
         return
 
 
-@six.add_metaclass(abc.ABCMeta)
-class MetadataSourceProvider(object):
+class MetadataSourceProvider(metaclass=abc.ABCMeta):
     """Interface for working with fetching input dataset metadata with ModelPersistenceContext."""
 
     @abc.abstractmethod
@@ -718,7 +714,7 @@ def discover_target_directory(dir_name, job_working_directory):
         return job_working_directory
 
 
-class JsonCollectedDatasetMatch(object):
+class JsonCollectedDatasetMatch:
 
     def __init__(self, as_dict, collector, filename, path=None, parent_identifiers=[]):
         self.as_dict = as_dict
@@ -812,6 +808,6 @@ class JsonCollectedDatasetMatch(object):
 class RegexCollectedDatasetMatch(JsonCollectedDatasetMatch):
 
     def __init__(self, re_match, collector, filename, path=None):
-        super(RegexCollectedDatasetMatch, self).__init__(
+        super().__init__(
             re_match.groupdict(), collector, filename, path=path
         )

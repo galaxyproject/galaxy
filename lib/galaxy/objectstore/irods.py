@@ -80,7 +80,7 @@ def parse_config_xml(config_xml):
         e_xml = config_xml.findall('extra_dir')
         if not e_xml:
             _config_xml_error('extra_dir')
-        extra_dirs = [dict(((k, e.get(k)) for k in attrs)) for e in e_xml]
+        extra_dirs = [{k: e.get(k) for k in attrs} for e in e_xml]
 
         return {
             'auth': {
@@ -173,7 +173,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
     def __init__(self, config, config_dict):
         reload_timer = ExecutionTimer()
-        super(IRODSObjectStore, self).__init__(config, config_dict)
+        super().__init__(config, config_dict)
 
         auth_dict = config_dict.get('auth')
         if auth_dict is None:
@@ -226,7 +226,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         if self.staging_path is None:
             _config_dict_error('cache->path')
 
-        extra_dirs = dict((e['type'], e['path']) for e in config_dict.get('extra_dirs', []))
+        extra_dirs = {e['type']: e['path'] for e in config_dict.get('extra_dirs', [])}
         if not extra_dirs:
             _config_dict_error('extra_dirs')
         self.extra_dirs.update(extra_dirs)
@@ -242,7 +242,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         return parse_config_xml(config_xml)
 
     def to_dict(self):
-        as_dict = super(IRODSObjectStore, self).to_dict()
+        as_dict = super().to_dict()
         as_dict.update(self._config_to_dict())
         return as_dict
 
@@ -595,7 +595,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         if not self._in_cache(rel_path):
             self._pull_into_cache(rel_path)
         # Read the file content from cache
-        data_file = open(self._get_cache_path(rel_path), 'r')
+        data_file = open(self._get_cache_path(rel_path))
         data_file.seek(start)
         content = data_file.read(count)
         data_file.close()

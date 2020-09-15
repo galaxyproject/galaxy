@@ -7,11 +7,8 @@ from abc import (
     abstractmethod
 )
 
-import six
 
-
-@six.add_metaclass(ABCMeta)
-class ErrorPlugin(object):
+class ErrorPlugin(metaclass=ABCMeta):
     """Describes how to send bug reports to various locations."""
 
     @property

@@ -6,7 +6,6 @@ import tempfile
 import traceback
 
 from fabric.api import lcd
-from six import string_types
 from sqlalchemy import or_
 
 from galaxy import exceptions, util
@@ -33,7 +32,7 @@ from galaxy.util.tool_shed import common_util, encoding_util, xml_util
 log = logging.getLogger(__name__)
 
 
-class InstallToolDependencyManager(object):
+class InstallToolDependencyManager:
 
     def __init__(self, app):
         self.app = app
@@ -129,7 +128,7 @@ class InstallToolDependencyManager(object):
             log.exception('Error installing tool dependency %s version %s.', tool_dependency.name, tool_dependency.version)
             # Since there was an installation error, update the tool dependency status to Error. The remove_installation_path option must
             # be left False here.
-            error_message = '%s\n%s' % (self.format_traceback(), util.unicodify(e))
+            error_message = '{}\n{}'.format(self.format_traceback(), util.unicodify(e))
             tool_dependency = tool_dependency_util.set_tool_dependency_attributes(self.app,
                                                                                   tool_dependency=tool_dependency,
                                                                                   status=self.app.install_model.ToolDependency.installation_status.ERROR,
@@ -426,7 +425,7 @@ class InstallToolDependencyManager(object):
         return tool_dependency
 
 
-class InstallRepositoryManager(object):
+class InstallRepositoryManager:
 
     def __init__(self, app, tpm=None):
         self.app = app
@@ -659,7 +658,7 @@ class InstallRepositoryManager(object):
             for tool_guid in tool_panel_section_mapping:
                 if tool_panel_section_mapping[tool_guid]['action'] == 'create':
                     new_tool_panel_section_name = tool_panel_section_mapping[tool_guid]['tool_panel_section']
-                    log.debug('Creating tool panel section "%s" for tool %s' % (new_tool_panel_section_name, tool_guid))
+                    log.debug('Creating tool panel section "{}" for tool {}'.format(new_tool_panel_section_name, tool_guid))
                     self.tpm.handle_tool_panel_section(self.app.toolbox, None, tool_panel_section_mapping[tool_guid]['tool_panel_section'])
         encoded_repository_ids = [self.app.security.encode_id(tsr.id) for tsr in created_or_updated_tool_shed_repositories]
         new_kwd = dict(includes_tools=includes_tools,
@@ -869,7 +868,7 @@ class InstallRepositoryManager(object):
                           str(tool_panel_section_key))
         else:
             tool_section = None
-        if isinstance(repo_info_dict, string_types):
+        if isinstance(repo_info_dict, str):
             repo_info_dict = encoding_util.tool_shed_decode(repo_info_dict)
         repo_info_tuple = repo_info_dict[tool_shed_repository.name]
         description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = repo_info_tuple
@@ -1135,4 +1134,4 @@ class InstallRepositoryManager(object):
 class RepositoriesInstalledException(exceptions.RequestParameterInvalidException):
 
     def __init__(self):
-        super(RepositoriesInstalledException, self).__init__('All repositories that you are attempting to install have been previously installed.')
+        super().__init__('All repositories that you are attempting to install have been previously installed.')

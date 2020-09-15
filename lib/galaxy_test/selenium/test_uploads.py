@@ -296,7 +296,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.screenshot("rules_example_6_7_named")
 
     def _read_rules_test_data_file(self, name):
-        with open(self.test_data_resolver.get_filename(os.path.join("rules", name)), "r") as f:
+        with open(self.test_data_resolver.get_filename(os.path.join("rules", name))) as f:
             return f.read()
 
     def _scroll_to_end_of_table(self):

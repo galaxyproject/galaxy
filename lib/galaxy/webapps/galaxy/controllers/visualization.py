@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import logging
 import os
 from json import loads
@@ -10,7 +8,6 @@ from paste.httpexceptions import (
     HTTPBadRequest,
     HTTPNotFound
 )
-from six import string_types
 from sqlalchemy import (
     and_,
     desc,
@@ -236,7 +233,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
     _tracks_grid = TracksterSelectionGrid()
 
     def __init__(self, app):
-        super(VisualizationController, self).__init__(app)
+        super().__init__(app)
         self.hda_manager = managers.hdas.HDAManager(app)
 
     #
@@ -443,7 +440,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                 session.flush()
                 viz_title = escape(visualization.title)
                 other_email = escape(other.email)
-                trans.set_message("Visualization '%s' shared with user '%s'" % (viz_title, other_email))
+                trans.set_message("Visualization '{}' shared with user '{}'".format(viz_title, other_email))
                 return trans.response.send_redirect(web.url_for("/visualizations/sharing?id=%s" % id))
         return trans.fill_template("/ind_share_base.mako",
                                    message=msg,
@@ -673,7 +670,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         # post to saved in order to save a visualization
         if type is None or config is None:
             return HTTPBadRequest('A visualization type and config are required to save a visualization')
-        if isinstance(config, string_types):
+        if isinstance(config, str):
             config = loads(config)
         title = title or DEFAULT_VISUALIZATION_NAME
 
@@ -796,7 +793,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
             dataset = self.get_hda_or_ldda(trans, dataset_dict['hda_ldda'], dataset_dict['id'])
 
             genome_data = self._get_genome_data(trans, dataset, dbkey)
-            if not isinstance(genome_data, string_types):
+            if not isinstance(genome_data, str):
                 track['preloaded_data'] = genome_data
 
         # define app configuration for generic mako template
@@ -903,7 +900,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                     else:
                         continue
 
-                    with open(image_file, 'r') as handle:
+                    with open(image_file) as handle:
                         self.gie_image_map[gie] = yaml.safe_load(handle)
 
         return trans.fill_template_mako(
@@ -935,7 +932,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                 if (i > 500):
                     break
                 fields = line.split()
-                location = name = "%s:%s-%s" % (fields[0], fields[1], fields[2])
+                location = name = "{}:{}-{}".format(fields[0], fields[1], fields[2])
                 if len(fields) > 3:
                     name = fields[4]
                 rows.append([location, name])

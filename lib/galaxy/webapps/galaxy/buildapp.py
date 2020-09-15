@@ -158,9 +158,11 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/workflows/create')
     webapp.add_client_route('/workflows/run')
     webapp.add_client_route('/workflows/import')
+    webapp.add_client_route('/workflows/trs_import')
+    webapp.add_client_route('/workflows/trs_search')
     webapp.add_client_route('/workflows/invocations')
     webapp.add_client_route('/workflows/invocations/report')
-    webapp.add_client_route('/workflows/invocations/view_bco')
+    # webapp.add_client_route('/workflows/invocations/view_bco')
     webapp.add_client_route('/custom_builds')
     webapp.add_client_route('/interactivetool_entry_points/list')
 
@@ -256,6 +258,11 @@ def populate_api_routes(webapp, app):
                           controller="datasets",
                           action="extra_files",
                           conditions=dict(method=["GET"]))
+    webapp.mapper.connect("history_content_as_text",
+                          "/api/datasets/{dataset_id}/get_content_as_text",
+                          controller="datasets",
+                          action="get_content_as_text",
+                          conditions=dict(method=["GET"]))
     webapp.mapper.connect("history_contents_metadata_file",
                           "/api/histories/{history_id}/contents/{history_content_id}/metadata_file",
                           controller="datasets",
@@ -330,7 +337,8 @@ def populate_api_routes(webapp, app):
     webapp.mapper.resource('role', 'roles', path_prefix='/api')
     webapp.mapper.resource('upload', 'uploads', path_prefix='/api')
     webapp.mapper.connect('/api/ftp_files', controller='remote_files')
-    webapp.mapper.resource('remote_file', 'remote_files', path_prefix='/api')
+    webapp.mapper.connect('/api/remote_files', action='index', controller='remote_files', conditions=dict(method=["GET"]))
+    webapp.mapper.connect('/api/remote_files/plugins', action='plugins', controller='remote_files', conditions=dict(method=["GET"]))
     webapp.mapper.resource('group', 'groups', path_prefix='/api')
     webapp.mapper.resource_with_deleted('quota', 'quotas', path_prefix='/api')
 
@@ -545,6 +553,49 @@ def populate_api_routes(webapp, app):
                           action='import_shared_workflow_deprecated',
                           conditions=dict(method=['POST']))
 
+    webapp.mapper.connect(
+        'trs_search',
+        '/api/trs_search',
+        controller='trs_search',
+        action="index",
+        conditions=dict(method=['GET'])
+    )
+    webapp.mapper.connect(
+        'trs_consume_get_servers',
+        '/api/trs_consume/servers',
+        controller='trs_consumer',
+        action="get_servers",
+        conditions=dict(method=['GET'])
+    )
+    webapp.mapper.connect(
+        'trs_consume_get_tool',
+        '/api/trs_consume/{trs_server}/tools/{tool_id}',
+        controller='trs_consumer',
+        action="get_tool",
+        conditions=dict(method=['GET'])
+    )
+    webapp.mapper.connect(
+        'trs_consume_get_tool_versions',
+        '/api/trs_consume/{trs_server}/tools/{tool_id}/versions',
+        controller='trs_consumer',
+        action="get_tool_versions",
+        conditions=dict(method=['GET'])
+    )
+    webapp.mapper.connect(
+        'trs_consume_get_tool_version',
+        '/api/trs_consume/{trs_server}/tools/{tool_id}/versions/{version_id}',
+        controller='trs_consumer',
+        action="get_tool_version",
+        conditions=dict(method=['GET'])
+    )
+    webapp.mapper.connect(
+        'trs_consume_import_tool_version',
+        '/api/trs_consume/{trs_server}/tools/{tool_id}/versions/{version_id}/import',
+        controller='trs_consumer',
+        action="import_tool_version",
+        conditions=dict(method=['POST'])
+    )
+
     # route for creating/getting converted datasets
     webapp.mapper.connect('/api/datasets/{dataset_id}/converted', controller='datasets', action='converted', ext=None)
     webapp.mapper.connect('/api/datasets/{dataset_id}/converted/{ext}', controller='datasets', action='converted')
@@ -565,7 +616,7 @@ def populate_api_routes(webapp, app):
         "usage": "_deprecated",
     }
     for noun, suffix in invoke_names.items():
-        name = "%s%s" % (noun, suffix)
+        name = "{}{}".format(noun, suffix)
         webapp.mapper.connect(
             'list_workflow_%s' % name,
             '/api/workflows/{workflow_id}/%s' % noun,
@@ -611,9 +662,8 @@ def populate_api_routes(webapp, app):
     connect_invocation_endpoint('show', '', action='show_invocation')
     connect_invocation_endpoint('show_report', '/report', action='show_invocation_report')
     connect_invocation_endpoint('show_report_pdf', '/report.pdf', action='show_invocation_report_pdf')
-    connect_invocation_endpoint('get_bco', '/get_bco', action='download_invocation_bco')
-    connect_invocation_endpoint('aws_estimate', '/aws_estimate', action='export_aws_estimate')
-    connect_invocation_endpoint('export_bco', '/export_bco', action='export_invocation_bco')
+    connect_invocation_endpoint('biocompute/download', '/biocompute/download', action='download_invocation_bco')
+    connect_invocation_endpoint('biocompute', '/biocompute', action='export_invocation_bco')
     connect_invocation_endpoint('jobs_summary', '/jobs_summary', action='invocation_jobs_summary')
     connect_invocation_endpoint('step_jobs_summary', '/step_jobs_summary', action='invocation_step_jobs_summary')
     connect_invocation_endpoint('cancel', '', action='cancel_invocation', conditions=dict(method=['DELETE']))
@@ -630,6 +680,13 @@ def populate_api_routes(webapp, app):
                           controller='authenticate',
                           action='get_api_key',
                           conditions=dict(method=["GET"]))
+
+    # API OPTIONS RESPONSE
+    webapp.mapper.connect('options',
+                          '/api/{path_info:.*?}',
+                          controller='authenticate',
+                          action='options',
+                          conditions={'method': ['OPTIONS']})
 
     # ======================================
     # ====== DISPLAY APPLICATIONS API ======
@@ -873,7 +930,7 @@ def populate_api_routes(webapp, app):
                           conditions=dict(method=["DELETE"]))
 
     webapp.mapper.connect('download_ld_items',
-                          '/api/libraries/datasets/download/{format}',
+                          '/api/libraries/datasets/download/{archive_format}',
                           controller='library_datasets',
                           action='download',
                           conditions=dict(method=["POST", "GET"]))

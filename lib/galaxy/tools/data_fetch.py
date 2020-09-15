@@ -336,7 +336,7 @@ def _has_src_to_path(upload_config, item, is_dataset=False):
     name = item.get("name")
     if src == "url":
         url = item.get("url")
-        path = sniff.stream_url_to_file(url)
+        path = sniff.stream_url_to_file(url, file_sources=get_file_sources())
         if not is_dataset:
             # Actual target dataset will validate and put results in dict
             # that gets passed back to Galaxy.
@@ -362,7 +362,7 @@ def _handle_hash_validation(upload_config, hash_function, hash_value, path):
     if upload_config.validate_hashes:
         calculated_hash_value = memory_bound_hexdigest(hash_func_name=hash_function, path=path)
         if calculated_hash_value != hash_value:
-            raise Exception("Failed to validate upload with [%s] - expected [%s] got [%s]" % (hash_function, hash_value, calculated_hash_value))
+            raise Exception("Failed to validate upload with [{}] - expected [{}] got [{}]".format(hash_function, hash_value, calculated_hash_value))
 
 
 def _arg_parser():
@@ -374,7 +374,27 @@ def _arg_parser():
     return parser
 
 
-class UploadConfig(object):
+_file_sources = None
+
+
+def get_file_sources():
+    global _file_sources
+    if _file_sources is None:
+        from galaxy.files import ConfiguredFileSources
+        file_sources = None
+        if os.path.exists("file_sources.json"):
+            file_sources_as_dict = None
+            with open("file_sources.json", "r") as f:
+                file_sources_as_dict = json.load(f)
+            if file_sources_as_dict is not None:
+                file_sources = ConfiguredFileSources.from_dict(file_sources_as_dict)
+        if file_sources is None:
+            ConfiguredFileSources.from_dict([])
+        _file_sources = file_sources
+    return _file_sources
+
+
+class UploadConfig:
 
     def __init__(self, request, registry):
         self.registry = registry

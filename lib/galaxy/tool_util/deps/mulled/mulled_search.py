@@ -99,7 +99,7 @@ class QuaySearch():
         Function downloads additional information from quay.io to
         get the tag-field which includes the version number.
         """
-        url = "%s/%s/%s" % (QUAY_API_URL, self.organization, repository_string)
+        url = "{}/{}/{}".format(QUAY_API_URL, self.organization, repository_string)
         r = requests.get(url, headers={'Accept-encoding': 'gzip'})
 
         json_decoder = json.JSONDecoder()
@@ -234,12 +234,12 @@ def readable_output(json, organization='biocontainers', channel='bioconda'):
                               (organization, result['package'], result['version'])])  # NOT a real solution
         for search_string, results in json.get('conda', {}).items():
             for result in results:
-                lines.append(['conda', result['package'], '%s--%s' % (result['version'], result['build']),
-                              'conda install -c %s %s=%s=%s\n' % (channel, result['package'], result['version'], result['build'])])
+                lines.append(['conda', result['package'], '{}--{}'.format(result['version'], result['build']),
+                              'conda install -c {} {}={}={}\n'.format(channel, result['package'], result['version'], result['build'])])
         for search_string, results in json.get('singularity', {}).items():
             for result in results:
                 lines.append(['singularity', result['package'], result['version'],
-                              'wget https://depot.galaxyproject.org/singularity/%s:%s\n' % (result['package'], result['version'])])
+                              'wget https://depot.galaxyproject.org/singularity/{}:{}\n'.format(result['package'], result['version'])])
 
         col_width0, col_width1, col_width2 = (max(len(
             line[n]) for line in lines) + 2 for n in (0, 1, 2))  # def max col widths for the output

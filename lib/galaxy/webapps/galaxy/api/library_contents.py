@@ -38,7 +38,7 @@ log = logging.getLogger(__name__)
 class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems, UsesFormDefinitionsMixin, LibraryActions):
 
     def __init__(self, app):
-        super(LibraryContentsController, self).__init__(app)
+        super().__init__(app)
         self.hda_manager = managers.hdas.HDAManager(app)
 
     @expose_api
@@ -367,12 +367,10 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         """
         if isinstance(meta, dict):
             for a in meta:
-                for path, value in self._scan_json_block(meta[a], prefix + "/" + a):
-                    yield path, value
+                yield from self._scan_json_block(meta[a], prefix + "/" + a)
         elif isinstance(meta, list):
             for i, a in enumerate(meta):
-                for path, value in self._scan_json_block(a, prefix + "[%d]" % (i)):
-                    yield path, value
+                yield from self._scan_json_block(a, prefix + "[%d]" % (i))
         else:
             # BUG: Everything is cast to string, which can lead to false positives
             # for cross type comparisions, ie "True" == True

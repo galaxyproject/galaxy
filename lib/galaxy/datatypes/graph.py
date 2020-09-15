@@ -111,7 +111,7 @@ class XGMMLGraphDataProvider(dataproviders.hierarchy.XMLDataProvider):
         #   essentially this is a form of aggregation
         graph = simplegraph.SimpleGraph()
 
-        parent_gen = super(XGMMLGraphDataProvider, self).__iter__()
+        parent_gen = super().__iter__()
         for graph_elem in parent_gen:
             if 'children' not in graph_elem:
                 continue
@@ -145,7 +145,7 @@ class SIFGraphDataProvider(dataproviders.column.ColumnarDataProvider):
         #   essentially this is a form of aggregation
         graph = simplegraph.SimpleGraph()
         # SIF is tabular with the source, link-type, and all targets in the columns
-        parent_gen = super(SIFGraphDataProvider, self).__iter__()
+        parent_gen = super().__iter__()
         for columns in parent_gen:
             if columns:
                 source_id = columns[0]

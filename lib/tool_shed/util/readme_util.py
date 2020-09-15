@@ -1,4 +1,3 @@
-import io
 import json
 import logging
 import os
@@ -46,7 +45,7 @@ def build_readme_files_dict(app, repository, changeset_revision, metadata, tool_
                         full_path_to_readme_file = os.path.abspath(relative_path_to_readme_file)
                     text = None
                     try:
-                        with io.open(full_path_to_readme_file, 'r', encoding='utf-8') as f:
+                        with open(full_path_to_readme_file, encoding='utf-8') as f:
                             text = f.read()
                     except Exception:
                         log.exception("Error reading README file '%s' from disk", relative_path_to_readme_file)

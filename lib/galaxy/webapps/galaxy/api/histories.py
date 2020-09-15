@@ -47,7 +47,7 @@ log = logging.getLogger(__name__)
 class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistoryMixin, SharableMixin):
 
     def __init__(self, app):
-        super(HistoriesController, self).__init__(app)
+        super().__init__(app)
         self.citations_manager = citations.CitationsManager(app)
         self.user_manager = users.UserManager(app)
         self.workflow_manager = workflows.WorkflowsManager(app)
@@ -531,5 +531,5 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
             .order_by(model.HistoryDatasetAssociation.hid.desc())
         return {
             'installed_builds'  : [{'label' : ins, 'value' : ins} for ins in installed_builds],
-            'fasta_hdas'        : [{'label' : '%s: %s' % (hda.hid, hda.name), 'value' : trans.security.encode_id(hda.id)} for hda in fasta_hdas],
+            'fasta_hdas'        : [{'label' : '{}: {}'.format(hda.hid, hda.name), 'value' : trans.security.encode_id(hda.id)} for hda in fasta_hdas],
         }

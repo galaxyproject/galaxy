@@ -17,7 +17,7 @@ from galaxy.util.tool_shed.xml_util import parse_xml
 log = logging.getLogger(__name__)
 
 
-class ToolPanelManager(object):
+class ToolPanelManager:
 
     def __init__(self, app):
         self.app = app
@@ -40,7 +40,7 @@ class ToolPanelManager(object):
         # from too many places to make it feasible at this time
         try:
             tree, error_message = parse_xml(shed_tool_conf, check_exists=False)
-        except (OSError, IOError) as exc:
+        except OSError as exc:
             if (exc.errno == errno.ENOENT and shed_tool_conf_dict.get('create', None) is not None):
                 log.info('Creating shed tool config with default contents: %s', shed_tool_conf)
                 with open(shed_tool_conf, 'w') as fh:

@@ -132,7 +132,11 @@ def create_or_verify_database(url, galaxy_config_file, engine_options={}, app=No
         else:
             cmd_msg = "sh manage_db.sh%s upgrade" % config_arg
         backup_msg = "Please backup your database and then migrate the database schema by running '%s'." % cmd_msg
-        raise Exception("%s. %s%s" % (expect_msg, instructions, backup_msg))
+        allow_future_database = os.environ.get("GALAXY_ALLOW_FUTURE_DATABASE", False)
+        if db_schema.version > migrate_repository.versions.latest and allow_future_database:
+            log.warning("WARNING: Database is from the future, but GALAXY_ALLOW_FUTURE_DATABASE is set, so Galaxy will continue to start.")
+        else:
+            raise Exception("{}. {}{}".format(expect_msg, instructions, backup_msg))
     else:
         log.info("At database version %d" % db_schema.version)
 
@@ -146,10 +150,10 @@ def migrate_to_current_version(engine, schema):
         raise e
     for ver, change in changeset:
         nextver = ver + changeset.step
-        log.info('Migrating %s -> %s... ' % (ver, nextver))
+        log.info('Migrating {} -> {}... '.format(ver, nextver))
         old_stdout = sys.stdout
 
-        class FakeStdout(object):
+        class FakeStdout:
             def __init__(self):
                 self.buffer = []
 

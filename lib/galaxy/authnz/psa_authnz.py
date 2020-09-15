@@ -1,7 +1,6 @@
 import json
 
 import requests
-import six
 from social_core.actions import do_auth, do_complete, do_disconnect
 from social_core.backends.utils import get_backend
 from social_core.strategy import BaseStrategy
@@ -175,7 +174,7 @@ class PSAAuthnz(IdentityProvider):
         strategy = Strategy(trans.request, trans.session, Storage, self.config)
         backend = self._load_backend(strategy, self.config['redirect_uri'])
         response = do_disconnect(backend, trans.user, association_id)
-        if isinstance(response, six.string_types):
+        if isinstance(response, str):
             return True, "", response
         return response.get('success', False), response.get('message', ""), ""
 
@@ -188,7 +187,7 @@ class Strategy(BaseStrategy):
         self.config = config
         self.config['SOCIAL_AUTH_REDIRECT_IS_HTTPS'] = True if self.request and self.request.host.startswith('https:') else False
         self.config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_EXTRA_DATA'] = ['id_token']
-        super(Strategy, self).__init__(storage, tpl)
+        super().__init__(storage, tpl)
 
     def get_setting(self, name):
         return self.config[name]
@@ -251,7 +250,7 @@ class Strategy(BaseStrategy):
         return self.backend.continue_pipeline(*args, **kwargs)
 
 
-class Storage(object):
+class Storage:
     user = UserAuthnzToken
     nonce = PSANonce
     association = PSAAssociation
@@ -388,7 +387,6 @@ def allowed_to_disconnect(name=None, user=None, user_storage=None, strategy=None
     :type details: dict
     :return: empty dict
     """
-    pass
 
 
 def disconnect(name=None, user=None, user_storage=None, strategy=None,

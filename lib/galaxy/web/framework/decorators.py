@@ -4,7 +4,6 @@ from json import loads
 from traceback import format_exc
 
 import paste.httpexceptions
-from six import string_types
 
 from galaxy.exceptions import error_codes, MessageException
 from galaxy.util import (
@@ -193,7 +192,7 @@ def __extract_payload_from_request(trans, func, kwargs):
         for arg in named_args:
             payload.pop(arg, None)
         for k, v in payload.items():
-            if isinstance(v, string_types):
+            if isinstance(v, str):
                 try:
                     # note: parse_non_hex_float only needed here for single string values where something like
                     # 40000000000000e5 will be parsed as a scientific notation float. This is as opposed to hex strings

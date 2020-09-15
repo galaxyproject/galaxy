@@ -1,7 +1,6 @@
 """
 File format detector
 """
-from __future__ import absolute_import
 
 import bz2
 import codecs
@@ -13,15 +12,8 @@ import re
 import shutil
 import sys
 import tempfile
+import urllib.request
 import zipfile
-
-from six import (
-    PY3,
-    StringIO,
-    text_type,
-)
-from six.moves import filter
-from six.moves.urllib.request import urlopen
 
 from galaxy import util
 from galaxy.util import compression_utils
@@ -46,10 +38,17 @@ def get_test_fname(fname):
     return full_path
 
 
-def stream_url_to_file(path):
-    page = urlopen(path)  # page will be .close()ed in stream_to_file
-    temp_name = stream_to_file(page, prefix='url_paste', source_encoding=util.get_charset_from_http_headers(page.headers))
-    return temp_name
+def stream_url_to_file(path, file_sources=None):
+    prefix = "url_paste"
+    if file_sources and file_sources.looks_like_uri(path):
+        file_source_path = file_sources.get_file_source_path(path)
+        _, temp_name = tempfile.mkstemp(prefix=prefix)
+        file_source_path.file_source.realize_to(file_source_path.path, temp_name)
+        return temp_name
+    else:
+        page = urllib.request.urlopen(path)  # page will be .close()ed in stream_to_file
+        temp_name = stream_to_file(page, prefix=prefix, source_encoding=util.get_charset_from_http_headers(page.headers))
+        return temp_name
 
 
 def stream_to_open_named_file(stream, fd, filename, source_encoding=None, source_error='strict', target_encoding=None, target_error='strict'):
@@ -68,7 +67,7 @@ def stream_to_open_named_file(stream, fd, filename, source_encoding=None, source
         if use_source_encoding:
             # If a source encoding is given we use it to convert to the target encoding
             try:
-                if not isinstance(chunk, text_type):
+                if not isinstance(chunk, str):
                     chunk = chunk.decode(source_encoding, source_error)
                 os.write(fd, chunk.encode(target_encoding, target_error))
             except UnicodeDecodeError:
@@ -77,7 +76,7 @@ def stream_to_open_named_file(stream, fd, filename, source_encoding=None, source
         else:
             # Compressed files must be encoded after they are uncompressed in the upload utility,
             # while binary files should not be encoded at all.
-            if isinstance(chunk, text_type):
+            if isinstance(chunk, str):
                 chunk = chunk.encode(target_encoding, target_error)
             os.write(fd, chunk)
     os.close(fd)
@@ -112,13 +111,9 @@ def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload", 
     """
     fd, temp_name = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
     i = 0
-    if PY3:
-        NEWLINE_BYTE = 10
-        CR_BYTE = 13
-    else:
-        NEWLINE_BYTE = "\n"
-        CR_BYTE = "\r"
-    with io.open(fd, mode="wb") as fp, io.open(fname, mode="rb") as fi:
+    NEWLINE_BYTE = 10
+    CR_BYTE = 13
+    with open(fd, mode="wb") as fp, open(fname, mode="rb") as fi:
         last_char = None
         block = fi.read(block_size)
         last_block = b""
@@ -525,7 +520,7 @@ def zip_single_fileobj(path):
             return z.open(name)
 
 
-class FilePrefix(object):
+class FilePrefix:
 
     def __init__(self, filename):
         non_utf8_error = None
@@ -567,7 +562,7 @@ class FilePrefix(object):
     def string_io(self):
         if self.non_utf8_error is not None:
             raise self.non_utf8_error
-        rval = StringIO(self.contents_header)
+        rval = io.StringIO(self.contents_header)
         return rval
 
     def startswith(self, prefix):
@@ -677,11 +672,11 @@ def handle_compressed_file(
         while True:
             try:
                 chunk = compressed_file.read(CHUNK_SIZE)
-            except IOError as e:
+            except OSError as e:
                 os.close(fd)
                 os.remove(uncompressed)
                 compressed_file.close()
-                raise IOError('Problem uncompressing %s data, please try retrieving the data uncompressed: %s' % (compressed_type, util.unicodify(e)))
+                raise OSError('Problem uncompressing {} data, please try retrieving the data uncompressed: {}'.format(compressed_type, util.unicodify(e)))
             if not chunk:
                 break
             os.write(fd, chunk)
