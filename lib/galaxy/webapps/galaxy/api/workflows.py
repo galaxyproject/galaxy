@@ -1317,7 +1317,6 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         """
         decoded_workflow_invocation_id = self.decode_id(invocation_id)
         workflow_invocation = self.workflow_manager.get_invocation(trans, decoded_workflow_invocation_id)
-        history = workflow_invocation.history
 
         metrics, h_metrics = {}, {}
         h_contents = self.history_manager.contained(history)
