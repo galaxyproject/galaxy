@@ -275,8 +275,8 @@ class BaseAppConfiguration:
 
         def strip_deprecated_dir(key, value):
             resolves_to = self.schema.paths_to_resolve.get(key)
-            if resolves_to:  # value is a path that will be resolved
-                paths = value.split(',')
+            if resolves_to:  # value contains paths that will be resolved
+                paths = [path.strip() for path in value.split(',')]
                 for i, path in enumerate(paths):
                     first_dir = path.split(os.sep)[0]  # get first directory component
                     if first_dir == self.deprecated_dirs.get(resolves_to):  # first_dir is deprecated for this option
