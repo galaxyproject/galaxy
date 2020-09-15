@@ -27,7 +27,6 @@ from galaxy import (
     model,
     util,
 )
-from galaxy.managers import history_contents
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.jobs import (
     fetch_job_states,
