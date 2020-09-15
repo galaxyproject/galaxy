@@ -58,7 +58,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     def __init__(self, app):
         super(WorkflowsAPIController, self).__init__(app)
         self.history_manager = histories.HistoryManager(app)
-        self.history_contents_manager = history_contents.HistoryContentsManager(app)
         self.workflow_manager = workflows.WorkflowsManager(app)
         self.workflow_contents_manager = workflows.WorkflowContentsManager(app)
         self.tool_recommendations = recommendations.ToolRecommendations()
