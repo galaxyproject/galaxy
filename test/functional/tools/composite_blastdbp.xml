@@ -2,7 +2,8 @@
     <command><![CDATA[
         mkdir '$output.extra_files_path' &&
         cp '$input.extra_files_path'/* '$output.extra_files_path' &&
-        touch '$output'
+        touch '$output' &&
+        echo "select_in: $select_in"
     ]]>
     </command>
     <inputs>
@@ -22,12 +23,15 @@
                 <composite_data value="blastdb.pin"/>
                 <composite_data value="blastdb.psq"/>
             </param>
-            <param name="text_in" value="" />
+            <param name="select_in" value="B" />
             <output name="output" value="blastdb" ftype="blastdbp">
                 <extra_files type="file" name="blastdb.phr" value="blastdb.phr"/>
                 <extra_files type="file" name="blastdb.pin" value="blastdb.pin"/>
                 <extra_files type="file" name="blastdb.psq" value="blastdb.psq"/>
             </output>
+            <assert_stdout>
+                <has_text text="select_in: B"/>
+            </assert_stdout>
         </test>
     </tests>
 </tool>
