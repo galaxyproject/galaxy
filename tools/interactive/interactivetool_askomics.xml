@@ -30,7 +30,7 @@
         <environment_variable name="ASKO_triplestore_load_url">http://localhost:5000</environment_variable>
         <!-- Virtuoso config -->
         <environment_variable name="SPARQL_UPDATE">true</environment_variable>
-        <!-- 
+        <!--
         Update the following environment variables according to how much memory you want to allow to virtuoso
         see https://github.com/askomics/flaskomics-docker-compose#configure-virtuoso for help
          -->
@@ -46,17 +46,19 @@
         source /askomics/venv/bin/activate &&
         mkdir -p /import &&
 
-        #for $input in $infiles:
-            #set link_name = re.sub('[^\w\-\.]', '_', str($input.element_identifier))
-            #if $input.ext == 'tabular':
-                #set link_name = $link_name
-            #elif $input.ext == 'interval':
-                #set link_name = $link_name + '.bed'
-            #else:
-                #set link_name = $link_name + '.' + $input.ext
-            #end if
-            ln -s '$input' '/import/$link_name' &&
-        #end for
+        #if $infiles:
+          #for $input in $infiles:
+              #set link_name = re.sub('[^\w\-\.]', '_', str($input.element_identifier))
+              #if $input.ext == 'tabular':
+                  #set link_name = $link_name
+              #elif $input.ext == 'interval':
+                  #set link_name = $link_name + '.bed'
+              #else:
+                  #set link_name = $link_name + '.' + $input.ext
+              #end if
+              ln -s '$input' '/import/$link_name' &&
+          #end for
+        #end if
 
         bash /askomics/cli/set_config.sh &&
         bash /askomics/cli/set_user.sh &&
