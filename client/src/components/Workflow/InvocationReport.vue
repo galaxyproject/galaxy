@@ -71,14 +71,15 @@ export default {
             this.edit = true;
         },
         onView() {
-            this.edit = false;
-            this.loadMarkdownConfig();
+            this.loadMarkdownConfig().then(() => {
+                this.edit = false;
+            });
         },
         onUpdate(newMarkdown) {
             this.invocationMarkdown = newMarkdown;
         },
-        loadMarkdownConfig() {
-            this.getMarkdown(this.invocationId)
+        async loadMarkdownConfig() {
+            return this.getMarkdown(this.invocationId)
                 .then((response) => {
                     this.markdownConfig = response;
                     this.invocationMarkdown = this.markdownConfig.invocation_markdown;

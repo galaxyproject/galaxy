@@ -148,16 +148,6 @@ export default {
                 name: "workflow",
                 elems: [
                     {
-                        id: "invocation_inputs",
-                        name: "Invocation Inputs",
-                        emitter: "onInvocationId",
-                    },
-                    {
-                        id: "invocation_outputs",
-                        name: "Invocation Outputs",
-                        emitter: "onInvocationId",
-                    },
-                    {
                         id: "invocation_time",
                         name: "Invocation Time",
                         emitter: "onInvocationId",

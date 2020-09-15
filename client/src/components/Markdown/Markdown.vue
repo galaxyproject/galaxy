@@ -27,6 +27,14 @@
                 <div class="float-left m-1">Created with Galaxy {{ getVersion }} on {{ getTime }}</div>
                 <div class="float-right m-1">Identifier {{ markdownConfig.id }}</div>
             </b-badge>
+            <div>
+                <b-alert v-if="markdownErrors.length > 0" variant="warning" show>
+                    <div v-for="(obj, index) in markdownErrors" :key="index" class="mb-1">
+                        <h5>{{ obj.error || "Error" }}</h5>
+                        {{ obj.line }}
+                    </div>
+                </b-alert>
+            </div>
             <div v-for="(obj, index) in markdownObjects" :key="index">
                 <p v-if="obj.name == 'default'" v-html="obj.content" class="text-justify m-2" />
                 <div v-else-if="obj.name == 'generate_galaxy_version'" class="galaxy-version">
@@ -145,7 +153,7 @@ export default {
     data() {
         return {
             markdownObjects: [],
-            markdownRendered: "",
+            markdownErrors: [],
             historyDatasets: {},
             historyDatasetCollections: {},
             workflows: {},
@@ -180,8 +188,8 @@ export default {
     watch: {
         markdownConfig: function (config) {
             const markdown = config.markdown;
+            this.markdownErrors = config.errors || [];
             this.markdownObjects = this.splitMarkdown(markdown);
-            this.markdownRendered = md.render(markdown);
             this.historyDatasets = config.history_datasets || {};
             this.historyDatasetCollections = config.history_dataset_collections || {};
             this.workflows = config.workflows || {};
@@ -210,7 +218,16 @@ export default {
                         }
                         const galaxyEndIndex = galaxyEnd + 4;
                         const galaxySection = digest.substr(galaxyStart, galaxyEndIndex);
-                        sections.push(this.getArgs(galaxySection));
+                        let args = null;
+                        try {
+                            args = this.getArgs(galaxySection);
+                            sections.push(args);
+                        } catch (e) {
+                            this.markdownErrors.push({
+                                error: "Found an unresolved tag.",
+                                line: galaxySection,
+                            });
+                        }
                         digest = digest.substr(galaxyStart + galaxyEndIndex);
                     } else {
                         digest = digest.substr(galaxyStart + 1);
