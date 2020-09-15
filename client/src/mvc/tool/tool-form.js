@@ -337,7 +337,7 @@ const View = Backbone.View.extend({
                 Galaxy.emit.debug("tool-form::validate()", "Retrieving input objects failed.");
                 continue;
             }
-            if (!input_def.optional && input_value == null) {
+            if (!input_def.optional && input_value == null && input_def.type != "hidden") {
                 this.form.highlight(input_id);
                 return false;
             }

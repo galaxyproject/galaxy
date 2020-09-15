@@ -15,14 +15,16 @@ def lint_tsts(tool_xml, lint_ctx):
     num_valid_tests = 0
     for test in tests:
         has_test = False
-        if "expect_failure" in test.attrib or "expect_exit_code" in test.attrib:
-            has_test = True
-        if len(test.findall("assert_stdout")) > 0:
-            has_test = True
-        if len(test.findall("assert_stderr")) > 0:
-            has_test = True
-        if len(test.findall("assert_command")) > 0:
-            has_test = True
+        test_expect = ("expect_failure", "expect_exit_code", "expect_num_outputs")
+        for te in test_expect:
+            if te in test.attrib:
+                has_test = True
+                break
+        test_assert = ("assert_stdout", "assert_stderr", "assert_command")
+        for ta in test_assert:
+            if len(test.findall(ta)) > 0:
+                has_test = True
+                break
 
         output_data_names, output_collection_names = _collect_output_names(tool_xml)
         found_output_test = False
