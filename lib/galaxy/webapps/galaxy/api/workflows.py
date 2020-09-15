@@ -1016,7 +1016,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         history = workflow_invocation.history
 
         metrics, h_metrics = {}, {}
-        h_contents = self.history_contents_manager.contained(history)
 
         for i, step in enumerate(workflow_invocation.steps):
             if step.workflow_step.type == 'tool':
