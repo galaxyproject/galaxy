@@ -5,6 +5,7 @@ collections from matched collections.
 """
 import collections
 import logging
+from collections import defaultdict
 
 from boltons.iterutils import remap
 
@@ -72,8 +73,20 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
         if job:
             log.debug(job_timer.to_str(tool_id=tool.id, job_id=job.id))
             execution_tracker.record_success(execution_slice, job, result)
+            # associate output datasets with the job that creates them
+            if execution_slice.datasets_to_persist:
+                for dataset in execution_slice.datasets_to_persist:
+                    job_output_datasets[job].append(dataset)
         else:
             execution_tracker.record_error(result)
+
+    def store_dataset_job_id():
+        for job, hdas in job_output_datasets.items():
+            trans.sa_session.add(job)
+            for hda in hdas:
+                hda.dataset.job_id = job.id  # TODO: can't add attr to Dataset in __init__(). Why?
+                trans.sa_session.add(hda.dataset)
+        trans.sa_session.flush()  # TODO: do we need this here? Or let the next flush handle this?
 
     tool_action = tool.tool_action
     if hasattr(tool_action, "check_inputs_ready"):
@@ -94,6 +107,8 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
     jobs_executed = 0
     has_remaining_jobs = False
     execution_slice = None
+    datasets_to_persist = []
+    job_output_datasets = defaultdict(list)  # key:job, values: list of dataset instances
 
     for i, execution_slice in enumerate(execution_tracker.new_execution_slices()):
         if max_num_jobs is not None and jobs_executed >= max_num_jobs:
@@ -111,6 +126,10 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
         # Make sure collections, implicit jobs etc are flushed even if there are no precreated output datasets
         trans.sa_session.flush()
     tool_id = tool.id
+
+    if job_output_datasets:
+        store_dataset_job_id()
+
     for job in execution_tracker.successful_jobs:
         # Put the job in the queue if tracking in memory
         tool.app.job_manager.enqueue(job, tool=tool, flush=False)
