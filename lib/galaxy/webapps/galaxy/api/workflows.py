@@ -1044,13 +1044,14 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                             }
                             metrics[i]['job_inputs'].append(dataset_metrics)
                     for job_output in job.output_datasets:
-                        if hasattr(job_output.dataset, 'dataset_id'):
-                            for h in [x for x in h_contents if x.dataset_id == job_output.dataset.id]:
-                                h_metrics = {
-                                    'total_size': int(h.dataset.total_size),
-                                    'uuid': str(h.dataset.uuid),
-                                    'job_output_name': job_output.name
-                                }
+                        if job_output.dataset.dataset:
+                            dataset = job_output.dataset
+                            h_metrics = {
+                                'total_size': int(dataset.total_size),
+                                'id': trans.security.encode_id(dataset.id),
+                                'model_class': dataset.__class__.__name__,
+                                'job_output_name': job_output.name
+                            }
                                 metrics[i]['job_outputs'].append(h_metrics)
         return metrics
 
