@@ -329,9 +329,28 @@ class GalaxyInteractorApi:
             tool_input["files_metadata|%s" % name] = value
 
         composite_data = test_data['composite_data']
+        file_start = 0
+        files = {}
+        if fname:
+            # A regular test input, or the primary file of a 'basic' composite datatype
+            file_start = 1
+            name = os.path.basename(fname)
+            tool_input.update({
+                "files_0|NAME": name,
+                "files_0|type": "upload_dataset",
+            })
+            if force_path_paste:
+                file_name = self.test_data_path(tool_id, fname)
+                tool_input.update({
+                    "files_0|url_paste": "file://" + file_name
+                })
+            else:
+                file_content = self.test_data_download(tool_id, fname)
+                files = {
+                    "files_0|file_data": file_content
+                }
         if composite_data:
-            files = {}
-            for i, file_name in enumerate(composite_data):
+            for i, file_name in enumerate(composite_data, start=file_start):
                 if force_path_paste:
                     file_path = self.test_data_path(tool_id, file_name)
                     tool_input.update({
@@ -344,23 +363,6 @@ class GalaxyInteractorApi:
                     "files_%d|type" % i: "upload_dataset",
                 })
             name = test_data['name']
-        else:
-            name = os.path.basename(fname)
-            tool_input.update({
-                "files_0|NAME": name,
-                "files_0|type": "upload_dataset",
-            })
-            files = {}
-            if force_path_paste:
-                file_name = self.test_data_path(tool_id, fname)
-                tool_input.update({
-                    "files_0|url_paste": "file://" + file_name
-                })
-            else:
-                file_content = self.test_data_download(tool_id, fname)
-                files = {
-                    "files_0|file_data": file_content
-                }
         submit_response_object = self.__submit_tool(history_id, "upload1", tool_input, extra_data={"type": "upload_dataset"}, files=files)
         submit_response = ensure_tool_run_response_okay(submit_response_object, "upload dataset %s" % name)
         assert "outputs" in submit_response, "Invalid response from server [%s], expecting outputs in response." % submit_response
