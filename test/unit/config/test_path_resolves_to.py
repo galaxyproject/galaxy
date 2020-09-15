@@ -85,7 +85,7 @@ def test_kwargs_relative_path(mock_init):
     assert config.path3 == 'my-other-files'  # no change
 
 
-def test_kwargs_ablsolute_path(mock_init):
+def test_kwargs_absolute_path(mock_init):
     # Expected: use value from kwargs, do NOT resolve
     new_path1 = '/foo1/bar'
     new_path2 = '/foo2/bar'
@@ -105,6 +105,13 @@ def test_kwargs_relative_path_old_prefix(mock_init):
     assert config.path1 == 'my-config/foo1/bar'  # stripped of old prefix, resolved
     assert config.path2 == 'my-data/foo2/bar'  # stripped of old prefix, resolved
     assert config.path3 == 'my-other-files'  # no change
+
+
+def test_kwargs_relative_path_old_prefix_csv_value(mock_init):
+    # Expect: use value from kwargs, split at commas, then for each path strip
+    # spaces, strip old prefix if needed, and resolve if needed
+    config = BaseAppConfiguration(path4='old-config/foo/file1 , /foo1/bar,  foo/file3')
+    assert config.path4 == ['my-config/foo/file1', '/foo1/bar', 'my-config/foo/file3']
 
 
 def test_kwargs_relative_path_old_prefix_for_other_option(mock_init):
@@ -198,7 +205,7 @@ def test_kwargs_listify(mock_init, monkeypatch):
     new_path4 = 'new1, new2'
     config = BaseAppConfiguration(path4=new_path4)
 
-    assert config._raw_config['path4'] == 'new1, new2'
+    assert config._raw_config['path4'] == 'new1,new2'
     assert config.path4 == ['my-config/new1', 'my-config/new2']
 
 
