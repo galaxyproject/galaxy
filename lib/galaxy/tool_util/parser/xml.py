@@ -792,7 +792,8 @@ def __parse_param_elem(param_elem, i=0):
         composite_data_name = None
         for child in children_elem:
             if child.tag == 'composite_data':
-                file_name = child.get("value")
+                file_name = child.get('value')
+                composite_data_name = child.get('name') or file_name
                 attrib['composite_data'].append(file_name)
                 if composite_data_name is None:
                     # Generate a unique name; each test uses a
