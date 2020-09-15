@@ -46,7 +46,7 @@
         source /askomics/venv/bin/activate &&
         mkdir -p /import &&
 
-       	#if $infiles:
+        #if $infiles:
           #for $input in $infiles:
               #set link_name = re.sub('[^\w\-\.]', '_', str($input.element_identifier))
               #if $input.ext == 'tabular':
@@ -58,7 +58,7 @@
               #end if
               ln -s '$input' '/import/$link_name' &&
           #end for
-       	#end if
+        #end if
 
         bash /askomics/cli/set_config.sh &&
         bash /askomics/cli/set_user.sh &&
