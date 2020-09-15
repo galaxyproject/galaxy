@@ -225,11 +225,12 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
         content_items = []
 
         current_folders = self.calculate_pagination(folders, offset, limit)
-
+        
         for subfolder in current_folders:
-            if search_text is not None:
-                if search_text not in subfolder.name or search_text not in subfolder.description:
-                    continue
+            if search_text and not subfolder.description:
+                continue
+            if search_text and subfolder.description and search_text not in subfolder.name and search_text not in subfolder.description:
+                continue
 
             if subfolder.deleted:
                 if is_admin:
@@ -268,9 +269,18 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
         current_datasets = self.calculate_pagination(datasets, offset, limit)
 
         for dataset in current_datasets:
-            if search_text is not None:
-                if search_text not in dataset.name or search_text not in dataset.message:
-                 continue
+
+            if dataset.library_dataset_dataset_association.message:
+                description = dataset.library_dataset_dataset_association.message
+            elif dataset.library_dataset_dataset_association.info:
+                description = dataset.library_dataset_dataset_association.info
+            else:
+                description = None
+
+            if search_text and not dataset.library_dataset_dataset_association.message:
+                continue
+            if search_text and description and search_text not in dataset.name and search_text not in description:
+                continue
             if dataset.deleted:
                 if is_admin:
                     # Admins can see all deleted datasets.
