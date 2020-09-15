@@ -1,9 +1,10 @@
 <tool id="discover_sort_by" name="discover_sort_by" version="0.1.0">
     <command><![CDATA[
-    echo "1" > 1.txt &&
-    echo "2" > 2.txt &&
-    echo "10" > 10.txt
-  ]]></command>
+for i in \$(seq 1 10);
+do
+    echo "\$i" > \$i.txt;
+done
+]]></command>
   <inputs/>
   <outputs>
     <collection name="collection_numeric_name" type="list" label="num">
@@ -22,7 +23,7 @@
   <tests>
     <test expect_num_outputs="4">
       <param name="input1" value="tinywga.fam" />
-      <output_collection name="collection_numeric_name" type="list" count="3">
+      <output_collection name="collection_numeric_name" type="list" count="10">
         <element name="1">
           <assert_contents><has_text_matching expression="^.*$"/></assert_contents>
         </element>
@@ -33,7 +34,7 @@
           <assert_contents><has_text_matching expression="^.*$"/></assert_contents>
         </element>
       </output_collection>
-      <output_collection name="collection_rev_numeric_name" type="list" count="3">
+      <output_collection name="collection_rev_numeric_name" type="list" count="10">
         <element name="10">
           <assert_contents><has_text_matching expression="^.*$"/></assert_contents>
         </element>
@@ -44,7 +45,7 @@
           <assert_contents><has_text_matching expression="^.*$"/></assert_contents>
         </element>
       </output_collection>
-      <output_collection name="collection_lexical_name" type="list" count="3">
+      <output_collection name="collection_lexical_name" type="list" count="10">
         <element name="1">
           <assert_contents><has_text_matching expression="^.*$"/></assert_contents>
         </element>
