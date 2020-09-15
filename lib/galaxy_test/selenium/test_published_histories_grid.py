@@ -22,7 +22,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         self.unset_filter('free-text-search', self.history1_name)
         self.published_grid_search_for(self.history4_name)
 
-        self.assert_grid_histories_are(['No items'])
+        self.assert_grid_histories_are([])
 
     @selenium_test
     def test_history_grid_search_advanced(self):
@@ -42,7 +42,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         self.unset_filter('name', self.history1_name)
 
         self.set_filter(name_filter_selector, self.history4_name)
-        self.assert_grid_histories_are(['No items'])
+        self.assert_grid_histories_are([])
         self.unset_filter('name', self.history4_name)
 
         # Search by annotation
