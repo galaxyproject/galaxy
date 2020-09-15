@@ -1148,21 +1148,22 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             if step.workflow_step.type == 'data_input':
                 for output_assoc in step.output_datasets:
                     encoded_dataset_id = trans.security.encode_id(output_assoc.dataset.id)
-                input_obj = {
-                    'filename': step.workflow_step.label,
-                    'uri': url_for('history_content', history_id=encoded_history_id, id=encoded_dataset_id, qualified=True),
-                    'access_time': step.workflow_step.update_time.isoformat(),
-                }
-                input_subdomain.append(input_obj)
+                    input_obj = {
+                        'filename': step.workflow_step.label,
+                        'uri': url_for('history_content', history_id=encoded_history_id, id=encoded_dataset_id, qualified=True),
+                        'access_time': step.workflow_step.update_time.isoformat(),
+                    }
+                    input_subdomain.append(input_obj)
 
             if step.workflow_step.type == 'data_collection_input':
-                encoded_dataset_id = trans.security.encode_id(step.workflow_step.id)
-                input_obj = {
-                    'filename': step.workflow_step.label,
-                    'uri': url_for('history_content', history_id=encoded_history_id, id=encoded_dataset_id, qualified=True),
-                    'access_time': step.workflow_step.update_time.isoformat(),
-                }
-                input_subdomain.append(input_obj)
+                for output_assoc in step.output_dataset_collection:
+                    encoded_dataset_collection_id = trans.security.encode_id(output_assoc.dataset_collection.id)
+                    input_obj = {
+                        'filename': step.workflow_step.label,
+                        'uri': url_for('history_content', history_id=encoded_history_id, id=encoded_dataset_collection_id, qualified=True),
+                        'access_time': step.workflow_step.update_time.isoformat(),
+                    }
+                    input_subdomain.append(input_obj)
 
         usability_domain = []
         for a in stored_workflow.annotations:
