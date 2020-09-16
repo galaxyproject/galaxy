@@ -80,6 +80,16 @@ Binary.register_sniffable_binary_format("mkv", "mkv", Mkv)
 
 
 class Mp4(Video):
+    """Class that reads MP4 video file
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('video_1.mp4')
+    >>> Mp4().sniff(fname)
+    True
+    >>> fname = get_test_fname('audio_1.wav')
+    >>> Mp4().sniff(fname)
+    False
+    """
+
     file_ext = "mp4"
 
     def sniff(self, filename):
@@ -122,7 +132,15 @@ Binary.register_sniffable_binary_format("mpg", "mpg", Mpg)
 
 
 class Mp3(Audio):
-    """Mp3 audio file"""
+    """Class that reads MP3 audio file
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('audio_2.mp3')
+    >>> Mp3().sniff(fname)
+    True
+    >>> fname = get_test_fname('audio_1.wav')
+    >>> Mp3().sniff(fname)
+    False
+    """
     file_ext = "mp3"
 
     def sniff(self, filename):
@@ -136,7 +154,18 @@ Binary.register_sniffable_binary_format('mp3', 'mp3', Mp3)
 
 
 class WAV(Binary):
-    """RIFF WAV audio file"""
+    """Class that reads WAV audio file
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('hello.wav')
+    >>> WAV().sniff(fname)
+    True
+    >>> fname = get_test_fname('audio_1.wav')
+    >>> WAV().sniff(fname)
+    True
+    >>> fname = get_test_fname('audio_2.mp3')
+    >>> WAV().sniff(fname)
+    False
+    """
 
     file_ext = "wav"
     blurb = "RIFF WAV Audio file"
