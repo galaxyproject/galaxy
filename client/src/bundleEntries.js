@@ -99,6 +99,7 @@ export { mountPageEditor } from "components/PageEditor/mount";
 export { mountPageDisplay } from "components/PageDisplay";
 export { mountDestinationParams } from "components/JobDestinationParams";
 export { mountDatasetInformation } from "components/DatasetInformation";
+export { mountDatasetStorage } from "components/Dataset/DatasetStorage";
 
 // Used in common.mako
 export { default as store } from "storemodern";

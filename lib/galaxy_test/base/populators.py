@@ -513,6 +513,11 @@ class BaseDatasetPopulator:
             src = 'hdca'
         return dict(src=src, id=history_content["id"])
 
+    def dataset_storage_info(self, dataset_id):
+        storage_response = self.galaxy_interactor.get("datasets/{}/storage".format(dataset_id))
+        storage_response.raise_for_status()
+        return storage_response.json()
+
     def get_roles(self):
         roles_response = self.galaxy_interactor.get("roles", admin=True)
         assert roles_response.status_code == 200

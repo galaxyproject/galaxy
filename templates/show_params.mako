@@ -85,6 +85,9 @@ encoded_history_id = trans.security.encode_id( hda.history_id )
     </tbody>
 </table>
 
+<div class="dataset-storage" dataset_id="${encoded_hda_id}" dataset_type="hda">
+</div>
+
 %if job:
 <div class="job-parameters" dataset_id="${encoded_hda_id}" dataset_type="hda">
 </div>
@@ -175,5 +178,6 @@ $(function(){
     window.bundleEntries.mountJobParameters();
     window.bundleEntries.mountDestinationParams();
     window.bundleEntries.mountDatasetInformation();
+    window.bundleEntries.mountDatasetStorage();
 });
 </script>

@@ -264,6 +264,11 @@ def populate_api_routes(webapp, app):
                           controller="datasets",
                           action="get_content_as_text",
                           conditions=dict(method=["GET"]))
+    webapp.mapper.connect('dataset_storage',
+                          '/api/datasets/{dataset_id}/storage',
+                          controller='datasets',
+                          action='show_storage',
+                          conditions=dict(method=["GET"]))
     webapp.mapper.connect("history_contents_metadata_file",
                           "/api/histories/{history_id}/contents/{history_content_id}/metadata_file",
                           controller="datasets",

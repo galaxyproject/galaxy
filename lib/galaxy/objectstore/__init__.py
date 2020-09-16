@@ -171,11 +171,41 @@ class ObjectStore(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def get_object_url(self, obj, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False):
         """
-        Return the URL for direct acces if supported, otherwise return None.
+        Return the URL for direct access if supported, otherwise return None.
 
         Note: need to be careful to not bypass dataset security with this.
         """
         raise NotImplementedError()
+
+    @abc.abstractmethod
+    def get_concrete_store_name(self, obj):
+        """Return a display name or title of the objectstore corresponding to obj.
+
+        To accommodate nested objectstores, obj is passed in so this metadata can
+        be returned for the ConcreteObjectStore corresponding to the object.
+        """
+
+    @abc.abstractmethod
+    def get_concrete_store_description_markdown(self, obj):
+        """Return a longer description of how data 'obj' is stored.
+
+        To accommodate nested objectstores, obj is passed in so this metadata can
+        be returned for the ConcreteObjectStore corresponding to the object.
+        """
+
+    @abc.abstractmethod
+    def is_transient(self, obj):
+        """Return boolean indicating if obj should be treated as transient.
+
+        To accommodate nested objectstores, obj is passed in so this metadata can
+        be returned for the ConcreteObjectStore corresponding to the object.
+
+        ObjectStores corresponding to data sources that get purged frequently
+        can mark that here. In the future it would be nice to provide different
+        icons in the UI for instance based on this or warn people before
+        publishing pages with links to transient datasets for instance, this
+        should provide a piece of the puzzle for doing that in the future.
+        """
 
     @abc.abstractmethod
     def get_store_usage_percent(self):
@@ -292,6 +322,15 @@ class BaseObjectStore(ObjectStore):
     def get_object_url(self, obj, **kwargs):
         return self._invoke('get_object_url', obj, **kwargs)
 
+    def get_concrete_store_name(self, obj):
+        return self._invoke('get_concrete_store_name', obj)
+
+    def get_concrete_store_description_markdown(self, obj):
+        return self._invoke('get_concrete_store_description_markdown', obj)
+
+    def is_transient(self, obj):
+        return self._invoke('is_transient', obj)
+
     def get_store_usage_percent(self):
         return self._invoke('get_store_usage_percent')
 
@@ -323,11 +362,26 @@ class ConcreteObjectStore(BaseObjectStore):
             config_dict = {}
         super().__init__(config=config, config_dict=config_dict, **kwargs)
         self.store_by = config_dict.get("store_by", None) or getattr(config, "object_store_store_by", "id")
+        self.name = config_dict.get("name", None)
+        self.description = config_dict.get("description", None)
+        self.transient = config_dict.get("transient", False)
 
     def to_dict(self):
         rval = super().to_dict()
         rval["store_by"] = self.store_by
+        rval["name"] = self.name
+        rval["description"] = self.description
+        rval["transient"] = self.transient
         return rval
+
+    def _get_concrete_store_name(self, obj):
+        return self.name
+
+    def _get_concrete_store_description_markdown(self, obj):
+        return self.description
+
+    def _is_transient(self, obj):
+        return self.transient
 
     def _get_store_by(self, obj):
         return self.store_by
@@ -378,9 +432,17 @@ class DiskObjectStore(ConcreteObjectStore):
             store_by = config_xml.attrib.get('store_by', None)
             if store_by is not None:
                 config_dict['store_by'] = store_by
+            transient = config_xml.attrib.get('transient', None)
+            if transient is not None:
+                config_dict['transient'] = asbool(transient)
+            name = config_xml.attrib.get('name', None)
+            if name is not None:
+                config_dict['name'] = name
             for e in config_xml:
                 if e.tag == 'files_dir':
                     config_dict["files_dir"] = e.get('path')
+                elif e.tag == 'description':
+                    config_dict["description"] = e.text
                 else:
                     extra_dirs.append({"type": e.get('type'), "path": e.get('path')})
 
@@ -658,6 +720,15 @@ class NestedObjectStore(BaseObjectStore):
     def _get_object_url(self, obj, **kwargs):
         """For the first backend that has this `obj`, get its URL."""
         return self._call_method('_get_object_url', obj, None, False, **kwargs)
+
+    def _get_concrete_store_name(self, obj):
+        return self._call_method('_get_concrete_store_name', obj, None, True)
+
+    def _get_concrete_store_description_markdown(self, obj):
+        return self._call_method('_get_concrete_store_description_markdown', obj, None, True)
+
+    def _is_transient(self, obj):
+        return self._call_method('_is_transient', obj, None, True)
 
     def _get_store_by(self, obj):
         return self._call_method('_get_store_by', obj, None, False)
