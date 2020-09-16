@@ -1,5 +1,5 @@
 <%
-    app_root = h.url_for("/static/plugins/visualizations/video_player/static/")
+    app_root = h.url_for("/static/plugins/visualizations/media_player/static/")
 %>
 
 <!DOCTYPE html>
