@@ -85,6 +85,15 @@ Please mind `http` and `https`.
         <prompt>consent</prompt>
     </provider>
 
+    <provider name="Fence">
+        <!-- Sets the URL where the Fence installation is accessible from. -->
+        <url>https://localhost/user/</url>
+
+        <client_id> ... </client_id>
+        <client_secret> ... </client_secret>
+        <redirect_uri>http://localhost:8080/authnz/fence/callback</redirect_uri>
+    </provider>
+
     <provider name="Custos">
         <url>https://custos.scigap.org/apiserver/identity-management/v1.0.0/</url>
         <client_id> ... </client_id>
