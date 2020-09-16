@@ -138,7 +138,6 @@ class Wav(Binary):
     >>> sniff_with_cls(Wav, 'drugbank_drugs.cml')
     False
     """
-
     file_ext = "wav"
     blurb = "RIFF WAV Audio file"
     is_binary = True
