@@ -32,7 +32,7 @@ BACKENDS_NAME = {
     'globus': 'globus',
     'elixir': 'elixir',
     'okta': 'okta-openidconnect',
-    "fence": "fence"
+    'fence': 'fence'
 }
 
 AUTH_PIPELINE = (
