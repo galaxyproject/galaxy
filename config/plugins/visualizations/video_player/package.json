@@ -6,6 +6,6 @@
         "plyr": "^3.6.2"
     },
     "scripts": {
-        "build": "mkdir -p static/dist && cp node_modules/plyr/dist/plyr.js node_modules/plyr/dist/plyr.css static/dist"
+        "build": "cp node_modules/plyr/dist/plyr.js node_modules/plyr/dist/plyr.css static/dist"
     }
 }

@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1"/>
     <title>Video player</title>
     ${h.stylesheet_link(app_root + 'dist/plyr.css')}
-    ${h.stylesheet_link(app_root + 'video_player.css')}
+    ${h.stylesheet_link(app_root + 'dist/video_player.css')}
 </head>
 <body class="body-video-player">
     ${h.javascript_link( app_root + "dist/plyr.js")}
