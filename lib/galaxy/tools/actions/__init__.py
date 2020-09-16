@@ -360,7 +360,7 @@ class DefaultToolAction:
         # datasets first, then create the associations
         parent_to_child_pairs = []
         child_dataset_names = set()
-        object_store_populator = ObjectStorePopulator(app)
+        object_store_populator = ObjectStorePopulator(app, trans.user)
         async_tool = tool.tool_type == 'data_source_async'
 
         def handle_output(name, output, hidden=None):
