@@ -236,6 +236,7 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
     def handle_error(self, container, line, error):
         pass
 
+
 class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
 
     def __init__(self, trans, extra_rendering_data={}):
@@ -319,6 +320,7 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
             "container": container,
         })
         return (line, False)
+
 
 def ready_galaxy_markdown_for_export(trans, internal_galaxy_markdown):
     """Fill in details needed to render Galaxy flavored markdown.
@@ -504,6 +506,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
 
     def handle_error(self, container, line, error):
         return (line, False)
+
 
 class MarkdownFormatHelpers:
     """Inject common markdown formatting helpers for per-datatype rendering."""
