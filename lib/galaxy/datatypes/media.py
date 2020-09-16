@@ -168,7 +168,7 @@ class WAV(Binary):
         >>> WAV().sniff(fname)
         False
         """
-        with wave.open(filename, 'rb') as fp:
+        with wave.open(filename, 'rb'):
             return True
 
     def set_meta(self, dataset, overwrite=True, **kwd):
