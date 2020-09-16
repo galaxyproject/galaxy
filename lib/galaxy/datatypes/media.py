@@ -76,13 +76,12 @@ class Mkv(Video):
 
 
 class Mp4(Video):
-    """Class that reads MP4 video file
-    >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname('video_1.mp4')
-    >>> Mp4().sniff(fname)
+    """
+    Class that reads MP4 video file.
+    >>> from galaxy.datatypes.sniff import sniff_with_cls
+    >>> sniff_with_cls(Mp4, 'video_1.mp4')
     True
-    >>> fname = get_test_fname('audio_1.wav')
-    >>> Mp4().sniff(fname)
+    >>> sniff_with_cls(Mp4, 'audio_1.mp4')
     False
     """
 
@@ -113,13 +112,12 @@ class Mpg(Video):
 
 
 class Mp3(Audio):
-    """Class that reads MP3 audio file
-    >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname('audio_2.mp3')
-    >>> Mp3().sniff(fname)
+    """
+    Class that reads MP3 audio file.
+    >>> from galaxy.datatypes.sniff import sniff_with_cls
+    >>> sniff_with_cls(Mp3, 'audio_2.mp3')
     True
-    >>> fname = get_test_fname('audio_1.wav')
-    >>> Mp3().sniff(fname)
+    >>> sniff_with_cls(Mp3, 'audio_1.wav')
     False
     """
     file_ext = "mp3"
@@ -130,17 +128,14 @@ class Mp3(Audio):
             return 'mp3' in metadata['format_name'].split(',')
 
 
-class WAV(Binary):
+class Wav(Binary):
     """Class that reads WAV audio file
-    >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname('hello.wav')
-    >>> WAV().sniff(fname)
+    >>> from galaxy.datatypes.sniff import sniff_with_cls
+    >>> sniff_with_cls(Wav, 'hello.wav')
     True
-    >>> fname = get_test_fname('audio_1.wav')
-    >>> WAV().sniff(fname)
-    True
-    >>> fname = get_test_fname('audio_2.mp3')
-    >>> WAV().sniff(fname)
+    >>> sniff_with_cls(Wav, 'audio_2.mp3')
+    False
+    >>> sniff_with_cls(Wav, 'drugbank_drugs.cml')
     False
     """
 
@@ -154,27 +149,15 @@ class WAV(Binary):
     MetadataElement(name="sampwidth", desc="Sample Width", default=0, no_value=0, readonly=True, visible=True, optional=True)
 
     def get_mime(self):
-        """Returns the mime type of the datatype"""
+        """Returns the mime type of the datatype."""
         return 'audio/wav'
 
     def sniff(self, filename):
-        """
-        >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('hello.wav')
-        >>> WAV().sniff(fname)
-        True
-
-        >>> fname = get_test_fname('drugbank_drugs.cml')
-        >>> WAV().sniff(fname)
-        False
-        """
         with wave.open(filename, 'rb'):
             return True
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-        """Set the metadata for this dataset from the file contents
-        """
-
+        """Set the metadata for this dataset from the file contents."""
         try:
             with wave.open(dataset.dataset.file_name, 'rb') as fd:
                 dataset.metadata.rate = fd.getframerate()
