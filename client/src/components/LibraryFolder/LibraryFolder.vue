@@ -341,7 +341,7 @@ export default {
                 });
         },
         updateSearchValue(value) {
-            this.search_text = value
+            this.search_text = value;
             this.fetchFolderContents(this.include_deleted, value);
         },
         selectAllRows() {
