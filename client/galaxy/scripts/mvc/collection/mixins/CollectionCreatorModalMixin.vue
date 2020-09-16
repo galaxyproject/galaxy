@@ -14,7 +14,7 @@ export default {
             const creatorOptions = _.defaults(options || {}, {
                 oncancel: function () {
                     modal.hide();
-                    deferred.reject("cancelled");
+                    this.$destroy();
                 },
                 oncreate: function (creator, response) {
                     modal.hide();

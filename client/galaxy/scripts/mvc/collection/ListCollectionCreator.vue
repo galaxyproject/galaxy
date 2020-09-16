@@ -1,6 +1,6 @@
 <template>
     <div class="list-collection-creator">
-        <collection-creator>
+        <collection-creator :oncancel="oncancel">
             <template v-slot:help-content>
                 <p>
                     {{
@@ -77,7 +77,7 @@
             </template>
             <template v-slot:middle-content>
                 <div class="collection-elements-controls">
-                    <a class="reset" href="javascript:void(0);" role="button" :title="titleUndoButton">
+                    <a class="reset" href="javascript:void(0);" role="button" :title="titleUndoButton" @click="reset">
                         {{ l("Start over") }}
                     </a>
                     <a
@@ -96,8 +96,8 @@
                         v-for="element in initialElements"
                         :key="element.id"
                         @element-is-selected="elementSelected"
-                        :canHighlight="true"
-                        :class="{selected: selectedDatasetElems.includes(element.id)}"
+                        :can-highlight="true"
+                        :class="{ selected: getSelectedDatasetElems.includes(element.id) }"
                         :element="element"
                     />
                 </div>
@@ -106,10 +106,6 @@
     </div>
     <!-- <div>
           <v-on:click.header.alert button="_hideAlert"/>
-          <v-on:click.collection-elements="clearSelectedElements"/>
-          <v-on:click.reset="reset"/>
-          <v-on:click.clear-selected="clearSelectedElements"/>
-          <v-on:click.cancel-create="_cancelCreate"/>
           <v-on:click.create-collection="_clickCreate"/>
           <v-on:dragover.collection-elements="_dravoverElements"/>
           <v-on:drop.collection-elements="_dropElements"/>
@@ -125,8 +121,6 @@
 import HDCA from "mvc/history/hdca-model";
 import CollectionCreatorMixin from "mvc/collection/mixins/CollectionCreatorMixin";
 import DatasetCollectionElementView from "mvc/collection/DatasetCollectionElementView";
-import _ from "underscore";
-import $ from "jquery";
 import _l from "utils/localization";
 import STATES from "mvc/dataset/states";
 import "ui/hoverhighlight";
@@ -166,7 +160,9 @@ export default {
         oncancel: {
             type: Function,
             required: false,
-            default: () => {},
+            default: () => {
+                console.log("in listcollectioncreator");
+            },
         },
         /** distance from list edge to begin autoscrolling list */
         autoscrollDist: {
@@ -190,9 +186,9 @@ export default {
         atLeastOneDatasetIsSelected() {
             return this.selectedDatasetElems.length > 0;
         },
-        selectedDatasetElems() {
+        getSelectedDatasetElems() {
             return this.selectedDatasetElems;
-        }
+        },
     },
     methods: {
         elementSelected(e) {
@@ -245,27 +241,6 @@ export default {
         //     return this;
         // },
 
-        // /** render the header section */
-        // _renderHeader: function (speed, callback) {
-        //     var $header = this.$(".header")
-        //         .empty()
-        //         .html(this.templates.header())
-        //         .find(".help-content")
-        //         .prepend($(this.templates.helpContent()));
-        //     //TODO: should only show once despite calling _renderHeader again
-        //     if (this.invalidElements.length) {
-        //         this._invalidElementsAlert();
-        //     }
-        //     return $header;
-        // },
-
-        // /** render the middle including the elements */
-        // _renderMiddle: function (speed, callback) {
-        //     var $middle = this.$(".middle").empty().html(this.templates.middle());
-        //     this._renderList(speed);
-        //     return $middle;
-        // },
-
         // /** add any jQuery/bootstrap/custom plugins to elements rendered */
         // _addPluginComponents: function () {
         //     this.$(".help-content i").hoverhighlight(".collection-creator", this.highlightClr);
@@ -291,14 +266,6 @@ export default {
         //         //     this.$( '.create-collection' ).removeClass( 'disable' );
         //     }
         // },
-        // /** show or hide the clear selected control based on the num of selected elements */
-        // _renderClearSelected: function () {
-        //     if (_.size(this.selectedIds)) {
-        //         this.$(".collection-elements-controls > .clear-selected").show();
-        //     } else {
-        //         this.$(".collection-elements-controls > .clear-selected").hide();
-        //     }
-        // },
 
         // /** render the elements in order (or a warning if no elements found) */
         // _renderList: function (speed, callback) {
@@ -312,11 +279,6 @@ export default {
         //         view.destroy();
         //         creator.removeElementView(view);
         //     });
-
-        //     // if( !this.workingElements.length ){
-        //     //     this._renderNoValidElements();
-        //     //     return;
-        //     // }
 
         //     creator.workingElements.forEach((element) => {
         //         var elementView = creator._createElementView(element);
@@ -375,11 +337,7 @@ export default {
         //     this._disableNameAndCreate(true);
         //     this.$(".collection-elements").append(this.templates.noElementsLeft());
         // },
-        // /** deselect all elements */
-        // clearSelectedElements: function (ev) {
-        //     this.$(".collection-elements .collection-element").removeClass("selected");
-        //     this.$(".collection-elements-controls > .clear-selected").hide();
-        // },
+
         // /** track the mouse drag over the list adding a placeholder to show where the drop would occur */
         // _dragoverElements: function (ev) {
         //     //this.debug( '_dragoverElements:', ev );
@@ -397,39 +355,6 @@ export default {
         //     } else {
         //         $nearest.before($placeholder);
         //     }
-        // },
-
-        // /** If the mouse is near enough to the list's top or bottom, scroll the list */
-        // _checkForAutoscroll: function ($element, y) {
-        //     var AUTOSCROLL_SPEED = 2;
-        //     var offset = $element.offset();
-        //     var scrollTop = $element.scrollTop();
-        //     var upperDist = y - offset.top;
-        //     var lowerDist = offset.top + $element.outerHeight() - y;
-        //     if (upperDist >= 0 && upperDist < this.autoscrollDist) {
-        //         $element.scrollTop(scrollTop - AUTOSCROLL_SPEED);
-        //     } else if (lowerDist >= 0 && lowerDist < this.autoscrollDist) {
-        //         $element.scrollTop(scrollTop + AUTOSCROLL_SPEED);
-        //     }
-        // },
-
-        // /** get the nearest element based on the mouse's Y coordinate.
-        //  *  If the y is at the end of the list, return an empty jQuery object.
-        //  */
-        // _getNearestElement: function (y) {
-        //     var WIGGLE = 4;
-
-        //     var lis = this.$(".collection-elements li.collection-element").toArray();
-
-        //     for (var i = 0; i < lis.length; i++) {
-        //         var $li = $(lis[i]);
-        //         var top = $li.offset().top;
-        //         var halfHeight = Math.floor($li.outerHeight() / 2) + WIGGLE;
-        //         if (top + halfHeight > y && top - halfHeight < y) {
-        //             return $li;
-        //         }
-        //     }
-        //     return $();
         // },
 
         // /** drop (dragged/selected elements) onto the list, re-ordering the internal list */
@@ -470,7 +395,7 @@ export default {
         /** set up instance vars */
         _instanceSetUp: function () {
             /** Ids of elements that have been selected by the user - to preserve over renders */
-            this.selectedIds = {};
+            this.selectedDatasetElems = [];
             /** DOM elements currently being dragged */
             this.$dragging = null;
             /** Used for blocking UI events during ajax/operations (don't post twice) */
@@ -593,12 +518,12 @@ export default {
         //                 }
         //             });
         //     },
-        //     // ------------------------------------------------------------------------ API
-        //     /** convert element into JSON compatible with the collections API */
-        //     _elementToJSON: function (element) {
-        //         // return element.toJSON();
-        //         return element;
-        //     },
+        // ------------------------------------------------------------------------ API
+        /** convert element into JSON compatible with the collections API */
+        _elementToJSON: function (element) {
+            // return element.toJSON();
+            return element;
+        },
         //     /** handle errors with feedback and details to the user (if available) */
         //     _errorHandler: function (data) {
         //         this.error(data);
@@ -620,17 +545,16 @@ export default {
         //         }
         //         creator._showAlert(content, "alert-danger");
         //     },
-        //     // ........................................................................ elements
-        //     /** reset all data to the initial state */
-        //     reset: function () {
-        //         this._instanceSetUp();
-        //         this._elementsSetUp();
-        //         this.render();
-        //     },
-        //     /** string rep */
-        //     toString: function () {
-        //         return "ListCollectionCreator";
-        //     },
+        // ........................................................................ elements
+        /** reset all data to the initial state */
+        reset: function () {
+            this._instanceSetUp();
+            this._elementsSetUp();
+        },
+        /** string rep */
+        toString: function () {
+            return "ListCollectionCreator";
+        },
 
         //     //TODO: not sure if this is a real method or a rendering/template item
         //     // ------------------------------------------------------------------------ rendering elements
@@ -669,18 +593,7 @@ export default {
         //             },
         //         });
         //     },
-        //     /** add a new element view based on the json in element */
-        //     addElementView: function (element) {
-        //         //TODO: workingElements is sorted, add element in appropo index
-        //         // add element, sort elements, find element index
-        //         // var view = this._createElementView( element );
-        //         // return view;
-        //     },
-        //     // /** render a message in the list that no valid elements were found to create a collection */
-        //     // _renderNoValidElements : function(){
-        //     //     this._disableNameAndCreate( true );
-        //     //     this.$( '.collection-elements' ).append( this.templates.noValidElements() );
-        //     // },
+
         //     /** resync the creator's list of elements based on the DOM order */
         //     _syncOrderToDom: function () {
         //         var creator = this;
@@ -701,12 +614,6 @@ export default {
         //         });
         //         this.workingElements = newElements;
         //         this._renderList();
-        //     },
-        //     /** sort a list of elements */
-        //     _sortElements: function (list) {
-        //         // // currently only natural sort by name
-        //         // this.workingElements.sort( function( a, b ){ return naturalSort( a.name, b.name ); });
-        //         // return this.workingElements;
         //     },
     },
     created() {

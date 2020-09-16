@@ -55,7 +55,7 @@
             </div>
             <div class="actions clear vertically-spaced">
                 <div class="float-left">
-                    <button class="cancel-create btn" tabindex="-1">
+                    <button class="cancel-create btn" tabindex="-1" @click="_cancelCreate">
                         {{ l("Cancel") }}
                     </button>
                     <div class="other-options create-other btn-group dropup">
@@ -78,6 +78,12 @@
 <script>
 import _l from "utils/localization";
 export default {
+    props: {
+        oncancel: {
+            type: Function,
+            required: true,
+        },
+    },
     data: function () {
         return {
             titleForHelp: _l("Expand or Close Help"),
@@ -86,7 +92,6 @@ export default {
             placeholderEnterName: _l("Enter a name for your new collection"),
             dropdownText: _l("Create a <i>single</> pair"),
             isExpanded: false,
-
         };
     },
     methods: {
@@ -99,6 +104,9 @@ export default {
         _clickForHelp: function () {
             this.isExpanded = !this.isExpanded;
             return this.isExpanded;
+        },
+        _cancelCreate: function () {
+            this.oncancel();
         },
     },
 };

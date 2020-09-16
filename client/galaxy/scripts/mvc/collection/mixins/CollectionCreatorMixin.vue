@@ -2,7 +2,9 @@
 import _ from "underscore";
 import CollectionCreator from "./CollectionCreator";
 export default {
-    components: { CollectionCreator },
+    components: {
+        CollectionCreator,
+    },
     methods: {
         /** add (or clear if clear is truthy) a validation warning to the DOM element described in what */
         _validationWarning: function (what, clear) {
@@ -76,7 +78,6 @@ export default {
         _setUpCommonSettings: function (attributes) {
             this.hideOriginals = attributes.defaultHideSourceItems || false;
         },
-
     },
 };
 </script>
