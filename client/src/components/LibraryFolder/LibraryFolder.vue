@@ -21,8 +21,7 @@
                 id="folder_list_body"
                 striped
                 hover
-                :filter="filter"
-                :filterIncludedFields="filterOn"
+                :busy.sync="isBusy"
                 :fields="fields"
                 :items="folderContents"
                 :per-page="perPage"
@@ -30,11 +29,10 @@
                 :select-mode="selectMode"
                 @row-selected="onRowSelected"
                 ref="folder_content_table"
-                @filtered="onFiltered"
                 show-empty
             >
                 <template v-slot:empty>
-                    <div class="empty-folder-message">
+                    <div v-if="!search_text" class="empty-folder-message">
                         This folder is either empty or you do not have proper access permissions to see the contents. If
                         you expected something to show up please consult the
                         <a href="https://galaxyproject.org/data-libraries/#permissions" target="_blank">
@@ -288,6 +286,7 @@ export default {
     data() {
         return {
             error: null,
+            isBusy: false,
             folder_metadata: null,
             currentPage: 1,
             fields: fields,
@@ -316,27 +315,34 @@ export default {
     created() {
         this.root = getAppRoot();
         this.services = new Services({ root: this.root });
-
         this.fetchFolderContents();
     },
     methods: {
-        fetchFolderContents(include_deleted = false) {
+        fetchFolderContents(include_deleted = false, search_text = false) {
             this.include_deleted = include_deleted;
-            this.hasLoaded = false;
+            search_text ? (this.isBusy = true) : (this.hasLoaded = false);
             this.services
-                .getFolderContents(this.folder_id, include_deleted, this.perPage, (this.currentPage - 1) * this.perPage)
+                .getFolderContents(
+                    this.folder_id,
+                    include_deleted,
+                    this.perPage,
+                    (this.currentPage - 1) * this.perPage,
+                    search_text
+                )
                 .then((response) => {
                     this.folderContents = response.folder_contents;
                     this.folder_metadata = response.metadata;
                     this.total_rows = response.metadata.total_rows;
                     this.hasLoaded = true;
+                    this.isBusy = false;
                 })
                 .catch((error) => {
                     this.error = error;
                 });
         },
         updateSearchValue(value) {
-            this.filter = value;
+            this.search_text = value
+            this.fetchFolderContents(this.include_deleted, value);
         },
         selectAllRows() {
             this.$refs.folder_content_table.selectAllRows();
@@ -408,11 +414,6 @@ export default {
                 if (!item.isNewFolder) return item;
             });
             this.refreshTable();
-        },
-        onFiltered(filteredItems) {
-            // Trigger pagination to update the number of buttons/pages due to filtering
-            this.totalRows = filteredItems.length;
-            this.currentPage = 1;
         },
         createNewFolder: function (folder) {
             if (!folder.name) {

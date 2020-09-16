@@ -7,8 +7,9 @@ export class Services {
         this.root = options.root || getAppRoot();
     }
 
-    async getFolderContents(id, include_deleted, limit, offset) {
-        const url = `${this.root}api/folders/${id}/contents?include_deleted=${include_deleted}&limit=${limit}&offset=${offset}`;
+    async getFolderContents(id, include_deleted, limit, offset, search_text = false) {
+        search_text = search_text ? `&search_text=${encodeURI(search_text)}` : "";
+        const url = `${this.root}api/folders/${id}/contents?include_deleted=${include_deleted}&limit=${limit}&offset=${offset}${search_text}`;
         try {
             const response = await axios.get(url);
             return response.data;

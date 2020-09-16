@@ -8,15 +8,7 @@
             </a>
             <div>
                 <form class="form-inline">
-                    <b-input-group size="sm">
-                        <b-form-input
-                            class="mr-1"
-                            v-on:input="updateSearch($event)"
-                            type="search"
-                            id="filterInput"
-                            placeholder="Search"
-                        />
-                    </b-input-group>
+                <SearchField @updateSearch="updateSearch($event)"></SearchField>
                     <button
                         v-if="metadata.can_add_library_item"
                         title="Create new folder"
@@ -163,6 +155,7 @@ import { Toast } from "ui/toast";
 import download from "./download";
 import mod_utils from "utils/utils";
 import { getAppRoot } from "onload/loadConfig";
+import SearchField from "../SearchField";
 
 initTopBarIcons();
 
@@ -193,6 +186,7 @@ export default {
         },
     },
     components: {
+        SearchField,
         FontAwesomeIcon,
     },
     data() {

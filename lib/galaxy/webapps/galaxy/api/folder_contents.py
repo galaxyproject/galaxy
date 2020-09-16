@@ -225,7 +225,7 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
         content_items = []
 
         current_folders = self.calculate_pagination(folders, offset, limit)
-        
+
         for subfolder in current_folders:
             if search_text and not subfolder.description:
                 continue
