@@ -963,7 +963,7 @@ class Anndata(H5):
     MetadataElement(name="varm_count", default=0, desc="varm_count", readonly=True, visible=True, no_value=0)
     MetadataElement(name="uns_layers", desc="uns_layers", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
     MetadataElement(name="uns_count", default=0, desc="uns_count", readonly=True, visible=True, no_value=0)
-    MetadataElement(name="shape", default=(), desc="shape", param=metadata.ListParameter, readonly=True, visible=True, no_value=(0,0))
+    MetadataElement(name="shape", default=(), desc="shape", param=metadata.ListParameter, readonly=True, visible=True, no_value=(0, 0))
 
     def sniff(self, filename):
         if super().sniff(filename):
@@ -990,7 +990,7 @@ class Anndata(H5):
                 dataset.metadata.layers_count = len(anndata_file)
                 dataset.metadata.layers_names = list(anndata_file.keys())
 
-                def _layercountsize (tmp, lennames=0):
+                def _layercountsize(tmp, lennames=0):
                     "From TMP and LENNAMES, return layers, their number, and the length of one of the layers (all equal)."
                     if hasattr(tmp, 'dtype'):
                         layers = [util.unicodify(x) for x in tmp.dtype.names]
@@ -1016,7 +1016,7 @@ class Anndata(H5):
                 if 'raw.var' in dataset.metadata.layers_names:
                     tmp = anndata_file["raw.var"]
                     # full set of genes would never need to be previewed
-                    #dataset.metadata.raw_var_names = tmp["index"]
+                    # dataset.metadata.raw_var_names = tmp["index"]
                     dataset.metadata.raw_var_layers, \
                         dataset.metadata.raw_var_count, \
                         dataset.metadata.raw_var_size = _layercountsize(tmp, len(tmp["index"]))
@@ -1024,7 +1024,7 @@ class Anndata(H5):
                 if 'var' in dataset.metadata.layers_names:
                     tmp = anndata_file["var"]
                     # row names are never used in preview windows
-                    #dataset.metadata.var_names = tmp["index"]
+                    # dataset.metadata.var_names = tmp["index"]
                     dataset.metadata.var_layers, \
                         dataset.metadata.var_count, \
                         dataset.metadata.var_size = _layercountsize(tmp, len(tmp["index"]))
@@ -1054,7 +1054,7 @@ class Anndata(H5):
         if not dataset.dataset.purged:
             tmp = dataset.metadata
 
-            def _makelayerstrings (layer, count, names):
+            def _makelayerstrings(layer, count, names):
                 "Format the layers."
                 if layer in tmp.layers_names:
                     return "\n[%s]: %d %s\n    %s" % (
