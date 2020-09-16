@@ -1,12 +1,12 @@
 <template>
     <div id="columns">
-        <div v-if="!edit" id="center">
+        <div v-show="!edit" id="center">
             <div class="h-100 overflow-auto p-3">
                 <markdown :markdown-config="markdownConfig" @onEdit="onEdit" />
             </div>
         </div>
         <markdown-editor
-            v-else
+            v-if="edit"
             :markdown-text="invocationMarkdown"
             :markdown-config="markdownConfig"
             @onUpdate="onUpdate"

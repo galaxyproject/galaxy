@@ -187,9 +187,10 @@ export default {
             }
         },
         onOk(selectedLabel) {
+            selectedLabel = selectedLabel || "<ENTER LABEL>";
             this.selectedShow = false;
             if (this.argumentType == "history_dataset_id") {
-                if (selectedLabel) {
+                if (this.useLabels) {
                     this.$emit("onInsert", `${this.argumentName}(output="${selectedLabel}")`);
                 } else {
                     getCurrentGalaxyHistory().then((historyId) => {
@@ -198,7 +199,7 @@ export default {
                     });
                 }
             } else if (this.argumentType == "history_dataset_collection_id") {
-                if (selectedLabel) {
+                if (this.useLabels) {
                     this.$emit("onInsert", `${this.argumentName}(output="${selectedLabel}")`);
                 } else {
                     getCurrentGalaxyHistory().then((historyId) => {
@@ -207,13 +208,13 @@ export default {
                     });
                 }
             } else if (this.argumentType == "job_id") {
-                if (selectedLabel) {
+                if (this.useLabels) {
                     this.$emit("onInsert", `${this.argumentName}(step="${selectedLabel}")`);
                 } else {
                     this.jobShow = true;
                 }
             } else if (this.argumentType == "invocation_id") {
-                if (selectedLabel) {
+                if (this.useLabels) {
                     this.$emit("onInsert", `${this.argumentName}(step="${selectedLabel}")`);
                 } else {
                     this.invocationShow = true;
