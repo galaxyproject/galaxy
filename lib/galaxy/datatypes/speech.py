@@ -10,7 +10,6 @@ class TextGrid(Text):
     >>> fname = get_test_fname('1_1119_2_22_001.textgrid')
     >>> TextGrid().sniff(fname)
     True
-
     >>> fname = get_test_fname('drugbank_drugs.cml')
     >>> TextGrid().sniff(fname)
     False
@@ -28,10 +27,7 @@ class TextGrid(Text):
 
         with open(filename, 'r') as fd:
             text = fd.read(len(self.header))
-
             return text == self.header
-
-        return False
 
 
 class BPF(Text):
@@ -42,11 +38,9 @@ class BPF(Text):
     >>> fname = get_test_fname('1_1119_2_22_001.par')
     >>> BPF().sniff(fname)
     True
-
     >>> fname = get_test_fname('1_1119_2_22_001-1.par')
     >>> BPF().sniff(fname)
     True
-
     >>> fname = get_test_fname('drugbank_drugs.cml')
     >>> BPF().sniff(fname)
     False

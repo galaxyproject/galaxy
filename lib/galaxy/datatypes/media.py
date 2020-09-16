@@ -1,10 +1,7 @@
 """Video classes"""
 import json
 import subprocess
-try:
-    import wave
-except ImportError:
-    wave = None
+import wave
 
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.metadata import ListParameter, MetadataElement
@@ -76,8 +73,6 @@ class Mkv(Video):
         if which('ffprobe'):
             metadata, streams = ffprobe(filename)
             return 'matroska' in metadata['format_name'].split(',')
-        else:
-            return False
 
 
 class Mp4(Video):
@@ -97,8 +92,6 @@ class Mp4(Video):
         if which('ffprobe'):
             metadata, streams = ffprobe(filename)
             return 'mp4' in metadata['format_name'].split(',')
-        else:
-            return False
 
 
 class Flv(Video):
@@ -108,8 +101,6 @@ class Flv(Video):
         if which('ffprobe'):
             metadata, streams = ffprobe(filename)
             return 'flv' in metadata['format_name'].split(',')
-        else:
-            return False
 
 
 class Mpg(Video):
@@ -119,8 +110,6 @@ class Mpg(Video):
         if which('ffprobe'):
             metadata, streams = ffprobe(filename)
             return 'mpegvideo' in metadata['format_name'].split(',')
-        else:
-            return False
 
 
 class Mp3(Audio):
@@ -139,8 +128,6 @@ class Mp3(Audio):
         if which('ffprobe'):
             metadata, streams = ffprobe(filename)
             return 'mp3' in metadata['format_name'].split(',')
-        else:
-            return False
 
 
 class WAV(Binary):
@@ -181,26 +168,18 @@ class WAV(Binary):
         >>> WAV().sniff(fname)
         False
         """
-        if wave:
-            try:
-                fp = wave.open(filename, 'rb')
-                fp.close()
-                return True
-            except Exception:
-                pass
-        return False
+        with wave.open(filename, 'rb') as fp:
+            return True
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         """Set the metadata for this dataset from the file contents
         """
 
         try:
-            fd = wave.open(dataset.dataset.file_name, 'rb')
-            dataset.metadata.rate = fd.getframerate()
-            dataset.metadata.nframes = fd.getnframes()
-            dataset.metadata.sampwidth = fd.getsampwidth()
-            dataset.metadata.nchannels = fd.getnchannels()
+            with wave.open(dataset.dataset.file_name, 'rb') as fd:
+                dataset.metadata.rate = fd.getframerate()
+                dataset.metadata.nframes = fd.getnframes()
+                dataset.metadata.sampwidth = fd.getsampwidth()
+                dataset.metadata.nchannels = fd.getnchannels()
         except wave.Error:
             pass
-        finally:
-            fd.close()

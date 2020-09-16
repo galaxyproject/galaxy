@@ -19,8 +19,6 @@ variables:
     run: sudo pip install tox
   install_ffprobe: &install_ffprobe
     run: sudo apt-get update && sudo apt-get install ffmpeg -y
-  install_wave: &install_wave
-    run: sudo pip install wave
   set_workdir: &set_workdir
     working_directory: ~/repo
   requires_get_code: &requires_get_code
@@ -108,7 +106,6 @@ jobs:
     steps:
       - *restore_repo_cache
       - *install_tox
-      - *install_wave
       - *install_ffprobe
       - run: tox -e py35-unit
   py35_first_startup:
@@ -139,7 +136,6 @@ jobs:
     steps:
       - *restore_repo_cache
       - *install_tox
-      - *install_wave
       - *install_ffprobe
       - run: tox -e test_galaxy_packages
   js_unit:
