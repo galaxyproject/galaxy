@@ -1145,7 +1145,7 @@ class NavigatesGalaxy(HasDriver):
 
         # Click labelled option
         self.wait_for_visible(self.navigation.history_panel.options_menu)
-        menu_item_sizzle_selector = '#history-options-button-menu > a:contains("%s")' % option_label
+        menu_item_sizzle_selector = "#history-options-button-menu > a:contains('%s')" % option_label
         menu_selection_element = self.wait_for_sizzle_selector_clickable(menu_item_sizzle_selector)
         menu_selection_element.click()
 
