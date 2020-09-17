@@ -203,7 +203,7 @@
     <tests>
     </tests>
     <help>
-        **Note: This interactive tool is in alpha. There is a known bug in the source tool that fails to render the image of the viewport on uploaded data. Further, uploaded coordinate filesystem loaded in will have the same name in the in-app fileselect.**
+        **Note: This interactive tool is in alpha. There is a known bug in the source tool that fails to render the image of the viewport on uploaded data. Further, uploaded coordinate file loaded in will have the same name in the in-app file select.**
 
         Interactive tool for visualising Hi-C data, works only for multi-cooler files which store multiple resolutions.
         For a detailed documentaition please visit https://docs.higlass.io/.
