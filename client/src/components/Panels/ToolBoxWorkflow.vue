@@ -88,6 +88,9 @@ export default {
             required: true,
         },
     },
+    created() {
+        console.log(this.moduleSections);
+    },
     computed: {
         workflowSection() {
             return {

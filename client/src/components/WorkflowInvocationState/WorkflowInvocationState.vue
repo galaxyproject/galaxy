@@ -125,7 +125,7 @@ export default {
             return this.invocationSchedulingTerminal && this.jobStatesTerminal;
         },
         invocationLink: function () {
-            return getUrl(`workflows/invocations/report?id=${this.invocationId}`);
+            return getUrl(`page/edit_report?id=${this.invocationId}`);
         },
         bcoJSON: function () {
             return getUrl(`api/invocations/${this.invocationId}/biocompute/download`);

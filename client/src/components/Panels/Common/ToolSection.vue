@@ -85,10 +85,14 @@ export default {
             type: String,
             default: "default",
         },
+        expanded: {
+            type: Boolean,
+            default: false,
+        },
     },
     data() {
         return {
-            opened: this.checkFilter(),
+            opened: this.expanded || this.checkFilter(),
         };
     },
     watch: {

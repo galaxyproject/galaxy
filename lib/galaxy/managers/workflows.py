@@ -708,7 +708,8 @@ class WorkflowContentsManager(UsesAnnotations):
         data['name'] = workflow.name
         data['steps'] = {}
         data['upgrade_messages'] = {}
-        data['report'] = workflow.reports_config
+        data['report'] = workflow.reports_config or {}
+
         input_step_types = set(workflow.input_step_types)
         # For each step, rebuild the form and encode the state
         for step in workflow.steps:

@@ -32,7 +32,6 @@ import InteractiveTools from "components/InteractiveTools/InteractiveTools.vue";
 import WorkflowList from "components/Workflow/WorkflowList.vue";
 import HistoryImport from "components/HistoryImport.vue";
 import HistoryView from "components/HistoryView.vue";
-import WorkflowInvocationReport from "components/WorkflowInvocationReport.vue";
 import WorkflowRun from "components/Workflow/Run/WorkflowRun.vue";
 import RecentInvocations from "components/User/RecentInvocations.vue";
 import ToolsView from "components/ToolsView/ToolsView.vue";
@@ -76,7 +75,6 @@ export const getAnalysisRouter = (Galaxy) =>
             "(/)workflows/run(/)": "show_workflows_run",
             "(/)workflows(/)list": "show_workflows",
             "(/)workflows/invocations": "show_workflow_invocations",
-            "(/)workflows/invocations/report": "show_workflow_invocation_report",
             // "(/)workflows/invocations/view_bco": "show_invocation_bco",
             "(/)workflows/list_published(/)": "show_workflows_published",
             "(/)workflows/create(/)": "show_workflows_create",
@@ -102,13 +100,13 @@ export const getAnalysisRouter = (Galaxy) =>
             return (Galaxy.user && Galaxy.user.id) || this.require_login.indexOf(name) == -1;
         },
 
-        _display_vue_helper: function (component, propsData = {}, active_tab = null) {
+        _display_vue_helper: function (component, propsData = {}, active_tab = null, noPadding = false) {
             const instance = Vue.extend(component);
             const container = document.createElement("div");
             if (active_tab) {
                 container.active_tab = active_tab;
             }
-            this.page.display(container);
+            this.page.display(container, noPadding);
             new instance({ store, propsData }).$mount(container);
         },
 
@@ -192,11 +190,6 @@ export const getAnalysisRouter = (Galaxy) =>
 
         show_history_view: function () {
             this._display_vue_helper(HistoryView, { id: QueryStringParsing.get("id") });
-        },
-
-        show_workflow_invocation_report: function () {
-            const invocationId = QueryStringParsing.get("id");
-            this._display_vue_helper(WorkflowInvocationReport, { invocationId: invocationId });
         },
 
         show_workflow_invocations: function () {

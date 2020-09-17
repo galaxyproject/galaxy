@@ -1,7 +1,7 @@
 <%inherit file="/webapps/galaxy/base_panels.mako"/>
 
 <%def name="title()">
-    Page Editor
+    Invocation Reports
 </%def>
 
 <%def name="init()">
@@ -15,8 +15,8 @@
     <script type="text/javascript">
         config.addInitialization(function(){
             console.log("editor.mako, javascript_app", "define variables needed by galaxy.pages script");
-            window.bundleEntries.mountPageEditor({
-                pageId: "${id}",
+            window.bundleEntries.mountInvocationReport({
+                invocationId: "${id}",
             });
         });
     </script>
