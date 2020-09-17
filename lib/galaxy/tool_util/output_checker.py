@@ -13,7 +13,7 @@ DETECTED_JOB_STATE = Bunch(
     GENERIC_ERROR='generic_error',
 )
 
-ERROR_PEAK = 2000
+ERROR_PEEK_SIZE = 2000
 
 
 def check_output_regex(job_id_tag, regex, stream, stream_name, job_messages, max_error_level):
@@ -147,8 +147,8 @@ def check_output(stdio_regexes, stdio_exit_codes, stdout, stderr, tool_exit_code
             #          + "checking stderr for success" )
             if stderr:
                 state = DETECTED_JOB_STATE.GENERIC_ERROR
-                peak = stderr[0:ERROR_PEAK] if stderr else ""
-                log.debug("Job failed because of contents in the standard error stream: [{}]".format(peak))
+                peek = stderr[0:ERROR_PEEK_SIZE] if stderr else ""
+                log.debug("Job failed because of contents in the standard error stream: [{}]".format(peek))
     except Exception:
         log.exception("Job state check encountered unexpected exception; assuming execution successful")
 
