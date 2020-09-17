@@ -60,11 +60,14 @@ export class Node {
         }
         return changed;
     }
-    changeOutputDatatype(outputName, datatype) {
+    setDatatype(outputName, datatype) {
         const output_terminal = this.output_terminals[outputName];
         const output = this.nodeView.outputViews[outputName].output;
-        output_terminal.force_datatype = datatype;
         output.force_datatype = datatype;
+        output_terminal.force_datatype = datatype;
+        output_terminal.destroyInvalidConnections();
+    }
+    changeOutputDatatype(outputName, datatype) {
         if (datatype) {
             this.post_job_actions["ChangeDatatypeAction" + outputName] = {
                 action_arguments: { newtype: datatype },
@@ -74,8 +77,8 @@ export class Node {
         } else {
             delete this.post_job_actions["ChangeDatatypeAction" + outputName];
         }
+        this.setDatatype(outputName, datatype);
         this.markChanged();
-        output_terminal.destroyInvalidConnections();
     }
     connectedOutputTerminals() {
         return this._connectedTerminals(this.output_terminals);
@@ -241,6 +244,11 @@ export class Node {
         }
         $.each(data.outputs, (i, output) => {
             nodeView.addDataOutput(output);
+            const changeOutputDatatype = node.post_job_actions["ChangeDatatypeAction" + output.name];
+            node.setDatatype(
+                output.name,
+                changeOutputDatatype ? changeOutputDatatype.action_arguments["newtype"] : null
+            );
         });
         nodeView.render();
         this.app.node_changed(this);
@@ -294,20 +302,17 @@ export class Node {
             } else {
                 // the output already exists, but the output formats may have changed.
                 // Therefore we update the datatypes and destroy invalid connections.
-                node.output_terminals[output.name].datatypes = output.extensions;
-                const changeOutputDatatype = node.post_job_actions["ChangeOutputDatatype" + output.name];
-                if (changeOutputDatatype) {
-                    node.output_terminals[output.name].force_datatype =
-                        changeOutputDatatype.action_arguments["newtype"];
-                } else {
-                    node.output_terminals[output.name].force_datatype = null;
-                }
                 if (node.type == "parameter_input") {
                     node.output_terminals[output.name].attributes.type = output.type;
                 }
                 node.output_terminals[output.name].optional = output.optional;
-                node.output_terminals[output.name].destroyInvalidConnections();
+                node.output_terminals[output.name].datatypes = output.extensions;
             }
+            const changeOutputDatatype = node.post_job_actions["ChangeDatatypeAction" + output.name];
+            node.setDatatype(
+                output.name,
+                changeOutputDatatype ? changeOutputDatatype.action_arguments["newtype"] : null
+            );
         });
         this.tool_state = data.tool_state;
         this.config_form = data.config_form;
