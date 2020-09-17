@@ -1,7 +1,6 @@
 """
 Migration script to add the long_description and times_downloaded columns to the repository table.
 """
-from __future__ import print_function
 
 import logging
 import sys

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-__version__ = '20.1.0.dev0'
+__version__ = '20.5.1.dev0'
 
 PROJECT_NAME = "galaxy-test-driver"
 PROJECT_OWNER = PROJECT_USERAME = "galaxyproject"

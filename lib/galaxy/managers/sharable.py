@@ -39,7 +39,7 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
     SINGLE_CHAR_ABBR = None
 
     def __init__(self, app):
-        super(SharableModelManager, self).__init__(app)
+        super().__init__(app)
         # user manager is needed to check access/ownership/admin
         self.user_manager = users.UserManager(app)
 
@@ -152,7 +152,7 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         # precondition: user has been validated
         # allow user to be a list and call recursivly
         if isinstance(user, list):
-            return map(lambda user: self.share_with(item, user, flush=False), user)
+            return [self.share_with(item, _, flush=False) for _ in user]
         # get or create
         existing = self.get_share_assocs(item, user=user)
         if existing:
@@ -181,7 +181,7 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         Delete a user share (or list of shares) from the database.
         """
         if isinstance(user, list):
-            return map(lambda user: self.unshare_with(item, user, flush=False), user)
+            return [self.unshare_with(item, _, flush=False) for _ in user]
         # Look for and delete sharing relation for user.
         user_share_assoc = self.get_share_assocs(item, user=user)[0]
         self.session().delete(user_share_assoc)
@@ -319,7 +319,7 @@ class SharableModelSerializer(base.ModelSerializer,
     SINGLE_CHAR_ABBR = None
 
     def __init__(self, app, **kwargs):
-        super(SharableModelSerializer, self).__init__(app, **kwargs)
+        super().__init__(app, **kwargs)
         self.add_view('sharing', [
             'id',
             'title',
@@ -330,7 +330,7 @@ class SharableModelSerializer(base.ModelSerializer,
         ])
 
     def add_serializers(self):
-        super(SharableModelSerializer, self).add_serializers()
+        super().add_serializers()
         taggable.TaggableSerializerMixin.add_serializers(self)
         annotatable.AnnotatableSerializerMixin.add_serializers(self)
         ratable.RatableSerializerMixin.add_serializers(self)
@@ -379,7 +379,7 @@ class SharableModelDeserializer(base.ModelDeserializer,
         taggable.TaggableDeserializerMixin, annotatable.AnnotatableDeserializerMixin, ratable.RatableDeserializerMixin):
 
     def add_deserializers(self):
-        super(SharableModelDeserializer, self).add_deserializers()
+        super().add_deserializers()
         taggable.TaggableDeserializerMixin.add_deserializers(self)
         annotatable.AnnotatableDeserializerMixin.add_deserializers(self)
         ratable.RatableDeserializerMixin.add_deserializers(self)
@@ -446,7 +446,7 @@ class SharableModelFilters(base.ModelFilterParser,
         taggable.TaggableFilterMixin, annotatable.AnnotatableFilterMixin, ratable.RatableFilterMixin):
 
     def _add_parsers(self):
-        super(SharableModelFilters, self)._add_parsers()
+        super()._add_parsers()
         taggable.TaggableFilterMixin._add_parsers(self)
         annotatable.AnnotatableFilterMixin._add_parsers(self)
         ratable.RatableFilterMixin._add_parsers(self)

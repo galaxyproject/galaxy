@@ -2,12 +2,11 @@ import logging
 import os
 import stat
 
-from six import string_types
 
 log = logging.getLogger(__name__)
 
 
-class EnvFileBuilder(object):
+class EnvFileBuilder:
 
     def __init__(self, install_dir):
         self.install_dir = install_dir
@@ -27,14 +26,14 @@ class EnvFileBuilder(object):
         if env_var_action in ['prepend_to', 'set_to', 'append_to']:
             env_var_name = env_var_dict['name']
             if env_var_action == 'prepend_to':
-                changed_value = '%s:$%s' % (env_var_value, env_var_name)
+                changed_value = '{}:${}'.format(env_var_value, env_var_name)
             elif env_var_action == 'set_to':
                 changed_value = '%s' % env_var_value
             elif env_var_action == 'append_to':
-                changed_value = '$%s:%s' % (env_var_name, env_var_value)
-            line = "%s=%s; export %s" % (env_var_name, changed_value, env_var_name)
+                changed_value = '${}:{}'.format(env_var_name, env_var_value)
+            line = "{}={}; export {}".format(env_var_name, changed_value, env_var_name)
         elif env_var_action == "source":
-            line = "if [ -f %s ] ; then . %s ; fi" % (env_var_value, env_var_value)
+            line = "if [ -f {} ] ; then . {} ; fi".format(env_var_value, env_var_value)
         else:
             raise Exception("Unknown shell file action %s" % env_var_action)
         env_shell_file_path = os.path.join(install_dir, 'env.sh')
@@ -56,7 +55,7 @@ class EnvFileBuilder(object):
         if os.path.exists(file_path):
             try:
                 new_env_file_contents = []
-                env_file_contents = open(file_path, 'r').readlines()
+                env_file_contents = open(file_path).readlines()
                 # Clean out blank lines from the env.sh file.
                 for line in env_file_contents:
                     line = line.rstrip()
@@ -78,7 +77,7 @@ class EnvFileBuilder(object):
                 log.exception(str(e))
                 return 1
         # Convert the received text to a list, in order to support adding one or more lines to the file.
-        if isinstance(text, string_types):
+        if isinstance(text, str):
             text = [text]
         for line in text:
             line = line.rstrip()

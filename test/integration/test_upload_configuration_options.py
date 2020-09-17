@@ -67,11 +67,6 @@ class BaseUploadContentConfigurationInstance(integration_util.IntegrationInstanc
         response = self.dataset_populator.fetch(payload, assert_ok=assert_ok)
         return response
 
-    @classmethod
-    def temp_config_dir(cls, name):
-        # realpath here to get around problems with symlinks being blocked.
-        return os.path.realpath(os.path.join(cls._test_driver.galaxy_test_tmp_dir, name))
-
     def _write_file(self, dir_path, content, filename="test"):
         """Helper for writing ftp/server dir files."""
         self._ensure_directory(dir_path)

@@ -79,7 +79,7 @@ the tool menu immediately following the hyperlink for the tool (based on the
         <xs:element name="stdio" type="Stdio" minOccurs="0"/>
         <xs:element name="help" type="xs:string" minOccurs="0">
           <xs:annotation gxdocs:best_practices="help-tag">
-            <xs:documentation xml:lang="en"><![CDATA[This tag set includes all of the necessary details of how to use the tool. This tag set should be included as the next to the last tag set, before citations, in the tool config. Tool help is written in reStructuredText. Included here is only an overview of a subset of features. For more information see http://docutils.sourceforge.net/docs/ref/rst/restructuredtext.html .
+            <xs:documentation xml:lang="en"><![CDATA[This tag set includes all of the necessary details of how to use the tool. This tag set should be included as the next to the last tag set, before citations, in the tool config. Tool help is written in reStructuredText. Included here is only an overview of a subset of features. For more information see [here](https://docutils.sourceforge.io/docs/ref/rst/restructuredtext.html).
 
 tag | details
 --- | -------
@@ -217,7 +217,7 @@ fragments be repeated in a file (for instance similar conditional branches,
 repeated options, etc...) or among tools in the same repository. Galaxy tools
 have a macro system to address this problem.
 
-For more information, see https://planemo.readthedocs.io/en/latest/writing_advanced.html#macros-reusable-elements</xs:documentation>
+For more information, see [planemo documentation](https://planemo.readthedocs.io/en/latest/writing_advanced.html#macros-reusable-elements)</xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:element name="import" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
@@ -1291,8 +1291,8 @@ and this can be used instead.
         <xs:documentation xml:lang="en"><![CDATA[
 
 If specified, the target output's checksum should match the value specified
-here. This value should have the form ``hash_type:hash_value``
-(e.g. ``sha1:8156d7ca0f46ed7abac98f82e36cfaddb2aca041``). For large static files
+here. This value should have the form ``hash_type$hash_value``
+(e.g. ``sha1$8156d7ca0f46ed7abac98f82e36cfaddb2aca041``). For large static files
 it may be inconvenient to upload the entiry file and this can be used instead.
 
 ]]></xs:documentation>
@@ -1312,9 +1312,14 @@ When this attribute is true and ``compare`` is set to ``diff``, try to decompres
 ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="delta" type="xs:integer">
+    <xs:attribute name="delta" type="xs:integer" default="10000">
       <xs:annotation>
-        <xs:documentation xml:lang="en">If ``compare`` is set to ``sim_size``, this is the number of bytes different allowed.</xs:documentation>
+        <xs:documentation xml:lang="en">If ``compare`` is set to ``sim_size``, this is the maximum allowed absolute size difference (in bytes) between the data set that is generated in the test and the file in ``test-data/`` that is referenced by the ``file`` attribute. Default value is 10000 bytes. Can be combined with ``delta_frac``.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="delta_frac" type="xs:float">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">If ``compare`` is set to ``sim_size``, this is the maximum allowed relative size difference between the data set that is generated in the test and the file in ``test-data/`` that is referenced by the ``file`` attribute. A value of 0.1 means that the file that is generated in the test can differ by at most 10% of the file in ``test-data``. The default is not to check for  relative size difference. Can be combined with ``delta``.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -1659,7 +1664,7 @@ module.
     <xs:choice>
       <xs:element name="has_text" type="xs:anyType">
         <xs:annotation>
-          <xs:documentation><![CDATA[Asserts the specified ``text`` appears in the output (e.g. ``<has_text text="chr7">``).]]>
+          <xs:documentation><![CDATA[Asserts the specified ``text`` appears in the output (e.g. ``<has_text text="chr7">``). If the ``text`` is expected to occur a particular number of times, this value can be specified using ``n``.]]>
           </xs:documentation>
         </xs:annotation>
       </xs:element>
@@ -1677,7 +1682,7 @@ module.
       </xs:element>
       <xs:element name="has_line" type="xs:anyType">
         <xs:annotation>
-          <xs:documentation><![CDATA[Asserts a line matching the specified string (``line``) appears in the output (e.g. ``<has_line line="A full example line." />``).]]>
+          <xs:documentation><![CDATA[Asserts a line matching the specified string (``line``) appears in the output (e.g. ``<has_line line="A full example line." />``). If the ``line`` is expected to occur a particular number of times, this value can be specified using ``n``.]]>
           </xs:documentation>
         </xs:annotation>
       </xs:element>
@@ -2393,6 +2398,14 @@ sanitizer to prevent Galaxy from escaping the result.
 </param>
 ```
 
+#### ``directory_uri``
+
+This is used to tie into galaxy.files URI infrastructure. This should only be used by
+core Galaxy tools until the interface around files has stabilized.
+
+Currently ``directory_uri`` parameters provide user's the option of selecting a writable
+directory destination for unstructured outputs of tools (e.g. history exports).
+
 $attribute_list:value,rgb:5
 
 This covers examples of the most common parameter types, the remaining parameter
@@ -2561,10 +2574,12 @@ Set to ``false`` to not force user to select an option in the list.</xs:document
         <xs:attribute name="use_header_names" type="PermissiveBoolean">
           <xs:annotation>
             <xs:documentation xml:lang="en">Used only if the ``type`` attribute
-value is ``data_column``, if ``true`` Galaxy assumes first row of ``data_ref``
+value is ``data_column``. If ``true``, Galaxy assumes the first row of ``data_ref``
 is a header and builds the select list with these values rather than the more
-generic ``c1`` ... ``cN``.
-</xs:documentation>
+generic ``c1`` ... ``cN`` (i.e. it will be ``c1: head1`` ... ``cN: headN``).
+Note that the content of the Cheetah variable is still
+the column index.
+            </xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="display" type="DisplayType">
@@ -2686,6 +2701,7 @@ allow access to Python code to generate options for a select list. See
       <xs:enumeration value="drill_down"/>
       <xs:enumeration value="group_tag"/>
       <xs:enumeration value="data_collection"/>
+      <xs:enumeration value="directory_uri" />
     </xs:restriction>
   </xs:simpleType>
 
@@ -2882,7 +2898,7 @@ Prior to Galaxy release 19.01 the stdio block has only been used for non-legacy 
         </xs:attribute>
         <xs:attribute name="strict" type="xs:boolean">
           <xs:annotation>
-            <xs:documentation xml:lang="en">This boolean forces the ``#set -e`` directive on in shell scripts - so that in a multi-part command if any part fails the job exits with a non-zero exit code. This is enabled by default for tools with ``profile>=16.04`` and disabled on legacy tools.</xs:documentation>
+            <xs:documentation xml:lang="en">This boolean forces the ``#set -e`` directive on in shell scripts - so that in a multi-part command if any part fails the job exits with a non-zero exit code. This is enabled by default for tools with ``profile>=20.09`` and disabled on legacy tools.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
@@ -3820,7 +3836,7 @@ Style used for tool provided metadata file (i.e.
 - this can be either "legacy" or "default". The default of tools with a profile
 of 17.09 or newer are "default", and "legacy" for older and tools and tools
 without a specified profile. A discussion of the differences between the styles
-can be found at https://github.com/galaxyproject/galaxy/pull/4437 .
+can be found [here](https://github.com/galaxyproject/galaxy/pull/4437).
 ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
@@ -3916,7 +3932,7 @@ types where the order of the columns is not set.</xs:documentation>
       <xs:annotation>
         <xs:documentation xml:lang="en">Relative path to a file produced by the
 tool in its working directory. Output's contents are set to this file's
-contents.</xs:documentation>
+contents. The behaviour when this file does not exist in the working directory is undefined; the resulting dataset could be empty or the tool execution could fail.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="hidden" type="xs:boolean" default="false">
@@ -4174,9 +4190,9 @@ Describe datasets to dynamically collect after the job complete.
 There are many simple tools with examples of this element distributed with
 Galaxy, including:
 
-* https://github.com/galaxyproject/galaxy/tree/master/test/functional/tools/multi_output.xml
-* https://github.com/galaxyproject/galaxy/tree/master/test/functional/tools/multi_output_assign_primary.xml
-* https://github.com/galaxyproject/galaxy/tree/master/test/functional/tools/multi_output_configured.xml
+* [multi_output.xml](https://github.com/galaxyproject/galaxy/tree/master/test/functional/tools/multi_output.xml)
+* [multi_output_assign_primary.xml](https://github.com/galaxyproject/galaxy/tree/master/test/functional/tools/multi_output_assign_primary.xml)
+* [multi_output_configured.xml](https://github.com/galaxyproject/galaxy/tree/master/test/functional/tools/multi_output_configured.xml)
 
 More information can be found on Planemo's documentation for
 [multiple output files](https://planemo.readthedocs.io/en/latest/writing_advanced.html#multiple-output-files).
@@ -4234,15 +4250,15 @@ expressions after the job is complete.
 There are many simple tools with examples of this element distributed with
 Galaxy, including:
 
-* https://github.com/galaxyproject/galaxy/blob/master/test/functional/tools/collection_split_on_column.xml
-* https://github.com/galaxyproject/galaxy/blob/master/test/functional/tools/collection_creates_dynamic_list_of_pairs.xml
-* https://github.com/galaxyproject/galaxy/blob/master/test/functional/tools/collection_creates_dynamic_nested.xml
+* [collection_split_on_column.xml](https://github.com/galaxyproject/galaxy/blob/master/test/functional/tools/collection_split_on_column.xml)
+* [collection_creates_dynamic_list_of_pairs.xml](https://github.com/galaxyproject/galaxy/blob/master/test/functional/tools/collection_creates_dynamic_list_of_pairs.xml)
+* [collection_creates_dynamic_nested.xml](https://github.com/galaxyproject/galaxy/blob/master/test/functional/tools/collection_creates_dynamic_nested.xml)
 
 ]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="from_provided_metadata" type="xs:boolean" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Indicate that dataset filenames should simply be read from the provided metadata file (e.g. galaxy.json). If this is set - pattern and sort must not be set.</xs:documentation>
+        <xs:documentation xml:lang="en">Indicate that dataset filenames should simply be read from the provided metadata file (e.g. galaxy.json). If this is set - pattern and sort_by must not be set.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="pattern" type="xs:string" use="optional">
@@ -4265,9 +4281,14 @@ Galaxy, including:
         <xs:documentation xml:lang="en">Format (or datatype) of discovered datasets (an alias with ``format``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="sort_by" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">A string `[reverse_]SORTBY[_SORT_COMP]` describing the desired sort order of the collection elements. `SORTBY` can be `filename`, `name`, `designation`, `dbkey` and the optional `SORT_COMP` can be either `lexical` or `numeric`. Default is lexical sorting by filename.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="visible" type="xs:boolean" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Indication if this dataset is visible in output history. This defaults to ``false``, but probably shouldn't - be sure to set to ``true`` if that is your intention.</xs:documentation>
+        <xs:documentation xml:lang="en">Indication if this dataset is visible in the history. This defaults to ``false``, but probably shouldn't - be sure to set to ``true`` if that is your intention.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -4747,6 +4768,7 @@ to setup configuration files for use by tools.]]></xs:documentation>
   <xs:group name="ConfigFilesElement">
     <xs:choice>
       <xs:element name="inputs" type="ConfigInputs"/>
+      <xs:element name="file_sources" type="ConfigFileSources"/>
       <xs:element name="configfile" type="ConfigFile"/>
     </xs:choice>
   </xs:group>
@@ -4830,7 +4852,7 @@ write out a JSON representation of the tool parameters.
 
 *Example*
 
-The following will create a cheetah variable that can be evaluated as ``$inputs`` that
+The following will create a Cheetah variable that can be evaluated as ``$inputs`` that
 will contain the tool parameter inputs.
 
 ```xml
@@ -4853,6 +4875,8 @@ A contrived example of a tool that uses this is the test tool
 
 By default this file will not contain paths for data or collection inputs. To include simple
 paths for data parameters set the ``data_style`` attribute to ``paths`` (see [inputs_as_json_with_paths.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/inputs_as_json_with_paths.xml) for an example).
+
+For tools with profile >= 20.05 a select with ``multiple="true"`` is rendered as an array which is empty if nothing is selected. For older profile versions select lists are rendered as comma separated strings or a literal ``null`` in case nothing is selected.
 ]]></xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
@@ -4873,6 +4897,30 @@ response to this directive.
         <xs:attribute name="data_style" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">Set to 'paths' to include dataset paths in the resulting file.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:complexType name="ConfigFileSources">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="name" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en"><![CDATA[
+Cheetah variable to populate the path to the inputs JSON file created in
+response to this directive.
+]]></xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="filename" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Path relative to the working directory of the tool for the file sources JSON configuration file created in response to this directive.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
@@ -5138,7 +5186,7 @@ Tools may use exit codes to indicate specific execution errors. Many programs us
 
 The exit code's range can be any consecutive group of integers. More advanced ranges, such as noncontiguous ranges, are currently not supported. Ranges can be specified in the form "m:n", where m is the start integer and n is the end integer. If ":n" is specified, then the exit code will be compared against all integers less than or equal to n. If "m:" is used, then the exit code will be compared against all integers greater than or equal to m. If the exit code matches, then the error level is applied and the error's description is added to stderr. If a tool's exit code does not match any of the supplied ``<exit_code>`` tags' ranges, then no errors are applied to the tool's execution.
 
-Note that most Unix and Linux variants only support positive integers 0 to 255 for exit codes. If an exit code falls out of the range 0 to 255, the usual convention is to only use the lower 8 bits for the exit code. The only known exception is if a job is broken into subtasks using the tasks runner and one of those tasks is stopped with a POSIX signal. (Note that signals should be used as a last resort for terminating processes.) In those cases, the task will receive -1 times the signal number. For example, suppose that a job uses the tasks runner and 8 tasks are created for the job. If one of the tasks hangs, then a sysadmin may choose to send the "kill" signal, SIGKILL, to the process. In that case, the task (and its job) will exit with an exit code of -9. More on POSIX signals can be found at https://en.wikipedia.org/wiki/Unix_signal as well as man pages on "signal".
+Note that most Unix and Linux variants only support positive integers 0 to 255 for exit codes. If an exit code falls outside of this range, the usual convention is to only use the lower 8 bits for the exit code. The only known exception is if a job is broken into subtasks using the tasks runner and one of those tasks is stopped with a POSIX signal. (Note that signals should be used as a last resort for terminating processes.) In those cases, the task will receive -1 times the signal number. For example, suppose that a job uses the tasks runner and 8 tasks are created for the job. If one of the tasks hangs, then a sysadmin may choose to send the "kill" signal, SIGKILL, to the process. In that case, the task (and its job) will exit with an exit code of -9. More on POSIX signals can be found on [Wikipedia](https://en.wikipedia.org/wiki/Signal_(IPC)) as well as on the man page for "signal" (``man 7 signal``).
 
 The ``<exit_code>`` tag's supported attributes are as follows:
 

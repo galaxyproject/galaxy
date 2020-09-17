@@ -4,7 +4,6 @@ import os
 from collections import OrderedDict
 from datetime import datetime, timedelta
 
-import six
 from sqlalchemy import and_, false, or_
 
 from galaxy import (
@@ -15,6 +14,7 @@ from galaxy import (
 from galaxy.actions.admin import AdminActions
 from galaxy.exceptions import ActionInputError, MessageException
 from galaxy.model import tool_shed_install as install_model
+from galaxy.security.validate_user_input import validate_password
 from galaxy.tool_shed.util.repository_util import get_ids_of_tool_shed_repositories_being_installed
 from galaxy.util import (
     nice_size,
@@ -468,7 +468,7 @@ class ToolVersionListGrid(grids.Grid):
             if toolbox.has_tool(tool_version.tool_id, exact=True):
                 link = url_for(controller='tool_runner', tool_id=tool_version.tool_id)
                 link_str = '<a target="_blank" href="%s">' % link
-                return '<div class="count-box state-color-ok">%s%s</a></div>' % (link_str, tool_version.tool_id)
+                return '<div class="count-box state-color-ok">{}{}</a></div>'.format(link_str, tool_version.tool_id)
             return tool_version.tool_id
 
     class ToolVersionsColumn(grids.TextColumn):
@@ -481,7 +481,7 @@ class ToolVersionListGrid(grids.Grid):
                     if toolbox.has_tool(tool_id, exact=True):
                         link = url_for(controller='tool_runner', tool_id=tool_id)
                         link_str = '<a target="_blank" href="%s">' % link
-                        tool_ids_str += '<div class="count-box state-color-ok">%s%s</a></div><br/>' % (link_str, tool_id)
+                        tool_ids_str += '<div class="count-box state-color-ok">{}{}</a></div><br/>'.format(link_str, tool_id)
                     else:
                         tool_ids_str += '%s<br/>' % tool_version.tool_id
             else:
@@ -589,8 +589,9 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         status = kwd.get('status', 'done')
         for dtype in sorted(trans.app.datatypes_registry.datatype_elems,
                            key=lambda dtype: dtype.get('extension')):
-            datatypes.append(dtype.attrib)
-            keys |= set(dtype.attrib)
+            attrib = dict(dtype.attrib)
+            datatypes.append(attrib)
+            keys |= set(attrib.keys())
         return {'keys': list(keys), 'data': datatypes, 'message': message, 'status': status}
 
     @web.expose
@@ -849,7 +850,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 if user:
                     trans.handle_user_logout()
                     trans.handle_user_login(user)
-                    return trans.show_message('You are now logged in as %s, <a target="_top" href="%s">return to the home page</a>' % (user.email, url_for(controller='root')), use_panels=True)
+                    return trans.show_message('You are now logged in as {}, <a target="_top" href="{}">return to the home page</a>'.format(user.email, url_for(controller='root')), use_panels=True)
             except Exception:
                 log.exception("Error fetching user for impersonation")
         return trans.response.send_redirect(web.url_for(controller='admin',
@@ -873,7 +874,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     changeset_revision = elem.get('changeset_revision')
                     params = dict(name=repository_name, owner='devteam', changeset_revision=changeset_revision)
                     pathspec = ['repository', 'get_tool_dependencies']
-                    text = url_get(shed_url, password_mgr=self.app.tool_shed_registry.url_auth(shed_url), pathspec=pathspec, params=params)
+                    text = url_get(shed_url, auth=self.app.tool_shed_registry.url_auth(shed_url), pathspec=pathspec, params=params)
                     if text:
                         tool_dependencies_dict = encoding_util.tool_shed_decode(text)
                         for dependency_key, requirements_dict in tool_dependencies_dict.items():
@@ -1048,7 +1049,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                         role.description = new_description
                         trans.sa_session.add(role)
                         trans.sa_session.flush()
-            return {'message': 'Role \'%s\' has been renamed to \'%s\'.' % (old_name, new_name)}
+            return {'message': 'Role \'{}\' has been renamed to \'{}\'.'.format(old_name, new_name)}
 
     @web.legacy_expose_api
     @web.require_admin
@@ -1214,7 +1215,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                         group.name = new_name
                         trans.sa_session.add(group)
                         trans.sa_session.flush()
-            return {'message': 'Group \'%s\' has been renamed to \'%s\'.' % (old_name, new_name)}
+            return {'message': 'Group \'{}\' has been renamed to \'{}\'.'.format(old_name, new_name)}
 
     @web.legacy_expose_api
     @web.require_admin
@@ -1387,10 +1388,9 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             else:
                 password = payload.get('password')
                 confirm = payload.get('confirm')
-                if len(password) < 6:
-                    return self.message_exception(trans, 'Use a password of at least 6 characters.')
-                elif password != confirm:
-                    return self.message_exception(trans, 'Passwords do not match.')
+                message = validate_password(trans, password, confirm)
+                if message:
+                    return self.message_exception(trans, message)
                 for user in users.values():
                     user.set_password_cleartext(password)
                     trans.sa_session.add(user)
@@ -1451,7 +1451,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         if new in (current, None):
             message = 'Usage is unchanged at %s.' % nice_size(current)
         else:
-            message = 'Usage has changed by %s to %s.' % (nice_size(new - current), nice_size(new))
+            message = 'Usage has changed by {} to {}.'.format(nice_size(new - current), nice_size(new))
         return (message, 'done')
 
     def _new_user_apikey(self, trans, user_id):
@@ -1464,7 +1464,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         )
         trans.sa_session.add(new_key)
         trans.sa_session.flush()
-        return ("New key '%s' generated for requested user '%s'." % (new_key.key, user.email), "done")
+        return ("New key '{}' generated for requested user '{}'.".format(new_key.key, user.email), "done")
 
     def _activate_user(self, trans, user_id):
         user = trans.sa_session.query(trans.model.User).get(trans.security.decode_id(user_id))
@@ -1597,7 +1597,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         if not selected_environments_to_uninstall:
             selected_environments_to_uninstall = []
         tools_by_id = trans.app.toolbox.tools_by_id.copy()
-        view = six.next(six.itervalues(trans.app.toolbox.tools_by_id))._view
+        view = next(iter(trans.app.toolbox.tools_by_id.values()))._view
         if selected_tool_ids:
             # install the dependencies for the tools in the selected_tool_ids list
             if not isinstance(selected_tool_ids, list):
@@ -1620,19 +1620,19 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
 
     @web.expose
     @web.require_admin
-    def sanitize_whitelist(self, trans, submit_whitelist=False, tools_to_whitelist=[]):
-        if submit_whitelist:
-            # write the configured sanitize_whitelist_file with new whitelist
+    def sanitize_allowlist(self, trans, submit_allowlist=False, tools_to_allowlist=[]):
+        if submit_allowlist:
+            # write the configured sanitize_allowlist_file with new allowlist
             # and update in-memory list.
-            with open(trans.app.config.sanitize_whitelist_file, 'wt') as f:
-                if isinstance(tools_to_whitelist, six.string_types):
-                    tools_to_whitelist = [tools_to_whitelist]
-                new_whitelist = sorted([tid for tid in tools_to_whitelist if tid in trans.app.toolbox.tools_by_id])
-                f.write("\n".join(new_whitelist))
-            trans.app.config.sanitize_whitelist = new_whitelist
-            trans.app.queue_worker.send_control_task('reload_sanitize_whitelist', noop_self=True)
+            with open(trans.app.config.sanitize_allowlist_file, 'wt') as f:
+                if isinstance(tools_to_allowlist, str):
+                    tools_to_allowlist = [tools_to_allowlist]
+                new_allowlist = sorted([tid for tid in tools_to_allowlist if tid in trans.app.toolbox.tools_by_id])
+                f.write("\n".join(new_allowlist))
+            trans.app.config.sanitize_allowlist = new_allowlist
+            trans.app.queue_worker.send_control_task('reload_sanitize_allowlist', noop_self=True)
             # dispatch a message to reload list for other processes
-        return trans.fill_template('/webapps/galaxy/admin/sanitize_whitelist.mako',
+        return trans.fill_template('/webapps/galaxy/admin/sanitize_allowlist.mako',
                                    sanitize_all=trans.app.config.sanitize_all_html,
                                    tools=trans.app.toolbox.tools_by_id)
 

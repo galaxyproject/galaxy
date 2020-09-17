@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<object_store type="irods"> 
+    <!--<auth username="rods" password="rods" />-->
+    <resource name="demoResc" />
+    <zone name="tempZone" />
+    <connection host="localhost" port="1247" timeout="30" poolsize="3"/>
+    <cache path="database/object_store_cache" size="1000"/>
+    <extra_dir type="job_work" path="database/job_working_directory_irods"/>
+    <extra_dir type="temp" path="database/tmp_irods"/>
+</object_store>

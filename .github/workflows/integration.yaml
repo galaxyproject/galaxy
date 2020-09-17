@@ -2,8 +2,8 @@ name: Integration
 on: [push, pull_request]
 env:
   GALAXY_TEST_DBURI: 'postgres://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
+  GALAXY_TEST_AMQP_URL: 'amqp://localhost:5672//'
 jobs:
-
   test:
     name: Test
     runs-on: ubuntu-18.04
@@ -20,11 +20,22 @@ jobs:
           POSTGRES_DB: postgres
         ports:
           - 5432:5432
+      rabbitmq:
+        image: rabbitmq
+        ports:
+          - 5672:5672
     steps:
+    - name: Prune unused docker image, volumes and containers
+      run: docker system prune -a -f
+    - name: Clean dotnet folder for space
+      if: matrix.subset == 'kubernetes'
+      run: rm -Rf /usr/share/dotnet
     - name: Setup Minikube
       if: matrix.subset == 'kubernetes'
       id: minikube
-      uses: CodingNagger/minikube-setup-action@v1.0.2
+      uses: CodingNagger/minikube-setup-action@v1.0.3
+      with:
+        minikube-version: "1.9.0-0_amd64"
     - name: Launch Minikube
       if: matrix.subset == 'kubernetes'
       run: eval ${{ steps.minikube.outputs.launcher }}
@@ -32,9 +43,8 @@ jobs:
       if: matrix.subset == 'kubernetes'
       run: |
         kubectl get pods
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
       with:
-        fetch-depth: 1
         path: 'galaxy root'
     - uses: actions/setup-python@v1
       with:
@@ -44,6 +54,10 @@ jobs:
       id: pip-cache
       with:
         path: ~/.cache/pip
-        key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
+        key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
+    - name: Install ffmpeg
+      run: sudo apt-get update && sudo apt-get install ffmpeg -y
+      if: matrix.subset == 'upload_datatype'
     - name: Run tests
       run: './run_tests.sh -integration test/integration -- -k "${{ matrix.subset }}"'
+      working-directory: 'galaxy root'

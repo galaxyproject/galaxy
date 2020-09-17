@@ -29,7 +29,7 @@ def parse_tool_provided_metadata(meta_file, provided_metadata_style=None, job_wr
 
 def _guess_tool_provided_metadata_style(path):
     try:
-        with open(path, "r") as f:
+        with open(path) as f:
             metadata = json.load(f)
         metadata_type = metadata.get("type", None)
         return "legacy" if metadata_type in ["dataset", "new_primary_dataset"] else "default"
@@ -39,7 +39,7 @@ def _guess_tool_provided_metadata_style(path):
         return "legacy"
 
 
-class BaseToolProvidedMetadata(object):
+class BaseToolProvidedMetadata:
 
     def get_new_datasets(self, output_name):
         """Find new datasets for dataset discovery for specified output.
@@ -104,7 +104,7 @@ class LegacyToolProvidedMetadata(BaseToolProvidedMetadata):
         self.meta_file = meta_file
         self.tool_provided_job_metadata = []
 
-        with open(meta_file, 'r') as f:
+        with open(meta_file) as f:
             for line in f:
                 try:
                     line = stringify_dictionary_keys(json.loads(line))
@@ -182,7 +182,7 @@ class ToolProvidedMetadata(BaseToolProvidedMetadata):
 
     def __init__(self, meta_file):
         self.meta_file = meta_file
-        with open(meta_file, 'r') as f:
+        with open(meta_file) as f:
             self.tool_provided_job_metadata = json.load(f)
 
     def get_dataset_meta(self, output_name, dataset_id, dataset_uuid):

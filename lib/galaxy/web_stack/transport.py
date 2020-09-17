@@ -1,6 +1,5 @@
 """Web application stack operations
 """
-from __future__ import absolute_import
 
 import logging
 import threading
@@ -16,7 +15,7 @@ except ImportError:
 log = logging.getLogger(__name__)
 
 
-class ApplicationStackTransport(object):
+class ApplicationStackTransport:
     SHUTDOWN_MSG = '__SHUTDOWN__'
 
     def __init__(self, app, stack, dispatcher=None):
@@ -85,7 +84,7 @@ class UWSGIFarmMessageTransport(ApplicationStackTransport):
         #     log.debug('Created %s uWSGI locks' % len(self.lock_map))
 
     def __init__(self, app, stack, dispatcher=None):
-        super(UWSGIFarmMessageTransport, self).__init__(app, stack, dispatcher=dispatcher)
+        super().__init__(app, stack, dispatcher=dispatcher)
 
     def __lock(self, name_or_id):
         try:
@@ -142,11 +141,11 @@ class UWSGIFarmMessageTransport(ApplicationStackTransport):
                 raise RuntimeError('Mule %s is in multiple farms! This configuration is not supported due to locking issues' % uwsgi.mule_id())
             # only mules receive messages so don't bother starting the dispatcher if we're not a mule (although
             # currently it doesn't have any registered handlers and so wouldn't start anyway)
-            super(UWSGIFarmMessageTransport, self).start()
+            super().start()
 
     def shutdown(self):
         if self.stack._is_mule:
-            super(UWSGIFarmMessageTransport, self).shutdown()
+            super().shutdown()
 
     def send_message(self, msg, dest):
         log.debug('Sending message to farm %s: %s', dest, msg)

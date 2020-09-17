@@ -11,19 +11,11 @@ def check_python():
     if sys.version_info[:2] >= (3, 5):
         # supported
         return
-    elif sys.version_info[:2] == (2, 7):
-        msg = """\
-Galaxy support for Python 2.7 is deprecated, please consider moving to
-Python >= 3.5 .
-https://docs.galaxyproject.org/en/latest/admin/python.html contains instructions
-on how to force Galaxy to use a different version."""
-        print(msg, file=sys.stderr)
-        return
     else:
         version_string = '.'.join(str(_) for _ in sys.version_info[:3])
         msg = """\
 ERROR: Your Python version is: %s
-Galaxy is currently supported on Python 2.7 (although deprecated) and >=3.5 .
+Galaxy is currently supported on Python >=3.5 .
 To run Galaxy, please install a supported Python version.
 If a supported version is already installed but is not your default,
 https://docs.galaxyproject.org/en/latest/admin/python.html contains instructions

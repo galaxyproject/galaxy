@@ -22,12 +22,12 @@ class InstalledRepositoryMetadataManager(MetadataGenerator):
                  shed_config_dict=None, relative_install_dir=None, repository_files_dir=None,
                  resetting_all_metadata_on_repository=False, updating_installed_repository=False,
                  persist=False, metadata_dict=None):
-        super(InstalledRepositoryMetadataManager, self).__init__(app, repository, changeset_revision,
-                                                                 repository_clone_url, shed_config_dict,
-                                                                 relative_install_dir, repository_files_dir,
-                                                                 resetting_all_metadata_on_repository,
-                                                                 updating_installed_repository, persist,
-                                                                 metadata_dict=metadata_dict, user=None)
+        super().__init__(app, repository, changeset_revision,
+                         repository_clone_url, shed_config_dict,
+                         relative_install_dir, repository_files_dir,
+                         resetting_all_metadata_on_repository,
+                         updating_installed_repository, persist,
+                         metadata_dict=metadata_dict, user=None)
         if tpm is None:
             self.tpm = tool_panel_manager.ToolPanelManager(self.app)
         else:
@@ -39,7 +39,7 @@ class InstalledRepositoryMetadataManager(MetadataGenerator):
         query = self.get_query_for_setting_metadata_on_repositories(order=True)
         for repository in query:
             owner = str(repository.owner)
-            option_label = '%s (%s)' % (str(repository.name), owner)
+            option_label = '{} ({})'.format(str(repository.name), owner)
             option_value = '%s' % self.app.security.encode_id(repository.id)
             repositories_select_field.add_option(option_label, option_value)
         return repositories_select_field
@@ -143,7 +143,7 @@ class InstalledRepositoryMetadataManager(MetadataGenerator):
         return message, status
 
     def set_repository(self, repository):
-        super(InstalledRepositoryMetadataManager, self).set_repository(repository)
+        super().set_repository(repository)
         self.repository_clone_url = common_util.generate_clone_url_for_installed_repository(self.app, repository)
 
     def tool_shed_from_repository_clone_url(self):

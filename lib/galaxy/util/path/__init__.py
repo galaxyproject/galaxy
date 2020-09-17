@@ -1,10 +1,10 @@
 """Path manipulation functions.
 """
-from __future__ import absolute_import
 
 import errno
 import imp
 import logging
+import shlex
 from functools import partial
 try:
     from grp import getgrgid
@@ -37,8 +37,6 @@ try:
 except ImportError:
     getpwuid = None
 
-from six import iteritems, string_types
-from six.moves import filter, map, zip
 
 import galaxy.util
 
@@ -47,49 +45,49 @@ WALK_MAX_DIRS = 10000
 log = logging.getLogger(__name__)
 
 
-def safe_path(path, whitelist=None):
-    """Ensure that a the absolute location of the path (after following symlinks) is either itself or on the whitelist
+def safe_path(path, allowlist=None):
+    """Ensure that a the absolute location of the path (after following symlinks) is either itself or on the allowlist
     of acceptable locations.
 
     This function does not perform an existence check, thus, if the path does not exist, ``True`` is returned.
 
     :type path:         string
     :param path:        a path to check
-    :type whitelist:    comma separated list of strings
-    :param whitelist:   list of acceptable locations
-    :return:            ``True`` if ``path`` resolves to itself or a whitelisted location
+    :type allowlist:    comma separated list of strings
+    :param allowlist:   list of acceptable locations
+    :return:            ``True`` if ``path`` resolves to itself or a allowlisted location
     """
-    return any(__contains(dirname(path), path, whitelist=whitelist))
+    return any(__contains(dirname(path), path, allowlist=allowlist))
 
 
-def safe_contains(prefix, path, whitelist=None, real=None):
+def safe_contains(prefix, path, allowlist=None, real=None):
     """Ensure a path is contained within another path.
 
     Given any two filesystem paths, ensure that ``path`` is contained in ``prefix``. If ``path`` exists (either as an
     absolute path or relative to ``prefix``), it is canonicalized with :func:`os.path.realpath` to ensure it is not a
-    symbolic link that points outside of ``prefix``. If it is a symbolic link and ``whitelist`` is set, the symbolic link
-    may also point inside a ``whitelist`` path.
+    symbolic link that points outside of ``prefix``. If it is a symbolic link and ``allowlist`` is set, the symbolic link
+    may also point inside a ``allowlist`` path.
 
-    The ``path`` is checked against ``whitelist`` using either its absolute pathname (if passed in as absolute) or
-    relative to ``prefix`` and canonicalized (if applicable). It is *not* ``os.path.join()``ed with each ``whitelist``
+    The ``path`` is checked against ``allowlist`` using either its absolute pathname (if passed in as absolute) or
+    relative to ``prefix`` and canonicalized (if applicable). It is *not* ``os.path.join()``ed with each ``allowlist``
     directory.
 
     :type prefix:       string
     :param prefix:      a directory under which ``path`` is to be checked
     :type path:         string
     :param path:        a filename to check
-    :type whitelist:    list of strings
-    :param whitelist:   list of additional paths under which ``path`` may be located
+    :type allowlist:    list of strings
+    :param allowlist:   list of additional paths under which ``path`` may be located
     :rtype:             bool
-    :returns:           ``True`` if ``path`` is contained within ``prefix`` or ``whitelist``, ``False`` otherwise.
+    :returns:           ``True`` if ``path`` is contained within ``prefix`` or ``allowlist``, ``False`` otherwise.
     """
-    return any(__contains(prefix, path, whitelist=whitelist, real=real))
+    return any(__contains(prefix, path, allowlist=allowlist, real=real))
 
 
-class _SafeContainsDirectoryChecker(object):
+class _SafeContainsDirectoryChecker:
 
-    def __init__(self, dirpath, prefix, whitelist=None):
-        self.whitelist = whitelist
+    def __init__(self, dirpath, prefix, allowlist=None):
+        self.allowlist = allowlist
         self.dirpath = dirpath
         self.prefix = prefix
         self.real_dirpath = realpath(join(prefix, dirpath))
@@ -97,9 +95,9 @@ class _SafeContainsDirectoryChecker(object):
     def check(self, filename):
         dirpath_path = join(self.real_dirpath, filename)
         if islink(dirpath_path):
-            return safe_contains(self.prefix, filename, whitelist=self.whitelist)
+            return safe_contains(self.prefix, filename, allowlist=self.allowlist)
         else:
-            return safe_contains(self.prefix, filename, whitelist=self.whitelist, real=dirpath_path)
+            return safe_contains(self.prefix, filename, allowlist=self.allowlist, real=dirpath_path)
 
 
 def safe_makedirs(path):
@@ -133,24 +131,24 @@ def safe_relpath(path):
     return not (isabs(path) or normpath(path).startswith(pardir))
 
 
-def safe_walk(path, whitelist=None):
+def safe_walk(path, allowlist=None):
     """Walk a path and return only the contents that are not symlinks outside the path.
 
-    Symbolic links are followed if a whitelist is provided. The path itself cannot be a symbolic link unless the pointed
-    to location is in the whitelist.
+    Symbolic links are followed if a allowlist is provided. The path itself cannot be a symbolic link unless the pointed
+    to location is in the allowlist.
 
     :type path:         string
     :param path:        a directory to check for unsafe contents
-    :type whitelist:    list of strings
-    :param whitelist:   list of additional paths under which contents may be located
+    :type allowlist:    list of strings
+    :param allowlist:   list of additional paths under which contents may be located
     :rtype:             iterator
     :returns:           Iterator of "safe" ``os.walk()`` tuples found under ``path``
     """
-    for i, elems in enumerate(walk(path, followlinks=bool(whitelist)), start=1):
+    for i, elems in enumerate(walk(path, followlinks=bool(allowlist)), start=1):
         dirpath, dirnames, filenames = elems
-        _check = _SafeContainsDirectoryChecker(dirpath, path, whitelist=None).check
+        _check = _SafeContainsDirectoryChecker(dirpath, path, allowlist=None).check
 
-        if whitelist and i % WALK_MAX_DIRS == 0:
+        if allowlist and i % WALK_MAX_DIRS == 0:
             raise RuntimeError(
                 'Breaking out of walk of %s after %s iterations (most likely infinite symlink recursion) at: %s' %
                 (path, WALK_MAX_DIRS, dirpath))
@@ -175,7 +173,7 @@ def safe_walk(path, whitelist=None):
         yield (dirpath, dirnames, filenames)
 
 
-def unsafe_walk(path, whitelist=None, username=None):
+def unsafe_walk(path, allowlist=None, username=None):
     """Walk a path and ensure that none of its contents are symlinks outside the path.
 
     It is assumed that ``path`` itself has already been validated e.g. with :func:`safe_relpath` or
@@ -184,14 +182,14 @@ def unsafe_walk(path, whitelist=None, username=None):
 
     :type path:         string
     :param path:        a directory to check for unsafe contents
-    :type whitelist:    list of strings
-    :param whitelist:   list of additional paths under which contents may be located
+    :type allowlist:    list of strings
+    :param allowlist:   list of additional paths under which contents may be located
     :rtype:             list of strings
     :returns:           A list of "bad" files found under ``path``
     """
     unsafe_paths = []
     for walked_path in __walk(abspath(path)):
-        is_safe = safe_contains(path, walked_path, whitelist=whitelist)
+        is_safe = safe_contains(path, walked_path, allowlist=allowlist)
         if username and is_safe:
             is_safe = full_path_permission_for_user(path, walked_path, username=username, skip_prefix=True)
         if not is_safe:
@@ -325,7 +323,7 @@ class Extensions(dict):
     The first item in the sequence should match the key and is the "canonicalization".
     """
     def __missing__(self, key):
-        for k, v in iteritems(self):
+        for k, v in self.items():
             if key in v:
                 self[key] = v
                 return v
@@ -341,6 +339,31 @@ extensions = Extensions({
     'json': ['json'],
     'yaml': ['yaml', 'yml'],
 })
+
+
+def external_chown(path, pwent, external_chown_script, description="file"):
+    """
+    call the external chown script (if not None) to change
+    the user and group of the given path, and additional description
+    of the file/path for the log message can be given
+
+    return
+    - None if external_chown_script is None
+    - True in case of success
+    - False in case of failure
+    """
+    if external_chown_script is None:
+        return None
+
+    try:
+        cmd = shlex.split(external_chown_script)
+        cmd.extend([path, pwent[0], str(pwent[3])])
+        log.debug('Changing ownership of {} with: {}'.format(path, ' '.join(cmd)))
+        galaxy.util.commands.execute(cmd)
+        return True
+    except galaxy.util.commands.CommandLineException as e:
+        log.warning('Changing ownership of {} {} failed: {}'.format(description, path, galaxy.util.unicodify(e)))
+        return False
 
 
 def __listify(item):
@@ -365,12 +388,12 @@ def __walk(path):
             yield join(dirpath, name)
 
 
-def __contains(prefix, path, whitelist=None, real=None):
+def __contains(prefix, path, allowlist=None, real=None):
     real = real or realpath(join(prefix, path))
     yield not relpath(real, prefix).startswith(pardir)
-    for wldir in whitelist or []:
-        # a path is under the whitelist if the relative path between it and the whitelist does not have to go up (..)
-        yield not relpath(real, wldir).startswith(pardir)
+    for aldir in allowlist or []:
+        # a path is under the allowlist if the relative path between it and the allowlist does not have to go up (..)
+        yield not relpath(real, aldir).startswith(pardir)
 
 
 def __ext_strip_sep(ext):
@@ -410,7 +433,7 @@ def _build_self(target, path_module):
 def __copy_self(names=__name__, parent=None):
     """Returns a copy of this module that can be modified without modifying `galaxy.util.path`` in ``sys.modules``.
     """
-    if isinstance(names, string_types):
+    if isinstance(names, str):
         names = iter(names.split('.'))
     try:
         name = next(names)

@@ -1,6 +1,5 @@
 # converter for ldreduced rgenetics datatype
 # used for grr and eigenstrat - shellfish if we get around to it
-from __future__ import print_function
 
 import os
 import subprocess
@@ -43,13 +42,13 @@ def pruneLD(plinktasks=[], cd='./', vclbase=[]):
         with open(plog, 'w') as sto:
             subprocess.check_call(vcl, stdout=sto, stderr=sto, cwd=cd)
         try:
-            lplog = open(plog, 'r').readlines()
+            lplog = open(plog).readlines()
             lplog = [elem for elem in lplog if elem.find('Pruning SNP') == -1]
             alog += lplog
             alog.append('\n')
             os.unlink(plog)  # no longer needed
         except Exception:
-            alog.append('### %s Strange - no std out from plink when running command line\n%s\n' % (timenow(), ' '.join(vcl)))
+            alog.append('### {} Strange - no std out from plink when running command line\n{}\n'.format(timenow(), ' '.join(vcl)))
     return alog
 
 
@@ -61,8 +60,8 @@ def makeLDreduced(basename, infpath=None, outfpath=None, plinke='plink', forcere
     inbase = os.path.join(infpath)
     plinktasks = []
     vclbase = [plinke, '--noweb']
-    plinktasks += [['--bfile', inbase, '--indep-pairwise %s %s %s' % (winsize, winmove, r2thresh), '--out %s' % outbase],
-                   ['--bfile', inbase, '--extract %s.prune.in --make-bed --out %s' % (outbase, outbase)]]
+    plinktasks += [['--bfile', inbase, '--indep-pairwise {} {} {}'.format(winsize, winmove, r2thresh), '--out %s' % outbase],
+                   ['--bfile', inbase, '--extract {}.prune.in --make-bed --out {}'.format(outbase, outbase)]]
     vclbase = [plinke, '--noweb']
     pruneLD(plinktasks=plinktasks, cd=outfpath, vclbase=vclbase)
 
@@ -100,12 +99,12 @@ def main():
     flist = os.listdir(outfilepath)
     with open(outhtmlname, 'w') as f:
         f.write(galhtmlprefix % prog)
-        s1 = '## Rgenetics: http://rgenetics.org Galaxy Tools %s %s' % (prog, timenow())  # becomes info
-        s2 = 'Input %s, winsize=%s, winmove=%s, r2thresh=%s' % (base_name, winsize, winmove, r2thresh)
-        print('%s %s' % (s1, s2))
-        f.write('<div>%s\n%s\n<ol>' % (s1, s2))
+        s1 = '## Rgenetics: http://rgenetics.org Galaxy Tools {} {}'.format(prog, timenow())  # becomes info
+        s2 = 'Input {}, winsize={}, winmove={}, r2thresh={}'.format(base_name, winsize, winmove, r2thresh)
+        print('{} {}'.format(s1, s2))
+        f.write('<div>{}\n{}\n<ol>'.format(s1, s2))
         for i, data in enumerate(flist):
-            f.write('<li><a href="%s">%s</a></li>\n' % (os.path.split(data)[-1], os.path.split(data)[-1]))
+            f.write('<li><a href="{}">{}</a></li>\n'.format(os.path.split(data)[-1], os.path.split(data)[-1]))
         f.write("</div></body></html>")
 
 

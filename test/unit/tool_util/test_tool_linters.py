@@ -1,9 +1,8 @@
-import xml.etree.ElementTree as ET
-
 import pytest
 
 from galaxy.tool_util.lint import LintContext
 from galaxy.tool_util.linters import inputs
+from galaxy.util import etree
 
 
 NO_SECTIONS_XML = """
@@ -36,6 +35,6 @@ TESTS = [
 @pytest.mark.parametrize('tool_xml,lint_func,assert_func', TESTS, ids=['Lint no sections', 'lint no when'])
 def test_tool_xml(tool_xml, lint_func, assert_func):
     lint_ctx = LintContext('all')
-    tree = ET.ElementTree(element=ET.fromstring(tool_xml))
+    tree = etree.ElementTree(element=etree.fromstring(tool_xml))
     lint_ctx.lint(name="test_lint", lint_func=lint_func, lint_target=tree)
     assert assert_func(lint_ctx)

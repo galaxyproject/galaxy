@@ -1,33 +1,28 @@
-from __future__ import absolute_import
-
 import logging
 import os
 from collections import OrderedDict
 
 import yaml
+try:
+    from yaml import CSafeLoader as SafeLoader
+except ImportError:
+    from yaml import SafeLoader
 from yaml.constructor import ConstructorError
 
 
 log = logging.getLogger(__name__)
 
-OPTION_DEFAULTS = {
-    "type": "str",
-    "unknown_option": False,
-    "default": None,
-    "desc": None,
-}
 
-
-class OrderedLoader(yaml.SafeLoader):
+class OrderedLoader(SafeLoader):
     # This class was pulled out of ordered_load() for the sake of
     # mocking __init__ in a unit test.
     def __init__(self, stream):
         self._root = os.path.split(stream.name)[0]
-        super(OrderedLoader, self).__init__(stream)
+        super().__init__(stream)
 
     def include(self, node):
         filename = os.path.join(self._root, self.construct_scalar(node))
-        with open(filename, 'r') as f:
+        with open(filename) as f:
             return yaml.load(f, OrderedLoader)
 
 

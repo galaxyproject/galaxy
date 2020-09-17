@@ -1,8 +1,6 @@
 """
 Classes for generating HTML forms
 """
-from __future__ import absolute_import
-from __future__ import print_function
 
 import logging
 
@@ -13,7 +11,7 @@ from galaxy.util import (
 log = logging.getLogger(__name__)
 
 
-class BaseField(object):
+class BaseField:
     def __init__(self, name, value=None, label=None, **kwds):
         self.name = name
         self.label = label
@@ -41,7 +39,7 @@ class TextField(BaseField):
     A standard text input box.
     """
     def to_dict(self):
-        d = super(TextField, self).to_dict()
+        d = super().to_dict()
         d['type'] = 'text'
         return d
 
@@ -51,7 +49,7 @@ class PasswordField(BaseField):
     A password input box. text appears as "******"
     """
     def to_dict(self):
-        d = super(PasswordField, self).to_dict()
+        d = super().to_dict()
         d['type'] = 'password'
         return d
 
@@ -61,7 +59,7 @@ class TextArea(BaseField):
     A standard text area box.
     """
     def to_dict(self):
-        d = super(TextArea, self).to_dict()
+        d = super().to_dict()
         d['type'] = 'text'
         d['area'] = True
         return d
@@ -78,7 +76,7 @@ class CheckboxField(BaseField):
         return False
 
     def to_dict(self):
-        d = super(CheckboxField, self).to_dict()
+        d = super().to_dict()
         d['type'] = 'boolean'
         return d
 
@@ -89,7 +87,7 @@ class SelectField(BaseField):
     """
 
     def __init__(self, name, multiple=None, display=None, field_id=None, value=None, selectlist=None, refresh_on_change=False, **kwds):
-        super(SelectField, self).__init__(name, value, **kwds)
+        super().__init__(name, value, **kwds)
         self.field_id = field_id
         self.multiple = multiple or False
         self.refresh_on_change = refresh_on_change
@@ -107,7 +105,7 @@ class SelectField(BaseField):
         self.options.append((text, value, selected))
 
     def to_dict(self):
-        d = super(SelectField, self).to_dict()
+        d = super().to_dict()
         d['type'] = 'select'
         d['display'] = self.display
         d['multiple'] = self.multiple
@@ -132,12 +130,12 @@ class AddressField(BaseField):
                 ("phone", "Phone", "")]
 
     def __init__(self, name, user=None, value=None, security=None, **kwds):
-        super(AddressField, self).__init__(name, value, **kwds)
+        super().__init__(name, value, **kwds)
         self.user = user
         self.security = security
 
     def to_dict(self):
-        d = super(AddressField, self).to_dict()
+        d = super().to_dict()
         d['type'] = 'select'
         d['data'] = []
         if self.user and self.security:
@@ -149,13 +147,13 @@ class AddressField(BaseField):
 
 class WorkflowField(BaseField):
     def __init__(self, name, user=None, value=None, security=None, **kwds):
-        super(WorkflowField, self).__init__(name, value, **kwds)
+        super().__init__(name, value, **kwds)
         self.user = user
         self.value = value
         self.security = security
 
     def to_dict(self):
-        d = super(WorkflowField, self).to_dict()
+        d = super().to_dict()
         d['type'] = 'select'
         d['data'] = []
         if self.user and self.security:
@@ -167,19 +165,19 @@ class WorkflowField(BaseField):
 
 class WorkflowMappingField(BaseField):
     def __init__(self, name, user=None, value=None, **kwds):
-        super(WorkflowMappingField, self).__init__(name, value, **kwds)
+        super().__init__(name, value, **kwds)
         self.user = user
 
 
 class HistoryField(BaseField):
     def __init__(self, name, user=None, value=None, security=None, **kwds):
-        super(HistoryField, self).__init__(name, value, **kwds)
+        super().__init__(name, value, **kwds)
         self.user = user
         self.value = value
         self.security = security
 
     def to_dict(self):
-        d = super(HistoryField, self).to_dict()
+        d = super().to_dict()
         d['type'] = 'select'
         d['data'] = [{'label': 'New History', 'value': 'new'}]
         if self.user and self.security:

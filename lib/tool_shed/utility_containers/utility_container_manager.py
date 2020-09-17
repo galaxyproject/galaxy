@@ -8,7 +8,7 @@ from tool_shed.util import repository_util
 log = logging.getLogger(__name__)
 
 
-class Folder(object):
+class Folder:
     """Container object."""
 
     def __init__(self, id=None, key=None, label=None, parent=None):
@@ -56,7 +56,7 @@ class Folder(object):
                 self.repository_dependencies.remove(contained_repository_dependency)
 
 
-class DataManager(object):
+class DataManager:
     """Data Manager object"""
 
     def __init__(self, id=None, name=None, version=None, data_tables=None):
@@ -66,7 +66,7 @@ class DataManager(object):
         self.data_tables = data_tables
 
 
-class Datatype(object):
+class Datatype:
     """Datatype object"""
 
     def __init__(self, id=None, extension=None, type=None, mimetype=None, subclass=None, converters=None, display_app_containers=None):
@@ -79,7 +79,7 @@ class Datatype(object):
         self.display_app_containers = display_app_containers
 
 
-class InvalidDataManager(object):
+class InvalidDataManager:
     """Invalid data Manager object"""
 
     def __init__(self, id=None, index=None, error=None):
@@ -88,7 +88,7 @@ class InvalidDataManager(object):
         self.error = error
 
 
-class InvalidTool(object):
+class InvalidTool:
     """Invalid tool object"""
 
     def __init__(self, id=None, tool_config=None, repository_id=None, changeset_revision=None, repository_installation_status=None):
@@ -99,7 +99,7 @@ class InvalidTool(object):
         self.repository_installation_status = repository_installation_status
 
 
-class ReadMe(object):
+class ReadMe:
     """Readme text object"""
 
     def __init__(self, id=None, name=None, text=None):
@@ -108,7 +108,7 @@ class ReadMe(object):
         self.text = text
 
 
-class RepositoryDependency(object):
+class RepositoryDependency:
     """Repository dependency object"""
 
     def __init__(self, id=None, toolshed=None, repository_name=None, repository_owner=None, changeset_revision=None, prior_installation_required=False,
@@ -133,7 +133,7 @@ class RepositoryDependency(object):
                 self.only_if_compiling_contained_td]
 
 
-class Tool(object):
+class Tool:
     """Tool object"""
 
     def __init__(self, id=None, tool_config=None, tool_id=None, name=None, description=None, version=None, profile=None, requirements=None,
@@ -151,7 +151,7 @@ class Tool(object):
         self.repository_installation_status = repository_installation_status
 
 
-class ToolDependency(object):
+class ToolDependency:
     """Tool dependency object"""
 
     def __init__(self, id=None, name=None, version=None, type=None, readme=None, installation_status=None, repository_id=None,
@@ -170,7 +170,7 @@ class ToolDependency(object):
         return [self.name, self.version, self.type]
 
 
-class Workflow(object):
+class Workflow:
     """Workflow object."""
 
     def __init__(self, id=None, workflow_name=None, steps=None, format_version=None, annotation=None,
@@ -189,7 +189,7 @@ class Workflow(object):
         self.repository_id = repository_id
 
 
-class UtilityContainerManager(object):
+class UtilityContainerManager:
 
     def __init__(self, app):
         self.app = app
@@ -471,7 +471,7 @@ class UtilityContainerManager(object):
                         except Exception as e:
                             requirement_name = str(e)
                             requirement_type = 'unknown'
-                        requirements_str += '%s (%s), ' % (requirement_name, requirement_type)
+                        requirements_str += '{} ({}), '.format(requirement_name, requirement_type)
                     requirements_str = requirements_str.rstrip(', ')
                 else:
                     requirements_str = 'none'

@@ -1,7 +1,6 @@
 """
 Migration script to add the email_alerts column to the repository table.
 """
-from __future__ import print_function
 
 import logging
 import sys

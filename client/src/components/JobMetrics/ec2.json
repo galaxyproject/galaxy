@@ -1,0 +1,306 @@
+[
+  {
+    "name": "t2.nano",
+    "mem": 0.5,
+    "price": 0.0067,
+    "priceunit": "Hrs",
+    "vcpus": 1,
+    "cpu": "Intel Xeon Family"
+  },
+  {
+    "name": "t3.nano",
+    "mem": 0.5,
+    "price": 0.006,
+    "priceunit": "Hrs",
+    "vcpus": 2,
+    "cpu": "Intel Skylake E5 2686 v5 (2.5 GHz)"
+  },
+  {
+    "name": "t2.micro",
+    "mem": 1,
+    "price": 0.0134,
+    "priceunit": "Hrs",
+    "vcpus": 1,
+    "cpu": "Intel Xeon Family"
+  },
+  {
+    "name": "t3.micro",
+    "mem": 1,
+    "price": 0.012,
+    "priceunit": "Hrs",
+    "vcpus": 2,
+    "cpu": "Intel Skylake E5 2686 v5 (2.5 GHz)"
+  },
+  {
+    "name": "t2.small",
+    "mem": 2,
+    "price": 0.0268,
+    "priceunit": "Hrs",
+    "vcpus": 1,
+    "cpu": "Intel Xeon Family"
+  },
+  {
+    "name": "t3.small",
+    "mem": 2,
+    "price": 0.024,
+    "priceunit": "Hrs",
+    "vcpus": 2,
+    "cpu": "Intel Skylake E5 2686 v5 (2.5 GHz)"
+  },
+  {
+    "name": "m3.medium",
+    "mem": 3.75,
+    "price": 0.079,
+    "priceunit": "Hrs",
+    "vcpus": 1,
+    "cpu": "Intel Xeon E5-2670 v2 (Ivy Bridge/Sandy Bridge)"
+  },
+  {
+    "name": "t2.medium",
+    "mem": 4,
+    "price": 0.0536,
+    "priceunit": "Hrs",
+    "vcpus": 2,
+    "cpu": "Intel Xeon Family"
+  },
+  {
+    "name": "t3.medium",
+    "mem": 4,
+    "price": 0.048,
+    "priceunit": "Hrs",
+    "vcpus": 2,
+    "cpu": "Intel Skylake E5 2686 v5 (2.5 GHz)"
+  },
+  {
+    "name": "m3.large",
+    "mem": 7.5,
+    "price": 0.158,
+    "priceunit": "Hrs",
+    "vcpus": 2,
+    "cpu": "Intel Xeon E5-2670 v2 (Ivy Bridge/Sandy Bridge)"
+  },
+  {
+    "name": "t2.large",
+    "mem": 8,
+    "price": 0.1072,
+    "priceunit": "Hrs",
+    "vcpus": 2,
+    "cpu": "Intel Xeon Family"
+  },
+  {
+    "name": "t3.large",
+    "mem": 8,
+    "price": 0.096,
+    "priceunit": "Hrs",
+    "vcpus": 2,
+    "cpu": "Intel Skylake E5 2686 v5 (2.5 GHz)"
+  },
+  {
+    "name": "m5.large",
+    "mem": 8,
+    "price": 0.115,
+    "priceunit": "Hrs",
+    "vcpus": 2,
+    "cpu": "Intel Xeon Platinum 8175"
+  },
+  {
+    "name": "m5d.large",
+    "mem": 8,
+    "price": 0.136,
+    "priceunit": "Hrs",
+    "vcpus": 2,
+    "cpu": "Intel Xeon Platinum 8175"
+  },
+  {
+    "name": "m4.large",
+    "mem": 8,
+    "price": 0.12,
+    "priceunit": "Hrs",
+    "vcpus": 2,
+    "cpu": "Intel Xeon E5-2676 v3 (Haswell)"
+  },
+  {
+    "name": "m3.xlarge",
+    "mem": 15,
+    "price": 0.315,
+    "priceunit": "Hrs",
+    "vcpus": 4,
+    "cpu": "Intel Xeon E5-2670 v2 (Ivy Bridge/Sandy Bridge)"
+  },
+  {
+    "name": "m5.xlarge",
+    "mem": 16,
+    "price": 0.23,
+    "priceunit": "Hrs",
+    "vcpus": 4,
+    "cpu": "Intel Xeon Platinum 8175"
+  },
+  {
+    "name": "m4.xlarge",
+    "mem": 16,
+    "price": 0.24,
+    "priceunit": "Hrs",
+    "vcpus": 4,
+    "cpu": "Intel Xeon E5-2676 v3 (Haswell)"
+  },
+  {
+    "name": "t3.xlarge",
+    "mem": 16,
+    "price": 0.192,
+    "priceunit": "Hrs",
+    "vcpus": 4,
+    "cpu": "Intel Skylake E5 2686 v5 (2.5 GHz)"
+  },
+  {
+    "name": "t2.xlarge",
+    "mem": 16,
+    "price": 0.2144,
+    "priceunit": "Hrs",
+    "vcpus": 4,
+    "cpu": "Intel Xeon Family"
+  },
+  {
+    "name": "m5d.xlarge",
+    "mem": 16,
+    "price": 0.272,
+    "priceunit": "Hrs",
+    "vcpus": 4,
+    "cpu": "Intel Xeon Platinum 8175"
+  },
+  {
+    "name": "m3.2xlarge",
+    "mem": 30,
+    "price": 0.632,
+    "priceunit": "Hrs",
+    "vcpus": 8,
+    "cpu": "Intel Xeon E5-2670 v2 (Ivy Bridge/Sandy Bridge)"
+  },
+  {
+    "name": "m5d.2xlarge",
+    "mem": 32,
+    "price": 0.544,
+    "priceunit": "Hrs",
+    "vcpus": 8,
+    "cpu": "Intel Xeon Platinum 8175"
+  },
+  {
+    "name": "m5.2xlarge",
+    "mem": 32,
+    "price": 0.46,
+    "priceunit": "Hrs",
+    "vcpus": 8,
+    "cpu": "Intel Xeon Platinum 8175"
+  },
+  {
+    "name": "m4.2xlarge",
+    "mem": 32,
+    "price": 0.48,
+    "priceunit": "Hrs",
+    "vcpus": 8,
+    "cpu": "Intel Xeon E5-2676 v3 (Haswell)"
+  },
+  {
+    "name": "t3.2xlarge",
+    "mem": 32,
+    "price": 0.384,
+    "priceunit": "Hrs",
+    "vcpus": 8,
+    "cpu": "Intel Skylake E5 2686 v5 (2.5 GHz)"
+  },
+  {
+    "name": "t2.2xlarge",
+    "mem": 32,
+    "price": 0.4288,
+    "priceunit": "Hrs",
+    "vcpus": 8,
+    "cpu": "Intel Xeon Family"
+  },
+  {
+    "name": "m5d.4xlarge",
+    "mem": 64,
+    "price": 1.088,
+    "priceunit": "Hrs",
+    "vcpus": 16,
+    "cpu": "Intel Xeon Platinum 8175"
+  },
+  {
+    "name": "m4.4xlarge",
+    "mem": 64,
+    "price": 0.96,
+    "priceunit": "Hrs",
+    "vcpus": 16,
+    "cpu": "Intel Xeon E5-2676 v3 (Haswell)"
+  },
+  {
+    "name": "m5.4xlarge",
+    "mem": 64,
+    "price": 0.92,
+    "priceunit": "Hrs",
+    "vcpus": 16,
+    "cpu": "Intel Xeon Platinum 8175"
+  },
+  {
+    "name": "m4.10xlarge",
+    "mem": 160,
+    "price": 2.4,
+    "priceunit": "Hrs",
+    "vcpus": 40,
+    "cpu": "Intel Xeon E5-2676 v3 (Haswell)"
+  },
+  {
+    "name": "m5d.12xlarge",
+    "mem": 192,
+    "price": 3.264,
+    "priceunit": "Hrs",
+    "vcpus": 48,
+    "cpu": "Intel Xeon Platinum 8175"
+  },
+  {
+    "name": "m5.12xlarge",
+    "mem": 192,
+    "price": 2.76,
+    "priceunit": "Hrs",
+    "vcpus": 48,
+    "cpu": "Intel Xeon Platinum 8175"
+  },
+  {
+    "name": "m4.16xlarge",
+    "mem": 256,
+    "price": 3.84,
+    "priceunit": "Hrs",
+    "vcpus": 64,
+    "cpu": "Intel Xeon E5-2686 v4 (Broadwell)"
+  },
+  {
+    "name": "m5d.metal",
+    "mem": 384,
+    "price": 6.528,
+    "priceunit": "Hrs",
+    "vcpus": 96,
+    "cpu": "Intel Xeon Platinum 8175"
+  },
+  {
+    "name": "m5.metal",
+    "mem": 384,
+    "price": 5.52,
+    "priceunit": "Hrs",
+    "vcpus": 96,
+    "cpu": "Intel Xeon Platinum 8175"
+  },
+  {
+    "name": "m5d.24xlarge",
+    "mem": 384,
+    "price": 6.528,
+    "priceunit": "Hrs",
+    "vcpus": 96,
+    "cpu": "Intel Xeon Platinum 8175"
+  },
+  {
+    "name": "m5.24xlarge",
+    "mem": 384,
+    "price": 5.52,
+    "priceunit": "Hrs",
+    "vcpus": 96,
+    "cpu": "Intel Xeon Platinum 8175"
+  }
+]

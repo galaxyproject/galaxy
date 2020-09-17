@@ -7,15 +7,13 @@ from abc import (
     abstractmethod
 )
 
-import six
-
 
 def dataset_path_rewrites(dataset_paths):
     dataset_paths_with_rewrites = [path for path in dataset_paths if getattr(path, "false_path", None)]
-    return dict((dp.real_path, dp) for dp in dataset_paths_with_rewrites)
+    return {dp.real_path: dp for dp in dataset_paths_with_rewrites}
 
 
-class DatasetPath(object):
+class DatasetPath:
 
     def __init__(
         self,
@@ -60,8 +58,7 @@ class DatasetPath(object):
         return dataset_path
 
 
-@six.add_metaclass(ABCMeta)
-class DatasetPathRewriter(object):
+class DatasetPathRewriter(metaclass=ABCMeta):
     """ Used by runner to rewrite paths. """
 
     @abstractmethod
@@ -72,7 +69,7 @@ class DatasetPathRewriter(object):
         """
 
 
-class NullDatasetPathRewriter(object):
+class NullDatasetPathRewriter:
     """ Used by default for jobwrapper, do not rewrite anything.
     """
 
@@ -82,7 +79,7 @@ class NullDatasetPathRewriter(object):
         return None
 
 
-class OutputsToWorkingDirectoryPathRewriter(object):
+class OutputsToWorkingDirectoryPathRewriter:
     """ Rewrites all paths to place them in the specified working
     directory for normal jobs when Galaxy is configured with
     app.config.outputs_to_working_directory. Job runner base class
@@ -107,7 +104,7 @@ class OutputsToWorkingDirectoryPathRewriter(object):
             return None
 
 
-class TaskPathRewriter(object):
+class TaskPathRewriter:
     """ Rewrites all paths to place them in the specified working
     directory for TaskWrapper. TaskWrapper is responsible for putting
     them there and pulling them out.

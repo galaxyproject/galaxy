@@ -5,6 +5,7 @@ import tempfile
 
 from galaxy.tool_shed.tools.tool_validator import ToolValidator as GalaxyToolValidator
 from galaxy.tools import Tool
+from galaxy.util import unicodify
 from tool_shed.util import (
     basic_util,
     hg_util,
@@ -29,7 +30,7 @@ class ToolValidator(GalaxyToolValidator):
             # The file no longer exists on disk, so it must have been deleted at some previous
             # point in the change log.
             return False
-        if changeset_revision == repository.tip(self.app):
+        if changeset_revision == repository.tip():
             return True
         file_name = basic_util.strip_path(file_path)
         latest_version_of_file = \
@@ -44,7 +45,7 @@ class ToolValidator(GalaxyToolValidator):
     def concat_messages(self, msg1, msg2):
         if msg1:
             if msg2:
-                message = '%s  %s' % (msg1, msg2)
+                message = '{}  {}'.format(msg1, msg2)
             else:
                 message = msg1
         elif msg2:
@@ -79,7 +80,7 @@ class ToolValidator(GalaxyToolValidator):
         for changeset in hg_util.reversed_upper_bounded_changelog(repo, changeset_revision):
             manifest_ctx = repo[changeset]
             for ctx_file in manifest_ctx.files():
-                ctx_file_name = basic_util.strip_path(ctx_file)
+                ctx_file_name = basic_util.strip_path(unicodify(ctx_file))
                 if ctx_file_name == stripped_filename:
                     try:
                         fctx = manifest_ctx[ctx_file]
@@ -111,6 +112,7 @@ class ToolValidator(GalaxyToolValidator):
         for changeset in hg_util.reversed_upper_bounded_changelog(repo, changeset_revision):
             changeset_ctx = repo[changeset]
             for ctx_file in changeset_ctx.files():
+                ctx_file = unicodify(ctx_file)
                 ctx_file_name = basic_util.strip_path(ctx_file)
                 # If we decide in the future that files deleted later in the changelog should
                 # not be used, we can use the following if statement. if ctx_file_name.endswith( '.sample' )
@@ -131,9 +133,8 @@ class ToolValidator(GalaxyToolValidator):
                     else:
                         sample_files.append(ctx_file_name)
                         tmp_ctx_file_name = os.path.join(dir, ctx_file_name.replace('.sample', ''))
-                        fh = open(tmp_ctx_file_name, 'wb')
-                        fh.write(fctx.data())
-                        fh.close()
+                        with open(tmp_ctx_file_name, 'wb') as fh:
+                            fh.write(fctx.data())
         return sample_files, deleted_sample_files
 
     def handle_sample_files_and_load_tool_from_disk(self, repo_files_dir, repository_id, tool_config_filepath, work_dir):
@@ -183,7 +184,7 @@ class ToolValidator(GalaxyToolValidator):
         """
         repository = repository_util.get_repository_in_tool_shed(self.app, repository_id)
         repo_files_dir = repository.repo_path(self.app)
-        repo = hg_util.get_repo_for_repository(self.app, repo_path=repo_files_dir)
+        repo = repository.hg_repo
         tool_config_filepath = repository_util.get_absolute_path_to_file_in_repository(repo_files_dir, tool_config_filename)
         work_dir = tempfile.mkdtemp(prefix="tmp-toolshed-ltfcr")
         can_use_disk_file = self.can_use_tool_config_disk_file(repository,

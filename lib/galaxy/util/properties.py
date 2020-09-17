@@ -9,7 +9,6 @@ from functools import partial
 from itertools import product, starmap
 
 import yaml
-from six import iteritems, string_types
 from six.moves.configparser import ConfigParser
 
 from galaxy.exceptions import InvalidFileFormatError
@@ -117,12 +116,12 @@ def read_properties_from_file(config_file, config_section=None):
         else:
             properties.update(parser.defaults())
     else:
-        raise InvalidFileFormatError()
+        raise InvalidFileFormatError("File '%s' doesn't have a supported extension" % config_file)
     return properties
 
 
 def _read_from_yaml_file(path):
-    with open(path, "r") as f:
+    with open(path) as f:
         return yaml.safe_load(f)
 
 
@@ -151,7 +150,7 @@ class NicerConfigParser(ConfigParser):
         Mainly to support defaults using values such as %(here)s
         """
         defaults = ConfigParser.defaults(self).copy()
-        for key, val in iteritems(defaults):
+        for key, val in defaults.items():
             defaults[key] = self.get('DEFAULT', key) or val
         return defaults
 
@@ -163,12 +162,12 @@ class NicerConfigParser(ConfigParser):
         except Exception:
             e = sys.exc_info()[1]
             args = list(e.args)
-            args[0] = 'Error in file %s: %s' % (self.filename, e)
+            args[0] = 'Error in file {}: {}'.format(self.filename, e)
             e.args = tuple(args)
             e.message = args[0]
             raise
 
-    class InterpolateWrapper(object):
+    class InterpolateWrapper:
         # Python >= 3.2
         def __init__(self, original):
             self._original = original
@@ -183,7 +182,7 @@ class NicerConfigParser(ConfigParser):
             except Exception:
                 e = sys.exc_info()[1]
                 args = list(e.args)
-                args[0] = 'Error in file %s: %s' % (parser.filename, e)
+                args[0] = 'Error in file {}: {}'.format(parser.filename, e)
                 e.args = tuple(args)
                 e.message = args[0]
                 raise
@@ -214,7 +213,7 @@ def __get_all_configs(dirs, names):
 
 def __find_config_files(names, exts=None, dirs=None, include_samples=False):
     sample_names = []
-    if isinstance(names, string_types):
+    if isinstance(names, str):
         names = [names]
     if not dirs:
         dirs = [os.getcwd()]

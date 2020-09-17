@@ -8,7 +8,7 @@ MAX_READLINES = 200000
 class Nexus_Parser(Newick_Parser):
 
     def __init__(self):
-        super(Nexus_Parser, self).__init__()
+        super().__init__()
 
     def parseFile(self, filePath):
         """passes a file and extracts its Nexus content."""
@@ -21,7 +21,7 @@ class Nexus_Parser(Newick_Parser):
         Nexus can store multiple trees
         """
 
-        with open(filename, "rt") as nex_file:
+        with open(filename) as nex_file:
             nexlines = nex_file.readlines()
 
         rowCount = 0

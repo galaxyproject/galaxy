@@ -128,11 +128,7 @@ if [ $SET_VENV -eq 1 ] && [ $CREATE_VENV -eq 1 ]; then
             fi
             virtualenv "$GALAXY_VIRTUAL_ENV"
         else
-            # If .venv does not exist, and there is no conda available, attempt to create it.
-            # Ensure Python is a supported version before creating .venv
-            echo "Creating Python virtual environment for Galaxy: $GALAXY_VIRTUAL_ENV"
-            echo "To avoid this, use the --no-create-venv flag or set \$GALAXY_VIRTUAL_ENV to an"
-            echo "existing environment before starting Galaxy."
+            # If $GALAXY_VIRTUAL_ENV does not exist, and there is no conda available, attempt to create it.
             if [ -z "$GALAXY_PYTHON" ]; then
                 if command -v python3 >/dev/null; then
                     GALAXY_PYTHON=python3
@@ -140,7 +136,12 @@ if [ $SET_VENV -eq 1 ] && [ $CREATE_VENV -eq 1 ]; then
                     GALAXY_PYTHON=python
                 fi
             fi
+            # Ensure Python is a supported version before creating $GALAXY_VIRTUAL_ENV
             "$GALAXY_PYTHON" ./scripts/check_python.py || exit 1
+            echo "Creating Python virtual environment for Galaxy: $GALAXY_VIRTUAL_ENV"
+            echo "using Python: $GALAXY_PYTHON"
+            echo "To avoid this, use the --no-create-venv flag or set \$GALAXY_VIRTUAL_ENV to an"
+            echo "existing environment before starting Galaxy."
             if command -v virtualenv >/dev/null; then
                 virtualenv -p "$GALAXY_PYTHON" "$GALAXY_VIRTUAL_ENV"
             else
@@ -186,7 +187,7 @@ fi
 : ${PYPI_INDEX_URL:="https://pypi.python.org/simple"}
 : ${GALAXY_DEV_REQUIREMENTS:="./lib/galaxy/dependencies/dev-requirements.txt"}
 if [ $REPLACE_PIP -eq 1 ]; then
-    pip install 'pip>=8.1'
+    python -m pip install 'pip>=8.1'
 fi
 
 requirement_args="-r requirements.txt"

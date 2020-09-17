@@ -123,7 +123,7 @@ def _make_sizzle_string(sizzle_selector):
         selector = sizzle_selector.decode("utf-8")
     except (AttributeError, UnicodeEncodeError):
         selector = sizzle_selector
-    return u"return Sizzle(\"{selector}\");".format(selector=re.escape(selector))
+    return "return Sizzle(\"{selector}\");".format(selector=re.escape(selector))
 
 
 __all__ = (

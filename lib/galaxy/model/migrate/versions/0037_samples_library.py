@@ -4,7 +4,6 @@ adds the same to the 'sample' table. This also adds a 'datatx' column to request
 to store the sequencer login information. Finally, this adds a 'dataset_files' column to
 the sample table.
 """
-from __future__ import print_function
 
 import datetime
 import logging

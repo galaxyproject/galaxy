@@ -163,6 +163,7 @@ class MockTool(object):
         self.tool_dir = "/path/to/tools"
         self.dependencies = []
         self.requires_galaxy_python_environment = False
+        self.id = 'mock_id'
 
     def build_dependency_shell_commands(self, job_directory):
         return TEST_DEPENDENCIES_COMMANDS

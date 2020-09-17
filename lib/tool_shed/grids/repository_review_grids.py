@@ -56,7 +56,7 @@ class RepositoriesWithReviewsGrid(RepositoryGrid):
             # Restrict to revisions that have been reviewed.
             if repository.reviews:
                 rval = ''
-                repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
+                repo = repository.hg_repo
                 for review in repository.reviews:
                     changeset_revision = review.changeset_revision
                     rev, label = hg_util.get_rev_label_from_changeset_revision(repo, changeset_revision)
@@ -299,7 +299,7 @@ class RepositoryReviewsByUserGrid(grids.Grid):
                                                         review.changeset_revision,
                                                         include_date=True,
                                                         include_hash=False)
-            rval += '?id=%s">%s</a>' % (encoded_review_id, revision_label)
+            rval += '?id={}">{}</a>'.format(encoded_review_id, revision_label)
             return rval
 
     class RatingColumn(grids.TextColumn):

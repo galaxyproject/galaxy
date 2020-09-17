@@ -1,7 +1,6 @@
 """
 Migration script to add a notify column to the request table.
 """
-from __future__ import print_function
 
 import logging
 

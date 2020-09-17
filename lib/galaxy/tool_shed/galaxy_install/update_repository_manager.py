@@ -15,7 +15,7 @@ from galaxy.util.tool_shed.encoding_util import tool_shed_decode
 log = logging.getLogger(__name__)
 
 
-class UpdateRepositoryManager(object):
+class UpdateRepositoryManager:
 
     def __init__(self, app):
         self.app = app
@@ -38,7 +38,7 @@ class UpdateRepositoryManager(object):
                       changeset_revision=str(repository.installed_changeset_revision))
         pathspec = ['repository', 'get_changeset_revision_and_ctx_rev']
         try:
-            encoded_update_dict = util.url_get(tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+            encoded_update_dict = util.url_get(tool_shed_url, auth=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
             if encoded_update_dict:
                 update_dict = tool_shed_decode(encoded_update_dict)
                 includes_data_managers = update_dict.get('includes_data_managers', False)
@@ -62,7 +62,7 @@ class UpdateRepositoryManager(object):
             changeset_revision_dict['changeset_revision'] = changeset_revision
             changeset_revision_dict['ctx_rev'] = ctx_rev
         except Exception as e:
-            log.debug("Error getting change set revision for update from the tool shed for repository '%s': %s" % (repository.name, str(e)))
+            log.debug("Error getting change set revision for update from the tool shed for repository '{}': {}".format(repository.name, str(e)))
             changeset_revision_dict['includes_data_managers'] = False
             changeset_revision_dict['includes_datatypes'] = False
             changeset_revision_dict['includes_tools'] = False
@@ -127,7 +127,7 @@ class UpdateRepositoryManager(object):
         return repository
 
 
-class Sleeper(object):
+class Sleeper:
     """
     Provides a 'sleep' method that sleeps for a number of seconds *unless* the notify method
     is called (from a different thread).

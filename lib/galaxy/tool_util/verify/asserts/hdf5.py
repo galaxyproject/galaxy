@@ -20,7 +20,7 @@ def assert_has_h5_attribute(output_bytes, key, value):
     output_temp = io.BytesIO(output_bytes)
     local_attrs = h5py.File(output_temp, 'r').attrs
     assert key in local_attrs and str(local_attrs[key]) == value, (
-        "Not a HDF5 file or H5 attributes do not match:\n\t%s\n\n\t(%s : %s)" % (local_attrs.items(), key, value))
+        "Not a HDF5 file or H5 attributes do not match:\n\t{}\n\n\t({} : {})".format(local_attrs.items(), key, value))
 
 
 def assert_has_h5_keys(output_bytes, keys):
@@ -39,4 +39,4 @@ def assert_has_h5_keys(output_bytes, keys):
     for key in h5_keys:
         if key not in local_keys:
             missing += 1
-    assert missing == 0, "Not a HDF5 file or H5 keys missing:\n\t%s\n\t%s" % (local_keys, h5_keys)
+    assert missing == 0, "Not a HDF5 file or H5 keys missing:\n\t{}\n\t{}".format(local_keys, h5_keys)

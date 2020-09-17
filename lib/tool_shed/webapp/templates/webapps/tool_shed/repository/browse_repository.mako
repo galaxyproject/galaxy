@@ -24,7 +24,7 @@
 </%def>
 
 <%
-    is_new = repository.is_new( trans.app )
+    is_new = repository.is_new()
     can_push = trans.app.security_agent.can_push( trans.app, trans.user, repository )
     can_download = not is_new and ( not is_malicious or can_push )
     can_browse_contents = not is_new
@@ -38,7 +38,7 @@ ${render_tool_shed_repository_actions( repository, metadata=metadata, changeset_
 
 %if can_browse_contents:
     <div class="toolForm">
-        <div class="toolFormTitle">Repository '${repository.name | h}' revision ${repository.tip( trans.app ) | h} (repository tip)</div>
+        <div class="toolFormTitle">Repository '${repository.name | h}' revision ${repository.tip() | h} (repository tip)</div>
         %if can_download:
             <div class="form-row">
                 <label>Clone this repository:</label>

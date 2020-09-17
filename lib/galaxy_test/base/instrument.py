@@ -1,6 +1,6 @@
 """ Utilities to help instrument tool tests.
 
-Including structed data nose plugin that allows storing arbitrary structured
+Including structured data nose plugin that allows storing arbitrary structured
 data on a per test case basis - used by tool test to store inputs,
 output problems, job tests, etc... but could easily by used by other test
 types in a different way.
@@ -38,7 +38,7 @@ class StructuredTestDataPlugin(Plugin):
     name = 'structureddata'
 
     def options(self, parser, env):
-        super(StructuredTestDataPlugin, self).options(parser, env=env)
+        super().options(parser, env=env)
         parser.add_option(
             '--structured-data-file', action='store',
             dest='structured_data_file', metavar="FILE",
@@ -48,7 +48,7 @@ class StructuredTestDataPlugin(Plugin):
                   "[NOSE_STRUCTURED_DATA]"))
 
     def configure(self, options, conf):
-        super(StructuredTestDataPlugin, self).configure(options, conf)
+        super().configure(options, conf)
         self.conf = conf
         if not self.enabled:
             return

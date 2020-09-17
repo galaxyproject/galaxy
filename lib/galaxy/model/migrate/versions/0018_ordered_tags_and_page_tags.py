@@ -2,7 +2,6 @@
 This migration script provides support for (a) ordering tags by recency and
 (b) tagging pages. This script deletes all existing tags.
 """
-from __future__ import print_function
 
 import logging
 

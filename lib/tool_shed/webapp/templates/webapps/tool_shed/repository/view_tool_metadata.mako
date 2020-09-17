@@ -5,7 +5,7 @@
 <%namespace file="/webapps/tool_shed/common/repository_actions_menu.mako" import="*" />
 
 <%
-    is_new = repository.is_new( trans.app )
+    is_new = repository.is_new()
 
     can_push = trans.app.security_agent.can_push( trans.app, trans.user, repository )
     can_download = not is_new and ( not is_malicious or can_push )

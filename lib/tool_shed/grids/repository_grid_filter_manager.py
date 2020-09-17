@@ -5,7 +5,7 @@ from galaxy.util.bunch import Bunch
 log = logging.getLogger(__name__)
 
 
-class RepositoryGridFilterManager(object):
+class RepositoryGridFilterManager:
     """Provides filtered views of the many Tool SHed repository grids."""
 
     filters = Bunch(CERTIFIED_LEVEL_ONE='certified_level_one',
@@ -26,7 +26,7 @@ class RepositoryGridFilterManager(object):
             return "Certified 2 Repository Suites %s" % trailing_string
         if filter == self.filters.SUITES:
             return "Repository Suites %s" % trailing_string
-        return "%s %s" % (default, trailing_string)
+        return "{} {}".format(default, trailing_string)
 
     def get_filter(self, trans):
         filter = trans.get_cookie(name='toolshedrepogridfilter')

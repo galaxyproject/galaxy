@@ -7,7 +7,7 @@ from galaxy.util import listify
 log = logging.getLogger(__name__)
 
 
-class FilterFactory(object):
+class FilterFactory:
     """
     An instance of this class is responsible for filtering the list
     of tools presented to a given user in a given context.
@@ -78,7 +78,7 @@ class FilterFactory(object):
     def _import_filter(self, module_name, function_name):
         function_name = function_name.strip()
         for base_module in self.__base_modules:
-            full_module_name = "%s.%s" % (base_module, module_name.strip())
+            full_module_name = "{}.{}".format(base_module, module_name.strip())
             try:
                 __import__(full_module_name)
             except ImportError:

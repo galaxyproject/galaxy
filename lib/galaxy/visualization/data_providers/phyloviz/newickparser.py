@@ -8,11 +8,11 @@ class Newick_Parser(Base_Parser):
     It is necessarily more complex because this parser is later extended by Nexus for parsing newick as well.."""
 
     def __init__(self):
-        super(Newick_Parser, self).__init__()
+        super().__init__()
 
     def parseFile(self, filePath):
         """Parses a newick file to obtain the string inside. Returns: jsonableDict"""
-        with open(filePath, "r") as newickFile:
+        with open(filePath) as newickFile:
             newickString = newickFile.read()
             newickString = newickString.replace("\n", "").replace("\r", "")
             return [self.parseData(newickString)], "Success"

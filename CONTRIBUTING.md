@@ -6,7 +6,9 @@ repository](https://github.com/galaxyproject/galaxy).
 For information on contributing more broadly to the Galaxy ecosystem and a
 deeper discussion of some of these points - please see the
 [Develop](https://galaxyproject.org/develop) section of the [Galaxy Community
-Hub](https://galaxyproject.org).
+Hub](https://galaxyproject.org) and the [Galaxy Code
+Architecture](https://training.galaxyproject.org/training-material/topics/dev/tutorials/architecture/slides.html#1) slides that are part of the [Galaxy Training
+Materials](https://training.galaxyproject.org/).
 
 ## Before you Begin
 
@@ -55,11 +57,15 @@ https://help.github.com/en/github/getting-started-with-github/git-and-github-lea
 
 3. Choose the correct branch to develop your changes against.
 
-   * Additions of new features to the codebase should be pushed to the `dev`
-     branch (`git checkout dev`).
+   * The `master` branch is kept in sync with the latest tagged release, but
+     should **not** be used as the base (i.e. target) branch of a pull request.
 
-   * Most bug fixes to previous (or frozen) releases should be made against the
-     corrisponding `release_XX.XX` branch (`git checkout release_XX.XX`).
+   * Additions of new features to the codebase should be based off the `dev`
+     branch (`git checkout -b feature_branch dev`), with few
+     [exceptions](doc/source/project/organization.rst#handling-pull-requests).
+
+   * Most bug fixes should target the oldest supported release exhibiting the
+     issue (`git checkout -b bugfix_branch release_XX.XX`).
 
    * Serious security problems should not be fixed via pull request - please see
      [the Galaxy security policies](SECURITY_POLICY.md) for information about

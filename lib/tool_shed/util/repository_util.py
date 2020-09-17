@@ -174,7 +174,7 @@ def create_repository(app, name, type, description, long_description, user_id, c
     # Create the local repository.
     init_repository(repo_path=repository_path)
     # Add an entry in the hgweb.config file for the local repository.
-    lhs = "repos/%s/%s" % (repository.user.username, repository.name)
+    lhs = "repos/{}/{}".format(repository.user.username, repository.name)
     app.hgweb_config_manager.add_entry(lhs, repository_path)
     # Create a .hg/hgrc file for the local repository.
     create_hgrc_file(app, repository)
@@ -198,7 +198,7 @@ def create_repository(app, name, type, description, long_description, user_id, c
 def generate_sharable_link_for_repository_in_tool_shed(repository, changeset_revision=None):
     """Generate the URL for sharing a repository that is in the tool shed."""
     base_url = web.url_for('/', qualified=True).rstrip('/')
-    sharable_url = '%s/view/%s/%s' % (base_url, repository.user.username, repository.name)
+    sharable_url = '{}/view/{}/{}'.format(base_url, repository.user.username, repository.name)
     if changeset_revision:
         sharable_url += '/%s' % changeset_revision
     return sharable_url
@@ -288,7 +288,7 @@ def get_repositories_by_category(app, category_id, installable=False, sort_order
         for changeset, changehash in repository.installable_revisions(app):
             encoded_id = app.security.encode_id(repository.id)
             metadata = get_repository_metadata_by_changeset_revision(app, encoded_id, changehash)
-            repository_dict['metadata']['%s:%s' % (changeset, changehash)] = metadata.to_dict(value_mapper=default_value_mapper)
+            repository_dict['metadata']['{}:{}'.format(changeset, changehash)] = metadata.to_dict(value_mapper=default_value_mapper)
         if installable:
             if len(repository.installable_revisions(app)):
                 repositories.append(repository_dict)
@@ -325,14 +325,14 @@ def get_tool_shed_repository_status_label(app, tool_shed_repository=None, name=N
         elif tool_shed_repository.status in [app.install_model.ToolShedRepository.installation_status.INSTALLED]:
             if tool_shed_repository.repository_dependencies_being_installed:
                 bgcolor = app.install_model.ToolShedRepository.states.WARNING
-                status_label = '%s, %s' % (status_label,
+                status_label = '{}, {}'.format(status_label,
                                            app.install_model.ToolShedRepository.installation_status.INSTALLING_REPOSITORY_DEPENDENCIES)
             elif tool_shed_repository.missing_repository_dependencies:
                 bgcolor = app.install_model.ToolShedRepository.states.WARNING
                 status_label = '%s, missing repository dependencies' % status_label
             elif tool_shed_repository.tool_dependencies_being_installed:
                 bgcolor = app.install_model.ToolShedRepository.states.WARNING
-                status_label = '%s, %s' % (status_label,
+                status_label = '{}, {}'.format(status_label,
                                            app.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES)
             elif tool_shed_repository.missing_tool_dependencies:
                 bgcolor = app.install_model.ToolShedRepository.states.WARNING
@@ -344,7 +344,7 @@ def get_tool_shed_repository_status_label(app, tool_shed_repository=None, name=N
     else:
         bgcolor = app.install_model.ToolShedRepository.states.WARNING
         status_label = 'unknown status'
-    return '<div class="count-box state-color-%s">%s</div>' % (bgcolor, status_label)
+    return '<div class="count-box state-color-{}">{}</div>'.format(bgcolor, status_label)
 
 
 def handle_role_associations(app, role, repository, **kwd):
@@ -406,7 +406,7 @@ def change_repository_name_in_hgrc_file(hgrc_file, new_name):
     config = configparser.ConfigParser()
     config.read(hgrc_file)
     config.set('web', 'name', new_name)
-    with open(hgrc_file, 'wb') as fh:
+    with open(hgrc_file, 'w') as fh:
         config.write(fh)
 
 
@@ -424,7 +424,7 @@ def update_repository(app, trans, id, **kwds):
         message = "You are not the owner of this repository, so you cannot administer it."
         return None, message
 
-    # Whitelist properties that can be changed via this method
+    # Allowlist properties that can be changed via this method
     for key in ('type', 'description', 'long_description', 'remote_repository_url', 'homepage_url'):
         # If that key is available, not None and different than what's in the model
         if key in kwds and kwds[key] is not None and kwds[key] != getattr(repository, key):
@@ -461,8 +461,8 @@ def update_repository(app, trans, id, **kwds):
 
         repo_dir = repository.repo_path(app)
         # Change the entry in the hgweb.config file for the repository.
-        old_lhs = "repos/%s/%s" % (repository.user.username, repository.name)
-        new_lhs = "repos/%s/%s" % (repository.user.username, kwds['name'])
+        old_lhs = "repos/{}/{}".format(repository.user.username, repository.name)
+        new_lhs = "repos/{}/{}".format(repository.user.username, kwds['name'])
         trans.app.hgweb_config_manager.change_entry(old_lhs, new_lhs, repo_dir)
 
         # Change the entry in the repository's hgrc file.

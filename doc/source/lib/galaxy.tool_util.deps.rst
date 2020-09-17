@@ -34,14 +34,6 @@ galaxy.tool\_util.deps.brew\_util module
     :undoc-members:
     :show-inheritance:
 
-galaxy.tool\_util.deps.commands module
---------------------------------------
-
-.. automodule:: galaxy.tool_util.deps.commands
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 galaxy.tool\_util.deps.conda\_compat module
 -------------------------------------------
 

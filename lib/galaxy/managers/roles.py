@@ -24,7 +24,7 @@ class RoleManager(base.ModelManager):
     group_assoc = model.GroupRoleAssociation
 
     def __init__(self, app):
-        super(RoleManager, self).__init__(app)
+        super().__init__(app)
 
     def get(self, trans, decoded_role_id):
         """

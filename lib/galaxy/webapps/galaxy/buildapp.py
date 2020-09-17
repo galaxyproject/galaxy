@@ -14,7 +14,7 @@ import galaxy.datatypes.registry
 import galaxy.model
 import galaxy.model.mapping
 import galaxy.web.framework
-import galaxy.web.framework.webapp
+import galaxy.webapps.base.webapp
 from galaxy import util
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
@@ -27,7 +27,7 @@ from galaxy.webapps.util import wrap_if_allowed
 log = logging.getLogger(__name__)
 
 
-class GalaxyWebApplication(galaxy.web.framework.webapp.WebApplication):
+class GalaxyWebApplication(galaxy.webapps.base.webapp.WebApplication):
     pass
 
 
@@ -75,6 +75,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_route('/authnz/{provider}/logout', controller='authnz', action='logout', provider=None)
     # Returns the provider specific logout url for currently logged in provider
     webapp.add_route('/authnz/logout', controller='authnz', action='get_logout_url')
+    webapp.add_route('/authnz/get_cilogon_idps', controller='authnz', action='get_cilogon_idps')
 
     # These two routes handle our simple needs at the moment
     webapp.add_route('/async/{tool_id}/{data_id}/{data_secret}', controller='async', action='index', tool_id=None, data_id=None, data_secret=None)
@@ -123,6 +124,8 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/admin/quotas', 'admin')
     webapp.add_client_route('/admin/form/{form_id}', 'admin')
     webapp.add_client_route('/admin/api_keys', 'admin')
+    webapp.add_client_route('/tools/view')
+    webapp.add_client_route('/tools/json')
     webapp.add_client_route('/tours')
     webapp.add_client_route('/tours/{tour_id}')
     webapp.add_client_route('/user')
@@ -155,8 +158,10 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/workflows/create')
     webapp.add_client_route('/workflows/run')
     webapp.add_client_route('/workflows/import')
+    webapp.add_client_route('/workflows/trs_import')
+    webapp.add_client_route('/workflows/trs_search')
     webapp.add_client_route('/workflows/invocations')
-    webapp.add_client_route('/workflows/invocations/report')
+    # webapp.add_client_route('/workflows/invocations/view_bco')
     webapp.add_client_route('/custom_builds')
     webapp.add_client_route('/interactivetool_entry_points/list')
 
@@ -193,7 +198,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
 
 
 def uwsgi_app():
-    return galaxy.web.framework.webapp.build_native_uwsgi_app(app_factory, "galaxy")
+    return galaxy.webapps.base.webapp.build_native_uwsgi_app(app_factory, "galaxy")
 
 
 # For backwards compatibility
@@ -202,7 +207,6 @@ uwsgi_app_factory = uwsgi_app
 
 def postfork_setup():
     from galaxy.app import app
-    app.queue_worker.bind_and_start()
     app.application_stack.log_startup()
 
 
@@ -252,6 +256,11 @@ def populate_api_routes(webapp, app):
                           "/api/histories/{history_id}/contents/{history_content_id}/extra_files",
                           controller="datasets",
                           action="extra_files",
+                          conditions=dict(method=["GET"]))
+    webapp.mapper.connect("history_content_as_text",
+                          "/api/datasets/{dataset_id}/get_content_as_text",
+                          controller="datasets",
+                          action="get_content_as_text",
                           conditions=dict(method=["GET"]))
     webapp.mapper.connect("history_contents_metadata_file",
                           "/api/histories/{history_id}/contents/{history_content_id}/metadata_file",
@@ -316,12 +325,19 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/tool_data/{id:.+?}/fields/{value:.+?}/files/{path:.+?}', action='download_field_file', controller="tool_data")
     webapp.mapper.connect('/api/tool_data/{id:.+?}/fields/{value:.+?}', action='show_field', controller="tool_data")
     webapp.mapper.connect('/api/tool_data/{id:.+?}/reload', action='reload', controller="tool_data")
-    webapp.mapper.resource('dataset_collection', 'dataset_collections', path_prefix='/api/')
+
+    webapp.mapper.resource('dataset_collection', 'dataset_collections', path_prefix='/api')
+    webapp.mapper.connect('contents_dataset_collection',
+        '/api/dataset_collections/{hdca_id}/contents/{parent_id}',
+        controller="dataset_collections",
+        action="contents")
+
     webapp.mapper.resource('form', 'forms', path_prefix='/api')
     webapp.mapper.resource('role', 'roles', path_prefix='/api')
     webapp.mapper.resource('upload', 'uploads', path_prefix='/api')
     webapp.mapper.connect('/api/ftp_files', controller='remote_files')
-    webapp.mapper.resource('remote_file', 'remote_files', path_prefix='/api')
+    webapp.mapper.connect('/api/remote_files', action='index', controller='remote_files', conditions=dict(method=["GET"]))
+    webapp.mapper.connect('/api/remote_files/plugins', action='plugins', controller='remote_files', conditions=dict(method=["GET"]))
     webapp.mapper.resource('group', 'groups', path_prefix='/api')
     webapp.mapper.resource_with_deleted('quota', 'quotas', path_prefix='/api')
 
@@ -402,6 +418,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/container_resolvers/{index}/toolbox', action="resolve_toolbox", controller="container_resolution", conditions=dict(method=["GET"]))
     webapp.mapper.connect('/api/container_resolvers/{index}/resolve/install', action="resolve_with_install", controller="container_resolution", conditions=dict(method=["POST"]))
     webapp.mapper.connect('/api/container_resolvers/{index}/toolbox/install', action="resolve_toolbox_with_install", controller="container_resolution", conditions=dict(method=["POST"]))
+    webapp.mapper.connect('/api/workflows/get_tool_predictions', action='get_tool_predictions', controller="workflows", conditions=dict(method=["POST"]))
 
     webapp.mapper.resource_with_deleted('user', 'users', path_prefix='/api')
     webapp.mapper.resource('genome', 'genomes', path_prefix='/api')
@@ -450,7 +467,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.resource('datatype',
                            'datatypes',
                            path_prefix='/api',
-                           collection={'sniffers': 'GET', 'mapping': 'GET', 'converters': 'GET', 'edam_data': 'GET', 'edam_formats': 'GET'},
+                           collection={'sniffers': 'GET', 'mapping': 'GET', 'converters': 'GET', 'edam_data': 'GET', 'edam_formats': 'GET', 'types_and_mapping': 'GET'},
                            parent_resources=dict(member_name='datatype', collection_name='datatypes'))
     webapp.mapper.resource('search', 'search', path_prefix='/api')
     webapp.mapper.connect('/api/pages/{id}.pdf', action='show_pdf', controller="pages", conditions=dict(method=["GET"]))
@@ -535,6 +552,49 @@ def populate_api_routes(webapp, app):
                           action='import_shared_workflow_deprecated',
                           conditions=dict(method=['POST']))
 
+    webapp.mapper.connect(
+        'trs_search',
+        '/api/trs_search',
+        controller='trs_search',
+        action="index",
+        conditions=dict(method=['GET'])
+    )
+    webapp.mapper.connect(
+        'trs_consume_get_servers',
+        '/api/trs_consume/servers',
+        controller='trs_consumer',
+        action="get_servers",
+        conditions=dict(method=['GET'])
+    )
+    webapp.mapper.connect(
+        'trs_consume_get_tool',
+        '/api/trs_consume/{trs_server}/tools/{tool_id}',
+        controller='trs_consumer',
+        action="get_tool",
+        conditions=dict(method=['GET'])
+    )
+    webapp.mapper.connect(
+        'trs_consume_get_tool_versions',
+        '/api/trs_consume/{trs_server}/tools/{tool_id}/versions',
+        controller='trs_consumer',
+        action="get_tool_versions",
+        conditions=dict(method=['GET'])
+    )
+    webapp.mapper.connect(
+        'trs_consume_get_tool_version',
+        '/api/trs_consume/{trs_server}/tools/{tool_id}/versions/{version_id}',
+        controller='trs_consumer',
+        action="get_tool_version",
+        conditions=dict(method=['GET'])
+    )
+    webapp.mapper.connect(
+        'trs_consume_import_tool_version',
+        '/api/trs_consume/{trs_server}/tools/{tool_id}/versions/{version_id}/import',
+        controller='trs_consumer',
+        action="import_tool_version",
+        conditions=dict(method=['POST'])
+    )
+
     # route for creating/getting converted datasets
     webapp.mapper.connect('/api/datasets/{dataset_id}/converted', controller='datasets', action='converted', ext=None)
     webapp.mapper.connect('/api/datasets/{dataset_id}/converted/{ext}', controller='datasets', action='converted')
@@ -555,7 +615,7 @@ def populate_api_routes(webapp, app):
         "usage": "_deprecated",
     }
     for noun, suffix in invoke_names.items():
-        name = "%s%s" % (noun, suffix)
+        name = "{}{}".format(noun, suffix)
         webapp.mapper.connect(
             'list_workflow_%s' % name,
             '/api/workflows/{workflow_id}/%s' % noun,
@@ -601,6 +661,8 @@ def populate_api_routes(webapp, app):
     connect_invocation_endpoint('show', '', action='show_invocation')
     connect_invocation_endpoint('show_report', '/report', action='show_invocation_report')
     connect_invocation_endpoint('show_report_pdf', '/report.pdf', action='show_invocation_report_pdf')
+    connect_invocation_endpoint('biocompute/download', '/biocompute/download', action='download_invocation_bco')
+    connect_invocation_endpoint('biocompute', '/biocompute', action='export_invocation_bco')
     connect_invocation_endpoint('jobs_summary', '/jobs_summary', action='invocation_jobs_summary')
     connect_invocation_endpoint('step_jobs_summary', '/step_jobs_summary', action='invocation_step_jobs_summary')
     connect_invocation_endpoint('cancel', '', action='cancel_invocation', conditions=dict(method=['DELETE']))
@@ -616,6 +678,13 @@ def populate_api_routes(webapp, app):
                           controller='authenticate',
                           action='get_api_key',
                           conditions=dict(method=["GET"]))
+
+    # API OPTIONS RESPONSE
+    webapp.mapper.connect('options',
+                          '/api/{path_info:.*?}',
+                          controller='authenticate',
+                          action='options',
+                          conditions={'method': ['OPTIONS']})
 
     # ======================================
     # ====== DISPLAY APPLICATIONS API ======
@@ -859,7 +928,7 @@ def populate_api_routes(webapp, app):
                           conditions=dict(method=["DELETE"]))
 
     webapp.mapper.connect('download_ld_items',
-                          '/api/libraries/datasets/download/{format}',
+                          '/api/libraries/datasets/download/{archive_format}',
                           controller='library_datasets',
                           action='download',
                           conditions=dict(method=["POST", "GET"]))
@@ -943,6 +1012,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('common_problems', '/api/jobs/{id}/common_problems', controller='jobs', action='common_problems', conditions=dict(method=['GET']))
     # Job metrics and parameters by job id or dataset id (for slightly different accessibility checking)
     webapp.mapper.connect('metrics', '/api/jobs/{job_id}/metrics', controller='jobs', action='metrics', conditions=dict(method=['GET']))
+    webapp.mapper.connect('destination_params', '/api/jobs/{job_id}/destination_params', controller='jobs', action='destination_params', conditions=dict(method=['GET']))
     webapp.mapper.connect('show_job_lock', '/api/job_lock', controller='jobs', action='show_job_lock', conditions=dict(method=['GET']))
     webapp.mapper.connect('update_job_lock', '/api/job_lock', controller='jobs', action='update_job_lock', conditions=dict(method=['PUT']))
     webapp.mapper.connect('dataset_metrics', '/api/datasets/{dataset_id}/metrics', controller='jobs', action='metrics', conditions=dict(method=['GET']))
@@ -953,6 +1023,12 @@ def populate_api_routes(webapp, app):
     webapp.mapper.resource('file',
                            'files',
                            controller="job_files",
+                           name_prefix="job_",
+                           path_prefix='/api/jobs/{job_id}',
+                           parent_resources=dict(member_name="job", collection_name="jobs"))
+    webapp.mapper.resource('port',
+                           'ports',
+                           controller="job_ports",
                            name_prefix="job_",
                            path_prefix='/api/jobs/{job_id}',
                            parent_resources=dict(member_name="job", collection_name="jobs"))
@@ -1233,5 +1309,5 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
 
 
 def wrap_in_static(app, global_conf, plugin_frameworks=None, **local_conf):
-    urlmap, cache_time = galaxy.web.framework.webapp.build_url_map(app, global_conf, local_conf)
+    urlmap, cache_time = galaxy.webapps.base.webapp.build_url_map(app, global_conf, local_conf)
     return urlmap

@@ -1,0 +1,74 @@
+<tool id="interactive_tool_geoexplorer" tool_type="interactive" name="geoexplorer" version="0.1">
+    <description>An interactive spatial analysis platform using ggvis and Leaflet</description>
+    <requirements>
+        <container type="docker">ylebras/geoexplorer-docker</container>
+    </requirements>
+    <entry_points>
+        <entry_point name="geoexplorer visualisation" requires_domain="True">
+            <port>3838</port>
+            <url>/sample-apps/SIG/</url>
+        </entry_point>
+    </entry_points>
+    <environment_variables>
+        <environment_variable name="HISTORY_ID">$__history_id__</environment_variable>
+        <environment_variable name="REMOTE_HOST">$__galaxy_url__</environment_variable>
+        <environment_variable name="GALAXY_WEB_PORT">8080</environment_variable>
+        <environment_variable name="GALAXY_URL">$__galaxy_url__</environment_variable>
+        <environment_variable name="API_KEY" inject="api_key" />
+    </environment_variables>
+    <command><![CDATA[
+
+        mkdir -p /srv/shiny-server/data/ &&
+        cp '$infile' /srv/shiny-server/data/inputdata.txt &&
+        mkdir -p /var/log/shiny-server &&
+        chown shiny.shiny /var/log/shiny-server &&
+
+        exec shiny-server >> /var/log/shiny-server.log 2>&1 
+
+    ]]>
+    </command>
+    <inputs>
+        <param name="infile" type="data" format="tabular,csv" label="csv file"/>
+    </inputs>
+    <outputs>
+        <data name="outfile" format="txt" />
+    </outputs>
+    <tests>
+    </tests>
+    <help>
+<![CDATA[
+
+
+`GeoExplorer <https://radiant-rstats.github.io/docs/>`_ is An interactive spatial analysis platform using ggvis and Leaflet.
+
+Author: David Stephens
+
+App: http://www.davesteps.com/geoExploreR/
+
+.. class:: infomark
+
+**Input data file MUST have as a uniq ID per row on first column, longitude column on column 2, latitude column on column 3 and quantitative values on 4th column **
+
+Example input file (csv)::
+
+"ID"	"x"	"y"	"test"
+01	-60.291838	46.328137	2
+02	-114.58927	35.022485	3
+03	-93.37406	30.00586	4
+04	-79.336288	43.682218	5
+05	-109.156024	31.904185	2
+06	-71.098031	42.297408	9
+07	-110.927215	32.18203	12
+
+]]>
+    </help>
+    <citations>
+           <citation type="bibtex">@misc{githubsurvey2018,
+           author       = {davesteps},
+           title        = {{dashboard to visualise geographic data}},
+           publisher    = {Github},
+           url          = {https://github.com/davesteps/geoExploreR}
+           }
+          }</citation>
+    </citations>
+</tool>

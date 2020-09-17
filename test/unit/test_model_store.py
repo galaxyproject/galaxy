@@ -21,6 +21,17 @@ def test_import_export_history():
     _assert_simple_cat_job_imported(imported_history)
 
 
+def test_import_export_history_failed_job():
+    """Test a simple job import/export, make sure state is maintained correctly."""
+    app = _mock_app()
+
+    u, h, d1, d2, j = _setup_simple_cat_job(app, state='error')
+
+    imported_history = _import_export_history(app, h, export_files="copy")
+
+    _assert_simple_cat_job_imported(imported_history, state='error')
+
+
 def test_import_export_bag_archive():
     """Test a simple job import/export using a BagIt archive."""
     dest_parent = mkdtemp()
@@ -402,13 +413,15 @@ def _setup_simple_export(export_kwds):
     return app, h, temp_directory, import_history
 
 
-def _assert_simple_cat_job_imported(imported_history):
+def _assert_simple_cat_job_imported(imported_history, state='ok'):
     assert imported_history.name == "imported from archive: Test History"
 
     datasets = imported_history.datasets
     assert len(datasets) == 2
+    assert datasets[0].state == datasets[1].state == state
     imported_job = datasets[1].creating_job
     assert imported_job
+    assert imported_job.state == state
     assert imported_job.output_datasets
     assert imported_job.output_datasets[0].dataset == datasets[1]
 
@@ -421,17 +434,19 @@ def _assert_simple_cat_job_imported(imported_history):
         assert f.read().startswith("chr1\t147962192\t147962580\tNM_005997_cds_0_0_chr1_147962193_r\t0\t-")
 
 
-def _setup_simple_cat_job(app):
+def _setup_simple_cat_job(app, state='ok'):
     sa_session = app.model.context
 
     u = model.User(email="collection@example.com", password="password")
     h = model.History(name="Test History", user=u)
 
     d1, d2 = _create_datasets(sa_session, h, 2)
+    d1.state = d2.state = state
 
     j = model.Job()
     j.user = u
     j.tool_id = "cat1"
+    j.state = state
 
     j.add_input_dataset("input1", d1)
     j.add_output_dataset("out_file1", d2)

@@ -1,5 +1,8 @@
-<tool id="metadata_bam" name="metadata BAM" version="1.0.0">
-  <command>echo "${ref_names}" &gt; "${output_of_input_metadata}"</command>
+<tool id="metadata_bam" name="metadata BAM" version="1.0.0" profile="16.04">
+  <command><![CDATA[
+#assert $input_bam.metadata.bam_index
+echo '${ref_names}' > '${output_of_input_metadata}'
+  ]]></command>
   <inputs>
     <param name="input_bam" type="data" format="bam" label="BAM File"/>
     <param name="ref_names" type="select" optional="False" label="Select references you would like to restrict bam to" multiple="True">

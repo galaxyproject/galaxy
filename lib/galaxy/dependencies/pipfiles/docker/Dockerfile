@@ -1,4 +1,4 @@
-FROM python:2.7
+FROM python:3.5
 
 ENV DEBIAN_FRONTEND noninteractive
 ENV LC_ALL C.UTF-8

@@ -9,23 +9,26 @@ module.exports = {
         commonjs: true,
         es6: true,
         node: true,
-        mocha: true
+        jest: true,
     },
     parserOptions: {
         parser: "babel-eslint",
-        sourceType: "module"
+        sourceType: "module",
     },
-    plugins: ["html"],
     rules: {
         // Standard rules
         "no-console": "off",
         "no-unused-vars": ["error", { args: "none" }],
         "prefer-const": "error",
+        "one-var": ["error", "never"],
+
+        "vue/valid-v-slot": "error",
+        "vue/v-slot-style": ["error", { atComponent: "v-slot", default: "v-slot", named: "longform" }],
 
         // Vue TODO (enable these)
-        "vue/require-default-prop": "off",
-        "vue/require-prop-types": "off",
-        "vue/prop-name-casing": "off",
+        "vue/require-default-prop": "warn",
+        "vue/require-prop-types": "warn",
+        "vue/prop-name-casing": "warn",
 
         // Prettier compromises/workarounds -- mostly #wontfix?
         "vue/html-indent": "off",
@@ -34,11 +37,6 @@ module.exports = {
         "vue/singleline-html-element-content-newline": "off",
         "vue/multiline-html-element-content-newline": "off",
         "vue/html-closing-bracket-newline": "off",
-        "vue/html-closing-bracket-spacing": "off"
+        "vue/html-closing-bracket-spacing": "off",
     },
-    globals: {
-        // chai tests
-        assert: true,
-        expect: true
-    }
 };

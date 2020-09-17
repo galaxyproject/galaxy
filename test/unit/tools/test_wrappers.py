@@ -1,6 +1,5 @@
 import os
 import tempfile
-from xml.etree.ElementTree import XML
 
 import pytest
 
@@ -20,6 +19,7 @@ from galaxy.tools.wrappers import (
     RawObjectWrapper,
     SelectToolParameterWrapper
 )
+from galaxy.util import XML
 from galaxy.util.bunch import Bunch
 
 

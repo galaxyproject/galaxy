@@ -36,7 +36,7 @@ ${render_galaxy_repository_actions( repository=repository )}
             <form name="change_revision" id="change_revision" action="${h.url_for( controller='repository', action='preview_tools_in_changeset', repository_id=trans.security.encode_id( repository.id ) )}" method="post" >
                 <div class="form-row">
                     <%
-                        if changeset_revision == repository.tip( trans.app ):
+                        if changeset_revision == repository.tip():
                             tip_str = 'repository tip'
                         else:
                             tip_str = ''

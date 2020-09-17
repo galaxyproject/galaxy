@@ -1,5 +1,8 @@
-<tool id="tabular_to_dbnsfp" name="Convert tabular to dbnsfp" version="1.0.0">
+<tool id="tabular_to_dbnsfp" name="Convert tabular to dbnsfp" version="1.0.1" profile="16.04">
     <description></description>
+    <requirements>
+        <requirement type="package" version="0.15.4">pysam</requirement>
+    </requirements>
     <command>python '$__tool_directory__/tabular_to_dbnsfp.py' '$input' '$dbnsfp.extra_files_path/dbNSFP.gz'</command>
     <inputs>
         <param format="tabular" name="input" type="data" label="Choose a dbnsfp tabular file"/>
@@ -7,6 +10,12 @@
     <outputs>
         <data format="snpsiftdbnsfp" name="dbnsfp"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input" format="tabular" value="vcf2pgSnp_input.vcf"/>
+            <output name="dbnsfp" format="snpsiftdbnsfp" value="vcf2pgSnp_input.vcf.snpsiftdbnsfp"/>
+        </test>
+    </tests>
     <help>
     </help>
 </tool>

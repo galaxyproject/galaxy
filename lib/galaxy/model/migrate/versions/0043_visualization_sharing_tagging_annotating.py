@@ -1,7 +1,6 @@
 """
 Migration script to create tables and columns for sharing visualizations.
 """
-from __future__ import print_function
 
 import logging
 

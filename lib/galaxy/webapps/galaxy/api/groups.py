@@ -52,7 +52,7 @@ class GroupAPIController(BaseAPIController):
         user_ids = payload.get('user_ids', [])
         for i in user_ids:
             log.info("user_id: %s\n" % (i))
-            log.info("%s %s\n" % (i, trans.security.decode_id(i)))
+            log.info("{} {}\n".format(i, trans.security.decode_id(i)))
         users = [trans.sa_session.query(trans.model.User).get(trans.security.decode_id(i)) for i in user_ids]
         role_ids = payload.get('role_ids', [])
         roles = [trans.sa_session.query(trans.model.Role).get(trans.security.decode_id(i)) for i in role_ids]

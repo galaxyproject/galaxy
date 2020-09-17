@@ -3,7 +3,7 @@ from galaxy.util import bunch
 from .mulled.mulled_build import DEFAULT_CHANNELS
 
 
-class AppInfo(object):
+class AppInfo:
 
     def __init__(
         self,
@@ -35,7 +35,7 @@ class AppInfo(object):
         self.mulled_channels = mulled_channels
 
 
-class ToolInfo(object):
+class ToolInfo:
     # TODO: Introduce tool XML syntax to annotate the optional environment
     # variables they can consume (e.g. JVM options, license keys, etc..)
     # and add these to env_path_through
@@ -55,7 +55,7 @@ class ToolInfo(object):
         self.profile = profile
 
 
-class JobInfo(object):
+class JobInfo:
 
     def __init__(
         self, working_directory, tool_directory, job_directory, tmp_directory, home_directory, job_directory_type,
@@ -70,7 +70,7 @@ class JobInfo(object):
         self.job_directory_type = job_directory_type  # "galaxy" or "pulsar"
 
 
-class DependenciesDescription(object):
+class DependenciesDescription:
     """ Capture (in a readily serializable way) context related a tool
     dependencies - both the tool's listed requirements and the tool shed
     related context required to resolve dependencies via the
@@ -99,7 +99,7 @@ class DependenciesDescription(object):
         requirements_dicts = as_dict.get('requirements', [])
         requirements = ToolRequirements.from_list(requirements_dicts)
         installed_tool_dependencies_dicts = as_dict.get('installed_tool_dependencies', [])
-        installed_tool_dependencies = map(DependenciesDescription._toolshed_install_dependency_from_dict, installed_tool_dependencies_dicts)
+        installed_tool_dependencies = list(map(DependenciesDescription._toolshed_install_dependency_from_dict, installed_tool_dependencies_dicts))
         return DependenciesDescription(
             requirements=requirements,
             installed_tool_dependencies=installed_tool_dependencies

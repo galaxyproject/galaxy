@@ -9,6 +9,14 @@ galaxy.tool\_util.deps.mulled package
 Submodules
 ----------
 
+galaxy.tool\_util.deps.mulled.get\_tests module
+-----------------------------------------------
+
+.. automodule:: galaxy.tool_util.deps.mulled.get_tests
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy.tool\_util.deps.mulled.mulled\_build module
 --------------------------------------------------
 
@@ -41,10 +49,26 @@ galaxy.tool\_util.deps.mulled.mulled\_build\_tool module
     :undoc-members:
     :show-inheritance:
 
+galaxy.tool\_util.deps.mulled.mulled\_list module
+-------------------------------------------------
+
+.. automodule:: galaxy.tool_util.deps.mulled.mulled_list
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy.tool\_util.deps.mulled.mulled\_search module
 ---------------------------------------------------
 
 .. automodule:: galaxy.tool_util.deps.mulled.mulled_search
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.tool\_util.deps.mulled.mulled\_update\_singularity\_containers module
+----------------------------------------------------------------------------
+
+.. automodule:: galaxy.tool_util.deps.mulled.mulled_update_singularity_containers
     :members:
     :undoc-members:
     :show-inheritance:

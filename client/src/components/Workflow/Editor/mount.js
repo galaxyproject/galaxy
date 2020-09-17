@@ -1,0 +1,13 @@
+/**
+ * Endpoint for mounting WorkflowEditor from non-Vue environment (editor.mako).
+ */
+import Vue from "vue";
+import Index from "./Index";
+
+export const mountWorkflowEditor = (propsData) => {
+    const component = Vue.extend(Index);
+    return new component({
+        propsData: propsData,
+        el: "#columns",
+    });
+};

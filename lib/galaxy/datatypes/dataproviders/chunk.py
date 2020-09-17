@@ -39,7 +39,7 @@ class ChunkDataProvider(base.DataProvider):
         :param chunk_size:  how large are the desired chunks to return
             (gen. in bytes).
         """
-        super(ChunkDataProvider, self).__init__(source, **kwargs)
+        super().__init__(source, **kwargs)
         self.chunk_size = int(chunk_size)
         self.chunk_pos = int(chunk_index) * self.chunk_size
 
@@ -48,7 +48,7 @@ class ChunkDataProvider(base.DataProvider):
         Does the given source have both the methods `seek` and `read`?
         :raises InvalidDataProviderSource: if not.
         """
-        source = super(ChunkDataProvider, self).validate_source(source)
+        source = super().validate_source(source)
         if((not hasattr(source, 'seek')) or (not hasattr(source, 'read'))):
             raise exceptions.InvalidDataProviderSource(source)
         return source

@@ -32,20 +32,18 @@ def lint_inputs(tool_xml, lint_ctx):
         if param_type == "data":
             if "format" not in param_attrib:
                 lint_ctx.warn("Param input [%s] with no format specified - 'data' format will be assumed.", param_name)
-
-        if param_type == "select":
+        elif param_type == "select":
             dynamic_options = param.get("dynamic_options", None)
             if dynamic_options is None:
                 dynamic_options = param.find("options")
 
-            select_options = _find_with_attribute(param, 'option', 'value')
+            select_options = param.findall('./option')
             if any(['value' not in option.attrib for option in select_options]):
-                lint_ctx.error("Option without value")
+                lint_ctx.error("Select [%s] has option without value", param_name)
 
             if dynamic_options is None and len(select_options) == 0:
                 message = "No options defined for select [%s]" % param_name
                 lint_ctx.warn(message)
-
         # TODO: Validate type, much more...
 
     conditional_selects = tool_xml.findall("./inputs//conditional")
@@ -85,14 +83,14 @@ def lint_inputs(tool_xml, lint_ctx):
 
         for option_id in option_ids:
             if option_id not in when_ids:
-                lint_ctx.warn("No <when /> block found for %s option '%s' inside conditional '%s'" % (first_param_type, option_id, conditional_name))
+                lint_ctx.warn("No <when /> block found for {} option '{}' inside conditional '{}'".format(first_param_type, option_id, conditional_name))
 
         for when_id in when_ids:
             if when_id not in option_ids:
                 if first_param_type == 'select':
-                    lint_ctx.warn("No <option /> found for when block '%s' inside conditional '%s'" % (when_id, conditional_name))
+                    lint_ctx.warn("No <option /> found for when block '{}' inside conditional '{}'".format(when_id, conditional_name))
                 else:
-                    lint_ctx.warn("No truevalue/falsevalue found for when block '%s' inside conditional '%s'" % (when_id, conditional_name))
+                    lint_ctx.warn("No truevalue/falsevalue found for when block '{}' inside conditional '{}'".format(when_id, conditional_name))
 
     if datasource:
         for datasource_tag in ('display', 'uihints'):

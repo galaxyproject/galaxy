@@ -50,8 +50,8 @@ def check_output(stdio_regexes, stdio_exit_codes, stdout, stderr, tool_exit_code
     # has a bug but the tool was ok, and it lets a workflow continue.
     state = DETECTED_JOB_STATE.OK
 
-    stdout = unicodify(stdout)
-    stderr = unicodify(stderr)
+    stdout = unicodify(stdout, strip_null=True)
+    stderr = unicodify(stderr, strip_null=True)
 
     # messages (descriptions of the detected exit_code and regexes)
     # to be prepended to the stdout/stderr after all exit code and regex tests
@@ -96,7 +96,6 @@ def check_output(stdio_regexes, stdio_exit_codes, stdout, stderr, tool_exit_code
                             'code_desc': code_desc,
                             'error_level': stdio_exit_code.error_level,
                         }
-                        log.info("Job %s: %s" % (job_id_tag, reason))
                         job_messages.append(reason)
                         max_error_level = max(max_error_level,
                                               stdio_exit_code.error_level)
@@ -133,7 +132,10 @@ def check_output(stdio_regexes, stdio_exit_codes, stdout, stderr, tool_exit_code
             if max_error_level == StdioErrorLevel.FATAL_OOM:
                 state = DETECTED_JOB_STATE.OUT_OF_MEMORY_ERROR
             elif max_error_level >= StdioErrorLevel.FATAL:
-                log.debug("Tool exit code indicates an error, failing job.")
+                reason = ''
+                if job_messages:
+                    reason = " Reasons are {}".format(job_messages)
+                log.debug("Job error detected, failing job.{}".format(reason))
                 state = DETECTED_JOB_STATE.GENERIC_ERROR
 
         # When there are no regular expressions and no exit codes to check,
@@ -145,10 +147,8 @@ def check_output(stdio_regexes, stdio_exit_codes, stdout, stderr, tool_exit_code
             #          + "checking stderr for success" )
             if stderr:
                 state = DETECTED_JOB_STATE.GENERIC_ERROR
-
-        if state != DETECTED_JOB_STATE.OK:
-            peak = stderr[0:ERROR_PEAK] if stderr else ""
-            log.debug("job failed, detected state %s, standard error is - [%s]" % (state, peak))
+                peak = stderr[0:ERROR_PEAK] if stderr else ""
+                log.debug("Job failed because of contents in the standard error stream: [{}]".format(peak))
     except Exception:
         log.exception("Job state check encountered unexpected exception; assuming execution successful")
 

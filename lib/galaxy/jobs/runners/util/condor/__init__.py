@@ -3,13 +3,13 @@ Condor helper utilities.
 """
 from subprocess import (
     CalledProcessError,
-    check_call,
-    PIPE,
-    Popen,
-    STDOUT
+    check_call
 )
 
-from galaxy.util import unicodify
+from galaxy.util import (
+    commands,
+    unicodify
+)
 from ..external import parse_external_id
 
 DEFAULT_QUERY_CLASSAD = dict(
@@ -18,8 +18,6 @@ DEFAULT_QUERY_CLASSAD = dict(
     notification='NEVER',
 )
 
-PROBLEM_RUNNING_CONDOR_SUBMIT = \
-    "Problem encountered while running condor_submit."
 PROBLEM_PARSING_EXTERNAL_ID = \
     "Failed to find job id from condor_submit"
 
@@ -60,7 +58,7 @@ def build_submit_description(executable, output, error, user_log, query_params):
 
     submit_description = []
     for key, value in all_query_params.items():
-        submit_description.append('%s = %s' % (key, value))
+        submit_description.append('{} = {}'.format(key, value))
     submit_description.append('executable = ' + executable)
     submit_description.append('output = ' + output)
     submit_description.append('error = ' + error)
@@ -76,14 +74,14 @@ def condor_submit(submit_file):
     """
     external_id = None
     try:
-        submit = Popen(('condor_submit', submit_file), stdout=PIPE, stderr=STDOUT)
-        message, _ = submit.communicate()
-        if submit.returncode == 0:
-            external_id = parse_external_id(message, type='condor')
-        else:
-            message = PROBLEM_PARSING_EXTERNAL_ID
-    except Exception as e:
+        message = commands.execute(('condor_submit', submit_file))
+    except commands.CommandLineException as e:
         message = unicodify(e)
+    else:
+        try:
+            external_id = parse_external_id(message, type='condor')
+        except Exception:
+            message = PROBLEM_PARSING_EXTERNAL_ID
     return external_id, message
 
 
@@ -107,7 +105,7 @@ def summarize_condor_log(log_file, external_id):
     """
     log_job_id = external_id.zfill(3)
     s1 = s4 = s7 = s5 = s9 = False
-    with open(log_file, 'r') as log_handle:
+    with open(log_file) as log_handle:
         for line in log_handle:
             if '001 (' + log_job_id + '.' in line:
                 s1 = True

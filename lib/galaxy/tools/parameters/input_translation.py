@@ -1,7 +1,6 @@
 """
 Tool Input Translation.
 """
-from __future__ import print_function
 
 import logging
 
@@ -10,13 +9,12 @@ from galaxy.util.bunch import Bunch
 log = logging.getLogger(__name__)
 
 
-class ToolInputTranslator(object):
+class ToolInputTranslator:
     """
     Handles Tool input translation.
     This is used for data source tools
 
-    >>> from galaxy.util import Params
-    >>> from xml.etree.ElementTree import XML
+    >>> from galaxy.util import Params, XML
     >>> translator = ToolInputTranslator.from_element(XML(
     ... '''
     ... <request_param_translation>
@@ -107,5 +105,5 @@ class ToolInputTranslator(object):
                         sep = translator.append_param.first_separator
                     else:
                         sep = translator.append_param.separator
-                    value += '%s%s%s%s' % (sep, param_name, translator.append_param.join_str, param_value)
+                    value += '{}{}{}{}'.format(sep, param_name, translator.append_param.join_str, param_value)
             params.update({galaxy_name: value})

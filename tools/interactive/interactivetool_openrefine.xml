@@ -1,0 +1,77 @@
+<tool id="interactive_tool_openrefine" tool_type="interactive" name="OpenRefine" version="0.1">
+    <description>Working with messy data</description>
+    <requirements>
+        <container type="docker">ylebras/openrefine-docker</container>
+    </requirements>
+    <entry_points>
+        <entry_point name="Openrefine visualisation" requires_domain="True">
+            <port>3333</port>
+        </entry_point>
+    </entry_points>
+    <environment_variables>
+        <environment_variable name="HISTORY_ID">$__history_id__</environment_variable>
+        <environment_variable name="REMOTE_HOST">$__galaxy_url__</environment_variable>
+        <environment_variable name="GALAXY_WEB_PORT">8080</environment_variable>
+        <environment_variable name="GALAXY_URL">$__galaxy_url__</environment_variable>
+        <environment_variable name="API_KEY" inject="api_key" />
+    </environment_variables>
+    <configfiles>
+        <configfile name="start_openrefine"><![CDATA[
+exec /OpenRefine/refine -i 0.0.0.0 -m \$GALAXY_MEMORY_MB &
+
+##Check if openrefine is up to work
+STATUS=\$(curl --include 'http://127.0.0.1:3333' 2>&1)
+while [[ \${STATUS} =~ "refused" ]]
+do
+  echo "Waiting for openrefine: \$STATUS \n"
+  STATUS=\$(curl --include 'http://127.0.0.1:3333' 2>&1)
+  sleep 4
+done
+]]>
+        </configfile>
+    </configfiles>
+    <command detect_errors="aggressive"><![CDATA[
+
+cp '$infile' /import/input.tabular &&
+cat '$start_openrefine' &&
+bash '$start_openrefine' &&
+
+## Createnew project with the dataset
+cd /refine-python &&
+python openrefine_create_project_API.py '/import/input.tabular' &&
+
+tail -f /dev/null
+
+    ]]>
+    </command>
+    <inputs>
+        <param name="infile" type="data" format="tabular" label="tabular file"/>
+    </inputs>
+    <outputs>
+        <data name="outfile" format="tabular" />
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+        </test>
+    </tests>
+    <help><![CDATA[
+
+`Openrefine <https://openrefine.org/>`_ (previously Google Refine) is a powerful tool for working with messy data:
+cleaning it; transforming it from one format into another; and extending it with web services and external data.
+
+.. class:: infomark
+
+Example input file (TAB separated)::
+
+  "name"	"longitude"	"latitude"	"countryCode"
+  Accipiter striatus Vieillot, 1808	-60.291838	46.328137	CA
+  Accipiter striatus Vieillot, 1808	-114.58927	35.022485	US
+  Accipiter striatus Vieillot, 1808	-93.37406	30.00586	US
+  Accipiter striatus Vieillot, 1808	-79.336288	43.682218	CA
+  Accipiter striatus Vieillot, 1808	-109.156024	31.904185	US
+  Accipiter striatus Vieillot, 1808	-71.098031	42.297408	US
+  Accipiter striatus Vieillot, 1808	-110.927215	32.18203	US
+
+]]>
+    </help>
+</tool>

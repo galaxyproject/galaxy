@@ -47,7 +47,7 @@ def lint_output(tool_xml, lint_ctx):
                 format_set = True
 
         if not format_set:
-            lint_ctx.warn("Tool %s output %s doesn't define an output format." % (output.tag, output.attrib.get("name", "with missing name")))
+            lint_ctx.warn("Tool {} output {} doesn't define an output format.".format(output.tag, output.attrib.get("name", "with missing name")))
 
     lint_ctx.info("%d outputs found.", num_outputs)
 

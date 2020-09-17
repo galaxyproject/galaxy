@@ -1,7 +1,6 @@
 """
 Migration script to add a 'tool_version' column to the hda/ldda tables.
 """
-from __future__ import print_function
 
 import logging
 

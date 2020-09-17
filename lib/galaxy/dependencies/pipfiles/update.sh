@@ -63,7 +63,6 @@ for env in $ENVS; do
                 -e "s/^\(enum34==[^ ;]\{1,\}\).*$/\1 ; python_version < '3.4'/" \
                 -e "s/^\(funcsigs==[^ ;]\{1,\}\).*$/\1 ; python_version < '3.3'/" \
                 -e "s/^\(functools32==[^ ;]\{1,\}\).*$/\1 ; python_version < '3.2'/" \
-                -e "s/^\(futures==[^ ;]\{1,\}\).*$/\1 ; python_version == '2.6' or python_version == '2.7'/" \
                 -e "s/^\(monotonic==[^ ;]\{1,\}\).*$/\1/" \
                 -e "s/^\(more-itertools==[^ ;]\{1,\}\).*$/\1/" \
                 -e "s/^\(paste==[^ ;]\{1,\}\).*$/\1/" \
@@ -73,6 +72,8 @@ for env in $ENVS; do
                 -e "s/^\(python-dateutil==[^ ;]\{1,\}\).*$/\1/" \
                 -e "s/^\(subprocess32==[^ ;]\{1,\}\).*$/\1 ; python_version < '3.0'/" \
                 -e "s/^\(typing==[^ ;]\{1,\}\).*$/\1 ; python_version < '3.5'/" \
+                -e "s/^\(urllib3==[^ ;]\{1,\}\).*$/\1/" \
+                -e "s/^\(wcwidth==[^ ;]\{1,\}\).*$/\1/" \
                 pinned-requirements.txt pinned-dev-requirements.txt
     if ! grep '==' pinned-dev-requirements.txt ; then
         rm -f pinned-dev-requirements.txt

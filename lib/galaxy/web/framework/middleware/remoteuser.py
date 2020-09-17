@@ -40,7 +40,7 @@ errorpage = """
 """
 
 
-class RemoteUser(object):
+class RemoteUser:
 
     def __init__(self, app, maildomain=None, display_servers=None, admin_users=None,
                  single_user=None, remote_user_header=None, remote_user_secret_header=None,
@@ -59,7 +59,7 @@ class RemoteUser(object):
         if self.display_servers and 'REMOTE_ADDR' in environ:
             try:
                 host = socket.gethostbyaddr(environ['REMOTE_ADDR'])[0]
-            except(socket.error, socket.herror, socket.gaierror, socket.timeout):
+            except(OSError, socket.herror, socket.gaierror, socket.timeout):
                 # in the event of a lookup failure, deny access
                 host = None
             if host in self.display_servers:
@@ -82,7 +82,7 @@ class RemoteUser(object):
             if self.normalize_remote_user_email:
                 environ[self.remote_user_header] = environ[self.remote_user_header].lower()
             if self.maildomain and '@' not in environ[self.remote_user_header]:
-                environ[self.remote_user_header] = "%s@%s" % (environ[self.remote_user_header], self.maildomain)
+                environ[self.remote_user_header] = "{}@{}".format(environ[self.remote_user_header], self.maildomain)
 
         path_info = environ.get('PATH_INFO', '')
 
@@ -169,7 +169,7 @@ class RemoteUser(object):
             )
 
             if not path_info.startswith('/user'):
-                # shortcut the following whitelist for non-user-controller
+                # shortcut the following allowlist for non-user-controller
                 # requests.
                 pass
             elif environ[self.remote_user_header] in self.admin_users and \

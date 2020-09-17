@@ -1,0 +1,32 @@
+<tool name="SRA" id="sra_source" tool_type="data_source" version="1.0.1" profile="16.04">
+    <description>server</description>
+    <command><![CDATA[
+    python '$__tool_directory__/data_source.py' '$output' $__app__.config.output_size_limit &&
+    python '$csv_to_tsv'
+    ]]></command>
+    <configfiles>
+    <configfile name="csv_to_tsv">
+import csv
+
+
+with open('$output') as in_fh:
+    rows = [r for r in csv.reader(in_fh)]
+with open('$output', 'w') as out_fh:
+    tsvout = csv.writer(out_fh, delimiter='\t')
+    for row in rows:
+        tsvout.writerow(row)
+    </configfile>
+    </configfiles>
+    <inputs action="https://www.ncbi.nlm.nih.gov/sra" check_values="false" method="get">
+        <display>go to SRA server $GALAXY_URL</display>
+        <param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=sra_source" />
+    </inputs>
+    <outputs>
+        <data name="output" format="sra_manifest.tabular"/>
+    </outputs>
+    <options sanitize="False" refresh="True"/>
+    <citations>
+        <citation type="doi">10.1093/database/bar011</citation>
+        <citation type="doi">10.1101/gr.229102</citation>
+    </citations>
+</tool>

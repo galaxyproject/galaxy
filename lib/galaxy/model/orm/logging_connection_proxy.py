@@ -2,9 +2,14 @@ import inspect
 import logging
 import os
 import threading
-import time
 
 from sqlalchemy.interfaces import ConnectionProxy
+
+try:
+    from time import process_time
+except ImportError:
+    # For compatibility with Python < 3.3
+    from time import clock as process_time
 
 log = logging.getLogger(__name__)
 
@@ -19,7 +24,7 @@ def stripwd(s):
 
 def pretty_stack():
     rval = []
-    for frame, fname, line, funcname, _, _ in inspect.stack()[2:]:
+    for _, fname, line, funcname, _, _ in inspect.stack()[2:]:
         rval.append("%s:%s@%d" % (stripwd(fname), funcname, line))
     return rval
 
@@ -46,9 +51,9 @@ class LoggingProxy(ConnectionProxy):
 
     def cursor_execute(self, execute, cursor, statement, parameters, context, executemany):
         thread_ident = threading.current_thread().ident
-        start = time.clock()
+        start = process_time()
         rval = execute(cursor, statement, parameters, context)
-        duration = time.clock() - start
+        duration = process_time() - start
         log.debug("statement: %r parameters: %r executemany: %r duration: %r stack: %r thread: %r",
                   statement, parameters, executemany, duration, " > ".join(pretty_stack()), thread_ident)
         return rval
@@ -63,9 +68,9 @@ class TraceLoggerProxy(ConnectionProxy):
         self.trace_logger = trace_logger
 
     def cursor_execute(self, execute, cursor, statement, parameters, context, executemany):
-        start = time.clock()
+        start = process_time()
         rval = execute(cursor, statement, parameters, context)
-        duration = time.clock() - start
+        duration = process_time() - start
         self.trace_logger.log(
             "sqlalchemy_query",
             message="Query executed",

@@ -80,18 +80,18 @@ The above list of people is the canonical source used to determine
 membership to the *committers* group - as such new members may be added to
 this group by opening a pull request adding a qualified person to this list.
 Pull requests modifying the membership of this list are subject to the normal
-rules for pull requests that modify governance procedures outlined below - with
-one exception - a *committer* may not vote
+rules for pull requests that modify governance procedures outlined below, with
+one exception: a *committer* may not vote
 against their own removal from the group (for obvious reasons).
 
-Given the responsibilities and power invested in this group - it is important
-that individuals not actively working on Galaxy in some fashion are removed from
+Given the responsibilities and power invested in this group, it is important
+that individuals not actively working on Galaxy anymore are removed from
 the group. If individuals in this group intend to change jobs or reallocate
 volunteer activities and will no longer be active in the Galaxy community,
 they should withdraw from membership of this group. Periodically, active
-members may review this group and request inactive members are removed - this
+members may review this group and request that inactive members are removed - this
 should not be interpreted as a condemnation of these inactive members but
-merely as a reflection of a desire to keep this group focused enough to remain
+merely as a reflection of the desire to keep this group focused enough to remain
 effective.
 
 Direct Commit Access
@@ -103,7 +103,7 @@ four categories of changes:
 
 * Patches for serious security vulnerabilities.
 * Cherry-picking and/or merging of existing approved commits to other branches.
-* Everything under packages/.
+* Everything under ``packages/`` .
 * Release notes and changelogs.
 
 
@@ -111,7 +111,7 @@ Release branches
 ================
 
 A *release branch* is created every few months from the ``dev`` branch of the
-Galaxy repository. A newly created release branch is in a *freezed* state until
+Galaxy repository. A newly created release branch is in a *frozen* state until
 the committers decide that it is ready for public consumption. At this point, a
 release tag will be assigned to a commit in the branch, changing the release
 state to *tagged*.
@@ -157,8 +157,9 @@ Any other pull request requires at least 1 *+1* binding vote from someone other
 than the author of the pull request. A member of the *committers* group merging
 a pull request is considered an implicit +1.
 
-Pull requests modifying freezed and tagged release branches should be restricted
-to bug fixes.
+Pull requests modifying frozen and tagged release branches should be restricted
+to bug fixes. As an exception, pull requests which only add new datatypes can
+target a frozen branch or the latest tagged release branch.
 
 Pull requests marked *[WIP]* (i.e. work in progress) in the title by the
 author(s), or tagged WIP via GitHub tags, may *not* be merged without

@@ -6,7 +6,7 @@ import os
 
 from six.moves import shlex_quote
 
-from .commands import argv_to_str
+from galaxy.util.commands import argv_to_str
 
 DEFAULT_DOCKER_COMMAND = "docker"
 DEFAULT_SUDO = False
@@ -69,7 +69,7 @@ def build_docker_cache_command(
 ):
     inspect_image_command = command_shell("inspect", [image], **kwds)
     pull_image_command = command_shell("pull", [image], **kwds)
-    cache_command = "%s > /dev/null 2>&1\n[ $? -ne 0 ] && %s > /dev/null 2>&1\n" % (inspect_image_command, pull_image_command)
+    cache_command = "{} > /dev/null 2>&1\n[ $? -ne 0 ] && {} > /dev/null 2>&1\n".format(inspect_image_command, pull_image_command)
     return cache_command
 
 
@@ -176,7 +176,7 @@ def build_docker_run_command(
         command_parts.extend(["--user", user])
     full_image = image
     if tag:
-        full_image = "%s:%s" % (full_image, tag)
+        full_image = "{}:{}".format(full_image, tag)
     command_parts.append(shlex_quote(full_image))
     command_parts.append(container_command)
     return " ".join(command_parts)

@@ -16,12 +16,9 @@
     <tool file="data_source/wormbase.xml" />
     <tool file="data_source/zebrafishmine.xml" />
     <tool file="data_source/eupathdb.xml" />
-    <tool file="genomespace/genomespace_importer.xml" />
-    <tool file="genomespace/genomespace_push.xml" />
   </section>
   <section id="send" name="Send Data">
     <tool file="cloud/send.xml" />
-    <tool file="genomespace/genomespace_exporter.xml" />
   </section>
   <section id="liftOver" name="Lift-Over">
     <tool file="extract/liftOver_wrapper.xml" />

@@ -1,4 +1,4 @@
-<tool id="collection_creates_dynamic_nested" name="collection_creates_dynamic_nested" version="0.1.0">
+<tool id="collection_creates_dynamic_nested" name="collection_creates_dynamic_nested" version="0.1.0" profile="16.04">
   <command><![CDATA[
     echo "A" > oe1_ie1.fq ;
     echo "B" > oe1_ie2.fq ;
@@ -6,11 +6,13 @@
     echo "D" > oe2_ie2.fq ;
     echo "E" > oe3_ie1.fq ;
     echo "F" > oe3_ie2.fq ;
-    sleep '$sleep_time';    
+    sleep '$sleep_time';
+    exit $fail_bool
   ]]></command>
   <inputs>
     <param name="foo" type="text" label="Dummy Parameter" />
     <param name="sleep_time" type="integer" label="Sleep Time" value="0" />
+    <param name="fail_bool" type="boolean" label="Fail tool run?" truevalue="1" falsevalue="0"/>
   </inputs>
   <outputs>
     <collection name="list_output" type="list:list" label="Duplicate List">

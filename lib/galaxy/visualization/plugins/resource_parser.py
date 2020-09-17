@@ -17,7 +17,7 @@ from galaxy.util import bunch
 log = logging.getLogger(__name__)
 
 
-class ResourceParser(object):
+class ResourceParser:
     """
     Given a parameter dictionary (often a converted query string) and a
     configuration dictionary (curr. only VisualizationsRegistry uses this),
@@ -112,7 +112,7 @@ class ResourceParser(object):
 
                 except Exception as exception:
                     log.warning('Exception parsing visualization param from query: ' +
-                              '%s, %s, (%s) %s' % (param_name, config_val, str(type(exception)), str(exception)))
+                              '{}, {}, ({}) {}'.format(param_name, config_val, str(type(exception)), str(exception)))
                     config_val = None
 
             # here - we've either had no value in the query_params or there was a failure to parse

@@ -2,7 +2,6 @@
 
 Implementer must provide a self.build_url method to target Galaxy.
 """
-from __future__ import print_function
 
 import collections
 import contextlib
@@ -50,13 +49,17 @@ WAIT_TYPES = Bunch(
     JOB_COMPLETION=WaitType("job_completion", 30),
     # Wait time for a GIE to spawn.
     GIE_SPAWN=WaitType("gie_spawn", 30),
+    # Wait time for toolshed search
+    SHED_SEARCH=WaitType('shed_search', 30),
+    # Wait time for repository installation
+    REPO_INSTALL=WaitType('repo_install', 60),
 )
 
 # Choose a moderate wait type for operations that don't specify a type.
 DEFAULT_WAIT_TYPE = WAIT_TYPES.DATABASE_OPERATION
 
 
-class NullTourCallback(object):
+class NullTourCallback:
 
     def handle_step(self, step, step_index):
         pass
@@ -159,7 +162,7 @@ class NavigatesGalaxy(HasDriver):
 
     @contextlib.contextmanager
     def local_storage(self, key, value):
-        self.driver.execute_script('''window.localStorage.setItem("%s", %s);''' % (key, value))
+        self.driver.execute_script('''window.localStorage.setItem("{}", {});'''.format(key, value))
         try:
             yield
         finally:
@@ -181,6 +184,12 @@ class NavigatesGalaxy(HasDriver):
             return response
         else:
             return response.json()
+
+    def api_post(self, endpoint, data=None):
+        data = data or {}
+        full_url = self.build_url("api/" + endpoint, for_selenium=False)
+        response = requests.post(full_url, data=data, cookies=self.selenium_to_requests_cookies())
+        return response.json()
 
     def api_delete(self, endpoint, raw=False):
         full_url = self.build_url("api/" + endpoint, for_selenium=False)
@@ -207,20 +216,28 @@ class NavigatesGalaxy(HasDriver):
     def history_panel_name(self):
         return self.history_panel_name_element().text
 
+    def history_contents(self, history_id=None, view='summary', datasets_only=True):
+        if history_id is None:
+            history_id = self.current_history_id()
+        histories = self.api_get('histories?keys=id')
+        if history_id not in [h['id'] for h in histories]:
+            return {}
+        if datasets_only:
+            endpoint = 'histories/{}/contents?view={}'.format(history_id, view)
+        else:
+            endpoint = 'histories/{}?view={}'.format(history_id, view)
+        return self.api_get(endpoint)
+
     def current_history(self):
-        history = self.api_get("histories")[0]
-        return history
+        full_url = self.build_url("history/current_history_json", for_selenium=False)
+        response = requests.get(full_url, cookies=self.selenium_to_requests_cookies())
+        return response.json()
 
     def current_history_id(self):
         return self.current_history()["id"]
 
-    def current_history_contents(self):
-        current_history_id = self.current_history_id()
-        history_contents = self.api_get("histories/%s/contents" % current_history_id)
-        return history_contents
-
     def latest_history_item(self):
-        history_contents = self.current_history_contents()
+        history_contents = self.history_contents()
         assert len(history_contents) > 0
         return history_contents[-1]
 
@@ -350,19 +367,32 @@ class NavigatesGalaxy(HasDriver):
 
     def published_grid_search_for(self, search_term=None):
         return self._inline_search_for(
-            '#input-free-text-search-filter',
+            self.navigation.grids.free_text_search,
             search_term,
         )
 
     def get_logged_in_user(self):
         return self.api_get("users/current")
 
+    def get_api_key(self, force=False):
+        # If force is false, use the form inputs API and allow the key to be absent.
+        if not force:
+            return self.api_get("users/%s/api_key/inputs" % self.get_user_id())["inputs"][0]["value"]
+        else:
+            return self.api_post("users/%s/api_key" % self.get_user_id())
+
+    def get_user_id(self):
+        user = self.get_logged_in_user()
+        return user["id"]
+
     def is_logged_in(self):
         return "email" in self.get_logged_in_user()
 
     @retry_during_transitions
     def _inline_search_for(self, selector, search_term=None):
-        search_box = self.wait_for_and_click_selector(selector)
+        # Clear tooltip resulting from clicking on the masthead to get here.
+        self.clear_tooltips()
+        search_box = self.wait_for_and_click(selector)
         search_box.clear()
         if search_term is not None:
             search_box.send_keys(search_term)
@@ -370,7 +400,7 @@ class NavigatesGalaxy(HasDriver):
         return search_box
 
     def _get_random_name(self, prefix=None, suffix=None, len=10):
-        return '%s%s%s' % (
+        return '{}{}{}'.format(
             prefix or '',
             ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(len)),
             suffix or '',
@@ -381,6 +411,12 @@ class NavigatesGalaxy(HasDriver):
         domain = domain or 'test.test'
         return self._get_random_name(prefix=username, suffix="@" + domain)
 
+    # Creates a random password of length len by creating an array with all ASCII letters and the numbers 0 to 9,
+    # then using the random number generator to pick one elemenent to concatinate it to the end of the password string until
+    # we have a password of length len.
+    def _get_random_password(self, len=6):
+        return ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(len))
+
     def submit_login(self, email, password=None, assert_valid=True, retries=0):
         if password is None:
             password = self.default_password
@@ -388,7 +424,7 @@ class NavigatesGalaxy(HasDriver):
             'login': email,
             'password': password,
         }
-        self.click_masthead_user()
+        self.components.masthead.register_or_login.wait_for_and_click()
         self.sleep_for(WAIT_TYPES.UX_RENDER)
         form = self.wait_for_visible(self.navigation.login.selectors.form)
         self.fill(form, login_info)
@@ -417,7 +453,7 @@ class NavigatesGalaxy(HasDriver):
             username = email.split("@")[0]
 
         self.home()
-        self.click_masthead_user()
+        self.components.masthead.register_or_login.wait_for_and_click()
         self.wait_for_and_click(self.navigation.registration.selectors.toggle)
         form = self.wait_for_visible(self.navigation.registration.selectors.form)
         self.fill(form, dict(
@@ -452,8 +488,8 @@ class NavigatesGalaxy(HasDriver):
             assert email in text
             assert self.get_logged_in_user()["email"] == email
 
-            # Hide masthead menu click
-            self.click_center()
+            # clicking away no longer closes menu post Masthead -> VueJS
+            self.click_masthead_user()
 
     def wait_for_logged_in(self):
         try:
@@ -825,6 +861,11 @@ class NavigatesGalaxy(HasDriver):
         self.wait_for_and_click_selector("#workflow-save-button")
         self.sleep_for(self.wait_types.DATABASE_OPERATION)
 
+    def navigate_to_user_preferences(self):
+        self.home()
+        self.click_masthead_user()
+        self.components.masthead.preferences.wait_for_and_click()
+
     def admin_open(self):
         self.components.masthead.admin.wait_for_and_click()
 
@@ -885,12 +926,8 @@ class NavigatesGalaxy(HasDriver):
 
     def libraries_folder_create(self, name):
         self.components.libraries.folder.add_folder.wait_for_and_click()
-
-        name_text_box = self.wait_for_selector_visible("textarea[name='input_folder_name']")
-        name_text_box.send_keys(name)
-
-        create_button = self.wait_for_selector_clickable(".save_folder_btn")
-        create_button.click()
+        self.components.libraries.folder.input_folder_name.wait_for_and_send_keys(name)
+        self.components.libraries.folder.save_folder_btn.wait_for_and_click()
 
     def libraries_click_dataset_import(self):
         self.wait_for_and_click(self.navigation.libraries.folder.selectors.add_items_button)
@@ -936,6 +973,12 @@ class NavigatesGalaxy(HasDriver):
         self.wait_for_selector_absent_or_hidden(".ui-modal", wait_type=WAIT_TYPES.UX_POPUP)
         self.wait_for_selector_absent_or_hidden(".toast", wait_type=WAIT_TYPES.UX_POPUP)
 
+    def clear_tooltips(self):
+        action_chains = self.action_chains()
+        center_element = self.driver.find_element_by_css_selector("#center")
+        action_chains.move_to_element(center_element).perform()
+        self.wait_for_selector_absent_or_hidden(".b-tooltip", wait_type=WAIT_TYPES.UX_POPUP)
+
     def workflow_index_open(self):
         self.home()
         self.click_masthead_workflow()
@@ -959,7 +1002,7 @@ class NavigatesGalaxy(HasDriver):
 
     def workflow_index_search_for(self, search_term=None):
         return self._inline_search_for(
-            "#workflow-search",
+            self.navigation.workflows.search_box,
             search_term,
         )
 
@@ -1102,7 +1145,7 @@ class NavigatesGalaxy(HasDriver):
 
         # Click labelled option
         self.wait_for_visible(self.navigation.history_panel.options_menu)
-        menu_item_sizzle_selector = '#history-options-button-menu > a:contains("%s")' % option_label
+        menu_item_sizzle_selector = "#history-options-button-menu > a:contains('%s')" % option_label
         menu_selection_element = self.wait_for_sizzle_selector_clickable(menu_item_sizzle_selector)
         menu_selection_element.click()
 
@@ -1178,13 +1221,13 @@ class NavigatesGalaxy(HasDriver):
         self.wait_for_and_click(dataset_selector)
 
     def history_panel_item_click_visualization_menu(self, hid):
-        viz_button_selector = "%s %s" % (self.history_panel_item_selector(hid), ".visualizations-dropdown")
+        viz_button_selector = "{} {}".format(self.history_panel_item_selector(hid), ".visualizations-dropdown")
         self.wait_for_and_click_selector(viz_button_selector)
-        self.wait_for_selector_visible("%s %s" % (viz_button_selector, ".dropdown-menu"))
+        self.wait_for_selector_visible("{} {}".format(viz_button_selector, ".dropdown-menu"))
 
     def history_panel_item_available_visualizations_elements(self, hid):
         # Precondition: viz menu has been opened with history_panel_item_click_visualization_menu
-        viz_menu_selectors = "%s %s" % (self.history_panel_item_selector(hid), "a.visualization-link")
+        viz_menu_selectors = "{} {}".format(self.history_panel_item_selector(hid), "a.visualization-link")
         return self.driver.find_elements_by_css_selector(viz_menu_selectors)
 
     def history_panel_item_get_nametags(self, hid):
@@ -1212,8 +1255,8 @@ class NavigatesGalaxy(HasDriver):
         try:
             history_item = [d for d in contents if d["hid"] == hid][0]
         except IndexError:
-            raise Exception("Could not find history item with hid [%s] in contents [%s]" % (hid, contents))
-        history_item_selector = "#%s-%s" % (history_item["history_content_type"], history_item["id"])
+            raise Exception("Could not find history item with hid [{}] in contents [{}]".format(hid, contents))
+        history_item_selector = "#{}-{}".format(history_item["history_content_type"], history_item["id"])
         if wait:
             self.wait_for_selector_visible(history_item_selector)
         return history_item_selector
@@ -1296,7 +1339,7 @@ class NavigatesGalaxy(HasDriver):
 
         self.home()
 
-        with open(path, "r") as f:
+        with open(path) as f:
             tour_dict = yaml.safe_load(f)
         steps = tour_dict["steps"]
         for i, step in enumerate(steps):
@@ -1376,21 +1419,23 @@ class NavigatesGalaxy(HasDriver):
         if hasattr(expected, "text"):
             expected = expected.text
         text = self.get_tooltip_text(element, sleep=sleep, click_away=click_away)
-        assert text == expected, "Tooltip text [%s] was not expected text [%s]." % (text, expected)
+        assert text == expected, "Tooltip text [{}] was not expected text [{}].".format(text, expected)
 
     def assert_error_message(self, contains=None):
-        return self._assert_message("error", contains=contains)
+        element = self.components._.messages["error"]
+        return self.assert_message(element, contains=contains)
 
     def assert_warning_message(self, contains=None):
-        return self._assert_message("warning", contains=contains)
+        element = self.components._.messages["warning"]
+        return self.assert_message(element, contains=contains)
 
-    def _assert_message(self, message_type, contains=None):
-        element = self.components._.messages[message_type].wait_for_visible()
+    def assert_message(self, element, contains=None):
+        element = element.wait_for_visible()
         assert element, "No error message found, one expected."
         if contains is not None:
             text = element.text
             if contains not in text:
-                message = "Text [%s] expected inside of [%s] but not found." % (contains, text)
+                message = "Text [{}] expected inside of [{}] but not found.".format(contains, text)
                 raise AssertionError(message)
 
     def assert_no_error_message(self):
@@ -1436,6 +1481,27 @@ class NavigatesGalaxy(HasDriver):
         element.click()
         return element
 
+    def set_history_annotation(self, annotation, clear_text=False):
+        self.ensure_history_annotation_area_displayed()
+
+        self.wait_for_and_click(self.navigation.history_panel.selectors.annotation_editable_text)
+
+        annon_area_editable = self.wait_for_and_click(self.navigation.history_panel.selectors.annotation_edit)
+        anno_done_button = self.wait_for_clickable(self.navigation.history_panel.selectors.annotation_done)
+
+        if clear_text:
+            annon_area_editable.clear()
+
+        annon_area_editable.send_keys(annotation)
+        anno_done_button.click()
+
+    def ensure_history_annotation_area_displayed(self):
+        annotation_area_selector = self.navigation.history_panel.selectors.annotation_area
+        annotation_icon_selector = self.navigation.history_panel.selectors.annotation_icon
+
+        if not self.is_displayed(annotation_area_selector):
+            self.wait_for_and_click(annotation_icon_selector)
+
     def select2_set_value(self, container_selector_or_elem, value, with_click=True, clear_value=False):
         # There are two hacky was to select things from the select2 widget -
         #   with_click=True: This simulates the mouse click after the suggestion contains
@@ -1478,7 +1544,7 @@ class NotLoggedInException(TimeoutException):
     def __init__(self, timeout_exception, user_info, dom_message):
         template = "Waiting for UI to reflect user logged in but it did not occur. API indicates no user is currently logged in. %s API response was [%s]. %s"
         msg = template % (dom_message, user_info, timeout_exception.msg)
-        super(NotLoggedInException, self).__init__(
+        super().__init__(
             msg=msg,
             screen=timeout_exception.screen,
             stacktrace=timeout_exception.stacktrace

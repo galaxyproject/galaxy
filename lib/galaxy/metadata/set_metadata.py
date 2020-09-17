@@ -40,8 +40,8 @@ def set_validated_state(dataset_instance):
     dataset_instance.validated_state_message = datatype_validation.message
 
     # Set special metadata property that will reload this on server side.
-    setattr(dataset_instance.metadata, "__validated_state__", datatype_validation.state)
-    setattr(dataset_instance.metadata, "__validated_state_message__", datatype_validation.message)
+    dataset_instance.metadata.__validated_state__ = datatype_validation.state
+    dataset_instance.metadata.__validated_state_message__ = datatype_validation.message
 
 
 def set_meta_with_tool_provided(dataset_instance, file_dict, set_meta_kwds, datatypes_registry, max_metadata_value_size):
@@ -60,7 +60,7 @@ def set_meta_with_tool_provided(dataset_instance, file_dict, set_meta_kwds, data
             # side and the model updated (see MetadataCollection.{from,to}_JSON_dict)
             dataset_instance.extension = extension
             # Set special metadata property that will reload this on server side.
-            setattr(dataset_instance.metadata, "__extension__", extension)
+            dataset_instance.metadata.__extension__ = extension
         except Exception:
             log.exception("Problem sniffing datatype.")
 
@@ -92,9 +92,9 @@ def set_metadata_portable():
 
     metadata_params_path = os.path.join("metadata", "params.json")
     try:
-        with open(metadata_params_path, "r") as f:
+        with open(metadata_params_path) as f:
             metadata_params = json.load(f)
-    except IOError:
+    except OSError:
         raise Exception("Failed to find metadata/params.json from cwd [%s]" % tool_job_working_directory)
     datatypes_config = metadata_params["datatypes_config"]
     job_metadata = metadata_params["job_metadata"]
@@ -123,7 +123,7 @@ def set_metadata_portable():
         stdio_exit_codes = list(map(ToolStdioExitCode, stdio_exit_code_dicts))
         stdio_regexes = list(map(ToolStdioRegex, stdio_regex_dicts))
 
-        with open(object_store_conf_path, "r") as f:
+        with open(object_store_conf_path) as f:
             config_dict = json.load(f)
         from galaxy.objectstore import build_object_store_from_config
         assert config_dict is not None
@@ -168,13 +168,12 @@ def set_metadata_portable():
         if os.path.exists(COMMAND_VERSION_FILENAME):
             version_string = open(COMMAND_VERSION_FILENAME).read()
 
-        # TODO: handle outputs_to_working_directory?
         from galaxy.util.expressions import ExpressionContext
         job_context = ExpressionContext(dict(stdout=tool_stdout, stderr=tool_stderr))
 
         # Load outputs.
         import_model_store = store.imported_store_for_metadata('metadata/outputs_new', object_store=object_store)
-        export_store = store.DirectoryModelExportStore('metadata/outputs_populated', serialize_dataset_objects=True, for_edit=True)
+        export_store = store.DirectoryModelExportStore('metadata/outputs_populated', serialize_dataset_objects=True, for_edit=True, strip_metadata_files=False)
 
     for output_name, output_dict in outputs.items():
         if extended_metadata_collection:
@@ -237,7 +236,10 @@ def set_metadata_portable():
                 dataset.set_size()
                 if 'uuid' in context:
                     dataset.dataset.uuid = context['uuid']
-                object_store.update_from_file(dataset.dataset, create=True)
+                if dataset_filename_override and dataset_filename_override != dataset.file_name:
+                    # This has to be a job with outputs_to_working_directory set.
+                    # We update the object store with the created output file.
+                    object_store.update_from_file(dataset.dataset, file_name=dataset_filename_override, create=True)
                 from galaxy.job_execution.output_collect import collect_extra_files
                 collect_extra_files(object_store, dataset, ".")
                 if galaxy.model.Job.states.ERROR == final_job_state:
@@ -265,11 +267,9 @@ def set_metadata_portable():
                     if context_key in context:
                         context_value = context[context_key]
                         setattr(dataset, context_key, context_value)
-
-                if extended_metadata_collection:
-                    export_store.add_dataset(dataset)
-                else:
-                    cPickle.dump(dataset, open(filename_out, 'wb+'))
+                # We never want to persist the external_filename.
+                dataset.dataset.external_filename = None
+                export_store.add_dataset(dataset)
             else:
                 dataset.metadata.to_JSON_dict(filename_out)  # write out results of set_meta
 
@@ -281,7 +281,15 @@ def set_metadata_portable():
         # discover extra outputs...
         from galaxy.job_execution.output_collect import collect_dynamic_outputs, collect_primary_datasets, SessionlessJobContext
 
-        job_context = SessionlessJobContext(metadata_params, tool_provided_metadata, object_store, export_store, import_model_store, os.path.join(tool_job_working_directory, "working"))
+        job_context = SessionlessJobContext(
+            metadata_params,
+            tool_provided_metadata,
+            object_store,
+            export_store,
+            import_model_store,
+            os.path.join(tool_job_working_directory, "working"),
+            final_job_state=final_job_state,
+        )
 
         output_collections = {}
         for name, output_collection in metadata_params["output_collections"].items():

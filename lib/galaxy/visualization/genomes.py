@@ -4,7 +4,6 @@ import re
 import sys
 from json import loads
 
-import six
 from bx.seq.twobit import TwoBitFile
 
 from galaxy.util.bunch import Bunch
@@ -27,13 +26,13 @@ messages = Bunch(
 
 def decode_dbkey(dbkey):
     """ Decodes dbkey and returns tuple ( username, dbkey )"""
-    if isinstance(dbkey, six.string_types) and ':' in dbkey:
+    if isinstance(dbkey, str) and ':' in dbkey:
         return dbkey.split(':')
     else:
         return None, dbkey
 
 
-class GenomeRegion(object):
+class GenomeRegion:
     """
     A genomic region on an individual chromosome.
     """
@@ -72,7 +71,7 @@ class GenomeRegion(object):
         return GenomeRegion()
 
 
-class Genome(object):
+class Genome:
     """
     Encapsulates information about a known genome/dbkey.
     """
@@ -183,7 +182,7 @@ class Genome(object):
         }
 
 
-class Genomes(object):
+class Genomes:
     """
     Provides information about available genome data and methods for manipulating that data.
     """
@@ -216,7 +215,7 @@ class Genomes(object):
                     if len(val) == 2:
                         key, path = val
                         twobit_fields[key] = path
-            except IOError:
+            except OSError:
                 # Thrown if twobit.loc does not exist.
                 log.exception("Error reading twobit.loc")
         for key, description in self.app.genome_builds.get_genome_build_names():
@@ -392,9 +391,9 @@ class Genomes(object):
 
         # Read and return reference data.
         try:
-            twobit = TwoBitFile(open(twobit_file_name))
+            twobit = TwoBitFile(open(twobit_file_name, 'rb'))
             if chrom in twobit:
                 seq_data = twobit[chrom].get(int(low), int(high))
                 return GenomeRegion(chrom=chrom, start=low, end=high, sequence=seq_data)
-        except IOError:
+        except OSError:
             return None

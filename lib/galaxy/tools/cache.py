@@ -1,5 +1,10 @@
+import json
 import logging
 import os
+import shutil
+import sqlite3
+import tempfile
+import zlib
 from collections import defaultdict
 from threading import Lock
 
@@ -7,14 +12,88 @@ from sqlalchemy.orm import (
     defer,
     joinedload,
 )
+from sqlitedict import SqliteDict
 
 from galaxy.util import unicodify
 from galaxy.util.hash_util import md5_hash_file
 
 log = logging.getLogger(__name__)
 
+CURRENT_TOOL_CACHE_VERSION = 0
 
-class ToolCache(object):
+
+def encoder(obj):
+    return sqlite3.Binary(zlib.compress(json.dumps(obj).encode('utf-8')))
+
+
+def decoder(obj):
+    return json.loads(zlib.decompress(bytes(obj)).decode('utf-8'))
+
+
+class ToolDocumentCache:
+
+    def __init__(self, cache_dir):
+        self.cache_dir = cache_dir
+        if not os.path.exists(self.cache_dir):
+            os.makedirs(self.cache_dir)
+        self.cache_file = os.path.join(self.cache_dir, 'cache.sqlite')
+        self.writeable_cache_file = None
+        # Create database if necessary using 'c' flag
+        self._cache = SqliteDict(self.cache_file, flag='c', encode=encoder, decode=decoder, autocommit=False)
+        # Switch SqliteDict back to readonly
+        self._cache.flag = 'r'
+
+    def get(self, config_file):
+        tool_document = self._cache.get(config_file)
+        if not tool_document:
+            return None
+        if tool_document.get('tool_cache_version') != CURRENT_TOOL_CACHE_VERSION:
+            return None
+        for path, modtime in tool_document['paths_and_modtimes'].items():
+            if os.path.getmtime(path) != modtime:
+                return None
+        return tool_document
+
+    def make_writable(self):
+        if not self.writeable_cache_file:
+            self.writeable_cache_file = tempfile.NamedTemporaryFile(dir=self.cache_dir, suffix='cache.sqlite.tmp', delete=False)
+            if os.path.exists(self.cache_file):
+                shutil.copy(self.cache_file, self.writeable_cache_file.name)
+            self._cache = SqliteDict(self.writeable_cache_file.name, flag='c', encode=encoder, decode=decoder, autocommit=False)
+
+    def persist(self):
+        if self.writeable_cache_file:
+            self._cache.commit()
+            os.rename(self.writeable_cache_file.name, self.cache_file)
+            self._cache = SqliteDict(self.cache_file, flag='r', encode=encoder, decode=decoder, autocommit=False)
+            self.writeable_cache_file = None
+
+    def set(self, config_file, tool_source):
+        self.make_writable()
+        to_persist = {
+            'document': tool_source.to_string(),
+            'macro_paths': tool_source.macro_paths,
+            'paths_and_modtimes': tool_source.paths_and_modtimes(),
+            'tool_cache_version': CURRENT_TOOL_CACHE_VERSION,
+        }
+        self._cache[config_file] = to_persist
+
+    def delete(self, config_file):
+        self.make_writable()
+        try:
+            del self._cache[config_file]
+        except KeyError:
+            pass
+
+    def __del__(self):
+        if self.writeable_cache_file:
+            try:
+                os.unlink(self.writeable_cache_file.name)
+            except Exception:
+                pass
+
+
+class ToolCache:
     """
     Cache tool definitions to allow quickly reloading the whole
     toolbox.
@@ -26,10 +105,16 @@ class ToolCache(object):
         self._tools_by_path = {}
         self._tool_paths_by_id = {}
         self._macro_paths_by_id = {}
-        self._mod_time_by_path = {}
         self._new_tool_ids = set()
         self._removed_tool_ids = set()
         self._removed_tools_by_path = {}
+        self._hashes_initialized = False
+
+    def assert_hashes_initialized(self):
+        if not self._hashes_initialized:
+            for tool_hash in self._hash_by_tool_paths.values():
+                tool_hash.hash
+            self._hashes_initialized = True
 
     def cleanup(self):
         """
@@ -40,14 +125,18 @@ class ToolCache(object):
         removed_tool_ids = []
         try:
             with self._lock:
-                paths_to_cleanup = {path: tool.all_ids for path, tool in self._tools_by_path.items() if self._should_cleanup(path)}
-                for config_filename, tool_ids in paths_to_cleanup.items():
+                persist_tool_document_cache = False
+                paths_to_cleanup = {(path, tool) for path, tool in self._tools_by_path.items() if self._should_cleanup(path)}
+                for config_filename, tool in paths_to_cleanup:
+                    tool.remove_from_cache()
+                    persist_tool_document_cache = True
                     del self._hash_by_tool_paths[config_filename]
                     if os.path.exists(config_filename):
                         # This tool has probably been broken while editing on disk
                         # We record it here, so that we can recover it
                         self._removed_tools_by_path[config_filename] = self._tools_by_path[config_filename]
                     del self._tools_by_path[config_filename]
+                    tool_ids = tool.all_ids
                     for tool_id in tool_ids:
                         if tool_id in self._tool_paths_by_id:
                             del self._tool_paths_by_id[tool_id]
@@ -56,11 +145,12 @@ class ToolCache(object):
                     self._removed_tool_ids.add(tool_id)
                     if tool_id in self._new_tool_ids:
                         self._new_tool_ids.remove(tool_id)
+                if persist_tool_document_cache:
+                    tool.toolbox.persist_tool_document_cache()
         except Exception as e:
             log.debug("Exception while checking tools to remove from cache: %s", unicodify(e))
             # If by chance the file is being removed while calculating the hash or modtime
             # we don't want the thread to die.
-            pass
         if removed_tool_ids:
             log.debug("Removed the following tools from cache: %s" % removed_tool_ids)
         return removed_tool_ids
@@ -70,13 +160,14 @@ class ToolCache(object):
         if not os.path.exists(config_filename):
             return True
         new_mtime = os.path.getmtime(config_filename)
-        if self._mod_time_by_path.get(config_filename) < new_mtime:
-            if md5_hash_file(config_filename) != self._hash_by_tool_paths.get(config_filename):
+        tool_hash = self._hash_by_tool_paths.get(config_filename)
+        if tool_hash.modtime < new_mtime:
+            if md5_hash_file(config_filename) != tool_hash.hash:
                 return True
         tool = self._tools_by_path[config_filename]
         for macro_path in tool._macro_paths:
             new_mtime = os.path.getmtime(macro_path)
-            if self._mod_time_by_path.get(macro_path) < new_mtime:
+            if self._hash_by_tool_paths.get(macro_path).modtime < new_mtime:
                 return True
         return False
 
@@ -98,23 +189,21 @@ class ToolCache(object):
                 del self._hash_by_tool_paths[config_filename]
                 del self._tool_paths_by_id[tool_id]
                 del self._tools_by_path[config_filename]
-                del self._mod_time_by_path[config_filename]
                 if tool_id in self._new_tool_ids:
                     self._new_tool_ids.remove(tool_id)
 
     def cache_tool(self, config_filename, tool):
-        tool_hash = md5_hash_file(config_filename)
-        if tool_hash is None:
-            return
         tool_id = str(tool.id)
+        # We defer hashing of the config file if we haven't called assert_hashes_initialized.
+        # This allows startup to occur without having to read in and hash all tool and macro files
+        lazy_hash = not self._hashes_initialized
         with self._lock:
-            self._hash_by_tool_paths[config_filename] = tool_hash
-            self._mod_time_by_path[config_filename] = os.path.getmtime(config_filename)
+            self._hash_by_tool_paths[config_filename] = ToolHash(config_filename, lazy_hash=lazy_hash)
             self._tool_paths_by_id[tool_id] = config_filename
             self._tools_by_path[config_filename] = tool
             self._new_tool_ids.add(tool_id)
             for macro_path in tool._macro_paths:
-                self._mod_time_by_path[macro_path] = os.path.getmtime(macro_path)
+                self._hash_by_tool_paths[macro_path] = ToolHash(macro_path, lazy_hash=lazy_hash)
                 if tool_id not in self._macro_paths_by_id:
                     self._macro_paths_by_id[tool_id] = {macro_path}
                 else:
@@ -130,7 +219,23 @@ class ToolCache(object):
             self._removed_tools_by_path = {}
 
 
-class ToolShedRepositoryCache(object):
+class ToolHash:
+
+    def __init__(self, path, modtime=None, lazy_hash=False):
+        self.path = path
+        self.modtime = modtime or os.path.getmtime(path)
+        self._tool_hash = None
+        if not lazy_hash:
+            self.hash
+
+    @property
+    def hash(self):
+        if self._tool_hash is None:
+            self._tool_hash = md5_hash_file(self.path)
+        return self._tool_hash
+
+
+class ToolShedRepositoryCache:
     """
     Cache installed ToolShedRepository objects.
     """
@@ -149,16 +254,20 @@ class ToolShedRepositoryCache(object):
         self.repos_by_tuple[(repository.tool_shed, repository.owner, repository.name)].append(repository)
 
     def rebuild(self):
-        self.repositories = self.app.install_model.context.current.query(self.app.install_model.ToolShedRepository).options(
-            defer(self.app.install_model.ToolShedRepository.metadata),
-            joinedload('tool_dependencies').subqueryload('tool_shed_repository').options(
-                defer(self.app.install_model.ToolShedRepository.metadata)
-            ),
-        ).all()
-        repos_by_tuple = defaultdict(list)
-        for repository in self.repositories + self.local_repositories:
-            repos_by_tuple[(repository.tool_shed, repository.owner, repository.name)].append(repository)
-        self.repos_by_tuple = repos_by_tuple
+        try:
+            session = self.app.install_model.context.current.session_factory()
+            self.repositories = session.query(self.app.install_model.ToolShedRepository).options(
+                defer(self.app.install_model.ToolShedRepository.metadata),
+                joinedload('tool_dependencies').subqueryload('tool_shed_repository').options(
+                    defer(self.app.install_model.ToolShedRepository.metadata)
+                ),
+            ).all()
+            repos_by_tuple = defaultdict(list)
+            for repository in self.repositories + self.local_repositories:
+                repos_by_tuple[(repository.tool_shed, repository.owner, repository.name)].append(repository)
+            self.repos_by_tuple = repos_by_tuple
+        finally:
+            session.close()
 
     def get_installed_repository(self, tool_shed=None, name=None, owner=None, installed_changeset_revision=None, changeset_revision=None, repository_id=None):
         if repository_id:

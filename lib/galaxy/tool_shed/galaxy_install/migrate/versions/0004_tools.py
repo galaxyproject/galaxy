@@ -5,7 +5,6 @@ blast_datatypes, in the main Galaxy tool shed at http://toolshed.g2.bx.psu.edu.
 These repositories will be installed into your local Galaxy instance at the
 location discussed above by running the following command.
 """
-from __future__ import print_function
 
 
 def upgrade(migrate_engine):

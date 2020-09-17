@@ -8,7 +8,7 @@ import galaxy
 log = logging.getLogger(__name__)
 
 
-class UsesItemRatings(object):
+class UsesItemRatings:
     """
         Mixin for getting and setting item ratings.
 
@@ -80,7 +80,7 @@ class UsesItemRatings(object):
         return item_fk.parent == item.id
 
 
-class UsesAnnotations(object):
+class UsesAnnotations:
     """ Mixin for getting and setting item annotations. """
 
     def get_item_annotation_str(self, db_session, user, item):

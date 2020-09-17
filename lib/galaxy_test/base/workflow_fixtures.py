@@ -1,5 +1,3 @@
-
-
 WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES = """
 class: GalaxyWorkflow
 doc: |
@@ -143,11 +141,11 @@ steps:
   - tool_id: collection_paired_test
     state:
       f1:
-        $link: 1#paired_output
+        $link: 1/paired_output
   - tool_id: cat_list
     state:
       input1:
-        $link: 2#out1
+        $link: 2/out1
 """
 
 
@@ -175,7 +173,7 @@ steps:
     state:
       num_lines: 1
       input:
-        $link: apply#output
+        $link: apply/output
       seed_source:
         seed_source_selector: set_seed
         seed: asdf
@@ -279,7 +277,7 @@ steps:
         inner_input: data
       outputs:
         workflow_output:
-          outputSource: random_lines#out_file1
+          outputSource: random_lines/out_file1
       steps:
         - tool_id: random_lines1
           label: random_lines

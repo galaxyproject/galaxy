@@ -1,0 +1,50 @@
+<tool id="interactive_tool_vcf_iobio" tool_type="interactive" name="VCF (iobio) Visualisation" version="0.1">
+    <requirements>
+        <container type="docker">qiaoy/iobio-bundle.vcf-iobio:dev-ondemand</container>
+    </requirements>
+    <entry_points>
+        <entry_point name="VCF io.bio visualisation of $infile.display_name" requires_domain="True">
+            <port>80</port>
+            <url><![CDATA[/?vcf=http://localhost/tmp/vcffile.vcf.gz]]></url>
+        </entry_point>
+    </entry_points>
+    <command><![CDATA[
+    #set $PUB_HOSTNAME = 'localhost'
+    #set $PUB_HTTP_PORT = '80'
+
+    cd /var/www/html &&
+    sed -i "s@\"wss://services.iobio.io/vcfdepther/\"@((window.location.protocol === \"https:\") ? \"wss://\" : \"ws://\") + window.location.host + \"/vcfdepther/\"@" app/vcf.iobio.js &&
+    sed -i "s@\"wss://services.iobio.io/vcfstatsalive/\"@((window.location.protocol === \"https:\") ? \"wss://\" : \"ws://\") + window.location.host + \"/vcfstatsalive/\"@" app/vcf.iobio.js &&
+    sed -i "s@\"wss://services.iobio.io/tabix/\"@((window.location.protocol === \"https:\") ? \"wss://\" : \"ws://\") + window.location.host + \"/tabix/\"@" app/vcf.iobio.js &&
+
+    sed -i 's/deny all;//g' /etc/nginx/nginx.conf &&
+
+    ln -s '$infile' /input/vcffile.vcf.gz &&
+    #if $infile.metadata.tabix_index:
+        ln -s '${infile.metadata.tabix_index}' /input/vcffile.vcf.gz.tbi &&
+    #end if
+
+    head -n -2  /etc/supervisor.d/app.conf > /tmp/app.conf &&
+    mv /tmp/app.conf /etc/supervisor.d/app.conf &&
+    /usr/bin/supervisord -c /etc/supervisord.conf
+
+    ]]>
+    </command>
+    <inputs>
+        <param name="infile" type="data" format="vcf_bgzip" label="Compressed VCF file"/>
+    </inputs>
+    <outputs>
+        <data name="outfile" format="txt" />
+    </outputs>
+    <tests>
+    </tests>
+    <help><![CDATA[
+Examine your variant file in seconds with the VCF `iobio visualisation <https://vcf.iobio.io>`_.
+
+This visualization is using Galaxy Interactive Tool and utilizes an all-in-one Docker container from http://iobio.io.
+
+Make sure your VCF file is compressed to the vcf_bgzip datatype to load it into the Visualization.
+    ]]>
+    </help>
+</tool>
+

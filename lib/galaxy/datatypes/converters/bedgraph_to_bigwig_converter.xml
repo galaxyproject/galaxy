@@ -10,6 +10,12 @@
     <outputs>
         <data format="bigwig" name="output"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input" format="bedgraph" value="1.bedgraph" dbkey="hg17"/>
+            <output name="output" format="bigwig" value="1.bedgrpah_to_bigwig.bigwig"/>
+        </test>
+    </tests>
     <help>
     </help>
 </tool>

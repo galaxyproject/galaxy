@@ -7,7 +7,6 @@ migrated_tools_conf.xml for tools outside tool panel sections as well as tools i
 layout of the local tool_conf.xml file.  Entries will not be created in migrated_tools_conf.xml for tools included in the tool
 shed repository but not defined in tool_conf.xml.
 """
-from __future__ import print_function
 
 import os
 import sys

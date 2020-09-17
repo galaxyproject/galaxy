@@ -30,7 +30,7 @@ class VisualizationManager(sharable.SharableModelManager):
     def __init__(self, app, *args, **kwargs):
         """
         """
-        super(VisualizationManager, self).__init__(app, *args, **kwargs)
+        super().__init__(app, *args, **kwargs)
 
     # def copy( self, trans, visualization, user, **kwargs ):
     #    """
@@ -46,7 +46,7 @@ class VisualizationSerializer(sharable.SharableModelSerializer):
     SINGLE_CHAR_ABBR = 'v'
 
     def __init__(self, app):
-        super(VisualizationSerializer, self).__init__(app)
+        super().__init__(app)
         self.visualization_manager = self.manager
 
         self.default_view = 'summary'
@@ -54,7 +54,7 @@ class VisualizationSerializer(sharable.SharableModelSerializer):
         self.add_view('detailed', [])
 
     def add_serializers(self):
-        super(VisualizationSerializer, self).add_serializers()
+        super().add_serializers()
         self.serializers.update({
         })
 
@@ -67,11 +67,11 @@ class VisualizationDeserializer(sharable.SharableModelDeserializer):
     model_manager_class = VisualizationManager
 
     def __init__(self, app):
-        super(VisualizationDeserializer, self).__init__(app)
+        super().__init__(app)
         self.visualization_manager = self.manager
 
     def add_deserializers(self):
-        super(VisualizationDeserializer, self).add_deserializers()
+        super().add_deserializers()
         self.deserializers.update({
         })
         self.deserializable_keyset.update(self.deserializers.keys())

@@ -18,7 +18,7 @@ def get_dataset_matcher_factory(trans):
     return dataset_matcher_factory or DatasetMatcherFactory(trans)
 
 
-class DatasetMatcherFactory(object):
+class DatasetMatcherFactory:
     """"""
 
     def __init__(self, trans, tool=None):
@@ -85,7 +85,7 @@ class DatasetMatcherFactory(object):
             return DatasetCollectionMatcher(self._trans, dataset_matcher)
 
 
-class DatasetMatcher(object):
+class DatasetMatcher:
     """ Utility class to aid DataToolParameter and similar classes in reasoning
     about what HDAs could match or are selected for a parameter and value.
 
@@ -156,7 +156,7 @@ class DatasetMatcher(object):
         return param.options and param.get_options_filter_attribute(hda) not in self.filter_values
 
 
-class HdaDirectMatch(object):
+class HdaDirectMatch:
     """ Supplied HDA was a valid option directly (did not need to find implicit
     conversion).
     """
@@ -169,7 +169,7 @@ class HdaDirectMatch(object):
         return False
 
 
-class HdaImplicitMatch(object):
+class HdaImplicitMatch:
     """ Supplied HDA was a valid option directly (did not need to find implicit
     conversion).
     """
@@ -184,21 +184,21 @@ class HdaImplicitMatch(object):
         return True
 
 
-class HdcaDirectMatch(object):
+class HdcaDirectMatch:
     implicit_conversion = False
 
     def __init__(self):
         pass
 
 
-class HdcaImplicitMatch(object):
+class HdcaImplicitMatch:
     implicit_conversion = True
 
     def __init__(self):
         pass
 
 
-class SummaryDatasetCollectionMatcher(object):
+class SummaryDatasetCollectionMatcher:
 
     def __init__(self, dataset_matcher_factory, trans, dataset_matcher):
         self.dataset_matcher_factory = dataset_matcher_factory
@@ -232,7 +232,7 @@ class SummaryDatasetCollectionMatcher(object):
         return HdcaImplicitMatch() if uses_implicit_conversion else HdcaDirectMatch()
 
 
-class DatasetCollectionMatcher(object):
+class DatasetCollectionMatcher:
 
     def __init__(self, trans, dataset_matcher):
         self.dataset_matcher = dataset_matcher

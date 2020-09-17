@@ -6,7 +6,6 @@ Convert from GFF file to interval index file.
 usage:
     python gff_to_interval_index_converter.py [input] [output]
 """
-from __future__ import division
 
 import fileinput
 import sys
@@ -34,7 +33,7 @@ def main():
         # not included in the index.
         offset += feature.raw_size
 
-    index.write(open(out_fname, "w"))
+    index.write(open(out_fname, "wb"))
 
 
 if __name__ == "__main__":

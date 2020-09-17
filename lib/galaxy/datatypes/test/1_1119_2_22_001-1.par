@@ -1,0 +1,33 @@
+LHD: Partitur 1.3
+REP: Muenchen
+SNB: 2
+SAM: 16000
+SBF: 01
+SSB: 16
+NCH: 1
+SPN: PS1
+FIL: SAM File Type
+TYP: Typ of SAM Label File
+DBN: Corpus Name
+VOL: Number of Volume
+DIR: Directory in Volume
+SRC: Name of speech file
+BEG: Beginning of labeling sequence
+END: End of labeling sequence
+RED: Date of Recording
+RET: Duration
+RCC: Recording Conditions
+CMT: Comment
+SPI: Speaker Information
+PCF: Name of Protocol File
+PCN: Protocol Number
+EXP: Name of Segmenter
+SYS: Labelingsystem
+DAT: Date of Labeling
+SPA: SAM-PA Version
+MAO: MAUS version and option list (paired value list)
+GPO: G2P version and option list (paired value list)
+SAO: Speech recognition program, version and option list (paired value list)
+LBD:
+ORT: 0 alan
+KAN: 0 {l@n

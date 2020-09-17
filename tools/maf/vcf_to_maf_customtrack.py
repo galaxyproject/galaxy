@@ -13,51 +13,43 @@ UNKNOWN_NUCLEOTIDE = '*'
 
 class PopulationVCFParser(Iterator):
     def __init__(self, reader, name):
-        self.reader = reader
+        self.reader = iter(reader)
         self.name = name
         self.counter = 0
 
-    def __next__(self):
-        rval = []
-        vc = next(self.reader)
-        for i, allele in enumerate(vc.alt):
-            rval.append(('%s_%i.%i' % (self.name, i + 1, self.counter + 1), allele))
-        self.counter += 1
-        return (vc, rval)
-
     def __iter__(self):
-        while True:
-            yield next(self)
+        for vc in self.reader:
+            rval = []
+            for i, allele in enumerate(vc.alt):
+                rval.append(('%s_%i.%i' % (self.name, i + 1, self.counter + 1), allele))
+            self.counter += 1
+            yield (vc, rval)
 
 
 class SampleVCFParser(Iterator):
     def __init__(self, reader):
-        self.reader = reader
+        self.reader = iter(reader)
         self.counter = 0
 
-    def __next__(self):
-        rval = []
-        vc = next(self.reader)
-        alleles = [vc.ref] + vc.alt
-
-        if 'GT' in vc.format:
-            gt_index = vc.format.index('GT')
-            for sample_name, sample_value in zip(vc.sample_names, vc.sample_values):
-                gt_indexes = []
-                for i in sample_value[gt_index].replace('|', '/').replace('\\', '/').split('/'):  # Do we need to consider phase here?
-                    try:
-                        gt_indexes.append(int(i))
-                    except Exception:
-                        gt_indexes.append(None)
-                for i, allele_i in enumerate(gt_indexes):
-                    if allele_i is not None:
-                        rval.append(('%s_%i.%i' % (sample_name, i + 1, self.counter + 1), alleles[allele_i]))
-        self.counter += 1
-        return (vc, rval)
-
     def __iter__(self):
-        while True:
-            yield next(self)
+        for vc in self.reader:
+            rval = []
+            alleles = [vc.ref] + vc.alt
+
+            if 'GT' in vc.format:
+                gt_index = vc.format.index('GT')
+                for sample_name, sample_value in zip(vc.sample_names, vc.sample_values):
+                    gt_indexes = []
+                    for i in sample_value[gt_index].replace('|', '/').replace('\\', '/').split('/'):  # Do we need to consider phase here?
+                        try:
+                            gt_indexes.append(int(i))
+                        except Exception:
+                            gt_indexes.append(None)
+                    for i, allele_i in enumerate(gt_indexes):
+                        if allele_i is not None:
+                            rval.append(('%s_%i.%i' % (sample_name, i + 1, self.counter + 1), alleles[allele_i]))
+            self.counter += 1
+            yield (vc, rval)
 
 
 def main():
@@ -77,7 +69,7 @@ def main():
     if not (options.population ^ options.sample):
         parser.error('You must specify either a per population conversion or a per sample conversion, but not both')
 
-    out = open(args.pop(0), 'wb')
+    out = open(args.pop(0), 'w')
     out.write('track name="%s" visibility=pack\n' % options.name.replace("\"", "'"))
 
     maf_writer = bx.align.maf.Writer(out)

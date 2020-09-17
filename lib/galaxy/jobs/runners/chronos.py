@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import functools
 import logging
 
@@ -117,7 +115,7 @@ class ChronosJobRunner(AsynchronousJobRunner):
         if self.RUNNER_PARAM_SPEC_KEY not in kwargs:
             kwargs[self.RUNNER_PARAM_SPEC_KEY] = {}
         kwargs[self.RUNNER_PARAM_SPEC_KEY].update(self.RUNNER_PARAM_SPEC)
-        super(ChronosJobRunner, self).__init__(app, nworkers, **kwargs)
+        super().__init__(app, nworkers, **kwargs)
         protocol = 'http' if self.runner_params.get('insecure', True) else 'https'
         self._chronos_client = chronos.connect(
             self.runner_params['chronos'],
@@ -227,7 +225,7 @@ class ChronosJobRunner(AsynchronousJobRunner):
 
     @handle_exception_call
     def finish_job(self, job_state):
-        super(ChronosJobRunner, self).finish_job(job_state)
+        super().finish_job(job_state)
         self._chronos_client.delete(job_state.job_id)
 
     def parse_destination_params(self, params):

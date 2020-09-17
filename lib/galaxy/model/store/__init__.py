@@ -8,7 +8,6 @@ import tempfile
 from json import dump, dumps, load
 from uuid import uuid4
 
-import six
 from bdbag import bdbag_api as bdb
 from boltons.iterutils import remap
 from sqlalchemy.orm import eagerload_all
@@ -33,7 +32,7 @@ ATTRS_FILENAME_LIBRARIES = 'libraries_attrs.txt'
 GALAXY_EXPORT_VERSION = "2"
 
 
-class ImportOptions(object):
+class ImportOptions:
 
     def __init__(self, allow_edit=False, allow_library_creation=False, allow_dataset_object_edit=None):
         self.allow_edit = allow_edit
@@ -43,7 +42,7 @@ class ImportOptions(object):
         self.allow_dataset_object_edit = allow_dataset_object_edit
 
 
-class SessionlessContext(object):
+class SessionlessContext:
 
     def __init__(self):
         self.objects = []
@@ -65,8 +64,7 @@ class SessionlessContext(object):
         return Bunch(find=find)
 
 
-@six.add_metaclass(abc.ABCMeta)
-class ModelImportStore(object):
+class ModelImportStore(metaclass=abc.ABCMeta):
 
     def __init__(self, import_options=None, app=None, user=None, object_store=None):
         if object_store is None:
@@ -82,6 +80,7 @@ class ModelImportStore(object):
             self.sessionless = True
         self.user = user
         self.import_options = import_options or ImportOptions()
+        self.dataset_state_serialized = True
 
     @abc.abstractmethod
     def defines_new_history(self):
@@ -183,6 +182,9 @@ class ModelImportStore(object):
         object_key = self.object_key
 
         for dataset_attrs in datasets_attrs:
+
+            if 'state' not in dataset_attrs:
+                self.dataset_state_serialized = False
 
             def handle_dataset_object_edit(dataset_instance):
                 if "dataset" in dataset_attrs:
@@ -321,7 +323,7 @@ class ModelImportStore(object):
                         dataset_instance.dataset.deleted = True
                         dataset_instance.dataset.purged = True
                     else:
-                        dataset_instance.state = dataset_instance.states.OK
+                        dataset_instance.state = dataset_attrs.get('state', dataset_instance.states.OK)
                         self.object_store.update_from_file(dataset_instance.dataset, file_name=temp_dataset_file_name, create=True)
 
                         # Import additional files if present. Histories exported previously might not have this attribute set.
@@ -432,6 +434,8 @@ class ModelImportStore(object):
                                                          element=model.DatasetCollectionElement.UNINITIALIZED_ELEMENT,
                                                          element_index=element_attrs['element_index'],
                                                          element_identifier=element_attrs['element_identifier'])
+                    if 'encoded_id' in element_attrs:
+                        object_import_tracker.dces_by_key[element_attrs['encoded_id']] = dce
                     if 'hda' in element_attrs:
                         hda_attrs = element_attrs['hda']
                         if object_key in hda_attrs:
@@ -440,12 +444,12 @@ class ModelImportStore(object):
                             if hda_key in hdas_by_key:
                                 hda = hdas_by_key[hda_key]
                             else:
-                                raise KeyError("Failed to find exported hda with key [%s] of type [%s] in [%s]" % (hda_key, object_key, hdas_by_key))
+                                raise KeyError("Failed to find exported hda with key [{}] of type [{}] in [{}]".format(hda_key, object_key, hdas_by_key))
                         else:
                             hda_id = hda_attrs["id"]
                             hdas_by_id = object_import_tracker.hdas_by_id
                             if hda_id not in hdas_by_id:
-                                raise Exception("Failed to find HDA with id [%s] in [%s]" % (hda_id, hdas_by_id))
+                                raise Exception("Failed to find HDA with id [{}] in [{}]".format(hda_id, hdas_by_id))
                             hda = hdas_by_id[hda_id]
                         dce.hda = hda
                     elif 'child_collection' in element_attrs:
@@ -553,7 +557,7 @@ class ModelImportStore(object):
                 # attach to this node... unless we've already encountered another dataset
                 # copied from that jobs output... in that case we are going to cheat and
                 # say this dataset was copied from that one. It wasn't in the original Galaxy
-                # instance but I think it is find to pretend in order to create a DAG here.
+                # instance but I think it is fine to pretend in order to create a DAG here.
                 hda_copied_from_sinks = object_import_tracker.hda_copied_from_sinks
                 if copied_from_object_key in hda_copied_from_sinks:
                     hda.copied_from_history_dataset_association = object_import_tracker.hdas_by_key[hda_copied_from_sinks[copied_from_object_key]]
@@ -621,6 +625,12 @@ class ModelImportStore(object):
                 hdca = object_import_tracker.hdca_copied_from_sinks[input_key]
             return hdca
 
+        def _find_dce(input_key):
+            dce = None
+            if input_key in object_import_tracker.dces_by_key:
+                dce = object_import_tracker.dces_by_key[input_key]
+            return dce
+
         #
         # Create jobs.
         #
@@ -632,7 +642,7 @@ class ModelImportStore(object):
                 assert self.import_options.allow_edit
                 assert not self.sessionless
                 job = self.sa_session.query(model.Job).get(job_attrs["id"])
-                self._connect_job_io(job, job_attrs, _find_hda, _find_hdca)
+                self._connect_job_io(job, job_attrs, _find_hda, _find_hdca, _find_dce)
                 self._flush()
                 continue
 
@@ -670,12 +680,12 @@ class ModelImportStore(object):
             self._flush()
 
             # Connect jobs to input and output datasets.
-            params = self._normalize_job_parameters(imported_job, job_attrs, _find_hda, _find_hdca)
+            params = self._normalize_job_parameters(imported_job, job_attrs, _find_hda, _find_hdca, _find_dce)
             for name, value in params.items():
                 # Transform parameter values when necessary.
                 imported_job.add_parameter(name, dumps(value))
 
-            self._connect_job_io(imported_job, job_attrs, _find_hda, _find_hdca)
+            self._connect_job_io(imported_job, job_attrs, _find_hda, _find_hdca, _find_dce)
             self._flush()
 
             if object_key in job_attrs:
@@ -691,7 +701,8 @@ class ModelImportStore(object):
             for order_index, job in enumerate(icj_attrs["jobs"]):
                 icja = model.ImplicitCollectionJobsJobAssociation()
                 icja.implicit_collection_jobs = icj
-                icja.job = object_import_tracker.jobs_by_key[job]
+                if job in object_import_tracker.jobs_by_key:
+                    icja.job = object_import_tracker.jobs_by_key[job]
                 icja.order_index = order_index
                 icj.jobs.append(icja)
                 self._session_add(icja)
@@ -728,7 +739,7 @@ def _copied_from_object_key(copied_from_chain, objects_by_key):
     return copied_from_object_key
 
 
-class ObjectImportTracker(object):
+class ObjectImportTracker:
     """Keep track of new and existing imported objects.
 
     Needed to re-establish connections and such in multiple passes.
@@ -740,6 +751,8 @@ class ObjectImportTracker(object):
         self.hdas_by_id = {}
         self.hdcas_by_key = {}
         self.hdcas_by_id = {}
+        self.dces_by_key = {}
+        self.dces_by_id = {}
         self.lddas_by_key = {}
         self.hda_copied_from_sinks = {}
         self.hdca_copied_from_sinks = {}
@@ -811,7 +824,7 @@ class DirectoryImportModelStore1901(BaseDirectoryImportModelStore):
     object_key = 'hid'
 
     def __init__(self, archive_dir, **kwd):
-        super(DirectoryImportModelStore1901, self).__init__(**kwd)
+        super().__init__(**kwd)
         archive_dir = os.path.realpath(archive_dir)
 
         # Bioblend previous to 17.01 exported histories with an extra subdir.
@@ -823,10 +836,13 @@ class DirectoryImportModelStore1901(BaseDirectoryImportModelStore):
 
         self.archive_dir = archive_dir
 
-    def _connect_job_io(self, imported_job, job_attrs, _find_hda, _find_hdca):
+    def _connect_job_io(self, imported_job, job_attrs, _find_hda, _find_hdca, _find_dce):
         for output_key in job_attrs['output_datasets']:
             output_hda = _find_hda(output_key)
             if output_hda:
+                if not self.dataset_state_serialized:
+                    # dataset state has not been serialized, get state from job
+                    output_hda.state = imported_job.state
                 imported_job.add_output_dataset(output_hda.name, output_hda)
 
         if 'input_mapping' in job_attrs:
@@ -835,7 +851,7 @@ class DirectoryImportModelStore1901(BaseDirectoryImportModelStore):
                 if input_hda:
                     imported_job.add_input_dataset(input_name, input_hda)
 
-    def _normalize_job_parameters(self, imported_job, job_attrs, _find_hda, _find_hdca):
+    def _normalize_job_parameters(self, imported_job, job_attrs, _find_hda, _find_hdca, _find_dce):
         def remap_objects(p, k, obj):
             if isinstance(obj, dict) and obj.get('__HistoryDatasetAssociation__', False):
                 imported_hda = _find_hda(obj[self.object_key])
@@ -857,7 +873,7 @@ class DirectoryImportModelStoreLatest(BaseDirectoryImportModelStore):
     object_key = 'encoded_id'
 
     def __init__(self, archive_dir, **kwd):
-        super(DirectoryImportModelStoreLatest, self).__init__(**kwd)
+        super().__init__(**kwd)
         archive_dir = os.path.realpath(archive_dir)
         self.archive_dir = archive_dir
         if self.defines_new_history():
@@ -865,7 +881,7 @@ class DirectoryImportModelStoreLatest(BaseDirectoryImportModelStore):
         else:
             self.import_history_encoded_id = None
 
-    def _connect_job_io(self, imported_job, job_attrs, _find_hda, _find_hdca):
+    def _connect_job_io(self, imported_job, job_attrs, _find_hda, _find_hdca, _find_dce):
 
         if 'input_dataset_mapping' in job_attrs:
             for input_name, input_keys in job_attrs['input_dataset_mapping'].items():
@@ -883,12 +899,23 @@ class DirectoryImportModelStoreLatest(BaseDirectoryImportModelStore):
                     if input_hdca:
                         imported_job.add_input_dataset_collection(input_name, input_hdca)
 
+        if 'input_dataset_collection_element_mapping' in job_attrs:
+            for input_name, input_keys in job_attrs['input_dataset_collection_element_mapping'].items():
+                input_keys = input_keys or []
+                for input_key in input_keys:
+                    input_dce = _find_dce(input_key)
+                    if input_dce:
+                        imported_job.add_input_dataset_collection_element(input_name, input_dce)
+
         if 'output_dataset_mapping' in job_attrs:
             for output_name, output_keys in job_attrs['output_dataset_mapping'].items():
                 output_keys = output_keys or []
                 for output_key in output_keys:
                     output_hda = _find_hda(output_key)
                     if output_hda:
+                        if not self.dataset_state_serialized:
+                            # dataset state has not been serialized, get state from job
+                            output_hda.state = imported_job.state
                         imported_job.add_output_dataset(output_name, output_hda)
 
         if 'output_dataset_collection_mapping' in job_attrs:
@@ -902,9 +929,9 @@ class DirectoryImportModelStoreLatest(BaseDirectoryImportModelStore):
     def trust_hid(self, obj_attrs):
         return self.import_history_encoded_id and obj_attrs.get("history_encoded_id") == self.import_history_encoded_id
 
-    def _normalize_job_parameters(self, imported_job, job_attrs, _find_hda, _find_hdca):
+    def _normalize_job_parameters(self, imported_job, job_attrs, _find_hda, _find_hdca, _find_dce):
         def remap_objects(p, k, obj):
-            if isinstance(obj, dict) and "src" in obj and obj["src"] in ["hda", "hdca"]:
+            if isinstance(obj, dict) and "src" in obj and obj["src"] in ["hda", "hdca", "dce"]:
                 if obj["src"] == "hda":
                     imported_hda = _find_hda(obj["id"])
                     if imported_hda:
@@ -915,6 +942,12 @@ class DirectoryImportModelStoreLatest(BaseDirectoryImportModelStore):
                     imported_hdca = _find_hdca(obj["id"])
                     if imported_hdca:
                         new_id = imported_hdca.id
+                    else:
+                        new_id = None
+                elif obj["src"] == "dce":
+                    imported_dce = _find_dce(obj["id"])
+                    if imported_dce:
+                        new_id = imported_dce.id
                     else:
                         new_id = None
                 else:
@@ -938,11 +971,10 @@ class BagArchiveImportModelStore(DirectoryImportModelStoreLatest):
         # Why this line though...?
         archive_dir = os.path.join(archive_dir, os.listdir(archive_dir)[0])
         bdb.revert_bag(archive_dir)
-        super(BagArchiveImportModelStore, self).__init__(archive_dir, **kwd)
+        super().__init__(archive_dir, **kwd)
 
 
-@six.add_metaclass(abc.ABCMeta)
-class ModelExportStore(object):
+class ModelExportStore(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def export_history(self, history, include_hidden=False, include_deleted=False):
@@ -1254,6 +1286,7 @@ class DirectoryModelExportStore(ModelExportStore):
             input_dataset_mapping = {}
             output_dataset_mapping = {}
             input_dataset_collection_mapping = {}
+            input_dataset_collection_element_mapping = {}
             output_dataset_collection_mapping = {}
             implicit_output_dataset_collection_mapping = {}
 
@@ -1284,6 +1317,14 @@ class DirectoryModelExportStore(ModelExportStore):
 
                     input_dataset_collection_mapping[name].append(self.exported_key(assoc.dataset_collection))
 
+            for assoc in job.input_dataset_collection_elements:
+                if assoc.dataset_collection_element:
+                    name = assoc.name
+                    if name not in input_dataset_collection_element_mapping:
+                        input_dataset_collection_element_mapping[name] = []
+
+                    input_dataset_collection_element_mapping[name].append(self.exported_key(assoc.dataset_collection_element))
+
             for assoc in job.output_dataset_collection_instances:
                 # Optional data outputs will not have a dataset.
                 if assoc.dataset_collection_instance:
@@ -1304,6 +1345,7 @@ class DirectoryModelExportStore(ModelExportStore):
 
             job_attrs['input_dataset_mapping'] = input_dataset_mapping
             job_attrs['input_dataset_collection_mapping'] = input_dataset_collection_mapping
+            job_attrs['input_dataset_collection_element_mapping'] = input_dataset_collection_element_mapping
             job_attrs['output_dataset_mapping'] = output_dataset_mapping
             job_attrs['output_dataset_collection_mapping'] = output_dataset_collection_mapping
             job_attrs['implicit_output_dataset_collection_mapping'] = implicit_output_dataset_collection_mapping
@@ -1349,10 +1391,10 @@ class TarModelExportStore(DirectoryModelExportStore):
         self.gzip = gzip
         self.out_file = out_file
         temp_output_dir = tempfile.mkdtemp()
-        super(TarModelExportStore, self).__init__(temp_output_dir, **kwds)
+        super().__init__(temp_output_dir, **kwds)
 
     def _finalize(self):
-        super(TarModelExportStore, self)._finalize()
+        super()._finalize()
         tar_export_directory(self.export_directory, self.out_file, self.gzip)
         shutil.rmtree(self.export_directory)
 
@@ -1361,10 +1403,10 @@ class BagDirectoryModelExportStore(DirectoryModelExportStore):
 
     def __init__(self, out_directory, **kwds):
         self.out_directory = out_directory
-        super(BagDirectoryModelExportStore, self).__init__(out_directory, **kwds)
+        super().__init__(out_directory, **kwds)
 
     def _finalize(self):
-        super(BagDirectoryModelExportStore, self)._finalize()
+        super()._finalize()
         bdb.make_bag(self.out_directory)
 
 
@@ -1375,10 +1417,10 @@ class BagArchiveModelExportStore(BagDirectoryModelExportStore):
         self.bag_archiver = bag_archiver
         self.out_file = out_file
         temp_output_dir = tempfile.mkdtemp()
-        super(BagArchiveModelExportStore, self).__init__(temp_output_dir, **kwds)
+        super().__init__(temp_output_dir, **kwds)
 
     def _finalize(self):
-        super(BagArchiveModelExportStore, self)._finalize()
+        super()._finalize()
         rval = bdb.archive_bag(self.export_directory, self.bag_archiver)
         shutil.move(rval, self.out_file)
         shutil.rmtree(self.export_directory)
@@ -1399,7 +1441,7 @@ def get_export_dataset_filename(name, ext, hid):
     Builds a filename for a dataset using its name an extension.
     """
     base = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in name)
-    return base + "_%s.%s" % (hid, ext)
+    return base + "_{}.{}".format(hid, ext)
 
 
 def imported_store_for_metadata(directory, object_store=None):

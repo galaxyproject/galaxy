@@ -7,7 +7,7 @@ class UCSCLimitException(Exception):
     pass
 
 
-class UCSCOutWrapper(object):
+class UCSCOutWrapper:
     """File-like object that throws an exception if it encounters the UCSC limit error lines"""
 
     def __init__(self, other):

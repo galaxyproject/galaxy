@@ -1,12 +1,15 @@
 import errno
 import logging
-from xml.etree import ElementTree as XmlET
 
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.tool_shed.util.basic_util import strip_path
 from galaxy.tool_shed.util.repository_util import get_repository_owner
 from galaxy.tool_shed.util.shed_util_common import get_tool_panel_config_tool_path_install_dir
-from galaxy.util import xml_to_string
+from galaxy.util import (
+    etree,
+    parse_xml_string,
+    xml_to_string,
+)
 from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
 from galaxy.util.tool_shed.common_util import remove_protocol_and_user_from_clone_url
 from galaxy.util.tool_shed.xml_util import parse_xml
@@ -14,7 +17,7 @@ from galaxy.util.tool_shed.xml_util import parse_xml
 log = logging.getLogger(__name__)
 
 
-class ToolPanelManager(object):
+class ToolPanelManager:
 
     def __init__(self, app):
         self.app = app
@@ -37,7 +40,7 @@ class ToolPanelManager(object):
         # from too many places to make it feasible at this time
         try:
             tree, error_message = parse_xml(shed_tool_conf, check_exists=False)
-        except (OSError, IOError) as exc:
+        except OSError as exc:
             if (exc.errno == errno.ENOENT and shed_tool_conf_dict.get('create', None) is not None):
                 log.info('Creating shed tool config with default contents: %s', shed_tool_conf)
                 with open(shed_tool_conf, 'w') as fh:
@@ -97,7 +100,7 @@ class ToolPanelManager(object):
         value of config_filename.
         """
         try:
-            root = XmlET.fromstring('<?xml version="1.0"?>\n<toolbox tool_path="%s"></toolbox>' % str(tool_path))
+            root = parse_xml_string('<?xml version="1.0"?>\n<toolbox tool_path="%s"></toolbox>' % str(tool_path))
             for elem in config_elems:
                 root.append(elem)
             with RenamedTemporaryFile(config_filename, mode='w') as fh:
@@ -109,24 +112,24 @@ class ToolPanelManager(object):
                            tool, tool_section):
         """Create and return an ElementTree tool Element."""
         if tool_section is not None:
-            tool_elem = XmlET.SubElement(tool_section, 'tool')
+            tool_elem = etree.SubElement(tool_section, 'tool')
         else:
-            tool_elem = XmlET.Element('tool')
+            tool_elem = etree.Element('tool')
         tool_elem.attrib['file'] = tool_file_path
         if not tool.guid:
             raise ValueError("tool has no guid")
         tool_elem.attrib['guid'] = tool.guid
-        tool_shed_elem = XmlET.SubElement(tool_elem, 'tool_shed')
+        tool_shed_elem = etree.SubElement(tool_elem, 'tool_shed')
         tool_shed_elem.text = tool_shed
-        repository_name_elem = XmlET.SubElement(tool_elem, 'repository_name')
+        repository_name_elem = etree.SubElement(tool_elem, 'repository_name')
         repository_name_elem.text = repository_name
-        repository_owner_elem = XmlET.SubElement(tool_elem, 'repository_owner')
+        repository_owner_elem = etree.SubElement(tool_elem, 'repository_owner')
         repository_owner_elem.text = owner
-        changeset_revision_elem = XmlET.SubElement(tool_elem, 'installed_changeset_revision')
+        changeset_revision_elem = etree.SubElement(tool_elem, 'installed_changeset_revision')
         changeset_revision_elem.text = changeset_revision
-        id_elem = XmlET.SubElement(tool_elem, 'id')
+        id_elem = etree.SubElement(tool_elem, 'id')
         id_elem.text = tool.id
-        version_elem = XmlET.SubElement(tool_elem, 'version')
+        version_elem = etree.SubElement(tool_elem, 'version')
         version_elem.text = tool.version
         return tool_elem
 
@@ -306,7 +309,7 @@ class ToolPanelManager(object):
         # { id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}
         if tool_section_dict['id']:
             # Create a new tool section.
-            tool_section = XmlET.Element('section')
+            tool_section = etree.Element('section')
             tool_section.attrib['id'] = tool_section_dict['id']
             tool_section.attrib['name'] = tool_section_dict['name']
             tool_section.attrib['version'] = tool_section_dict['version']

@@ -2,9 +2,12 @@ import errno
 import logging
 import os
 import time
-from xml.etree import ElementTree
 
-from galaxy.util import xml_to_string
+from galaxy.util import (
+    etree,
+    parse_xml_string,
+    xml_to_string,
+)
 from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
 from galaxy.util.tool_shed.xml_util import parse_xml
 from . import tool_panel_manager
@@ -17,7 +20,7 @@ SHED_DATA_MANAGER_CONF_XML = """<?xml version="1.0"?>
 """
 
 
-class DataManagerHandler(object):
+class DataManagerHandler:
 
     def __init__(self, app):
         self.app = app
@@ -40,7 +43,7 @@ class DataManagerHandler(object):
             root_str = '<?xml version="1.0"?><data_managers tool_path="%s"></data_managers>' % data_managers_path
         else:
             root_str = '<?xml version="1.0"?><data_managers></data_managers>'
-        root = ElementTree.fromstring(root_str)
+        root = parse_xml_string(root_str)
         for elem in config_elems:
             root.append(elem)
         try:
@@ -60,7 +63,7 @@ class DataManagerHandler(object):
             # Load existing data managers.
             try:
                 tree, error_message = parse_xml(shed_data_manager_conf_filename, check_exists=False)
-            except (OSError, IOError) as exc:
+            except OSError as exc:
                 if exc.errno == errno.ENOENT:
                     with open(shed_data_manager_conf_filename, 'w') as fh:
                         fh.write(SHED_DATA_MANAGER_CONF_XML)
@@ -94,12 +97,12 @@ class DataManagerHandler(object):
                         continue
                     guid = data_manager_dict.get('guid', None)
                     if guid is None:
-                        log.error("Data manager guid '%s' is not set in metadata for '%s'." % (guid, data_manager_id))
+                        log.error("Data manager guid '{}' is not set in metadata for '{}'.".format(guid, data_manager_id))
                         continue
                     elem.set('guid', guid)
                     tool_guid = data_manager_dict.get('tool_guid', None)
                     if tool_guid is None:
-                        log.error("Data manager tool guid '%s' is not set in metadata for '%s'." % (tool_guid, data_manager_id))
+                        log.error("Data manager tool guid '{}' is not set in metadata for '{}'.".format(tool_guid, data_manager_id))
                         continue
                     tool_dict = repository_tools_by_guid.get(tool_guid, None)
                     if tool_dict is None:
@@ -131,10 +134,10 @@ class DataManagerHandler(object):
                                                                       tool_path=shed_config_dict.get('tool_path', ''))
                     if data_manager:
                         rval.append(data_manager)
-                elif elem.tag is ElementTree.Comment:
+                elif elem.tag is etree.Comment:
                     pass
                 else:
-                    log.warning("Encountered unexpected element '%s':\n%s" % (elem.tag, xml_to_string(elem)))
+                    log.warning("Encountered unexpected element '{}':\n{}".format(elem.tag, xml_to_string(elem)))
                 config_elems.append(elem)
                 data_manager_config_has_changes = True
             # Persist the altered shed_data_manager_config file.

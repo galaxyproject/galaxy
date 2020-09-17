@@ -1,7 +1,6 @@
 """
 Add link from history_dataset_association to the extended_metadata table
 """
-from __future__ import print_function
 
 import logging
 

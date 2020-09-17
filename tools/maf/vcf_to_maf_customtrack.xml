@@ -1,5 +1,9 @@
-<tool id="vcf_to_maf_customtrack1" name="VCF to MAF Custom Track" version="1.0.0">
+<tool id="vcf_to_maf_customtrack1" name="VCF to MAF Custom Track" version="1.0.1" profile="18.01">
   <description>for display at UCSC</description>
+  <requirements>
+    <requirement type="package" version="1.1.4">galaxy_sequence_utils</requirement>
+    <requirement type="package" version="0.8.6">bx-python</requirement>
+  </requirements>
   <macros>
       <import>macros.xml</import>
   </macros>
@@ -43,21 +47,21 @@ ${vcf_source_type.vcf_source} -n '$track_name'
   <outputs>
     <data format="mafcustomtrack" name="out_file1" />
   </outputs>
-<!--  <tests>
+  <tests>
     <test>
       <param name="track_name" value="Galaxy Custom Track"/>
-      <param name="vcf_source" value="Per Population"/>
+      <param name="vcf_source" value="-p"/>
       <param name="vcf_input" value="vcf_to_maf_in.vcf" ftype="tabular"/>
       <param name="population_name" value=""/>
       <output name="out_file1" file="vcf_to_maf_population_out.mafcustomtrack"/>
     </test>
     <test>
       <param name="track_name" value="Galaxy Custom Track"/>
-      <param name="vcf_source" value="Per Sample"/>
+      <param name="vcf_source" value="-s"/>
       <param name="vcf_input" value="vcf_to_maf_in.vcf" ftype="tabular"/>
       <output name="out_file1" file="vcf_to_maf_sample_out.mafcustomtrack"/>
     </test>
-  </tests> -->
+  </tests>
   <help>
 **What it does**
 

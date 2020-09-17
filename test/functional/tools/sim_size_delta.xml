@@ -1,0 +1,22 @@
+<tool id="sim_size_delta" name="sim_size_delta" version="0.1.0">
+  <command><![CDATA[
+    head -c 80 '$in' > '$out_smaller' &&
+    cp '$in' '$out_larger' &&
+    head -c 20 '$in' >> '$out_larger'
+  ]]></command>
+  <inputs>
+    <param name="in" type="data" format="data"/>
+  </inputs>
+  <outputs>
+    <data name="out_smaller" format="data" label="smaller"/>
+    <data name="out_larger" format="data" label="larger"/>
+  </outputs>
+  <tests>
+    <!-- take a test file of 100b size and add/remove 20b -->
+    <test expect_num_outputs="2">
+      <param name="in" value="1.sff" ftype="txt" />
+      <output name="out_smaller" value="1.sff" compare="sim_size" delta="20" delta_frac="0.2"/>
+      <output name="out_larger" value="1.sff" compare="sim_size" delta="20" delta_frac="0.2"/>
+    </test>
+  </tests>
+</tool>

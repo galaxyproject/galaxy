@@ -1,12 +1,12 @@
-import io
 import json
 import logging
 import os
 import tempfile
 
-from six import string_types
 
 from galaxy import model
+from galaxy.files import ProvidesUserFileSourcesUserContext
+from galaxy.job_execution.setup import ensure_configs_directory
 from galaxy.model.none_like import NoneDataset
 from galaxy.tools import global_tool_errors
 from galaxy.tools.parameters import (
@@ -48,7 +48,7 @@ from galaxy.work.context import WorkRequestContext
 log = logging.getLogger(__name__)
 
 
-class ToolEvaluator(object):
+class ToolEvaluator:
     """ An abstraction linking together a tool and a job runtime to evaluate
     tool inputs in an isolated, testable manner.
     """
@@ -67,11 +67,12 @@ class ToolEvaluator(object):
         self.compute_environment = compute_environment
 
         job = self.job
-        incoming = dict([(p.name, p.value) for p in job.parameters])
+        incoming = {p.name: p.value for p in job.parameters}
         incoming = self.tool.params_from_strings(incoming, self.app)
 
         # Full parameter validation
         request_context = WorkRequestContext(app=self.app, user=self._user, history=self._history)
+        self.request_context = request_context
 
         def validate_inputs(input, value, context, **kwargs):
             value = input.from_json(value, request_context, context)
@@ -82,22 +83,9 @@ class ToolEvaluator(object):
         inp_data, out_data, out_collections = job.io_dicts()
 
         if get_special:
-
-            # Set up output dataset association for export history jobs. Because job
-            # uses a Dataset rather than an HDA or LDA, it's necessary to set up a
-            # fake dataset association that provides the needed attributes for
-            # preparing a job.
-            class FakeDatasetAssociation (object):
-                fake_dataset_association = True
-
-                def __init__(self, dataset=None):
-                    self.dataset = dataset
-                    self.file_name = dataset.file_name
-                    self.metadata = dict()
-
             special = get_special()
             if special:
-                out_data["output_file"] = FakeDatasetAssociation(dataset=special.dataset)
+                out_data["output_file"] = special.fda
 
         # These can be passed on the command line if wanted as $__user_*__
         incoming.update(model.User.user_template_environment(job.history and job.history.user))
@@ -317,6 +305,7 @@ class ToolEvaluator(object):
             wrapper_kwds = dict(
                 datatypes_registry=self.app.datatypes_registry,
                 compute_environment=self.compute_environment,
+                io_type='output',
                 tool=tool,
                 name=name
             )
@@ -332,7 +321,7 @@ class ToolEvaluator(object):
                 if not output_def.implicit:
                     dataset_wrapper = wrapper[element_identifier]
                     param_dict[output_def.name] = dataset_wrapper
-                    log.info("Updating param_dict for %s with %s" % (output_def.name, dataset_wrapper))
+                    log.info("Updating param_dict for {} with {}".format(output_def.name, dataset_wrapper))
 
     def __populate_output_dataset_wrappers(self, param_dict, output_datasets, job_working_directory):
         for name, hda in output_datasets.items():
@@ -521,9 +510,7 @@ class ToolEvaluator(object):
         for name, filename, content in self.tool.config_files:
             config_text, is_template = self.__build_config_file_text(content)
             # If a particular filename was forced by the config use it
-            directory = os.path.join(self.local_working_directory, "configs")
-            if not os.path.exists(directory):
-                os.makedirs(directory)
+            directory = ensure_configs_directory(self.local_working_directory)
             if filename is not None:
                 # Explicit filename was requested, needs to be placed in tool working directory
                 directory = os.path.join(self.local_working_directory, "working")
@@ -590,24 +577,36 @@ class ToolEvaluator(object):
                     if not isinstance(value, list):
                         value = [value]
                     for elem in value:
-                        f.write('%s=%s\n' % (key, elem))
+                        f.write('{}={}\n'.format(key, elem))
             self.__register_extra_file('param_file', param_filename)
             return param_filename
         else:
             return None
 
     def __build_config_file_text(self, content):
-        if isinstance(content, string_types):
+        if isinstance(content, str):
             return content, True
 
-        content_format = content["format"]
-        handle_files = content["handle_files"]
-        if content_format != "json":
-            template = "Galaxy can only currently convert inputs to json, format [%s] is unhandled"
-            message = template % content_format
-            raise Exception(message)
+        config_type = content.get("type", "inputs")
+        if config_type == "inputs":
+            content_format = content["format"]
+            handle_files = content["handle_files"]
+            if content_format != "json":
+                template = "Galaxy can only currently convert inputs to json, format [%s] is unhandled"
+                message = template % content_format
+                raise Exception(message)
+        elif config_type == "files":
+            user_context = ProvidesUserFileSourcesUserContext(self.request_context)
+            file_sources_dict = self.app.file_sources.to_dict(for_serialization=True, user_context=user_context)
+            rval = json.dumps(file_sources_dict)
+            return rval, False
+        else:
+            raise Exception("Unknown config file type %s" % config_type)
 
-        return json.dumps(wrapped_json.json_wrap(self.tool.inputs, self.param_dict, handle_files=handle_files)), False
+        return json.dumps(wrapped_json.json_wrap(self.tool.inputs,
+                                                 self.param_dict,
+                                                 self.tool.profile,
+                                                 handle_files=handle_files)), False
 
     def __write_workdir_file(self, config_filename, content, context, is_template=True, strip=False):
         parent_dir = os.path.dirname(config_filename)
@@ -619,7 +618,7 @@ class ToolEvaluator(object):
             value = unicodify(content)
         if strip:
             value = value.strip()
-        with io.open(config_filename, "w", encoding='utf-8') as f:
+        with open(config_filename, "w", encoding='utf-8') as f:
             f.write(value)
         # For running jobs as the actual user, ensure the config file is globally readable
         os.chmod(config_filename, RW_R__R__)

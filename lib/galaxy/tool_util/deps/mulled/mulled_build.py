@@ -8,7 +8,6 @@ Build a mulled image with:
     mulled-build build 'samtools=1.3.1--4,bedtools=2.22'
 
 """
-from __future__ import print_function
 
 import json
 import logging
@@ -26,10 +25,11 @@ try:
 except ImportError:
     yaml = None
 
-from galaxy.tool_util.deps import commands, installable
+from galaxy.tool_util.deps import installable
 from galaxy.tool_util.deps.conda_util import best_search_result
 from galaxy.tool_util.deps.docker_util import command_list as docker_command_list
 from galaxy.util import (
+    commands,
     safe_makedirs,
     unicodify,
 )
@@ -142,7 +142,7 @@ def conda_versions(pkg_name, file_name):
     ret = list()
     for pkg in j['packages'].values():
         if pkg['name'] == pkg_name:
-            ret.append('%s--%s' % (pkg['version'], pkg['build']))
+            ret.append('{}--{}'.format(pkg['version'], pkg['build']))
     return ret
 
 
@@ -221,7 +221,7 @@ def mull_targets(
     for channel in channels:
         if channel.startswith('file://'):
             bind_path = channel.lstrip('file://')
-            binds.append('/%s:/%s' % (bind_path, bind_path))
+            binds.append('/{}:/{}'.format(bind_path, bind_path))
 
     channels = ",".join(channels)
     target_str = ",".join(map(conda_build_target_str, targets))
@@ -252,19 +252,19 @@ def mull_targets(
         involucro_args.extend(["-set", "SINGULARITY=1"])
         involucro_args.extend(["-set", "SINGULARITY_IMAGE_NAME=%s" % singularity_image_name])
         involucro_args.extend(["-set", "SINGULARITY_IMAGE_DIR=%s" % singularity_image_dir])
-        involucro_args.extend(["-set", "USER_ID=%s:%s" % (os.getuid(), os.getgid())])
+        involucro_args.extend(["-set", "USER_ID={}:{}".format(os.getuid(), os.getgid())])
     if test:
         involucro_args.extend(["-set", "TEST=%s" % test])
     if conda_version is not None:
         verbose = "--verbose" if verbose else "--quiet"
-        involucro_args.extend(["-set", "PREINSTALL=conda install %s --yes conda=%s" % (verbose, conda_version)])
+        involucro_args.extend(["-set", "PREINSTALL=conda install {} --yes conda={}".format(verbose, conda_version)])
     involucro_args.append(command)
     if test_files:
         test_bind = []
         for test_file in test_files:
             if ':' not in test_file:
                 if os.path.exists(test_file):
-                    test_bind.append("%s:%s/%s" % (test_file, DEFAULT_WORKING_DIR, test_file))
+                    test_bind.append("{}:{}/{}".format(test_file, DEFAULT_WORKING_DIR, test_file))
             else:
                 if os.path.exists(test_file.split(':')[0]):
                     test_bind.append(test_file)
@@ -296,7 +296,7 @@ def context_from_args(args):
     return InvolucroContext(involucro_bin=args.involucro_path, verbose=verbose)
 
 
-class CondaInDockerContext(object):
+class CondaInDockerContext:
 
     @property
     def conda_exec(self):

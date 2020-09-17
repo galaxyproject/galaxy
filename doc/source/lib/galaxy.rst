@@ -32,6 +32,7 @@ Subpackages
     galaxy.quota
     galaxy.security
     galaxy.selenium
+    galaxy.tool_shed
     galaxy.tool_util
     galaxy.tools
     galaxy.tours

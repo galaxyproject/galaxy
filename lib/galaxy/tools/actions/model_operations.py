@@ -38,7 +38,7 @@ class ModelOperationToolAction(DefaultToolAction):
         wrapped_params = self._wrapped_params(trans, tool, incoming)
 
         out_data = OrderedDict()
-        input_collections = dict((k, v[0][0]) for k, v in inp_dataset_collections.items())
+        input_collections = {k: v[0][0] for k, v in inp_dataset_collections.items()}
         output_collections = OutputCollections(
             trans,
             history,

@@ -17,6 +17,12 @@
     <outputs>
         <data name="output" format="unsorted.bam"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input" format="sam" value="bfast_out1.sam"/>
+            <output name="output" format="unsorted.bam" value="bfast_out1.unsorted.bam"/>
+        </test>
+    </tests>
     <help>
     </help>
 </tool>

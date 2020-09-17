@@ -15,14 +15,16 @@ def lint_tsts(tool_xml, lint_ctx):
     num_valid_tests = 0
     for test in tests:
         has_test = False
-        if "expect_failure" in test.attrib or "expect_exit_code" in test.attrib:
-            has_test = True
-        if len(test.findall("assert_stdout")) > 0:
-            has_test = True
-        if len(test.findall("assert_stderr")) > 0:
-            has_test = True
-        if len(test.findall("assert_command")) > 0:
-            has_test = True
+        test_expect = ("expect_failure", "expect_exit_code", "expect_num_outputs")
+        for te in test_expect:
+            if te in test.attrib:
+                has_test = True
+                break
+        test_assert = ("assert_stdout", "assert_stderr", "assert_command")
+        for ta in test_assert:
+            if len(test.findall(ta)) > 0:
+                has_test = True
+                break
 
         output_data_names, output_collection_names = _collect_output_names(tool_xml)
         found_output_test = False
@@ -33,7 +35,7 @@ def lint_tsts(tool_xml, lint_ctx):
                 lint_ctx.warn("Found output tag without a name defined.")
             else:
                 if name not in output_data_names:
-                    lint_ctx.error("Found output tag with unknown name [%s], valid names [%s]" % (name, output_data_names))
+                    lint_ctx.error("Found output tag with unknown name [{}], valid names [{}]".format(name, output_data_names))
 
         for output_collection in test.findall("output_collection"):
             found_output_test = True
@@ -42,7 +44,7 @@ def lint_tsts(tool_xml, lint_ctx):
                 lint_ctx.warn("Found output_collection tag without a name defined.")
             else:
                 if name not in output_collection_names:
-                    lint_ctx.warn("Found output_collection tag with unknown name [%s], valid names [%s]" % (name, output_collection_names))
+                    lint_ctx.warn("Found output_collection tag with unknown name [{}], valid names [{}]".format(name, output_collection_names))
 
         has_test = has_test or found_output_test
         if not has_test:

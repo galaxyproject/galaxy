@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import functools
 import operator
 from collections import namedtuple
@@ -12,7 +10,7 @@ from .test_workflows import BaseWorkflowsApiTestCase
 class WorkflowExtractionApiTestCase(BaseWorkflowsApiTestCase):
 
     def setUp(self):
-        super(WorkflowExtractionApiTestCase, self).setUp()
+        super().setUp()
         self.history_id = self.dataset_populator.new_history()
 
     @skip_without_tool("cat1")
@@ -228,7 +226,7 @@ steps:
   - tool_id: cat_collection
     state:
       input1:
-        $link: noop#out_file1
+        $link: noop/out_file1
 test_data:
   text_input1:
     type: "list:paired"
@@ -274,11 +272,11 @@ steps:
     tool_id: collection_split_on_column
     state:
       input1:
-        $link: cat_inputs#out_file1
+        $link: cat_inputs/out_file1
   - tool_id: cat_list
     state:
       input1:
-        $link: split_up#split_output
+        $link: split_up/split_output
 test_data:
   text_input1: "samp1\t10.0\nsamp2\t20.0\n"
   text_input2: "samp1\t30.0\nsamp2\t40.0\n"
@@ -316,16 +314,16 @@ steps:
     tool_id: collection_creates_pair
     state:
       input1:
-        $link: cat_inputs#out_file1
+        $link: cat_inputs/out_file1
   - label: cat_pairs
     tool_id: cat_collection
     state:
       input1:
-        $link: pair_off#paired_output
+        $link: pair_off/paired_output
   - tool_id: cat_list
     state:
       input1:
-        $link: cat_pairs#out_file1
+        $link: cat_pairs/out_file1
 test_data:
   text_input1:
     type: list
@@ -538,7 +536,7 @@ test_data:
         return sorted(steps, key=operator.itemgetter("id"))
 
     def __job_id(self, history_id, dataset_id):
-        url = "histories/%s/contents/%s/provenance" % (history_id, dataset_id)
+        url = "histories/{}/contents/{}/provenance".format(history_id, dataset_id)
         prov_response = self._get(url, data=dict(follow=False))
         self._assert_status_code_is(prov_response, 200)
         return prov_response.json()["job_id"]

@@ -94,7 +94,7 @@ def build_dependency_manager(app_config_dict=None, resolution_config_dict=None, 
     return dependency_manager
 
 
-class DependencyManager(object):
+class DependencyManager:
     """
     A DependencyManager attempts to resolve named and versioned dependencies by
     searching for them under a list of directories. Directories should be
@@ -107,11 +107,13 @@ class DependencyManager(object):
     """
     cached = False
 
-    def __init__(self, default_base_path, conf_file=None, app_config={}):
+    def __init__(self, default_base_path, conf_file=None, app_config=None):
         """
         Create a new dependency manager looking for packages under the paths listed
         in `base_paths`.  The default base path is app.config.tool_dependency_dir.
         """
+        if app_config is None:
+            app_config = {}
         if not os.path.exists(default_base_path):
             log.warning("Path '%s' does not exist, ignoring", default_base_path)
         if not os.path.isdir(default_base_path):
@@ -149,12 +151,14 @@ class DependencyManager(object):
         """Returns the union of enabled container types."""
         return self._enabled_container_types
 
-    def get_resolver_option(self, resolver, key, explicit_resolver_options={}):
+    def get_resolver_option(self, resolver, key, explicit_resolver_options=None):
         """Look in resolver-specific settings for option and then fallback to global settings.
         """
+        if explicit_resolver_options is None:
+            explicit_resolver_options = {}
         default = resolver.config_options.get(key)
         config_prefix = resolver.resolver_type
-        global_key = "%s_%s" % (config_prefix, key)
+        global_key = "{}_{}".format(config_prefix, key)
         value = explicit_resolver_options.get(key, CONFIG_VAL_NOT_FOUND)
         if value is CONFIG_VAL_NOT_FOUND:
             value = self.get_app_option(global_key, default)
@@ -295,7 +299,7 @@ class DependencyManager(object):
         return any(map(lambda r: isinstance(r, ToolShedPackageDependencyResolver), self.dependency_resolvers))
 
     def find_dep(self, name, version=None, type='package', **kwds):
-        log.debug('Find dependency %s version %s' % (name, version))
+        log.debug('Find dependency {} version {}'.format(name, version))
         requirements = ToolRequirements([ToolRequirement(name=name, version=version, type=type)])
         dep_dict = self._requirements_to_dependencies_dict(requirements, **kwds)
         if len(dep_dict) > 0:
@@ -347,7 +351,7 @@ class CachedDependencyManager(DependencyManager):
     cached = True
 
     def __init__(self, default_base_path, **kwd):
-        super(CachedDependencyManager, self).__init__(default_base_path=default_base_path, **kwd)
+        super().__init__(default_base_path=default_base_path, **kwd)
         self.tool_dependency_cache_dir = self.get_app_option("tool_dependency_cache_dir") or os.path.join(default_base_path, "_cache")
 
     def build_cache(self, requirements, **kwds):
@@ -408,7 +412,9 @@ class CachedDependencyManager(DependencyManager):
 class NullDependencyManager(DependencyManager):
     cached = False
 
-    def __init__(self, default_base_path=None, conf_file=None, app_config={}):
+    def __init__(self, default_base_path=None, conf_file=None, app_config=None):
+        if app_config is None:
+            app_config = {}
         self.__app_config = app_config
         self.resolver_classes = set()
         self.dependency_resolvers = []

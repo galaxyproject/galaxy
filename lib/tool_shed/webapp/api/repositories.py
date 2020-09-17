@@ -82,7 +82,7 @@ class RepositoriesController(BaseAPIController):
             raise HTTPBadRequest(detail="Missing required parameter 'owner'.")
         repository = repository_util.get_repository_by_name_and_owner(self.app, name, owner)
         if repository is None:
-            error_message = 'Cannot locate repository with name %s and owner %s,' % (str(name), str(owner))
+            error_message = 'Cannot locate repository with name {} and owner {},'.format(str(name), str(owner))
             log.debug(error_message)
             response_dict['status'] = 'error'
             response_dict['message'] = error_message
@@ -111,14 +111,15 @@ class RepositoriesController(BaseAPIController):
         if owner is None:
             owner = kwd.get('owner', None)
         tsr_id = kwd.get('tsr_id', None)
+        eagerload_columns = ['downloadable_revisions']
         if None not in [name, owner]:
             # Get the repository information.
-            repository = repository_util.get_repository_by_name_and_owner(self.app, name, owner)
+            repository = repository_util.get_repository_by_name_and_owner(self.app, name, owner, eagerload_columns=eagerload_columns)
             if repository is None:
                 trans.response.status = 404
-                return {'status': 'error', 'message': 'No repository named %s found with owner %s' % (name, owner)}
+                return {'status': 'error', 'message': 'No repository named {} found with owner {}'.format(name, owner)}
         elif tsr_id is not None:
-            repository = repository_util.get_repository_in_tool_shed(self.app, tsr_id)
+            repository = repository_util.get_repository_in_tool_shed(self.app, tsr_id, eagerload_columns=eagerload_columns)
         else:
             error_message = "Error in the Tool Shed repositories API in get_ordered_installable_revisions: "
             error_message += "invalid parameters received."
@@ -197,9 +198,9 @@ class RepositoriesController(BaseAPIController):
         # http://<xyz>/api/repositories/get_repository_revision_install_info?name=<n>&owner=<o>&changeset_revision=<cr>
         if name and owner and changeset_revision:
             # Get the repository information.
-            repository = repository_util.get_repository_by_name_and_owner(self.app, name, owner)
+            repository = repository_util.get_repository_by_name_and_owner(self.app, name, owner, eagerload_columns=['downloadable_revisions'])
             if repository is None:
-                log.debug('Cannot locate repository %s owned by %s' % (str(name), str(owner)))
+                log.debug('Cannot locate repository {} owned by {}'.format(str(name), str(owner)))
                 return {}, {}, {}
             encoded_repository_id = trans.security.encode_id(repository.id)
             repository_dict = repository.to_dict(view='element',
@@ -263,7 +264,7 @@ class RepositoriesController(BaseAPIController):
         # Example URL: http://localhost:9009/api/repositories/get_installable_revisions?tsr_id=9d37e53072ff9fa4
         tsr_id = kwd.get('tsr_id', None)
         if tsr_id is not None:
-            repository = repository_util.get_repository_in_tool_shed(self.app, tsr_id)
+            repository = repository_util.get_repository_in_tool_shed(self.app, tsr_id, eagerload_columns=['downloadable_revisions'])
         else:
             error_message = "Error in the Tool Shed repositories API in get_ordered_installable_revisions: "
             error_message += "missing or invalid parameter received."
@@ -332,7 +333,7 @@ class RepositoriesController(BaseAPIController):
             callback = kwd.get('callback', 'callback')
             search_results = self._search(trans, q, page, page_size)
             if return_jsonp:
-                response = str('%s(%s);' % (callback, json.dumps(search_results)))
+                response = str('{}({});'.format(callback, json.dumps(search_results)))
             else:
                 response = json.dumps(search_results)
             return response
@@ -371,7 +372,7 @@ class RepositoriesController(BaseAPIController):
                         metadata_dict['tool_dependencies'] = {}
                     if metadata.includes_tools:
                         metadata_dict['tools'] = metadata.metadata['tools']
-                    all_metadata['%s:%s' % (int(changeset), changehash)] = metadata_dict
+                    all_metadata['{}:{}'.format(int(changeset), changehash)] = metadata_dict
             if repository_found is not None:
                 all_metadata['current_changeset'] = repository_found[0]
                 # all_metadata[ 'found_changesets' ] = repository_found
@@ -467,7 +468,7 @@ class RepositoriesController(BaseAPIController):
             raise HTTPBadRequest(detail="Missing required parameter 'owner'.")
         repository = repository_util.get_repository_by_name_and_owner(self.app, name, owner)
         if repository is None:
-            error_message = 'Cannot locate repository with name %s and owner %s,' % (str(name), str(owner))
+            error_message = 'Cannot locate repository with name {} and owner {},'.format(str(name), str(owner))
             log.debug(error_message)
             response_dict['status'] = 'error'
             response_dict['message'] = error_message
@@ -554,7 +555,7 @@ class RepositoriesController(BaseAPIController):
                 message = "Error resetting metadata on repository %s owned by %s: %s" % \
                     (str(repository.name), str(repository.user.username), util.unicodify(e))
                 results['unsuccessful_count'] += 1
-            status = '%s : %s' % (str(repository.name), message)
+            status = '{} : {}'.format(str(repository.name), message)
             results['repository_status'].append(status)
             return results
         rmm = repository_metadata_manager.RepositoryMetadataManager(app=self.app,
@@ -644,7 +645,7 @@ class RepositoriesController(BaseAPIController):
                 message = "Error resetting metadata on repository %s owned by %s: %s" % \
                     (str(repository.name), str(repository.user.username), util.unicodify(e))
                 results['status'] = 'error'
-            status = '%s : %s' % (str(repository.name), message)
+            status = '{} : {}'.format(str(repository.name), message)
             results['repository_status'].append(status)
             return results
 
@@ -652,7 +653,7 @@ class RepositoriesController(BaseAPIController):
         if repository_id is not None:
             repository = repository_util.get_repository_in_tool_shed(self.app, repository_id)
             start_time = strftime("%Y-%m-%d %H:%M:%S")
-            log.debug("%s...resetting metadata on repository %s" % (start_time, str(repository.name)))
+            log.debug("{}...resetting metadata on repository {}".format(start_time, str(repository.name)))
             results = handle_repository(trans, start_time, repository)
             stop_time = strftime("%Y-%m-%d %H:%M:%S")
             results['stop_time'] = stop_time
@@ -713,16 +714,17 @@ class RepositoriesController(BaseAPIController):
         owner = kwd.get('owner', None)
         changeset_revision = kwd.get('changeset_revision', None)
         hexlify_this = util.asbool(kwd.get('hexlify', True))
-        repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
-        if repository:
+        repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner, eagerload_columns=['downloadable_revisions'])
+        if repository and repository.downloadable_revisions:
             repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app,
                                                                                               trans.security.encode_id(repository.id),
                                                                                               changeset_revision)
             tool_shed_status_dict = {}
             # Handle repository deprecation.
             tool_shed_status_dict['repository_deprecated'] = str(repository.deprecated)
+            tip_revision = repository.downloadable_revisions[0]
             # Handle latest installable revision.
-            if changeset_revision == repository.tip(trans.app):
+            if changeset_revision == tip_revision:
                 tool_shed_status_dict['latest_installable_revision'] = 'True'
             else:
                 next_installable_revision = metadata_util.get_next_downloadable_changeset_revision(trans.app, repository, changeset_revision)
@@ -737,7 +739,7 @@ class RepositoriesController(BaseAPIController):
                     else:
                         tool_shed_status_dict['latest_installable_revision'] = 'True'
             # Handle revision updates.
-            if changeset_revision == repository.tip(trans.app):
+            if changeset_revision == tip_revision:
                 tool_shed_status_dict['revision_update'] = 'False'
             else:
                 if repository_metadata is None:
@@ -801,7 +803,7 @@ class RepositoriesController(BaseAPIController):
             raise MalformedId('The given id is invalid.')
         recursive = util.asbool(kwd.get('recursive', 'True'))
         all_metadata = {}
-        repository = repository_util.get_repository_in_tool_shed(self.app, id)
+        repository = repository_util.get_repository_in_tool_shed(self.app, id, eagerload_columns=['downloadable_revisions'])
         for changeset, changehash in repository.installable_revisions(self.app):
             metadata = metadata_util.get_current_repository_metadata_for_changeset_revision(self.app, repository, changehash)
             if metadata is None:
@@ -818,7 +820,7 @@ class RepositoriesController(BaseAPIController):
                 metadata_dict['tool_dependencies'] = {}
             if metadata.includes_tools:
                 metadata_dict['tools'] = metadata.metadata['tools']
-            all_metadata['%s:%s' % (int(changeset), changehash)] = metadata_dict
+            all_metadata['{}:{}'.format(int(changeset), changehash)] = metadata_dict
         return all_metadata
 
     @expose_api
@@ -975,7 +977,7 @@ class RepositoriesController(BaseAPIController):
         repo_dir = repository.repo_path(self.app)
 
         upload_point = commit_util.get_upload_point(repository, **kwd)
-        tip = repository.tip(self.app)
+        tip = repository.tip()
 
         file_data = payload.get('file')
         # Code stolen from gx's upload_common.py
@@ -1025,7 +1027,7 @@ class RepositoriesController(BaseAPIController):
             # Update the repository files for browsing.
             hg_util.update_repository(repo_dir)
             # Get the new repository tip.
-            if tip == repository.tip(self.app):
+            if tip == repository.tip():
                 trans.response.status = 400
                 message = 'No changes to repository.'
                 ok = False

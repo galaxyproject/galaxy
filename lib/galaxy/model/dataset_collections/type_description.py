@@ -1,7 +1,7 @@
 from .registry import DATASET_COLLECTION_TYPES_REGISTRY
 
 
-class CollectionTypeDescriptionFactory(object):
+class CollectionTypeDescriptionFactory:
 
     def __init__(self, type_registry=DATASET_COLLECTION_TYPES_REGISTRY):
         # taking in type_registry though not using it, because we will someday
@@ -13,7 +13,7 @@ class CollectionTypeDescriptionFactory(object):
         return CollectionTypeDescription(collection_type, self)
 
 
-class CollectionTypeDescription(object):
+class CollectionTypeDescription:
     """ Abstraction over dataset collection type that ties together string
     reprentation in database/model with type registry.
 
@@ -66,7 +66,7 @@ class CollectionTypeDescription(object):
             subcollection_type = subcollection_type.collection_type
 
         if not self.has_subcollections_of_type(subcollection_type):
-            raise ValueError("Cannot compute effective subcollection type of %s over %s" % (subcollection_type, self))
+            raise ValueError("Cannot compute effective subcollection type of {} over {}".format(subcollection_type, self))
 
         return self.collection_type[:-(len(subcollection_type) + 1)]
 
@@ -136,7 +136,7 @@ def map_over_collection_type(mapped_over_collection_type, target_collection_type
         if hasattr(target_collection_type, 'collection_type'):
             target_collection_type = target_collection_type.collection_type
 
-        return "%s:%s" % (mapped_over_collection_type, target_collection_type)
+        return "{}:{}".format(mapped_over_collection_type, target_collection_type)
 
 
 COLLECTION_TYPE_DESCRIPTION_FACTORY = CollectionTypeDescriptionFactory()

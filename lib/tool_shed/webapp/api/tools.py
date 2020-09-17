@@ -71,7 +71,7 @@ class ToolsController(BaseAPIController):
             callback = kwd.get('callback', 'callback')
             search_results = self._search(trans, q, page, page_size)
             if return_jsonp:
-                response = str('%s(%s);' % (callback, json.dumps(search_results)))
+                response = str('{}({});'.format(callback, json.dumps(search_results)))
             else:
                 response = json.dumps(search_results)
             return response
@@ -156,7 +156,7 @@ class ToolsController(BaseAPIController):
                         found_tool = tool
                         break
         if found_tool is None:
-            message = 'Unable to find tool with guid %s in repository %s.' % (guid, repository.name)
+            message = 'Unable to find tool with guid {} in repository {}.'.format(guid, repository.name)
             trans.response.status = 404
             return {'status': 'error', 'message': message}
 

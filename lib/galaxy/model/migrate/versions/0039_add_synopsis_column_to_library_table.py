@@ -1,7 +1,6 @@
 """
 Migration script to add a synopsis column to the library table.
 """
-from __future__ import print_function
 
 import logging
 

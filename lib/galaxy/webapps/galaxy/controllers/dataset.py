@@ -3,7 +3,6 @@ import os
 
 import paste.httpexceptions
 from markupsafe import escape
-from six import string_types, text_type
 from six.moves.urllib.parse import (
     quote_plus,
     unquote_plus
@@ -45,7 +44,7 @@ except ImportError:
 class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesExtendedMetadataMixin):
 
     def __init__(self, app):
-        super(DatasetInterface, self).__init__(app)
+        super().__init__(app)
         self.history_manager = managers.histories.HistoryManager(app)
         self.hda_manager = managers.hdas.HDAManager(app)
 
@@ -121,7 +120,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
 
         file_ext = data.metadata.spec.get(metadata_name).get("file_ext", metadata_name)
         trans.response.headers["Content-Type"] = "application/octet-stream"
-        trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (data.hid, fname, file_ext)
+        trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy{}-[{}].{}"'.format(data.hid, fname, file_ext)
         return open(data.metadata.get(metadata_name).file_name, 'rb')
 
     def _check_dataset(self, trans, hda_id):
@@ -153,7 +152,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         """ Primarily used for the S3ObjectStore - get the status of data transfer
         if the file is not in cache """
         data = self._check_dataset(trans, dataset_id)
-        if isinstance(data, string_types):
+        if isinstance(data, str):
             return data
         log.debug("Checking transfer status for dataset %s..." % data.dataset.id)
 
@@ -373,7 +372,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data}, overwrite=False)  # overwrite is False as per existing behavior
                     message = 'Changed the type to %s.' % datatype
             else:
-                return self.message_exception(trans, 'You are unable to change datatypes in this manner. Changing %s to %s is not allowed.' % (data.extension, datatype))
+                return self.message_exception(trans, 'You are unable to change datatypes in this manner. Changing {} to {} is not allowed.'.format(data.extension, datatype))
         elif operation == 'datatype_detect':
             # The user clicked the 'Detect datatype' button on the 'Change data type' form
             if data.datatype.allow_datatype_change:
@@ -446,7 +445,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             trans.log_event("Problem retrieving dataset id (%s)." % dataset_id)
             return None, self.message_exception(trans, 'The dataset id is invalid.')
         if dataset_id is not None and data.history.user is not None and data.history.user != trans.user:
-            trans.log_event("User attempted to edit a dataset they do not own (encoded: %s, decoded: %s)." % (dataset_id, id))
+            trans.log_event("User attempted to edit a dataset they do not own (encoded: {}, decoded: {}).".format(dataset_id, id))
             return None, self.message_exception(trans, 'The dataset id is invalid.')
         if data.history.user and not data.dataset.has_manage_permissions_roles(trans):
             # Permission setting related to DATASET_MANAGE_PERMISSIONS was broken for a period of time,
@@ -472,7 +471,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         # Do import.
         cur_history = trans.get_history(create=True)
         status, message = self._copy_datasets(trans, [dataset_id], [cur_history], imported=True)
-        message = "Dataset imported. <br>You can <a href='%s'>start using the dataset</a> or %s." % (url_for('/'), referer_message)
+        message = "Dataset imported. <br>You can <a href='{}'>start using the dataset</a> or {}.".format(url_for('/'), referer_message)
         return trans.show_message(message, type=status, use_panels=True)
 
     @web.expose
@@ -598,7 +597,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         if not dataset:
             web.httpexceptions.HTTPNotFound()
         annotation = self.get_item_annotation_str(trans.sa_session, trans.user, dataset)
-        if annotation and isinstance(annotation, text_type):
+        if annotation and isinstance(annotation, str):
             annotation = annotation.encode('ascii', 'replace')  # paste needs ascii here
         return annotation
 
@@ -702,7 +701,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                                 else:
                                     file_name = value.file_name
                                 content_length = os.path.getsize(file_name)
-                                rval = open(file_name)
+                                rval = open(file_name, 'rb')
                             except OSError as e:
                                 log.debug("Unable to access requested file in display application: %s", e)
                                 return paste.httpexceptions.HTTPNotFound("This file is no longer available.")
@@ -760,7 +759,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             self.hda_manager.stop_creating_job(hda)
             trans.sa_session.flush()
         except Exception:
-            msg = 'HDA deletion failed (encoded: %s, decoded: %s)' % (dataset_id, id)
+            msg = 'HDA deletion failed (encoded: {}, decoded: {})'.format(dataset_id, id)
             log.exception(msg)
             trans.log_event(msg)
             message = 'Dataset deletion failed'
@@ -786,7 +785,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             trans.sa_session.flush()
             trans.log_event("Dataset id %s has been undeleted" % str(id))
         except Exception:
-            msg = 'HDA undeletion failed (encoded: %s, decoded: %s)' % (dataset_id, id)
+            msg = 'HDA undeletion failed (encoded: {}, decoded: {})'.format(dataset_id, id)
             log.exception(msg)
             trans.log_event(msg)
             message = 'Dataset undeletion failed'
@@ -835,8 +834,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             hda.deleted = True
             # HDA is purgeable
             # Decrease disk usage first
-            if user:
-                user.adjust_total_disk_usage(-hda.quota_amount(user))
+            hda.purge_usage_from_quota(user)
             # Mark purged
             hda.purged = True
             trans.sa_session.add(hda)
@@ -848,13 +846,13 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             if hda.dataset.user_can_purge:
                 try:
                     hda.dataset.full_delete()
-                    trans.log_event("Dataset id %s has been purged upon the the purge of HDA id %s" % (hda.dataset.id, hda.id))
+                    trans.log_event("Dataset id {} has been purged upon the the purge of HDA id {}".format(hda.dataset.id, hda.id))
                     trans.sa_session.add(hda.dataset)
                 except Exception:
-                    log.exception('Unable to purge dataset (%s) on purge of HDA (%s):' % (hda.dataset.id, hda.id))
+                    log.exception('Unable to purge dataset ({}) on purge of HDA ({}):'.format(hda.dataset.id, hda.id))
             trans.sa_session.flush()
         except Exception:
-            msg = 'HDA purge failed (encoded: %s, decoded: %s)' % (dataset_id, id)
+            msg = 'HDA purge failed (encoded: {}, decoded: {})'.format(dataset_id, id)
             log.exception(msg)
             trans.log_event(msg)
             message = 'Dataset removal from disk failed'

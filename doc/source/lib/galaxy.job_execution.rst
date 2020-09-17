@@ -6,6 +6,13 @@ galaxy.job\_execution package
     :undoc-members:
     :show-inheritance:
 
+Subpackages
+-----------
+
+.. toctree::
+
+    galaxy.job_execution.ports
+
 Submodules
 ----------
 
@@ -21,6 +28,14 @@ galaxy.job\_execution.output\_collect module
 --------------------------------------------
 
 .. automodule:: galaxy.job_execution.output_collect
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.job\_execution.setup module
+----------------------------------
+
+.. automodule:: galaxy.job_execution.setup
     :members:
     :undoc-members:
     :show-inheritance:

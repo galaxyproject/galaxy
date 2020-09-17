@@ -28,7 +28,7 @@ def build_tool_dependencies_select_field(app, tool_shed_repository, name, multip
             if tool_dependency.status in [app.install_model.ToolDependency.installation_status.NEVER_INSTALLED,
                                           app.install_model.ToolDependency.installation_status.UNINSTALLED]:
                 continue
-        option_label = '%s version %s' % (str(tool_dependency.name), str(tool_dependency.version))
+        option_label = '{} version {}'.format(str(tool_dependency.name), str(tool_dependency.version))
         option_value = app.security.encode_id(tool_dependency.id)
         tool_dependencies_select_field.add_option(option_label, option_value)
     return tool_dependencies_select_field
@@ -365,7 +365,7 @@ def remove_tool_dependency_installation_directory(dependency_install_dir):
             log.debug("Removed tool dependency installation directory: %s" % str(dependency_install_dir))
         except Exception as e:
             removed = False
-            error_message = "Error removing tool dependency installation directory %s: %s" % (str(dependency_install_dir), str(e))
+            error_message = "Error removing tool dependency installation directory {}: {}".format(str(dependency_install_dir), str(e))
             log.warning(error_message)
     else:
         removed = True
@@ -383,7 +383,7 @@ def set_tool_dependency_attributes(app, tool_dependency, status, error_message=N
         tool_shed_repository = tool_dependency.tool_shed_repository
         debug_msg = 'Updating an existing record for version %s of tool dependency %s for revision %s of repository %s ' % \
             (str(tool_dependency.version), str(tool_dependency.name), str(tool_shed_repository.changeset_revision), str(tool_shed_repository.name))
-        debug_msg += 'by updating the status from %s to %s.' % (str(tool_dependency.status), str(status))
+        debug_msg += 'by updating the status from {} to {}.'.format(str(tool_dependency.status), str(status))
         log.debug(debug_msg)
     tool_dependency.status = status
     sa_session.add(tool_dependency)

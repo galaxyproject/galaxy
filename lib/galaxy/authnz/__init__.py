@@ -10,7 +10,7 @@ credentials for cloud-based resource providers (e.g., Amazon AWS, Microsoft Azur
 """
 
 
-class IdentityProvider(object):
+class IdentityProvider:
     """
     OpenID Connect Identity Provider abstract interface.
     """
@@ -24,13 +24,13 @@ class IdentityProvider(object):
         :type provider: string
         :param provider: is the name of the identity provider (e.g., Google).
 
-        :type config: xml.etree.ElementTree.Element
+        :type config: lxml.etree.ElementTree._Element
         :param config: Is the configuration element of the provider
             from the configuration file (e.g., oidc_config.xml).
             This element contains the all the provider-specific
             configuration elements.
 
-        :type backend_config: xml.etree.ElementTree.Element
+        :type backend_config: lxml.etree.ElementTree._Element
         :param backend_config: Is the configuration element of the backend of
             the provider from the configuration file (e.g.,
             oidc_backends_config.xml). This element contains all the

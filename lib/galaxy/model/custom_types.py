@@ -8,7 +8,6 @@ from itertools import chain
 from sys import getsizeof
 
 import numpy
-import six
 import sqlalchemy
 from sqlalchemy.ext.mutable import Mutable
 from sqlalchemy.types import (
@@ -33,7 +32,7 @@ class SafeJsonEncoder(json.JSONEncoder):
             return int(obj)
         elif isinstance(obj, numpy.float_):
             return float(obj)
-        elif isinstance(obj, six.binary_type):
+        elif isinstance(obj, bytes):
             return unicodify(obj)
         # Let the base class default method raise the TypeError
         return json.JSONEncoder.default(self, obj)
@@ -67,16 +66,15 @@ class GalaxyLargeBinary(LargeBinary):
     # does not specify an encoding in the `bytes` call ,
     # likely because `result` should be binary.
     # This doesn't seem to be the case in galaxy.
-    if six.PY3:
-        def result_processor(self, dialect, coltype):
-            def process(value):
-                if value is not None:
-                    if isinstance(value, str):
-                        value = bytes(value, encoding='utf-8')
-                    else:
-                        value = bytes(value)
-                return value
-            return process
+    def result_processor(self, dialect, coltype):
+        def process(value):
+            if value is not None:
+                if isinstance(value, str):
+                    value = bytes(value, encoding='utf-8')
+                else:
+                    value = bytes(value)
+            return value
+        return process
 
 
 class JSONType(sqlalchemy.types.TypeDecorator):
@@ -207,7 +205,7 @@ class MutationList(MutationObj, list):
     @classmethod
     def coerce(cls, key, value):
         """Convert plain list to MutationList"""
-        self = MutationList((MutationObj.coerce(key, v) for v in value))
+        self = MutationList(MutationObj.coerce(key, v) for v in value)
         self._key = key
         return self
 
@@ -317,7 +315,7 @@ class MetadataType(JSONType):
                     sz = total_size(v)
                     if sz > MAX_METADATA_VALUE_SIZE:
                         del value[k]
-                        log.warning('Refusing to bind metadata key %s due to size (%s)' % (k, sz))
+                        log.warning('Refusing to bind metadata key {} due to size ({})'.format(k, sz))
             value = json_encoder.encode(value).encode()
         return value
 

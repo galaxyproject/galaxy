@@ -43,7 +43,7 @@ log = logging.getLogger(__name__)
 class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems, UsesTagsMixin):
 
     def __init__(self, app):
-        super(HistoryContentsController, self).__init__(app)
+        super().__init__(app)
         self.hda_manager = hdas.HDAManager(app)
         self.history_manager = histories.HistoryManager(app)
         self.history_contents_manager = history_contents.HistoryContentsManager(app)
@@ -205,7 +205,6 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         if ids is None:
             assert types is None
             # TODO: ...
-            pass
         else:
             ids = [self.app.security.decode_id(i) for i in util.listify(ids)]
             types = util.listify(types)
@@ -310,7 +309,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
                 continue
             for file_path, relpath in hda.datatype.to_archive(trans=trans, dataset=hda, name=name):
                 archive.add(file=file_path, relpath=relpath)
-        archive_name = "%s: %s.%s" % (dataset_collection_instance.hid, dataset_collection_instance.name, archive_ext)
+        archive_name = "{}: {}.{}".format(dataset_collection_instance.hid, dataset_collection_instance.name, archive_ext)
         trans.response.set_content_type("application/x-tar")
         trans.response.headers["Content-Disposition"] = 'attachment; filename="{}"'.format(archive_name)
         archive.wsgi_status = trans.response.wsgi_status()
@@ -522,6 +521,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             dataset_collection_instance = service.create(
                 trans,
                 parent=history,
+                history=history,
                 **create_params
             )
         elif source == "hdca":
@@ -903,7 +903,12 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         view = serialization_params.pop('view')
 
         contents = self.history_contents_manager.contents(history,
-            filters=filters, limit=limit, offset=offset, order_by=order_by)
+            filters=filters,
+            limit=limit,
+            offset=offset,
+            order_by=order_by,
+            serialization_params=serialization_params)
+
         for content in contents:
 
             # TODO: remove split
@@ -949,9 +954,9 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         # roughly from: http://stackoverflow.com/a/31976060 (windows, linux)
         invalid_filename_char_regex = re.compile(r'[:<>|\\\/\?\* "]')
         # path format string - dot separator between id and name
-        id_name_format = u'{}.{}'
+        id_name_format = '{}.{}'
 
-        def name_to_filename(name, max_length=150, replace_with=u'_'):
+        def name_to_filename(name, max_length=150, replace_with='_'):
             # TODO: seems like shortening unicode with [:] would cause unpredictable display strings
             return invalid_filename_char_regex.sub(replace_with, name)[0:max_length]
 

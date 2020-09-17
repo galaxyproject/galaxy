@@ -1,4 +1,4 @@
-from galaxy.tool_util.deps.commands import which
+from galaxy.util.commands import which
 
 
 def find_engine(config):

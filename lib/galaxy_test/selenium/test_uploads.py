@@ -16,7 +16,7 @@ class UploadsTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.perform_upload(self.get_filename("1.sam"))
 
         self.history_panel_wait_for_hid_ok(1)
-        history_contents = self.current_history_contents()
+        history_contents = self.history_contents()
         history_count = len(history_contents)
         assert history_count == 1, "Incorrect number of items in history - expected 1, found %d" % history_count
 
@@ -31,7 +31,7 @@ class UploadsTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
     def test_upload_specify_ext(self):
         self.perform_upload(self.get_filename("1.sam"), ext="txt")
         self.history_panel_wait_for_hid_ok(1)
-        history_contents = self.current_history_contents()
+        history_contents = self.history_contents()
         hda = history_contents[0]
         assert hda["name"] == '1.sam'
         assert hda["extension"] == "txt", hda
@@ -48,7 +48,7 @@ class UploadsTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
     def test_upload_specify_ext_all(self):
         self.perform_upload(self.get_filename("1.sam"), ext_all="txt")
         self.history_panel_wait_for_hid_ok(1)
-        history_contents = self.current_history_contents()
+        history_contents = self.history_contents()
         hda = history_contents[0]
         assert hda["name"] == '1.sam'
         assert hda["extension"] == "txt", hda
@@ -92,7 +92,7 @@ class UploadsTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.history_panel_wait_for_hid_ok(3)
         self.history_panel_wait_for_hid_ok(1)
 
-        history_contents = self.current_history_contents()
+        history_contents = self.history_contents()
         hda = history_contents[0]
         assert hda["name"] == '1.tabular'
         assert hda["extension"] == "txt", hda
@@ -296,7 +296,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.screenshot("rules_example_6_7_named")
 
     def _read_rules_test_data_file(self, name):
-        with open(self.test_data_resolver.get_filename(os.path.join("rules", name)), "r") as f:
+        with open(self.test_data_resolver.get_filename(os.path.join("rules", name))) as f:
             return f.read()
 
     def _scroll_to_end_of_table(self):

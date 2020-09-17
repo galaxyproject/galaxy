@@ -153,7 +153,7 @@ steps:
         self.workflow_run_with_name(name)
         self.sleep_for(self.wait_types.UX_TRANSITION)
         # Check that this tool form contains a warning about different versions.
-        self.assert_warning_message(contains="different versions")
+        self.assert_message(self.components.workflow_run.warning, contains="different versions")
         self.screenshot("workflow_run_tool_upgrade")
 
     @selenium_test
@@ -183,7 +183,7 @@ steps:
 
     @selenium_test
     @managed_history
-    def test_execution_with_custom_invocation_repoprt(self):
+    def test_execution_with_custom_invocation_report(self):
         history_id, inputs = self.workflow_run_setup_inputs(WORKFLOW_WITH_CUSTOM_REPORT_1_TEST_DATA)
         self.open_in_workflow_run(WORKFLOW_WITH_CUSTOM_REPORT_1)
         self.workflow_run_specify_inputs(inputs)
@@ -195,8 +195,8 @@ steps:
         self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
 
         invocation_0 = self.workflow_populator.history_invocations(history_id)[0]
-        self.get("workflows/invocations/report?id=%s" % invocation_0["id"])
-        self.wait_for_selector_visible(".embedded-item.dataset")
+        self.get("page/edit_report?id=%s" % invocation_0["id"])
+        self.wait_for_selector_visible(".embedded-dataset")
         self.screenshot("workflow_report_custom_1")
 
     def open_in_workflow_run(self, yaml_content):

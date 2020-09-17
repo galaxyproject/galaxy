@@ -10,7 +10,7 @@ class InvalidDataProviderSource(TypeError):
 
     def __init__(self, source=None, msg=''):
         msg = msg or 'Invalid source for provider: %s' % (source)
-        super(InvalidDataProviderSource, self).__init__(msg)
+        super().__init__(msg)
 
 
 class NoProviderAvailable(TypeError):
@@ -33,4 +33,4 @@ class NoProviderAvailable(TypeError):
         msg = msg or 'No provider available in factory_source "%s" for format requested' % (str(factory_source))
         if self.format_requested:
             msg += ': "%s"' % (self.format_requested)
-        super(NoProviderAvailable, self).__init__(msg)
+        super().__init__(msg)

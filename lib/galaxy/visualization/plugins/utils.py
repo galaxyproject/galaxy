@@ -19,7 +19,7 @@ class OpenObject(dict):
     def __getitem__(self, key):
         if key not in self:
             return None
-        return super(OpenObject, self).__getitem__(key)
+        return super().__getitem__(key)
 
     def __getattr__(self, key):
         return self.__getitem__(key)

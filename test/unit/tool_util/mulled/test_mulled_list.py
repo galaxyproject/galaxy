@@ -21,10 +21,10 @@ def test_get_singularity_containers():
 def test_get_missing_containers():
     test_dir = tempfile.mkdtemp()
     try:
-        exclude_list = '%s/blacklist.txt' % test_dir
+        exclude_list = '%s/blocklist.txt' % test_dir
         with open(exclude_list, 'w') as f:
             f.write('a\n\nb\nc\nd')
-        containers = get_missing_containers(quay_list=['1', '2', '3', 'a', 'b', 'z'], singularity_list=['3', '4', '5'], blacklist_file=exclude_list)
+        containers = get_missing_containers(quay_list=['1', '2', '3', 'a', 'b', 'z'], singularity_list=['3', '4', '5'], blocklist_file=exclude_list)
         assert containers == ['1', '2', 'z']
     finally:
         shutil.rmtree(test_dir)
@@ -33,10 +33,10 @@ def test_get_missing_containers():
 def test_get_missing_envs():
     test_dir = tempfile.mkdtemp()
     try:
-        exclude_list = '%s/blacklist.txt' % test_dir
+        exclude_list = '%s/blocklist.txt' % test_dir
         with open(exclude_list, 'w') as f:
             f.write('a\n\nb\nc\nd')
-        envs = get_missing_envs(quay_list=['1', '2', '3', 'a', 'b--2', 'z--1'], conda_list=['3', '4', '5'], blacklist_file=exclude_list)
+        envs = get_missing_envs(quay_list=['1', '2', '3', 'a', 'b--2', 'z--1'], conda_list=['3', '4', '5'], blocklist_file=exclude_list)
         assert envs == ['1', '2', 'z--1']
     finally:
         shutil.rmtree(test_dir)

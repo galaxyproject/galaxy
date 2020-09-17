@@ -11,7 +11,11 @@ from galaxy.managers.pages import (
     PageSerializer
 )
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.web import expose_api, expose_api_raw
+from galaxy.web import (
+    expose_api,
+    expose_api_anonymous_and_sessionless,
+    expose_api_raw_anonymous_and_sessionless
+)
 from galaxy.webapps.base.controller import (
     BaseAPIController,
     SharableItemSecurityMixin,
@@ -27,11 +31,11 @@ class PagesController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotati
     """
 
     def __init__(self, app):
-        super(PagesController, self).__init__(app)
+        super().__init__(app)
         self.manager = PageManager(app)
         self.serializer = PageSerializer(app)
 
-    @expose_api
+    @expose_api_anonymous_and_sessionless
     def index(self, trans, deleted=False, **kwd):
         """
         index( self, trans, deleted=False, **kwd )
@@ -52,12 +56,14 @@ class PagesController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotati
             for row in r:
                 out.append(self.encode_all_ids(trans, row.to_dict(), True))
         else:
+            # Transaction user's pages (if any)
             user = trans.get_user()
             r = trans.sa_session.query(trans.app.model.Page).filter_by(user=user)
             if not deleted:
                 r = r.filter_by(deleted=False)
             for row in r:
                 out.append(self.encode_all_ids(trans, row.to_dict(), True))
+            # Published pages from other users
             r = trans.sa_session.query(trans.app.model.Page).filter(trans.app.model.Page.user != user).filter_by(published=True)
             if not deleted:
                 r = r.filter_by(deleted=False)
@@ -90,6 +96,10 @@ class PagesController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotati
         return rval
 
     @expose_api
+    def create_report(self, trans, payload, **kwd):
+        pass
+
+    @expose_api
     def delete(self, trans, id, **kwd):
         """
         delete( self, trans, id, **kwd )
@@ -108,7 +118,7 @@ class PagesController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotati
         trans.sa_session.flush()
         return ''  # TODO: Figure out what to return on DELETE, document in guidelines!
 
-    @expose_api
+    @expose_api_anonymous_and_sessionless
     def show(self, trans, id, **kwd):
         """
         show( self, trans, id, **kwd )
@@ -127,7 +137,7 @@ class PagesController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotati
         self.manager.rewrite_content_for_export(trans, rval)
         return rval
 
-    @expose_api_raw
+    @expose_api_raw_anonymous_and_sessionless
     def show_pdf(self, trans, id, **kwd):
         """
         show( self, trans, id, **kwd )

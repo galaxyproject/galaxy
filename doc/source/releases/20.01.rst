@@ -1,0 +1,734 @@
+
+.. to_doc
+
+20.01
+===============================
+
+.. announce_start
+
+Enhancements
+-------------------------------
+
+* CLI tools for installing/testing Docker and Singularity containers
+  (thanks to `@simonbray <https://github.com/simonbray>`__).
+  `Pull Request 7936`_
+* Markdown-based Galaxy Pages.
+  `Pull Request 8512`_
+* Make Masthead and workflow page screenreader friendly
+  `Pull Request 8700`_
+* Add data dialog input element to client form parameter list
+  `Pull Request 8774`_
+* Add has_size option
+  (thanks to `@simonbray <https://github.com/simonbray>`__).
+  `Pull Request 8852`_
+* Email notifications on job completion
+  `Pull Request 8948`_
+* Make tours reloadable
+  `Pull Request 9032`_
+* Add a config option to allow customizing the brand title
+  `Pull Request 9062`_
+* IT fixes and 3 new ITs
+  `Pull Request 9141`_
+* Remove GenomeSpace tools, OpenID, UI and requirements
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9363`_
+* Hyphy-vision fixes and updates.
+  `Pull Request 9384`_
+* Datatypes for MassSpec DIA dlib,elib
+  (thanks to `@jj-umn <https://github.com/jj-umn>`__).
+  `Pull Request 8657`_
+* Add bus as binary, remove extra datatype
+  (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
+  `Pull Request 8705`_
+* remove dada2_derep data type
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 8902`_
+* Add new GROMACS datatypes: ndx, xvg, edr
+  (thanks to `@simonbray <https://github.com/simonbray>`__).
+  `Pull Request 8964`_
+* Add gff3.gz and gff3.bz2 datatypes
+  (thanks to `@FredericBGA <https://github.com/FredericBGA>`__).
+  `Pull Request 8967`_
+* Make mol2 visible
+  (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
+  `Pull Request 8995`_
+* Add a datatype subclass for CAT (Contig Annotation Tool)
+  (thanks to `@jj-umn <https://github.com/jj-umn>`__).
+  `Pull Request 9087`_
+* Add tabular.gz datatype and add embl to uploadable formats
+  `Pull Request 9293`_
+* Upgrade askomics interactive tool
+  (thanks to `@xgaia <https://github.com/xgaia>`__).
+  `Pull Request 8517`_
+* Remove collection ID character restriction from 'Relabel collection from file' tool
+  (thanks to `@brinkmanlab <https://github.com/brinkmanlab>`__).
+  `Pull Request 8571`_
+* Allow space, dot and comma in relabel identifier tool
+  `Pull Request 8757`_
+* Fix script shebangs
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 8888`_
+* Allow admins to import tools/workflows from paths.
+  `Pull Request 9003`_
+* Move sam_pileup to GALAXY_LIB_TOOLS_VERSIONED
+  `Pull Request 9320`_
+* Interactive modification of invocation report.
+  `Pull Request 8691`_
+* User-facing Workflow Invocation Grid
+  `Pull Request 8699`_
+* PDF Export of Galaxy Markdown
+  `Pull Request 8893`_
+* Refactor some workflow editor plumbing to VueJS
+  `Pull Request 8931`_
+* Track non-history content outputs.
+  `Pull Request 9009`_
+* Default format 2 workflows to be downloaded as YAML.
+  `Pull Request 9023`_
+* Even Richer Workflow Inputs
+  `Pull Request 9086`_
+* Separate Markdown Validation into its own module.
+  `Pull Request 9099`_
+* add option select_type_workflow_threshold (rebase)
+  `Pull Request 9105`_
+* Upgrade eslint (major version), fix compliance with new standard rules.
+  `Pull Request 8708`_
+* JobMetrics.vue unit test.
+  `Pull Request 8732`_
+* Fix the flexible Data Dialog to work independent of the page layout initialization hooks.
+  `Pull Request 8744`_
+* axios-mock-adapter for cleaner, more expansive testing
+  `Pull Request 8749`_
+* Added client-side application configs for each target environment
+  `Pull Request 8827`_
+* Small cleanup for job runners kill
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 8523`_
+* Improvements to Galaxy and Pulsar job execution
+  `Pull Request 8625`_
+* Allow assigning UUID job ids with Pulsar in MQ mode.
+  `Pull Request 8718`_
+* Do not re-compute job input_ext/dbkey in job finish.
+  `Pull Request 8910`_
+* Implement extended job metadata collection
+  `Pull Request 8930`_
+* Move Jobs updated time display logic to client.
+  `Pull Request 8943`_
+* Implement extended job metadata collection + fixes
+  `Pull Request 8984`_
+* Place version output file in a writable directory for containerized jobs.
+  `Pull Request 8997`_
+* Fix deletion of outputs and working before job
+  `Pull Request 9245`_
+* Mount tool_data_path (ro) when running containerized tools
+  `Pull Request 9314`_
+* Allow remote jobs to configure Interactive Tool entry points.
+  `Pull Request 9349`_
+* Add Tool Manager Component for Admin Panel
+  `Pull Request 8601`_
+* Add process ID to worker_process table
+  (thanks to `@selten <https://github.com/selten>`__).
+  `Pull Request 8972`_
+* Use official "login with" buttons for OIDC
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
+  `Pull Request 8107`_, `Pull Request 9102`_
+* Add data types to docs.galaxyproject.org
+  (thanks to `@selten <https://github.com/selten>`__).
+  `Pull Request 8531`_
+* python-ldap python3 update and documentation change
+  (thanks to `@selten <https://github.com/selten>`__).
+  `Pull Request 8618`_
+* GitLab error reporting
+  (thanks to `@selten <https://github.com/selten>`__).
+  `Pull Request 8620`_
+* Extend the list of attributes to be reported.
+  `Pull Request 8661`_
+* Have CI ensure client PRs are formatted.
+  `Pull Request 8662`_
+* Add area/configuration label
+  `Pull Request 8665`_
+* Update BootstrapVue to 2.0.1
+  `Pull Request 8666`_
+* add .gitattributes file and normalize line endings to use LF in…
+  `Pull Request 8677`_
+* Improve CI reliability by annotating external resources.
+  `Pull Request 8678`_
+* Restrict `/api/histories/shared_with_me` to logged-in users
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 8685`_
+* Automate path resolution for config options
+  `Pull Request 8689`_
+* Remove unused Docker Swarm options
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 8690`_
+* LDAP search member of filter
+  (thanks to `@BioinformaticsPlatformWIV-ISP <https://github.com/BioinformaticsPlatformWIV-ISP>`__).
+  `Pull Request 8697`_
+* Rebuild and prettify config sample and doc
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 8713`_
+* Update zh/locale.js
+  (thanks to `@shenweiyan <https://github.com/shenweiyan>`__).
+  `Pull Request 8725`_
+* Start using path_resolves_to; add integration tests
+  `Pull Request 8737`_
+* Significant overhaul to container+dependency management
+  `Pull Request 8741`_
+* Multi subdomains cookie support
+  (thanks to `@julozi <https://github.com/julozi>`__).
+  `Pull Request 8746`_
+* One test case to rule them all
+  `Pull Request 8793`_
+* Allow recording more performance statistics to statsd.
+  `Pull Request 8800`_
+* Add installation monitor popup to toolshed client
+  `Pull Request 8810`_
+* General server dependency updates (was/including catalina fix)
+  `Pull Request 8843`_
+* Add badge to indicate availability of a newer toolshed repository version
+  `Pull Request 8860`_
+* Add config options to integration test for abs path
+  `Pull Request 8862`_
+* Make message_box style and visible options reloadable
+  `Pull Request 8863`_
+* Remove 'area/cleanup', edit 'kind/refactoring'
+  `Pull Request 8874`_
+* Unpin bdbag.
+  `Pull Request 8883`_
+* Add separate knob for masthead colors
+  `Pull Request 8904`_
+* Refactor galaxy_install and required dependencies into Galaxy's namespace.
+  `Pull Request 8905`_
+* Enable interactivetools with other beta tools...
+  `Pull Request 8913`_
+* Simplify logo replacement, fix height and alignment
+  `Pull Request 8914`_
+* Simplify Python deps installation in `testing-base` Dockerfile
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 8921`_
+* Config: drop redundant `template_cache` attribute
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 8924`_
+* Enable secondary authorization
+  `Pull Request 8926`_
+* Set up a cache dir for pip when running tests with Docker
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 8929`_
+* Add link for interactive tools
+  (thanks to `@anuprulez <https://github.com/anuprulez>`__).
+  `Pull Request 8936`_
+* Remove deprecated tool dependency scripts.
+  `Pull Request 8955`_
+* Remove tool shed API examples.
+  `Pull Request 8956`_
+* Remove script for migrating tools to the tool shed...
+  `Pull Request 8957`_
+* Move galaxy testing utilities into cleaner package structure.
+  `Pull Request 8960`_
+* Create packages for Galaxy tests and infrastructure.
+  `Pull Request 8962`_
+* Remove workflow support from tool shed.
+  `Pull Request 8978`_
+* Remove capsule feature from tool shed.
+  `Pull Request 8979`_
+* trim long ldda messages; improve fluid media css
+  `Pull Request 9000`_
+* Expose python version in api/config
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
+  `Pull Request 9010`_
+* Hot module reloading using webpack-dev-server for client dev
+  `Pull Request 9029`_
+* when building ts index log parse errors at debug level
+  `Pull Request 9033`_
+* Update quickstart.rst
+  (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
+  `Pull Request 9044`_
+* Add Sergey Golitsynskiy to committers group
+  `Pull Request 9056`_
+* Update Mercurial to Py3-compatible v5.2, and all other deps
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9065`_
+* Automatically redirect to OIDC provider when only auth option
+  (thanks to `@machristie <https://github.com/machristie>`__).
+  `Pull Request 9115`_
+* Automatically use extended-base-image if necessary
+  `Pull Request 9116`_
+* Add HMR to client readme.
+  `Pull Request 9121`_
+* Add admin functionality to histories API
+  (thanks to `@thomcuddihy <https://github.com/thomcuddihy>`__).
+  `Pull Request 9124`_
+* Don't break generated reStructuredText and YAML on hyphens
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9128`_
+* mulled: use threading.Event in PrintProgress to avoid unnecessary wai…
+  `Pull Request 9163`_
+* Set Conda environment variables  when running biocontainers
+  `Pull Request 9170`_
+* Update my username
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
+  `Pull Request 9195`_
+* Add base_image column to mulled-build-files
+  `Pull Request 9199`_
+* Allow passing conda_context to any_target_requires_extended_base
+  `Pull Request 9202`_
+* Backport 9175: Update galaxy.tool_util.cwl for latest changes in CWL branch.
+  `Pull Request 9210`_
+* Extended base annotation fixes
+  `Pull Request 9224`_
+* External auth login refinement
+  `Pull Request 9233`_
+* Fixes for IGV GEDA handling of genomes
+  `Pull Request 9413`_
+* Factor out yaml read/write from config_manage.py
+  `Pull Request 8509`_
+* Implementation of the workflow list as vue component
+  `Pull Request 8551`_
+* Refactor config loading
+  `Pull Request 8573`_
+* Change reloadable config + misc cleanup
+  `Pull Request 8600`_
+* Case-insensitive match user-supplied email when logging in
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 8631`_
+* Modify schema defaults and their loading
+  `Pull Request 8639`_
+* Replace resolve_path() with os.path.join()
+  `Pull Request 8646`_
+* Simplify config code (minor edits)
+  `Pull Request 8648`_
+* Refactor/cleanup config loading (misc edits)
+  `Pull Request 8651`_
+* Remove unused Tags file since it was converted to a Vue component
+  `Pull Request 8722`_
+* Update slot syntax to v-slot across the board.
+  `Pull Request 8730`_
+* Remove deprecated Toolshed API endpoints
+  `Pull Request 8734`_
+* Client build process refinement
+  `Pull Request 8742`_
+* Add vue component and endpoint to reset repository metadata
+  `Pull Request 8754`_
+* Cleanup SQL query in ``_calculate_or_set_disk_usage()``
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 8776`_
+* Drop DetachedInstanceError workaround
+  `Pull Request 8785`_
+* Simplify code for expand_meta_parameters
+  (thanks to `@qiagu <https://github.com/qiagu>`__).
+  `Pull Request 8794`_
+* Convert User Preferences page to Vue Component
+  `Pull Request 8803`_
+* client-side current user store module
+  `Pull Request 8813`_
+* Refactor database_connection config loading
+  `Pull Request 8855`_
+* Refactor default_locale config option; test
+  `Pull Request 8856`_
+* Refactor infrastructure_url/port values; fix tests
+  `Pull Request 8857`_
+* Refactor pretty-datatime_format config loading
+  `Pull Request 8858`_
+* Fix misc. integration tests for config values
+  `Pull Request 8859`_
+* Do not specify None as default in dict.get()
+  `Pull Request 8865`_
+* Delete 'resolve path' integration tests
+  `Pull Request 8870`_
+* Do not raise Exception to manage control flow
+  `Pull Request 8876`_
+* Eliminate interactive debugging middleware
+  `Pull Request 8877`_
+* Normalize myexperiment_target_url / myexperiment_url
+  `Pull Request 8882`_
+* Do not override schema defaults if they exist
+  `Pull Request 8884`_
+* Use schema defaults in galaxy masthead
+  `Pull Request 8885`_
+* Cleanup config loading (minor fixes)
+  `Pull Request 8890`_
+* Refactor _set_config_base; fix config_dir value
+  `Pull Request 8915`_
+* Library tags tweaks and tests
+  `Pull Request 8947`_
+* Refactor Toolshed webapp into tool_shed package.
+  `Pull Request 8949`_
+* Separate Shed and Galaxy makos, package shed makos.
+  `Pull Request 8958`_
+* Remove admin tool shed controller code (Part 1)
+  `Pull Request 8988`_
+* Remove unused helper code from twilltestcase.
+  `Pull Request 8989`_
+* Fix tool image loading (was broken due to failing repo dir resolution)
+  `Pull Request 9006`_
+* Convert Custom builds vue
+  `Pull Request 9016`_
+* Implement datasets grid as vue component
+  `Pull Request 9018`_
+* remove unused toolshed template code
+  `Pull Request 9084`_
+* Default the authnz_manager to None
+  `Pull Request 9117`_
+* Update github username @erasche to @hexylena and correct inconsistencies
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
+  `Pull Request 9194`_
+* Add requirements, fix legacy tools and move them out of GALAXY_LIB_TOOLS_UNVERSIONED
+  `Pull Request 9336`_
+* Add requirements to (almost) all converters, profile and minor fixes
+  `Pull Request 9345`_
+
+
+Fixes
+-------------------------------
+
+* Wrap SQL statement in a text() function as required by sqlalchemy
+  (thanks to `@kaukrise <https://github.com/kaukrise>`__).
+  `Pull Request 9216`_
+* Ensure visible overflow on navbar container
+  (thanks to `@kaukrise <https://github.com/kaukrise>`__).
+  `Pull Request 9217`_
+* Various python 3 fixes from sentry
+  `Pull Request 9337`_
+* Fix cool sniffing on python3
+  `Pull Request 9153`_
+* Fix `SearchGuiArchive.set_meta()`
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 9437`_
+* grouping: strip newlines
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 8953`_
+* Add requirements to interval_to_bed_converter.xml
+  `Pull Request 9041`_
+* Fix version in which ``sam_pileup`` was fixed
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9350`_
+* Expunge tool shed repository objects, prevents ParentInstanceDetachedError
+  `Pull Request 9354`_
+* Fix maf tools
+  `Pull Request 9393`_
+* Exports reports with workflows (if configured).
+  `Pull Request 9055`_
+* Rev gxformat2 dependency to fix various export issues.
+  `Pull Request 9075`_
+* Fix workflow editor save as functionality
+  `Pull Request 9315`_
+* Various fixes and enhancements to reports
+  `Pull Request 9316`_
+* Small fixes for k8s.
+  `Pull Request 8759`_
+* Fix output.file_path writing to read-only path on Docker
+  `Pull Request 9048`_
+* Add job home to writable paths
+  `Pull Request 9051`_
+* Fix LocalShell returncode
+  `Pull Request 9171`_
+* Fix: Added support for specifying k8s job pod priority class
+  (thanks to `@nuwang <https://github.com/nuwang>`__).
+  `Pull Request 9219`_
+* Fix: Added support for specifying k8s job affinity and tolerations
+  (thanks to `@nuwang <https://github.com/nuwang>`__).
+  `Pull Request 9225`_
+* Mount job_working_directory/configs rw
+  `Pull Request 9234`_
+* Limit async hack to async tools
+  `Pull Request 9242`_
+* Fix moving of data manager output for entries
+  `Pull Request 9243`_
+* python3 fixes for setups using drmaa and realuser setups
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 9246`_, `Pull Request 9253`_
+* Email notifications aren't used from just workflow steps anymore.
+  `Pull Request 9276`_
+* Use requests for slots instead of limit
+  (thanks to `@nuwang <https://github.com/nuwang>`__).
+  `Pull Request 9322`_
+* Make set metadata exec after process more robust
+  `Pull Request 9395`_
+* Make dataset discovery respect final_job_state
+  `Pull Request 9406`_
+* Strip unicode null characters from traceback and job_messages
+  `Pull Request 9430`_
+* Encode lines in filter_file_fields
+  (thanks to `@selten <https://github.com/selten>`__).
+  `Pull Request 8652`_
+* Git error reporting - bug fixes and better error handling
+  (thanks to `@selten <https://github.com/selten>`__).
+  `Pull Request 8900`_
+* Assorted admin panel fixes
+  `Pull Request 9097`_
+* Run integration tests on github, fix various bugs (interactive tools, kubernetes, test framework)
+  `Pull Request 9193`_
+* Always add shed_tool_config file to tool_configs
+  `Pull Request 9364`_
+* Documentation update
+  (thanks to `@selten <https://github.com/selten>`__).
+  `Pull Request 8508`_
+* Asynchronous data source: unable to create the file
+  (thanks to `@FredericBGA <https://github.com/FredericBGA>`__).
+  `Pull Request 8515`_
+* OIDC config patch
+  (thanks to `@almahmoud <https://github.com/almahmoud>`__).
+  `Pull Request 8572`_
+* set uwsgi umask default
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 8581`_
+* Fix `test_validate_simple_config` unit test
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 8632`_
+* Fix a bug that occurs while installing a data manager.
+  (thanks to `@selten <https://github.com/selten>`__).
+  `Pull Request 8634`_
+* Fix bug in build_dependency_manager()
+  `Pull Request 8660`_
+* Get rid of fix timeout in admin app Selenium test.
+  `Pull Request 8667`_
+* More robust login/logout with Selenium.
+  `Pull Request 8676`_
+* Fixes for BootstrapVue Tables
+  `Pull Request 8684`_
+* More bootstrap vue upgrade fixes.
+  `Pull Request 8692`_
+* GRT: Ensure correct encoding, no partial lines
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
+  `Pull Request 8712`_
+* Revise toolshed config dependency check error message in repository install manager
+  `Pull Request 8720`_
+* Fix data dialog height, modal test case and table slots
+  `Pull Request 8724`_
+* Do not overwrite existing attributes
+  `Pull Request 8728`_
+* Replace hardcoded configuration
+  `Pull Request 8731`_
+* Fix `new_secure_hash()` when passed an empty string
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 8739`_
+* data_manager_conf.xml.sample is missing
+  (thanks to `@lecorguille <https://github.com/lecorguille>`__).
+  `Pull Request 8784`_
+* Revert "[19.09] Fix detached parent instance error in 8769"
+  (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
+  `Pull Request 8791`_
+* Handles k8s job recently created with no status set yet
+  (thanks to `@pcm32 <https://github.com/pcm32>`__).
+  `Pull Request 8799`_
+* Add postcss-loader and autoprefixer dependencies
+  `Pull Request 8821`_
+* LDAP fixes
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 8823`_
+* Ensure app.config.config_file is an absolute path
+  `Pull Request 8836`_
+* Fix rare bug in config loading + add unit test
+  `Pull Request 8837`_
+* fix plugin name
+  (thanks to `@gmauro <https://github.com/gmauro>`__).
+  `Pull Request 8840`_
+* Restore portlet section style for repeat blocks
+  `Pull Request 8864`_
+* Prevent potential bug in config loading; test
+  `Pull Request 8866`_
+* Fix authnz manager's oidc config parsing for python3
+  `Pull Request 8871`_
+* Update check_py3_compatibility script for new ack versions.
+  `Pull Request 8872`_
+* If config_file is None, use cwd, not its parent
+  `Pull Request 8894`_
+* Log LDAP authenticate exceptions at the right level
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 8907`_
+* make pgcleanup also delete HDAs
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 8908`_
+* Fix unbounded variable error in `GET /api/datasets/{encoded_dataset_id}` exception handling
+  `Pull Request 8935`_
+* Set `deleted` attribute of history datasets when purging histories from grid
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 8940`_
+* Fix default logo path in configuration manager
+  `Pull Request 8941`_
+* Fix API decorator order
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9015`_
+* do not use var from inner scope
+  `Pull Request 9026`_
+* escape double hyphen in IT sample config, making it valid XML
+  `Pull Request 9034`_
+* Fix input parameter comparisons
+  `Pull Request 9047`_
+* Restore casting a boolean param to str when comparing with one
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9052`_
+* Fix comparison if parameter is optional and value is not provided
+  `Pull Request 9054`_
+* Small refactor of ``InputValueWrapper`` comparison methods
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9059`_
+* Add create_time to the signature of Repository constructor.
+  `Pull Request 9063`_
+* Listify value for multiple SelectToolParameterWrapper
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9067`_
+* Use newer psycopg2 conditional requirement for wheels on 3.7
+  `Pull Request 9068`_
+* Fix mulled version comparison
+  `Pull Request 9078`_
+* linter: accept outputs with auto_format only
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 9081`_
+* Create temporary files for cgi.FieldsStorage with delete=False
+  `Pull Request 9082`_
+* Fix importing a directory from user_library_import_dir
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9090`_
+* Make callbacks for tour and config watchers a control task
+  `Pull Request 9092`_
+* Don't watch tool files through watchdog
+  `Pull Request 9094`_
+* Allow html in registration warning message.
+  `Pull Request 9098`_
+* Admin job info display fix
+  `Pull Request 9120`_
+* Client build readme followup
+  `Pull Request 9122`_
+* Fix mulled cache/data locations, rebuild schema
+  `Pull Request 9125`_
+* More fixes for publishing decomposed packages.
+  `Pull Request 9126`_
+* fix url for workflow sharing
+  `Pull Request 9132`_
+* Add click prevent to workflow list dropdowns
+  `Pull Request 9133`_
+* Remove legacy admin panel entry for installation monitor, fix typo
+  `Pull Request 9134`_
+* Parse brand label option in legacy mako
+  `Pull Request 9136`_
+* Restore returning "None" when casting unselected multiselect param to str
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9144`_
+* Misc fixes
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9145`_
+* Add implementation of `parse_interactivetool` to `CwlToolSource` class
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9146`_
+* Fix optional unset integer and float params
+  `Pull Request 9149`_
+* Assorted OIDC fixes
+  `Pull Request 9150`_
+* Cast to None for optional params if not comparing strings
+  `Pull Request 9156`_
+* Ensure that users have a private role before login
+  `Pull Request 9168`_
+* Add static-safe mapping to config management
+  `Pull Request 9179`_
+* Fix tool shed tests for `#9168 <https://github.com/galaxyproject/galaxy/issues/9168>`__.
+  `Pull Request 9182`_
+* Add require_login bypass for entire authnz controller.
+  `Pull Request 9192`_
+* Fix runtime error in ToolConfWatcher
+  `Pull Request 9212`_
+* Fix extended base for singularity and add base_image_for_targets
+  `Pull Request 9215`_
+* More mulled-build-files fixes
+  `Pull Request 9228`_
+* Fix mailto hrefs in menus
+  `Pull Request 9232`_
+* Move meme_fimo out of unversioned lib tools
+  `Pull Request 9237`_
+* Fallback to binary download if header lies about content encoding
+  `Pull Request 9239`_
+* Fix lint warning string formatting
+  `Pull Request 9240`_
+* Fix unselected select parameter comparison to empty string
+  `Pull Request 9260`_
+* Fix iteritems use in build_from_current_history.mako
+  `Pull Request 9266`_
+* Fix suffix for single target mulled builds
+  `Pull Request 9267`_
+* backport 9268: Fix target_str_to_targets
+  `Pull Request 9269`_
+* Backwards compatible build number parsing
+  `Pull Request 9278`_
+* Tag display fixes for ui-select.
+  `Pull Request 9281`_
+* Python3: don't check for has_key attribute
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9290`_
+* Prevent caching of bootstrapped client data
+  `Pull Request 9294`_
+* Add build_sites_config_file option to config_schema
+  `Pull Request 9297`_
+* Backport reports config/py3 fix
+  `Pull Request 9309`_
+* Python3: unicodify the output of ``subprocess.check_output()``
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9319`_
+* Fix reports disk usage query for python 3
+  `Pull Request 9321`_
+* Fix string module use
+  `Pull Request 9327`_
+* Fix Python 3 error in containers lib
+  `Pull Request 9329`_
+* Fix use of next() as a meethod instead of a function
+  `Pull Request 9330`_
+* Automatically resolve and add static-safe mappings for client-based images
+  `Pull Request 9331`_
+* Various doc fixes
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9334`_
+* Fix app reference in guess_shed_config
+  `Pull Request 9339`_
+* Make linters more robust on python 3
+  `Pull Request 9348`_
+* Use RenamedTemporaryFile for safer integrated_tool_panel_file writing
+  `Pull Request 9359`_
+* Only get non-deleted datasets when listing custom dbkeys
+  `Pull Request 9360`_
+* Prevent duplicate listing of doi link and link (text, with href doi link)
+  `Pull Request 9366`_
+* Styleguide fixes
+  `Pull Request 9367`_
+* Prevent tool execution getting stuck in history when a chromInfo data…
+  `Pull Request 9385`_
+* Move migrated_tools_conf > mutable_config_dir (`#9376 <https://github.com/galaxyproject/galaxy/issues/9376>`__)
+  `Pull Request 9388`_
+* Fix dependency for CONVERTER_tar_to_directory
+  `Pull Request 9389`_
+* Fix for qp method used in GEDAs.
+  `Pull Request 9391`_
+* Fix hid comparison failing with hdas without hid
+  `Pull Request 9398`_
+* Don't raise exception if anon goes to <galaxy_url>/user/resend_verification
+  `Pull Request 9404`_
+* Update bleach to 3.1.1
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9408`_
+* Fix shed image resolution
+  `Pull Request 9411`_
+* Fixes for get_estimated_display_viewport
+  `Pull Request 9415`_
+* Fix wrong map use in many places
+  `Pull Request 9416`_
+* Conda startup fixes
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9421`_
+* fix two cases of opening a file binary
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 9424`_
+* Remove '.sample' from default value; rebuild schema
+  `Pull Request 9427`_
+* Fix login to accounts using different email capitalization
+  `Pull Request 9432`_
+* Fix TwoBitFile handle not opened in binary mode
+  `Pull Request 9433`_
+* Fix uploading workflow archives
+  `Pull Request 9434`_
+* Fix to_dict for upload1 tool
+  `Pull Request 9441`_
+* Fix data tables vue display
+  `Pull Request 9442`_
+* Fix `UserManager.get_reset_token()` after `#9432 <https://github.com/galaxyproject/galaxy/issues/9432>`__
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9446`_
+
+.. include:: 20.01_prs.rst
+

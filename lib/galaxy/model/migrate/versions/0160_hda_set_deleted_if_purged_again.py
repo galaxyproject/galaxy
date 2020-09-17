@@ -2,7 +2,6 @@
 Migration script to set the 'deleted' column of the
 'history_dataset_association' table to True if 'purged' is True.
 """
-from __future__ import print_function
 
 import logging
 

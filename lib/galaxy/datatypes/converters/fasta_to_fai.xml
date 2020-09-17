@@ -12,6 +12,12 @@ samtools faidx temp.fasta
     <outputs>
         <data name="output" format="fai" from_work_dir="temp.fasta.fai" />
     </outputs>
+    <tests>
+        <test>
+            <param name="input" format="fasta" value="chr_m.fasta"/>
+            <output name="output" format="fai" value="chr_m.fai"/>
+        </test>
+    </tests>
     <help>
     </help>
 </tool>

@@ -1,15 +1,15 @@
 import logging
 import os
 import shutil
-from xml.etree import ElementTree as XmlET
 
 from galaxy.tool_shed.util import hg_util
+from galaxy.util import etree
 from galaxy.util.tool_shed import xml_util
 
 log = logging.getLogger(__name__)
 
 
-class ShedToolDataTableManager(object):
+class ShedToolDataTableManager:
 
     def __init__(self, app):
         self.app = app
@@ -18,21 +18,21 @@ class ShedToolDataTableManager(object):
                                       parent_elem=None, **kwd):
         """Create and return an ElementTree repository info Element."""
         if parent_elem is None:
-            elem = XmlET.Element('tool_shed_repository')
+            elem = etree.Element('tool_shed_repository')
         else:
-            elem = XmlET.SubElement(parent_elem, 'tool_shed_repository')
-        tool_shed_elem = XmlET.SubElement(elem, 'tool_shed')
+            elem = etree.SubElement(parent_elem, 'tool_shed_repository')
+        tool_shed_elem = etree.SubElement(elem, 'tool_shed')
         tool_shed_elem.text = tool_shed
-        repository_name_elem = XmlET.SubElement(elem, 'repository_name')
+        repository_name_elem = etree.SubElement(elem, 'repository_name')
         repository_name_elem.text = repository_name
-        repository_owner_elem = XmlET.SubElement(elem, 'repository_owner')
+        repository_owner_elem = etree.SubElement(elem, 'repository_owner')
         repository_owner_elem.text = owner
-        changeset_revision_elem = XmlET.SubElement(elem, 'installed_changeset_revision')
+        changeset_revision_elem = etree.SubElement(elem, 'installed_changeset_revision')
         changeset_revision_elem.text = changeset_revision
         # add additional values
         # TODO: enhance additional values to allow e.g. use of dict values that will recurse
         for key, value in kwd.items():
-            new_elem = XmlET.SubElement(elem, key)
+            new_elem = etree.SubElement(elem, key)
             new_elem.text = value
         return elem
 

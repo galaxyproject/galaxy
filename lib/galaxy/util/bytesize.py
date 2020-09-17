@@ -14,7 +14,7 @@ SUFFIX_TO_BYTES = {
 }
 
 
-class ByteSize(object):
+class ByteSize:
     """Convert multiples of bytes to various units."""
 
     def __init__(self, value):
@@ -45,7 +45,7 @@ class ByteSize(object):
 
 
 def parse_bytesize(value):
-    if isinstance(value, int):
+    if isinstance(value, int) or isinstance(value, float):
         # Assume bytes
         return value
     value = value.upper()

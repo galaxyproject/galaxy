@@ -2,7 +2,6 @@
 Functionality for dealing with dbkeys.
 """
 # dbkeys read from disk using builds.txt
-from __future__ import absolute_import
 
 import os.path
 from json import loads
@@ -11,7 +10,7 @@ from galaxy.util import read_dbnames
 from galaxy.util.object_wrapper import sanitize_lists_to_string
 
 
-class GenomeBuilds(object):
+class GenomeBuilds:
     default_value = "?"
     default_name = "unspecified (?)"
 
@@ -39,12 +38,12 @@ class GenomeBuilds(object):
                 datasets = trans.sa_session.query(self._app.model.HistoryDatasetAssociation) \
                                 .filter_by(deleted=False, history_id=trans.history.id, extension="len")
                 for dataset in datasets:
-                    rval.append((dataset.dbkey, "%s (%s) [History]" % (dataset.name, dataset.dbkey)))
+                    rval.append((dataset.dbkey, "{} ({}) [History]".format(dataset.name, dataset.dbkey)))
             user = trans.user
             if user and hasattr(user, 'preferences') and 'dbkeys' in user.preferences:
                 user_keys = loads(user.preferences['dbkeys'])
                 for key, chrom_dict in user_keys.items():
-                    rval.append((key, "%s (%s) [Custom]" % (chrom_dict['name'], key)))
+                    rval.append((key, "{} ({}) [Custom]".format(chrom_dict['name'], key)))
         # Load old builds.txt static keys
         rval.extend(self._static_dbkeys)
         # load dbkeys from dbkey data table

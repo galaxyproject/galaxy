@@ -29,10 +29,10 @@ def get_quay_containers(repository='biocontainers'):
     for repo in repos:
         logging.info(repo)
         tags_response = requests.get(
-            "%s/%s/%s" % (QUAY_API_ENDPOINT, repository, repo['name']))
+            "{}/{}/{}".format(QUAY_API_ENDPOINT, repository, repo['name']))
         tags = tags_response.json()['tags']
         for tag in tags:
-            containers.append('%s:%s' % (repo['name'], tag))
+            containers.append('{}:{}'.format(repo['name'], tag))
 
     return containers
 
@@ -67,25 +67,27 @@ def get_conda_envs(filepath):
     return [n.split('__')[-1].replace('@', ':') for n in glob('%s/*' % filepath)]
 
 
-def get_missing_containers(quay_list, singularity_list, blacklist_file=None):
+def get_missing_containers(quay_list, singularity_list, blocklist_file=None):
     r"""
-    Return list of quay containers that do not exist as singularity containers. Files stored in a blacklist will be ignored
+    Return list of quay containers that do not exist as singularity containers. Files stored in a blocklist will be ignored
     """
-    blacklist = []
-    if blacklist_file:
-        blacklist = open(blacklist_file).read().split('\n')
-    return [n for n in quay_list if n not in singularity_list and n not in blacklist]
+    blocklist = []
+    if blocklist_file:
+        with open(blocklist_file) as fh:
+            blocklist = fh.read().split('\n')
+    return [n for n in quay_list if n not in singularity_list and n not in blocklist]
 
 
-def get_missing_envs(quay_list, conda_list, blacklist_file=None):
+def get_missing_envs(quay_list, conda_list, blocklist_file=None):
     r"""
     Compares list of conda envs and docker containers and returns missing conda envs
     """
-    blacklist = []
-    if blacklist_file:
-        blacklist = open(blacklist_file).read().split('\n')
+    blocklist = []
+    if blocklist_file:
+        with open(blocklist_file) as fh:
+            blocklist = fh.read().split('\n')
 
-    return [n for n in quay_list if n.split('--')[0] not in conda_list and n.split('--')[0] not in blacklist]
+    return [n for n in quay_list if n.split('--')[0] not in conda_list and n.split('--')[0] not in blocklist]
 
 
 def main():
@@ -99,8 +101,8 @@ def main():
                         help="Exclude Docker containers from which Conda environments have already been extracted.")
     parser.add_argument('--conda-filepath', dest='conda_filepath', default=None,
                         help="If searching for conda environments or employing the --not-conda option, a filepath where the environments are located.")
-    parser.add_argument('-b', '--blacklist', dest='blacklist', default=None,
-                        help="Provide a 'blacklist file' containing containers which should be excluded from the list.")
+    parser.add_argument('-b', '--blocklist', '--blacklist', dest='blocklist', default=None,
+                        help="Provide a 'blocklist file' containing containers which should be excluded from the list.")
     parser.add_argument('-f', '--file', dest='output', default=None,
                         help="File to write list to. If not given output will be returned on the command line.")
 
@@ -110,10 +112,10 @@ def main():
         containers = get_quay_containers()
         if args.not_singularity:
             containers = get_missing_containers(
-                containers, get_singularity_containers(), args.blacklist)
+                containers, get_singularity_containers(), args.blocklist)
         if args.not_conda:
             containers = get_missing_envs(containers, get_conda_envs(
-                args.conda_filepath), args.blacklist)
+                args.conda_filepath), args.blocklist)
     elif args.source == 'singularity':
         containers = get_singularity_containers()
     elif args.source == 'conda':

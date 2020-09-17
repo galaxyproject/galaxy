@@ -19,7 +19,7 @@ class ConfigurationError(Exception):
     pass
 
 
-class Configuration(object):
+class Configuration:
     def __init__(self, **kwargs):
         self.config_dict = kwargs
         self.root = kwargs.get('root_dir', '.')

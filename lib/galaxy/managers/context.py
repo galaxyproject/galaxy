@@ -4,13 +4,12 @@ Mixins for transaction-like objects.
 import string
 from json import dumps
 
-from six import text_type
 
 from galaxy.exceptions import UserActivationRequiredException
 from galaxy.util import bunch
 
 
-class ProvidesAppContext(object):
+class ProvidesAppContext:
     """ For transaction-like objects to provide Galaxy convience layer for
     database and event handling.
 
@@ -22,7 +21,7 @@ class ProvidesAppContext(object):
         Application-level logging of user actions.
         """
         if self.app.config.log_actions:
-            action = self.app.model.UserAction(action=action, context=context, params=text_type(dumps(params)))
+            action = self.app.model.UserAction(action=action, context=context, params=str(dumps(params)))
             try:
                 if user:
                     action.user = user
@@ -100,7 +99,7 @@ class ProvidesAppContext(object):
         return self.app.install_model
 
 
-class ProvidesUserContext(object):
+class ProvidesUserContext:
     """ For transaction-like objects to provide Galaxy convience layer for
     reasoning about users.
 
@@ -146,7 +145,7 @@ class ProvidesUserContext(object):
     @property
     def user_ftp_dir(self):
         base_dir = self.app.config.ftp_upload_dir
-        if base_dir is None:
+        if base_dir is None or self.user is None:
             return None
         else:
             # e.g. 'email' or 'username'
@@ -160,7 +159,7 @@ class ProvidesUserContext(object):
             return path
 
 
-class ProvidesHistoryContext(object):
+class ProvidesHistoryContext:
     """ For transaction-like objects to provide Galaxy convience layer for
     reasoning about histories.
 
@@ -180,12 +179,24 @@ class ProvidesHistoryContext(object):
             # The API presents a Bunch for a history.  Until the API is
             # more fully featured for handling this, also return None.
             return None
-        datasets = self.sa_session.query(self.app.model.HistoryDatasetAssociation) \
-                                  .filter_by(deleted=False, history_id=self.history.id, extension="len")
+        non_ready_or_ok = set(self.app.model.Dataset.non_ready_states)
+        non_ready_or_ok.add(self.app.model.HistoryDatasetAssociation.states.OK)
+        datasets = self.sa_session.query(
+            self.app.model.HistoryDatasetAssociation
+        ).filter_by(
+            deleted=False,
+            history_id=self.history.id,
+            extension="len"
+        ).filter(
+            self.app.model.HistoryDatasetAssociation._state.in_(non_ready_or_ok),
+        )
+        valid_ds = None
         for ds in datasets:
-            if dbkey == ds.dbkey:
-                return ds
-        return None
+            if ds.dbkey == dbkey:
+                if ds.state == self.app.model.HistoryDatasetAssociation.states.OK:
+                    return ds
+                valid_ds = ds
+        return valid_ds
 
     @property
     def db_builds(self):

@@ -116,7 +116,7 @@ class TestFreebayesRepository(ShedTwillTestCase):
                          uncompress_file=False,
                          remove_repo_files_not_in_tar=False,
                          commit_message='Uploaded malformed tool dependency XML.',
-                         strings_displayed=['Exception attempting to parse', 'not well-formed'],
+                         strings_displayed=['Exception attempting to parse', 'invalid element name'],
                          strings_not_displayed=[])
 
     def test_0030_upload_invalid_tool_dependency_xml(self):

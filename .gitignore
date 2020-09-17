@@ -21,20 +21,27 @@ lib/galaxy/web/framework/static/scripts
 lib/galaxy/web/framework/static/style
 
 # Database stuff
+database/*.sqlite
 database/beaker_sessions
 database/citations
 database/community_files
 database/compiled_templates
+database/dependencies
 database/files
-database/jobs_directory
 database/job_working_directory
+database/jobs_directory
+database/mulled
+database/object_store_cache
+database/objects
+database/openid_consumer_cache
 database/pbs
 database/shed_tools
 database/test_errors
 database/tmp
-database/*.sqlite
-database/openid_consumer_cache
-database/dependencies
+database/tool_cache
+database/tool_search_index
+database/tool_recommendation_model.hdf5
+
 
 # Python bytecode
 *.pyc
@@ -134,7 +141,6 @@ test/unit/**.log
 .vscode
 client/**/jsconfig.json
 
-
 # Chrom len files
 *.len
 
@@ -147,8 +153,9 @@ static/plugins
 static/scripts
 node_modules
 bower_components
-client/galaxy/scripts/libs/*
-client/galaxy/style/less/*
+client/src/libs/*
+# Old galaxy client location
+client/galaxy
 
 # Documentation build files.
 doc/build
@@ -174,5 +181,8 @@ packages/*/*.egg-info
 *.rej
 *~
 
-# Plugin build artifacts -- TODO make this more generic as a part of the standard plugin interface
+# standalone script + main, or build into dist.
+config/plugins/visualizations/**/static/dist
 config/plugins/visualizations/**/static/script.js
+config/plugins/visualizations/**/static/main.css
+config/plugins/visualizations/**/static/plugin_build_hash.txt

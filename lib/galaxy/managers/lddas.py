@@ -17,7 +17,6 @@ class LDDAManager(DatasetAssociationManager):
         """
         Set up and initialize other managers needed by lddas.
         """
-        pass
 
     def get(self, trans, id, check_accessible=True):
         return manager_base.get_object(trans, id,

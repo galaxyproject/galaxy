@@ -1,4 +1,4 @@
-class Bunch(object):
+class Bunch:
     """
     http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/52308
 

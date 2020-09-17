@@ -1,7 +1,6 @@
 """
 Migration script to add dataset source and hash tables.
 """
-from __future__ import print_function
 
 import logging
 

@@ -15,7 +15,7 @@ from galaxy.util import unicodify
 UNKNOWN_ERROR_MESSAGE = "Unknown error occurred while processing request."
 
 
-class ErrorCode(object):
+class ErrorCode:
     """Small class allowing object representation for error descriptions loaded from JSON."""
 
     def __init__(self, code, default_error_message):

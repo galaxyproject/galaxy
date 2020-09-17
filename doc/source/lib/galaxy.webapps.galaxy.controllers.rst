@@ -89,6 +89,14 @@ galaxy.webapps.galaxy.controllers.interactive\_environments module
     :undoc-members:
     :show-inheritance:
 
+galaxy.webapps.galaxy.controllers.interactivetool module
+--------------------------------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.controllers.interactivetool
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy.webapps.galaxy.controllers.library module
 ------------------------------------------------
 

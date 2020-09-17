@@ -17,7 +17,7 @@ from galaxy.util.tool_shed.xml_util import parse_xml
 log = logging.getLogger(__name__)
 
 
-class RecipeTag(object):
+class RecipeTag:
     """Abstract class that defines a standard format for handling recipe tags when installing packages."""
 
     def process_tag_set(self, tool_shed_repository, tool_dependency, package_elem, package_name, package_version,
@@ -25,7 +25,7 @@ class RecipeTag(object):
         raise Exception("Unimplemented Method")
 
 
-class SyncDatabase(object):
+class SyncDatabase:
 
     def sync_database_with_file_system(self, app, tool_shed_repository, tool_dependency_name, tool_dependency_version,
                                        tool_dependency_install_dir, tool_dependency_type='package'):
@@ -173,7 +173,7 @@ class Install(RecipeTag, SyncDatabase):
                                                                               include_after_install_actions=True)
                 if not actions_elem_tuples:
                     proceed_with_install = False
-                    error_message = 'Version %s of the %s package cannot be installed because ' % (str(package_version), str(package_name))
+                    error_message = 'Version {} of the {} package cannot be installed because '.format(str(package_version), str(package_name))
                     error_message += 'the recipe for installing the package is missing either an &lt;actions&gt; tag set or an &lt;actions_group&gt; '
                     error_message += 'tag set.'
                     # Since there was an installation error, update the tool dependency status to Error.
@@ -250,19 +250,19 @@ class Repository(RecipeTag, SyncDatabase):
                       owner=owner,
                       changeset_revision=changeset_revision)
         pathspec = ['repository', 'get_tool_dependencies_config_contents']
-        text = url_get(tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+        text = url_get(tool_shed_url, auth=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
         if text:
             # Write the contents to a temporary file on disk so it can be reloaded and parsed.
-            fh = tempfile.NamedTemporaryFile('wb', prefix="tmp-toolshed-cttdc")
+            fh = tempfile.NamedTemporaryFile('w', prefix="tmp-toolshed-cttdc")
             tmp_filename = fh.name
             fh.close()
-            fh = open(tmp_filename, 'wb')
+            fh = open(tmp_filename, 'w')
             fh.write(text)
             fh.close()
             return tmp_filename
         else:
             message = "Unable to retrieve required tool_dependencies.xml file from the Tool Shed for revision "
-            message += "%s of installed repository %s owned by %s." % (str(changeset_revision), str(name), str(owner))
+            message += "{} of installed repository {} owned by {}.".format(str(changeset_revision), str(name), str(owner))
             raise Exception(message)
 
     def create_tool_dependency_with_initialized_env_sh_file(self, dependent_install_dir, tool_shed_repository,

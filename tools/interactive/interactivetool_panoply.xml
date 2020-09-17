@@ -1,0 +1,48 @@
+<tool id="interactive_tool_panoply" tool_type="interactive" name="Panoply" version="@VERSION@">
+    <description>interative plotting tool for geo-referenced data</description>
+    <macros>
+    <token name="@VERSION@">4.5.1</token>
+    </macros>
+    <requirements>
+        <container type="docker">quay.io/nordicesmhub/docker-panoply:@VERSION@</container>
+    </requirements>
+    <entry_points>
+        <entry_point name="Panoply on $infile.display_name" requires_domain="True">
+            <port>5800</port>
+        </entry_point>
+    </entry_points>
+    <command detect_errors="exit_code">
+    <![CDATA[
+    mkdir output &&
+        mkdir /config/home  &&
+        mkdir /config/home/output &&
+        export HOME=/config/home &&
+        cp '$infile' '/config/home/$infile.display_name' &&
+        mkdir /config/home/.gissjava &&
+        cd /config/home/.gissjava    &&
+        tar xvf /opt/PanoplyJ/colorbars.tar &&
+        cd - &&
+        /init ;
+        echo "Galaxy Panoply version @VERSION@" > output/version.txt &&
+        cp /config/home/output/* output/ | true &&
+        cd output &&
+        sleep 2 &&
+        for file in *; do mv "\$file" "\${file// /_}"; done &&
+        for file in *; do mv "\$file" "\$file.\${file\#\#*.}"; done
+    ]]>
+    </command>
+    <inputs>
+        <param name="infile" type="data" format="netcdf,h5" label="netcdf"/>
+    </inputs>
+    <outputs>
+        <collection name="outputs" type="list" label="Panoply outputs">
+            <discover_datasets pattern="__name_and_ext__" directory="output" />
+        </collection>
+    </outputs>
+    <tests>
+    </tests>
+    <help><![CDATA[
+        `Panoply <https://www.giss.nasa.gov/tools/panoply/>`_ plots geo-referenced and other arrays from netCDF, HDF, GRIB, and other datasets.
+    ]]>
+    </help>
+</tool>

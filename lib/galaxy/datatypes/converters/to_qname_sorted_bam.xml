@@ -18,6 +18,12 @@
     <outputs>
         <data format="qname_sorted.bam" name="output"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input" format="sam" value="bfast_out1.sam"/>
+            <output name="output" format="qname_sorted.bam" value="bfast_out1.qname_sorted.bam"/>
+        </test>
+    </tests>
     <help>
     </help>
 </tool>

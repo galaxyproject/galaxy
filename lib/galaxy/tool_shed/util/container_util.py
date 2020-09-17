@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import logging
 
 from galaxy.util.tool_shed.common_util import remove_protocol_from_tool_shed_url
@@ -21,7 +19,7 @@ def generate_repository_dependencies_key_for_repository(toolshed_base_url, repos
     # of the Galaxy database for an installed repository.  This value does not include the protocol, but does include
     # the port if there is one.
     tool_shed = remove_protocol_from_tool_shed_url(toolshed_base_url)
-    return '%s%s%s%s%s%s%s%s%s%s%s' % (tool_shed,
+    return '{}{}{}{}{}{}{}{}{}{}{}'.format(tool_shed,
                                        STRSEP,
                                        str(repository_name),
                                        STRSEP,
@@ -64,8 +62,8 @@ def print_folders(pad, folder):
     pad_str = ''
     for i in range(1, pad):
         pad_str += ' '
-    print('%sid: %s key: %s' % (pad_str, str(folder.id), folder.key))
+    print('{}id: {} key: {}'.format(pad_str, str(folder.id), folder.key))
     for repository_dependency in folder.repository_dependencies:
-        print('    %s%s' % (pad_str, repository_dependency.listify))
+        print('    {}{}'.format(pad_str, repository_dependency.listify))
     for sub_folder in folder.folders:
         print_folders(pad + 5, sub_folder)

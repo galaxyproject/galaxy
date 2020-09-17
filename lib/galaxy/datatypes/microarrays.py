@@ -38,9 +38,9 @@ class GenericMicroarrayFile(data.Text):
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             if dataset.metadata.block_count == 1:
-                dataset.blurb = "%s %s: Format %s, 1 block, %s headers and %s columns" % (dataset.metadata.file_type, dataset.metadata.version_number, dataset.metadata.file_format, dataset.metadata.number_of_optional_header_records, dataset.metadata.number_of_data_columns)
+                dataset.blurb = "{} {}: Format {}, 1 block, {} headers and {} columns".format(dataset.metadata.file_type, dataset.metadata.version_number, dataset.metadata.file_format, dataset.metadata.number_of_optional_header_records, dataset.metadata.number_of_data_columns)
             else:
-                dataset.blurb = "%s %s: Format %s, %s blocks, %s headers and %s columns" % (dataset.metadata.file_type, dataset.metadata.version_number, dataset.metadata.file_format, dataset.metadata.block_count, dataset.metadata.number_of_optional_header_records, dataset.metadata.number_of_data_columns)
+                dataset.blurb = "{} {}: Format {}, {} blocks, {} headers and {} columns".format(dataset.metadata.file_type, dataset.metadata.version_number, dataset.metadata.file_format, dataset.metadata.block_count, dataset.metadata.number_of_optional_header_records, dataset.metadata.number_of_data_columns)
             dataset.peek = get_file_peek(dataset.file_name)
         else:
             dataset.peek = 'file does not exist'
@@ -78,7 +78,7 @@ class Gal(GenericMicroarrayFile):
         """
         Set metadata for Gal file.
         """
-        super(Gal, self).set_meta(dataset, **kwd)
+        super().set_meta(dataset, **kwd)
         headers = get_headers(dataset.file_name, sep="\t", count=5)
         dataset.metadata.file_format = headers[0][0]
         dataset.metadata.version_number = headers[0][1]
@@ -119,7 +119,7 @@ class Gpr(GenericMicroarrayFile):
         """
         Set metadata for Gpr file.
         """
-        super(Gpr, self).set_meta(dataset, **kwd)
+        super().set_meta(dataset, **kwd)
         headers = get_headers(dataset.file_name, sep="\t", count=5)
         dataset.metadata.file_format = headers[0][0]
         dataset.metadata.version_number = headers[0][1]

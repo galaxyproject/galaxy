@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import argparse
 import collections
 import copy
@@ -9,10 +7,11 @@ import os
 import re
 import sys
 from functools import reduce
-from xml.etree import ElementTree as ET
 
 import numpy as np
 import yaml
+
+from galaxy.util import parse_xml
 
 __version__ = '1.1.0'
 
@@ -67,13 +66,15 @@ def get_keys_from_dict(dl, keys_list):
     This function builds a list using the keys from nest dictionaries
     """
     if isinstance(dl, dict):
-        keys_list += dl.keys()
-        map(lambda x: get_keys_from_dict(x, keys_list), dl.values())
+        keys_list.extend(dl.keys())
+        for x in dl.values():
+            get_keys_from_dict(x, keys_list)
     elif isinstance(dl, list):
-        map(lambda x: get_keys_from_dict(x, keys_list), dl)
+        for x in dl:
+            get_keys_from_dict(x, keys_list)
 
 
-class RuleValidator(object):
+class RuleValidator:
     """
     This class is the primary facility for validating configs. It's always
     called in map_tool_to_destination and it's called for validating config
@@ -733,14 +734,15 @@ def parse_yaml(path="/config/tool_destinations.yml",
                 # os.path.realpath gets the path of DynamicToolDestination.py
                 # and then os.path.join is used to go back four directories
                 config_directory = os.path.join(
-                    os.path.dirname(os.path.realpath(__file__)), '../../../..')
+                    os.path.dirname(os.path.realpath(__file__)), os.pardir,
+                    os.pardir, os.pardir, os.pardir)
 
                 opt_file = config_directory + path
 
             else:
                 opt_file = path
 
-            with open(opt_file, 'r') as stream:
+            with open(opt_file) as stream:
                 config = yaml.safe_load(stream)
 
         # Test imported file
@@ -888,8 +890,8 @@ def validate_config(obj, app=None, return_bool=False,):
 
             elif isinstance(obj['default_destination'], dict):
 
-                if ('priority' in obj['default_destination'] and
-                        isinstance(obj['default_destination']['priority'], dict)):
+                if ('priority' in obj['default_destination']
+                        and isinstance(obj['default_destination']['priority'], dict)):
 
                     for priority in obj['default_destination']['priority']:
                         if isinstance(obj['default_destination']['priority'][priority],
@@ -1018,7 +1020,7 @@ def validate_config(obj, app=None, return_bool=False,):
                                     (tool, curr['default_destination']))
                                 if is_valid:
                                     new_config['tools'][tool]['default_destination'] = (
-                                        (curr['default_destination']))
+                                        curr['default_destination'])
                                     tool_has_default = True
                                 else:
                                     valid_config = False
@@ -1103,8 +1105,8 @@ def validate_config(obj, app=None, return_bool=False,):
                                         # if we got a rule back that seems to be
                                         # valid (or was fixable) then append it to
                                         # list of ready-to-use tools
-                                        if (not return_bool and
-                                                validated_rule is not None):
+                                        if (not return_bool
+                                                and validated_rule is not None):
                                             curr_tool_rules.append(
                                                 copy.deepcopy(validated_rule))
 
@@ -1217,8 +1219,8 @@ def bytes_to_str(size, unit="YB"):
         i = 0
 
     try:
-        return_str = "%.2f %s" % (size_changer, units[i])
-    except TypeError:
+        return_str = "{:.2f} {}".format(size_changer, units[i])
+    except (ValueError, TypeError):
         return_str = "%s" % (size_changer)
 
     return return_str
@@ -1261,7 +1263,7 @@ def str_to_bytes(size):
             # Get the unit and convert to bytes
             try:
                 pos = units.index(curr_unit)
-                for x in range(pos, 1, -1):
+                for _ in range(pos, 1, -1):
                     curr_size *= 1024
             except ValueError:
                 error = "Unable to convert size " + str(size)
@@ -1287,7 +1289,7 @@ def importer(test):
     global JobDestination
     global JobMappingException
     if test:
-        class JobDestination(object):
+        class JobDestination:
             def __init__(self, *kwd):
                 self.id = kwd.get('id')
                 self.nativeSpec = kwd.get('params')['nativeSpecification']
@@ -1338,7 +1340,7 @@ def map_tool_to_destination(
         raise JobMappingException(e)
 
     # Get all inputs from tool and databases
-    inp_data = dict([(da.name, da.dataset) for da in job.input_datasets])
+    inp_data = {da.name: da.dataset for da in job.input_datasets}
     inp_data.update([(da.name, da.dataset) for da in job.input_library_datasets])
 
     if config is not None and str(tool.old_id) in config['tools']:
@@ -1644,29 +1646,25 @@ def get_destination_list_from_job_config(job_config_location):
     # and then os.path.join is used to go back four directories
 
     config_location = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), '../../..')
+        os.path.dirname(os.path.realpath(__file__)), os.pardir, os.pardir, os.pardir)
 
     if job_config_location:
         local_path = re.compile('^/config/.+$')
         if local_path.match(job_config_location):
-            job_config_location = config_location + job_config_location
+            job_config_location = os.path.join(config_location, job_config_location)
     else:  # Pick one of the default ones
         message = "* No job config specified, "
-        if os.path.isfile(config_location + "/config/job_conf.xml"):
-            job_config_location = config_location + "/config/job_conf.xml"
-            message += "using 'config/job_conf.xml'. *"
-
-        elif os.path.isfile(config_location +
-                "/config/job_conf.xml.sample_advanced"):
-            job_config_location = (config_location
-                + "/config/job_conf.xml.sample_advanced")
-            message += "using 'config/job_conf.xml.sample_advanced'. *"
-
-        elif os.path.isfile(config_location +
-                "/config/job_conf.xml.sample_basic"):
-            job_config_location = (config_location
-                + "/config/job_conf.xml.sample_basic")
-            message += "using 'config/job_conf.xml.sample_basic'. *"
+        possible_job_conf_files = [
+            "config/job_conf.xml",
+            "config/job_conf.xml.sample_advanced",
+            "config/job_conf.xml.sample_basic",
+        ]
+        for f in possible_job_conf_files:
+            possible_job_conf_path = os.path.join(config_location, f)
+            if os.path.isfile(possible_job_conf_path):
+                job_config_location = possible_job_conf_path
+                message += "using '%s'. *" % f
+                break
         else:
             message += ("and no default job configs in 'config/'. "
                     + "Expect lots of failures. *")
@@ -1675,7 +1673,7 @@ def get_destination_list_from_job_config(job_config_location):
             log.debug(message)
 
     if job_config_location:
-        job_conf = ET.parse(job_config_location)
+        job_conf = parse_xml(job_config_location, strip_whitespace=False)
 
         # Add all destination IDs from the job configuration xml file
         for destination in job_conf.getroot().iter("destination"):

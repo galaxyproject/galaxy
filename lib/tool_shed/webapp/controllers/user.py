@@ -71,7 +71,7 @@ class User(BaseUser):
                 status = "error"
             elif response.get("expired_user"):
                 change_password_url = url_for(controller='user', action='change_password', id=response.get("expired_user"))
-                message = "%s<br>Click <a href='%s'>here</a> to change your password." % (response.get("message"), change_password_url)
+                message = "{}<br>Click <a href='{}'>here</a> to change your password.".format(response.get("message"), change_password_url)
                 status = "warning"
             else:
                 success = True
@@ -198,7 +198,7 @@ class User(BaseUser):
             if trans.app.config.user_activation_on:
                 is_activation_sent = self.user_manager.send_activation_email(trans, email, username)
                 if is_activation_sent:
-                    message = 'Now logged in as %s.<br>Verification email has been sent to your email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.<br><a target="_top" href="%s">Return to the home page.</a>' % (escape(user.email), url_for('/'))
+                    message = 'Now logged in as {}.<br>Verification email has been sent to your email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.<br><a target="_top" href="{}">Return to the home page.</a>'.format(escape(user.email), url_for('/'))
                 else:
                     status = "error"
                     message = 'Unable to send activation email, please contact your local Galaxy administrator.'
@@ -206,7 +206,7 @@ class User(BaseUser):
                         message += ' Contact: %s' % trans.app.config.error_email_to
         else:
             # User activation is OFF, proceed without sending the activation email.
-            message = 'Now logged in as %s.<br><a target="_top" href="%s">Return to the home page.</a>' % (escape(user.email), url_for('/'))
+            message = 'Now logged in as {}.<br><a target="_top" href="{}">Return to the home page.</a>'.format(escape(user.email), url_for('/'))
         return message, status, user, status is None
 
     @web.expose

@@ -1,0 +1,2 @@
+#<dbkey>	<display_name>	<len_file_path>
+hg17	hg17	${__HERE__}/hg17.len

@@ -2,19 +2,21 @@
 
 Tests that start an actual Galaxy server with a particular configuration in
 order to test something that cannot be tested with the default functional/api
-tessting configuration.
+testing configuration.
 """
 import os
 from unittest import skip, SkipTest, TestCase
 
 import pytest
 
-from galaxy.tool_util.deps.commands import which
 from galaxy.tool_util.verify.test_data import TestDataResolver
-from .api import UsesApiTestCaseMixin
+from galaxy.util.commands import which
+from galaxy_test.base.api import UsesApiTestCaseMixin
 from .driver_util import GalaxyTestDriver
 
 NO_APP_MESSAGE = "test_case._app called though no Galaxy has been configured."
+# Following should be for Homebrew Rabbitmq and Docker on Mac "amqp://guest:guest@localhost:5672//"
+AMQP_URL = os.environ.get("GALAXY_TEST_AMQP_URL", None)
 
 
 def _identity(func):
@@ -26,6 +28,12 @@ def skip_if_jenkins(cls):
         return skip
 
     return cls
+
+
+def skip_unless_amqp():
+    if AMQP_URL is not None:
+        return _identity
+    return pytest.mark.skip("AMQP_URL is not set, required for this test.")
 
 
 def skip_unless_executable(executable):
@@ -51,6 +59,13 @@ def skip_unless_fixed_port():
         return _identity
 
     return pytest.mark.skip("GALAXY_TEST_PORT must be set for this test.")
+
+
+def skip_if_github_workflow():
+    if os.environ.get("GITHUB_ACTIONS", None) is None:
+        return _identity
+
+    return pytest.mark.skip("This test is skipped for Github actions.")
 
 
 class IntegrationInstance(UsesApiTestCaseMixin):
@@ -89,7 +104,7 @@ class IntegrationInstance(UsesApiTestCaseMixin):
         server_wrapper = self._test_driver.server_wrappers[0]
         host = server_wrapper.host
         port = server_wrapper.port
-        self.url = "http://%s:%s" % (host, port)
+        self.url = "http://{}:{}".format(host, port)
         self._setup_interactor()
 
     def restart(self, handle_reconfig=None):
@@ -139,6 +154,11 @@ class IntegrationInstance(UsesApiTestCaseMixin):
 
     def _run_tool_test(self, *args, **kwargs):
         return self._test_driver.run_tool_test(*args, **kwargs)
+
+    @classmethod
+    def temp_config_dir(cls, name):
+        # realpath here to get around problems with symlinks being blocked.
+        return os.path.realpath(os.path.join(cls._test_driver.galaxy_test_tmp_dir, name))
 
 
 class IntegrationTestCase(IntegrationInstance, TestCase):

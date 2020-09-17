@@ -233,10 +233,8 @@ def test_subworkflow_new_outputs():
     assert len(outputs) == 2, len(outputs)
     output1, output2 = outputs
     assert output1["name"] == "out1"
-    assert output1["label"] == "out1"
     assert output1["extensions"] == ["input"]
     assert output2["name"] == "4:out_file1", output2["name"]
-    assert output2["label"] == "4:out_file1", output2["label"]
 
 
 def _construct_steps_for_map_over():
@@ -456,7 +454,8 @@ def __mock_tool(
                                           output_type='data')},
         params_from_strings=mock.Mock(),
         check_and_update_param_values=mock.Mock(),
-        to_json=_to_json
+        to_json=_to_json,
+        assert_finalized=lambda: None,
     )
 
     return tool

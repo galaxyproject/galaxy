@@ -1,7 +1,6 @@
 """
 Migration script updating collections tables for output collections.
 """
-from __future__ import print_function
 
 import logging
 

@@ -26,7 +26,7 @@ log = logging.getLogger(__name__)
 VIRTUALENV_URL = 'https://pypi.python.org/packages/d4/0c/9840c08189e030873387a73b90ada981885010dd9aea134d6de30cd24cb8/virtualenv-15.1.0.tar.gz'
 
 
-class Download(object):
+class Download:
 
     def url_download(self, install_dir, downloaded_file_name, download_url, extract=True, checksums={}):
         """
@@ -41,11 +41,15 @@ class Download(object):
         If the checksum does not match an exception is thrown.
         """
         file_path = os.path.join(install_dir, downloaded_file_name)
-        try:
-            download_to_file(download_url, file_path, chunk_size=basic_util.CHUNK_SIZE)
-        except Exception as e:
-            err_msg = 'Error downloading from URL %s : %s' % (str(download_url), str(e))
-            raise Exception(err_msg)
+        if download_url.startswith("file://"):
+            local_file_source = download_url[len('file://'):].split('#')[0]
+            shutil.copyfile(local_file_source, file_path)
+        else:
+            try:
+                download_to_file(download_url, file_path, chunk_size=basic_util.CHUNK_SIZE)
+            except Exception as e:
+                err_msg = 'Error downloading from URL {} : {}'.format(str(download_url), str(e))
+                raise Exception(err_msg)
 
         if 'sha256sum' in checksums or '#sha256#' in download_url:
             downloaded_checksum = hashlib.sha256(open(file_path, 'rb').read()).hexdigest().lower()
@@ -57,7 +61,7 @@ class Download(object):
                 expected = download_url.split('#sha256#')[1].lower()
 
             if downloaded_checksum != expected:
-                raise Exception('Given sha256 checksum does not match with the one from the downloaded file (%s != %s).' % (downloaded_checksum, expected))
+                raise Exception('Given sha256 checksum does not match with the one from the downloaded file ({} != {}).'.format(downloaded_checksum, expected))
 
         if 'md5sum' in checksums or '#md5#' in download_url or '#md5=' in download_url:
             downloaded_checksum = hashlib.md5(open(file_path, 'rb').read()).hexdigest().lower()
@@ -69,7 +73,7 @@ class Download(object):
                 expected = re.split('#md5[#=]', download_url)[1].lower()
 
             if downloaded_checksum != expected:
-                raise Exception('Given md5 checksum does not match with the one from the downloaded file (%s != %s).' % (downloaded_checksum, expected))
+                raise Exception('Given md5 checksum does not match with the one from the downloaded file ({} != {}).'.format(downloaded_checksum, expected))
 
         if extract:
             if tarfile.is_tarfile(file_path) or (zipfile.is_zipfile(file_path) and not file_path.endswith('.jar')):
@@ -93,7 +97,7 @@ class Download(object):
         return dict(i for i in dct.items() if i[0] in ['md5sum', 'sha256sum'])
 
 
-class RecipeStep(object):
+class RecipeStep:
     """Abstract class that defines a standard format for handling recipe steps when installing packages."""
 
     def execute_step(self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
@@ -549,9 +553,9 @@ class DownloadByUrl(Download, RecipeStep):
         if is_binary:
             log_file = os.path.join(install_environment.install_dir, basic_util.INSTALLATION_LOG)
             if os.path.exists(log_file):
-                logfile = open(log_file, 'ab')
+                logfile = open(log_file, 'a')
             else:
-                logfile = open(log_file, 'wb')
+                logfile = open(log_file, 'w')
             logfile.write('Successfully downloaded from url: %s\n' % action_dict['url'])
             logfile.close()
         log.debug('Successfully downloaded from url: %s' % action_dict['url'])
@@ -805,7 +809,7 @@ class RegexReplace(RecipeStep):
         temp_fh = tempfile.NamedTemporaryFile(dir=current_dir)
         ofh = temp_fh.file
         total_replacements = 0
-        with open(filename, 'r') as haystack:
+        with open(filename) as haystack:
             for line in haystack:
                 altered_text, replacement_count = re.subn(regex, replacement, line)
                 if replacement_count > 0:
@@ -1329,7 +1333,7 @@ class SetupRubyEnvironment(Download, RecipeStep):
                     if os.path.isfile(gem):
                         # we assume a local shipped gem file
                         cmd = '''PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
-                                gem install --local %s %s''' % (gem, gem_parameters)
+                                gem install --local {} {}'''.format(gem, gem_parameters)
                     elif gem.find('://') != -1:
                         # We assume a URL to a gem file.
                         url = gem
@@ -1337,7 +1341,7 @@ class SetupRubyEnvironment(Download, RecipeStep):
                         checksums = ruby_package_tup_dict.get('checksums', {})
                         self.url_download(work_dir, gem_name, url, extract=False, checksums=checksums)
                         cmd = '''PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
-                                gem install --local %s %s''' % (gem_name, gem_parameters)
+                                gem install --local {} {}'''.format(gem_name, gem_parameters)
                     else:
                         # gem file from rubygems.org with or without version number
                         if gem_version:
@@ -1345,11 +1349,11 @@ class SetupRubyEnvironment(Download, RecipeStep):
                             # Use raw strings so that python won't automatically unescape the quotes before passing the command
                             # to subprocess.Popen.
                             cmd = r'''PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
-                                gem install %s --version "=%s" %s''' % (gem, gem_version, gem_parameters)
+                                gem install {} --version "={}" {}'''.format(gem, gem_version, gem_parameters)
                         else:
                             # no version number given
                             cmd = '''PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
-                                gem install %s %s''' % (gem, gem_parameters)
+                                gem install {} {}'''.format(gem, gem_parameters)
                     cmd = install_environment.build_command(basic_util.evaluate_template(cmd, install_environment))
                     return_code = install_environment.handle_command(tool_dependency=tool_dependency,
                                                                      cmd=cmd,
@@ -1592,7 +1596,7 @@ class SetupVirtualEnv(Download, RecipeStep):
         venv_directory = os.path.join(install_environment.install_dir, "venv")
         python_cmd = action_dict['python']
         # TODO: Consider making --no-site-packages optional.
-        setup_command = "%s %s/virtualenv.py --no-site-packages '%s'" % (python_cmd, venv_src_directory, venv_directory)
+        setup_command = "{} {}/virtualenv.py --no-site-packages '{}'".format(python_cmd, venv_src_directory, venv_directory)
         # POSIXLY_CORRECT forces shell commands . and source to have the same
         # and well defined behavior in bash/zsh.
         activate_command = "POSIXLY_CORRECT=1; . %s" % os.path.join(venv_directory, "bin", "activate")
@@ -1617,8 +1621,8 @@ class SetupVirtualEnv(Download, RecipeStep):
                         if not install_command:
                             install_command = line_install_command
                         else:
-                            install_command = "%s && %s" % (install_command, line_install_command)
-        full_setup_command = "%s; %s; %s" % (setup_command, activate_command, install_command)
+                            install_command = "{} && {}".format(install_command, line_install_command)
+        full_setup_command = "{}; {}; {}".format(setup_command, activate_command, install_command)
         return_code = install_environment.handle_command(tool_dependency=tool_dependency,
                                                          cmd=full_setup_command,
                                                          return_output=False,

@@ -13,7 +13,6 @@ from galaxy.tool_shed.util.hg_util import (
     get_config_from_disk,
     get_ctx_file_path_from_manifest,
     get_file_context_from_ctx,
-    get_repo_for_repository,
     pull_repository,
     reversed_lower_upper_bounded_changelog,
     reversed_upper_bounded_changelog,
@@ -30,7 +29,7 @@ def add_changeset(repo_path, path_to_filename_in_archive):
     try:
         subprocess.check_output(['hg', 'add', path_to_filename_in_archive], stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
-        error_message = "Error adding '%s' to repository: %s" % (path_to_filename_in_archive, unicodify(e))
+        error_message = "Error adding '{}' to repository: {}".format(path_to_filename_in_archive, unicodify(e))
         if isinstance(e, subprocess.CalledProcessError):
             error_message += "\nOutput was:\n%s" % unicodify(e.output)
         raise Exception(error_message)
@@ -42,7 +41,7 @@ def archive_repository_revision(app, repository, archive_dir, changeset_revision
     try:
         subprocess.check_output(['hg', 'archive', '-r', changeset_revision, archive_dir], stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
-        error_message = "Error attempting to archive revision '%s' of repository '%s': %s" % (changeset_revision, repository.name, unicodify(e))
+        error_message = "Error attempting to archive revision '{}' of repository '{}': {}".format(changeset_revision, repository.name, unicodify(e))
         if isinstance(e, subprocess.CalledProcessError):
             error_message += "\nOutput was:\n%s" % unicodify(e.output)
         log.exception(error_message)
@@ -53,7 +52,7 @@ def commit_changeset(repo_path, full_path_to_changeset, username, message):
     try:
         subprocess.check_output(['hg', 'commit', '-u', username, '-m', message, full_path_to_changeset], stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
-        error_message = "Error committing '%s' to repository: %s" % (full_path_to_changeset, unicodify(e))
+        error_message = "Error committing '{}' to repository: {}".format(full_path_to_changeset, unicodify(e))
         if isinstance(e, subprocess.CalledProcessError):
             if e.returncode == 1 and 'nothing changed' in unicodify(e.output):
                 return
@@ -93,7 +92,7 @@ def get_named_tmpfile_from_ctx(ctx, filename, dir):
     """
     filename = basic_util.strip_path(filename)
     for ctx_file in ctx.files():
-        ctx_file_name = basic_util.strip_path(ctx_file)
+        ctx_file_name = basic_util.strip_path(unicodify(ctx_file))
         if filename == ctx_file_name:
             try:
                 # If the file was moved, its destination file contents will be returned here.
@@ -140,7 +139,7 @@ def get_revision_label(app, repository, changeset_revision, include_date=True, i
     Return a string consisting of the human readable changeset rev and the changeset revision string
     which includes the revision date if the receive include_date is True.
     """
-    repo = get_repo_for_repository(app, repository=repository)
+    repo = repository.hg_repo
     ctx = get_changectx_for_changeset(repo, changeset_revision)
     if ctx:
         return get_revision_label_from_ctx(ctx, include_date=include_date, include_hash=include_hash)
@@ -155,7 +154,7 @@ def get_rev_label_changeset_revision_from_repository_metadata(app, repository_me
                                                               include_date=True, include_hash=True):
     if repository is None:
         repository = repository_metadata.repository
-    repo = get_repo_for_repository(app, repository=repository)
+    repo = repository.hg_repo
     changeset_revision = repository_metadata.changeset_revision
     ctx = get_changectx_for_changeset(repo, changeset_revision)
     if ctx:
@@ -163,12 +162,12 @@ def get_rev_label_changeset_revision_from_repository_metadata(app, repository_me
         if include_date:
             changeset_revision_date = get_readable_ctx_date(ctx)
             if include_hash:
-                label = "%s:%s (%s)" % (str(ctx.rev()), changeset_revision, changeset_revision_date)
+                label = "{}:{} ({})".format(str(ctx.rev()), changeset_revision, changeset_revision_date)
             else:
-                label = "%s (%s)" % (str(ctx.rev()), changeset_revision_date)
+                label = "{} ({})".format(str(ctx.rev()), changeset_revision_date)
         else:
             if include_hash:
-                label = "%s:%s" % (str(ctx.rev()), changeset_revision)
+                label = "{}:{}".format(str(ctx.rev()), changeset_revision)
             else:
                 label = "%s" % str(ctx.rev())
     else:
@@ -190,7 +189,7 @@ def get_revision_label_from_ctx(ctx, include_date=True, include_hash=True):
                 (str(ctx.rev()), str(get_readable_ctx_date(ctx)))
     else:
         if include_hash:
-            return '%s:%s' % (str(ctx.rev()), str(ctx))
+            return '{}:{}'.format(str(ctx.rev()), str(ctx))
         else:
             return str(ctx.rev())
 
@@ -218,7 +217,7 @@ def remove_file(repo_path, selected_file, force=True):
     try:
         subprocess.check_output(cmd, stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
-        error_message = "Error removing file '%s': %s" % (selected_file, unicodify(e))
+        error_message = "Error removing file '{}': {}".format(selected_file, unicodify(e))
         if isinstance(e, subprocess.CalledProcessError):
             error_message += "\nOutput was:\n%s" % unicodify(e.output)
         raise Exception(error_message)
@@ -244,7 +243,7 @@ def changeset2rev(repo_path, changeset_revision):
     try:
         rev = subprocess.check_output(['hg', 'id', '-r', changeset_revision, '-n'], stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
-        error_message = "Error looking for changeset '%s': %s" % (changeset_revision, unicodify(e))
+        error_message = "Error looking for changeset '{}': {}".format(changeset_revision, unicodify(e))
         if isinstance(e, subprocess.CalledProcessError):
             error_message += "\nOutput was:\n%s" % unicodify(e.output)
         raise Exception(error_message)
@@ -264,7 +263,6 @@ __all__ = (
     'get_file_context_from_ctx',
     'get_named_tmpfile_from_ctx',
     'get_readable_ctx_date',
-    'get_repo_for_repository',
     'get_repository_heads',
     'get_reversed_changelog_changesets',
     'get_revision_label',

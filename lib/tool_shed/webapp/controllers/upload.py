@@ -46,13 +46,13 @@ class UploadController(BaseUIController):
         remove_repo_files_not_in_tar = util.string_as_bool(kwd.get('remove_repo_files_not_in_tar', 'true'))
         uploaded_file = None
         upload_point = commit_util.get_upload_point(repository, **kwd)
-        tip = repository.tip(trans.app)
+        tip = repository.tip()
         file_data = kwd.get('file_data', '')
         url = kwd.get('url', '')
         # Part of the upload process is sending email notification to those that have registered to
         # receive them.  One scenario occurs when the first change set is produced for the repository.
         # See the suc.handle_email_alerts() method for the definition of the scenarios.
-        new_repo_alert = repository.is_new(trans.app)
+        new_repo_alert = repository.is_new()
         uploaded_directory = None
         if kwd.get('upload_button', False):
             if file_data == '' and url == '':
@@ -218,7 +218,7 @@ class UploadController(BaseUIController):
                                 # dictionary.
                                 error, error_message = stdtm.handle_sample_tool_data_table_conf_file(full_path, persist=False)
                                 if error:
-                                    message = '%s<br/>%s' % (message, error_message)
+                                    message = '{}<br/>{}'.format(message, error_message)
                             # See if the content of the change set was valid.
                             admin_only = len(repository.downloadable_revisions) != 1
                             suc.handle_email_alerts(trans.app,
@@ -231,7 +231,7 @@ class UploadController(BaseUIController):
                     # Update the repository files for browsing.
                     hg_util.update_repository(repo_dir)
                     # Get the new repository tip.
-                    if tip == repository.tip(trans.app):
+                    if tip == repository.tip():
                         message = 'No changes to repository.  '
                         status = 'warning'
                     else:

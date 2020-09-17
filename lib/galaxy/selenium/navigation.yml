@@ -31,21 +31,19 @@ masthead:
   selectors:
     _: '#masthead'
 
-    user:
-      type: xpath
-      selector: '//li[@id="user"]'
+    # bootstrap-vue a tag doesn't work as link target, need to hit span inside
+    user: '#user.loggedin-only > a.nav-link.dropdown-toggle > span'
+    register_or_login: '#user.loggedout-only > .nav-link'
 
-    user_menu: 'li#user .dropdown-menu'
-    workflow:
-      type: xpath
-      selector: '//li[@id="workflow"]'
+    user_menu: '#user .dropdown-menu a'
+    workflow: '#workflow .nav-link'
 
     user_email:
       type: xpath
       selector: '//a[contains(text(), "Logged in as")]'
 
-    logged_in_only: 'a.loggedin-only'
-    logged_out_only: 'a.loggedout-only'
+    logged_in_only: '.loggedin-only'
+    logged_out_only: '.loggedout-only'
 
   labels:
     # top-level menus
@@ -60,12 +58,46 @@ masthead:
     # user menu
     logout: 'Logout'
     custom_builds: 'Custom Builds'
+    preferences: 'Preferences'
     histories: 'Histories'
     pages: 'Pages'
 
     # Shared data
     libraries: 'Data Libraries'
     published_histories: 'Histories'
+
+preferences:
+  selectors:
+    sign_out: "#edit-preferences-sign-out"
+    change_password: "#edit-preferences-password"
+    manage_information: '#edit-preferences-information'
+    toolbox_filters: '#edit-preferences-toolbox-filters'
+    manage_api_key: '#edit-preferences-api-key'
+    current_email: "#user-preferences-current-email"
+    get_new_key: '#submit'
+
+toolbox_filters:
+  selectors:
+    submit: '#submit'
+
+change_user_email:
+  selectors:
+    submit: '#submit'
+
+change_user_password:
+  selectors:
+    submit: '#submit'
+
+change_user_address:
+  selectors:
+    address_button:
+      type: xpath
+      selector: '//span[contains(text(), "Insert Address")]'
+
+sign_out:
+  selectors:
+    cancel_button: '.modal-footer .buttons #button-0'
+    sign_out_button: '.modal-footer .buttons #button-1'
 
 history_panel:
   menu:
@@ -88,6 +120,7 @@ history_panel:
       dbkey: '${_} .dbkey .value'
       info: '${_} .info .value'
       peek: '${_} .dataset-peek'
+      toolhelp_title: '${_} .toolhelp strong'
 
       # Title buttons...
       display_button: '${_} .icon-btn.display-btn'
@@ -97,6 +130,7 @@ history_panel:
       # Action buttons...
       download_button: '${_} .icon-btn.download-btn'
       info_button: '${_} .icon-btn.params-btn'
+      dbkey_button: '${_} .fa.fa-question'
       rerun_button: '${_} .icon-btn.rerun-btn'
       nametags: '${_} .nametags .badge-tags'
 
@@ -136,6 +170,8 @@ history_panel:
     tag_icon: '.actions .history-tag-btn'
     tag_area: '.controls .tags-display'
     tag_area_input: '.controls .tags-display .tags-input input'
+    tag_close_btn: '.tags-display .ti-icon-close'
+    tags: 'li.ti-tag.ti-valid .tag-name'
     annotation_icon: '.actions .history-annotate-btn'
     annotation_area: '.controls .annotation-display'
     annotation_editable_text: '.controls .annotation-display .annotation.editable-text'
@@ -145,6 +181,9 @@ history_panel:
     options_button: '#history-options-button'
     options_button_icon: '#history-options-button span.fa-cog'
     options_menu: '#history-options-button-menu'
+    options_show_history_structure:
+      type: xpath
+      selector: '//a[text()="Show Structure"]'
     new_history_button: '#history-new-button'
     multi_view_button: '#history-view-multi-button'
 
@@ -160,6 +199,28 @@ history_panel:
     new_name: 'Unnamed history'
     new_size: '(empty)'
 
+
+history_structure:
+  selectors:
+    _: '.tool'
+    header: '.tool > .header.clickable'
+    dataset: '.tool div.list-item.dataset.history-content'
+    details: '.tool .details'
+
+edit_dataset_attributes:
+  selectors:
+    database_build_dropdown: '[data-label="Database/Build"]'
+    save_btn: '#submit_attributes'
+
+  dbkey_dropdown_results:
+    selectors:
+      _:  '#select2-drop  > .select2-results'
+      dbkey_dropdown_option:
+        type: xpath
+        selector: '//li[normalize-space() = "${dbkey_text}"]'
+
+
+
 tool_panel:
 
   selectors:
@@ -172,9 +233,30 @@ multi_history_view:
 
   selectors:
     _: '.multi-panel-history'
+    histories: '.middle .history-column'
     current_label: '.current-label'
     create_new_button: '.create-new'
     drag_drop_help: '.history-drop-target-help'
+    switch_history: '.switch-to'
+    history_dropdown_btn: '[history-dropdown-btn="${history_id}"]'
+    copy: '.copy-history'
+    delete: '.copy-history'
+    current_history_check: '#history-column-${history_id} .current-label'
+    empty_message_check: '.empty-message'
+    switch_button: '#history-column-${history_id} .switch-to'
+
+  history_dropdown_menu:
+    selectors:
+      _: '[history-dropdown-menu="${history_id}"]'
+      delete:  '[history-dropdown-menu="${history_id}"] > .delete-history'
+      purge:  '[history-dropdown-menu="${history_id}"] > .purge-history'
+  copy_history_modal:
+    selectors:
+      _: '.modal-dialog'
+      copy_btn:
+        type: xpath
+        selector: '//button[contains(text(), "Copy")]'
+
 
 history_copy_elements:
 
@@ -240,11 +322,12 @@ tool_form:
   selectors:
     options: '#options [data-toggle="dropdown"]'
     execute: 'button#execute'
+    parameter_div: 'div.ui-form-element[tour_id="${parameter}"]'
     citations: '.citations-formatted'
     reference: '.citations-formatted .formatted-reference'
-    show_bibtex: 'button.citations-to-bibtex'
-    bibtex_area: 'code.citations-bibtex'
-    parameter_div: 'div.ui-form-element[tour_id="${parameter}"]'
+    show_bibtex:
+      type: xpath
+      selector: '//a[@class="nav-link" and text()="BibTeX"]'
 
   labels:
     generate_tour: 'Generate Tour'
@@ -255,10 +338,12 @@ workflows:
     new_button: '#workflow-create'
     import_button: '#workflow-import'
     save_button: '#workflow-save-button'
+    search_box: "#workflow-search"
 
 workflow_run:
 
   selectors:
+    warning: ".ui-form-composite .alert-warning"
     input_div: "[step-label='${label}']"
     input_data_div: "[step-label='${label}'] .select2-container"
     # TODO: put step labels in the DOM ideally
@@ -270,18 +355,17 @@ workflow_editor:
     selectors:
       _: "[node-label='${label}']"
 
-      title: '${_} .nodeTitle'
+      title: '${_} .node-title'
       destroy: '${_} .node-destroy'
       clone: '${_} .node-clone'
 
       output_terminal: "${_} [output-name='${name}']"
       input_terminal: "${_} [input-name='${name}']"
 
-      input_mapping_icon: "${_} [name='${name}'] .fa-folder-o"
+      input_mapping_icon: "${_} [input-name='${name}'].multiple"
 
   selectors:
-    canvas_body: '#workflow-canvas-body'
-    canvas_title: '#workflow-canvas-title'
+    canvas_body: '#workflow-canvas'
     edit_annotation: '#workflow-annotation'
     edit_name: '#workflow-name'
 
@@ -295,7 +379,7 @@ workflow_editor:
     label_input: "[tour_id='__label'] input"
     annotation_input: "[tour_id='__annotation'] textarea"
 
-    connector_for: "canvas[handle1-id='${source_id}'][handle2-id='${sink_id}']"
+    connector_for: "div[output-handle-id='${source_id}'][input-handle-id='${sink_id}']"
 
     connector_destroy_callout: '.delete-terminal'
 
@@ -312,21 +396,54 @@ tour:
 
 admin:
 
+  manage_dependencies:
+    selectors:
+      dependencies: 'a[contains(text(), "Dependencies")]'
+      containers: 'a[contains(text(), "Containers")]'
+      unused: 'a[contains(text(), "Unused")]'
+      resolver_type: '#manage-resolver-type'
+      container_type: '#manage-container-type'
+      unused_paths: '#unused-paths-table'
+
+  manage_jobs:
+    selectors:
+      job_lock: '#prevent-job-dispatching'
+      job_lock_label:
+        type: xpath
+        selector: "//label[@for='prevent-job-dispatching']/strong"
+      cutoff: '#cutoff'
+
+  toolshed:
+    selectors:
+      repo_search: '#toolshed-repo-search'
+      search_results: '#shed-search-results'
+      upgrade_notification: '#repository-table .badge'
+
   index:
     selectors:
       datatypes: '#admin-link-datatypes'
+      dependencies: '#admin-link-manage-dependencies'
       data_tables: '#admin-link-data-tables'
       display_applications: '#admin-link-display-applications'
+      errors: '#admin-link-error-stack'
+      forms: '#admin-link-forms'
       jobs: '#admin-link-jobs'
       local_data: '#admin-link-local-data'
+      metadata: '#admin-link-metadata'
+      migrations: '#admin-link-migrations'
+      tool_versions: '#admin-link-tool-versions'
+      toolshed: '#admin-link-toolshed'
       users: '#admin-link-users'
       quotas: '#admin-link-quotas'
       groups: '#admin-link-groups'
       roles: '#admin-link-roles'
       impersonate: '#admin-link-impersonate'
+      allowlist: '#admin-link-allowlist'
 
   selectors:
+    warning: '#center .alert-warning'
     # TODO: place betters IDS or something on this in these grids in the DOM
+    jobs_title: '#jobs-title'
     datatypes_grid: '#data-types-grid'
     data_tables_grid: '#data-tables-grid'
     display_applications_grid: '#display-applications-grid'
@@ -376,6 +493,20 @@ libraries:
       import_history_contents_items: '.library_selected_history_content tbody > tr'
       import_from_path_textarea: '#import_paths'
       select_all: '#select-all-checkboxes'
+      select_one: '.lib-folder-checkbox'
+      empty_folder_message: '.empty-folder-message'
+      btn_open_upper_folder: '.btn_open_folder'
+      edit_folder_btn: '.edit_folder_btn'
+      description_field: '.description-field'
+      save_folder_btn: '.save_folder_btn'
+      input_folder_name: 'textarea[name="input_folder_name"]'
+      input_folder_description: '.input_folder_description'
+      download_dropdown: '#download-dropdown-btn'
+      delete_btn: '.toolbtn-bulk-delete'
+      toast_msg: '.toast-message'
+      download_zip:
+        type: xpath
+        selector: '//a[contains(text(), ".zip")]'
 
     labels:
       from_history: 'from History'
@@ -404,6 +535,11 @@ gies:
 upload:
   selectors:
     tab: '#tab-title-link-${tab}'
+    ftp_add: '#btn-ftp'
+    ftp_popup: '.upload-ftp-body'
+    ftp_items: '.upload-ftp-row'
+    ftp_close: '.popover-header .popover-close'
+    row: '#upload-row-${n}'
     start: '.upload-button'
     rule_source_content: 'textarea.upload-rule-source-content'
     rule_select_data_type: '.rule-data-type'

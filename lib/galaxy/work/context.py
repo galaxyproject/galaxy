@@ -41,7 +41,7 @@ class WorkRequestContext(ProvidesAppContext, ProvidesUserContext, ProvidesHistor
 
     def get_current_user_roles(self):
         if self.__user_current_roles is None:
-            self.__user_current_roles = super(WorkRequestContext, self).get_current_user_roles()
+            self.__user_current_roles = super().get_current_user_roles()
         return self.__user_current_roles
 
     def set_user(self, user):

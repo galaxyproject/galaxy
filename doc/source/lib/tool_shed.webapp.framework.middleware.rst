@@ -1,7 +1,7 @@
-galaxy.webapps.tool\_shed.framework.middleware package
-======================================================
+tool\_shed.webapp.framework.middleware package
+==============================================
 
-.. automodule:: galaxy.webapps.tool_shed.framework.middleware
+.. automodule:: tool_shed.webapp.framework.middleware
     :members:
     :undoc-members:
     :show-inheritance:
@@ -9,10 +9,10 @@ galaxy.webapps.tool\_shed.framework.middleware package
 Submodules
 ----------
 
-galaxy.webapps.tool\_shed.framework.middleware.remoteuser module
-----------------------------------------------------------------
+tool\_shed.webapp.framework.middleware.remoteuser module
+--------------------------------------------------------
 
-.. automodule:: galaxy.webapps.tool_shed.framework.middleware.remoteuser
+.. automodule:: tool_shed.webapp.framework.middleware.remoteuser
     :members:
     :undoc-members:
     :show-inheritance:

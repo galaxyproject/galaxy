@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 
 import os
 import string
@@ -55,7 +54,7 @@ GALAXY_CONFIG_SUBSTITUTIONS = {
     '  http: 127.0.0.1:8080': '  ${uwsgi_transport}: ${host}:${port}',
     '  static-map: /static=static': '  static-map: /static=${static_path}',
     '  static-map: /favicon.ico=static/favicon.ico': '  static-map: /static=${static_path}/favicon.ico',
-    '  static-safe: client/galaxy/images': '  ${client_path}/galaxy/images',
+    '  static-safe: client/src/assets': '  ${client_path}/src/assets',
     '  virtualenv: .venv': '  #venv: .venv   # not used when running installed',
     '  pythonpath: lib': '  #pythonpath: lib  # not used  when running installed',
     '  #config_dir: false': '  config_dir: ${config_dir}',

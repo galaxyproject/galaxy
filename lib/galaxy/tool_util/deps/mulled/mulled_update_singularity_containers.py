@@ -30,7 +30,7 @@ def docker_to_singularity(container, installation, filepath, no_sudo=False):
             check_output(cmd.insert(0, 'sudo'), stderr=subprocess.STDOUT)
             check_output(['sudo', 'rm', '-rf', '/root/.singularity/docker/'], stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
-        raise Exception("Docker to Singularity conversion failed.\nOutput was:\n%" % unicodify(e.output))
+        raise Exception("Docker to Singularity conversion failed.\nOutput was:\n%s" % unicodify(e.output))
 
 
 def singularity_container_test(tests, installation, filepath):
@@ -167,7 +167,7 @@ def container_testing(args=None):
         for container in test_results['failed']:
             f.write('\n\t\t%s' % container['container'])
             for error in container['errors']:
-                f.write('\n\t\t\tCOMMAND: %s\n\t\t\t\tERROR:%s' % (error.get(
+                f.write('\n\t\t\tCOMMAND: {}\n\t\t\t\tERROR:{}'.format(error.get(
                     'command', 'import' + error.get('import', 'nothing found')), error['output']))
         f.write('\n\tNO TEST AVAILABLE:')
         for container in test_results['notest']:

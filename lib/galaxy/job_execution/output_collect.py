@@ -18,6 +18,7 @@ from galaxy.model.store.discover import (
     ModelPersistenceContext,
     persist_elements_to_folder,
     persist_elements_to_hdca,
+    persist_extra_files,
     persist_hdas,
     RegexCollectedDatasetMatch,
     SessionlessModelPersistenceContext,
@@ -43,7 +44,7 @@ log = logging.getLogger(__name__)
 
 # PermissionProvider and MetadataSourceProvider are abstractions over input data used to
 # collect and produce dynamic outputs.
-class PermissionProvider(object):
+class PermissionProvider:
 
     def __init__(self, inp_data, security_agent, job):
         self._job = job
@@ -75,7 +76,7 @@ class PermissionProvider(object):
         self._security_agent.copy_dataset_permissions(init_from.dataset, primary_data.dataset)
 
 
-class MetadataSourceProvider(object):
+class MetadataSourceProvider:
 
     def __init__(self, inp_data):
         self._inp_data = inp_data
@@ -121,7 +122,7 @@ def collect_dynamic_outputs(
                 hdca = job_context.create_hdca(name, structure)
             persist_elements_to_hdca(job_context, elements, hdca, collector=DEFAULT_DATASET_COLLECTOR)
         elif destination_type == "hdas":
-            persist_hdas(elements, job_context)
+            persist_hdas(elements, job_context, final_job_state=job_context.final_job_state)
 
     for name, has_collection in output_collections.items():
         output_collection_def = job_context.output_collection_def(name)
@@ -152,6 +153,7 @@ def collect_dynamic_outputs(
                 filenames,
                 name=output_collection_def.name,
                 metadata_source_name=output_collection_def.metadata_source,
+                final_job_state=job_context.final_job_state,
             )
             collection_builder.populate()
         except Exception:
@@ -161,7 +163,7 @@ def collect_dynamic_outputs(
         job_context.add_dataset_collection(has_collection)
 
 
-class BaseJobContext(object):
+class BaseJobContext:
 
     def add_dataset_collection(self, collection):
         pass
@@ -175,7 +177,7 @@ class BaseJobContext(object):
 
 class JobContext(ModelPersistenceContext, BaseJobContext):
 
-    def __init__(self, tool, tool_provided_metadata, job, job_working_directory, permission_provider, metadata_source_provider, input_dbkey, object_store):
+    def __init__(self, tool, tool_provided_metadata, job, job_working_directory, permission_provider, metadata_source_provider, input_dbkey, object_store, final_job_state):
         self.tool = tool
         self.metadata_source_provider = metadata_source_provider
         self.permission_provider = permission_provider
@@ -186,6 +188,7 @@ class JobContext(ModelPersistenceContext, BaseJobContext):
         self.job_working_directory = job_working_directory
         self.tool_provided_metadata = tool_provided_metadata
         self.object_store = object_store
+        self.final_job_state = final_job_state
 
     @property
     def work_context(self):
@@ -296,15 +299,16 @@ class JobContext(ModelPersistenceContext, BaseJobContext):
 
 class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
 
-    def __init__(self, metadata_params, tool_provided_metadata, object_store, export_store, import_store, working_directory):
+    def __init__(self, metadata_params, tool_provided_metadata, object_store, export_store, import_store, working_directory, final_job_state):
         # TODO: use a metadata source provider... (pop from inputs and add parameter)
         # TODO: handle input_dbkey...
         input_dbkey = "?"
-        super(SessionlessJobContext, self).__init__(object_store, export_store, working_directory)
+        super().__init__(object_store, export_store, working_directory)
         self.metadata_params = metadata_params
         self.tool_provided_metadata = tool_provided_metadata
         self.import_store = import_store
         self.input_dbkey = input_dbkey
+        self.final_job_state = final_job_state
 
     def output_collection_def(self, name):
         tool_as_dict = self.metadata_params["tool"]
@@ -375,8 +379,17 @@ def collect_primary_datasets(job_context, output, input_ext):
                 # Before I guess pop() would just have thrown an IndexError
                 raise Exception("Problem parsing metadata fields for file %s" % filename)
             designation = fields_match.designation
+            ext = fields_match.ext
+            if ext == "input":
+                ext = input_ext
+            dbkey = fields_match.dbkey
+            if dbkey == INPUT_DBKEY_TOKEN:
+                dbkey = job_context.input_dbkey
             if filename_index == 0 and extra_file_collector.assign_primary_output and output_index == 0:
-                new_outdata_name = fields_match.name or "%s (%s)" % (outdata.name, designation)
+                new_outdata_name = fields_match.name or "{} ({})".format(outdata.name, designation)
+                outdata.change_datatype(ext)
+                outdata.dbkey = dbkey
+                outdata.designation = designation
                 outdata.dataset.external_filename = None  # resets filename_override
                 # Move data from temp location to dataset location
                 job_context.object_store.update_from_file(outdata.dataset, file_name=filename, create=True)
@@ -385,14 +398,8 @@ def collect_primary_datasets(job_context, output, input_ext):
             if name not in primary_datasets:
                 primary_datasets[name] = OrderedDict()
             visible = fields_match.visible
-            ext = fields_match.ext
-            if ext == "input":
-                ext = input_ext
-            dbkey = fields_match.dbkey
-            if dbkey == INPUT_DBKEY_TOKEN:
-                dbkey = job_context.input_dbkey
             # Create new primary dataset
-            new_primary_name = fields_match.name or "%s (%s)" % (outdata.name, designation)
+            new_primary_name = fields_match.name or "{} ({})".format(outdata.name, designation)
             info = outdata.info
 
             # TODO: should be able to disambiguate files in different directories...
@@ -411,25 +418,13 @@ def collect_primary_datasets(job_context, output, input_ext):
                 dataset_attributes=new_primary_datasets_attributes,
             )
             # Associate new dataset with job
-            job_context.add_output_dataset_association('__new_primary_file_%s|%s__' % (name, designation), primary_data)
+            job_context.add_output_dataset_association('__new_primary_file_{}|{}__'.format(name, designation), primary_data)
 
             if new_primary_datasets_attributes:
                 extra_files_path = new_primary_datasets_attributes.get('extra_files', None)
                 if extra_files_path:
                     extra_files_path_joined = os.path.join(job_working_directory, extra_files_path)
-                    primary_data.dataset.create_extra_files_path()
-                    for root, dirs, files in os.walk(extra_files_path_joined):
-                        extra_dir = os.path.join(primary_data.extra_files_path, root.replace(extra_files_path_joined, '', 1).lstrip(os.path.sep))
-                        extra_dir = os.path.normpath(extra_dir)
-                        for f in files:
-                            job_context.object_store.update_from_file(
-                                primary_data.dataset,
-                                extra_dir=extra_dir,
-                                alt_name=f,
-                                file_name=os.path.join(root, f),
-                                create=True,
-                                preserve_symlinks=True
-                            )
+                    persist_extra_files(job_context.object_store, extra_files_path_joined, primary_data)
             job_context.add_datasets_to_history([primary_data], for_output_dataset=outdata)
             # Add dataset to return dict
             primary_datasets[name][designation] = primary_data
@@ -505,7 +500,7 @@ def dataset_collector(dataset_collection_description):
             return ToolMetadataDatasetCollector(dataset_collection_description)
 
 
-class ToolMetadataDatasetCollector(object):
+class ToolMetadataDatasetCollector:
 
     def __init__(self, dataset_collection_description):
         self.discover_via = dataset_collection_description.discover_via
@@ -516,7 +511,7 @@ class ToolMetadataDatasetCollector(object):
         self.assign_primary_output = dataset_collection_description.assign_primary_output
 
 
-class DatasetCollector(object):
+class DatasetCollector:
 
     def __init__(self, dataset_collection_description):
         self.discover_via = dataset_collection_description.discover_via
@@ -572,7 +567,7 @@ def read_exit_code_from(exit_code_file, id_tag):
     """Read exit code reported for a Galaxy job."""
     try:
         # This should be an 8-bit exit code, but read ahead anyway:
-        exit_code_str = open(exit_code_file, "r").read(32)
+        exit_code_str = open(exit_code_file).read(32)
     except Exception:
         # By default, the exit code is 0, which typically indicates success.
         exit_code_str = "0"
@@ -582,7 +577,7 @@ def read_exit_code_from(exit_code_file, id_tag):
         exit_code = int(exit_code_str)
     except ValueError:
         galaxy_id_tag = id_tag
-        log.warning("(%s) Exit code '%s' invalid. Using 0." % (galaxy_id_tag, exit_code_str))
+        log.warning("({}) Exit code '{}' invalid. Using 0.".format(galaxy_id_tag, exit_code_str))
         exit_code = 0
 
     return exit_code

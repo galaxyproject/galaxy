@@ -88,7 +88,7 @@ def generate_tool_guid(repository_clone_url, tool):
     <tool shed host>/repos/<repository owner>/<repository name>/<tool id>/<tool version>
     """
     tmp_url = common_util.remove_protocol_and_user_from_clone_url(repository_clone_url)
-    return '%s/%s/%s' % (tmp_url, tool.id, tool.version)
+    return '{}/{}/{}'.format(tmp_url, tool.id, tool.version)
 
 
 def get_ctx_rev(app, tool_shed_url, name, owner, changeset_revision):
@@ -99,7 +99,7 @@ def get_ctx_rev(app, tool_shed_url, name, owner, changeset_revision):
     tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(app, tool_shed_url)
     params = dict(name=name, owner=owner, changeset_revision=changeset_revision)
     pathspec = ['repository', 'get_ctx_rev']
-    ctx_rev = util.url_get(tool_shed_url, password_mgr=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+    ctx_rev = util.url_get(tool_shed_url, auth=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
     return ctx_rev
 
 
@@ -144,7 +144,7 @@ def get_tool_panel_config_tool_path_install_dir(app, repository):
     defined in a single shed-related tool panel config.
     """
     tool_shed = common_util.remove_port_from_tool_shed_url(str(repository.tool_shed))
-    relative_install_dir = '%s/repos/%s/%s/%s' % (tool_shed,
+    relative_install_dir = '{}/repos/{}/{}/{}'.format(tool_shed,
                                                   str(repository.owner),
                                                   str(repository.name),
                                                   str(repository.installed_changeset_revision))

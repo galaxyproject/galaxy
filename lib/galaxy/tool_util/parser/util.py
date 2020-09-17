@@ -1,5 +1,8 @@
 from collections import OrderedDict
 
+DEFAULT_DELTA = 10000
+DEFAULT_DELTA_FRAC = None
+
 
 def is_dict(item):
     return isinstance(item, dict) or isinstance(item, OrderedDict)

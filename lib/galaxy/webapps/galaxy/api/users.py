@@ -1,12 +1,12 @@
 """
 API operations on User objects.
 """
+import copy
 import json
 import logging
 import re
 from collections import OrderedDict
 
-import six
 from markupsafe import escape
 from sqlalchemy import (
     false,
@@ -51,7 +51,7 @@ log = logging.getLogger(__name__)
 class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, BaseUIController, UsesFormDefinitionsMixin):
 
     def __init__(self, app):
-        super(UserAPIController, self).__init__(app)
+        super().__init__(app)
         self.user_manager = users.UserManager(app)
         self.user_serializer = users.UserSerializer(app)
         self.user_deserializer = users.UserDeserializer(app)
@@ -292,18 +292,19 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         # Build sections for different categories of inputs
         for item, value in preferences.items():
             if value is not None:
-                for input in value["inputs"]:
+                input_fields = copy.deepcopy(value["inputs"])
+                for input in input_fields:
                     help = input.get('help', '')
                     required = 'Required' if util.string_as_bool(input.get('required')) else ''
                     if help:
-                        input['help'] = "%s %s" % (help, required)
+                        input['help'] = "{} {}".format(help, required)
                     else:
                         input['help'] = required
                     field = item + '|' + input['name']
                     for data_item in user.extra_preferences:
                         if field in data_item:
                             input['value'] = user.extra_preferences[data_item]
-                extra_pref_inputs.append({'type': 'section', 'title': value['description'], 'name': item, 'expanded': True, 'inputs': value['inputs']})
+                extra_pref_inputs.append({'type': 'section', 'title': value['description'], 'name': item, 'expanded': True, 'inputs': input_fields})
         return extra_pref_inputs
 
     @expose_api
@@ -486,13 +487,13 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
                 try:
                     user_address = trans.sa_session.query(trans.app.model.UserAddress).get(trans.security.decode_id(d['id']))
                 except Exception as e:
-                    raise exceptions.ObjectNotFound('Failed to access user address (%s). %s' % (d['id'], e))
+                    raise exceptions.ObjectNotFound('Failed to access user address ({}). {}'.format(d['id'], e))
             else:
                 user_address = trans.model.UserAddress()
                 trans.log_event('User address added')
             for field in AddressField.fields():
                 if str(field[2]).lower() == 'required' and not d.get(field[0]):
-                    raise exceptions.ObjectAttributeMissingException('Address %s: %s (%s) required.' % (index + 1, field[1], field[0]))
+                    raise exceptions.ObjectAttributeMissingException('Address {}: {} ({}) required.'.format(index + 1, field[1], field[0]))
                 setattr(user_address, field[0], str(d.get(field[0], '')))
             user_address.user = user
             user.addresses.append(user_address)
@@ -570,7 +571,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
 
     def _validate_email(self, email):
         ''' Validate email and username using regex '''
-        if email == '' or not isinstance(email, six.string_types):
+        if email == '' or not isinstance(email, str):
             return 'Please provide your email address.'
         if not re.match(r'^(([^<>()[\]\.,;:\s@"]+(\.[^<>()[\]\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$', email):
             return 'Please provide your valid email address.'
@@ -615,7 +616,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
                            'name': index,
                            'label': action.action,
                            'help': action.description,
-                           'options': list(set((r.name, r.id) for r in roles)),
+                           'options': list({(r.name, r.id) for r in roles}),
                            'value': [a.role.id for a in user.default_permissions if a.action == action.action]})
         return {'inputs': inputs}
 
@@ -644,7 +645,11 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         for name, value in user.preferences.items():
             if name in filter_types:
                 saved_values[name] = listify(value, do_strip=True)
-        inputs = []
+        inputs = [{
+            'type': 'hidden',
+            'name': 'helptext',
+            'label': 'In this section you may enable or disable Toolbox filters. Please contact your admin to configure filters as necessary.'
+        }]
         errors = {}
         factory = FilterFactory(trans.app.toolbox)
         for filter_type in filter_types:
@@ -677,7 +682,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         for filter_name in filter_config:
             function = factory.build_filter_function(filter_name)
             if function is None:
-                errors['%s|%s' % (filter_type, filter_name)] = 'Filter function not found.'
+                errors['{}|{}'.format(filter_type, filter_name)] = 'Filter function not found.'
 
             short_description, description = None, None
             doc_string = docstring_trim(function.__doc__)
@@ -863,7 +868,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
                             lines_skipped += 1
                             continue
                         counter += 1
-                        f.write('%s\t%s\n' % (chrom, length))
+                        f.write('{}\t{}\n'.format(chrom, length))
                 build_dict['len'] = new_len.id
                 build_dict['count'] = counter
             else:

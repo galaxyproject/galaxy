@@ -2,7 +2,6 @@
 Migration script to (a) add and populate necessary columns for doing community tagging of histories, datasets, and pages and \
 (b) add table for doing individual and community tagging of workflows.
 """
-from __future__ import print_function
 
 import logging
 

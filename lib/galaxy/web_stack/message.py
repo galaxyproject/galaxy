@@ -1,6 +1,5 @@
 """Web Application Stack worker messaging
 """
-from __future__ import absolute_import
 
 import json
 import logging
@@ -10,7 +9,7 @@ import six
 log = logging.getLogger(__name__)
 
 
-class ApplicationStackMessageDispatcher(object):
+class ApplicationStackMessageDispatcher:
     def __init__(self):
         self.__funcs = {}
 
@@ -77,7 +76,7 @@ class ApplicationStackMessage(dict):
 
     def _validate_items(self, obj, items, name):
         for item in items:
-            assert item in obj, "Missing '%s' message %" % (item, name)
+            assert item in obj, "Missing '{}' message {}".format(item, name)
 
     def validate(self):
         self._validate_items(self, self.validate_kwargs, 'argument')
@@ -111,13 +110,13 @@ class ParamMessage(ApplicationStackMessage):
     _exclude_params = ()
 
     def __init__(self, target=None, params=None, **kwargs):
-        super(ParamMessage, self).__init__(target=target)
+        super().__init__(target=target)
         self['params'] = params or {}
         for k, v in kwargs.items():
             self['params'][k] = v
 
     def validate(self):
-        super(ParamMessage, self).validate()
+        super().validate()
         self._validate_items(self['params'], self.validate_params, 'parameters')
 
     @property

@@ -10,8 +10,8 @@ filter_repository_name = 'filter_1430'
 column_repository_name = 'column_1430'
 filter_repository_description = "Galaxy's filter tool for test 1430"
 column_repository_description = 'Add a value as a new column'
-filter_repository_long_description = '%s: %s' % (filter_repository_name, filter_repository_description)
-column_repository_long_description = '%s: %s' % (column_repository_name, column_repository_description)
+filter_repository_long_description = '{}: {}'.format(filter_repository_name, filter_repository_description)
+column_repository_long_description = '{}: {}'.format(column_repository_name, column_repository_description)
 
 '''
 In the Tool Shed:

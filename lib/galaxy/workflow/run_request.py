@@ -15,7 +15,7 @@ INPUT_STEP_TYPES = ['data_input', 'data_collection_input', 'parameter_input']
 log = logging.getLogger(__name__)
 
 
-class WorkflowRunConfig(object):
+class WorkflowRunConfig:
     """ Wrapper around all the ways a workflow execution can be parameterized.
 
     :param target_history: History to execute workflow in.
@@ -89,7 +89,7 @@ def _normalize_inputs(steps, inputs, inputs_by):
         # start to ensure tool state is being preserved and loaded in a type safe way.
         assert isinstance(optional, bool)
         if not inputs_key and default_value is None and not optional:
-            message = "Workflow cannot be run because an expected input step '%s' (%s) is not optional and no input." % (step.id, step.label)
+            message = "Workflow cannot be run because an expected input step '{}' ({}) is not optional and no input.".format(step.id, step.label)
             raise exceptions.MessageException(message)
         if inputs_key:
             normalized_inputs[step.id] = inputs[inputs_key]
@@ -99,7 +99,7 @@ def _normalize_inputs(steps, inputs, inputs_by):
 def _normalize_step_parameters(steps, param_map, legacy=False, already_normalized=False):
     """ Take a complex param_map that can reference parameters by
     step_id in the new flexible way or in the old one-parameter
-    per tep fashion or by tool id and normalize the parameters so
+    per step fashion or by tool id and normalize the parameters so
     everything is referenced by a numeric step id.
     """
     normalized_param_map = {}
@@ -178,7 +178,7 @@ def _flatten_step_params(param_dict, prefix=""):
     new_params = {}
     for key in list(param_dict.keys()):
         if prefix:
-            effective_key = "%s|%s" % (prefix, key)
+            effective_key = "{}|{}".format(prefix, key)
         else:
             effective_key = key
         value = param_dict[key]
@@ -214,9 +214,9 @@ def _get_target_history(trans, workflow, payload, param_keys=None, index=0):
         ids = param_keys[index]
         nids = len(ids)
         if nids == 1:
-            nh_name = '%s on %s' % (nh_name, ids[0])
+            nh_name = '{} on {}'.format(nh_name, ids[0])
         elif nids > 1:
-            nh_name = '%s on %s and %s' % (nh_name, ', '.join(ids[0:-1]), ids[-1])
+            nh_name = '{} on {} and {}'.format(nh_name, ', '.join(ids[0:-1]), ids[-1])
         new_history = trans.app.model.History(user=trans.user, name=nh_name)
         trans.sa_session.add(new_history)
         target_history = new_history
@@ -246,25 +246,27 @@ def build_workflow_run_configs(trans, workflow, payload):
 
     run_configs = []
     unexpanded_param_map = _normalize_step_parameters(workflow.steps, raw_parameters, legacy=legacy, already_normalized=already_normalized)
-    expanded_params, expanded_param_keys = expand_workflow_inputs(unexpanded_param_map)
-    for index, param_map in enumerate(expanded_params):
-        history = _get_target_history(trans, workflow, payload, expanded_param_keys, index)
-        inputs = payload.get('inputs', None)
-        inputs_by = payload.get('inputs_by', None)
-        # New default is to reference steps by index of workflow step
-        # which is intrinsic to the workflow and independent of the state
-        # of Galaxy at the time of workflow import.
-        default_inputs_by = 'step_index|step_uuid'
-        if inputs is None:
-            # Default to legacy behavior - read ds_map and reference steps
-            # by unencoded step id (a raw database id).
-            inputs = payload.get('ds_map', {})
-            if legacy:
-                default_inputs_by = 'step_id|step_uuid'
-            inputs_by = inputs_by or default_inputs_by
-        else:
-            inputs = inputs or {}
+    unexpanded_inputs = payload.get('inputs', None)
+    inputs_by = payload.get('inputs_by', None)
+    # New default is to reference steps by index of workflow step
+    # which is intrinsic to the workflow and independent of the state
+    # of Galaxy at the time of workflow import.
+    default_inputs_by = 'step_index|step_uuid'
+    inputs_by = inputs_by or default_inputs_by
+
+    if unexpanded_inputs is None:
+        # Default to legacy behavior - read ds_map and reference steps
+        # by unencoded step id (a raw database id).
+        unexpanded_inputs = payload.get('ds_map', {})
+        if legacy:
+            default_inputs_by = 'step_id|step_uuid'
         inputs_by = inputs_by or default_inputs_by
+    else:
+        unexpanded_inputs = unexpanded_inputs or {}
+
+    expanded_params, expanded_param_keys, expanded_inputs = expand_workflow_inputs(unexpanded_param_map, unexpanded_inputs)
+    for index, (param_map, inputs) in enumerate(zip(expanded_params, expanded_inputs)):
+        history = _get_target_history(trans, workflow, payload, expanded_param_keys, index)
         if inputs or not already_normalized:
             normalized_inputs = _normalize_inputs(workflow.steps, inputs, inputs_by)
         else:
@@ -497,5 +499,5 @@ def __decode_id(trans, workflow_id, model_type="workflow"):
     try:
         return trans.security.decode_id(workflow_id)
     except Exception:
-        message = "Malformed %s id ( %s ) specified, unable to decode" % (model_type, workflow_id)
+        message = "Malformed {} id ( {} ) specified, unable to decode".format(model_type, workflow_id)
         raise exceptions.MalformedId(message)

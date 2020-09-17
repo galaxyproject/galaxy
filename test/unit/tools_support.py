@@ -99,6 +99,7 @@ class UsesTools(object):
         tool_source = get_tool_source(self.tool_file)
         try:
             self.tool = create_tool_from_source(self.app, tool_source, config_file=self.tool_file)
+            self.tool.assert_finalized()
         except Exception:
             self.tool = None
         if getattr(self, "tool_action", None and self.tool):

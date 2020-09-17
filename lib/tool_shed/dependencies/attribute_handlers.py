@@ -15,7 +15,7 @@ from tool_shed.util import xml_util
 log = logging.getLogger(__name__)
 
 
-class RepositoryDependencyAttributeHandler(object):
+class RepositoryDependencyAttributeHandler:
 
     def __init__(self, app, unpopulate):
         self.app = app
@@ -117,9 +117,9 @@ class RepositoryDependencyAttributeHandler(object):
                 else:
                     error_message = 'Invalid latest installable changeset_revision %s ' % \
                         str(lastest_installable_changeset_revision)
-                    error_message += 'retrieved for repository %s owned by %s.  ' % (str(name), str(owner))
+                    error_message += 'retrieved for repository {} owned by {}.  '.format(str(name), str(owner))
             else:
-                error_message = 'Unable to locate repository with name %s and owner %s.  ' % (str(name), str(owner))
+                error_message = 'Unable to locate repository with name {} and owner {}.  '.format(str(name), str(owner))
         return altered, elem, error_message
 
     def handle_sub_elem(self, parent_elem, elem_index, elem):
@@ -166,7 +166,7 @@ class RepositoryDependencyAttributeHandler(object):
                 # <repository name="molecule_datatypes" owner="test" changeset_revision="1a070566e9c6" />
                 altered, new_elem, error_message = self.handle_elem(elem)
                 if error_message:
-                    error_message = 'The %s file contains an invalid <repository> tag.  %s' % (self.file_name, error_message)
+                    error_message = 'The {} file contains an invalid <repository> tag.  {}'.format(self.file_name, error_message)
                     return False, None, error_message
                 if altered:
                     if not root_altered:
@@ -175,7 +175,7 @@ class RepositoryDependencyAttributeHandler(object):
         return root_altered, new_root, error_message
 
 
-class ToolDependencyAttributeHandler(object):
+class ToolDependencyAttributeHandler:
 
     def __init__(self, app, unpopulate):
         self.app = app

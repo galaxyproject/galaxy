@@ -48,7 +48,7 @@ def edgelist_for_workflow_steps(steps):
     on associated ``WorkflowStepConnection``s
     """
     edges = []
-    steps_to_index = dict((step, i) for i, step in enumerate(steps))
+    steps_to_index = {step: i for i, step in enumerate(steps)}
     for step in steps:
         edges.append((steps_to_index[step], steps_to_index[step]))
         for conn in step.input_connections:

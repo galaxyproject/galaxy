@@ -28,7 +28,7 @@ schema = Schema(
     repo_id=STORED)
 
 
-class ToolSearch(object):
+class ToolSearch:
 
     def search(self, trans, search_term, page, page_size, boosts):
         """

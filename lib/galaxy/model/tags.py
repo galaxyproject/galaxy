@@ -1,7 +1,6 @@
 import logging
 import re
 
-from six import string_types
 from sqlalchemy.sql import select
 from sqlalchemy.sql.expression import func
 
@@ -15,14 +14,14 @@ log = logging.getLogger(__name__)
 
 
 # Item-specific information needed to perform tagging.
-class ItemTagAssocInfo(object):
+class ItemTagAssocInfo:
     def __init__(self, item_class, tag_assoc_class, item_id_col):
         self.item_class = item_class
         self.tag_assoc_class = tag_assoc_class
         self.item_id_col = item_id_col
 
 
-class TagHandler(object):
+class TagHandler:
     """
     Manages CRUD operations related to tagging objects.
     """
@@ -42,26 +41,31 @@ class TagHandler(object):
         # Initialize with known classes - add to this in subclasses.
         self.item_tag_assoc_info = {}
 
-    def add_tags_from_list(self, user, item, new_tags_list):
+    def create_tag_handler_session(self):
+        # Creates a transient tag handler that avoids repeated flushes
+        return GalaxyTagHandlerSession(self.sa_session)
+
+    def add_tags_from_list(self, user, item, new_tags_list, flush=True):
         new_tags_set = set(new_tags_list)
         if item.tags:
             new_tags_set.update(self.get_tags_str(item.tags).split(','))
-        return self.set_tags_from_list(user, item, new_tags_set)
+        return self.set_tags_from_list(user, item, new_tags_set, flush=flush)
 
-    def remove_tags_from_list(self, user, item, tag_to_remove_list):
+    def remove_tags_from_list(self, user, item, tag_to_remove_list, flush=True):
         tag_to_remove_set = set(tag_to_remove_list)
         tags_set = {_.strip() for _ in self.get_tags_str(item.tags).split(',')}
         if item.tags:
             tags_set -= tag_to_remove_set
-        return self.set_tags_from_list(user, item, tags_set)
+        return self.set_tags_from_list(user, item, tags_set, flush=flush)
 
-    def set_tags_from_list(self, user, item, new_tags_list):
+    def set_tags_from_list(self, user, item, new_tags_list, flush=True):
         # precondition: item is already security checked against user
         # precondition: incoming tags is a list of sanitized/formatted strings
         self.delete_item_tags(user, item)
         new_tags_str = ','.join(new_tags_list)
-        self.apply_item_tags(user, item, unicodify(new_tags_str, 'utf-8'))
-        self.sa_session.flush()
+        self.apply_item_tags(user, item, unicodify(new_tags_str, 'utf-8'), flush=flush)
+        if flush:
+            self.sa_session.flush()
         return item.tags
 
     def get_tag_assoc_class(self, item_class):
@@ -127,14 +131,16 @@ class TagHandler(object):
         """Delete tags from an item."""
         # Delete item-tag associations.
         for tag in item.tags:
-            self.sa_session.delete(tag)
+            if tag.id:
+                # Only can and need to delete tag if tag is persisted
+                self.sa_session.delete(tag)
         # Delete tags from item.
         del item.tags[:]
 
     def item_has_tag(self, user, item, tag):
         """Returns true if item is has a given tag."""
         # Get tag name.
-        if isinstance(tag, string_types):
+        if isinstance(tag, str):
             tag_name = tag
         elif isinstance(tag, galaxy.model.Tag):
             tag_name = tag.name
@@ -146,7 +152,7 @@ class TagHandler(object):
             return True
         return False
 
-    def apply_item_tag(self, user, item, name, value=None):
+    def apply_item_tag(self, user, item, name, value=None, flush=True):
         # Use lowercase name for searching/creating tag.
         lc_name = name.lower()
         # Get or create item-tag association.
@@ -174,17 +180,17 @@ class TagHandler(object):
         item_tag_assoc.user_tname = name
         item_tag_assoc.user_value = value
         item_tag_assoc.value = lc_value
-        # Need to flush to get an ID. We need an ID to apply multiple tags with the same tname to an object.
-        self.sa_session.flush()
+        if flush:
+            self.sa_session.flush()
         return item_tag_assoc
 
-    def apply_item_tags(self, user, item, tags_str):
+    def apply_item_tags(self, user, item, tags_str, flush=True):
         """Apply tags to an item."""
         # Parse tags.
         parsed_tags = self.parse_tags(tags_str)
         # Apply each tag.
         for name, value in parsed_tags:
-            self.apply_item_tag(user, item, name, value)
+            self.apply_item_tag(user, item, name, value, flush=flush)
 
     def get_tags_str(self, tags):
         """Build a string from an item's tags."""
@@ -218,15 +224,21 @@ class TagHandler(object):
         for sub_tag in tag_hierarchy:
             # Get or create subtag.
             tag_name = tag_prefix + self._scrub_tag_name(sub_tag)
-            tag = self.sa_session.query(galaxy.model.Tag).filter_by(name=tag_name).first()
+            tag = self._get_tag(tag_name)
             if not tag:
-                tag = galaxy.model.Tag(type=0, name=tag_name)
+                tag = self._create_tag_instance(tag_name)
             # Set tag parent.
             tag.parent = parent_tag
             # Update parent and tag prefix.
             parent_tag = tag
             tag_prefix = tag.name + self.hierarchy_separator
         return tag
+
+    def _get_tag(self, tag_name):
+        return self.sa_session.query(galaxy.model.Tag).filter_by(name=tag_name).first()
+
+    def _create_tag_instance(self, tag_name):
+        return galaxy.model.Tag(type=0, name=tag_name)
 
     def _get_or_create_tag(self, tag_str):
         """Get or create a Tag object from a tag string."""
@@ -363,6 +375,24 @@ class GalaxyTagHandler(TagHandler):
         self.item_tag_assoc_info["Visualization"] = ItemTagAssocInfo(model.Visualization,
                                                                      model.VisualizationTagAssociation,
                                                                      model.VisualizationTagAssociation.table.c.visualization_id)
+
+
+class GalaxyTagHandlerSession(GalaxyTagHandler):
+    """Like GalaxyTagHandler, but avoids one flush per created tag."""
+    def __init__(self, sa_session):
+        super().__init__(sa_session)
+        self.created_tags = {}
+
+    def _get_tag(self, tag_name):
+        """Get tag from cache or database."""
+        # Avoids creating multiple new tags with the same tag_name, which violates unique key constraint
+        return self.created_tags.get(tag_name) or super(GalaxyTagHandler, self)._get_tag(tag_name)
+
+    def _create_tag_instance(self, tag_name):
+        """Create tag and and store in cache."""
+        tag = super()._create_tag_instance(tag_name)
+        self.created_tags[tag_name] = tag
+        return tag
 
 
 class CommunityTagHandler(TagHandler):

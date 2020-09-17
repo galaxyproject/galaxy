@@ -2,7 +2,6 @@
 Migration script to add column to openid table for provider.
 Remove any OpenID entries with nonunique GenomeSpace Identifier
 """
-from __future__ import print_function
 
 import logging
 

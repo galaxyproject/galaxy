@@ -9,6 +9,22 @@ galaxy.config package
 Submodules
 ----------
 
+galaxy.config.config\_manage module
+-----------------------------------
+
+.. automodule:: galaxy.config.config_manage
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.config.schema module
+---------------------------
+
+.. automodule:: galaxy.config.schema
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy.config.script module
 ---------------------------
 

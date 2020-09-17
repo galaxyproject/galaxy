@@ -33,7 +33,7 @@ PACKAGES = [
     'galaxy',
     'galaxy.exceptions',
     'galaxy.util',
-    'galaxy.util.logging',
+    'galaxy.util.custom_logging',
     'galaxy.util.path',
 ]
 ENTRY_POINTS = '''
@@ -60,9 +60,7 @@ else:
     requirements = []
 
 
-test_requirements = [
-    # TODO: put package test requirements here
-]
+test_requirements = open("test-requirements.txt").read().split("\n")
 
 
 setup(

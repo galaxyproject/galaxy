@@ -9,7 +9,9 @@
 -->
 <tool name="GrameneMart" id="gramenemart" tool_type="data_source" version="1.0.1">
     <description> Central server</description>
-    <command interpreter="python">data_source.py $output $__app__.config.output_size_limit</command>
+    <command><![CDATA[
+python '$__tool_directory__/data_source.py' '$output' $__app__.config.output_size_limit
+    ]]></command>
     <inputs action="http://www.gramene.org/biomart/martview" check_values="false" method="get" target="_top">
         <display>go to GrameneMart Central $GALAXY_URL</display>
         <param name="GALAXY_URL" type="baseurl" value="/tool_runner/biomart" />

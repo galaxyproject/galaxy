@@ -26,7 +26,7 @@ class Otu(Text):
     MetadataElement(name="otulabels", default=[], desc="OTU Names", readonly=True, visible=True, no_value=[])
 
     def __init__(self, **kwd):
-        super(Otu, self).__init__(**kwd)
+        super().__init__(**kwd)
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         """
@@ -47,7 +47,7 @@ class Otu(Text):
         >>> len(dataset.metadata.otulabels) == 98
         True
         """
-        super(Otu, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
 
         if dataset.has_data():
             label_names = set()
@@ -118,10 +118,10 @@ class Sabund(Otu):
         """
         http://www.mothur.org/wiki/Sabund_file
         """
-        super(Sabund, self).__init__(**kwd)
+        super().__init__(**kwd)
 
     def init_meta(self, dataset, copy_from=None):
-        super(Sabund, self).init_meta(dataset, copy_from=copy_from)
+        super().init_meta(dataset, copy_from=copy_from)
 
     def sniff_prefix(self, file_prefix):
         """
@@ -162,13 +162,13 @@ class GroupAbund(Otu):
     MetadataElement(name="groups", default=[], desc="Group Names", readonly=True, visible=True, no_value=[])
 
     def __init__(self, **kwd):
-        super(GroupAbund, self).__init__(**kwd)
+        super().__init__(**kwd)
 
     def init_meta(self, dataset, copy_from=None):
-        super(GroupAbund, self).init_meta(dataset, copy_from=copy_from)
+        super().init_meta(dataset, copy_from=copy_from)
 
     def set_meta(self, dataset, overwrite=True, skip=1, **kwd):
-        super(GroupAbund, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
 
         # See if file starts with header line
         if dataset.has_data():
@@ -244,7 +244,7 @@ class SecondaryStructureMap(Tabular):
 
     def __init__(self, **kwd):
         """Initialize secondary structure map datatype"""
-        super(SecondaryStructureMap, self).__init__(**kwd)
+        super().__init__(**kwd)
         self.column_names = ['Map']
 
     def sniff_prefix(self, file_prefix):
@@ -288,13 +288,13 @@ class AlignCheck(Tabular):
 
     def __init__(self, **kwd):
         """Initialize AlignCheck datatype"""
-        super(AlignCheck, self).__init__(**kwd)
+        super().__init__(**kwd)
         self.column_names = ['name', 'pound', 'dash', 'plus', 'equal', 'loop', 'tilde', 'total']
         self.column_types = ['str', 'int', 'int', 'int', 'int', 'int', 'int', 'int']
         self.comment_lines = 1
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-        super(AlignCheck, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
 
         dataset.metadata.column_names = self.column_names
         dataset.metadata.column_types = self.column_types
@@ -312,7 +312,7 @@ class AlignReport(Tabular):
 
     def __init__(self, **kwd):
         """Initialize AlignCheck datatype"""
-        super(AlignReport, self).__init__(**kwd)
+        super().__init__(**kwd)
         self.column_names = ['QueryName', 'QueryLength', 'TemplateName', 'TemplateLength', 'SearchMethod', 'SearchScore',
                              'AlignmentMethod', 'QueryStart', 'QueryEnd', 'TemplateStart', 'TemplateEnd',
                              'PairwiseAlignmentLength', 'GapsInQuery', 'GapsInTemplate', 'LongestInsert', 'SimBtwnQuery&Template'
@@ -325,10 +325,10 @@ class DistanceMatrix(Text):
     MetadataElement(name="sequence_count", default=0, desc="Number of sequences", readonly=True, visible=True, optional=True, no_value='?')
 
     def init_meta(self, dataset, copy_from=None):
-        super(DistanceMatrix, self).init_meta(dataset, copy_from=copy_from)
+        super().init_meta(dataset, copy_from=copy_from)
 
     def set_meta(self, dataset, overwrite=True, skip=0, **kwd):
-        super(DistanceMatrix, self).set_meta(dataset, overwrite=overwrite, skip=skip, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, skip=skip, **kwd)
 
         headers = iter_headers(dataset.file_name, sep='\t')
         for line in headers:
@@ -347,10 +347,10 @@ class LowerTriangleDistanceMatrix(DistanceMatrix):
 
     def __init__(self, **kwd):
         """Initialize secondary structure map datatype"""
-        super(LowerTriangleDistanceMatrix, self).__init__(**kwd)
+        super().__init__(**kwd)
 
     def init_meta(self, dataset, copy_from=None):
-        super(LowerTriangleDistanceMatrix, self).init_meta(dataset, copy_from=copy_from)
+        super().init_meta(dataset, copy_from=copy_from)
 
     def sniff_prefix(self, file_prefix):
         """
@@ -411,10 +411,10 @@ class SquareDistanceMatrix(DistanceMatrix):
     file_ext = 'mothur.square.dist'
 
     def __init__(self, **kwd):
-        super(SquareDistanceMatrix, self).__init__(**kwd)
+        super().__init__(**kwd)
 
     def init_meta(self, dataset, copy_from=None):
-        super(SquareDistanceMatrix, self).init_meta(dataset, copy_from=copy_from)
+        super().init_meta(dataset, copy_from=copy_from)
 
     def sniff_prefix(self, file_prefix):
         """
@@ -474,12 +474,12 @@ class PairwiseDistanceMatrix(DistanceMatrix, Tabular):
 
     def __init__(self, **kwd):
         """Initialize secondary structure map datatype"""
-        super(PairwiseDistanceMatrix, self).__init__(**kwd)
+        super().__init__(**kwd)
         self.column_names = ['Sequence', 'Sequence', 'Distance']
         self.column_types = ['str', 'str', 'float']
 
     def set_meta(self, dataset, overwrite=True, skip=None, **kwd):
-        super(PairwiseDistanceMatrix, self).set_meta(dataset, overwrite=overwrite, skip=skip, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, skip=skip, **kwd)
 
     def sniff_prefix(self, file_prefix):
         """
@@ -526,7 +526,7 @@ class Names(Tabular):
         http://www.mothur.org/wiki/Name_file
         Name file shows the relationship between a representative sequence(col 1)  and the sequences(comma-separated) it represents(col 2)
         """
-        super(Names, self).__init__(**kwd)
+        super().__init__(**kwd)
         self.column_names = ['name', 'representatives']
         self.columns = 2
 
@@ -536,7 +536,7 @@ class Summary(Tabular):
 
     def __init__(self, **kwd):
         """summarizes the quality of sequences in an unaligned or aligned fasta-formatted sequence file"""
-        super(Summary, self).__init__(**kwd)
+        super().__init__(**kwd)
         self.column_names = ['seqname', 'start', 'end', 'nbases', 'ambigs', 'polymer']
         self.columns = 6
 
@@ -550,12 +550,12 @@ class Group(Tabular):
         http://www.mothur.org/wiki/Groups_file
         Group file assigns sequence (col 1)  to a group (col 2)
         """
-        super(Group, self).__init__(**kwd)
+        super().__init__(**kwd)
         self.column_names = ['name', 'group']
         self.columns = 2
 
     def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=None, **kwd):
-        super(Group, self).set_meta(dataset, overwrite, skip, max_data_lines)
+        super().set_meta(dataset, overwrite, skip, max_data_lines)
 
         group_names = set()
         headers = iter_headers(dataset.file_name, sep='\t', count=-1)
@@ -570,7 +570,7 @@ class AccNos(Tabular):
 
     def __init__(self, **kwd):
         """A list of names"""
-        super(AccNos, self).__init__(**kwd)
+        super().__init__(**kwd)
         self.column_names = ['name']
         self.columns = 1
 
@@ -616,7 +616,7 @@ class Frequency(Tabular):
 
     def __init__(self, **kwd):
         """A list of names"""
-        super(Frequency, self).__init__(**kwd)
+        super().__init__(**kwd)
         self.column_names = ['position', 'frequency']
         self.column_types = ['int', 'float']
 
@@ -678,7 +678,7 @@ class Quantile(Tabular):
 
     def __init__(self, **kwd):
         """Quantiles for chimera analysis"""
-        super(Quantile, self).__init__(**kwd)
+        super().__init__(**kwd)
         self.column_names = ['num', 'ten', 'twentyfive', 'fifty', 'seventyfive', 'ninetyfive', 'ninetynine']
         self.column_types = ['int', 'float', 'float', 'float', 'float', 'float', 'float']
 
@@ -772,11 +772,11 @@ class CountTable(Tabular):
         U68591  1       1       0
         U68647  1       0       1
         """
-        super(CountTable, self).__init__(**kwd)
+        super().__init__(**kwd)
         self.column_names = ['name', 'total']
 
     def set_meta(self, dataset, overwrite=True, skip=1, max_data_lines=None, **kwd):
-        super(CountTable, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
 
         headers = get_headers(dataset.file_name, sep='\t', count=1)
         colnames = headers[0]
@@ -796,7 +796,7 @@ class RefTaxonomy(Tabular):
     file_ext = 'mothur.ref.taxonomy'
 
     def __init__(self, **kwd):
-        super(RefTaxonomy, self).__init__(**kwd)
+        super().__init__(**kwd)
         self.column_names = ['name', 'taxonomy']
 
     def sniff_prefix(self, file_prefix):
@@ -856,7 +856,7 @@ class ConsensusTaxonomy(Tabular):
 
     def __init__(self, **kwd):
         """A list of names"""
-        super(ConsensusTaxonomy, self).__init__(**kwd)
+        super().__init__(**kwd)
         self.column_names = ['OTU', 'count', 'taxonomy']
 
 
@@ -865,7 +865,7 @@ class TaxonomySummary(Tabular):
 
     def __init__(self, **kwd):
         """A Summary of taxon classification"""
-        super(TaxonomySummary, self).__init__(**kwd)
+        super().__init__(**kwd)
         self.column_names = ['taxlevel', 'rankID', 'taxon', 'daughterlevels', 'total']
 
 
@@ -875,7 +875,7 @@ class Axes(Tabular):
 
     def __init__(self, **kwd):
         """Initialize axes datatype"""
-        super(Axes, self).__init__(**kwd)
+        super().__init__(**kwd)
 
     def sniff_prefix(self, file_prefix):
         """
@@ -940,7 +940,7 @@ class SffFlow(Tabular):
     MetadataElement(name="flow_order", default="TACG", no_value="TACG", desc="Total number of flow values", readonly=False)
     file_ext = 'mothur.sff.flow'
     """
-        http://www.mothur.org/wiki/Flow_file
+        https://mothur.org/wiki/flow_file/
         The first line is the total number of flow values - 800 for Titanium data. For GS FLX it would be 400.
         Following lines contain:
         - SequenceName
@@ -954,10 +954,10 @@ class SffFlow(Tabular):
     """
 
     def __init__(self, **kwd):
-        super(SffFlow, self).__init__(**kwd)
+        super().__init__(**kwd)
 
     def set_meta(self, dataset, overwrite=True, skip=1, max_data_lines=None, **kwd):
-        super(SffFlow, self).set_meta(dataset, overwrite, 1, max_data_lines)
+        super().set_meta(dataset, overwrite, 1, max_data_lines)
 
         headers = get_headers(dataset.file_name, sep='\t', count=1)
         try:
@@ -966,18 +966,20 @@ class SffFlow(Tabular):
         except Exception as e:
             log.warning("SffFlow set_meta %s" % e)
 
-    def make_html_table(self, dataset, skipchars=[]):
+    def make_html_table(self, dataset, skipchars=None):
         """Create HTML table, used for displaying peek"""
+        if skipchars is None:
+            skipchars = []
         try:
             out = '<table cellspacing="0" cellpadding="3">'
 
             # Generate column header
             out += '<tr>'
-            out += '<th>%d. Name</th>' % 1
-            out += '<th>%d. Flows</th>' % 2
+            out += '<th>1. Name</th>'
+            out += '<th>2. Flows</th>'
             for i in range(3, dataset.metadata.columns + 1):
                 base = dataset.metadata.flow_order[(i + 1) % 4]
-                out += '<th>%d. %d %s</th>' % (i - 2, base)
+                out += '<th>%d. %s</th>' % (i - 2, base)
             out += '</tr>'
             out += self.make_html_peek_rows(dataset, skipchars=skipchars)
             out += '</table>'

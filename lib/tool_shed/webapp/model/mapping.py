@@ -8,7 +8,6 @@ from sqlalchemy import Boolean, Column, DateTime, desc, false, ForeignKey, Integ
 from sqlalchemy.orm import backref, mapper, relation
 
 import tool_shed.webapp.model
-import tool_shed.webapp.util.hgweb_config
 import tool_shed.webapp.util.shed_statistics as shed_statistics
 from galaxy.model.base import ModelMapping
 from galaxy.model.custom_types import JSONType, TrimmedString
@@ -267,7 +266,7 @@ mapper(Repository, Repository.table,
                                        order_by=desc(RepositoryMetadata.table.c.update_time)),
            roles=relation(RepositoryRoleAssociation),
            reviews=relation(RepositoryReview,
-                            primaryjoin=((Repository.table.c.id == RepositoryReview.table.c.repository_id))),
+                            primaryjoin=(Repository.table.c.id == RepositoryReview.table.c.repository_id)),
            reviewers=relation(User,
                               secondary=RepositoryReview.table,
                               primaryjoin=(Repository.table.c.id == RepositoryReview.table.c.repository_id),
@@ -328,5 +327,4 @@ def init(file_path, url, engine_options={}, create_tables=False):
     # Load local tool shed security policy
     result.security_agent = CommunityRBACAgent(result)
     result.shed_counter = shed_statistics.ShedCounter(result)
-    result.hgweb_config_manager = tool_shed.webapp.util.hgweb_config.HgWebConfigManager()
     return result

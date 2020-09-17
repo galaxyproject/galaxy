@@ -4,7 +4,6 @@ from operator import itemgetter
 from sqlalchemy import and_
 
 from galaxy.tool_shed.util.hg_util import (
-    get_repo_for_repository,
     INITIAL_CHANGELOG_HASH,
     reversed_lower_upper_bounded_changelog,
 )
@@ -77,7 +76,7 @@ def get_dependencies_for_metadata_revision(app, metadata):
 
 
 def get_latest_changeset_revision(app, repository):
-    repository_tip = repository.tip(app)
+    repository_tip = repository.tip()
     repository_metadata = get_repository_metadata_by_changeset_revision(app,
                                                                         app.security.encode_id(repository.id),
                                                                         repository_tip)
@@ -90,7 +89,7 @@ def get_latest_changeset_revision(app, repository):
 
 
 def get_latest_downloadable_changeset_revision(app, repository):
-    repository_tip = repository.tip(app)
+    repository_tip = repository.tip()
     repository_metadata = get_repository_metadata_by_changeset_revision(app, app.security.encode_id(repository.id), repository_tip)
     if repository_metadata and repository_metadata.downloadable:
         return repository_tip
@@ -153,7 +152,7 @@ def get_next_downloadable_changeset_revision(app, repository, after_changeset_re
         if changeset_revision == after_changeset_revision:
             return after_changeset_revision
     found_after_changeset_revision = False
-    repo = get_repo_for_repository(app, repository=repository)
+    repo = repository.hg_repo
     for changeset in repo.changelog:
         changeset_revision = str(repo[changeset])
         if found_after_changeset_revision:
@@ -288,7 +287,7 @@ def get_updated_changeset_revisions(app, name, owner, changeset_revision):
     upper_bound_changeset_revision = get_next_downloadable_changeset_revision(app, repository, changeset_revision)
     # Build the list of changeset revision hashes defining each available update up to, but excluding
     # upper_bound_changeset_revision.
-    repo = get_repo_for_repository(app, repository=repository)
+    repo = repository.hg_repo
     changeset_hashes = []
     for changeset in reversed_lower_upper_bounded_changelog(repo, changeset_revision, upper_bound_changeset_revision):
         # Make sure to exclude upper_bound_changeset_revision.

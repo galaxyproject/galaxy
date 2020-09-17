@@ -3,7 +3,6 @@ Migration script to add 'name' attribute to the JSON dict which describes
 a form definition field and the form values in the database. In the 'form_values'
 table, the 'content' column is now a JSON dict instead of a list.
 """
-from __future__ import print_function
 
 import logging
 from json import (

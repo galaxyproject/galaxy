@@ -4,7 +4,7 @@ import os
 import tempfile
 
 
-class RenamedTemporaryFile(object):
+class RenamedTemporaryFile:
     """
     A temporary file object which will be renamed to the specified
     path on exit.

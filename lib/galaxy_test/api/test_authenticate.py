@@ -13,7 +13,7 @@ class AuthenticationApiTestCase(ApiTestCase):
     def test_auth(self):
         self._setup_user(TEST_USER_EMAIL, TEST_USER_PASSWORD)
         baseauth_url = self._api_url("authenticate/baseauth", use_key=False)
-        unencoded_credentials = "%s:%s" % (TEST_USER_EMAIL, TEST_USER_PASSWORD)
+        unencoded_credentials = "{}:{}".format(TEST_USER_EMAIL, TEST_USER_PASSWORD)
         authorization = base64.b64encode(unencoded_credentials.encode("utf-8"))
         headers = {
             "Authorization": authorization,

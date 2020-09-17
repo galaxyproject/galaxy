@@ -1241,6 +1241,94 @@ galaxy.model.migrate.versions.0154\_created\_from\_basename module
     :undoc-members:
     :show-inheritance:
 
+galaxy.model.migrate.versions.0155\_job\_galaxy\_version module
+---------------------------------------------------------------
+
+.. automodule:: galaxy.model.migrate.versions.0155_job_galaxy_version
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.model.migrate.versions.0156\_add\_interactivetools module
+----------------------------------------------------------------
+
+.. automodule:: galaxy.model.migrate.versions.0156_add_interactivetools
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.model.migrate.versions.0157\_rework\_dataset\_validation module
+----------------------------------------------------------------------
+
+.. automodule:: galaxy.model.migrate.versions.0157_rework_dataset_validation
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.model.migrate.versions.0158\_workflow\_reports module
+------------------------------------------------------------
+
+.. automodule:: galaxy.model.migrate.versions.0158_workflow_reports
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.model.migrate.versions.0159\_add\_job\_external\_id\_index module
+------------------------------------------------------------------------
+
+.. automodule:: galaxy.model.migrate.versions.0159_add_job_external_id_index
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.model.migrate.versions.0160\_hda\_set\_deleted\_if\_purged\_again module
+-------------------------------------------------------------------------------
+
+.. automodule:: galaxy.model.migrate.versions.0160_hda_set_deleted_if_purged_again
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.model.migrate.versions.0161\_add\_workflow\_invocation\_output\_table module
+-----------------------------------------------------------------------------------
+
+.. automodule:: galaxy.model.migrate.versions.0161_add_workflow_invocation_output_table
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.model.migrate.versions.0162\_job\_only\_pjas module
+----------------------------------------------------------
+
+.. automodule:: galaxy.model.migrate.versions.0162_job_only_pjas
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.model.migrate.versions.0163\_worker\_process\_pid module
+---------------------------------------------------------------
+
+.. automodule:: galaxy.model.migrate.versions.0163_worker_process_pid
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.model.migrate.versions.0164\_page\_format module
+-------------------------------------------------------
+
+.. automodule:: galaxy.model.migrate.versions.0164_page_format
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.model.migrate.versions.0165\_add\_content\_update\_time module
+---------------------------------------------------------------------
+
+.. automodule:: galaxy.model.migrate.versions.0165_add_content_update_time
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy.model.migrate.versions.util module
 -----------------------------------------
 

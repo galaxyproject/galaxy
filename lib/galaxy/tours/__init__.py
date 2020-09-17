@@ -26,7 +26,7 @@ def tour_loader(contents_dict):
     return contents_dict
 
 
-class ToursRegistry(object):
+class ToursRegistry:
     def __init__(self, tour_directories):
         self.tour_directories = util.config_directories_from_setting(tour_directories)
         self.load_tours()
@@ -78,7 +78,7 @@ class ToursRegistry(object):
                 self.tours[tour_id] = tour_loader(conf)
                 log.info("Loaded tour '%s'" % tour_id)
                 return tour
-        except IOError:
+        except OSError:
             log.exception("Tour '%s' could not be loaded, error reading file.", tour_id)
         except yaml.error.YAMLError:
             log.exception("Tour '%s' could not be loaded, error within file.  Please check your yaml syntax.", tour_id)

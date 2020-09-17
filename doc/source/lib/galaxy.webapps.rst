@@ -18,14 +18,6 @@ Subpackages
 Submodules
 ----------
 
-galaxy.webapps.config\_manage module
-------------------------------------
-
-.. automodule:: galaxy.webapps.config_manage
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 galaxy.webapps.util module
 --------------------------
 

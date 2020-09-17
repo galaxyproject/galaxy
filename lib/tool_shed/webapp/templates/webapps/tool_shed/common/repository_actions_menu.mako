@@ -22,12 +22,12 @@
         else:
             is_deprecated = False
 
-        if repository.is_new( trans.app ):
+        if repository.is_new():
             is_new = True
         else:
             is_new = False
 
-        if is_malicious( trans.app, trans.security.encode_id( repository.id ), repository.tip( trans.app ) ):
+        if is_malicious( trans.app, trans.security.encode_id( repository.id ), repository.tip() ):
             changeset_is_malicious = True
         else:
             changeset_is_malicious = False
@@ -102,7 +102,7 @@
             can_set_metadata = False
 
         if changeset_revision is not None:
-            if changeset_revision == repository.tip( trans.app ):
+            if changeset_revision == repository.tip():
                 changeset_revision_is_repository_tip = True
             else:
                 changeset_revision_is_repository_tip = False
@@ -148,9 +148,9 @@
                     <a class="action-button" target="galaxy_main" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ) )}">Upload files to repository</a>
                 %endif
                 %if can_administer:
-                    <a class="action-button" target="galaxy_main" href="${h.url_for( controller='repository', action='manage_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip( trans.app ) )}">Manage repository</a>
+                    <a class="action-button" target="galaxy_main" href="${h.url_for( controller='repository', action='manage_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip() )}">Manage repository</a>
                 %else:
-                    <a class="action-button" target="galaxy_main" href="${h.url_for( controller='repository', action='view_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip( trans.app ) )}">View repository</a>
+                    <a class="action-button" target="galaxy_main" href="${h.url_for( controller='repository', action='view_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip() )}">View repository</a>
                 %endif
                 %if can_view_change_log:
                     <a class="action-button" target="galaxy_main" href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">View change log</a>
@@ -180,9 +180,9 @@
                     %if metadata is not None and changeset_revision is not None:
                         <a class="action-button" href="${h.url_for( controller='repository', action='export', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">Export this revision</a>
                     %endif
-                    <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip( trans.app ), file_type='gz' )}">Download as a .tar.gz file</a>
-                    <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip( trans.app ), file_type='bz2' )}">Download as a .tar.bz2 file</a>
-                    <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip( trans.app ), file_type='zip' )}">Download as a zip file</a>
+                    <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip(), file_type='gz' )}">Download as a .tar.gz file</a>
+                    <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip(), file_type='bz2' )}">Download as a .tar.bz2 file</a>
+                    <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip(), file_type='zip' )}">Download as a zip file</a>
                 %endif
             </div>
         %endif

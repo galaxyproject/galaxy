@@ -1,7 +1,6 @@
 """
 Migration script to add the tool_test_errors, do_not_test, tools_functionally_correct, and time_last_tested columns to the repository_metadata table.
 """
-from __future__ import print_function
 
 import logging
 import sys

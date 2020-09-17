@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 class ConfigurationController(BaseAPIController):
 
     def __init__(self, app):
-        super(ConfigurationController, self).__init__(app)
+        super().__init__(app)
         self.config_serializer = configuration.ConfigSerializer(app)
         self.admin_config_serializer = configuration.AdminConfigSerializer(app)
         self.user_manager = users.UserManager(app)
@@ -64,7 +64,7 @@ class ConfigurationController(BaseAPIController):
         extra = {}
         try:
             version_file = os.environ.get("GALAXY_VERSION_JSON_FILE", self.app.container_finder.app_info.galaxy_root_dir + "/version.json")
-            with open(version_file, "r") as f:
+            with open(version_file) as f:
                 extra = json.load(f)
         except Exception:
             pass

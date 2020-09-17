@@ -1,7 +1,6 @@
 """
 This module manages loading of Galaxy webhooks.
 """
-import io
 import logging
 import os
 
@@ -12,7 +11,7 @@ from galaxy.util import config_directories_from_setting
 log = logging.getLogger(__name__)
 
 
-class Webhook(object):
+class Webhook:
     def __init__(self, id, type, activate, weight, path):
         self.id = id
         self.type = type
@@ -36,7 +35,7 @@ class Webhook(object):
         }
 
 
-class WebhooksRegistry(object):
+class WebhooksRegistry:
     def __init__(self, webhooks_dirs):
         self.webhooks = []
         self.webhooks_directories = []
@@ -84,18 +83,18 @@ class WebhooksRegistry(object):
         # single file
         try:
             styles_file = os.path.join(webhook_dir, 'styles.css')
-            with open(styles_file, 'r') as fh:
+            with open(styles_file) as fh:
                 webhook.styles = fh.read().replace('\n', '')
-        except IOError:
+        except OSError:
             pass
 
         # Read script into a string, assuming everything is in a
         # single file
         try:
             script_file = os.path.join(webhook_dir, 'script.js')
-            with io.open(script_file, 'r', encoding='utf-8') as fh:
+            with open(script_file, encoding='utf-8') as fh:
                 webhook.script = fh.read()
-        except IOError:
+        except OSError:
             pass
 
         # Save helper function path if it exists

@@ -8,24 +8,26 @@ import galaxy.tools.data
 import tool_shed.repository_registry
 import tool_shed.repository_types.registry
 import tool_shed.webapp.model
-from galaxy import tools
 from galaxy.config import configure_logging
 from galaxy.model.tags import CommunityTagHandler
 from galaxy.security import idencoding
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web_stack import application_stack_instance
 from tool_shed.grids.repository_grid_filter_manager import RepositoryGridFilterManager
+from tool_shed.util.hgweb_config import hgweb_config_manager
 from . import config
 
 log = logging.getLogger(__name__)
 
 
-class UniverseApplication(object):
+class UniverseApplication:
     """Encapsulates the state of a Universe application"""
 
     def __init__(self, **kwd):
         log.debug("python path is: %s", ", ".join(sys.path))
         self.name = "tool_shed"
+        # will be overwritten when building WSGI app
+        self.is_webapp = False
         # Read the tool_shed.ini configuration file and check for errors.
         self.config = config.Configuration(**kwd)
         self.config.check()
@@ -63,9 +65,7 @@ class UniverseApplication(object):
         # Citation manager needed to load tools.
         from galaxy.managers.citations import CitationsManager
         self.citations_manager = CitationsManager(self)
-        # The Tool Shed makes no use of a Galaxy toolbox, but this attribute is still required.
         self.use_tool_dependency_resolution = False
-        self.toolbox = tools.ToolBox([], self.config.tool_path, self)
         # Initialize the Tool Shed security agent.
         self.security_agent = self.model.security_agent
         # The Tool Shed makes no use of a quota, but this attribute is still required.
@@ -73,7 +73,7 @@ class UniverseApplication(object):
         # Initialize the baseline Tool Shed statistics component.
         self.shed_counter = self.model.shed_counter
         # Let the Tool Shed's HgwebConfigManager know where the hgweb.config file is located.
-        self.hgweb_config_manager = self.model.hgweb_config_manager
+        self.hgweb_config_manager = hgweb_config_manager
         self.hgweb_config_manager.hgweb_config_dir = self.config.hgweb_config_dir
         # Initialize the repository registry.
         self.repository_registry = tool_shed.repository_registry.Registry(self)

@@ -1,7 +1,6 @@
 """
 Migration script to add the job_to_input_library_dataset table.
 """
-from __future__ import print_function
 
 import logging
 

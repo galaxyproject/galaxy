@@ -5,12 +5,10 @@ Unpack a tar or tar.gz archive into a directory.
 usage: %prog archive_source dest_dir
     --[url|file] source type, either a URL or a file.
 """
-from __future__ import print_function
 
 import math
 import optparse
 import os
-import sys
 import tarfile
 import tempfile
 from base64 import b64decode
@@ -26,22 +24,18 @@ def url_to_file(url, dest_file):
     """
     Transfer a file from a remote URL to a temporary file.
     """
-    try:
-        url_reader = requests.get(url, stream=True)
-        CHUNK = 10 * 1024  # 10k
-        total = 0
-        fp = open(dest_file, 'wb')
+    url_reader = requests.get(url, stream=True)
+    assert url_reader.ok, "History import failed, server returned '%s'" % url_reader.reason
+    CHUNK = 10 * 1024  # 10k
+    total = 0
+    with open(dest_file, 'wb') as fp:
         for chunk in url_reader.iter_content(chunk_size=CHUNK):
             if chunk:
                 fp.write(chunk)
                 total += CHUNK
                 if total > MAX_SIZE:
                     break
-        fp.close()
-        return dest_file
-    except Exception as e:
-        print("Exception getting file from URL: %s" % e, file=sys.stderr)
-        return None
+    return dest_file
 
 
 def check_archive(archive_file, dest_dir):
@@ -96,7 +90,4 @@ if __name__ == "__main__":
     parser.add_option('-F', '--file', dest='is_file', action="store_true", help='Source is a file.')
     parser.add_option('-e', '--encoded', dest='is_b64encoded', action="store_true", default=False, help='Source and destination dir values are base64 encoded.')
     (options, args) = parser.parse_args()
-    try:
-        main(options, args)
-    except Exception as e:
-        print("Error unpacking tar/gz archive: %s" % e, file=sys.stderr)
+    main(options, args)

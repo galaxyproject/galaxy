@@ -35,8 +35,7 @@ from galaxy.tools.util import maf_utilities
 
 
 def stop_err(msg):
-    sys.stderr.write(msg)
-    sys.exit()
+    sys.exit(msg)
 
 
 def __main__():

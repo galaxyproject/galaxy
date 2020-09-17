@@ -12,9 +12,27 @@ MOCK_YAML = '''
       mockgalaxy:
         type: map
         mapping:
-          option:
-            attr1: a
-            attr2: b
+          property1:
+            default: a
+            type: str
+            path_resolves_to: foo
+          property2:
+            default: 1
+            type: int
+            reloadable: true
+          property3:
+            default: 1.0
+            type: float
+            reloadable: true
+          property4:
+            default: true
+            type: bool
+            path_resolves_to: foo
+          property5:
+            something_else: b
+            type: invalid
+          property6:
+            something_else: b
     '''
 
 
@@ -29,10 +47,29 @@ def test_schema_is_loaded(monkeypatch):
     monkeypatch.setattr(AppSchema, '_read_schema', mock_read_schema)
     monkeypatch.setattr(OrderedLoader, '__init__', mock_init)
 
-    loaded_schema = AppSchema('no path', 'mockgalaxy')
+    schema = AppSchema('no path', 'mockgalaxy')
     data = ordered_load(MOCK_YAML)
 
-    assert loaded_schema.description == data['desc']
-    assert loaded_schema.raw_schema['foo'] == 'bar'
-    assert loaded_schema.app_schema['option']['attr1'] == 'a'
-    assert loaded_schema.get_app_option('option')['attr2'] == 'b'
+    assert schema.description == data['desc']
+    assert schema.raw_schema['foo'] == 'bar'
+
+    assert len(schema.defaults) == 6
+    assert schema.defaults['property1'] == 'a'
+    assert schema.defaults['property2'] == 1
+    assert schema.defaults['property3'] == 1.0
+    assert schema.defaults['property4'] is True
+    assert schema.defaults['property5'] is None
+    assert schema.defaults['property6'] is None
+
+    assert type(schema.defaults['property1']) is str
+    assert type(schema.defaults['property2']) is int
+    assert type(schema.defaults['property3']) is float
+    assert type(schema.defaults['property4']) is bool
+
+    assert len(schema.reloadable_options) == 2
+    assert 'property2' in schema.reloadable_options
+    assert 'property3' in schema.reloadable_options
+
+    assert len(schema.paths_to_resolve) == 2
+    assert 'property1' in schema.paths_to_resolve
+    assert 'property4' in schema.paths_to_resolve

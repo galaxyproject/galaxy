@@ -1,6 +1,5 @@
 import logging
 
-from six import string_types
 
 import galaxy.model
 from galaxy.util.xml_macros import load
@@ -13,10 +12,9 @@ class ParsingException(ValueError):
     An exception class for errors that occur during parsing of the visualizations
     framework configuration XML file.
     """
-    pass
 
 
-class VisualizationsConfigParser(object):
+class VisualizationsConfigParser:
     """
     Class that parses a visualizations configuration XML file.
 
@@ -187,7 +185,7 @@ class VisualizationsConfigParser(object):
             raise ParsingException('template or entry_point required')
 
         # parse by returning a sub-object and simply copying any attributes unused here
-        entry_point_attrib = entry_point.attrib.copy()
+        entry_point_attrib = dict(entry_point.attrib)
         entry_point_type = entry_point_attrib.pop('entry_point_type', 'mako')
         if entry_point_type not in self.ALLOWED_ENTRY_POINT_TYPES:
             raise ParsingException('Unknown entry_point type: ' + entry_point_type)
@@ -199,7 +197,7 @@ class VisualizationsConfigParser(object):
 
 
 # -------------------------------------------------------------------
-class DataSourceParser(object):
+class DataSourceParser:
     """
     Component class of VisualizationsConfigParser that parses data_source elements
     within visualization elements.
@@ -300,7 +298,7 @@ class DataSourceParser(object):
             test_result = test_elem.text.strip() if test_elem.text else None
             if not test_type or not test_result:
                 log.warning('Skipping test. Needs both type attribute and text node to be parsed: ' +
-                          '%s, %s' % (test_type, test_elem.text))
+                          '{}, {}'.format(test_type, test_elem.text))
                 continue
             test_result = test_result.strip()
 
@@ -308,7 +306,7 @@ class DataSourceParser(object):
             # TODO: too dangerous - constrain these to some allowed list
             # TODO: does this err if no test_attr - it should...
             test_attr = test_elem.get('test_attr')
-            test_attr = test_attr.split(self.ATTRIBUTE_SPLIT_CHAR) if isinstance(test_attr, string_types) else []
+            test_attr = test_attr.split(self.ATTRIBUTE_SPLIT_CHAR) if isinstance(test_attr, str) else []
             # log.debug( 'test_type: %s, test_attr: %s, test_result: %s', test_type, test_attr, test_result )
 
             # build a lambda function that gets the desired attribute to test
@@ -436,7 +434,7 @@ class DictParser(dict):
                 self.update({element.tag: element.text})
 
 
-class ParamParser(object):
+class ParamParser:
     """
     Component class of VisualizationsConfigParser that parses param elements
     within visualization elements.
@@ -515,5 +513,5 @@ class ParamModifierParser(ParamParser):
         modifies = element.get('modifies')
         if not modifies:
             raise ParsingException('param_modifier entry requires a target param key (attribute "modifies")')
-        returned = super(ParamModifierParser, self).parse(element)
+        returned = super().parse(element)
         return returned

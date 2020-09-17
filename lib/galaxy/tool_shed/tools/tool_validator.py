@@ -16,7 +16,7 @@ from galaxy.tools.parameters import dynamic_options
 log = logging.getLogger(__name__)
 
 
-class ToolValidator(object):
+class ToolValidator:
 
     def __init__(self, app):
         self.app = app
@@ -78,6 +78,7 @@ class ToolValidator(object):
         )
         try:
             tool = create_tool_from_source(config_file=full_path, app=self.app, tool_source=tool_source, repository_id=repository_id, allow_code_files=False)
+            tool.assert_finalized(raise_if_invalid=True)
             valid = True
             error_message = None
         except KeyError as e:

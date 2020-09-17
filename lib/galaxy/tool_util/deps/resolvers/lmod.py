@@ -74,7 +74,7 @@ class LmodDependencyResolver(DependencyResolver, MappableDependencyResolver):
         return self.module_checker.has_module(name, version)
 
 
-class AvailModuleChecker(object):
+class AvailModuleChecker:
     """Parses the output of Lmod 'module avail' command to get the list of available modules."""
 
     def __init__(self, lmod_dependency_resolver, modulepath):
@@ -164,7 +164,7 @@ class LmodDependency(Dependency):
         # Get the full module name in the form "tool_name/tool_version"
         module_to_load = self.module_name
         if self.module_version:
-            module_to_load = '%s/%s' % (self.module_name, self.module_version)
+            module_to_load = '{}/{}'.format(self.module_name, self.module_version)
 
         # Build the list of command to add to run script
         # Note that since "module" is actually a bash function, we are directy executing the underlying executable instead
@@ -172,7 +172,7 @@ class LmodDependency(Dependency):
         command = 'MODULEPATH=%s; ' % (self.lmod_dependency_resolver.modulepath)
         command += 'export MODULEPATH; '
         # - Execute the "module load" command (or rather the "/path/to/lmod load" command)
-        command += 'eval `%s load %s` ' % (self.lmod_dependency_resolver.lmodexec, module_to_load)
+        command += 'eval `{} load {}` '.format(self.lmod_dependency_resolver.lmodexec, module_to_load)
         # - Execute the "settarg" command in addition if needed
         if self.lmod_dependency_resolver.settargexec is not None:
             command += '&& eval `%s -s sh`' % (self.lmod_dependency_resolver.settargexec)

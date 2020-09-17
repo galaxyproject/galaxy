@@ -17,7 +17,7 @@ as_dict = json.load(open(input_json_path, "r"))
 
 
 def assert_equals(x, y):
-    assert x == y, "%s != %s" % (x, y)
+    assert x == y, "%s[%s] != %s[%s] " % (x, type(x), y, type(y))
 
 if test_case == "1":
     assert_equals(as_dict["test_case"], 1)
@@ -32,6 +32,7 @@ if test_case == "1":
     assert_equals(as_dict["cond"]["more_text"], "fdefault")
     assert_equals(as_dict["section_example"]["section_text"], "section_default")
     assert_equals(as_dict["data_input"], None)
+    assert_equals(as_dict["multiple_data_input"], [None])
 elif test_case == "2":
     assert_equals(as_dict["test_case"], 2)
     assert_equals(as_dict["text_test"], "bar")
@@ -46,6 +47,9 @@ elif test_case == "2":
     assert_equals(as_dict["section_example"]["section_text"], "section_default")
     data_input = as_dict["data_input"]
     assert data_input is not None
+    multiple_data_input = as_dict["multiple_data_input"]
+    assert type(multiple_data_input) is list
+    assert len(multiple_data_input) == 2
 
 with open("output", "w") as f:
     f.write("okay\n")
@@ -64,6 +68,7 @@ with open("output", "w") as f:
             <option value="c_radio">C Radio</option>
         </param>
         <param name="data_input" type="data" optional="true" />
+        <param name="multiple_data_input" type="data" optional="true" multiple="true" />
         <repeat name="repeat" title="Repeat" min="1">
             <param name="r" type="color" />
         </repeat>
@@ -115,6 +120,7 @@ with open("output", "w") as f:
             <param name="booltest" value="false" />
             <param name="booltest2" value="boolfalse" />
             <param name="data_input" value="simple_line.txt" />
+            <param name="multiple_data_input" value="simple_line.txt,simple_line_alternative.txt" />
             <!-- Testing null integers -->
             <!-- <param name="inttest" value="12456" /> -->
             <param name="r" value="000000" />

@@ -18,13 +18,13 @@ log = logging.getLogger(__name__)
 
 
 # =============================================================================
-class LibraryManager(object):
+class LibraryManager:
     """
     Interface/service object for interacting with libraries.
     """
 
     def __init__(self, *args, **kwargs):
-        super(LibraryManager, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def get(self, trans, decoded_library_id, check_accessible=True):
         """

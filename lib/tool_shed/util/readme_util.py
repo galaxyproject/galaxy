@@ -6,12 +6,18 @@ from mako.template import Template
 
 import tool_shed.util.shed_util_common as suc
 from galaxy import web
-from galaxy.util import rst_to_html, unicodify, url_get
-from tool_shed.util import basic_util
-from tool_shed.util import common_util
-from tool_shed.util import hg_util
-from tool_shed.util import metadata_util
-from tool_shed.util import repository_util
+from galaxy.util import (
+    rst_to_html,
+    unicodify,
+    url_get,
+)
+from tool_shed.util import (
+    basic_util,
+    common_util,
+    hg_util,
+    metadata_util,
+    repository_util,
+)
 
 log = logging.getLogger(__name__)
 
@@ -39,9 +45,8 @@ def build_readme_files_dict(app, repository, changeset_revision, metadata, tool_
                         full_path_to_readme_file = os.path.abspath(relative_path_to_readme_file)
                     text = None
                     try:
-                        f = open(full_path_to_readme_file, 'r')
-                        text = unicodify(f.read())
-                        f.close()
+                        with open(full_path_to_readme_file, encoding='utf-8') as f:
+                            text = f.read()
                     except Exception:
                         log.exception("Error reading README file '%s' from disk", relative_path_to_readme_file)
                         text = None
@@ -68,7 +73,7 @@ def build_readme_files_dict(app, repository, changeset_revision, metadata, tool_
                         readme_files_dict[readme_file_name] = text_of_reasonable_length
                 else:
                     # We must be in the tool shed and have an old changeset_revision, so we need to retrieve the file contents from the repository manifest.
-                    repo = hg_util.get_repo_for_repository(app, repository=repository)
+                    repo = repository.hg_repo
                     ctx = hg_util.get_changectx_for_changeset(repo, changeset_revision)
                     if ctx:
                         fctx = hg_util.get_file_context_from_ctx(ctx, readme_file_name)
@@ -94,6 +99,6 @@ def get_readme_files_dict_for_display(app, tool_shed_url, repo_info_dict):
     tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(app, tool_shed_url)
     params = dict(name=name, owner=repository_owner, changeset_revision=changeset_revision)
     pathspec = ['repository', 'get_readme_files']
-    raw_text = url_get(tool_shed_url, password_mgr=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+    raw_text = url_get(tool_shed_url, auth=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
     readme_files_dict = json.loads(raw_text)
     return readme_files_dict

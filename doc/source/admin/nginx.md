@@ -124,7 +124,7 @@ http {
 
         # proxy all requests not matching other locations to uWSGI
         location / {
-            uwsgi_pass unix:///srv/galaxy/var/uwsgi.sock
+            uwsgi_pass unix:///srv/galaxy/var/uwsgi.sock;
             uwsgi_param UWSGI_SCHEME $scheme;
             include uwsgi_params;
         }

@@ -19,8 +19,7 @@ assert sys.version_info[:2] >= (2, 4)
 
 
 def stop_err(msg):
-    sys.stderr.write("%s" % msg)
-    sys.exit()
+    sys.exit("%s" % msg)
 
 
 def __main__():
@@ -88,7 +87,7 @@ def __main__():
                         stop_err('Invalid fastqsolexa format at line %d: the number of quality scores ( %d ) is not the same as bases ( %d ).' % (i + 1, quality_score_length, read_length))
                     for j, char in enumerate(line):
                         score = ord(char) - quality_score_startswith    # 64
-                        qual = "%s%s " % (qual, str(score))
+                        qual = "{}{} ".format(qual, str(score))
                 outfile_score.write('%s\n' % qual)
 
 

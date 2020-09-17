@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # Dan Blankenberg
-from __future__ import print_function
 
 import sys
 
@@ -10,8 +9,7 @@ assert sys.version_info[:2] >= (2, 6)
 
 
 def stop_err(msg):
-    sys.stderr.write(msg)
-    sys.exit()
+    sys.exit(msg)
 
 
 def force_bed_field_count(fields, region_count, force_num_columns):
@@ -129,7 +127,7 @@ def __main__():
         skipped_lines = 0
         first_skipped_line = None
         count = 0
-        with open(input_name, 'r') as fh, open(output_name, 'w') as out:
+        with open(input_name) as fh, open(output_name, 'w') as out:
             for count, region in enumerate(bx.intervals.io.NiceReaderWrapper(fh, chrom_col=chromCol, start_col=startCol, end_col=endCol, strand_col=strandCol, fix_strand=True, return_header=False, return_comments=False)):
                 try:
                     if nameCol >= 0:

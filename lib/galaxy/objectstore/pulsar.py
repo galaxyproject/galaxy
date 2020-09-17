@@ -1,6 +1,4 @@
-from __future__ import absolute_import  # Need to import pulsar_client absolutely.
-
-from ..objectstore import ObjectStore
+from ..objectstore import BaseObjectStore
 
 try:
     from pulsar.client.manager import ObjectStoreClientManager
@@ -8,7 +6,7 @@ except ImportError:
     ObjectStoreClientManager = None
 
 
-class PulsarObjectStore(ObjectStore):
+class PulsarObjectStore(BaseObjectStore):
     """
     Object store implementation that delegates to a remote Pulsar server.
 
@@ -26,38 +24,38 @@ class PulsarObjectStore(ObjectStore):
     def __init__(self, config, config_xml):
         self.pulsar_client = self.__build_pulsar_client(config_xml)
 
-    def exists(self, obj, **kwds):
+    def _exists(self, obj, **kwds):
         return self.pulsar_client.exists(**self.__build_kwds(obj, **kwds))
 
     def file_ready(self, obj, **kwds):
         return self.pulsar_client.file_ready(**self.__build_kwds(obj, **kwds))
 
-    def create(self, obj, **kwds):
+    def _create(self, obj, **kwds):
         return self.pulsar_client.create(**self.__build_kwds(obj, **kwds))
 
-    def empty(self, obj, **kwds):
+    def _empty(self, obj, **kwds):
         return self.pulsar_client.empty(**self.__build_kwds(obj, **kwds))
 
-    def size(self, obj, **kwds):
+    def _size(self, obj, **kwds):
         return self.pulsar_client.size(**self.__build_kwds(obj, **kwds))
 
-    def delete(self, obj, **kwds):
+    def _delete(self, obj, **kwds):
         return self.pulsar_client.delete(**self.__build_kwds(obj, **kwds))
 
     # TODO: Optimize get_data.
-    def get_data(self, obj, **kwds):
+    def _get_data(self, obj, **kwds):
         return self.pulsar_client.get_data(**self.__build_kwds(obj, **kwds))
 
-    def get_filename(self, obj, **kwds):
+    def _get_filename(self, obj, **kwds):
         return self.pulsar_client.get_filename(**self.__build_kwds(obj, **kwds))
 
-    def update_from_file(self, obj, **kwds):
+    def _update_from_file(self, obj, **kwds):
         return self.pulsar_client.update_from_file(**self.__build_kwds(obj, **kwds))
 
-    def get_store_usage_percent(self):
+    def _get_store_usage_percent(self):
         return self.pulsar_client.get_store_usage_percent()
 
-    def get_object_url(self, obj, extra_dir=None, extra_dir_at_root=False, alt_name=None):
+    def _get_object_url(self, obj, extra_dir=None, extra_dir_at_root=False, alt_name=None):
         return None
 
     def __build_kwds(self, obj, **kwds):

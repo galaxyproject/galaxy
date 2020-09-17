@@ -4,14 +4,10 @@ statistics for a given pid's process and process ancestors.
 import collections
 import csv
 import logging
-import sys
 import tempfile
 
 from galaxy import util
 from ..collectl import stats
-
-if sys.version_info > (3,):
-    long = int
 
 log = logging.getLogger(__name__)
 
@@ -68,7 +64,7 @@ PROCESS_COLUMNS = [
 # Types of statistics this module can summarize
 STATISTIC_TYPES = ["max", "min", "sum", "count", "avg"]
 
-COLUMN_INDICES = dict([(col, i) for i, col in enumerate(PROCESS_COLUMNS)])
+COLUMN_INDICES = {col: i for i, col in enumerate(PROCESS_COLUMNS)}
 PID_INDEX = COLUMN_INDICES["PID"]
 PARENT_PID_INDEX = COLUMN_INDICES["PPID"]
 
@@ -111,7 +107,7 @@ def generate_process_statistics(collectl_playback_cli, pid, statistics=DEFAULT_S
     """
     with tempfile.NamedTemporaryFile() as tmp_tsv:
         collectl_playback_cli.run(stdout=tmp_tsv)
-        with open(tmp_tsv.name, "r") as tsv_file:
+        with open(tmp_tsv.name) as tsv_file:
             return _read_process_statistics(tsv_file, pid, statistics)
 
 
@@ -142,7 +138,7 @@ def _read_process_statistics(tsv_file, pid, statistics):
     return process_summarizer.get_statistics()
 
 
-class CollectlProcessSummarizer(object):
+class CollectlProcessSummarizer:
 
     def __init__(self, pid, statistics):
         self.pid = pid
@@ -169,7 +165,7 @@ class CollectlProcessSummarizer(object):
                 if column_name in ["SysT", "UsrT", "PCT"]:
                     to_num = float
                 else:
-                    to_num = long
+                    to_num = int
 
                 interval_stat = sum(to_num(r[column_index]) for r in rows)
                 self.tree_statistics[column_name].track(interval_stat)
@@ -226,7 +222,7 @@ class CollectlProcessSummarizer(object):
         return seconds
 
 
-class CollectlProcessInterval(object):
+class CollectlProcessInterval:
     """ Represent all rows in collectl playback file for given time slice with
     ability to filter out just rows corresponding to the process tree
     corresponding to a given pid.

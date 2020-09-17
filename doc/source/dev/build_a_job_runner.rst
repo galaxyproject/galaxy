@@ -4,8 +4,8 @@ Build a job runner
 A walk through the steps of building a runner for Galaxy
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In this tutorial, we would build the runner in a block by block fashion
-(like the building blocks), so we would divide the runner into
+In this tutorial, we will build a runner in a block by block fashion
+(like building blocks), so we will divide the runner into
 components based on their function.
 
 We assume you are familiar with setting up and managing a local installation of Galaxy.
@@ -24,7 +24,7 @@ has the base runner implementation. To create a new runner, that base
 runner must be inherited and only certain methods need to be
 overridden with your logic.
 
-These are the following methods which need to be implemented: 
+These are the methods that need to be implemented:
 
 1. ``__init__(app, nworkers, **kwargs)``
 
@@ -39,11 +39,11 @@ These are the following methods which need to be implemented:
 The big picture
 ---------------
 
-The above methods are invoked at various state of a job execution in
+The above methods are invoked at various stages of job execution in
 Galaxy. These methods will act as a mediator between the Galaxy
-framework and the external executor framework. To know, when and how
-these methods are invoked, we will see about the implementation of
-parent class and process lifecycle of the runner.
+framework and the external execution platform. To know when and how
+these methods are invoked, we will look at the implementation of
+the parent class and process lifecycle of a runner.
 
 Implementation of parent class (``galaxy.jobs.runners.__init__.py``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -58,8 +58,8 @@ Implementation of parent class (``galaxy.jobs.runners.__init__.py``)
 
    .. image:: runner_diag.png
 
-The whole process is divided into different stages for understanding
-purpose.
+The whole process is divided into different stages for ease of
+understanding.
 
 Runner Methods in detail
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -171,10 +171,10 @@ methods for running processes and state management.
    job. Initial state and configuration of the job are set and every
    data is associated with **job\_wrapper**.
 
-B. Submit job to the external runner and return the jobid. Accessing
-jobs data (tool submitted in Galaxy webframework) is purely from
-``job_wrapper``. eg: ``job_wrapper.get_state()`` -> gives state of a job
-(queued/running/failed/success/...)
+    B. Submit job to the external runner and return the jobid. Accessing
+    jobs data (tool submitted in Galaxy webframework) is purely from
+    ``job_wrapper``. eg: ``job_wrapper.get_state()`` -> gives state of a job
+    (queued/running/failed/success/...)
 
 Let us look at a means of accessing external runner's configuration
 present under destination tag of ``job_conf.xml`` in the above example.
@@ -198,9 +198,9 @@ functionality. We can use the following statement:
 Note: This pre-written method is only for getting the external
 image/container/os..
 
-C. After successful submission of job in the external runner, submit the
-job to Galaxy framework. To do that,make an object of
-AsynchronousJobState and put it in ``monitor_queue``.
+C. After successful submission of a job to the external runner, submit the
+job to the Galaxy framework. To do that, make an object of type
+AsynchronousJobState and put it in the ``monitor_queue``.
 
 .. code-block:: python
 
@@ -221,7 +221,7 @@ Without going into much detail, assume there is a queue to track the status of e
     :align: center
 
 The galaxy framework updates the status of a job by iterating through the
-queue. During the iteration, it calls ``check_watched_item`` method with the job.
+queue. During the iteration, it calls the ``check_watched_item`` method with the job.
 Your responsibility will be to get the status of execution of the job from the
 external runner and return the updated status of the job, and also to
 copy the output files for the completed jobs.
@@ -232,7 +232,7 @@ Updated result after an iteration (after invocation of ``check_watched_item`` 6 
     :align: center
 
 
-Note: Iterating through the queue is already taken care by the framework.
+Note: Iterating through the queue is already taken care of by the framework.
 
 To inform Galaxy about the status of the job:
 
@@ -276,7 +276,7 @@ Note:
 
 -  ``get_task_from_external_runner`` and ``create_log_files`` are user-defined methods.
 
--  Return value is ``job_state`` for running, pending jobs and None for rest of the states of jobs.
+-  Return value is ``job_state`` for running, pending jobs and None for any remaining states of a job.
 
 ``create_log_files()`` are nothing but copying the files (``error_file``,
 ``output_file``, ``exit_code_file``) from the external runner's directory to
@@ -299,10 +299,10 @@ Input params: job (Object of
 
 Output params: None
 
-Functionality: Attempts to delete a dispatched executing Job in external
+Functionality: Attempts to delete a dispatched Job executing in an external
 runner.
 
-When an user requests to stop the execution of job in Galaxy framework,
+When a user requests that the execution of a job in the Galaxy framework be stopped,
 a call is made to the external runner to stop the job execution.
 
 The ``job_id`` of the job to be deleted is accessed by
@@ -323,14 +323,14 @@ Input params:
 
 Output params: None
 
-Functionality: Recovers jobs stuck in the queued/running state when
-Galaxy started.
+Functionality: Recovers any jobs stuck in a queued/running state when
+Galaxy was started.
 
 This method is invoked by Galaxy at the time of startup. Jobs in Running
 & Queued status in Galaxy are put in the ``monitor_queue`` by creating an
 ``AsynchronousJobState`` object.
 
-The following is a generic code snippet for ``recover`` method.
+The following is a generic code snippet for the ``recover`` method.
 
 .. code-block:: python
 

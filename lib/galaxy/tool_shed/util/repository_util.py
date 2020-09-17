@@ -5,7 +5,12 @@ import shutil
 
 from markupsafe import escape
 from six.moves.urllib.error import HTTPError
-from sqlalchemy import and_, false, or_
+from sqlalchemy import (
+    and_,
+    false,
+    or_,
+)
+from sqlalchemy.orm import joinedload
 
 from galaxy import util
 from galaxy import web
@@ -279,7 +284,7 @@ def get_repo_info_tuple_contents(repo_info_tuple):
 
 
 def get_repository_admin_role_name(repository_name, repository_owner):
-    return '%s_%s_admin' % (str(repository_name), str(repository_owner))
+    return '{}_{}_admin'.format(str(repository_name), str(repository_owner))
 
 
 def get_repository_and_repository_dependencies_from_repo_info_dict(app, repo_info_dict):
@@ -307,7 +312,7 @@ def get_repository_by_id(app, id):
         return sa_session.query(app.model.Repository).get(app.security.decode_id(id))
 
 
-def get_repository_by_name_and_owner(app, name, owner):
+def get_repository_by_name_and_owner(app, name, owner, eagerload_columns=None):
     """Get a repository from the database via name and owner"""
     repository_query = get_repository_query(app)
     if is_tool_shed_client(app):
@@ -316,13 +321,16 @@ def get_repository_by_name_and_owner(app, name, owner):
                          app.install_model.ToolShedRepository.table.c.owner == owner)) \
             .first()
     # We're in the tool shed.
-    user = common_util.get_user_by_username(app, owner)
-    if user:
-        return repository_query \
-            .filter(and_(app.model.Repository.table.c.name == name,
-                         app.model.Repository.table.c.user_id == user.id)) \
-            .first()
-    return None
+    q = repository_query.filter(
+        and_(
+            app.model.Repository.table.c.name == name,
+            app.model.User.table.c.username == owner,
+            app.model.Repository.table.c.user_id == app.model.User.table.c.id
+        )
+    )
+    if eagerload_columns:
+        q = q.options(joinedload(*eagerload_columns))
+    return q.first()
 
 
 def get_repository_by_name(app, name):
@@ -392,7 +400,7 @@ def get_repository_for_dependency_relationship(app, tool_shed, name, owner, chan
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(app, tool_shed)
         params = dict(name=name, owner=owner, changeset_revision=changeset_revision)
         pathspec = ['repository', 'next_installable_changeset_revision']
-        text = util.url_get(tool_shed_url, password_mgr=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+        text = util.url_get(tool_shed_url, auth=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
         if text:
             repository = get_installed_repository(app=app,
                                                   tool_shed=tool_shed,
@@ -454,9 +462,12 @@ def get_repository_ids_requiring_prior_import_or_install(app, tsr_ids, repositor
     return prior_tsr_ids
 
 
-def get_repository_in_tool_shed(app, id):
+def get_repository_in_tool_shed(app, id, eagerload_columns=None):
     """Get a repository on the tool shed side from the database via id."""
-    return get_repository_query(app).get(app.security.decode_id(id))
+    q = get_repository_query(app)
+    if eagerload_columns:
+        q = q.options(joinedload(*eagerload_columns))
+    return q.get(app.security.decode_id(id))
 
 
 def get_repository_owner(cleaned_repository_url):
@@ -512,7 +523,7 @@ def get_tool_shed_status_for_installed_repository(app, repository):
     params = dict(name=repository.name, owner=repository.owner, changeset_revision=repository.changeset_revision)
     pathspec = ['repository', 'status_for_installed_repository']
     try:
-        encoded_tool_shed_status_dict = util.url_get(tool_shed_url, password_mgr=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+        encoded_tool_shed_status_dict = util.url_get(tool_shed_url, auth=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
         tool_shed_status_dict = encoding_util.tool_shed_decode(encoded_tool_shed_status_dict)
         return tool_shed_status_dict
     except HTTPError as e:
@@ -524,7 +535,7 @@ def get_tool_shed_status_for_installed_repository(app, repository):
         params['from_update_manager'] = True
         try:
             # The value of text will be 'true' or 'false', depending upon whether there is an update available for the installed revision.
-            text = util.url_get(tool_shed_url, password_mgr=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+            text = util.url_get(tool_shed_url, auth=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
             return dict(revision_update=text)
         except Exception:
             # The required tool shed may be unavailable, so default the revision_update value to 'false'.
@@ -573,7 +584,7 @@ def repository_was_previously_installed(app, tool_shed_url, repository_name, rep
                   changeset_revision=changeset_revision,
                   from_tip=str(from_tip))
     pathspec = ['repository', 'previous_changeset_revisions']
-    text = util.url_get(tool_shed_url, password_mgr=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+    text = util.url_get(tool_shed_url, auth=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
     if text:
         changeset_revisions = util.listify(text)
         for previous_changeset_revision in changeset_revisions:

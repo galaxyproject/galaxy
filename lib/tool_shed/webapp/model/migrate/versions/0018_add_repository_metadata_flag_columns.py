@@ -2,7 +2,6 @@
 Migration script to alter the repository_metadata table by dropping the tool_test_errors column and adding columns
 tool_test_results, missing_test_components.
 """
-from __future__ import print_function
 
 import logging
 import sys

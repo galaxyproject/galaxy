@@ -1,6 +1,5 @@
 import os
 from unittest import TestCase
-from xml.etree.ElementTree import XML
 
 from galaxy.job_execution.datasets import DatasetPath
 from galaxy.jobs import SimpleComputeEnvironment
@@ -26,6 +25,7 @@ from galaxy.tools.parameters.grouping import (
     ConditionalWhen,
     Repeat
 )
+from galaxy.util import XML
 from galaxy.util.bunch import Bunch
 # Test fixtures for Galaxy infrastructure.
 from ..tools_support import UsesApp

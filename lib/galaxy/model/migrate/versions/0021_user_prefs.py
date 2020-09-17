@@ -1,7 +1,6 @@
 """
 This migration script adds a user preferences table to Galaxy.
 """
-from __future__ import print_function
 
 import logging
 

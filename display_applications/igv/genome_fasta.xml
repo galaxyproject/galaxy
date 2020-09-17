@@ -70,10 +70,10 @@
 </jnlp>
 ]]>
         </param>
-        <param type="data" name="fai_file" dataset="fasta_file" url="galaxy_${DATASET_HASH}.fasta.fai" format="fai" />
+        <param type="data" name="fai_file" dataset="fasta_file" url="galaxy_${DATASET_HASH}.${fasta_file.ext}.fai" format="fai" />
         <param type="template" name="redirect_url" strip="True" >
             #if $site_id.startswith( 'local_' )
-                ${site_link}?genome=${fasta_file.qp}&amp;merge=true&amp;name=name=${qp( ( $fasta_file.name or $DATASET_HASH ).replace( ',', ';' ) )}
+                ${site_link}?genome=${fasta_file.qp}&amp;merge=true&amp;name=${qp( ( $fasta_file.name or $DATASET_HASH ).replace( ',', ';' ) )}
             #elif $site_id.startswith( 'web_link_' ):
 ${site_link}?sessionURL=${fasta_file.qp}&amp;genome=${fasta_file.qp}&amp;merge=true&amp;name=${qp( ( $fasta_file.name or $DATASET_HASH ).replace( ',', ';' ) )}
             #else:

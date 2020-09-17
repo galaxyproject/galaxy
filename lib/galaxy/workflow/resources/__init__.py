@@ -29,7 +29,7 @@ def get_resource_mapper_function(app):
         return functools.partial(raw_function, workflow_resource_params=workflow_resource_params)
     else:
         workflow_resource_params = _read_defined_parameter_definitions(config)
-        with open(mapper, "r") as f:
+        with open(mapper) as f:
             mapper_definition = yaml.safe_load(f)
 
         if "by_group" in mapper_definition:
@@ -153,7 +153,6 @@ def validate_by_group_workflow_parameters_mapper(by_group, workflow_resource_par
     except Exception as e:
         log.exception(e)
         valid = False
-        pass
 
     return valid
 
@@ -169,7 +168,7 @@ def _import_resource_mapping_function(qualified_function_path):
     if hasattr(module, function_name):
         return getattr(module, function_name)
     else:
-        raise Exception("Failed to find workflow resource mapper function %s.%s" % (full_module_name, function_name))
+        raise Exception("Failed to find workflow resource mapper function {}.{}".format(full_module_name, function_name))
 
 
 def _null_mapper_function(*args, **kwds):

@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import gzip
 import io
 import logging
@@ -58,14 +56,30 @@ def get_fileobj_raw(filename, mode="r", compressed_formats=None):
     elif 'b' in mode:
         return compressed_format, open(filename, mode)
     else:
-        return compressed_format, io.open(filename, mode, encoding='utf-8')
+        return compressed_format, open(filename, mode, encoding='utf-8')
     if 'b' not in mode:
         return compressed_format, io.TextIOWrapper(fh, encoding='utf-8')
     else:
         return compressed_format, fh
 
 
-class CompressedFile(object):
+def file_iter(fname, sep=None):
+    """
+    This generator iterates over a file and yields its lines
+    splitted via the C{sep} parameter. Skips empty lines and lines starting with
+    the C{#} character.
+
+    >>> lines = [ line for line in file_iter(__file__) ]
+    >>> len(lines) !=  0
+    True
+    """
+    with get_fileobj(fname) as fh:
+        for line in fh:
+            if line and line[0] != '#':
+                yield line.split(sep)
+
+
+class CompressedFile:
 
     @staticmethod
     def can_decompress(file_path):
@@ -151,7 +165,7 @@ class CompressedFile(object):
                 if finfo.issym() or finfo.islnk():
                     link_target = os.path.join(os.path.dirname(finfo.name), finfo.linkname)
                     if not safe_relpath(link_target) or not os.path.normpath(link_target).startswith(common_prefix_dir):
-                        raise Exception("Link '%s' to '%s' is blocked." % (finfo.name, finfo.linkname))
+                        raise Exception("Link '{}' to '{}' is blocked.".format(finfo.name, finfo.linkname))
                 yield finfo
         elif self.file_type == "zip":
             for name in members.namelist():

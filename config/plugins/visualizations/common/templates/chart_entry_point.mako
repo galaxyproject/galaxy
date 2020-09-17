@@ -1,19 +1,17 @@
 # -*- coding: utf-8 -*-
 <%inherit file="visualization_base.mako"/>
 <%def name="stylesheets()">
-    ${h.css('jquery-ui/smoothness/jquery-ui')}
-    ${h.css('base')}
+    ${h.dist_css('base')}
     <%css_path = script_attributes.get("css") %>
     %if css_path is not None:
         <link rel="stylesheet" href="${static_url}${css_path}">
     %endif
 </%def>
 <%def name="javascripts()">
-    ${h.js('libs/jquery/jquery',
-           'libs/jquery/jquery-ui',
-           'bundled/libs.chunk',
-           'bundled/base.chunk',
-           'bundled/generic.bundled')}
+    ${h.dist_js(
+           'libs.chunk',
+           'base.chunk',
+           'generic.bundled')}
     <%src_path = script_attributes.get("src") %>
     <script type="text/javascript" src="${static_url}${src_path}"></script>
     <script type="text/javascript">

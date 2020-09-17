@@ -11,7 +11,6 @@ new association tables:
 2) library_folder_info_association
 3) library_dataset_dataset_info_association
 """
-from __future__ import print_function
 
 import logging
 

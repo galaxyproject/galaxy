@@ -21,7 +21,7 @@ class CloudAuthzManager(sharable.SharableModelManager):
     foreign_key_name = 'cloudauthz'
 
     def __init__(self, app, *args, **kwargs):
-        super(CloudAuthzManager, self).__init__(app, *args, **kwargs)
+        super().__init__(app, *args, **kwargs)
 
 
 class CloudAuthzsSerializer(base.ModelSerializer):
@@ -31,7 +31,7 @@ class CloudAuthzsSerializer(base.ModelSerializer):
     model_manager_class = CloudAuthzManager
 
     def __init__(self, app, **kwargs):
-        super(CloudAuthzsSerializer, self).__init__(app, **kwargs)
+        super().__init__(app, **kwargs)
         self.cloudauthzs_manager = self.manager
 
         self.default_view = 'summary'
@@ -49,7 +49,7 @@ class CloudAuthzsSerializer(base.ModelSerializer):
         ])
 
     def add_serializers(self):
-        super(CloudAuthzsSerializer, self).add_serializers()
+        super().add_serializers()
 
         # Arguments of the following lambda functions:
         # i  : an instance of galaxy.model.CloudAuthz.
@@ -77,7 +77,7 @@ class CloudAuthzsDeserializer(base.ModelDeserializer):
     model_manager_class = CloudAuthzManager
 
     def add_deserializers(self):
-        super(CloudAuthzsDeserializer, self).add_deserializers()
+        super().add_deserializers()
         self.deserializers.update({
             'authn_id': self.deserialize_and_validate_authn_id,
             'provider': self.default_deserializer,

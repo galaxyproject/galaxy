@@ -38,7 +38,7 @@ ALL_CONTAINER_TYPES = [DOCKER_CONTAINER_TYPE, SINGULARITY_CONTAINER_TYPE]
 ResolvedContainerDescription = collections.namedtuple('ResolvedContainerDescription', ['container_resolver', 'container_description'])
 
 
-class ContainerFinder(object):
+class ContainerFinder:
 
     def __init__(self, app_info, mulled_resolution_cache=None):
         self.app_info = app_info
@@ -140,14 +140,14 @@ class ContainerFinder(object):
     def __build_container_id_from_parts(self, container_type, destination_info, mode):
         repo = ""
         owner = ""
-        repo_key = "%s_repo_%s" % (container_type, mode)
-        owner_key = "%s_owner_%s" % (container_type, mode)
+        repo_key = "{}_repo_{}".format(container_type, mode)
+        owner_key = "{}_owner_{}".format(container_type, mode)
         if repo_key in destination_info:
             repo = destination_info[repo_key] + "/"
         if owner_key in destination_info:
             owner = destination_info[owner_key] + "/"
-        cont_id = repo + owner + destination_info["%s_image_%s" % (container_type, mode)]
-        tag_key = "%s_tag_%s" % (container_type, mode)
+        cont_id = repo + owner + destination_info["{}_image_{}".format(container_type, mode)]
+        tag_key = "{}_tag_{}".format(container_type, mode)
         if tag_key in destination_info:
             cont_id += ":" + destination_info[tag_key]
         return cont_id
@@ -180,13 +180,13 @@ class ContainerFinder(object):
         return asbool(destination_info.get("%s_enabled" % container_type, False))
 
 
-class NullContainerFinder(object):
+class NullContainerFinder:
 
     def find_container(self, tool_info, destination_info, job_info):
         return []
 
 
-class ContainerRegistry(object):
+class ContainerRegistry:
     """Loop through enabled ContainerResolver plugins and find first match."""
 
     def __init__(self, app_info, mulled_resolution_cache=None):
@@ -204,9 +204,9 @@ class ContainerRegistry(object):
             log.debug("Unable to find config file '%s'", conf_file)
             return self.__default_containers_resolvers()
         plugin_source = plugin_config.plugin_source_from_path(conf_file)
-        return self.__parse_resolver_conf_xml(plugin_source)
+        return self._parse_resolver_conf(plugin_source)
 
-    def __parse_resolver_conf_xml(self, plugin_source):
+    def _parse_resolver_conf(self, plugin_source):
         extra_kwds = {
             'app_info': self.app_info
         }
@@ -236,7 +236,11 @@ class ContainerRegistry(object):
 
     def find_best_container_description(self, enabled_container_types, tool_info, **kwds):
         """Yield best container description of supplied types matching tool info."""
-        resolved_container_description = self.resolve(enabled_container_types, tool_info, **kwds)
+        try:
+            resolved_container_description = self.resolve(enabled_container_types, tool_info, **kwds)
+        except Exception:
+            log.exception("Could not get container description for tool '%s'", tool_info.tool_id)
+            return None
         return None if resolved_container_description is None else resolved_container_description.container_description
 
     def resolve(self, enabled_container_types, tool_info, index=None, resolver_type=None, install=True, resolution_cache=None):
@@ -255,7 +259,7 @@ class ContainerRegistry(object):
                 continue
 
             container_description = container_resolver.resolve(enabled_container_types, tool_info, resolution_cache=resolution_cache)
-            log.info("Checking with container resolver [%s] found description [%s]" % (container_resolver, container_description))
+            log.info("Checking with container resolver [{}] found description [{}]".format(container_resolver, container_description))
             if container_description:
                 assert container_description.type in enabled_container_types
                 return ResolvedContainerDescription(container_resolver, container_description)

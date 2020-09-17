@@ -7,7 +7,7 @@ Owned models can be modified and deleted.
 from galaxy import exceptions
 
 
-class AccessibleManagerMixin(object):
+class AccessibleManagerMixin:
     """
     A security interface to check if a User can read/view an item's.
 
@@ -65,7 +65,7 @@ class AccessibleManagerMixin(object):
         # return filter( lambda item: self.is_accessible( trans, item, user ), items )
 
 
-class OwnableManagerMixin(object):
+class OwnableManagerMixin:
     """
     A security interface to check if a User is an item's owner.
 

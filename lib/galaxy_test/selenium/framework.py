@@ -1,6 +1,4 @@
 """Basis for Selenium test framework."""
-from __future__ import absolute_import
-from __future__ import print_function
 
 import datetime
 import json
@@ -27,11 +25,15 @@ from galaxy.selenium.navigates_galaxy import (
     NavigatesGalaxy,
     retry_during_transitions
 )
-from galaxy.util import asbool
+from galaxy.util import asbool, classproperty
 from galaxy_test.base import populators
-from galaxy_test.driver.api import UsesApiTestCaseMixin
-from galaxy_test.driver.driver_util import classproperty, DEFAULT_WEB_HOST, get_ip_address
-from galaxy_test.driver.testcase import FunctionalTestCase
+from galaxy_test.base.api import UsesApiTestCaseMixin
+from galaxy_test.base.env import DEFAULT_WEB_HOST, get_ip_address
+from galaxy_test.base.testcase import FunctionalTestCase
+try:
+    from galaxy_test.driver.driver_util import GalaxyTestDriver
+except ImportError:
+    GalaxyTestDriver = None
 
 DEFAULT_TIMEOUT_MULTIPLIER = 1
 DEFAULT_TEST_ERRORS_DIRECTORY = os.path.abspath("database/test_errors")
@@ -42,6 +44,8 @@ DEFAULT_SELENIUM_REMOTE_HOST = "127.0.0.1"
 DEFAULT_SELENIUM_HEADLESS = "auto"
 DEFAULT_ADMIN_USER = "test@bx.psu.edu"
 DEFAULT_ADMIN_PASSWORD = "testpass"
+DEFAULT_DOWNLOAD_PATH = driver_factory.DEFAULT_DOWNLOAD_PATH
+
 
 TIMEOUT_MULTIPLIER = float(os.environ.get("GALAXY_TEST_TIMEOUT_MULTIPLIER", DEFAULT_TIMEOUT_MULTIPLIER))
 GALAXY_TEST_ERRORS_DIRECTORY = os.environ.get("GALAXY_TEST_ERRORS_DIRECTORY", DEFAULT_TEST_ERRORS_DIRECTORY)
@@ -157,7 +161,7 @@ def selenium_test(f):
                 dump_test_information(self, test_name)
                 if retry_attempts < GALAXY_TEST_SELENIUM_RETRIES:
                     retry_attempts += 1
-                    print("Test function [%s] threw an exception, retrying. Failed attempts - %s." % (test_name, retry_attempts))
+                    print("Test function [{}] threw an exception, retrying. Failed attempts - {}.".format(test_name, retry_attempts))
                 else:
                     raise
 
@@ -167,7 +171,7 @@ def selenium_test(f):
 retry_assertion_during_transitions = partial(retry_during_transitions, exception_check=lambda e: isinstance(e, AssertionError))
 
 
-class TestSnapshot(object):
+class TestSnapshot:
 
     def __init__(self, driver, index, description):
         self.screenshot_binary = driver.get_screenshot_as_png()
@@ -183,7 +187,7 @@ class TestSnapshot(object):
         write_file_func("%s-stack.txt" % prefix, str(self.stack))
 
 
-class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin):
+class TestWithSeleniumMixin(NavigatesGalaxy, UsesApiTestCaseMixin):
     # If run one-off via nosetests, the next line ensures test
     # tools and datatypes are used instead of configured tools.
     framework_tool_and_types = True
@@ -193,16 +197,24 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin
     # GALAXY_TEST_SELENIUM_USER_PASSWORD are set these values
     # will be used to login.
     ensure_registered = False
+
+    # Override this in subclasses to annotate that an admin user
+    # is required for the test to run properly. Override admin user
+    # login info with GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL /
+    # GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD
     requires_admin = False
 
-    def setUp(self):
-        super(SeleniumTestCase, self).setUp()
+    def _target_url_from_selenium(self):
         # Deal with the case when Galaxy has a different URL when being accessed by Selenium
         # then when being accessed by local API calls.
         if GALAXY_TEST_EXTERNAL_FROM_SELENIUM is not None:
-            self.target_url_from_selenium = GALAXY_TEST_EXTERNAL_FROM_SELENIUM
+            target_url_from_selenium = GALAXY_TEST_EXTERNAL_FROM_SELENIUM
         else:
-            self.target_url_from_selenium = self.url
+            target_url_from_selenium = self.url
+        return target_url_from_selenium
+
+    def setup_selenium(self):
+        self.target_url_from_selenium = self._target_url_from_selenium()
         self.snapshots = []
         self.setup_driver_and_session()
         if self.requires_admin and GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL == DEFAULT_ADMIN_USER:
@@ -226,20 +238,8 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin
         if self.ensure_registered:
             self.login()
 
-    def tearDown(self):
-        exception = None
-        try:
-            super(SeleniumTestCase, self).tearDown()
-        except Exception as e:
-            exception = e
-
-        try:
-            self.tear_down_driver()
-        except Exception as e:
-            exception = e
-
-        if exception is not None:
-            raise exception
+    def tear_down_selenium(self):
+        self.tear_down_driver()
 
     def snapshot(self, description):
         """Create a debug snapshot (DOM, screenshot, etc...) that is written out on tool failure.
@@ -262,6 +262,16 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin
             return
 
         self.driver.save_screenshot(target)
+
+    def get_download_path(self):
+        """Returns default download path
+        """
+        return DEFAULT_DOWNLOAD_PATH
+
+    def api_interactor_for_logged_in_user(self):
+        api_key = self.get_api_key(force=True)
+        interactor = self._get_interactor(api_key=api_key)
+        return interactor
 
     def write_screenshot_directory_file(self, label, content):
         target = self._screenshot_path(label, ".txt")
@@ -360,7 +370,7 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin
         initial_size_str = self.components.history_panel.new_size.text
         size_selector = self.components.history_panel.size
         size_text = size_selector.wait_for_text()
-        assert initial_size_str in size_text, "%s not in %s" % (initial_size_str, size_text)
+        assert initial_size_str in size_text, "{} not in {}".format(initial_size_str, size_text)
 
         self.components.history_panel.empty_message.wait_for_visible()
 
@@ -401,6 +411,29 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin
             raise unittest.SkipTest("Skipping test, visualization [%s] doesn't appear to be configured." % visualization_name)
 
 
+class SeleniumTestCase(FunctionalTestCase, TestWithSeleniumMixin):
+    galaxy_driver_class = GalaxyTestDriver
+
+    def setUp(self):
+        super().setUp()
+        self.setup_selenium()
+
+    def tearDown(self):
+        exception = None
+        try:
+            self.tear_down_selenium()
+        except Exception as e:
+            exception = e
+
+        try:
+            super().tearDown()
+        except Exception as e:
+            exception = e
+
+        if exception is not None:
+            raise exception
+
+
 class SharedStateSeleniumTestCase(SeleniumTestCase):
     """This describes a class Selenium tests that setup class state for all tests.
 
@@ -432,7 +465,7 @@ class SharedStateSeleniumTestCase(SeleniumTestCase):
         """Override this to setup shared data for tests that gets initialized only once."""
 
 
-class UsesHistoryItemAssertions(object):
+class UsesHistoryItemAssertions:
 
     def assert_item_peek_includes(self, hid, expected):
         item_body = self.history_panel_item_component(hid=hid)
@@ -442,7 +475,7 @@ class UsesHistoryItemAssertions(object):
     def assert_item_info_includes(self, hid, expected):
         item_body = self.history_panel_item_component(hid=hid)
         info_text = item_body.info.wait_for_text()
-        assert expected in info_text, "Failed to find expected info text [%s] in info [%s]" % (expected, info_text)
+        assert expected in info_text, "Failed to find expected info text [{}] in info [{}]".format(expected, info_text)
 
     def assert_item_dbkey_displayed_as(self, hid, dbkey):
         item_body = self.history_panel_item_component(hid=hid)
@@ -452,7 +485,7 @@ class UsesHistoryItemAssertions(object):
     def assert_item_summary_includes(self, hid, expected_text):
         item_body = self.history_panel_item_component(hid=hid)
         summary_text = item_body.summary.wait_for_text()
-        assert expected_text in summary_text, "Expected summary [%s] not found in [%s]." % (expected_text, summary_text)
+        assert expected_text in summary_text, "Expected summary [{}] not found in [{}].".format(expected_text, summary_text)
 
     def assert_item_name(self, hid, expected_name):
         item_body = self.history_panel_item_component(hid=hid)
@@ -471,7 +504,7 @@ def default_web_host_for_selenium_tests():
         try:
             dev_ip = get_ip_address('docker0')
             return dev_ip
-        except IOError:
+        except OSError:
             return DEFAULT_WEB_HOST
     else:
         return DEFAULT_WEB_HOST
@@ -525,7 +558,7 @@ def get_remote_driver():
     )
 
 
-class SeleniumSessionGetPostMixin(object):
+class SeleniumSessionGetPostMixin:
     """Mixin for adapting Galaxy testing populators helpers to Selenium session backed bioblend."""
 
     def _get(self, route, data={}):

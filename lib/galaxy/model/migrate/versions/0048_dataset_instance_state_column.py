@@ -1,7 +1,6 @@
 """
 Add a state column to the history_dataset_association and library_dataset_dataset_association table.
 """
-from __future__ import print_function
 
 import logging
 

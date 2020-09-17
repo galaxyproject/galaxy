@@ -1,8 +1,9 @@
 <tool id="CONVERTER_interval_to_bigwig_0" name="Convert Genomic Intervals To Coverage" version="1.0.1">
     <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
     <requirements>
-        <requirement type="package" version="357">ucsc-bedgraphtobigwig</requirement>
-        <requirement type="package" version="2.27.1">bedtools</requirement>
+        <requirement type="package" version="377">ucsc-bedgraphtobigwig</requirement>
+        <requirement type="package" version="2.29.2">bedtools</requirement>
+        <requirement type="package" version="8.25">coreutils</requirement>
     </requirements>
     <command>
 <![CDATA[
@@ -29,6 +30,12 @@
     <outputs>
         <data format="bigwig" name="output"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input1" format="interval" value="2.interval" dbkey="hg17"/>
+            <output name="output" format="bigwig" value="2.bigwig" compare="sim_size"/>
+        </test>
+    </tests>
     <help>
     </help>
 </tool>

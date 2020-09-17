@@ -1,10 +1,9 @@
-from __future__ import print_function
-
 import json
 import time
 from json import dumps
 from uuid import uuid4
 
+import pytest
 from requests import delete, get, put
 
 from galaxy.exceptions import error_codes
@@ -40,45 +39,19 @@ from galaxy_test.base.workflow_fixtures import (
 from ._framework import ApiTestCase
 
 
-NESTED_WORKFLOW_AUTO_LABELS_LEGACY_SYNTAX = """
+WORKFLOW_SIMPLE = """
 class: GalaxyWorkflow
+name: Simple Workflow
 inputs:
-  outer_input: data
+  input1: data
 outputs:
-  outer_output:
-    outputSource: second_cat/out_file1
+  wf_output_1:
+    outputSource: first_cat/out_file1
 steps:
   first_cat:
     tool_id: cat1
     in:
-      input1: outer_input
-  nested_workflow:
-    run:
-      class: GalaxyWorkflow
-      inputs:
-        - id: inner_input
-      outputs:
-        - source: 1#out_file1
-      steps:
-        random:
-          tool_id: random_lines1
-          state:
-            num_lines: 1
-            input:
-              $link: inner_input
-            seed_source:
-              seed_source_selector: set_seed
-              seed: asdf
-    in:
-      inner_input: first_cat/out_file1
-  second_cat:
-    tool_id: cat1
-    state:
-      input1:
-        $link: nested_workflow#1:out_file1
-      queries:
-        - input2:
-            $link: nested_workflow#1:out_file1
+      input1: input1
 """
 
 NESTED_WORKFLOW_AUTO_LABELS_MODERN_SYNTAX = """
@@ -124,14 +97,14 @@ class BaseWorkflowsApiTestCase(ApiTestCase):
     # TODO: Find a new file for this class.
 
     def setUp(self):
-        super(BaseWorkflowsApiTestCase, self).setUp()
+        super().setUp()
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
 
     def _assert_user_has_workflow_with_name(self, name):
         names = self._workflow_names()
-        assert name in names, "No workflows with name %s in users workflows <%s>" % (name, names)
+        assert name in names, "No workflows with name {} in users workflows <{}>".format(name, names)
 
     def _workflow_names(self):
         index_response = self._get("workflows")
@@ -204,7 +177,7 @@ class BaseWorkflowsApiTestCase(ApiTestCase):
         return workflow_inputs
 
     def _invocation_details(self, workflow_id, invocation_id, **kwds):
-        invocation_details_response = self._get("workflows/%s/usage/%s" % (workflow_id, invocation_id), data=kwds)
+        invocation_details_response = self._get("workflows/{}/usage/{}".format(workflow_id, invocation_id), data=kwds)
         self._assert_status_code_is(invocation_details_response, 200)
         invocation_details = invocation_details_response.json()
         return invocation_details
@@ -243,12 +216,43 @@ class BaseWorkflowsApiTestCase(ApiTestCase):
         assert tool_state_value["__class__"] == "RuntimeValue"
 
 
+class ChangeDatatypeTestCase(object):
+
+    def test_assign_column_pja(self):
+        with self.dataset_populator.test_history() as history_id:
+            self.workflow_populator.run_workflow("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: input1
+    outputs:
+      out_file1:
+        change_datatype: bed
+        set_columns:
+          chromCol: 1
+          endCol: 2
+          startCol: 3
+""", test_data="""
+input1:
+  value: 1.bed
+  type: File
+""", history_id=history_id)
+            details_dataset_new_col = self.dataset_populator.get_history_dataset_details(history_id, hid=2, wait=True, assert_ok=True)
+            assert details_dataset_new_col["history_content_type"] == "dataset", details_dataset_new_col
+            assert details_dataset_new_col['metadata_endCol'] == 2
+            assert details_dataset_new_col['metadata_startCol'] == 3
+
+
 # Workflow API TODO:
 # - Allow history_id as param to workflow run action. (hist_id)
 # - Allow post to workflows/<workflow_id>/run in addition to posting to
 #    /workflows with id in payload.
 # - Much more testing obviously, always more testing.
-class WorkflowsApiTestCase(BaseWorkflowsApiTestCase):
+class WorkflowsApiTestCase(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
 
     def test_show_valid(self):
         workflow_id = self.workflow_populator.simple_workflow("dummy")
@@ -272,7 +276,7 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase):
         self._assert_status_code_is(show_response, 400)
 
     def test_cannot_show_private_workflow(self):
-        workflow_id = self.workflow_populator.simple_workflow("test_not_importportable")
+        workflow_id = self.workflow_populator.simple_workflow("test_not_importable")
         with self._different_user():
             show_response = self._get("workflows/%s" % workflow_id)
             self._assert_status_code_is(show_response, 403)
@@ -280,6 +284,22 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase):
             # Try as anonymous user
             workflows_url = self._api_url("workflows/%s" % workflow_id)
             assert get(workflows_url).status_code == 403
+
+    def test_cannot_download_private_workflow(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_not_downloadable")
+        with self._different_user():
+            with pytest.raises(AssertionError) as excinfo:
+                self._download_workflow(workflow_id)
+            assert '403' in str(excinfo.value)
+        workflows_url = self._api_url("workflows/%s/download" % workflow_id)
+        assert get(workflows_url).status_code == 403
+
+    def test_anon_can_download_public_workflow(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_downloadable", publish=True)
+        workflows_url = self._api_url("workflows/%s/download" % workflow_id)
+        response = get(workflows_url)
+        response.raise_for_status()
+        assert response.json()['a_galaxy_workflow'] == 'true'
 
     def test_delete(self):
         workflow_id = self.workflow_populator.simple_workflow("test_delete")
@@ -302,6 +322,31 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase):
         index_response = self._get("workflows")
         self._assert_status_code_is(index_response, 200)
         assert isinstance(index_response.json(), list)
+
+    def test_index_deleted(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_delete")
+        workflow_index = self._get("workflows").json()
+        assert [w for w in workflow_index if w['id'] == workflow_id]
+        workflow_url = self._api_url("workflows/%s" % workflow_id, use_key=True)
+        delete_response = delete(workflow_url)
+        self._assert_status_code_is(delete_response, 200)
+        workflow_index = self._get("workflows").json()
+        assert not [w for w in workflow_index if w['id'] == workflow_id]
+        workflow_index = self._get("workflows?show_deleted=true").json()
+        assert [w for w in workflow_index if w['id'] == workflow_id]
+
+    def test_index_hidden(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_delete")
+        workflow_index = self._get("workflows").json()
+        workflow = [w for w in workflow_index if w['id'] == workflow_id][0]
+        workflow['hidden'] = True
+        update_response = self.workflow_populator.update_workflow(workflow_id, workflow)
+        self._assert_status_code_is(update_response, 200)
+        assert update_response.json()['hidden']
+        workflow_index = self._get("workflows").json()
+        assert not [w for w in workflow_index if w['id'] == workflow_id]
+        workflow_index = self._get("workflows?show_hidden=true").json()
+        assert [w for w in workflow_index if w['id'] == workflow_id]
 
     def test_upload(self):
         self.__test_upload(use_deprecated_route=False)
@@ -330,6 +375,29 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase):
             self._assert_status_code_is(upload_response, 200)
             self._assert_user_has_workflow_with_name(name)
         return upload_response
+
+    def test_get_tool_predictions(self):
+        request = {"tool_sequence": "Cut1", "remote_model_url": "https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model.hdf5"}
+        actual_recommendations = ['Filter1', 'cat1', 'addValue', 'comp1', 'Grep1']
+        route = "workflows/get_tool_predictions"
+        response = self._post(route, data=request)
+        recommendation_response = response.json()
+        is_empty = bool(recommendation_response["current_tool"])
+        if is_empty is False:
+            self._assert_status_code_is(response, 400)
+        else:
+            # check Ok response from the API
+            self._assert_status_code_is(response, 200)
+            recommendation_response = response.json()
+            # check the input tool sequence
+            assert recommendation_response["current_tool"] == request["tool_sequence"]
+            # check non-empty predictions list
+            predicted_tools = recommendation_response["predicted_data"]["children"]
+            assert len(predicted_tools) > 0
+            # check for the correct predictions
+            for tool in predicted_tools:
+                assert tool["tool_id"] in actual_recommendations
+                break
 
     def test_update(self):
         original_workflow = self.workflow_populator.load_workflow(name="test_import")
@@ -464,10 +532,10 @@ steps:
   - tool_id: cat1
     state:
       input1:
-        $link: first_cat#out_file1
+        $link: first_cat/out_file1
       queries:
         input2:
-          $link: embed1#output1
+          $link: embed1/output1
 test_data:
   input1: "hello world"
 """)
@@ -488,7 +556,7 @@ test_data:
             other_id = other_import_response.json()["id"]
             imported_workflow = self._show_workflow(other_id)
             assert imported_workflow["annotation"] == "simple workflow"
-            step_annotations = set(step["annotation"] for step in imported_workflow["steps"].values())
+            step_annotations = {step["annotation"] for step in imported_workflow["steps"].values()}
             assert "input1 description" in step_annotations
 
     def test_import_subworkflows(self):
@@ -500,6 +568,12 @@ test_data:
 
         workflow_id = self._upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE, publish=True)
         subworkflow_content_id = get_subworkflow_content_id(workflow_id)
+        instance_response = self._get("workflows/%s?instance=true" % subworkflow_content_id)
+        self._assert_status_code_is(instance_response, 200)
+        subworkflow = instance_response.json()
+        assert subworkflow['inputs']['0']['label'] == 'inner_input'
+        assert subworkflow['name'] == 'Workflow'
+        assert subworkflow['hidden']
         with self._different_user():
             other_import_response = self.__import_workflow(workflow_id)
             self._assert_status_code_is(other_import_response, 200)
@@ -809,12 +883,12 @@ steps:
         inner_cond:
           cond_param_inner: true
           input1:
-            $link: 0#out_file1
+            $link: 0/out_file1
   cat:
     tool_id: cat1
     in:
-      input1: identifier#output1
-      queries_0|input2: identifier#output1
+      input1: identifier/output1
+      queries_0|input2: identifier/output1
 """)
         with self.dataset_populator.test_history() as history_id:
             invocation_id = self.__invoke_workflow(history_id, workflow_id)
@@ -850,11 +924,11 @@ steps:
   list_in_list_out:
     tool_id: collection_creates_list
     in:
-      input1: job_props#list_output
+      input1: job_props/list_output
   identifier:
     tool_id: identifier_collection
     in:
-      input1: list_in_list_out#list_output
+      input1: list_in_list_out/list_output
 """)
         with self.dataset_populator.test_history() as history_id:
             invocation_id = self.__invoke_workflow(history_id, workflow_id)
@@ -1105,7 +1179,7 @@ test_data:
 
     def test_run_subworkflow_simple(self):
         with self.dataset_populator.test_history() as history_id:
-            self._run_jobs(WORKFLOW_NESTED_SIMPLE, test_data="""
+            run_response = self._run_jobs(WORKFLOW_NESTED_SIMPLE, test_data="""
 outer_input:
   value: 1.bed
   type: File
@@ -1113,6 +1187,16 @@ outer_input:
 
             content = self.dataset_populator.get_history_dataset_content(history_id)
             self.assertEqual("chrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\nchrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n", content)
+            steps = self.workflow_populator.get_invocation(run_response.invocation_id)['steps']
+            assert sum(1 for step in steps if step['subworkflow_invocation_id'] is None) == 3
+            subworkflow_invocation_id = [step['subworkflow_invocation_id'] for step in steps if step['subworkflow_invocation_id']][0]
+            subworkflow_invocation = self.workflow_populator.get_invocation(subworkflow_invocation_id)
+            # inner_input should be step 0, random_lines should be step 1, but step order gets lost on python < 3.6
+            assert [step for step in subworkflow_invocation['steps'] if step['workflow_step_label'] == 'inner_input']
+            assert [step for step in subworkflow_invocation['steps'] if step['workflow_step_label'] == 'random_lines']
+
+            bco = self.workflow_populator.get_biocompute_object(run_response.invocation_id)
+            self.workflow_populator.validate_biocompute_object(bco)
 
     @skip_without_tool("random_lines1")
     def test_run_subworkflow_runtime_parameters(self):
@@ -1130,7 +1214,7 @@ outer_input:
             assert len([x for x in content.split("\n") if x]) == 2
 
     @skip_without_tool("cat")
-    def test_run_subworkflow_replacment_parameters(self):
+    def test_run_subworkflow_replacement_parameters(self):
         with self.dataset_populator.test_history() as history_id:
             test_data = """
 replacement_parameters:
@@ -1197,8 +1281,7 @@ test_data:
                     "chrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\nchrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n",
                     content)
 
-        for workflow_text in [NESTED_WORKFLOW_AUTO_LABELS_LEGACY_SYNTAX, NESTED_WORKFLOW_AUTO_LABELS_MODERN_SYNTAX]:
-            run_test(workflow_text)
+        run_test(NESTED_WORKFLOW_AUTO_LABELS_MODERN_SYNTAX)
 
     @skip_without_tool("cat1")
     @skip_without_tool("collection_paired_test")
@@ -1251,7 +1334,7 @@ steps:
     tool_id: '__FLATTEN__'
     state:
       input:
-        $link: nested#list_output
+        $link: nested/list_output
       join_identifier: '-'
 """, test_data={}, history_id=history_id)
             details = self.dataset_populator.get_history_collection_details(history_id, hid=14)
@@ -1304,7 +1387,7 @@ input_1:
   type: File
 """
         with self.dataset_populator.test_history() as history_id:
-            summary = self._run_jobs(r"""
+            summary = self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
   input_1: data
@@ -1352,6 +1435,15 @@ steps:
             assert "## Workflow Inputs" in markdown_content
             assert "## About This Report" in markdown_content
 
+    @skip_without_tool("cat1")
+    def test_export_invocation_bco(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_jobs(WORKFLOW_SIMPLE, test_data={"input1": "hello world"}, history_id=history_id)
+            invocation_id = summary.invocation_id
+            bco = self.workflow_populator.get_biocompute_object(invocation_id)
+            self.workflow_populator.validate_biocompute_object(bco)
+            self.assertEqual(bco['provenance_domain']['name'], "Simple Workflow")
+
     @skip_without_tool("__APPLY_RULES__")
     def test_workflow_run_apply_rules(self):
         with self.dataset_populator.test_history() as history_id:
@@ -1377,7 +1469,7 @@ steps:
     tool_id: "__FILTER_FAILED_DATASETS__"
     state:
       input:
-        $link: mixed_collection#out_file1
+        $link: mixed_collection/out_file1
 
   cat:
     tool_id: cat1
@@ -1418,22 +1510,10 @@ input_c:
 
     def test_workflow_output_dataset(self):
         with self.dataset_populator.test_history() as history_id:
-            summary = self._run_jobs("""
-class: GalaxyWorkflow
-inputs:
-  input1: data
-outputs:
-  wf_output_1:
-    outputSource: first_cat/out_file1
-steps:
-  first_cat:
-    tool_id: cat1
-    in:
-      input1: input1
-""", test_data={"input1": "hello world"}, history_id=history_id)
+            summary = self._run_jobs(WORKFLOW_SIMPLE, test_data={"input1": "hello world"}, history_id=history_id)
             workflow_id = summary.workflow_id
             invocation_id = summary.invocation_id
-            invocation_response = self._get("workflows/%s/invocations/%s" % (workflow_id, invocation_id))
+            invocation_response = self._get("workflows/{}/invocations/{}".format(workflow_id, invocation_id))
             self._assert_status_code_is(invocation_response, 200)
             invocation = invocation_response.json()
             self._assert_has_keys(invocation , "id", "outputs", "output_collections")
@@ -1470,7 +1550,7 @@ input1:
 """, history_id=history_id, round_trip_format_conversion=True)
             workflow_id = summary.workflow_id
             invocation_id = summary.invocation_id
-            invocation_response = self._get("workflows/%s/invocations/%s" % (workflow_id, invocation_id))
+            invocation_response = self._get("workflows/{}/invocations/{}".format(workflow_id, invocation_id))
             self._assert_status_code_is(invocation_response, 200)
             invocation = invocation_response.json()
             self._assert_has_keys(invocation , "id", "outputs", "output_collections")
@@ -1500,7 +1580,7 @@ steps: []
 """, test_data={"input1": "hello world", "text_input": {"value": "A text variable", "type": "raw"}}, history_id=history_id)
             workflow_id = summary.workflow_id
             invocation_id = summary.invocation_id
-            invocation_response = self._get("workflows/%s/invocations/%s" % (workflow_id, invocation_id))
+            invocation_response = self._get("workflows/{}/invocations/{}".format(workflow_id, invocation_id))
             self._assert_status_code_is(invocation_response, 200)
             invocation = invocation_response.json()
             self._assert_has_keys(invocation , "id", "outputs", "output_collections")
@@ -1541,7 +1621,7 @@ input1:
 """, history_id=history_id)
             workflow_id = summary.workflow_id
             invocation_id = summary.invocation_id
-            invocation_response = self._get("workflows/%s/invocations/%s" % (workflow_id, invocation_id))
+            invocation_response = self._get("workflows/{}/invocations/{}".format(workflow_id, invocation_id))
             self._assert_status_code_is(invocation_response, 200)
             invocation = invocation_response.json()
             self._assert_has_keys(invocation , "id", "outputs", "output_collections")
@@ -1583,7 +1663,7 @@ text_input:
 """, history_id=history_id)
             workflow_id = summary.workflow_id
             invocation_id = summary.invocation_id
-            invocation_response = self._get("workflows/%s/invocations/%s" % (workflow_id, invocation_id))
+            invocation_response = self._get("workflows/{}/invocations/{}".format(workflow_id, invocation_id))
             self._assert_status_code_is(invocation_response, 200)
             invocation = invocation_response.json()
             self._assert_has_keys(invocation , "id", "outputs", "output_collections")
@@ -1599,7 +1679,7 @@ text_input:
 
             self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
 
-            jobs_summary_response = self._get("workflows/%s/invocations/%s/jobs_summary" % (workflow_id, invocation_id))
+            jobs_summary_response = self._get("workflows/{}/invocations/{}/jobs_summary".format(workflow_id, invocation_id))
             self._assert_status_code_is(jobs_summary_response, 200)
             jobs_summary = jobs_summary_response.json()
             assert 'states' in jobs_summary
@@ -1609,7 +1689,7 @@ text_input:
             assert invocation_states['ok'] == 2, jobs_summary
             assert jobs_summary['model'] == 'WorkflowInvocation', jobs_summary
 
-            jobs_summary_response = self._get("workflows/%s/invocations/%s/step_jobs_summary" % (workflow_id, invocation_id))
+            jobs_summary_response = self._get("workflows/{}/invocations/{}/step_jobs_summary".format(workflow_id, invocation_id))
             self._assert_status_code_is(jobs_summary_response, 200)
             jobs_summary = jobs_summary_response.json()
             assert len(jobs_summary) == 1
@@ -1638,9 +1718,9 @@ outer_input:
             summary = self._run_jobs(WORKFLOW_NESTED_SIMPLE, test_data=test_data, history_id=history_id)
             workflow_id = summary.workflow_id
             invocation_id = summary.invocation_id
-            invocation_response = self._get("workflows/%s/invocations/%s" % (workflow_id, invocation_id))
+            invocation_response = self._get("workflows/{}/invocations/{}".format(workflow_id, invocation_id))
             self._assert_status_code_is(invocation_response, 200)
-            invocation_response = self._get("workflows/%s/invocations/%s" % (workflow_id, invocation_id))
+            invocation_response = self._get("workflows/{}/invocations/{}".format(workflow_id, invocation_id))
             self._assert_status_code_is(invocation_response, 200)
             invocation = invocation_response.json()
             self._assert_has_keys(invocation , "id", "outputs", "output_collections")
@@ -1847,7 +1927,7 @@ steps:
     state:
       num_lines: 2
       input:
-        $link: empty_list#output
+        $link: empty_list/output
       seed_source:
         seed_source_selector: set_seed
         seed: asdf
@@ -1930,7 +2010,7 @@ steps:
     state:
       num_lines: 2
       input:
-        $link: empty_list#output
+        $link: empty_list/output
       seed_source:
         seed_source_selector: set_seed
         seed: asdf
@@ -2077,7 +2157,7 @@ input1:
             # are at the pause step in this case then.
             self._assert_invocation_non_terminal(uploaded_workflow_id, invocation_id)
 
-            invocation_url = self._api_url("workflows/%s/usage/%s" % (uploaded_workflow_id, invocation_id), use_key=True)
+            invocation_url = self._api_url("workflows/{}/usage/{}".format(uploaded_workflow_id, invocation_id), use_key=True)
             delete_response = delete(invocation_url)
             self._assert_status_code_is(delete_response, 200)
 
@@ -2118,7 +2198,7 @@ steps:
                                                                              contents=[("sample1-1", "1 2 3")]).json()
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             deleted_id = hdca1['elements'][DELETED]['object']['id']
-            r = self._delete("histories/%s/contents/%s?purge=%s" % (history_id, deleted_id, purge))
+            r = self._delete("histories/{}/contents/{}?purge={}".format(history_id, deleted_id, purge))
             label_map = {"input1": self._ds_entry(hdca1)}
             workflow_request = dict(
                 history="hist_id=%s" % history_id,
@@ -2365,7 +2445,7 @@ steps:
   state:
     floattest: 3.14
     inttest:
-      $link: forty_two#out1
+      $link: forty_two/out1
 test_data: {}
 """, history_id=history_id)
 
@@ -2394,7 +2474,7 @@ steps:
 - label: consume_expression_parameter
   tool_id: validation_default
   in:
-    input1: param_out#text_param
+    input1: param_out/text_param
   outputs:
     out_file1:
       rename: "replaced_param_collection"
@@ -2441,7 +2521,7 @@ test_data:
             first_wf_output = self._get("datasets/%s" % run_workflow_response['outputs'][0]).json()
             second_wf_output = self._get("datasets/%s" % new_workflow_response['outputs'][0]).json()
             assert first_wf_output['file_name'] == second_wf_output['file_name'], \
-                "first output:\n%s\nsecond output:\n%s" % (first_wf_output, second_wf_output)
+                "first output:\n{}\nsecond output:\n{}".format(first_wf_output, second_wf_output)
 
     @skip_without_tool('cat1')
     def test_nested_workflow_rerun_with_use_cached_job(self):
@@ -2530,7 +2610,7 @@ outer_input:
         for workflow_file in ["test_workflow_topoambigouity", "test_workflow_topoambigouity_auto_laidout"]:
             workflow = self.workflow_populator.load_workflow_from_resource(workflow_file)
             last_step_map = self._step_map(workflow)
-            for i in range(num_tests):
+            for _ in range(num_tests):
                 uploaded_workflow_id = self.workflow_populator.create_workflow(workflow)
                 downloaded_workflow = self._download_workflow(uploaded_workflow_id)
                 step_map = self._step_map(downloaded_workflow)
@@ -3200,35 +3280,6 @@ input1:
             assert details1["history_content_type"] == "dataset_collection"
             assert details1["tags"][0] == "name:foo", details1
 
-    @skip_without_tool("cat")
-    def test_assign_column_pja(self):
-        with self.dataset_populator.test_history() as history_id:
-            self._run_jobs("""
-class: GalaxyWorkflow
-inputs:
-  input1: data
-steps:
-  first_cat:
-    tool_id: cat
-    in:
-      input1: input1
-    outputs:
-      out_file1:
-        change_datatype: bed
-        set_columns:
-          chromCol: 1
-          endCol: 2
-          startCol: 3
-""", test_data="""
-input1:
-  value: 1.bed
-  type: File
-""", history_id=history_id)
-            details_dataset_new_col = self.dataset_populator.get_history_dataset_details(history_id, hid=2, wait=True, assert_ok=True)
-            assert details_dataset_new_col["history_content_type"] == "dataset", details_dataset_new_col
-            assert details_dataset_new_col['metadata_endCol'] == 2
-            assert details_dataset_new_col['metadata_startCol'] == 3
-
     @skip_without_tool("collection_creates_pair")
     @skip_without_tool("cat")
     def test_run_remove_tag_on_collection_output(self):
@@ -3249,7 +3300,7 @@ steps:
   create_pair:
     tool_id: collection_creates_pair
     in:
-      input1: first_cat#out_file1
+      input1: first_cat/out_file1
     outputs:
       paired_output:
         remove_tags:
@@ -3323,7 +3374,7 @@ steps:
       input1: the_pause
 """, round_trip_format_conversion=True)
         downloaded_workflow = self._download_workflow(workflow_id)
-        uuid_dict = dict((int(index), step["uuid"]) for index, step in downloaded_workflow["steps"].items())
+        uuid_dict = {int(index): step["uuid"] for index, step in downloaded_workflow["steps"].items()}
         with self.dataset_populator.test_history() as history_id:
             hda = self.dataset_populator.new_dataset(history_id, content="1 2 3")
             self.dataset_populator.wait_for_history(history_id)
@@ -3418,19 +3469,7 @@ steps:
     @skip_without_tool("cat1")
     def test_validated_post_job_action_unvalidated_default(self):
         with self.dataset_populator.test_history() as history_id:
-            self._run_jobs("""
-class: GalaxyWorkflow
-inputs:
-  input1: data
-outputs:
-  wf_output_1:
-    outputSource: first_cat/out_file1
-steps:
-  first_cat:
-    tool_id: cat1
-    in:
-      input1: input1
-""", test_data={"input1": {"type": "File", "file_type": "fastqsanger", "value": "1.fastqsanger"}}, history_id=history_id)
+            self._run_jobs(WORKFLOW_SIMPLE, test_data={"input1": {"type": "File", "file_type": "fastqsanger", "value": "1.fastqsanger"}}, history_id=history_id)
             hda2 = self.dataset_populator.get_history_dataset_details(history_id, hid=2)
             assert hda2["validated_state"] == "unknown"
 
@@ -3500,6 +3539,50 @@ steps:
             workflow_request = {
                 "history_id" : history_id,
                 "batch"      : True,
+                "parameters_normalized": True,
+                "parameters" : dumps(parameters),
+            }
+            invocation_response = self._post("workflows/%s/usage" % workflow_id, data=workflow_request)
+            self._assert_status_code_is(invocation_response, 200)
+            time.sleep(5)
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            r1 = "1 2 3\t1\n1 2 3\t2\n"
+            r2 = "4 5 6\t1\n1 2 3\t2\n"
+            r3 = "7 8 9\t1\n1 2 3\t2\n"
+            r4 = "10 11 12\t1\n1 2 3\t2\n"
+            t1 = self.dataset_populator.get_history_dataset_content(history_id, hid=7)
+            t2 = self.dataset_populator.get_history_dataset_content(history_id, hid=10)
+            t3 = self.dataset_populator.get_history_dataset_content(history_id, hid=13)
+            t4 = self.dataset_populator.get_history_dataset_content(history_id, hid=16)
+            self.assertEqual(r1, t1)
+            self.assertEqual(r2, t2)
+            self.assertEqual(r3, t3)
+            self.assertEqual(r4, t4)
+
+    @skip_without_tool("cat1")
+    @skip_without_tool("addValue")
+    def test_run_batch_inputs(self):
+        workflow = self.workflow_populator.load_workflow_from_resource("test_workflow_batch")
+        workflow_id = self.workflow_populator.create_workflow(workflow)
+        with self.dataset_populator.test_history() as history_id:
+            hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3")
+            hda2 = self.dataset_populator.new_dataset(history_id, content="4 5 6")
+            hda3 = self.dataset_populator.new_dataset(history_id, content="7 8 9")
+            hda4 = self.dataset_populator.new_dataset(history_id, content="10 11 12")
+            inputs = {
+                "coolinput": {"batch": True, "values": [{"id" : hda1.get("id"), "hid": hda1.get("hid"), "src": "hda"},
+                                                        {"id" : hda2.get("id"), "hid": hda2.get("hid"), "src": "hda"},
+                                                        {"id" : hda3.get("id"), "hid": hda2.get("hid"), "src": "hda"},
+                                                        {"id" : hda4.get("id"), "hid": hda2.get("hid"), "src": "hda"}]}
+            }
+            parameters = {
+                "1": {"input": {"batch": False, "values": [{"id" : hda1.get("id"), "hid": hda1.get("hid"), "src": "hda"}]}, "exp": "2"}
+            }
+            workflow_request = {
+                "history_id" : history_id,
+                "batch"      : True,
+                "inputs"     : dumps(inputs),
+                "inputs_by"  : "name",
                 "parameters_normalized": True,
                 "parameters" : dumps(parameters),
             }
@@ -3702,7 +3785,7 @@ input:
     def test_only_own_invocations_indexed_and_accessible(self):
         workflow_id, usage = self._run_workflow_once_get_invocation("test_usage")
         with self._different_user():
-            usage_details_response = self._get("workflows/%s/usage/%s" % (workflow_id, usage["id"]))
+            usage_details_response = self._get("workflows/{}/usage/{}".format(workflow_id, usage["id"]))
             self._assert_status_code_is(usage_details_response, 403)
             index_response = self._get("workflows/%s/invocations" % workflow_id)
             self._assert_status_code_is(index_response, 200)
@@ -3754,7 +3837,7 @@ input:
         assert job_id is not None
 
         invocation_tool_step_id = invocation_tool_step["id"]
-        invocation_tool_step_response = self._get("workflows/%s/invocations/%s/steps/%s" % (workflow_id, invocation_id, invocation_tool_step_id))
+        invocation_tool_step_response = self._get("workflows/{}/invocations/{}/steps/{}".format(workflow_id, invocation_id, invocation_tool_step_id))
         self._assert_status_code_is(invocation_tool_step_response, 200)
         self._assert_has_keys(invocation_tool_step_response.json(), "id", "order_index", "job_id")
 
@@ -3844,7 +3927,7 @@ input_c:
             self._assert_status_code_is(run_workflow_response, 200)
             run_workflow_response = run_workflow_response.json()
             invocation_id = run_workflow_response['id']
-            usage_details_response = self._get("workflows/%s/usage/%s" % (other_id, invocation_id))
+            usage_details_response = self._get("workflows/{}/usage/{}".format(other_id, invocation_id))
             self._assert_status_code_is(usage_details_response, 200)
 
     @skip_without_tool("cat1")
@@ -3860,7 +3943,7 @@ input_c:
             self._assert_status_code_is(run_workflow_response, 200)
             run_workflow_response = run_workflow_response.json()
             invocation_id = run_workflow_response['id']
-            usage_details_response = self._get("workflows/%s/usage/%s" % (workflow_id, invocation_id))
+            usage_details_response = self._get("workflows/{}/usage/{}".format(workflow_id, invocation_id))
             self._assert_status_code_is(usage_details_response, 200)
 
     @skip_without_tool("cat1")
@@ -3876,7 +3959,7 @@ input_c:
         run_workflow_response = run_workflow_response.json()
         invocation_id = run_workflow_response['id']
         with self._different_user():
-            usage_details_response = self._get("workflows/%s/usage/%s" % (workflow_id, invocation_id))
+            usage_details_response = self._get("workflows/{}/usage/{}".format(workflow_id, invocation_id))
             self._assert_status_code_is(usage_details_response, 403)
 
     def _invoke_paused_workflow(self, history_id):
@@ -3895,7 +3978,7 @@ input_c:
 
     def _wait_for_invocation_non_new(self, workflow_id, invocation_id):
         target_state_reached = False
-        for i in range(50):
+        for _ in range(50):
             invocation = self._invocation_details(workflow_id, invocation_id)
             if invocation['state'] != 'new':
                 target_state_reached = True
@@ -3911,7 +3994,7 @@ input_c:
 
     def _wait_for_invocation_state(self, workflow_id, invocation_id, target_state):
         target_state_reached = False
-        for i in range(25):
+        for _ in range(25):
             invocation = self._invocation_details(workflow_id, invocation_id)
             if invocation['state'] == target_state:
                 target_state_reached = True
@@ -3925,13 +4008,13 @@ input_c:
         return self.workflow_populator.update_workflow(workflow_id, workflow_object)
 
     def _invocation_step_details(self, workflow_id, invocation_id, step_id):
-        invocation_step_response = self._get("workflows/%s/usage/%s/steps/%s" % (workflow_id, invocation_id, step_id))
+        invocation_step_response = self._get("workflows/{}/usage/{}/steps/{}".format(workflow_id, invocation_id, step_id))
         self._assert_status_code_is(invocation_step_response, 200)
         invocation_step_details = invocation_step_response.json()
         return invocation_step_details
 
     def _execute_invocation_step_action(self, workflow_id, invocation_id, step_id, action):
-        raw_url = "workflows/%s/usage/%s/steps/%s" % (workflow_id, invocation_id, step_id)
+        raw_url = "workflows/{}/usage/{}/steps/{}".format(workflow_id, invocation_id, step_id)
         url = self._api_url(raw_url, use_key=True)
         payload = dumps(dict(action=action))
         action_response = put(url, data=payload)
@@ -3996,7 +4079,7 @@ input_c:
         contents_url = "histories/%s/contents" % history
         history_contents = self.__history_contents(history)
         hda_summary = next(hc for hc in history_contents if hc["hid"] == hid)
-        hda_info_response = self._get("%s/%s" % (contents_url, hda_summary["id"]))
+        hda_info_response = self._get("{}/{}".format(contents_url, hda_summary["id"]))
         self._assert_status_code_is(hda_info_response, 200)
         self.assertEqual(hda_info_response.json()["metadata_data_lines"], lines)
 
@@ -4080,10 +4163,10 @@ steps:
   - tool_id: cat1
     state:
       input1:
-        $link: first_cat#out_file1
+        $link: first_cat/out_file1
       queries:
       - input2:
-          $link: embed1#output1
+          $link: embed1/output1
 test_data:
   input1: "hello world"
 """)

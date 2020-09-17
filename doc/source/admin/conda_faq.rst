@@ -399,7 +399,7 @@ following command:
 
 .. code-block:: bash
 
-   $ <tool_dependency_dir/_conda/bin/conda install conda==4.6.14
+   $ <tool_dependency_dir/_conda/bin/conda install -c conda-forge conda==4.6.14
 
 The command can obviously be adapted to install any version of Conda. If the
 above command fails with an error like:
@@ -417,7 +417,7 @@ specification, which for the example error above would be ``python==3.6``:
 
 .. code-block:: bash
 
-   $ <tool_dependency_dir/_conda/bin/conda install conda==4.6.14 python==3.6
+   $ <tool_dependency_dir/_conda/bin/conda install -c conda-forge conda==4.6.14 python==3.6
 
 
 .. _Conda documentation: https://conda.io/docs/

@@ -4,14 +4,13 @@ SLURM job control via the DRMAA API.
 import os
 import re
 import shutil
-import subprocess
 import tempfile
 import time
 
 from galaxy import model
 from galaxy.jobs.runners.drmaa import DRMAAJobRunner
-from galaxy.util import unicodify
-from galaxy.util.logging import get_logger
+from galaxy.util import commands
+from galaxy.util.custom_logging import get_logger
 
 log = get_logger(__name__)
 
@@ -49,18 +48,17 @@ class SlurmJobRunner(DRMAAJobRunner):
             if cluster:
                 cmd.extend(['-M', cluster])
             cmd.extend(['-j', job_id])
-            p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            stdout, stderr = p.communicate()
-            if p.returncode != 0:
-                stderr = unicodify(stderr).strip()
-                if stderr == 'SLURM accounting storage is disabled':
+            try:
+                stdout = commands.execute(cmd)
+            except commands.CommandLineException as e:
+                if e.stderr.strip() == 'SLURM accounting storage is disabled':
                     log.warning('SLURM accounting storage is not properly configured, unable to run sacct')
                     return
-                raise Exception('`%s` returned %s, stderr: %s' % (' '.join(cmd), p.returncode, stderr))
+                raise e
             # First line is for 'job_id'
             # Second line is for 'job_id.batch' (only available after the batch job is complete)
             # Following lines are for the steps 'job_id.0', 'job_id.1', ... (but Galaxy does not use steps)
-            first_line = unicodify(stdout).splitlines()[0]
+            first_line = stdout.splitlines()[0]
             # Strip whitespaces and the final '+' (if present), only return the first word
             return first_line.strip().rstrip('+').split()[0]
 
@@ -74,19 +72,16 @@ class SlurmJobRunner(DRMAAJobRunner):
                 job_id = ajs.job_id
                 cluster = None
             cmd.extend(['show', 'job', job_id])
-            p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            stdout, stderr = p.communicate()
-            if p.returncode != 0:
-                # Will need to be more clever here if this message is not consistent
-                stderr = unicodify(stderr)
-                if stderr == 'slurm_load_jobs error: Invalid job id specified\n':
+            try:
+                stdout = commands.execute(cmd).strip()
+            except commands.CommandLineException as e:
+                if e.stderr == 'slurm_load_jobs error: Invalid job id specified\n':
                     # The job may be old, try to get its state with sacct
                     job_state = _get_slurm_state_with_sacct(job_id, cluster)
                     if job_state:
                         return job_state
                     return 'NOT_FOUND'
-                raise Exception('`%s` returned %s, stderr: %s' % (' '.join(cmd), p.returncode, stderr))
-            stdout = unicodify(stdout).strip()
+                raise e
             # stdout is a single line in format "key1=value1 key2=value2 ..."
             job_info_keys = []
             job_info_values = []
@@ -158,7 +153,7 @@ class SlurmJobRunner(DRMAAJobRunner):
                     self.work_queue.put((self.fail_job, ajs))
                     return
             if drmaa_state == self.drmaa_job_states.DONE:
-                with open(ajs.error_file, 'r') as rfh:
+                with open(ajs.error_file) as rfh:
                     _remove_spurious_top_lines(rfh, ajs)
                 with open(ajs.error_file, 'r+') as f:
                     if os.path.getsize(ajs.error_file) > SLURM_MEMORY_LIMIT_SCAN_SIZE:
@@ -177,7 +172,7 @@ class SlurmJobRunner(DRMAAJobRunner):
         except Exception:
             log.exception('(%s/%s) Failure in SLURM _complete_terminal_job(), job final state will be: %s', ajs.job_wrapper.get_id_tag(), ajs.job_id, drmaa_state)
         # by default, finish the job with the state from drmaa
-        return super(SlurmJobRunner, self)._complete_terminal_job(ajs, drmaa_state=drmaa_state)
+        return super()._complete_terminal_job(ajs, drmaa_state=drmaa_state)
 
     def __check_memory_limit(self, efile_path):
         """
@@ -205,7 +200,7 @@ class SlurmJobRunner(DRMAAJobRunner):
 def _remove_spurious_top_lines(rfh, ajs, maxlines=3):
     bad = []
     putback = None
-    for i in range(maxlines):
+    for _ in range(maxlines):
         line = rfh.readline()
         log.trace('checking line: %s', line)
         for pattern in SLURM_TOP_WARNING_RES:

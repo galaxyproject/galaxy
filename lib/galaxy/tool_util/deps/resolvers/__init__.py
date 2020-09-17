@@ -1,12 +1,12 @@
 """The module defines the abstract interface for dealing tool dependency resolution plugins."""
 import errno
+import os.path
 from abc import (
     ABCMeta,
     abstractmethod,
     abstractproperty,
 )
 
-import six
 import yaml
 
 from galaxy.util import listify
@@ -14,8 +14,7 @@ from galaxy.util.dictifiable import Dictifiable
 from ..requirements import ToolRequirement
 
 
-@six.add_metaclass(ABCMeta)
-class DependencyResolver(Dictifiable):
+class DependencyResolver(Dictifiable, metaclass=ABCMeta):
     """Abstract description of a technique for resolving container images for tool execution."""
 
     # Keys for dictification.
@@ -44,7 +43,7 @@ class DependencyResolver(Dictifiable):
         """
 
 
-class MultipleDependencyResolver(object):
+class MultipleDependencyResolver:
     """Variant of DependencyResolver that can optionally resolve multiple dependencies together."""
 
     @abstractmethod
@@ -62,8 +61,7 @@ class MultipleDependencyResolver(object):
         """
 
 
-@six.add_metaclass(ABCMeta)
-class ListableDependencyResolver(object):
+class ListableDependencyResolver(metaclass=ABCMeta):
     """ Mix this into a ``DependencyResolver`` and implement to indicate
     the dependency resolver can iterate over its dependencies and generate
     requirements.
@@ -79,7 +77,7 @@ class ListableDependencyResolver(object):
         return ToolRequirement(name=name, type="package", version=version)
 
 
-class MappableDependencyResolver(object):
+class MappableDependencyResolver:
     """Mix this into a ``DependencyResolver`` to allow mapping files.
 
     Mapping files allow adapting generic requirements to specific local implementations.
@@ -89,21 +87,35 @@ class MappableDependencyResolver(object):
         mapping_files = dependency_manager.get_resolver_option(self, "mapping_files", explicit_resolver_options=kwds)
         mappings = []
         if mapping_files:
+            search_dirs = [os.getcwd()]
+            if isinstance(dependency_manager.default_base_path, str):
+                search_dirs.append(dependency_manager.default_base_path)
+
+            def candidates(path):
+                if os.path.isabs(path):
+                    yield path
+                else:
+                    for search_dir in search_dirs:
+                        yield os.path.join(search_dir, path)
+
             mapping_files = listify(mapping_files)
             for mapping_file in mapping_files:
-                mappings.extend(MappableDependencyResolver._mapping_file_to_list(mapping_file))
+                for full_path in candidates(mapping_file):
+                    if os.path.exists(full_path):
+                        mappings.extend(MappableDependencyResolver._mapping_file_to_list(full_path))
+                        break
         self._mappings = mappings
 
     @staticmethod
     def _mapping_file_to_list(mapping_file):
         raw_mapping = []
         try:
-            with open(mapping_file, "r") as f:
+            with open(mapping_file) as f:
                 raw_mapping = yaml.safe_load(f)
-        except (OSError, IOError) as exc:
+        except OSError as exc:
             if exc.errno != errno.ENOENT:
                 raise
-        return map(RequirementMapping.from_dict, raw_mapping)
+        return list(map(RequirementMapping.from_dict, raw_mapping))
 
     def _expand_mappings(self, requirement):
         for mapping in self._mappings:
@@ -117,7 +129,7 @@ class MappableDependencyResolver(object):
 FROM_UNVERSIONED = object()
 
 
-class RequirementMapping(object):
+class RequirementMapping:
 
     def __init__(self, from_name, from_version, to_name, to_version):
         self.from_name = from_name
@@ -181,8 +193,7 @@ class RequirementMapping(object):
         return RequirementMapping(from_name, from_version, to_name, to_version)
 
 
-@six.add_metaclass(ABCMeta)
-class SpecificationAwareDependencyResolver(object):
+class SpecificationAwareDependencyResolver(metaclass=ABCMeta):
     """Mix this into a :class:`DependencyResolver` to implement URI specification matching.
 
     Allows adapting generic requirements to more specific URIs - to tailor name
@@ -225,8 +236,7 @@ class SpecificationPatternDependencyResolver(SpecificationAwareDependencyResolve
         return requirement
 
 
-@six.add_metaclass(ABCMeta)
-class InstallableDependencyResolver(object):
+class InstallableDependencyResolver(metaclass=ABCMeta):
     """ Mix this into a ``DependencyResolver`` and implement to indicate
     the dependency resolver can attempt to install new dependencies.
     """
@@ -238,8 +248,7 @@ class InstallableDependencyResolver(object):
         """
 
 
-@six.add_metaclass(ABCMeta)
-class Dependency(Dictifiable):
+class Dependency(Dictifiable, metaclass=ABCMeta):
     dict_collection_visible_keys = ['dependency_type', 'exact', 'name', 'version', 'cacheable']
     cacheable = False
 
@@ -260,7 +269,7 @@ class Dependency(Dictifiable):
         """
         Return a message describing this dependency
         """
-        return "Using dependency %s version %s of type %s" % (self.name, self.version, self.dependency_type)
+        return "Using dependency {} version {} of type {}".format(self.name, self.version, self.dependency_type)
 
 
 class ContainerDependency(Dependency):

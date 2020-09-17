@@ -22,7 +22,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         self.unset_filter('free-text-search', self.history1_name)
         self.published_grid_search_for(self.history4_name)
 
-        self.assert_grid_histories_are(['No Items'])
+        self.assert_grid_histories_are([])
 
     @selenium_test
     def test_history_grid_search_advanced(self):
@@ -42,7 +42,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         self.unset_filter('name', self.history1_name)
 
         self.set_filter(name_filter_selector, self.history4_name)
-        self.assert_grid_histories_are(['No Items'])
+        self.assert_grid_histories_are([])
         self.unset_filter('name', self.history4_name)
 
         # Search by annotation
@@ -132,7 +132,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         actual_histories = self.get_histories()
 
         # Filter out histories created by other tests
-        all_histories = self.all_histories + ['No Items']
+        all_histories = self.all_histories + ['No items']
         actual_histories = [x for x in actual_histories if x in all_histories]
 
         if not sort_matters:
@@ -160,24 +160,6 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         self.wait_for_and_click_selector(close_link_selector)
         self.sleep_for(self.wait_types.UX_RENDER)
 
-    def set_annotation(self, annotation):
-        self.ensure_annotation_area_displayed()
-
-        self.wait_for_and_click(self.navigation.history_panel.selectors.annotation_editable_text)
-
-        annon_area_editable = self.wait_for_and_click(self.navigation.history_panel.selectors.annotation_edit)
-        anno_done_button = self.wait_for_clickable(self.navigation.history_panel.selectors.annotation_done)
-
-        annon_area_editable.send_keys(annotation)
-        anno_done_button.click()
-
-    def ensure_annotation_area_displayed(self):
-        annotation_area_selector = self.navigation.history_panel.selectors.annotation_area
-        annotation_icon_selector = self.navigation.history_panel.selectors.annotation_icon
-
-        if not self.is_displayed(annotation_area_selector):
-            self.wait_for_and_click(annotation_icon_selector)
-
     def setup_shared_state(self):
         tag1 = self._get_random_name(len=5)
         tag2 = self._get_random_name(len=5)
@@ -202,7 +184,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
 
         self.create_history(self.history3_name)
         self.history_panel_add_tags(self.history3_tags)
-        self.set_annotation(self.history3_annot)
+        self.set_history_annotation(self.history3_annot)
         self.publish_current_history()
         self.logout_if_needed()
 

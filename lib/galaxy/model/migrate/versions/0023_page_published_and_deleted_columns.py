@@ -2,7 +2,6 @@
 Migration script to add columns for tracking whether pages are deleted and
 publicly accessible.
 """
-from __future__ import print_function
 
 import logging
 

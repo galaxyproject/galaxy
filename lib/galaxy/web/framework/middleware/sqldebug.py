@@ -8,7 +8,7 @@ from galaxy.model.orm.engine_factory import log_request_query_counts, reset_requ
 log = logging.getLogger(__name__)
 
 
-class SQLDebugMiddleware(object):
+class SQLDebugMiddleware:
 
     def __init__(self, application, galaxy, config=None):
         #: the wrapped webapp

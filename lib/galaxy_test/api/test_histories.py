@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import time
 
 from requests import (
@@ -9,16 +8,30 @@ from requests import (
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
+    skip_without_tool,
 )
 from ._framework import ApiTestCase
 
 
-class HistoriesApiTestCase(ApiTestCase):
+class BaseHistories(object):
 
-    def setUp(self):
-        super(HistoriesApiTestCase, self).setUp()
-        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
-        self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
+    def _show(self, history_id):
+        return self._get("histories/%s" % history_id).json()
+
+    def _update(self, history_id, data):
+        update_url = self._api_url("histories/%s" % history_id, use_key=True)
+        put_response = put(update_url, json=data)
+        return put_response
+
+    def _create_history(self, name):
+        post_data = dict(name=name)
+        create_response = self._post("histories", data=post_data).json()
+        self._assert_has_keys(create_response, "name", "id")
+        self.assertEqual(create_response["name"], name)
+        return create_response
+
+
+class HistoriesApiTestCase(ApiTestCase, BaseHistories):
 
     def test_create_history(self):
         # Create a history.
@@ -108,7 +121,7 @@ class HistoriesApiTestCase(ApiTestCase):
         show_response = self._show(history_id)
         assert show_response["name"] == "New Name"
 
-        unicode_name = u'桜ゲノム'
+        unicode_name = '桜ゲノム'
         self._update(history_id, {"name": unicode_name})
         show_response = self._show(history_id)
         assert show_response["name"] == unicode_name, show_response
@@ -177,11 +190,29 @@ class HistoriesApiTestCase(ApiTestCase):
         create_response = post(url=histories_url, data=post_data)
         self._assert_status_code_is(create_response, 403)
 
+    def test_create_tag(self):
+        post_data = dict(name="TestHistoryForTag")
+        history_id = self._post("histories", data=post_data).json()["id"]
+        tag_data = dict(value="awesometagvalue")
+        tag_url = "histories/%s/tags/awesometagname" % history_id
+        tag_create_response = self._post(tag_url, data=tag_data)
+        self._assert_status_code_is(tag_create_response, 200)
+
+    # TODO: (CE) test_create_from_copy
+
+
+class ImportExportHistoryTestCase(ApiTestCase, BaseHistories):
+
+    def setUp(self):
+        super(ImportExportHistoryTestCase, self).setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
+
     def test_import_export(self):
         history_name = "for_export_default"
         history_id = self.dataset_populator.new_history(name=history_name)
         self.dataset_populator.new_dataset(history_id, content="1 2 3")
-        deleted_hda = self.dataset_populator.new_dataset(history_id, content="1 2 3")
+        deleted_hda = self.dataset_populator.new_dataset(history_id, content="1 2 3", wait=True)
         self.dataset_populator.delete_dataset(history_id, deleted_hda["id"])
         deleted_details = self.dataset_populator.get_history_dataset_details(history_id, id=deleted_hda["id"])
         assert deleted_details["deleted"]
@@ -213,7 +244,7 @@ class HistoriesApiTestCase(ApiTestCase):
         history_name = "for_export_include_deleted"
         history_id = self.dataset_populator.new_history(name=history_name)
         self.dataset_populator.new_dataset(history_id, content="1 2 3")
-        deleted_hda = self.dataset_populator.new_dataset(history_id, content="1 2 3")
+        deleted_hda = self.dataset_populator.new_dataset(history_id, content="1 2 3", wait=True)
         self.dataset_populator.delete_dataset(history_id, deleted_hda["id"])
 
         imported_history_id = self._reimport_history(history_id, history_name, wait_on_history_length=2, export_kwds={"include_deleted": "True"})
@@ -222,18 +253,37 @@ class HistoriesApiTestCase(ApiTestCase):
         def upload_job_check(job):
             assert job["tool_id"] == "upload1"
 
-        def check_ok(hda):
+        def check_deleted_not_purged(hda):
             assert hda["state"] == "ok", hda
             assert hda["deleted"] is True, hda
+            assert hda["purged"] is False, hda
 
         self._check_imported_dataset(history_id=imported_history_id, hid=1, job_checker=upload_job_check)
-        self._check_imported_dataset(history_id=imported_history_id, hid=2, hda_checker=check_ok, job_checker=upload_job_check)
+        self._check_imported_dataset(history_id=imported_history_id, hid=2, hda_checker=check_deleted_not_purged, job_checker=upload_job_check)
 
         imported_content = self.dataset_populator.get_history_dataset_content(
             history_id=imported_history_id,
             hid=1,
         )
         assert imported_content == "1 2 3\n"
+
+    @skip_without_tool("job_properties")
+    def test_import_export_failed_job(self):
+        history_name = "for_export_include_failed_job"
+        history_id = self.dataset_populator.new_history(name=history_name)
+        self.dataset_populator.run_tool('job_properties', inputs={'failbool': True}, history_id=history_id, assert_ok=False)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=False)
+
+        imported_history_id = self._reimport_history(history_id, history_name, assert_ok=False, wait_on_history_length=4, export_kwds={"include_deleted": "True"})
+        self._assert_history_length(imported_history_id, 4)
+
+        def check_failed(hda_or_job):
+            print(hda_or_job)
+            assert hda_or_job["state"] == "error", hda_or_job
+
+        self.dataset_populator._summarize_history(imported_history_id)
+
+        self._check_imported_dataset(history_id=imported_history_id, hid=1, assert_ok=False, hda_checker=check_failed, job_checker=check_failed)
 
     def test_import_metadata_regeneration(self):
         history_name = "for_import_metadata_regeneration"
@@ -303,9 +353,9 @@ class HistoriesApiTestCase(ApiTestCase):
 
         self._check_imported_collection(imported_history_id, hid=1, collection_type="list:paired", elements_checker=check_elements)
 
-    def _reimport_history(self, history_id, history_name, wait_on_history_length=None, export_kwds={}):
+    def _reimport_history(self, history_id, history_name, wait_on_history_length=None, assert_ok=True, export_kwds={}):
         # Ensure the history is ready to go...
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=assert_ok)
 
         return self.dataset_populator.reimport_history(
             history_id, history_name, wait_on_history_length=wait_on_history_length, export_kwds=export_kwds, url=self.url, api_key=self.galaxy_interactor.api_key
@@ -326,10 +376,11 @@ class HistoriesApiTestCase(ApiTestCase):
         contents = contents_response.json()
         assert len(contents) == n, contents
 
-    def _check_imported_dataset(self, history_id, hid, has_job=True, hda_checker=None, job_checker=None):
+    def _check_imported_dataset(self, history_id, hid, assert_ok=True, has_job=True, hda_checker=None, job_checker=None):
         imported_dataset_metadata = self.dataset_populator.get_history_dataset_details(
             history_id=history_id,
             hid=hid,
+            assert_ok=assert_ok,
         )
         assert imported_dataset_metadata["history_content_type"] == "dataset"
         assert imported_dataset_metadata["history_id"] == history_id
@@ -365,28 +416,3 @@ class HistoriesApiTestCase(ApiTestCase):
 
         if elements_checker is not None:
             elements_checker(imported_collection_metadata["elements"])
-
-    def test_create_tag(self):
-        post_data = dict(name="TestHistoryForTag")
-        history_id = self._post("histories", data=post_data).json()["id"]
-        tag_data = dict(value="awesometagvalue")
-        tag_url = "histories/%s/tags/awesometagname" % history_id
-        tag_create_response = self._post(tag_url, data=tag_data)
-        self._assert_status_code_is(tag_create_response, 200)
-
-    def _show(self, history_id):
-        return self._get("histories/%s" % history_id).json()
-
-    def _update(self, history_id, data):
-        update_url = self._api_url("histories/%s" % history_id, use_key=True)
-        put_response = put(update_url, json=data)
-        return put_response
-
-    def _create_history(self, name):
-        post_data = dict(name=name)
-        create_response = self._post("histories", data=post_data).json()
-        self._assert_has_keys(create_response, "name", "id")
-        self.assertEqual(create_response["name"], name)
-        return create_response
-
-    # TODO: (CE) test_create_from_copy

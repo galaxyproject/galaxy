@@ -705,11 +705,11 @@ class HistoryFiltersTestCase(BaseTestCase):
         self.assertRaises(exceptions.RequestParameterInvalidException, self.filter_parser.parse_filters, [
             ('merp', 'eq', 'wot'),
         ])
-        self.log('should error on non-whitelisted attr')
+        self.log('should error on non-allowlisted attr')
         self.assertRaises(exceptions.RequestParameterInvalidException, self.filter_parser.parse_filters, [
             ('user_id', 'eq', 'wot'),
         ])
-        self.log('should error on non-whitelisted op')
+        self.log('should error on non-allowlisted op')
         self.assertRaises(exceptions.RequestParameterInvalidException, self.filter_parser.parse_filters, [
             ('name', 'lt', 'wot'),
         ])

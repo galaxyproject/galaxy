@@ -17,6 +17,8 @@
     <datatype extension="anvio_structure_db" type="galaxy.datatypes.anvio:AnvioStructureDB" display_in_upload="false" />
     <datatype extension="anvio_variability" type="galaxy.datatypes.tabular:TSV" display_in_upload="false" subclass="true" />
     <datatype extension="arff" type="galaxy.datatypes.text:Arff" mimetype="text/plain" display_in_upload="true"/>
+    <datatype extension="paf" type="galaxy.datatypes.text:Paf" mimetype="text/plain" display_in_upload="true"/>
+    <datatype extension="gfa1" type="galaxy.datatypes.text:Gfa1" mimetype="text/plain" display_in_upload="true"/>
     <datatype extension="asn1" type="galaxy.datatypes.data:GenericAsn1" mimetype="text/plain" display_in_upload="true"/>
     <datatype extension="asn1-binary" type="galaxy.datatypes.binary:GenericAsn1Binary" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="axt" type="galaxy.datatypes.sequence:Axt" display_in_upload="true" description="blastz pairwise alignment format.  Each alignment block in an axt file contains three lines: a summary line and 2 sequence lines.  Blocks are separated from one another by blank lines.  The summary line contains chromosomal position and size information about the alignment. It consists of 9 required fields." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Axt"/>
@@ -142,6 +144,7 @@
       <converter file="gff_to_interval_index_converter.xml" target_datatype="interval_index"/>
       <converter file="bed_gff_or_vcf_to_bigwig_converter.xml" target_datatype="bigwig"/>
       <converter file="gff_to_fli_converter.xml" target_datatype="fli"/>
+      <converter file="gff_to_bgzip_converter.xml" target_datatype="bgzip"/>
       <display file="ensembl/ensembl_gff.xml" inherit="true"/>
       <display file="igv/gff.xml" inherit="true"/>
       <!-- <display file="gbrowse/gbrowse_gff.xml" inherit="true" /> -->
@@ -227,19 +230,27 @@
     <datatype extension="directory" type="galaxy.datatypes.data:Directory">
     </datatype>
     <!-- Proteomics Datatypes -->
+    <datatype extension="mrm" type="galaxy.datatypes.tabular:Tabular" display_in_upload="true" subclass="true"/>
+    <datatype extension="dta" type="galaxy.datatypes.proteomics:Dta" display_in_upload="true" />
+    <datatype extension="dta2d" type="galaxy.datatypes.proteomics:Dta2d" display_in_upload="true" />
+    <datatype extension="edta" type="galaxy.datatypes.proteomics:Edta" display_in_upload="true" />
     <datatype extension="pepxml" type="galaxy.datatypes.proteomics:PepXml" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="raw_pepxml" type="galaxy.datatypes.proteomics:PepXml" mimetype="application/xml" subclass="true"/>
     <datatype extension="peptideprophet_pepxml" type="galaxy.datatypes.proteomics:PepXml" mimetype="application/xml" subclass="true"/>
     <datatype extension="interprophet_pepxml" type="galaxy.datatypes.proteomics:PepXml" mimetype="application/xml" subclass="true"/>
     <datatype extension="protxml" type="galaxy.datatypes.proteomics:ProtXML" mimetype="application/xml" display_in_upload="true"/>
-    <datatype extension="trafoxml" type="galaxy.datatypes.xml:GenericXml" mimetype="application/xml" subclass="true" display_in_upload="true" description="Transformation of retention times"/>
+    <datatype extension="paramxml" type="galaxy.datatypes.proteomics:ParamXml" mimetype="application/xml" subclass="true" display_in_upload="true" />
     <datatype extension="qcml" type="galaxy.datatypes.xml:GenericXml" mimetype="application/xml" subclass="true" display_in_upload="true" description="Quality control data in XML format (https://code.google.com/p/qcml/)."/>
+    <datatype extension="kroenik" type="galaxy.datatypes.proteomics:Kroenik" display_in_upload="true"/>
+    <datatype extension="peplist" type="galaxy.datatypes.proteomics:PepList" display_in_upload="true"/>
+    <datatype extension="psms" type="galaxy.datatypes.proteomics:PSMS" display_in_upload="true"/>
     <datatype extension="pepxml.tsv" type="galaxy.datatypes.proteomics:PepXmlReport" display_in_upload="true"/>
     <datatype extension="protxml.tsv" type="galaxy.datatypes.proteomics:ProtXmlReport" display_in_upload="true"/>
     <datatype extension="mascotdat" type="galaxy.datatypes.proteomics:MascotDat" display_in_upload="false"/>
     <datatype extension="mzid" type="galaxy.datatypes.proteomics:MzIdentML" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="idxml" type="galaxy.datatypes.proteomics:IdXML" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="tandem" type="galaxy.datatypes.proteomics:TandemXML" mimetype="application/xml" display_in_upload="true"/>
+    <datatype extension="sirius.ms" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="false"/>
     <datatype extension="thermo.raw" type="galaxy.datatypes.proteomics:ThermoRAW" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="brukerbaf.d.tar" type="galaxy.datatypes.binary:BafTar" display_in_upload="true"/>
     <datatype extension="agilentbrukeryep.d.tar" type="galaxy.datatypes.binary:YepTar" display_in_upload="true"/>
@@ -247,6 +258,9 @@
     <datatype extension="agilentmasshunter.d.tar" type="galaxy.datatypes.binary:MassHunterTar" display_in_upload="true"/>
     <datatype extension="watersmasslynx.raw.tar" type="galaxy.datatypes.binary:MassLynxTar" display_in_upload="true"/>
     <datatype extension="wiff.tar" type="galaxy.datatypes.binary:WiffTar" display_in_upload="true"/>
+    <datatype extension="mascotxml" type="galaxy.datatypes.proteomics:MascotXML" mimetype="application/xml" display_in_upload="true"/>
+    <datatype extension="mztab" type="galaxy.datatypes.proteomics:MzTab" display_in_upload="true"/>
+    <datatype extension="mztab2" type="galaxy.datatypes.proteomics:MzTab2" display_in_upload="true"/>
     <datatype extension="mzml" type="galaxy.datatypes.proteomics:MzML" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="nmrml" type="galaxy.datatypes.proteomics:NmrML" mimetype="application/xml" display_in_upload="true" description="nmrML is an open mark-up language for NMR data." description_url="http://nmrml.org/schema/"/>
     <datatype extension="mgf" type="galaxy.datatypes.proteomics:Mgf" display_in_upload="true"/>
@@ -255,11 +269,18 @@
     <datatype extension="mzdata" type="galaxy.datatypes.proteomics:MzData" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="ms2" type="galaxy.datatypes.proteomics:Ms2" display_in_upload="true"/>
     <datatype extension="mzq" type="galaxy.datatypes.proteomics:MzQuantML" mimetype="application/xml" display_in_upload="true"/>
+    <datatype extension="sqlite" type="galaxy.datatypes.binary:SQlite" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="mz.sqlite" type="galaxy.datatypes.binary:MzSQlite" mimetype="application/octet-stream" display_in_upload="true"/>
+    <datatype extension="osw" type="galaxy.datatypes.binary:OSW" mimetype="application/octet-stream" display_in_upload="true"/>
+    <datatype extension="pqp" type="galaxy.datatypes.binary:PQP" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="traml" type="galaxy.datatypes.proteomics:TraML" mimetype="application/xml" display_in_upload="true"/>
+    <datatype extension="trafoxml" type="galaxy.datatypes.proteomics:TrafoXML" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="featurexml" type="galaxy.datatypes.proteomics:FeatureXML" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="consensusxml" type="galaxy.datatypes.proteomics:ConsensusXML" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="uniprotxml" type="galaxy.datatypes.proteomics:UniProtXML" mimetype="application/xml" display_in_upload="true"/>
+    <datatype extension="xquest.xml" type="galaxy.datatypes.proteomics:XquestXML" mimetype="application/xml" display_in_upload="true"/>
+    <datatype extension="spec.xml" type="galaxy.datatypes.proteomics:XquestSpecXML" mimetype="application/xml" display_in_upload="true"/>
+    <datatype extension="qcml" type="galaxy.datatypes.proteomics:QCML" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="msp" type="galaxy.datatypes.proteomics:Msp" display_in_upload="true"/>
     <datatype extension="splib_noindex" type="galaxy.datatypes.proteomics:SPLibNoIndex" display_in_upload="true"/>
     <datatype extension="splib" type="galaxy.datatypes.proteomics:SPLib" display_in_upload="true"/>
@@ -283,6 +304,7 @@
     <datatype extension="kronik" type="galaxy.datatypes.tabular:Tabular" subclass="true"/>
     <datatype extension="imzml" type="galaxy.datatypes.proteomics:ImzML" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="analyze75" type="galaxy.datatypes.proteomics:Analyze75" mimetype="application/xml" display_in_upload="true"/>
+    <datatype extension="peff" type="galaxy.datatypes.proteomics:PEFF" display_in_upload="true"/>
     <!-- End Proteomics Datatypes -->
     <datatype extension="deeptools_compute_matrix_archive" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true"/>
     <datatype extension="deeptools_coverage_matrix" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true"/>
@@ -334,18 +356,19 @@
     </datatype>
     <datatype extension="sff" type="galaxy.datatypes.binary:Sff" mimetype="application/octet-stream" display_in_upload="true" description="A binary file in 'Standard Flowgram Format' with a '.sff' file extension." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Sff"/>
     <datatype extension="sra" type="galaxy.datatypes.binary:Sra" mimetype="application/octet-stream" display_in_upload="true" description="A binary file archive format from the NCBI Sequence Read Archive with a '.sra' file extension." description_url="http://www.ncbi.nlm.nih.gov/books/n/helpsra/SRA_Overview_BK/#SRA_Overview_BK.4_SRA_Data_Structure"/>
+    <datatype extension="sra_manifest.tabular" type="galaxy.datatypes.tabular:SraManifest" display_in_upload="true"/>
     <datatype extension="svg" type="galaxy.datatypes.xml:GenericXml" mimetype="image/svg+xml" subclass="true"/>
     <datatype extension="taxonomy" type="galaxy.datatypes.tabular:Taxonomy" display_in_upload="true"/>
     <datatype extension="tabular" type="galaxy.datatypes.tabular:Tabular" auto_compressed_types="gz" display_in_upload="true" description="Any data in tab delimited format (tabular)." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Tabular_.28tab_delimited.29">
       <converter file="tabular_to_csv.xml" target_datatype="csv"/>
     </datatype>
     <datatype extension="twobit" type="galaxy.datatypes.binary:TwoBit" mimetype="application/octet-stream" display_in_upload="true"/>
-    <datatype extension="sqlite" type="galaxy.datatypes.binary:SQlite" mimetype="application/octet-stream" display_in_upload="true"/>
-    <datatype extension="pqp" type="galaxy.datatypes.binary:SQlite" mimetype="application/octet-stream" display_in_upload="true" subclass="true"/>
-    <datatype extension="osw" type="galaxy.datatypes.binary:SQlite" mimetype="application/octet-stream" display_in_upload="true" subclass="true"/>
+    <datatype extension="sqmass" type="galaxy.datatypes.binary:SQmass" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="gemini.sqlite" type="galaxy.datatypes.binary:GeminiSQLite" mimetype="application/octet-stream" display_in_upload="true"/>
+    <datatype extension="chira.sqlite" type="galaxy.datatypes.binary:ChiraSQLite" mimetype="application/octet-stream" display_in_upload="true" />
     <datatype extension="cuffdiff.sqlite" type="galaxy.datatypes.binary:CuffDiffSQlite" display_in_upload="true"/>
     <datatype extension="gafa.sqlite" type="galaxy.datatypes.binary:GAFASQLite" mimetype="application/octet-stream" display_in_upload="true"/>
+    <datatype extension="ncbitaxonomy.sqlite" type="galaxy.datatypes.binary:NcbiTaxonomySQlite" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="txt" type="galaxy.datatypes.data:Text" display_in_upload="true" description="Any text file." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Plain_text"/>
     <datatype extension="linecount" type="galaxy.datatypes.data:LineCount" display_in_upload="false"/>
     <datatype extension="memepsp" type="galaxy.datatypes.sequence:MemePsp" display_in_upload="true" description="The MEME Position Specific Priors (PSP) format includes the name of the sequence for which a prior distribution corresponds." description_url="http://meme-suite.org/doc/psp-format.html"/>
@@ -378,11 +401,17 @@
       <display file="igb/wig.xml"/>
     </datatype>
     <datatype extension="interval_index" type="galaxy.datatypes.binary:Binary" subclass="true"/>
+    <datatype extension="odgi" type="galaxy.datatypes.binary:Binary" subclass="true" description="Genomic variation graphs self index used by odgi." display_in_upload="true"/>
+    <datatype extension="vg" type="galaxy.datatypes.binary:Binary" subclass="true" description="Genomic variation graphs." display_in_upload="true"/>
+    <datatype extension="xg" type="galaxy.datatypes.binary:Binary" subclass="true" description="Genomic variation graphs with vg index." display_in_upload="true"/>
+    <datatype extension="protobuf2" type="galaxy.datatypes.binary:Binary" subclass="true" description="Protocol Buffers (Protobuf) is data format for serializing structured data."/>
+    <datatype extension="protobuf3" type="galaxy.datatypes.binary:Binary" subclass="true" description="Protocol Buffers (Protobuf) is data format for serializing structured data."/>
     <datatype extension="tabix" type="galaxy.datatypes.binary:Binary" subclass="true"/>
     <datatype extension="bgzip" type="galaxy.datatypes.binary:Binary" subclass="true"/>
     <datatype extension="vcf_bgzip" type="galaxy.datatypes.tabular:VcfGz" display_in_upload="true">
       <display file="igv/vcf.xml"/>
       <converter file="vcf_bgzip_to_tabix_converter.xml" target_datatype="tabix"/>
+      <converter file="gz_to_uncompressed.xml" target_datatype="vcf"/>
     </datatype>
     <datatype extension="bus" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true" />
     <datatype extension="kallisto.idx" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true" />
@@ -520,7 +549,9 @@
     <datatype extension="embl" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true"/>
     <datatype extension="fitch" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="gcg" type="galaxy.datatypes.data:Text" subclass="true"/>
-    <datatype extension="genbank" auto_compressed_types="gz" sniff_compressed_types="true" type="galaxy.datatypes.sequence:Genbank" display_in_upload="True"/>
+    <datatype extension="genbank" auto_compressed_types="gz" sniff_compressed_types="true" type="galaxy.datatypes.sequence:Genbank" display_in_upload="True">
+      <display file="igv/genbank.xml"/>
+    </datatype>
     <datatype extension="hennig86" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="ig" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="jackknifer" type="galaxy.datatypes.data:Text" subclass="true"/>
@@ -558,8 +589,17 @@
     <datatype extension="cel" type="galaxy.datatypes.microarrays:Cel" display_in_upload="true"/>
     <datatype extension="gpr" type="galaxy.datatypes.microarrays:Gpr" display_in_upload="true"/>
     <datatype extension="gal" type="galaxy.datatypes.microarrays:Gal" display_in_upload="true"/>
-    <datatype extension="rdata" type="galaxy.datatypes.binary:RData" display_in_upload="true" description="Stored data from an R session"/>
-    <datatype extension="rdata.sce" type="galaxy.datatypes.binary:RData" description="Stored RDS from a SingleCellObject" subclass="true" display_in_upload="true"/>
+    <datatype extension="rdata" type="galaxy.datatypes.binary:RData" mimetype="application/x-gzip" display_in_upload="true" description="Stored data from an R session"/>
+    <datatype extension="rdata.sce" type="galaxy.datatypes.binary:RData" mimetype="application/x-gzip" subclass="true" display_in_upload="true" description="Stored RDS from a SingleCellObject"/>
+    <datatype extension="rdata.xcms.raw" type="galaxy.datatypes.binary:RData" mimetype="application/x-gzip" subclass="true" display_in_upload="true"/>
+    <datatype extension="rdata.msnbase.raw" type="galaxy.datatypes.binary:RData" mimetype="application/x-gzip" subclass="true" display_in_upload="true"/>
+    <datatype extension="rdata.xcms.findchrompeaks" type="galaxy.datatypes.binary:RData" mimetype="application/x-gzip" subclass="true" display_in_upload="true"/>
+    <datatype extension="rdata.xcms.group" type="galaxy.datatypes.binary:RData" mimetype="application/x-gzip" subclass="true" display_in_upload="true"/>
+    <datatype extension="rdata.xcms.retcor" type="galaxy.datatypes.binary:RData" mimetype="application/x-gzip" subclass="true" display_in_upload="true"/>
+    <datatype extension="rdata.xcms.fillpeaks" type="galaxy.datatypes.binary:RData" mimetype="application/x-gzip" subclass="true" display_in_upload="true"/>
+    <datatype extension="rdata.camera.positive" type="galaxy.datatypes.binary:RData" mimetype="application/x-gzip" subclass="true" display_in_upload="true"/>
+    <datatype extension="rdata.camera.negative" type="galaxy.datatypes.binary:RData" mimetype="application/x-gzip" subclass="true" display_in_upload="true"/>
+    <datatype extension="rdata.camera.quick" type="galaxy.datatypes.binary:RData" mimetype="application/x-gzip" subclass="true" display_in_upload="true"/>
     <datatype extension="rdock_as" type="galaxy.datatypes.binary:Binary" description="rDock active site format" subclass="true" display_in_upload="true"/>
     <datatype extension="oxlicg" type="galaxy.datatypes.binary:OxliCountGraph" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="oxling" type="galaxy.datatypes.binary:OxliNodeGraph" mimetype="application/octet-stream" display_in_upload="true"/>
@@ -703,6 +743,10 @@
     <datatype extension="blastdbn" type="galaxy.datatypes.blast:BlastNucDb" mimetype="text/html" display_in_upload="false"/>
     <datatype extension="blastdbp" type="galaxy.datatypes.blast:BlastProtDb" mimetype="text/html" display_in_upload="false"/>
     <datatype extension="blastdbd" type="galaxy.datatypes.blast:BlastDomainDb" mimetype="text/html" display_in_upload="false"/>
+    <datatype extension="lastdb" type="galaxy.datatypes.blast:LastDb" mimetype="text/html" display_in_upload="false"/>
+    <datatype extension="blastdbn5" type="galaxy.datatypes.blast:BlastNucDb5" mimetype="text/html" display_in_upload="false"/>
+    <datatype extension="blastdbp5" type="galaxy.datatypes.blast:BlastProtDb5" mimetype="text/html" display_in_upload="false"/>
+    <datatype extension="blastdbd5" type="galaxy.datatypes.blast:BlastDomainDb5" mimetype="text/html" display_in_upload="false"/>
     <datatype extension="maskinfo-asn1" type="galaxy.datatypes.data:GenericAsn1" mimetype="text/plain" subclass="true" display_in_upload="true"/>
     <datatype extension="maskinfo-asn1-binary" type="galaxy.datatypes.binary:GenericAsn1Binary" mimetype="application/octet-stream" subclass="true" display_in_upload="true"/>
     <datatype extension="pssm-asn1" type="galaxy.datatypes.data:GenericAsn1" mimetype="text/plain" subclass="true" display_in_upload="true"/>
@@ -754,6 +798,21 @@
     <datatype extension="dada2_sequencetable" type="galaxy.datatypes.tabular:Tabular" mimetype="application/text" subclass="true" display_in_upload="true" />
     <datatype extension="dada2_uniques" type="galaxy.datatypes.tabular:Tabular" mimetype="application/text" subclass="true" display_in_upload="true" />
     <datatype extension="ckpt" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true" />
+    <datatype extension="tgz" type="galaxy.datatypes.binary:Binary" subclass="true" mimetype="multipart/x-gzip" display_in_upload="true" />
+    <!-- media datatypes -->
+    <datatype extension="wav" type="galaxy.datatypes.media:Wav" display_in_upload="true" mimetype="audio/wav"/>
+    <datatype extension="mp3" type="galaxy.datatypes.media:Mp3" display_in_upload="true" mimetype="audio/mp3"/>
+    <datatype extension="mkv" type="galaxy.datatypes.media:Mkv" display_in_upload="true" mimetype="video/mkv"/>
+    <datatype extension="avi" type="galaxy.datatypes.media:Avi" display_in_upload="true" mimetype="video/x-msvideo"/>
+    <datatype extension="mov" type="galaxy.datatypes.media:Mov" display_in_upload="true" mimetype="video/quicktime"/>
+    <datatype extension="mp4" type="galaxy.datatypes.media:Mp4" display_in_upload="true" mimetype="video/mp4"/>
+    <datatype extension="flv" type="galaxy.datatypes.media:Flv" display_in_upload="true" mimetype="video/flv"/>
+    <datatype extension="ogv" type="galaxy.datatypes.media:Ogv" display_in_upload="true" mimetype="video/ogg"/>
+    <datatype extension="oga" type="galaxy.datatypes.media:Oga" display_in_upload="true" mimetype="audio/ogg"/>
+    <datatype extension="mpg" type="galaxy.datatypes.media:Mpg" display_in_upload="true" mimetype="video/mpeg"/>
+    <!-- speech datatypes -->
+    <datatype extension="textgrid" type="galaxy.datatypes.speech:TextGrid" display_in_upload="true" mimetype="text/plain"/>
+    <datatype extension="par" type="galaxy.datatypes.speech:BPF" display_in_upload="true" mimetype="text/plain-bas"/>
   </registration>
   <sniffers>
     <!--
@@ -786,13 +845,18 @@
     <sniffer type="galaxy.datatypes.tabular:Vcf"/>
     <sniffer type="galaxy.datatypes.binary:TwoBit"/>
     <sniffer type="galaxy.datatypes.binary:GeminiSQLite"/>
+    <sniffer type="galaxy.datatypes.binary:SQmass"/>
     <sniffer type="galaxy.datatypes.binary:MzSQlite"/>
+    <sniffer type="galaxy.datatypes.binary:OSW"/>
+    <sniffer type="galaxy.datatypes.binary:PQP"/>
     <sniffer type="galaxy.datatypes.binary:IdpDB"/>
     <sniffer type="galaxy.datatypes.binary:ElibSQlite"/>
     <sniffer type="galaxy.datatypes.binary:DlibSQlite"/>
     <sniffer type="galaxy.datatypes.binary:BlibSQlite"/>
+    <sniffer type="galaxy.datatypes.binary:ChiraSQLite"/>
     <sniffer type="galaxy.datatypes.binary:CuffDiffSQlite"/>
     <sniffer type="galaxy.datatypes.binary:GAFASQLite"/>
+    <sniffer type="galaxy.datatypes.binary:NcbiTaxonomySQlite"/>
     <sniffer type="galaxy.datatypes.binary:SQlite"/>
     <sniffer type="galaxy.datatypes.binary:Cool"/>
     <sniffer type="galaxy.datatypes.binary:MCool"/>
@@ -828,27 +892,48 @@
     <sniffer type="galaxy.datatypes.binary:Cpt"/>
     <sniffer type="galaxy.datatypes.binary:Edr"/>
     <sniffer type="galaxy.datatypes.binary:Vel"/>
+    <sniffer type="galaxy.datatypes.binary:Xlsx"/>
+    <sniffer type="galaxy.datatypes.binary:CompressedZipArchive"/>
     <sniffer type="galaxy.datatypes.annotation:Augustus"/>
     <sniffer type="galaxy.datatypes.triples:Rdf"/>
     <sniffer type="galaxy.datatypes.blast:BlastXml"/>
     <sniffer type="galaxy.datatypes.xml:Phyloxml"/>
     <sniffer type="galaxy.datatypes.xml:Owl"/>
     <sniffer type="galaxy.datatypes.xml:Sbml"/>
-    <sniffer type="galaxy.datatypes.proteomics:MzML"/>
-    <sniffer type="galaxy.datatypes.proteomics:NmrML"/>
-    <sniffer type="galaxy.datatypes.proteomics:TandemXML"/>
-    <sniffer type="galaxy.datatypes.proteomics:PepXml"/>
+    <sniffer type="galaxy.datatypes.proteomics:Dta2d"/>
+    <sniffer type="galaxy.datatypes.proteomics:Edta"/>
+    <sniffer type="galaxy.datatypes.proteomics:ConsensusXML"/>
+    <sniffer type="galaxy.datatypes.proteomics:IdXML"/>
+    <sniffer type="galaxy.datatypes.proteomics:FeatureXML"/>
+    <sniffer type="galaxy.datatypes.proteomics:MascotXML"/>
     <sniffer type="galaxy.datatypes.proteomics:Mgf"/>
-    <sniffer type="galaxy.datatypes.proteomics:ProtXML"/>
-    <sniffer type="galaxy.datatypes.proteomics:MzXML"/>
-    <sniffer type="galaxy.datatypes.proteomics:MzData"/>
-    <sniffer type="galaxy.datatypes.proteomics:TraML"/>
-    <sniffer type="galaxy.datatypes.proteomics:MzIdentML"/>
-    <sniffer type="galaxy.datatypes.proteomics:MzQuantML"/>
-    <sniffer type="galaxy.datatypes.proteomics:UniProtXML"/>
+    <sniffer type="galaxy.datatypes.proteomics:Ms2"/>
     <sniffer type="galaxy.datatypes.proteomics:Msp"/>
+    <sniffer type="galaxy.datatypes.proteomics:MzData"/>
+    <sniffer type="galaxy.datatypes.proteomics:MzIdentML"/>
+    <sniffer type="galaxy.datatypes.proteomics:MzML"/>
+    <sniffer type="galaxy.datatypes.proteomics:MzQuantML"/>
+    <sniffer type="galaxy.datatypes.proteomics:MzTab"/>
+    <sniffer type="galaxy.datatypes.proteomics:MzTab2"/>
+    <sniffer type="galaxy.datatypes.proteomics:ParamXml"/>
+    <sniffer type="galaxy.datatypes.proteomics:MzXML"/>
+    <sniffer type="galaxy.datatypes.proteomics:NmrML"/>
+    <sniffer type="galaxy.datatypes.proteomics:Kroenik"/>
+    <sniffer type="galaxy.datatypes.proteomics:PepList"/>
+    <sniffer type="galaxy.datatypes.proteomics:PSMS"/>
+    <sniffer type="galaxy.datatypes.proteomics:PepXml"/>
+    <sniffer type="galaxy.datatypes.proteomics:ProtXML"/>
     <sniffer type="galaxy.datatypes.proteomics:SPLib"/>
+    <sniffer type="galaxy.datatypes.proteomics:TandemXML"/>
     <sniffer type="galaxy.datatypes.proteomics:ThermoRAW"/>
+    <sniffer type="galaxy.datatypes.proteomics:TraML"/>
+    <sniffer type="galaxy.datatypes.proteomics:TrafoXML"/>
+    <sniffer type="galaxy.datatypes.proteomics:UniProtXML"/>
+    <sniffer type="galaxy.datatypes.proteomics:XquestXML"/>
+    <sniffer type="galaxy.datatypes.proteomics:XquestSpecXML"/>
+    <sniffer type="galaxy.datatypes.proteomics:QCML"/>
+    <sniffer type="galaxy.datatypes.proteomics:Wiff"/>
+    <sniffer type="galaxy.datatypes.proteomics:PEFF"/>
     <sniffer type="galaxy.datatypes.molecules:CML"/>
     <sniffer type="galaxy.datatypes.xml:GenericXml"/>
     <sniffer type="galaxy.datatypes.triples:HDT"/>
@@ -885,6 +970,7 @@
     <sniffer type="galaxy.datatypes.interval:Gff"/>
     <sniffer type="galaxy.datatypes.interval:Gff3"/>
     <sniffer type="galaxy.datatypes.tabular:Pileup"/>
+    <sniffer type="galaxy.datatypes.text:Paf"/>
     <sniffer type="galaxy.datatypes.interval:Interval"/>
     <sniffer type="galaxy.datatypes.tabular:Sam"/>
     <sniffer type="galaxy.datatypes.data:Newick"/>
@@ -934,7 +1020,18 @@
     <sniffer type="galaxy.datatypes.images:Xpm"/>
     <sniffer type="galaxy.datatypes.images:Eps"/>
     <sniffer type="galaxy.datatypes.images:Rast"/>
-
+    <sniffer type="galaxy.datatypes.media:Wav"/>
+    <sniffer type="galaxy.datatypes.media:Mkv"/>
+    <sniffer type="galaxy.datatypes.media:Mp3"/>
+    <sniffer type="galaxy.datatypes.media:Mov"/>
+    <sniffer type="galaxy.datatypes.media:Avi"/>
+    <sniffer type="galaxy.datatypes.media:Mp4"/>
+    <sniffer type="galaxy.datatypes.media:Ogv"/>
+    <sniffer type="galaxy.datatypes.media:Oga"/>
+    <sniffer type="galaxy.datatypes.media:Flv"/>
+    <sniffer type="galaxy.datatypes.media:Mpg"/>
+    <sniffer type="galaxy.datatypes.speech:TextGrid" />
+    <sniffer type="galaxy.datatypes.speech:BPF" />
     <!--
     Keep this commented until the sniff method in the assembly.py
     module is fixed to not read the entire file.

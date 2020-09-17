@@ -1052,6 +1052,8 @@ class Cleanup(object):
         self.args.sequence = [x.strip() for x in self.args.sequence.split(',')]
         if self.args.sequence != ['']:
             self.args.actions.extend(self.args.sequence)
+        if not self.args.actions:
+            parser.error("Please specify one or more actions")
 
     def __setup_logging(self):
         logging.basicConfig(

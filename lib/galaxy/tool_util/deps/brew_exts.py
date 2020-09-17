@@ -19,7 +19,6 @@
 # htslib@1.1
 # % brew vdeps samtools 0.1.19
 
-from __future__ import print_function
 
 import argparse
 import contextlib
@@ -47,13 +46,13 @@ RELAXED = False
 BREW_ARGS = []
 
 
-class BrewContext(object):
+class BrewContext:
 
     def __init__(self, args=None):
         ensure_brew_on_path(args)
         raw_config = brew_execute(["config"])
         config_lines = [l.strip().split(":", 1) for l in raw_config.split("\n") if l]
-        config = dict([(p[0].strip(), p[1].strip()) for p in config_lines])
+        config = {p[0].strip(): p[1].strip() for p in config_lines}
         # unset if "/usr/local" -> https://github.com/Homebrew/homebrew/blob/master/Library/Homebrew/cmd/config.rb
         homebrew_prefix = config.get("HOMEBREW_PREFIX", "/usr/local")
         homebrew_cellar = config.get("HOMEBREW_CELLAR", os.path.join(homebrew_prefix, "Cellar"))
@@ -61,7 +60,7 @@ class BrewContext(object):
         self.homebrew_cellar = homebrew_cellar
 
 
-class RecipeContext(object):
+class RecipeContext:
 
     @staticmethod
     def from_args(args, brew_context=None):
@@ -267,8 +266,8 @@ def load_versioned_deps(cellar_path, relaxed=None):
         if RELAXED:
             return []
         else:
-            raise IOError("Could not locate versioned receipt file: {}".format(v_metadata_path))
-    with open(v_metadata_path, "r") as f:
+            raise OSError("Could not locate versioned receipt file: {}".format(v_metadata_path))
+    with open(v_metadata_path) as f:
         metadata = json.load(f)
     return metadata['deps']
 
@@ -333,7 +332,7 @@ def build_env_actions(deps, cellar_root, cellar_path, relaxed=None, custom_only=
             ld_path_appends.append(lib_path)
         env_path = os.path.join(cellar_path, "platform_environment.json")
         if os.path.exists(env_path):
-            with open(env_path, "r") as f:
+            with open(env_path) as f:
                 env_metadata = json.load(f)
                 if "actions" in env_metadata:
                     def to_action(desc):
@@ -355,7 +354,7 @@ def build_env_actions(deps, cellar_root, cellar_path, relaxed=None, custom_only=
     return actions
 
 
-class EnvAction(object):
+class EnvAction:
 
     def __init__(self, keg_root, action_description):
         self.variable = action_description["variable"]
@@ -529,7 +528,7 @@ def ensure_brew_on_path(args):
 
     def ensure_on_path(brew):
         if brew != brew_on_path:
-            os.environ["PATH"] = "%s:%s" % (os.path.dirname(brew), os.environ["PATH"])
+            os.environ["PATH"] = "{}:{}".format(os.path.dirname(brew), os.environ["PATH"])
 
     default_brew_path = os.path.join(DEFAULT_HOMEBREW_ROOT, "bin", "brew")
     if args and args.brew:

@@ -23,7 +23,7 @@ def clone_repository(repository_clone_url, repository_file_dir, ctx_rev=None):
     if not os.path.exists(repository_file_dir):
         os.makedirs(repository_file_dir)
     try:
-        subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+        subprocess.check_output(cmd, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL)
         return True, None
     except Exception as e:
         error_message = 'Error cloning repository: %s' % unicodify(e)
@@ -77,7 +77,7 @@ def get_ctx_file_path_from_manifest(filename, repo, changeset_revision):
     for changeset in reversed_upper_bounded_changelog(repo, changeset_revision):
         manifest_ctx = repo[changeset]
         for ctx_file in manifest_ctx.files():
-            ctx_file_name = basic_util.strip_path(ctx_file)
+            ctx_file_name = basic_util.strip_path(unicodify(ctx_file))
             if ctx_file_name == stripped_filename:
                 return manifest_ctx, ctx_file
     return None, None
@@ -93,7 +93,7 @@ def get_file_context_from_ctx(ctx, filename):
     deleted = False
     filename = basic_util.strip_path(filename)
     for ctx_file in ctx.files():
-        ctx_file_name = basic_util.strip_path(ctx_file)
+        ctx_file_name = basic_util.strip_path(unicodify(ctx_file))
         if filename == ctx_file_name:
             try:
                 # If the file was moved, its destination will be returned here.
@@ -107,24 +107,12 @@ def get_file_context_from_ctx(ctx, filename):
     return None
 
 
-def get_repo_for_repository(app, repository=None, repo_path=None):
-    # Import from mercurial here to let Galaxy start under Python 3
-    from mercurial import (
-        hg,
-        ui
-    )
-    if repository is not None:
-        return hg.repository(ui.ui(), repository.repo_path(app))
-    if repo_path is not None:
-        return hg.repository(ui.ui(), repo_path)
-
-
 def pull_repository(repo_path, repository_clone_url, ctx_rev):
     """Pull changes from a remote repository to a local one."""
     try:
         subprocess.check_output(['hg', 'pull', '-r', ctx_rev, repository_clone_url], stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
-        error_message = "Error pulling revision '%s': %s" % (ctx_rev, unicodify(e))
+        error_message = "Error pulling revision '{}': {}".format(ctx_rev, unicodify(e))
         if isinstance(e, subprocess.CalledProcessError):
             error_message += "\nOutput was:\n%s" % unicodify(e.output)
         raise Exception(error_message)
@@ -199,7 +187,6 @@ __all__ = (
     'get_config_from_disk',
     'get_ctx_file_path_from_manifest',
     'get_file_context_from_ctx',
-    'get_repo_for_repository',
     'pull_repository',
     'reversed_lower_upper_bounded_changelog',
     'reversed_upper_bounded_changelog',

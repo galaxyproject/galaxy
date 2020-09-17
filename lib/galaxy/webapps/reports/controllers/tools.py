@@ -32,9 +32,9 @@ def int_to_octet(size):
         size /= 1000.
         no_unit += 1
     try:
-        return "%.2f %s" % (size, units[no_unit])
+        return "{:.2f} {}".format(size, units[no_unit])
     except IndexError:
-        return "%.0f %s" % (size * ((no_unit - len(units) + 1) * 1000.), units[-1])
+        return "{:.0f} {}".format(size * ((no_unit - len(units) + 1) * 1000.), units[-1])
 
 
 class Tools(BaseUIController):

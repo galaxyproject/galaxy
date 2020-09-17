@@ -4,7 +4,7 @@ Mixins for parsing web form and API parameters
 from galaxy import util
 
 
-class BaseParamParser(object):
+class BaseParamParser:
     def get_params(self, kwargs):
         params = util.Params(kwargs)
         # set defaults if unset

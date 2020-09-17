@@ -30,7 +30,7 @@ def build_repository_type_select_field(trans, repository=None, name='repository_
         if repository:
             if repository.type == option_value:
                 repository_type_select_field.add_option(option_label, option_value, selected=selected)
-            elif type_class.is_valid_for_type(trans.app, repository):
+            elif type_class.is_valid_for_type(repository):
                 repository_type_select_field.add_option(option_label, option_value, selected=selected)
         else:
             repository_type_select_field.add_option(option_label, option_value, selected=selected)

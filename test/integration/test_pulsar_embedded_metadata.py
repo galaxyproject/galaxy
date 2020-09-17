@@ -16,8 +16,13 @@ class EmbeddedMetadataPulsarIntegrationInstance(integration_util.IntegrationInst
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         config["job_config_file"] = EMBEDDED_PULSAR_JOB_CONFIG_FILE
+        config['object_store_store_by'] = 'uuid'
+        # We set the global metadata_strategy to `extended, but`metadata_strategy is
+        # being overridden in embedded_pulsar_metadata_job_conf.yml, since extended_metadata does not yet work on pulsar
+        config['metadata_strategy'] = 'extended'
+        config['retry_metadata_internally'] = False
 
 
 instance = integration_util.integration_module_instance(EmbeddedMetadataPulsarIntegrationInstance)
 
-test_tools = integration_util.integration_tool_runner(["simple_constructs"])
+test_tools = integration_util.integration_tool_runner(["simple_constructs", "metadata_bam"])

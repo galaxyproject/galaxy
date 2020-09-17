@@ -12,6 +12,7 @@ import sys
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
 sys.path[1:1] = [os.path.join(galaxy_root, "lib"), os.path.join(galaxy_root, "test")]
 
+from galaxy.util import classproperty
 from galaxy_test.base.api_util import get_master_api_key, get_user_api_key
 from galaxy_test.driver import driver_util
 
@@ -61,7 +62,7 @@ class SeleniumGalaxyTestDriver(driver_util.GalaxyTestDriver):
 
     framework_tool_and_types = True
 
-    @driver_util.classproperty
+    @classproperty
     def default_web_host(cls):
         from galaxy_test.selenium.framework import default_web_host_for_selenium_tests
         return default_web_host_for_selenium_tests()

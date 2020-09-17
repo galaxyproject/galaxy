@@ -1,8 +1,6 @@
-# -*- coding: utf-8 -*-
 import logging
 import os
 import re
-import subprocess
 
 from galaxy.datatypes import (
     data,
@@ -19,24 +17,28 @@ from galaxy.datatypes.sniff import (
 from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.util.generic_util import count_special_lines
 from galaxy.datatypes.xml import GenericXml
-from galaxy.util import unicodify
+from galaxy.util import (
+    commands,
+    unicodify
+)
 
 log = logging.getLogger(__name__)
 
 
 def count_lines(filename, non_empty=False):
     """
-        counting the number of lines from the 'filename' file
+    counting the number of lines from the 'filename' file
     """
+    if non_empty:
+        cmd = ['grep', '-cve', r'^\s*$', filename]
+    else:
+        cmd = ['wc', '-l', filename]
     try:
-        if non_empty:
-            out = subprocess.Popen(['grep', '-cve', r'^\s*$', filename], stdout=subprocess.PIPE)
-        else:
-            out = subprocess.Popen(['wc', '-l', filename], stdout=subprocess.PIPE)
-        return int(out.communicate()[0].split()[0])
-    except Exception:
-        pass
-    return 0
+        out = commands.execute(cmd)
+    except commands.CommandLineException as e:
+        log.error(unicodify(e))
+        return 0
+    return int(out.split()[0])
 
 
 class GenericMolFile(data.Text):
@@ -497,7 +499,7 @@ class PDB(GenericMolFile):
         """
         try:
             chain_ids = set()
-            with open(dataset.file_name, 'r') as fh:
+            with open(dataset.file_name) as fh:
                 for line in fh:
                     if line.startswith('ATOM  ') or line.startswith('HETATM'):
                         if line[21] != ' ':
@@ -513,7 +515,7 @@ class PDB(GenericMolFile):
             hetatm_numbers = count_special_lines("^HETATM", dataset.file_name)
             chain_ids = ','.join(dataset.metadata.chain_ids) if len(dataset.metadata.chain_ids) > 0 else 'None'
             dataset.peek = get_file_peek(dataset.file_name)
-            dataset.blurb = "%s atoms and %s HET-atoms\nchain_ids: %s" % (atom_numbers, hetatm_numbers, chain_ids)
+            dataset.blurb = "{} atoms and {} HET-atoms\nchain_ids: {}".format(atom_numbers, hetatm_numbers, chain_ids)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -564,7 +566,7 @@ class PDBQT(GenericMolFile):
             root_numbers = count_special_lines("^ROOT", dataset.file_name)
             branch_numbers = count_special_lines("^BRANCH", dataset.file_name)
             dataset.peek = get_file_peek(dataset.file_name)
-            dataset.blurb = "%s roots and %s branches" % (root_numbers, branch_numbers)
+            dataset.blurb = "{} roots and {} branches".format(root_numbers, branch_numbers)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -648,7 +650,7 @@ class PQR(GenericMolFile):
         try:
             prog = self.get_matcher()
             chain_ids = set()
-            with open(dataset.file_name, 'r') as fh:
+            with open(dataset.file_name) as fh:
                 for line in fh:
                     if line.startswith('REMARK'):
                         continue
@@ -666,7 +668,7 @@ class PQR(GenericMolFile):
             hetatm_numbers = count_special_lines("^HETATM", dataset.file_name)
             chain_ids = ','.join(dataset.metadata.chain_ids) if len(dataset.metadata.chain_ids) > 0 else 'None'
             dataset.peek = get_file_peek(dataset.file_name)
-            dataset.blurb = "%s atoms and %s HET-atoms\nchain_ids: %s" % (atom_numbers, hetatm_numbers, str(chain_ids))
+            dataset.blurb = "{} atoms and {} HET-atoms\nchain_ids: {}".format(atom_numbers, hetatm_numbers, str(chain_ids))
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'

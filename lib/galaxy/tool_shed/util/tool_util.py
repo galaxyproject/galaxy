@@ -97,7 +97,7 @@ def generate_message_for_invalid_tools(app, invalid_file_tups, repository, metad
     if app.name == 'galaxy':
         tip_rev = str(repository.changeset_revision)
     else:
-        tip_rev = str(repository.tip(app))
+        tip_rev = str(repository.tip())
     if not displaying_invalid_tool:
         if metadata_dict:
             message += "Metadata may have been defined for some items in revision '%s'.  " % tip_rev
@@ -124,7 +124,7 @@ def generate_message_for_invalid_tools(app, invalid_file_tups, repository, metad
                 correction_msg = exception_msg
             else:
                 correction_msg = exception_msg.replace('<br/>', new_line).replace('<b>', bold_start).replace('</b>', bold_end)
-        message += "%s%s%s - %s%s" % (bold_start, tool_file, bold_end, correction_msg, new_line)
+        message += "{}{}{} - {}{}".format(bold_start, tool_file, bold_end, correction_msg, new_line)
     return message
 
 

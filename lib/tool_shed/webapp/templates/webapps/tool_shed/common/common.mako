@@ -109,6 +109,7 @@
         else:
             disabled_str = ''
         html = ''
+        rating = rating or 0
         for index in range( 1, 6 ):
             html += '<input name="%s" type="radio" class="star" value="%s" %s' % ( str( name ), str( index ), disabled_str )
             if rating > ( index - 0.5 ) and rating < ( index + 0.5 ):

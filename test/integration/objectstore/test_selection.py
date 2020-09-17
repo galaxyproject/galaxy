@@ -44,6 +44,9 @@ class ObjectStoreSelectionIntegrationTestCase(BaseObjectStoreIntegrationTestCase
         cls._configure_object_store(DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE, config)
         config["job_config_file"] = JOB_CONFIG_FILE
         config["job_resource_params_file"] = JOB_RESOURCE_PARAMETERS_CONFIG_FILE
+        config["object_store_store_by"] = "uuid"
+        config["metadata_strategy"] = "extended"
+        config["outputs_to_working_directory"] = True
 
     def _object_store_counts(self):
         files_default_count = files_count(self.files_default_path)
@@ -60,6 +63,11 @@ class ObjectStoreSelectionIntegrationTestCase(BaseObjectStoreIntegrationTestCase
         assert static == files_static_count
         assert dynamic_ebs == files_dynamic_ebs_count
         assert dynamic_s3 == files_dynamic_s3_count
+
+    def _assert_no_external_filename(self):
+        # Should maybe be its own test case ...
+        for external_filename_tuple in self._app.model.session.query(self._app.model.Dataset.external_filename).all():
+            assert external_filename_tuple[0] is None
 
     def test_tool_simple_constructs(self):
         with self.dataset_populator.test_history() as history_id:
@@ -103,3 +111,4 @@ class ObjectStoreSelectionIntegrationTestCase(BaseObjectStoreIntegrationTestCase
             }
             _run_tool("create_10", create_10_inputs)
             self._assert_file_counts(1, 2, 10, 10)
+            self._assert_no_external_filename()

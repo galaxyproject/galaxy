@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 class ToursController(BaseAPIController):
 
     def __init__(self, app):
-        super(ToursController, self).__init__(app)
+        super().__init__(app)
 
     @expose_api_anonymous_and_sessionless
     def index(self, trans, **kwd):

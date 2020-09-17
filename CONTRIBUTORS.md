@@ -86,6 +86,7 @@ The following individuals have contributed code to Galaxy:
 * Joachim Jacob <joachim.jacob@gmail.com>
 * Xiaoqian Jiang <jxq198409@hotmail.com>
 * Jim Johnson <jj@umn.edu> <jj@msi.umn.edu>
+* Kaivan Kamali <kxk302@gmail.com>
 * Radhesh Kamath <radhesh@bx.psu.edu>
 * Iyad Kandalaft <ik@iyadk.com>
 * Jan Kanis <jan.code@jankanis.nl>

@@ -1,7 +1,6 @@
 """
 Adds 'active' and 'activation_token' columns to the galaxy_user table.
 """
-from __future__ import print_function
 
 import logging
 

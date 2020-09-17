@@ -1,9 +1,7 @@
 """
 API operations for Workflows
 """
-from __future__ import absolute_import
 
-import io
 import json
 import logging
 import os
@@ -21,18 +19,22 @@ from galaxy import (
 )
 from galaxy.managers import (
     histories,
+    history_contents,
     workflows
 )
-from galaxy.managers.jobs import fetch_job_states, invocation_job_source_iter
+from galaxy.managers.jobs import fetch_job_states, invocation_job_source_iter, summarize_job_metrics
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
+from galaxy.tools import recommendations
 from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.basic import workflow_building_modes
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.version import VERSION
 from galaxy.web import (
     expose_api,
     expose_api_anonymous_and_sessionless,
     expose_api_raw,
+    expose_api_raw_anonymous_and_sessionless,
     format_return_as_json,
 )
 from galaxy.webapps.base.controller import (
@@ -53,13 +55,15 @@ log = logging.getLogger(__name__)
 class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnnotations, SharableMixin):
 
     def __init__(self, app):
-        super(WorkflowsAPIController, self).__init__(app)
+        super().__init__(app)
         self.history_manager = histories.HistoryManager(app)
+        self.history_contents_manager = history_contents.HistoryContentsManager(app)
         self.workflow_manager = workflows.WorkflowsManager(app)
         self.workflow_contents_manager = workflows.WorkflowContentsManager(app)
+        self.tool_recommendations = recommendations.ToolRecommendations()
 
     def __get_full_shed_url(self, url):
-        for name, shed_url in self.app.tool_shed_registry.tool_sheds.items():
+        for shed_url in self.app.tool_shed_registry.tool_sheds.values():
             if url in shed_url:
                 return shed_url
         return None
@@ -69,7 +73,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         """
         GET /api/workflows
         """
-        return self.get_workflows_list(trans, kwd)
+        return self.get_workflows_list(trans, **kwd)
 
     @expose_api
     def get_workflow_menu(self, trans, **kwd):
@@ -81,7 +85,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         ids_in_menu = [x.stored_workflow_id for x in user.stored_workflow_menu_entries]
         return {
             'ids_in_menu': ids_in_menu,
-            'workflows': self.get_workflows_list(trans, kwd)
+            'workflows': self.get_workflows_list(trans, **kwd)
         }
 
     @expose_api
@@ -123,31 +127,31 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         trans.set_message(message)
         return {'message': message, 'status': 'done'}
 
-    def get_workflows_list(self, trans, kwd):
+    def get_workflows_list(self, trans, missing_tools=False, show_published=None, show_hidden=False, show_deleted=False, **kwd):
         """
         Displays a collection of workflows.
 
         :param  show_published:      if True, show also published workflows
         :type   show_published:      boolean
+        :param  show_hidden:         if True, show hidden workflows
+        :type   show_hidden:         boolean
+        :param  show_deleted:        if True, show deleted workflows
+        :type   show_deleted:        boolean
         :param  missing_tools:       if True, include a list of missing tools per workflow
         :type   missing_tools:       boolean
         """
-        missing_tools = util.string_as_bool(kwd.get('missing_tools', 'False'))
         rval = []
-        filter1 = (trans.app.model.StoredWorkflow.user == trans.user)
+        filter1 = trans.app.model.StoredWorkflow.user == trans.user
         user = trans.get_user()
-        if user is None:
-            show_published = util.string_as_bool(kwd.get('show_published', 'True'))
-        else :
-            show_published = util.string_as_bool(kwd.get('show_published', 'False'))
-        if show_published:
+        if show_published or user is None and show_published is None:
             filter1 = or_(filter1, (trans.app.model.StoredWorkflow.published == true()))
-        for wf in trans.sa_session.query(trans.app.model.StoredWorkflow).options(
-                joinedload("annotations")).options(
-                joinedload("latest_workflow").undefer("step_count").lazyload("steps")).options(
-                joinedload("tags")).filter(
-                    filter1, trans.app.model.StoredWorkflow.table.c.deleted == false()).order_by(
-                    desc(trans.app.model.StoredWorkflow.table.c.update_time)).all():
+        query = trans.sa_session.query(trans.app.model.StoredWorkflow).options(
+            joinedload("annotations")).options(
+            joinedload("latest_workflow").undefer("step_count").lazyload("steps")).options(
+            joinedload("tags")
+        ).filter(filter1)
+        query = query.filter_by(hidden=true() if show_hidden else false(), deleted=true() if show_deleted else false())
+        for wf in query.order_by(desc(trans.app.model.StoredWorkflow.table.c.update_time)).all():
             item = wf.to_dict(value_mapper={'id': trans.security.encode_id})
             encoded_id = trans.security.encode_id(wf.id)
             item['annotations'] = [x.annotation for x in wf.annotations]
@@ -181,7 +185,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             workflows_missing_tools = []
             workflows = []
             workflows_by_toolshed = dict()
-            for key, value in enumerate(rval):
+            for value in rval:
                 tool_ids = []
                 workflow_details = self.workflow_contents_manager.workflow_to_dict(trans, self.__get_stored_workflow(trans, value['id']), style='instance')
                 if 'steps' in workflow_details:
@@ -327,7 +331,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             if not os.path.exists(installed_repository_file):
                 raise exceptions.RequestParameterInvalidException("Workflow file '%s' not found" % installed_repository_file)
             elif os.path.getsize(os.path.abspath(installed_repository_file)) > 0:
-                with io.open(installed_repository_file, encoding='utf-8') as f:
+                with open(installed_repository_file, encoding='utf-8') as f:
                     workflow_data = f.read()
                 return self.__api_import_from_archive(trans, workflow_data)
             else:
@@ -344,6 +348,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                     workflow_src = {"src": "from_path", "path": archive_source[len("file://"):]}
                     payload["workflow"] = workflow_src
                     return self.__api_import_new_workflow(trans, payload, **kwd)
+                elif archive_source == "trs_tool":
+                    trs_server = payload.get("trs_server")
+                    trs_tool_id = payload.get("trs_tool_id")
+                    trs_version_id = payload.get("trs_version_id")
+                    archive_data = self.app.trs_proxy.get_version_descriptor(trs_server, trs_tool_id, trs_version_id)
                 else:
                     try:
                         archive_data = requests.get(archive_source).text
@@ -353,7 +362,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 uploaded_file = archive_file.file
                 uploaded_file_name = uploaded_file.name
                 if os.path.getsize(os.path.abspath(uploaded_file_name)) > 0:
-                    archive_data = uploaded_file.read()
+                    archive_data = util.unicodify(uploaded_file.read())
                 else:
                     raise exceptions.MessageException("You attempted to upload an empty file.")
             else:
@@ -441,7 +450,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         invocation_response.update(rval)
         return invocation_response
 
-    @expose_api_raw
+    @expose_api_raw_anonymous_and_sessionless
     def workflow_dict(self, trans, workflow_id, **kwd):
         """
         GET /api/workflows/{encoded_workflow_id}/download
@@ -474,7 +483,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 extension = "ga"
             else:
                 extension = "gxwf.json"
-            trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy-Workflow-%s.%s"' % (sname, extension)
+            trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy-Workflow-{}.{}"'.format(sname, extension)
             trans.response.set_content_type('application/galaxy-archive')
 
         if style == "format2" and download_format != 'json-download':
@@ -572,6 +581,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 trans.sa_session.add(workflow, stored_workflow)
                 trans.sa_session.flush()
 
+            if 'hidden' in workflow_dict and stored_workflow.hidden != workflow_dict['hidden']:
+                stored_workflow.hidden = workflow_dict['hidden']
+                trans.sa_session.flush()
+
             if 'annotation' in workflow_dict:
                 newAnnotation = sanitize_html(workflow_dict['annotation'])
                 self.add_item_annotation(trans.sa_session, trans.get_user(), stored_workflow, newAnnotation)
@@ -608,11 +621,13 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         return self.workflow_contents_manager.workflow_to_dict(trans, stored_workflow, style="instance")
 
     @expose_api
-    def build_module(self, trans, payload={}):
+    def build_module(self, trans, payload=None):
         """
         POST /api/workflows/build_module
         Builds module models for the workflow editor.
         """
+        if payload is None:
+            payload = {}
         inputs = payload.get('inputs', {})
         trans.workflow_building_mode = workflow_building_modes.ENABLED
         module = module_factory.from_dict(trans, payload, from_tool_form=True)
@@ -629,6 +644,26 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             'outputs'           : module.get_all_outputs(),
             'config_form'       : module.get_config_form(),
             'post_job_actions'  : module.get_post_job_actions(inputs)
+        }
+
+    @expose_api
+    def get_tool_predictions(self, trans, payload, **kwd):
+        """
+        POST /api/workflows/get_tool_predictions
+        Fetch predicted tools for a workflow
+        :type   payload: dict
+        :param  payload: a dictionary containing two parameters:
+                         'tool_sequence' - comma separated sequence of tool ids
+                         'remote_model_url' - (optional) path to the deep learning model
+        """
+        remote_model_url = payload.get('remote_model_url', trans.app.config.tool_recommendation_model_path)
+        tool_sequence = payload.get('tool_sequence', "")
+        if 'tool_sequence' not in payload or remote_model_url is None:
+            return
+        tool_sequence, recommended_tools = self.tool_recommendations.get_predictions(trans, tool_sequence, remote_model_url)
+        return {
+            "current_tool": tool_sequence,
+            "predicted_data": recommended_tools
         }
 
     #
@@ -790,10 +825,13 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 trans=trans,
                 workflow=workflow,
                 workflow_run_config=run_config,
-                request_params=work_request_params
+                request_params=work_request_params,
+                flush=False,
             )
-            invocation = self.encode_all_ids(trans, workflow_invocation.to_dict(), recursive=True)
-            invocations.append(invocation)
+            invocations.append(workflow_invocation)
+
+        trans.sa_session.flush()
+        invocations = [self.encode_all_ids(trans, invocation.to_dict(), recursive=True) for invocation in invocations]
 
         if is_batch:
             return invocations
@@ -957,6 +995,276 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             plugin_type=generator_plugin_type,
             target_format=target_format,
         )
+
+    def _generate_invocation_bco(self, trans, invocation_id, **kwd):
+        decoded_workflow_invocation_id = self.decode_id(invocation_id)
+        workflow_invocation = self.workflow_manager.get_invocation(trans, decoded_workflow_invocation_id)
+        history = workflow_invocation.history
+        workflow = workflow_invocation.workflow
+        stored_workflow = workflow.stored_workflow
+
+        # pull in the user info from those who the history and workflow has been shared with
+        contributing_users = [stored_workflow.user]
+        for association in trans.sa_session.query(model.StoredWorkflowUserShareAssociation):
+            if association.user not in contributing_users:
+                contributing_users.append(association.user)
+        for h_association in trans.sa_session.query(model.HistoryUserShareAssociation):
+            if h_association.user not in contributing_users:
+                contributing_users.append(h_association.user)
+
+        # may want to extend this to have more reviewers.
+        reviewing_users = [stored_workflow.user]
+        encoded_workflow_id = trans.security.encode_id(stored_workflow.id)
+        encoded_history_id = trans.security.encode_id(history.id)
+        dict_workflow = json.loads(self.workflow_dict(trans, encoded_workflow_id))
+
+        # h_contents = self.history_contents_manager.contained(history)
+
+        spec_version = kwd.get('spec_version', 'https://w3id.org/ieee/ieee-2791-schema/2791object.json')
+
+        # listing the versions of the workflow for 'version' and 'derived_from'
+        versions = []
+        workflow_versions = self.workflow_manager.get_stored_accessible_workflow(trans, encoded_workflow_id)
+        for i, w in enumerate(reversed(workflow_versions.workflows)):
+            version = {
+                'version': i,
+                'update_time': str(w.update_time),
+                'steps': len(w.steps),
+                'version_id': trans.security.encode_id(w.stored_workflow.id),
+            }
+            versions.append(version)
+        current_version = versions[-1]['version']
+
+        contributors = []
+        for contributing_user in contributing_users:
+            contributor = {
+                'orcid': kwd.get('xref', []),
+                'name': contributing_user.username,
+                'affiliation': contributing_user.email.split('@')[-1],
+                'contribution': ['authoredBy'],
+                'email': contributing_user.email,
+            }
+            contributors.append(contributor)
+
+        reviewers = []
+        for reviewer in reviewing_users:
+            reviewer = {
+                'status': 'approved',
+                'reviewer_comment': '',
+                'date': workflow_invocation.update_time.isoformat(),
+                'reviewer': {
+                    'orcid': kwd.get('orcid', []),
+                    'name': contributing_user.username,
+                    'affiliation': contributing_user.email.split('@')[-1],
+                    'contribution': 'curatedBy',
+                    'email': contributing_user.email
+                }
+            }
+            reviewers.append(reviewer)
+
+        provenance_domain = {
+            'name': workflow.name,
+            'version': current_version,
+            'review': reviewers,
+            'derived_from': url_for('workflow', id=encoded_workflow_id, qualified=True),
+            'created': workflow_invocation.create_time.isoformat(),
+            'modified': workflow_invocation.update_time.isoformat(),
+            'contributors': contributors,
+            'license': 'https://spdx.org/licenses/CC-BY-4.0.html',
+        }
+
+        keywords = []
+        for tag in stored_workflow.tags:
+            keywords.append(tag.user_tname)
+        for tag in history.tags:
+            if tag.user_tname not in keywords:
+                keywords.append(tag.user_tname)
+
+        metrics = {}
+        tools, input_subdomain, output_subdomain, pipeline_steps, software_prerequisites = [], [], [], [], []
+        for i, step in enumerate(workflow_invocation.steps):
+            if step.workflow_step.type == 'tool':
+                workflow_outputs_list , output_list, input_list = [], [], []
+                for wo in step.workflow_step.workflow_outputs:
+                    workflow_outputs_list.append(wo.output_name)
+                for job in step.jobs:
+                    metrics[i] = summarize_job_metrics(trans, job)
+                    for job_input in job.input_datasets:
+                        if hasattr(job_input.dataset, 'dataset_id'):
+                            encoded_dataset_id = trans.security.encode_id(job_input.dataset.dataset_id)
+                            input_obj = {
+                                'filename': job_input.dataset.name,
+                                'uri': url_for('history_content', history_id=encoded_history_id, id=encoded_dataset_id, qualified=True),
+                                'access_time': job_input.dataset.create_time.isoformat(),
+                            }
+                            input_list.append(input_obj)
+
+                    for job_output in job.output_datasets:
+                        if hasattr(job_output.dataset, 'dataset_id'):
+                            encoded_dataset_id = trans.security.encode_id(job_output.dataset.dataset_id)
+                            output_obj = {
+                                'filename': job_output.dataset.name,
+                                'uri': url_for('history_content', history_id=encoded_history_id, id=encoded_dataset_id, qualified=True),
+                                'access_time': job_output.dataset.create_time.isoformat(),
+                            }
+                            output_list.append(output_obj)
+
+                        if job_output.name in workflow_outputs_list:
+                            output = {
+                                'mediatype': job_output.dataset.extension,
+                                'uri': {
+                                    'filename': job_output.dataset.name,
+                                    'uri': url_for('history_content', history_id=encoded_history_id, id=encoded_dataset_id, qualified=True),
+                                    'access_time': job_output.dataset.create_time.isoformat(),
+                                }
+                            }
+                            output_subdomain.append(output)
+                current_tool = dict_workflow['steps'][str(i)]
+                pipeline_step = {
+                    'step_number': i,
+                    'name': current_tool['name'],
+                    'description': current_tool['annotation'],
+                    'version': current_tool['tool_version'],
+                    'prerequisite': kwd.get('prerequisite', []),
+                    'input_list': input_list,
+                    'output_list': output_list
+                }
+                pipeline_steps.append(pipeline_step)
+                try:
+                    software_prerequisite = {
+                        'name': current_tool['tool_shed_repository']['name'],
+                        'version': current_tool['tool_version'],
+                        'uri': {
+                            'uri': current_tool['content_id'],
+                            'access_time': current_tool['uuid']
+                        }
+                    }
+                    if software_prerequisite['uri']['uri'] not in tools:
+                        software_prerequisites.append(software_prerequisite)
+                        tools.append(software_prerequisite['uri']['uri'])
+                except Exception:
+                    continue
+
+            if step.workflow_step.type == 'data_input':
+                for output_assoc in step.output_datasets:
+                    encoded_dataset_id = trans.security.encode_id(output_assoc.dataset.id)
+                input_obj = {
+                    'filename': step.workflow_step.label,
+                    'uri': url_for('history_content', history_id=encoded_history_id, id=encoded_dataset_id, qualified=True),
+                    'access_time': step.workflow_step.update_time.isoformat(),
+                }
+                input_subdomain.append(input_obj)
+
+            if step.workflow_step.type == 'data_collection_input':
+                encoded_dataset_id = trans.security.encode_id(step.workflow_step.id)
+                input_obj = {
+                    'filename': step.workflow_step.label,
+                    'uri': url_for('history_content', history_id=encoded_history_id, id=encoded_dataset_id, qualified=True),
+                    'access_time': step.workflow_step.update_time.isoformat(),
+                }
+                input_subdomain.append(input_obj)
+
+        usability_domain = []
+        for a in stored_workflow.annotations:
+            usability_domain.append(a.annotation)
+        for h in history.annotations:
+            usability_domain.append(h.annotation)
+
+        parametric_domain = []
+        for inv_step in workflow_invocation.steps:
+            try:
+                for k, v in inv_step.workflow_step.tool_inputs.items():
+                    param, value, step = k, v, inv_step.workflow_step.order_index
+                    parametric_domain.append({'param': param, 'value': value, 'step': step})
+            except Exception:
+                continue
+
+        execution_domain = {
+            'script_access_type': 'a_galaxy_workflow',
+            'script': [url_for('workflows', encoded_workflow_id=encoded_workflow_id)],
+            'script_driver': 'Galaxy',
+            'software_prerequisites': software_prerequisites,
+            'external_data_endpoints': [
+                {
+                    'name': 'Access to Galaxy',
+                    'url': url_for('/', qualified=True)
+                },
+                kwd.get('external_data_endpoints')
+            ],
+            'environment_variables': kwd.get('environment_variables', {})
+        }
+
+        extension = [
+            {
+                'extension_schema': 'https://raw.githubusercontent.com/biocompute-objects/extension_domain/6d2cd8482e6075746984662edcf78b57d3d38065/galaxy/galaxy_extension.json',
+                'galaxy_extension': {
+                    'galaxy_url': url_for('/', qualified=True),
+                    'galaxy_version': VERSION,
+                    # 'aws_estimate': aws_estimate,
+                    # 'job_metrics': metrics
+                }
+            }
+        ]
+
+        error_domain = {
+            'empirical_error': kwd.get('empirical_error', []),
+            'algorithmic_error': kwd.get('algorithmic_error', [])
+        }
+
+        bco_dict = {
+            'object_id': url_for('invocation_export_bco', invocation_id=invocation_id, qualified=True),
+            'spec_version': spec_version,
+            'etag': str(model.uuid4().hex),
+            'provenance_domain': provenance_domain,
+            'usability_domain': usability_domain,
+            'extension_domain': extension,
+            'description_domain': {
+                'keywords': keywords,
+                'xref': kwd.get('xref', []),
+                'platform': ['Galaxy'],
+                'pipeline_steps': pipeline_steps,
+            },
+            'execution_domain': execution_domain,
+            'parametric_domain': parametric_domain,
+            'io_domain': {
+                'input_subdomain': input_subdomain,
+                'output_subdomain': output_subdomain,
+            },
+            'error_domain': error_domain,
+        }
+        return bco_dict
+
+    @expose_api
+    def export_invocation_bco(self, trans, invocation_id, **kwd):
+        '''
+        GET /api/invocations/{invocations_id}/biocompute
+
+        Return a BioCompute Object for the workflow invocation.
+
+        The BioCompute Object endpoints are in beta - important details such
+        as how inputs and outputs are represented, how the workflow is encoded,
+        and how author and version information is encoded, and how URLs are
+        generated will very likely change in important ways over time.
+        '''
+        return self._generate_invocation_bco(trans, invocation_id, **kwd)
+
+    @expose_api_raw
+    def download_invocation_bco(self, trans, invocation_id, **kwd):
+        """
+        GET /api/invocations/{invocations_id}/biocompute/download
+
+        Returns a selected BioCompute Object as a file for download (HTTP
+        headers configured with filename and such).
+
+        The BioCompute Object endpoints are in beta - important details such
+        as how inputs and outputs are represented, how the workflow is encoded,
+        and how author and version information is encoded, and how URLs are
+        generated will very likely change in important ways over time.
+        """
+        ret_dict = self._generate_invocation_bco(trans, invocation_id, **kwd)
+        trans.response.headers["Content-Disposition"] = 'attachment; filename="bco_%s.json"' % invocation_id
+        trans.response.set_content_type("application/json")
+        return format_return_as_json(ret_dict, pretty=True)
 
     @expose_api
     def invocation_step(self, trans, invocation_id, step_id, **kwd):

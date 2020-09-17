@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import collections
 import copy
 import json
@@ -8,7 +6,6 @@ import math
 import random
 import string
 
-from six import iteritems, string_types
 
 from ..util import unicodify
 
@@ -24,13 +21,13 @@ def swap_inf_nan(val):
     """
     This takes an arbitrary object and preps it for jsonifying safely, templating Inf/NaN.
     """
-    if isinstance(val, string_types):
+    if isinstance(val, str):
         # basestring first, because it's a sequence and would otherwise get caught below.
         return val
     elif isinstance(val, collections.Sequence):
         return [swap_inf_nan(v) for v in val]
     elif isinstance(val, collections.Mapping):
-        return dict([(swap_inf_nan(k), swap_inf_nan(v)) for (k, v) in iteritems(val)])
+        return {swap_inf_nan(k): swap_inf_nan(v) for (k, v) in val.items()}
     elif isinstance(val, float):
         if math.isnan(val):
             return "__NaN__"
@@ -152,7 +149,7 @@ def validate_jsonrpc_response(response, id=None):
         try:
             assert 'id' in response and response['id'] == id
         except Exception:
-            log.error('The response id "%s" does not match the request id "%s"' % (response['id'], id))
+            log.error('The response id "{}" does not match the request id "{}"'.format(response['id'], id))
             return False, response
     return True, response
 

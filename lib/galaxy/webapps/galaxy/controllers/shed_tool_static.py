@@ -9,6 +9,12 @@ from galaxy.webapps.base.controller import BaseUIController
 log = logging.getLogger(__name__)
 
 
+def _asset_exists_and_is_safe(repo_path, asset_path):
+    if not safe_contains(repo_path, asset_path):
+        raise RequestParameterInvalidException()
+    return os.path.exists(asset_path)
+
+
 class ShedToolStatic(BaseUIController):
 
     @web.expose
@@ -26,17 +32,25 @@ class ShedToolStatic(BaseUIController):
         """
         guid = '/'.join((shed, 'repos', owner, repo, tool, version))
         tool = trans.app.toolbox.get_tool(guid)
-        repo_path = tool._repository_dir
+        repo_path = os.path.abspath(tool._repository_dir)
+        found_path = None
+
         if 'static/images' not in image_file:
-            path = join(repo_path, 'static', 'images', image_file)
+            asset_path = os.path.abspath(join(repo_path, 'static', 'images', image_file))
+            if _asset_exists_and_is_safe(repo_path, asset_path):
+                found_path = asset_path
+
+        if not found_path:
+            asset_path = os.path.abspath(join(repo_path, image_file))
+            if _asset_exists_and_is_safe(repo_path, asset_path):
+                found_path = asset_path
+
+        if found_path:
+            ext = os.path.splitext(image_file)[-1].lstrip('.')
+            if ext:
+                mime = trans.app.datatypes_registry.get_mimetype_by_extension(ext)
+                if mime:
+                    trans.response.set_content_type(mime)
+            return open(found_path, 'rb')
         else:
-            path = join(repo_path, image_file)
-        if not safe_contains(os.path.abspath(repo_path), os.path.abspath(path)):
             raise RequestParameterInvalidException()
-        ext = os.path.splitext(image_file)[-1].lstrip('.')
-        if ext:
-            mime = trans.app.datatypes_registry.get_mimetype_by_extension(ext)
-            if mime:
-                trans.response.set_content_type(mime)
-        if os.path.exists(path):
-            return open(path, 'rb')

@@ -1,7 +1,6 @@
 """
 Migration script to support subworkflows and workflow request input parameters
 """
-from __future__ import print_function
 
 import logging
 

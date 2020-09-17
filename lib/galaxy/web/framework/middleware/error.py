@@ -13,7 +13,6 @@ import sys
 import traceback
 
 import markupsafe
-import six
 from paste import (
     request,
     wsgilib
@@ -24,7 +23,7 @@ from six.moves import cStringIO as StringIO
 __all__ = ('ErrorMiddleware', 'handle_exception')
 
 
-class _NoDefault(object):
+class _NoDefault:
     def __repr__(self):
         return '<NoDefault>'
 
@@ -32,7 +31,7 @@ class _NoDefault(object):
 NoDefault = _NoDefault()
 
 
-class ErrorMiddleware(object):
+class ErrorMiddleware:
 
     """
     Error handling middleware
@@ -199,7 +198,7 @@ class ErrorMiddleware(object):
             environ=environ)
 
 
-class ResponseStartChecker(object):
+class ResponseStartChecker:
     def __init__(self, start_response):
         self.start_response = start_response
         self.response_started = False
@@ -211,7 +210,7 @@ class ResponseStartChecker(object):
         return self.start_response(*args)
 
 
-class CatchingIter(six.Iterator):
+class CatchingIter:
 
     """
     A wrapper around the application iterator that will catch
@@ -281,7 +280,7 @@ class CatchingIter(six.Iterator):
             return close_response
 
 
-class Supplement(object):
+class Supplement:
 
     """
     This is a supplement used to display standard WSGI information in
@@ -398,7 +397,7 @@ def handle_exception(exc_info, error_stream, html=True,
         else:
             reported = True
     else:
-        error_stream.write('Error - %s: %s\n' % (
+        error_stream.write('Error - {}: {}\n'.format(
             exc_data.exception_type, exc_data.exception_value))
     if html:
         if debug_mode and simple_html_error:
@@ -445,10 +444,10 @@ def send_report(rep, exc_data, html=True):
         traceback.print_exc(file=output)
         if html:
             return """
-            <p>Additionally an error occurred while sending the %s report:
+            <p>Additionally an error occurred while sending the {} report:
 
-            <pre>%s</pre>
-            </p>""" % (
+            <pre>{}</pre>
+            </p>""".format(
                 markupsafe.escape(str(rep)), output.getvalue())
         else:
             return (
@@ -464,11 +463,11 @@ def error_template(head_html, exception, extra):
     <html>
     <head>
     <style type="text/css">
-    body { color: #303030; background: #dfe5f9; font-family:"Lucida Grande",verdana,arial,helvetica,sans-serif; font-size:12px; line-height:16px; }
-    .content { max-width: 720px; margin: auto; margin-top: 50px; }
+    body {{ color: #303030; background: #dfe5f9; font-family:"Lucida Grande",verdana,arial,helvetica,sans-serif; font-size:12px; line-height:16px; }}
+    .content {{ max-width: 720px; margin: auto; margin-top: 50px; }}
     </style>
     <title>Internal Server Error</title>
-    %s
+    {}
     </head>
     <body>
     <div class="content">
@@ -476,14 +475,14 @@ def error_template(head_html, exception, extra):
 
     <h2>Galaxy was unable to successfully complete your request</h2>
 
-    <p>%s</p>
+    <p>{}</p>
 
     This may be an intermittent problem due to load or other unpredictable factors, reloading the page may address the problem.
 
-    %s
+    {}
     </div>
     </body>
-    </html>''' % (head_html, exception, extra)
+    </html>'''.format(head_html, exception, extra)
 
 
 def make_error_middleware(app, global_conf, **kw):

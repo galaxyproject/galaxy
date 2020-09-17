@@ -6,7 +6,9 @@
 -->
 <tool name="CBI Rice Mart" id="cbi_rice_mart" tool_type="data_source" version="1.0.1">
     <description>rice mart</description>
-    <command interpreter="python">data_source.py $output $__app__.config.output_size_limit</command>
+    <command><![CDATA[
+python '$__tool_directory__/data_source.py' '$output' $__app__.config.output_size_limit
+    ]]></command>
     <inputs action="http://ricemart.cbi.edu.cn/biomart/martview/" check_values="false" method="get" target="_top">
         <display>go to RMap rice mart $GALAXY_URL</display>
         <param name="GALAXY_URL" type="baseurl" value="/tool_runner/biomart" />

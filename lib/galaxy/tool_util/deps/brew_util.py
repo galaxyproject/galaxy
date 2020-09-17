@@ -7,7 +7,7 @@ from ..deps import brew_exts
 DEFAULT_TAP = "homebrew/science"
 
 
-class HomebrewRecipe(object):
+class HomebrewRecipe:
 
     def __init__(self, recipe, version, tap):
         self.recipe = recipe

@@ -7,8 +7,9 @@ import re
 from galaxy.datatypes import data
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import Text
+from galaxy.datatypes.sequence import Sequence
 from galaxy.datatypes.sniff import build_sniff_from_prefix
-from galaxy.datatypes.tabular import Tabular
+from galaxy.datatypes.tabular import Tabular, TabularData
 from galaxy.datatypes.xml import GenericXml
 from galaxy.util import nice_size
 
@@ -46,11 +47,226 @@ class Wiff(Binary):
             if composite_file.optional:
                 opt_text = ' (optional)'
             if composite_file.get('description'):
-                rval.append('<li><a href="%s" type="text/plain">%s (%s)</a>%s</li>' % (fn, fn, composite_file.get('description'), opt_text))
+                rval.append('<li><a href="{}" type="text/plain">{} ({})</a>{}</li>'.format(fn, fn, composite_file.get('description'), opt_text))
             else:
-                rval.append('<li><a href="%s" type="text/plain">%s</a>%s</li>' % (fn, fn, opt_text))
+                rval.append('<li><a href="{}" type="text/plain">{}</a>{}</li>'.format(fn, fn, opt_text))
         rval.append('</ul></div></html>')
         return "\n".join(rval)
+
+
+@build_sniff_from_prefix
+class MzTab(Text):
+    """
+    exchange format for proteomics and metabolomics results
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.mztab')
+    >>> MzTab().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.mztab2')
+    >>> MzTab().sniff(fname)
+    False
+    """
+    edam_data = "data_3681"
+    file_ext = "mztab"
+    # section names (except MTD)
+    _sections = ["PRH", "PRT", "PEH", "PEP", "PSH", "PSM", "SMH", "SML", "COM"]
+    # mandatory metadata fields and list of allowed entries (in lower case)
+    # (or None if everything is allowed)
+    _man_mtd = {"mzTab-mode": ["complete", "summary"],
+                "mzTab-type": ['quantification', 'identification'],
+                "description": None}
+    _version_re = r"(1)(\.[0-9])?(\.[0-9])?"
+
+    def __init__(self, **kwd):
+        super().__init__(**kwd)
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        """Set the peek and blurb text"""
+        if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.blurb = 'mzTab Format'
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def sniff_prefix(self, file_prefix):
+        """ Determines whether the file is the correct type. """
+        has_version = False
+        found_man_mtd = set()
+        contents = file_prefix.string_io()
+        for line in contents:
+            if re.match(r"^\s*$", line):
+                continue
+            line = line.strip("\r\n").split("\t")
+            if line[0] == "MTD":
+                if line[1] == "mzTab-version" and re.match(self._version_re, line[2]) is not None:
+                    has_version = True
+                elif line[1] in self._man_mtd and (self._man_mtd[line[1]] is None or line[2].lower() in self._man_mtd[line[1]]):
+                    found_man_mtd.add(line[1])
+            elif not line[0] in self._sections:
+                return False
+        return has_version and found_man_mtd == set(self._man_mtd.keys())
+
+
+class MzTab2(MzTab):
+    """
+    exchange format for proteomics and metabolomics results
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.mztab2')
+    >>> MzTab2().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.mztab')
+    >>> MzTab2().sniff(fname)
+    False
+    """
+    file_ext = "mztab2"
+    _sections = ["SMH", "SML", "SFH", "SMF", "SEH", "SME", "COM"]
+    _version_re = r"(2)(\.[0-9])?(\.[0-9])?-M$"
+    _man_mtd = {"mzTab-ID": None}
+
+    def __init__(self, **kwd):
+        super().__init__(**kwd)
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        """Set the peek and blurb text"""
+        if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.blurb = 'mzTab2 Format'
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+
+@build_sniff_from_prefix
+class Kroenik(Tabular):
+    """
+    Kroenik (HardKloer sibling) files
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.kroenik')
+    >>> Kroenik().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.peplist')
+    >>> Kroenik().sniff(fname)
+    False
+    """
+    file_ext = "kroenik"
+
+    def __init__(self, **kwd):
+        super().__init__(**kwd)
+        self.column_names = ["File", "First Scan", "Last Scan", "Num of Scans", "Charge", "Monoisotopic Mass", "Base Isotope Peak", "Best Intensity", "Summed Intensity", "First RTime", "Last RTime", "Best RTime", "Best Correlation", "Modifications"]
+
+    def display_peek(self, dataset):
+        """Returns formated html of peek"""
+        return self.make_html_table(dataset, column_names=self.column_names)
+
+    def sniff_prefix(self, file_prefix):
+        fh = file_prefix.string_io()
+        line = [_.strip() for _ in fh.readline().split("\t")]
+        if line != self.column_names:
+            return False
+        line = fh.readline().split("\t")
+        try:
+            [int(_) for _ in line[1:5]]
+            [float(_) for _ in line[5:13]]
+        except ValueError:
+            return False
+        return True
+
+
+@build_sniff_from_prefix
+class PepList(Tabular):
+    """
+    Peplist file as used in OpenMS
+    https://github.com/OpenMS/OpenMS/blob/0fc8765670a0ad625c883f328de60f738f7325a4/src/openms/source/FORMAT/FileHandler.cpp#L432
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.peplist')
+    >>> PepList().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.psms')
+    >>> PepList().sniff(fname)
+    False
+    """
+    file_ext = "peplist"
+
+    def __init__(self, **kwd):
+        super().__init__(**kwd)
+        self.column_names = ["m/z", "rt(min)", "snr", "charge", "intensity"]
+
+    def display_peek(self, dataset):
+        """Returns formated html of peek"""
+        return self.make_html_table(dataset, column_names=self.column_names)
+
+    def sniff_prefix(self, file_prefix):
+        fh = file_prefix.string_io()
+        line = [_.strip() for _ in fh.readline().split("\t")]
+        if line == self.column_names:
+            return True
+        return False
+
+
+@build_sniff_from_prefix
+class PSMS(Tabular):
+    """
+    Percolator tab-delimited output (PSM level, .psms) as used in OpenMS
+    https://github.com/OpenMS/OpenMS/blob/0fc8765670a0ad625c883f328de60f738f7325a4/src/openms/source/FORMAT/FileHandler.cpp#L453
+    see also http://www.kojak-ms.org/docs/percresults.html
+
+    Note that the data rows can have more columns than the header line
+    since ProteinIds are listed tab-separated.
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.psms')
+    >>> PSMS().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.kroenik')
+    >>> PSMS().sniff(fname)
+    False
+    """
+    file_ext = "psms"
+
+    def __init__(self, **kwd):
+        super().__init__(**kwd)
+        self.column_names = ["PSMId", "score", "q-value", "posterior_error_prob", "peptide", "proteinIds"]
+
+    def display_peek(self, dataset):
+        """Returns formated html of peek"""
+        return self.make_html_table(dataset, column_names=self.column_names)
+
+    def sniff_prefix(self, file_prefix):
+        fh = file_prefix.string_io()
+        line = [_.strip() for _ in fh.readline().split("\t")]
+        if line == self.column_names:
+            return True
+        return False
+
+
+@build_sniff_from_prefix
+class PEFF(Sequence):
+    """
+    PSI Extended FASTA Format
+    https://github.com/HUPO-PSI/PEFF
+    """
+    file_ext = "peff"
+
+    def sniff_prefix(self, file_prefix):
+        """
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( 'test.peff' )
+        >>> PEFF().sniff( fname )
+        True
+        >>> fname = get_test_fname( 'sequence.fasta' )
+        >>> PEFF().sniff( fname )
+        False
+        """
+        fh = file_prefix.string_io()
+        if re.match(r"# PEFF \d+.\d+", fh.readline()):
+            return True
+        else:
+            return False
 
 
 class PepXmlReport(Tabular):
@@ -59,7 +275,7 @@ class PepXmlReport(Tabular):
     file_ext = "pepxml.tsv"
 
     def __init__(self, **kwd):
-        super(PepXmlReport, self).__init__(**kwd)
+        super().__init__(**kwd)
         self.column_names = ['Protein', 'Peptide', 'Assumed Charge', 'Neutral Pep Mass (calculated)', 'Neutral Mass', 'Retention Time', 'Start Scan', 'End Scan', 'Search Engine', 'PeptideProphet Probability', 'Interprophet Probability']
 
     def display_peek(self, dataset):
@@ -74,7 +290,7 @@ class ProtXmlReport(Tabular):
     comment_lines = 1
 
     def __init__(self, **kwd):
-        super(ProtXmlReport, self).__init__(**kwd)
+        super().__init__(**kwd)
         self.column_names = [
             "Entry Number", "Group Probability",
             "Protein", "Protein Link", "Protein Probability",
@@ -92,6 +308,277 @@ class ProtXmlReport(Tabular):
         return self.make_html_table(dataset, column_names=self.column_names)
 
 
+class Dta(TabularData):
+    """dta
+    The first line contains the singly protonated peptide mass (MH+) and the
+    peptide charge state separated by a space. Subsequent lines contain space
+    separated pairs of fragment ion m/z and intensity values.
+    """
+    file_ext = "dta"
+    comment_lines = 0
+
+    def set_meta(self, dataset, **kwd):
+        column_types = []
+        data_row = []
+        data_lines = 0
+        if dataset.has_data():
+            with open(dataset.file_name) as dtafile:
+                for line in dtafile:
+                    data_lines += 1
+
+        # Guess column types
+        for cell in data_row:
+            column_types.append(self.guess_type(cell))
+
+        # Set metadata
+        dataset.metadata.data_lines = data_lines
+        dataset.metadata.comment_lines = 0
+        dataset.metadata.column_types = ['float', 'float']
+        dataset.metadata.columns = 2
+        dataset.metadata.column_names = ['m/z', 'intensity']
+        dataset.metadata.delimiter = " "
+
+
+@build_sniff_from_prefix
+class Dta2d(TabularData):
+    """
+    dta2d: files with three tab/space-separated columns.
+    The default format is: retention time (seconds) , m/z , intensity.
+    If the first line starts with '#', a different order is defined by the the
+    order of the keywords 'MIN' (retention time in minutes) or 'SEC' (retention
+    time in seconds), 'MZ', and 'INT'.
+    Example: '#MZ MIN INT'
+    The peaks of one retention time have to be in subsequent lines.
+
+    Note: sniffer detects (tab or space separated) dta2d files with correct
+    header, wo header seems to generic
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.dta2d')
+    >>> Dta2d().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.edta')
+    >>> Dta2d().sniff(fname)
+    False
+    """
+    file_ext = "dta2d"
+    comment_lines = 0
+
+    def _parse_header(self, line):
+        if len(line) != 3 or len(line[0]) < 3 or not line[0].startswith("#"):
+            return None
+        line[0] = line[0].lstrip("#")
+        line = [_.strip() for _ in line]
+        if 'MZ' not in line or 'INT' not in line or ('MIN' not in line and 'SEC' not in line):
+            return None
+        return line
+
+    def _parse_delimiter(self, line):
+        if len(line.split(" ")) == 3:
+            return " "
+        elif len(line.split("\t")) == 3:
+            return "\t"
+        return None
+
+    def _parse_dataline(self, line):
+        try:
+            line = [float(_) for _ in line]
+        except ValueError:
+            return False
+        if not all(_ >= 0 for _ in line):
+            return False
+        return True
+
+    def set_meta(self, dataset, **kwd):
+        data_lines = 0
+        delim = None
+        if dataset.has_data():
+            with open(dataset.file_name) as dtafile:
+                for line in dtafile:
+                    if delim is None:
+                        delim = self._parse_delimiter(line)
+                        dataset.metadata.column_names = self._parse_header(line.split(delim))
+                    data_lines += 1
+
+        # Set metadata
+        if delim is not None:
+            dataset.metadata.delimiter = delim
+
+        dataset.metadata.data_lines = data_lines
+        dataset.metadata.comment_lines = 0
+        dataset.metadata.column_types = ['float', 'float', 'float']
+        dataset.metadata.columns = 3
+        if dataset.metadata.column_names is None or dataset.metadata.column_names == []:
+            dataset.metadata.comment_lines += 1
+            dataset.metadata.data_lines -= 1
+            dataset.metadata.column_names = ['SEC', 'MZ', 'INT']
+
+    def sniff_prefix(self, file_prefix):
+        sep = None
+        header = None
+        for idx, line in enumerate(file_prefix.line_iterator()):
+            line = line.strip()
+            if sep is None:
+                sep = self._parse_delimiter(line)
+                if sep is None:
+                    return False
+            line = line.split(sep)
+            if len(line) != 3:
+                return False
+            if idx == 0:
+                header = self._parse_header(line)
+                if (header is None) and not self._parse_dataline(line):
+                    return False
+            elif not self._parse_dataline(line):
+                return False
+        if sep is None or header is None:
+            return False
+        return True
+
+
+@build_sniff_from_prefix
+class Edta(TabularData):
+    """
+    Input text file containing tab, space or comma separated columns.
+    The separator between columns is checked in the first line in this order.
+
+    It supports three variants of this format.
+
+    1. Columns are: RT, MZ, Intensity A header is optional.
+    2. Columns are: RT, MZ, Intensity, Charge, <Meta-Data> columns{0,} A header is mandatory.
+    3. Columns are: (RT, MZ, Intensity, Charge){1,}, <Meta-Data> columns{0,}
+       Header is mandatory. First quadruplet is the consensus. All following
+       quadruplets describe the sub-features. This variant is discerned from
+       variant #2 by the name of the fifth column, which is required to be RT1
+       (or rt1). All other column names for sub-features are faithfully ignored.
+
+    Note the sniffer only detects files with header.
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.edta')
+    >>> Edta().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.dta2d')
+    >>> Edta().sniff(fname)
+    False
+    """
+    file_ext = "edta"
+    comment_lines = 0
+
+    def _parse_delimiter(self, line):
+        if len(line.split(" ")) >= 3:
+            return " "
+        elif len(line.split("\t")) >= 3:
+            return "\t"
+        elif len(line.split(",")) >= 3:
+            return "\t"
+        return None
+
+    def _parse_type(self, line):
+        """
+        parse the type from the header line
+        types 1-3 as in the class docs, 0: type 1 wo/wrong header
+        """
+        if len(line) < 3:
+            return None
+        line = [_.lower().replace("/", "") for _ in line]
+        if len(line) == 3:
+            if line[0] == "rt" and line[1] == "mz" and (line[2] == "int" or line[2] == "intensity"):
+                return 1
+            else:
+                return None
+        if line[0] != "rt" or line[1] != "mz" or (line[2] != "int" and line[2] != "intensity") or line[3] != "charge":
+            return None
+        if not line[4].startswith("rt"):
+            return 2
+        else:
+            return 3
+
+    def _parse_dataline(self, line, tpe):
+        if tpe == 2 or tpe == 3:
+            idx = 4
+        else:
+            idx = 3
+        try:
+            line = [float(_) for _ in line[:idx]]
+        except ValueError:
+            return False
+        if not all(_ >= 0 for _ in line[:idx]):
+            return False
+        return True
+
+    def _clean_header(self, line):
+        for idx, el in enumerate(line):
+            el = el.lower()
+            if el.startswith("rt"):
+                line[idx] = "RT"
+            elif el.startswith("int"):
+                line[idx] = "intensity"
+            elif el.startswith("mz"):
+                line[idx] = "m/z"
+            elif el.startswith("charge"):
+                line[idx] = "charge"
+            else:
+                break
+            if idx // 4 > 0:
+                line[idx] += str(idx // 4)
+        return line
+
+    def set_meta(self, dataset, **kwd):
+        data_lines = 0
+        delim = None
+        if dataset.has_data():
+            with open(dataset.file_name) as dtafile:
+                for idx, line in enumerate(dtafile):
+                    if idx == 0:
+                        delim = self._parse_delimiter(line)
+                        tpe = self._parse_type(line.split(delim))
+                        if tpe == 0:
+                            dataset.metadata.column_names = ["RT", "m/z", "intensity"]
+                        else:
+                            dataset.metadata.column_names = self._clean_header(line.split(delim))
+                    data_lines += 1
+
+        # Set metadata
+        if delim is not None:
+            dataset.metadata.delimiter = delim
+        for c in dataset.metadata.column_names:
+            if any(c.startswith(_) for _ in ["RT", "m/z", "intensity", "charge"]):
+                dataset.metadata.column_types.append("float")
+            else:
+                dataset.metadata.column_types.append("str")
+
+        dataset.metadata.data_lines = data_lines
+        dataset.metadata.comment_lines = 0
+        dataset.metadata.columns = len(dataset.metadata.column_names)
+        if tpe > 0:
+            dataset.metadata.comment_lines += 1
+            dataset.metadata.data_lines -= 1
+
+    def sniff_prefix(self, file_prefix):
+        sep = None
+        tpe = None
+        for idx, line in enumerate(file_prefix.line_iterator()):
+            line = line.strip("\r\n")
+            if sep is None:
+                sep = self._parse_delimiter(line)
+                if sep is None:
+                    return False
+            line = line.split(sep)
+
+            if idx == 0:
+                tpe = self._parse_type(line)
+                if tpe is None:
+                    return False
+                elif tpe == 0 and not self._parse_dataline(line, tpe):
+                    return False
+            elif not self._parse_dataline(line, tpe):
+                return False
+        if tpe is None:
+            return False
+        return True
+
+
 class ProteomicsXml(GenericXml):
     """ An enhanced XML datatype used to reuse code across several
     proteomic/mass-spec datatypes. """
@@ -102,12 +589,12 @@ class ProteomicsXml(GenericXml):
         """ Determines whether the file is the correct XML type. """
         contents = file_prefix.string_io()
         while True:
-            line = contents.readline()
+            line = contents.readline().strip()
             if line is None or not line.startswith('<?'):
                 break
         # pattern match <root or <ns:root for any ns string
-        pattern = r'^<(\w*:)?%s' % self.root
-        return line is not None and re.match(pattern, line) is not None
+        pattern = r'<(\w*:)?%s' % self.root
+        return line is not None and re.search(pattern, line) is not None
 
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
@@ -119,12 +606,26 @@ class ProteomicsXml(GenericXml):
             dataset.blurb = 'file purged from disk'
 
 
+class ParamXml(ProteomicsXml):
+    """store Parameters in XML formal"""
+    file_ext = "paramxml"
+    blurb = "parameters in xmls"
+    root = "parameters|PARAMETERS"
+
+
 class PepXml(ProteomicsXml):
     """pepXML data"""
     edam_format = "format_3655"
     file_ext = "pepxml"
     blurb = 'pepXML data'
     root = "msms_pipeline_analysis"
+
+
+class MascotXML(ProteomicsXml):
+    """mzXML data"""
+    file_ext = "mascotxml"
+    blurb = "mascot Mass Spectrometry data"
+    root = "mascot_search_results"
 
 
 class MzML(ProteomicsXml):
@@ -180,6 +681,12 @@ class TraML(ProteomicsXml):
     root = "TraML"
 
 
+class TrafoXML(ProteomicsXml):
+    file_ext = "trafoxml"
+    blurb = "RT alignment tranformation"
+    root = "TrafoXML"
+
+
 class MzQuantML(ProteomicsXml):
     edam_format = "format_3248"
     file_ext = "mzq"
@@ -216,6 +723,29 @@ class UniProtXML(ProteomicsXml):
     file_ext = "uniprotxml"
     blurb = "UniProt Proteome file"
     root = "uniprot"
+
+
+class XquestXML(ProteomicsXml):
+    file_ext = "xquest.xml"
+    blurb = "XQuest XML file"
+    root = "xquest_results"
+
+
+class XquestSpecXML(ProteomicsXml):
+    """spec.xml"""
+    file_ext = "spec.xml"
+    blurb = 'xquest_spectra'
+    root = "xquest_spectra"
+
+
+class QCML(ProteomicsXml):
+    """qcml
+    https://github.com/OpenMS/OpenMS/blob/113c49d01677f7f03343ce7cd542d83c99b351ee/share/OpenMS/SCHEMAS/mzQCML_0_0_5.xsd
+    https://github.com/OpenMS/OpenMS/blob/3cfc57ad1788e7ab2bd6dd9862818b2855234c3f/share/OpenMS/SCHEMAS/qcML_0.0.7.xsd
+    """
+    file_ext = "qcml"
+    blurb = 'QualityAssessments to runs'
+    root = "qcML|MzQualityML)"
 
 
 class Mgf(Text):
@@ -278,7 +808,7 @@ class ThermoRAW(Binary):
     """Class describing a Thermo Finnigan binary RAW file"""
     edam_data = "data_2536"
     edam_format = "format_3712"
-    file_ext = "raw"
+    file_ext = "thermo.raw"
 
     def sniff(self, filename):
         # Thermo Finnigan RAW format is proprietary and hence not well documented.
@@ -369,9 +899,9 @@ class SPLib(Msp):
             if composite_file.optional:
                 opt_text = ' (optional)'
             if composite_file.get('description'):
-                rval.append('<li><a href="%s" type="text/plain">%s (%s)</a>%s</li>' % (fn, fn, composite_file.get('description'), opt_text))
+                rval.append('<li><a href="{}" type="text/plain">{} ({})</a>{}</li>'.format(fn, fn, composite_file.get('description'), opt_text))
             else:
-                rval.append('<li><a href="%s" type="text/plain">%s</a>%s</li>' % (fn, fn, opt_text))
+                rval.append('<li><a href="{}" type="text/plain">{}</a>{}</li>'.format(fn, fn, opt_text))
         rval.append('</ul></div></html>')
         return "\n".join(rval)
 
@@ -465,9 +995,9 @@ class ImzML(Binary):
             fn = composite_name
             opt_text = ''
             if composite_file.get('description'):
-                rval.append('<li><a href="%s" type="text/plain">%s (%s)</a>%s</li>' % (fn, fn, composite_file.get('description'), opt_text))
+                rval.append('<li><a href="{}" type="text/plain">{} ({})</a>{}</li>'.format(fn, fn, composite_file.get('description'), opt_text))
             else:
-                rval.append('<li><a href="%s" type="text/plain">%s</a>%s</li>' % (fn, fn, opt_text))
+                rval.append('<li><a href="{}" type="text/plain">{}</a>{}</li>'.format(fn, fn, opt_text))
         rval.append('</ul></div></html>')
         return "\n".join(rval)
 
@@ -512,8 +1042,8 @@ class Analyze75(Binary):
             if composite_file.optional:
                 opt_text = ' (optional)'
             if composite_file.get('description'):
-                rval.append('<li><a href="%s" type="text/plain">%s (%s)</a>%s</li>' % (fn, fn, composite_file.get('description'), opt_text))
+                rval.append('<li><a href="{}" type="text/plain">{} ({})</a>{}</li>'.format(fn, fn, composite_file.get('description'), opt_text))
             else:
-                rval.append('<li><a href="%s" type="text/plain">%s</a>%s</li>' % (fn, fn, opt_text))
+                rval.append('<li><a href="{}" type="text/plain">{}</a>{}</li>'.format(fn, fn, opt_text))
         rval.append('</ul></div></html>')
         return "\n".join(rval)

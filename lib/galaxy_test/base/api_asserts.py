@@ -28,12 +28,12 @@ def _report_status_code_error(response, expected_status_code):
 
 def assert_has_keys(response, *keys):
     for key in keys:
-        assert key in response, "Response [%s] does not contain key [%s]" % (response, key)
+        assert key in response, "Response [{}] does not contain key [{}]".format(response, key)
 
 
 def assert_not_has_keys(response, *keys):
     for key in keys:
-        assert key not in response, "Response [%s] contains invalid key [%s]" % (response, key)
+        assert key not in response, "Response [{}] contains invalid key [{}]".format(response, key)
 
 
 def assert_error_code_is(response, error_code):
@@ -42,6 +42,26 @@ def assert_error_code_is(response, error_code):
     assert_has_keys(response, "err_code")
     err_code = response["err_code"]
     assert err_code == int(error_code), ASSERT_FAIL_ERROR_CODE % (err_code, int(error_code))
+
+
+def assert_object_id_error(response):
+    # for tests that use fake object IDs - API might throw MalformedId (400) or
+    # or ObjectNotFound (404) - depending if the ID happens to be parseable with
+    # servers API key.
+    error_code = response.status_code
+    assert error_code in [400, 404]
+    if error_code == 400:
+        assert_error_code_is(response, 400009)
+    else:
+        assert_error_code_is(response, 404001)
+
+
+def assert_error_message_contains(response, expected_contains):
+    if hasattr(response, "json"):
+        response = response.json()
+    assert_has_keys(response, "err_msg")
+    err_msg = response["err_msg"]
+    assert expected_contains in err_msg
 
 
 assert_has_key = assert_has_keys

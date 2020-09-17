@@ -1,5 +1,4 @@
 """This modules contains the functions that drive the tool linting framework."""
-from __future__ import print_function
 
 import inspect
 
@@ -62,7 +61,7 @@ def lint_xml_with(lint_context, tool_xml, extra_modules=[]):
 # TODO: Nothing inherently tool-y about LintContext and in fact
 # it is reused for repositories in planemo. Therefore, it should probably
 # be moved to galaxy.util.lint.
-class LintContext(object):
+class LintContext:
 
     def __init__(self, level, skip_types=[], object_name=None):
         self.skip_types = skip_types
@@ -93,7 +92,7 @@ class LintContext(object):
             if self.printed_linter_info:
                 return
             self.printed_linter_info = True
-            print("Applying linter %s... %s" % (name, status))
+            print("Applying linter {}... {}".format(name, status))
 
         for message in self.error_messages:
             self.found_errors = True

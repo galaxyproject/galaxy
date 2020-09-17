@@ -80,7 +80,7 @@ class LDAP(AuthProvider):
     role_search_option = 'auto-register-roles'
 
     def __init__(self):
-        super(LDAP, self).__init__()
+        super().__init__()
         self.auto_create_roles_or_groups = False
         self.role_search_attribute = None
 

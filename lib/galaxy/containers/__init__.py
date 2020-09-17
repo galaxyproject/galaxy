@@ -1,7 +1,6 @@
 """
 Interfaces to containerization software
 """
-from __future__ import absolute_import
 
 import errno
 import inspect
@@ -18,7 +17,6 @@ from abc import (
 from collections import namedtuple
 
 import yaml
-from six import string_types, with_metaclass
 from six.moves import shlex_quote
 
 from galaxy.exceptions import ContainerCLIError
@@ -45,7 +43,7 @@ class ContainerPort(namedtuple('ContainerPort', ('port', 'protocol', 'hostaddr',
     """
 
 
-class ContainerVolume(with_metaclass(ABCMeta, object)):
+class ContainerVolume(metaclass=ABCMeta):
 
     valid_modes = frozenset({"ro", "rw"})
 
@@ -79,7 +77,7 @@ class ContainerVolume(with_metaclass(ABCMeta, object)):
         return self.mode in self.valid_modes
 
 
-class Container(with_metaclass(ABCMeta, object)):
+class Container(metaclass=ABCMeta):
 
     def __init__(self, interface, id, name=None, **kwargs):
         """:param   interface:  Container interface for the given container type
@@ -167,7 +165,7 @@ class Container(with_metaclass(ABCMeta, object)):
         return None
 
 
-class ContainerInterface(with_metaclass(ABCMeta, object)):
+class ContainerInterface(metaclass=ABCMeta):
 
     container_type = None
     container_class = None
@@ -191,7 +189,7 @@ class ContainerInterface(with_metaclass(ABCMeta, object)):
         self.validate_config()
 
     def _normalize_command(self, command):
-        if isinstance(command, string_types):
+        if isinstance(command, str):
             command = shlex.split(command)
         return command
 
@@ -241,7 +239,7 @@ class ContainerInterface(with_metaclass(ABCMeta, object)):
     def _stringify_kwopt_list(self, flag, val):
         """
         """
-        if isinstance(val, string_types):
+        if isinstance(val, str):
             return self._stringify_kwopt_string(flag, val)
         return ' '.join('{flag} {value}'.format(flag=flag, value=shlex_quote(str(v))) for v in val)
 
@@ -261,7 +259,7 @@ class ContainerInterface(with_metaclass(ABCMeta, object)):
     def _stringify_kwopt_list_of_kovtrips(self, flag, val):
         """
         """
-        if isinstance(val, string_types):
+        if isinstance(val, str):
             return self._stringify_kwopt_string(flag, val)
         l = []
         for k, o, v in val:
@@ -326,7 +324,7 @@ class ContainerInterfaceConfig(dict):
         try:
             return self[name]
         except KeyError:
-            raise AttributeError("'%s' object has no attribute '%s'" % (self.__class__.__name__, name))
+            raise AttributeError("'{}' object has no attribute '{}'".format(self.__class__.__name__, name))
 
     def get(self, name, default=None):
         try:
@@ -370,7 +368,7 @@ def parse_containers_config(containers_config_file):
         with open(containers_config_file) as fh:
             c = yaml.safe_load(fh)
             conf.update(c.get('containers', {}))
-    except (OSError, IOError) as exc:
+    except OSError as exc:
         if exc.errno == errno.ENOENT:
             log.debug("config file '%s' does not exist, running with default config", containers_config_file)
         else:
@@ -386,4 +384,4 @@ def _get_interface_modules():
         classes = [_ for _ in module_names if inspect.isclass(_) and
             not _ == ContainerInterface and issubclass(_, ContainerInterface)]
         interfaces.extend(classes)
-    return dict((x.container_type, x) for x in interfaces)
+    return {x.container_type: x for x in interfaces}

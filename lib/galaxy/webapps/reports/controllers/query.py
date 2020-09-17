@@ -3,7 +3,7 @@
 import sqlalchemy as sa
 
 
-class ReportQueryBuilder(object):
+class ReportQueryBuilder:
 
     def group_by_month(self, column):
         if self.app.targets_mysql:

@@ -1,7 +1,6 @@
 """
 Migration script for workflow request tables.
 """
-from __future__ import print_function
 
 import logging
 

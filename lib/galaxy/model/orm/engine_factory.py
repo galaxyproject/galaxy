@@ -18,7 +18,7 @@ def log_request_query_counts(req_id):
     try:
         times = QUERY_COUNT_LOCAL.times
         if times:
-            log.info("Executed [%s] SQL requests in for web request [%s] (%f(s)ms)" % (len(times), req_id, sum(times) * 1000.))
+            log.info("Executed [{}] SQL requests in for web request [{}] ({:0.3f} ms)".format(len(times), req_id, sum(times) * 1000.))
     except AttributeError:
         # Didn't record anything so don't worry.
         pass
@@ -45,7 +45,7 @@ def build_engine(url, engine_options, database_query_profiling_proxy=False, trac
                                  parameters, context, executemany):
             total = time.time() - conn.info['query_start_time'].pop(-1)
             if total > slow_query_log_threshold:
-                log.debug("Slow query: %f(s)\n%s\nParameters: %s" % (total, statement, parameters))
+                log.debug("Slow query: {:f}(s)\n{}\nParameters: {}".format(total, statement, parameters))
             if log_query_counts:
                 try:
                     QUERY_COUNT_LOCAL.times.append(total)
@@ -55,7 +55,7 @@ def build_engine(url, engine_options, database_query_profiling_proxy=False, trac
             if thread_local_log is not None:
                 try:
                     if thread_local_log.log:
-                        log.debug("Request query: %f(s)\n%s\nParameters: %s" % (total, statement, parameters))
+                        log.debug("Request query: {:f}(s)\n{}\nParameters: {}".format(total, statement, parameters))
                 except AttributeError:
                     pass
 

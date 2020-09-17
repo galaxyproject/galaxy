@@ -12,7 +12,10 @@ import time
 import pytest
 
 from galaxy.util import unicodify
-from galaxy_test.base.populators import skip_without_tool
+from galaxy_test.base.populators import (
+    DatasetPopulator,
+    skip_without_tool,
+)
 from galaxy_test.driver import integration_util
 from .test_containerized_jobs import MulledJobTestCases
 from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
@@ -151,11 +154,22 @@ def job_config(jobs_directory):
     return Config(job_conf.name)
 
 
+class KubernetesDatasetPopulator(DatasetPopulator):
+
+    def wait_for_history(self, *args, **kwargs):
+        try:
+            super(KubernetesDatasetPopulator, self).wait_for_history(*args, **kwargs)
+        except AssertionError:
+            print("Kubernetes status:\n %s" % unicodify(subprocess.check_output(['kubectl', 'describe', 'nodes'])))
+            raise
+
+
 @integration_util.skip_unless_kubernetes()
 class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases):
 
     def setUp(self):
         super(BaseKubernetesIntegrationTestCase, self).setUp()
+        self.dataset_populator = KubernetesDatasetPopulator(self.galaxy_interactor)
         self.history_id = self.dataset_populator.new_history()
 
     @classmethod

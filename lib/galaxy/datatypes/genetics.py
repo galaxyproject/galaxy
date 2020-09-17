@@ -62,7 +62,7 @@ class GenomeGraphs(Tabular):
     def set_meta(self, dataset, **kwd):
         Tabular.set_meta(self, dataset, **kwd)
         dataset.metadata.markerCol = 1
-        header = open(dataset.file_name, 'r').readlines()[0].strip().split('\t')
+        header = open(dataset.file_name).readlines()[0].strip().split('\t')
         dataset.metadata.columns = len(header)
         t = ['numeric' for x in header]
         t[0] = 'string'
@@ -107,9 +107,9 @@ class GenomeGraphs(Tabular):
                     display_url = quote_plus(display_url)
                     # was display_url = quote_plus( "%s/display_as?id=%i&display_app=%s" % (base_url, dataset.id, type) )
                     # redirect_url = quote_plus( "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" % (site_url, dataset.dbkey, chrom, start, stop) )
-                    sl = ["%sdb=%s" % (site_url, dataset.dbkey), ]
+                    sl = ["{}db={}".format(site_url, dataset.dbkey), ]
                     # sl.append("&hgt.customText=%s")
-                    sl.append("&hgGenome_dataSetName=%s&hgGenome_dataSetDescription=%s" % (dataset.name, 'GalaxyGG_data'))
+                    sl.append("&hgGenome_dataSetName={}&hgGenome_dataSetDescription={}".format(dataset.name, 'GalaxyGG_data'))
                     sl.append("&hgGenome_formatType=best guess&hgGenome_markerType=best guess")
                     sl.append("&hgGenome_columnLabels=first row&hgGenome_maxVal=&hgGenome_labelVals=")
                     sl.append("&hgGenome_doSubmitUpload=submit")
@@ -117,7 +117,7 @@ class GenomeGraphs(Tabular):
                     s = ''.join(sl)
                     s = quote_plus(s)
                     redirect_url = s
-                    link = '%s?redirect_url=%s&display_url=%s' % (internal_url, redirect_url, display_url)
+                    link = '{}?redirect_url={}&display_url={}'.format(internal_url, redirect_url, display_url)
                     ret_val.append((site_name, link))
         return ret_val
 
@@ -127,7 +127,7 @@ class GenomeGraphs(Tabular):
         """
         out = ['<table cellspacing="0" cellpadding="3">']
         try:
-            with open(dataset.file_name, 'r') as f:
+            with open(dataset.file_name) as f:
                 d = f.readlines()[:5]
             if len(d) == 0:
                 out = "Cannot find anything to parse in %s" % dataset.name
@@ -141,7 +141,7 @@ class GenomeGraphs(Tabular):
             out.append('<tr>')
             if hasheader:
                 for i, name in enumerate(d[0].split()):
-                    out.append('<th>%s.%s</th>' % (i + 1, name))
+                    out.append('<th>{}.{}</th>'.format(i + 1, name))
                 d.pop(0)
                 out.append('</tr>')
             for row in d:
@@ -158,7 +158,7 @@ class GenomeGraphs(Tabular):
         """
         Validate a gg file - all numeric after header row
         """
-        with open(dataset.file_name, "r") as infile:
+        with open(dataset.file_name) as infile:
             next(infile)  # header
             for i, row in enumerate(infile):
                 ll = row.strip().split('\t')[1:]  # first is alpha feature identifier
@@ -285,9 +285,9 @@ class Rgenetics(Html):
             if composite_file.optional:
                 opt_text = ' (optional)'
             if composite_file.get('description'):
-                rval.append('<li><a href="%s" type="application/binary">%s (%s)</a>%s</li>' % (fn, fn, composite_file.get('description'), opt_text))
+                rval.append('<li><a href="{}" type="application/binary">{} ({})</a>{}</li>'.format(fn, fn, composite_file.get('description'), opt_text))
             else:
-                rval.append('<li><a href="%s" type="application/binary">%s</a>%s</li>' % (fn, fn, opt_text))
+                rval.append('<li><a href="{}" type="application/binary">{}</a>{}</li>'.format(fn, fn, opt_text))
         rval.append('</ul></div></html>')
         return "\n".join(rval)
 
@@ -297,11 +297,11 @@ class Rgenetics(Html):
         """
         efp = dataset.extra_files_path
         flist = os.listdir(efp)
-        rval = ['<html><head><title>Files for Composite Dataset %s</title></head><body><p/>Composite %s contains:<p/><ul>' % (dataset.name, dataset.name)]
+        rval = ['<html><head><title>Files for Composite Dataset {}</title></head><body><p/>Composite {} contains:<p/><ul>'.format(dataset.name, dataset.name)]
         for i, fname in enumerate(flist):
             sfname = os.path.split(fname)[-1]
             f, e = os.path.splitext(fname)
-            rval.append('<li><a href="%s">%s</a></li>' % (sfname, sfname))
+            rval.append('<li><a href="{}">{}</a></li>'.format(sfname, sfname))
         rval.append('</ul></body></html>')
         with open(dataset.file_name, 'w') as f:
             f.write("\n".join(rval))
@@ -325,17 +325,17 @@ class Rgenetics(Html):
             efp = dataset.extra_files_path
         except Exception:
             if verbose:
-                gal_Log.debug('@@@rgenetics set_meta failed %s - dataset %s has no efp ?' % (sys.exc_info()[0], dataset.name))
+                gal_Log.debug('@@@rgenetics set_meta failed {} - dataset {} has no efp ?'.format(sys.exc_info()[0], dataset.name))
             return False
         try:
             flist = os.listdir(efp)
         except Exception:
             if verbose:
-                gal_Log.debug('@@@rgenetics set_meta failed %s - dataset %s has no efp ?' % (sys.exc_info()[0], dataset.name))
+                gal_Log.debug('@@@rgenetics set_meta failed {} - dataset {} has no efp ?'.format(sys.exc_info()[0], dataset.name))
             return False
         if len(flist) == 0:
             if verbose:
-                gal_Log.debug('@@@rgenetics set_meta failed - %s efp %s is empty?' % (dataset.name, efp))
+                gal_Log.debug('@@@rgenetics set_meta failed - {} efp {} is empty?'.format(dataset.name, efp))
             return False
         self.regenerate_primary_file(dataset)
         if not dataset.info:
@@ -557,7 +557,7 @@ class IdeasPre(Html):
         rval.append('<ul>')
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
             fn = composite_name
-            rval.append('<li><a href="%s>%s</a></li>' % (fn, fn))
+            rval.append('<li><a href="{}>{}</a></li>'.format(fn, fn))
         rval.append('</ul></body></html>\n')
         return "\n".join(rval)
 
@@ -568,7 +568,7 @@ class IdeasPre(Html):
         rval.append('<ul>')
         for fname in os.listdir(dataset.extra_files_path):
             fn = os.path.split(fname)[-1]
-            rval.append('<li><a href="%s">%s</a></li>' % (fn, fn))
+            rval.append('<li><a href="{}">{}</a></li>'.format(fn, fn))
         rval.append('</ul></body></html>')
         with open(dataset.file_name, 'w') as f:
             f.write("\n".join(rval))
@@ -662,7 +662,7 @@ class RexpBase(Html):
             for j in range(i + 1, nuse):
                 kdict = {}
                 for row in phe:  # row is a list of lists
-                    k = '%s%s' % (row[i], row[j])  # composite key
+                    k = '{}{}'.format(row[i], row[j])  # composite key
                     kdict[k] = k
                 if (len(kdict.keys()) == len(concordance[useCols[j]])):  # i and j are always matched
                     delme.append(j)
@@ -693,7 +693,7 @@ class RexpBase(Html):
         A file can be written as
         write.table(file='foo.pheno',pData(foo),sep='\t',quote=F,row.names=F)
         """
-        p = open(dataset.metadata.pheno_path, 'r').readlines()
+        p = open(dataset.metadata.pheno_path).readlines()
         if len(p) > 0:  # should only need to fix an R pheno file once
             head = p[0].strip().split('\t')
             line1 = p[1].strip().split('\t')
@@ -712,7 +712,8 @@ class RexpBase(Html):
         if not dataset.dataset.purged:
             pp = os.path.join(dataset.extra_files_path, '%s.pheno' % dataset.metadata.base_name)
             try:
-                p = open(pp, 'r').readlines()
+                with open(pp) as f:
+                    p = f.readlines()
             except Exception:
                 p = ['##failed to find %s' % pp, ]
             dataset.peek = ''.join(p[:5])
@@ -727,7 +728,8 @@ class RexpBase(Html):
         """
         pp = os.path.join(dataset.extra_files_path, '%s.pheno' % dataset.metadata.base_name)
         try:
-            p = open(pp, 'r').readlines()
+            with open(pp) as f:
+                p = f.readlines()
         except Exception:
             p = ['##failed to find %s' % pp]
         return ''.join(p[:5])
@@ -738,7 +740,8 @@ class RexpBase(Html):
         """
         h = '## rexpression get_file_peek: no file found'
         try:
-            h = open(filename, 'r').readlines()
+            with open(filename) as f:
+                h = f.readlines()
         except Exception:
             pass
         return ''.join(h[:5])
@@ -752,7 +755,7 @@ class RexpBase(Html):
         rval = ['<html><head><title>Files for Composite Dataset %s</title></head><p/>Comprises the following files:<p/><ul>' % (bn)]
         for i, fname in enumerate(flist):
             sfname = os.path.split(fname)[-1]
-            rval.append('<li><a href="%s">%s</a>' % (sfname, sfname))
+            rval.append('<li><a href="{}">{}</a>'.format(sfname, sfname))
         rval.append('</ul></html>')
         with open(dataset.file_name, 'w') as f:
             f.write("\n".join(rval))
@@ -788,7 +791,8 @@ class RexpBase(Html):
         pp = os.path.join(dataset.extra_files_path, pn)
         dataset.metadata.pheno_path = pp
         try:
-            pf = open(pp, 'r').readlines()  # read the basename.phenodata in the extra_files_path
+            with open(pp) as f:
+                pf = f.readlines()  # read the basename.phenodata in the extra_files_path
         except Exception:
             pf = None
         if pf:
@@ -908,7 +912,7 @@ class GenotypeMatrix(LinkageStudies):
     file_ext = "alohomora_gts"
 
     def __init__(self, **kwd):
-        super(GenotypeMatrix, self).__init__(**kwd)
+        super().__init__(**kwd)
 
     def header_check(self, fio):
         header_elems = fio.readline().split('\t')
@@ -1037,7 +1041,7 @@ class DataIn(LinkageStudies):
     file_ext = "linkage_datain"
 
     def __init__(self, **kwd):
-        super(DataIn, self).__init__(**kwd)
+        super().__init__(**kwd)
 
     def sniff_prefix(self, file_prefix):
         """

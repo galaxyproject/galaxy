@@ -71,10 +71,18 @@ participants with disabilities.
 ### Reporting Issues
 
 If you experience or witness unacceptable behavior, or have any other concerns,
-please report it by contacting Dave Clements (clementsgalaxy@gmail.com). To
-report an issue involving Dave Clements please email James Taylor
-(james@taylorlab.org). All reports will be handled with discretion. In your
-report please include:
+please report it to any combination of the following people that makes you feel
+the most comfortable:
+
+- Dave Clements (clementsgalaxy@gmail.com). Dave is the Galaxy Project community
+  outreach manager and has experience handling Code of Conduct related issues.
+- Dr. Mike Schatz (mschatz@cs.jhu.edu). Mike is Dave Clements' direct manager
+  and issues related to Dave in some way should be reported to Mike.
+- Helena Rasche (helena.rasche@gmail.com). Helena is a well-known, trusted
+  community member, is LGBT+, and has completely separate funding and
+  institutional affiliation from Dave and Mike.
+
+All reports will be handled with discretion. In your report please include:
 
 - Your contact information.
 

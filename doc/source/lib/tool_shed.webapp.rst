@@ -1,5 +1,5 @@
 tool\_shed.webapp package
-=================================
+=========================
 
 .. automodule:: tool_shed.webapp
     :members:
@@ -23,7 +23,7 @@ Submodules
 ----------
 
 tool\_shed.webapp.app module
-------------------------------------
+----------------------------
 
 .. automodule:: tool_shed.webapp.app
     :members:
@@ -31,7 +31,7 @@ tool\_shed.webapp.app module
     :show-inheritance:
 
 tool\_shed.webapp.buildapp module
------------------------------------------
+---------------------------------
 
 .. automodule:: tool_shed.webapp.buildapp
     :members:
@@ -39,7 +39,7 @@ tool\_shed.webapp.buildapp module
     :show-inheritance:
 
 tool\_shed.webapp.config module
----------------------------------------
+-------------------------------
 
 .. automodule:: tool_shed.webapp.config
     :members:

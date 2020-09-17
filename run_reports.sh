@@ -35,10 +35,6 @@ if [ -z "$GALAXY_REPORTS_CONFIG" ]; then
     export GALAXY_REPORTS_CONFIG
 fi
 
-if [ -n "$GALAXY_REPORTS_CONFIG_DIR" ]; then
-    python ./scripts/build_universe_config.py "$GALAXY_REPORTS_CONFIG_DIR" "$GALAXY_REPORTS_CONFIG"
-fi
-
 find_server ${GALAXY_REPORTS_CONFIG:-none} reports
 echo "Executing: $run_server $server_args"
 eval $run_server $server_args

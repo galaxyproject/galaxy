@@ -25,6 +25,8 @@
       <output name="out_file1">
          <assert_contents>
             <has_line line="__dq__ X echo __dq__moo" />
+            <has_line line="__dq__ X echo __dq__moo" n="1" />
+            <has_text text="o" n="3" />
             <has_n_lines n="1" />
             <has_size value="24"/>
             <has_size value="20" delta="5"/>

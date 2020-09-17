@@ -258,7 +258,7 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
         for repository in [emboss_datatypes_repository, emboss_repository, column_repository]:
             self.check_repository_dependency(freebayes_repository, repository)
         freebayes_dependencies = [freebayes_repository, emboss_datatypes_repository, emboss_repository, column_repository]
-        strings_displayed = ['%s depends on %s.' % (freebayes_repository.name, ', '.join(repo.name for repo in freebayes_dependencies))]
+        strings_displayed = ['{} depends on {}.'.format(freebayes_repository.name, ', '.join(repo.name for repo in freebayes_dependencies))]
         self.display_manage_repository_page(freebayes_repository, strings_displayed=strings_displayed)
 
     def test_0050_verify_tool_dependencies(self):

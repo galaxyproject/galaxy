@@ -15,5 +15,5 @@ def get_updated_changeset_revisions_from_tool_shed(app, tool_shed_url, name, own
         raise Exception(message)
     params = dict(name=name, owner=owner, changeset_revision=changeset_revision)
     pathspec = ['repository', 'updated_changeset_revisions']
-    text = util.url_get(tool_shed_url, password_mgr=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
+    text = util.url_get(tool_shed_url, auth=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
     return text

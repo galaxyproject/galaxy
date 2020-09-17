@@ -29,7 +29,7 @@ python '$__tool_directory__/shrimp_color_wrapper.py' '$input_target' '$input_que
                 <param name="kmer" type="integer" value="-1" label="Kmer Std. Deviation Limit" help="-1 as None"/>
                 <param name="sw_match_value" type="integer" value="100" label="S-W Match Value" />
                 <param name="sw_mismatch_value" type="integer" value="-150" label="S-W Mismatch Value" />
-                <param name="sw_gap_open_ref"type="integer" value="-400" label="S-W Gap Open Penalty (Reference)" />
+                <param name="sw_gap_open_ref" type="integer" value="-400" label="S-W Gap Open Penalty (Reference)" />
                 <param name="sw_gap_open_query" type="integer" value="-400" label="S-W Gap Open Penalty (Query)" />
                 <param name="sw_gap_ext_ref" type="integer" value="-70" label="S-W Gap Extend Penalty (Reference)" />
                 <param name="sw_gap_ext_query" type="integer" value="-70" label="S-W Gap Extend Penalty (Query)" />
