@@ -14,14 +14,14 @@
                     >
                         {{ label }}
                     </b-form-radio>
-                    <p class="mt-3 text-muted">
-                        You may add new labels by selecting a step in the workflow editor and then editing the
-                        corresponding label field in the step form.
-                    </p>
                 </div>
                 <b-alert v-else show variant="info">
-                    No Labels found. Please specify Labels in the Workflow Editor.
+                    No labels found. Please specify labels in the Workflow Editor.
                 </b-alert>
+                <p class="mt-3 text-muted">
+                    You may add new labels by selecting a step in the workflow editor and then editing the corresponding
+                    label field in the step form.
+                </p>
             </div>
         </b-modal>
     </span>
