@@ -133,16 +133,20 @@ class CustosAuthnz(IdentityProvider):
         trans.sa_session.flush()
         return login_redirect_url, custos_authnz_token.user
 
-    def disconnect(self, provider, trans, disconnect_redirect_url=None):
+    def disconnect(self, provider, trans, email=None, disconnect_redirect_url=None):
         try:
             user = trans.user
+            index = 0
             # Find CustosAuthnzToken record for this provider (should only be one)
             provider_tokens = [token for token in user.custos_auth if token.provider == self.config["provider"]]
             if len(provider_tokens) == 0:
                 raise Exception("User is not associated with provider {}".format(self.config["provider"]))
             if len(provider_tokens) > 1:
-                raise Exception("User is associated more than once with provider {}".format(self.config["provider"]))
-            trans.sa_session.delete(provider_tokens[0])
+                for idx, token in enumerate(provider_tokens):
+                    id_token_decoded = jwt.decode(token.id_token, verify=False)
+                    if (id_token_decoded['email'] == email):
+                        index = idx
+            trans.sa_session.delete(provider_tokens[index])
             trans.sa_session.flush()
             return True, "", disconnect_redirect_url
         except Exception as e:
