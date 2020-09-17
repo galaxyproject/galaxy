@@ -55,6 +55,9 @@ jobs:
       with:
         path: ~/.cache/pip
         key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
+    - name: Install ffmpeg
+      run: sudo apt-get update && sudo apt-get install ffmpeg -y
+      if: matrix.subset == 'upload_datatype'
     - name: Run tests
       run: './run_tests.sh -integration test/integration -- -k "${{ matrix.subset }}"'
       working-directory: 'galaxy root'

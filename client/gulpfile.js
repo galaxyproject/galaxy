@@ -5,22 +5,20 @@ const { src, dest, series, parallel } = require("gulp");
 const child_process = require("child_process");
 const glob = require("glob");
 
+/*
+ * We'll want a flexible glob down the road, but for now there are no
+ * un-built visualizations in the repository; for performance and
+ * simplicity just add them one at a time until we upgrade older viz's.
+ */
+const PLUGIN_BUILD_DIRS = ["annotate_image", "hyphyvision", "openlayers", "chiraviz", "editor", "media_player"];
+
 const paths = {
     node_modules: "./node_modules",
     plugin_dirs: [
         "../config/plugins/{visualizations,interactive_environments}/*/static/**/*",
         "../config/plugins/{visualizations,interactive_environments}/*/*/static/**/*",
     ],
-    /*
-     * We'll want a flexible glob down the road, but for now there are no
-     * un-built visualizations in the repository; for performance and
-     * simplicity just add them one at a time until we upgrade older viz's.
-     */
-    //plugin_build_dirs: [
-    //    "../config/plugins/{visualizations,interactive_environments}/*/package.json",
-    //    "../config/plugins/{visualizations,interactive_environments}/*/*/package.json"
-    //],
-    plugin_build_dirs: ["../config/plugins/visualizations/{annotate_image,hyphyvision,openlayers,chiraviz,editor}/package.json"],
+    plugin_build_dirs: [`../config/plugins/visualizations/{${PLUGIN_BUILD_DIRS.join(",")}}/package.json`],
     lib_locs: {
         // This is a stepping stone towards having all this staged
         // automatically.  Eventually, this dictionary and staging step will

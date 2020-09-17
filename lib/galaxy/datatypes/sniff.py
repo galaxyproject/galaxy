@@ -38,6 +38,14 @@ def get_test_fname(fname):
     return full_path
 
 
+def sniff_with_cls(cls, fname):
+    path = get_test_fname(fname)
+    try:
+        return bool(cls().sniff(path))
+    except Exception:
+        return False
+
+
 def stream_url_to_file(path, file_sources=None):
     prefix = "url_paste"
     if file_sources and file_sources.looks_like_uri(path):
