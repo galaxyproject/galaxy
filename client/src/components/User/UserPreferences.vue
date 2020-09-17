@@ -236,15 +236,22 @@ export default {
             this.handleSubmit();
         },
         async handleSubmit() {
+            const Galaxy = getGalaxyInstance();
             if (!this.checkFormValidity()) {
                 return false;
             }
-            var value = await axios.get(`${getAppRoot()}api/users/${this.userId}`);
-            var email = JSON.parse(JSON.stringify(value.data)).email;
-            var userId = JSON.parse(JSON.stringify(value.data)).id;
-            if (email === this.name) {
+            var email = Galaxy.user.email;
+            var userId = Galaxy.user.id;
+            if (this.email === this.name) {
                 this.nameState = true;
-                await fetch(`${getAppRoot()}api/users/${userId}`, { method: "DELETE" });
+                try {
+                    await axios.delete(`${getAppRoot()}api/users/${userId}`);
+                } catch  {
+                    alert("Admin user deletion must be configured on this instance in order to allow user self-deletion")
+                }
+                window.location.href = `${getAppRoot()}user/logout?session_csrf_token=${
+                    Galaxy.session_csrf_token
+                }`;
                 window.location.href = `${getAppRoot()}`;
             } else {
                 this.nameState = false;
