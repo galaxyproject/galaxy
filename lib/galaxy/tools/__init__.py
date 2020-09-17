@@ -129,6 +129,7 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "upload1",
     "send_to_cloud",
     "__DATA_FETCH__",
+    "directory_uri",
     # Legacy tools bundled with Galaxy.
     "laj_1",
     "gff2bed1",

@@ -12,6 +12,7 @@ class UserFtpFilesSource(PosixFilesSource):
             root=root,
             label=label,
             doc=doc,
+            writable=True,
         )
         posix_kwds.update(kwd)
         if "delete_on_realize" not in posix_kwds:

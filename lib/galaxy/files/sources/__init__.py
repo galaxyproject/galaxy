@@ -6,6 +6,9 @@ import six
 
 from galaxy.util.template import fill_template
 
+DEFAULT_SCHEME = "gxfiles"
+DEFAULT_WRITABLE = False
+
 
 @six.add_metaclass(abc.ABCMeta)
 class FilesSource(object):
@@ -20,6 +23,10 @@ class FilesSource(object):
     def get_scheme(self):
         """Return a prefix for the root (e.g. the gxfiles in gxfiles://prefix/path)."""
 
+    @abc.abstractmethod
+    def get_writable(self):
+        """Return a boolean indicating if this target is writable."""
+
     # TODO: off-by-default
     @abc.abstractmethod
     def list(self, source_path="/", recursive=False, user_context=None):
@@ -28,6 +35,10 @@ class FilesSource(object):
     @abc.abstractmethod
     def realize_to(self, source_path, native_path, user_context=None):
         """Realize source path (relative to uri root) to local file system path."""
+
+    def write_from(self, target_path, native_path, user_context=None):
+        """Write file at native path to target_path (relative to uri root).
+        """
 
     @abc.abstractmethod
     def to_dict(self, for_serialization=False, user_context=None):
@@ -46,6 +57,9 @@ class BaseFilesSource(FilesSource):
     def get_scheme(self):
         return "gxfiles"
 
+    def get_writable(self):
+        return self.writable
+
     def get_uri_root(self):
         prefix = self.get_prefix()
         scheme = self.get_scheme()
@@ -63,7 +77,8 @@ class BaseFilesSource(FilesSource):
         self.id = kwd.pop("id")
         self.label = kwd.pop("label", None) or self.id
         self.doc = kwd.pop("doc", None)
-        self.scheme = kwd.pop("scheme", "gxfiles")
+        self.scheme = kwd.pop("scheme", DEFAULT_SCHEME)
+        self.writable = kwd.pop("writable", DEFAULT_WRITABLE)
         # If coming from to_dict, strip API helper values
         kwd.pop("uri_root", None)
         kwd.pop("type", None)
@@ -76,6 +91,7 @@ class BaseFilesSource(FilesSource):
             "uri_root": self.get_uri_root(),
             "label": self.label,
             "doc": self.doc,
+            "writable": self.writable,
         }
         if for_serialization:
             rval.update(self._serialization_props(user_context=user_context))
@@ -95,6 +111,15 @@ class BaseFilesSource(FilesSource):
 
         Used in to_dict method if for_serialization is True.
         """
+
+    def write_from(self, target_path, native_path, user_context=None):
+        if not self.get_writable():
+            raise Exception("Cannot write to a non-writable file source.")
+        self._write_from(target_path, native_path, user_context=user_context)
+
+    @abc.abstractmethod
+    def _write_from(self, target_path, native_path, user_context=None):
+        pass
 
     def _evaluate_prop(self, prop_val, user_context):
         rval = prop_val

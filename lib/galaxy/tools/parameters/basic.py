@@ -296,7 +296,26 @@ class ToolParameter(Dictifiable):
         return input_source.parse_name()
 
 
-class TextToolParameter(ToolParameter):
+class SimpleTextToolParameter(ToolParameter):
+
+    def __init__(self, tool, input_source):
+        input_source = ensure_input_source(input_source)
+        super().__init__(tool, input_source)
+        self.value = ''
+
+    def to_json(self, value, app, use_security):
+        """Convert a value to a string representation suitable for persisting"""
+        if value is None:
+            rval = ''
+        else:
+            rval = unicodify(value)
+        return rval
+
+    def get_initial_value(self, trans, other_values):
+        return self.value
+
+
+class TextToolParameter(SimpleTextToolParameter):
     """
     Parameter that can take on any text value.
 
@@ -317,21 +336,10 @@ class TextToolParameter(ToolParameter):
         self.value = input_source.get('value')
         self.area = input_source.get_bool('area', False)
 
-    def to_json(self, value, app, use_security):
-        """Convert a value to a string representation suitable for persisting"""
-        if value is None:
-            rval = ''
-        else:
-            rval = unicodify(value)
-        return rval
-
     def validate(self, value, trans=None):
         search = self.type == "text"
         if not (trans and trans.workflow_building_mode is workflow_building_modes.ENABLED and contains_workflow_parameter(value, search=search)):
             return super().validate(value, trans)
-
-    def get_initial_value(self, trans, other_values):
-        return self.value
 
     def to_dict(self, trans, other_values={}):
         d = super().to_dict(trans)
@@ -2328,6 +2336,14 @@ class BaseJsonToolParameter(ToolParameter):
         return json.loads(value)
 
 
+class DirectoryUriToolParameter(SimpleTextToolParameter):
+    """galaxy.files URIs for directories."""
+
+    def __init__(self, tool, input_source, context=None):
+        input_source = ensure_input_source(input_source)
+        SimpleTextToolParameter.__init__(self, tool, input_source)
+
+
 class RulesListToolParameter(BaseJsonToolParameter):
     """
     Parameter that allows for the creation of a list of rules using the Galaxy rules DSL.
@@ -2388,6 +2404,7 @@ parameter_types = dict(
     data_collection=DataCollectionToolParameter,
     library_data=LibraryDatasetToolParameter,
     rules=RulesListToolParameter,
+    directory_uri=DirectoryUriToolParameter,
     drill_down=DrillDownSelectToolParameter
 )
 

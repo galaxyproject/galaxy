@@ -14,6 +14,7 @@ from ._util import (
     list_root,
     serialize_and_recover,
     user_context_fixture,
+    write_from,
 )
 
 EMAIL = 'alice@galaxyproject.org'
@@ -63,7 +64,17 @@ def test_posix_link_security():
         sniff.stream_url_to_file("gxfiles://test1/unsafe", file_sources=file_sources)
     except Exception as ex:
         e = ex
-    assert e is not None
+    _assert_access_prohibited(e)
+
+
+def test_posix_link_security_write():
+    file_sources = _configured_file_sources(writable=True)
+    e = None
+    try:
+        write_from(file_sources, "gxfiles://test1/unsafe", "my test content")
+    except Exception as ex:
+        e = ex
+    _assert_access_prohibited(e)
 
 
 def test_posix_link_security_allowlist():
@@ -76,6 +87,13 @@ def test_posix_link_security_allowlist():
         os.remove(tmp_name)
 
 
+def test_posix_link_security_allowlist_write():
+    file_sources = _configured_file_sources(include_allowlist=True, writable=True)
+    write_from(file_sources, "gxfiles://test1/unsafe", "my test content")
+    with open(os.path.join(file_sources.test_root, "unsafe"), "r") as f:
+        assert f.read() == "my test content"
+
+
 def test_posix_disable_link_security():
     file_sources = _configured_file_sources(plugin_extra_config={"enforce_symlink_security": False})
     tmp_name = sniff.stream_url_to_file("gxfiles://test1/unsafe", file_sources=file_sources)
@@ -86,6 +104,17 @@ def test_posix_disable_link_security():
         os.remove(tmp_name)
 
 
+def test_posix_nonexistent_parent_write():
+    file_sources = _configured_file_sources(include_allowlist=True, writable=True)
+    e = None
+    try:
+        write_from(file_sources, "gxfiles://test1/notreal/myfile", "my test content")
+    except Exception as ex:
+        e = ex
+    assert e is not None
+    assert "Parent" in str(e)
+
+
 def test_posix_per_user():
     file_sources = _configured_file_sources(per_user=True)
     user_context = user_context_fixture()
@@ -93,6 +122,23 @@ def test_posix_per_user():
 
     res = list_root(file_sources, "gxfiles://test1", recursive=False, user_context=user_context)
     assert find_file_a(res)
+
+
+def test_posix_per_user_writable():
+    file_sources = _configured_file_sources(per_user=True, writable=True)
+    user_context = user_context_fixture()
+
+    res = list_root(file_sources, "gxfiles://test1", recursive=False, user_context=user_context)
+    b = find(res, name="b")
+    assert b is None
+
+    write_from(file_sources, "gxfiles://test1/b", "my test content", user_context=user_context)
+
+    res = list_root(file_sources, "gxfiles://test1", recursive=False, user_context=user_context)
+    b = find(res, name="b")
+    assert b is not None, b
+
+    assert_realizes_as(file_sources, "gxfiles://test1/b", "my test content", user_context=user_context)
 
 
 def test_posix_per_user_serialized():
@@ -208,7 +254,7 @@ def test_user_import_dir_implicit_config():
     assert_realizes_as(file_sources, "gxuserimport://a", "a\n", user_context=user_context)
 
 
-def _configured_file_sources(include_allowlist=False, plugin_extra_config=None, per_user=False):
+def _configured_file_sources(include_allowlist=False, plugin_extra_config=None, per_user=False, writable=None):
     tmp, root = _setup_root()
     config_kwd = {}
     if include_allowlist:
@@ -218,6 +264,8 @@ def _configured_file_sources(include_allowlist=False, plugin_extra_config=None, 
         'type': 'posix',
         'id': 'test1',
     }
+    if writable is not None:
+        plugin['writable'] = writable
     if per_user:
         plugin['root'] = "%s/${user.username}" % root
         # setup files just for alice
@@ -227,7 +275,9 @@ def _configured_file_sources(include_allowlist=False, plugin_extra_config=None, 
         plugin['root'] = root
     plugin.update(plugin_extra_config or {})
     _write_file_fixtures(tmp, root)
-    return ConfiguredFileSources(file_sources_config, conf_dict=[plugin])
+    file_sources = ConfiguredFileSources(file_sources_config, conf_dict=[plugin])
+    file_sources.test_root = root
+    return file_sources
 
 
 def _setup_root():
@@ -266,3 +316,8 @@ def _download_and_check_file(file_sources):
         assert a_contents == "a\n"
     finally:
         os.remove(tmp_name)
+
+
+def _assert_access_prohibited(e):
+    assert e is not None
+    assert "Operation not allowed" in str(e)

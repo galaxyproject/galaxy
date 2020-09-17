@@ -62,6 +62,7 @@
   <tool file="detect_errors.xml" />
   <tool file="detect_errors_aggressive.xml" />
   <tool file="qc_stdout.xml" />
+  <tool file="directory_uri.xml" />
   <tool file="md5sum.xml" />
   <tool file="checksum.xml" />
   <tool file="sim_size_delta.xml" />
