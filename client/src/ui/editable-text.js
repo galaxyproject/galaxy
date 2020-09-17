@@ -74,8 +74,8 @@ $.fn.make_text_editable = function (config_dict) {
         } else {
             input_elt = $("<input type='text'/>")
                 .attr({ value: $.trim(cur_text), size: num_cols })
-                .blur(e => {
-                    const new_text = $(e.currentTarget).val(); 
+                .blur((e) => {
+                    const new_text = $(e.currentTarget).val();
                     set_text(new_text);
                 })
                 .keyup((e) => {
@@ -84,7 +84,7 @@ $.fn.make_text_editable = function (config_dict) {
                         set_text(cur_text);
                     } else if (e.keyCode === 13) {
                         // Enter key.
-                         $(e.currentTarget).trigger("blur");
+                        $(e.currentTarget).trigger("blur");
                     }
 
                     // Do not propogate event to avoid unwanted side effects.
