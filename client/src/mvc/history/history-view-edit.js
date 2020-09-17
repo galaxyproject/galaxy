@@ -7,7 +7,9 @@ import HDA_LI_EDIT from "mvc/history/hda-li-edit";
 import HDCA_LI_EDIT from "mvc/history/hdca-li-edit";
 import { mountModelTags } from "components/Tags";
 import ANNOTATIONS from "mvc/annotation";
-import LIST_COLLECTION_CREATOR from "mvc/collection/list-collection-creator";
+import Vue from "vue";
+import ListCollectionCreatorModal from "mvc/collection/ListCollectionCreatorModal";
+import RuleBasedCollectionCreatorModal from "mvc/collection/RuleBasedCollectionCreatorModal";
 import PAIR_COLLECTION_CREATOR from "mvc/collection/pair-collection-creator";
 import LIST_OF_PAIRS_COLLECTION_CREATOR from "mvc/collection/list-of-pairs-collection-creator";
 import faIconButton from "ui/fa-icon-button";
@@ -372,13 +374,19 @@ var HistoryViewEdit = _super.extend(
             hideSourceItems = hideSourceItems || false;
             var createFunc;
             if (collectionType == "list") {
-                createFunc = LIST_COLLECTION_CREATOR.createListCollection;
+                const ListCollectionCreatorModalClass = Vue.extend(ListCollectionCreatorModal);
+                const inst = new ListCollectionCreatorModalClass();
+                inst.$mount();
+                createFunc = inst.createListCollection;
             } else if (collectionType == "paired") {
                 createFunc = PAIR_COLLECTION_CREATOR.createPairCollection;
             } else if (collectionType == "list:paired") {
                 createFunc = LIST_OF_PAIRS_COLLECTION_CREATOR.createListOfPairsCollection;
             } else if (collectionType.startsWith("rules")) {
-                createFunc = LIST_COLLECTION_CREATOR.createCollectionViaRules;
+                const RuleBasedCollectionCreatorModalClass = Vue.extend(RuleBasedCollectionCreatorModal);
+                const inst = new RuleBasedCollectionCreatorModalClass();
+                inst.$mount();
+                createFunc = inst.createCollectionViaRules;
             } else {
                 console.warn(`Unknown collectionType encountered ${collectionType}`);
             }
