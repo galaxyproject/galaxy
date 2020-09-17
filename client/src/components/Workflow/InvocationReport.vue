@@ -1,11 +1,5 @@
 <template>
-    <div id="columns">
-        <div id="center">
-            <div class="h-100 overflow-auto p-3">
-                <markdown :markdown-config="markdownConfig" :read-only="true" />
-            </div>
-        </div>
-    </div>
+    <markdown class="p-3" :markdown-config="markdownConfig" :read-only="true" />
 </template>
 
 <script>

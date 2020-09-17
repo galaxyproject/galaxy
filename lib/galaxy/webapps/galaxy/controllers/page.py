@@ -416,14 +416,6 @@ class PageController(BaseUIController, SharableMixin,
         return trans.fill_template("page/editor.mako", id=id)
 
     @web.expose
-    @web.require_login("edit workflow invocation report")
-    def edit_report(self, trans, id):
-        """
-        Render the report page interface.
-        """
-        return trans.fill_template("page/report.mako", id=id)
-
-    @web.expose
     @web.require_login("use Galaxy pages")
     def share(self, trans, id, email="", use_panels=False):
         """ Handle sharing with an individual user. """
