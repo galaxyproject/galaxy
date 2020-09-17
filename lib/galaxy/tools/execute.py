@@ -5,7 +5,6 @@ collections from matched collections.
 """
 import collections
 import logging
-from collections import defaultdict
 
 from boltons.iterutils import remap
 
@@ -73,21 +72,13 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
         if job:
             log.debug(job_timer.to_str(tool_id=tool.id, job_id=job.id))
             execution_tracker.record_success(execution_slice, job, result)
-            # associate output datasets with the job that creates them
+            # associate dataset instances with the job that creates them
             if execution_slice.datasets_to_persist:
-                for dataset in execution_slice.datasets_to_persist:
-                    job_output_datasets[job].append(dataset)
+                datasets = [d for d in execution_slice.datasets_to_persist if type(d) == model.HistoryDatasetAssociation]
+                if datasets:
+                    job_datasets[job] = datasets
         else:
             execution_tracker.record_error(result)
-
-    def store_dataset_job_id():
-        for job, hdas in job_output_datasets.items():
-            trans.sa_session.add(job)
-            for hda in hdas:
-                if type(hda) == 'HistoryDatasetAssociation':  # temporary/debugging
-                    hda.dataset.job_id = job.id  # TODO: can't add attr to Dataset in __init__(). Why?
-                    trans.sa_session.add(hda.dataset)
-        trans.sa_session.flush()  # TODO: do we need this here? Or let the next flush handle this?
 
     tool_action = tool.tool_action
     if hasattr(tool_action, "check_inputs_ready"):
@@ -109,7 +100,7 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
     has_remaining_jobs = False
     execution_slice = None
     datasets_to_persist = []
-    job_output_datasets = defaultdict(list)  # key:job, values: list of dataset instances
+    job_datasets = {}  # job: list of dataset instances created by job
 
     for i, execution_slice in enumerate(execution_tracker.new_execution_slices()):
         if max_num_jobs is not None and jobs_executed >= max_num_jobs:
@@ -128,8 +119,10 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
         trans.sa_session.flush()
     tool_id = tool.id
 
-    if job_output_datasets:
-        store_dataset_job_id()
+    if job_datasets:
+        for job, datasets in job_datasets.items():
+            for dataset_instance in datasets:
+                dataset_instance.dataset.job_id = job.id
 
     for job in execution_tracker.successful_jobs:
         # Put the job in the queue if tracking in memory
