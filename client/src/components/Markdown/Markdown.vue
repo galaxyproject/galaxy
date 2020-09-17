@@ -7,6 +7,7 @@
             </a>
             <div>
                 <b-button
+                    v-if="!readOnly"
                     class="float-right"
                     title="Edit Markdown"
                     variant="link"
@@ -143,7 +144,7 @@ export default {
         },
         readOnly: {
             type: Boolean,
-            default: true,
+            default: false,
         },
         exportLink: {
             type: String,
