@@ -6,7 +6,7 @@
         <a class="name" title="titleElementName" href="javascript:void(0)" role="button" @click="clickName">
             {{ element.name }}
         </a>
-        <button class="discard-btn btn-sm" title="titleDiscardButton">
+        <button class="discard-btn btn-sm" title="titleDiscardButton" @click="clickDiscard">
             {{ l("Discard") }}
         </button>
     </div>
@@ -23,9 +23,6 @@ export default {
     },
     data: function () {
         return {
-            //TODO: how to make this private?
-            //logNamespace: "collections",
-            //TODO: use proper class (DatasetDCE or NestedDCDCE (or the union of both))
             tagName: "li",
             className: "collection-element",
             titleDiscardButton: _l("Remove this dataset from the list"),
@@ -49,11 +46,13 @@ export default {
             // _l conflicts private methods of Vue internals, expose as l instead
             return _l(str);
         },
-        //move to computed after this is written.
-        // discard: function () {
+        clickDiscard: function () {
+            this.$emit('element-is-discarded', this.element);
+            this.$destroy();
+        },
 
         // },
-        //TODO: template, rendering, OR conditional rendering (i.e. belongs in template)
+        //TODO: template, rendering, OR conditional 'rendering (i.e. belongs in template)
         // /** dragging for re-ordering */
         // _dragend(ev) {
         //     this.$el.removeClass("dragging");
@@ -72,11 +71,6 @@ export default {
         // },
 
         //TODO: actual method - must be rewritten, assess whether methods/created/computed/etc.
-        // /** remove the DOM and any listeners */
-        // destroy() {
-        //     this.off();
-        //     this.$el.remove();
-        // },
         // /** animate the removal of this element and pub */
         // discard() {
         //     var view = this;
@@ -88,16 +82,11 @@ export default {
         //         view.destroy();
         //     });
         // },
-        // /** manually bubble up an event to the parent/container */
-        // _sendToParent(ev) {
-        //     this.$el.parent().trigger(ev);
-        // },
-        // /** string rep */
-        // toString() {
-        //     return "DatasetCollectionElementView()";
-        // },
+        /** string rep */
+        toString() {
+            return "DatasetCollectionElementView()";
+        },
     },
-    //initialize method
 };
 </script>
 
