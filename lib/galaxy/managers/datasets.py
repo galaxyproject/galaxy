@@ -9,6 +9,7 @@ import os
 import galaxy.datatypes.metadata
 from galaxy import (
     exceptions,
+    managers,
     model
 )
 from galaxy.datatypes import sniff
@@ -658,7 +659,7 @@ class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableD
         self.deserializers.update({
             'name' : self.deserialize_basestring,
             'info' : self.deserialize_basestring,
-            'extension' : self.deserialize_basestring,
+            'datatype' : self.deserialize_datatype,
         })
         self.deserializable_keyset.update(self.deserializers.keys())
 
@@ -684,6 +685,15 @@ class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableD
         setattr(dataset_assoc.metadata, key, unwrapped_val)
         # ...?
         return unwrapped_val
+
+    def deserialize_datatype(self, item, key, val, **context):
+        trans = context['trans']
+        if item.datatype.allow_datatype_change and trans.app.datatypes_registry.get_datatype_by_extension(val).allow_datatype_change:
+            if managers.hdas.HDAManager(self.app).ok_to_edit_metadata(item.dataset_id):
+                trans.app.datatypes_registry.change_datatype(item, val)
+                trans.sa_session.flush()
+                trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': item}, overwrite=False)  # overwrite is False as per existing behavior
+        return item.datatype
 
 
 class DatasetAssociationFilterParser(base.ModelFilterParser, deletable.PurgableFiltersMixin):

@@ -1,4 +1,5 @@
 import textwrap
+import time
 
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
@@ -140,10 +141,19 @@ class DatasetsApiTestCase(ApiTestCase):
         original_hda = self._get(
             "histories/{history_id}/contents/{hda_id}".format(history_id=self.history_id, hda_id=hda_id)).json()
         assert original_hda['extension'] == 'txt'
-        update_payload = {
-            'extension': 'dat'
-        }
+        assert original_hda['data_type'] == 'galaxy.datatypes.data.Text'
+        assert len(original_hda['visualizations']) < 10
+
+        time.sleep(10)  # need to wait for upload to complete before updating datatype
+
         updated_hda = self._put(
             "histories/{history_id}/contents/{hda_id}".format(history_id=self.history_id, hda_id=hda_id),
-            update_payload).json()
-        assert updated_hda['extension'] == 'dat'
+            {'datatype': 'tabular'}).json()
+        assert updated_hda['extension'] == 'tabular'
+        assert updated_hda['data_type'] == 'galaxy.datatypes.tabular.Tabular'
+        assert len(updated_hda['visualizations']) > 20
+
+        invalidly_updated_hda = self._put(
+            "histories/{history_id}/contents/{hda_id}".format(history_id=self.history_id, hda_id=hda_id),
+            {'datatype': 'invalid'})
+        self._assert_status_code_is(invalidly_updated_hda, 500)
