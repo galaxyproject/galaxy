@@ -19,6 +19,7 @@ except ImportError:
 
 import packaging.version
 import webob.exc
+from lxml import etree
 from mako.template import Template
 from six.moves.urllib.parse import unquote_plus
 from webob.compat import cgi_FieldStorage
@@ -55,7 +56,7 @@ from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
-from galaxy.tools.cache import create_cache_region
+from galaxy.tools.cache import ToolDocumentCache
 from galaxy.tools.parameters import (
     check_param,
     params_from_strings,
@@ -247,8 +248,6 @@ class ToolBox(BaseGalaxyToolBox):
         self._reload_count = 0
         self.tool_location_fetcher = ToolLocationFetcher()
         self.cache_regions = {}
-        if not os.path.exists(app.config.tool_cache_data_dir):
-            os.makedirs(app.config.tool_cache_data_dir)
         # This is here to deal with the old default value, which doesn't make
         # sense in an "installed Galaxy" world.
         # FIXME: ./
@@ -260,6 +259,10 @@ class ToolBox(BaseGalaxyToolBox):
             app=app,
             save_integrated_tool_panel=save_integrated_tool_panel,
         )
+
+    def persist_cache(self):
+        for region in self.cache_regions.values():
+            region.persist()
 
     def can_load_config_file(self, config_filename):
         if config_filename == self.app.config.shed_tool_config_file and not self.app.config.is_set('shed_tool_config_file'):
@@ -289,13 +292,22 @@ class ToolBox(BaseGalaxyToolBox):
 
     def get_cache_region(self, tool_cache_data_dir):
         if tool_cache_data_dir not in self.cache_regions:
-            self.cache_regions[tool_cache_data_dir] = create_cache_region(tool_cache_data_dir)
+            self.cache_regions[tool_cache_data_dir] = ToolDocumentCache(cache_dir=tool_cache_data_dir)
         return self.cache_regions[tool_cache_data_dir]
 
     def create_tool(self, config_file, tool_cache_data_dir=None, **kwds):
-        cache = self.get_cache_region(tool_cache_data_dir or self.app.config.tool_cache_data_dir)
         if config_file.endswith('.xml'):
-            tool_source = cache.get_or_create(config_file, creator=self.get_expanded_tool_source, expiration_time=-1, creator_args=((config_file,), {}))
+            cache = self.get_cache_region(tool_cache_data_dir or self.app.config.tool_cache_data_dir)
+            tool_document = cache.get(config_file)
+            if tool_document:
+                tool_source = self.get_expanded_tool_source(
+                    config_file=config_file,
+                    xml_tree=etree.ElementTree(etree.fromstring(tool_document['document'].encode('utf-8'))),
+                    macro_paths=tool_document['macro_paths']
+                )
+            else:
+                tool_source = self.get_expanded_tool_source(config_file)
+                cache.set(config_file, tool_source)
         else:
             tool_source = self.get_expanded_tool_source(config_file)
         tool = self._create_tool_from_source(tool_source, config_file=config_file, **kwds)
@@ -303,12 +315,13 @@ class ToolBox(BaseGalaxyToolBox):
             tool.assert_finalized(raise_if_invalid=True)
         return tool
 
-    def get_expanded_tool_source(self, config_file):
+    def get_expanded_tool_source(self, config_file, **kwargs):
         try:
             return get_tool_source(
                 config_file,
                 enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", False),
                 tool_location_fetcher=self.tool_location_fetcher,
+                **kwargs,
             )
         except Exception as e:
             # capture and log parsing errors

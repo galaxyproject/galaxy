@@ -1,89 +1,96 @@
 import json
 import logging
 import os
+import shutil
+import sqlite3
+import tempfile
+import zlib
 from collections import defaultdict
 from threading import Lock
 
-from dogpile.cache import make_region
-from dogpile.cache.api import (
-    CachedValue,
-    NO_VALUE,
-)
-from dogpile.cache.proxy import ProxyBackend
-from lxml import etree
 from sqlalchemy.orm import (
     defer,
     joinedload,
 )
+from sqlitedict import SqliteDict
 
-from galaxy.tool_util.parser import get_tool_source
 from galaxy.util import unicodify
 from galaxy.util.hash_util import md5_hash_file
 
 log = logging.getLogger(__name__)
 
-CURRENT_TOOL_CACHE_VERSION = 2
+CURRENT_TOOL_CACHE_VERSION = 0
 
 
-class JSONBackend(ProxyBackend):
+def encoder(obj):
+    return sqlite3.Binary(zlib.compress(json.dumps(obj).encode('utf-8')))
 
-    def set(self, key, value):
-        with self.proxied._dbm_file(True) as dbm:
-            dbm[key] = json.dumps({
-                'metadata': value.metadata,
-                'payload': self.value_encode(value),
-                'macro_paths': value.payload.macro_paths,
-                'paths_and_modtimes': value.payload.paths_and_modtimes(),
-                'tool_cache_version': CURRENT_TOOL_CACHE_VERSION
-            })
 
-    def get(self, key):
-        with self.proxied._dbm_file(False) as dbm:
-            if hasattr(dbm, "get"):
-                value = dbm.get(key, NO_VALUE)
-            else:
-                # gdbm objects lack a .get method
-                try:
-                    value = dbm[key]
-                except KeyError:
-                    value = NO_VALUE
-            if value is not NO_VALUE:
-                value = self.value_decode(key, value)
-            return value
+def decoder(obj):
+    return json.loads(zlib.decompress(bytes(obj)).decode('utf-8'))
 
-    def value_decode(self, k, v):
-        if not v or v is NO_VALUE:
-            return NO_VALUE
-        # v is returned as bytestring, so we need to `unicodify` on python < 3.6 before we can use json.loads
-        v = json.loads(unicodify(v))
-        if v.get('tool_cache_version', 0) != CURRENT_TOOL_CACHE_VERSION:
-            return NO_VALUE
-        for path, modtime in v['paths_and_modtimes'].items():
+
+class ToolDocumentCache:
+
+    def __init__(self, cache_dir):
+        self.cache_dir = cache_dir
+        if not os.path.exists(self.cache_dir):
+            os.makedirs(self.cache_dir)
+        self.cache_file = os.path.join(self.cache_dir, 'cache.sqlite')
+        self.writeable_cache_file = None
+        # Create database if necessary using 'c' flag
+        self._cache = SqliteDict(self.cache_file, flag='c', encode=encoder, decode=decoder, autocommit=False)
+        # Switch SqliteDict back to readonly
+        self._cache.flag = 'r'
+
+    def get(self, config_file):
+        tool_document = self._cache.get(config_file)
+        if not tool_document:
+            return None
+        if tool_document.get('tool_cache_version') != CURRENT_TOOL_CACHE_VERSION:
+            return None
+        for path, modtime in tool_document['paths_and_modtimes'].items():
             if os.path.getmtime(path) != modtime:
-                return NO_VALUE
-        payload = get_tool_source(
-            config_file=k,
-            xml_tree=etree.ElementTree(etree.fromstring(v['payload'].encode('utf-8'))),
-            macro_paths=v['macro_paths']
-        )
-        return CachedValue(metadata=v['metadata'], payload=payload)
+                return None
+        return tool_document
 
-    def value_encode(self, v):
-        return unicodify(v.payload.to_string())
+    def make_writable(self):
+        if not self.writeable_cache_file:
+            self.writeable_cache_file = tempfile.NamedTemporaryFile(dir=self.cache_dir, suffix='cache.sqlite.tmp', delete=False)
+            if os.path.exists(self.cache_file):
+                shutil.copy(self.cache_file, self.writeable_cache_file.name)
+            self._cache = SqliteDict(self.writeable_cache_file.name, flag='c', encode=encoder, decode=decoder, autocommit=False)
 
+    def persist(self):
+        if self.writeable_cache_file:
+            self._cache.commit()
+            os.rename(self.writeable_cache_file.name, self.cache_file)
+            self._cache = SqliteDict(self.cache_file, flag='r', encode=encoder, decode=decoder, autocommit=False)
+            self.writeable_cache_file = None
 
-def create_cache_region(tool_cache_data_dir):
-    if not os.path.exists(tool_cache_data_dir):
-        os.makedirs(tool_cache_data_dir)
-    region = make_region()
-    region.configure(
-        'dogpile.cache.dbm',
-        arguments={"filename": os.path.join(tool_cache_data_dir, "cache.dbm")},
-        expiration_time=-1,
-        wrap=[JSONBackend],
-        replace_existing_backend=True,
-    )
-    return region
+    def set(self, config_file, tool_source):
+        self.make_writable()
+        to_persist = {
+            'document': tool_source.to_string(),
+            'macro_paths': tool_source.macro_paths,
+            'paths_and_modtimes': tool_source.paths_and_modtimes(),
+            'tool_cache_version': CURRENT_TOOL_CACHE_VERSION,
+        }
+        self._cache[config_file] = to_persist
+
+    def delete(self, config_file):
+        self.make_writable()
+        try:
+            del self._cache[config_file]
+        except KeyError:
+            pass
+
+    def __del__(self):
+        if self.writeable_cache_file:
+            try:
+                os.unlink(self.writeable_cache_file.name)
+            except Exception:
+                pass
 
 
 class ToolCache:
@@ -118,9 +125,11 @@ class ToolCache:
         removed_tool_ids = []
         try:
             with self._lock:
+                persist_tool_document_cache = False
                 paths_to_cleanup = {(path, tool) for path, tool in self._tools_by_path.items() if self._should_cleanup(path)}
                 for config_filename, tool in paths_to_cleanup:
                     tool.remove_from_cache()
+                    persist_tool_document_cache = True
                     del self._hash_by_tool_paths[config_filename]
                     if os.path.exists(config_filename):
                         # This tool has probably been broken while editing on disk
@@ -136,6 +145,8 @@ class ToolCache:
                     self._removed_tool_ids.add(tool_id)
                     if tool_id in self._new_tool_ids:
                         self._new_tool_ids.remove(tool_id)
+                if persist_tool_document_cache:
+                    tool.toolbox.persist_tool_document_cache()
         except Exception as e:
             log.debug("Exception while checking tools to remove from cache: %s", unicodify(e))
             # If by chance the file is being removed while calculating the hash or modtime

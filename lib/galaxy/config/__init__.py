@@ -73,10 +73,6 @@ LOGGING_CONFIG_DEFAULT = {
             'level': 'INFO',
             'qualname': 'amqp',
         },
-        'dogpile': {
-            'level': 'WARN',
-            'qualname': 'dogpile',
-        },
     },
     'filters': {
         'stack': {
