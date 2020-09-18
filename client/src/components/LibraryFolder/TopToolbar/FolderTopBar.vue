@@ -8,7 +8,7 @@
             </a>
             <div>
                 <form class="form-inline">
-                <SearchField @updateSearch="updateSearch($event)"></SearchField>
+                    <SearchField @updateSearch="updateSearch($event)"></SearchField>
                     <button
                         v-if="metadata.can_add_library_item"
                         title="Create new folder"
