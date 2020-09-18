@@ -1,5 +1,5 @@
 <template>
-    <markdown class="p-3" :markdown-config="markdownConfig" :read-only="true" />
+    <markdown class="p-3" :markdown-config="markdownConfig" @onEdit="onEdit" />
 </template>
 
 <script>
@@ -40,9 +40,12 @@ export default {
             });
     },
     methods: {
+        onEdit() {
+            window.location = `${getAppRoot()}pages/create?invocation_id=${this.invocationId}`;
+        },
         /** Markdown data request helper **/
         async getMarkdown(id) {
-            const url = getAppRoot() + `api/invocations/${id}/report`;
+            const url = `${getAppRoot()}api/invocations/${id}/report`;
             try {
                 const { data } = await axios.get(url);
                 return data;

@@ -273,9 +273,14 @@ export const getAnalysisRouter = (Galaxy) =>
         },
 
         show_pages_create: function () {
+            let url = "page/create";
+            const invocation_id = QueryStringParsing.get("invocation_id");
+            if (invocation_id) {
+                url += `?invocation_id=${invocation_id}`;
+            }
             this.page.display(
                 new FormWrapper.View({
-                    url: "page/create",
+                    url: url,
                     redirect: "pages/list",
                     active_tab: "user",
                 })
