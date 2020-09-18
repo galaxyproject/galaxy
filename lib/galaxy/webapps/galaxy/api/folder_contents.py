@@ -277,7 +277,7 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
             else:
                 description = None
 
-            if search_text and not dataset.library_dataset_dataset_association.message:
+            if search_text and description is None:
                 continue
             if search_text and description and search_text not in dataset.name and search_text not in description:
                 continue
