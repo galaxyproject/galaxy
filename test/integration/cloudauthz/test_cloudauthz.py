@@ -36,14 +36,15 @@ class DefineCloudAuthzTestCase(BaseCloudAuthzTestCase):
             # The payload for the POST API.
             payload = {
                 "provider": provider,
-                "config": {
+                "config": json.dumps({
                     "tenant_id": tenant_id,
                     "client_id": client_id,
                     "client_secret": client_secret
-                }
+                })
             }
 
             response = self._post(path="cloud/authz", data=payload)
-            cloudauthz = json.loads(response.content)
+            response.raise_for_status()
+            cloudauthz = response.json()
 
             assert cloudauthz["provider"] == provider
