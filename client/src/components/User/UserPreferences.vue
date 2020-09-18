@@ -50,6 +50,7 @@
                     @ok="handleOk"
                 >
                     <p>
+                        <b-alert variant="danger" :show="showDeleteError">{{ deleteError }}</b-alert>
                         <b>
                             This action cannot be undone. Your account will be permanently deleted, along with the data
                             contained in it.
@@ -112,6 +113,7 @@ export default {
             message: null,
             name: "",
             nameState: null,
+            deleteError: "",
             submittedNames: [],
         };
     },
@@ -156,6 +158,9 @@ export default {
             }
 
             return activeLinks;
+        },
+        showDeleteError() {
+            return this.deleteError !== "";
         },
     },
     methods: {
@@ -246,12 +251,13 @@ export default {
                 this.nameState = true;
                 try {
                     await axios.delete(`${getAppRoot()}api/users/${userId}`);
-                } catch  {
-                    alert("Admin user deletion must be configured on this instance in order to allow user self-deletion")
+                } catch {
+                    // TODO: actually inspect the response for an error code, don't just assume this was the issue.
+                    this.deleteError =
+                        "User deletion must be configured on this instance in order to allow user self-deletion.  Please contact an administrator for assistance.";
+                    return false;
                 }
-                window.location.href = `${getAppRoot()}user/logout?session_csrf_token=${
-                    Galaxy.session_csrf_token
-                }`;
+                window.location.href = `${getAppRoot()}user/logout?session_csrf_token=${Galaxy.session_csrf_token}`;
                 window.location.href = `${getAppRoot()}`;
             } else {
                 this.nameState = false;
