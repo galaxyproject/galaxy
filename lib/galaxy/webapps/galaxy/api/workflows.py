@@ -1012,26 +1012,16 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         spec_version = kwd.get('spec_version', 'https://w3id.org/ieee/ieee-2791-schema/2791object.json')
 
-        # listing the versions of the workflow for 'version' and 'derived_from'
-        versions = []
         for i, w in enumerate(reversed(stored_workflow.workflows)):
-            version = {
-                'version': i,
-                'update_time': str(w.update_time),
-                'steps': w.step_count,
-                'version_id': trans.security.encode_id(w.stored_workflow.id),
-            }
-            versions.append(version)
             if workflow == w:
-                break
-        current_version = versions[-1]['version']
+                current_version = i
 
         contributors = []
         for contributing_user in contributing_users:
             contributor = {
                 'orcid': kwd.get('xref', []),
                 'name': contributing_user.username,
-                'affiliation': contributing_user.email.split('@')[-1],
+                'affiliation': "",
                 'contribution': ['authoredBy'],
                 'email': contributing_user.email,
             }
@@ -1046,7 +1036,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 'reviewer': {
                     'orcid': kwd.get('orcid', []),
                     'name': contributing_user.username,
-                    'affiliation': contributing_user.email.split('@')[-1],
+                    'affiliation': "",
                     'contribution': 'curatedBy',
                     'email': contributing_user.email
                 }
@@ -1073,17 +1063,18 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         metrics = {}
         tools, input_subdomain, output_subdomain, pipeline_steps, software_prerequisites = [], [], [], [], []
-        for i, step in enumerate(workflow_invocation.steps):
+        for step in workflow_invocation.steps:
             if step.workflow_step.type == 'tool':
-                workflow_outputs_list , output_list, input_list = [], [], []
+                workflow_outputs_list , output_list, input_list = set(), [], []
                 for wo in step.workflow_step.workflow_outputs:
-                    workflow_outputs_list.append(wo.output_name)
+                    workflow_outputs_list.add(wo.output_name)
                 for job in step.jobs:
                     metrics[i] = summarize_job_metrics(trans, job)
                     for job_input in job.input_datasets:
                         if hasattr(job_input.dataset, 'dataset_id'):
                             encoded_dataset_id = trans.security.encode_id(job_input.dataset.dataset_id)
                             input_obj = {
+                                # TODO: that should maybe be a step prefix + element identifier where appropriate.
                                 'filename': job_input.dataset.name,
                                 'uri': url_for('history_content', history_id=encoded_history_id, id=encoded_dataset_id, qualified=True),
                                 'access_time': job_input.dataset.create_time.isoformat(),
@@ -1100,19 +1091,21 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                             }
                             output_list.append(output_obj)
 
-                        if job_output.name in workflow_outputs_list:
-                            output = {
-                                'mediatype': job_output.dataset.extension,
-                                'uri': {
-                                    'filename': job_output.dataset.name,
-                                    'uri': url_for('history_content', history_id=encoded_history_id, id=encoded_dataset_id, qualified=True),
-                                    'access_time': job_output.dataset.create_time.isoformat(),
+                            if job_output.name in workflow_outputs_list:
+                                output = {
+                                    'mediatype': job_output.dataset.extension,
+                                    'uri': {
+                                        'filename': job_output.dataset.name,
+                                        'uri': url_for('history_content', history_id=encoded_history_id, id=encoded_dataset_id, qualified=True),
+                                        'access_time': job_output.dataset.create_time.isoformat(),
+                                    }
                                 }
-                            }
-                            output_subdomain.append(output)
-                current_step = dict_workflow['steps'][str(i)]
+                                output_subdomain.append(output)
+                workflow_step = step.workflow_step
+                step_index = workflow_step.order_index
+                current_step = dict_workflow['steps'][str(step_index)]
                 pipeline_step = {
-                    'step_number': i,
+                    'step_number': step_index,
                     'name': current_step['name'],
                     'description': current_step['annotation'],
                     'version': current_step['tool_version'],
@@ -1123,7 +1116,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 pipeline_steps.append(pipeline_step)
                 try:
                     software_prerequisite = {
-                        'name': current_step['tool_shed_repository']['name'],
+                        'name': current_step['content_id'],
                         'version': current_step['tool_version'],
                         'uri': {
                             'uri': current_step['content_id'],
@@ -1136,24 +1129,25 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 except Exception:
                     continue
 
-            if step.workflow_step.type == 'data_input':
+            if step.workflow_step.type == 'data_input' and step.output_datasets:
                 for output_assoc in step.output_datasets:
-                    encoded_dataset_id = trans.security.encode_id(output_assoc.dataset.id)
-                input_obj = {
-                    'filename': step.workflow_step.label,
-                    'uri': url_for('history_content', history_id=encoded_history_id, id=encoded_dataset_id, qualified=True),
-                    'access_time': step.workflow_step.update_time.isoformat(),
-                }
-                input_subdomain.append(input_obj)
+                    encoded_dataset_id = trans.security.encode_id(output_assoc.dataset_id)
+                    input_obj = {
+                        'filename': step.workflow_step.label,
+                        'uri': url_for('history_content', history_id=encoded_history_id, id=encoded_dataset_id, qualified=True),
+                        'access_time': step.workflow_step.update_time.isoformat(),
+                    }
+                    input_subdomain.append(input_obj)
 
-            if step.workflow_step.type == 'data_collection_input':
-                encoded_dataset_id = trans.security.encode_id(step.workflow_step.id)
-                input_obj = {
-                    'filename': step.workflow_step.label,
-                    'uri': url_for('history_content', history_id=encoded_history_id, id=encoded_dataset_id, qualified=True),
-                    'access_time': step.workflow_step.update_time.isoformat(),
-                }
-                input_subdomain.append(input_obj)
+            if step.workflow_step.type == 'data_collection_input' and step.output_dataset_collections:
+                for output_dataset_collection_association in step.output_dataset_collections:
+                    encoded_dataset_id = trans.security.encode_id(output_dataset_collection_association.dataset_collection_id)
+                    input_obj = {
+                        'filename': step.workflow_step.label,
+                        'uri': url_for('history_content', history_id=encoded_history_id, id=encoded_dataset_id, type="dataset_collection", qualified=True),
+                        'access_time': step.workflow_step.update_time.isoformat(),
+                    }
+                    input_subdomain.append(input_obj)
 
         usability_domain = []
         for a in stored_workflow.annotations:
@@ -1172,7 +1166,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         execution_domain = {
             'script_access_type': 'a_galaxy_workflow',
-            'script': [url_for('workflows', encoded_workflow_id=encoded_workflow_id)],
+            'script': [url_for('workflows', encoded_workflow_id=encoded_workflow_id, qualified=True)],
             'script_driver': 'Galaxy',
             'software_prerequisites': software_prerequisites,
             'external_data_endpoints': [
@@ -1204,7 +1198,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         }
 
         bco_dict = {
-            'object_id': url_for('invocation_export_bco', invocation_id=invocation_id, qualified=True),
+            'object_id': url_for(controller="api/invocations/%s" % invocation_id, action='invocation_export_bco', qualified=True),
             'spec_version': spec_version,
             'etag': str(model.uuid4().hex),
             'provenance_domain': provenance_domain,
