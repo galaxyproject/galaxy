@@ -9,7 +9,6 @@ import os
 import galaxy.datatypes.metadata
 from galaxy import (
     exceptions,
-    managers,
     model
 )
 from galaxy.datatypes import sniff
@@ -687,15 +686,15 @@ class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableD
         return unwrapped_val
 
     def deserialize_datatype(self, item, key, val, **context):
-        if item.datatype.allow_datatype_change and context['trans'].app.datatypes_registry.get_datatype_by_extension(val).allow_datatype_change:
-            if managers.hdas.HDAManager(self.app).ok_to_edit_metadata(item.dataset_id):
-                context['trans'].app.datatypes_registry.change_datatype(item, val)
+        if item.datatype.allow_datatype_change and self.app.datatypes_registry.get_datatype_by_extension(val).allow_datatype_change:
+            if DatasetAssociationManager(self.app).ok_to_edit_metadata(item.dataset_id):
+                item.change_datatype(val)
                 context['trans'].sa_session.flush()
-                context['trans'].app.datatypes_registry.set_external_metadata_tool.tool_action.execute(context['trans'].app.datatypes_registry.set_external_metadata_tool, context['trans'], incoming={'input1': item}, overwrite=False)  # overwrite is False as per existing behavior
+                self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(self.app.datatypes_registry.set_external_metadata_tool, context['trans'], incoming={'input1': item}, overwrite=False)  # overwrite is False as per existing behavior
                 return item.datatype
         context['trans'].response.status = 500
-        context['trans'].error_message = 'Datatype could not be updated'
-        return False
+        context['trans'].error_message = 'Datatype could not be updated.'
+        raise Exception('Datatype could not be updated.')
 
 
 class DatasetAssociationFilterParser(base.ModelFilterParser, deletable.PurgableFiltersMixin):
