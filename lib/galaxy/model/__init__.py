@@ -5975,14 +5975,6 @@ class CloudAuthz(object):
         self.last_activity = datetime.now()
         self.description = description
 
-    def __eq__(self, other):
-        if not isinstance(other, CloudAuthz):
-            return False
-        return self.equals(other.user_id, other.provider, other.authn_id, other.config)
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
     def equals(self, user_id, provider, authn_id, config):
         return (self.user_id == user_id
                 and self.provider == provider

@@ -148,7 +148,6 @@ class CloudAuthzController(BaseAPIController):
             )
             view = self.cloudauthz_serializer.serialize_to_view(new_cloudauthz, trans=trans, **self._parse_serialization_params(kwargs, 'summary'))
             log.debug('Created a new cloudauthz record for the user id `{}` '.format(str(trans.user.id)))
-            trans.response.status = '200'
             return view
         except Exception as e:
             log.exception(msg_template.format("exception while creating the new cloudauthz record"))
