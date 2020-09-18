@@ -16,6 +16,32 @@ from galaxy_test.driver import integration_util
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 WORKFLOW_HANDLER_CONFIGURATION_JOB_CONF = os.path.join(SCRIPT_DIRECTORY, "workflow_handler_configuration_job_conf.xml")
 
+WORKFLOW_HANDLER_JOB_CONFIG_TEMPLATE = string.Template("""
+<job_conf>
+    <plugins>
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="2"/>
+    </plugins>
+
+    <handlers default="handlers"  $assign_with>
+        <handler id="handler0" tags="handlers"/>
+        <handler id="handler1" tags="handlers"/>
+        <handler id="handler2" tags="handlers" />
+        <handler id="handler3" tags="handlers" />
+        <handler id="handler4" tags="handlers" />
+        <handler id="handler5" tags="handlers" />
+        <handler id="handler6" tags="handlers" />
+        <handler id="handler7" tags="handlers" />
+        <handler id="handler8" tags="handlers" />
+        <handler id="handler9" tags="handlers" />
+    </handlers>
+
+    <destinations default="local">
+        <destination id="local" runner="local">
+        </destination>
+    </destinations>
+</job_conf>
+""")
+
 WORKFLOW_SCHEDULERS_CONFIG_TEMPLATE = string.Template("""
 <workflow_schedulers default="core">
   <core id="core" />
@@ -41,19 +67,20 @@ steps:
 """
 
 
-def workflow_schedulers_config_file(assign_with=''):
+def config_file(template, assign_with=''):
     fd, path = tempfile.mkstemp(suffix=".xml", prefix="workflow_handler_config_")
     os.close(fd)
     with open(path, 'w') as config:
         if assign_with:
             assign_with = 'assign_with="{}"'.format(assign_with)
-        config.write(WORKFLOW_SCHEDULERS_CONFIG_TEMPLATE.substitute(assign_with=assign_with))
+        config.write(template.substitute(assign_with=assign_with))
     return path
 
 
 class BaseWorkflowHandlerConfigurationTestCase(integration_util.IntegrationTestCase):
 
     framework_tool_and_types = True
+    assign_with = ""
 
     def setUp(self):
         super(BaseWorkflowHandlerConfigurationTestCase, self).setUp()
@@ -63,7 +90,7 @@ class BaseWorkflowHandlerConfigurationTestCase(integration_util.IntegrationTestC
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
-        config["job_config_file"] = WORKFLOW_HANDLER_CONFIGURATION_JOB_CONF
+        config["job_config_file"] = config_file(WORKFLOW_HANDLER_JOB_CONFIG_TEMPLATE, assign_with=cls.assign_with)
 
     def _invoke_n_workflows(self, n):
         workflow_id = self.workflow_populator.upload_yaml_workflow(PAUSE_WORKFLOW)
@@ -135,7 +162,7 @@ class WorkflowSchedulerHandlerAssignment(BaseWorkflowHandlerConfigurationTestCas
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         BaseWorkflowHandlerConfigurationTestCase.handle_galaxy_config_kwds(config)
-        config["workflow_schedulers_config_file"] = workflow_schedulers_config_file()
+        config["workflow_schedulers_config_file"] = config_file(WORKFLOW_SCHEDULERS_CONFIG_TEMPLATE, assign_with=cls.assign_with)
 
     def test_handler_assignment(self):
         self._invoke_n_workflows(1)
@@ -143,11 +170,14 @@ class WorkflowSchedulerHandlerAssignment(BaseWorkflowHandlerConfigurationTestCas
         assert WORKFLOW_SCHEDULER_HANDLER_PATTERN.match(workflow_invocations[0].handler)
 
 
-# Follow five classes test 5 different ways Galaxy processes can be workflow schedulers or not.
+# Following 8 classes test 8 different ways Galaxy processes can be workflow schedulers or not.
 #  - In single process mode, the process is a workflow scheduler.
 #  - If no workflow schedulers conf is configured and the process is a job handler, it is a workflow scheduler as well.
+#  - If no workflow schedulers conf is configured and the process is a job handler, it is a workflow scheduler as well (with db-dkip-locked).
 #  - If no workflow schedulers conf is configured and the process is not a job handler, it is not a workflow scheduler as well.
 #  - If a workflow scheduler conf is defined and the process is listed as a handler, it is workflow scheduler.
+#  - If a workflow scheduler conf is defined and assign_with is set to db-skip-locked, invocation handler is correctly set
+#  - If a workflow scheduler conf is defined and assign_with is set to db-transaction-isolation, invocation handler is correctly set
 #  - If a workflow scheduler conf is defined and the process is not listed as a handler, it is not workflow scheduler.
 class DefaultWorkflowHandlerOnTestCase(BaseWorkflowHandlerConfigurationTestCase):
 
@@ -171,6 +201,25 @@ class DefaultWorkflowHandlerIfJobHandlerOnTestCase(BaseWorkflowHandlerConfigurat
         assert self.is_app_workflow_scheduler
 
 
+class JobHandlerAsWorkflowHandlerWithDbSkipLocked(BaseWorkflowHandlerConfigurationTestCase):
+
+    assign_with = 'db-skip-locked'
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        BaseWorkflowHandlerConfigurationTestCase.handle_galaxy_config_kwds(config)
+        config["server_name"] = "handler0"
+
+    def test_handler_assignment(self):
+        self._invoke_n_workflows(1)
+        time.sleep(2)
+        workflow_invocations = self._get_workflow_invocations()
+        assert JOB_HANDLER_PATTERN.match(workflow_invocations[0].handler)
+
+    def test_default_job_handler_is_workflow_handler(self):
+        assert self.is_app_workflow_scheduler
+
+
 class DefaultWorkflowHandlerIfJobHandlerOffTestCase(BaseWorkflowHandlerConfigurationTestCase):
 
     @classmethod
@@ -178,7 +227,7 @@ class DefaultWorkflowHandlerIfJobHandlerOffTestCase(BaseWorkflowHandlerConfigura
         BaseWorkflowHandlerConfigurationTestCase.handle_galaxy_config_kwds(config)
         config["server_name"] = "web0"
 
-    def test_default_job_handler_is_workflow_handler(self):
+    def test_default_job_handler_is_not_workflow_handler(self):
         assert not self.is_app_workflow_scheduler
 
 
@@ -189,7 +238,7 @@ class ExplicitWorkflowHandlersOnTestCase(BaseWorkflowHandlerConfigurationTestCas
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         BaseWorkflowHandlerConfigurationTestCase.handle_galaxy_config_kwds(config)
-        config["workflow_schedulers_config_file"] = workflow_schedulers_config_file(cls.assign_with)
+        config["workflow_schedulers_config_file"] = config_file(WORKFLOW_SCHEDULERS_CONFIG_TEMPLATE, assign_with=cls.assign_with)
         config["server_name"] = "work1"
 
     def test_app_is_workflow_scheduler(self):
@@ -219,7 +268,7 @@ class ExplicitWorkflowHandlersOffTestCase(BaseWorkflowHandlerConfigurationTestCa
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         BaseWorkflowHandlerConfigurationTestCase.handle_galaxy_config_kwds(config)
-        config["workflow_schedulers_config_file"] = workflow_schedulers_config_file()
+        config["workflow_schedulers_config_file"] = config_file(WORKFLOW_SCHEDULERS_CONFIG_TEMPLATE, assign_with=cls.assign_with)
         config["server_name"] = "handler0"  # Configured as a job handler but not a workflow handler.
 
     def test_app_is_not_workflow_scheduler(self):
