@@ -708,12 +708,6 @@ def verify_hid(filename, hda_id, attributes, test_data_downloader, hid="", datas
 def verify_collection(output_collection_def, data_collection, verify_dataset):
     name = output_collection_def.name
 
-    def get_element(elements, id):
-        for element in elements:
-            if element["element_identifier"] == id:
-                return element
-        return False
-
     expected_collection_type = output_collection_def.collection_type
     if expected_collection_type:
         collection_type = data_collection["collection_type"]
@@ -731,16 +725,35 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
             raise AssertionError(message)
 
     def verify_elements(element_objects, element_tests):
+        sorted_test_ids = [None] * len(element_tests)
         for element_identifier, element_test in element_tests.items():
             if isinstance(element_test, dict):
                 element_outfile, element_attrib = None, element_test
             else:
                 element_outfile, element_attrib = element_test
+            sorted_test_ids[element_attrib["element_index"]] = element_identifier
 
-            element = get_element(element_objects, element_identifier)
-            if not element:
-                template = "Failed to find identifier [%s] for testing, tool generated collection elements [%s]"
-                message = template % (element_identifier, element_objects)
+        i = 0
+        for element_identifier in sorted_test_ids:
+            element_test = element_tests[element_identifier]
+            if isinstance(element_test, dict):
+                element_outfile, element_attrib = None, element_test
+            else:
+                element_outfile, element_attrib = element_test
+
+            element = None
+            while i < len(element_objects):
+                if element_objects[i]["element_identifier"] == element_identifier:
+                    element = element_objects[i]
+                    i += 1
+                    break
+                i += 1
+
+            if element is None:
+                template = "Failed to find identifier '%s' of test collection %s in the tool generated collection elements %s (at the correct position)"
+                eo_ids = [_["element_identifier"] for _ in element_objects]
+                message = template % (element_identifier, sorted_test_ids,
+                                      eo_ids)
                 raise AssertionError(message)
 
             element_type = element["element_type"]
