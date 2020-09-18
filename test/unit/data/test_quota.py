@@ -2,6 +2,38 @@ from galaxy.quota import DatabaseQuotaAgent
 from .test_galaxy_mapping import BaseModelTestCase
 
 
+class CalculateUsageTestCase(BaseModelTestCase):
+
+    def test_calculate_usage(self):
+        model = self.model
+        u = model.User(email="calc_usage@example.com", password="password")
+        self.persist(u)
+
+        h = model.History(name="History for Usage", user=u)
+        self.persist(h)
+
+        d1 = model.HistoryDatasetAssociation(extension="txt", history=h, create_dataset=True, sa_session=model.session)
+        d1.dataset.total_size = 10
+        self.persist(d1)
+
+        assert u.calculate_disk_usage() == 10
+        assert u.disk_usage is None
+        u.calculate_and_set_disk_usage()
+        assert u.disk_usage == 10
+
+        # Test dataset being in another history doesn't duplicate usage cost.
+        h2 = model.History(name="Second usage history", user=u)
+        self.persist(h2)
+        d2 = model.HistoryDatasetAssociation(extension="txt", history=h2, dataset=d1.dataset)
+        self.persist(d2)
+
+        # duplicating dataset within a history also doesn't duplicate usage cost
+        d3 = model.HistoryDatasetAssociation(extension="txt", history=h, dataset=d1.dataset)
+        self.persist(d3)
+
+        assert u.calculate_disk_usage() == 10
+
+
 class QuotaTestCase(BaseModelTestCase):
 
     def setUp(self):
