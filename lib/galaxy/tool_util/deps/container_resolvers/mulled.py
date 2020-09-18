@@ -154,7 +154,7 @@ def find_best_matching_cached_image(targets, cached_images, hash_func):
     image = None
     if len(targets) == 1:
         target = targets[0]
-        for cached_image in cached_images:
+        for cached_image in reversed(cached_images):
             if cached_image.multi_target:
                 continue
             if not cached_image.package_name == target.package_name:
@@ -169,7 +169,7 @@ def find_best_matching_cached_image(targets, cached_images, hash_func):
         else:
             package_hash, version_hash = name, None
 
-        for cached_image in cached_images:
+        for cached_image in reversed(cached_images):
             if cached_image.multi_target != "v2":
                 continue
 
@@ -186,7 +186,7 @@ def find_best_matching_cached_image(targets, cached_images, hash_func):
 
     elif hash_func == "v1":
         name = v1_image_name(targets)
-        for cached_image in cached_images:
+        for cached_image in reversed(cached_images):
             if cached_image.multi_target != "v1":
                 continue
 
