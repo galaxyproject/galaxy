@@ -138,13 +138,14 @@ export default {
             titleUndoButton: _l("Undo all reordering and discards"),
             titleDeselectButton: _l("De-select all selected datasets"),
             selectedDatasetElems: [],
+            workingElements:[],
         };
     },
     mixins: [CollectionCreatorMixin],
     props: {
         initialElements: {
-            required: false,
-            default: [],
+            required: true,
+            type: Array,
         },
         creationFn: {
             type: Function,
@@ -191,7 +192,6 @@ export default {
             return this.selectedDatasetElems;
         },
         returnWorkingElements: function () {
-            console.log("in returnWE method");
             return this.workingElements;
         },
     },
@@ -204,11 +204,7 @@ export default {
             }
         },
         elementDiscarded(e) {
-            console.log("BOB deleting " + e.id);
-            //this.workingElements.splice(this.workingElements.indexOf(e), 1);
             this.$delete(this.workingElements, this.workingElements.indexOf(e));
-            console.log(this.workingElements);
-            this.$forceUpdate();
             return this.workingElements;
         },
         clickClearAll() {

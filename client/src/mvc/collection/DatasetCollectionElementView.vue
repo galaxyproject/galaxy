@@ -44,7 +44,6 @@ export default {
         },
         clickDiscard: function () {
             this.$emit("element-is-discarded", this.element);
-            this.$destroy();
         },
         // },
         //TODO: template, rendering, OR conditional 'rendering (i.e. belongs in template)
@@ -63,18 +62,7 @@ export default {
         //     this.$el.addClass("dragging");
         //     this.$el.parent().trigger("collection-element.dragstart", [this]);
         // },
-        //TODO: actual method - must be rewritten, assess whether methods/created/computed/etc.
-        // /** animate the removal of this element and pub */
-        // discard() {
-        //     var view = this;
-        //     var parentWidth = this.$el.parent().width();
-        //     this.$el.animate({ "margin-right": parentWidth }, "fast", () => {
-        //         view.trigger("discard", {
-        //             source: view,
-        //         });
-        //         view.destroy();
-        //     });
-        // },
+
         /** string rep */
         toString() {
             return "DatasetCollectionElementView()";
