@@ -14,11 +14,11 @@ from six.moves.html_parser import HTMLParser
 from galaxy import exceptions, model
 from galaxy.managers import base, sharable
 from galaxy.managers.hdas import HDAManager
-from galaxy.managers.workflows import WorkflowsManager
 from galaxy.managers.markdown_util import (
     ready_galaxy_markdown_for_export,
     ready_galaxy_markdown_for_import,
 )
+from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.util import unicodify
 from galaxy.util.sanitize_html import sanitize_html
@@ -73,7 +73,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         """
         """
         super().__init__(app, *args, **kwargs)
-        workflow_manager = WorkflowsManager(app)
+        self.workflow_manager = WorkflowsManager(app)
 
     def copy(self, trans, page, user, **kwargs):
         """
@@ -98,7 +98,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
             content_format = "markdown"
         else:
             content = payload.get("content", "")
-            content_format = payload.get("content_format", "markdown")
+            content_format = payload.get("content_format", "html")
         content = self.rewrite_content_for_import(trans, content, content_format)
 
         # Create the new stored page
