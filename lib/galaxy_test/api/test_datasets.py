@@ -144,16 +144,21 @@ class DatasetsApiTestCase(ApiTestCase):
         assert original_hda['data_type'] == 'galaxy.datatypes.data.Text'
         assert len(original_hda['visualizations']) < 10
 
-        time.sleep(10)  # need to wait for upload to complete before updating datatype
+        update_while_incomplete = self._put(  # try updating datatype before upload is complete
+            "histories/{history_id}/contents/{hda_id}".format(history_id=self.history_id, hda_id=hda_id),
+            {'datatype': 'tabular'}).status_code
+        assert update_while_incomplete == 500
 
-        updated_hda = self._put(
+        time.sleep(10)  # now wait for upload to complete
+
+        successful_updated_hda = self._put(
             "histories/{history_id}/contents/{hda_id}".format(history_id=self.history_id, hda_id=hda_id),
             {'datatype': 'tabular'}).json()
-        assert updated_hda['extension'] == 'tabular'
-        assert updated_hda['data_type'] == 'galaxy.datatypes.tabular.Tabular'
-        assert len(updated_hda['visualizations']) > 20
+        assert successful_updated_hda['extension'] == 'tabular'
+        assert successful_updated_hda['data_type'] == 'galaxy.datatypes.tabular.Tabular'
+        assert len(successful_updated_hda['visualizations']) > 20
 
-        invalidly_updated_hda = self._put(
+        invalidly_updated_hda = self._put(  # try updating with invalid datatype
             "histories/{history_id}/contents/{hda_id}".format(history_id=self.history_id, hda_id=hda_id),
             {'datatype': 'invalid'})
         self._assert_status_code_is(invalidly_updated_hda, 500)
