@@ -1,9 +1,6 @@
 <template>
     <div>
-        <div v-if="!hasLoaded" class="d-flex justify-content-center m-5">
-            <font-awesome-icon icon="spinner" spin size="9x" />
-        </div>
-        <div v-else>
+        <div>
             <FolderTopBar
                 @updateSearch="updateSearchValue($event)"
                 @refreshTable="refreshTable"
@@ -294,12 +291,12 @@ export default {
             selected: [],
             expandedMessage: [],
             folderContents: [],
-            hasLoaded: false,
             perPage: 15,
             maxDescriptionLength: 40,
             filter: null,
             include_deleted: false,
             filterOn: [],
+            search_text: "",
         };
     },
     computed: {
@@ -318,22 +315,21 @@ export default {
         this.fetchFolderContents();
     },
     methods: {
-        fetchFolderContents(include_deleted = false, search_text = false) {
+        fetchFolderContents(include_deleted = false) {
             this.include_deleted = include_deleted;
-            search_text ? (this.isBusy = true) : (this.hasLoaded = false);
+            this.isBusy = true;
             this.services
                 .getFolderContents(
                     this.folder_id,
                     include_deleted,
                     this.perPage,
                     (this.currentPage - 1) * this.perPage,
-                    search_text
+                    this.search_text
                 )
                 .then((response) => {
                     this.folderContents = response.folder_contents;
                     this.folder_metadata = response.metadata;
                     this.total_rows = response.metadata.total_rows;
-                    this.hasLoaded = true;
                     this.isBusy = false;
                 })
                 .catch((error) => {
@@ -342,7 +338,7 @@ export default {
         },
         updateSearchValue(value) {
             this.search_text = value;
-            this.fetchFolderContents(this.include_deleted, value);
+            this.fetchFolderContents(this.include_deleted);
         },
         selectAllRows() {
             this.$refs.folder_content_table.selectAllRows();
