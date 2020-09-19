@@ -10,7 +10,7 @@ export function userLogoutAll() {
 export function userLogout(logoutAll = false) {
     const galaxy = getGalaxyInstance();
     const session_csrf_token = galaxy.session_csrf_token;
-    const url = `${galaxy.root}user/logout?session_csrf_token=${session_csrf_token}&logoutAll=${logoutAll}`;
+    const url = `${galaxy.root}user/logout?session_csrf_token=${session_csrf_token}&logout_all=${logoutAll}`;
     axios
         .get(url)
         .then(() => {
