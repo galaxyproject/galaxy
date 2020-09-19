@@ -32,6 +32,43 @@
                 </div>
             </div>
         </b-row>
+        <b-row class="ml-3 mb-1">
+            <i class="pref-icon pt-1 fa fa-lg fa-radiation" />
+            <div class="pref-content pr-1">
+                <a href="javascript:void(0)"><b v-b-modal.modal-prevent-closing>Delete Account</b></a>
+                <div class="form-text text-muted">
+                    Delete your account on this Galaxy server.
+                </div>
+                <b-modal
+                    id="modal-prevent-closing"
+                    centered
+                    ref="modal"
+                    title="Account Deletion"
+                    title-tag="h2"
+                    @show="resetModal"
+                    @hidden="resetModal"
+                    @ok="handleOk"
+                >
+                    <p>
+                        <b-alert variant="danger" :show="showDeleteError">{{ deleteError }}</b-alert>
+                        <b>
+                            This action cannot be undone. Your account will be permanently deleted, along with the data
+                            contained in it.
+                        </b>
+                    </p>
+                    <b-form ref="form" @submit.prevent="handleSubmit">
+                        <b-form-group
+                            :state="nameState"
+                            label="Enter your user email for this account as confirmation."
+                            label-for="Email"
+                            invalid-feedback="Incorrect email"
+                        >
+                            <b-form-input id="name-input" v-model="name" :state="nameState" required></b-form-input>
+                        </b-form-group>
+                    </b-form>
+                </b-modal>
+            </div>
+        </b-row>
         <p class="mt-2">
             You are using <strong>{{ diskUsage }}</strong> of disk space in this Galaxy instance.
             <span v-html="quotaUsageString"></span>
@@ -51,6 +88,7 @@ import _l from "utils/localization";
 import axios from "axios";
 import QueryStringParsing from "utils/query-string-parsing";
 import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
+import "@fortawesome/fontawesome-svg-core";
 
 Vue.use(BootstrapVue);
 
@@ -73,6 +111,10 @@ export default {
             baseUrl: `${getAppRoot()}user`,
             messageVariant: null,
             message: null,
+            name: "",
+            nameState: null,
+            deleteError: "",
+            submittedNames: [],
         };
     },
     created() {
@@ -107,6 +149,8 @@ export default {
                         case "logout":
                             activeLinks[key].onclick = this.signOut;
                             break;
+                        // case "delete_user":
+                        //     activeLinks[key].onclick = this.deleteUser;
                         default:
                             activeLinks[key].action = key;
                     }
@@ -114,6 +158,9 @@ export default {
             }
 
             return activeLinks;
+        },
+        showDeleteError() {
+            return this.deleteError !== "";
         },
     },
     methods: {
@@ -178,10 +225,47 @@ export default {
                 },
             });
         },
+        checkFormValidity() {
+            const valid = this.$refs.form.checkValidity();
+            this.nameState = valid;
+            return valid;
+        },
+        resetModal() {
+            this.name = "";
+            this.nameState = null;
+        },
+        handleOk(bvModalEvt) {
+            // Prevent modal from closing
+            bvModalEvt.preventDefault();
+            // Trigger submit handler
+            this.handleSubmit();
+        },
+        async handleSubmit() {
+            const Galaxy = getGalaxyInstance();
+            const userId = Galaxy.user.id;
+            if (!this.checkFormValidity()) {
+                return false;
+            }
+            if (this.email === this.name) {
+                this.nameState = true;
+                try {
+                    await axios.delete(`${getAppRoot()}api/users/${userId}`);
+                } catch (e) {
+                    if (e.response.status === 403) {
+                        this.deleteError =
+                            "User deletion must be configured on this instance in order to allow user self-deletion.  Please contact an administrator for assistance.";
+                        return false;
+                    }
+                }
+                window.location.href = `${getAppRoot()}user/logout?session_csrf_token=${Galaxy.session_csrf_token}`;
+            } else {
+                this.nameState = false;
+                return false;
+            }
+        },
     },
 };
 </script>
-
 <style scoped>
 .pref-content {
     width: calc(100% - 3rem);
