@@ -242,23 +242,22 @@ export default {
         },
         async handleSubmit() {
             const Galaxy = getGalaxyInstance();
+            const userId = Galaxy.user.id;
             if (!this.checkFormValidity()) {
                 return false;
             }
-            var email = Galaxy.user.email;
-            var userId = Galaxy.user.id;
             if (this.email === this.name) {
                 this.nameState = true;
                 try {
                     await axios.delete(`${getAppRoot()}api/users/${userId}`);
-                } catch {
-                    // TODO: actually inspect the response for an error code, don't just assume this was the issue.
-                    this.deleteError =
-                        "User deletion must be configured on this instance in order to allow user self-deletion.  Please contact an administrator for assistance.";
-                    return false;
+                } catch (e) {
+                    if (e.response.status === 403) {
+                        this.deleteError =
+                            "User deletion must be configured on this instance in order to allow user self-deletion.  Please contact an administrator for assistance.";
+                        return false;
+                    }
                 }
                 window.location.href = `${getAppRoot()}user/logout?session_csrf_token=${Galaxy.session_csrf_token}`;
-                window.location.href = `${getAppRoot()}`;
             } else {
                 this.nameState = false;
                 return false;
