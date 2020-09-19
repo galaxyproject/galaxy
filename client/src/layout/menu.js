@@ -3,10 +3,14 @@ import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import { CommunicationServerView } from "layout/communication-server-view";
 
-export function userLogout() {
+export function userLogoutAll() {
+    return userLogout(true);
+}
+
+export function userLogout(logoutAll = false) {
     const galaxy = getGalaxyInstance();
     const session_csrf_token = galaxy.session_csrf_token;
-    const url = `${galaxy.root}user/logout?session_csrf_token=${session_csrf_token}`;
+    const url = `${galaxy.root}user/logout?session_csrf_token=${session_csrf_token}&logoutAll=${logoutAll}`;
     axios
         .get(url)
         .then(() => {

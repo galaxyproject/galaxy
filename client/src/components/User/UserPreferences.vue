@@ -88,7 +88,7 @@ import _l from "utils/localization";
 import axios from "axios";
 import QueryStringParsing from "utils/query-string-parsing";
 import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
-import { userLogout } from "layout/menu";
+import { userLogoutAll } from "layout/menu";
 import "@fortawesome/fontawesome-svg-core";
 
 Vue.use(BootstrapVue);
@@ -218,7 +218,7 @@ export default {
                     Cancel: function () {
                         Galaxy.modal.hide();
                     },
-                    "Sign out": userLogout,
+                    "Sign out": userLogoutAll,
                 },
             });
         },
@@ -254,7 +254,7 @@ export default {
                         return false;
                     }
                 }
-                userLogout();
+                userLogoutAll();
             } else {
                 this.nameState = false;
                 return false;
