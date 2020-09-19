@@ -3,7 +3,7 @@ import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import { CommunicationServerView } from "layout/communication-server-view";
 
-export function logoutClick() {
+export function userLogout() {
     const galaxy = getGalaxyInstance();
     const session_csrf_token = galaxy.session_csrf_token;
     const url = `${galaxy.root}user/logout?session_csrf_token=${session_csrf_token}`;
@@ -244,7 +244,7 @@ export function fetchMenu(options = {}) {
                 {
                     title: _l("Logout"),
                     divider: true,
-                    onclick: logoutClick,
+                    onclick: userLogout,
                 },
                 {
                     title: _l("Datasets"),
