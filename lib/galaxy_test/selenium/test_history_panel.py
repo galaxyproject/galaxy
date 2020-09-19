@@ -30,12 +30,12 @@ class HistoryPanelTestCase(SeleniumTestCase):
         assert "New History Name" in self.history_panel_name()
 
     @selenium_test
-    def test_history_rename_cancel_with_click(self):
+    def test_history_rename_confirm_with_click(self):
         editable_text_input_element = self.history_panel_click_to_rename()
         editable_text_input_element.send_keys("New History Name")
         self.click_center()
         self.assert_absent(self.navigation.history_panel.selectors.name_edit_input)
-        assert "New History Name" not in self.history_panel_name()
+        assert "New History Name" in self.history_panel_name()
 
     @selenium_test
     def test_history_rename_cancel_with_escape(self):
