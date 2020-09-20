@@ -261,9 +261,19 @@ class ToolBox(BaseGalaxyToolBox):
             save_integrated_tool_panel=save_integrated_tool_panel,
         )
 
-    def persist_cache(self):
+    def persist_cache(self, register_postfork=False):
+        """
+        Persists any modified tool cache files to disk.
+
+        Set ``register_postfork`` to stop database thread queue,
+        close database connection and register re-open function
+        that re-opens the database after forking.
+        """
         for region in self.cache_regions.values():
             region.persist()
+            if register_postfork:
+                region.close()
+                self.app.application_stack.register_postfork_function(region.reopen_ro)
 
     def can_load_config_file(self, config_filename):
         if config_filename == self.app.config.shed_tool_config_file and not self.app.config.is_set('shed_tool_config_file'):
