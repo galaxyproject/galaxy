@@ -854,8 +854,8 @@ class InstallRepositoryManager:
                                                       install_tool_dependencies=install_tool_dependencies,
                                                       reinstalling=reinstalling,
                                                       tool_panel_section_mapping=tool_panel_section_mapping)
-                except Exception as e:
-                    log.exception(e)
+                except Exception:
+                    log.exception("Error installing repository '%s'", tool_shed_repository.name)
                     if pre_install_state != self.install_model.ToolShedRepository.states.OK:
                         # If repository was in OK state previously and e.g and update failed don't set the state to ERROR.
                         # For every other state do update the state to error and reset files on disk,
