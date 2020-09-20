@@ -96,10 +96,6 @@ class PagesController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotati
         return rval
 
     @expose_api
-    def create_report(self, trans, payload, **kwd):
-        pass
-
-    @expose_api
     def delete(self, trans, id, **kwd):
         """
         delete( self, trans, id, **kwd )

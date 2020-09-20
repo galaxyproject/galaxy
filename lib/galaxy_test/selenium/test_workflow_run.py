@@ -195,7 +195,7 @@ steps:
         self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
 
         invocation_0 = self.workflow_populator.history_invocations(history_id)[0]
-        self.get("page/edit_report?id=%s" % invocation_0["id"])
+        self.get("workflows/invocations/report?id=%s" % invocation_0["id"])
         self.wait_for_selector_visible(".embedded-dataset")
         self.screenshot("workflow_report_custom_1")
 

@@ -1100,7 +1100,7 @@ class NavigatesGalaxy(HasDriver):
     def tool_set_value(self, expanded_parameter_id, value, expected_type=None, test_data_resolver=None):
         div_element = self.tool_parameter_div(expanded_parameter_id)
         assert div_element
-        if expected_type in ["data", "data_collection"]:
+        if expected_type in ["select", "data", "data_collection"]:
             div_selector = "div.ui-form-element[tour_id$='%s']" % expanded_parameter_id
             self.select2_set_value(div_selector, value)
         else:

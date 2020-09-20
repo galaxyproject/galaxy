@@ -44,7 +44,6 @@ from galaxy.webapps.base.controller import (
 )
 from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.modules import module_factory
-from galaxy.workflow.reports import generate_report
 from galaxy.workflow.run import invoke, queue_invoke
 from galaxy.workflow.run_request import build_workflow_run_configs
 
@@ -964,7 +963,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         Get JSON summarizing invocation for reporting.
         """
         kwd["format"] = "json"
-        return self._generate_report(trans, invocation_id, **kwd)
+        return self.workflow_manager.get_invocation_report(trans, invocation_id, **kwd)
 
     @expose_api_raw
     def show_invocation_report_pdf(self, trans, invocation_id, **kwd):
@@ -976,23 +975,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         """
         kwd["format"] = "pdf"
         trans.response.set_content_type("application/pdf")
-        return self._generate_report(trans, invocation_id, **kwd)
-
-    def _generate_report(self, trans, invocation_id, **kwd):
-        decoded_workflow_invocation_id = self.decode_id(invocation_id)
-        workflow_invocation = self.workflow_manager.get_invocation(trans, decoded_workflow_invocation_id)
-        generator_plugin_type = kwd.get("generator_plugin_type")
-        runtime_report_config_json = kwd.get("runtime_report_config_json")
-        invocation_markdown = kwd.get("invocation_markdown", None)
-        target_format = kwd.get("format", "json")
-        if invocation_markdown:
-            runtime_report_config_json = {"markdown": invocation_markdown}
-        return generate_report(
-            trans, workflow_invocation,
-            runtime_report_config_json=runtime_report_config_json,
-            plugin_type=generator_plugin_type,
-            target_format=target_format,
-        )
+        return self.workflow_manager.get_invocation_report(trans, invocation_id, **kwd)
 
     def _generate_invocation_bco(self, trans, invocation_id, **kwd):
         decoded_workflow_invocation_id = self.decode_id(invocation_id)

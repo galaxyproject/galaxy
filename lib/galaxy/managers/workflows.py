@@ -39,6 +39,7 @@ from galaxy.workflow.modules import (
     ToolModule,
     WorkflowModuleInjector
 )
+from galaxy.workflow.reports import generate_report
 from galaxy.workflow.resources import get_resource_mapper_function
 from galaxy.workflow.steps import attach_ordered_steps
 from .base import decode_id
@@ -167,6 +168,22 @@ class WorkflowsManager:
             raise exceptions.ObjectNotFound(message)
         self.check_security(trans, workflow_invocation, check_ownership=True, check_accessible=False)
         return workflow_invocation
+
+    def get_invocation_report(self, trans, invocation_id, **kwd):
+        decoded_workflow_invocation_id = trans.security.decode_id(invocation_id)
+        workflow_invocation = self.get_invocation(trans, decoded_workflow_invocation_id)
+        generator_plugin_type = kwd.get("generator_plugin_type")
+        runtime_report_config_json = kwd.get("runtime_report_config_json")
+        invocation_markdown = kwd.get("invocation_markdown", None)
+        target_format = kwd.get("format", "json")
+        if invocation_markdown:
+            runtime_report_config_json = {"markdown": invocation_markdown}
+        return generate_report(
+            trans, workflow_invocation,
+            runtime_report_config_json=runtime_report_config_json,
+            plugin_type=generator_plugin_type,
+            target_format=target_format,
+        )
 
     def cancel_invocation(self, trans, decoded_invocation_id):
         workflow_invocation = self.get_invocation(trans, decoded_invocation_id)

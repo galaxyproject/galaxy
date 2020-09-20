@@ -32,6 +32,7 @@ import InteractiveTools from "components/InteractiveTools/InteractiveTools.vue";
 import WorkflowList from "components/Workflow/WorkflowList.vue";
 import HistoryImport from "components/HistoryImport.vue";
 import HistoryView from "components/HistoryView.vue";
+import WorkflowInvocationReport from "components/Workflow/InvocationReport.vue";
 import WorkflowRun from "components/Workflow/Run/WorkflowRun.vue";
 import RecentInvocations from "components/User/RecentInvocations.vue";
 import ToolsView from "components/ToolsView/ToolsView.vue";
@@ -75,6 +76,7 @@ export const getAnalysisRouter = (Galaxy) =>
             "(/)workflows/run(/)": "show_workflows_run",
             "(/)workflows(/)list": "show_workflows",
             "(/)workflows/invocations": "show_workflow_invocations",
+            "(/)workflows/invocations/report": "show_workflow_invocation_report",
             // "(/)workflows/invocations/view_bco": "show_invocation_bco",
             "(/)workflows/list_published(/)": "show_workflows_published",
             "(/)workflows/create(/)": "show_workflows_create",
@@ -192,6 +194,11 @@ export const getAnalysisRouter = (Galaxy) =>
             this._display_vue_helper(HistoryView, { id: QueryStringParsing.get("id") });
         },
 
+        show_workflow_invocation_report: function () {
+            const invocationId = QueryStringParsing.get("id");
+            this._display_vue_helper(WorkflowInvocationReport, { invocationId: invocationId }, null, true);
+        },
+
         show_workflow_invocations: function () {
             this._display_vue_helper(RecentInvocations, {});
         },
@@ -266,9 +273,14 @@ export const getAnalysisRouter = (Galaxy) =>
         },
 
         show_pages_create: function () {
+            let url = "page/create";
+            const invocation_id = QueryStringParsing.get("invocation_id");
+            if (invocation_id) {
+                url += `?invocation_id=${invocation_id}`;
+            }
             this.page.display(
                 new FormWrapper.View({
-                    url: "page/create",
+                    url: url,
                     redirect: "pages/list",
                     active_tab: "user",
                 })
