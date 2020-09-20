@@ -43,6 +43,13 @@ class ToolDocumentCache:
         # Switch SqliteDict back to readonly
         self._cache.flag = 'r'
 
+    def close(self):
+        self._cache.close()
+
+    def reopen_ro(self):
+        self._cache = SqliteDict(self.cache_file, flag='r', encode=encoder, decode=decoder, autocommit=False)
+        self.writeable_cache_file = None
+
     def get(self, config_file):
         tool_document = self._cache.get(config_file)
         if not tool_document:
@@ -65,8 +72,7 @@ class ToolDocumentCache:
         if self.writeable_cache_file:
             self._cache.commit()
             os.rename(self.writeable_cache_file.name, self.cache_file)
-            self._cache = SqliteDict(self.cache_file, flag='r', encode=encoder, decode=decoder, autocommit=False)
-            self.writeable_cache_file = None
+            self.reopen_ro()
 
     def set(self, config_file, tool_source):
         self.make_writable()
