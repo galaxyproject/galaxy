@@ -132,7 +132,22 @@ class OIDC(JSAppLauncher):
     @web.expose
     @web.json
     def get_cilogon_idps(self, trans, **kwargs):
+        allowed_idps = trans.app.authnz_manager.get_allowed_idps()
         try:
-            return json.loads(url_get('https://cilogon.org/idplist/', params=dict(kwargs)))
+            cilogon_idps = json.loads(url_get('https://cilogon.org/idplist/', params=dict(kwargs)))
         except Exception as e:
             raise Exception("Invalid server response. %s." % str(e))
+
+        if (allowed_idps):
+            validated_idps = list(filter(lambda idp: idp['EntityID'] in allowed_idps, cilogon_idps))
+
+            if not (len(validated_idps) == len(allowed_idps)):
+                validated_entity_ids = [entity['EntityID'] for entity in validated_idps]
+
+                for idp in allowed_idps:
+                    if (idp not in validated_entity_ids):
+                        log.debug("Invalid EntityID entered: %s. Use https://cilogon.org/idplist/ to find desired institution's EntityID.", idp)
+
+            return validated_idps
+        else:
+            return cilogon_idps
