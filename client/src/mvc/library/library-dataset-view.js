@@ -106,7 +106,7 @@ var LibraryDatasetView = Backbone.View.extend({
         this.options = _.extend(this.options, options);
         $(".tooltip").remove();
         var template = this.templateDataset();
-        this.$el.html(template({ item: this.model }));
+        this.$el.html(template({ item: this.model, rootPath: getAppRoot() }));
         $(".peek").html(this.model.get("peek"));
         $('#center [data-toggle="tooltip"]').tooltip({ trigger: "hover" });
         this._mountNametags("initialize");
@@ -154,14 +154,14 @@ var LibraryDatasetView = Backbone.View.extend({
     renderVersion: function () {
         $(".tooltip").remove();
         var template = this.templateVersion();
-        this.$el.html(template({ item: this.model, ldda: this.ldda }));
+        this.$el.html(template({ item: this.model, ldda: this.ldda, rootPath: getAppRoot() }));
         $(".peek").html(this.ldda.get("peek"));
     },
 
     enableModification: function () {
         $(".tooltip").remove();
         var template = this.templateModifyDataset();
-        this.$el.html(template({ item: this.model }));
+        this.$el.html(template({ item: this.model, rootPath: getAppRoot() }));
         this.renderSelectBoxes({
             genome_build: this.model.get("genome_build"),
             file_ext: this.model.get("file_ext"),
@@ -315,6 +315,7 @@ var LibraryDatasetView = Backbone.View.extend({
             template({
                 item: this.model,
                 is_admin: Galaxy.config.is_admin_user,
+                rootPath: getAppRoot(),
             })
         );
         $.get(`${getAppRoot()}api/libraries/datasets/${self.id}/permissions?scope=current`)
@@ -671,7 +672,7 @@ var LibraryDatasetView = Backbone.View.extend({
                     <% _.each(item.get("full_path"), function(path_item) { %>
                         <% if (path_item[0] != item.id) { %>
                             <li class="breadcrumb-item">
-                                <a title="Return to this folder" href="#/folders/<%- path_item[0] %>">
+                                <a title="Return to this folder" href="<% rootPath %>folders/<%- path_item[0] %>">
                                     <%- path_item[1] %>
                                 </a>
                             </li>
@@ -858,7 +859,7 @@ var LibraryDatasetView = Backbone.View.extend({
                     <% _.each(item.get("full_path"), function(path_item) { %>
                         <% if (path_item[0] != item.id) { %>
                             <li class="breadcrumb-item">
-                                <a title="Return to this folder" href="#/folders/<%- path_item[0] %>">
+                                <a title="Return to this folder" href="<% rootPath %>folders/<%- path_item[0] %>">
                                     <%- path_item[1] %>
                                 </a>
                             </li>
@@ -991,7 +992,7 @@ var LibraryDatasetView = Backbone.View.extend({
                     <% _.each(item.get("full_path"), function(path_item) { %>
                         <% if (path_item[0] != item.id) { %>
                             <li class="breadcrumb-item">
-                                <a title="Return to this folder" href="#/folders/<%- path_item[0] %>">
+                                <a title="Return to this folder" href="<% rootPath %>folders/<%- path_item[0] %>">
                                     <%- path_item[1] %>
                                 </a>
                             </li>
@@ -1132,7 +1133,7 @@ var LibraryDatasetView = Backbone.View.extend({
                     <% _.each(item.get("full_path"), function(path_item) { %>
                         <% if (path_item[0] != item.id) { %>
                             <li class="breadcrumb-item">
-                                <a title="Return to this folder" href="#/folders/<%- path_item[0] %>">
+                                <a title="Return to this folder" href="<% rootPath %>folders/<%- path_item[0] %>">
                                     <%- path_item[1] %>
                                 </a>
                             </li>
