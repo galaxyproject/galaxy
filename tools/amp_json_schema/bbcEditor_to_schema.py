@@ -8,13 +8,18 @@ import json
 import sys
 import os
 from os import path
+
+from amp_logger import AmpLogger
+
 import aws_transcribe_to_schema
 from speech_to_text_schema import SpeechToText, SpeechToTextMedia, SpeechToTextResult, SpeechToTextScore, SpeechToTextWord
 
 # Convert editor output to standardized json
 def main():
-    (editor_output_file, output_json_file, media_file) = sys.argv[1:4]
-
+    (root_dir, editor_output_file, output_json_file, media_file) = sys.argv[1:5]
+    
+    sys.stdout = AmpLogger(root_dir, "hmgm_transcript", editor_output_file)
+    
     hmgm_utils.exit_if_output_not_ready(editor_output_file)
 
     with open(editor_output_file) as json_file:

@@ -79,6 +79,8 @@ class HmgmRunner(AsynchronousJobRunner):
         # This is a HMGM is not complete, try again later
         elif exit_code==1:
             job_state.running = False
+            # Write the output
+            self.create_log_file(job_state, exit_code)
             job_state.job_wrapper.change_state(model.Job.states.QUEUED)
             # Sleep the current thread.  Let's not iterate through too fast when re-queueing tasks
             sleep(DEFAULT_POOL_SLEEP_TIME)
