@@ -4,26 +4,24 @@
     </requirements>
   <command detect_errors="exit_code"> $__tool_directory__/contact_sheets.py '$input_file' '$type' '$frame_seconds' '$frame_quantity' '$amp_shots' '$amp_facial_recognition' '$amp_contact_sheets' '$number_of_columns' '$photo_width' '$margin' '$padding'</command>
   <inputs>
-	<param name="input_file" type="data" format="video" label="Video File" help="A video file input for OCR"/>
-  <param name="type" type="select" label="Contact Sheet Type" help="Type of contact sheet to create">
-      <option value="time">Extract frames by time period (seconds)</option>
-      <option value="quantity">Extract fixed number of frames</option>
-      <option value="shot">Extract frames based on shot detection</option>
-      <option value="facial">Extract frames based on facial recognition</option>
-    </param>
-    <param name="frame_seconds" type="integer" optional="true"  min="0" max="60" label="Seconds" help="Interval in seconds to space frames"/>
-	  <param name="frame_quantity" type="integer" optional="true"  min="0" label="Quantity" help="Total number of frames"/>
-	  <param name="amp_shots" type="data" format="json" optional="true" label="Shots Json" help="AMP Shot JSON to create frames from"/>
+    <param name="input_file" type="data" format="video" label="Video File" help="A video file input for OCR"/>
+    <param name="type" type="select" label="Contact Sheet Type" help="Type of contact sheet to create">
+        <option value="time">Extract frames by time period (seconds)</option>
+        <option value="quantity">Extract fixed number of frames</option>
+        <option value="shot">Extract frames based on shot detection</option>
+        <option value="facial">Extract frames based on facial recognition</option>
+      </param>
+    <param name="amp_shots" type="data" format="json" optional="true" label="Shots Json" help="AMP Shot JSON to create frames from"/>
 	  <param name="amp_facial_recognition" type="data" format="json" optional="true" label="Facial Recognition Json" help="AMP Facial Recognition JSON to create frames from"/>
+	  <param name="frame_seconds" type="integer" optional="true"  min="0" max="60" label="Seconds" help="Interval in seconds to space frames"/>
+	  <param name="frame_quantity" type="integer" optional="true"  min="0" label="Quantity" help="Total number of frames"/>
 	  <param name="number_of_columns" type="integer" optional="true"  min="0" value="4" label="Number of Columns" help="Number of columns in the contact sheet"/>
 	  <param name="photo_width" type="integer" optional="true"  min="0" value="300" label="Photo Width" help="Photo Width"/>
 	  <param name="margin" type="integer" optional="true"  min="0" value="10" label="Margin" help="Margin around each frame"/>
 	  <param name="padding" type="integer" optional="true"  min="0" value="3" label="Padding" help="Padding around each frame"/>
-
-    <!--ncols = 4, photow = 300, margin = 10, padding = 3-->
   </inputs>
 	 <outputs>
-    <data format="png" name="amp_contact_sheets" />
+    <data name="amp_contact_sheets" format="png" label="AMP Contact Sheet"/>
   </outputs>
   <tests>
   </tests>
