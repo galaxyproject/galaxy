@@ -78,8 +78,8 @@ def main():
 		shots = read_json_file(amp_shots)
 		c.create_shots(shots)
 	elif type == 'facial':
-		print("Not implemented yet")
-		exit(1)
+		fr = read_json_file(amp_facial_recognition)
+		c.create_facial(fr)
 
 def read_json_file(input):
 	with open(input) as f:

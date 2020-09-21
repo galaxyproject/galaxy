@@ -51,7 +51,13 @@ class ContactSheet:
 		valid_input = self.validate_facial(amp_facial_recognition)
 		if valid_input == False:
 			exit(1)
-		exit(1)
+		
+		times, labels = self.getTimesFacialRecognition(amp_facial_recognition
+		)
+		# Get images
+		filenames = self.get_thumbs(self.input_file, times, self.temporary_directory.name)
+		
+		self.create_contact_sheet(filenames, labels)
 
 	def create_shots(self, amp_shots):
 		valid_input = self.validate_shots(amp_shots)
@@ -158,10 +164,23 @@ class ContactSheet:
 		step = math.floor(videoLength/numFrames)
 		return self.getTimesInterval(videoLength, step)
 
-	def getTimesShotDetection(self, data):
+	def getTimesFacialRecognition(self, data):
 		times = []
 		labels = []
 		
+		for i, shot in enumerate(data["frames"]):
+			# Find the timestamp for the middle frame of the shot
+			start = float(self.get_seconds_from_time_string(shot["start"]))
+			times.append(start)
+
+			# Save a formatted time range for this shot in the list of times
+			range = str(timedelta(seconds=round(start)))
+			labels.append(range)
+		return times, labels
+
+	def getTimesShotDetection(self, data):
+		times = []
+		labels = []
 		for i, shot in enumerate(data["shots"]):
 			if shot["type"] == "scene": # for Azure-- skip things labeled "scene"
 				continue
@@ -176,6 +195,7 @@ class ContactSheet:
 			range = str(timedelta(seconds=round(start))) + " - " + str(timedelta(seconds=round(end)))
 			labels.append(range)
 		return times, labels
+
 	def get_seconds_from_time_string(self, time_string):
 		pt = datetime.strptime(time_string,'%H:%M:%S.%f')
 		total_seconds = pt.second + pt.minute*60 + pt.hour*3600
