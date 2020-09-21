@@ -843,15 +843,32 @@ class InstallRepositoryManager:
             for tool_shed_repository, repo_info_dict, tool_panel_section_key in zip(repositories_for_installation,
                                                                                     filtered_repo_info_dicts,
                                                                                     filtered_tool_panel_section_keys):
-                self.install_tool_shed_repository(tool_shed_repository,
-                                                  repo_info_dict=repo_info_dict,
-                                                  tool_panel_section_key=tool_panel_section_key,
-                                                  shed_tool_conf=shed_tool_conf,
-                                                  tool_path=tool_path,
-                                                  install_resolver_dependencies=install_resolver_dependencies,
-                                                  install_tool_dependencies=install_tool_dependencies,
-                                                  reinstalling=reinstalling,
-                                                  tool_panel_section_mapping=tool_panel_section_mapping)
+                pre_install_state = tool_shed_repository.status
+                try:
+                    self.install_tool_shed_repository(tool_shed_repository,
+                                                      repo_info_dict=repo_info_dict,
+                                                      tool_panel_section_key=tool_panel_section_key,
+                                                      shed_tool_conf=shed_tool_conf,
+                                                      tool_path=tool_path,
+                                                      install_resolver_dependencies=install_resolver_dependencies,
+                                                      install_tool_dependencies=install_tool_dependencies,
+                                                      reinstalling=reinstalling,
+                                                      tool_panel_section_mapping=tool_panel_section_mapping)
+                except Exception as e:
+                    log.exception("Error installing repository '%s'", tool_shed_repository.name)
+                    if pre_install_state != self.install_model.ToolShedRepository.states.OK:
+                        # If repository was in OK state previously and e.g. an update failed don't set the state to ERROR.
+                        # For every other state do update the state to error and reset files on disk,
+                        # so that another attempt can be made
+                        repository_util.set_repository_attributes(
+                            self.app,
+                            tool_shed_repository,
+                            status=self.install_model.ToolShedRepository.installation_status.ERROR,
+                            error_message=util.unicodify(e),
+                            deleted=False,
+                            uninstalled=False,
+                            remove_from_disk=True,
+                        )
                 installed_tool_shed_repositories.append(tool_shed_repository)
         else:
             raise RepositoriesInstalledException()
@@ -892,64 +909,55 @@ class InstallRepositoryManager:
             # May exist from a previous failed install attempt, just try updating instead of cloning.
             hg_util.pull_repository(install_dir, repository_clone_url, ctx_rev)
             hg_util.update_repository(install_dir, ctx_rev)
-            cloned_ok = True
         else:
-            cloned_ok, error_message = hg_util.clone_repository(repository_clone_url, install_dir, ctx_rev)
-        if cloned_ok:
-            if reinstalling:
-                # Since we're reinstalling the repository we need to find the latest changeset revision to
-                # which it can be updated.
-                changeset_revision_dict = self.app.update_repository_manager.get_update_to_changeset_revision_and_ctx_rev(tool_shed_repository)
-                current_changeset_revision = changeset_revision_dict.get('changeset_revision', None)
-                current_ctx_rev = changeset_revision_dict.get('ctx_rev', None)
-                if current_ctx_rev != ctx_rev:
-                    repo_path = os.path.abspath(install_dir)
-                    hg_util.pull_repository(repo_path, repository_clone_url, current_changeset_revision)
-                    hg_util.update_repository(repo_path, ctx_rev=current_ctx_rev)
-            self.__handle_repository_contents(tool_shed_repository=tool_shed_repository,
-                                              tool_path=tool_path,
-                                              repository_clone_url=repository_clone_url,
-                                              relative_install_dir=relative_install_dir,
-                                              tool_shed=tool_shed_repository.tool_shed,
-                                              tool_section=tool_section,
-                                              shed_tool_conf=shed_tool_conf,
-                                              reinstalling=reinstalling,
-                                              tool_panel_section_mapping=tool_panel_section_mapping)
-            metadata = tool_shed_repository.metadata
-            if 'tools' in metadata and install_resolver_dependencies:
-                self.update_tool_shed_repository_status(tool_shed_repository,
-                                                        self.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES)
-                new_tools = [self.app.toolbox._tools_by_id.get(tool_d['guid'], None) for tool_d in metadata['tools']]
-                new_requirements = {tool.requirements.packages for tool in new_tools if tool}
-                [self._view.install_dependencies(r) for r in new_requirements]
-                dependency_manager = self.app.toolbox.dependency_manager
-                if dependency_manager.cached:
-                    [dependency_manager.build_cache(r) for r in new_requirements]
-
-            if install_tool_dependencies and tool_shed_repository.tool_dependencies and 'tool_dependencies' in metadata:
-                work_dir = tempfile.mkdtemp(prefix="tmp-toolshed-itsr")
-                # Install tool dependencies.
-                self.update_tool_shed_repository_status(tool_shed_repository,
-                                                        self.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES)
-                # Get the tool_dependencies.xml file from the repository.
-                tool_dependencies_config = hg_util.get_config_from_disk('tool_dependencies.xml', install_dir)
-                itdm = InstallToolDependencyManager(self.app)
-                itdm.install_specified_tool_dependencies(tool_shed_repository=tool_shed_repository,
-                                                         tool_dependencies_config=tool_dependencies_config,
-                                                         tool_dependencies=tool_shed_repository.tool_dependencies,
-                                                         from_tool_migration_manager=False)
-                basic_util.remove_dir(work_dir)
+            _, error_message = hg_util.clone_repository(repository_clone_url, install_dir, ctx_rev)
+            if error_message:
+                raise Exception(error_message)
+        if reinstalling:
+            # Since we're reinstalling the repository we need to find the latest changeset revision to
+            # which it can be updated.
+            changeset_revision_dict = self.app.update_repository_manager.get_update_to_changeset_revision_and_ctx_rev(tool_shed_repository)
+            current_changeset_revision = changeset_revision_dict.get('changeset_revision', None)
+            current_ctx_rev = changeset_revision_dict.get('ctx_rev', None)
+            if current_ctx_rev != ctx_rev:
+                repo_path = os.path.abspath(install_dir)
+                hg_util.pull_repository(repo_path, repository_clone_url, current_changeset_revision)
+                hg_util.update_repository(repo_path, ctx_rev=current_ctx_rev)
+        self.__handle_repository_contents(tool_shed_repository=tool_shed_repository,
+                                          tool_path=tool_path,
+                                          repository_clone_url=repository_clone_url,
+                                          relative_install_dir=relative_install_dir,
+                                          tool_shed=tool_shed_repository.tool_shed,
+                                          tool_section=tool_section,
+                                          shed_tool_conf=shed_tool_conf,
+                                          reinstalling=reinstalling,
+                                          tool_panel_section_mapping=tool_panel_section_mapping)
+        metadata = tool_shed_repository.metadata
+        if 'tools' in metadata and install_resolver_dependencies:
             self.update_tool_shed_repository_status(tool_shed_repository,
-                                                    self.install_model.ToolShedRepository.installation_status.INSTALLED)
-        else:
-            # An error occurred while cloning the repository, so reset everything necessary to enable another attempt.
-            repository_util.set_repository_attributes(self.app,
-                                                      tool_shed_repository,
-                                                      status=self.install_model.ToolShedRepository.installation_status.ERROR,
-                                                      error_message=error_message,
-                                                      deleted=False,
-                                                      uninstalled=False,
-                                                      remove_from_disk=True)
+                                                    self.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES)
+            new_tools = [self.app.toolbox._tools_by_id.get(tool_d['guid'], None) for tool_d in metadata['tools']]
+            new_requirements = {tool.requirements.packages for tool in new_tools if tool}
+            [self._view.install_dependencies(r) for r in new_requirements]
+            dependency_manager = self.app.toolbox.dependency_manager
+            if dependency_manager.cached:
+                [dependency_manager.build_cache(r) for r in new_requirements]
+
+        if install_tool_dependencies and tool_shed_repository.tool_dependencies and 'tool_dependencies' in metadata:
+            work_dir = tempfile.mkdtemp(prefix="tmp-toolshed-itsr")
+            # Install tool dependencies.
+            self.update_tool_shed_repository_status(tool_shed_repository,
+                                                    self.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES)
+            # Get the tool_dependencies.xml file from the repository.
+            tool_dependencies_config = hg_util.get_config_from_disk('tool_dependencies.xml', install_dir)
+            itdm = InstallToolDependencyManager(self.app)
+            itdm.install_specified_tool_dependencies(tool_shed_repository=tool_shed_repository,
+                                                     tool_dependencies_config=tool_dependencies_config,
+                                                     tool_dependencies=tool_shed_repository.tool_dependencies,
+                                                     from_tool_migration_manager=False)
+            basic_util.remove_dir(work_dir)
+        self.update_tool_shed_repository_status(tool_shed_repository,
+                                                self.install_model.ToolShedRepository.installation_status.INSTALLED)
 
     def update_tool_shed_repository(self, repository, tool_shed_url, latest_ctx_rev, latest_changeset_revision,
                                     install_new_dependencies=True, install_options=None):
