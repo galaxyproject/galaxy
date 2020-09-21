@@ -102,45 +102,44 @@ class ContactSheet:
 
 		returns a PIL image object.
 		"""
+		# Calculate the size of the output image, based on the
+		#  photo thumb sizes, margins, and padding
+		self.mart = self.mart + 100
+		marw = self.marl+self.marr
+		marh = self.mart+ self.marb
 
+		padw = (self.ncols-1)*self.padding
+		padh = (nrows-1)*self.padding
+		isize = (self.ncols*self.photow+marw+padw,nrows*photoh+marh+padh)
 
-		# Read in all images and resize appropriately
-		imgs = [Image.open(fn).resize((self.photow, photoh)) for fn in fnames]
-
-		for i, img in enumerate(imgs):
-			d = ImageDraw.Draw(img)
-			d.text((10,10), str(ftimes[i]), fill=(255,255,0))
-
-			# Calculate the size of the output image, based on the
-			#  photo thumb sizes, margins, and padding
-			mart = self.mart+100
-			marw = self.marl+self.marr
-			marh = mart+self.marb
-
-			padw = (self.ncols-1)*self.padding
-			padh = (nrows-1)*self.padding
-			isize = (self.ncols*self.photow+marw+padw, nrows*photoh+marh+padh)
-
-			# Create the new image. The background doesn't have to be white
-			white = (255,255,255)
-			inew = Image.new('RGB',isize,white)
-
-			# Write the header
-			d = ImageDraw.Draw(inew).text((10,10), str(headerInfo), fill=(0,0,0))
+		# Create the new image. The background doesn't have to be white
+		white = (255,255,255)
+		inew = Image.new('RGB',isize,white)
+		# Write the header
+		ImageDraw.Draw(inew).text((10,10), str(headerInfo), fill=(0,0,0))
+		count = 0
 
 		# Insert each thumb:
 		for irow in range(nrows):
 			for icol in range(self.ncols):
 				left = self.marl + icol*(self.photow+self.padding)
 				right = left + self.photow
-				upper = mart + irow*(photoh+self.padding)
+				upper = self.mart + irow*(photoh+self.padding)
 				lower = upper + photoh
 				bbox = (left,upper,right,lower)
 				try:
-					img = imgs.pop(0)
+					# Read in an image and resize appropriately
+					img = Image.open(fnames[count]).resize((self.photow,photoh))
+					ImageDraw.Draw(img).text((10,10), str(ftimes[count]), fill=(255,255,0))
 				except:
 					break
 				inew.paste(img,bbox)
+				count += 1
+				if(count>=len(fnames)):
+					break
+			
+			if(count>=len(fnames)):
+				break
 		return inew
 
 	def get_length(self, input_video):
