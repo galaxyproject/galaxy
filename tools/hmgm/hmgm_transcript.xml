@@ -1,9 +1,9 @@
 <tool id="hmgm_transcript" name="HMGM Transcript Correction" version="1.0.2">
   <description>Manual transcript correction by a human</description>
   <command detect_errors="exit_code">
-    '$__tool_directory__/../amp_json_schema/amp_stt_to_draftjs.py' '$input_transcript' '$input_diarization' '$original_draftjs';
+    '$__tool_directory__/../amp_json_schema/amp_stt_to_draftjs.py' '$__root_dir__' '$input_transcript' '$input_diarization' '$original_draftjs';
     '$__tool_directory__/hmgm_main.py' 'Transcript' '$__root_dir__' '$original_draftjs' '$corrected_draftjs' '$task_info' '$context_json';
-    '$__tool_directory__/../amp_json_schema/bbcEditor_to_schema.py' '$corrected_draftjs' '$output_transcript' '$input_transcript'
+    '$__tool_directory__/../amp_json_schema/bbcEditor_to_schema.py' '$__root_dir__' '$corrected_draftjs' '$output_transcript' '$input_transcript'
   </command>
   <inputs>
     <param name="input_transcript" type="data" format="transcript" label="Input Transcript JSON" help="Original AMP transcript file to be corrected"/>

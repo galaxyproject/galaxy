@@ -7,6 +7,7 @@ import sys
 import logging
 
 from adjustment import Adjustment
+from amp_logger import AmpLogger
 
 log = logging.getLogger(__name__)
 
@@ -15,7 +16,10 @@ segments = list()
 # Converts AMP speech to text json to Draft JS which is used by the transcript editor.
 def main():
 
-	(amp_json, segmentation_json, output_json) = sys.argv[1:4]
+	(root_dir, amp_json, segmentation_json, output_json) = sys.argv[1:5]
+
+	sys.stdout = AmpLogger(root_dir, "hmgm_transcript", amp_json)
+
 	exit_peacefully = False
 	# Read the output file.  Check to see if we've already done this conversion. 
 	if path.exists(output_json):
