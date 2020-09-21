@@ -1455,7 +1455,7 @@ class JobWrapper(HasResourceParameters):
             # jobs may have this set. Skip this following code if that is the case.
             return
 
-        object_store_populator = ObjectStorePopulator(self.app, job.user)
+        object_store_populator = ObjectStorePopulator(self.app)
         object_store_id = self.get_destination_configuration("object_store_id", None)
         if object_store_id:
             object_store_populator.object_store_id = object_store_id
