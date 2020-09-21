@@ -28,6 +28,6 @@
     "webpack-cli": "^3.3.11"
   },
   "dependencies": {
-    
+    "bootstrap": "3"
   }
 }
