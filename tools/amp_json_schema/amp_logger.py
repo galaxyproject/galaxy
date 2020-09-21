@@ -5,6 +5,7 @@ import os
 from datetime import datetime
 import shutil
 import zipfile
+import gzip
 
 class AmpLogger(object):
     log_file_size = 100000
