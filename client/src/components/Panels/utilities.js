@@ -74,6 +74,9 @@ function normalize_results(results) {
         if (result.includes("/repos/")) {
             norm_results.push(result.split('/')[3]);
         }
+        else {
+            norm_results.push(result);
+        }
     });
     return norm_results;
 }
