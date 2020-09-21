@@ -259,6 +259,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         # Delay toolbox index until after startup
         self.application_stack.register_postfork_function(lambda: send_local_control_task(self, 'rebuild_toolbox_search_index'))
 
+        galaxy.model.listen_for_history_update_time(self.model.session)
         self.model.engine.dispose()
 
         # Inject url_for for components to more easily optionally depend

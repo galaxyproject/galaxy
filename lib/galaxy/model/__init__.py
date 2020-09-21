@@ -17,6 +17,7 @@ import string
 import time
 from collections import defaultdict
 from datetime import datetime, timedelta
+from itertools import chain
 from string import Template
 from uuid import UUID, uuid4
 
@@ -25,6 +26,7 @@ from social_core.storage import AssociationMixin, CodeMixin, NonceMixin, Partial
 from sqlalchemy import (
     alias,
     and_,
+    event,
     func,
     inspect,
     join,
@@ -6331,3 +6333,24 @@ def _prepare_metadata_for_serialization(id_encoder, serialization_options, metad
         processed_metadata[name] = value
 
     return processed_metadata
+
+
+def objects_requiring_history_updates(objects):
+    for obj in objects:
+        if isinstance(obj, HistoryDatasetAssociation):
+            yield obj, None
+        elif isinstance(obj, HistoryDatasetCollectionAssociation):
+            yield None, obj
+
+
+def listen_for_history_update_time(session):
+    @event.listens_for(session, 'before_flush')
+    def before_flush(session, flush_context, instances):
+        histories = set()
+        for hda, hdca in objects_requiring_history_updates(chain(session.dirty, session.deleted)):
+            if hda:
+                hda.__create_version__(session)
+            histories.add(hda.history if hda else hdca.history)
+        for history in histories:
+            if history and history.id:
+                history.update_time = galaxy.model.orm.now.now()
