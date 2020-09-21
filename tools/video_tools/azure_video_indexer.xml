@@ -4,7 +4,7 @@
     </requirements>
   <command detect_errors="exit_code"> $__tool_directory__/azure_video_indexer_wrapper.py $input_file $location $__root_dir__ $azure_ocr $azure_ocr_long $amp_ocr</command>
   <inputs>
-	<param name="input_file" type="data" format="video" label="Video File" help="A video file input for OCR"/>
+	<param name="input_file" type="data" format="video" label="Input Video" help="An input video file for OCR"/>
   <param name="location" type="select" label="Azure Location" help="Region video indexer account is running in Azure">
       <option value="trial">Trial</option>
       <option value="westus2">West US 2</option>
@@ -12,9 +12,9 @@
     </param>
   </inputs>
   <outputs>
-    <data format="json" name="azure_ocr" />
-    <data format="json" name="azure_ocr_long" />
-    <data format="json" name="amp_ocr" />
+    <data name="azure_ocr" format="json" label="Azure OCR JSON"/>
+    <data name="azure_ocr_long" format="json" label="Azure OCR JSON (Long Version)" />
+    <data name="amp_ocr" format="vocr"  label="AMP OCR" />
   </outputs>
   <tests>
   </tests>

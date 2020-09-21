@@ -6,8 +6,8 @@
     '$__tool_directory__/../amp_json_schema/bbcEditor_to_schema.py' '$corrected_draftjs' '$output_transcript' '$input_transcript'
   </command>
   <inputs>
-    <param name="input_transcript" type="data" format="json" label="Input Transcript JSON" help="Original AMP JSON file for the transcript to be corrected"/>
-    <param name="input_diarization" type="data" optional = "true" format="json" label="Input Diarization JSON" help="AMP JSON Diarization file for the transcript to be corrected "/>
+    <param name="input_transcript" type="data" format="transcript" label="Input Transcript JSON" help="Original AMP transcript file to be corrected"/>
+    <param name="input_diarization" type="data" optional = "true" format="segment" label="Input Diarization JSON" help="AMP diarization file for the transcript to be corrected "/>
     <param name="context_json" type="text" label="HMGM Task Context" help="JSON string containing context information needed for creating Human MGM task">
     	<sanitizer sanitize="false">
     	</sanitizer>
@@ -16,7 +16,7 @@
   <outputs>
     <data name="original_draftjs" format="json" label="Original DraftJS" help="DarftJS file converted from the original AMP Transcript JSON file" />
     <data name="corrected_draftjs" format="json" label="Corrected DraftJS" help="DarftJS file with corrected transcript" />
-    <data name="output_transcript" format="json" label="Output Transcript" help="AMP JSON file with corrected transcript converted from the corrected DraftJS file" />
+    <data name="output_transcript" format="transcript" label="Output Transcript" help="AMP transcript file converted from the corrected DraftJS file" />
     <data name="task_info" format="json" label="HMGM Task Info" help="Information about the Human MMGM task created for Transcript Correction" />
   </outputs>
   <tests>

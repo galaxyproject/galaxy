@@ -6,11 +6,11 @@
   <command detect_errors="exit_code">$__tool_directory__/adjust_diarization_timestamps.py $diarization_json $adj_json $amp_diarization</command>
    <inputs>
    <!-- should be wave data type -->
-    <param name="diarization_json" type="data" format="json" label="AMP Diarization JSON From Speech to Text" help="Diarization output in the form of AMP Diarization JSON"/>
+    <param name="diarization_json" type="data" format="segment" label="AMP Diarization From STT" help="Diarization generated from speech-to-text in the form of AMP Diarization Segments"/>
     <param name="adj_json" type="data" format="json" label="Kept segments JSON From Remove Segments" help="List of kept segments"/>
   </inputs>
   <outputs>
-    <data format="json" name="amp_diarization" label="AMP Diarization JSON with Timestamp Adjusted"/>
+    <data name="amp_diarization" format="segment" label="AMP Diarization with Timestamp Adjusted"/>
   </outputs>
   <tests>
   </tests>

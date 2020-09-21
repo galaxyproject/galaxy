@@ -1,18 +1,18 @@
 <tool id="spacy_entity_extraction" name="spaCy Entity Extraction" version="1.0.0">
-  <description>Named entity extraction with spaCy</description>
+  <description>Named entity recognition with spaCy</description>
     <requirements>
     </requirements>
   <command detect_errors="exit_code">$__tool_directory__/spacy_wrapper.py $input $amp_entity_extraction $ignore_categories_csv</command>
    <inputs>
    <!-- should be wave data type -->
-    <param name="input" type="data" format="txt" label="From transcript" help="An transcript file"/>
-    <param name="ignore_categories_csv" type="text" format="txt" label="Categories to ignore" help="Comma separated list of categories to ignore.  For instance, 'QUANTITY, ORGANIZATION'.">
+    <param name="input" type="data" format="transcript" label="AMP Transcript" help="AMP Transcript input for NER"/>
+    <param name="ignore_categories_csv" type="text" format="csv" label="Categories to ignore" help="Comma separated list of categories to ignore.  For instance, 'QUANTITY, ORGANIZATION'.">
      <sanitizer sanitize="false">
     </sanitizer>
     </param>
   </inputs>
   <outputs>
-    <data format="json" name="amp_entity_extraction" />
+    <data name="amp_entity_extraction" format="ner" label="AMP Named Entities Recognized"/>
   </outputs>
   <tests>
   </tests>

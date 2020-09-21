@@ -4,16 +4,16 @@
 	'$__tool_directory__/hmgm_main.py' 'Segmentation' '$__root_dir__' '$original_structmeta' '$corrected_structmeta' '$task_info' '$context_json';
   </command>
   <inputs>
-    <param name="input_segment" type="data" format="json" label="Input Segmentation JSON" help="Original AMP JSON file for the segmentation to be corrected "/>
+    <param name="input_segment" type="data" format="segment" label="Input Segmentation" help="Original AMP segment file to be corrected "/>
     <param name="context_json" type="text" label="Human MGM Task Context" help="JSON string containing context information needed for creating Human MGM task">
 		<sanitizer sanitize="false">
     	</sanitizer>
 	</param>
   </inputs>
   <outputs>
-    <data name="original_structmeta" format="xml" label="Original Structural Metadata" help="Structural Metadata XML file converted from the original AMP Segmentation JSON file" />
+    <data name="original_structmeta" format="xml" label="Original Structural Metadata" help="Structural Metadata XML file converted from the original AMP Segment file" />
     <data name="corrected_structmeta" format="xml" label="Corrected Structural Metadata" help="Structural Metadata XML file with corrected segmentation"  />
-    <data name="output_segment" format="json" label="Output Segmentation" help="AMP JSON file with corrected segmentation converted from the corrected structural metadata file" />
+    <data name="output_segment" format="segment" label="Output Segmentation" help="AMP segment file converted from the corrected structural metadata file" />
     <data name="task_info" format="json" label="HMGM Task Info" help="Information about the Human MMGM task created for Segmentation Correction" />
   </outputs>
   <tests>

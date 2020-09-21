@@ -10,7 +10,7 @@
 	'$__tool_directory__/../amp_json_schema/aws_transcribe_to_schema.py' '$input_file' '$aws_transcript' '$amp_transcript' '$amp_diarization'
   </command>
   <inputs>
-    <param name="input_file" type="data" format="audio" label="Input File Path" help="Audio file to transcribe"/>
+    <param name="input_file" type="data" format="audio" label="Input Audio" help="Audio file to transcribe"/>
     <param name="audio_format" type="select" label="Audio Format" help="Format of the audio file. For best results use a lossless format such as FLAC or WAV with PCM 16-bit encoding.">
       <option value="wav">WAV</option>
       <option value="flac">FLAC</option>
@@ -29,9 +29,9 @@
     <param name="s3_directory" type="text" label="S3 Directory Path" help="S3 directory inside S3 bucket for input files"/>
   </inputs>
   <outputs>
-    <data format="json" name="aws_transcript" label='AWS Transcript' />
-    <data format="json" name="amp_transcript" label='AMP Transcript' />
-    <data format="json" name="amp_diarization" label='AMP Diarization' />
+    <data name="aws_transcript" format="json" label='AWS Transcript JSON' />
+    <data name="amp_transcript" format="transcript" label='AMP Transcript' />
+    <data name="amp_diarization" format="segment" label='AMP Diarization' />
   </outputs>
   <tests>
   </tests>

@@ -8,12 +8,12 @@
   </command>
    <inputs>
    <!-- should be wave data type -->
-    <param name="input" type="data" format="audio" label="From dataset" help="An audio file"/>
+    <param name="input" type="data" format="audio" label="Input Audio" help="An audio file"/>
   </inputs>
   <outputs>
-    <data format="json" name="kaldi_transcript_json" />
-    <data format="txt" name="kaldi_transcript_text" />
-    <data format="json" name="amp_transcript" />
+    <data name="kaldi_transcript_json" format="json" label="Kaldi Transcript JSON"/>
+    <data name="kaldi_transcript_text" format="txt" label="Kaldi Transcript Text" />
+    <data name="amp_transcript" format="transcript" label="AMP Transcript" />
   </outputs>
   <tests>
   </tests>

@@ -5,10 +5,10 @@
   <command detect_errors="exit_code">$__tool_directory__/ina_speech_segmenter_wrapper.py $input $amp_segmentation</command>
    <inputs>
    <!-- should be wave data type -->
-    <param name="input" type="data" format="audio" label="From dataset" help="An audio file"/>
+    <param name="input" type="data" format="audio" label="Input Audio" help="An audio file"/>
   </inputs>
   <outputs>
-    <data format="segments" name="amp_segmentation" />
+    <data name="amp_segmentation" format="segment" label="AMP Segments Generated"/>
   </outputs>
   <tests>
   </tests>

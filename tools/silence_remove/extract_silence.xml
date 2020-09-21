@@ -5,11 +5,11 @@
     </requirements>
   <command>ffmpeg -y -hide_banner -nostats -loglevel panic -i $input -af "areverse,silenceremove=start_periods=1:start_duration=1:start_threshold=-60dB:detection=peak,aformat=s32,areverse" -f wav $audio_file</command>
   <inputs>
-    <param name="input" type="data" format="binary" label="From dataset" help="An audio file"/>
+    <param name="input" type="data" format="audio" label="Input Audio" help="An input audio file"/>
     <param name="start_threshold" type="integer" value="-60" label="Silence threshold" help="A threshold decibel value for silence"/> 
   </inputs>
   <outputs>
-    <data format="audio" name="audio_file" />
+    <data name="audio_file" format="wav" label="Audio Without Trailing Silence"/>
   </outputs>
   <tests>
   </tests>

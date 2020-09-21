@@ -6,12 +6,12 @@
   $__tool_directory__/remove_silence_music_speech.py $input $input_segmentation_json speech $segmented_audio_file $amp_kept_segments</command>
    <inputs>
    <!-- should be wave data type -->
-    <param name="input" type="data" format="audio" label="From audio file" help="An audio file"/>
-    <param name="input_segmentation_json" type="data" format="segments" label="From segmentation" help="Segmentation json file"/>
+    <param name="input" type="data" format="audio" label="Original Audio" help="An audio file"/>
+    <param name="input_segmentation_json" type="data" format="segment" label="Segments in the Audio" help="Segments generated from Segmentation"/>
   </inputs>
   <outputs>
-    <data format="audio" name="segmented_audio_file" />
-    <data format="json" name="amp_kept_segments" />
+    <data name="segmented_audio_file" format="music" label="Audio with only Music Segments"/>
+    <data name="amp_kept_segments" format="json" label="Kept Segments JSON" />
   </outputs>
   <tests>
   </tests>

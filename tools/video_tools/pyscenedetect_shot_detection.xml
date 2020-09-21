@@ -6,12 +6,12 @@
     </requirements>
   <command detect_errors="exit_code"> '$__tool_directory__/pyscenedetect_shot_detection.py' '$input' '$threshold' '$amp_shots' '$frame_stats'</command>
   <inputs>
-	<param name="input" type="data" format="video" label="Video File" help="A video file input for shot detection"/>
+	<param name="input" type="data" format="video" label="Input Video" help="An input video file for shot detection"/>
 	<param name="threshold" type="integer" label="(Optional) Threshold" value="30" min="0" max="100" optional="true" help="Sensitivity of the shot detection. The default is 30"/>
   </inputs>
   <outputs>
-    <data format="json" name="amp_shots" />
-    <data format="csv" name="frame_stats" />
+    <data name="amp_shots" format="shot" label="AMP Shots Generated" />
+    <data name="frame_stats" format="csv" label="Frame Statistics"/>
   </outputs>
   <help>
 .. class:: infomark

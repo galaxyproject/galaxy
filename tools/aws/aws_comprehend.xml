@@ -5,16 +5,16 @@
     </requirements>
   <command detect_errors="exit_code">$__tool_directory__/aws_comprehend.py $input $amp_entity_extraction $bucketName $dataAccessRoleArn $ignore_categories_csv</command>
   <inputs>
-    <param name="input" type="data" format="txt" label="AMP Speech To Text" help="An AMP transcript json file"/>
-    <param name="bucketName" type="text" format="txt" label="S3 Bucket Name" help="An existing bucket name in AWS S3"/>
-    <param name="dataAccessRoleArn" type="text" format="txt" label="IAM Data Access Role" help="An AWS IAM role providing access from AWS comprehend to S3"/>
-    <param name="ignore_categories_csv" type="text" format="txt" label="Categories to ignore" help="Comma separated list of categories to ignore.  For instance, 'QUANTITY, ORGANIZATION'.">
+    <param name="input" type="data" format="transcript" label="AMP Transcript" help="An AMP transcript json file from speech-to-text"/>
+    <param name="bucketName" type="text" label="S3 Bucket Name" help="An existing bucket name in AWS S3"/>
+    <param name="dataAccessRoleArn" type="text" label="IAM Data Access Role" help="An AWS IAM role providing access from AWS comprehend to S3"/>
+    <param name="ignore_categories_csv" type="text" format="csv" label="Categories to ignore" help="Comma separated list of categories to ignore.  For instance, 'QUANTITY, ORGANIZATION'.">
      <sanitizer sanitize="false">
     </sanitizer>
     </param>
   </inputs>
   <outputs>
-    <data format="json" name="amp_entity_extraction" />
+    <data name="amp_entity_extraction" format="ner" label="AMP Named Entities Recgonized"/>
   </outputs>
   <tests>
   </tests>

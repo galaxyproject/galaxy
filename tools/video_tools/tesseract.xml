@@ -4,19 +4,19 @@
     </requirements>
   <command detect_errors="exit_code"> $__tool_directory__/run-tesseract.py $input $amp_ocr</command>
   <inputs>
-	<param name="input" type="data" format="video" label="Video File" help="A video file input for OCR"/>
+	<param name="input" type="data" format="video" label="Input Video" help="An input video file for OCR"/>
 	<!--<param name="start" type="integer" value="0" label="Start time frame in seconds" help="A starting time frame on the input video"/>
 	<param name="duration" type="integer" value="0" label="Duration of video in seconds" help="Duration of the video to passed through OCR"/> -->
   </inputs>
   <outputs>
-    <data format="json" name="amp_ocr" />
+    <data name="amp_ocr" format="vocr" label="AMP Video OCR"/>
   </outputs>
   <tests>
   </tests>
   <help>
 .. class:: infomark
 
-Run a OCR using Tesseract on the image frames extracted from a video
+Run a OCR using Tesseract on the image frames extracted from a video with FFMpeg 
 
   </help>
 </tool>

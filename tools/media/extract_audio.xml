@@ -5,7 +5,7 @@
     </requirements>
   <command>ffmpeg -y -hide_banner -nostats -loglevel panic -i $input -ar $rate -ac $channels -c:a $samplesize -f wav $audio_file</command>
   <inputs>
-    <param name="input" type="data" format="binary" label="From dataset" help="A video file"/>
+    <param name="input" type="data" format="av" label="Input Audio/Video" help="An audio/video file"/>
     <param name="rate" type="select" label="Sample Rate">
       <option value="8000">8KHz</option>
       <option value="16000">16KHz</option>
@@ -24,7 +24,7 @@
     </param>
   </inputs>
   <outputs>
-    <data format="audio" name="audio_file" />
+    <data name="audio_file" format="wav" label="Audio Extracted" />
   </outputs>
   <tests>
   </tests>
