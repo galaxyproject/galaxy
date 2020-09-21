@@ -41,6 +41,9 @@
   <section id="shot_detection" name="Video Shot Detection">
     <tool file="video_tools/pyscenedetect_shot_detection.xml"/>
   </section>
+  <section id="contact_sheet_tools" name="Contact Sheets">
+    <tool file="video_tools/contact_sheets.xml"/>
+  </section>
 
   <section id="video_ocr" name="Video OCR">
     <tool file="video_tools/tesseract.xml"/>
