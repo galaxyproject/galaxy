@@ -53,7 +53,10 @@ const View = Backbone.View.extend({
                                 // we can rely on tool_id, only if it's installed from toolshed
                                 // if no version provided and tool_id is not in toolshed style, don't show the warning
                                 const client_version =
-                                    options.version || (options.tool_id.match(/^(toolshed)\./) && options.tool_id);
+                                    options.version ||
+                                    (options.tool_id && options.tool_id.match(/^(toolshed)\./)
+                                        ? options.tool_id
+                                        : false);
 
                                 if (
                                     data.versions &&
