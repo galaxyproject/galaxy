@@ -14,7 +14,6 @@ import Webhooks from "mvc/webhooks";
 import Vue from "vue";
 import ToolEntryPoints from "components/ToolEntryPoints/ToolEntryPoints";
 import ToolRecommendation from "components/ToolRecommendation";
-import { Toast } from "ui/toast";
 
 const View = Backbone.View.extend({
     initialize: function (options) {
@@ -51,22 +50,17 @@ const View = Backbone.View.extend({
                                     return;
                                 }
 
-                                const client_version = options.version || options.tool_id;
+                                // we can rely on tool_id, only if it's installed from toolshed
+                                // if no version provided and tool_id is not in toolshed style, don't show the warning
+                                const client_version =
+                                    options.version || (options.tool_id.match(/^(toolshed)\./) && options.tool_id);
 
                                 if (
                                     data.versions &&
                                     client_version &&
                                     !data.versions.includes(client_version.replace(/.*\//, ""))
                                 ) {
-                                    Toast.warning(
-                                        `Specified version is not found! Using ${data.version} instead`,
-                                        "Error",
-                                        {
-                                            closeButton: true,
-                                            timeOut: 10000,
-                                            tapToDismiss: false,
-                                        }
-                                    );
+                                    data.message = `Requested version unavailable.`;
                                 }
 
                                 form.model.set(data);
