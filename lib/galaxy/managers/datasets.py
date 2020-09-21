@@ -686,15 +686,16 @@ class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableD
         return unwrapped_val
 
     def deserialize_datatype(self, item, key, val, **context):
-        if item.datatype.allow_datatype_change and self.app.datatypes_registry.get_datatype_by_extension(val).allow_datatype_change:
-            if DatasetAssociationManager(self.app).ok_to_edit_metadata(item.dataset_id):
-                item.change_datatype(val)
-                context['trans'].sa_session.flush()
-                self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(self.app.datatypes_registry.set_external_metadata_tool, context['trans'], incoming={'input1': item}, overwrite=False)  # overwrite is False as per existing behavior
-                return item.datatype
-        context['trans'].response.status = 500
-        context['trans'].error_message = 'Datatype could not be updated.'
-        raise Exception('Datatype could not be updated.')
+        if not item.datatype.allow_datatype_change:
+            raise Exception("The current datatype does not allow datatype changes.")
+        if not self.app.datatypes_registry.get_datatype_by_extension(val).allow_datatype_change:
+            raise Exception("Either the target datatype does not exist, or it does not allow datatype changes.")
+        if not DatasetAssociationManager(self.app).ok_to_edit_metadata(item.dataset_id):
+            raise Exception("Dataset metadata could not be updated, probably because it is not in an 'ok' state.")
+        item.change_datatype(val)
+        context['trans'].sa_session.flush()
+        self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(self.app.datatypes_registry.set_external_metadata_tool, context['trans'], incoming={'input1': item}, overwrite=False)  # overwrite is False as per existing behavior
+        return item.datatype
 
 
 class DatasetAssociationFilterParser(base.ModelFilterParser, deletable.PurgableFiltersMixin):
