@@ -28,6 +28,6 @@
   <help>
 .. class:: infomark
 
-  TODO
+  Create contact sheets based on a quantity, time interval, facial recognition, or shot detection of a video
   </help>
 </tool>
