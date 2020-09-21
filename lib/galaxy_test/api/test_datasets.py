@@ -147,7 +147,7 @@ class DatasetsApiTestCase(ApiTestCase):
         update_while_incomplete = self._put(  # try updating datatype before upload is complete
             "histories/{history_id}/contents/{hda_id}".format(history_id=self.history_id, hda_id=hda_id),
             {'datatype': 'tabular'}).status_code
-        assert update_while_incomplete == 500
+        assert update_while_incomplete == 400
 
         time.sleep(10)  # now wait for upload to complete
 
@@ -161,4 +161,4 @@ class DatasetsApiTestCase(ApiTestCase):
         invalidly_updated_hda = self._put(  # try updating with invalid datatype
             "histories/{history_id}/contents/{hda_id}".format(history_id=self.history_id, hda_id=hda_id),
             {'datatype': 'invalid'})
-        self._assert_status_code_is(invalidly_updated_hda, 500)
+        self._assert_status_code_is(invalidly_updated_hda, 400)
