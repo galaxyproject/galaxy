@@ -4,6 +4,8 @@ import configparser
 import os
 from datetime import datetime
 import shutil
+import zipfile
+
 class AmpLogger(object):
     log_file_size = 100000
     def __init__(self, root_dir, logname, input_file):
@@ -19,7 +21,17 @@ class AmpLogger(object):
         self.roll_log_file(log_file_name)
         return log_file_name
 
+    def compress_log_file(self, log_file_name):
+        base_name = os.path.basename(log_file_name)
+        with open(log_file_name, 'rb') as f_in:
+            with open(log_file_name + '.gz', 'wb') as f_out:
+                with gzip.GzipFile(base_name, 'wb', fileobj=f_out) as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+
     def roll_log_file(self, log_file):
+        if os.path.exists(log_file) == False:
+            return
+
         file_stats = os.stat(log_file)
         
         # If the log file is greater than the max size, move it, start with the base log name
@@ -29,6 +41,8 @@ class AmpLogger(object):
                 tmp_file_name = log_file + "." + str(i)
                 if os.path.exists(tmp_file_name)==False:
                     shutil.move(log_file,tmp_file_name)
+                    self.compress_log_file(tmp_file_name)
+                    os.remove(tmp_file_name)
                     break
 
     def write(self, message):
