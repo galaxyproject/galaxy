@@ -1162,10 +1162,15 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             UPDATE workflow_invocation_step
             SET update_time = :update_time
             WHERE job_id = :job_id;
+        ''', '''
+            UPDATE history
+            SET update_time = :update_time
+            WHERE id = :history_id
         ''']
         sa_session = object_session(self)
         params = {
             'job_id': self.id,
+            'history_id': self.history_id,
             'update_time': galaxy.model.orm.now.now()
         }
         for statement in statements:
@@ -1249,10 +1254,15 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
                 FROM job_to_output_library_dataset jtold
                 WHERE jtold.job_id = :job_id
             );
+        ''', '''
+            UPDATE history
+            SET update_time = :update_time
+            WHERE id = :history_id
         ''']
         sa_session = object_session(self)
         params = {
             'job_id': self.id,
+            'history_id': self.history_id,
             'state': self.state,
             'info': self.info,
             'update_time': galaxy.model.orm.now.now()
