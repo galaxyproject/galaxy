@@ -321,7 +321,7 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
 
             if description is None:
                 return False
-            elif (search_text in dataset.name or search_text  in description):
+            elif search_text in dataset.name or search_text in description:
                 return True
             else:
                 return False
@@ -330,7 +330,7 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
         folders = check_deleted(folder.folders, include_deleted)
 
         if search_text is not None:
-            folders = [folder for folder in folders if folder.description and search_text in folder.name or search_text in folder.description]
+            folders = [item for item in folders if item.description and search_text in item.name or search_text in item.description]
             datasets = list(filter(filter_searched_datasets, datasets))
 
         return folders, datasets
