@@ -90,11 +90,10 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
         update_time = ''
         create_time = ''
 
-        valid_datasets = self.refine_deleted(folder.datasets, deleted)
-        valid_folders = self.refine_deleted(folder.folders, deleted)
+        folders, datasets = self.apply_preferences(folder, deleted, search_text)
 
         #  Go through every accessible item (folders, datasets) in the folder and include its metadata.
-        for content_item in self._load_folder_contents(trans, valid_folders, valid_datasets, offset, limit, search_text):
+        for content_item in self._load_folder_contents(trans, folders, datasets, offset, limit):
             return_item = {}
             encoded_id = trans.security.encode_id(content_item.id)
             create_time = content_item.create_time.strftime("%Y-%m-%d %I:%M %p")
@@ -170,7 +169,7 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
         if folder.parent_library is not None:
             parent_library_id = trans.security.encode_id(folder.parent_library.id)
 
-        total_rows = len(valid_folders) + len(valid_datasets)
+        total_rows = len(folders) + len(datasets)
 
         metadata = dict(full_path=full_path,
                         total_rows=total_rows,
@@ -204,7 +203,7 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
             path_to_root.extend(self.build_path(trans, upper_folder))
         return path_to_root
 
-    def _load_folder_contents(self, trans, folders, datasets, offset=None, limit=None, search_text=None):
+    def _load_folder_contents(self, trans, folders, datasets, offset=None, limit=None):
         """
         Loads all contents of the folder (folders and data sets) but only
         in the first level. Include deleted if the flag is set and if the
@@ -227,10 +226,6 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
         current_folders = self.calculate_pagination(folders, offset, limit)
 
         for subfolder in current_folders:
-            if search_text and not subfolder.description:
-                continue
-            if search_text and subfolder.description and search_text not in subfolder.name and search_text not in subfolder.description:
-                continue
 
             if subfolder.deleted:
                 if is_admin:
@@ -269,18 +264,6 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
         current_datasets = self.calculate_pagination(datasets, offset, limit)
 
         for dataset in current_datasets:
-
-            if dataset.library_dataset_dataset_association.message:
-                description = dataset.library_dataset_dataset_association.message
-            elif dataset.library_dataset_dataset_association.info:
-                description = dataset.library_dataset_dataset_association.info
-            else:
-                description = None
-
-            if search_text and description is None:
-                continue
-            if search_text and description and search_text not in dataset.name and search_text not in description:
-                continue
             if dataset.deleted:
                 if is_admin:
                     # Admins can see all deleted datasets.
@@ -319,12 +302,38 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
 
         return paginated_array
 
-    def refine_deleted(self, array, include_deleted):
-        if include_deleted:
-            refined_array = array
-        else:
-            refined_array = [data for data in array if data.deleted == include_deleted]
-        return refined_array
+    def apply_preferences(self, folder, include_deleted, search_text):
+
+        def check_deleted(array, include_deleted):
+            if include_deleted:
+                result_array = array
+            else:
+                result_array = [data for data in array if data.deleted == include_deleted]
+            return result_array
+
+        def filter_searched_datasets(dataset):
+            if dataset.library_dataset_dataset_association.message:
+                description = dataset.library_dataset_dataset_association.message
+            elif dataset.library_dataset_dataset_association.info:
+                description = dataset.library_dataset_dataset_association.info
+            else:
+                description = None
+
+            if description is None:
+                return False
+            elif (search_text in dataset.name or search_text  in description):
+                return True
+            else:
+                return False
+
+        datasets = check_deleted(folder.datasets, include_deleted)
+        folders = check_deleted(folder.folders, include_deleted)
+
+        if search_text is not None:
+            folders = [folder for folder in folders if folder.description and search_text in folder.name or search_text in folder.description]
+            datasets = list(filter(filter_searched_datasets, datasets))
+
+        return folders, datasets
 
     @expose_api
     def create(self, trans, encoded_folder_id, payload, **kwd):
