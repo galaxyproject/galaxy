@@ -1,7 +1,7 @@
 import "./css/jquery-ui.min.css";
 import "./css/lorikeet.css";
-// TODO: this lumps in bootstrap3 styling; use manual styling.
-//import "./css/datatables.min.css";
+// TODO: this previously lumped in bootstrap3 styling; include explicitly.
+import "./css/datatables.min.css";
 import "./css/msi.css";
 import "./css/app.css";
 import "./css/igv.css";
