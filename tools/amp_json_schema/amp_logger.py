@@ -8,7 +8,7 @@ import zipfile
 import gzip
 
 class AmpLogger(object):
-    log_file_size = 100000
+    log_file_size = 1000000
     def __init__(self, root_dir, logname, input_file):
         self.terminal = sys.stdout
         log_file_name = self.create_log_file(root_dir, input_file, logname)
