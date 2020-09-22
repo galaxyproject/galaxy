@@ -134,7 +134,7 @@ def main(old_revision, new_revision=None):
         except subprocess.CalledProcessError:
             new_files.append(file)
 
-    report_diff(added, removed, changed, new_files)
+    report_diff(added, changed, removed, new_files)
 
 
 if __name__ == '__main__':
