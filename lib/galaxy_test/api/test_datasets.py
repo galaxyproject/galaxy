@@ -1,5 +1,4 @@
 import textwrap
-import time
 
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
@@ -142,23 +141,23 @@ class DatasetsApiTestCase(ApiTestCase):
             "histories/{history_id}/contents/{hda_id}".format(history_id=self.history_id, hda_id=hda_id)).json()
         assert original_hda['extension'] == 'txt'
         assert original_hda['data_type'] == 'galaxy.datatypes.data.Text'
-        assert len(original_hda['visualizations']) < 10
+        'scatterplot' not in original_hda['visualizations']
 
-        update_while_incomplete = self._put(  # try updating datatype before upload is complete
+        update_while_incomplete_response = self._put(  # try updating datatype before upload is complete
             "histories/{history_id}/contents/{hda_id}".format(history_id=self.history_id, hda_id=hda_id),
-            {'datatype': 'tabular'}).status_code
-        assert update_while_incomplete == 400
+            {'datatype': 'tabular'})
+        self._assert_status_code_is(update_while_incomplete_response, 500)
 
-        time.sleep(10)  # now wait for upload to complete
+        self.dataset_populator.wait_for_history(self.history_id)  # now wait for upload to complete
 
-        successful_updated_hda = self._put(
+        successful_updated_hda_response = self._put(
             "histories/{history_id}/contents/{hda_id}".format(history_id=self.history_id, hda_id=hda_id),
             {'datatype': 'tabular'}).json()
-        assert successful_updated_hda['extension'] == 'tabular'
-        assert successful_updated_hda['data_type'] == 'galaxy.datatypes.tabular.Tabular'
-        assert len(successful_updated_hda['visualizations']) > 20
+        assert successful_updated_hda_response['extension'] == 'tabular'
+        assert successful_updated_hda_response['data_type'] == 'galaxy.datatypes.tabular.Tabular'
+        'scatterplot' not in successful_updated_hda_response['visualizations']
 
-        invalidly_updated_hda = self._put(  # try updating with invalid datatype
+        invalidly_updated_hda_response = self._put(  # try updating with invalid datatype
             "histories/{history_id}/contents/{hda_id}".format(history_id=self.history_id, hda_id=hda_id),
             {'datatype': 'invalid'})
-        self._assert_status_code_is(invalidly_updated_hda, 400)
+        self._assert_status_code_is(invalidly_updated_hda_response, 400)
