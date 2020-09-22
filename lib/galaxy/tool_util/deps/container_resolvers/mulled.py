@@ -29,6 +29,7 @@ from ..mulled.util import (
     split_tag,
     v1_image_name,
     v2_image_name,
+    version_sorted,
 )
 from ..requirements import (
     ContainerDescription,
@@ -72,19 +73,17 @@ def list_docker_cached_mulled_images(namespace=None, hash_func="v2", resolution_
         except subprocess.CalledProcessError:
             log.info("Call to `docker images` failed, configured container resolution may be broken")
             return []
-        images_and_versions = [l.split()[0:2] for l in images_and_versions[1:]]
+        images_and_versions = [":".join(l.split()[0:2]) for l in images_and_versions[1:]]
         if resolution_cache is not None:
             resolution_cache[cache_key] = images_and_versions
 
-    name_filter = get_filter(namespace)
-
     def output_line_to_image(line):
-        image_name, version = line[0], line[1]
-        identifier = "%s:%s" % (image_name, version)
-        image = identifier_to_cached_target(identifier, hash_func, namespace=namespace)
+        image = identifier_to_cached_target(line, hash_func, namespace=namespace)
         return image
 
-    raw_images = [output_line_to_image(_) for _ in filter(name_filter, images_and_versions)]
+    name_filter = get_filter(namespace)
+    sorted_images = version_sorted([_ for _ in filter(name_filter, images_and_versions)])
+    raw_images = (output_line_to_image(_) for _ in sorted_images)
     return [i for i in raw_images if i is not None]
 
 
@@ -138,13 +137,14 @@ def identifier_to_cached_target(identifier, hash_func, namespace=None):
 
 def list_cached_mulled_images_from_path(directory, hash_func="v2"):
     contents = os.listdir(directory)
-    raw_images = map(lambda name: identifier_to_cached_target(name, hash_func), contents)
+    sorted_images = version_sorted(contents)
+    raw_images = map(lambda name: identifier_to_cached_target(name, hash_func), sorted_images)
     return [i for i in raw_images if i is not None]
 
 
 def get_filter(namespace):
     prefix = "quay.io/" if namespace is None else "quay.io/%s" % namespace
-    return lambda name: name[0].startswith(prefix) and name[0].count("/") == 2
+    return lambda name: name.startswith(prefix) and name.count("/") == 2
 
 
 def find_best_matching_cached_image(targets, cached_images, hash_func):
@@ -154,7 +154,7 @@ def find_best_matching_cached_image(targets, cached_images, hash_func):
     image = None
     if len(targets) == 1:
         target = targets[0]
-        for cached_image in reversed(cached_images):
+        for cached_image in cached_images:
             if cached_image.multi_target:
                 continue
             if not cached_image.package_name == target.package_name:
@@ -169,7 +169,7 @@ def find_best_matching_cached_image(targets, cached_images, hash_func):
         else:
             package_hash, version_hash = name, None
 
-        for cached_image in reversed(cached_images):
+        for cached_image in cached_images:
             if cached_image.multi_target != "v2":
                 continue
 
@@ -186,7 +186,7 @@ def find_best_matching_cached_image(targets, cached_images, hash_func):
 
     elif hash_func == "v1":
         name = v1_image_name(targets)
-        for cached_image in reversed(cached_images):
+        for cached_image in cached_images:
             if cached_image.multi_target != "v1":
                 continue
 
