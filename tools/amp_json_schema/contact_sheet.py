@@ -154,7 +154,7 @@ class ContactSheet:
 		return int(len)
 
 	def getTimesInterval(self, videoLength, interval):
-		times = [t for t in range(0, videoLength, interval)]
+		times = [t for t in range(interval, videoLength, interval)]
 		labels = []
 		for t in times:
 			labels.append(str(timedelta(seconds=round(t))))
@@ -162,6 +162,9 @@ class ContactSheet:
 
 	def getTimesQuantity(self, videoLength, numFrames):
 		step = math.floor(videoLength/numFrames)
+		print("Length: " + str(videoLength))
+		print("Frames: " + str(numFrames))
+		print("Step: " + str(step))
 		return self.getTimesInterval(videoLength, step)
 
 	def getTimesFacialRecognition(self, data):
