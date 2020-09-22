@@ -73,10 +73,14 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
             log.debug(job_timer.to_str(tool_id=tool.id, job_id=job.id))
             execution_tracker.record_success(execution_slice, job, result)
             # associate dataset instances with the job that creates them
-            if execution_slice.datasets_to_persist:
-                datasets = [d for d in execution_slice.datasets_to_persist if type(d) == model.HistoryDatasetAssociation]
+            if result:
+                datasets = [pair[1] for pair in result if type(pair[1]) == model.HistoryDatasetAssociation]
                 if datasets:
                     job_datasets[job] = datasets
+            # if execution_slice.datasets_to_persist:
+            #     datasets = [d for d in execution_slice.datasets_to_persist if type(d) == model.HistoryDatasetAssociation]
+            #     if datasets:
+            #         job_datasets[job] = datasets
         else:
             execution_tracker.record_error(result)
 
