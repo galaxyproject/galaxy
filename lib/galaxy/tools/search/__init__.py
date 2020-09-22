@@ -19,8 +19,14 @@ from whoosh.fields import (
     Schema,
     TEXT
 )
-from whoosh.qparser import MultifieldParser, OrGroup
-from whoosh.scoring import BM25F, MultiWeighting
+from whoosh.qparser import (
+    MultifieldParser,
+    OrGroup,
+)
+from whoosh.scoring import (
+    BM25F,
+    MultiWeighting,
+)
 from whoosh.writing import AsyncWriter
 
 from galaxy.util import ExecutionTimer
