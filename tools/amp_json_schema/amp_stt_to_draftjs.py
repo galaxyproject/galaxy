@@ -18,7 +18,9 @@ def main():
 
 	(root_dir, amp_json, segmentation_json, output_json) = sys.argv[1:5]
 
-	sys.stdout = AmpLogger(root_dir, "hmgm_transcript", amp_json)
+	logger = AmpLogger(root_dir, "hmgm_transcript", amp_json)
+	sys.stdout = logger
+	sys.stderr = logger
 
 	exit_peacefully = False
 	# Read the output file.  Check to see if we've already done this conversion. 

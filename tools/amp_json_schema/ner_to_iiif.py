@@ -17,7 +17,10 @@ def main():
 #     context_json = '{ "submittedBy": "yingfeng", "unitId": "1", "unitName": "Test Unit", "collectionId": "2", "collectionName": "Test Collection", "taskManager": "Jira", "itemId": "3", "itemName": "Test Item", "primaryfileId": "4", "primaryfileName": "Test primaryfile", "primaryfileUrl": "http://techslides.com/demos/sample-videos/small.mp4", "primaryfileMediaInfo": "/tmp/hmgm/mediaInfo.json", "workflowId": "123456789", "workflowName": "Test Workflow" }'
     
     
-    sys.stdout = AmpLogger(root_dir, "hmgm_ner", input_ner)
+    logger = AmpLogger(root_dir, "hmgm_ner", input_ner)
+
+    sys.stdout = logger
+    sys.stderr = logger
 
     print ("input_ner: " + input_ner)
     print ("input_iiif: " + input_iiif)

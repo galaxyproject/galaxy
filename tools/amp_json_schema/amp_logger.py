@@ -20,7 +20,7 @@ class AmpLogger(object):
         log_path = self.get_log_dir(root_dir)
         log_file_name = os.path.join(log_path, file_name)
         self.roll_log_file(log_file_name)
-        return log_file_name
+        return log_file_name.lower()
 
     def compress_log_file(self, log_file_name):
         base_name = os.path.basename(log_file_name)

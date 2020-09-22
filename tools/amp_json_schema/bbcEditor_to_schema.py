@@ -18,8 +18,10 @@ from speech_to_text_schema import SpeechToText, SpeechToTextMedia, SpeechToTextR
 def main():
     (root_dir, editor_output_file, output_json_file, media_file) = sys.argv[1:5]
     
-    sys.stdout = AmpLogger(root_dir, "hmgm_transcript", editor_output_file)
-    
+    logger = AmpLogger(root_dir, "hmgm_transcript", editor_output_file)
+    sys.stdout = logger
+    sys.stderr = logger
+
     hmgm_utils.exit_if_output_not_ready(editor_output_file)
 
     with open(editor_output_file) as json_file:
