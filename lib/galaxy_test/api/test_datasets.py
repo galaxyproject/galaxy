@@ -141,7 +141,7 @@ class DatasetsApiTestCase(ApiTestCase):
             "histories/{history_id}/contents/{hda_id}".format(history_id=self.history_id, hda_id=hda_id)).json()
         assert original_hda['extension'] == 'txt'
         assert original_hda['data_type'] == 'galaxy.datatypes.data.Text'
-        'scatterplot' not in original_hda['visualizations']
+        assert 'scatterplot' not in [viz['name'] for viz in original_hda['visualizations']]
 
         update_while_incomplete_response = self._put(  # try updating datatype before upload is complete
             "histories/{history_id}/contents/{hda_id}".format(history_id=self.history_id, hda_id=hda_id),
@@ -155,7 +155,7 @@ class DatasetsApiTestCase(ApiTestCase):
             {'datatype': 'tabular'}).json()
         assert successful_updated_hda_response['extension'] == 'tabular'
         assert successful_updated_hda_response['data_type'] == 'galaxy.datatypes.tabular.Tabular'
-        'scatterplot' not in successful_updated_hda_response['visualizations']
+        assert 'scatterplot' in [viz['name'] for viz in successful_updated_hda_response['visualizations']]
 
         invalidly_updated_hda_response = self._put(  # try updating with invalid datatype
             "histories/{history_id}/contents/{hda_id}".format(history_id=self.history_id, hda_id=hda_id),
