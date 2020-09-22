@@ -35,6 +35,7 @@ const nodeData = {
 class Node {
     constructor(attr = {}) {
         this.element = attr.element;
+        this.postJobActions = {};
         this.inputTerminals = {};
         this.outputTerminals = {};
     }
@@ -326,7 +327,7 @@ QUnit.test("Collection output can connect to same collection input type", functi
         datatypes: "txt",
         collection_type: "list",
     });
-    outputTerminal.node = {};
+    outputTerminal.node = {postJobActions: {}};
     assert.ok(
         inputTerminal.canAccept(outputTerminal).canAccept,
         "Input terminal " + inputTerminal + " can not accept " + outputTerminal

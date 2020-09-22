@@ -27,6 +27,9 @@ from galaxy.visualization.data_providers.cigar import get_ref_based_read_seq_and
 # Utility functions.
 #
 
+# pysam 0.16.0.1 emits logs containing the word 'Error', this can confuse the stdout/stderr checkers.
+# Can be be removed once https://github.com/pysam-developers/pysam/issues/939 is resolved.
+pysam.set_verbosity(0)
 PYSAM_INDEX_SYMLINK_NECESSARY = packaging.version.parse(pysam.__version__) <= packaging.version.parse('0.13.0')
 
 

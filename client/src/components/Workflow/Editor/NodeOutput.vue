@@ -74,7 +74,6 @@ export default {
                 collection_type: collection_type,
                 collection_type_source: collection_type_source,
                 datatypes: output.extensions,
-                force_datatype: output.force_datatype,
                 optional: output.optional,
             });
         } else if (output.parameter) {
@@ -91,7 +90,6 @@ export default {
                 name: output.name,
                 element: this.$refs.terminal,
                 datatypes: output.extensions,
-                force_datatype: output.force_datatype,
                 optional: output.optional,
             });
         }
