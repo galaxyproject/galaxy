@@ -390,8 +390,10 @@ class PulsarJobRunner(AsynchronousJobRunner):
             job_id = pulsar_submit_job(client, client_job_description, remote_job_config)
             log.info("Pulsar job submitted with job_id %s" % job_id)
             job = job_wrapper.get_job()
+            # Set the job destination here (unlike other runners) because there are likely additional job destination
+            # params from the Pulsar client.
             # Flush with change_state.
-            job_wrapper.set_external_id(job_id, job=job, flush=False)
+            job_wrapper.set_job_destination(job_destination, external_id=job_id, flush=False, job=job)
             job_wrapper.change_state(model.Job.states.QUEUED, job=job)
         except Exception:
             job_wrapper.fail("failure running job", exception=True)
