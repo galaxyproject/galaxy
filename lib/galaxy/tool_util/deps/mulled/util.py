@@ -124,9 +124,9 @@ def parse_tag(tag):
     match = BUILD_NUMBER_REGEX.search(version)
     if match:
         build_number = int(match.group(0))
-    if '--' in tag:
+    if '--' in version:
         version, build_string = version.rsplit('--', 1)
-    elif '-' in tag:
+    elif '-' in version:
         # Should be mulled multi-container image tag
         version, build_string = version.rsplit('-', 1)
     else:
