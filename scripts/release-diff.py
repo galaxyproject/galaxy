@@ -80,7 +80,7 @@ def report_diff(added, changed, removed, new_files):
             "Added",
             "The following configuration options are new",
             added,
-            lambda x: f"-  {x}",
+            lambda x: f"-  {x}"
         )
 
     if changed:
@@ -88,7 +88,7 @@ def report_diff(added, changed, removed, new_files):
             "Changed",
             "The following configuration options have been changed",
             changed,
-            lambda x: f"-  {x[0]} has changed from ``{x[1]}`` to ``{x[2]}``",
+            lambda x: f"-  {x[0]} has changed from ``{x[1]}`` to ``{x[2]}``"
         )
 
     if removed:
@@ -96,7 +96,7 @@ def report_diff(added, changed, removed, new_files):
             "Removed",
             "The following configuration options have been completely removed",
             removed,
-            lambda x: f"-  {x}",
+            lambda x: f"-  {x}"
         )
 
     if new_files:
