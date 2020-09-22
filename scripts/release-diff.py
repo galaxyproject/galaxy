@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import subprocess
 import argparse
-import sys
 from pathlib import Path
 import glob
 import yaml
@@ -19,10 +18,6 @@ def flatten(d, path):
     if isinstance(d, dict):
         for k, v in d.items():
             yield from flatten(v, path + [k])
-    # elif isinstance(d, list):
-        # yield ('.'.join(path), d)
-        # for i, x in enumerate(d):
-            # yield from flatten(x, path + [i])
     else:
         yield (".".join(path), d)
 
@@ -39,7 +34,6 @@ class MockOrderedLoader(SafeLoader):
 
 MockOrderedLoader.add_constructor("!include", MockOrderedLoader.include)
 
-# git show v20.01:lib/galaxy/config/sample/galaxy.yml.sample
 
 def diff_files(old, new):
     # Flatten them
@@ -66,7 +60,7 @@ def _report_dict(title, subheading, data, mapper):
     print()
     for fn in data:
         print(fn)
-        print('~' * len(fn))
+        print("~" * len(fn))
         print()
         for k in data[fn]:
             print(mapper(k))
@@ -82,13 +76,28 @@ def report_diff(added, changed, removed, new_files):
         print()
 
     if added:
-        _report_dict("Added", "The following configuration options are new", added, lambda x: f'-  {x}')
+        _report_dict(
+            "Added",
+            "The following configuration options are new",
+            added,
+            lambda x: f"-  {x}",
+        )
 
     if changed:
-        _report_dict("Changed", "The following configuration options have been changed", changed, lambda x: f'-  {x[0]} has changed from ``{x[1]}`` to ``{x[2]}``')
+        _report_dict(
+            "Changed",
+            "The following configuration options have been changed",
+            changed,
+            lambda x: f"-  {x[0]} has changed from ``{x[1]}`` to ``{x[2]}``",
+        )
 
     if removed:
-        _report_dict("Removed", "The following configuration options have been completely removed", removed, lambda x: f'-  {x}')
+        _report_dict(
+            "Removed",
+            "The following configuration options have been completely removed",
+            removed,
+            lambda x: f"-  {x}",
+        )
 
     if new_files:
         print("New Configuration Files")
@@ -102,14 +111,16 @@ def report_diff(added, changed, removed, new_files):
 
 def load_at_time(path, revision=None):
     if revision is not None:
-        return subprocess.check_output(['git', 'show', f'{revision}:{path}'], stderr=subprocess.STDOUT)
+        return subprocess.check_output(
+            ["git", "show", f"{revision}:{path}"], stderr=subprocess.STDOUT
+        )
     else:
-        with open(path, 'r') as handle:
+        with open(path, "r") as handle:
             return handle.read()
 
 
 def main(old_revision, new_revision=None):
-    files_to_diff = glob.glob('config/*.yml.sample')
+    files_to_diff = glob.glob("config/*.yml.sample")
     added = {}
     removed = {}
     changed = {}
@@ -118,8 +129,12 @@ def main(old_revision, new_revision=None):
     for file in files_to_diff:
         real_path = Path(file).resolve().relative_to(Path.cwd())
         try:
-            old_contents = yaml.load(load_at_time(real_path, old_revision), Loader=MockOrderedLoader)
-            new_contents = yaml.load(load_at_time(real_path, new_revision), Loader=MockOrderedLoader)
+            old_contents = yaml.load(
+                load_at_time(real_path, old_revision), Loader=MockOrderedLoader
+            )
+            new_contents = yaml.load(
+                load_at_time(real_path, new_revision), Loader=MockOrderedLoader
+            )
 
             (a, r, c) = diff_files(old_contents, new_contents)
             if a:
@@ -137,9 +152,14 @@ def main(old_revision, new_revision=None):
     report_diff(added, changed, removed, new_files)
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Diff yaml configuration files between two points in time.')
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Diff yaml configuration files between two points in time."
+    )
     parser.add_argument("old_revision", help="Old revision")
-    parser.add_argument("--new_revision", help="New revision (defaults to whatever is currently in tree)")
+    parser.add_argument(
+        "--new_revision",
+        help="New revision (defaults to whatever is currently in tree)",
+    )
     args = parser.parse_args()
     main(args.old_revision, args.new_revision)
