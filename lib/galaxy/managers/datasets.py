@@ -5,8 +5,6 @@ import glob
 import logging
 import os
 
-
-import galaxy.datatypes.metadata
 from galaxy import (
     exceptions,
     model
@@ -55,7 +53,7 @@ class DatasetManager(base.ModelManager, secured.AccessibleManagerMixin, deletabl
         return dataset
 
     def copy(self, dataset, **kwargs):
-        raise galaxy.exceptions.NotImplemented('Datasets cannot be copied')
+        raise exceptions.NotImplemented('Datasets cannot be copied')
 
     def purge(self, dataset, flush=True):
         """
@@ -271,7 +269,7 @@ class DatasetAssociationManager(base.ModelManager,
         return dataset_assoc
 
     def by_user(self, user):
-        raise galaxy.exceptions.NotImplemented('Abstract Method')
+        raise exceptions.NotImplemented('Abstract Method')
 
     # .... associated job
     def creating_job(self, dataset_assoc):
@@ -442,7 +440,7 @@ class DatasetAssociationManager(base.ModelManager,
             self._set_permissions(trans, dataset_assoc, role_ids_dict)
 
     def _set_permissions(self, trans, dataset_assoc, roles_dict):
-        raise galaxy.exceptions.NotImplemented()
+        raise exceptions.NotImplemented()
 
 
 class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer,
@@ -658,6 +656,7 @@ class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableD
         self.deserializers.update({
             'name' : self.deserialize_basestring,
             'info' : self.deserialize_basestring,
+            'datatype' : self.deserialize_datatype,
         })
         self.deserializable_keyset.update(self.deserializers.keys())
 
@@ -683,6 +682,20 @@ class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableD
         setattr(dataset_assoc.metadata, key, unwrapped_val)
         # ...?
         return unwrapped_val
+
+    def deserialize_datatype(self, item, key, val, **context):
+        if not item.datatype.allow_datatype_change:
+            raise exceptions.RequestParameterInvalidException("The current datatype does not allow datatype changes.")
+        if not self.app.datatypes_registry.get_datatype_by_extension(val):
+            raise exceptions.RequestParameterInvalidException("The target datatype does not exist.")
+        if not self.app.datatypes_registry.get_datatype_by_extension(val).allow_datatype_change:
+            raise exceptions.RequestParameterInvalidException("The target datatype does not allow datatype changes.")
+        if not DatasetAssociationManager(self.app).ok_to_edit_metadata(item.dataset_id):
+            raise Exception("Dataset metadata could not be updated because it is used as input or output of a running job.")
+        item.change_datatype(val)
+        context['trans'].sa_session.flush()
+        self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(self.app.datatypes_registry.set_external_metadata_tool, context['trans'], incoming={'input1': item}, overwrite=False)  # overwrite is False as per existing behavior
+        return item.datatype
 
 
 class DatasetAssociationFilterParser(base.ModelFilterParser, deletable.PurgableFiltersMixin):
