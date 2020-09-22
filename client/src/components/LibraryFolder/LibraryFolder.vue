@@ -520,7 +520,7 @@ export default {
     watch: {
         currentPage: {
             handler: function (value) {
-                this.fetchFolderContents();
+                this.fetchFolderContents(this.include_deleted);
             },
         },
     },
