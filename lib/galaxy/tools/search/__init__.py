@@ -19,10 +19,9 @@ from whoosh.fields import (
     Schema,
     TEXT
 )
-from whoosh.qparser import MultifieldParser, FuzzyTermPlugin, OrGroup
+from whoosh.qparser import MultifieldParser, OrGroup
 from whoosh.scoring import BM25F, MultiWeighting
 from whoosh.writing import AsyncWriter
-from whoosh.query import FuzzyTerm
 
 from galaxy.util import ExecutionTimer
 from galaxy.web.framework.helpers import to_unicode
@@ -174,8 +173,7 @@ class ToolBoxSearch:
         # https://whoosh.readthedocs.io/en/latest/parsing.html#searching-for-any-terms-instead-of-all-terms-by-default
         # Adding the FuzzyTermPlugin to account for misspellings and typos, using a max distance of 2
         og = OrGroup.factory(0.9)
-        self.parser = MultifieldParser(['name', 'old_id', 'description', 'section', 'help', 'labels', 'stub'], schema=self.schema, group=og)  # , termclass=FuzzyTerm)
-        self.parser.add_plugin(FuzzyTermPlugin())
+        self.parser = MultifieldParser(['name', 'old_id', 'description', 'section', 'help', 'labels', 'stub'], schema=self.schema, group=og)
 
         cleaned_query = q.lower()
         if tool_enable_ngram_search is True:
@@ -184,11 +182,8 @@ class ToolBoxSearch:
         else:
             cleaned_query = ' '.join(token.text for token in self.rex(cleaned_query))
             # Use asterisk Whoosh wildcard so e.g. 'bow' easily matches 'bowtie'
-            #parsed_query = self.parser.parse('*' + cleaned_query + '*' + '~2')
-            parsed_query = self.parser.parse('*' + cleaned_query + '*' + ' ' + cleaned_query + '~2')
-            #parsed_query = self.parser.parse('*' + cleaned_query + '*')
+            parsed_query = self.parser.parse('*' + cleaned_query + '*')
             hits = self.searcher.search(parsed_query, limit=float(tool_search_limit), sortedby='')
-            print("\n\n\nHITSSS: ", hits)
             return [hit['id'] for hit in hits]
 
     def _search_ngrams(self, cleaned_query, tool_ngram_minsize, tool_ngram_maxsize, tool_search_limit):
