@@ -108,7 +108,7 @@ class CustosAuthnz(IdentityProvider):
                             len(trans.app.auth_manager.authenticators) == 0):
                         user = existing_user
                     else:
-                        message = 'There already exists a user this email.  To associate this external login, you must first be logged in as that existing account.'
+                        message = "There already exists a user with email %s.  To associate this external login, you must first be logged in as that existing account." % email
                         log.exception(message)
                         raise exceptions.AuthenticationFailed(message)
                 else:

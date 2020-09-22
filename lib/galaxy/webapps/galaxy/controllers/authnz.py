@@ -82,8 +82,8 @@ class OIDC(JSAppLauncher):
                                                                                 trans,
                                                                                 login_redirect_url=url_for('/'),
                                                                                 idphint=idphint)
-        except exceptions.AuthenticationFailed as e:
-            return trans.response.send_redirect(trans.request.base + url_for('/') + 'root/login?message=' + (e.message or "Duplicate Email"))
+        except exceptions.AuthenticationFailed:
+            raise
         if success is False:
             return trans.show_error_message(message)
         user = user if user is not None else trans.user

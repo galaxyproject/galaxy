@@ -297,9 +297,8 @@ class AuthnzManager:
             if success is False:
                 return False, message, (None, None)
             return success, message, backend.callback(state_token, authz_code, trans, login_redirect_url)
-        except exceptions.AuthenticationFailed as e:
-            log.exception(e.message)
-            raise exceptions.AuthenticationFailed(e.message)
+        except exceptions.AuthenticationFailed:
+            raise
         except Exception as e:
             msg = 'The following error occurred when handling callback from `{}` identity provider: ' \
                   '{}'.format(provider, str(e))
