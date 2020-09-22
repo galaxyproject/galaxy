@@ -17,7 +17,9 @@ def main():
     input_ner = sys.argv[3]     # input file to feed to NER editor in IIIF json format to convert to
     output_ner = sys.argv[4]    # context info as json string needed for creating HMGM tasks
 
-    sys.stdout = AmpLogger(root_dir, "hmgm_ner", input_ner)
+    logger = AmpLogger(root_dir, "hmgm_ner", input_ner)
+    sys.stdout = logger
+    sys.stderr = logger
 
     hmgm_utils.exit_if_output_not_ready(output_iiif)
         

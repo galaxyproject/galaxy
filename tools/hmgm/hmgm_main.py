@@ -35,7 +35,10 @@ def main():
 #     context_json = '{ "submittedBy": "yingfeng", "unitId": "1", "unitName": "Test%27s Unit", "collectionId": "2", "collectionName": "Test%22s Collection", "taskManager": "Jira", "itemId": "3", "itemName": "Test%27s Item", "primaryfileId": "4", "primaryfileName": "Test%22s primaryfile", "primaryfileUrl": "http://techslides.com/demos/sample-videos/small.mp4", "primaryfileMediaInfo": "/tmp/hmgm/mediaInfo.json", "workflowId": "123456789", "workflowName": "Test%27%22 Workflow" }'
 
 	try:
-		sys.stdout = AmpLogger(root_dir, "hmgm_" + task_type, input_json)
+		logger = AmpLogger(root_dir, "hmgm_" + task_type, input_json)
+		sys.stdout = logger
+		sys.stderr = logger
+		
 		config = config_hmgm(root_dir)
 		context = json.loads(context_json)
 		context = desanitize_context(context)
