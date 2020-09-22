@@ -128,14 +128,14 @@ class LSF(BaseJobExec):
             }.get(state)
         except KeyError:
             raise KeyError("Failed to map LSF status code [%s] to job state." % state)
-            
+
     def _get_excluded_hosts(self):
         """
         Reads a file in the set path with one node name per line. All these nodes will be added
         to the exclusion list for execution.
-        
+
         The path can be added to destinations like this:
-        
+
         <destination id="lsf_8cpu_16GbRam" runner="cli">
             <param id="shell_plugin">LocalShell</param>
             <param id="job_plugin">LSF</param>
@@ -151,7 +151,7 @@ class LSF(BaseJobExec):
             path_excluded = self.params["excluded_hosts"]
             if path.isfile(path_excluded):
                 return open(path_excluded).read().splitlines()
-        return list()   
+        return list()
 
 
 __all__ = ('LSF',)
