@@ -5,8 +5,10 @@ export function filterToolSections(layout, results) {
             var toolRes = [];
             if (section.elems) {
                 section.elems.forEach((el) => {
-                    if ((!el.text && results.includes(el.id)) ||
-                        (el.tool_shed_repository && results.includes(el.tool_shed_repository.name))) {
+                    if (
+                        (!el.text && results.includes(el.id)) ||
+                        (el.tool_shed_repository && results.includes(el.tool_shed_repository.name))
+                    ) {
                         toolRes.push(el);
                     }
                 });
@@ -53,8 +55,10 @@ export function filterTools(layout, results) {
         layout.map((section) => {
             if (section.elems) {
                 section.elems.forEach((el) => {
-                    if ((!el.text && results.includes(el.id)) ||
-                        (el.tool_shed_repository && results.includes(el.tool_shed_repository.name))) {
+                    if (
+                        (!el.text && results.includes(el.id)) ||
+                        (el.tool_shed_repository && results.includes(el.tool_shed_repository.name))
+                    ) {
                         toolsResults.push(el);
                     }
                 });
@@ -72,9 +76,8 @@ function normalize_results(results) {
     var norm_results = [];
     results.forEach((result) => {
         if (result.includes("/repos/")) {
-            norm_results.push(result.split('/')[3]);
-        }
-        else {
+            norm_results.push(result.split("/")[3]);
+        } else {
             norm_results.push(result);
         }
     });
