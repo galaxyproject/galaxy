@@ -63,11 +63,12 @@ files_to_diff = glob.glob('config/*.yml.sample')
 added = {}
 removed = {}
 changed = {}
+new_files = []
 
 for file in files_to_diff:
     real_path = Path(file).resolve().relative_to(Path.cwd())
     try:
-        contents = subprocess.check_output(['git', 'show', f'{old_version}:{real_path}'])
+        contents = subprocess.check_output(['git', 'show', f'{old_version}:{real_path}'], stderr=subprocess.STDOUT)
         old = yaml.load(contents, Loader=MockOrderedLoader)
         with open(real_path, 'r') as handle:
             new = yaml.load(handle, Loader=MockOrderedLoader)
@@ -83,7 +84,7 @@ for file in files_to_diff:
             changed[file] = c
 
     except subprocess.CalledProcessError:
-        print(f"{file} did not exist in that revision.")
+        new_files.append(file)
 
 # Print out report
 if added or changed or removed:
@@ -135,3 +136,12 @@ if removed:
             print(f"-  {k}")
         print()
     print()
+
+if new_files:
+    print("New Configuration Files")
+    print("-----------------------")
+    print()
+    print(f"The following files are new, or recently converted to yaml since the {old_version}")
+    print()
+    for k in new_files:
+        print(f"-  ``{k}``")
