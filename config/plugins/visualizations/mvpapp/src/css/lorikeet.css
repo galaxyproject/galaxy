@@ -1,0 +1,153 @@
+/*$LastChangedDate$*/
+/*$LastChangedBy$*/
+/*$LastChangedRevision$*/
+
+@media print {
+	.noprint {
+         display:none;
+    }
+}
+
+div.lorikeet {
+	width:100%; 
+	background-color: #FFFFFF;
+	color: #000000;
+	font-family: "Trebuchet MS",Arial,sans-serif;
+	font-size: 10pt;
+    font-style: normal;
+    margin: 0;
+    padding: 0;
+}
+
+div.lorikeet div.bar {
+	background-color:#F5F5DC;
+    color:black; 
+}
+div.lorikeet td {
+	background-color:#FFFFEF; 
+	border:1px solid black;
+	padding: 5px;
+}
+      
+div.lorikeet td.optionCell {
+	background-color: white; 
+	border: 1px dotted #666666; 
+	padding: 5px;
+	margin:5px;
+}
+
+div.lorikeet .link {
+	text-decoration: underline;
+	cursor:pointer;
+	color:sienna;
+}
+div.lorikeet .font_small {
+	font-size: 8pt;
+}
+div.lorikeet .zoom_out_link {
+	background-image: url('../images/lorikeet/zoom_out.png');
+	background-repeat: no-repeat;
+	width:20px;
+	height:20px;
+	cursor:pointer;
+}
+div.lorikeet .zoom_in_link {
+	background-image: url('../images/lorikeet/zoom_in.png');
+	background-repeat: no-repeat;
+	width:20px;
+	height:20px;
+	cursor:pointer;
+}
+
+
+/* THE FOLLOWING STYLES ARE FOR THE TABLE DISPLAYING THE SEQUENCE AND FRAGMENT ION MASS */
+div.lorikeet .ionTable {
+    border-collapse:collapse;
+	border-color:#DDDDDD;
+}
+div.lorikeet .ionTable th {
+	background-color:#BDB76B;
+	border: 1px solid #666666;
+}
+div.lorikeet .ionTable td {
+	border: 1px solid #666666;
+	text-align: center;
+	background-color:#FFFFFF;
+	font-size: 8pt;
+}
+
+/* style for a cell containing a residue from the sequence */
+div.lorikeet .ionTable td.seq {
+	font-weight: bold;
+	background-color:#BDB76B;
+}
+
+/* style for cell containing a modified residue */
+div.lorikeet .ionTable td.modified{
+	background-color:gold;
+}
+
+/* style for cell containing the fragment indices */
+div.lorikeet .ionTable td.numCell {
+	background-color:#F5F5DC;
+	color:#777777;
+}
+
+
+/* style for cell containing a fragment m/z that matches a peak in the scan */
+div.lorikeet .ionTable td.matchIon {
+	font-weight:bold;
+	opacity:0.8;
+	filter: alpha(opacity=80); /*For IE*/
+	-moz-opacity:0.8; /*Old Mozilla browsers*/
+	color:white;
+}
+      
+
+/* THE FOLLOWING STYLES ARE FOR THE TABLE DISPLAYING VARIABLE MODIFICATIONS */
+div.lorikeet .varModsTable {
+    border-collapse:collapse;
+}
+
+div.lorikeet .varModsTable td {
+	border: 0px;
+	text-align: left;
+	font-size: 10pt;
+    padding: 1px 5px 1px 0px;
+}
+
+/*
+ * THE FOLLOWING STYLES ARE FOR THE SLIDERS CONTROLLING THE PLOT SIZE
+ */
+ 
+/*
+ * jQuery UI Slider @VERSION
+ *
+ * Copyright 2010, AUTHORS.txt (http://jqueryui.com/about)
+ * Dual licensed under the MIT or GPL Version 2 licenses.
+ * http://jquery.org/license
+ *
+ * http://docs.jquery.com/UI/Slider#theming
+ */
+.ui-slider { position: relative; text-align: left; }
+.ui-slider .ui-slider-handle { position: absolute; z-index: 2; width: 1.0em; height: 0.9em; cursor: default; }
+.ui-slider .ui-slider-range { position: absolute; z-index: 1; font-size: .7em; display: block; border: 0; background-position: 0 0;}
+
+.ui-slider-horizontal { height: .3em; }
+.ui-slider-horizontal .ui-slider-handle { top: -.3em; margin-left: -.6em; }
+.ui-slider-horizontal .ui-slider-range { top: 0; height: 100%; }
+.ui-slider-horizontal .ui-slider-range-min { left: 0; }
+.ui-slider-horizontal .ui-slider-range-max { right: 0; }
+
+.ui-corner-all { -moz-border-radius: 4px/*{cornerRadius}*/; -webkit-border-radius: 4px/*{cornerRadius}*/; border-radius: 4px/*{cornerRadius}*/; }
+.ui-state-default, .ui-widget-content .ui-state-default { border: 1px solid #d3d3d3/*{borderColorDefault}*/; 
+background-image: url('../images/lorikeet/slider_handle.png');
+background-repeat: no-repeat;
+font-weight: normal/*{fwDefault}*/; color: #555555/*{fcDefault}*/; }
+
+/* Component containers
+----------------------------------*/
+.ui-widget { }
+.ui-widget .ui-widget { }
+.ui-widget-content { border: 1px solid #888888/*{borderColorContent}*/; background: #CFCFCF/*{bgColorContent}*/ ; color: #111111/*{fcContent}*/; }
+.ui-widget-content a { color: #000000/*{fcContent}*/; }
