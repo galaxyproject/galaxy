@@ -42,6 +42,18 @@ To update an existing Galaxy repository run:
 
 See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
 
+Upgrade Warning for Admins
+==========================
+
+We have been simplifying the organization of our static and client content. As a result, the ``/static`` directory now
+only requires a single rule in your proxy (nginx, Apache, etc.) configuration. Previously, additional rules for
+``/static/scripts`` and ``/static/style`` were required. Both of these additional rules should be removed from your
+proxy server configuration when upgrading your Galaxy server to release 20.05.
+
+More information about proxy server configuration for Galaxy can be found in  `Proxying Galaxy with NGINX
+<https://docs.galaxyproject.org/en/release_20.05/admin/nginx.html>`__ and `Proxying Galaxy with Apache
+<https://docs.galaxyproject.org/en/release_20.05/admin/apache.html>`__.
+
 Release Notes
 ===========================================================
 
