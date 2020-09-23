@@ -11,6 +11,7 @@
                 :folder_id="folder_id"
                 :selected="selected"
                 :metadata="folder_metadata"
+                :isAllSelectedMode="isAllSelectedRenderMode"
             />
             <a class="btn btn-secondary btn-sm btn_open_folder" :href="parentFolder">..</a>
 
@@ -23,8 +24,8 @@
                 :items="folderContents"
                 :per-page="perPage"
                 selectable
-                :select-mode="selectMode"
-                @row-selected="onRowSelected"
+                no-select-on-click
+                @row-clicked="onRowClick"
                 ref="folder_content_table"
                 show-empty
             >
@@ -39,11 +40,20 @@
                 </template>
                 <template v-slot:head(selected)="">
                     <font-awesome-icon
+                        v-if="isAllSelected && !isAllSelectedRenderMode"
                         @click="toggleSelect"
                         class="select-checkbox cursor-pointer"
                         size="lg"
                         title="Check to select all datasets"
-                        :icon="isCheckedAll() ? ['far', 'check-square'] : ['far', 'square']"
+                        icon="minus-square"
+                    />
+                    <font-awesome-icon
+                        v-else
+                        @click="toggleSelect"
+                        class="select-checkbox cursor-pointer"
+                        size="lg"
+                        title="Check to select all datasets"
+                        :icon="isAllSelectedOnPage() && isAllSelectedRenderMode ? ['far', 'check-square'] : ['far', 'square']"
                     />
                 </template>
                 <template v-slot:cell(selected)="row">
@@ -297,6 +307,9 @@ export default {
             include_deleted: false,
             filterOn: [],
             search_text: "",
+            isAllSelectedRenderMode: false,
+            isAllSelected: false,
+            deselectedDatasets: []
         };
     },
     computed: {
@@ -327,9 +340,20 @@ export default {
                     this.search_text
                 )
                 .then((response) => {
+                    console.log(this.selected)
                     this.folderContents = response.folder_contents;
                     this.folder_metadata = response.metadata;
                     this.total_rows = response.metadata.total_rows;
+                    if (this.selected.length > 1) {
+                        Vue.nextTick(() => {
+                            this.selected.forEach(row => this.select_unselect_table_row(row.id))
+                        });
+                    }
+                    // if (this.isAllSelectedRenderMode) {
+                    //     Vue.nextTick(() => {
+                    //         this.selectAllRows();
+                    //     });
+                    // }
                     this.isBusy = false;
                 })
                 .catch((error) => {
@@ -356,7 +380,7 @@ export default {
                 }
             });
         },
-        isCheckedAll() {
+        isAllSelectedOnPage() {
             if (!this.$refs.folder_content_table) return false;
 
             // Since we cannot select new folders, toggle should clear all if all rows match, expect new folders
@@ -365,22 +389,38 @@ export default {
             this.$refs.folder_content_table.computedItems.forEach((row) => {
                 if (row.isNewFolder || row.deleted) unselectable++;
             });
-            return this.selected.length + unselectable == this.$refs.folder_content_table.computedItems.length;
+            const result = this.selected.length + unselectable === this.$refs.folder_content_table.computedItems.length
+            this.isAllSelectedRenderMode = result
+            return result;
         },
         toggleSelect() {
-            if (this.isCheckedAll()) {
+            if (this.isAllSelectedOnPage() && this.isAllSelectedRenderMode && this.isAllSelected) {
                 this.clearSelected();
             } else {
                 this.selectAllRows();
             }
+            this.isAllSelectedRenderMode = !this.isAllSelectedRenderMode;
+            this.isAllSelected = !this.isAllSelected;
         },
-        onRowSelected(items) {
-            // make new folders not selectable
-            // https://github.com/bootstrap-vue/bootstrap-vue/issues/3134#issuecomment-526810892
-            for (let i = 0; i < items.length; i++) {
-                if (items[i].isNewFolder || items[i].deleted) this.$refs.folder_content_table.unselectRow(i);
+        onRowClick(row) {
+            console.log(this.selected)
+            const selected_array_index = this.selected.findIndex(item => item.id === row.id)
+            if (selected_array_index > -1) {
+                this.selected.splice(selected_array_index, 1)
+                this.select_unselect_table_row(row.id, true)
+            } else {
+                if (!row.isNewFolder && !row.deleted) {
+                    this.select_unselect_table_row(row.id)
+                    this.selected.push(row)
+                }
             }
-            this.selected = items;
+        },
+        select_unselect_table_row(id, unselect = false) {
+            const index = this.$refs.folder_content_table.items.findIndex(row => row.id === id)
+            if (unselect)
+                this.$refs.folder_content_table.unselectRow(index);
+            else
+                this.$refs.folder_content_table.selectRow(index);
         },
         bytesToString(raw_size) {
             return Utils.bytesToString(raw_size);

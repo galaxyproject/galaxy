@@ -64,6 +64,7 @@
                             type="button"
                             class="primary-button dropdown-toggle add-to-history"
                             data-toggle="dropdown"
+                            :disabled="isAllSelectedMode"
                         >
                             <font-awesome-icon icon="book" />
                             Export to History <span class="caret"></span>
@@ -169,6 +170,10 @@ export default {
             required: true,
         },
         include_deleted: {
+            type: Boolean,
+            required: true,
+        },
+        isAllSelectedMode: {
             type: Boolean,
             required: true,
         },
