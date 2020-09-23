@@ -160,9 +160,9 @@ class DatasetsApiTestCase(ApiTestCase):
         update_while_incomplete_response = self._put(  # try updating datatype before upload is complete
             "histories/{history_id}/contents/{hda_id}".format(history_id=self.history_id, hda_id=queued_id),
             {'datatype': 'tabular'})
-        self._assert_status_code_is(update_while_incomplete_response, 500)
+        self._assert_status_code_is(update_while_incomplete_response, 400)
 
-        self.dataset_populator.wait_for_history(self.history_id)  # now wait for upload to complete
+        self.dataset_populator.wait_for_history_jobs(self.history_id)  # now wait for upload to complete
 
         successful_updated_hda_response = self._put(
             "histories/{history_id}/contents/{hda_id}".format(history_id=self.history_id, hda_id=hda_id),
