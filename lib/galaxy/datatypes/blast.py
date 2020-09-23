@@ -236,13 +236,13 @@ class _BlastDb(Data):
         raise NotImplementedError("Can't split BLAST databases")
 
 
-class BlastNucDb(_BlastDb, Data):
+class BlastNucDb(_BlastDb):
     """Class for nucleotide BLAST database files."""
     file_ext = 'blastdbn'
     composite_type = 'basic'
 
     def __init__(self, **kwd):
-        Data.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.add_composite_file('blastdb.nhr', is_binary=True)  # sequence headers
         self.add_composite_file('blastdb.nin', is_binary=True)  # index file
         self.add_composite_file('blastdb.nsq', is_binary=True)  # nucleotide sequences
@@ -263,13 +263,13 @@ class BlastNucDb(_BlastDb, Data):
 # The previous 3 lines should be repeated for each WriteDB column, with filename extensions like ('.nba', '.nbb', '.nbc'), ('.nca', '.ncb', '.ncc'), etc.
 
 
-class BlastProtDb(_BlastDb, Data):
+class BlastProtDb(_BlastDb):
     """Class for protein BLAST database files."""
     file_ext = 'blastdbp'
     composite_type = 'basic'
 
     def __init__(self, **kwd):
-        Data.__init__(self, **kwd)
+        super().__init__(**kwd)
 # Component file comments are as in BlastNucDb except where noted
         self.add_composite_file('blastdb.phr', is_binary=True)
         self.add_composite_file('blastdb.pin', is_binary=True)
@@ -287,13 +287,13 @@ class BlastProtDb(_BlastDb, Data):
 # The last 3 lines should be repeated for each WriteDB column, with filename extensions like ('.pba', '.pbb', '.pbc'), ('.pca', '.pcb', '.pcc'), etc.
 
 
-class BlastDomainDb(_BlastDb, Data):
+class BlastDomainDb(_BlastDb):
     """Class for domain BLAST database files."""
     file_ext = 'blastdbd'
     composite_type = 'basic'
 
     def __init__(self, **kwd):
-        Data.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.add_composite_file('blastdb.phr', is_binary=True)
         self.add_composite_file('blastdb.pin', is_binary=True)
         self.add_composite_file('blastdb.psq', is_binary=True)
@@ -327,7 +327,7 @@ class LastDb(Data):
             return "LAST database (multiple files)"
 
     def __init__(self, **kwd):
-        Data.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.add_composite_file('lastdb.bck', is_binary=True)
         self.add_composite_file('lastdb.des', description="Description file", is_binary=False)
         self.add_composite_file('lastdb.prj', description="Project resume file", is_binary=False)
@@ -337,13 +337,13 @@ class LastDb(Data):
         self.add_composite_file('lastdb.tis', is_binary=True)
 
 
-class BlastNucDb5(_BlastDb, Data):
+class BlastNucDb5(_BlastDb):
     """Class for nucleotide BLAST database files."""
     file_ext = 'blastdbn5'
     composite_type = 'basic'
 
     def __init__(self, **kwd):
-        Data.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.add_composite_file('blastdb.nhr', is_binary=True)  # sequence headers
         self.add_composite_file('blastdb.nin', is_binary=True)  # index file
         self.add_composite_file('blastdb.nsq', is_binary=True)  # nucleotide sequences
@@ -364,13 +364,13 @@ class BlastNucDb5(_BlastDb, Data):
 # The previous 3 lines should be repeated for each WriteDB column, with filename extensions like ('.nba', '.nbb', '.nbc'), ('.nca', '.ncb', '.ncc'), etc.
 
 
-class BlastProtDb5(_BlastDb, Data):
+class BlastProtDb5(_BlastDb):
     """Class for protein BLAST database files."""
     file_ext = 'blastdbp5'
     composite_type = 'basic'
 
     def __init__(self, **kwd):
-        Data.__init__(self, **kwd)
+        super().__init__(**kwd)
 # Component file comments are as in BlastNucDb except where noted
         self.add_composite_file('blastdb.phr', is_binary=True)
         self.add_composite_file('blastdb.pin', is_binary=True)
@@ -388,13 +388,13 @@ class BlastProtDb5(_BlastDb, Data):
 # The last 3 lines should be repeated for each WriteDB column, with filename extensions like ('.pba', '.pbb', '.pbc'), ('.pca', '.pcb', '.pcc'), etc.
 
 
-class BlastDomainDb5(_BlastDb, Data):
+class BlastDomainDb5(_BlastDb):
     """Class for domain BLAST database files."""
     file_ext = 'blastdbd5'
     composite_type = 'basic'
 
     def __init__(self, **kwd):
-        Data.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.add_composite_file('blastdb.phr', is_binary=True)
         self.add_composite_file('blastdb.pin', is_binary=True)
         self.add_composite_file('blastdb.psq', is_binary=True)

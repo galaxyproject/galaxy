@@ -2,12 +2,12 @@ import logging
 import os
 import re
 
-from galaxy.datatypes import (
-    data,
-    metadata
-)
+from galaxy.datatypes import metadata
 from galaxy.datatypes.binary import Binary
-from galaxy.datatypes.data import get_file_peek
+from galaxy.datatypes.data import (
+    get_file_peek,
+    Text,
+)
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
@@ -41,7 +41,7 @@ def count_lines(filename, non_empty=False):
     return int(out.split()[0])
 
 
-class GenericMolFile(data.Text):
+class GenericMolFile(Text):
     """
     Abstract class for most of the molecule files.
     """
@@ -347,7 +347,7 @@ class FPS(GenericMolFile):
         """
         if len(split_files) == 1:
             # For one file only, use base class method (move/copy)
-            return data.Text.merge(split_files, output_file)
+            return Text.merge(split_files, output_file)
         if not split_files:
             raise ValueError("No fps files given, %r, to merge into %s"
                              % (split_files, output_file))
@@ -379,7 +379,7 @@ class OBFS(Binary):
             A Fastsearch Index consists of a binary file with the fingerprints
             and a pointer the actual molecule file.
         """
-        Binary.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.add_composite_file('molecule.fs', is_binary=True,
                                 description='OpenBabel Fastsearch Index')
         self.add_composite_file('molecule.sdf', optional=True,
@@ -673,7 +673,7 @@ class PQR(GenericMolFile):
             dataset.blurb = 'file purged from disk'
 
 
-class grd(data.Text):
+class grd(Text):
     file_ext = "grd"
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -910,7 +910,7 @@ class CML(GenericXml):
         """
         if len(split_files) == 1:
             # For one file only, use base class method (move/copy)
-            return data.Text.merge(split_files, output_file)
+            return Text.merge(split_files, output_file)
         if not split_files:
             raise ValueError("Given no CML files, %r, to merge into %s"
                              % (split_files, output_file))

@@ -561,7 +561,7 @@ class SnpEffDb(Text):
     MetadataElement(name="annotation", default=[], desc="Annotation Names", readonly=True, visible=True, no_value=[], optional=True)
 
     def __init__(self, **kwd):
-        Text.__init__(self, **kwd)
+        super().__init__(**kwd)
 
     # The SnpEff version line was added in SnpEff version 4.1
     def getSnpeffVersionFromFile(self, path):
@@ -578,7 +578,7 @@ class SnpEffDb(Text):
         return snpeff_version
 
     def set_meta(self, dataset, **kwd):
-        Text.set_meta(self, dataset, **kwd)
+        super().set_meta(dataset, **kwd)
         data_dir = dataset.extra_files_path
         # search data_dir/genome_version for files
         regulation_pattern = 'regulation_(.+).bin'
@@ -643,12 +643,9 @@ class SnpSiftDbNSFP(Text):
     """
 
     def __init__(self, **kwd):
-        Text.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.add_composite_file('%s.gz', description='dbNSFP bgzip', substitute_name_with_metadata='reference_name', is_binary=True)
         self.add_composite_file('%s.gz.tbi', description='Tabix Index File', substitute_name_with_metadata='reference_name', is_binary=True)
-
-    def init_meta(self, dataset, copy_from=None):
-        Text.init_meta(self, dataset, copy_from=copy_from)
 
     def generate_primary_file(self, dataset=None):
         """

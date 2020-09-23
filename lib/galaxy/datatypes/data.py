@@ -1042,13 +1042,6 @@ class Newick(Text):
     edam_format = "format_1910"
     file_ext = "newick"
 
-    def __init__(self, **kwd):
-        """Initialize foobar datatype"""
-        Text.__init__(self, **kwd)
-
-    def init_meta(self, dataset, copy_from=None):
-        Text.init_meta(self, dataset, copy_from=copy_from)
-
     def sniff(self, filename):
         """ Returning false as the newick format is too general and cannot be sniffed."""
         return False
@@ -1057,7 +1050,6 @@ class Newick(Text):
         """
         Returns a list of visualizations for datatype.
         """
-
         return ['phyloviz']
 
 
@@ -1068,13 +1060,6 @@ class Nexus(Text):
     edam_format = "format_1912"
     file_ext = "nex"
 
-    def __init__(self, **kwd):
-        """Initialize foobar datatype"""
-        Text.__init__(self, **kwd)
-
-    def init_meta(self, dataset, copy_from=None):
-        Text.init_meta(self, dataset, copy_from=copy_from)
-
     def sniff_prefix(self, file_prefix):
         """All Nexus Files Simply puts a '#NEXUS' in its first line"""
         return file_prefix.string_io().read(6).upper() == "#NEXUS"
@@ -1083,7 +1068,6 @@ class Nexus(Text):
         """
         Returns a list of visualizations for datatype.
         """
-
         return ['phyloviz']
 
 

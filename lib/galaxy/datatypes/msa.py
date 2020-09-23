@@ -129,7 +129,7 @@ class HmmerPress(Binary):
             return "HMMER3 database (multiple files)"
 
     def __init__(self, **kwd):
-        Binary.__init__(self, **kwd)
+        super().__init__(**kwd)
         # Binary model
         self.add_composite_file('model.hmm.h3m', is_binary=True)
         # SSI index for binary model

@@ -56,11 +56,11 @@ class GenomeGraphs(Tabular):
         """
         Initialize gg datatype, by adding UCSC display apps
         """
-        Tabular.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.add_display_app('ucsc', 'Genome Graph', 'as_ucsc_display_file', 'ucsc_links')
 
     def set_meta(self, dataset, **kwd):
-        Tabular.set_meta(self, dataset, **kwd)
+        super().set_meta(dataset, **kwd)
         dataset.metadata.markerCol = 1
         header = open(dataset.file_name).readlines()[0].strip().split('\t')
         dataset.metadata.columns = len(header)
@@ -121,7 +121,7 @@ class GenomeGraphs(Tabular):
                     ret_val.append((site_name, link))
         return ret_val
 
-    def make_html_table(self, dataset, skipchars=[]):
+    def make_html_table(self, dataset):
         """
         Create HTML table, used for displaying peek
         """
@@ -160,9 +160,9 @@ class GenomeGraphs(Tabular):
         """
         with open(dataset.file_name) as infile:
             next(infile)  # header
-            for i, row in enumerate(infile):
+            for row in infile:
                 ll = row.strip().split('\t')[1:]  # first is alpha feature identifier
-                for j, x in enumerate(ll):
+                for x in ll:
                     x = float(x)
         return DatatypeValidation.validated()
 
@@ -214,7 +214,7 @@ class rgTabList(Tabular):
         """
         Initialize featurelistt datatype
         """
-        Tabular.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.column_names = []
 
     def display_peek(self, dataset):
@@ -240,7 +240,7 @@ class rgSampleList(rgTabList):
         """
         Initialize samplelist datatype
         """
-        rgTabList.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.column_names[0] = 'FID'
         self.column_names[1] = 'IID'
         # this is what Plink wants as at 2009
@@ -257,7 +257,7 @@ class rgFeatureList(rgTabList):
 
     def __init__(self, **kwd):
         """Initialize featurelist datatype"""
-        rgTabList.__init__(self, **kwd)
+        super().__init__(**kwd)
         for i, s in enumerate(['#FeatureId', 'Chr', 'Genpos', 'Mappos']):
             self.column_names[i] = s
 
@@ -297,7 +297,7 @@ class Rgenetics(Html):
         efp = dataset.extra_files_path
         flist = os.listdir(efp)
         rval = ['<html><head><title>Files for Composite Dataset {}</title></head><body><p/>Composite {} contains:<p/><ul>'.format(dataset.name, dataset.name)]
-        for i, fname in enumerate(flist):
+        for fname in flist:
             sfname = os.path.split(fname)[-1]
             f, e = os.path.splitext(fname)
             rval.append('<li><a href="{}">{}</a></li>'.format(sfname, sfname))
@@ -315,7 +315,7 @@ class Rgenetics(Html):
         for lped/pbed eg
 
         """
-        Html.set_meta(self, dataset, **kwd)
+        super().set_meta(dataset, **kwd)
         if not kwd.get('overwrite'):
             if verbose:
                 gal_Log.debug('@@@ rgenetics set_meta called with overwrite = False')
@@ -361,8 +361,8 @@ class SNPMatrix(Rgenetics):
     def sniff(self, filename):
         """ need to check the file header hex code
         """
-        infile = open(filename, "b")
-        head = infile.read(16)
+        with open(filename, "b") as infile:
+            head = infile.read(16)
         head = [hex(x) for x in head]
         if head != '':
             return False
@@ -377,7 +377,7 @@ class Lped(Rgenetics):
     file_ext = "lped"
 
     def __init__(self, **kwd):
-        Rgenetics.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.add_composite_file('%s.ped',
                                 description='Pedigree File',
                                 substitute_name_with_metadata='base_name',
@@ -395,7 +395,7 @@ class Pphe(Rgenetics):
     file_ext = "pphe"
 
     def __init__(self, **kwd):
-        Rgenetics.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.add_composite_file('%s.pphe',
                                 description='Plink Phenotype File',
                                 substitute_name_with_metadata='base_name',
@@ -410,7 +410,7 @@ class Fphe(Rgenetics):
     file_ext = "fphe"
 
     def __init__(self, **kwd):
-        Rgenetics.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.add_composite_file('%s.fphe',
                                 description='FBAT Phenotype File',
                                 substitute_name_with_metadata='base_name')
@@ -423,7 +423,7 @@ class Phe(Rgenetics):
     file_ext = "phe"
 
     def __init__(self, **kwd):
-        Rgenetics.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.add_composite_file('%s.phe',
                                 description='Phenotype File',
                                 substitute_name_with_metadata='base_name',
@@ -438,7 +438,7 @@ class Fped(Rgenetics):
     file_ext = "fped"
 
     def __init__(self, **kwd):
-        Rgenetics.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.add_composite_file('%s.fped', description='FBAT format pedfile',
                                 substitute_name_with_metadata='base_name',
                                 is_binary=False)
@@ -451,7 +451,7 @@ class Pbed(Rgenetics):
     file_ext = "pbed"
 
     def __init__(self, **kwd):
-        Rgenetics.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.add_composite_file('%s.bim', substitute_name_with_metadata='base_name', is_binary=False)
         self.add_composite_file('%s.bed', substitute_name_with_metadata='base_name', is_binary=True)
         self.add_composite_file('%s.fam', substitute_name_with_metadata='base_name', is_binary=False)
@@ -466,7 +466,7 @@ class ldIndep(Rgenetics):
     file_ext = "ldreduced"
 
     def __init__(self, **kwd):
-        Rgenetics.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.add_composite_file('%s.bim', substitute_name_with_metadata='base_name', is_binary=False)
         self.add_composite_file('%s.bed', substitute_name_with_metadata='base_name', is_binary=True)
         self.add_composite_file('%s.fam', substitute_name_with_metadata='base_name', is_binary=False)
@@ -481,7 +481,7 @@ class Eigenstratgeno(Rgenetics):
     file_ext = "eigenstratgeno"
 
     def __init__(self, **kwd):
-        Rgenetics.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.add_composite_file('%s.eigenstratgeno', substitute_name_with_metadata='base_name', is_binary=False)
         self.add_composite_file('%s.ind', substitute_name_with_metadata='base_name', is_binary=False)
         self.add_composite_file('%s.map', substitute_name_with_metadata='base_name', is_binary=False)
@@ -495,7 +495,7 @@ class Eigenstratpca(Rgenetics):
     file_ext = "eigenstratpca"
 
     def __init__(self, **kwd):
-        Rgenetics.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.add_composite_file('%s.eigenstratpca',
                                 description='Eigenstrat PCA file', substitute_name_with_metadata='base_name')
 
@@ -530,14 +530,14 @@ class IdeasPre(Html):
     file_ext = 'ideaspre'
 
     def __init__(self, **kwd):
-        Html.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.add_composite_file('chromosome_windows.txt', description='Chromosome window positions', is_binary=False, optional=True)
         self.add_composite_file('chromosomes.bed', description='Bed file specifying window positions', is_binary=False, optional=True)
         self.add_composite_file('IDEAS_input_config.txt', description='IDEAS input config', is_binary=False)
         self.add_composite_file('tmp.tar.gz', description='Compressed archive of compressed bed files', is_binary=True)
 
     def set_meta(self, dataset, **kwd):
-        Html.set_meta(self, dataset, **kwd)
+        super().set_meta(dataset, **kwd)
         for fname in os.listdir(dataset.extra_files_path):
             if fname.startswith("chromosomes"):
                 dataset.metadata.chrom_bed = os.path.join(dataset.extra_files_path, fname)
@@ -553,7 +553,7 @@ class IdeasPre(Html):
         rval = ['<html><head></head><body>']
         rval.append('<h3>Files prepared for IDEAS</h3>')
         rval.append('<ul>')
-        for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
+        for composite_name in self.get_composite_files(dataset=dataset).keys():
             fn = composite_name
             rval.append('<li><a href="{}>{}</a></li>'.format(fn, fn))
         rval.append('</ul></body></html>\n')
@@ -597,7 +597,7 @@ class RexpBase(Html):
     composite_type = 'auto_primary_file'
 
     def __init__(self, **kwd):
-        Html.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.add_composite_file('%s.pheno', description='Phenodata tab text file',
                                 substitute_name_with_metadata='base_name', is_binary=False)
 
@@ -612,7 +612,7 @@ class RexpBase(Html):
         """Returns the mime type of the datatype"""
         return 'text/html'
 
-    def get_phecols(self, phenolist=[], maxConc=20):
+    def get_phecols(self, phenolist, maxConc=20):
         """
         sept 2009: cannot use whitespace to split - make a more complex structure here
         and adjust the methods that rely on this structure
@@ -750,7 +750,7 @@ class RexpBase(Html):
         bn = dataset.metadata.base_name
         flist = os.listdir(dataset.extra_files_path)
         rval = ['<html><head><title>Files for Composite Dataset %s</title></head><p/>Comprises the following files:<p/><ul>' % (bn)]
-        for i, fname in enumerate(flist):
+        for fname in flist:
             sfname = os.path.split(fname)[-1]
             rval.append('<li><a href="{}">{}</a>'.format(sfname, sfname))
         rval.append('</ul></html>')
@@ -768,7 +768,7 @@ class RexpBase(Html):
         from a BioC eSet or affybatch.
 
         """
-        Html.set_meta(self, dataset, **kwd)
+        super().set_meta(dataset, **kwd)
         try:
             flist = os.listdir(dataset.extra_files_path)
         except Exception:
@@ -854,7 +854,7 @@ class Affybatch(RexpBase):
     file_ext = "affybatch"
 
     def __init__(self, **kwd):
-        RexpBase.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.add_composite_file('%s.affybatch',
                                 description='AffyBatch R object saved to file',
                                 substitute_name_with_metadata='base_name', is_binary=True)
@@ -867,7 +867,7 @@ class Eset(RexpBase):
     file_ext = "eset"
 
     def __init__(self, **kwd):
-        RexpBase.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.add_composite_file('%s.eset',
                                 description='ESet R object saved to file',
                                 substitute_name_with_metadata='base_name', is_binary=True)
@@ -880,7 +880,7 @@ class MAlist(RexpBase):
     file_ext = "malist"
 
     def __init__(self, **kwd):
-        RexpBase.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.add_composite_file('%s.malist',
                                 description='MAlist R object saved to file',
                                 substitute_name_with_metadata='base_name', is_binary=True)
@@ -896,7 +896,7 @@ class LinkageStudies(Text):
     ]
 
     def __init__(self, **kwd):
-        Text.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.max_lines = 10
 
 
