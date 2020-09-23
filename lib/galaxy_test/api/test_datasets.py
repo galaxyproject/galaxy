@@ -157,7 +157,7 @@ class DatasetsApiTestCase(ApiTestCase):
         )
         queued_id = run_response.json()["outputs"][0]["id"]
 
-        update_while_incomplete_response = self._put(  # try updating datatype before upload is complete
+        update_while_incomplete_response = self._put(  # try updating datatype while used as output of a running job
             "histories/{history_id}/contents/{hda_id}".format(history_id=self.history_id, hda_id=queued_id),
             {'datatype': 'tabular'})
         self._assert_status_code_is(update_while_incomplete_response, 400)
