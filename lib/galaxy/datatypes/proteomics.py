@@ -22,7 +22,6 @@ class Wiff(Binary):
     edam_data = "data_2536"
     edam_format = "format_3710"
     file_ext = 'wiff'
-    allow_datatype_change = False
     composite_type = 'auto_primary_file'
 
     def __init__(self, **kwd):
@@ -970,7 +969,6 @@ class ImzML(Binary):
     """
     edam_format = "format_3682"
     file_ext = 'imzml'
-    allow_datatype_change = False
     composite_type = 'auto_primary_file'
 
     def __init__(self, **kwd):
@@ -1008,7 +1006,6 @@ class Analyze75(Binary):
         http://www.imzml.org
     """
     file_ext = 'analyze75'
-    allow_datatype_change = False
     composite_type = 'auto_primary_file'
 
     def __init__(self, **kwd):

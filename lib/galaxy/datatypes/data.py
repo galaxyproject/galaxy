@@ -122,13 +122,13 @@ class Data(metaclass=DataMeta):
     # The dataset contains binary data --> do not space_to_tab or convert newlines, etc.
     # Allow binary file uploads of this type when True.
     is_binary = True
-    # Allow user to change between this datatype and others. If False, this datatype
-    # cannot be changed from or into.
-    allow_datatype_change = True
     # Composite datatypes
     composite_type = None
     composite_files = OrderedDict()
     primary_file_name = 'index'
+    # Allow user to change between this datatype and others. If left to None,
+    # datatype change is allowed if the datatype is not composite.
+    allow_datatype_change = None
     # A per datatype setting (inherited): max file size (in bytes) for setting optional metadata
     _max_optional_metadata_filesize = None
 
@@ -144,6 +144,16 @@ class Data(metaclass=DataMeta):
         self.supported_display_apps = self.supported_display_apps.copy()
         self.composite_files = self.composite_files.copy()
         self.display_applications = OrderedDict()
+
+    @classmethod
+    def is_datatype_change_allowed(cls):
+        """
+        Returns the value of the `allow_datatype_change` class attribute if set
+        in a subclass, or True iff the datatype is not composite.
+        """
+        if cls.allow_datatype_change is not None:
+            return cls.allow_datatype_change
+        return cls.composite_type is None
 
     def get_raw_data(self, dataset):
         """Returns the full data. To stream it open the file_name and read/write as needed"""

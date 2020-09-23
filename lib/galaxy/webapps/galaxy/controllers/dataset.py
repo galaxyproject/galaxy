@@ -47,6 +47,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         super().__init__(app)
         self.history_manager = managers.histories.HistoryManager(app)
         self.hda_manager = managers.hdas.HDAManager(app)
+        self.hda_deserializer = managers.hdas.HDADeserializer(app)
 
     def _get_job_for_dataset(self, trans, dataset_id):
         '''
@@ -198,7 +199,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 return self.message_exception(trans, 'Please wait until this dataset finishes uploading before attempting to edit its metadata.')
             # let's not overwrite the imported datatypes module with the variable datatypes?
             # the built-in 'id' is overwritten in lots of places as well
-            ldatatypes = [(dtype_name, dtype_name) for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.items() if dtype_value.allow_datatype_change]
+            ldatatypes = [(dtype_name, dtype_name) for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.items() if dtype_value.is_datatype_change_allowed()]
             ldatatypes.sort()
             all_roles = [(r.name, trans.security.encode_id(r.id)) for r in trans.app.security_agent.get_legitimate_roles(trans, data.dataset, 'root')]
             data_metadata = [(name, spec) for name, spec in data.metadata.spec.items()]
@@ -258,7 +259,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 'help'      : 'This will create a new dataset with the contents of this dataset converted to a new format.',
                 'options'   : conversion_options
             }]
-            # datatype changeing
+            # datatype changing
             datatype_options = [(ext_name, ext_id) for ext_id, ext_name in ldatatypes]
             datatype_disable = len(datatype_options) == 0
             datatype_inputs = [{
@@ -362,20 +363,14 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         elif operation == 'datatype':
             # The user clicked the Save button on the 'Change data type' form
             datatype = payload.get('datatype')
-            if data.datatype.allow_datatype_change and trans.app.datatypes_registry.get_datatype_by_extension(datatype).allow_datatype_change:
-                # prevent modifying datatype when dataset is queued or running as input/output
-                if not __ok_to_edit_metadata(data.id):
-                    return self.message_exception(trans, 'This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them.')
-                else:
-                    trans.app.datatypes_registry.change_datatype(data, datatype)
-                    trans.sa_session.flush()
-                    trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data}, overwrite=False)  # overwrite is False as per existing behavior
-                    message = 'Changed the type to %s.' % datatype
-            else:
-                return self.message_exception(trans, 'You are unable to change datatypes in this manner. Changing {} to {} is not allowed.'.format(data.extension, datatype))
+            try:
+                self.hda_deserializer.deserialize(data, {'datatype': datatype}, trans=trans)
+                message = 'Changed the type to %s.' % datatype
+            except Exception as e:
+                return self.message_exception(trans, util.unicodify(e))
         elif operation == 'datatype_detect':
             # The user clicked the 'Detect datatype' button on the 'Change data type' form
-            if data.datatype.allow_datatype_change:
+            if data.datatype.is_datatype_change_allowed():
                 # prevent modifying datatype when dataset is queued or running as input/output
                 if not __ok_to_edit_metadata(data.id):
                     return self.message_exception(trans, 'This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them.')

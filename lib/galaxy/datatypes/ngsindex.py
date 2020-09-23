@@ -19,7 +19,6 @@ class BowtieIndex(Html):
     MetadataElement(name="sequence_space", desc="sequence_space for this index set", default='unknown', set_in_upload=True, readonly=True)
 
     composite_type = 'auto_primary_file'
-    allow_datatype_change = False
 
     def generate_primary_file(self, dataset=None):
         """

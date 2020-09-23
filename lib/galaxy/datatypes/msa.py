@@ -110,7 +110,6 @@ class Hmmer3(Hmmer):
 class HmmerPress(Binary):
     """Class for hmmpress database files."""
     file_ext = 'hmmpress'
-    allow_datatype_change = False
     composite_type = 'basic'
 
     def set_peek(self, dataset, is_multi_byte=False):

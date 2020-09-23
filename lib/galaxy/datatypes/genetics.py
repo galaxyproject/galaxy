@@ -273,7 +273,6 @@ class Rgenetics(Html):
                     readonly=True, set_in_upload=True)
 
     composite_type = 'auto_primary_file'
-    allow_datatype_change = False
     file_ext = 'rgenetics'
 
     def generate_primary_file(self, dataset=None):
@@ -528,7 +527,6 @@ class IdeasPre(Html):
     MetadataElement(name="tmp_archive", desc="Compressed archive of compressed bed files", default=None, readonly=True)
 
     composite_type = 'auto_primary_file'
-    allow_datatype_change = False
     file_ext = 'ideaspre'
 
     def __init__(self, **kwd):
@@ -597,7 +595,6 @@ class RexpBase(Html):
     file_ext = 'rexpbase'
     html_table = None
     composite_type = 'auto_primary_file'
-    allow_datatype_change = False
 
     def __init__(self, **kwd):
         Html.__init__(self, **kwd)

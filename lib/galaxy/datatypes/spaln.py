@@ -14,7 +14,6 @@ verbose = True
 
 
 class _SpalnDb(Data):
-    allow_datatype_change = False
     composite_type = "auto_primary_file"
 
     MetadataElement(

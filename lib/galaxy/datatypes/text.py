@@ -630,7 +630,6 @@ class SnpSiftDbNSFP(Text):
     MetadataElement(name="annotation", default=[], desc="Annotation Names", readonly=True, visible=True, no_value=[])
     file_ext = "snpsiftdbnsfp"
     composite_type = 'auto_primary_file'
-    allow_datatype_change = False
     """
     ## The dbNSFP file is a tabular file with 1 header line
     ## The first 4 columns are required to be: chrom	pos	ref	alt

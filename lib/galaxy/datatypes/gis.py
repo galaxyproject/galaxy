@@ -12,7 +12,6 @@ class Shapefile(Binary):
 
     composite_type = 'auto_primary_file'
     file_ext = "shp"
-    allow_datatype_change = False
 
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)

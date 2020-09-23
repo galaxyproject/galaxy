@@ -136,7 +136,6 @@ class Velvet(Html):
     MetadataElement(name="long_reads", desc="has long reads", default="False", readonly=False, set_in_upload=True)
     MetadataElement(name="short2_reads", desc="has 2nd short reads", default="False", readonly=False, set_in_upload=True)
     composite_type = 'auto_primary_file'
-    allow_datatype_change = False
     file_ext = 'velvet'
 
     def __init__(self, **kwd):

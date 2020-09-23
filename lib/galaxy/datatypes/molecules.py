@@ -370,7 +370,6 @@ class OBFS(Binary):
     """OpenBabel Fastsearch format (fs)."""
     file_ext = 'obfs'
     composite_type = 'basic'
-    allow_datatype_change = False
 
     MetadataElement(name="base_name", default='OpenBabel Fastsearch Index',
                     readonly=True, visible=True, optional=True,)

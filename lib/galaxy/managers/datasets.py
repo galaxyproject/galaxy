@@ -354,7 +354,7 @@ class DatasetAssociationManager(base.ModelManager,
     def detect_datatype(self, trans, dataset_assoc):
         """Sniff and assign the datatype to a given dataset association (ldda or hda)"""
         data = trans.sa_session.query(self.model_class).get(dataset_assoc.id)
-        if data.datatype.allow_datatype_change:
+        if data.datatype.is_datatype_change_allowed():
             if not self.ok_to_edit_metadata(data.id):
                 raise exceptions.ItemAccessibilityException('This dataset is currently being used as input or output. You cannot change datatype until the jobs have completed or you have canceled them.')
             else:
@@ -684,11 +684,12 @@ class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableD
         return unwrapped_val
 
     def deserialize_datatype(self, item, key, val, **context):
-        if not item.datatype.allow_datatype_change:
+        if not item.datatype.is_datatype_change_allowed():
             raise exceptions.RequestParameterInvalidException("The current datatype does not allow datatype changes.")
-        if not self.app.datatypes_registry.get_datatype_by_extension(val):
+        target_datatype = self.app.datatypes_registry.get_datatype_by_extension(val)
+        if not target_datatype:
             raise exceptions.RequestParameterInvalidException("The target datatype does not exist.")
-        if not self.app.datatypes_registry.get_datatype_by_extension(val).allow_datatype_change:
+        if not target_datatype.is_datatype_change_allowed():
             raise exceptions.RequestParameterInvalidException("The target datatype does not allow datatype changes.")
         if not DatasetAssociationManager(self.app).ok_to_edit_metadata(item.dataset_id):
             raise exceptions.RequestParameterInvalidException("Dataset metadata could not be updated because it is used as input or output of a running job.")

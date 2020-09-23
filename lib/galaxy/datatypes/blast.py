@@ -239,7 +239,6 @@ class _BlastDb(Data):
 class BlastNucDb(_BlastDb, Data):
     """Class for nucleotide BLAST database files."""
     file_ext = 'blastdbn'
-    allow_datatype_change = False
     composite_type = 'basic'
 
     def __init__(self, **kwd):
@@ -267,7 +266,6 @@ class BlastNucDb(_BlastDb, Data):
 class BlastProtDb(_BlastDb, Data):
     """Class for protein BLAST database files."""
     file_ext = 'blastdbp'
-    allow_datatype_change = False
     composite_type = 'basic'
 
     def __init__(self, **kwd):
@@ -292,7 +290,6 @@ class BlastProtDb(_BlastDb, Data):
 class BlastDomainDb(_BlastDb, Data):
     """Class for domain BLAST database files."""
     file_ext = 'blastdbd'
-    allow_datatype_change = False
     composite_type = 'basic'
 
     def __init__(self, **kwd):
@@ -311,7 +308,6 @@ class BlastDomainDb(_BlastDb, Data):
 class LastDb(Data):
     """Class for LAST database files."""
     file_ext = 'lastdb'
-    allow_datatype_change = False
     composite_type = 'basic'
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -344,7 +340,6 @@ class LastDb(Data):
 class BlastNucDb5(_BlastDb, Data):
     """Class for nucleotide BLAST database files."""
     file_ext = 'blastdbn5'
-    allow_datatype_change = False
     composite_type = 'basic'
 
     def __init__(self, **kwd):
@@ -372,7 +367,6 @@ class BlastNucDb5(_BlastDb, Data):
 class BlastProtDb5(_BlastDb, Data):
     """Class for protein BLAST database files."""
     file_ext = 'blastdbp5'
-    allow_datatype_change = False
     composite_type = 'basic'
 
     def __init__(self, **kwd):
@@ -397,7 +391,6 @@ class BlastProtDb5(_BlastDb, Data):
 class BlastDomainDb5(_BlastDb, Data):
     """Class for domain BLAST database files."""
     file_ext = 'blastdbd5'
-    allow_datatype_change = False
     composite_type = 'basic'
 
     def __init__(self, **kwd):
