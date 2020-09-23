@@ -691,7 +691,7 @@ class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableD
         if not self.app.datatypes_registry.get_datatype_by_extension(val).allow_datatype_change:
             raise exceptions.RequestParameterInvalidException("The target datatype does not allow datatype changes.")
         if not DatasetAssociationManager(self.app).ok_to_edit_metadata(item.dataset_id):
-            raise Exception("Dataset metadata could not be updated because it is used as input or output of a running job.")
+            raise exceptions.RequestParameterInvalidException("Dataset metadata could not be updated because it is used as input or output of a running job.")
         item.change_datatype(val)
         context['trans'].sa_session.flush()
         self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(self.app.datatypes_registry.set_external_metadata_tool, context['trans'], incoming={'input1': item}, overwrite=False)  # overwrite is False as per existing behavior
