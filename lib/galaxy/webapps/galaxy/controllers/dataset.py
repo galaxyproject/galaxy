@@ -328,9 +328,6 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
     @web.legacy_expose_api_anonymous
     def set_edit(self, trans, payload=None, **kwd):
         """Allows user to modify parameters of an HDA."""
-        def __ok_to_edit_metadata(dataset_id):
-            return self.hda_manager.ok_to_edit_metadata(dataset_id)
-
         status = 'success'
         operation = payload.get('operation')
         dataset_id = payload.get('dataset_id')
@@ -342,7 +339,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             # The user clicked the Save button on the 'Edit Attributes' form
             data.name = payload.get('name')
             data.info = payload.get('info')
-            if __ok_to_edit_metadata(data.id):
+            if data.ok_to_edit_metadata():
                 # The following for loop will save all metadata_spec items
                 for name, spec in data.datatype.metadata_spec.items():
                     if not spec.get('readonly'):
@@ -372,7 +369,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             # The user clicked the 'Detect datatype' button on the 'Change data type' form
             if data.datatype.is_datatype_change_allowed():
                 # prevent modifying datatype when dataset is queued or running as input/output
-                if not __ok_to_edit_metadata(data.id):
+                if not data.ok_to_edit_metadata():
                     return self.message_exception(trans, 'This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them.')
                 else:
                     path = data.dataset.file_name
