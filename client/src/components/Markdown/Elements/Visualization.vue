@@ -1,7 +1,8 @@
 <template>
     <div class="w-50 p-2 float-left">
         <b-card body-class="embed-responsive embed-responsive-4by3">
-            <div v-if="error" class="m-2">{{ error }}</div>
+            <LoadingSpan v-if="loading" class="m-2" message="Loading Visualization" />
+            <div v-else-if="error" class="m-2">{{ error }}</div>
             <iframe v-else class="embed-responsive-item" :src="visualizationUrl" />
         </b-card>
     </div>
@@ -11,11 +12,15 @@
 import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import LoadingSpan from "components/LoadingSpan";
 import { getAppRoot } from "onload/loadConfig";
 
 Vue.use(BootstrapVue);
 
 export default {
+    components: {
+        LoadingSpan,
+    },
     props: {
         args: {
             type: Object,
@@ -26,6 +31,7 @@ export default {
         return {
             visualizationUrl: null,
             error: null,
+            loading: true,
         };
     },
     created() {
@@ -37,9 +43,11 @@ export default {
                 .get(`${getAppRoot()}api/plugins/${this.args.id}`)
                 .then(({ data }) => {
                     this.visualizationUrl = `${data.href}?dataset_id=${this.args.history_dataset_id}`;
+                    this.loading = false;
                 })
                 .catch((e) => {
                     this.error = `Failed to load Visualization '${this.args.id}'.`;
+                    this.loading = false;
                 });
         },
     },
