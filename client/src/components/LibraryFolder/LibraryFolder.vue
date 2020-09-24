@@ -11,7 +11,6 @@
                 :folder_id="folder_id"
                 :selected="selected"
                 :metadata="folder_metadata"
-                :isAllSelectedMode="isAllSelectedRenderMode"
             />
             <a class="btn btn-secondary btn-sm btn_open_folder" :href="parentFolder">..</a>
 
@@ -40,7 +39,7 @@
                 </template>
                 <template v-slot:head(selected)="">
                     <font-awesome-icon
-                        v-if="isAllSelected && !isAllSelectedRenderMode"
+                        v-if="isAllSelectedMode && !isAllSelectedOnPage()"
                         @click="toggleSelect"
                         class="select-checkbox cursor-pointer"
                         size="lg"
@@ -53,7 +52,7 @@
                         class="select-checkbox cursor-pointer"
                         size="lg"
                         title="Check to select all datasets"
-                        :icon="isAllSelectedOnPage() && isAllSelectedRenderMode ? ['far', 'check-square'] : ['far', 'square']"
+                        :icon="isAllSelectedOnPage() ? ['far', 'check-square'] : ['far', 'square']"
                     />
                 </template>
                 <template v-slot:cell(selected)="row">
@@ -299,6 +298,7 @@ export default {
             fields: fields,
             selectMode: "multi",
             selected: [],
+            unselected: [],
             expandedMessage: [],
             folderContents: [],
             perPage: 15,
@@ -307,9 +307,8 @@ export default {
             include_deleted: false,
             filterOn: [],
             search_text: "",
-            isAllSelectedRenderMode: false,
-            isAllSelected: false,
-            deselectedDatasets: []
+            isAllSelectedMode: false,
+            deselectedDatasets: [],
         };
     },
     computed: {
@@ -340,13 +339,18 @@ export default {
                     this.search_text
                 )
                 .then((response) => {
-                    console.log(this.selected)
+                    console.log(this.selected);
                     this.folderContents = response.folder_contents;
                     this.folder_metadata = response.metadata;
                     this.total_rows = response.metadata.total_rows;
-                    if (this.selected.length > 0) {
+                    if (this.isAllSelectedMode) {
+                        this.selected = [];
                         Vue.nextTick(() => {
-                            this.selected.forEach(row => this.select_unselect_row_by_id(row.id))
+                            this.selectAllRenderedRows();
+                        });
+                    } else if (this.selected.length > 0) {
+                        Vue.nextTick(() => {
+                            this.selected.forEach((row) => this.select_unselect_row_by_id(row.id));
                         });
                     }
                     this.isBusy = false;
@@ -359,11 +363,19 @@ export default {
             this.search_text = value;
             this.fetchFolderContents(this.include_deleted);
         },
-        selectAllRows() {
-            this.$refs.folder_content_table.selectAllRows();
+        selectAllRenderedRows() {
+            console.log("!!!!");
+            console.log(this.unselected);
+            this.$refs.folder_content_table.items.forEach((row, index) => {
+                if (!row.isNewFolder && !row.deleted && !this.unselected.some((unsel) => unsel.id === row.id)) {
+                    this.select_unselect_row(index);
+                    if (!this.selected.some((selectedItem) => selectedItem.id === row.id)) this.selected.push(row);
+                }
+            });
         },
-        clearSelected() {
+        clearRenderedSelectedRows() {
             this.$refs.folder_content_table.clearSelected();
+            this.selected = [];
         },
         refreshTable() {
             this.$refs.folder_content_table.refresh();
@@ -384,41 +396,40 @@ export default {
             this.$refs.folder_content_table.computedItems.forEach((row) => {
                 if (row.isNewFolder || row.deleted) unselectable++;
             });
-            const result = this.selected.length + unselectable === this.$refs.folder_content_table.computedItems.length
-            this.isAllSelectedRenderMode = result
-            return result;
+
+            return this.selected.length + unselectable === this.$refs.folder_content_table.computedItems.length;
         },
         toggleSelect() {
-            if (this.isAllSelectedOnPage() && this.isAllSelectedRenderMode && this.isAllSelected) {
-                this.clearSelected();
+            this.unselected = [];
+            if (this.isAllSelectedOnPage()) {
+                this.isAllSelectedMode = false;
+                this.clearRenderedSelectedRows();
             } else {
-                this.selectAllRows();
+                this.isAllSelectedMode = true;
+                this.selectAllRenderedRows();
             }
-            this.isAllSelectedRenderMode = !this.isAllSelectedRenderMode;
-            this.isAllSelected = !this.isAllSelected;
         },
         onRowClick(row, index, event) {
-            console.log(this.selected, this.selected)
-            const selected_array_index = this.selected.findIndex(item => item.id === row.id)
+            // check if exists
+            const selected_array_index = this.selected.findIndex((item) => item.id === row.id);
             if (selected_array_index > -1) {
-                this.selected.splice(selected_array_index, 1)
-                this.select_unselect_row(index, true)
+                this.selected.splice(selected_array_index, 1);
+                this.select_unselect_row(index, true);
+                if (this.isAllSelectedMode) this.unselected.push(row);
             } else {
                 if (!row.isNewFolder && !row.deleted) {
-                    this.select_unselect_row(index)
-                    this.selected.push(row)
+                    this.select_unselect_row(index);
+                    this.selected.push(row);
                 }
             }
         },
         select_unselect_row_by_id(id, unselect = false) {
-            const index = this.$refs.folder_content_table.items.findIndex(row => row.id === id)
-            this.select_unselect_row(index, unselect)
+            const index = this.$refs.folder_content_table.items.findIndex((row) => row.id === id);
+            this.select_unselect_row(index, unselect);
         },
         select_unselect_row(index, unselect = false) {
-            if (unselect)
-                this.$refs.folder_content_table.unselectRow(index);
-            else
-                this.$refs.folder_content_table.selectRow(index);
+            if (unselect) this.$refs.folder_content_table.unselectRow(index);
+            else this.$refs.folder_content_table.selectRow(index);
         },
         bytesToString(raw_size) {
             return Utils.bytesToString(raw_size);
