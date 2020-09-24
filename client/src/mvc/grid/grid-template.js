@@ -134,7 +134,7 @@ export default {
             // No results.
             const filters = options.filters;
             const searchTerm = filters["free-text-search"] || "";
-            const tags = filters.tags !== "All" ? `tags:${filters.tags} ` : "";
+            const tags = filters.tags && filters.tags !== "All" ? `tags:${filters.tags} ` : "";
             const name = filters.name && filters.name !== "All" ? `name:${filters.name}` : "";
             const searchMsg = searchTerm || `${tags}${name}`;
             const noItemsMsg = searchMsg ? `No matching entries found for <strong>${searchMsg}</strong>` : "No items";
