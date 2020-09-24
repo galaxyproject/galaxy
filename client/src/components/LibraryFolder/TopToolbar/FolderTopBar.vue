@@ -156,6 +156,7 @@ import download from "./download";
 import mod_utils from "utils/utils";
 import { getAppRoot } from "onload/loadConfig";
 import SearchField from "../SearchField";
+import { Services } from "../services";
 
 initTopBarIcons();
 
@@ -172,7 +173,15 @@ export default {
             type: Boolean,
             required: true,
         },
+        isAllSelectedMode: {
+            type: Boolean,
+            required: true,
+        },
         selected: {
+            type: Array,
+            required: true,
+        },
+        unselected: {
             type: Array,
             required: true,
         },
@@ -215,6 +224,7 @@ export default {
     },
     created() {
         const Galaxy = getGalaxyInstance();
+        this.services = new Services();
         this.is_admin = Galaxy.user.attributes.is_admin;
         this.user_library_import_dir = Galaxy.config.user_library_import_dir;
         this.library_import_dir = Galaxy.config.library_import_dir;
@@ -259,11 +269,23 @@ export default {
             this.$emit("updateSearch", value);
         },
         deleteSelected: function () {
-            deleteSelectedItems(
-                this.selected,
-                (deletedItem) => this.$emit("deleteFromTable", deletedItem),
-                () => this.$emit("refreshTable")
-            );
+            if (this.isAllSelectedMode) {
+                this.$emit("setBusy", true);
+                this.services.getFilteredFolderContents(this.folder_id, this.unselected).then((selected) => {
+                    this.$emit("setBusy", false);
+                    deleteSelectedItems(
+                        selected,
+                        (deletedItem) => this.$emit("deleteFromTable", deletedItem),
+                        () => this.$emit("refreshTable"),
+                        () => this.$emit("refreshTableContent")
+                    );
+                });
+            } else
+                deleteSelectedItems(
+                    this.selected,
+                    (deletedItem) => this.$emit("deleteFromTable", deletedItem),
+                    () => this.$emit("refreshTable")
+                );
         },
         newFolder() {
             this.folderContents.unshift({

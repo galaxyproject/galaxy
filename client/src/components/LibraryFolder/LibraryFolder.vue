@@ -4,13 +4,17 @@
             <FolderTopBar
                 @updateSearch="updateSearchValue($event)"
                 @refreshTable="refreshTable"
+                @refreshTableContent="refreshTableContent"
                 @fetchFolderContents="fetchFolderContents($event)"
                 @deleteFromTable="deleteFromTable"
+                @setBusy="setBusy($event)"
                 :folderContents="folderContents"
                 :include_deleted="include_deleted"
                 :folder_id="folder_id"
                 :selected="selected"
                 :metadata="folder_metadata"
+                :unselected="unselected"
+                :isAllSelectedMode="isAllSelectedMode"
             />
             <a class="btn btn-secondary btn-sm btn_open_folder" :href="parentFolder">..</a>
 
@@ -329,7 +333,7 @@ export default {
     methods: {
         fetchFolderContents(include_deleted = false) {
             this.include_deleted = include_deleted;
-            this.isBusy = true;
+            this.setBusy(true);
             this.services
                 .getFolderContents(
                     this.folder_id,
@@ -339,7 +343,6 @@ export default {
                     this.search_text
                 )
                 .then((response) => {
-                    console.log(this.selected);
                     this.folderContents = response.folder_contents;
                     this.folder_metadata = response.metadata;
                     this.total_rows = response.metadata.total_rows;
@@ -353,7 +356,7 @@ export default {
                             this.selected.forEach((row) => this.select_unselect_row_by_id(row.id));
                         });
                     }
-                    this.isBusy = false;
+                    this.setBusy(false);
                 })
                 .catch((error) => {
                     this.error = error;
@@ -364,8 +367,6 @@ export default {
             this.fetchFolderContents(this.include_deleted);
         },
         selectAllRenderedRows() {
-            console.log("!!!!");
-            console.log(this.unselected);
             this.$refs.folder_content_table.items.forEach((row, index) => {
                 if (!row.isNewFolder && !row.deleted && !this.unselected.some((unsel) => unsel.id === row.id)) {
                     this.select_unselect_row(index);
@@ -379,6 +380,9 @@ export default {
         },
         refreshTable() {
             this.$refs.folder_content_table.refresh();
+        },
+        refreshTableContent() {
+            this.fetchFolderContents(this.include_deleted);
         },
         deleteFromTable(deletedItem) {
             this.folderContents = this.folderContents.filter((element) => {
@@ -449,6 +453,9 @@ export default {
         },
         expandMessage(element) {
             this.expandedMessage.push(element.id);
+        },
+        setBusy(value) {
+            this.isBusy = value;
         },
         linkify(raw_text) {
             return linkify(raw_text);

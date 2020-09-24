@@ -18,6 +18,13 @@ export class Services {
         }
     }
 
+    async getFilteredFolderContents(id, excluded) {
+        const contents = await axios.get(`${this.root}api/folders/${id}/contents`);
+        return contents.data.folder_contents.filter((item) => {
+            return !excluded.some((exc) => exc.id === item.id);
+        });
+    }
+
     updateFolder(item, onSucess, onError) {
         const url = `${this.root}api/folders/${item.id}`;
         try {
