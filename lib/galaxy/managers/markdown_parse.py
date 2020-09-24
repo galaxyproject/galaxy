@@ -32,6 +32,7 @@ VALID_ARGUMENTS = {
     "generate_galaxy_version": [],
     "generate_time": [],
     "invocation_time": ["invocation_id"],
+    "visualization": ["id", "history_dataset_id"],
     # Invocation Flavored Markdown
     "invocation_outputs": [],
     "invocation_inputs": [],
