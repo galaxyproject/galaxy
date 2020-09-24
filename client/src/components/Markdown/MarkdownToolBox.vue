@@ -7,6 +7,9 @@
         </div>
         <div class="unified-panel-body">
             <div class="toolMenuContainer">
+                <b-alert v-if="error" variant="danger" class="my-2 mx-3 px-2 py-1" show>
+                    {{ error }}
+                </b-alert>
                 <tool-section :category="historySection" @onClick="onClick" :expanded="true" />
                 <tool-section :category="jobSection" @onClick="onClick" :expanded="true" />
                 <tool-section
@@ -17,7 +20,7 @@
                 />
                 <tool-section v-else :category="workflowSection" @onClick="onClick" :expanded="true" />
                 <tool-section :category="otherSection" @onClick="onClick" :expanded="true" />
-                <tool-section v-if="!isWorkflow" :category="visualizationSection" @onClick="onClick" />
+                <tool-section v-if="hasVisualizations" :category="visualizationSection" @onClick="onClick" />
             </div>
         </div>
         <MarkdownDialog
@@ -60,6 +63,7 @@ export default {
             selectedType: null,
             selectedLabels: null,
             selectedShow: false,
+            error: null,
             historySection: {
                 title: "History",
                 name: "history",
@@ -213,6 +217,9 @@ export default {
         isWorkflow() {
             return !!this.nodes;
         },
+        hasVisualizations() {
+            return !this.nodes && this.visualizationSection.elems.length > 0;
+        },
     },
     created() {
         this.getVisualizations();
@@ -326,7 +333,7 @@ export default {
                     });
                 })
                 .catch((e) => {
-                    this.error = this._errorMessage(e);
+                    this.error = "Failed to load Visualizations.";
                 });
         },
     },
