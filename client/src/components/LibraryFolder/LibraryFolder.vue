@@ -344,16 +344,11 @@ export default {
                     this.folderContents = response.folder_contents;
                     this.folder_metadata = response.metadata;
                     this.total_rows = response.metadata.total_rows;
-                    if (this.selected.length > 1) {
+                    if (this.selected.length > 0) {
                         Vue.nextTick(() => {
-                            this.selected.forEach(row => this.select_unselect_table_row(row.id))
+                            this.selected.forEach(row => this.select_unselect_row_by_id(row.id))
                         });
                     }
-                    // if (this.isAllSelectedRenderMode) {
-                    //     Vue.nextTick(() => {
-                    //         this.selectAllRows();
-                    //     });
-                    // }
                     this.isBusy = false;
                 })
                 .catch((error) => {
@@ -402,21 +397,24 @@ export default {
             this.isAllSelectedRenderMode = !this.isAllSelectedRenderMode;
             this.isAllSelected = !this.isAllSelected;
         },
-        onRowClick(row) {
-            console.log(this.selected)
+        onRowClick(row, index, event) {
+            console.log(this.selected, this.selected)
             const selected_array_index = this.selected.findIndex(item => item.id === row.id)
             if (selected_array_index > -1) {
                 this.selected.splice(selected_array_index, 1)
-                this.select_unselect_table_row(row.id, true)
+                this.select_unselect_row(index, true)
             } else {
                 if (!row.isNewFolder && !row.deleted) {
-                    this.select_unselect_table_row(row.id)
+                    this.select_unselect_row(index)
                     this.selected.push(row)
                 }
             }
         },
-        select_unselect_table_row(id, unselect = false) {
+        select_unselect_row_by_id(id, unselect = false) {
             const index = this.$refs.folder_content_table.items.findIndex(row => row.id === id)
+            this.select_unselect_row(index, unselect)
+        },
+        select_unselect_row(index, unselect = false) {
             if (unselect)
                 this.$refs.folder_content_table.unselectRow(index);
             else
