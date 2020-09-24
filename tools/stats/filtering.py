@@ -12,7 +12,7 @@ AST_NODE_TYPE_WHITELIST = [
     'Expr', 'Load', 'Str', 'Num', 'BoolOp', 'Compare', 'And', 'Eq', 'NotEq',
     'Or', 'GtE', 'LtE', 'Lt', 'Gt', 'BinOp', 'Add', 'Div', 'Sub', 'Mult', 'Mod',
     'Pow', 'LShift', 'GShift', 'BitAnd', 'BitOr', 'BitXor', 'UnaryOp', 'Invert',
-    'Not', 'NotIn', 'In', 'Is', 'IsNot', 'List', 'Index', 'Subscript',
+    'Not', 'NotIn', 'In', 'Is', 'IsNot', 'List', 'Index', 'Subscript', 'Constant',
     # Further checks
     'Name', 'Call', 'Attribute',
 ]
