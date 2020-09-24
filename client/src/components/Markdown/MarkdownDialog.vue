@@ -133,7 +133,9 @@ export default {
         },
         onData(response) {
             this.dataShow = false;
-            this.$emit("onInsert", `${this.argumentName}(history_dataset_id=${response})`);
+            let markdownData = `${this.argumentName}(history_dataset_id=${response})`;
+            markdownData = markdownData.replace(")(", ", ");
+            this.$emit("onInsert", markdownData);
         },
         onDataCollection(response) {
             this.dataCollectionShow = false;

@@ -317,10 +317,11 @@ export default {
                 .then((response) => {
                     this.visualizationSection.elems = response.data.map((x) => {
                         return {
-                            id: x.name,
+                            id: `visualization(id=${x.name})`,
                             name: x.html,
                             description: x.description,
                             logo: x.logo ? `${getAppRoot()}${x.logo}` : null,
+                            emitter: "onHistoryId",
                         };
                     });
                 })
