@@ -18,6 +18,7 @@ const PLUGIN_BUILD_DIRS = [
     "media_player",
     "mvpapp",
     "openlayers",
+    "pv",
 ];
 
 const paths = {
