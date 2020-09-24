@@ -17,6 +17,6 @@
         "underscore": "^1.11.0"
     },
     "scripts": {
-        "build": "parcel build src/pv.js -d static"
+        "build": "parcel build src/pv.js -d static/dist"
     }
 }
