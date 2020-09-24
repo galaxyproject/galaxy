@@ -17,7 +17,7 @@
                 />
                 <tool-section v-else :category="workflowSection" @onClick="onClick" :expanded="true" />
                 <tool-section :category="otherSection" @onClick="onClick" :expanded="true" />
-                <tool-section v-if="!isWorkflow" :category="visualizationSection" @onClick="onClick" :expanded="true" />
+                <tool-section v-if="!isWorkflow" :category="visualizationSection" @onClick="onClick" />
             </div>
         </div>
         <MarkdownDialog
