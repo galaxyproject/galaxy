@@ -1,7 +1,7 @@
 <template>
     <div class="w-50 p-2 float-left">
         <b-card body-class="embed-responsive embed-responsive-4by3">
-            <iframe class="embed-responsive-item" :src="visualizationUrl"/>
+            <iframe class="embed-responsive-item" :src="visualizationUrl" />
         </b-card>
     </div>
 </template>
