@@ -110,7 +110,6 @@ class Hmmer3(Hmmer):
 class HmmerPress(Binary):
     """Class for hmmpress database files."""
     file_ext = 'hmmpress'
-    allow_datatype_change = False
     composite_type = 'basic'
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -130,7 +129,7 @@ class HmmerPress(Binary):
             return "HMMER3 database (multiple files)"
 
     def __init__(self, **kwd):
-        Binary.__init__(self, **kwd)
+        super().__init__(**kwd)
         # Binary model
         self.add_composite_file('model.hmm.h3m', is_binary=True)
         # SSI index for binary model

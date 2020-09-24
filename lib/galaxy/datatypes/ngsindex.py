@@ -19,7 +19,6 @@ class BowtieIndex(Html):
     MetadataElement(name="sequence_space", desc="sequence_space for this index set", default='unknown', set_in_upload=True, readonly=True)
 
     composite_type = 'auto_primary_file'
-    allow_datatype_change = False
 
     def generate_primary_file(self, dataset=None):
         """
@@ -35,7 +34,7 @@ class BowtieIndex(Html):
         bn = dataset.metadata.base_name
         flist = os.listdir(dataset.extra_files_path)
         rval = ['<html><head><title>Files for Composite Dataset %s</title></head><p/>Comprises the following files:<p/><ul>' % (bn)]
-        for i, fname in enumerate(flist):
+        for fname in flist:
             sfname = os.path.split(fname)[-1]
             rval.append('<li><a href="{}">{}</a>'.format(sfname, sfname))
         rval.append('</ul></html>')

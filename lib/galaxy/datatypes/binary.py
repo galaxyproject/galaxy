@@ -802,7 +802,7 @@ class H5(Binary):
     edam_format = "format_3590"
 
     def __init__(self, **kwd):
-        Binary.__init__(self, **kwd)
+        super().__init__(**kwd)
         self._magic = binascii.unhexlify("894844460d0a1a0a")
 
     def sniff(self, filename):
@@ -1446,7 +1446,7 @@ class BigWig(Binary):
     data_sources = {"data_standalone": "bigwig"}
 
     def __init__(self, **kwd):
-        Binary.__init__(self, **kwd)
+        super().__init__(**kwd)
         self._magic = 0x888FFC26
         self._name = "BigWig"
 
@@ -2577,7 +2577,7 @@ class Dcd(Binary):
     edam_data = "data_3842"
 
     def __init__(self, **kwd):
-        Binary.__init__(self, **kwd)
+        super().__init__(**kwd)
         self._magic_number = b'CORD'
 
     def sniff(self, filename):
@@ -2628,7 +2628,7 @@ class Vel(Binary):
     file_ext = "vel"
 
     def __init__(self, **kwd):
-        Binary.__init__(self, **kwd)
+        super().__init__(**kwd)
         self._magic_number = b'VELD'
 
     def sniff(self, filename):
@@ -2678,7 +2678,7 @@ class DAA(Binary):
     file_ext = "daa"
 
     def __init__(self, **kwd):
-        Binary.__init__(self, **kwd)
+        super().__init__(**kwd)
         self._magic = binascii.unhexlify("6be33e6d47530e3c")
 
     def sniff(self, filename):
@@ -2701,7 +2701,7 @@ class RMA6(Binary):
     file_ext = "rma6"
 
     def __init__(self, **kwd):
-        Binary.__init__(self, **kwd)
+        super().__init__(**kwd)
         self._magic = binascii.unhexlify("000003f600000006")
 
     def sniff(self, filename):
@@ -2724,7 +2724,7 @@ class DMND(Binary):
     file_ext = "dmnd"
 
     def __init__(self, **kwd):
-        Binary.__init__(self, **kwd)
+        super().__init__(**kwd)
         self._magic = binascii.unhexlify("6d18ee15a4f84a02")
 
     def sniff(self, filename):

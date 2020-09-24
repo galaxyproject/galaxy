@@ -2733,6 +2733,17 @@ class DatasetInstance:
                 self.metadata.dbkey = [value]
     dbkey = property(get_dbkey, set_dbkey)
 
+    def ok_to_edit_metadata(self):
+        # prevent modifying metadata when dataset is queued or running as input/output
+        # This code could be more efficient, i.e. by using mappers, but to prevent slowing down loading a History panel, we'll leave the code here for now
+        sa_session = object_session(self)
+        for job_to_dataset_association in sa_session.query(
+                JobToInputDatasetAssociation).filter_by(dataset_id=self.id).all() \
+                + sa_session.query(JobToOutputDatasetAssociation).filter_by(dataset_id=self.id).all():
+            if job_to_dataset_association.job.state not in Job.terminal_states:
+                return False
+        return True
+
     def change_datatype(self, new_ext):
         self.clear_associated_files()
         _get_datatypes_registry().change_datatype(self, new_ext)

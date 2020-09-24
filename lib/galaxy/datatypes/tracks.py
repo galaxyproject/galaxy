@@ -16,9 +16,6 @@ class GeneTrack(binary.Binary):
     edam_format = "format_2919"
     file_ext = "genetrack"
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
 
 class UCSCTrackHub(Html):
     """
@@ -27,9 +24,6 @@ class UCSCTrackHub(Html):
 
     file_ext = 'trackhub'
     composite_type = 'auto_primary_file'
-
-    def __init__(self, **kwd):
-        Html.__init__(self, **kwd)
 
     def generate_primary_file(self, dataset=None):
         """
