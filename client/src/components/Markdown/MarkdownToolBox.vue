@@ -17,6 +17,7 @@
                 />
                 <tool-section v-else :category="workflowSection" @onClick="onClick" :expanded="true" />
                 <tool-section :category="otherSection" @onClick="onClick" :expanded="true" />
+                <tool-section v-if="!isWorkflow" :category="visualizationSection" @onClick="onClick" :expanded="true" />
             </div>
         </div>
         <MarkdownDialog
@@ -33,10 +34,12 @@
 
 <script>
 import Vue from "vue";
+import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
 import ToolSection from "components/Panels/Common/ToolSection";
 import MarkdownDialog from "./MarkdownDialog";
 import { showMarkdownHelp } from "./markdownHelp";
+import { getAppRoot } from "onload/loadConfig";
 
 Vue.use(BootstrapVue);
 
@@ -199,12 +202,20 @@ export default {
                     },
                 ],
             },
+            visualizationSection: {
+                title: "Visualizations",
+                name: "visualizations",
+                elems: [],
+            },
         };
     },
     computed: {
         isWorkflow() {
             return !!this.nodes;
         },
+    },
+    created() {
+        this.getVisualizations();
     },
     methods: {
         getSteps() {
@@ -299,6 +310,23 @@ export default {
         },
         onHelp() {
             showMarkdownHelp();
+        },
+        async getVisualizations() {
+            axios
+                .get(`${getAppRoot()}api/plugins`)
+                .then((response) => {
+                    this.visualizationSection.elems = response.data.map((x) => {
+                        return {
+                            id: x.name,
+                            name: x.html,
+                            description: x.description,
+                            logo: x.logo ? `${getAppRoot()}${x.logo}` : null,
+                        };
+                    });
+                })
+                .catch((e) => {
+                    this.error = this._errorMessage(e);
+                });
         },
     },
 };
