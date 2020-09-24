@@ -17,6 +17,7 @@ const PLUGIN_BUILD_DIRS = [
     "hyphyvision",
     "media_player",
     "mvpapp",
+    "ngl",
     "openlayers",
     "pv",
 ];
