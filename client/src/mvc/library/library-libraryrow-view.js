@@ -243,7 +243,7 @@ var LibraryRowView = Backbone.View.extend({
                         <td style="color:grey;"><%- library.get("name") %></td>
                     <% } else { %>
                         <td>
-                            <a href="folders/<%- library.get("root_folder_id") %>"><%- library.get("name") %></a>
+                            <a href="/library/folders/<%- library.get("root_folder_id") %>"><%- library.get("name") %></a>
                         </td>
                     <% } %>
                     <% if(library.get("description")) { %>
