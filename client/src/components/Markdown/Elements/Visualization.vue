@@ -1,7 +1,8 @@
 <template>
     <div class="w-50 p-2 float-left">
         <b-card body-class="embed-responsive embed-responsive-4by3">
-            <iframe class="embed-responsive-item" :src="visualizationUrl" />
+            <div v-if="error" class="m-2">{{ error }}</div>
+            <iframe v-else class="embed-responsive-item" :src="visualizationUrl" />
         </b-card>
     </div>
 </template>
@@ -24,6 +25,7 @@ export default {
     data() {
         return {
             visualizationUrl: null,
+            error: null,
         };
     },
     created() {
@@ -37,7 +39,7 @@ export default {
                     this.visualizationUrl = `${data.href}?dataset_id=${this.args.history_dataset_id}`;
                 })
                 .catch((e) => {
-                    this.error = this._errorMessage(e);
+                    this.error = `Failed to load Visualization '${this.args.id}'.`;
                 });
         },
     },
