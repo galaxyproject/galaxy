@@ -6,7 +6,7 @@ import Screenshot from "mvc/visualization/chart/components/screenshot";
 export default Backbone.View.extend({
     initialize: function (app) {
         this.app = app;
-        this.model = new Backbone.Model({ visible: true });
+        this.model = new Backbone.Model({ visible: false });
         this.execute_button = new Ui.Button({
             icon: "fa-check-square",
             tooltip: "Confirm",
