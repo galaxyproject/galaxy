@@ -9,7 +9,6 @@ import shutil
 
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
 from mgm_logger import MgmLogger
-
 from task_jira import TaskJira
 from task_openproject import TaskOpenproject 
 from task_redmine import TaskRedmine
