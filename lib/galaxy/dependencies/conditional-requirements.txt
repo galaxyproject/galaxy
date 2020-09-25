@@ -30,4 +30,4 @@ pygithub
 influxdb
 
 # Deep learning packages for tool recommendation
-tensorflow==2.3.0
+tensorflow==2.3.1
