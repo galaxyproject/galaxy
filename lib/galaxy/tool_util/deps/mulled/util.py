@@ -118,14 +118,22 @@ def split_tag(tag):
 
 def parse_tag(tag):
     """Decompose tag of mulled images into version, build string and build number."""
-    version = tag
+    version = tag.rsplit(':')[-1]
     build_string = "-1"
-    if '--' in tag:
-        version, build_string = tag.rsplit('--', 1)
-    elif '-' in tag:
+    build_number = -1
+    match = BUILD_NUMBER_REGEX.search(version)
+    if match:
+        build_number = int(match.group(0))
+    if '--' in version:
+        version, build_string = version.rsplit('--', 1)
+    elif '-' in version:
         # Should be mulled multi-container image tag
-        version, build_string = tag.rsplit('-', 1)
-    build_number = int(BUILD_NUMBER_REGEX.search(tag).group(0))
+        version, build_string = version.rsplit('-', 1)
+    else:
+        # We don't have a build number, and the BUILD_NUMBER_REGEX above is only accurate for build strings,
+        # so set build number to -1. Any matching image:version combination with a build number
+        # will be considered newer.
+        build_number = -1
     return PARSED_TAG(tag=tag,
                       version=packaging.version.parse(version),
                       build_string=packaging.version.parse(build_string),
@@ -137,7 +145,7 @@ def version_sorted(elements):
     elements = (parse_tag(tag) for tag in elements)
     elements = sorted(elements, key=lambda tag: tag.build_string, reverse=True)
     elements = sorted(elements, key=lambda tag: tag.build_number, reverse=True)
-    elements = sorted(elements, key=lambda tag: tag.version)
+    elements = sorted(elements, key=lambda tag: tag.version, reverse=True)
     return [e.tag for e in elements]
 
 
