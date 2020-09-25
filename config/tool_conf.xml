@@ -43,7 +43,7 @@
   </section>
   
   <section id="shot_detection" name="Shot Detection">
-    <tool file="amp_shot/pyscenedetect_shot_detection.xml"/>
+    <tool file="amp_shot/pyscenedetect.xml"/>
   </section>
   
   <section id="facial_recognition" name="Facial Recognition">

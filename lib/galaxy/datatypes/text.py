@@ -130,7 +130,7 @@ class Segment(Json):
         else:
             start = file_prefix.string_io().read(100).strip()
             if start:
-                return start.startswith("{\"segments\"")
+                return "\"media\":" in starts and "\"segments\":" in starts
             return False
        
 @build_sniff_from_prefix
@@ -158,7 +158,7 @@ class Transcript(Json):
         else:
             start = file_prefix.string_io().read(500).strip()
             if start:
-                return start.contains("\"media\":") and start.contains("\"results\":") and start.contains("\"transcript\":") 
+                return "\"media\":" in starts and "\"results\":" in starts and "\"transcript\":" in starts 
             return False
        
 @build_sniff_from_prefix
@@ -183,7 +183,7 @@ class Ner(Json):
         else:
             start = file_prefix.string_io().read(500).strip()
             if start:
-                return start.contains("\"media\":") and start.contains("\"entities\":") 
+                return "\"media\":" in starts and "\"entities\":" in starts
             return False
        
 @build_sniff_from_prefix
@@ -211,7 +211,7 @@ class VideoOcr(Json):
         else:
             start = file_prefix.string_io().read(500).strip()
             if start:
-                return start.contains("\"media\":") and start.contains("\"frames\":") and start.contains("\"objects\":") 
+                return "\"media\":" in starts and "\"frames\":" in starts and "\"objects\":" in starts 
             return False    
    
 @build_sniff_from_prefix
@@ -236,7 +236,7 @@ class Shot(Json):
         else:
             start = file_prefix.string_io().read(500).strip()
             if start:
-                return start.contains("\"media\":") and start.contains("\"shots\":")
+                return "\"media\":" in starts and "\"shots\":" in starts
             return False
            
 @build_sniff_from_prefix
@@ -261,7 +261,7 @@ class Face(Json):
         else:
             start = file_prefix.string_io().read(500).strip()
             if start:
-                return start.contains("\"media\":") and start.contains("\"faces\":")
+                return "\"media\":" in starts and "\"faces\":" in starts
             return False
            
 @build_sniff_from_prefix

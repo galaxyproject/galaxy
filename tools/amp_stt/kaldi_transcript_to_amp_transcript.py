@@ -3,7 +3,7 @@
 import json
 import sys
 
-from speech_to_text_schema import SpeechToText, SpeechToTextMedia, SpeechToTextResult, SpeechToTextScore, SpeechToTextWord
+from speech_to_text import SpeechToText, SpeechToTextMedia, SpeechToTextResult, SpeechToTextScore, SpeechToTextWord
 
 # Convert kaldi output to standardized json
 def main():

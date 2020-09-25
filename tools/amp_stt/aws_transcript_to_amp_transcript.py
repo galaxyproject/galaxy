@@ -7,7 +7,7 @@ import sys
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
 import mgm_utils
 
-from speech_to_text_schema import SpeechToText, SpeechToTextMedia, SpeechToTextResult, SpeechToTextScore, SpeechToTextWord
+from speech_to_text import SpeechToText, SpeechToTextMedia, SpeechToTextResult, SpeechToTextScore, SpeechToTextWord
 from segmentation import SegmentationSchema, SegmentationSchemaMedia, SegmentationSchemaSegment
 
 def main():
