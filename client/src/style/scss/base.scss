@@ -432,11 +432,9 @@ body {
 .quota-meter-text {
     @extend .text-light;
     position: absolute;
-    top: 50%;
+    line-height: 16px;
     left: 0;
     width: 100px;
-    height: 16px;
-    margin-top: -7px;
     text-align: center;
     z-index: 9001;
     white-space: nowrap;
