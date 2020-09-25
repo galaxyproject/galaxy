@@ -419,7 +419,14 @@ export default {
             if (selected_array_index > -1) {
                 this.selected.splice(selected_array_index, 1);
                 this.select_unselect_row(index, true);
-                if (this.isAllSelectedMode) this.unselected.push(row);
+                if (this.isAllSelectedMode) {
+                    this.unselected.push(row);
+                    if(this.total_rows === this.unselected.length){
+                        // if user presses `selectAll` and unselects everything manually
+                        this.isAllSelectedMode = false
+                        this.unselected = []
+                    }
+                }
             } else {
                 if (!row.isNewFolder && !row.deleted) {
                     this.select_unselect_row(index);
