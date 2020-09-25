@@ -269,23 +269,23 @@ export default {
             this.$emit("updateSearch", value);
         },
         deleteSelected: function () {
+            this.getSelected().then((selected) =>
+                deleteSelectedItems(
+                    selected,
+                    (deletedItem) => this.$emit("deleteFromTable", deletedItem),
+                    () => this.$emit("refreshTable"),
+                    () => this.$emit("refreshTableContent")
+                )
+            )
+        },
+        async getSelected() {
             if (this.isAllSelectedMode) {
                 this.$emit("setBusy", true);
-                this.services.getFilteredFolderContents(this.folder_id, this.unselected).then((selected) => {
-                    this.$emit("setBusy", false);
-                    deleteSelectedItems(
-                        selected,
-                        (deletedItem) => this.$emit("deleteFromTable", deletedItem),
-                        () => this.$emit("refreshTable"),
-                        () => this.$emit("refreshTableContent")
-                    );
-                });
+                const selected = await this.services.getFilteredFolderContents(this.folder_id, this.unselected)
+                this.$emit("setBusy", false);
+                return selected;
             } else
-                deleteSelectedItems(
-                    this.selected,
-                    (deletedItem) => this.$emit("deleteFromTable", deletedItem),
-                    () => this.$emit("refreshTable")
-                );
+                return this.selected
         },
         newFolder() {
             this.folderContents.unshift({
@@ -298,13 +298,15 @@ export default {
             this.$emit("refreshTable");
         },
         downloadData(format) {
-            const { datasets, folders } = this.findCheckedItems();
-            if (this.selected.length === 0) {
-                Toast.info("You must select at least one dataset to download");
-                return;
-            }
+            this.findCheckedItems().then(({datasets, folders}) => {
 
-            download(format, datasets, folders);
+                if (this.selected.length === 0) {
+                    Toast.info("You must select at least one dataset to download");
+                    return;
+                }
+
+                download(format, datasets, folders);
+            })
         },
         addDatasets(source) {
             new mod_add_datasets.AddDatasets({
@@ -316,33 +318,35 @@ export default {
             });
         },
         // helper function to make legacy code compatible
-        findCheckedItems: function (idOnly = true) {
+        findCheckedItems: async function (idOnly = true) {
             const datasets = [];
             const folder = [];
-            this.selected.forEach((item) => {
+            const selected = await this.getSelected()
+            selected.forEach((item) => {
                 item.type === "file" ? datasets.push(idOnly ? item.id : item) : idOnly ? item.id : item;
             });
-            return { datasets: datasets, folders: folder };
+            return {datasets: datasets, folders: folder};
         },
         importToHistoryModal: function (isCollection) {
-            const { datasets, folders } = this.findCheckedItems(!isCollection);
-            const checkedItems = this.selected;
-            checkedItems.dataset_ids = datasets;
-            checkedItems.folder_ids = folders;
-            if (isCollection) {
-                new mod_import_collection.ImportCollectionModal({
-                    selected: checkedItems,
-                    allDatasets: this.allDatasets,
-                });
-            } else {
-                new mod_import_dataset.ImportDatasetModal({
-                    selected: checkedItems,
-                });
-            }
+            this.findCheckedItems(!isCollection).then(({datasets, folders}) => {
+                const checkedItems = this.selected;
+                checkedItems.dataset_ids = datasets;
+                checkedItems.folder_ids = folders;
+                if (isCollection) {
+                    new mod_import_collection.ImportCollectionModal({
+                        selected: checkedItems,
+                        allDatasets: this.allDatasets,
+                    });
+                } else {
+                    new mod_import_dataset.ImportDatasetModal({
+                        selected: checkedItems,
+                    });
+                }
+            })
         },
         /*
             Slightly adopted Bootstrap code
-             */
+        */
         /**
          * Request all extensions and genomes from Galaxy
          * and save them in sorted arrays.

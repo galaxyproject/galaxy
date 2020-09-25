@@ -421,10 +421,10 @@ export default {
                 this.select_unselect_row(index, true);
                 if (this.isAllSelectedMode) {
                     this.unselected.push(row);
-                    if(this.total_rows === this.unselected.length){
+                    if (this.total_rows === this.unselected.length) {
                         // if user presses `selectAll` and unselects everything manually
-                        this.isAllSelectedMode = false
-                        this.unselected = []
+                        this.isAllSelectedMode = false;
+                        this.unselected = [];
                     }
                 }
             } else {
