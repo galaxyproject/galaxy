@@ -1048,7 +1048,7 @@ class Anndata(H5):
                     elif hasattr(anndata_file['X'], 'shape'):
                         dataset.metadata.shape = tuple(anndata_file['X'].shape)
                     else:
-                        dataset.metadata.shape = tuple(int(dataset.metadata.obs_size), int(dataset.metadata.var_size))
+                        dataset.metadata.shape = (int(dataset.metadata.obs_size), int(dataset.metadata.var_size))
 
         except Exception as e:
             log.warning('%s, set_meta Exception: %s', self, e)
