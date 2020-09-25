@@ -560,12 +560,12 @@ class Bam(BamNative):
     # @dataproviders.decorators.dataprovider_factory('dataset-column', dataproviders.column.ColumnarDataProvider.settings)
     # def dataset_column_dataprovider(self, dataset, **settings):
     #    settings['comment_char'] = '@'
-    #    return super(Sam, self).dataset_column_dataprovider(dataset, **settings)
+    #    return super().dataset_column_dataprovider(dataset, **settings)
 
     # @dataproviders.decorators.dataprovider_factory('dataset-dict', dataproviders.column.DictDataProvider.settings)
     # def dataset_dict_dataprovider(self, dataset, **settings):
     #    settings['comment_char'] = '@'
-    #    return super(Sam, self).dataset_dict_dataprovider(dataset, **settings)
+    #    return super().dataset_dict_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory('header', dataproviders.line.RegexLineDataProvider.settings)
     def header_dataprovider(self, dataset, **settings):
@@ -978,7 +978,7 @@ class Anndata(H5):
         return False
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-        super(Anndata, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             with h5py.File(dataset.file_name, 'r') as anndata_file:
                 dataset.metadata.title = util.unicodify(anndata_file.attrs.get('title'))
