@@ -14,6 +14,7 @@ const PLUGIN_BUILD_IDS = [
     "annotate_image",
     "chiraviz",
     "editor",
+    "heatmap/heatmap_default",
     "hyphyvision",
     "media_player",
     "mvpapp",
