@@ -8,7 +8,7 @@ import sys
 import os
 from os import path
 
-sys.path.insert(0, os.path.abspath('../../../../../tools/amp_utils'))
+sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
 from mgm_logger import MgmLogger
 import mgm_utils
 

@@ -7,7 +7,7 @@ import os.path
 import sys
 import shutil
 
-sys.path.insert(0, os.path.abspath('../../../../../tools/amp_utils'))
+sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
 from mgm_logger import MgmLogger
 
 from task_jira import TaskJira

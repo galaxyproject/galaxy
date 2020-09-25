@@ -4,7 +4,7 @@ import json
 import sys
 import os
 
-sys.path.insert(0, os.path.abspath('../../../../../tools/amp_utils'))
+sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
 from mgm_logger import MgmLogger
 
 # Convert NER generated JSON file to IIIF manifest JSON file.
