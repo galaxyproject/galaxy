@@ -1,0 +1,25 @@
+<tool id="adjust_transcript_timestamps" name="Adjust Transcript Timestamps" version="1.0.0">
+  <description>Adjust timestamps so Speech-to-Text output matches timestamps of the original file</description>
+  <requirements>
+  	<requirement type="package" version="3.8">python</requirement>
+    <requirement type="package" version="8.30">coreutils</requirement>
+  </requirements>
+  <command detect_errors="exit_code">
+    '$__tool_directory__/adjust_transcript_timestamps.py' '$amp_transcript_unadjusted' '$kept_segments' '$amp_transcript_adjusted'
+  </command>
+  <inputs>
+    <param name="amp_transcript_unadjusted" type="data" format="transcript" label="AMP Transcript Unadjusted" help="AMP Transcript generated from speech-to-text without timestamp adjusted"/>
+    <param name="kept_segments" type="data" format="json" label="Kept segments JSON" help="List of kept segments from RemoveSegments"/>
+  </inputs>
+  <outputs>
+    <data name="amp_transcript_adjusted" format="transcript" label="AMP Transcript Timestamp Adjusted"/>
+  </outputs>
+  <tests>
+  </tests>
+  <help>
+.. class:: infomark
+
+Adjust timestamps of a speech-to-text transcript json output to match timestamps of the original file.
+
+  </help>
+</tool>

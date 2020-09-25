@@ -240,9 +240,34 @@ class Shot(Json):
             return False
            
 @build_sniff_from_prefix
+class Face(Json):
+    file_ext = "face"
+    label = "AMP Face JSON"
+
+    def _looks_like(self, file_prefix):
+        # Pattern used by SequenceSplitLocations
+        if file_prefix.file_size < 50000 and not file_prefix.truncated:
+            # If the file is small enough - don't guess just check.
+            try:
+                # exclude simple types, must set format in these cases
+                item = json.loads(file_prefix.contents_header)
+                assert isinstance(item, (list, dict))
+                if 'faces' in item and 'media' in item:
+                    return True
+                else:
+                    return False
+            except Exception:
+                return False
+        else:
+            start = file_prefix.string_io().read(500).strip()
+            if start:
+                return start.contains("\"media\":") and start.contains("\"faces\":")
+            return False
+           
+@build_sniff_from_prefix
 class Vtt(Text):
     file_ext = "vtt"
-    label = "AMP Web VTT"
+    label = "Web VTT"
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
@@ -262,19 +287,15 @@ class Vtt(Text):
         # on following lines can be done to detect if they match the regexp patterns for timestamp & speaker diarization.
         try:
             first_line = file_prefix.string_io().readline().strip()      
-            log.debug ("-------------------- first_line = " + first_line)  
-            print ("-------------------- first_line = " + first_line)  
+            log.debug ("Vtt.sniff_prefix: first_line = " + first_line)  
             if (first_line == "WEBVTT"):
-                log.debug ("-------------------- Vtt sniffer true")  
-                print ("-------------------- Vtt sniffer true")  
+                log.debug ("Vtt.sniff_prefix: return true")  
                 return True
             else:
-                log.debug ("-------------------- Vtt sniffer false")  
-                print ("-------------------- Vtt sniffer false")  
+                log.debug ("Vtt.sniff_prefix: return false")  
                 return False
         except Exception as e:
             log.exception(e)
-            print (e)  
             return False              
 
     def display_peek(self, dataset):

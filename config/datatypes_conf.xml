@@ -14,6 +14,7 @@
 	<datatype extension="ner" type="galaxy.datatypes.text:Ner" mimetype="application/json" subclass="true" display_in_upload="true"/>
     <datatype extension="vocr" type="galaxy.datatypes.text:VideoOcr" mimetype="application/json" subclass="true" display_in_upload="true"/>
     <datatype extension="shot" type="galaxy.datatypes.text:Shot" mimetype="application/json" subclass="true" display_in_upload="true"/>
+    <datatype extension="face" type="galaxy.datatypes.text:Face" mimetype="application/json" subclass="true" display_in_upload="true"/>
     <datatype extension="vtt" type="galaxy.datatypes.text:Vtt" mimetype="text/vtt" subclass="true" display_in_upload="true"/>
     <!-- END AMP Data Type Extension -->
 
@@ -750,6 +751,7 @@
     <sniffer type="galaxy.datatypes.text:Ner"/>    
     <sniffer type="galaxy.datatypes.text:VideoOcr"/>    
     <sniffer type="galaxy.datatypes.text:Shot"/>    
+    <sniffer type="galaxy.datatypes.text:Face"/>    
     <sniffer type="galaxy.datatypes.text:Vtt"/>    
     <!-- END AMP Data Types Extension -->
 

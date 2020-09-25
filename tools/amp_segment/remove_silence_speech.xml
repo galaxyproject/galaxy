@@ -1,0 +1,30 @@
+<tool id="remove_silence_speech" name="Remove Silence and Speech" version="1.0.0">
+  <description>Create an audio file containing only music, removing silence and speech</description>
+    <requirements>
+		<requirement type="package" version="3.8">python</requirement>
+    </requirements>
+  <command detect_errors="exit_code">
+    '$__tool_directory__/remove_silence_music_speech.py' '$original_audio' '$amp_segments' 'speech' '$music_audio' '$amp_kept_segments'
+  </command>
+  <inputs>
+    <!-- should be wave data type -->
+    <param name="original_audio" type="data" format="wav" label="Original Audio" help="Original wav audio file without any segments removed"/>
+    <param name="amp_segments" type="data" format="segment" label="AMP Segments" help="AMP Segment file with all segments generated from Segmentation"/>
+  </inputs>
+  <outputs>
+  	<!-- TODO 
+  		music_audio format should be music, however, setting so disallows it to be fed into tools taking wav as input.
+  	 	This appears to be a bug in Galaxy, as subtype (music) should be allowed to feed into parent type (wav).
+  	-->  
+    <data name="music_audio" format="wav" label="Music Audio"/>
+    <data name="kept_segments" format="json" label="Kept Segments" />
+  </outputs>
+  <tests>
+  </tests>
+  <help>
+.. class:: infomark
+
+Remove segments of silence and speech from an audio file.
+
+  </help>
+</tool>

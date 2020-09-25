@@ -1,0 +1,28 @@
+<tool id="kaldi_stt" name="Kaldi Speech to Text" version="1.0.2">
+  <description>Local Kaldi Speech-to-Text transcription</description>
+  <requirements>
+    <requirement type="package" version="3.8">python</requirement>
+    <requirement type="package" version="8.30">coreutils</requirement>
+  </requirements>
+  <command detect_errors="exit_code">
+  	'$__tool_directory__/kaldi.py' '$input_audio' '$kaldi_transcript_json' '$kaldi_transcript_text';
+    '$__tool_directory__/kaldi_transcript_to_amp_transcript.py' '$input_audio' '$kaldi_transcript_json' '$kaldi_transcript_text' '$amp_transcript'
+  </command>
+  <inputs>
+    <!-- should be wav data type -->
+    <param name="input_audio" type="data" format="wav" label="Input Audio" help="Audio file to transcribe"/>
+  </inputs>
+  <outputs>
+    <data name="kaldi_transcript_json" format="json" label="Kaldi Transcript JSON"/>
+    <data name="kaldi_transcript_text" format="txt" label="Kaldi Transcript Text" />
+    <data name="amp_transcript" format="transcript" label="AMP Transcript" />
+  </outputs>
+  <tests>
+  </tests>
+  <help>
+.. class:: infomark
+
+Do a speech-to-text transcribe on an audio file using a local Kaldi instance.
+
+  </help>
+</tool>

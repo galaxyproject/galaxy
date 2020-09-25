@@ -1,0 +1,28 @@
+<tool id="spacy_ner" name="spaCy Entity Extraction" version="1.0.0">
+  <description>Named entity recognition with a local spaCy instance</description>
+  <requirements>
+	<requirement type="package" version="3.8">python</requirement>
+    <requirement type="package" version="8.30">coreutils</requirement>
+  </requirements>
+  <command detect_errors="exit_code">
+    '$__tool_directory__/spacy.py' '$amp_transcript' '$amp_entities' '$ignore_categories'
+  </command>
+  <inputs>
+    <param name="amp_transcript" type="data" format="transcript" label="AMP Transcript" help="AMP Transcript file from speech-to-text with timestamp adjusted"/>
+    <param name="ignore_categories" type="text" format="csv" label="Categories to ignore" help="Comma separated list of categories to ignore. For instance, 'QUANTITY, ORGANIZATION'.">
+      <sanitizer sanitize="false">
+    </sanitizer>
+    </param>
+  </inputs>
+  <outputs>
+    <data name="amp_entities" format="ner" label="AMP Entities Extracted"/>
+  </outputs>
+  <tests>
+  </tests>
+  <help>
+.. class:: infomark
+
+Extract named entities using local spaCy instance
+
+  </help>
+</tool>
