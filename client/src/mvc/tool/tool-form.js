@@ -49,6 +49,23 @@ const View = Backbone.View.extend({
                                     window.location = getAppRoot();
                                     return;
                                 }
+
+                                // we can rely on tool_id, only if it's installed from toolshed
+                                // if no version provided and tool_id is not in toolshed style, don't show the warning
+                                const client_version =
+                                    options.version ||
+                                    (options.tool_id && options.tool_id.match(/^(toolshed)\./)
+                                        ? options.tool_id
+                                        : false);
+
+                                if (
+                                    data.versions &&
+                                    client_version &&
+                                    !data.versions.includes(client_version.replace(/.*\//, ""))
+                                ) {
+                                    data.message = `Requested version unavailable.`;
+                                }
+
                                 form.model.set(data);
                                 this._customize(form);
                                 Galaxy.emit.debug("tool-form-base::_buildModel()", "Initial tool model ready.", data);
