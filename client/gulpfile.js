@@ -126,16 +126,11 @@ const client = parallel(fonts, stageLibs);
 const plugins = series(buildPlugins, cleanPlugins, stagePlugins);
 
 function watchPlugins() {
-    const BUILD_PLUGIN_WATCH_GLOB = [
-        `../config/plugins/visualizations/{${PLUGIN_BUILD_IDS.join(",")}}/**/*`,
-        `!../config/plugins/visualizations/{${PLUGIN_BUILD_IDS.join(",")}}/static/dist/**/*`,
-        `!../config/plugins/visualizations/{${PLUGIN_BUILD_IDS.join(",")}}/node_modules/**/*`,
-    ];
-    watch(BUILD_PLUGIN_WATCH_GLOB, plugins);
+    const BUILD_PLUGIN_WATCH_GLOB = [`../config/plugins/visualizations/{${PLUGIN_BUILD_IDS.join(",")}}/**/*`];
+    watch(BUILD_PLUGIN_WATCH_GLOB, { queue: false }, plugins);
 }
 
 module.exports.client = client;
 module.exports.plugins = plugins;
 module.exports.watchPlugins = watchPlugins;
-
 module.exports.default = parallel(client, plugins);
