@@ -1000,7 +1000,7 @@ class Anndata(H5):
                         count = len(tmp.dtype)
                         size = int(tmp.size)
                     else:
-                        layers = [util.unicodify(x) for x in list(tmp.keys())]
+                        layers = [util.unicodify(x) for x in tmp.keys()]
                         count = len(layers)
                         size = lennames
                     return (layers, count, size)
@@ -1355,7 +1355,7 @@ class MCool(H5):
             with h5py.File(filename, 'r') as handle:
                 if not all(name in handle.keys() for name in keys0):
                     return False
-                res0 = list(handle['resolutions'].keys())[0]
+                res0 = next(iter(handle['resolutions'].keys()))
                 keys = ['chroms', 'bins', 'pixels', 'indexes']
                 fmt = util.unicodify(handle['resolutions'][res0].attrs.get('format'))
                 url = util.unicodify(handle['resolutions'][res0].attrs.get('format-url'))
