@@ -1,7 +1,7 @@
 const path = require("path");
 const fs = require("fs");
 const del = require("del");
-const { src, dest, series, parallel } = require("gulp");
+const { src, dest, series, parallel, watch } = require("gulp");
 const child_process = require("child_process");
 const glob = require("glob");
 
@@ -10,7 +10,7 @@ const glob = require("glob");
  * un-built visualizations in the repository; for performance and
  * simplicity just add them one at a time until we upgrade older viz's.
  */
-const PLUGIN_BUILD_DIRS = [
+const PLUGIN_BUILD_IDS = [
     "annotate_image",
     "chiraviz",
     "editor",
@@ -28,7 +28,7 @@ const paths = {
         "../config/plugins/{visualizations,interactive_environments}/*/static/**/*",
         "../config/plugins/{visualizations,interactive_environments}/*/*/static/**/*",
     ],
-    plugin_build_dirs: [`../config/plugins/visualizations/{${PLUGIN_BUILD_DIRS.join(",")}}/package.json`],
+    plugin_build_modules: [`../config/plugins/visualizations/{${PLUGIN_BUILD_IDS.join(",")}}/package.json`],
     lib_locs: {
         // This is a stepping stone towards having all this staged
         // automatically.  Eventually, this dictionary and staging step will
@@ -75,10 +75,10 @@ function stagePlugins() {
 
 function buildPlugins(callback) {
     /*
-     * Walk plugin_build_dirs glob and attempt to build modules.
+     * Walk plugin_build_modules glob and attempt to build modules.
      * */
-    paths.plugin_build_dirs.map((build_dir) => {
-        glob(build_dir, {}, (er, files) => {
+    paths.plugin_build_modules.map((build_module) => {
+        glob(build_module, {}, (er, files) => {
             files.map((file) => {
                 let skip_build = false;
                 const f = path.join(process.cwd(), file).slice(0, -12);
@@ -122,10 +122,20 @@ function cleanPlugins() {
     return del(["../static/plugins/{visualizations,interactive_environments}/*"], { force: true });
 }
 
-client = parallel(fonts, stageLibs);
-plugins = series(buildPlugins, cleanPlugins, stagePlugins);
+const client = parallel(fonts, stageLibs);
+const plugins = series(buildPlugins, cleanPlugins, stagePlugins);
+
+function watchPlugins() {
+    const BUILD_PLUGIN_WATCH_GLOB = [
+        `../config/plugins/visualizations/{${PLUGIN_BUILD_IDS.join(",")}}/**/*`,
+        `!../config/plugins/visualizations/{${PLUGIN_BUILD_IDS.join(",")}}/static/dist/**/*`,
+        `!../config/plugins/visualizations/{${PLUGIN_BUILD_IDS.join(",")}}/node_modules/**/*`,
+    ];
+    watch(BUILD_PLUGIN_WATCH_GLOB, plugins);
+}
 
 module.exports.client = client;
 module.exports.plugins = plugins;
+module.exports.watchPlugins = watchPlugins;
 
 module.exports.default = parallel(client, plugins);
