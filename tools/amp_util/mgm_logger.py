@@ -55,7 +55,7 @@ class MgmLogger(object):
     def get_log_dir(self, root_dir):
         config = configparser.ConfigParser()
         config.read(root_dir + "/config/hmgm.ini") 
-        return os.path.join(config["amppd"]["io_dir"] , 'logs')
+        return config["amppd"]["log_dir"]
 
     def flush(self):
         pass    

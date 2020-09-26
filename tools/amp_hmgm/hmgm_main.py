@@ -174,7 +174,7 @@ def get_editor_input_path(config, dataset_file):
 	# TODO replace below code with logic to generate an obscure soft link based on the original file path
 	# for now we just use the original filename within the designated directory
 	filename = os.path.basename(dataset_file)
-	filepath = io_dir + "/" + filename
+	filepath = os.path.join(io_dir, filename)
 	
 	return filepath
 	 
