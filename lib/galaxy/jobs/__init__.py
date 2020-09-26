@@ -569,7 +569,15 @@ class JobConfiguration(ConfiguresHandlers):
             resource_group = resource_group or self.default_resource_group
             if resource_group and resource_group in self.resource_groups:
                 fields_names = self.resource_groups[resource_group]
-                fields = [self.resource_parameters[n] for n in fields_names]
+                fields = []
+                for field_name in fields_names:
+                    if field_name not in self.resource_parameters:
+                        message = "Failed to find field for resource {} in resource parameters {}".format(
+                            field_name, self.resource_parameters
+                        )
+                        raise KeyError(message)
+                    fields.append(self.resource_parameters[field_name])
+
                 if fields:
                     conditional_element = parse_xml_string(self.JOB_RESOURCE_CONDITIONAL_XML)
                     when_yes_elem = conditional_element.findall('when')[1]
