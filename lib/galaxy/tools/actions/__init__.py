@@ -177,16 +177,23 @@ class DefaultToolAction:
                 for action, role_id in action_tuples:
                     record_permission(action, role_id)
 
-                replace_collection = False
+                _, extensions = collection.dataset_states_and_extensions_summary
+                conversion_required = False
+                for ext in extensions:
+                    if ext:
+                        datatype = trans.app.datatypes_registry.get_datatype_by_extension(ext)
+                        if not datatype.matches_any(input.formats):
+                            conversion_required = True
+                            break
                 processed_dataset_dict = {}
                 for i, v in enumerate(collection.dataset_instances):
-                    processed_dataset = process_dataset(v)
-                    if processed_dataset is not v:
-                        replace_collection = True
-                        processed_dataset_dict[v] = processed_dataset
-                    input_datasets[prefix + input.name + str(i + 1)] = processed_dataset
-
-                if replace_collection:
+                    processed_dataset = None
+                    if conversion_required:
+                        processed_dataset = process_dataset(v)
+                        if processed_dataset is not v:
+                            processed_dataset_dict[v] = processed_dataset
+                    input_datasets[prefix + input.name + str(i + 1)] = processed_dataset or v
+                if conversion_required:
                     collection_type_description = trans.app.dataset_collections_service.collection_type_descriptions.for_collection_type(collection.collection_type)
                     collection_builder = CollectionBuilder(collection_type_description)
                     collection_builder.replace_elements_in_collection(
