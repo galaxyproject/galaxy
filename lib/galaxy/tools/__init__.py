@@ -2768,24 +2768,25 @@ class DatabaseOperationTool(Tool):
         return not self.require_dataset_ok
 
     def check_inputs_ready(self, input_datasets, input_dataset_collections):
-        def check_dataset_instance(input_dataset):
-            if input_dataset.is_pending:
+        def check_dataset_state(state):
+            if state in model.Dataset.non_ready_states:
                 raise ToolInputsNotReadyException("An input dataset is pending.")
 
             if self.require_dataset_ok:
-                if input_dataset.state != input_dataset.dataset.states.OK:
+                if state != model.Dataset.states.OK:
                     raise ValueError("Tool requires inputs to be in valid state, but dataset {} is in state '{}'".format(input_dataset, input_dataset.state))
 
         for input_dataset in input_datasets.values():
-            check_dataset_instance(input_dataset)
+            check_dataset_state(input_dataset.state)
 
         for input_dataset_collection_pairs in input_dataset_collections.values():
             for input_dataset_collection, _ in input_dataset_collection_pairs:
-                if not input_dataset_collection.collection.populated:
+                if not input_dataset_collection.collection.populated_optimized:
                     raise ToolInputsNotReadyException("An input collection is not populated.")
 
-            for dataset_instance in input_dataset_collection.dataset_instances:
-                check_dataset_instance(dataset_instance)
+            states, _  = input_dataset_collection.collection.dataset_states_and_extensions_summary
+            for state in states:
+                check_dataset_state(state)
 
     def _add_datasets_to_history(self, history, elements, datasets_visible=False):
         datasets = []
