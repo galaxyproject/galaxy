@@ -4058,14 +4058,36 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
 
     @property
     def dataset_instances(self):
-        instances = []
-        for element in self.elements:
-            if element.is_collection:
-                instances.extend(element.child_collection.dataset_instances)
-            else:
-                instance = element.dataset_instance
-                instances.append(instance)
-        return instances
+        db_session = object_session(self)
+        if db_session and self.id:
+            dc = alias(DatasetCollection.table)
+            de = alias(DatasetCollectionElement.table)
+            hda = alias(HistoryDatasetAssociation.table)
+
+            depth_collection_type = self.collection_type
+            select_from = dc.outerjoin(de, de.c.dataset_collection_id == dc.c.id)
+
+            while ":" in depth_collection_type:
+                child_collection = alias(DatasetCollection.table)
+                child_collection_element = alias(DatasetCollectionElement.table)
+                select_from = select_from.outerjoin(child_collection, child_collection.c.id == de.c.child_collection_id)
+                select_from = select_from.outerjoin(child_collection_element, child_collection_element.c.dataset_collection_id == child_collection.c.id)
+
+                de = child_collection_element
+                depth_collection_type = depth_collection_type.split(":", 1)[1]
+            select_from = select_from.outerjoin(hda, hda.c.id == de.c.hda_id)
+            select_stmt = select([hda]).select_from(select_from).where(dc.c.id == self.id).distinct()
+            return db_session.query(HistoryDatasetAssociation).select_entity_from(select_stmt).all()
+        else:
+            # Sessionless context
+            instances = []
+            for element in self.elements:
+                if element.is_collection:
+                    instances.extend(element.child_collection.dataset_instances)
+                else:
+                    instance = element.dataset_instance
+                    instances.append(instance)
+            return instances
 
     @property
     def dataset_elements(self):
