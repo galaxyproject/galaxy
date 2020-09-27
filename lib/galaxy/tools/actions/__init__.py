@@ -252,12 +252,9 @@ class DefaultToolAction:
 
     def _collect_inputs(self, tool, trans, incoming, history, current_user_roles, collection_info):
         """ Collect history as well as input datasets and collections. """
-        app = trans.app
         # Set history.
         if not history:
             history = tool.get_default_history_by_trans(trans, create=True)
-        if history not in trans.sa_session:
-            history = trans.sa_session.query(app.model.History).get(history.id)
 
         # Track input dataset collections - but replace with simply lists so collect
         # input datasets can process these normally.
