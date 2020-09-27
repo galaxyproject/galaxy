@@ -547,6 +547,16 @@ class BaseDatasetPopulator:
         assert role_response.status_code == 200
         return role_response.json()[0]
 
+    def create_quota(self, quota_payload):
+        quota_response = self.galaxy_interactor.post("quotas", data=quota_payload, admin=True)
+        quota_response.raise_for_status()
+        return quota_response.json()
+
+    def get_quotas(self):
+        quota_response = self.galaxy_interactor.get("quotas", admin=True)
+        quota_response.raise_for_status()
+        return quota_response.json()
+
     def make_private(self, history_id, dataset_id):
         role_id = self.user_private_role_id()
         # Give manage permission to the user.
