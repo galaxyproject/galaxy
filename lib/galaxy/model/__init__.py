@@ -41,6 +41,7 @@ from sqlalchemy.orm import (
     joinedload,
     object_session,
     Query,
+    reconstructor,
 )
 from sqlalchemy.schema import UniqueConstraint
 
@@ -1725,10 +1726,32 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
         self.datasets = []
         self.galaxy_sessions = []
         self.tags = []
+        # Objects to eventually add to history
+        self._pending_additions = []
+
+    @reconstructor
+    def init_on_load(self):
+        # Restores properties that are not tracked in the database
+        self._pending_additions = []
+
+    def stage_addition(self, items):
+        history_id = self.id
+        for item in listify(items):
+            if history_id:
+                item.history_id = history_id
+            else:
+                item.history = self
+            self._pending_additions.append(item)
 
     @property
     def empty(self):
         return self.hid_counter == 1
+
+    def add_pending_datasets(self, set_output_hid=True):
+        # These are assumed to be either copies of existing datasets or new, empty datasets,
+        # so we don't need to set the quota.
+        self.add_datasets(object_session(self), self._pending_additions, set_hid=set_output_hid, quota=False, flush=False)
+        self._pending_additions = []
 
     def _next_hid(self, n=1):
         # this is overriden in mapping.py db_next_hid() method

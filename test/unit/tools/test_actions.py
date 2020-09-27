@@ -134,7 +134,7 @@ class DefaultToolActionTestCase(unittest.TestCase, tools_support.UsesApp, tools_
         if incoming is None:
             incoming = dict(param1="moo")
         self._init_tool(contents)
-        job, out_data, _, _ = self.action.execute(
+        job, out_data, _, = self.action.execute(
             tool=self.tool,
             trans=self.trans,
             history=self.history,
