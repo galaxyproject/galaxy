@@ -1646,9 +1646,8 @@ class Tool(Dictifiable):
             )
             job = rval[0]
             out_data = rval[1]
-            if len(rval) == 4:
-                execution_slice.datasets_to_persist = rval[2]
-                execution_slice.history = rval[3]
+            if len(rval) > 2:
+                execution_slice.history = rval[2]
         except (webob.exc.HTTPFound, exceptions.MessageException) as e:
             # if it's a webob redirect exception, pass it up the stack
             raise e
@@ -2777,14 +2776,10 @@ class DatabaseOperationTool(Tool):
                 check_dataset_state(state)
 
     def _add_datasets_to_history(self, history, elements, datasets_visible=False):
-        datasets = []
         for element_object in elements:
             if getattr(element_object, "history_content_type", None) == "dataset":
                 element_object.visible = datasets_visible
-                datasets.append(element_object)
-
-        if datasets:
-            history.add_datasets(self.sa_session, datasets, set_hid=True)
+                history.stage_addition(element_object)
 
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         return self._outputs_dict()
@@ -3156,25 +3151,23 @@ class ApplyRulesTool(DatabaseOperationTool):
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, tag_handler, **kwds):
         hdca = incoming["input"]
         rule_set = RuleSet(incoming["rules"])
-        datasets_to_persist = []
+        copied_datasets = []
 
         def copy_dataset(dataset, tags):
             copied_dataset = dataset.copy(flush=False)
             if tags is not None:
                 tag_handler.set_tags_from_list(trans.get_user(), copied_dataset, tags, flush=False)
             copied_dataset.history_id = history.id
-            datasets_to_persist.append(copied_dataset)
+            copied_datasets.append(copied_dataset)
             return copied_dataset
 
         new_elements = self.app.dataset_collections_service.apply_rules(
             hdca, rule_set, copy_dataset
         )
-        hdca = output_collections.create_collection(
-            next(iter(self.outputs.values())), "output", collection_type=rule_set.collection_type, elements=new_elements, flush=False, set_hid=False,
+        self._add_datasets_to_history(history, copied_datasets)
+        output_collections.create_collection(
+            next(iter(self.outputs.values())), "output", collection_type=rule_set.collection_type, elements=new_elements,
         )
-        if hdca:
-            datasets_to_persist.append(hdca)
-        return datasets_to_persist
 
 
 class TagFromFileTool(DatabaseOperationTool):
@@ -3270,10 +3263,10 @@ class FilterFromFileTool(DatabaseOperationTool):
                 discarded_elements[element_identifier] = copied_value
 
         self._add_datasets_to_history(history, filtered_elements.values())
-        self._add_datasets_to_history(history, discarded_elements.values())
         output_collections.create_collection(
             self.outputs["output_filtered"], "output_filtered", elements=filtered_elements
         )
+        self._add_datasets_to_history(history, discarded_elements.values())
         output_collections.create_collection(
             self.outputs["output_discarded"], "output_discarded", elements=discarded_elements
         )
