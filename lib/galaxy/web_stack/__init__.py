@@ -533,6 +533,9 @@ class WeblessApplicationStack(ApplicationStack):
         # isolation if it doesn't, or DB_PREASSIGN if the job_config doesn't allow either.
         conf_class_name = job_config.__class__.__name__
         remove_methods = [HANDLER_ASSIGNMENT_METHODS.DB_SELF]
+        with self.app.model.session.connection():
+            # Force a connection so dialect.server_version_info is populated
+            pass
         dialect = self.app.model.session.bind.dialect
         if ((dialect.name == 'postgresql' and dialect.server_version_info >= (9, 5))
                 or (dialect.name == 'mysql' and dialect.server_version_info >= (8, 0, 1))):
