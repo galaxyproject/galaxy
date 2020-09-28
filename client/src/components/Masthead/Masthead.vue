@@ -7,10 +7,26 @@
         aria-label="Main"
         class="justify-content-center"
     >
-        <b-navbar-brand href="https://anvil.terra.bio" aria-label="homepage">
+        <b-navbar-brand @click="showNavGuard" :href="anvilLink" aria-label="homepage">
             <img alt="Galaxy Logo" style="padding-top: 0.4rem;" class="navbar-brand-image" :src="galaxyLogoSrc" />
             <img alt="Anvil Logo" class="navbar-brand-image" :src="anvilLogoSrc" />
         </b-navbar-brand>
+
+        <b-modal ref="navGuardModal" hide-footer title="A quick note before you go">
+            <div>
+                <p>
+                    You are navigating away from Galaxy, which will continue to run in the background. Any jobs you have
+                    running will continue, but it's important to keep in mind that this instance will also continue
+                    potentially incurring costs. Remember to shut down Galaxy when you are done.
+                </p>
+                <p>
+                    This modal will not be shown again.
+                </p>
+            </div>
+            <b-button variant="primary" block @click="confirmNav">
+                I understand, take me back to my AnVIL Dashboard
+            </b-button>
+        </b-modal>
 
         <b-navbar-nav>
             <masthead-item
@@ -99,11 +115,23 @@ export default {
             tab.toggle = frames.visible;
             tab.icon = (frames.visible && "fa-eye") || "fa-eye-slash";
         },
+        showNavGuard(ev) {
+            const dismissNavGuard = localStorage.getItem("dismissNavGuard");
+            if (!dismissNavGuard === true) {
+                this.$refs.navGuardModal.show();
+                ev.preventDefault();
+            }
+        },
+        confirmNav() {
+            localStorage.setItem("dismissNavGuard", true);
+            window.location = this.anvilLink;
+        },
     },
     data() {
         return {
             baseTabs: [],
             extensionTabs: [],
+            anvilLink: "https://anvil.terra.bio",
         };
     },
     computed: {
