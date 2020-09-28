@@ -26,6 +26,7 @@ DEFAULT_NAMESPACE = "default"
 INSTANCE_ID_INVALID_MESSAGE = ("Galaxy instance [%s] is either too long "
                                "(>20 characters) or it includes non DNS "
                                "acceptable characters, ignoring it.")
+JOB_ID_LABEL = "controller-uid"
 
 
 def ensure_pykube():
@@ -68,24 +69,14 @@ def pull_policy(params):
     return None
 
 
-def find_job_object_by_name(pykube_api, job_name, namespace=None):
-    return _find_object_by_name(Job, pykube_api, job_name, namespace=namespace)
+def find_job_object_by_id(pykube_api, job_id, namespace=None):
+    if not job_id:
+        raise ValueError("job_id must not be empty")
+    return Job.objects(pykube_api).filter(selector=JOB_ID_LABEL + "=" + job_id, namespace=namespace)
 
 
-def find_pod_object_by_name(pykube_api, pod_name, namespace=None):
-    return _find_object_by_name(Pod, pykube_api, pod_name, namespace=namespace)
-
-
-def _find_object_by_name(clazz, pykube_api, object_name, namespace=None):
-    filter_kwd = dict(selector="app=%s" % object_name)
-    if namespace is not None:
-        filter_kwd["namespace"] = namespace
-
-    objs = clazz.objects(pykube_api).filter(**filter_kwd)
-    obj = None
-    if len(objs.response['items']) > 0:
-        obj = clazz(pykube_api, objs.response['items'][0])
-    return obj
+def find_pod_object_by_id(pykube_api, job_id, namespace=None):
+    return Pod.objects(pykube_api).filter(selector=JOB_ID_LABEL + "=" + job_id, namespace=namespace)
 
 
 def stop_job(job, cleanup="always"):
@@ -111,11 +102,9 @@ def job_object_dict(params, job_name, spec):
         "apiVersion": params.get('k8s_job_api_version', DEFAULT_JOB_API_VERSION),
         "kind": "Job",
         "metadata": {
-                # metadata.name is the name of the pod resource created, and must be unique
-                # http://kubernetes.io/docs/user-guide/configuring-containers/
-                "name": job_name,
+                # labels must not be set so that the automatically generated ones are used that include controller-uid
+                "generateName": job_name + "-",
                 "namespace": params.get('k8s_namespace', DEFAULT_NAMESPACE),
-                "labels": {"app": job_name}
         },
         "spec": spec,
     }
@@ -145,9 +134,10 @@ def galaxy_instance_id(params):
 
 __all__ = (
     "DEFAULT_JOB_API_VERSION",
+    "JOB_ID_LABEL",
     "ensure_pykube",
-    "find_job_object_by_name",
-    "find_pod_object_by_name",
+    "find_job_object_by_id",
+    "find_pod_object_by_id",
     "galaxy_instance_id",
     "Job",
     "job_object_dict",
