@@ -1,0 +1,105 @@
+
+===========================================================
+September 2020 Galaxy Release (v 20.09)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**Feature1**
+  Feature description.
+
+**Feature2**
+  Feature description.
+
+**Feature3**
+  Feature description.
+
+
+New Visualizations
+===========================================================
+
+.. visualizations
+* Add build artifact destination for plugins
+  `Pull Request 9754`_
+* Hyphyvision visualization dependency fix
+  `Pull Request 10011`_
+* Add galaxyp MVP visualization plugin
+  (thanks to `@tmcgowan <https://github.com/tmcgowan>`__).
+  `Pull Request 10136`_
+
+New Datatypes
+===========================================================
+
+.. datatypes
+* Add VCF_BGZIP to VCF converter
+  (thanks to `@almahmoud <https://github.com/almahmoud>`__).
+  `Pull Request 7926`_
+* Add NcbiTaxonomySQlite class to describe NCBI Taxonomy SQLite databases
+  (thanks to `@pvanheus <https://github.com/pvanheus>`__).
+  `Pull Request 9712`_
+* Add lastdb datatype for last tool (PR `#2749 <https://github.com/galaxyproject/galaxy/issues/2749>`__)
+  (thanks to `@RomainDallet <https://github.com/RomainDallet>`__).
+  `Pull Request 9872`_
+* Add BLASTDBv5 datatype (for blast >=2.8.1)
+  (thanks to `@abretaud <https://github.com/abretaud>`__).
+  `Pull Request 9939`_
+* Use compression_utils to safely peek in compressed datasets
+  (thanks to `@pvanheus <https://github.com/pvanheus>`__).
+  `Pull Request 9990`_
+* Add Anndata peek capability
+  (thanks to `@mtekman <https://github.com/mtekman>`__).
+  `Pull Request 10013`_
+* fix OSError in fastq_to_fqtoc converter
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 10042`_
+* Don't display download link for optional, non-existant metadata files
+  `Pull Request 10068`_
+* Add "tgz" datatype to config sample file for toolfactory and any other tools generating gzipped tar files
+  (thanks to `@fubar2 <https://github.com/fubar2>`__).
+  `Pull Request 10080`_
+* Fix determining 'int', 'float' column type in Tabular
+  (thanks to `@selten <https://github.com/selten>`__).
+  `Pull Request 10155`_
+* Decrease pysam verbosity
+  `Pull Request 10225`_
+* Remove references to missing types from sample config file
+  `Pull Request 10269`_
+* Fix tuple assignment (fixes anndata, scanpy tool tests)
+  `Pull Request 10293`_
+
+Builtin Tool Updates
+===========================================================
+
+.. tools
+* Allow submission of tools with unset hidden parameters
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 9656`_
+* Citations overhaul
+  `Pull Request 9757`_
+* Fix error in get_open_tempfile()
+  `Pull Request 10060`_
+* Backport bugfix in `#10060 <https://github.com/galaxyproject/galaxy/issues/10060>`__ to 20.05
+  `Pull Request 10138`_
+* Fix and simplify built-in trim tool
+  (thanks to `@wm75 <https://github.com/wm75>`__).
+  `Pull Request 10145`_
+* Allow unary plus and minus in filtering
+  (thanks to `@wm75 <https://github.com/wm75>`__).
+  `Pull Request 10154`_
+* Toolbox refactoring, styling, and a couple bugfixes
+  `Pull Request 10170`_
+* Filtering.py failing all expressions
+  (thanks to `@almahmoud <https://github.com/almahmoud>`__).
+  `Pull Request 10266`_
+
+Release Notes
+===========================================================
+
+Please see the `full release notes <20.09_announce.html>`_ for more details.
+
+.. include:: 20.09_prs.rst
+
+.. include:: _thanks.rst
