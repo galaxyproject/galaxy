@@ -200,8 +200,6 @@ export default {
     },
     data() {
         return {
-            dataset_manipulation: false,
-            logged_dataset_manipulation: false,
             is_admin: false,
             multiple_add_dataset_options: false,
             user_library_import_dir: false,
@@ -236,17 +234,7 @@ export default {
         ) {
             this.multiple_add_dataset_options = true;
         }
-        const contains_file_or_folder = this.folderContents.find((el) => el.type === "folder" || el.type === "file");
 
-        // logic from legacy code
-        if (contains_file_or_folder) {
-            if (Galaxy.user) {
-                this.dataset_manipulation = true;
-                if (!Galaxy.user.isAnonymous()) {
-                    this.logged_dataset_manipulation = true;
-                }
-            }
-        }
         this.fetchExtAndGenomes();
     },
     mounted() {
@@ -257,6 +245,20 @@ export default {
         });
     },
     computed: {
+        contains_file_or_folder: function () {
+            return this.folderContents.find((el) => el.type === "folder" || el.type === "file");
+        },
+        logged_dataset_manipulation: function () {
+            const Galaxy = getGalaxyInstance();
+            // logic from legacy code
+            return !!(this.contains_file_or_folder && Galaxy.user && !Galaxy.user.isAnonymous());
+        },
+        dataset_manipulation: function () {
+            const Galaxy = getGalaxyInstance();
+            // logic from legacy code
+            return !!(this.contains_file_or_folder && Galaxy.user);
+        },
+
         getHomeUrl: () => {
             return `${getAppRoot()}library/list`;
         },
@@ -276,16 +278,15 @@ export default {
                     () => this.$emit("refreshTable"),
                     () => this.$emit("refreshTableContent")
                 )
-            )
+            );
         },
         async getSelected() {
             if (this.isAllSelectedMode) {
                 this.$emit("setBusy", true);
-                const selected = await this.services.getFilteredFolderContents(this.folder_id, this.unselected)
+                const selected = await this.services.getFilteredFolderContents(this.folder_id, this.unselected);
                 this.$emit("setBusy", false);
                 return selected;
-            } else
-                return this.selected
+            } else return this.selected;
         },
         newFolder() {
             this.folderContents.unshift({
@@ -298,15 +299,14 @@ export default {
             this.$emit("refreshTable");
         },
         downloadData(format) {
-            this.findCheckedItems().then(({datasets, folders}) => {
-
+            this.findCheckedItems().then(({ datasets, folders }) => {
                 if (this.selected.length === 0) {
                     Toast.info("You must select at least one dataset to download");
                     return;
                 }
 
                 download(format, datasets, folders);
-            })
+            });
         },
         addDatasets(source) {
             new mod_add_datasets.AddDatasets({
@@ -321,14 +321,14 @@ export default {
         findCheckedItems: async function (idOnly = true) {
             const datasets = [];
             const folder = [];
-            const selected = await this.getSelected()
+            const selected = await this.getSelected();
             selected.forEach((item) => {
                 item.type === "file" ? datasets.push(idOnly ? item.id : item) : idOnly ? item.id : item;
             });
-            return {datasets: datasets, folders: folder};
+            return { datasets: datasets, folders: folder };
         },
         importToHistoryModal: function (isCollection) {
-            this.findCheckedItems(!isCollection).then(({datasets, folders}) => {
+            this.findCheckedItems(!isCollection).then(({ datasets, folders }) => {
                 const checkedItems = this.selected;
                 checkedItems.dataset_ids = datasets;
                 checkedItems.folder_ids = folders;
@@ -342,7 +342,7 @@ export default {
                         selected: checkedItems,
                     });
                 }
-            })
+            });
         },
         /*
             Slightly adopted Bootstrap code
