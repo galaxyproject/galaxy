@@ -10,12 +10,32 @@ Enhancements
 -------------------------------
 
 .. major_feature
-
+* Simplified Workflow Run Form
+  `Pull Request 9151`_
+* Allow uploading directly from the tool form
+  `Pull Request 9809`_
+* Pluggable URI handling across upload components.
+  `Pull Request 9888`_
+* API + UI for importing workflows from a GA4GH TRS server.
+  `Pull Request 9999`_
+* GTN in Galaxy
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
+  `Pull Request 10024`_
+* Revision of Workflow Reports
+  `Pull Request 10121`_
+* Markdown Editor Revision
+  `Pull Request 10134`_
+* GA4GH TRS Workflow Search
+  `Pull Request 10158`_
+* Vue rewrite of the data-library-folder
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 9905`_
+* Improve workflow layout algorithm
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
+  `Pull Request 10045`_
 
 .. feature
 
-* Simplified Workflow Run Form
-  `Pull Request 9151`_
 * Added documentation for debugging Galaxy and unit/integration tests
   (thanks to `@kxk302 <https://github.com/kxk302>`__).
   `Pull Request 9664`_
@@ -25,8 +45,6 @@ Enhancements
 * Higlass InteractiveTool update
   (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
   `Pull Request 9805`_
-* Allow uploading directly from the tool form
-  `Pull Request 9809`_
 * Add allowed_cilogon list functionality (idphint short list)
   (thanks to `@juleengraham <https://github.com/juleengraham>`__).
   `Pull Request 9862`_
@@ -36,16 +54,9 @@ Enhancements
 * Adding user id to key so savedRules are specific for users
   (thanks to `@assuntad23 <https://github.com/assuntad23>`__).
   `Pull Request 9882`_
-* Pluggable URI handling across upload components.
-  `Pull Request 9888`_
 * Add BLASTDBv5 datatype (for blast >=2.8.1)
   (thanks to `@abretaud <https://github.com/abretaud>`__).
   `Pull Request 9939`_
-* API + UI for importing workflows from a GA4GH TRS server.
-  `Pull Request 9999`_
-* GTN in Galaxy
-  (thanks to `@hexylena <https://github.com/hexylena>`__).
-  `Pull Request 10024`_
 * Add galaxyp MVP visualization plugin
   (thanks to `@tmcgowan <https://github.com/tmcgowan>`__).
   `Pull Request 10136`_
@@ -101,12 +112,6 @@ Enhancements
 * Workflow list: Add published column, add sort bookmarked
   (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
   `Pull Request 10119`_
-* Revision of Workflow Reports
-  `Pull Request 10121`_
-* Markdown Editor Revision
-  `Pull Request 10134`_
-* GA4GH TRS Workflow Search
-  `Pull Request 10158`_
 * Add workflow invocation grabbing with db-skipped-lock
   `Pull Request 10177`_
 * Add user-is-owner context for display of published workflows.
@@ -119,9 +124,6 @@ Enhancements
   `Pull Request 9798`_
 * Change usage of whitelist/blacklist terms to allowlist/blocklist
   `Pull Request 9864`_
-* Vue rewrite of the data-library-folder
-  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
-  `Pull Request 9905`_
 * Allow option to remember the previously used IDP for login
   (thanks to `@juleengraham <https://github.com/juleengraham>`__).
   `Pull Request 10078`_
@@ -317,9 +319,6 @@ Enhancements
   `Pull Request 10041`_
 * Add GALAXY_ALLOW_FUTURE_DATABASE option in migration check
   `Pull Request 10044`_
-* Improve workflow layout algorithm
-  (thanks to `@hexylena <https://github.com/hexylena>`__).
-  `Pull Request 10045`_
 * Upload tests to clarify behavior around handling files without trailing newlines.
   `Pull Request 10050`_
 * Fix Galaxy tool/workflow staging and refactor for reuse in Planemo.
