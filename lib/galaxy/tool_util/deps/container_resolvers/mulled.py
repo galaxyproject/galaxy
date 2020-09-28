@@ -271,14 +271,11 @@ def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None)
         if tags:
             for tag in tags:
                 if '--' in tag:
-                    version, build = split_tag(tag)
+                    version, _ = split_tag(tag)
                 else:
                     version = tag
-                    build = None
                 if target_version and version == target_version:
-                    name = "%s:%s" % (target.package_name, version)
-                    if build:
-                        name = "%s--%s" % (name, build)
+                    name = "%s:%s" % (target.package_name, tag)
                     break
 
     else:
