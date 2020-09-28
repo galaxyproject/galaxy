@@ -165,8 +165,8 @@ class DataMetaFilter(Filter):
         def _add_meta(meta_value, m):
             if isinstance(m, list):
                 meta_value |= set(m)
-            elif isinstance(m, dict) or isinstance(m, OrderedDict):
-                meta_value |= set(["%s,%s" % (k, v) for k, v in m.iteritems()])
+            elif isinstance(m, dict):
+                meta_value |= set(["%s,%s" % (k, v) for k, v in m.items()])
             elif isinstance(m, str) and os.path.isfile(m):
                 with open(m) as fh:
                     for line in fh:
