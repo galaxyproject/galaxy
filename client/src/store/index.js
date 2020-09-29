@@ -17,6 +17,7 @@ import { configStore } from "./configStore";
 import { workflowStore } from "./workflowStore";
 import { datasetPathDestinationStore } from "./datasetPathDestinationStore";
 import { datasetExtFilesStore } from "./datasetExtFilesStore";
+import { datasetsStore } from "./datasetsStore";
 
 Vue.use(Vuex);
 
@@ -41,6 +42,7 @@ export function createStore() {
             user: userStore,
             config: configStore,
             workflows: workflowStore,
+            datasets: datasetsStore,
         },
     });
 }
