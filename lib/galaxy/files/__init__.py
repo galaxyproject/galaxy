@@ -61,7 +61,12 @@ class ConfiguredFileSources(object):
         extra_kwds = {
             'file_sources_config': self._file_sources_config,
         }
-        return plugin_config.load_plugins(self._plugin_classes, plugin_source, extra_kwds)
+        return plugin_config.load_plugins(
+            self._plugin_classes,
+            plugin_source,
+            extra_kwds,
+            dict_to_list_key="id",
+        )
 
     def get_file_source_path(self, uri):
         """Parse uri into a FileSource object and a path relative to its base."""

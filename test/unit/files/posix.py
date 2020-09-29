@@ -262,7 +262,6 @@ def _configured_file_sources(include_allowlist=False, plugin_extra_config=None, 
     file_sources_config = ConfiguredFileSourcesConfig(**config_kwd)
     plugin = {
         'type': 'posix',
-        'id': 'test1',
     }
     if writable is not None:
         plugin['writable'] = writable
@@ -275,7 +274,7 @@ def _configured_file_sources(include_allowlist=False, plugin_extra_config=None, 
         plugin['root'] = root
     plugin.update(plugin_extra_config or {})
     _write_file_fixtures(tmp, root)
-    file_sources = ConfiguredFileSources(file_sources_config, conf_dict=[plugin])
+    file_sources = ConfiguredFileSources(file_sources_config, conf_dict={"test1": plugin})
     file_sources.test_root = root
     return file_sources
 
