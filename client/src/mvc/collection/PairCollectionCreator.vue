@@ -36,7 +36,3 @@
         </template>
     </collection-creator>
 </template>
-<script>
-import CollectionCreatorMixin from "mvc/collection/mixins/CollectionCreatorMixin";
-export default {};
-</script>

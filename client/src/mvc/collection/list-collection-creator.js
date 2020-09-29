@@ -1,6 +1,7 @@
 import _ from "underscore";
 import jQuery from "jquery";
 import Backbone from "backbone";
+import CCMM from "./mixins/CollectionCreatorModalMixin";
 import HDCA from "mvc/history/hdca-model";
 import STATES from "mvc/dataset/states";
 import BASE_MVC from "mvc/base-mvc";
@@ -1045,7 +1046,10 @@ var collectionCreatorModal = function _collectionCreatorModal(elements, options,
     options = _.defaults(options || {}, {
         elements: elements,
     });
-    const { deferred, creatorOptions, showEl } = collectionCreatorModalSetup(options);
+    const clazz = Vue.extend(CCMM);
+    const inst = new clazz();
+    inst.$mount();
+    const { deferred, creatorOptions, showEl } = inst.collectionCreatorModalSetup(options);
     var creator = new CreatorClass(creatorOptions);
     showEl(creator.$el);
     creator.render();

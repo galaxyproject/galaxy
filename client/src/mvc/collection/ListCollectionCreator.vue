@@ -138,7 +138,7 @@ export default {
             titleUndoButton: _l("Undo all reordering and discards"),
             titleDeselectButton: _l("De-select all selected datasets"),
             selectedDatasetElems: [],
-            workingElements:[],
+            workingElements: [],
         };
     },
     mixins: [CollectionCreatorMixin],
@@ -236,9 +236,48 @@ export default {
             this.elementViews = [];
             // copy initial list, sort, add ids if needed
             this.workingElements = this.initialElements.slice(0);
-            // this._ensureElementIds();
-            // this._validateElements();
+            this._ensureElementIds();
+            this._validateElements();
             // this._mangleDuplicateNames();
+        },
+        /** add ids to dataset objs in initial list if none */
+        _ensureElementIds: function () {
+            this.workingElements.forEach((element) => {
+                if (!Object.prototype.hasOwnProperty.call(element, "id")) {
+                    element.id = element._uid;
+                }
+            });
+            return this.workingElements;
+        },
+        // /** separate working list into valid and invalid elements for this collection */
+        _validateElements: function () {
+            var creator = this;
+            creator.invalidElements = [];
+            this.workingElements = this.workingElements.filter((element) => {
+                var problem = creator._isElementInvalid(element);
+                if (problem) {
+                    creator.invalidElements.push({
+                        element: element,
+                        text: problem,
+                    });
+                }
+                return !problem;
+            });
+            return this.workingElements;
+        },
+        /** describe what is wrong with a particular element if anything */
+        _isElementInvalid: function (element) {
+            if (element.history_content_type === "dataset_collection") {
+                return _l("is a collection, this is not allowed");
+            }
+            var validState = element.state === STATES.OK || STATES.NOT_READY_STATE.contains(element.state);
+            if (!validState) {
+                return _l("has errored, is paused, or is not accessible");
+            }
+            if (element.deleted || element.purged) {
+                return _l("has been deleted or purged");
+            }
+            return null;
         },
         /** convert element into JSON compatible with the collections API */
         _elementToJSON: function (element) {
@@ -287,29 +326,6 @@ export default {
         //         // } else {
         //         //     this.$( '.collection-name' ).prop( 'disabled', false );
         //         //     this.$( '.create-collection' ).removeClass( 'disable' );
-        //     }
-        // },
-        // /** render the elements in order (or a warning if no elements found) */
-        // _renderList: function (speed, callback) {
-        //     //this.debug( '-- _renderList' );
-        //     var creator = this;
-        //     var $tmp = $("<div/>");
-        //     var $list = creator.$list();
-        //     _.each(this.elementViews, (view) => {
-        //         view.destroy();
-        //         creator.removeElementView(view);
-        //     });
-        //     creator.workingElements.forEach((element) => {
-        //         var elementView = creator._createElementView(element);
-        //         $tmp.append(elementView.$el);
-        //     });
-        //     creator._renderClearSelected();
-        //     $list.empty().append($tmp.children());
-        //     _.invoke(creator.elementViews, "render");
-        //     if ($list.height() > $list.css("max-height")) {
-        //         $list.css("border-width", "1px 0px 1px 0px");
-        //     } else {
-        //         $list.css("border-width", "0px");
         //     }
         // },
         // /** set up event handlers on self */
@@ -387,45 +403,6 @@ export default {
         //     this.$dragging = null;
         // },
         //TODO: actual method - must be rewritten, assess whether methods/created/computed/etc.
-        // /** separate working list into valid and invalid elements for this collection */
-        // _validateElements: function () {
-        //     var creator = this;
-        //     creator.invalidElements = [];
-        //     this.workingElements = this.workingElements.filter((element) => {
-        //         var problem = creator._isElementInvalid(element);
-        //         if (problem) {
-        //             creator.invalidElements.push({
-        //                 element: element,
-        //                 text: problem,
-        //             });
-        //         }
-        //         return !problem;
-        //     });
-        //     return this.workingElements;
-        // },
-        // /** add ids to dataset objs in initial list if none */
-        // _ensureElementIds: function () {
-        //     this.workingElements.forEach((element) => {
-        //         if (!Object.prototype.hasOwnProperty.call(element, "id")) {
-        //             element.id = _.uniqueId();
-        //         }
-        //     });
-        //     return this.workingElements;
-        // },
-        // /** describe what is wrong with a particular element if anything */
-        // _isElementInvalid: function (element) {
-        //     if (element.history_content_type === "dataset_collection") {
-        //         return _l("is a collection, this is not allowed");
-        //     }
-        //     var validState = element.state === STATES.OK || _.contains(STATES.NOT_READY_STATES, element.state);
-        //     if (!validState) {
-        //         return _l("has errored, is paused, or is not accessible");
-        //     }
-        //     if (element.deleted || element.purged) {
-        //         return _l("has been deleted or purged");
-        //     }
-        //     return null;
-        // },
         // /** mangle duplicate names using a mac-like '(counter)' addition to any duplicates */
         // _mangleDuplicateNames: function () {
         //     var SAFETY = 900;
@@ -504,36 +481,6 @@ export default {
         //     /** conv. to the main list display DOM */
         //     $list: function () {
         //         return this.$(".collection-elements");
-        //     },
-        //     /** create an element view, cache in elementViews, set up listeners, and return */
-        //     _createElementView: function (element) {
-        //         var elementView = new this.elementViewClass({
-        //             //TODO: use non-generic class or not all
-        //             // model : COLLECTION.DatasetDCE( element )
-        //             element: element,
-        //             selected: _.has(this.selectedIds, element.id),
-        //         });
-        //         this.elementViews.push(elementView);
-        //         this._listenToElementView(elementView);
-        //         return elementView;
-        //     },
-        //     /** listen to any element events */
-        //     _listenToElementView: function (view) {
-        //         var creator = this;
-        //         creator.listenTo(view, {
-        //             select: function (data) {
-        //                 var element = data.source.element;
-        //                 if (data.selected) {
-        //                     creator.selectedIds[element.id] = true;
-        //                 } else {
-        //                     delete creator.selectedIds[element.id];
-        //                 }
-        //                 creator.trigger("elements:select", data);
-        //             },
-        //             discard: function (data) {
-        //                 creator.trigger("elements:discard", data);
-        //             },
-        //         });
         //     },
         //     /** resync the creator's list of elements based on the DOM order */
         //     _syncOrderToDom: function () {
