@@ -49,7 +49,10 @@ from galaxy.tool_util.parser import (
     get_tool_source_from_representation,
     ToolOutputCollectionPart
 )
-from galaxy.tool_util.parser.xml import XmlPageSource
+from galaxy.tool_util.parser.xml import (
+    XmlPageSource,
+    XmlToolSource
+)
 from galaxy.tool_util.provided_metadata import parse_tool_provided_metadata
 from galaxy.tools import expressions
 from galaxy.tools.actions import DefaultToolAction
@@ -1721,6 +1724,16 @@ class Tool(Dictifiable):
                 args[key] = model.User.expand_user_properties(trans.user, param.value)
             else:
                 raise Exception("Unexpected parameter type")
+        if self.tool_type == 'data_source_async':
+            # parse xml in order to get 'environment_variable' values
+            for user_env_var in XmlToolSource(raw_tool_xml_tree(self.config_file)).parse_environment_variables():
+                if user_env_var['inject']:
+                    # we need to get the value of api_key as there is no template for it
+                    from galaxy.managers import api_keys
+                    args[user_env_var['name']] = api_keys.ApiKeyManager(trans.app).get_or_create_api_key(trans.user)
+                else:
+                    # regular env variable
+                    args[user_env_var['name']] = user_env_var['template']
         return args
 
     def execute(self, trans, incoming=None, set_output_hid=True, history=None, **kwargs):
