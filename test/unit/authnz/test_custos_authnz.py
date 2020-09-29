@@ -444,8 +444,10 @@ class CustosAuthnzTestCase(unittest.TestCase):
         )
         self.trans.user = custos_authnz_token.user
         self.trans.user.custos_auth = [custos_authnz_token]
+        provider = custos_authnz_token.provider
+        email = custos_authnz_token.user.email
 
-        success, message, redirect_uri = self.custos_authnz.disconnect("Custos", self.trans, "/")
+        success, message, redirect_uri = self.custos_authnz.disconnect(provider, self.trans, email, "/")
 
         self.assertEqual(1, len(self.trans.sa_session.deleted))
         deleted_token = self.trans.sa_session.deleted[0]

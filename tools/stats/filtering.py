@@ -13,7 +13,7 @@ AST_NODE_TYPE_WHITELIST = [
     'Or', 'GtE', 'LtE', 'Lt', 'Gt', 'BinOp', 'Add', 'Div', 'Sub', 'Mult', 'Mod',
     'Pow', 'LShift', 'GShift', 'BitAnd', 'BitOr', 'BitXor', 'UnaryOp', 'Invert',
     'Not', 'UAdd', 'USub', 'NotIn', 'In', 'Is', 'IsNot', 'List', 'Index',
-    'Subscript',
+    'Subscript', 'Constant',
     # Further checks
     'Name', 'Call', 'Attribute',
 ]

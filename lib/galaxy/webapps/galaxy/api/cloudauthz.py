@@ -104,7 +104,7 @@ class CloudAuthzController(BaseAPIController):
             missing_arguments.append('config')
 
         authn_id = payload.get('authn_id', None)
-        if authn_id is None:
+        if authn_id is None and provider.lower() not in ["azure", "gcp"]:
             missing_arguments.append('authn_id')
 
         if len(missing_arguments) > 0:
@@ -118,16 +118,17 @@ class CloudAuthzController(BaseAPIController):
             log.debug(msg_template.format("invalid config type `{}`, expect `dict`".format(type(config))))
             raise RequestParameterInvalidException('Invalid type for the required `config` variable; expect `dict` '
                                                    'but received `{}`.'.format(type(config)))
-        try:
-            authn_id = self.decode_id(authn_id)
-        except Exception:
-            log.debug(msg_template.format("cannot decode authn_id `" + str(authn_id) + "`"))
-            raise MalformedId('Invalid `authn_id`!')
+        if authn_id:
+            try:
+                authn_id = self.decode_id(authn_id)
+            except Exception:
+                log.debug(msg_template.format("cannot decode authn_id `" + str(authn_id) + "`"))
+                raise MalformedId('Invalid `authn_id`!')
 
-        try:
-            trans.app.authnz_manager.can_user_assume_authn(trans, authn_id)
-        except Exception as e:
-            raise e
+            try:
+                trans.app.authnz_manager.can_user_assume_authn(trans, authn_id)
+            except Exception as e:
+                raise e
 
         # No two authorization configuration with
         # exact same key/value should exist.
@@ -147,7 +148,6 @@ class CloudAuthzController(BaseAPIController):
             )
             view = self.cloudauthz_serializer.serialize_to_view(new_cloudauthz, trans=trans, **self._parse_serialization_params(kwargs, 'summary'))
             log.debug('Created a new cloudauthz record for the user id `{}` '.format(str(trans.user.id)))
-            trans.response.status = '200'
             return view
         except Exception as e:
             log.exception(msg_template.format("exception while creating the new cloudauthz record"))

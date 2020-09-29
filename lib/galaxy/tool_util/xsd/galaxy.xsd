@@ -4228,6 +4228,11 @@ More information can be found on Planemo's documentation for
         <xs:documentation xml:lang="en">Format (or datatype) of discovered datasets (an alias with ``format``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="sort_by" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">A string `[reverse_][SORT_COMP_]SORTBY` describing the desired sort order of the collection elements. `SORTBY` can be `filename`, `name`, `designation`, `dbkey` and the optional `SORT_COMP` can be either `lexical` or `numeric`. Default is lexical sorting by filename.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="visible" type="xs:boolean" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">Indication if this dataset is visible in output history. This defaults to ``false``, but probably shouldn't - be sure to set to ``true`` if that is your intention.</xs:documentation>
@@ -4283,7 +4288,7 @@ Galaxy, including:
     </xs:attribute>
     <xs:attribute name="sort_by" type="xs:string" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">A string `[reverse_]SORTBY[_SORT_COMP]` describing the desired sort order of the collection elements. `SORTBY` can be `filename`, `name`, `designation`, `dbkey` and the optional `SORT_COMP` can be either `lexical` or `numeric`. Default is lexical sorting by filename.</xs:documentation>
+        <xs:documentation xml:lang="en">A string `[reverse_][SORT_COMP_]SORTBY` describing the desired sort order of the collection elements. `SORTBY` can be `filename`, `name`, `designation`, `dbkey` and the optional `SORT_COMP` can be either `lexical` or `numeric`. Default is lexical sorting by filename.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="visible" type="xs:boolean" use="optional">

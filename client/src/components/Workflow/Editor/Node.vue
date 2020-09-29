@@ -414,8 +414,6 @@ export default {
             }
             const outputName = output.name;
             const outputTerminal = this.outputTerminals[outputName];
-            outputTerminal.force_datatype = datatype;
-            output.force_datatype = datatype;
             if (datatype) {
                 this.postJobActions["ChangeDatatypeAction" + outputName] = {
                     action_arguments: { newtype: datatype },

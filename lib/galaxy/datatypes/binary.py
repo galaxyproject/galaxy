@@ -32,6 +32,9 @@ from galaxy.util.checkers import is_bz2, is_gzip
 from . import data, dataproviders
 
 log = logging.getLogger(__name__)
+# pysam 0.16.0.1 emits logs containing the word 'Error', this can confuse the stdout/stderr checkers.
+# Can be be removed once https://github.com/pysam-developers/pysam/issues/939 is resolved.
+pysam.set_verbosity(0)
 
 # Currently these supported binary data types must be manually set on upload
 
@@ -486,9 +489,9 @@ class Bam(BamNative):
             # we start another process and discard stderr.
             if index_flag == '-b':
                 # IOError: No such file or directory: '-b' if index_flag is set to -b (pysam 0.15.4)
-                cmd = ['python', '-c', "import pysam; pysam.index('{}', '{}')".format(file_name, index_name)]
+                cmd = ['python', '-c', "import pysam; pysam.set_verbosity(0); pysam.index('{}', '{}')".format(file_name, index_name)]
             else:
-                cmd = ['python', '-c', "import pysam; pysam.index('{}', '{}', '{}')".format(index_flag, file_name, index_name)]
+                cmd = ['python', '-c', "import pysam; pysam.set_verbosity(0); pysam.index('{}', '{}', '{}')".format(index_flag, file_name, index_name)]
             with open(os.devnull, 'w') as devnull:
                 subprocess.check_call(cmd, stderr=devnull, shell=False)
             needs_sorting = False
@@ -557,12 +560,12 @@ class Bam(BamNative):
     # @dataproviders.decorators.dataprovider_factory('dataset-column', dataproviders.column.ColumnarDataProvider.settings)
     # def dataset_column_dataprovider(self, dataset, **settings):
     #    settings['comment_char'] = '@'
-    #    return super(Sam, self).dataset_column_dataprovider(dataset, **settings)
+    #    return super().dataset_column_dataprovider(dataset, **settings)
 
     # @dataproviders.decorators.dataprovider_factory('dataset-dict', dataproviders.column.DictDataProvider.settings)
     # def dataset_dict_dataprovider(self, dataset, **settings):
     #    settings['comment_char'] = '@'
-    #    return super(Sam, self).dataset_dict_dataprovider(dataset, **settings)
+    #    return super().dataset_dict_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory('header', dataproviders.line.RegexLineDataProvider.settings)
     def header_dataprovider(self, dataset, **settings):
@@ -799,7 +802,7 @@ class H5(Binary):
     edam_format = "format_3590"
 
     def __init__(self, **kwd):
-        Binary.__init__(self, **kwd)
+        super().__init__(**kwd)
         self._magic = binascii.unhexlify("894844460d0a1a0a")
 
     def sniff(self, filename):
@@ -975,7 +978,7 @@ class Anndata(H5):
         return False
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-        super(Anndata, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             with h5py.File(dataset.file_name, 'r') as anndata_file:
                 dataset.metadata.title = util.unicodify(anndata_file.attrs.get('title'))
@@ -997,7 +1000,7 @@ class Anndata(H5):
                         count = len(tmp.dtype)
                         size = int(tmp.size)
                     else:
-                        layers = [util.unicodify(x) for x in list(tmp.keys())]
+                        layers = [util.unicodify(x) for x in tmp.keys()]
                         count = len(layers)
                         size = lennames
                     return (layers, count, size)
@@ -1045,7 +1048,7 @@ class Anndata(H5):
                     elif hasattr(anndata_file['X'], 'shape'):
                         dataset.metadata.shape = tuple(anndata_file['X'].shape)
                     else:
-                        dataset.metadata.shape = tuple(int(dataset.metadata.obs_size), int(dataset.metadata.var_size))
+                        dataset.metadata.shape = (int(dataset.metadata.obs_size), int(dataset.metadata.var_size))
 
         except Exception as e:
             log.warning('%s, set_meta Exception: %s', self, e)
@@ -1352,7 +1355,7 @@ class MCool(H5):
             with h5py.File(filename, 'r') as handle:
                 if not all(name in handle.keys() for name in keys0):
                     return False
-                res0 = list(handle['resolutions'].keys())[0]
+                res0 = next(iter(handle['resolutions'].keys()))
                 keys = ['chroms', 'bins', 'pixels', 'indexes']
                 fmt = util.unicodify(handle['resolutions'][res0].attrs.get('format'))
                 url = util.unicodify(handle['resolutions'][res0].attrs.get('format-url'))
@@ -1443,7 +1446,7 @@ class BigWig(Binary):
     data_sources = {"data_standalone": "bigwig"}
 
     def __init__(self, **kwd):
-        Binary.__init__(self, **kwd)
+        super().__init__(**kwd)
         self._magic = 0x888FFC26
         self._name = "BigWig"
 
@@ -2574,7 +2577,7 @@ class Dcd(Binary):
     edam_data = "data_3842"
 
     def __init__(self, **kwd):
-        Binary.__init__(self, **kwd)
+        super().__init__(**kwd)
         self._magic_number = b'CORD'
 
     def sniff(self, filename):
@@ -2625,7 +2628,7 @@ class Vel(Binary):
     file_ext = "vel"
 
     def __init__(self, **kwd):
-        Binary.__init__(self, **kwd)
+        super().__init__(**kwd)
         self._magic_number = b'VELD'
 
     def sniff(self, filename):
@@ -2675,7 +2678,7 @@ class DAA(Binary):
     file_ext = "daa"
 
     def __init__(self, **kwd):
-        Binary.__init__(self, **kwd)
+        super().__init__(**kwd)
         self._magic = binascii.unhexlify("6be33e6d47530e3c")
 
     def sniff(self, filename):
@@ -2698,7 +2701,7 @@ class RMA6(Binary):
     file_ext = "rma6"
 
     def __init__(self, **kwd):
-        Binary.__init__(self, **kwd)
+        super().__init__(**kwd)
         self._magic = binascii.unhexlify("000003f600000006")
 
     def sniff(self, filename):
@@ -2721,7 +2724,7 @@ class DMND(Binary):
     file_ext = "dmnd"
 
     def __init__(self, **kwd):
-        Binary.__init__(self, **kwd)
+        super().__init__(**kwd)
         self._magic = binascii.unhexlify("6d18ee15a4f84a02")
 
     def sniff(self, filename):

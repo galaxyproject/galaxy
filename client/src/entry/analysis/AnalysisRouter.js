@@ -29,9 +29,11 @@ import WorkflowImport from "components/Workflow/WorkflowImport.vue";
 import TrsImport from "components/Workflow/TrsImport.vue";
 import TrsSearch from "components/Workflow/TrsSearch.vue";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools.vue";
+import LibraryFolder from "components/LibraryFolder/LibraryFolder.vue";
 import WorkflowList from "components/Workflow/WorkflowList.vue";
 import HistoryImport from "components/HistoryImport.vue";
 import HistoryView from "components/HistoryView.vue";
+import WorkflowInvocationReport from "components/Workflow/InvocationReport.vue";
 import WorkflowRun from "components/Workflow/Run/WorkflowRun.vue";
 import RecentInvocations from "components/User/RecentInvocations.vue";
 import ToolsView from "components/ToolsView/ToolsView.vue";
@@ -75,6 +77,7 @@ export const getAnalysisRouter = (Galaxy) =>
             "(/)workflows/run(/)": "show_workflows_run",
             "(/)workflows(/)list": "show_workflows",
             "(/)workflows/invocations": "show_workflow_invocations",
+            "(/)workflows/invocations/report": "show_workflow_invocation_report",
             // "(/)workflows/invocations/view_bco": "show_invocation_bco",
             "(/)workflows/list_published(/)": "show_workflows_published",
             "(/)workflows/create(/)": "show_workflows_create",
@@ -91,6 +94,7 @@ export const getAnalysisRouter = (Galaxy) =>
             "(/)datasets/edit": "show_dataset_edit_attributes",
             "(/)datasets/error": "show_dataset_error",
             "(/)interactivetool_entry_points(/)list": "show_interactivetool_list",
+            "(/)library/folders(/)(:folder_id)": "show_library_folder",
         },
 
         require_login: ["show_user", "show_user_form", "show_workflows", "show_cloud_auth", "show_external_ids"],
@@ -135,6 +139,12 @@ export const getAnalysisRouter = (Galaxy) =>
 
         show_interactivetool_list: function () {
             this._display_vue_helper(InteractiveTools);
+        },
+
+        show_library_folder: function (folder_id) {
+            this.page.toolPanel?.component.hide(0);
+            this.page.panels.right.hide();
+            this._display_vue_helper(LibraryFolder, { folder_id: folder_id });
         },
 
         show_cloud_auth: function () {
@@ -190,6 +200,11 @@ export const getAnalysisRouter = (Galaxy) =>
 
         show_history_view: function () {
             this._display_vue_helper(HistoryView, { id: QueryStringParsing.get("id") });
+        },
+
+        show_workflow_invocation_report: function () {
+            const invocationId = QueryStringParsing.get("id");
+            this._display_vue_helper(WorkflowInvocationReport, { invocationId: invocationId }, null, true);
         },
 
         show_workflow_invocations: function () {
@@ -266,9 +281,14 @@ export const getAnalysisRouter = (Galaxy) =>
         },
 
         show_pages_create: function () {
+            let url = "page/create";
+            const invocation_id = QueryStringParsing.get("invocation_id");
+            if (invocation_id) {
+                url += `?invocation_id=${invocation_id}`;
+            }
             this.page.display(
                 new FormWrapper.View({
-                    url: "page/create",
+                    url: url,
                     redirect: "pages/list",
                     active_tab: "user",
                 })

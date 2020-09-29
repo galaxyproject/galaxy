@@ -88,19 +88,18 @@ class LocalJobRunner(BaseJobRunner):
         stderr = stdout = ''
 
         # command line has been added to the wrapper by prepare_job()
-        command_line, exit_code_path = self.__command_line(job_wrapper)
+        job_file, exit_code_path = self.__command_line(job_wrapper)
         job_id = job_wrapper.get_id_tag()
 
         try:
             stdout_file = tempfile.NamedTemporaryFile(mode='wb+', suffix='_stdout', dir=job_wrapper.working_directory)
             stderr_file = tempfile.NamedTemporaryFile(mode='wb+', suffix='_stderr', dir=job_wrapper.working_directory)
-            log.debug('({}) executing job script: {}'.format(job_id, command_line))
+            log.debug('({}) executing job script: {}'.format(job_id, job_file))
             # The preexec_fn argument of Popen() is used to call os.setpgrp() in
             # the child process just before the child is executed. This will set
             # the PGID of the child process to its PID (i.e. ensures that it is
             # the root of its own process group instead of Galaxy's one).
-            proc = subprocess.Popen(args=command_line,
-                                    shell=True,
+            proc = subprocess.Popen(args=[job_file],
                                     cwd=job_wrapper.working_directory,
                                     stdout=stdout_file,
                                     stderr=stderr_file,
@@ -138,7 +137,7 @@ class LocalJobRunner(BaseJobRunner):
             stderr = self._job_io_for_db(stderr_file)
             stdout_file.close()
             stderr_file.close()
-            log.debug('execution finished: %s' % command_line)
+            log.debug('execution finished: %s' % job_file)
         except Exception:
             log.exception("failure running job %d", job_wrapper.job_id)
             self._fail_job_local(job_wrapper, "failure running job")

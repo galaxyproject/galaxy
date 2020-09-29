@@ -204,7 +204,7 @@ var FolderView = Backbone.View.extend({
         return _.template(
             `<div class="library_style_container">
                 <div>
-                    <a href="#/folders/<%= folder.get("parent_id") %>">
+                    <a href="/library/folders/<%= folder.get("parent_id") %>">
                         <button data-toggle="tooltip" data-placement="top" title="Go back to the parent folder"
                             class="btn btn-secondary primary-button" type="button">
                             <span class="fa fa-caret-left fa-lg"/>

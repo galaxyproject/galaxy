@@ -3,18 +3,14 @@
 // MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
 /* global ga */
-import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 // import mod_utils from "utils/utils";
-import { Toast } from "ui/toast";
 import mod_baseMVC from "mvc/base-mvc";
 // import mod_library_model from "mvc/library/library-model";
-import mod_folderlist_view from "mvc/library/library-folderlist-view";
 import mod_librarylist_view from "mvc/library/library-librarylist-view";
 import mod_librarytoolbar_view from "mvc/library/library-librarytoolbar-view";
-import mod_foldertoolbar_view from "mvc/library/library-foldertoolbar-view";
 import mod_library_dataset_view from "mvc/library/library-dataset-view";
 import mod_library_library_view from "mvc/library/library-library-view";
 import mod_library_folder_view from "mvc/library/library-folder-view";
@@ -43,13 +39,9 @@ var LibraryRouter = Backbone.Router.extend({
         "page/:show_page": "libraries_page",
         "library/:library_id/permissions": "library_permissions",
         "folders/:folder_id/permissions": "folder_permissions",
-        "folders/:id": "folder_content",
-        "folders/:id/page/:show_page": "folder_page",
         "folders/:folder_id/datasets/:dataset_id": "dataset_detail",
         "folders/:folder_id/datasets/:dataset_id/permissions": "dataset_permissions",
         "folders/:folder_id/datasets/:dataset_id/versions/:ldda_id": "dataset_version",
-        "folders/:folder_id/download/:format": "download",
-        "folders/:folder_id/import/:source": "import_datasets",
     },
 
     /**
@@ -154,39 +146,6 @@ var GalaxyLibrary = Backbone.View.extend({
             }
         });
 
-        this.library_router.on("route:folder_content", (id) => {
-            if (Galaxy.libraries.folderToolbarView) {
-                Galaxy.libraries.folderToolbarView.$el.unbind("click");
-            }
-            Galaxy.libraries.folderToolbarView = new mod_foldertoolbar_view.FolderToolbarView({ id: id });
-            Galaxy.libraries.folderListView = new mod_folderlist_view.FolderListView({ id: id });
-        });
-
-        this.library_router.on("route:folder_page", (id, show_page) => {
-            if (Galaxy.libraries.folderToolbarView === null) {
-                Galaxy.libraries.folderToolbarView = new mod_foldertoolbar_view.FolderToolbarView({ id: id });
-                Galaxy.libraries.folderListView = new mod_folderlist_view.FolderListView({
-                    id: id,
-                    show_page: show_page,
-                });
-            } else {
-                Galaxy.libraries.folderListView.render({
-                    id: id,
-                    show_page: parseInt(show_page),
-                });
-            }
-        });
-
-        this.library_router.on("route:download", (folder_id, format) => {
-            if ($("#folder_list_body").find(":checked").length === 0) {
-                Toast.info("You must select at least one dataset to download");
-                Galaxy.libraries.library_router.navigate(`folders/${folder_id}`, { trigger: true, replace: true });
-            } else {
-                Galaxy.libraries.folderToolbarView.download(format);
-                Galaxy.libraries.library_router.navigate(`folders/${folder_id}`, { trigger: false, replace: true });
-            }
-        });
-
         this.library_router.on("route:dataset_detail", (folder_id, dataset_id) => {
             if (Galaxy.libraries.datasetView) {
                 Galaxy.libraries.datasetView.$el.unbind("click");
@@ -237,20 +196,6 @@ var GalaxyLibrary = Backbone.View.extend({
                 id: folder_id,
                 show_permissions: true,
             });
-        });
-
-        this.library_router.on("route:import_datasets", (folder_id, source) => {
-            if (Galaxy.libraries.folderToolbarView && Galaxy.libraries.folderListView) {
-                Galaxy.libraries.folderToolbarView.showImportModal({
-                    source: source,
-                });
-            } else {
-                Galaxy.libraries.folderToolbarView = new mod_foldertoolbar_view.FolderToolbarView({ id: folder_id });
-                Galaxy.libraries.folderListView = new mod_folderlist_view.FolderListView({ id: folder_id });
-                Galaxy.libraries.folderToolbarView.showImportModal({
-                    source: source,
-                });
-            }
         });
 
         Backbone.history.start({ pushState: false });

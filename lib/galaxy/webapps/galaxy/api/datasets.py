@@ -179,7 +179,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
         """
         Return True if dataset is currently used as an input or output. False otherwise.
         """
-        return not self.hda_manager.ok_to_edit_metadata(dataset.id)
+        return not dataset.ok_to_edit_metadata()
 
     def _dataset_state(self, trans, dataset, **kwargs):
         """

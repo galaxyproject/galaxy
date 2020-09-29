@@ -288,6 +288,8 @@ def build_workflow_run_configs(trans, workflow, payload):
         steps_by_id = workflow.steps_by_id
         # Set workflow inputs.
         for key, input_dict in normalized_inputs.items():
+            if input_dict is None:
+                continue
             step = steps_by_id[key]
             if step.type == 'parameter_input':
                 continue
