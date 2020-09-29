@@ -177,13 +177,6 @@ class XmlToolSource(ToolSource):
         # break or modify any configurations by default.
         return "job_tmp_if_explicit"
 
-    def parse_docker_env_pass_through(self):
-        if self.parse_profile() < "18.01":
-            return ["GALAXY_SLOTS"]
-        else:
-            # Pass home, etc...
-            return super(XmlToolSource, self).parse_docker_env_pass_through()
-
     def parse_interpreter(self):
         interpreter = None
         command_el = self._command_el

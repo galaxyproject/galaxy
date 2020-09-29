@@ -109,9 +109,21 @@ class DockerizedJobsIntegrationTestCase(integration_util.IntegrationTestCase, Ru
         assert job_env.group_id == str(egid), job_env.group_id
         assert job_env.pwd.startswith(self.jobs_directory)
         assert job_env.pwd.endswith("/working")
-        # Should we change env_pass_through to just always include TMP and HOME for docker?
-        # I'm not sure, if yes this would change.
         assert not job_env.home.endswith('/home')
+
+    def test_container_job_environment_explicit_shared_home(self):
+        job_env = self._run_and_get_environment_properties("job_environment_explicit_shared_home")
+
+        assert job_env.pwd.startswith(self.jobs_directory)
+        assert job_env.pwd.endswith("/working")
+        assert not job_env.home.endswith('/home')
+
+    def test_container_job_environment_explicit_isolated_home(self):
+        job_env = self._run_and_get_environment_properties("job_environment_explicit_isolated_home")
+
+        assert job_env.pwd.startswith(self.jobs_directory)
+        assert job_env.pwd.endswith("/working")
+        assert job_env.home.endswith('/home')
 
     def test_build_mulled(self):
         if not which('docker'):
