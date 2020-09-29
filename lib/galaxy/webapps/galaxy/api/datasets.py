@@ -169,7 +169,6 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
         object_store_id = dataset.object_store_id
         name = object_store.get_concrete_store_name(dataset)
         description = object_store.get_concrete_store_description_markdown(dataset)
-        transient = object_store.is_transient(dataset)
         # not really working (existing problem)
         try:
             percent_used = object_store.get_store_usage_percent()
@@ -181,7 +180,6 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
             'object_store_id': object_store_id,
             'name': name,
             'description': description,
-            'transient': transient,
             'percent_used': percent_used,
         }
 
