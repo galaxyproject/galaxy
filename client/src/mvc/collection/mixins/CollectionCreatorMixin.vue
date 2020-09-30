@@ -38,27 +38,6 @@ export default {
         _getName: function () {
             return _.escape(this.$(".collection-name").val());
         },
-        /** show an alert on the top of the interface containing message (alertClass is bootstrap's alert-*) */
-        _showAlert: function (message, alertClass) {
-            alertClass = alertClass || "alert-danger";
-            this.$(".main-help").hide();
-            this.$(".header .alert")
-                .attr("class", "alert alert-dismissable")
-                .addClass(alertClass)
-                .show()
-                .find(".alert-message")
-                .html(message);
-        },
-        /** hide the alerts at the top */
-        _hideAlert: function (message) {
-            this.$(".main-help").show();
-            this.$(".header .alert").hide();
-        },
-        _cancelCreate: function (ev) {
-            if (typeof this.oncancel === "function") {
-                this.oncancel.call(this);
-            }
-        },
         /** attempt to create the current collection */
         _clickCreate: function (ev) {
             var name = this._getName();

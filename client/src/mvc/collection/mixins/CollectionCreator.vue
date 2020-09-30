@@ -29,11 +29,6 @@
                     </a>
                 </div>
             </div>
-            <!-- <div class="alert alert-dismissable">
-                <button type="button" class="close" data-dismiss="alert" :title="titleMoreHelp" aria-hidden="true">
-                    &times;
-                </button>
-            </div> -->
         </div>
         <div class="middle flex-row flex-row-container">
             <slot name="middle-content"></slot>
