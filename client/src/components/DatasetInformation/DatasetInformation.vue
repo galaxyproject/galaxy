@@ -19,7 +19,7 @@
                 </tr>
                 <tr>
                     <td>Filesize</td>
-                    <td v-html="bytesToString(dataset.file_size)"></td>
+                    <td id="filesize" v-html="bytesToString(dataset.file_size)"></td>
                 </tr>
                 <tr>
                     <td>Dbkey</td>
@@ -54,14 +54,6 @@ export default {
     },
     computed: {
         dataset: function () {
-            console.log(this.$store.getters.dataset(this.hda_id));
-            console.log(this.$store.getters.dataset(this.hda_id));
-            console.log(this.$store.getters.dataset(this.hda_id));
-            console.log(this.$store.getters.dataset(this.hda_id));
-            console.log(this.$store.getters.dataset(this.hda_id));
-            console.log(this.$store.getters.dataset(this.hda_id));
-            console.log(this.$store.getters.dataset(this.hda_id));
-            console.log(this.$store.getters.dataset(this.hda_id));
             return this.$store.getters.dataset(this.hda_id);
         },
     },
