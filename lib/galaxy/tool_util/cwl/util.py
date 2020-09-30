@@ -84,7 +84,7 @@ def path_or_uri_to_uri(path_or_uri):
 
 
 def galactic_job_json(
-    job, test_data_directory, upload_func, copy_func, collection_create_func, tool_or_workflow="workflow"
+    job, test_data_directory, upload_func, collection_create_func, tool_or_workflow="workflow"
 ):
     """Adapt a CWL job object to the Galaxy API.
 
@@ -145,7 +145,7 @@ def galactic_job_json(
         is_file = item_class == "File"
         is_directory = item_class == "Directory"
         is_collection = item_class == "Collection"  # Galaxy extension.
-        is_galaxy_id = item_class == "GalaxyID"  # Galaxy dataset/collection ID.
+        # is_galaxy_id = item_class == "GalaxyID"  # Galaxy dataset/collection ID.
 
         if force_to_file:
             if is_file:
@@ -168,12 +168,14 @@ def galactic_job_json(
             return replacement_directory(value)
         elif is_collection:
             return replacement_collection(value)
-        elif is_galaxy_id:
-            return replacement_galaxy_id(value)
+        # elif is_galaxy_id:
+        #     return replacement_galaxy_id(value)
         else:
             return replacement_record(value)
 
     def replacement_file(value):
+        if value.get('galaxy_id'):
+            return replacement_galaxy_id(value)
         file_path = value.get("location", None) or value.get("path", None)
         # format to match output definitions in tool, where did filetype come from?
         filetype = value.get("filetype", None) or value.get("format", None)
@@ -281,6 +283,8 @@ def galactic_job_json(
         return collection_element_identifiers
 
     def replacement_collection(value):
+        if value.get('galaxy_id'):
+            return replacement_galaxy_id(value)
         assert "collection_type" in value
         collection_type = value["collection_type"]
         elements = to_elements(value, collection_type)
@@ -291,10 +295,7 @@ def galactic_job_json(
         return {"src": "hdca", "id": hdca_id}
 
     def replacement_galaxy_id(value):
-        response = copy_func(value['location'])
-        target = FileLiteralTarget(contents=None)
-        datasets.append((response, target))
-        return {"src": "hda", "id": value['location']}
+        return {"src": "hda", "id": value['galaxy_id']}
 
     def replacement_record(value):
         collection_element_identifiers = []
