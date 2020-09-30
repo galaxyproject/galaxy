@@ -200,15 +200,6 @@ class StagingInterace(object):
                 payload["files_0|url_paste"] = content
                 return self._tools_post(payload)
 
-        # To be used when datasets are already available and can be copied instead of uploaded
-        def copy_func(dataset_id):
-            copy_payload = {
-                'content': dataset_id,
-                'source': 'hda',
-                'type': 'dataset'
-            }
-            return self._post('histories/{}/contents'.format(history_id), payload=copy_payload)
-
         def create_collection_func(element_identifiers, collection_type):
             payload = {
                 "name": "dataset collection",
@@ -239,7 +230,6 @@ class StagingInterace(object):
             job,
             job_dir,
             upload,
-            copy_func,
             create_collection_func,
             tool_or_workflow,
         )
