@@ -1089,7 +1089,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
                 span = 1
                 step = None
                 with open(dataset.file_name) as fh:
-                    for line in util.iter_readline_count(fh, VIEWPORT_READLINE_BUFFER_SIZE):
+                    for line in util.iter_start_of_line(fh, VIEWPORT_READLINE_BUFFER_SIZE):
                         try:
                             if line.startswith("browser"):
                                 chr_info = line.rstrip('\n\r').split()[-1]
