@@ -150,7 +150,8 @@ class LSF(BaseJobExec):
         if "excluded_hosts" in self.params:
             path_excluded = self.params["excluded_hosts"]
             if path.isfile(path_excluded):
-                return open(path_excluded).read().splitlines()
+                with open(path_excluded) as f:
+                    return f.read().splitlines()
         return list()
 
 
