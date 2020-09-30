@@ -261,11 +261,12 @@ class Data(metaclass=DataMeta):
             messagetype = "error"
         return error, msg, messagetype
 
-    def _archive_composite_dataset(self, trans, data, do_action='zip', msg=''):
+    def _archive_composite_dataset(self, trans, data, do_action='zip'):
         # save a composite object into a compressed archive for downloading
         outfname = data.name[0:150]
         outfname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in outfname)
         error = False
+        msg = ''
         try:
             if do_action == 'zip':
                 # Can't use mkstemp - the file must not exist first
@@ -434,7 +435,7 @@ class Data(metaclass=DataMeta):
         from galaxy import datatypes  # DBTODO REMOVE THIS AT REFACTOR
         if to_ext or isinstance(data.datatype, datatypes.binary.Binary):  # Saving the file, or binary file
             if data.extension in composite_extensions:
-                return self._archive_composite_dataset(trans, data, do_action=kwd.get('do_action'), msg=kwd.get('msg'))
+                return self._archive_composite_dataset(trans, data, do_action=kwd.get('do_action'))
             else:
                 trans.response.headers['Content-Length'] = int(os.stat(data.file_name).st_size)
                 filename = self._download_filename(data, to_ext, hdca=kwd.get("hdca", None), element_identifier=kwd.get("element_identifier", None))
