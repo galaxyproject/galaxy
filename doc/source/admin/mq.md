@@ -10,7 +10,7 @@ the process that handled that particular request will tell all others to also re
 <!-- TODO the types of messages being passed, more detailed than above -->
 
 This is configured via the [amqp_internal_connection](https://docs.galaxyproject.org/en/latest/admin/config.html#amqp-internal-connection)
-option in the galaxy.yaml. For connection examples, see the [kombu connection documentation](http://docs.celeryproject.org/projects/kombu/en/latest/userguide/connections.html).
+option in `galaxy.yml`. For connection examples, see the [Kombu connection documentation](http://https://docs.celeryproject.org/projects/kombu/en/stable/userguide/connections.html).
 See the [URL specification](https://docs.celeryproject.org/projects/kombu/en/stable/userguide/connections.html#urls) on that page for more information on configuring different transports.
 
 <!-- TODO copy in an actual rabbit MQ example from the link above 
