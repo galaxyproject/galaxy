@@ -99,16 +99,7 @@ def dist_js(*args):
     return js_helper('static/dist/', *args)
 
 
-def templates(*args):
-    """
-    Take a list of template names (no extension) and return appropriate
-    string of script tags.
-    """
-    return js_helper('static/scripts/templates/compiled/', *args)
-
 # Hashes
-
-
 def md5(s):
     """
     Return hex encoded md5 hash of string s
