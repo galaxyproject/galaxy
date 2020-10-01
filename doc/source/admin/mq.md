@@ -26,7 +26,7 @@ database located in your <galaxy>/database folder.
 
 ## Transports
 Kombu and Galaxy support a variety of MQ transport/server options. 
-[RabbitMQ](https://www.rabbitmq.com/) via AMQP is the most popular.
+[RabbitMQ](https://www.rabbitmq.com/) via AMQP is the most popular for production deployments.
 
 Visit the [Kombu reference index](https://docs.celeryproject.org/projects/kombu/en/latest/reference/index.html) for a
 complete list of supported transports and their configuration.
