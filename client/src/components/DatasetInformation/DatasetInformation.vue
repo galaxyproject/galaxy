@@ -1,7 +1,7 @@
 <template>
     <div>
         <h3>Dataset Information</h3>
-        <table id="dataset_information" class="tabletip info_data_table">
+        <table id="dataset-details" class="tabletip info_data_table">
             <tbody>
                 <tr>
                     <td>Number</td>

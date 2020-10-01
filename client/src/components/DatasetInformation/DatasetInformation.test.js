@@ -30,7 +30,7 @@ describe("JobDestinationParams/JobDestinationParams.vue", () => {
                 },
             },
         });
-        datasetInfoTable = wrapper.find("#dataset_information");
+        datasetInfoTable = wrapper.find("#dataset-details");
         await flushPromises();
     });
 
@@ -42,12 +42,12 @@ describe("JobDestinationParams/JobDestinationParams.vue", () => {
         expect(rows.length).toBe(6);
     });
 
-    it("should be formatted", async () => {
-        // filesize should be formatted
+    it("filesize should be formatted", async () => {
         const filesize = datasetInfoTable.find("#filesize > strong");
         expect(filesize.html()).toBe("<strong>93</strong>");
+    });
 
-        // Date should be formatted
+    it("Date should be formatted", async () => {
         const date = datasetInfoTable.find(".utc-time").text();
         expect(date).toBe("Monday Sep 28th 3:54:04 2020 UTC");
     });
