@@ -12,9 +12,9 @@
                 <transition name="slide">
                     <div v-if="opened">
                         <template v-for="[key, el] in category.elems.entries()">
-                            <span v-if="el.text" class="label toolPanelLabel ml-2" :key="key">
+                            <div v-if="el.text" class="label toolPanelLabel ml-2" :key="key">
                                 {{ el.text }}
-                            </span>
+                            </div>
                             <tool
                                 v-else
                                 class="ml-2"
@@ -33,9 +33,9 @@
             </div>
         </div>
         <div v-else>
-            <span v-if="category.text" class="label toolPanelLabel">
+            <div v-if="category.text" class="label toolPanelLabel">
                 {{ category.text }}
-            </span>
+            </div>
             <tool
                 v-else
                 :tool="category"
