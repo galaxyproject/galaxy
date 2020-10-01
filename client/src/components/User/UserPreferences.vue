@@ -88,7 +88,7 @@ import _l from "utils/localization";
 import axios from "axios";
 import QueryStringParsing from "utils/query-string-parsing";
 import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
-import { userLogoutAll } from "layout/menu";
+import { userLogoutAll, userLogoutClient } from "layout/menu";
 import "@fortawesome/fontawesome-svg-core";
 
 Vue.use(BootstrapVue);
@@ -254,7 +254,7 @@ export default {
                         return false;
                     }
                 }
-                userLogoutAll();
+                userLogoutClient();
             } else {
                 this.nameState = false;
                 return false;
