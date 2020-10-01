@@ -332,13 +332,12 @@ def _ensure_file_exists(file_path):
 
 class FileLiteralTarget:
 
-    def __init__(self, contents, path=None, **kwargs):
+    def __init__(self, contents, **kwargs):
         self.contents = contents
         self.properties = kwargs
-        self.path = path
 
     def __str__(self):
-        return "FileLiteralTarget[path={}] with {}".format(self.path, self.properties)
+        return "FileLiteralTarget[contents={}] with {}".format(self.contents, self.properties)
 
 
 class FileUploadTarget:
