@@ -15,7 +15,6 @@ const testStore = new Vuex.Store({
     plugins: [createCache()],
     modules: {
         datasetsStore: {
-            state: { datasetByHDAId: HDA_ID },
             actions: {
                 fetchDataset: jest.fn(),
             },
