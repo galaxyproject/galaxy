@@ -1,6 +1,5 @@
 import Vuex from "vuex";
 import { mount, createLocalVue } from "@vue/test-utils";
-// import { createStore } from "../../store";
 import { datasetsStore } from "store/datasetsStore";
 import DatasetInformation from "./DatasetInformation";
 import datasetResponse from "./testData/datasetResponse";
@@ -17,6 +16,12 @@ const testStore = new Vuex.Store({
         datasetsStore,
     },
 });
+
+jest.mock("axios", () => ({
+    get: async () => {
+        return { response: { status: 200 } };
+    },
+}));
 
 describe("DatasetInformation/DatasetInformation.vue", () => {
     let wrapper;
