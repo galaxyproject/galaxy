@@ -5,15 +5,15 @@
             <tbody>
                 <tr>
                     <td>Number</td>
-                    <td>{{ dataset.hid }}</td>
+                    <td id="number">{{ dataset.hid }}</td>
                 </tr>
                 <tr>
                     <td>Name</td>
-                    <td>{{ dataset.name }}</td>
+                    <td id="name">{{ dataset.name }}</td>
                 </tr>
                 <tr>
                     <td>Created</td>
-                    <td v-if="dataset.create_time">
+                    <td id="created" v-if="dataset.create_time">
                         <UtcDate :date="dataset.create_time" mode="pretty" />
                     </td>
                 </tr>
@@ -23,11 +23,11 @@
                 </tr>
                 <tr>
                     <td>Dbkey</td>
-                    <td>{{ dataset.metadata_dbkey }}</td>
+                    <td id="dbkey">{{ dataset.metadata_dbkey }}</td>
                 </tr>
                 <tr>
                     <td>Format</td>
-                    <td>{{ dataset.file_ext }}</td>
+                    <td id="format">{{ dataset.file_ext }}</td>
                 </tr>
             </tbody>
         </table>
