@@ -15,12 +15,14 @@ const testStore = new Vuex.Store({
     plugins: [createCache()],
     modules: {
         datasetsStore: {
-            state: HDA_ID,
+            state: { datasetByHDAId: HDA_ID },
             actions: {
                 fetchDataset: jest.fn(),
             },
             getters: {
-                dataset: () => datasetResponse,
+                dataset: (state) => (hda_id) => {
+                    return datasetResponse;
+                },
             },
         },
     },
@@ -39,11 +41,6 @@ describe("DatasetInformation/DatasetInformation.vue", () => {
             store: testStore,
             propsData,
             localVue,
-            computed: {
-                dataset() {
-                    return datasetResponse;
-                },
-            },
         });
         datasetInfoTable = wrapper.find("#dataset-details");
         await flushPromises();
