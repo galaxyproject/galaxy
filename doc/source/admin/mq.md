@@ -21,7 +21,7 @@ amqp_internal_connection:
 
 By default, Galaxy will first attempt to use
 your specified [database_connection](https://docs.galaxyproject.org/en/latest/admin/config.html#database-connection).  
-If that's not specified either, Galaxy will automatically create and use a separate sqlite
+If that's not specified either, Galaxy will automatically create and use a separate SQLite
 database located in your <galaxy>/database folder (indicated in the commented out line below).
 
 ## Transports
