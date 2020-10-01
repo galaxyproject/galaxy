@@ -3909,19 +3909,6 @@ class LibraryDatasetDatasetInfoAssociation(RepresentById):
         return True  # always allow inheriting, used for replacement
 
 
-class ValidationError(RepresentById):
-    def __init__(self, message=None, err_type=None, attributes=None):
-        self.message = message
-        self.err_type = err_type
-        self.attributes = attributes
-
-
-class DatasetToValidationErrorAssociation:
-    def __init__(self, dataset, validation_error):
-        self.dataset = dataset
-        self.validation_error = validation_error
-
-
 class ImplicitlyConvertedDatasetAssociation(RepresentById):
 
     def __init__(self, id=None, parent=None, dataset=None, file_type=None, deleted=False, purged=False, metadata_safe=True):
@@ -6167,10 +6154,6 @@ class ItemTagAssociation(Dictifiable):
 
 
 class HistoryTagAssociation(ItemTagAssociation, RepresentById):
-    pass
-
-
-class DatasetTagAssociation(ItemTagAssociation, RepresentById):
     pass
 
 
