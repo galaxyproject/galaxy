@@ -1,3 +1,4 @@
+import hashlib
 import logging
 
 from sqlalchemy import (
@@ -46,6 +47,14 @@ def localtimestamp(migrate_engine):
     else:
         raise Exception('Unable to convert data for unknown database type: %s' % migrate_engine.name)
 
+
+def truncate_index_name(index_name, engine):
+    # does what sqlalchemy does, see https://github.com/sqlalchemy/sqlalchemy/blob/8455a11bcc23e97afe666873cd872b0f204848d8/lib/sqlalchemy/sql/compiler.py#L4696
+    max_index_name_length = engine.dialect.max_index_name_length or engine.dialect.max_identifier_length
+    if len(index_name) > max_index_name_length:
+        suffix = hashlib.md5(index_name.encode('utf-8')).hexdigest()[-4:]
+        index_name = "{trunc}_{suffix}".format(trunc=index_name[0 : max_index_name_length - 8], suffix=suffix)
+    return index_name
 
 def create_table(table):
     try:
@@ -135,10 +144,14 @@ def add_index(index_name, table, column_name, metadata=None, **kwds):
     :param metadata: Needed only if ``table`` is a table name
     :type metadata: :class:`Metadata`
     """
+    if len(index_name) > 63 and metadata.bind.name in ('postgres', 'postgresql'):
+        suffix = hashlib.md5(index_name.encode('utf-8')).hexdigest()[-4:]
+
     try:
         if not isinstance(table, Table):
             assert metadata is not None
             table = Table(table, metadata, autoload=True)
+        index_name = truncate_index_name(index_name, table.metadata.bind)
         if index_name not in [ix.name for ix in table.indexes]:
             column = table.c[column_name]
             # MySQL cannot index a TEXT/BLOB column without specifying mysql_length
@@ -168,6 +181,7 @@ def drop_index(index, table, column_name=None, metadata=None):
             if not isinstance(table, Table):
                 assert metadata is not None
                 table = Table(table, metadata, autoload=True)
+            index = truncate_index_name(index, table.metadata.bind)
             if index in [ix.name for ix in table.indexes]:
                 index = Index(index, table.c[column_name])
             else:
