@@ -1,22 +1,28 @@
 import Vuex from "vuex";
 import { mount, createLocalVue } from "@vue/test-utils";
-import { createStore } from "../../store";
+// import { createStore } from "../../store";
+import { datasetsStore } from "store/datasetsStore";
 import DatasetInformation from "./DatasetInformation";
 import datasetResponse from "./testData/datasetResponse";
 import flushPromises from "flush-promises";
+import createCache from "vuex-cache";
 
 const HDA_ID = "06ec17aefa2d49dd";
 
-describe("JobDestinationParams/JobDestinationParams.vue", () => {
-    const localVue = createLocalVue();
-    localVue.use(Vuex);
+const localVue = createLocalVue();
+localVue.use(Vuex);
+const testStore = new Vuex.Store({
+    plugins: [createCache()],
+    modules: {
+        datasetsStore,
+    },
+});
 
-    let testStore;
+describe("DatasetInformation/DatasetInformation.vue", () => {
     let wrapper;
     let datasetInfoTable;
 
     beforeEach(async () => {
-        testStore = createStore();
         const propsData = {
             hda_id: HDA_ID,
         };
@@ -44,11 +50,15 @@ describe("JobDestinationParams/JobDestinationParams.vue", () => {
 
     it("filesize should be formatted", async () => {
         const filesize = datasetInfoTable.find("#filesize > strong");
-        expect(filesize.html()).toBe("<strong>93</strong>");
+        expect(filesize.html()).toBe(`<strong>${datasetResponse.file_size}</strong>`);
     });
 
     it("Date should be formatted", async () => {
         const date = datasetInfoTable.find(".utc-time").text();
         expect(date).toBe("Monday Sep 28th 3:54:04 2020 UTC");
     });
+
+    // it("Table should render data accordingly", async () => {
+    //     const entries = [{ Number: "hid" }, "name", "file_ext", "metadata_dbkey"];
+    // });
 });
