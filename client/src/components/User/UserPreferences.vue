@@ -238,15 +238,13 @@ export default {
             this.handleSubmit();
         },
         async handleSubmit() {
-            const Galaxy = getGalaxyInstance();
-            const userId = Galaxy.user.id;
             if (!this.checkFormValidity()) {
                 return false;
             }
             if (this.email === this.name) {
                 this.nameState = true;
                 try {
-                    await axios.delete(`${getAppRoot()}api/users/${userId}`);
+                    await axios.delete(`${getAppRoot()}api/users/${this.userId}`);
                 } catch (e) {
                     if (e.response.status === 403) {
                         this.deleteError =
