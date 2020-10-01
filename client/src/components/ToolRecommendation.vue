@@ -139,6 +139,18 @@ export default {
                 nodeEnter.append("title").text((d) => {
                     return d.children || d._children ? d.name : "Open tool - " + d.name;
                 });
+                nodeEnter
+                    .append("svg:a")
+                    .attr("xlink:href", (d) => {
+                        return "https://docs.google.com/forms/d/e/1FAIpQLSeLvW0MUKP60DCy08bQ7NuJF8qBTgcjEk1ayQ1mp_z9CoJAXg/viewform?entry.761773741=" + d.id;
+                    })
+                    //.attr("dy", ".35em")
+                    //.attr("y", d.y)
+                    .attr("height", d.y)
+                    .attr("width", d.x)
+                    .text((d) => {
+                        return "Rate it";
+                    });
                 // Transition nodes to their new position.
                 const nodeUpdate = node
                     .transition()
