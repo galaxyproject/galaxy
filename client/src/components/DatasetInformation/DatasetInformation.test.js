@@ -67,13 +67,15 @@ describe("DatasetInformation/DatasetInformation.vue", () => {
 
     it("Table should render data accordingly", async () => {
         const rendered_entries = [
-            { number: "hid" },
-            { name: "name" },
-            { dbkey: "metadata_dbkey" },
-            { format: "file_ext" },
+            { htmlAttribute: "number", backend_key: "hid" },
+            { htmlAttribute: "name", backend_key: "name" },
+            { htmlAttribute: "dbkey", backend_key: "metadata_dbkey" },
+            { htmlAttribute: "format", backend_key: "file_ext" },
         ];
+
         rendered_entries.forEach((entry) => {
-            console.log(entry);
+            const renderedText = datasetInfoTable.find(`#${entry.htmlAttribute}`).text();
+            expect(renderedText).toBe(datasetResponse[entry.backend_key].toString());
         });
     });
 });
