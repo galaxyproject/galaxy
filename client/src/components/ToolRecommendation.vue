@@ -144,12 +144,12 @@ export default {
                     .attr("xlink:href", (d) => {
                         return "https://docs.google.com/forms/d/e/1FAIpQLSeLvW0MUKP60DCy08bQ7NuJF8qBTgcjEk1ayQ1mp_z9CoJAXg/viewform?entry.761773741=" + d.id;
                     })
-                    //.attr("dy", ".35em")
-                    //.attr("y", d.y)
-                    .attr("height", d.y)
-                    .attr("width", d.x)
+                    .attr("target", "_blank")
+                    .append("text")
+                    .attr("dy", ".35em")
+                    .attr("x", "60")
                     .text((d) => {
-                        return "Rate it";
+                        return d.children || d._children ? "" : "Rate it";
                     });
                 // Transition nodes to their new position.
                 const nodeUpdate = node
