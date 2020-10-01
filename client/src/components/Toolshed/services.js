@@ -78,7 +78,7 @@ export class Services {
         const url = `${getAppRoot()}api/tool_shed_repositories/?uninstalled=False`;
         try {
             const response = await axios.get(url);
-            const repositories = this._groupByNameOwner(response.data, options.filter);
+            const repositories = this._groupByNameOwner(response.data, options.filter, options.selectLatest);
             this._fixToolshedUrls(repositories, Galaxy.config.tool_shed_urls);
             return repositories;
         } catch (e) {
@@ -125,7 +125,19 @@ export class Services {
             rethrowSimple(e);
         }
     }
-    _groupByNameOwner(incoming, filter) {
+    _groupByNameOwner(incoming, filter, selectLatest) {
+        if (selectLatest) {
+            const getSortValue = (x, y) => {
+                return x == y ? 0 : x < y ? -1 : 1;
+            };
+            incoming = incoming.sort((a, b) => {
+                return (
+                    getSortValue(a.name, b.name) ||
+                    getSortValue(a.owner, b.owner) ||
+                    getSortValue(parseInt(b.ctx_rev), parseInt(a.ctx_rev))
+                );
+            });
+        }
         const hash = {};
         const repositories = [];
         incoming.forEach((x) => {
