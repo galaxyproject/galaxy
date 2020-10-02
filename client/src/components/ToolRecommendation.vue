@@ -203,17 +203,9 @@ export default {
             };
             // Toggle children on click.
             const click = (d) => {
-                console.log(d);
-                /*if (d.children) {
-                    d._children = d.children;
-                    d.children = null;
-                } else {
-                    d.children = d._children;
-                    d._children = null;
-                }*/
-                update(d);
+                //update(d);
                 const tId = d.id;
-                if (tId !== undefined && tId !== "undefined" && tId !== null && tId !== "" && d._children === null) {
+                if (tId !== undefined && tId !== "undefined" && tId !== null && tId !== "" && d.parent != null) {
                     document.location.href = `${getAppRoot()}tool_runner?tool_id=${tId}`;
                 }
             };
