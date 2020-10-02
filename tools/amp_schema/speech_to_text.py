@@ -1,16 +1,16 @@
 class SpeechToText:
-	def __init__(self, media=None, result=None):
+	def __init__(self, media=None, results=None):
 		if media is None:
 			self.media = SpeechToTextMedia()
 		else:
 			 self.media = media
-		if result is None:
-			self.result = SpeechToTextResult()
+		if results is None:
+			self.results = SpeechToTextResult()
 		else:
-			 self.result = result
+			 self.results = results
 	@classmethod
 	def from_json(cls, json_data: dict):
-		return cls(json_data['media'], SpeechToTextResult().from_json(json_data['result']))
+		return cls(json_data['media'], SpeechToTextResult().from_json(json_data['results']))
 
 class SpeechToTextMedia:
 	filename = ""

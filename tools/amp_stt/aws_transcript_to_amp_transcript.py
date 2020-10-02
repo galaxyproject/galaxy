@@ -20,28 +20,28 @@ def main():
 	with open(transcribe_file) as json_file:
 		data = json.load(json_file)
 		
-	result = SpeechToTextResult()
+	amp_results = SpeechToTextResult()
 
 	# Fail if we don't have results
 	if "results" not in data.keys():
 		exit(1)
 
-	results = data["results"]
+	aws_results = data["results"]
 
-	if "transcripts" not in results.keys():
+	if "transcripts" not in aws_results.keys():
 		exit(1)
 
 	# Parse transcript
-	transcripts = results["transcripts"]
+	transcripts = aws_results["transcripts"]
 	for t in transcripts:
-		result.transcript = result.transcript + t["transcript"]
+		amp_results.transcript = amp_results.transcript + t["transcript"]
 
 	# Fail if we don't have any keys
-	if "items" not in results.keys():
+	if "items" not in aws_results.keys():
 		exit(1)
 
 	# Parse items (words)
-	items = results["items"]
+	items = aws_results["items"]
 	duration = 0.00
 	
 	# For each item, get the necessary parts and store as a word
@@ -68,20 +68,20 @@ def main():
 			# If this is the greatest end time, store it as duration
 			if end_time > duration:
 				duration = end_time
-		# Add the word to the result
-		result.addWord(i["type"], start_time, end_time, text, "confidence", max_confidence)
+		# Add the word to the results
+		amp_results.addWord(i["type"], start_time, end_time, text, "confidence", max_confidence)
 	
 	# Create the media object
 	media = SpeechToTextMedia(duration, media_file)
 
 	# Create the final object
-	outputFile = SpeechToText(media, result)
+	outputFile = SpeechToText(media, amp_results)
 
 	# Write the output
 	write_output_json(outputFile, output_stt_json_file)
 
 	# Start segmentation schema with diarization data
-	if "speaker_labels" in results.keys():
+	if "speaker_labels" in aws_results.keys():
     	# Create a segmentation object to serialize
 		seg_schema = SegmentationSchema()
 
@@ -89,7 +89,7 @@ def main():
 		segMedia = SegmentationSchemaMedia(duration, media_file)
 		seg_schema.media = segMedia
 
-		speakerLabels = results["speaker_labels"]
+		speakerLabels = aws_results["speaker_labels"]
 		seg_schema.numSpeakers = speakerLabels["speakers"]
 
 		# For each segment, get the start time, end time and speaker label

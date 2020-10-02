@@ -42,7 +42,7 @@ def main():
         last_end = end
     
     # For each word, find the corresponding adjustment
-    for word in stt.result.words:
+    for word in stt.results.words:
         adjust_word(word, offset_adj)
         
     # Write the resulting json

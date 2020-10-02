@@ -38,23 +38,23 @@ def main():
     with open(input_file, 'r') as file:
         stt = SpeechToText().from_json(json.load(file))
     
-    # Create the result object
-    result = EntityExtraction()
+    # Create the ner object
+    ner = EntityExtraction()
 
     # Add the media information
-    if stt is None or stt.result is None:
+    if stt is None or stt.results is None:
         mediaLength = 0
     else:
-        mediaLength = len(stt.result.transcript)
+        mediaLength = len(stt.results.transcript)
 
     # If we have a blank file, don't error.  Create another blank json file to pass to the next process
     if mediaLength == 0:
-        result.media = EntityExtractionMedia(mediaLength, input_file)
-        write_json_file(result, json_file)
+        ner.media = EntityExtractionMedia(mediaLength, input_file)
+        write_json_file(ner, json_file)
         exit(0)
     
     # Create a temp file to upload to S3
-    tmpfile = create_temp_transcript_file(jobName, stt.result.transcript)
+    tmpfile = create_temp_transcript_file(jobName, stt.results.transcript)
 
     # Copy the temporary text file to S3
     copy_to_s3(tmpfile.name, bucketName, jobName)
@@ -69,11 +69,11 @@ def main():
 
     comprehend_data = read_comprehend_response(uncompressed_file)
     
-    result.media = EntityExtractionMedia(mediaLength, input_file)
+    ner.media = EntityExtractionMedia(mediaLength, input_file)
 
     # Variables for filling time offsets based on speech to text
     lastPos = 0  # Iterator to keep track of location in STT word
-    sttWords = len(stt.result.words) # Number of STT words
+    sttWords = len(stt.results.words) # Number of STT words
 
     if 'Entities' in comprehend_data.keys():
         for entity in comprehend_data["Entities"]:
@@ -90,7 +90,7 @@ def main():
             for entityPart in entityParts:
                 for wordPos in range(lastPos, sttWords):
                     # If it matches, set the time offset.
-                    word = stt.result.words[wordPos]
+                    word = stt.results.words[wordPos]
                     if clean_entity_word(word.text) == entityPart:
                         # Keep track of last position to save iterations
                         lastPos = wordPos
@@ -104,13 +104,10 @@ def main():
                         end = None
             
             if clean_text(entity_type) not in ignore_cats_list and start is not None:
-                result.addEntity(entity_type, text, None, None, "relevance", float(entity["Score"]), start, None)  #AMP-636 removed startOffset=endOffset=end=None
-
-
-
+                ner.addEntity(entity_type, text, None, None, "relevance", float(entity["Score"]), start, None)  #AMP-636 removed startOffset=endOffset=end=None
 
     #Write the json file
-    write_json_file(result, json_file)
+    write_json_file(ner, json_file)
 
     #Cleanup temp files
     safe_delete(uncompressed_file)

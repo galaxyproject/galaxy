@@ -130,7 +130,7 @@ class Segment(Json):
         else:
             start = file_prefix.string_io().read(100).strip()
             if start:
-                return "\"media\":" in starts and "\"segments\":" in starts
+                return "\"media\":" in start and "\"segments\":" in start
             return False
        
 @build_sniff_from_prefix
@@ -158,7 +158,7 @@ class Transcript(Json):
         else:
             start = file_prefix.string_io().read(500).strip()
             if start:
-                return "\"media\":" in starts and "\"results\":" in starts and "\"transcript\":" in starts 
+                return "\"media\":" in start and "\"results\":" in start and "\"transcript\":" in start 
             return False
        
 @build_sniff_from_prefix
@@ -183,7 +183,7 @@ class Ner(Json):
         else:
             start = file_prefix.string_io().read(500).strip()
             if start:
-                return "\"media\":" in starts and "\"entities\":" in starts
+                return "\"media\":" in start and "\"entities\":" in start
             return False
        
 @build_sniff_from_prefix
@@ -211,7 +211,7 @@ class VideoOcr(Json):
         else:
             start = file_prefix.string_io().read(500).strip()
             if start:
-                return "\"media\":" in starts and "\"frames\":" in starts and "\"objects\":" in starts 
+                return "\"media\":" in start and "\"frames\":" in start and "\"objects\":" in start 
             return False    
    
 @build_sniff_from_prefix
@@ -236,7 +236,7 @@ class Shot(Json):
         else:
             start = file_prefix.string_io().read(500).strip()
             if start:
-                return "\"media\":" in starts and "\"shots\":" in starts
+                return "\"media\":" in start and "\"shots\":" in start
             return False
            
 @build_sniff_from_prefix
@@ -261,7 +261,7 @@ class Face(Json):
         else:
             start = file_prefix.string_io().read(500).strip()
             if start:
-                return "\"media\":" in starts and "\"faces\":" in starts
+                return "\"media\":" in start and "\"faces\":" in start
             return False
            
 @build_sniff_from_prefix

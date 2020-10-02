@@ -26,7 +26,7 @@ class JsonToVtt:
 		if path.exists(stt_file):
 			json_stt = open(stt_file)
 			dict_stt = json.loads(json_stt.read())
-			words = dict_stt['result']['words']
+			words = dict_stt['results']['words']
 		
 		end = start = 0
 		line = ''

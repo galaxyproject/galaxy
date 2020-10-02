@@ -54,18 +54,18 @@ def main():
 				exit(1)
 
 			# Check to see if we have the required input
-			if 'result' not in json_input.keys():
-				print("Missing required result input.  Exiting")
+			if 'results' not in json_input.keys():
+				print("Missing required results input.  Exiting")
 				exit(0)
 
-			ampResult = json_input['result']	
+			ampResults = json_input['results']	
 
-			if 'words' not in ampResult.keys() or 'transcript' not in ampResult.keys():
+			if 'words' not in ampResults.keys() or 'transcript' not in ampResults.keys():
 				print("Missing required words or transcript input.  Exiting")
 				exit(0)
 
-			ampResultWords = ampResult['words']
-			ampTranscript = ampResult['transcript']
+			ampResultsWords = ampResults['words']
+			ampTranscript = ampResults['transcript']
 
 			blockWords = list() # Words in this data block
 			entityRanges = list() # A list of entity ranges
@@ -75,15 +75,15 @@ def main():
 			this_transcript = ''
 
 			# Iterate through all of the words
-			for w in range(0, len(ampResultWords)):
-				word = ampResultWords[w]
+			for w in range(0, len(ampResultsWords)):
+				word = ampResultsWords[w]
 				nextWord = None
 				punctuation = ""
 				wordText = word['text']
 
 				# Check to see if the next "word" is punctuation.  If so, append it to the current word
-				if len(ampResultWords) > w + 1:
-					nextWord = ampResultWords[w + 1]
+				if len(ampResultsWords) > w + 1:
+					nextWord = ampResultsWords[w + 1]
 					if nextWord['type'] == 'punctuation':
 						punctuation += nextWord['text']
 
@@ -166,7 +166,7 @@ def main():
 					blockWords.append(newWord)
 
 				# If it's the end, make sure we get the 
-				if w == (len(ampResultWords) -1):
+				if w == (len(ampResultsWords) -1):
 					data = createData(speaker_name, blockWords, block_start)
 					# Add this all as a block.  We only have one since only one speaker
 					block = createBlock(0, data, entityRanges, this_transcript)

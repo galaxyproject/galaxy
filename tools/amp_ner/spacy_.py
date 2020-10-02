@@ -27,29 +27,29 @@ def main():
     # Load English tokenizer, tagger, parser, NER and word vectors
     nlp = spacy.load("en_core_web_lg")
 
-    # Create the result object
-    result = EntityExtraction()
+    # Create the ner object
+    ner = EntityExtraction()
 
     with open(input_file, 'r') as file:
         stt = SpeechToText().from_json(json.load(file))
 
     # If we have a blank file, don't error.  Create another blank json file to pass to the next process
-    if(stt is None or stt.result is None):
-        result.media = EntityExtractionMedia(len(stt.result.transcript), input_file)
+    if(stt is None or stt.results is None):
+        ner.media = EntityExtractionMedia(len(stt.results.transcript), input_file)
         # Write the json file
-        write_json_file(result, json_file)
+        write_json_file(ner, json_file)
         exit(0)
 
-    doc = nlp(stt.result.transcript)
+    doc = nlp(stt.results.transcript)
 
     # Add the media information
-    result.media = EntityExtractionMedia(len(stt.result.transcript), input_file)
+    ner.media = EntityExtractionMedia(len(stt.results.transcript), input_file)
     
     # Variables for filling time offsets based on speech to text
     lastPos = 0  # Iterator to keep track of location in STT word
-    sttWords = len(stt.result.words) # Number of STT words
+    sttWords = len(stt.results.words) # Number of STT words
 
-    # Find named entities, phrases and concepts - Add them to the result
+    # Find named entities, phrases and concepts - Add them to the ner
     for entity in doc.ents:
         # Start and end time offsets
         start = None
@@ -62,7 +62,7 @@ def main():
         # For each word in the entity, find the corresponding word in the STT word list
         for entityPart in entityParts:
             for wordPos in range(lastPos, sttWords):
-                word = stt.result.words[wordPos]
+                word = stt.results.words[wordPos]
                 # If it matches, set the time offset.
                 if word.text == entityPart:
                     # Keep track of last position to save iterations
@@ -74,10 +74,10 @@ def main():
                     break
         # Ignore certain categories
         if clean_text(entity.label_) not in ignore_cats_list:
-            result.addEntity(entity.label_, text, None, None, None, None, start, None)   #AMP-636 removed startOffset=endOffset=end=None
+            ner.addEntity(entity.label_, text, None, None, None, None, start, None)   #AMP-636 removed startOffset=endOffset=end=None
     
     # Write the json file
-    write_json_file(result, json_file)
+    write_json_file(ner, json_file)
 
 # Standardize ignore list text
 def clean_text(text):

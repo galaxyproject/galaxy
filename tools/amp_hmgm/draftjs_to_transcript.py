@@ -33,10 +33,10 @@ def main():
     #read original file for extracting only the confidence score of each word
     original_input = open(media_file)
     original_json = json.loads(original_input.read())
-    original_items = original_json["result"]["words"]
+    original_items = original_json["results"]["words"]
 	
     #print("the data in editor output is:",data)
-    result = SpeechToTextResult()
+    results = SpeechToTextResult()
     word_type = text = ''
     confidence = start_time = end_time = -1
     duration = 0.0
@@ -72,13 +72,13 @@ def main():
                     else:
                         word_type = entity_type
 
-            result.addWord(word_type, start_time, end_time, text, "confidence",confidence)   
+            results.addWord(word_type, start_time, end_time, text, "confidence",confidence)   
             if len(punctuation) > 0:
-                result.addWord('punctuation', None, None, punctuation, "confidence",0.0)
+                results.addWord('punctuation', None, None, punctuation, "confidence",0.0)
 
-        result.transcript = transcript
-        words = result.words
-        #Now retrieving the confidence values from the original input file and assigning them to 'result'
+        results.transcript = transcript
+        words = results.words
+        #Now retrieving the confidence values from the original input file and assigning them to 'results'
         list_items = []
         list_result = []
         for i in range(0,len(original_items)):
@@ -114,7 +114,7 @@ def main():
     elif "jobName" in data.keys() and "results" in data.keys():
         transcripts = data["results"]["transcripts"]
         for t in transcripts:
-            result.transcript = result.transcript + t["transcript"]
+            results.transcript = results.transcript + t["transcript"]
         
         # Parse items (words)
         items = data["results"]["items"]
@@ -143,8 +143,8 @@ def main():
                 # If this is the greatest end time, store it as duration
                 if end_time > duration:
                     duration = end_time
-            # Add the word to the result
-            result.addWord(i["type"], start_time, end_time, text, "confidence", max_confidence)
+            # Add the word to the results
+            results.addWord(i["type"], start_time, end_time, text, "confidence", max_confidence)
 
     #Standardizing Kaldi file
     elif "words" in data.keys():
@@ -161,19 +161,19 @@ def main():
             if text[-1] in [',','.','!','?'] and len(text) > 1:
                 punctuation = text[-1]
                 text = text[0:-1]
-                result.addWord('pronunciation', start_time, end_time, text, "confidence",confidence)
-                result.addWord('punctuation', None, None, punctuation, "confidence",confidence)
+                results.addWord('pronunciation', start_time, end_time, text, "confidence",confidence)
+                results.addWord('punctuation', None, None, punctuation, "confidence",confidence)
             elif text in [',','.','!','?']:
-                result.addWord('punctuation', None, None, text, "confidence",confidence)
+                results.addWord('punctuation', None, None, text, "confidence",confidence)
             else:
-                result.addWord('pronunciation', start_time, end_time, text, "confidence",confidence)
-        result.transcript = transcript
+                results.addWord('pronunciation', start_time, end_time, text, "confidence",confidence)
+        results.transcript = transcript
         
     # Create the media object
     media = SpeechToTextMedia(duration, media_file)
 
     # Create the final object
-    outputFile = SpeechToText(media, result)
+    outputFile = SpeechToText(media, results)
 
     # Write the output
     write_output_json(outputFile, output_json_file)

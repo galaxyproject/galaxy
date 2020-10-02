@@ -11,7 +11,7 @@ from speech_to_text import SpeechToText, SpeechToTextMedia, SpeechToTextResult, 
 def main():
 	(media_file, kaldi_file, kaldi_transcript_file, output_json_file) = sys.argv[1:5]
 
-	result = SpeechToTextResult()
+	results = SpeechToTextResult()
 
 	# Open the kaldi json
 	with open(kaldi_file) as json_file:
@@ -19,26 +19,26 @@ def main():
 
 	transcript = open(kaldi_transcript_file, "r")
 	
-	result.transcript = transcript.read()
+	results.transcript = transcript.read()
 
 	# Get a list of words
 	words = data["words"]
 	duration = 0.00
 
-	# For each word, add a word to our result
+	# For each word, add a word to our results
 	for w in words:
 		time = float(w["time"])
 		end = time + float(w["duration"])
 		# Keep track of the last time and use it as the duration
 		if end > duration:
 			duration = end
-		result.addWord("", time, end, w["word"], None, None)
+		results.addWord("", time, end, w["word"], None, None)
 
 	# Create the media objeect
 	media = SpeechToTextMedia(duration, media_file)
 
 	# Create the final object
-	outputFile = SpeechToText(media, result)
+	outputFile = SpeechToText(media, results)
 
 	#write the output
 	write_output_json(outputFile, output_json_file)
