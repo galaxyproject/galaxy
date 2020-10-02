@@ -144,7 +144,17 @@
                         </a>
                     </div>
                     <div class="collection-elements scroll-container flex-row">
+                        <div v-if="noMoreValidDatasets">
+                            <b-alert show variant="warning" dismissible>
+                                {{ discardedElementsHeader }}
+                                <a class="cancel-text" href="javascript:void(0)" role="button" @click="reset">
+                                    {{ startOverText }}
+                                </a>
+                                ?
+                            </b-alert>
+                        </div>
                         <dataset-collection-element-view
+                            v-else
                             v-for="element in returnWorkingElements"
                             :key="element.id"
                             @element-is-selected="elementSelected"
@@ -194,9 +204,11 @@ export default {
             titleUndoButton: _l("Undo all reordering and discards"),
             titleDeselectButton: _l("De-select all selected datasets"),
             noElementsHeader: _l("No datasets were selected"),
+            discardedElementsHeader: _l("No elements left. Would you like to"),
             invalidHeader: _l("The following selections could not be included due to problems:"),
             allInvalidElementsPartOne: _l("At least one element is needed for the collection. You may need to"),
             cancelText: _l("cancel"),
+            startOverText: _l("start over"),
             allInvalidElementsPartTwo: _l("and reselect new elements."),
             workingElements: [],
             invalidElements: [],
@@ -251,6 +263,9 @@ export default {
         },
         returnWorkingElements: function () {
             return this.workingElements;
+        },
+        noMoreValidDatasets() {
+            return this.workingElements.length == 0;
         },
         returnInvalidElementsLength: function () {
             return this.invalidElements.length > 0;
@@ -394,11 +409,6 @@ export default {
         //     //});
         //     return this;
         // },
-        // /** render a message in the list that no elements remain to create a collection */
-        // _renderNoElementsLeft: function () {
-        //     this._disableNameAndCreate(true);
-        //     this.$(".collection-elements").append(this.templates.noElementsLeft());
-        // },
         // /** track the mouse drag over the list adding a placeholder to show where the drop would occur */
         // _dragoverElements: function (ev) {
         //     //this.debug( '_dragoverElements:', ev );
@@ -465,41 +475,6 @@ export default {
         //         existingNames[element.name] = true;
         //     });
         // },
-        //     /** create the collection via the API
-        //      *  @returns {jQuery.xhr Object} the jquery ajax request
-        //      */
-        //     createList: function (name) {
-        //         if (!this.workingElements.length) {
-        //             var message = `${_l("No valid elements for final list")}. `;
-        //             message += `<a class="cancel-create" href="javascript:void(0);" role="button">${_l("Cancel")}</a> `;
-        //             message += _l("or");
-        //             message += ` <a class="reset" href="javascript:void(0);" role="button">${_l("start over")}</a>.`;
-        //             this._showAlert(message);
-        //             return;
-        //         }
-        //         var creator = this;
-        //         var elements = this.workingElements.map((element) => creator._elementToJSON(element));
-        //         creator.blocking = true;
-        //         return creator
-        //             .creationFn(elements, name, creator.hideOriginals)
-        //             .always(() => {
-        //                 creator.blocking = false;
-        //             })
-        //             .fail((xhr, status, message) => {
-        //                 creator.trigger("error", {
-        //                     xhr: xhr,
-        //                     status: status,
-        //                     message: _l("An error occurred while creating this collection"),
-        //                 });
-        //             })
-        //             .done(function (response, message, xhr) {
-        //                 creator.trigger("collection:created", response, message, xhr);
-        //                 creator.metric("collection:created", response);
-        //                 if (typeof creator.oncreate === "function") {
-        //                     creator.oncreate.call(this, response, message, xhr);
-        //                 }
-        //             });
-        //     },
         //     /** handle errors with feedback and details to the user (if available) */
         //     _errorHandler: function (data) {
         //         this.error(data);
@@ -608,9 +583,6 @@ export default {
         color: grey;
         font-style: italic;
         text-align: center;
-    }
-    .no-elements-left-message {
-        text-align: left;
     }
 }
 </style>
