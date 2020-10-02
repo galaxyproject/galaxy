@@ -15,7 +15,7 @@ from sqlalchemy import create_engine, MetaData
 from galaxy.model import mapping
 from galaxy.model.orm.scripts import get_config
 
-Index = namedtuple('MissingIndex', 'table column_names')
+IndexTuple = namedtuple('IndexTuple', 'table column_names')
 
 
 def tuple_from_index(index):
