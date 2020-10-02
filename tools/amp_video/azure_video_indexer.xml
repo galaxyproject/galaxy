@@ -1,0 +1,40 @@
+<tool id="azure_video_indexer" name="Azure Video Indexer" version="1.0.0">
+  <description>Azure Video Indexer providing video index results needed by other Azure video tools such as Azure Video OCR and Azure Shot Detection.</description>
+  <requirements>
+	<requirement type="package" version="3.8">python</requirement>
+	<requirement type="package" version="2.12">azure-cli</requirement>
+  </requirements>
+  <command detect_errors="exit_code">
+  	'$__tool_directory__/azure_video_indexer.py' '$input_video' '$include_ocr' '$location' '$__root_dir__' '$azure_video_index' '$azure_artifact_ocr'
+  </command>
+  <inputs>
+	<param name="input_video" type="data" format="video" label="Input Video" help="An input video file for Azure Video Indexer"/>
+	<param name="include_ocr" type="boolean" label="Include Video OCR" help="A boolean value indicating whether to include video OCR artifact in the outputs"/>
+    <param name="location" type="select" label="Azure Location" help="Region video indexer account is running in Azure">
+      <option value="trial">Trial</option>
+      <option value="westus2">West US 2</option>
+      <option value="eastus2">East US 2</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data name="azure_video_index" format="json" label="Azure Video Index JSON"/>
+    <data name="azure_artifact_ocr" format="json" label="Azure Artifact OCR JSON" />
+  </outputs>
+  <tests>
+  </tests>
+  <help>
+.. class:: infomark
+
+  Upload video to Azure, run the Video Indexer, and outputs the video index JSON as well as any additional artifacts JSON requested.
+  </help>
+  
+  <!-- Note: 
+	Currently we only use Azure for video OCR and shot detection: 
+	the former needs both the overall video index and the extra OCR artifact when generating AMP Video OCR;
+	while the latter only needs the video indexer (Azure does provide keyframe artifact).
+	In the future, if we use Azure for other video tools that need extra artifacts, we can add more input parameters 
+	for additional artifact types needed, or change the boolean parameter include_ocr into a multi-select artifact type list 
+	named artifacts; and correspondingly, we can add optional artifact outputs based on the artifacts list.
+ -->
+  
+</tool>

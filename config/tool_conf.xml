@@ -10,9 +10,9 @@
   
 <!--  AMP MGM Sections -->  
   
-  <section id="media" name="Media Pre-Processing">
-    <tool file="amp_media/extract_audio.xml"/>
-    <tool file="amp_media/remove_trailing_silence.xml"/>
+  <section id="audio_processing" name="Audio Extraction">
+    <tool file="amp_audio/extract_audio.xml"/>
+    <tool file="amp_audio/remove_trailing_silence.xml"/>
   </section>
   
   <section id="segmentation" name="Segmentation">
@@ -34,7 +34,17 @@
     <tool file="amp_ner/aws_comprehend.xml"/>
   </section>
 
-  <section id="music_ocr" name="Music Optical Charater Recoginition">
+  <section id="video_processing" name="Video Indexing">
+    <tool file="amp_video/azure_video_indexer.xml"/>
+    <tool file="amp_video/contact_sheets.xml"/>
+  </section>
+
+  <section id="shot_detection" name="Shot Detection">
+    <tool file="amp_shot/pyscenedetect.xml"/>
+    <tool file="amp_shot/azure_shot_detection.xml"/>
+  </section>
+  
+  <section id="facial_recognition" name="Facial Recognition">
   </section>
   
   <section id="video_ocr" name="Video Optical Charater Recoginition">
@@ -42,17 +52,9 @@
     <tool file="amp_vocr/azure_video_ocr.xml"/>
   </section>
   
-  <section id="shot_detection" name="Shot Detection">
-    <tool file="amp_shot/pyscenedetect.xml"/>
+  <section id="music_ocr" name="Music Optical Charater Recoginition">
   </section>
   
-  <section id="facial_recognition" name="Facial Recognition">
-  </section>
-  
-  <section id="contact_sheet" name="Contact Sheet">
-    <tool file="amp_contact/contact_sheets.xml"/>
-  </section>
-
   <section id="hmgm_editor" name="Human MGM Editor">
     <tool file="amp_hmgm/hmgm_sample.xml"/>
     <tool file="amp_hmgm/hmgm_transcript.xml"/>

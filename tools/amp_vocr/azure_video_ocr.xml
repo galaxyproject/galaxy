@@ -1,23 +1,17 @@
-<tool id="azure_video_ocr" name="Azure Video Indexer OCR" version="1.0.0">
-  <description>OCR Using Azure Video Indexer</description>
+<tool id="azure_video_ocr" name="Azure Video OCR Generator" version="1.0.0">
+  <description>Generate AMP Video OCR using results from Azure Video Indexer</description>
   <requirements>
 	<requirement type="package" version="3.8">python</requirement>
-	<requirement type="package" version="2.12">azure-cli</requirement>
   </requirements>
   <command detect_errors="exit_code">
-  	'$__tool_directory__/azure_video_ocr.py' '$input_video' '$location' '$__root_dir__' '$azure_ocr' '$azure_ocr_long' '$amp_vocr'
+  	'$__tool_directory__/azure_video_ocr.py' '$input_video' '$azure_video_index' '$azure_artifact_ocr' '$amp_vocr'
   </command>
   <inputs>
-	<param name="input_video" type="data" format="video" label="Input Video" help="An input video file for OCR"/>
-    <param name="location" type="select" label="Azure Location" help="Region video indexer account is running in Azure">
-      <option value="trial">Trial</option>
-      <option value="westus2">West US 2</option>
-      <option value="eastus2">East US 2</option>
-    </param>
+	<param name="input_video" type="data" format="video" label="Input Video" help="Input video file used by Azure Video Indexer"/>
+	<param name="azure_video_index" type="data" format="json" label="Azure Video Index JSON" help="Azure Video Index JSON file from Azure Video Indexer"/>
+	<param name="azure_artifact_ocr" type="data" format="json" label="Azure Artifact OCR JSON" help="Azure Artifact OCR JSON file from Azure Video Indexer"/>
   </inputs>
   <outputs>
-    <data name="azure_ocr" format="json" label="Azure OCR JSON"/>
-    <data name="azure_ocr_long" format="json" label="Azure OCR JSON (Long Version)" />
     <data name="amp_vocr" format="vocr" label="AMP Video OCR Generated" />
   </outputs>
   <tests>
@@ -25,6 +19,6 @@
   <help>
 .. class:: infomark
 
-  Generate Video OCR using Microsoft Azure Video Indexer
+  Generate AMP Video OCR using results from Microsoft Azure Video Indexer
   </help>
 </tool>
