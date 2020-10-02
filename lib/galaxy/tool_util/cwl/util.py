@@ -338,7 +338,7 @@ class FileLiteralTarget:
         self.path = path
 
     def __str__(self):
-        return "FileLiteralTarget[path={}] with {}".format(self.path, self.properties)
+        return "FileLiteralTarget[contents={}] with {}".format(self.contents, self.properties)
 
 
 class FileUploadTarget:
