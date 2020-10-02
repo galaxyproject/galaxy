@@ -62,12 +62,13 @@ def create_or_verify_database(url, galaxy_config_file, engine_options={}, app=No
         migrate_to_current_version(engine, db_schema)
 
     def migrate_from_scratch():
-        log.info("Creating new database from scratch, skipping migrations")
-        current_version = migrate_repository.version().version
-        mapping.init(file_path='/tmp', url=url, map_install_models=map_install_models, create_tables=True)
-        schema.ControlledSchema.create(engine, migrate_repository, version=current_version)
-        db_schema = schema.ControlledSchema(engine, migrate_repository)
-        assert db_schema.version == current_version
+        if not os.environ.get("GALAXY_TEST_FORCE_DATABASE_MIGRATION"):
+            log.info("Creating new database from scratch, skipping migrations")
+            current_version = migrate_repository.version().version
+            mapping.init(file_path='/tmp', url=url, map_install_models=map_install_models, create_tables=True)
+            schema.ControlledSchema.create(engine, migrate_repository, version=current_version)
+            db_schema = schema.ControlledSchema(engine, migrate_repository)
+            assert db_schema.version == current_version
         migrate()
         if app:
             # skips the tool migration process.
