@@ -15,6 +15,6 @@ import "script-loader!./js/popper.min.js";
 import "script-loader!./js/plotly-latest.min.js";
 import "script-loader!./js/datatables.min.js";
 import "script-loader!./js/d3.min.js";
-import "script-loader!./js/igv.js";
+import "script-loader!../node_modules/igv/dist/igv.min.js";
 import "script-loader!./js/msms_graphs.js";
 import "script-loader!./js/mvpapp.js";

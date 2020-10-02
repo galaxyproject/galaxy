@@ -1,4 +1,3 @@
-
 /**
  * Handles modification provisioning.
  * Uses chained Promises to efficiently generate all modifications in memory.
