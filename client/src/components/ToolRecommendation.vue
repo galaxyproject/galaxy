@@ -117,8 +117,7 @@ export default {
                     .attr("class", "node")
                     .attr("transform", (d) => {
                         return "translate(" + source.y0 + "," + source.x0 + ")";
-                    })
-                    .on("click", click);
+                    });
                 nodeEnter.append("circle").attr("r", 1e-6);
                 nodeEnter
                     .append("text")
@@ -135,7 +134,8 @@ export default {
                             return tName.slice(0, maxTextLength) + "...";
                         }
                         return d.name;
-                    });
+                    })
+                    .on("click", click);
                 nodeEnter.append("title").text((d) => {
                     return d.children || d._children ? d.name : "Open tool - " + d.name;
                 });
@@ -147,7 +147,7 @@ export default {
                     .attr("target", "_blank")
                     .append("text")
                     .attr("dy", ".35em")
-                    .attr("x", "60")
+                    .attr("x", "80")
                     .text((d) => {
                         return d.children || d._children ? "" : "Rate it";
                     });
@@ -198,6 +198,7 @@ export default {
             };
             // Toggle children on click.
             const click = (d) => {
+                console.log(d);
                 if (d.children) {
                     d._children = d.children;
                     d.children = null;
