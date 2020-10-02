@@ -171,6 +171,8 @@ def galactic_job_json(
             return replacement_record(value)
 
     def replacement_file(value):
+        if value.get('galaxy_id'):
+            return {"src": "hda", "id": value['galaxy_id']}
         file_path = value.get("location", None) or value.get("path", None)
         # format to match output definitions in tool, where did filetype come from?
         filetype = value.get("filetype", None) or value.get("format", None)
@@ -278,6 +280,8 @@ def galactic_job_json(
         return collection_element_identifiers
 
     def replacement_collection(value):
+        if value.get('galaxy_id'):
+            return {"src": "hdca", "id": value['galaxy_id']}
         assert "collection_type" in value
         collection_type = value["collection_type"]
         elements = to_elements(value, collection_type)
@@ -333,7 +337,7 @@ class FileLiteralTarget:
         self.properties = kwargs
 
     def __str__(self):
-        return "FileLiteralTarget[path={}] with {}".format(self.path, self.properties)
+        return "FileLiteralTarget[contents={}] with {}".format(self.contents, self.properties)
 
 
 class FileUploadTarget:
