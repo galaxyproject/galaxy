@@ -28,7 +28,7 @@
                 <td>{{ jobInformation.exit_code }}</td>
             </tr>
 
-            <tr v-if="jobInformation && jobInformation.job_messages">
+            <tr v-if="jobInformation && jobInformation.job_messages && jobInformation.job_messages.length > 0">
                 <td>Job Messages</td>
                 <td>
                     <ul style="padding-left: 15px; margin-bottom: 0px;">
