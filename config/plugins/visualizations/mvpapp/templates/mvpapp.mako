@@ -1,12 +1,11 @@
 <%
-    app_root = h.url_for("/static/plugins/visualizations/mvpapp/static/js/")
+    app_root = h.url_for("/static/plugins/visualizations/mvpapp/static/")
 %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>MVP Application</title>
-    
     <link rel="stylesheet" type="text/css" href='https://fonts.googleapis.com/css?family=PT+Sans:400,700'>
     <link rel="stylesheet" type="text/css" href='https://fonts.googleapis.com/css?family=Open+Sans'>
     <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css">
@@ -69,21 +68,21 @@
 </div>
 
 
-${h.javascript_link(app_root +  "script.js")}
+${h.javascript_link(app_root +  "dist/script.js")}
 <script>
     $(document).ready(function (){
         var config = {
-                                dbkey: '${hda.get_metadata().dbkey}',
-                                href: document.location.origin,
-                                dataName: '${hda.name}',
-                                historyID: '${trans.security.encode_id( hda.history_id )}',
-                                datasetID: '${trans.security.encode_id( hda.id )}',
-                                tableRowCount: {
-                                              % for table in hda.metadata.table_row_count:
-                                                '${table}': ${hda.metadata.table_row_count[table]} ,
-                                               % endfor
-                                }
-                            };
+            dbkey: '${hda.get_metadata().dbkey}',
+            href: document.location.origin,
+            dataName: '${hda.name}',
+            historyID: '${trans.security.encode_id( hda.history_id )}',
+            datasetID: '${trans.security.encode_id( hda.id )}',
+            tableRowCount: {
+                            % for table in hda.metadata.table_row_count:
+                            '${table}': ${hda.metadata.table_row_count[table]} ,
+                            % endfor
+            }
+        };
         MVPApplication.run(config);
     });
 </script>

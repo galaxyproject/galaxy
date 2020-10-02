@@ -1,3 +1,4 @@
+import "./js/publicPath";
 import "./css/jquery-ui.min.css";
 import "./css/lorikeet.css";
 import "./css/datatables.min.css";
