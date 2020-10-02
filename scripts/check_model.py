@@ -53,5 +53,5 @@ def find_missing_indexes():
 if __name__ == '__main__':
     indexes = find_missing_indexes()
     if indexes:
-        print(json.dumps(indexes, indent=4))
+        print(json.dumps(indexes, indent=4, sort_keys=True))
         sys.exit(1)
