@@ -22,7 +22,7 @@ def tuple_from_index(index):
     columns = tuple([getattr(index.columns, c).name for c in dir(index.columns) if not c.startswith('__')])
     if len(columns) == 1:
         columns = columns[0]
-    return Index(index.table.name, columns)
+    return IndexTuple(index.table.name, columns)
 
 
 def find_missing_indexes():
@@ -31,8 +31,8 @@ def find_missing_indexes():
         indexes = {}
         for t in metadata.tables.values():
             for index in t.indexes:
-                missing_index = tuple_from_index(index)
-                indexes[missing_index] = index.name
+                index_tuple = tuple_from_index(index)
+                indexes[index_tuple] = index.name
         return indexes
 
     # load metadata from mapping.py
