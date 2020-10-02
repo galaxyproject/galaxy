@@ -135,10 +135,11 @@ export default {
                         }
                         return d.name;
                     })
-                    .on("click", click);
-                nodeEnter.append("title").text((d) => {
-                    return d.children || d._children ? d.name : "Open tool - " + d.name;
-                });
+                    .on("click", click)
+                    .append("title")
+                    .text((d) => {
+                        return d.children || d._children ? d.name : "Open tool - " + d.name;
+                    });
                 nodeEnter
                     .append("svg:a")
                     .attr("xlink:href", (d) => {
@@ -150,6 +151,10 @@ export default {
                     .attr("x", "80")
                     .text((d) => {
                         return d.children || d._children ? "" : "Rate it";
+                    })
+                    .append("title")
+                    .text((d) => {
+                        return d.children || d._children ? d.name : "Rate this recommendation";
                     });
                 // Transition nodes to their new position.
                 const nodeUpdate = node
@@ -199,16 +204,16 @@ export default {
             // Toggle children on click.
             const click = (d) => {
                 console.log(d);
-                if (d.children) {
+                /*if (d.children) {
                     d._children = d.children;
                     d.children = null;
                 } else {
                     d.children = d._children;
                     d._children = null;
-                }
+                }*/
                 update(d);
                 const tId = d.id;
-                if (tId !== undefined && tId !== "undefined" && tId !== null && tId !== "") {
+                if (tId !== undefined && tId !== "undefined" && tId !== null && tId !== "" && d._children === null) {
                     document.location.href = `${getAppRoot()}tool_runner?tool_id=${tId}`;
                 }
             };
