@@ -1,0 +1,31 @@
+<tool id='discover_test' name='discover_test' version='0.1.0' python_template_version='3.5'>
+    <requirements>
+    </requirements>
+    <command detect_errors='exit_code'><![CDATA[
+        mkdir test_out
+        && touch test_out/{1..$number}.txt
+        && touch {1..2}.txt
+    ]]></command>
+    <inputs>
+        <param name='number' type='integer' help='number files' value='1'/>
+    </inputs>
+    <outputs>
+        <collection name='test_outfiles' type='list' label='test outfiles'>
+            <discover_datasets directory='test_out' pattern='__name_and_ext__'/>
+        </collection>
+        <collection name='manual_outfiles' type='list' label='test outfiles'>
+            <data name='1' format='txt' from_work_dir="1.txt" />
+            <data name='2' format='txt' from_work_dir="2.txt" />
+        </collection>
+    </outputs>
+    <tests>
+        <test expect_num_outputs='14'>
+            <param name='number' value='10'/>
+            <output_collection name='test_outfiles' type='list' count='10'/>
+            <output_collection name='manual_outfiles' type='list' count='2'/>
+        </test>
+    </tests>
+    <help><![CDATA[
+        TODO: Fill in help.
+    ]]></help>
+</tool>
