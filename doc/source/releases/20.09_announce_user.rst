@@ -99,9 +99,25 @@ New Visualizations
 ===========================================================
 
 .. visualizations
-* Add galaxyp MVP visualization plugin
-  (thanks to `@tmcgowan <https://github.com/tmcgowan>`__).
-  `Pull Request 10136`_
+
+GalaxyP MVP visualization plugin (thanks to `@tmcgowan <https://github.com/tmcgowan>`__). `Pull Request 10136`_
+
+.. figure:: images/20.09-mvp.png
+   :alt: Screenshot of the MVP visualisation. Described below.
+
+From their associated paper:
+
+    [The MVP App] displays this example data where the list of variant peptides
+    are shown in the Peptide Overview window (A). One of these peptides
+    (sequence DGDLENPVLYSGAVK) has been selected in this list, and the button
+    “PSMs for Selected Peptides” clicked to display the 2 PSMs that matched to
+    this sequence, along with associated scoring metrics (B). Double-clicking
+    on one of these PSMs opens the Lorikeet MS/MS viewer (C). Lorikeet [29]
+    renders MS/MS spectra, providing a visualization of the annotated spectra
+    that led to a PSM using the upstream sequence database searching software.
+    C shows an example PSM, where the blue- and red-colored m/z peak
+    values correspond to amino acid fragments that would be predicted to derive
+    from the peptide sequence identified by this PSM
 
 New Datatypes
 ===========================================================
