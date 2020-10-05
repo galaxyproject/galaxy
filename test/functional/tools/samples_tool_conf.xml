@@ -165,6 +165,7 @@
   <tool file="collection_creates_dynamic_nested_fail.xml" />
   <tool file="collection_cat_group_tag.xml" />
   <tool file="collection_cat_group_tag_multiple.xml" />
+  <tool file="collection_discover_dataset.xml" />
   <tool file="discover_sort_by.xml" />
   <tool file="expression_forty_two.xml" />
   <tool file="expression_parse_int.xml" />
