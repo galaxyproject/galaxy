@@ -218,7 +218,7 @@ export default {
             return !!this.nodes;
         },
         hasVisualizations() {
-            return !this.nodes && this.visualizationSection.elems.length > 0;
+            return this.visualizationSection.elems.length > 0;
         },
     },
     created() {
