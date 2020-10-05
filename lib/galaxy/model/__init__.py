@@ -1158,11 +1158,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         ''', '''
             UPDATE workflow_invocation_step
             SET update_time = :update_time
-            WHERE id in (
-                SELECT workflow_invocation_step.id
-                FROM workflow_invocation_step wis
-                WHERE wis.job_id = :job_id
-            );
+            WHERE job_id = :job_id;
         ''']
         sa_session = object_session(self)
         params = {
