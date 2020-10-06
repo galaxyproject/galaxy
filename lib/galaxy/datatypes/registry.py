@@ -883,13 +883,19 @@ class Registry:
         return None
 
     def find_conversion_destination_for_dataset_by_extensions(self, dataset_or_ext, accepted_formats, converter_safe=True):
-        """Returns ( target_ext, existing converted dataset )"""
+        """
+        Returns (target_ext, existing converted dataset)
+        where target_ext becomes None if conversion is not necessary or possible
+        """
         if hasattr(dataset_or_ext, "ext"):
             ext = dataset_or_ext.ext
             dataset = dataset_or_ext
         else:
             ext = dataset_or_ext
             dataset = None
+
+        if self.get_datatype_by_extension(ext) is not None and self.get_datatype_by_extension(ext).matches_any(accepted_formats):
+            return None, None
 
         for convert_ext in self.get_converters_by_datatype(ext):
             convert_ext_datatype = self.get_datatype_by_extension(convert_ext)
@@ -904,7 +910,7 @@ class Registry:
                 else:
                     ret_data = None
                 return (convert_ext, ret_data)
-        return (None, None)
+        return None, None
 
     def get_composite_extensions(self):
         return [ext for (ext, d_type) in self.datatypes_by_extension.items() if d_type.composite_type is not None]
