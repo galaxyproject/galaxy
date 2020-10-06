@@ -10,7 +10,14 @@
                 <a href="#" title="Open tool" :id="tool.id" @click="$emit('onCreate', tool.id, tool.name, $event)">{{
                     tool.name
                 }}</a>
-                <a :href="'https://docs.google.com/forms/d/e/1FAIpQLSeLvW0MUKP60DCy08bQ7NuJF8qBTgcjEk1ayQ1mp_z9CoJAXg/viewform?entry.761773741=' + tool.id" title="Rate this recommendation" target="_blank">
+                <a
+                    :href="
+                        'https://docs.google.com/forms/d/e/1FAIpQLSeLvW0MUKP60DCy08bQ7NuJF8qBTgcjEk1ayQ1mp_z9CoJAXg/viewform?entry.761773741=' +
+                        tool.id
+                    "
+                    title="Rate this recommendation"
+                    target="_blank"
+                >
                     <i class="fa mr-1 fa-star"></i>
                 </a>
             </div>

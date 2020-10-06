@@ -143,11 +143,15 @@ export default {
                 nodeEnter
                     .append("svg:a")
                     .attr("xlink:href", (d) => {
-                        return "https://docs.google.com/forms/d/e/1FAIpQLSeLvW0MUKP60DCy08bQ7NuJF8qBTgcjEk1ayQ1mp_z9CoJAXg/viewform?entry.761773741=" + d.id;
+                        return (
+                            "https://docs.google.com/forms/d/e/1FAIpQLSeLvW0MUKP60DCy08bQ7NuJF8qBTgcjEk1ayQ1mp_z9CoJAXg/viewform?entry.761773741=" +
+                            d.id
+                        );
                     })
                     .attr("target", "_blank")
                     .append("polygon")
                     .attr("points", (d) => {
+                        console.log(d.x, d.y);
                         return d.children || d._children ? "" : "15,-5.0 12,4.04 19.5,-1.6 10.5,-1.6 18,4.04";
                     })
                     .attr("class", "star-rate")
