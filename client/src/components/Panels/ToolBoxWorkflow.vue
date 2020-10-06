@@ -29,15 +29,13 @@
                     :disable-filter="true"
                     @onClick="onInsertTool"
                 />
-                <div class="toolMenu" id="workflow-tool-menu">
-                    <tool-section
-                        v-for="section in sections"
-                        :category="section"
-                        :query-filter="query"
-                        :key="section.id"
-                        @onClick="onInsertTool"
-                    />
-                </div>
+                <tool-section
+                    v-for="section in sections"
+                    :category="section"
+                    :query-filter="query"
+                    :key="section.id"
+                    @onClick="onInsertTool"
+                />
                 <tool-section
                     v-if="hasWorkflowSection"
                     :category="workflowSection"
