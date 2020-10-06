@@ -26,7 +26,6 @@ DEFAULT_NAMESPACE = "default"
 INSTANCE_ID_INVALID_MESSAGE = ("Galaxy instance [%s] is either too long "
                                "(>20 characters) or it includes non DNS "
                                "acceptable characters, ignoring it.")
-JOB_ID_LABEL = "controller-uid"
 
 
 def ensure_pykube():
@@ -47,18 +46,9 @@ def pykube_client_from_dict(params):
     return pykube_client
 
 
-def produce_unique_k8s_job_name(app_prefix=None, instance_id=None, job_id=None):
-    if job_id is None:
-        job_id = str(uuid.uuid4())
-
-    job_name = ""
-    if app_prefix:
-        job_name += "%s-" % app_prefix
-
-    if instance_id and len(instance_id) > 0:
-        job_name += "%s-" % instance_id
-
-    return "{}{}-{}".format(job_name, job_id, uuid.uuid4())
+def produce_k8s_job_prefix(app_prefix=None, instance_id=None, job_id=None):
+    job_name_elems = [app_prefix or "", instance_id or "", job_id or str(uuid.uuid4())]
+    return '-'.join(elem for elem in job_name_elems if elem)
 
 
 def pull_policy(params):
@@ -69,14 +59,14 @@ def pull_policy(params):
     return None
 
 
-def find_job_object_by_id(pykube_api, job_id, namespace=None):
-    if not job_id:
-        raise ValueError("job_id must not be empty")
-    return Job.objects(pykube_api).filter(selector=JOB_ID_LABEL + "=" + job_id, namespace=namespace)
+def find_job_object_by_name(pykube_api, job_name, namespace=None):
+    if not job_name:
+        raise ValueError("job name must not be empty")
+    return Job.objects(pykube_api).filter(field_selector={"metadata.name": job_name}, namespace=namespace)
 
 
-def find_pod_object_by_id(pykube_api, job_id, namespace=None):
-    return Pod.objects(pykube_api).filter(selector=JOB_ID_LABEL + "=" + job_id, namespace=namespace)
+def find_pod_object_by_name(pykube_api, job_name, namespace=None):
+    return Pod.objects(pykube_api).filter(selector="job-name=" + job_name, namespace=namespace)
 
 
 def stop_job(job, cleanup="always"):
@@ -97,13 +87,12 @@ def stop_job(job, cleanup="always"):
         job.api.raise_for_status(r)
 
 
-def job_object_dict(params, job_name, spec):
+def job_object_dict(params, job_prefix, spec):
     k8s_job_obj = {
         "apiVersion": params.get('k8s_job_api_version', DEFAULT_JOB_API_VERSION),
         "kind": "Job",
         "metadata": {
-                # labels must not be set so that the automatically generated ones are used that include controller-uid
-                "generateName": job_name + "-",
+                "generateName": job_prefix + "-",
                 "namespace": params.get('k8s_namespace', DEFAULT_NAMESPACE),
         },
         "spec": spec,
@@ -134,15 +123,14 @@ def galaxy_instance_id(params):
 
 __all__ = (
     "DEFAULT_JOB_API_VERSION",
-    "JOB_ID_LABEL",
     "ensure_pykube",
-    "find_job_object_by_id",
-    "find_pod_object_by_id",
+    "find_job_object_by_name",
+    "find_pod_object_by_name",
     "galaxy_instance_id",
     "Job",
     "job_object_dict",
     "Pod",
-    "produce_unique_k8s_job_name",
+    "produce_k8s_job_prefix",
     "pull_policy",
     "pykube_client_from_dict",
     "stop_job",
