@@ -88,6 +88,7 @@ import _l from "utils/localization";
 import axios from "axios";
 import QueryStringParsing from "utils/query-string-parsing";
 import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
+import { userLogoutAll, userLogoutClient } from "layout/menu";
 import "@fortawesome/fontawesome-svg-core";
 
 Vue.use(BootstrapVue);
@@ -217,11 +218,7 @@ export default {
                     Cancel: function () {
                         Galaxy.modal.hide();
                     },
-                    "Sign out": function () {
-                        window.location.href = `${getAppRoot()}user/logout?session_csrf_token=${
-                            Galaxy.session_csrf_token
-                        }`;
-                    },
+                    "Sign out": userLogoutAll,
                 },
             });
         },
@@ -241,15 +238,13 @@ export default {
             this.handleSubmit();
         },
         async handleSubmit() {
-            const Galaxy = getGalaxyInstance();
-            const userId = Galaxy.user.id;
             if (!this.checkFormValidity()) {
                 return false;
             }
             if (this.email === this.name) {
                 this.nameState = true;
                 try {
-                    await axios.delete(`${getAppRoot()}api/users/${userId}`);
+                    await axios.delete(`${getAppRoot()}api/users/${this.userId}`);
                 } catch (e) {
                     if (e.response.status === 403) {
                         this.deleteError =
@@ -257,7 +252,7 @@ export default {
                         return false;
                     }
                 }
-                window.location.href = `${getAppRoot()}user/logout?session_csrf_token=${Galaxy.session_csrf_token}`;
+                userLogoutClient();
             } else {
                 this.nameState = false;
                 return false;
