@@ -151,7 +151,6 @@ export default {
                     .attr("target", "_blank")
                     .append("polygon")
                     .attr("points", (d) => {
-                        console.log(d.x, d.y);
                         return d.children || d._children ? "" : "15,-5.0 12,4.04 19.5,-1.6 10.5,-1.6 18,4.04";
                     })
                     .attr("class", "star-rate")
@@ -206,7 +205,6 @@ export default {
             };
             // Toggle children on click.
             const click = (d) => {
-                //update(d);
                 const tId = d.id;
                 if (tId !== undefined && tId !== "undefined" && tId !== null && tId !== "" && d.parent != null) {
                     document.location.href = `${getAppRoot()}tool_runner?tool_id=${tId}`;
