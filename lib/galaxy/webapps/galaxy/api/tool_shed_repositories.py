@@ -6,7 +6,11 @@ from paste.httpexceptions import (
     HTTPBadRequest,
     HTTPForbidden
 )
-from sqlalchemy import and_
+from sqlalchemy import (
+    and_,
+    cast,
+    Integer,
+)
 
 from galaxy import (
     exceptions,
@@ -82,7 +86,8 @@ class ToolShedRepositoriesController(BaseAPIController):
             clause_list.append(self.app.install_model.ToolShedRepository.table.c.uninstalled == util.asbool(kwd.get('uninstalled')))
         tool_shed_repository_dicts = []
         query = trans.install_model.context.query(self.app.install_model.ToolShedRepository) \
-                                           .order_by(self.app.install_model.ToolShedRepository.table.c.name)
+                                           .order_by(self.app.install_model.ToolShedRepository.table.c.name) \
+                                           .order_by(cast(self.app.install_model.ToolShedRepository.ctx_rev, Integer).desc())
         if len(clause_list) > 0:
             query = query.filter(and_(*clause_list))
         for tool_shed_repository in query.all():
