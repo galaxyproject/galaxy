@@ -146,12 +146,20 @@ export default {
                         return "https://docs.google.com/forms/d/e/1FAIpQLSeLvW0MUKP60DCy08bQ7NuJF8qBTgcjEk1ayQ1mp_z9CoJAXg/viewform?entry.761773741=" + d.id;
                     })
                     .attr("target", "_blank")
-                    .append("text")
+                    .append("polygon")
                     .attr("dy", ".35em")
                     .attr("x", "80")
+                    .attr("points", "10,1 4,19.8 19,7.8 1,7.8 16,19.8")
+                    //.attr("fill-rule", "nonzero")
+                    .attr("fill", "#25537b")
+                    /*.append("text")
+                    .attr("dy", ".35em")
+                    .attr("x", "80")
+                    .attr("font-family", "FontAwesome")
+                    .attr("type", "text/html")
                     .text((d) => {
-                        return d.children || d._children ? "" : "Rate it";
-                    })
+                        return d.children || d._children ? "" : "&#xf005;";
+                    })*/
                     .append("title")
                     .text((d) => {
                         return d.children || d._children ? d.name : "Rate this recommendation";
