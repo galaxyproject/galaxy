@@ -333,14 +333,6 @@ model.ImplicitlyConvertedDatasetAssociation.table = Table(
     Column("metadata_safe", Boolean, index=True, default=True),
     Column("type", TrimmedString(255)))
 
-model.ValidationError.table = Table(
-    "validation_error", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("dataset_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
-    Column("message", TrimmedString(255)),
-    Column("err_type", TrimmedString(64)),
-    Column("attributes", TEXT))
-
 model.Group.table = Table(
     "galaxy_group", metadata,
     Column("id", Integer, primary_key=True),
@@ -1342,16 +1334,6 @@ model.HistoryTagAssociation.table = Table(
     Column("value", TrimmedString(255), index=True),
     Column("user_value", TrimmedString(255), index=True))
 
-model.DatasetTagAssociation.table = Table(
-    "dataset_tag_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("dataset_id", Integer, ForeignKey("dataset.id"), index=True),
-    Column("tag_id", Integer, ForeignKey("tag.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("user_tname", TrimmedString(255), index=True),
-    Column("value", TrimmedString(255), index=True),
-    Column("user_value", TrimmedString(255), index=True))
-
 model.HistoryDatasetAssociationTagAssociation.table = Table(
     "history_dataset_association_tag_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -1720,8 +1702,6 @@ mapper(model.CloudAuthz, model.CloudAuthz.table, properties=dict(
                    backref='cloudauthz')
 ))
 
-mapper(model.ValidationError, model.ValidationError.table)
-
 simple_mapping(model.DynamicTool)
 
 simple_mapping(model.HistoryDatasetAssociation,
@@ -1785,9 +1765,6 @@ simple_mapping(model.Dataset,
         primaryjoin=(
             (model.Dataset.table.c.id == model.LibraryDatasetDatasetAssociation.table.c.dataset_id) &
             (model.LibraryDatasetDatasetAssociation.table.c.deleted == false()))),
-    tags=relation(model.DatasetTagAssociation,
-        order_by=model.DatasetTagAssociation.table.c.id,
-        backref='datasets')
 )
 
 mapper(model.DatasetHash, model.DatasetHash.table, properties=dict(
@@ -2752,7 +2729,6 @@ def tag_mapping(tag_association_class, backref_name):
 
 
 tag_mapping(model.HistoryTagAssociation, "tagged_histories")
-tag_mapping(model.DatasetTagAssociation, "tagged_datasets")
 tag_mapping(model.HistoryDatasetAssociationTagAssociation, "tagged_history_dataset_associations")
 tag_mapping(model.LibraryDatasetDatasetAssociationTagAssociation, "tagged_library_dataset_dataset_associations")
 tag_mapping(model.PageTagAssociation, "tagged_pages")

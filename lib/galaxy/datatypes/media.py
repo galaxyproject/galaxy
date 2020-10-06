@@ -128,7 +128,7 @@ class Mp3(Audio):
             return 'mp3' in metadata['format_name'].split(',')
 
 
-class Wav(Binary):
+class Wav(Audio):
     """Class that reads WAV audio file
     >>> from galaxy.datatypes.sniff import sniff_with_cls
     >>> sniff_with_cls(Wav, 'hello.wav')

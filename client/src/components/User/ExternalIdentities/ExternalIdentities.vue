@@ -89,7 +89,7 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { getGalaxyInstance } from "app";
 import svc from "./service";
-import { logoutClick } from "layout/menu";
+import { userLogout } from "layout/menu";
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin.vue";
 
 Vue.use(BootstrapVue);
@@ -180,7 +180,7 @@ export default {
         disconnectAndReset() {
             // Disconnects the user's final ext id and logouts of current session
             this.disconnectID();
-            logoutClick();
+            userLogout();
         },
         removeItem(item) {
             this.items = this.items.filter((o) => o != item);

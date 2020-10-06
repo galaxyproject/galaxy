@@ -1158,11 +1158,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         ''', '''
             UPDATE workflow_invocation_step
             SET update_time = :update_time
-            WHERE id in (
-                SELECT workflow_invocation_step.id
-                FROM workflow_invocation_step wis
-                WHERE wis.job_id = :job_id
-            );
+            WHERE job_id = :job_id;
         ''']
         sa_session = object_session(self)
         params = {
@@ -3898,19 +3894,6 @@ class LibraryDatasetDatasetInfoAssociation(RepresentById):
         return True  # always allow inheriting, used for replacement
 
 
-class ValidationError(RepresentById):
-    def __init__(self, message=None, err_type=None, attributes=None):
-        self.message = message
-        self.err_type = err_type
-        self.attributes = attributes
-
-
-class DatasetToValidationErrorAssociation:
-    def __init__(self, dataset, validation_error):
-        self.dataset = dataset
-        self.validation_error = validation_error
-
-
 class ImplicitlyConvertedDatasetAssociation(RepresentById):
 
     def __init__(self, id=None, parent=None, dataset=None, file_type=None, deleted=False, purged=False, metadata_safe=True):
@@ -6156,10 +6139,6 @@ class ItemTagAssociation(Dictifiable):
 
 
 class HistoryTagAssociation(ItemTagAssociation, RepresentById):
-    pass
-
-
-class DatasetTagAssociation(ItemTagAssociation, RepresentById):
     pass
 
 
