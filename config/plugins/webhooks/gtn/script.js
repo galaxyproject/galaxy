@@ -1,11 +1,11 @@
 var gtnWebhookLoaded = false;
 
 function removeOverlay() {
-    document.getElementById("gtn-container").style.visibility = 'hidden';
+    document.getElementById("gtn-container").style.visibility = "hidden";
 }
 
 function showOverlay() {
-    document.getElementById("gtn-container").style.visibility = 'visible';
+    document.getElementById("gtn-container").style.visibility = "visible";
 }
 
 function addIframe() {
