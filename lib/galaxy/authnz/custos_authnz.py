@@ -5,6 +5,7 @@ import os
 from datetime import datetime, timedelta
 from urllib.parse import quote
 
+import json
 import jwt
 import requests
 from oauthlib.common import generate_nonce
@@ -112,23 +113,9 @@ class CustosAuthnz(IdentityProvider):
                         log.exception(message)
                         raise exceptions.AuthenticationFailed(message)
                 else:
-                    print("\n\n\nn\\nNEW USER: ", email, username)  # testing
-                    # return for confirmation, maybe return to confirmation page instead of login_redirect_url
-                    # return login_redirect_url, custos_authnz_token.user
+                    login_redirect_url = login_redirect_url + 'login/confirm?token=' + json.dumps(token)
+                    return login_redirect_url, None
 
-                    # is there a better was to do this storage?
-                    self.new_user = {'email': email,
-                                     'username': username,
-                                     'token': token,
-                                     'user_id': user_id}
-
-                    print("\n\n\nn\\nNEW USER AGAIN: ", self.new_user, self.new_user.get('email'), self.new_user.get('username'))  # testing
-                    return login_redirect_url + 'login/confirm', None
-                    return self.create_user(trans, login_redirect_url)
-
-                    # user = trans.app.user_manager.create(email=email, username=username)
-                    # trans.sa_session.add(user)
-                    # trans.sa_session.flush()
             custos_authnz_token = CustosAuthnzToken(user=user,
                                    external_user_id=user_id,
                                    provider=self.config['provider'],
@@ -147,35 +134,43 @@ class CustosAuthnz(IdentityProvider):
         trans.sa_session.flush()
         return login_redirect_url, custos_authnz_token.user
 
-    def create_user(self, trans, login_redirect_url):
-        print("\n\n\nn\\nCREATE NEW USER: ", login_redirect_url)  # testing
-        user = trans.app.user_manager.create(email=self.new_user.get('email'),
-                                             username=self.new_user.get('username'))
-        trans.sa_session.add(user)
-        trans.sa_session.flush()  # might not need this extra flush
+    def create_user(self, token, trans, login_redirect_url):
+        token_dict = json.loads(token)
 
-        user_id = self.new_user.get('user_id')
-        token = self.new_user.get('token')
-        access_token = token['access_token']
-        id_token = token['id_token']
-        refresh_token = token['refresh_token'] if 'refresh_token' in token else None
-        expiration_time = datetime.now() + timedelta(seconds=token.get('expires_in', 3600))
-        refresh_expiration_time = (datetime.now() + timedelta(seconds=token['refresh_expires_in'])) if 'refresh_expires_in' in token else None
+        access_token = token_dict['access_token']
+        id_token = token_dict['id_token']
+        refresh_token = token_dict['refresh_token'] if 'refresh_token' in token_dict else None
+        expiration_time = datetime.now() + timedelta(seconds=token_dict.get('expires_in', 3600))  # might be a problem cause times no long valid
+        refresh_expiration_time = (datetime.now() + timedelta(seconds=token_dict['refresh_expires_in'])) if 'refresh_expires_in' in token_dict else None
 
-        print("\n\n\nn\\nCREATE NEW USER AGAIN: ", user_id)  # testing
+        # Get nonce from token['id_token'] and validate. 'nonce' in the
+        # id_token is a hash of the nonce stored in the NONCE_COOKIE_NAME
+        # cookie.
+        userinfo = jwt.decode(id_token, verify=False)
+
+        # Get userinfo and create Galaxy user record
+        email = userinfo['email']
+        # Check if username if already taken
+        username = userinfo.get('preferred_username', self._generate_username(trans, email))
+        user_id = userinfo['sub']
+
+        user = trans.app.user_manager.create(email=email, username=username)
+        if trans.app.config.user_activation_on:
+            trans.app.user_manager.send_activation_email(trans, email, username)
 
         custos_authnz_token = CustosAuthnzToken(user=user,
-                                external_user_id=user_id,
-                                provider=self.config['provider'],
-                                access_token=access_token,
-                                id_token=id_token,
-                                refresh_token=refresh_token,
-                                expiration_time=expiration_time,
-                                refresh_expiration_time=refresh_expiration_time)
+                               external_user_id=user_id,
+                               provider=self.config['provider'],
+                               access_token=access_token,
+                               id_token=id_token,
+                               refresh_token=refresh_token,
+                               expiration_time=expiration_time,
+                               refresh_expiration_time=refresh_expiration_time)
 
+        trans.sa_session.add(user)
         trans.sa_session.add(custos_authnz_token)
         trans.sa_session.flush()
-        return login_redirect_url, custos_authnz_token.user
+        return login_redirect_url, user
 
     def disconnect(self, provider, trans, email=None, disconnect_redirect_url=None):
         try:

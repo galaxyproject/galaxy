@@ -8,30 +8,18 @@
                 <b-form id="confirmation" @submit.prevent="submit()">
                     <b-card no-body header="Confirm new account creation">
                         <b-card-body>
-                            <p
-                                >Do you already have a Galaxy account?</p
-                            ><p
-                                >You are about to create a new account. 
+                            <p>Looks like you are about to create a new account!</p>
+                            <p>
+                                Do you already have a Galaxy account?
                                 If you already have an account, hit <em>'Cancel'</em> and log in using your username 
-                                and password to connect this account via <strong>User Preferences</strong>.</p
-                            >
-                            <p
-                                >If you wish to continue with the new account, select <em>'Confirm'</em>.</p
-                            >
+                                and password to connect this account via <strong>User Preferences</strong>.
+                            </p>
+                            <p>If you wish to continue with the new account, select <em>'Confirm'</em>.</p>
                             <p>
                                 Reminder: Registration and usage of multiple accounts is tracked and such accounts are subject
                                 to termination and data deletion. Connect existing account now to avoid possible loss of data.
                             </p>
 
-                            <!-- <b-form-group label="Public name">
-                                <b-form-input name="username" type="text" v-model="username" />
-                                <b-form-text
-                                    >Your public name is an identifier that will be used to generate addresses for
-                                    information you share publicly. Public names must be at least three characters in
-                                    length and contain only lower-case letters, numbers, dots, underscores, and dashes
-                                    ('.', '_', '-').</b-form-text
-                                >
-                            </b-form-group> -->
                             <b-form-group
                                 v-if="mailing_join_addr && server_mail_configured"
                                 label="Subscribe to mailing list"
@@ -114,12 +102,17 @@ export default {
         },
         submit() {
             const rootUrl = getAppRoot();
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
             
             axios
-                .post(`${rootUrl}authnz/create_user`)
+                .post(`${rootUrl}authnz/custos/create_user?token=${token}`)
                 .then((response) => {
                     if (response.data.redirect_uri) {
-                        window.location = response.data.redirect_uri || rootUrl;
+                        window.location = response.data.redirect_uri;
+                    }
+                    else {
+                        window.location = rootUrl;
                     }
                 })
                 .catch((error) => {

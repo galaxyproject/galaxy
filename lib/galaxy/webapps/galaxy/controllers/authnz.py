@@ -86,10 +86,10 @@ class OIDC(JSAppLauncher):
             raise
         if success is False:
             return trans.show_error_message(message)
-        if redirect_url == "/login/confirm":
-            print("\n\n\n\nURL: ", redirect_url)
-            self.provider = provider
+        if "/login/confirm" in redirect_url:
             return trans.response.send_redirect(url_for(redirect_url))
+        elif redirect_url is None:
+            redirect_url = url_for('/')
 
         user = user if user is not None else trans.user
         if user is None:
@@ -99,12 +99,15 @@ class OIDC(JSAppLauncher):
         trans.handle_user_login(user)
         # Record which idp provider was logged into, so we can logout of it later
         trans.set_cookie(value=provider, name=PROVIDER_COOKIE_NAME)
-        return trans.response.send_redirect(url_for('/'))
+        return trans.response.send_redirect(url_for(redirect_url))
 
     @web.expose
-    def create_user(self, trans, **kwargs):
+    def create_user(self, trans, provider, **kwargs):
         try:
-            success, message, (redirect_url, user) = trans.app.authnz_manager.create_user(self.provider, trans, login_redirect_url=url_for('/'))
+            success, message, (redirect_url, user) = trans.app.authnz_manager.create_user(provider,
+                                                                                          token=kwargs.get('token', ' '),
+                                                                                          trans=trans,
+                                                                                          login_redirect_url=url_for('/'))
         except exceptions.AuthenticationFailed as e:
             return trans.response.send_redirect(trans.request.base + url_for('/') + 'root/login?message=' + (e.message or "Duplicate Email"))
 
@@ -117,8 +120,10 @@ class OIDC(JSAppLauncher):
                                             "contact the Galaxy instance admin.".format(provider))
         trans.handle_user_login(user)
         # Record which idp provider was logged into, so we can logout of it later
-        trans.set_cookie(value=self.provider, name=PROVIDER_COOKIE_NAME)
-        return trans.response.send_redirect(url_for('/'))
+        trans.set_cookie(value=provider, name=PROVIDER_COOKIE_NAME)
+        if redirect_url is None:
+            redirect_url = url_for('/')
+        return trans.response.send_redirect(url_for(redirect_url))
 
     @web.expose
     @web.require_login("authenticate against the selected identity provider")
