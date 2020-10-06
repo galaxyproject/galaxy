@@ -34,4 +34,4 @@ class TimeoutAssertionError(AssertionError):
     """Derivative of AssertionError indicating wait_on exceeded max time."""
 
     def __init__(self, message):
-        super(TimeoutAssertionError, self).__init__(message)
+        super().__init__(message)

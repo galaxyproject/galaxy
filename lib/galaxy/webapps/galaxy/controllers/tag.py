@@ -23,7 +23,7 @@ class TagsController(BaseUIController, UsesTagsMixin):
         """
         item = self._get_item(trans, item_class, trans.security.decode_id(item_id))
         if not item:
-            return trans.show_error_message("No item of class {} with id {} ".format(item_class, item_id))
+            return trans.show_error_message(f"No item of class {item_class} with id {item_id} ")
         return trans.fill_template("/tagging_common.mako",
                                    tag_type="individual",
                                    user=trans.user,

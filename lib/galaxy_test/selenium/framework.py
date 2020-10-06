@@ -6,6 +6,7 @@ import os
 import traceback
 import unittest
 from functools import partial, wraps
+from urllib.parse import urljoin
 
 import requests
 from gxformat2 import (
@@ -16,7 +17,6 @@ try:
     from pyvirtualdisplay import Display
 except ImportError:
     Display = None
-from six.moves.urllib.parse import urljoin
 
 from galaxy.selenium import (
     driver_factory,
@@ -161,7 +161,7 @@ def selenium_test(f):
                 dump_test_information(self, test_name)
                 if retry_attempts < GALAXY_TEST_SELENIUM_RETRIES:
                     retry_attempts += 1
-                    print("Test function [{}] threw an exception, retrying. Failed attempts - {}.".format(test_name, retry_attempts))
+                    print(f"Test function [{test_name}] threw an exception, retrying. Failed attempts - {retry_attempts}.")
                 else:
                     raise
 
@@ -370,7 +370,7 @@ class TestWithSeleniumMixin(NavigatesGalaxy, UsesApiTestCaseMixin):
         initial_size_str = self.components.history_panel.new_size.text
         size_selector = self.components.history_panel.size
         size_text = size_selector.wait_for_text()
-        assert initial_size_str in size_text, "{} not in {}".format(initial_size_str, size_text)
+        assert initial_size_str in size_text, f"{initial_size_str} not in {size_text}"
 
         self.components.history_panel.empty_message.wait_for_visible()
 
@@ -475,7 +475,7 @@ class UsesHistoryItemAssertions:
     def assert_item_info_includes(self, hid, expected):
         item_body = self.history_panel_item_component(hid=hid)
         info_text = item_body.info.wait_for_text()
-        assert expected in info_text, "Failed to find expected info text [{}] in info [{}]".format(expected, info_text)
+        assert expected in info_text, f"Failed to find expected info text [{expected}] in info [{info_text}]"
 
     def assert_item_dbkey_displayed_as(self, hid, dbkey):
         item_body = self.history_panel_item_component(hid=hid)
@@ -485,7 +485,7 @@ class UsesHistoryItemAssertions:
     def assert_item_summary_includes(self, hid, expected_text):
         item_body = self.history_panel_item_component(hid=hid)
         summary_text = item_body.summary.wait_for_text()
-        assert expected_text in summary_text, "Expected summary [{}] not found in [{}].".format(expected_text, summary_text)
+        assert expected_text in summary_text, f"Expected summary [{expected_text}] not found in [{summary_text}]."
 
     def assert_item_name(self, hid, expected_name):
         item_body = self.history_panel_item_component(hid=hid)

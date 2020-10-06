@@ -99,7 +99,7 @@ class QuaySearch():
         Function downloads additional information from quay.io to
         get the tag-field which includes the version number.
         """
-        url = "{}/{}/{}".format(QUAY_API_URL, self.organization, repository_string)
+        url = f"{QUAY_API_URL}/{self.organization}/{repository_string}"
         r = requests.get(url, headers={'Accept-encoding': 'gzip'})
 
         json_decoder = json.JSONDecoder()

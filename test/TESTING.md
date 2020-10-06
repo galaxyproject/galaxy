@@ -10,7 +10,7 @@ tox needs to be installed in your Python virtualenv with `pip install tox` .
 
 To view the list of available "test environments" for tox: `tox -l`
 
-To run the test for e.g. the `py35-lint` test environment: `tox -e py35-lint`
+To run the test for e.g. the `py36-lint` test environment: `tox -e py36-lint`
 
 ## ./run_tests.sh
 

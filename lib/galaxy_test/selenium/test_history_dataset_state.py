@@ -32,7 +32,7 @@ class HistoryDatasetStateTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         item.dbkey_button.wait_for_and_click()
         toolhelp_title_text = item.toolhelp_title.wait_for_visible().text
         # assert tool helptext
-        assert EXPECTED_TOOLHELP_TITLE_TEXT == toolhelp_title_text, "Toolhelp title [%s] was not expected text [%s]." % (
+        assert EXPECTED_TOOLHELP_TITLE_TEXT == toolhelp_title_text, "Toolhelp title [{}] was not expected text [{}].".format(
             EXPECTED_TOOLHELP_TITLE_TEXT, toolhelp_title_text)
 
         self.screenshot("history_panel_dataset_expanded")

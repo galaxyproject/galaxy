@@ -47,7 +47,7 @@ class Slurm(BaseJobExec):
         # Generated template.
         template_scriptargs = ''
         for k, v in scriptargs.items():
-            template_scriptargs += '#SBATCH {} {}\n'.format(k, v)
+            template_scriptargs += f'#SBATCH {k} {v}\n'
         return dict(headers=template_scriptargs)
 
     def submit(self, script_file):

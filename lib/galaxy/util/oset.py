@@ -1,10 +1,10 @@
 """
 Ordered set implementation from https://code.activestate.com/recipes/576694/
 """
-import collections
+from collections.abc import MutableSet
 
 
-class OrderedSet(collections.MutableSet):
+class OrderedSet(MutableSet):
     def __init__(self, iterable=None):
         self.end = end = []
         end += [None, end, end]         # sentinel node for doubly linked list
@@ -53,7 +53,7 @@ class OrderedSet(collections.MutableSet):
 
     def __repr__(self):
         if not self:
-            return '{}()'.format(self.__class__.__name__)
+            return f'{self.__class__.__name__}()'
         return '{}({!r})'.format(self.__class__.__name__, list(self))
 
     def __eq__(self, other):

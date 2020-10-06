@@ -3,9 +3,9 @@ import logging
 import os
 import tarfile
 from collections import namedtuple
+from io import StringIO
 from time import strftime
 
-from six import StringIO
 from sqlalchemy import and_, false
 from webob.compat import cgi_FieldStorage
 
@@ -117,7 +117,7 @@ class RepositoriesController(BaseAPIController):
             repository = repository_util.get_repository_by_name_and_owner(self.app, name, owner, eagerload_columns=eagerload_columns)
             if repository is None:
                 trans.response.status = 404
-                return {'status': 'error', 'message': 'No repository named {} found with owner {}'.format(name, owner)}
+                return {'status': 'error', 'message': f'No repository named {name} found with owner {owner}'}
         elif tsr_id is not None:
             repository = repository_util.get_repository_in_tool_shed(self.app, tsr_id, eagerload_columns=eagerload_columns)
         else:

@@ -13,10 +13,10 @@ constructed automatically).
 import json
 import logging
 import os
+import pickle
 import sys
 import traceback
 
-from six.moves import cPickle
 from sqlalchemy.orm import clear_mappers
 
 import galaxy.model.mapping  # need to load this before we unpickle, in order to setup properties assigned by the mappers
@@ -182,7 +182,7 @@ def set_metadata_portable():
             assert dataset is not None
         else:
             filename_in = os.path.join("metadata/metadata_in_%s" % output_name)
-            dataset = cPickle.load(open(filename_in, 'rb'))  # load DatasetInstance
+            dataset = pickle.load(open(filename_in, 'rb'))  # load DatasetInstance
 
         filename_kwds = os.path.join("metadata/metadata_kwds_%s" % output_name)
         filename_out = os.path.join("metadata/metadata_out_%s" % output_name)
@@ -345,7 +345,7 @@ def set_metadata_legacy():
         override_metadata = fields.pop(0)
         set_meta_kwds = stringify_dictionary_keys(json.load(open(filename_kwds)))  # load kwds; need to ensure our keywords are not unicode
         try:
-            dataset = cPickle.load(open(filename_in, 'rb'))  # load DatasetInstance
+            dataset = pickle.load(open(filename_in, 'rb'))  # load DatasetInstance
             dataset.dataset.external_filename = dataset_filename_override
             store_by = "id"
             extra_files_dir_name = "dataset_%s_files" % getattr(dataset.dataset, store_by)

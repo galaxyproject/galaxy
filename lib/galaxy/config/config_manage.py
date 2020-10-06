@@ -8,12 +8,12 @@ from collections import (
     namedtuple,
     OrderedDict
 )
+from io import StringIO
 from textwrap import TextWrapper
 
 import requests
 import yaml
 from boltons.iterutils import remap
-from six import StringIO
 
 try:
     from pykwalify.core import Core
@@ -405,7 +405,7 @@ def _to_rst(args, app_desc, heading_level="~"):
 def _write_option_rst(args, rst, key, heading_level, option_value):
     title = "``%s``" % key
     heading = heading_level * len(title)
-    rst.write("{}\n{}\n{}\n\n".format(heading, title, heading))
+    rst.write(f"{heading}\n{title}\n{heading}\n\n")
     option, value = _parse_option_value(option_value)
     desc = option["desc"]
     rst.write(":Description:\n")
@@ -649,7 +649,7 @@ def _is_ini(path):
 def _replace_file(args, f, app_desc, from_path, to_path):
     _write_to_file(args, f, to_path)
     backup_path = "%s.backup" % from_path
-    print("Moving [{}] to [{}]".format(from_path, backup_path))
+    print(f"Moving [{from_path}] to [{backup_path}]")
     if args.dry_run:
         print("... skipping because --dry-run is enabled.")
     else:
@@ -661,7 +661,7 @@ def _build_sample_yaml(args, app_desc):
         UWSGI_OPTIONS.update(SHED_ONLY_UWSGI_OPTIONS)
     schema = app_desc.schema
     f = StringIO()
-    for key, value in UWSGI_OPTIONS.items():
+    for value in UWSGI_OPTIONS.values():
         for field in ["desc", "default"]:
             if field not in value:
                 continue
@@ -693,7 +693,7 @@ def _write_to_file(args, f, path):
         contents = f
     if args.dry_run:
         contents_indented = "\n".join(" |%s" % l for l in contents.splitlines())
-        print("Overwriting {} with the following contents:\n{}".format(path, contents_indented))
+        print(f"Overwriting {path} with the following contents:\n{contents_indented}")
         print("... skipping because --dry-run is enabled.")
     else:
         print("Overwriting %s" % path)
@@ -743,10 +743,10 @@ def _write_option(args, f, key, option_value, as_comment=False, uwsgi_hack=False
     if uwsgi_hack:
         if option.get("type", "str") == "bool":
             value = str(value).lower()
-        key_val_str = "{}: {}".format(key, value)
+        key_val_str = f"{key}: {value}"
     else:
         key_val_str = yaml.dump({key: value}, width=float("inf")).lstrip("{").rstrip("\n}")
-    lines = "{}{}{}".format(comment, as_comment_str, key_val_str)
+    lines = f"{comment}{as_comment_str}{key_val_str}"
     lines_idented = "\n".join("  %s" % l for l in lines.split("\n"))
     f.write("%s\n\n" % lines_idented)
 
@@ -774,7 +774,7 @@ def _server_paste_to_uwsgi(app_desc, server_config, applied_filters):
     if server_config.get("use", "egg:Paste#http") != "egg:Paste#http":
         raise Exception("Unhandled paste server 'use' value [%s], file must be manually migrate.")
 
-    uwsgi_dict["http"] = "{}:{}".format(host, port)
+    uwsgi_dict["http"] = f"{host}:{port}"
     # default changing from 10 to 8
     uwsgi_dict["threads"] = int(server_config.get("threadpool_workers", 8))
     # required for static...
@@ -791,7 +791,7 @@ def _server_paste_to_uwsgi(app_desc, server_config, applied_filters):
             uwsgi_dict["http-auto-gzip"] = True
 
     if prefix:
-        uwsgi_dict["mount"] = "{}={}".format(prefix, app_desc.uwsgi_module)
+        uwsgi_dict["mount"] = f"{prefix}={app_desc.uwsgi_module}"
         uwsgi_dict["manage-script-name"] = True
     else:
         uwsgi_dict["module"] = app_desc.uwsgi_module

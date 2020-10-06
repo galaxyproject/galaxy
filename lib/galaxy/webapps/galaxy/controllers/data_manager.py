@@ -91,7 +91,7 @@ class DataManager(BaseUIController):
             job = trans.sa_session.query(trans.app.model.Job).get(job_id)
         except Exception as e:
             job = None
-            log.error("Bad job id ({}) passed to job_info: {}".format(job_id, e))
+            log.error(f"Bad job id ({job_id}) passed to job_info: {e}")
         if not job:
             return {'message': "Invalid job (%s) was requested" % job_id,
                     'status': "error"}
@@ -115,7 +115,7 @@ class DataManager(BaseUIController):
                 data_manager_json = loads(open(hda.get_file_name()).read())
             except Exception as e:
                 data_manager_json = {}
-                error_messages.append("Unable to obtain data_table info for hda ({}): {}".format(hda.id, e))
+                error_messages.append(f"Unable to obtain data_table info for hda ({hda.id}): {e}")
             values = []
             for key, value in data_manager_json.get('data_tables', {}).items():
                 values.append((key, value))

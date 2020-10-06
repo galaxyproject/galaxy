@@ -17,14 +17,14 @@ log = logging.getLogger(__name__)
 WorkflowParameterExpansion = namedtuple('WorkflowParameterExpansion', ['param_combinations', 'param_keys', 'input_combinations'])
 
 
-class ParamKey(object):
+class ParamKey:
 
     def __init__(self, step_id, key):
         self.step_id = step_id
         self.key = key
 
 
-class InputKey(object):
+class InputKey:
 
     def __init__(self, input_id):
         self.input_id = input_id

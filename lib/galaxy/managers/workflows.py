@@ -1339,7 +1339,7 @@ class WorkflowContentsManager(UsesAnnotations):
                         raise exceptions.MessageException(message)
                     external_id = conn_dict['id']
                     if external_id not in steps_by_external_id:
-                        raise KeyError("Failed to find external id {} in {}".format(external_id, steps_by_external_id.keys()))
+                        raise KeyError(f"Failed to find external id {external_id} in {steps_by_external_id.keys()}")
                     output_step = steps_by_external_id[external_id]
 
                     output_name = conn_dict["output_name"]

@@ -61,9 +61,9 @@ class GroupUsersAPIController(BaseAPIController):
                                 email=user.email,
                                 url=url_for('group_user', group_id=group_id, id=user_id))  # TODO Fix This
             if not item:
-                item = "user {} not in group {}".format(user.email, group.name)
+                item = f"user {user.email} not in group {group.name}"
         except Exception as e:
-            item = "Error in group_user API group {} user {}".format(group.name, user.email)
+            item = f"Error in group_user API group {group.name} user {user.email}"
             log.error(item + ": %s", unicodify(e))
         return item
 
@@ -95,7 +95,7 @@ class GroupUsersAPIController(BaseAPIController):
                             email=user.email,
                             url=url_for('group_user', group_id=group_id, id=user_id))
         except Exception as e:
-            item = "Error in group_user API Adding user {} to group {}".format(user.email, group.name)
+            item = f"Error in group_user API Adding user {user.email} to group {group.name}"
             log.error(item + ": %s", unicodify(e))
         return item
 
@@ -120,8 +120,8 @@ class GroupUsersAPIController(BaseAPIController):
                                 email=user.email,
                                 url=url_for('group_user', group_id=group_id, id=user_id))
             if not item:
-                item = "user {} not in group {}".format(user.email, group.name)
+                item = f"user {user.email} not in group {group.name}"
         except Exception as e:
-            item = "Error in group_user API Removing user {} from group {}".format(user.email, group.name)
+            item = f"Error in group_user API Removing user {user.email} from group {group.name}"
             log.error(item + ": %s", unicodify(e))
         return item

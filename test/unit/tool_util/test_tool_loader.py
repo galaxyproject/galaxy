@@ -9,7 +9,7 @@ from .sample_data import SIMPLE_MACRO, SIMPLE_TOOL_WITH_MACRO
 
 def test_loader():
 
-    class TestToolDirectory(object):
+    class TestToolDirectory:
         def __init__(self):
             self.temp_directory = mkdtemp()
 

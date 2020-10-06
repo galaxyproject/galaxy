@@ -23,10 +23,10 @@ import io
 import json
 import logging
 import re
+from urllib.parse import urlparse
 
 import routes
 import webob.exc
-from six.moves.urllib.parse import urlparse
 
 from galaxy.util import (
     smart_str,

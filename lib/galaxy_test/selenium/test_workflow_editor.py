@@ -29,10 +29,10 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         name = self.workflow_create_new(annotation=annotation)
         edit_name_element = self.components.workflow_editor.edit_name.wait_for_visible()
         actual_name = edit_name_element.get_attribute("value")
-        assert name in actual_name, "'{}' unequal name '{}'".format(name, actual_name)
+        assert name in actual_name, f"'{name}' unequal name '{actual_name}'"
         edit_annotation_element = self.components.workflow_editor.edit_annotation.wait_for_visible()
         actual_annotation = edit_annotation_element.get_attribute("value")
-        assert annotation in actual_annotation, "'{}' unequal annotation '{}'".format(annotation, actual_annotation)
+        assert annotation in actual_annotation, f"'{annotation}' unequal annotation '{actual_annotation}'"
 
         editor.canvas_body.wait_for_visible()
         editor.tool_menu.wait_for_visible()
@@ -497,4 +497,4 @@ steps:
     def assert_modal_has_text(self, expected_text):
         modal_element = self.wait_for_selector_visible(self.modal_body_selector())
         text = modal_element.text
-        assert expected_text in text, "Failed to find expected text [{}] in modal text [{}]".format(expected_text, text)
+        assert expected_text in text, f"Failed to find expected text [{expected_text}] in modal text [{text}]"

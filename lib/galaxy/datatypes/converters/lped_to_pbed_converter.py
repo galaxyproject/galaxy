@@ -99,7 +99,7 @@ def main():
     flist = os.listdir(outfilepath)
     with open(outhtmlname, 'w') as f:
         f.write(galhtmlprefix % prog)
-        s = '## Rgenetics: http://rgenetics.org Galaxy Tools {} {}'.format(prog, timenow())  # becomes info
+        s = f'## Rgenetics: http://rgenetics.org Galaxy Tools {prog} {timenow()}'  # becomes info
         print(s)
         f.write('<div>%s\n<ol>' % (s))
         for i, data in enumerate(flist):

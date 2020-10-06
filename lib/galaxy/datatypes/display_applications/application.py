@@ -2,8 +2,7 @@
 import logging
 from collections import OrderedDict
 from copy import deepcopy
-
-from six.moves.urllib.parse import quote_plus
+from urllib.parse import quote_plus
 
 from galaxy.util import (
     parse_xml,
@@ -192,7 +191,7 @@ class DynamicDisplayApplicationBuilder:
                 # now populate
                 links.append(DisplayApplicationLink.from_elem(new_elem, display_application, other_values=dynamic_values))
             else:
-                log.warning('Invalid dynamic display application link specified in {}: "{}"'.format(filename, line))
+                log.warning(f'Invalid dynamic display application link specified in {filename}: "{line}"')
         self.links = links
 
     def __iter__(self):

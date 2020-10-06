@@ -269,7 +269,7 @@ class Dependency(Dictifiable, metaclass=ABCMeta):
         """
         Return a message describing this dependency
         """
-        return "Using dependency {} version {} of type {}".format(self.name, self.version, self.dependency_type)
+        return f"Using dependency {self.name} version {self.version} of type {self.dependency_type}"
 
 
 class ContainerDependency(Dependency):

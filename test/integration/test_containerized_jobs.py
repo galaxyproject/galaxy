@@ -17,7 +17,7 @@ SINGULARITY_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "singularity_job_co
 EXTENDED_TIMEOUT = 120
 
 
-class MulledJobTestCases(object):
+class MulledJobTestCases:
     def test_explicit(self):
         self.dataset_populator.run_tool("mulled_example_explicit", {}, self.history_id)
         self.dataset_populator.wait_for_history(self.history_id, assert_ok=True)
@@ -42,7 +42,7 @@ class ContainerizedIntegrationTestCase(integration_util.IntegrationTestCase):
     @classmethod
     def setUpClass(cls):
         skip_if_container_type_unavailable(cls)
-        super(ContainerizedIntegrationTestCase, cls).setUpClass()
+        super().setUpClass()
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -79,10 +79,10 @@ class DockerizedJobsIntegrationTestCase(integration_util.IntegrationTestCase, Ru
     @classmethod
     def setUpClass(cls):
         skip_if_container_type_unavailable(cls)
-        super(DockerizedJobsIntegrationTestCase, cls).setUpClass()
+        super().setUpClass()
 
     def setUp(self):
-        super(DockerizedJobsIntegrationTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.history_id = self.dataset_populator.new_history()
 
@@ -169,10 +169,10 @@ class MappingContainerResolverTestCase(integration_util.IntegrationTestCase):
     @classmethod
     def setUpClass(cls):
         skip_if_container_type_unavailable(cls)
-        super(MappingContainerResolverTestCase, cls).setUpClass()
+        super().setUpClass()
 
     def setUp(self):
-        super(MappingContainerResolverTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.history_id = self.dataset_populator.new_history()
 

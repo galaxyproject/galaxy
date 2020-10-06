@@ -4,8 +4,7 @@ is further subdivided into multiple data (e.g. columns from a line).
 """
 import logging
 import re
-
-from six.moves.urllib.parse import unquote_plus
+from urllib.parse import unquote_plus
 
 from . import line
 

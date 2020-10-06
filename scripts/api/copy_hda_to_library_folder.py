@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 
 import sys
 
@@ -9,7 +8,7 @@ usage = "USAGE: copy_hda_to_library_folder.py <base url> <api key> <hda id> <lib
 
 
 def copy_hda_to_library_folder(base_url, key, hda_id, library_id, folder_id, message=''):
-    url = 'http://%s/api/libraries/%s/contents' % (base_url, library_id)
+    url = f'http://{base_url}/api/libraries/{library_id}/contents'
     payload = {
         'folder_id'     : folder_id,
         'create_type'   : 'file',

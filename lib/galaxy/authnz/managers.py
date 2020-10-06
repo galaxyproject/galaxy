@@ -1,3 +1,4 @@
+import builtins
 import copy
 import json
 import logging
@@ -10,7 +11,6 @@ from cloudauthz import CloudAuthz
 from cloudauthz.exceptions import (
     CloudAuthzBaseException
 )
-from six.moves import builtins
 
 from galaxy import exceptions
 from galaxy import model
@@ -89,7 +89,7 @@ class AuthnzManager:
         except ImportError:
             raise
         except etree.ParseError as e:
-            raise etree.ParseError("Invalid configuration at `{}`: {} -- unable to continue.".format(config_file, e))
+            raise etree.ParseError(f"Invalid configuration at `{config_file}`: {e} -- unable to continue.")
 
     def _get_idp_icon(self, idp):
         return self.oidc_backends_config[idp].get('icon') or DEFAULT_OIDC_IDP_ICONS.get(idp)
@@ -109,7 +109,7 @@ class AuthnzManager:
                               "skipping the node.".format(child.tag))
                     continue
                 if 'name' not in child.attrib:
-                    log.error("Could not find a node attribute 'name'; skipping the node '{}'.".format(child.tag))
+                    log.error(f"Could not find a node attribute 'name'; skipping the node '{child.tag}'.")
                     continue
                 idp = child.get('name').lower()
                 if idp in BACKENDS_NAME:
@@ -127,7 +127,7 @@ class AuthnzManager:
         except ImportError:
             raise
         except etree.ParseError as e:
-            raise etree.ParseError("Invalid configuration at `{}`: {} -- unable to continue.".format(config_file, e))
+            raise etree.ParseError(f"Invalid configuration at `{config_file}`: {e} -- unable to continue.")
 
     def _parse_idp_config(self, config_xml):
         rtv = {
@@ -188,10 +188,10 @@ class AuthnzManager:
                 else:
                     return True, "", identity_provider_class(unified_provider_name, self.oidc_config, self.oidc_backends_config[unified_provider_name])
             except Exception as e:
-                log.exception('An error occurred when loading {}'.format(identity_provider_class.__name__))
+                log.exception(f'An error occurred when loading {identity_provider_class.__name__}')
                 return False, unicodify(e), None
         else:
-            msg = 'The requested identity provider, `{}`, is not a recognized/expected provider.'.format(provider)
+            msg = f'The requested identity provider, `{provider}`, is not a recognized/expected provider.'
             log.debug(msg)
             return False, msg, None
 
@@ -281,13 +281,13 @@ class AuthnzManager:
                 return False, message, None
             elif provider in KEYCLOAK_BACKENDS:
                 if (self.allowed_idps and (idphint not in self.allowed_idps)):
-                    msg = 'An error occurred when authenticating a user. Invalid EntityID: `{}`'.format(idphint)
+                    msg = f'An error occurred when authenticating a user. Invalid EntityID: `{idphint}`'
                     log.exception(msg)
                     return False, msg, None
-                return True, "Redirecting to the `{}` identity provider for authentication".format(provider), backend.authenticate(trans, idphint)
-            return True, "Redirecting to the `{}` identity provider for authentication".format(provider), backend.authenticate(trans)
+                return True, f"Redirecting to the `{provider}` identity provider for authentication", backend.authenticate(trans, idphint)
+            return True, f"Redirecting to the `{provider}` identity provider for authentication", backend.authenticate(trans)
         except Exception:
-            msg = 'An error occurred when authenticating a user on `{}` identity provider'.format(provider)
+            msg = f'An error occurred when authenticating a user on `{provider}` identity provider'
             log.exception(msg)
             return False, msg, None
 
@@ -322,7 +322,7 @@ class AuthnzManager:
             # check if logout is enabled for this idp and return false if not
             unified_provider_name = self._unify_provider_name(provider)
             if self.oidc_backends_config[unified_provider_name]['enable_idp_logout'] is False:
-                return False, "IDP logout is not enabled for {}".format(provider), None
+                return False, f"IDP logout is not enabled for {provider}", None
 
             success, message, backend = self._get_authnz_backend(provider)
             if success is False:

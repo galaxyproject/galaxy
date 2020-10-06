@@ -1,10 +1,8 @@
-from __future__ import print_function
-
 import argparse
 import os
 import sys
+from configparser import ConfigParser
 
-from six.moves.configparser import SafeConfigParser
 from sqlalchemy import create_engine, MetaData
 from sqlalchemy.orm import scoped_session, sessionmaker
 
@@ -27,7 +25,7 @@ def main(opts, session, model):
 
 
 def create_database(config_file):
-    parser = SafeConfigParser()
+    parser = ConfigParser()
     parser.read(config_file)
     # Determine which database connection to use.
     database_connection = parser.get('app:main', 'install_database_connection')

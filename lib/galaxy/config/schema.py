@@ -84,7 +84,7 @@ class AppSchema(Schema):
 
         def check_type_is_str_or_any(option, key):
             if option.get('type') not in ('str', 'any'):
-                message = "Invalid schema: property '{}' should have type 'str'".format(key)
+                message = f"Invalid schema: property '{key}' should have type 'str'"
                 raise_error(message)
 
         def check_is_dag():

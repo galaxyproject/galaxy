@@ -207,7 +207,7 @@ def main(ldfile, snpsfile, required, excluded):
 
 def read_list(filename):
     assert os.path.exists(filename)
-    file = open(filename, "r")
+    file = open(filename)
     list = {}
 
     for line in file:

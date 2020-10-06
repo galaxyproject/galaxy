@@ -735,7 +735,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     string.Template(template).safe_substitute(tool_shed_url=tool_shed_url,
                                                               repository_owner=str(repository.user.username),
                                                               repository_name=str(repository.name))
-                repository_string = '{}\n{}'.format(repository_string, repository_template)
+                repository_string = f'{repository_string}\n{repository_template}'
             template = basic_util.DOCKER_IMAGE_TEMPLATE
             docker_image_template = \
                 string.Template(template).safe_substitute(selected_repositories=repository_string)
@@ -2506,13 +2506,13 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             if ctx_parent_rev < 0:
                 prev = None
             else:
-                prev = "<b>{}:{}</b> <i>({})</i>".format(ctx_parent_rev, ctx_parent, ctx_parent_date)
+                prev = f"<b>{ctx_parent_rev}:{ctx_parent}</b> <i>({ctx_parent_date})</i>"
         else:
             prev = None
         if ctx_child:
             ctx_child_date = hg_util.get_readable_ctx_date(ctx_child)
             ctx_child_rev = ctx_child.rev()
-            next = "<b>{}:{}</b> <i>({})</i>".format(ctx_child_rev, ctx_child, ctx_child_date)
+            next = f"<b>{ctx_child_rev}:{ctx_child}</b> <i>({ctx_child_date})</i>"
         else:
             next = None
         return trans.fill_template('/webapps/tool_shed/repository/view_changeset.mako',

@@ -64,6 +64,6 @@ def print_folders(pad, folder):
         pad_str += ' '
     print('{}id: {} key: {}'.format(pad_str, str(folder.id), folder.key))
     for repository_dependency in folder.repository_dependencies:
-        print('    {}{}'.format(pad_str, repository_dependency.listify))
+        print(f'    {pad_str}{repository_dependency.listify}')
     for sub_folder in folder.folders:
         print_folders(pad + 5, sub_folder)

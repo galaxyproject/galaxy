@@ -274,7 +274,7 @@ class _Isa(data.Data):
                    </body></html>"""
         else:
             html = '<html><body>'
-            html += '<h1>{} {}</h1>'.format(investigation.title, investigation.identifier)
+            html += f'<h1>{investigation.title} {investigation.identifier}</h1>'
 
             # Loop on all studies
             for study in investigation.studies:

@@ -16,7 +16,7 @@ class MaximumWorkflowInvocationDurationTestCase(integration_util.IntegrationTest
     framework_tool_and_types = True
 
     def setUp(self):
-        super(MaximumWorkflowInvocationDurationTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
 
@@ -52,7 +52,7 @@ class MaximumWorkflowJobsPerSchedulingIterationTestCase(integration_util.Integra
     framework_tool_and_types = True
 
     def setUp(self):
-        super(MaximumWorkflowJobsPerSchedulingIterationTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)

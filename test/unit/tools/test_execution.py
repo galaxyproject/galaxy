@@ -163,7 +163,7 @@ class ToolExecutionTestCase(TestCase, tools_support.UsesApp, tools_support.UsesT
         assert not vars["job_errors"]
 
 
-class MockAction(object):
+class MockAction:
 
     def __init__(self, expected_trans):
         self.expected_trans = expected_trans
@@ -194,7 +194,7 @@ class MockAction(object):
         self.error_message_after_excution = after_execution
 
 
-class MockTrans(object):
+class MockTrans:
 
     def __init__(self, app, history):
         self.app = app
@@ -215,7 +215,7 @@ class MockTrans(object):
         pass
 
 
-class MockCollectionService(object):
+class MockCollectionService:
 
     def __init__(self):
         self.collection_info = object()

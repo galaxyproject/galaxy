@@ -41,7 +41,7 @@ def __main__():
         out_files[spec].write('#chrom\tstart\tend\tstrand\tscore\tname\t%s\n' % ('\t'.join(all_species)))
     num_species = len(all_species)
 
-    file_in = open(input_filename, 'r')
+    file_in = open(input_filename)
     maf_reader = maf.Reader(file_in)
 
     for i, m in enumerate(maf_reader):

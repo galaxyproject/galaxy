@@ -321,7 +321,7 @@ class ToolEvaluator:
                 if not output_def.implicit:
                     dataset_wrapper = wrapper[element_identifier]
                     param_dict[output_def.name] = dataset_wrapper
-                    log.info("Updating param_dict for {} with {}".format(output_def.name, dataset_wrapper))
+                    log.info(f"Updating param_dict for {output_def.name} with {dataset_wrapper}")
 
     def __populate_output_dataset_wrappers(self, param_dict, output_datasets, job_working_directory):
         for name, hda in output_datasets.items():
@@ -577,7 +577,7 @@ class ToolEvaluator:
                     if not isinstance(value, list):
                         value = [value]
                     for elem in value:
-                        f.write('{}={}\n'.format(key, elem))
+                        f.write(f'{key}={elem}\n')
             self.__register_extra_file('param_file', param_filename)
             return param_filename
         else:
