@@ -131,14 +131,14 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         job.create()
         job_id = job.labels.get(JOB_ID_LABEL, False)
         if not job_id:
-            ## Recover uid label because it wasn't set
-            #job.labels[JOB_ID_LABEL] = job.metadata.uid
-            #job.update()
-            #job_id = job.labels.get(JOB_ID_LABEL, False)
-            #if not job_id:
-            job_wrapper.fail("Unexpected value from job runner", exception=True)
-            log.exception("%s not assigned by k8s to job on invocation: %s" % (JOB_ID_LABEL, job.obj))
-            return
+            # Recover uid label because it wasn't set
+            job.labels[JOB_ID_LABEL] = job.metadata.uid
+            job.update()
+            job_id = job.labels.get(JOB_ID_LABEL, False)
+            if not job_id:
+                job_wrapper.fail("Unexpected value from job runner", exception=True)
+                log.exception("%s not assigned by k8s to job on invocation: %s" % (JOB_ID_LABEL, job.obj))
+                return
 
         # define job attributes in the AsyncronousJobState for follow-up
         ajs.job_id = job_id
