@@ -1604,6 +1604,11 @@ body.reports {
         stroke: $brand-primary;
         stroke-width: 1;
     }
+    
+    .star-rate {
+        fill: $brand-primary;
+        stroke: none;
+    }
 }
 
 .workflow-recommendations {

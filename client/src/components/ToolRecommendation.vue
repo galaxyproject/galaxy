@@ -122,7 +122,7 @@ export default {
                 nodeEnter
                     .append("text")
                     .attr("x", (d) => {
-                        return d.children || d._children ? -10 : 10;
+                        return d.children || d._children ? -10 : 25;
                     })
                     .attr("dy", ".35em")
                     .attr("text-anchor", (d) => {
@@ -147,19 +147,10 @@ export default {
                     })
                     .attr("target", "_blank")
                     .append("polygon")
-                    .attr("dy", ".35em")
-                    .attr("x", "80")
-                    .attr("points", "10,1 4,19.8 19,7.8 1,7.8 16,19.8")
-                    //.attr("fill-rule", "nonzero")
-                    .attr("fill", "#25537b")
-                    /*.append("text")
-                    .attr("dy", ".35em")
-                    .attr("x", "80")
-                    .attr("font-family", "FontAwesome")
-                    .attr("type", "text/html")
-                    .text((d) => {
-                        return d.children || d._children ? "" : "&#xf005;";
-                    })*/
+                    .attr("points", (d) => {
+                        return d.children || d._children ? "" : "15,-5.0 12,4.04 19.5,-1.6 10.5,-1.6 18,4.04";
+                    })
+                    .attr("class", "star-rate")
                     .append("title")
                     .text((d) => {
                         return d.children || d._children ? d.name : "Rate this recommendation";
