@@ -528,6 +528,9 @@ class WeblessApplicationStack(ApplicationStack):
         #
         # Disable DB_SELF if a valid pool is configured. Use DB "SKIP LOCKED" if the DB engine supports it, transaction
         # isolation if it doesn't, or DB_PREASSIGN if the job_config doesn't allow either.
+        #
+        # Set handler_assignment_methods_configured to True, so that pool members initialize grabbing
+        job_config.handler_assignment_methods_configured = True
         conf_class_name = job_config.__class__.__name__
         remove_methods = [HANDLER_ASSIGNMENT_METHODS.DB_SELF]
         with self.app.model.session.connection():
@@ -547,7 +550,7 @@ class WeblessApplicationStack(ApplicationStack):
         for m in remove_methods:
             try:
                 job_config.handler_assignment_methods.remove(m)
-                log.debug("%s: Removed '%s' from handler assignment methods due to use of mules", conf_class_name, m)
+                log.debug("%s: Removed '%s' from handler assignment methods due to use of --attach-to-pool", conf_class_name, m)
             except ValueError:
                 pass
         if add_method not in job_config.handler_assignment_methods:
