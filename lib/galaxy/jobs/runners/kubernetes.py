@@ -87,7 +87,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         self.setup_volumes()
 
     def setup_volumes(self):
-        volume_claims = dict(volume.split(":") for volume in self.runner_params['k8s_persistent_volume_claims'].split(','))
+        if self.runner_params.get('k8s_persistent_volume_claims'):
+            volume_claims = dict(volume.split(":") for volume in self.runner_params['k8s_persistent_volume_claims'].split(','))
+        else:
+            volume_claims = {}
         mountable_volumes = [{'name': claim_name, 'persistentVolumeClaim': {'claimName': claim_name}} for claim_name in volume_claims]
         self.runner_params['k8s_mountable_volumes'] = mountable_volumes
         volume_mounts = [{'name': claim_name, 'mountPath': mount_path} for claim_name, mount_path in volume_claims.items()]
@@ -495,8 +498,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         job = job_wrapper.get_job()
         try:
             job_to_delete = find_job_object_by_name(self._pykube_api, job.get_job_runner_external_id(), self.runner_params['k8s_namespace'])
-            if job_to_delete:
-                self.__cleanup_k8s_job(job_to_delete)
+            if job_to_delete and len(job_to_delete.response['items']) > 0:
+                k8s_job = Job(self._pykube_api, job_to_delete.response['items'][0])
+                self.__cleanup_k8s_job(k8s_job)
             # TODO assert whether job parallelism == 0
             # assert not job_to_delete.exists(), "Could not delete job,"+job.job_runner_external_id+" it still exists"
             log.debug("({}/{}) Terminated at user's request".format(job.id, job.get_job_runner_external_id()))
