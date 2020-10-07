@@ -196,7 +196,10 @@ export default {
                 update(d);
                 const tId = d.id;
                 if (tId !== undefined && tId !== "undefined" && tId !== null && tId !== "") {
-                    document.location.href = `${getAppRoot()}tool_runner?tool_id=${tId}`;
+                    const utc = new Date();
+                    const timeId = utc.getTime();
+                    document.location.href =
+                        `${getAppRoot()}root?tool_id=${tId}&origin=tool_recommendation&utc=` + timeId;
                 }
             };
             const collapse = (d) => {

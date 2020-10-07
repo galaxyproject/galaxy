@@ -62,7 +62,12 @@ export async function getDatatypeMapping() {
 
 export async function getToolPredictions(requestData) {
     try {
-        const { data } = await axios.post(`${getAppRoot()}api/workflows/get_tool_predictions`, requestData);
+        const utc = new Date();
+        const timeId = utc.getTime();
+        const { data } = await axios.post(
+            `${getAppRoot()}api/workflows/get_tool_predictions?origin=tool_recommendation&utc=` + timeId,
+            requestData
+        );
         return data;
     } catch (e) {
         rethrowSimple(e);
