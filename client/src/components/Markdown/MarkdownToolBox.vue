@@ -272,6 +272,9 @@ export default {
                 case "onInvocationId":
                     this.onInvocationId(item.id);
                     break;
+                case "onVisualizationId":
+                    this.onVisualizationId(item.id);
+                    break;
                 default:
                     this.onNoParameter(item.id);
             }
@@ -285,6 +288,12 @@ export default {
         },
         onNoParameter(argumentName) {
             this.onInsert(`${argumentName}()`);
+        },
+        onVisualizationId(argumentName) {
+            this.selectedArgumentName = argumentName;
+            this.selectedType = "visualization_id";
+            this.selectedLabels = this.getOutputs();
+            this.selectedShow = true;
         },
         onHistoryId(argumentName) {
             this.selectedArgumentName = argumentName;
@@ -328,7 +337,7 @@ export default {
                             name: x.html,
                             description: x.description,
                             logo: x.logo ? `${getAppRoot()}${x.logo}` : null,
-                            emitter: "onHistoryId",
+                            emitter: "onVisualizationId",
                         };
                     });
                 })
