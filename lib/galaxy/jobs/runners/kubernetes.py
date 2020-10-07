@@ -214,7 +214,14 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         (see pod selector) and an appropriate restart policy."""
         k8s_spec_template = {
             "metadata": {
-                "labels": {"app": self.__produce_unique_k8s_job_name(ajs.job_wrapper.get_id_tag())}
+                "labels": {
+                    "app.kubernetes.io/name": ajs.tool_wrapper.tool.id,
+                    "app.kubernetes.io/instance": "job-"+ajs.job_wrapper.get_id_tag(),
+                    "app.kubernetes.io/version": ajs.tool_wrapper.tool.version,
+                    "app.kubernetes.io/component": "tool",
+                    "app.kubernetes.io/part-of": self._galaxy_instance_id or "galaxy",
+                    "app.kubernetes.io/managed-by": "galaxy",
+                }
             },
             "spec": {
                 "volumes": self.runner_params['k8s_mountable_volumes'],
