@@ -152,7 +152,7 @@ class LSF(BaseJobExec):
             if path.isfile(path_excluded):
                 with open(path_excluded) as f:
                     return f.read().splitlines()
-        return list()
+        return []
 
 
 __all__ = ('LSF',)
