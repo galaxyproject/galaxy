@@ -214,6 +214,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                     "app.galaxyproject.org/job_id": ajs.job_wrapper.get_id_tag(),
                     "app.galaxyproject.org/instance": self._galaxy_instance_id or "",
                     "app.galaxyproject.org/handler": self.app.config.server_name,
+                    "app.galaxyproject.org/destination": ajs.job_wrapper.job_destination.id,
                 }
             },
             "spec": {
