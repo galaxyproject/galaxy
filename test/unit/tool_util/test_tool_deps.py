@@ -751,6 +751,7 @@ def __dependency_manager_for_config(app_config, resolution_config=None):
 
 
 class _SimpleDependencyManager(object):
+    default_base_path = None
 
     def get_resolver_option(self, resolver, key, explicit_resolver_options=None):
         if explicit_resolver_options is None:

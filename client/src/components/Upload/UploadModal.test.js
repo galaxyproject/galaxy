@@ -1,9 +1,10 @@
 import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
 import UploadModal from "./UploadModal.vue";
-import { setupTestGalaxy } from "qunit/test-app";
 
 import { shallowMount, createLocalVue } from "@vue/test-utils";
+
+jest.mock("app");
 
 const propsData = {
     chunkUploadSize: 1024,
@@ -34,7 +35,6 @@ describe("UploadModal.vue", () => {
         axiosMock.onGet(`/api/genomes`).reply(200, genomesResponse);
 
         localVue = createLocalVue();
-        setupTestGalaxy();
         wrapper = shallowMount(UploadModal, {
             propsData: propsData,
             localVue: localVue,
@@ -46,21 +46,21 @@ describe("UploadModal.vue", () => {
     });
 
     it("should load with correct defaults", async () => {
-        expect(wrapper.vm.auto.id).to.equals("auto");
-        expect(wrapper.vm.datatypesDisableAuto).to.equals(false);
+        expect(wrapper.vm.auto.id).toBe("auto");
+        expect(wrapper.vm.datatypesDisableAuto).toBe(false);
     });
 
     it("should fetch datatypes and parse them", async () => {
         await localVue.nextTick();
         await localVue.nextTick();
-        expect(wrapper.vm.listExtensions.length).to.equals(2);
-        expect(wrapper.vm.listExtensions[0].id).to.equals("auto");
-        expect(wrapper.vm.listExtensions[1].id).to.equals("fasta");
+        expect(wrapper.vm.listExtensions.length).toBe(2);
+        expect(wrapper.vm.listExtensions[0].id).toBe("auto");
+        expect(wrapper.vm.listExtensions[1].id).toBe("fasta");
     });
 
     it("should fetch genomes and parse them", async () => {
         await localVue.nextTick();
         await localVue.nextTick();
-        expect(wrapper.vm.listGenomes.length).to.equals(3);
+        expect(wrapper.vm.listGenomes.length).toBe(3);
     });
 });

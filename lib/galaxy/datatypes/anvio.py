@@ -82,8 +82,6 @@ class AnvioDB(AnvioComposite):
     _anvio_basename = None
     MetadataElement(name="anvio_basename", default=_anvio_basename, desc="Basename", readonly=True)
     file_ext = 'anvio_db'
-    composite_type = 'auto_primary_file'
-    allow_datatype_change = False
 
     def __init__(self, *args, **kwd):
         super().__init__(*args, **kwd)
@@ -113,8 +111,6 @@ class AnvioStructureDB(AnvioDB):
     _anvio_basename = 'STRUCTURE.db'
     MetadataElement(name="anvio_basename", default=_anvio_basename, desc="Basename", readonly=True)
     file_ext = 'anvio_structure_db'
-    composite_type = 'auto_primary_file'
-    allow_datatype_change = False
 
 
 class AnvioGenomesDB(AnvioDB):
@@ -122,8 +118,6 @@ class AnvioGenomesDB(AnvioDB):
     _anvio_basename = '-GENOMES.db'
     MetadataElement(name="anvio_basename", default=_anvio_basename, desc="Basename", readonly=True)
     file_ext = 'anvio_genomes_db'
-    composite_type = 'auto_primary_file'
-    allow_datatype_change = False
 
 
 class AnvioContigsDB(AnvioDB):
@@ -131,8 +125,6 @@ class AnvioContigsDB(AnvioDB):
     _anvio_basename = 'CONTIGS.db'
     MetadataElement(name="anvio_basename", default=_anvio_basename, desc="Basename", readonly=True)
     file_ext = 'anvio_contigs_db'
-    composite_type = 'auto_primary_file'
-    allow_datatype_change = False
 
     def __init__(self, *args, **kwd):
         super().__init__(*args, **kwd)
@@ -144,8 +136,6 @@ class AnvioProfileDB(AnvioDB):
     _anvio_basename = 'PROFILE.db'
     MetadataElement(name="anvio_basename", default=_anvio_basename, desc="Basename", readonly=True)
     file_ext = 'anvio_profile_db'
-    composite_type = 'auto_primary_file'
-    allow_datatype_change = False
 
     def __init__(self, *args, **kwd):
         super().__init__(*args, **kwd)
@@ -160,8 +150,6 @@ class AnvioPanDB(AnvioDB):
     _anvio_basename = 'PAN.db'
     MetadataElement(name="anvio_basename", default=_anvio_basename, desc="Basename", readonly=True)
     file_ext = 'anvio_pan_db'
-    composite_type = 'auto_primary_file'
-    allow_datatype_change = False
 
 
 class AnvioSamplesDB(AnvioDB):
@@ -169,8 +157,6 @@ class AnvioSamplesDB(AnvioDB):
     _anvio_basename = 'SAMPLES.db'
     MetadataElement(name="anvio_basename", default=_anvio_basename, desc="Basename", readonly=True)
     file_ext = 'anvio_samples_db'
-    composite_type = 'auto_primary_file'
-    allow_datatype_change = False
 
 
 if __name__ == '__main__':

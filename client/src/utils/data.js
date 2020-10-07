@@ -12,7 +12,7 @@ import { getAppRoot } from "onload/loadConfig";
 // This should be moved more centrally (though still hanging off Galaxy for
 // external use?), and populated from the store; just using this as a temporary
 // interface.
-async function getCurrentGalaxyHistory() {
+export async function getCurrentGalaxyHistory() {
     const galaxy = getGalaxyInstance();
     if (galaxy.currHistoryPanel && galaxy.currHistoryPanel.model.id) {
         // TODO: use central store (vuex) for this.
@@ -36,14 +36,10 @@ async function getCurrentGalaxyHistory() {
  * @param {function} callback - Result function called with selection
  */
 export function dialog(callback, options = {}) {
-    const galaxy = getGalaxyInstance();
-    const host = `${window.location.protocol}//${window.location.hostname}:${window.location.port}`;
     getCurrentGalaxyHistory().then((history_id) => {
         Object.assign(options, {
             callback: callback,
             history: history_id,
-            root: galaxy.root,
-            host: host,
         });
         if (options.new) {
             options.modalShow = true;

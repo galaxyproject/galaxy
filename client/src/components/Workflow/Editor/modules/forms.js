@@ -138,6 +138,7 @@ function _addLabelAnnotation(self, node) {
                     break;
                 }
             }
+            self.form.data.create();
             const input_id = self.form.data.match("__label");
             const input_element = self.form.element_list[input_id];
             input_element.model.set(
@@ -243,6 +244,7 @@ function _makeSection(self, node, output) {
                 help: "This will provide a short name to describe the output - this must be unique across workflows.",
                 fixed: true,
                 onchange: (newLabel) => {
+                    self.form.data.create();
                     const oldLabel = node.labelOutput(output, newLabel);
                     const input_id = self.form.data.match(`__label__${output.name}`);
                     const input_element = self.form.element_list[input_id];

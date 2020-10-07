@@ -12,8 +12,14 @@
             @filtered="filtered"
         >
             <template v-slot:cell(label)="data">
-                <i v-if="data.item.isLeaf" :class="leafIcon" /> <i v-else class="fa fa-folder" />
-                <span :title="data.item.labelTitle">{{ data.value ? data.value : "-" }}</span>
+                <pre
+                    v-if="isEncoded"
+                    :title="data.item.labelTitle"
+                ><code>{{ data.value ? data.value : "-" }}</code></pre>
+                <span v-else>
+                    <i v-if="data.item.isLeaf" :class="leafIcon" /> <i v-else class="fa fa-folder" />
+                    <span :title="data.item.labelTitle">{{ data.value ? data.value : "-" }}</span>
+                </span>
             </template>
             <template v-slot:cell(details)="data">
                 {{ data.value ? data.value : "-" }}
@@ -74,6 +80,10 @@ export default {
             default: true,
         },
         showNavigate: {
+            type: Boolean,
+            default: false,
+        },
+        isEncoded: {
             type: Boolean,
             default: false,
         },

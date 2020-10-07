@@ -7,7 +7,8 @@ import Vue from "vue";
 import { mount } from "@vue/test-utils";
 
 describe("ToolsView/ToolsView.vue", () => {
-    let wrapper, axiosMock;
+    let wrapper;
+    let axiosMock;
     const defaultSchemaElementTag = "application/ld+json";
 
     beforeEach(async () => {
@@ -22,8 +23,8 @@ describe("ToolsView/ToolsView.vue", () => {
         const tools = wrapper.vm.createToolsJson(testToolsListResponse);
         const schemaElement = document.getElementById("schema-json");
         const schemaText = JSON.parse(schemaElement.text);
-        assert(tools["@graph"].length === 84, "tools are not parsed correctly!");
-        assert(schemaText["@graph"].length === 84, "tools are not correctly presented in schema script tag!");
-        assert(schemaElement.type === defaultSchemaElementTag, "element type is not correct!");
+        expect(tools["@graph"].length === 84).toBeTruthy();
+        expect(schemaText["@graph"].length === 84).toBeTruthy();
+        expect(schemaElement.type === defaultSchemaElementTag).toBeTruthy();
     });
 });

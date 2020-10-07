@@ -54,7 +54,11 @@
                     <template v-slot:cell(tags)="row">
                         <Tags :index="row.index" :tags="row.item.tags" @input="onTags" />
                     </template>
-                    <template v-slot:cell(bookmark)="row">
+                    <template v-slot:cell(published)="row">
+                        <font-awesome-icon v-if="row.item.published" v-b-tooltip.hover title="Published" icon="globe" />
+                        <font-awesome-icon v-if="row.item.shared" v-b-tooltip.hover title="Shared" icon="share-alt" />
+                    </template>
+                    <template v-slot:cell(show_in_tool_panel)="row">
                         <b-form-checkbox v-model="row.item.show_in_tool_panel" @change="bookmarkWorkflow(row.item)" />
                     </template>
                     <template v-slot:cell(update_time)="data">
@@ -86,6 +90,8 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { faUpload } from "@fortawesome/free-solid-svg-icons";
+import { faGlobe } from "@fortawesome/free-solid-svg-icons";
+import { faShareAlt } from "@fortawesome/free-solid-svg-icons";
 
 import { getAppRoot } from "onload/loadConfig";
 import { Services } from "./services";
@@ -96,7 +102,8 @@ import UtcDate from "components/UtcDate";
 library.add(faPlus);
 library.add(faUpload);
 library.add(faSpinner);
-
+library.add(faGlobe);
+library.add(faShareAlt);
 export default {
     components: {
         FontAwesomeIcon,
@@ -122,7 +129,14 @@ export default {
                     sortable: true,
                 },
                 {
-                    key: "bookmark",
+                    label: "Sharing",
+                    key: "published",
+                    sortable: true,
+                },
+                {
+                    label: "Bookmarked",
+                    key: "show_in_tool_panel",
+                    sortable: true,
                 },
                 {
                     key: "execute",

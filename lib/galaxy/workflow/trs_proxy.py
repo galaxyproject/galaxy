@@ -7,6 +7,7 @@ import yaml
 
 from galaxy.exceptions import MessageException
 from galaxy.util import asbool
+from galaxy.util.search import parse_filters
 
 log = logging.getLogger(__name__)
 
@@ -21,6 +22,27 @@ DEFAULT_TRS_SERVERS = [
     },
 ]
 GA4GH_GALAXY_DESCRIPTOR = "GALAXY"
+
+
+def parse_search_kwds(search_query):
+    filters = {
+        "organization": "organization",
+        "o": "organization",
+        "name": "name",
+        "n": "name",
+    }
+    keyed_terms, description_term = parse_filters(search_query, filters)
+    query_kwd = {
+        "toolClass": "Workflow",
+        "descriptorType": "GALAXY",
+    }
+    if description_term and description_term.strip():
+        query_kwd["description"] = description_term,
+
+    if keyed_terms is not None:
+        for (key, value) in keyed_terms:
+            query_kwd[key] = value
+    return query_kwd
 
 
 class TrsProxy(object):
@@ -39,8 +61,14 @@ class TrsProxy(object):
         return self._server_list
 
     def get_tools(self, trs_server, **kwd):
+        query_kwd = {}
+        for key in ["toolClass", "descriptorType", "description", "name", "organization"]:
+            value = kwd.pop(key, None)
+            if value is not None:
+                query_kwd[key] = value
+
         trs_api_url = self._get_api_endpoint(trs_server, **kwd)
-        return self._get(trs_api_url)
+        return self._get(trs_api_url, params=query_kwd)
 
     def get_tool(self, trs_server, tool_id, **kwd):
         trs_api_url = self._get_tool_api_endpoint(trs_server, tool_id, **kwd)
@@ -65,8 +93,8 @@ class TrsProxy(object):
         tool_id = urllib.parse.quote_plus(tool_id)
         return tool_id
 
-    def _get(self, url):
-        response = requests.get(url)
+    def _get(self, url, params=None):
+        response = requests.get(url, params=params)
         if response.ok:
             return response.json()
         else:

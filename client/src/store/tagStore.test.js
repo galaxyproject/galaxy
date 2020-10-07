@@ -20,21 +20,21 @@ describe("store/tagStore.js", () => {
             stateTags = state.modelTagCache.get(testKey);
         });
 
-        it("should update the state Map and store a Set", () => {
-            assert(stateTags instanceof Set, "Stored list should be a Set");
+        test("should update the state Map and store a Set", () => {
+            expect(stateTags instanceof Set).toBeTruthy();
             testTags.forEach((t) => {
-                assert(stateTags.has(t), `Missing tag: ${t}`);
+                expect(stateTags.has(t)).toBeTruthy();
             });
         });
 
-        it("that set should contain all the passed tags", () => {
+        test("that set should contain all the passed tags", () => {
             testTags.forEach((t) => {
-                assert(stateTags.has(t), `Missing tag: ${t}`);
+                expect(stateTags.has(t)).toBeTruthy();
             });
         });
 
-        it("should store a list of unique values", () => {
-            assert(stateTags.size == 3, "Stored list should only consist of unique items");
+        test("should store a list of unique values", () => {
+            expect(stateTags.size == 3).toBeTruthy();
         });
     });
 
@@ -52,10 +52,10 @@ describe("store/tagStore.js", () => {
             thisGetter = getTagsById(state);
         });
 
-        it("should update the state Map and store a Set", () => {
-            let tags = thisGetter(testKey);
-            assert(tags instanceof Array, "returned result should be a simple array");
-            assert((tags.length = 3));
+        test("should update the state Map and store a Set", () => {
+            const tags = thisGetter(testKey);
+            expect(tags instanceof Array).toBeTruthy();
+            expect((tags.length = 3)).toBeTruthy();
         });
     });
 });

@@ -19,13 +19,13 @@ $brand-masthead-text-hover: $brand-toggle;
 $text-color: $brand-dark;
 $text-muted: lighten($text-color, 10%);
 $text-light: lighten($text-color, 20%);
-$border-color: lighten($text-color, 60%);
 
 // Light grays for backgrounds
 $white: lighten($brand-light, 15%); // body background
 $gray-100: $brand-light;
 $gray-200: darken($brand-light, 5%); // welcome background
 $gray-300: darken($brand-light, 10%);
+$border-color: darken($brand-light, 20%);
 
 // Dark grays for foregrounds
 $gray-900: $text-color;

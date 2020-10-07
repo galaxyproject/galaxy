@@ -1560,6 +1560,22 @@ class JobExternalOutputMetadata(RepresentById):
         return None
 
 
+# Set up output dataset association for export history jobs. Because job
+# uses a Dataset rather than an HDA or LDA, it's necessary to set up a
+# fake dataset association that provides the needed attributes for
+# preparing a job.
+class FakeDatasetAssociation (object):
+    fake_dataset_association = True
+
+    def __init__(self, dataset=None):
+        self.dataset = dataset
+        self.file_name = dataset.file_name
+        self.metadata = dict()
+
+    def __eq__(self, other):
+        return isinstance(other, FakeDatasetAssociation) and self.dataset == other.dataset
+
+
 class JobExportHistoryArchive(RepresentById):
     def __init__(self, job=None, history=None, dataset=None, compressed=False,
                  history_attrs_filename=None):
@@ -1568,6 +1584,10 @@ class JobExportHistoryArchive(RepresentById):
         self.dataset = dataset
         self.compressed = compressed
         self.history_attrs_filename = history_attrs_filename
+
+    @property
+    def fda(self):
+        return FakeDatasetAssociation(self.dataset)
 
     @property
     def temp_directory(self):
@@ -2713,6 +2733,17 @@ class DatasetInstance:
                 self.metadata.dbkey = [value]
     dbkey = property(get_dbkey, set_dbkey)
 
+    def ok_to_edit_metadata(self):
+        # prevent modifying metadata when dataset is queued or running as input/output
+        # This code could be more efficient, i.e. by using mappers, but to prevent slowing down loading a History panel, we'll leave the code here for now
+        sa_session = object_session(self)
+        for job_to_dataset_association in sa_session.query(
+                JobToInputDatasetAssociation).filter_by(dataset_id=self.id).all() \
+                + sa_session.query(JobToOutputDatasetAssociation).filter_by(dataset_id=self.id).all():
+            if job_to_dataset_association.job.state not in Job.terminal_states:
+                return False
+        return True
+
     def change_datatype(self, new_ext):
         self.clear_associated_files()
         _get_datatypes_registry().change_datatype(self, new_ext)
@@ -3251,6 +3282,12 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         Return The access roles associated with this HDA's dataset.
         """
         return self.dataset.get_access_roles(trans)
+
+    def purge_usage_from_quota(self, user):
+        """Remove this HDA's quota_amount from user's quota.
+        """
+        if user:
+            user.adjust_total_disk_usage(-self.quota_amount(user))
 
     def quota_amount(self, user):
         """
@@ -4412,6 +4449,14 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
         object_session(self).add(hdca)
         object_session(self).flush()
         return hdca
+
+    @property
+    def waiting_for_elements(self):
+        summary = self.job_state_summary
+        if summary.all_jobs > 0 and summary.deleted + summary.error + summary.failed + summary.ok == summary.all_jobs:
+            return False
+        else:
+            return self.collection.waiting_for_elements
 
     def contains_collection(self, collection_id):
         """Checks to see that the indicated collection is a member of the
@@ -5929,7 +5974,7 @@ class CustosAuthnzToken(RepresentById):
         self.refresh_expiration_time = refresh_expiration_time
 
 
-class CloudAuthz(RepresentById):
+class CloudAuthz(object):
     def __init__(self, user_id, provider, config, authn_id, description=""):
         self.id = None
         self.user_id = user_id
@@ -5941,17 +5986,10 @@ class CloudAuthz(RepresentById):
         self.last_activity = datetime.now()
         self.description = description
 
-    def __eq__(self, other):
-        if not isinstance(other, CloudAuthz):
-            return False
-        return self.equals(other.user_id, other.provider, other.authn_id, other.config)
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
     def equals(self, user_id, provider, authn_id, config):
         return (self.user_id == user_id
                 and self.provider == provider
+                and self.authn_id
                 and self.authn_id == authn_id
                 and len({k: self.config[k] for k in self.config if k in config
                          and self.config[k] == config[k]}) == len(self.config))

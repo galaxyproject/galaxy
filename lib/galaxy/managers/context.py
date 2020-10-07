@@ -145,7 +145,7 @@ class ProvidesUserContext:
     @property
     def user_ftp_dir(self):
         base_dir = self.app.config.ftp_upload_dir
-        if base_dir is None:
+        if base_dir is None or self.user is None:
             return None
         else:
             # e.g. 'email' or 'username'

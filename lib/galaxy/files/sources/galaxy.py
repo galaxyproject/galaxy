@@ -12,6 +12,7 @@ class UserFtpFilesSource(PosixFilesSource):
             root=root,
             label=label,
             doc=doc,
+            writable=True,
         )
         posix_kwds.update(kwd)
         if "delete_on_realize" not in posix_kwds:
@@ -22,7 +23,7 @@ class UserFtpFilesSource(PosixFilesSource):
     def get_prefix(self):
         return None
 
-    def get_schema(self):
+    def get_scheme(self):
         return "gxftp"
 
 
@@ -42,7 +43,7 @@ class LibraryImportFilesSource(PosixFilesSource):
     def get_prefix(self):
         return None
 
-    def get_schema(self):
+    def get_scheme(self):
         return "gximport"
 
 
@@ -62,7 +63,7 @@ class UserLibraryImportFilesSource(PosixFilesSource):
     def get_prefix(self):
         return None
 
-    def get_schema(self):
+    def get_scheme(self):
         return "gxuserimport"
 
 

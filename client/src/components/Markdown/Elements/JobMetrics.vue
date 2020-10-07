@@ -1,5 +1,5 @@
 <template>
-    <JobMetrics class="job-metrics" :jobId="args.job_id" />
+    <JobMetrics class="job-metrics" :job-id="args.job_id" />
 </template>
 
 <script>

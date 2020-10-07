@@ -7,6 +7,7 @@ import flushPromises from "flush-promises";
 
 import sampleRunData1 from "./testdata/run1.json";
 
+jest.mock("app");
 const run1WorkflowId = "ebab00128497f9d7";
 
 describe("WorkflowRun.vue", () => {
@@ -17,7 +18,6 @@ describe("WorkflowRun.vue", () => {
     beforeEach(() => {
         axiosMock = new MockAdapter(axios);
         rewire.__Rewire__("getAppRoot", () => "/");
-
         const propsData = { workflowId: run1WorkflowId };
         localVue = createLocalVue();
         axiosMock.onGet(`/api/workflows/${run1WorkflowId}/download?style=run`).reply(200, sampleRunData1);
@@ -32,19 +32,19 @@ describe("WorkflowRun.vue", () => {
     });
 
     it("loads run data from API and parses it into a WorkflowRunModel object", async () => {
-        expect(wrapper.vm.loading).to.equal(true);
-        expect(wrapper.vm.error).to.equal(null);
-        expect(wrapper.vm.model).to.equal(null);
+        expect(wrapper.vm.loading).toBe(true);
+        expect(wrapper.vm.error).toBeNull();
+        expect(wrapper.vm.model).toBeNull();
         await flushPromises();
-        expect(wrapper.vm.error).to.equal(null);
-        expect(wrapper.vm.loading).to.equal(false);
+        expect(wrapper.vm.error).toBeNull();
+        expect(wrapper.vm.loading).toBe(false);
         const model = wrapper.vm.model;
-        expect(model).to.not.equal(null);
-        expect(model.workflowId).to.equal(run1WorkflowId);
-        expect(model.name).to.equal("Cool Test Workflow");
-        expect(model.historyId).to.equal("8f7a155755f10e73");
-        expect(model.hasUpgradeMessages).to.equal(false);
-        expect(model.hasStepVersionChanges).to.equal(false);
-        expect(model.wpInputs.wf_param.label).to.equal("wf_param");
+        expect(model).not.toBeNull();
+        expect(model.workflowId).toBe(run1WorkflowId);
+        expect(model.name).toBe("Cool Test Workflow");
+        expect(model.historyId).toBe("8f7a155755f10e73");
+        expect(model.hasUpgradeMessages).toBe(false);
+        expect(model.hasStepVersionChanges).toBe(false);
+        expect(model.wpInputs.wf_param.label).toBe("wf_param");
     });
 });

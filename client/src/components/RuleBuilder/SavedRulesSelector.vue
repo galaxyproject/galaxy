@@ -2,7 +2,7 @@
     <div class="btn-group dropdown">
         <span
             class="fas fa-history rule-builder-view-source"
-            v-bind:class="{ disabled: numOfSavedRules == 0 }"
+            :class="{ disabled: numOfSavedRules == 0 }"
             v-b-tooltip.hover.bottom
             :title="savedRulesMenu"
             data-toggle="dropdown"
@@ -25,6 +25,8 @@ import Vue from "vue";
 import _l from "utils/localization";
 import BootstrapVue from "bootstrap-vue";
 import moment from "moment";
+import { getGalaxyInstance } from "app";
+
 Vue.use(BootstrapVue);
 export default {
     data: function () {
@@ -35,30 +37,35 @@ export default {
     },
     created() {
         let counter = 0;
-        for (let i = 0; i < localStorage.length; i++) {
-            if (localStorage.key(i).startsWith(this.prefix)) {
-                var savedSession = localStorage.getItem(localStorage.key(i));
-                if (savedSession) {
-                    var key = localStorage.key(i);
-                    this.savedRules.push({
-                        dateTime: key.substring(this.prefix.length),
-                        rule: savedSession,
-                    });
-                }
-                counter++;
-                if (counter == 10) {
-                    break;
+        if (this.user == null) {
+            return;
+        } else {
+            for (let i = 0; i < localStorage.length; i++) {
+                if (localStorage.key(i).startsWith(this.prefix + this.user)) {
+                    var savedSession = localStorage.getItem(localStorage.key(i));
+                    if (savedSession) {
+                        var key = localStorage.key(i);
+                        this.savedRules.push({
+                            dateTime: key.substring(this.prefix.length + this.user.length),
+                            rule: savedSession,
+                        });
+                    }
+                    counter++;
+                    if (counter == 10) {
+                        break;
+                    }
                 }
             }
         }
     },
     props: {
-        builder: {
-            required: true,
-        },
         prefix: {
             type: String,
             default: "galaxy_rules_",
+        },
+        user: {
+            type: String,
+            default: getGalaxyInstance() ? getGalaxyInstance().user.id : "",
         },
     },
     computed: {
@@ -72,7 +79,7 @@ export default {
         },
         saveSession(jsonRulesString) {
             var dateTimeString = new Date().toISOString();
-            var key = this.prefix + dateTimeString;
+            var key = this.prefix + this.user + dateTimeString;
             localStorage.setItem(key, jsonRulesString);
             this.savedRules.push({
                 dateTime: dateTimeString,

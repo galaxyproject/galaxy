@@ -224,7 +224,7 @@ class Registry:
                             if ok:
                                 datatype_class = None
                                 if proprietary_path and proprietary_datatype_module and datatype_class_name:
-                                    # TODO: previously comments suggested this needs to be locked because it modifys
+                                    # TODO: previously comments suggested this needs to be locked because it modifies
                                     # the sys.path, probably true but the previous lock wasn't doing that.
                                     try:
                                         imported_module = __import_module(proprietary_path,
@@ -556,7 +556,7 @@ class Registry:
             return images.Image
 
         # TODO: too inefficient - would be better to generate this once as a map and store in this object
-        for ext, datatype_obj in self.datatypes_by_extension.items():
+        for datatype_obj in self.datatypes_by_extension.values():
             datatype_obj_class = datatype_obj.__class__
             datatype_obj_class_str = str(datatype_obj_class)
             if name in datatype_obj_class_str:

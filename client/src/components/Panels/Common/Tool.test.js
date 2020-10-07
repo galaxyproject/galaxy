@@ -1,25 +1,27 @@
 import { mount } from "@vue/test-utils";
 import Tool from "./Tool";
+import { getNewAttachNode } from "jest/helpers";
 
 describe("Tool", () => {
-    it("test tool", () => {
+    test("test tool", () => {
         const wrapper = mount(Tool, {
             propsData: {
                 tool: {},
             },
+            attachTo: getNewAttachNode(),
         });
         const nameElement = wrapper.findAll(".name");
-        expect(nameElement.at(0).text()).to.equal("");
+        expect(nameElement.at(0).text()).toBe("");
         nameElement.trigger("click");
-        expect(wrapper.emitted().onClick).to.not.be.undefined;
+        expect(wrapper.emitted().onClick).toBeDefined();
         const labelsElement = wrapper.find(".labels");
-        expect(labelsElement.children).to.equal(undefined);
+        expect(labelsElement.children).toBeUndefined();
         const operationElement = wrapper.find(".operation");
-        expect(operationElement.classes()).to.include("operation");
+        expect(operationElement.classes()).toEqual(expect.arrayContaining(["operation"]));
         operationElement.trigger("click");
-        expect(wrapper.emitted().onOperation).to.not.be.undefined;
+        expect(wrapper.emitted().onOperation).toBeDefined();
     });
-    it("test tool operation", () => {
+    test("test tool operation", () => {
         const wrapper = mount(Tool, {
             propsData: {
                 tool: {
@@ -28,15 +30,16 @@ describe("Tool", () => {
                 operationIcon: "operationIconClass",
                 operationTitle: "operationTitle",
             },
+            attachTo: getNewAttachNode(),
         });
         const nameElement = wrapper.findAll(".name");
-        expect(nameElement.at(0).text()).to.equal("name");
+        expect(nameElement.at(0).text()).toBe("name");
         const operationElement = wrapper.find(".operation");
-        expect(operationElement.classes()).to.include("operationIconClass");
+        expect(operationElement.classes()).toEqual(expect.arrayContaining(["operationIconClass"]));
         const title = operationElement.attributes("title");
-        expect(title).to.equal("operationTitle");
+        expect(title).toBe("operationTitle");
     });
-    it("test tool hide name, test description", () => {
+    test("test tool hide name, test description", () => {
         const wrapper = mount(Tool, {
             propsData: {
                 tool: {
@@ -45,10 +48,11 @@ describe("Tool", () => {
                 },
                 hideName: true,
             },
+            attachTo: getNewAttachNode(),
         });
         const nameElement = wrapper.findAll(".name");
-        expect(nameElement.length).to.equal(0);
+        expect(nameElement.length).toBe(0);
         const descriptionElement = wrapper.find(".description");
-        expect(descriptionElement.text()).to.equal("description");
+        expect(descriptionElement.text()).toBe("description");
     });
 });

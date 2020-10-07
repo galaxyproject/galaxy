@@ -169,7 +169,7 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesApp, tools_support.U
             **kwd
         )
         self.history.add_dataset(output_dataset)
-        ObjectStorePopulator(self.app).set_object_store_id(output_dataset)
+        ObjectStorePopulator(self.app, user=self.job.user).set_object_store_id(output_dataset)
         return output_dataset
 
     def _write_work_dir_file(self, filename, contents):

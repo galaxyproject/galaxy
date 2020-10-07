@@ -28,17 +28,17 @@ describe("ToolsView/ToolsView.vue", () => {
     });
 
     it("should render infinite scroll div", async () => {
-        expect(wrapper.html()).contain('<div infinite-scroll-disabled="busy">');
+        expect(wrapper.html()).toEqual(expect.stringContaining('<div infinite-scroll-disabled="busy">'));
     });
 
     it("should return defined number of tools", async () => {
-        assert(wrapper.vm.getToolsNumber() === 84, "Tools Get Response is not parsed correctly!");
+        expect(wrapper.vm.getToolsNumber() === 84).toBeTruthy();
     });
 
     it("should render only specific number of tools, equal to current buffer", async () => {
         const buttons = wrapper.findAll('[type="button"]').filter((button) => button.text() === "Info");
         // one 'info' button per tool
-        assert(wrapper.vm.buffer.length === buttons.length, "Number of 'info' buttons do not equal the buffer size!");
+        expect(wrapper.vm.buffer.length === buttons.length).toBeTruthy();
     });
 
     it("should open modal on button click", async () => {
@@ -49,12 +49,12 @@ describe("ToolsView/ToolsView.vue", () => {
             .at(0);
         const modalId = "modal--" + infoButton.attributes().index;
         const modal = wrapper.find("#" + modalId);
-        assert(modal.isVisible() === false, "modal is visible before the click!");
+        expect(modal.element).not.toBeVisible();
 
         infoButton.trigger("click");
         await flushPromises();
 
-        assert(modal.isVisible(), "'Info' button didn't open a modal!");
+        expect(modal.element).toBeVisible();
     });
 
     it("citation should open on click", async () => {
@@ -64,13 +64,13 @@ describe("ToolsView/ToolsView.vue", () => {
             .at(0);
         const citation = wrapper.find("#" + infoButton.attributes("aria-controls").replace(/ /g, "_"));
 
-        assert(citation.isVisible() === false, "citation is visible before being triggered!");
-        assert(infoButton.attributes("aria-expanded") === "false", "citation is expanded before being triggered!");
+        expect(citation.element).not.toBeVisible();
+        expect(infoButton.attributes("aria-expanded") === "false").toBeTruthy();
 
         infoButton.trigger("click");
         await flushPromises();
 
-        assert(infoButton.attributes("aria-expanded") === "true", "citation field did not expand!");
-        assert(citation.isVisible(), "citation is not visible, after being triggered!");
+        expect(infoButton.attributes("aria-expanded") === "true").toBeTruthy();
+        expect(citation.element).toBeVisible();
     });
 });

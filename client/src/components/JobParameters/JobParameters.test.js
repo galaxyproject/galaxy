@@ -10,11 +10,10 @@ const JOB_ID = "foo";
 
 describe("JobMetrics/JobMetrics.vue", () => {
     const localVue = createLocalVue();
-    localVue.use(Vuex);
-
-    let wrapper, emitted, axiosMock;
-
     const linkParam = paramResponse.parameters.find((element) => Array.isArray(element.value));
+    let axiosMock;
+
+    localVue.use(Vuex);
 
     beforeEach(() => {
         axiosMock = new MockAdapter(axios);
@@ -37,21 +36,21 @@ describe("JobMetrics/JobMetrics.vue", () => {
 
         const checkTableParameter = (element, expectedTitle, expectedValue, link) => {
             const tds = element.findAll("td");
-            expect(tds.length).to.equals(2);
-            expect(tds.at(0).text()).to.equals(expectedTitle);
-            expect(tds.at(1).text()).to.equals(expectedValue);
+            expect(tds.length).toBe(2);
+            expect(tds.at(0).text()).toBe(expectedTitle);
+            expect(tds.at(1).text()).toBe(expectedValue);
             if (link) {
                 const a_element = tds.at(1).find("a");
-                expect(a_element.attributes("href")).to.equals(link);
+                expect(a_element.attributes("href")).toBe(link);
             }
         };
         // parameter table
         const tbody = wrapper.find("#tool-parameters > tbody");
-        expect(tbody.exists()).to.equals(true);
+        expect(tbody.exists()).toBe(true);
 
         // table elements
         const elements = tbody.findAll("tr");
-        expect(elements.length).to.equals(3);
+        expect(elements.length).toBe(3);
 
         checkTableParameter(elements.at(0), "Add this value", "22");
         checkTableParameter(
@@ -80,7 +79,7 @@ describe("JobMetrics/JobMetrics.vue", () => {
 
         const singleParam = await getSingleParam(propsData);
 
-        expect(singleParam.text()).to.equals("NO");
+        expect(singleParam.text()).toBe("NO");
 
         const propsDataLink = {
             jobId: JOB_ID,
@@ -89,6 +88,6 @@ describe("JobMetrics/JobMetrics.vue", () => {
 
         const singleParamLink = await getSingleParam(propsDataLink);
         const link = singleParamLink.find("a").attributes("href");
-        expect(link).to.equals(`/datasets/${linkParam.value[0].id}/show_params`);
+        expect(link).toBe(`/datasets/${linkParam.value[0].id}/show_params`);
     });
 });

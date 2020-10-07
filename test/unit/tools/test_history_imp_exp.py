@@ -1,9 +1,11 @@
 import json
 import os
-import shutil
 import tarfile
 from shutil import rmtree
-from tempfile import mkdtemp
+from tempfile import (
+    mkdtemp,
+    mkstemp,
+)
 
 from galaxy import model
 from galaxy.exceptions import MalformedContents
@@ -30,6 +32,7 @@ class MockSetExternalTool(object):
 def _run_jihaw_cleanup(archive_dir, app=None):
     app = app or _mock_app()
     job = model.Job()
+    job.user = model.User(email="test@test.org", password='test')
     job.tool_stderr = ''
     jiha = model.JobImportHistoryArchive(job=job, archive_dir=archive_dir)
     app.model.context.current.add_all([job, jiha])
@@ -58,11 +61,11 @@ def _run_jihaw_cleanup_check_secure(history_archive, msg):
 
 def test_create_archive():
     tempdir = mkdtemp()
+    _, out_file = mkstemp()
     dataset = os.path.join(tempdir, 'datasets/Pasted_Entry_1.txt')
     history_attrs_file = os.path.join(tempdir, 'history_attrs.txt')
     datasets_attrs_file = os.path.join(tempdir, 'datasets_attrs.txt')
     jobs_attrs_file = os.path.join(tempdir, 'jobs_attrs.txt')
-    out_file = os.path.join(tempdir, 'out.tar.gz')
     os.makedirs(os.path.join(tempdir, 'datasets'))
     with open(dataset, 'w') as out:
         out.write('Hello\n')
@@ -72,12 +75,9 @@ def test_create_archive():
         out.write(DATASETS_ATTRS_EXPORT.format(file_name=dataset))
     with open(jobs_attrs_file, 'w') as out:
         out.write(JOBS_ATTRS)
-    try:
-        create_archive(tempdir, out_file, gzip=True)
-        with tarfile.open(out_file) as t:
-            assert sorted(t.getnames()) == sorted(['datasets', 'datasets/Pasted_Entry_1.txt', 'history_attrs.txt', 'datasets_attrs.txt', 'jobs_attrs.txt']), t.getnames()
-    finally:
-        shutil.rmtree(tempdir)
+    create_archive(tempdir, out_file, gzip=True)
+    with tarfile.open(out_file) as t:
+        assert sorted(t.getnames()) == sorted(['datasets', 'datasets/Pasted_Entry_1.txt', 'history_attrs.txt', 'datasets_attrs.txt', 'jobs_attrs.txt']), t.getnames()
 
 
 def test_history_import_symlink():
@@ -626,8 +626,10 @@ def _import_export(app, h, dest_export=None):
         dest_parent = mkdtemp()
         dest_export = os.path.join(dest_parent, "moo.tgz")
 
-    jeha = model.JobExportHistoryArchive(job=None, history=h,
-                                         dataset=None,
+    dataset = model.Dataset(id=100)
+
+    jeha = model.JobExportHistoryArchive(job=model.Job(), history=h,
+                                         dataset=dataset,
                                          compressed=True)
     wrapper = JobExportHistoryArchiveWrapper(app, 1)
     wrapper.setup_job(jeha)

@@ -2,6 +2,7 @@
 Basic tool parameters.
 """
 
+import contextlib
 import json
 import logging
 import os
@@ -79,6 +80,43 @@ def parse_dynamic_options(param, input_source):
     if options_elem is not None:
         return dynamic_options.DynamicOptions(options_elem, param)
     return None
+
+
+# Describe a parameter value error where there is no actual supplied
+# parameter - e.g. just a specification issue.
+NO_PARAMETER_VALUE = object()
+
+
+@contextlib.contextmanager
+def assert_throws_param_value_error(message):
+    exception_thrown = False
+    try:
+        yield
+    except ParameterValueError as e:
+        exception_thrown = True
+        assert str(e) == message
+    assert exception_thrown
+
+
+class ParameterValueError(ValueError):
+
+    def __init__(self, message_suffix, parameter_name, parameter_value=NO_PARAMETER_VALUE, is_dynamic=None):
+        message = "parameter '%s': %s" % (parameter_name, message_suffix)
+        super(ParameterValueError, self).__init__(message)
+        self.message_suffix = message_suffix
+        self.parameter_name = parameter_name
+        self.parameter_value = parameter_value
+        self.is_dynamic = is_dynamic
+
+    def to_dict(self):
+        as_dict = {"message": unicodify(self)}
+        as_dict["message_suffix"] = self.message_suffix
+        as_dict["parameter_name"] = self.parameter_name
+        if self.parameter_value is not NO_PARAMETER_VALUE:
+            as_dict["parameter_value"] = self.parameter_value
+        if self.is_dynamic is not None:
+            as_dict["is_dynamic"] = self.is_dynamic
+        return as_dict
 
 
 class ToolParameter(Dictifiable):
@@ -258,7 +296,26 @@ class ToolParameter(Dictifiable):
         return input_source.parse_name()
 
 
-class TextToolParameter(ToolParameter):
+class SimpleTextToolParameter(ToolParameter):
+
+    def __init__(self, tool, input_source):
+        input_source = ensure_input_source(input_source)
+        super().__init__(tool, input_source)
+        self.value = ''
+
+    def to_json(self, value, app, use_security):
+        """Convert a value to a string representation suitable for persisting"""
+        if value is None:
+            rval = ''
+        else:
+            rval = unicodify(value)
+        return rval
+
+    def get_initial_value(self, trans, other_values):
+        return self.value
+
+
+class TextToolParameter(SimpleTextToolParameter):
     """
     Parameter that can take on any text value.
 
@@ -279,21 +336,10 @@ class TextToolParameter(ToolParameter):
         self.value = input_source.get('value')
         self.area = input_source.get_bool('area', False)
 
-    def to_json(self, value, app, use_security):
-        """Convert a value to a string representation suitable for persisting"""
-        if value is None:
-            rval = ''
-        else:
-            rval = unicodify(value)
-        return rval
-
     def validate(self, value, trans=None):
         search = self.type == "text"
         if not (trans and trans.workflow_building_mode is workflow_building_modes.ENABLED and contains_workflow_parameter(value, search=search)):
             return super().validate(value, trans)
-
-    def get_initial_value(self, trans, other_values):
-        return self.value
 
     def to_dict(self, trans, other_values={}):
         d = super().to_dict(trans)
@@ -313,10 +359,8 @@ class IntegerToolParameter(TextToolParameter):
     _name
     >>> assert sorted(p.to_dict(trans).items()) == [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'IntegerToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'integer'), ('value', u'10')]
     >>> assert type(p.from_json("10", trans)) == int
-    >>> type(p.from_json("_string", trans))
-    Traceback (most recent call last):
-        ...
-    ValueError: parameter '_name': an integer or workflow parameter is required
+    >>> with assert_throws_param_value_error("parameter '_name': an integer or workflow parameter is required"):
+    ...     p.from_json("_string", trans)
     """
 
     dict_collection_visible_keys = ToolParameter.dict_collection_visible_keys + ['min', 'max']
@@ -327,21 +371,21 @@ class IntegerToolParameter(TextToolParameter):
             try:
                 int(self.value)
             except ValueError:
-                raise ValueError("parameter '%s': the attribute 'value' must be an integer" % self.name)
+                raise ParameterValueError("the attribute 'value' must be an integer", self.name)
         elif self.value is None and not self.optional:
-            raise ValueError("parameter '%s': the attribute 'value' must be set for non optional parameters" % self.name)
+            raise ParameterValueError("the attribute 'value' must be set for non optional parameters", self.name, None)
         self.min = input_source.get('min')
         self.max = input_source.get('max')
         if self.min:
             try:
                 self.min = int(self.min)
             except ValueError:
-                raise ValueError("parameter '%s': attribute 'min' must be an integer" % self.name)
+                raise ParameterValueError("attribute 'min' must be an integer", self.name, self.min)
         if self.max:
             try:
                 self.max = int(self.max)
             except ValueError:
-                raise ValueError("parameter '%s': attribute 'max' must be an integer" % self.name)
+                raise ParameterValueError("attribute 'max' must be an integer", self.name, self.max)
         if self.min is not None or self.max is not None:
             self.validators.append(validation.InRangeValidator(None, self.min, self.max))
 
@@ -354,9 +398,9 @@ class IntegerToolParameter(TextToolParameter):
             if not value and self.optional:
                 return ""
             if trans.workflow_building_mode is workflow_building_modes.ENABLED:
-                raise ValueError("parameter '%s': an integer or workflow parameter is required" % self.name)
+                raise ParameterValueError("an integer or workflow parameter is required", self.name, value)
             else:
-                raise ValueError("parameter '%s': the attribute 'value' must be set for non optional parameters" % self.name)
+                raise ParameterValueError("the attribute 'value' must be set for non optional parameters", self.name, value)
 
     def to_python(self, value, app):
         try:
@@ -386,10 +430,8 @@ class FloatToolParameter(TextToolParameter):
     _name
     >>> assert sorted(p.to_dict(trans).items()) == [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'FloatToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'float'), ('value', u'3.141592')]
     >>> assert type(p.from_json("36.1", trans)) == float
-    >>> type(p.from_json("_string", trans))
-    Traceback (most recent call last):
-        ...
-    ValueError: parameter '_name': an integer or workflow parameter is required
+    >>> with assert_throws_param_value_error("parameter '_name': an integer or workflow parameter is required"):
+    ...     p.from_json("_string", trans)
     """
 
     dict_collection_visible_keys = ToolParameter.dict_collection_visible_keys + ['min', 'max']
@@ -402,19 +444,19 @@ class FloatToolParameter(TextToolParameter):
             try:
                 float(self.value)
             except ValueError:
-                raise ValueError("parameter '%s': the attribute 'value' must be a real number" % self.name)
+                raise ParameterValueError("the attribute 'value' must be a real number", self.name, self.value)
         elif self.value is None and not self.optional:
-            raise ValueError("parameter '%s': the attribute 'value' must be set for non optional parameters" % self.name)
+            raise ParameterValueError("the attribute 'value' must be set for non optional parameters", self.name, None)
         if self.min:
             try:
                 self.min = float(self.min)
             except ValueError:
-                raise ValueError("parameter '%s': attribute 'min' must be a real number" % self.name)
+                raise ParameterValueError("attribute 'min' must be a real number", self.name, self.min)
         if self.max:
             try:
                 self.max = float(self.max)
             except ValueError:
-                raise ValueError("parameter '%s': attribute 'max' must be a real number" % self.name)
+                raise ParameterValueError("attribute 'max' must be a real number", self.name, self.max)
         if self.min is not None or self.max is not None:
             self.validators.append(validation.InRangeValidator(None, self.min, self.max))
 
@@ -427,9 +469,9 @@ class FloatToolParameter(TextToolParameter):
             if not value and self.optional:
                 return ""
             if trans.workflow_building_mode is workflow_building_modes.ENABLED:
-                raise ValueError("parameter '%s': an integer or workflow parameter is required" % self.name)
+                raise ParameterValueError("an integer or workflow parameter is required", self.name, value)
             else:
-                raise ValueError("parameter '%s': the attribute 'value' must be set for non optional parameters" % self.name)
+                raise ParameterValueError("the attribute 'value' must be set for non optional parameters", self.name, value)
 
     def to_python(self, value, app):
         try:
@@ -532,7 +574,7 @@ class FileToolParameter(ToolParameter):
                 session_id = value["session_id"]
                 upload_store = trans.app.config.new_file_path
                 if re.match(r'^[\w-]+$', session_id) is None:
-                    raise ValueError("Invald session id format.")
+                    raise ValueError("Invalid session id format.")
                 local_filename = os.path.abspath(os.path.join(upload_store, session_id))
             else:
                 # handle nginx upload
@@ -688,10 +730,8 @@ class ColorToolParameter(ToolParameter):
     >>> p = ColorToolParameter(None, XML('<param name="_name" type="color" value="#ffffff" rgb="True"/>'))
     >>> print(p.to_param_dict_string("#ffffff"))
     (255, 255, 255)
-    >>> print(p.to_param_dict_string(None))
-    Traceback (most recent call last):
-        ...
-    ValueError: Failed to convert 'None' to RGB.
+    >>> with assert_throws_param_value_error("parameter '_name': Failed to convert 'None' to RGB."):
+    ...      p.to_param_dict_string(None)
     """
 
     def __init__(self, tool, input_source):
@@ -709,7 +749,7 @@ class ColorToolParameter(ToolParameter):
             try:
                 return str(tuple(int(value.lstrip('#')[i : i + 2], 16) for i in (0, 2, 4)))
             except Exception:
-                raise ValueError("Failed to convert \'%s\' to RGB." % value)
+                raise ParameterValueError("Failed to convert \'%s\' to RGB." % value, self.name)
         return str(value)
 
 
@@ -858,20 +898,20 @@ class SelectToolParameter(ToolParameter):
         elif value is None:
             if self.optional:
                 return None
-            raise ValueError("parameter '%s': an invalid option (None) was selected, please verify" % self.name)
+            raise ParameterValueError("an invalid option (None) was selected, please verify", self.name, None, is_dynamic=self.is_dynamic)
         elif not legal_values:
             if self.optional and self.tool.profile < 18.09:
                 # Covers optional parameters with default values that reference other optional parameters.
                 # These will have a value but no legal_values.
                 return None
-            raise ValueError("parameter '%s': requires a value, but no legal values defined" % self.name)
+            raise ParameterValueError("requires a value, but no legal values defined", self.name, is_dynamic=self.is_dynamic)
         if isinstance(value, list):
             if not self.multiple:
-                raise ValueError("parameter '%s': multiple values provided but parameter is not expecting multiple values" % (self.name))
+                raise ParameterValueError("multiple values provided but parameter is not expecting multiple values", self.name, is_dynamic=self.is_dynamic)
             rval = []
             for v in value:
                 if v not in legal_values:
-                    raise ValueError("parameter '{}': an invalid option ({!r}) was selected (valid options: {})".format(self.name, v, ",".join(legal_values)))
+                    raise ParameterValueError("an invalid option ({!r}) was selected (valid options: {})".format(v, ",".join(legal_values)), self.name, v, is_dynamic=self.is_dynamic)
                 rval.append(v)
             return rval
         else:
@@ -881,11 +921,11 @@ class SelectToolParameter(ToolParameter):
                     if self.optional:
                         return []
                     else:
-                        raise ValueError("parameter '%s': no option was selected for non optional parameter" % (self.name))
+                        raise ParameterValueError("no option was selected for non optional parameter", self.name, is_dynamic=self.is_dynamic)
             if is_runtime_value(value):
                 return None
             if value not in legal_values and require_legal_value:
-                raise ValueError("parameter '{}': an invalid option ({!r}) was selected (valid options: {})".format(self.name, value, ",".join(legal_values)))
+                raise ParameterValueError("an invalid option ({!r}) was selected (valid options: {})".format(value, ",".join(legal_values)), self.name, value, is_dynamic=self.is_dynamic)
             return value
 
     def to_param_dict_string(self, value, other_values={}):
@@ -893,7 +933,7 @@ class SelectToolParameter(ToolParameter):
             return "None"
         if isinstance(value, list):
             if not self.multiple:
-                raise ValueError("parameter '%s': multiple values provided but parameter is not expecting multiple values" % (self.name))
+                raise ParameterValueError("multiple values provided but parameter is not expecting multiple values", self.name, is_dynamic=self.is_dynamic)
             value = list(map(str, value))
         else:
             value = str(value)
@@ -982,12 +1022,15 @@ class GenomeBuildParameter(SelectToolParameter):
     [('Human May 2004 (NCBI35/hg17) (hg17)', 'hg17', True)]
     >>> [i for i in o if i[1] == 'hg18']
     [('Human Mar. 2006 (NCBI36/hg18) (hg18)', 'hg18', False)]
+    >>> p.is_dynamic
+    True
     """
 
     def __init__(self, *args, **kwds):
         super().__init__(*args, **kwds)
         if self.tool:
             self.static_options = [(value, key, False) for key, value in self._get_dbkey_names()]
+        self.is_dynamic = True
 
     def get_options(self, trans, other_values):
         last_used_build = object()
@@ -1430,17 +1473,17 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         elif value is None:
             if self.optional:
                 return None
-            raise ValueError("parameter '{}': an invalid option ({!r}) was selected".format(self.name, value))
+            raise ParameterValueError("an invalid option ({!r}) was selected".format(value), self.name, value)
         elif not legal_values:
-            raise ValueError("parameter '%s': requires a value, but no legal values defined" % (self.name))
+            raise ParameterValueError("requires a value, but no legal values defined", self.name)
         if not isinstance(value, list):
             value = [value]
         if len(value) > 1 and not self.multiple:
-            raise ValueError("parameter '%s': multiple values provided but parameter is not expecting multiple values" % (self.name))
+            raise ParameterValueError("multiple values provided but parameter is not expecting multiple values", self.name)
         rval = []
         for val in value:
             if val not in legal_values:
-                raise ValueError("parameter '{}': an invalid option ({!r}) was selected (valid options: {})".format(self.name, val, ",".join(legal_values)))
+                raise ParameterValueError("an invalid option ({!r}) was selected (valid options: {})".format(val, ",".join(legal_values)), self.name, val)
             rval.append(val)
         return rval
 
@@ -1475,7 +1518,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
                 options = get_options_list(val)
                 rval.extend(options)
         if len(rval) > 1 and not self.multiple:
-            raise ValueError("parameter '%s': multiple values provided but parameter is not expecting multiple values" % (self.name))
+            raise ParameterValueError("multiple values provided but parameter is not expecting multiple values", self.name)
         rval = self.separator.join(rval)
         if self.tool is None or self.tool.options.sanitize:
             if self.sanitizer:
@@ -1707,16 +1750,16 @@ class DataToolParameter(BaseDataToolParameter):
             try:
                 self.min = int(self.min)
             except ValueError:
-                raise ValueError("parameter '%s': attribute 'min' must be an integer" % self.name)
+                raise ParameterValueError("attribute 'min' must be an integer", self.name)
         if self.max:
             try:
                 self.max = int(self.max)
             except ValueError:
-                raise ValueError("parameter '%s': attribute 'max' must be an integer" % self.name)
+                raise ParameterValueError("attribute 'max' must be an integer", self.name)
         if not self.multiple and (self.min is not None):
-            raise ValueError("parameter '%s': cannot specify 'min' property on single data parameter '%s'. Set multiple=\"true\" to enable this option" % self.name)
+            raise ParameterValueError("cannot specify 'min' property on single data parameter. Set multiple=\"true\" to enable this option", self.name)
         if not self.multiple and (self.max is not None):
-            raise ValueError("parameter '%s': cannot specify 'max' property on single data parameter '%s'. Set multiple=\"true\" to enable this option" % self.name)
+            raise ParameterValueError("cannot specify 'max' property on single data parameter. Set multiple=\"true\" to enable this option", self.name)
         self.is_dynamic = True
         self._parse_options(input_source)
         # Load conversions required for the dataset input
@@ -1726,14 +1769,14 @@ class DataToolParameter(BaseDataToolParameter):
             if self.datatypes_registry:
                 conv_type = self.datatypes_registry.get_datatype_by_extension(conv_extension.lower())
                 if conv_type is None:
-                    raise ValueError("parameter '{}': datatype class not found for extension '{}', which is used as 'type' attribute in conversion of data parameter".format(self.name, conv_type))
+                    raise ParameterValueError("datatype class not found for extension '{}', which is used as 'type' attribute in conversion of data parameter".format(conv_type), self.name)
                 self.conversions.append((name, conv_extension, [conv_type]))
 
     def from_json(self, value, trans, other_values={}):
         if trans.workflow_building_mode is workflow_building_modes.ENABLED or is_runtime_value(value):
             return None
         if not value and not self.optional:
-            raise ValueError("parameter '%s': specify a dataset of the required format / build for parameter" % self.name)
+            raise ParameterValueError("specify a dataset of the required format / build for parameter", self.name)
         if value in [None, "None", '']:
             return None
         if isinstance(value, dict) and 'values' in value:
@@ -1775,7 +1818,7 @@ class DataToolParameter(BaseDataToolParameter):
             if found_hdca:
                 for val in rval:
                     if not isinstance(val, trans.app.model.HistoryDatasetCollectionAssociation):
-                        raise ValueError("parameter '%s': if collections are supplied to multiple data input parameter, only collections may be used" % self.name)
+                        raise ParameterValueError("if collections are supplied to multiple data input parameter, only collections may be used", self.name)
         elif isinstance(value, trans.app.model.HistoryDatasetAssociation):
             rval = value
         elif isinstance(value, dict) and 'src' in value and 'id' in value:
@@ -1804,20 +1847,20 @@ class DataToolParameter(BaseDataToolParameter):
         for v in values:
             if v:
                 if hasattr(v, "deleted") and v.deleted:
-                    raise ValueError("parameter '%s': the previously selected dataset has been deleted." % self.name)
+                    raise ParameterValueError("the previously selected dataset has been deleted.", self.name)
                 elif hasattr(v, "dataset") and v.dataset.state in [galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED]:
-                    raise ValueError("parameter '%s': the previously selected dataset has entered an unusable state" % self.name)
+                    raise ParameterValueError("the previously selected dataset has entered an unusable state", self.name)
                 elif hasattr(v, "dataset"):
                     match = dataset_matcher.hda_match(v)
                     if match and match.implicit_conversion:
                         v.implicit_conversion = True
         if not self.multiple:
             if len(values) > 1:
-                raise ValueError("parameter '%s': more than one dataset supplied to single input dataset parameter" % self.name)
+                raise ParameterValueError("more than one dataset supplied to single input dataset parameter", self.name)
             if len(values) > 0:
                 rval = values[0]
             else:
-                raise ValueError("parameter '%s': invalid dataset supplied to single input dataset parameter" % self.name)
+                raise ParameterValueError("invalid dataset supplied to single input dataset parameter", self.name)
         return rval
 
     def to_param_dict_string(self, value, other_values={}):
@@ -2055,7 +2098,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
         if trans.workflow_building_mode is workflow_building_modes.ENABLED:
             return None
         if not value and not self.optional:
-            raise ValueError("parameter '%s': specify a dataset collection of the correct type" % self.name)
+            raise ParameterValueError("specify a dataset collection of the correct type", self.name)
         if value in [None, "None"]:
             return None
         if isinstance(value, dict) and 'values' in value:
@@ -2089,7 +2132,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
                 rval = trans.sa_session.query(trans.app.model.HistoryDatasetCollectionAssociation).get(value)
         if rval and isinstance(rval, trans.app.model.HistoryDatasetCollectionAssociation):
             if rval.deleted:
-                raise ValueError("parameter '%s': the previously selected dataset collection has been deleted" % self.name)
+                raise ParameterValueError("the previously selected dataset collection has been deleted", self.name)
             # TODO: Handle error states, implement error states ...
         return rval
 
@@ -2258,10 +2301,10 @@ class LibraryDatasetToolParameter(ToolParameter):
                 if lda is not None:
                     lst.append(lda)
                 elif validate:
-                    raise ValueError("parameter '%s': one of the selected library datasets is invalid or not available anymore" % self.name)
+                    raise ParameterValueError("one of the selected library datasets is invalid or not available anymore", self.name)
         if len(lst) == 0:
             if not self.optional and validate:
-                raise ValueError("parameter '%s': invalid library dataset selected" % self.name)
+                raise ParameterValueError("invalid library dataset selected", self.name)
             return None
         else:
             return lst
@@ -2291,6 +2334,14 @@ class BaseJsonToolParameter(ToolParameter):
     def to_python(self, value, app):
         """Convert a value created with to_json back to an object representation"""
         return json.loads(value)
+
+
+class DirectoryUriToolParameter(SimpleTextToolParameter):
+    """galaxy.files URIs for directories."""
+
+    def __init__(self, tool, input_source, context=None):
+        input_source = ensure_input_source(input_source)
+        SimpleTextToolParameter.__init__(self, tool, input_source)
 
 
 class RulesListToolParameter(BaseJsonToolParameter):
@@ -2353,6 +2404,7 @@ parameter_types = dict(
     data_collection=DataCollectionToolParameter,
     library_data=LibraryDatasetToolParameter,
     rules=RulesListToolParameter,
+    directory_uri=DirectoryUriToolParameter,
     drill_down=DrillDownSelectToolParameter
 )
 

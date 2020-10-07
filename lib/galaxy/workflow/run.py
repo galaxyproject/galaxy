@@ -364,7 +364,7 @@ class WorkflowProgress:
                 raise Exception(message)
         if isinstance(replacement, model.HistoryDatasetCollectionAssociation):
             if not replacement.collection.populated:
-                if not replacement.collection.waiting_for_elements:
+                if not replacement.waiting_for_elements:
                     # If we are not waiting for elements, there was some
                     # problem creating the collection. Collection will never
                     # be populated.

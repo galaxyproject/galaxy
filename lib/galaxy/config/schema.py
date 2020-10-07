@@ -82,8 +82,8 @@ class AppSchema(Schema):
                     "for '{}' does not exist".format(resolves_to, key)
                 raise_error(message)
 
-        def check_type_is_str(option, key):
-            if option.get('type') != 'str':
+        def check_type_is_str_or_any(option, key):
+            if option.get('type') not in ('str', 'any'):
                 message = "Invalid schema: property '{}' should have type 'str'".format(key)
                 raise_error(message)
 
@@ -105,6 +105,6 @@ class AppSchema(Schema):
             print(key)
             parent = self.app_schema.get(resolves_to)
             check_exists(parent, key)
-            check_type_is_str(parent, key)
-            check_type_is_str(self.app_schema[key], key)
+            check_type_is_str_or_any(parent, key)
+            check_type_is_str_or_any(self.app_schema[key], key)
         check_is_dag()  # must be called last: walks entire graph

@@ -115,7 +115,7 @@ export default {
         // empty grid?
         if (items_length === 0) {
             // No results.
-            tmpl += '<tr><td colspan="100"><em>No Items</em></td></tr>';
+            tmpl += '<tr><td colspan="100"><em>No items</em></td></tr>';
         }
 
         // create rows
@@ -202,6 +202,7 @@ export default {
             var num_page_links = options.num_page_links;
             var cur_page_num = options.cur_page_num;
             var num_pages = options.num_pages;
+            const allow_fetching_all_results = options.allow_fetching_all_results;
 
             // First pass on min page.
             var page_link_range = num_page_links / 2;
@@ -264,10 +265,12 @@ export default {
             tmpl += "</span>";
 
             // Show all link
-            tmpl += `
-                    <span class="page-link" id="show-all-link-span"> | <a href="javascript:void(0);" onclick="return false;" page_num="all">Show All</a></span>
-                    </td>
-                </tr>`;
+            if (allow_fetching_all_results) {
+                tmpl += `
+                        <span class="page-link" id="show-all-link-span"> | <a href="javascript:void(0);" onclick="return false;" page_num="all">Show All</a></span>
+                        </td>
+                    </tr>`;
+            }
         }
 
         // Grid operations for multiple items.

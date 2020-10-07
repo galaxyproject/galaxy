@@ -1,7 +1,6 @@
 import ipaddress
 import logging
 import os
-import shlex
 import socket
 import tempfile
 from collections import OrderedDict
@@ -19,10 +18,8 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
 )
 from galaxy.model import tags
-from galaxy.util import (
-    commands,
-    unicodify
-)
+from galaxy.util import unicodify
+from galaxy.util.path import external_chown
 
 log = logging.getLogger(__name__)
 
@@ -190,14 +187,14 @@ def __new_history_upload(trans, uploaded_dataset, history=None, state=None):
     else:
         hda.state = hda.states.QUEUED
     trans.sa_session.flush()
-    history.add_dataset(hda, genome_build=uploaded_dataset.dbkey)
+    history.add_dataset(hda, genome_build=uploaded_dataset.dbkey, quota=False)
     permissions = trans.app.security_agent.history_get_default_permissions(history)
     trans.app.security_agent.set_all_dataset_permissions(hda.dataset, permissions)
     trans.sa_session.flush()
     return hda
 
 
-def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, state=None):
+def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_handler, state=None):
     current_user_roles = trans.get_current_user_roles()
     if not ((trans.user_is_admin and cntrller in ['library_admin', 'api']) or trans.app.security_agent.can_add_library_item(current_user_roles, library_bunch.folder)):
         # This doesn't have to be pretty - the only time this should happen is if someone's being malicious.
@@ -234,14 +231,12 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, state
                                                             sa_session=trans.sa_session)
     if uploaded_dataset.get('tag_using_filenames', False):
         tag_from_filename = os.path.splitext(os.path.basename(uploaded_dataset.name))[0]
-        tag_manager = tags.GalaxyTagHandler(trans.sa_session)
-        tag_manager.apply_item_tag(item=ldda, user=trans.user, name='name', value=tag_from_filename)
+        tag_handler.apply_item_tag(item=ldda, user=trans.user, name='name', value=tag_from_filename)
 
     tags_list = uploaded_dataset.get('tags', False)
     if tags_list:
-        tag_manager = tags.GalaxyTagHandler(trans.sa_session)
         for tag in tags_list:
-            tag_manager.apply_item_tag(item=ldda, user=trans.user, name='name', value=tag)
+            tag_handler.apply_item_tag(item=ldda, user=trans.user, name='name', value=tag)
 
     trans.sa_session.add(ldda)
     if state:
@@ -292,17 +287,18 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, state
 
 
 def new_upload(trans, cntrller, uploaded_dataset, library_bunch=None, history=None, state=None, tag_list=None):
+    tag_handler = tags.GalaxyTagHandlerSession(trans.sa_session)
     if library_bunch:
-        upload_target_dataset_instance = __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, state)
+        upload_target_dataset_instance = __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_handler, state)
         if library_bunch.tags and not uploaded_dataset.tags:
-            new_tags = trans.app.tag_handler.parse_tags_list(library_bunch.tags)
+            new_tags = tag_handler.parse_tags_list(library_bunch.tags)
             for tag in new_tags:
-                trans.app.tag_handler.apply_item_tag(user=trans.user, item=upload_target_dataset_instance, name=tag[0], value=tag[1])
+                tag_handler.apply_item_tag(user=trans.user, item=upload_target_dataset_instance, name=tag[0], value=tag[1])
     else:
         upload_target_dataset_instance = __new_history_upload(trans, uploaded_dataset, history=history, state=state)
 
     if tag_list:
-        trans.app.tag_handler.add_tags_from_list(trans.user, upload_target_dataset_instance, tag_list)
+        tag_handler.add_tags_from_list(trans.user, upload_target_dataset_instance, tag_list)
 
     return upload_target_dataset_instance
 
@@ -321,22 +317,6 @@ def create_paramfile(trans, uploaded_datasets):
     """
     Create the upload tool's JSON "param" file.
     """
-    def _chown(path):
-        try:
-            # get username from email/username
-            pwent = trans.user.system_user_pwent(trans.app.config.real_system_username)
-            cmd = shlex.split(trans.app.config.external_chown_script)
-            cmd.extend([path, pwent[0], str(pwent[3])])
-        except Exception as e:
-            log.debug('Failed to construct command to change ownership %s' %
-                      unicodify(e))
-        log.debug('Changing ownership of {} with: {}'.format(path, ' '.join(cmd)))
-        try:
-            commands.execute(cmd)
-        except commands.CommandLineException as e:
-            log.warning('Changing ownership of uploaded file %s failed: %s',
-                        path, unicodify(e))
-
     tool_params = []
     json_file_path = None
     for uploaded_dataset in uploaded_datasets:
@@ -398,8 +378,10 @@ def create_paramfile(trans, uploaded_datasets):
             # TODO: This will have to change when we start bundling inputs.
             # Also, in_place above causes the file to be left behind since the
             # user cannot remove it unless the parent directory is writable.
-            if link_data_only == 'copy_files' and trans.app.config.external_chown_script:
-                _chown(uploaded_dataset.path)
+            if link_data_only == 'copy_files' and trans.user:
+                external_chown(uploaded_dataset.path,
+                               trans.user.system_user_pwent(trans.app.config.real_system_username),
+                               trans.app.config.external_chown_script, description="uploaded file")
         tool_params.append(params)
     with tempfile.NamedTemporaryFile(mode="w", prefix='upload_params_', delete=False) as fh:
         json_file_path = fh.name

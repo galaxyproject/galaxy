@@ -1,6 +1,5 @@
 import base64
 import hashlib
-import json
 import logging
 import os
 from datetime import datetime, timedelta
@@ -44,7 +43,10 @@ class CustosAuthnz(IdentityProvider):
 
     def authenticate(self, trans, idphint=None):
         base_authorize_url = self.config['authorization_endpoint']
-        oauth2_session = self._create_oauth2_session(scope=('openid', 'email', 'profile', 'org.cilogon.userinfo'))
+        scopes = ['openid', 'email', 'profile']
+        if self.config['provider'] in ['custos', 'cilogon']:
+            scopes.append('org.cilogon.userinfo')
+        oauth2_session = self._create_oauth2_session(scope=scopes)
         nonce = generate_nonce()
         nonce_hash = self._hash_nonce(nonce)
         extra_params = {"nonce": nonce_hash}
@@ -65,7 +67,6 @@ class CustosAuthnz(IdentityProvider):
         state_cookie = trans.get_cookie(name=STATE_COOKIE_NAME)
         oauth2_session = self._create_oauth2_session(state=state_cookie)
         token = self._fetch_token(oauth2_session, trans)
-        log.debug("token={}".format(json.dumps(token, indent=True)))
         access_token = token['access_token']
         id_token = token['id_token']
         refresh_token = token['refresh_token'] if 'refresh_token' in token else None
@@ -84,7 +85,6 @@ class CustosAuthnz(IdentityProvider):
             userinfo = id_token_decoded
         else:
             userinfo = self._get_userinfo(oauth2_session)
-        log.debug("userinfo={}".format(json.dumps(userinfo, indent=True)))
         email = userinfo['email']
         # Check if username if already taken
         username = userinfo.get('preferred_username', self._generate_username(trans, email))
@@ -108,7 +108,7 @@ class CustosAuthnz(IdentityProvider):
                             len(trans.app.auth_manager.authenticators) == 0):
                         user = existing_user
                     else:
-                        message = 'There already exists a user this email.  To associate this external login, you must first be logged in as that existing account.'
+                        message = "There already exists a user with email %s.  To associate this external login, you must first be logged in as that existing account." % email
                         log.exception(message)
                         raise exceptions.AuthenticationFailed(message)
                 else:
@@ -133,16 +133,20 @@ class CustosAuthnz(IdentityProvider):
         trans.sa_session.flush()
         return login_redirect_url, custos_authnz_token.user
 
-    def disconnect(self, provider, trans, disconnect_redirect_url=None):
+    def disconnect(self, provider, trans, email=None, disconnect_redirect_url=None):
         try:
             user = trans.user
+            index = 0
             # Find CustosAuthnzToken record for this provider (should only be one)
             provider_tokens = [token for token in user.custos_auth if token.provider == self.config["provider"]]
             if len(provider_tokens) == 0:
                 raise Exception("User is not associated with provider {}".format(self.config["provider"]))
             if len(provider_tokens) > 1:
-                raise Exception("User is associated more than once with provider {}".format(self.config["provider"]))
-            trans.sa_session.delete(provider_tokens[0])
+                for idx, token in enumerate(provider_tokens):
+                    id_token_decoded = jwt.decode(token.id_token, verify=False)
+                    if (id_token_decoded['email'] == email):
+                        index = idx
+            trans.sa_session.delete(provider_tokens[index])
             trans.sa_session.flush()
             return True, "", disconnect_redirect_url
         except Exception as e:

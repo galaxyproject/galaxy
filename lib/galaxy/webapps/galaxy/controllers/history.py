@@ -1055,8 +1055,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             for hda in trans.history.datasets:
                 if not hda.deleted or hda.purged:
                     continue
-                if trans.user:
-                    trans.user.adjust_total_disk_usage(-hda.quota_amount(trans.user))
+                hda.purge_usage_from_quota(trans.user)
                 hda.purged = True
                 trans.sa_session.add(hda)
                 trans.log_event("HDA id %s has been purged" % hda.id)

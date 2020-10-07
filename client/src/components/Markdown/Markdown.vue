@@ -6,6 +6,17 @@
                 <i class="fa fa-3x fa-download" />
             </a>
             <div>
+                <b-button
+                    v-if="!readOnly"
+                    class="float-right"
+                    title="Edit Markdown"
+                    variant="link"
+                    role="button"
+                    v-b-tooltip.hover.bottom
+                    @click="$emit('onEdit')"
+                >
+                    <font-awesome-icon icon="edit" />
+                </b-button>
                 <h3 class="float-right align-middle mr-1 mt-2">Galaxy {{ markdownConfig.model_class }}</h3>
                 <span class="float-left font-weight-light mb-3">
                     <small>Title: {{ markdownConfig.title || markdownConfig.model_class }}</small
@@ -17,6 +28,14 @@
                 <div class="float-left m-1">Created with Galaxy {{ getVersion }} on {{ getTime }}</div>
                 <div class="float-right m-1">Identifier {{ markdownConfig.id }}</div>
             </b-badge>
+            <div>
+                <b-alert v-if="markdownErrors.length > 0" variant="warning" show>
+                    <div v-for="(obj, index) in markdownErrors" :key="index" class="mb-1">
+                        <h5>{{ obj.error || "Error" }}</h5>
+                        {{ obj.line }}
+                    </div>
+                </b-alert>
+            </div>
             <div v-for="(obj, index) in markdownObjects" :key="index">
                 <p v-if="obj.name == 'default'" v-html="obj.content" class="text-justify m-2" />
                 <div v-else-if="obj.name == 'generate_galaxy_version'" class="galaxy-version">
@@ -68,9 +87,14 @@
 </template>
 
 <script>
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
 import store from "store";
 import { getGalaxyInstance } from "app";
 import MarkdownIt from "markdown-it";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faEdit } from "@fortawesome/free-solid-svg-icons";
 
 import LoadingSpan from "components/LoadingSpan";
 import HistoryDatasetAsImage from "./Elements/HistoryDatasetAsImage";
@@ -92,6 +116,10 @@ const FUNCTION_CALL_LINE_TEMPLATE = new RegExp(FUNCTION_CALL_LINE, "m");
 
 const md = MarkdownIt();
 
+Vue.use(BootstrapVue);
+
+library.add(faEdit);
+
 export default {
     store: store,
     components: {
@@ -107,6 +135,7 @@ export default {
         ToolStd,
         WorkflowDisplay,
         InvocationTime,
+        FontAwesomeIcon,
     },
     props: {
         markdownConfig: {
@@ -115,7 +144,7 @@ export default {
         },
         readOnly: {
             type: Boolean,
-            default: true,
+            default: false,
         },
         exportLink: {
             type: String,
@@ -125,7 +154,7 @@ export default {
     data() {
         return {
             markdownObjects: [],
-            markdownRendered: "",
+            markdownErrors: [],
             historyDatasets: {},
             historyDatasetCollections: {},
             workflows: {},
@@ -160,8 +189,8 @@ export default {
     watch: {
         markdownConfig: function (config) {
             const markdown = config.markdown;
+            this.markdownErrors = config.errors || [];
             this.markdownObjects = this.splitMarkdown(markdown);
-            this.markdownRendered = md.render(markdown);
             this.historyDatasets = config.history_datasets || {};
             this.historyDatasetCollections = config.history_dataset_collections || {};
             this.workflows = config.workflows || {};
@@ -190,7 +219,16 @@ export default {
                         }
                         const galaxyEndIndex = galaxyEnd + 4;
                         const galaxySection = digest.substr(galaxyStart, galaxyEndIndex);
-                        sections.push(this.getArgs(galaxySection));
+                        let args = null;
+                        try {
+                            args = this.getArgs(galaxySection);
+                            sections.push(args);
+                        } catch (e) {
+                            this.markdownErrors.push({
+                                error: "Found an unresolved tag.",
+                                line: galaxySection,
+                            });
+                        }
                         digest = digest.substr(galaxyStart + galaxyEndIndex);
                     } else {
                         digest = digest.substr(galaxyStart + 1);

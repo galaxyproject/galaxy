@@ -218,6 +218,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         if parsing_shed_tool_conf:
             shed_tool_conf_dict = dict(config_filename=config_filename,
                                        tool_path=tool_path,
+                                       tool_cache_data_dir=tool_cache_data_dir,
                                        config_elems=config_elems)
             self._dynamic_tool_confs.append(shed_tool_conf_dict)
 

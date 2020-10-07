@@ -171,6 +171,7 @@ sortedcontainers==2.2.2
 sqlalchemy-migrate==0.13.0
 sqlalchemy-utils==0.36.6
 sqlalchemy==1.3.17
+sqlitedict==1.7.0
 sqlparse==0.3.1
 stevedore==1.32.0
 svgwrite==1.3.1

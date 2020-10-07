@@ -40,6 +40,7 @@ database/test_errors
 database/tmp
 database/tool_cache
 database/tool_search_index
+database/tool_recommendation_model.hdf5
 
 
 # Python bytecode

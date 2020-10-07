@@ -12,10 +12,9 @@ class Shapefile(Binary):
 
     composite_type = 'auto_primary_file'
     file_ext = "shp"
-    allow_datatype_change = False
 
     def __init__(self, **kwd):
-        Binary.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.add_composite_file('shapefile.shp', description='Geometry File (shp)', is_binary=True, optional=False)
         self.add_composite_file('shapefile.shx', description='Geometry index File (shx)', is_binary=True, optional=False)
         self.add_composite_file('shapefile.dbf', description='Columnar attributes for each shape (dbf)', is_binary=True, optional=False)

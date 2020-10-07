@@ -38,10 +38,10 @@ describe("Toolshed service helpers", () => {
         const filter = (x) => x.status !== "Installed";
         const grouped = services._groupByNameOwner(incoming, filter);
         services._fixToolshedUrls(grouped, urls);
-        expect(grouped.length).to.equal(2);
-        expect(grouped[0].name).to.equal("name_0");
-        expect(grouped[0].tool_shed_url).to.equal("http://url_1.com");
+        expect(grouped.length).toBe(2);
+        expect(grouped[0].name).toBe("name_0");
+        expect(grouped[0].tool_shed_url).toBe("http://url_1.com");
         expect(grouped[1].name === "name_1");
-        expect(grouped[1].tool_shed_url).to.equal("http://url_2.com");
+        expect(grouped[1].tool_shed_url).toBe("http://url_2.com");
     });
 });

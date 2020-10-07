@@ -3,7 +3,7 @@
         :error-message="errorMessage"
         :options-show="optionsShow"
         :modal-show="modalShow"
-        :hide-modal="() => (modalShow = false)"
+        :hide-modal="onCancel"
     >
         <template v-slot:search>
             <data-dialog-search v-model="filter" />
@@ -14,7 +14,7 @@
                 :items="items"
                 :multiple="multiple"
                 :filter="filter"
-                @clicked="clicked"
+                @clicked="onClick"
                 @load="load"
             />
         </template>
@@ -23,7 +23,7 @@
                 <div class="fa fa-caret-left mr-1" />
                 Back
             </b-btn>
-            <b-btn size="sm" class="float-left mr-1" @click="newUpload">
+            <b-btn size="sm" class="float-left mr-1" @click="onUpload">
                 <div class="fa fa-upload ml-1" />
                 Upload
             </b-btn>
@@ -32,7 +32,7 @@
                 size="sm"
                 class="float-right ml-1"
                 variant="primary"
-                @click="finalize"
+                @click="onOk"
                 :disabled="!hasValue"
             >
                 Ok
@@ -48,6 +48,7 @@ import SelectionDialogMixin from "components/SelectionDialog/SelectionDialogMixi
 import { UrlTracker } from "./utilities";
 import { Model } from "./model";
 import { Services } from "./services";
+import { getAppRoot } from "onload/loadConfig";
 import { mountUploadModal } from "components/Upload";
 
 Vue.use(BootstrapVue);
@@ -66,14 +67,6 @@ export default {
         library: {
             type: Boolean,
             default: true,
-        },
-        root: {
-            type: String,
-            required: true,
-        },
-        host: {
-            type: String,
-            required: true,
         },
         history: {
             type: String,
@@ -96,15 +89,15 @@ export default {
         };
     },
     created: function () {
-        this.services = new Services({ root: this.root, host: this.host });
+        this.services = new Services();
         this.urlTracker = new UrlTracker(this.getHistoryUrl());
         this.model = new Model({ multiple: this.multiple, format: this.format });
         this.load();
     },
     methods: {
         /** Returns the default url i.e. the url of the current history **/
-        getHistoryUrl: function () {
-            return `${this.root}api/histories/${this.history}/contents?deleted=false`;
+        getHistoryUrl() {
+            return `${getAppRoot()}api/histories/${this.history}/contents?deleted=false`;
         },
         /** Add highlighting for record variations, i.e. datasets vs. libraries/collections **/
         formatRows() {
@@ -117,20 +110,21 @@ export default {
             }
         },
         /** Collects selected datasets in value array **/
-        clicked: function (record) {
+        onClick(record) {
             if (record.isLeaf) {
                 this.model.add(record);
                 this.hasValue = this.model.count() > 0;
                 if (this.multiple) {
                     this.formatRows();
                 } else {
-                    this.finalize();
+                    this.onOk();
                 }
             } else {
                 this.load(record.url);
             }
         },
-        newUpload: function () {
+        /** Called when user decides to upload new data */
+        onUpload() {
             const propsData = {
                 multiple: this.multiple,
                 format: this.format,
@@ -141,13 +135,19 @@ export default {
             this.modalShow = false;
         },
         /** Called when selection is complete, values are formatted and parsed to external callback **/
-        finalize: function () {
+        onOk() {
             const results = this.model.finalize();
             this.modalShow = false;
             this.callback(results);
+            this.$emit("onOk", results);
+        },
+        /** Called when the modal is hidden */
+        onCancel() {
+            this.modalShow = false;
+            this.$emit("onCancel");
         },
         /** Performs server request to retrieve data records **/
-        load: function (url) {
+        load(url) {
             url = this.urlTracker.getUrl(url);
             this.filter = null;
             this.optionsShow = false;
@@ -158,7 +158,7 @@ export default {
                     if (this.library && this.urlTracker.atRoot()) {
                         items.unshift({
                             label: "Data Libraries",
-                            url: `${this.root}api/libraries`,
+                            url: `${getAppRoot()}api/libraries`,
                         });
                     }
                     this.items = items;

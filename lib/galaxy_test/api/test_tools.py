@@ -1159,6 +1159,89 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         assert "123\n0ab" in outputs_contents
         assert "456\n789" in outputs_contents
 
+    @skip_without_tool("dbkey_output_action")
+    def test_dynamic_parameter_error_handling(self):
+        # Run test with valid index once, then supply invalid dbkey and invalid table
+        # entry to ensure dynamic param errors are register.
+        job_data_list = []
+
+        def register_job_data(job_data):
+            job_data_list.append(job_data)
+
+        tool_test_dicts = [{
+            "inputs": {
+                "input": ["simple_line.txt"],
+                "index": ["hg18"],
+            },
+            "outputs": {},
+            "required_files": [['simple_line.txt', {'value': 'simple_line.txt', 'dbkey': 'hg18'}]],
+        }]
+        dynamic_param_error = None
+        try:
+            self._test_driver.run_tool_test(
+                "dbkey_output_action",
+                tool_test_dicts=tool_test_dicts
+            )
+        except Exception as e:
+            dynamic_param_error = getattr(e, "dynamic_param_error", False)
+        assert dynamic_param_error is None
+
+        tool_test_dicts = [{
+            "inputs": {
+                "input": ["simple_line.txt"],
+                "index": ["hg18"],
+            },
+            "outputs": {},
+            "required_files": [['simple_line.txt', {'value': 'simple_line.txt', 'dbkey': 'hgnot18'}]],
+        }]
+        dynamic_param_error = None
+        try:
+            self._test_driver.run_tool_test(
+                "dbkey_output_action",
+                tool_test_dicts=tool_test_dicts
+            )
+        except Exception as e:
+            dynamic_param_error = getattr(e, "dynamic_param_error", False)
+        assert dynamic_param_error
+
+        tool_test_dicts = [{
+            "inputs": {
+                "input": ["simple_line.txt"],
+                "index": ["hgnot18"],
+            },
+            "outputs": {},
+            "required_files": [['simple_line.txt', {'value': 'simple_line.txt', 'dbkey': 'hg18'}]],
+        }]
+        dynamic_param_error = None
+        try:
+            self._test_driver.run_tool_test(
+                "dbkey_output_action",
+                tool_test_dicts=tool_test_dicts,
+                register_job_data=register_job_data
+            )
+        except Exception as e:
+            dynamic_param_error = getattr(e, "dynamic_param_error", False)
+        assert dynamic_param_error
+        assert len(job_data_list) == 1
+        job_data = job_data_list[0]
+        assert job_data["status"] == "error"
+        job_data_list.clear()
+
+        dynamic_param_error = None
+        try:
+            self._test_driver.run_tool_test(
+                "dbkey_output_action",
+                tool_test_dicts=tool_test_dicts,
+                skip_on_dynamic_param_errors=True,
+                register_job_data=register_job_data,
+            )
+        except Exception as e:
+            dynamic_param_error = getattr(e, "dynamic_param_error", False)
+        assert dynamic_param_error
+        assert len(job_data_list) == 1
+        job_data = job_data_list[0]
+        assert job_data["status"] == "skip"
+
     def _assert_one_job_one_collection_run(self, create):
         jobs = create['jobs']
         implicit_collections = create['implicit_collections']

@@ -204,6 +204,7 @@
     <datatype extension="svs" type="galaxy.datatypes.images:Tiff" subclass="true" display_in_upload="false"/>
     <datatype extension="scn" type="galaxy.datatypes.images:Tiff" subclass="true" display_in_upload="false"/>
     <datatype extension="bif" type="galaxy.datatypes.images:Tiff" subclass="true" display_in_upload="false"/>
+    <datatype extension="ome.tiff" type="galaxy.datatypes.images:Tiff" subclass="true" display_in_upload="true"/>
     <datatype extension="vms" type="galaxy.datatypes.images:Hamamatsu" mimetype="image/hamamatsu"/>
     <datatype extension="vmu" type="galaxy.datatypes.images:Hamamatsu" subclass="true" display_in_upload="false"/>
     <datatype extension="ndpi" type="galaxy.datatypes.images:Hamamatsu" subclass="true" display_in_upload="false"/>
@@ -743,6 +744,10 @@
     <datatype extension="blastdbn" type="galaxy.datatypes.blast:BlastNucDb" mimetype="text/html" display_in_upload="false"/>
     <datatype extension="blastdbp" type="galaxy.datatypes.blast:BlastProtDb" mimetype="text/html" display_in_upload="false"/>
     <datatype extension="blastdbd" type="galaxy.datatypes.blast:BlastDomainDb" mimetype="text/html" display_in_upload="false"/>
+    <datatype extension="lastdb" type="galaxy.datatypes.blast:LastDb" mimetype="text/html" display_in_upload="false"/>
+    <datatype extension="blastdbn5" type="galaxy.datatypes.blast:BlastNucDb5" mimetype="text/html" display_in_upload="false"/>
+    <datatype extension="blastdbp5" type="galaxy.datatypes.blast:BlastProtDb5" mimetype="text/html" display_in_upload="false"/>
+    <datatype extension="blastdbd5" type="galaxy.datatypes.blast:BlastDomainDb5" mimetype="text/html" display_in_upload="false"/>
     <datatype extension="maskinfo-asn1" type="galaxy.datatypes.data:GenericAsn1" mimetype="text/plain" subclass="true" display_in_upload="true"/>
     <datatype extension="maskinfo-asn1-binary" type="galaxy.datatypes.binary:GenericAsn1Binary" mimetype="application/octet-stream" subclass="true" display_in_upload="true"/>
     <datatype extension="pssm-asn1" type="galaxy.datatypes.data:GenericAsn1" mimetype="text/plain" subclass="true" display_in_upload="true"/>
@@ -795,6 +800,16 @@
     <datatype extension="dada2_uniques" type="galaxy.datatypes.tabular:Tabular" mimetype="application/text" subclass="true" display_in_upload="true" />
     <datatype extension="ckpt" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true" />
     <datatype extension="tgz" type="galaxy.datatypes.binary:Binary" subclass="true" mimetype="multipart/x-gzip" display_in_upload="true" />
+    <!-- media datatypes -->
+    <datatype extension="wav" type="galaxy.datatypes.media:Wav" display_in_upload="true" mimetype="audio/wav"/>
+    <datatype extension="mp3" type="galaxy.datatypes.media:Mp3" display_in_upload="true" mimetype="audio/mp3"/>
+    <datatype extension="mkv" type="galaxy.datatypes.media:Mkv" display_in_upload="true" mimetype="video/mkv"/>
+    <datatype extension="mp4" type="galaxy.datatypes.media:Mp4" display_in_upload="true" mimetype="video/mp4"/>
+    <datatype extension="flv" type="galaxy.datatypes.media:Flv" display_in_upload="true" mimetype="video/flv"/>
+    <datatype extension="mpg" type="galaxy.datatypes.media:Mpg" display_in_upload="true" mimetype="video/mpeg"/>
+    <!-- speech datatypes -->
+    <datatype extension="textgrid" type="galaxy.datatypes.speech:TextGrid" display_in_upload="true" mimetype="text/plain"/>
+    <datatype extension="par" type="galaxy.datatypes.speech:BPF" display_in_upload="true" mimetype="text/plain-bas"/>
   </registration>
   <sniffers>
     <!--
@@ -1002,7 +1017,14 @@
     <sniffer type="galaxy.datatypes.images:Xpm"/>
     <sniffer type="galaxy.datatypes.images:Eps"/>
     <sniffer type="galaxy.datatypes.images:Rast"/>
-
+    <sniffer type="galaxy.datatypes.media:Wav"/>
+    <sniffer type="galaxy.datatypes.media:Mkv"/>
+    <sniffer type="galaxy.datatypes.media:Mp3"/>
+    <sniffer type="galaxy.datatypes.media:Mp4"/>
+    <sniffer type="galaxy.datatypes.media:Flv"/>
+    <sniffer type="galaxy.datatypes.media:Mpg"/>
+    <sniffer type="galaxy.datatypes.speech:TextGrid" />
+    <sniffer type="galaxy.datatypes.speech:BPF" />
     <!--
     Keep this commented until the sniff method in the assembly.py
     module is fixed to not read the entire file.

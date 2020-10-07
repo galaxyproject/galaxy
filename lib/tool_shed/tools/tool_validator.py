@@ -112,7 +112,8 @@ class ToolValidator(GalaxyToolValidator):
         for changeset in hg_util.reversed_upper_bounded_changelog(repo, changeset_revision):
             changeset_ctx = repo[changeset]
             for ctx_file in changeset_ctx.files():
-                ctx_file_name = basic_util.strip_path(unicodify(ctx_file))
+                ctx_file = unicodify(ctx_file)
+                ctx_file_name = basic_util.strip_path(ctx_file)
                 # If we decide in the future that files deleted later in the changelog should
                 # not be used, we can use the following if statement. if ctx_file_name.endswith( '.sample' )
                 # and ctx_file_name not in sample_files and ctx_file_name not in deleted_sample_files:
@@ -132,9 +133,8 @@ class ToolValidator(GalaxyToolValidator):
                     else:
                         sample_files.append(ctx_file_name)
                         tmp_ctx_file_name = os.path.join(dir, ctx_file_name.replace('.sample', ''))
-                        fh = open(tmp_ctx_file_name, 'wb')
-                        fh.write(fctx.data())
-                        fh.close()
+                        with open(tmp_ctx_file_name, 'wb') as fh:
+                            fh.write(fctx.data())
         return sample_files, deleted_sample_files
 
     def handle_sample_files_and_load_tool_from_disk(self, repo_files_dir, repository_id, tool_config_filepath, work_dir):

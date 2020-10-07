@@ -70,16 +70,16 @@ steps:
       intro: "This is your ToolBox. All tools available in your Galaxy instance you can find here."
       position: "right"
 
+    - title: "Tool categories"
+      element: '.toolSectionTitle'
+      intro: "Tools are grouped into categories to make them easier to find."
+      position: "right"
+
     - title: "Tool search bar"
       element: '.search-query'
       intro: "You can search for tools by keywords."
       position: "right"
       textinsert: 'filter'
-
-    - title: "Tool categories"
-      element: '.toolSectionTitle'
-      intro: "Tools are grouped into categories to make them easier to find."
-      position: "right"
 
     - title: "Select a tool"
       element: 'a[href$="tool_runner?tool_id=Filter1"]'

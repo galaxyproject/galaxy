@@ -4,6 +4,7 @@ from functools import partial
 import galaxy.workflow.schedulers
 from galaxy import model
 from galaxy.exceptions import HandlerAssignmentError
+from galaxy.jobs.handler import ItemGrabber
 from galaxy.util import (
     parse_xml,
     plugin_config,
@@ -31,11 +32,9 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
     processes.
     """
     DEFAULT_BASE_HANDLER_POOLS = ('workflow-schedulers', 'job-handlers')
-    UNSUPPORTED_HANDLER_ASSIGNMENT_METHODS = (
-        HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION,
-        HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED,
+    UNSUPPORTED_HANDLER_ASSIGNMENT_METHODS = {
         HANDLER_ASSIGNMENT_METHODS.UWSGI_MULE_MESSAGE,
-    )
+    }
 
     def __init__(self, app):
         self.app = app
@@ -178,7 +177,7 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
     def __init_schedulers(self):
         config_file = self.app.config.workflow_schedulers_config_file
         use_default_scheduler = False
-        if not config_file or (not os.path.exists(config_file) and not self.app.config.workflow_schedulers_config_file_set):
+        if not config_file or (not os.path.exists(config_file) and not self.app.config.is_set('workflow_schedulers_config_file')):
             log.info("No workflow schedulers plugin config file defined, using default scheduler.")
             use_default_scheduler = True
         elif not os.path.exists(config_file):
@@ -267,10 +266,27 @@ class WorkflowRequestMonitor(Monitors):
         self.app = app
         self.workflow_scheduling_manager = workflow_scheduling_manager
         self._init_monitor_thread(name="WorkflowRequestMonitor.monitor_thread", target=self.__monitor, config=app.config)
+        self.invocation_grabber = None
+        if self.workflow_scheduling_manager.handler_assignment_methods_configured:
+            self_handler_tags = set(self.app.job_config.self_handler_tags)
+            self_handler_tags.add(self.workflow_scheduling_manager.default_handler_id)
+            handler_assignment_method = ItemGrabber.get_grabbable_handler_assignment_method(self.workflow_scheduling_manager.handler_assignment_methods)
+            if handler_assignment_method:
+                self.invocation_grabber = ItemGrabber(
+                    app=app,
+                    grab_type='WorkflowInvocation',
+                    handler_assignment_method=handler_assignment_method,
+                    max_grab=self.workflow_scheduling_manager.handler_max_grab,
+                    self_handler_tags=self_handler_tags,
+                    handler_tags=self_handler_tags,
+                )
 
     def __monitor(self):
         to_monitor = self.workflow_scheduling_manager.active_workflow_schedulers
         while self.monitor_running:
+            if self.invocation_grabber:
+                self.invocation_grabber.grab_unhandled_items()
+
             monitor_step_timer = self.app.execution_timer_factory.get_timer(
                 'internal.galaxy.workflows.scheduling_manager.monitor_step',
                 'Workflow scheduling manager monitor step complete.'
@@ -280,7 +296,6 @@ class WorkflowRequestMonitor(Monitors):
                     return
 
                 self.__schedule(workflow_scheduler_id, workflow_scheduler)
-
             log.trace(monitor_step_timer.to_str())
             self._monitor_sleep(1)
 

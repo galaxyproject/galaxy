@@ -179,13 +179,6 @@ class XmlToolSource(ToolSource):
         # break or modify any configurations by default.
         return "job_tmp_if_explicit"
 
-    def parse_docker_env_pass_through(self):
-        if self.parse_profile() < "18.01":
-            return ["GALAXY_SLOTS"]
-        else:
-            # Pass home, etc...
-            return super().parse_docker_env_pass_through()
-
     def parse_interpreter(self):
         interpreter = None
         command_el = self._command_el
@@ -605,12 +598,13 @@ def __parse_output_collection_elem(output_collection_elem):
 
 def __parse_element_tests(parent_element):
     element_tests = {}
-    for element in parent_element.findall("element"):
+    for idx, element in enumerate(parent_element.findall("element")):
         element_attrib = dict(element.attrib)
         identifier = element_attrib.pop('name', None)
         if identifier is None:
             raise Exception("Test primary dataset does not have a 'identifier'")
         element_tests[identifier] = __parse_test_attributes(element, element_attrib, parse_elements=True)
+        element_tests[identifier][1]["element_index"] = idx
     return element_tests
 
 

@@ -1070,9 +1070,10 @@ class ObjectStorePopulator:
     datasets from a job end up with the same object_store_id.
     """
 
-    def __init__(self, app):
+    def __init__(self, app, user):
         self.object_store = app.object_store
         self.object_store_id = None
+        self.user = user
 
     def set_object_store_id(self, data):
         # Create an empty file immediately.  The first dataset will be

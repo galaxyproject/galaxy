@@ -22,7 +22,10 @@ from galaxy.tool_shed.util.shed_util_common import (
     set_image_paths,
     tool_shed_is_this_tool_shed,
 )
-from galaxy.util import checkers
+from galaxy.util import (
+    checkers,
+    unicodify,
+)
 from tool_shed.util import (
     basic_util,
     common_util,
@@ -333,10 +336,11 @@ def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_al
         else:
             email_from = 'galaxy-no-reply@' + host.split(':')[0]
         ctx = repo[repo.changelog.tip()]
+        username = unicodify(ctx.user())
         try:
-            username = ctx.user().split()[0]
+            username = username.split()[0]
         except Exception:
-            username = ctx.user()
+            pass
         # We'll use 2 template bodies because we only want to send content
         # alerts to tool shed admin users.
         if new_repo_alert:
@@ -344,20 +348,22 @@ def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_al
         else:
             template = email_alert_template
         display_date = hg_util.get_readable_ctx_date(ctx)
+        description = unicodify(ctx.description())
+        revision = '{}:{}'.format(ctx.rev(), ctx)
         admin_body = string.Template(template).safe_substitute(host=host,
                                                                sharable_link=sharable_link,
                                                                repository_name=repository.name,
-                                                               revision='{}:{}'.format(str(ctx.rev()), ctx),
+                                                               revision=revision,
                                                                display_date=display_date,
-                                                               description=ctx.description(),
+                                                               description=description,
                                                                username=username,
                                                                content_alert_str=content_alert_str)
         body = string.Template(template).safe_substitute(host=host,
                                                          sharable_link=sharable_link,
                                                          repository_name=repository.name,
-                                                         revision='{}:{}'.format(str(ctx.rev()), ctx),
+                                                         revision=revision,
                                                          display_date=display_date,
-                                                         description=ctx.description(),
+                                                         description=description,
                                                          username=username,
                                                          content_alert_str='')
         admin_users = app.config.get("admin_users", "").split(",")

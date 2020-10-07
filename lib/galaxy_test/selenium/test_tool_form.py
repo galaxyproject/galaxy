@@ -44,13 +44,13 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
             dataset_details_key_value_pairs = self._table_to_key_value_elements("table#dataset-details")
             number_found = name_found = format_found = False
             for key, value in dataset_details_key_value_pairs:
-                if "Number:" in key.text:
+                if "Number" in key.text:
                     assert str(hda["hid"]) in value.text
                     number_found = True
-                if "Name:" in key.text:
+                if "Name" in key.text:
                     assert hda["name"] in value.text
                     name_found = True
-                if "Format:" in key.text:
+                if "Format" in key.text:
                     assert hda["extension"] in value.text
                     format_found = True
 

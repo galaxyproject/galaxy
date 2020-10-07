@@ -267,31 +267,6 @@
                  a requirement of the other.
 
                  -->
-            <!-- <param id="requests_cpu">500m</param> -->
-            <!-- <param id="requests_memory">500Mi</param> -->
-            <!-- <param id="limits_cpu">2</param> -->
-            <!-- <param id="limits_memory">2Gi</param> -->
-            <!-- Kubernetes resource Requests and Limits
-                 Parameters above (requests_* and limits_*) set default minimal (requests) and
-                 maximal (limits) CPU and memory resources to be allocated to all containers in
-                 Kubernetes jobs by default.
-
-                 Limits and requests for CPU resources are measured in cpu units. Fractional requests are allowed. A
-                 Container with requests_cpu of 0.5 is guaranteed half as much CPU as one that asks for 1 CPU. The
-                 expression 0.1 is equivalent to the expression 100m, which can be read as “one hundred millicpu”. Some
-                 people say “one hundred millicores”, and this is understood to mean the same thing. A request with a
-                 decimal point, like 0.1, is converted to 100m by the API, and precision finer than 1m is not allowed.
-                 For this reason, the form 100m might be preferred.
-
-                 You can express memory as a plain integer or as a fixed-point integer using one of these suffixes: E,
-                 P, T, G, M, K. You can also use the power-of-two equivalents: Ei, Pi, Ti, Gi, Mi, Ki.
-                 For instance, "1Gi" stands for 1 Gigabyte, and "500Mi" stands for 500 megabytes. Using other formats
-                 will make the jobs fail as Kubernetes won't recognize the assignment.
-
-                 For more details on the Kubernetes resources management, see:
-                 https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/
-                 -->
-
         </plugin>
         <plugin id="godocker" type="runner" load="galaxy.jobs.runners.godocker:GodockerJobRunner">
             <!-- Go-Docker is a batch computing/cluster management tool using Docker
@@ -986,6 +961,32 @@
             <!-- REQUIRED: To play nicely with the existing galaxy setup for containers. This could be set though
                  internally by the runner. -->
             <param id="docker_enabled">true</param>
+        </destination>
+        <destination id="kubernetes" runner="k8s">
+            <!-- <param id="requests_cpu">500m</param> -->
+            <!-- <param id="requests_memory">500Mi</param> -->
+            <!-- <param id="limits_cpu">2</param> -->
+            <!-- <param id="limits_memory">2Gi</param> -->
+            <!-- Kubernetes resource Requests and Limits
+                 Parameters above (requests_* and limits_*) set default minimal (requests) and
+                 maximal (limits) CPU and memory resources to be allocated to all containers in
+                 Kubernetes jobs by default.
+
+                 Limits and requests for CPU resources are measured in cpu units. Fractional requests are allowed. A
+                 Container with requests_cpu of 0.5 is guaranteed half as much CPU as one that asks for 1 CPU. The
+                 expression 0.1 is equivalent to the expression 100m, which can be read as “one hundred millicpu”. Some
+                 people say “one hundred millicores”, and this is understood to mean the same thing. A request with a
+                 decimal point, like 0.1, is converted to 100m by the API, and precision finer than 1m is not allowed.
+                 For this reason, the form 100m might be preferred.
+
+                 You can express memory as a plain integer or as a fixed-point integer using one of these suffixes: E,
+                 P, T, G, M, K. You can also use the power-of-two equivalents: Ei, Pi, Ti, Gi, Mi, Ki.
+                 For instance, "1Gi" stands for 1 Gigabyte, and "500Mi" stands for 500 megabytes. Using other formats
+                 will make the jobs fail as Kubernetes won't recognize the assignment.
+
+                 For more details on the Kubernetes resources management, see:
+                 https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/
+                 -->
         </destination>
         <destination id="god" runner="godocker">
             <!-- The following are configurations for the container -->

@@ -2398,6 +2398,14 @@ sanitizer to prevent Galaxy from escaping the result.
 </param>
 ```
 
+#### ``directory_uri``
+
+This is used to tie into galaxy.files URI infrastructure. This should only be used by
+core Galaxy tools until the interface around files has stabilized.
+
+Currently ``directory_uri`` parameters provide user's the option of selecting a writable
+directory destination for unstructured outputs of tools (e.g. history exports).
+
 $attribute_list:value,rgb:5
 
 This covers examples of the most common parameter types, the remaining parameter
@@ -2693,6 +2701,7 @@ allow access to Python code to generate options for a select list. See
       <xs:enumeration value="drill_down"/>
       <xs:enumeration value="group_tag"/>
       <xs:enumeration value="data_collection"/>
+      <xs:enumeration value="directory_uri" />
     </xs:restriction>
   </xs:simpleType>
 
@@ -4219,6 +4228,11 @@ More information can be found on Planemo's documentation for
         <xs:documentation xml:lang="en">Format (or datatype) of discovered datasets (an alias with ``format``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="sort_by" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">A string `[reverse_][SORT_COMP_]SORTBY` describing the desired sort order of the collection elements. `SORTBY` can be `filename`, `name`, `designation`, `dbkey` and the optional `SORT_COMP` can be either `lexical` or `numeric`. Default is lexical sorting by filename.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="visible" type="xs:boolean" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">Indication if this dataset is visible in output history. This defaults to ``false``, but probably shouldn't - be sure to set to ``true`` if that is your intention.</xs:documentation>
@@ -4274,7 +4288,7 @@ Galaxy, including:
     </xs:attribute>
     <xs:attribute name="sort_by" type="xs:string" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">A string `[reverse_]SORTBY[_SORT_COMP]` describing the desired sort order of the collection elements. `SORTBY` can be `filename`, `name`, `designation`, `dbkey` and the optional `SORT_COMP` can be either `lexical` or `numeric`. Default is lexical sorting by filename.</xs:documentation>
+        <xs:documentation xml:lang="en">A string `[reverse_][SORT_COMP_]SORTBY` describing the desired sort order of the collection elements. `SORTBY` can be `filename`, `name`, `designation`, `dbkey` and the optional `SORT_COMP` can be either `lexical` or `numeric`. Default is lexical sorting by filename.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="visible" type="xs:boolean" use="optional">

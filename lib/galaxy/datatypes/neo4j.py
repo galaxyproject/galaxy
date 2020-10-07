@@ -63,7 +63,6 @@ class Neo4jDB(Neo4j, Data):
     """Class for neo4jDB database files."""
     file_ext = 'neostore'
     composite_type = 'auto_primary_file'
-    allow_datatype_change = False
 
     def __init__(self, **kwd):
         Data.__init__(self, **kwd)
@@ -129,7 +128,6 @@ class Neo4jDBzip(Neo4j, Data):
 
     file_ext = "neostore.zip"
     composite_type = 'auto_primary_file'
-    allow_datatype_change = False
 
     def __init__(self, **kwd):
         Data.__init__(self, **kwd)

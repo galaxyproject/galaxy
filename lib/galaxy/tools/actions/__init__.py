@@ -360,7 +360,7 @@ class DefaultToolAction:
         # datasets first, then create the associations
         parent_to_child_pairs = []
         child_dataset_names = set()
-        object_store_populator = ObjectStorePopulator(app)
+        object_store_populator = ObjectStorePopulator(app, trans.user)
         async_tool = tool.tool_type == 'data_source_async'
 
         def handle_output(name, output, hidden=None):
@@ -460,6 +460,9 @@ class DefaultToolAction:
             if not filter_output(output, incoming):
                 handle_output_timer = ExecutionTimer()
                 if output.collection:
+                    if completed_job and dataset_collection_elements and name in dataset_collection_elements:
+                        # Output collection is mapped over and has already been copied from original job
+                        continue
                     collections_manager = app.dataset_collections_service
                     element_identifiers = []
                     known_outputs = output.known_outputs(input_collections, collections_manager.type_registry)
@@ -511,6 +514,7 @@ class DefaultToolAction:
                         name=name,
                         set_hid=True if flush_job else False,
                         flush=flush_job,
+                        completed_job=completed_job,
                         **element_kwds
                     )
                     if hdca:
@@ -817,7 +821,7 @@ class OutputCollections:
         self.out_collection_instances = {}
         self.tags = tags
 
-    def create_collection(self, output, name, collection_type=None, set_hid=True, flush=True, **element_kwds):
+    def create_collection(self, output, name, collection_type=None, set_hid=True, flush=True, completed_job=None, **element_kwds):
         input_collections = self.input_collections
         collections_manager = self.trans.app.dataset_collections_service
         collection_type = collection_type or output.structure.collection_type
@@ -898,6 +902,8 @@ class OutputCollections:
                 tags=self.tags,
                 set_hid=set_hid,
                 flush=flush,
+                completed_job=completed_job,
+                output_name=name,
                 **element_kwds
             )
             # name here is name of the output element - not name

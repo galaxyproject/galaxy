@@ -19,6 +19,7 @@ except ImportError:
 
 import packaging.version
 import webob.exc
+from lxml import etree
 from mako.template import Template
 from six.moves.urllib.parse import unquote_plus
 from webob.compat import cgi_FieldStorage
@@ -55,7 +56,7 @@ from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
-from galaxy.tools.cache import create_cache_region
+from galaxy.tools.cache import ToolDocumentCache
 from galaxy.tools.parameters import (
     check_param,
     params_from_strings,
@@ -128,6 +129,7 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "upload1",
     "send_to_cloud",
     "__DATA_FETCH__",
+    "directory_uri",
     # Legacy tools bundled with Galaxy.
     "laj_1",
     "gff2bed1",
@@ -247,8 +249,6 @@ class ToolBox(BaseGalaxyToolBox):
         self._reload_count = 0
         self.tool_location_fetcher = ToolLocationFetcher()
         self.cache_regions = {}
-        if not os.path.exists(app.config.tool_cache_data_dir):
-            os.makedirs(app.config.tool_cache_data_dir)
         # This is here to deal with the old default value, which doesn't make
         # sense in an "installed Galaxy" world.
         # FIXME: ./
@@ -261,12 +261,26 @@ class ToolBox(BaseGalaxyToolBox):
             save_integrated_tool_panel=save_integrated_tool_panel,
         )
 
+    def persist_cache(self, register_postfork=False):
+        """
+        Persists any modified tool cache files to disk.
+
+        Set ``register_postfork`` to stop database thread queue,
+        close database connection and register re-open function
+        that re-opens the database after forking.
+        """
+        for region in self.cache_regions.values():
+            region.persist()
+            if register_postfork:
+                region.close()
+                self.app.application_stack.register_postfork_function(region.reopen_ro)
+
     def can_load_config_file(self, config_filename):
-        if config_filename == self.app.config.shed_tool_config_file and not self.app.config.shed_tool_config_file_set:
+        if config_filename == self.app.config.shed_tool_config_file and not self.app.config.is_set('shed_tool_config_file'):
             if self.dynamic_confs():
                 # Do not load or create a default shed_tool_config_file if another shed_tool_config file has already been loaded
                 return False
-        elif self.app.config.tool_config_file_set:
+        elif self.app.config.is_set('tool_config_file'):
             log.warning(
                 "The default shed tool config file (%s) has been added to the tool_config_file option, if this is "
                 "not the desired behavior, please set shed_tool_config_file to your primary shed-enabled tool "
@@ -289,13 +303,22 @@ class ToolBox(BaseGalaxyToolBox):
 
     def get_cache_region(self, tool_cache_data_dir):
         if tool_cache_data_dir not in self.cache_regions:
-            self.cache_regions[tool_cache_data_dir] = create_cache_region(tool_cache_data_dir)
+            self.cache_regions[tool_cache_data_dir] = ToolDocumentCache(cache_dir=tool_cache_data_dir)
         return self.cache_regions[tool_cache_data_dir]
 
     def create_tool(self, config_file, tool_cache_data_dir=None, **kwds):
-        cache = self.get_cache_region(tool_cache_data_dir or self.app.config.tool_cache_data_dir)
         if config_file.endswith('.xml'):
-            tool_source = cache.get_or_create(config_file, creator=self.get_expanded_tool_source, expiration_time=-1, creator_args=((config_file,), {}))
+            cache = self.get_cache_region(tool_cache_data_dir or self.app.config.tool_cache_data_dir)
+            tool_document = cache.get(config_file)
+            if tool_document:
+                tool_source = self.get_expanded_tool_source(
+                    config_file=config_file,
+                    xml_tree=etree.ElementTree(etree.fromstring(tool_document['document'].encode('utf-8'))),
+                    macro_paths=tool_document['macro_paths']
+                )
+            else:
+                tool_source = self.get_expanded_tool_source(config_file)
+                cache.set(config_file, tool_source)
         else:
             tool_source = self.get_expanded_tool_source(config_file)
         tool = self._create_tool_from_source(tool_source, config_file=config_file, **kwds)
@@ -303,12 +326,13 @@ class ToolBox(BaseGalaxyToolBox):
             tool.assert_finalized(raise_if_invalid=True)
         return tool
 
-    def get_expanded_tool_source(self, config_file):
+    def get_expanded_tool_source(self, config_file, **kwargs):
         try:
             return get_tool_source(
                 config_file,
                 enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", False),
                 tool_location_fetcher=self.tool_location_fetcher,
+                **kwargs,
             )
         except Exception as e:
             # capture and log parsing errors
@@ -1539,7 +1563,7 @@ class Tool(Dictifiable):
             else:
                 # Update state for all inputs on the current page taking new
                 # values from `incoming`.
-                populate_state(request_context, self.inputs, expanded_incoming, params, errors)
+                populate_state(request_context, self.inputs, expanded_incoming, params, errors, simple_errors=False)
                 # If the tool provides a `validate_input` hook, call it.
                 validate_input = self.get_hook('validate_input')
                 if validate_input:
@@ -1562,8 +1586,17 @@ class Tool(Dictifiable):
         all_params, all_errors, rerun_remap_job_id, collection_info = self.expand_incoming(trans=trans, incoming=incoming, request_context=request_context)
         # If there were errors, we stay on the same page and display them
         if any(all_errors):
-            err_data = {key: value for d in all_errors for (key, value) in d.items()}
-            raise exceptions.MessageException(', '.join(msg for msg in err_data.values()), err_data=err_data)
+            # simple param_key -> message string for tool form.
+            err_data = {key: unicodify(value) for d in all_errors for (key, value) in d.items()}
+            param_errors = {}
+            for d in all_errors:
+                for key, value in d.items():
+                    if hasattr(value, 'to_dict'):
+                        value_obj = value.to_dict()
+                    else:
+                        value_obj = {"message": unicodify(value)}
+                    param_errors[key] = value_obj
+            raise exceptions.RequestParameterInvalidException(', '.join(msg for msg in err_data.values()), err_data=err_data, param_errors=param_errors)
         else:
             mapping_params = MappingParameters(incoming, all_params)
             completed_jobs = {}

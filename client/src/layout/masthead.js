@@ -52,7 +52,7 @@ export function mountMasthead(el, options, mastheadState) {
             brandLink: options.logo_url,
             brandImage: options.logo_src,
             appRoot: getAppRoot(),
-            Galaxy: getGalaxyInstance(),
+            galaxy: getGalaxyInstance(),
             menuOptions: options,
         },
         el

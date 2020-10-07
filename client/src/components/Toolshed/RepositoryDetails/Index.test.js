@@ -9,13 +9,13 @@ describe("RepositoryDetails", () => {
             "Services",
             class {
                 async getRepository(toolshedUrl, repositoryId) {
-                    expect(toolshedUrl).to.equal("toolshedUrl");
-                    expect(repositoryId).to.equal("id");
+                    expect(toolshedUrl).toBe("toolshedUrl");
+                    expect(repositoryId).toBe("id");
                     return [];
                 }
                 async getInstalledRepositoriesByName(name, owner) {
-                    expect(name).to.equal("name");
-                    expect(owner).to.equal("owner");
+                    expect(name).toBe("name");
+                    expect(owner).toBe("owner");
                     return [];
                 }
             }
@@ -39,10 +39,10 @@ describe("RepositoryDetails", () => {
                 RepositoryTools: true,
             },
         });
-        expect(wrapper.find(".loading-message").text()).to.equal("Loading repository details...");
+        expect(wrapper.find(".loading-message").text()).toBe("Loading repository details...");
         await Vue.nextTick();
-        expect(wrapper.findAll(".alert").length).to.equal(0);
+        expect(wrapper.findAll(".alert").length).toBe(0);
         await Vue.nextTick();
-        expect(wrapper.findAll(".alert").length).to.equal(0);
+        expect(wrapper.findAll(".alert").length).toBe(0);
     });
 });

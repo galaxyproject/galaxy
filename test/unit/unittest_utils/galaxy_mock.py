@@ -172,6 +172,7 @@ class MockAppConfig(Bunch):
         self.root = root
         self.tool_cache_data_dir = os.path.join(root, 'tool_cache')
         self.delay_tool_initialization = True
+        self.external_chown_script = None
 
         self.config_file = None
 
@@ -180,6 +181,9 @@ class MockAppConfig(Bunch):
         return self.dict()
 
     def __getattr__(self, name):
+        # Handle the automatic [option]_set options: for tests, assume none are set
+        if name == 'is_set':
+            return lambda x: False
         # Handle the automatic config file _set options
         if name.endswith('_file_set'):
             return False

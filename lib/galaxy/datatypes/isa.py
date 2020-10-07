@@ -62,7 +62,6 @@ def utf8_text_file_open(path):
 class _Isa(data.Data):
     """ Base class for implementing ISA datatypes """
     composite_type = 'auto_primary_file'
-    allow_datatype_change = False
     is_binary = True
     _main_file_regex = None
 

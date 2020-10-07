@@ -141,7 +141,7 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
                 rval = self.handle_tool_stdout(line, job)
             elif container == "tool_stderr":
                 job = job_manager.get_accessible_job(trans, object_id)
-                rval = self.handle_tool_stdout(line, job)
+                rval = self.handle_tool_stderr(line, job)
             elif container == "job_parameters":
                 job = job_manager.get_accessible_job(trans, object_id)
                 rval = self.handle_job_parameters(line, job)
@@ -163,7 +163,13 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
             else:
                 return (line, False)
 
-        export_markdown = _remap_galaxy_markdown_calls(_remap, internal_galaxy_markdown)
+        def _remap_container(container, line):
+            try:
+                return _remap(container, line)
+            except Exception as e:
+                return self.handle_error(container, line, str(e))
+
+        export_markdown = _remap_galaxy_markdown_calls(_remap_container, internal_galaxy_markdown)
         return export_markdown
 
     @abc.abstractmethod
@@ -224,6 +230,10 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def handle_invocation_time(self, line, date):
+        pass
+
+    @abc.abstractmethod
+    def handle_error(self, container, line, error):
         pass
 
 
@@ -300,6 +310,16 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
 
     def handle_dataset_name(self, line, hda):
         self.extend_history_dataset_rendering_data(hda, "name", hda.name, "*Unknown dataset name*")
+
+    def handle_error(self, container, line, error):
+        if "errors" not in self.extra_rendering_data:
+            self.extra_rendering_data["errors"] = []
+        self.extra_rendering_data["errors"].append({
+            "error": error,
+            "line": line,
+            "container": container,
+        })
+        return (line, False)
 
 
 def ready_galaxy_markdown_for_export(trans, internal_galaxy_markdown):
@@ -483,6 +503,9 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         else:
             content = "*No Dataset Type Available*"
         return (content, True)
+
+    def handle_error(self, container, line, error):
+        return (line, False)
 
 
 class MarkdownFormatHelpers:
@@ -683,7 +706,6 @@ def _remap_galaxy_markdown_containers(func, markdown):
                 end_pos = match.end(1)
             start_pos = start_pos + searching_from
             end_pos = end_pos + searching_from
-
             new_markdown = new_markdown[:start_pos] + replacement + new_markdown[end_pos:]
             searching_from = start_pos + len(replacement)
         else:
@@ -701,10 +723,11 @@ def _remap_galaxy_markdown_calls(func, markdown):
                 assert matching_line is None
                 matching_line = line
 
-        assert matching_line, "Failed to find func call line in [%s]" % container
-        match = GALAXY_MARKDOWN_FUNCTION_CALL_LINE.match(line)
-
-        return func(match.group(1), matching_line + "\n")
+        if matching_line:
+            match = GALAXY_MARKDOWN_FUNCTION_CALL_LINE.match(line)
+            return func(match.group(1), matching_line + "\n")
+        else:
+            return (container, True)
 
     return _remap_galaxy_markdown_containers(_remap_container, markdown)
 

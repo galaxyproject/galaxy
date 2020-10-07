@@ -965,8 +965,8 @@ class NavigatesGalaxy(HasDriver):
             self.wait_for_absent_or_hidden(self.navigation.libraries.folder.selectors.import_progress_bar)
 
     def libraries_table_elements(self):
-        tbody_element = self.wait_for_selector_visible("#folder_list_body")
-        return tbody_element.find_elements_by_css_selector("tr")[1:]
+        tbody_element = self.wait_for_selector_visible("#folder_list_body > tbody")
+        return tbody_element.find_elements_by_css_selector("tr:not(.b-table-empty-row)")
 
     def wait_for_overlays_cleared(self):
         """Wait for modals and Toast notifications to disappear."""
@@ -1100,7 +1100,7 @@ class NavigatesGalaxy(HasDriver):
     def tool_set_value(self, expanded_parameter_id, value, expected_type=None, test_data_resolver=None):
         div_element = self.tool_parameter_div(expanded_parameter_id)
         assert div_element
-        if expected_type in ["data", "data_collection"]:
+        if expected_type in ["select", "data", "data_collection"]:
             div_selector = "div.ui-form-element[tour_id$='%s']" % expanded_parameter_id
             self.select2_set_value(div_selector, value)
         else:
@@ -1145,7 +1145,7 @@ class NavigatesGalaxy(HasDriver):
 
         # Click labelled option
         self.wait_for_visible(self.navigation.history_panel.options_menu)
-        menu_item_sizzle_selector = '#history-options-button-menu > a:contains("%s")' % option_label
+        menu_item_sizzle_selector = "#history-options-button-menu > a:contains('%s')" % option_label
         menu_selection_element = self.wait_for_sizzle_selector_clickable(menu_item_sizzle_selector)
         menu_selection_element.click()
 

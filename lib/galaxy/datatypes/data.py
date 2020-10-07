@@ -122,13 +122,13 @@ class Data(metaclass=DataMeta):
     # The dataset contains binary data --> do not space_to_tab or convert newlines, etc.
     # Allow binary file uploads of this type when True.
     is_binary = True
-    # Allow user to change between this datatype and others. If False, this datatype
-    # cannot be changed from or into.
-    allow_datatype_change = True
     # Composite datatypes
     composite_type = None
     composite_files = OrderedDict()
     primary_file_name = 'index'
+    # Allow user to change between this datatype and others. If left to None,
+    # datatype change is allowed if the datatype is not composite.
+    allow_datatype_change = None
     # A per datatype setting (inherited): max file size (in bytes) for setting optional metadata
     _max_optional_metadata_filesize = None
 
@@ -144,6 +144,16 @@ class Data(metaclass=DataMeta):
         self.supported_display_apps = self.supported_display_apps.copy()
         self.composite_files = self.composite_files.copy()
         self.display_applications = OrderedDict()
+
+    @classmethod
+    def is_datatype_change_allowed(cls):
+        """
+        Returns the value of the `allow_datatype_change` class attribute if set
+        in a subclass, or True iff the datatype is not composite.
+        """
+        if cls.allow_datatype_change is not None:
+            return cls.allow_datatype_change
+        return cls.composite_type is None
 
     def get_raw_data(self, dataset):
         """Returns the full data. To stream it open the file_name and read/write as needed"""
@@ -261,84 +271,78 @@ class Data(metaclass=DataMeta):
             messagetype = "error"
         return error, msg, messagetype
 
-    def _archive_composite_dataset(self, trans, data=None, **kwd):
+    def _archive_composite_dataset(self, trans, data, do_action='zip'):
         # save a composite object into a compressed archive for downloading
-        params = util.Params(kwd)
         outfname = data.name[0:150]
         outfname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in outfname)
-        if params.do_action is None:
-            params.do_action = 'zip'  # default
-        msg = util.restore_text(params.get('msg', ''))
-        if not data:
-            msg = "You must select at least one dataset"
-        else:
-            error = False
-            try:
-                if params.do_action == 'zip':
-                    # Can't use mkstemp - the file must not exist first
-                    tmpd = tempfile.mkdtemp(dir=trans.app.config.new_file_path, prefix='gx_composite_archive_')
-                    util.umask_fix_perms(tmpd, trans.app.config.umask, 0o777, trans.app.config.gid)
-                    tmpf = os.path.join(tmpd, 'library_download.' + params.do_action)
-                    archive = zipfile.ZipFile(tmpf, 'w', zipfile.ZIP_DEFLATED, True)
+        error = False
+        msg = ''
+        try:
+            if do_action == 'zip':
+                # Can't use mkstemp - the file must not exist first
+                tmpd = tempfile.mkdtemp(dir=trans.app.config.new_file_path, prefix='gx_composite_archive_')
+                util.umask_fix_perms(tmpd, trans.app.config.umask, 0o777, trans.app.config.gid)
+                tmpf = os.path.join(tmpd, 'library_download.' + do_action)
+                archive = zipfile.ZipFile(tmpf, 'w', zipfile.ZIP_DEFLATED, True)
 
-                    def zipfile_add(fpath, arcname):
-                        encoded_arcname = arcname.encode('CP437')
-                        try:
-                            archive.write(fpath, encoded_arcname)
-                        except TypeError:
-                            # Despite documenting the need for CP437 encoded arcname,
-                            # python 3 actually needs this to be a unicode string ...
-                            # https://bugs.python.org/issue24110
-                            archive.write(fpath, arcname)
+                def zipfile_add(fpath, arcname):
+                    encoded_arcname = arcname.encode('CP437')
+                    try:
+                        archive.write(fpath, encoded_arcname)
+                    except TypeError:
+                        # Despite documenting the need for CP437 encoded arcname,
+                        # python 3 actually needs this to be a unicode string ...
+                        # https://bugs.python.org/issue24110
+                        archive.write(fpath, arcname)
 
-                    archive.add = zipfile_add
+                archive.add = zipfile_add
 
-                elif params.do_action == 'tgz':
-                    archive = util.streamball.StreamBall('w|gz')
-                elif params.do_action == 'tbz':
-                    archive = util.streamball.StreamBall('w|bz2')
-            except (OSError, zipfile.BadZipFile):
-                error = True
-                log.exception("Unable to create archive for download")
-                msg = "Unable to create archive for %s for download, please report this error" % outfname
+            elif do_action == 'tgz':
+                archive = util.streamball.StreamBall('w|gz')
+            elif do_action == 'tbz':
+                archive = util.streamball.StreamBall('w|bz2')
+        except (OSError, zipfile.BadZipFile):
+            error = True
+            log.exception("Unable to create archive for download")
+            msg = "Unable to create archive for %s for download, please report this error" % outfname
+        if not error:
+            ext = data.extension
+            path = data.file_name
+            efp = data.extra_files_path
+            # Add any central file to the archive,
+
+            display_name = os.path.splitext(outfname)[0]
+            if not display_name.endswith(ext):
+                display_name = '{}_{}'.format(display_name, ext)
+
+            error, msg = self._archive_main_file(archive, display_name, path)[:2]
             if not error:
-                ext = data.extension
-                path = data.file_name
-                efp = data.extra_files_path
-                # Add any central file to the archive,
-
-                display_name = os.path.splitext(outfname)[0]
-                if not display_name.endswith(ext):
-                    display_name = '{}_{}'.format(display_name, ext)
-
-                error, msg = self._archive_main_file(archive, display_name, path)[:2]
-                if not error:
-                    # Add any child files to the archive,
-                    for fpath, rpath in self.__archive_extra_files_path(extra_files_path=efp):
-                        try:
-                            archive.add(fpath, rpath)
-                        except OSError:
-                            error = True
-                            log.exception("Unable to add %s to temporary library download archive", rpath)
-                            msg = "Unable to create archive for download, please report this error"
-                            continue
-                if not error:
-                    if params.do_action == 'zip':
-                        archive.close()
-                        tmpfh = open(tmpf, 'rb')
-                        # CANNOT clean up - unlink/rmdir was always failing because file handle retained to return - must rely on a cron job to clean up tmp
-                        trans.response.set_content_type("application/x-zip-compressed")
-                        trans.response.headers["Content-Disposition"] = 'attachment; filename="%s.zip"' % outfname
-                        return tmpfh
-                    else:
-                        trans.response.set_content_type("application/x-tar")
-                        outext = 'tgz'
-                        if params.do_action == 'tbz':
-                            outext = 'tbz'
-                        trans.response.headers["Content-Disposition"] = 'attachment; filename="{}.{}"'.format(outfname, outext)
-                        archive.wsgi_status = trans.response.wsgi_status()
-                        archive.wsgi_headeritems = trans.response.wsgi_headeritems()
-                        return archive.stream
+                # Add any child files to the archive,
+                for fpath, rpath in self.__archive_extra_files_path(extra_files_path=efp):
+                    try:
+                        archive.add(fpath, rpath)
+                    except OSError:
+                        error = True
+                        log.exception("Unable to add %s to temporary library download archive", rpath)
+                        msg = "Unable to create archive for download, please report this error"
+                        continue
+            if not error:
+                if do_action == 'zip':
+                    archive.close()
+                    tmpfh = open(tmpf, 'rb')
+                    # CANNOT clean up - unlink/rmdir was always failing because file handle retained to return - must rely on a cron job to clean up tmp
+                    trans.response.set_content_type("application/x-zip-compressed")
+                    trans.response.headers["Content-Disposition"] = 'attachment; filename="%s.zip"' % outfname
+                    return tmpfh
+                else:
+                    trans.response.set_content_type("application/x-tar")
+                    outext = 'tgz'
+                    if do_action == 'tbz':
+                        outext = 'tbz'
+                    trans.response.headers["Content-Disposition"] = 'attachment; filename="{}.{}"'.format(outfname, outext)
+                    archive.wsgi_status = trans.response.wsgi_status()
+                    archive.wsgi_headeritems = trans.response.wsgi_headeritems()
+                    return archive.stream
         return trans.show_error_message(msg)
 
     def __archive_extra_files_path(self, extra_files_path):
@@ -441,7 +445,7 @@ class Data(metaclass=DataMeta):
         from galaxy import datatypes  # DBTODO REMOVE THIS AT REFACTOR
         if to_ext or isinstance(data.datatype, datatypes.binary.Binary):  # Saving the file, or binary file
             if data.extension in composite_extensions:
-                return self._archive_composite_dataset(trans, data, **kwd)
+                return self._archive_composite_dataset(trans, data, do_action=kwd.get('do_action'))
             else:
                 trans.response.headers['Content-Length'] = int(os.stat(data.file_name).st_size)
                 filename = self._download_filename(data, to_ext, hdca=kwd.get("hdca", None), element_identifier=kwd.get("element_identifier", None))
@@ -1032,13 +1036,6 @@ class Newick(Text):
     edam_format = "format_1910"
     file_ext = "newick"
 
-    def __init__(self, **kwd):
-        """Initialize foobar datatype"""
-        Text.__init__(self, **kwd)
-
-    def init_meta(self, dataset, copy_from=None):
-        Text.init_meta(self, dataset, copy_from=copy_from)
-
     def sniff(self, filename):
         """ Returning false as the newick format is too general and cannot be sniffed."""
         return False
@@ -1047,7 +1044,6 @@ class Newick(Text):
         """
         Returns a list of visualizations for datatype.
         """
-
         return ['phyloviz']
 
 
@@ -1058,13 +1054,6 @@ class Nexus(Text):
     edam_format = "format_1912"
     file_ext = "nex"
 
-    def __init__(self, **kwd):
-        """Initialize foobar datatype"""
-        Text.__init__(self, **kwd)
-
-    def init_meta(self, dataset, copy_from=None):
-        Text.init_meta(self, dataset, copy_from=copy_from)
-
     def sniff_prefix(self, file_prefix):
         """All Nexus Files Simply puts a '#NEXUS' in its first line"""
         return file_prefix.string_io().read(6).upper() == "#NEXUS"
@@ -1073,7 +1062,6 @@ class Nexus(Text):
         """
         Returns a list of visualizations for datatype.
         """
-
         return ['phyloviz']
 
 

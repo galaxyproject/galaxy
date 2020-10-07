@@ -1,6 +1,8 @@
 """
 """
+import importlib
 import json
+import pkgutil
 from glob import glob
 from os import getcwd
 from os.path import (
@@ -23,7 +25,7 @@ class CliInterface:
     def __init__(self, code_dir='lib'):
         """
         """
-        def __load(module_path, d):
+        def __load_from_code_dir(module_path):
             module_pattern = join(join(getcwd(), code_dir, *module_path.split('.')), '*.py')
             for file in glob(module_pattern):
                 if basename(file).startswith('_'):
@@ -32,6 +34,20 @@ class CliInterface:
                 module = __import__(module_name)
                 for comp in module_name.split(".")[1:]:
                     module = getattr(module, comp)
+                yield module
+
+        def __load_from_path(module_path):
+            base_module = importlib.import_module(module_path)
+            for module_info in pkgutil.iter_modules(base_module.__path__):
+                module = importlib.import_module('{}.{}'.format(module_path, module_info.name))
+                yield module
+
+        def __load(module_path, d):
+            if code_dir is not None:
+                module_generator = __load_from_code_dir
+            else:
+                module_generator = __load_from_path
+            for module in module_generator(module_path):
                 for name in module.__all__:
                     try:
                         d[name] = getattr(module, name)

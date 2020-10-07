@@ -369,7 +369,7 @@ workflow_editor:
     edit_annotation: '#workflow-annotation'
     edit_name: '#workflow-name'
 
-    tool_menu: '#workflow-tool-menu'
+    tool_menu: '.toolMenuContainer'
     tool_menu_section_link: '.tool-menu-section-${section_name} a span'
     tool_menu_item_link: 'a.tool-menu-item-${item_name}'
 
@@ -405,6 +405,14 @@ admin:
       container_type: '#manage-container-type'
       unused_paths: '#unused-paths-table'
 
+  manage_jobs:
+    selectors:
+      job_lock: '#prevent-job-dispatching'
+      job_lock_label:
+        type: xpath
+        selector: "//label[@for='prevent-job-dispatching']/strong"
+      cutoff: '#cutoff'
+
   toolshed:
     selectors:
       repo_search: '#toolshed-repo-search'
@@ -435,6 +443,7 @@ admin:
   selectors:
     warning: '#center .alert-warning'
     # TODO: place betters IDS or something on this in these grids in the DOM
+    jobs_title: '#jobs-title'
     datatypes_grid: '#data-types-grid'
     data_tables_grid: '#data-tables-grid'
     display_applications_grid: '#display-applications-grid'
@@ -488,7 +497,8 @@ libraries:
       empty_folder_message: '.empty-folder-message'
       btn_open_upper_folder: '.btn_open_folder'
       edit_folder_btn: '.edit_folder_btn'
-      description_field: '.description-field'
+      description_field: '.description-field > div'
+      description_field_shrinked: '.shrinked-description'
       save_folder_btn: '.save_folder_btn'
       input_folder_name: 'textarea[name="input_folder_name"]'
       input_folder_description: '.input_folder_description'

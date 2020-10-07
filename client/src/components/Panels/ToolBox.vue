@@ -17,9 +17,11 @@
                     <span class="mr-1">{{ buttonText }}</span>
                 </b-button>
             </div>
-            <div class="py-2" v-else-if="query">
-                <b-badge v-if="query.length < 3" class="w-100">Search string too short!</b-badge>
-                <b-badge v-else class="w-100">No results found!</b-badge>
+            <div class="py-2" v-else-if="queryTooShort">
+                <b-badge class="w-100">Search string too short!</b-badge>
+            </div>
+            <div class="py-2" v-else-if="queryFinished">
+                <b-badge class="w-100">No results found!</b-badge>
             </div>
         </div>
         <div class="unified-panel-body">
@@ -33,9 +35,9 @@
                         @onClick="onOpen"
                     />
                 </div>
-                <div class="toolPanelLabel" id="title_XXinternalXXworkflow">
-                    <a>{{ workflowTitle }}</a>
-                </div>
+
+                <tool-section :category="{ text: workflowTitle }" />
+
                 <div id="internal-workflows" class="toolSectionBody">
                     <div class="toolSectionBg" />
                     <div class="toolTitle" v-for="wf in workflows" :key="wf.id">
@@ -70,6 +72,7 @@ export default {
             query: null,
             results: null,
             queryFilter: null,
+            queryPending: false,
             showSections: false,
             buttonText: "",
             buttonIcon: "",
@@ -80,7 +83,7 @@ export default {
             type: Array,
             required: true,
         },
-        stored_workflow_menu_entries: {
+        storedWorkflowMenuEntries: {
             type: Array,
             required: true,
         },
@@ -90,6 +93,12 @@ export default {
         },
     },
     computed: {
+        queryTooShort() {
+            return this.query && this.query.length < 3;
+        },
+        queryFinished() {
+            return this.query && this.queryPending != true;
+        },
         sections() {
             if (this.showSections) {
                 return filterToolSections(this.toolbox, this.results);
@@ -108,7 +117,7 @@ export default {
                     href: `${getAppRoot()}workflows/list`,
                     id: "list",
                 },
-                ...this.stored_workflow_menu_entries.map((menuEntry) => {
+                ...this.storedWorkflowMenuEntries.map((menuEntry) => {
                     return {
                         id: menuEntry.id,
                         title: menuEntry.name,
@@ -124,11 +133,13 @@ export default {
     methods: {
         onQuery(query) {
             this.query = query;
+            this.queryPending = true;
         },
         onResults(results) {
             this.results = results;
             this.queryFilter = this.hasResults ? this.query : null;
             this.setButtonText();
+            this.queryPending = false;
         },
         onFavorites(term) {
             this.query = term;

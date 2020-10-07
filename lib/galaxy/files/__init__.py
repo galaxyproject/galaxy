@@ -61,14 +61,19 @@ class ConfiguredFileSources(object):
         extra_kwds = {
             'file_sources_config': self._file_sources_config,
         }
-        return plugin_config.load_plugins(self._plugin_classes, plugin_source, extra_kwds)
+        return plugin_config.load_plugins(
+            self._plugin_classes,
+            plugin_source,
+            extra_kwds,
+            dict_to_list_key="id",
+        )
 
     def get_file_source_path(self, uri):
         """Parse uri into a FileSource object and a path relative to its base."""
         if "://" not in uri:
             raise exceptions.RequestParameterInvalidException("Invalid uri [%s]" % uri)
         scheme, rest = uri.split("://", 1)
-        if scheme not in self.get_schemas():
+        if scheme not in self.get_schemes():
             raise exceptions.RequestParameterInvalidException("Unsupported URI scheme [%s]" % scheme)
 
         if scheme != "gxfiles":
@@ -107,30 +112,30 @@ class ConfiguredFileSources(object):
             if not user_ftp_dir or not os.path.exists(user_ftp_dir):
                 raise exceptions.ObjectNotFound('Your FTP directory does not exist, attempting to upload files to it may cause it to be created.')
 
-    def get_file_source(self, id_prefix, schema):
+    def get_file_source(self, id_prefix, scheme):
         for file_source in self._file_sources:
-            # gxfiles uses prefix to find plugin, other schema are assumed to have
+            # gxfiles uses prefix to find plugin, other scheme are assumed to have
             # at most one file_source.
-            if schema != file_source.get_schema():
+            if scheme != file_source.get_scheme():
                 continue
-            prefix_match = schema != "gxfiles" or file_source.get_prefix() == id_prefix
+            prefix_match = scheme != "gxfiles" or file_source.get_prefix() == id_prefix
             if prefix_match:
                 return file_source
 
     def looks_like_uri(self, path_or_uri):
         # is this string a URI this object understands how to realize
         if path_or_uri.startswith("gx") and "://" in path_or_uri:
-            for scheme in self.get_schemas():
+            for scheme in self.get_schemes():
                 if path_or_uri.startswith("%s://" % scheme):
                     return True
 
         return False
 
-    def get_schemas(self):
-        schemas = set()
+    def get_schemes(self):
+        schemes = set()
         for file_source in self._file_sources:
-            schemas.add(file_source.get_schema())
-        return schemas
+            schemes.add(file_source.get_scheme())
+        return schemes
 
     def plugins_to_dict(self, for_serialization=False, user_context=None):
         rval = []

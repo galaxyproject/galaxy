@@ -8,7 +8,6 @@ import json
 import logging
 import os
 import pwd
-import shlex
 import shutil
 import string
 import sys
@@ -57,14 +56,14 @@ from galaxy.tool_util.output_checker import (
     DETECTED_JOB_STATE,
 )
 from galaxy.util import (
-    commands,
     parse_xml_string,
     RWXRWXRWX,
     safe_makedirs,
-    unicodify,
+    unicodify
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
+from galaxy.util.path import external_chown
 from galaxy.util.xml_macros import load
 from galaxy.web_stack.handlers import ConfiguresHandlers
 
@@ -570,7 +569,15 @@ class JobConfiguration(ConfiguresHandlers):
             resource_group = resource_group or self.default_resource_group
             if resource_group and resource_group in self.resource_groups:
                 fields_names = self.resource_groups[resource_group]
-                fields = [self.resource_parameters[n] for n in fields_names]
+                fields = []
+                for field_name in fields_names:
+                    if field_name not in self.resource_parameters:
+                        message = "Failed to find field for resource {} in resource parameters {}".format(
+                            field_name, self.resource_parameters
+                        )
+                        raise KeyError(message)
+                    fields.append(self.resource_parameters[field_name])
+
                 if fields:
                     conditional_element = parse_xml_string(self.JOB_RESOURCE_CONDITIONAL_XML)
                     when_yes_elem = conditional_element.findall('when')[1]
@@ -1456,7 +1463,7 @@ class JobWrapper(HasResourceParameters):
             # jobs may have this set. Skip this following code if that is the case.
             return
 
-        object_store_populator = ObjectStorePopulator(self.app)
+        object_store_populator = ObjectStorePopulator(self.app, job.user)
         object_store_id = self.get_destination_configuration("object_store_id", None)
         if object_store_id:
             object_store_populator.object_store_id = object_store_id
@@ -1819,7 +1826,6 @@ class JobWrapper(HasResourceParameters):
                         if e.errno != errno.ENOENT:
                             raise
                 self.external_output_metadata.cleanup_external_metadata(self.sa_session)
-            galaxy.tools.imp_exp.JobExportHistoryArchiveWrapper(self.app, self.job_id).cleanup_after_job()
             galaxy.tools.imp_exp.JobImportHistoryArchiveWrapper(self.app, self.job_id).cleanup_after_job()
             if delete_files:
                 self.object_store.delete(self.get_job(), base_dir='job_work', entire_dir=True, dir_only=True, obj_dir=True)
@@ -1932,8 +1938,6 @@ class JobWrapper(HasResourceParameters):
         for (hda, dataset_path) in self.output_hdas_and_paths.values():
             if hda == dataset:
                 return dataset_path
-        if getattr(dataset, "fake_dataset_association", False):
-            return dataset.file_name
         raise KeyError("Couldn't find job output for [{}] in [{}]".format(dataset, self.output_hdas_and_paths.values()))
 
     def get_mutable_output_fnames(self):
@@ -1967,6 +1971,7 @@ class JobWrapper(HasResourceParameters):
             false_path = dataset_path_rewriter.rewrite_dataset_path(special, 'output')
             dsp = DatasetPath(special.dataset.id, special.dataset.file_name, false_path)
             self.output_paths.append(dsp)
+            self.output_hdas_and_paths["output_file"] = [special.fda, dsp]
         return self.output_paths
 
     def get_output_file_id(self, file):
@@ -2205,33 +2210,21 @@ class JobWrapper(HasResourceParameters):
             # The tool is unavailable, we try to move the outputs.
             return False
 
-    def _change_ownership(self, username, gid):
-        job = self.get_job()
-        external_chown_script = self.get_destination_configuration("external_chown_script", None)
-        if external_chown_script is not None:
-            cmd = shlex.split(external_chown_script)
-            cmd.extend([self.working_directory, username, str(gid)])
-            log.debug('({}) Changing ownership of working directory with: {}'.format(job.id, ' '.join(cmd)))
-            try:
-                commands.execute(cmd)
-            except commands.CommandLineException as e:
-                log.error('external script failed: %s' % unicodify(e))
-
     def change_ownership_for_run(self):
         job = self.get_job()
         external_chown_script = self.get_destination_configuration("external_chown_script", None)
-        if external_chown_script and job.user is not None:
-            try:
-                self._change_ownership(self.user_system_pwent[0], str(self.user_system_pwent[3]))
-            except Exception:
-                log.exception('({}) Failed to change ownership of {}, making world-writable instead'.format(job.id, self.working_directory))
+        if job.user is not None and external_chown_script is not None:
+            ret = external_chown(self.working_directory, self.user_system_pwent,
+                           external_chown_script, description="working directory")
+            if not ret:
                 os.chmod(self.working_directory, RWXRWXRWX)
 
     def reclaim_ownership(self):
         job = self.get_job()
         external_chown_script = self.get_destination_configuration("external_chown_script", None)
-        if external_chown_script and job.user is not None:
-            self._change_ownership(self.galaxy_system_pwent[0], str(self.galaxy_system_pwent[3]))
+        if job.user is not None:
+            external_chown(self.working_directory, self.galaxy_system_pwent,
+                           external_chown_script, description="working directory")
 
     @property
     def user_system_pwent(self):

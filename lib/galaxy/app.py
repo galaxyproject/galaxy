@@ -159,6 +159,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self.datatypes_registry.load_external_metadata_tool(self.toolbox)
         # Load history import/export tools.
         load_lib_tools(self.toolbox)
+        self.toolbox.persist_cache(register_postfork=True)
         # visualizations registry: associates resources with visualizations, controls how to render
         self.visualizations_registry = VisualizationsRegistry(
             self,
@@ -199,8 +200,8 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         if self.config.enable_oidc:
             from galaxy.authnz import managers
             self.authnz_manager = managers.AuthnzManager(self,
-                                                         self.config.oidc_config,
-                                                         self.config.oidc_backends_config)
+                                                         self.config.oidc_config_file,
+                                                         self.config.oidc_backends_config_file)
 
         self.sentry_client = None
         if self.config.sentry_dsn:

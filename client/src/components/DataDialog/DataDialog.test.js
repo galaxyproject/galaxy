@@ -1,15 +1,15 @@
 import DataDialog from "./DataDialog.vue";
 import SelectionDialog from "components/SelectionDialog/SelectionDialog.vue";
-import { __RewireAPI__ as rewire } from "./DataDialog";
 import { Model } from "./model";
 import { UrlTracker } from "./utilities";
 import { Services } from "./services";
-import { mount, createLocalVue } from "@vue/test-utils";
+import { shallowMount, createLocalVue } from "@vue/test-utils";
+import { getNewAttachNode } from "jest/helpers";
+
+jest.mock("app");
 
 const mockOptions = {
     callback: () => {},
-    host: "host",
-    root: "root",
     history: "history",
     modalStatic: true,
 };
@@ -22,33 +22,34 @@ describe("model.js", () => {
             model.add({ idx: 1 });
             throw "Accepted invalid record.";
         } catch (error) {
-            expect(error).to.equals("Invalid record with no <id>.");
+            expect(error).toBe("Invalid record with no <id>.");
         }
         model.add({ id: 1 });
-        expect(model.count()).to.equals(1);
-        expect(model.exists(1)).to.equals(true);
+        expect(model.count()).toBe(1);
+        expect(model.exists(1)).toBe(true);
         model.add({ id: 2, tag: "tag" });
-        expect(model.count()).to.equals(1);
-        expect(model.exists(1)).to.equals(false);
-        expect(model.exists(2)).to.equals(true);
+        expect(model.count()).toBe(1);
+        expect(model.exists(1)).toBe(false);
+        expect(model.exists(2)).toBe(true);
         result = model.finalize();
-        expect(result.id).to.equals(2);
-        expect(result.tag).to.equals("tag");
+        expect(result.id).toBe(2);
+        expect(result.tag).toBe("tag");
     });
+
     it("Model operations for multiple, with format", () => {
         const model = new Model({ multiple: true, format: "tag" });
         model.add({ id: 1, tag: "tag_1" });
-        expect(model.count()).to.equals(1);
+        expect(model.count()).toBe(1);
         model.add({ id: 2, tag: "tag_2" });
-        expect(model.count()).to.equals(2);
+        expect(model.count()).toBe(2);
         result = model.finalize();
-        expect(result.length).to.equals(2);
-        expect(result[0]).to.equals("tag_1");
-        expect(result[1]).to.equals("tag_2");
+        expect(result.length).toBe(2);
+        expect(result[0]).toBe("tag_1");
+        expect(result[1]).toBe("tag_2");
         model.add({ id: 1 });
-        expect(model.count()).to.equals(1);
+        expect(model.count()).toBe(1);
         result = model.finalize();
-        expect(result[0]).to.equals("tag_2");
+        expect(result[0]).toBe("tag_2");
     });
 });
 
@@ -56,33 +57,33 @@ describe("utilities.js/UrlTracker", () => {
     it("Test url tracker", () => {
         const urlTracker = new UrlTracker("url_initial");
         let url = urlTracker.getUrl();
-        expect(url).to.equals("url_initial");
-        expect(urlTracker.atRoot()).to.equals(true);
+        expect(url).toBe("url_initial");
+        expect(urlTracker.atRoot()).toBe(true);
         url = urlTracker.getUrl("url_1");
-        expect(url).to.equals("url_1");
-        expect(urlTracker.atRoot()).to.equals(false);
+        expect(url).toBe("url_1");
+        expect(urlTracker.atRoot()).toBe(false);
         url = urlTracker.getUrl("url_2");
-        expect(url).to.equals("url_2");
-        expect(urlTracker.atRoot()).to.equals(false);
+        expect(url).toBe("url_2");
+        expect(urlTracker.atRoot()).toBe(false);
         url = urlTracker.getUrl();
-        expect(url).to.equals("url_1");
-        expect(urlTracker.atRoot()).to.equals(false);
+        expect(url).toBe("url_1");
+        expect(urlTracker.atRoot()).toBe(false);
         url = urlTracker.getUrl();
-        expect(url).to.equals("url_initial");
-        expect(urlTracker.atRoot()).to.equals(true);
+        expect(url).toBe("url_initial");
+        expect(urlTracker.atRoot()).toBe(true);
     });
 });
 
 describe("services/Services:isDataset", () => {
     it("Test dataset identifier", () => {
         const services = new Services(mockOptions);
-        expect(services.isDataset({})).to.equals(false);
-        expect(services.isDataset({ history_content_type: "dataset" })).to.equals(true);
-        expect(services.isDataset({ history_content_type: "xyz" })).to.equals(false);
-        expect(services.isDataset({ type: "file" })).to.equals(true);
-        expect(services.getRecord({ hid: 1, history_content_type: "dataset" }).isLeaf).to.equals(true);
-        expect(services.getRecord({ hid: 2, history_content_type: "xyz" }).isLeaf).to.equals(false);
-        expect(services.getRecord({ type: "file" }).isLeaf).to.equals(true);
+        expect(services.isDataset({})).toBe(false);
+        expect(services.isDataset({ history_content_type: "dataset" })).toBe(true);
+        expect(services.isDataset({ history_content_type: "xyz" })).toBe(false);
+        expect(services.isDataset({ type: "file" })).toBe(true);
+        expect(services.getRecord({ hid: 1, history_content_type: "dataset" }).isLeaf).toBe(true);
+        expect(services.getRecord({ hid: 2, history_content_type: "xyz" }).isLeaf).toBe(false);
+        expect(services.getRecord({ type: "file" }).isLeaf).toBe(true);
     });
 });
 
@@ -96,16 +97,16 @@ describe("services.js/Services", () => {
         };
         const services = new Services(mockOptions);
         const items = services.getItems(rawData);
-        expect(items.length).to.equals(1);
+        expect(items.length).toBe(1);
         const first = items[0];
-        expect(first.label).to.equals("1: name_1");
-        expect(first.download).to.equals("host/api/histories/0/contents/1/display");
+        expect(first.label).toBe("1: name_1");
+        expect(first.download).toBe("http://localhost:/api/histories/0/contents/1/display");
     });
 });
 
 describe("DataDialog.vue", () => {
     let wrapper;
-
+    /*
     const rawData = [
         {
             id: 1,
@@ -125,31 +126,16 @@ describe("DataDialog.vue", () => {
             history_content_type: "dataset_collection",
         },
     ];
+    */
 
-    const mockServices = class {
-        get(url) {
-            const services = new Services(mockOptions);
-            const items = services.getItems(rawData);
-            return new Promise((resolve, reject) => {
-                resolve(items);
-            });
-        }
-    };
-
-    beforeEach(() => {
-        rewire.__Rewire__("getGalaxyInstance", () => {
-            root: "root";
-        });
+    it("loads correctly, embeds a SelectionDialog", () => {
         const localVue = createLocalVue();
-        wrapper = mount(DataDialog, {
+        wrapper = shallowMount(DataDialog, {
             propsData: mockOptions,
-            attachToDocument: true,
+            attachTo: getNewAttachNode(),
             localVue,
         });
-    });
-
-    it("loads correctly, embeds a SelectionDialog", async () => {
-        expect(wrapper.find(SelectionDialog).is(SelectionDialog)).to.equals(true);
+        expect(wrapper.findComponent(SelectionDialog).exists()).toBe(true);
         // Cannot get nested slot templates to render into the wrapper
         ///  Lots of open issues around this
         ///  ... Maybe because named slots have many issues

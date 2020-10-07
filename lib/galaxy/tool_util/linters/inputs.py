@@ -32,20 +32,18 @@ def lint_inputs(tool_xml, lint_ctx):
         if param_type == "data":
             if "format" not in param_attrib:
                 lint_ctx.warn("Param input [%s] with no format specified - 'data' format will be assumed.", param_name)
-
-        if param_type == "select":
+        elif param_type == "select":
             dynamic_options = param.get("dynamic_options", None)
             if dynamic_options is None:
                 dynamic_options = param.find("options")
 
-            select_options = _find_with_attribute(param, 'option', 'value')
+            select_options = param.findall('./option')
             if any(['value' not in option.attrib for option in select_options]):
-                lint_ctx.error("Option without value")
+                lint_ctx.error("Select [%s] has option without value", param_name)
 
             if dynamic_options is None and len(select_options) == 0:
                 message = "No options defined for select [%s]" % param_name
                 lint_ctx.warn(message)
-
         # TODO: Validate type, much more...
 
     conditional_selects = tool_xml.findall("./inputs//conditional")

@@ -47,6 +47,9 @@ class ToolRunner(BaseUIController):
         # tool id not available, redirect to main page
         if tool_id is None:
             return trans.response.send_redirect(url_for(controller='root', action='welcome'))
+        if tool_id.endswith('/'):
+            # Probably caused by a redirect
+            tool_id = tool_id[:-1]
         tool = self.__get_tool(tool_id)
         # tool id is not matching, display an error
         if not tool:

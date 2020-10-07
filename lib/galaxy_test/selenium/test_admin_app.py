@@ -70,6 +70,54 @@ class AdminAppTestCase(SeleniumTestCase):
         self.screenshot('admin_toolshed_repo_uninstalled')
 
     @selenium_test
+    def test_admin_dependencies_display(self):
+        admin_component = self.components.admin
+        self.admin_login()
+        self.admin_open()
+        self.screenshot("admin_landing")
+        admin_component.index.dependencies.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        # Ensure that tabs are visible
+        self.driver.find_element_by_link_text('Dependencies')
+        self.driver.find_element_by_link_text('Containers')
+        unused_link = self.driver.find_element_by_link_text('Unused')
+        # Ensure that #manage-resolver-type is visible.
+        admin_component.manage_dependencies.resolver_type.wait_for_visible()
+        self.screenshot("admin_dependencies_landing")
+        self.action_chains().move_to_element(unused_link).click().perform()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        # Ensure that the unused paths table is visible.
+        admin_component.manage_dependencies.unused_paths.wait_for_visible()
+        self.screenshot("admin_dependencies_unused")
+
+    @selenium_test
+    def test_admin_jobs_display(self):
+        admin_component = self.components.admin
+        self.admin_login()
+        self.admin_open()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.screenshot("admin_landing")
+        admin_component.index.jobs.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.screenshot("admin_jobs_landing")
+        # Since both get_property and get_attribute always return true, use the
+        # label for the job lock toggle to verify that job locking actually happens
+        manage_jobs = admin_component.manage_jobs
+        lock_label = manage_jobs.job_lock_label
+        original_label = lock_label.wait_for_text()
+        lock_label.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        # Make sure the job lock has been toggled.
+        new_label = lock_label.wait_for_text()
+        self.assertNotEqual(new_label, original_label)
+        self.screenshot("admin_jobs_locked")
+        lock_label.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        self.screenshot("admin_jobs_unlocked")
+        # And confirm that it has toggled back to what it was.
+        self.assertEqual(lock_label.wait_for_text(), original_label)
+
+    @selenium_test
     def test_admin_server_display(self):
         admin_component = self.components.admin
         self.admin_login()

@@ -237,7 +237,7 @@ const CenterPanel = Backbone.View.extend({
     },
 
     /** Display a view in the center panel, hide iframe */
-    display: function (view) {
+    display: function (view, noPadding) {
         const Galaxy = getGalaxyInstance();
         let contentWindow = this.$frame[0].contentWindow || {};
         let message;
@@ -258,6 +258,8 @@ const CenterPanel = Backbone.View.extend({
                 .scrollTop(0)
                 .append(view.$el || view)
                 .show();
+            const paddingOperation = noPadding ? "addClass" : "removeClass";
+            this.$panel[paddingOperation]("p-0");
             Galaxy.trigger("center-panel:load", view);
         }
     },

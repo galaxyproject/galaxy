@@ -1,8 +1,19 @@
-import store from "./index";
+import { createLocalVue } from "@vue/test-utils";
+import Vuex from "vuex";
+import { gridSearchStore } from "./gridSearchStore";
+
+const localVue = createLocalVue();
+localVue.use(Vuex);
+
+const testStore = new Vuex.Store({
+    modules: {
+        gridSearchStore,
+    },
+});
 
 describe("store/gridSearchStore.js", () => {
-    it("the searchTags in the store should be a Set object", () => {
-        let searchTags = store.state.gridSearch.searchTags; // this is a Set()
-        assert(searchTags instanceof Set, "searchTags wrong variable type, should be Set()");
+    test("the searchTags in the store should be a Set object", () => {
+        const searchTags = testStore.state.gridSearchStore.searchTags; // this is a Set()
+        expect(searchTags instanceof Set).toBeTruthy();
     });
 });

@@ -7,8 +7,10 @@
  * will handle initializations for components individually.
  */
 
+/* jquery and _ are exposed via expose-loader while several external plugins rely on these */
 import $ from "jquery";
-import "bootstrap";
+import _ from "expose-loader?exposes[]=_&exposes[]=underscore!underscore"; // eslint-disable-line no-unused-vars
+
 export { getGalaxyInstance, setGalaxyInstance } from "app";
 import { TracksterUIView } from "viz/trackster";
 export { TracksterUI } from "viz/trackster";
@@ -16,7 +18,6 @@ import Circster from "viz/circster";
 export { PhylovizView as phyloviz } from "viz/phyloviz";
 export { SweepsterVisualization, SweepsterVisualizationView } from "viz/sweepster";
 import GalaxyLibrary from "galaxy.library";
-export { default as pages } from "galaxy.pages";
 export { createTabularDatasetChunkedView } from "mvc/dataset/data";
 import { HistoryCollection } from "mvc/history/history-model";
 export { History } from "mvc/history/history-model";
@@ -94,8 +95,10 @@ export { mountMakoTags } from "components/Tags";
 export { mountJobMetrics } from "components/JobMetrics";
 export { mountJobParameters } from "components/JobParameters";
 export { mountWorkflowEditor } from "components/Workflow/Editor/mount";
+export { mountPageEditor } from "components/PageEditor/mount";
 export { mountPageDisplay } from "components/PageDisplay";
 export { mountDestinationParams } from "components/JobDestinationParams";
+export { mountDatasetInformation } from "components/DatasetInformation";
 
 // Used in common.mako
 export { default as store } from "storemodern";

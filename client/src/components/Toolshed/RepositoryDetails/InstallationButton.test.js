@@ -10,9 +10,9 @@ describe("InstallationButton", () => {
             },
         });
         const $el = wrapper.find("button");
-        expect($el.classes()).to.include("btn-danger");
+        expect($el.classes()).toEqual(expect.arrayContaining(["btn-danger"]));
         $el.trigger("click");
-        expect(wrapper.emitted().onUninstall).to.not.be.undefined;
+        expect(wrapper.emitted().onUninstall).toBeDefined();
     });
 
     it("test uninstalled repository revision", () => {
@@ -23,8 +23,8 @@ describe("InstallationButton", () => {
             },
         });
         const $el = wrapper.find("button");
-        expect($el.classes()).to.include("btn-primary");
+        expect($el.classes()).toEqual(expect.arrayContaining(["btn-primary"]));
         $el.trigger("click");
-        expect(wrapper.emitted().onInstall).to.not.be.undefined;
+        expect(wrapper.emitted().onInstall).toBeDefined();
     });
 });

@@ -80,6 +80,7 @@
         'cur_page_num'                  : cur_page_num,
         'num_pages'                     : num_pages,
         'num_page_links'                : num_page_links,
+        'allow_fetching_all_results'    : grid.allow_fetching_all_results,
         'status'                        : status,
         'message'                       : util.restore_text(message),
         'global_actions'                : [],

@@ -1,96 +1,120 @@
 <template>
     <div id="columns" class="workflow-client">
-        <SidePanel id="left" side="left">
-            <template v-slot:panel>
-                <ToolBoxWorkflow
-                    :toolbox="toolbox"
-                    :module-sections="moduleSections"
-                    :data-managers="dataManagers"
-                    :workflows="workflows"
-                    @onInsertTool="onInsertTool"
-                    @onInsertModule="onInsertModule"
-                    @onInsertWorkflow="onInsertWorkflow"
-                    @onInsertWorkflowSteps="onInsertWorkflowSteps"
-                />
+        <MarkdownEditor
+            v-if="!isCanvas"
+            :markdown-text="markdownText"
+            :markdown-config="markdownConfig"
+            :title="'Workflow Report: ' + name"
+            :nodes="nodes"
+            @onUpdate="onReportUpdate"
+        >
+            <template v-slot:buttons>
+                <b-button
+                    id="workflow-canvas-button"
+                    title="Return to Workflow"
+                    variant="link"
+                    role="button"
+                    v-b-tooltip.hover.bottom
+                    @click="onEdit"
+                >
+                    <span class="fa fa-times" />
+                </b-button>
             </template>
-        </SidePanel>
-        <div id="center" class="workflow-center inbound">
-            <div class="unified-panel-header" unselectable="on">
-                <div class="unified-panel-header-inner">
-                    <span class="sr-only">Workflow Editor</span>
-                    {{ name }}
-                </div>
-            </div>
-            <div id="workflow-canvas" class="unified-panel-body workflow-canvas" v-show="isCanvas">
-                <ZoomControl :zoom-level="zoomLevel" @onZoom="onZoom" />
-                <div id="canvas-viewport">
-                    <div ref="canvas" id="canvas-container">
-                        <WorkflowNode
-                            v-for="(step, key) in steps"
-                            :id="key"
-                            :name="step.name"
-                            :type="step.type"
-                            :content-id="step.content_id"
-                            :step="step"
-                            :key="key"
-                            :datatypes-mapper="datatypesMapper"
-                            :get-manager="getManager"
-                            :get-canvas-manager="getCanvasManager"
-                            @onAdd="onAdd"
-                            @onUpdate="onUpdate"
-                            @onClone="onClone"
-                            @onCreate="onInsertTool"
-                            @onChange="onChange"
-                            @onActivate="onActivate"
-                            @onRemove="onRemove"
-                        />
+        </MarkdownEditor>
+        <div v-show="isCanvas">
+            <SidePanel id="left" side="left">
+                <template v-slot:panel>
+                    <ToolBoxWorkflow
+                        :toolbox="toolbox"
+                        :module-sections="moduleSections"
+                        :data-managers="dataManagers"
+                        :workflows="workflows"
+                        @onInsertTool="onInsertTool"
+                        @onInsertModule="onInsertModule"
+                        @onInsertWorkflow="onInsertWorkflow"
+                        @onInsertWorkflowSteps="onInsertWorkflowSteps"
+                    />
+                </template>
+            </SidePanel>
+            <div id="center" class="workflow-center">
+                <div class="unified-panel-header" unselectable="on">
+                    <div class="unified-panel-header-inner">
+                        <span class="sr-only">Workflow Editor</span>
+                        {{ name }}
                     </div>
                 </div>
-                <div class="workflow-overview" aria-hidden="true">
-                    <div class="workflow-overview-body">
-                        <div id="overview-container">
-                            <canvas width="0" height="0" id="overview-canvas" />
-                            <div id="overview-viewport" />
+                <div id="workflow-canvas" class="unified-panel-body workflow-canvas">
+                    <ZoomControl :zoom-level="zoomLevel" @onZoom="onZoom" />
+                    <div id="canvas-viewport">
+                        <div ref="canvas" id="canvas-container">
+                            <WorkflowNode
+                                v-for="(step, key) in steps"
+                                :id="key"
+                                :name="step.name"
+                                :type="step.type"
+                                :content-id="step.content_id"
+                                :step="step"
+                                :key="key"
+                                :datatypes-mapper="datatypesMapper"
+                                :get-manager="getManager"
+                                :get-canvas-manager="getCanvasManager"
+                                @onAdd="onAdd"
+                                @onUpdate="onUpdate"
+                                @onClone="onClone"
+                                @onCreate="onInsertTool"
+                                @onChange="onChange"
+                                @onActivate="onActivate"
+                                @onRemove="onRemove"
+                            />
+                        </div>
+                    </div>
+                    <div class="workflow-overview" aria-hidden="true">
+                        <div class="workflow-overview-body">
+                            <div id="overview-container">
+                                <canvas width="0" height="0" id="overview-canvas" />
+                                <div id="overview-viewport" />
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="unified-panel-body workflow-report-body" v-show="!isCanvas">
-                <MarkdownEditor ref="report-editor" initial-markdown="" :onupdate="onReportUpdate" :toolbar="false" />
-            </div>
+            <SidePanel id="right" side="right">
+                <template v-slot:panel>
+                    <div class="unified-panel workflow-panel">
+                        <div class="unified-panel-header" unselectable="on">
+                            <div class="unified-panel-header-inner">
+                                <WorkflowOptions
+                                    @onSave="onSave"
+                                    @onSaveAs="onSaveAs"
+                                    @onRun="onRun"
+                                    @onDownload="onDownload"
+                                    @onReport="onReport"
+                                    @onLayout="onLayout"
+                                    @onEdit="onEdit"
+                                    @onAttributes="onAttributes"
+                                />
+                            </div>
+                        </div>
+                        <div class="unified-panel-body workflow-right">
+                            <div class="m-1">
+                                <WorkflowAttributes
+                                    :id="id"
+                                    :name="name"
+                                    :tags="tags"
+                                    :parameters="parameters"
+                                    :annotation="annotation"
+                                    :version="version"
+                                    :versions="versions"
+                                    @onVersion="onVersion"
+                                    @onRename="onRename"
+                                />
+                                <div id="right-content" class="right-content" />
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </SidePanel>
         </div>
-        <SidePanel id="right" side="right">
-            <template v-slot:panel>
-                <EditorPanel :canvas="isCanvas" class="workflow-panel">
-                    <template v-slot:attributes>
-                        <WorkflowAttributes
-                            :id="id"
-                            :name="name"
-                            :tags="tags"
-                            :parameters="parameters"
-                            :annotation="annotation"
-                            :version="version"
-                            :versions="versions"
-                            @onVersion="onVersion"
-                            @onRename="onRename"
-                        />
-                    </template>
-                    <template v-slot:buttons>
-                        <WorkflowOptions
-                            :canvas="isCanvas"
-                            @onSave="onSave"
-                            @onSaveAs="onSaveAs"
-                            @onRun="onRun"
-                            @onDownload="onDownload"
-                            @onReport="onReport"
-                            @onLayout="onLayout"
-                            @onEdit="onEdit"
-                            @onAttributes="onAttributes"
-                        />
-                    </template>
-                </EditorPanel>
-            </template>
-        </SidePanel>
     </div>
 </template>
 
@@ -113,7 +137,6 @@ import ToolBoxWorkflow from "components/Panels/ToolBoxWorkflow";
 import SidePanel from "components/Panels/SidePanel";
 import { getAppRoot } from "onload/loadConfig";
 import reportDefault from "./reportDefault";
-import EditorPanel from "./EditorPanel";
 import { hide_modal, show_message, show_modal } from "layout/modal";
 import WorkflowAttributes from "./Attributes";
 import ZoomControl from "./ZoomControl";
@@ -122,7 +145,6 @@ import Vue from "vue";
 
 export default {
     components: {
-        EditorPanel,
         MarkdownEditor,
         SidePanel,
         ToolBoxWorkflow,
@@ -172,6 +194,8 @@ export default {
     data() {
         return {
             isCanvas: true,
+            markdownConfig: null,
+            markdownText: null,
             versions: [],
             parameters: [],
             zoomLevel: 7,
@@ -183,6 +207,7 @@ export default {
             datatypes: [],
             report: {},
             activeNode: null,
+            labels: {},
         };
     },
     created() {
@@ -293,16 +318,24 @@ export default {
         onReportUpdate(markdown) {
             this.hasChanges = true;
             this.report.markdown = markdown;
+            this.markdownText = markdown;
         },
         onRun() {
-            window.location = `${getAppRoot()}workflows/run?id=${this.id}`;
+            const runUrl = `${getAppRoot()}workflows/run?id=${this.id}`;
+            if (this.hasChanges) {
+                this.onSave(true).then(() => {
+                    window.location = runUrl;
+                });
+            } else {
+                window.location = runUrl;
+            }
         },
         onZoom(zoomLevel) {
             this.zoomLevel = this.canvasManager.setZoom(zoomLevel);
         },
-        onSave() {
-            show_message("Saving workflow...", "progress");
-            saveWorkflow(this)
+        onSave(hideProgress = false) {
+            !hideProgress && show_message("Saving workflow...", "progress");
+            return saveWorkflow(this)
                 .then((data) => {
                     showWarnings(data);
                     getVersions(this.id).then((versions) => {
@@ -345,7 +378,8 @@ export default {
                 .then((data) => {
                     const report = data.report || {};
                     const markdown = report.markdown || reportDefault;
-                    this.$refs["report-editor"].input = markdown;
+                    this.markdownText = markdown;
+                    this.markdownConfig = report;
                     showUpgradeMessage(data);
                     getVersions(this.id).then((versions) => {
                         this.versions = versions;
@@ -369,3 +403,8 @@ export default {
     },
 };
 </script>
+<style scoped>
+.workflow-markdown-editor {
+    right: 0px !important;
+}
+</style>

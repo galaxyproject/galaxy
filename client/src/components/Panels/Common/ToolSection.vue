@@ -1,51 +1,47 @@
 <template>
-    <div>
-        <div v-if="isSection">
-            <div v-if="hasElements">
-                <div :class="['toolSectionTitle', `tool-menu-section-${sectionName}`]">
-                    <a @click="toggleMenu" href="javascript:void(0)" role="button">
-                        <span class="name">
-                            {{ this.name }}
-                        </span>
-                    </a>
-                </div>
-                <transition name="slide">
-                    <div v-if="opened">
-                        <template v-for="[key, el] in category.elems.entries()">
-                            <span v-if="el.text" class="label toolPanelLabel ml-2" :key="key">
-                                {{ el.text }}
-                            </span>
-                            <tool
-                                v-else
-                                class="ml-2"
-                                :tool="el"
-                                :key="key"
-                                :tool-key="toolKey"
-                                :hide-name="hideName"
-                                :operation-title="operationTitle"
-                                :operation-icon="operationIcon"
-                                @onOperation="onOperation"
-                                @onClick="onClick"
-                            />
-                        </template>
+    <div v-if="isSection && hasElements" class="tool-panel-section">
+        <div :class="['toolSectionTitle', `tool-menu-section-${sectionName}`]">
+            <a @click="toggleMenu" href="javascript:void(0)" role="button">
+                <span class="name">
+                    {{ this.name }}
+                </span>
+            </a>
+        </div>
+        <transition name="slide">
+            <div v-if="opened">
+                <template v-for="[key, el] in category.elems.entries()">
+                    <div v-if="el.text" class="tool-panel-label" :key="key">
+                        {{ el.text }}
                     </div>
-                </transition>
+                    <tool
+                        v-else
+                        class="ml-2"
+                        :tool="el"
+                        :key="key"
+                        :tool-key="toolKey"
+                        :hide-name="hideName"
+                        :operation-title="operationTitle"
+                        :operation-icon="operationIcon"
+                        @onOperation="onOperation"
+                        @onClick="onClick"
+                    />
+                </template>
             </div>
+        </transition>
+    </div>
+    <div v-else>
+        <div v-if="category.text" class="tool-panel-label">
+            {{ category.text }}
         </div>
-        <div v-else>
-            <span v-if="category.text" class="label toolPanelLabel">
-                {{ category.text }}
-            </span>
-            <tool
-                v-else
-                :tool="category"
-                :hide-name="hideName"
-                :operation-title="operationTitle"
-                :operation-icon="operationIcon"
-                @onOperation="onOperation"
-                @onClick="onClick"
-            />
-        </div>
+        <tool
+            v-else
+            :tool="category"
+            :hide-name="hideName"
+            :operation-title="operationTitle"
+            :operation-icon="operationIcon"
+            @onOperation="onOperation"
+            @onClick="onClick"
+        />
     </div>
 </template>
 
@@ -65,6 +61,7 @@ export default {
         },
         queryFilter: {
             type: String,
+            default: "",
         },
         disableFilter: {
             type: Boolean,
@@ -74,21 +71,28 @@ export default {
         },
         operationTitle: {
             type: String,
+            default: "",
         },
         operationIcon: {
             type: String,
+            default: "",
         },
         toolKey: {
             type: String,
+            default: "",
         },
         sectionName: {
             type: String,
             default: "default",
         },
+        expanded: {
+            type: Boolean,
+            default: false,
+        },
     },
     data() {
         return {
-            opened: this.checkFilter(),
+            opened: this.expanded || this.checkFilter(),
         };
     },
     watch: {
@@ -126,7 +130,27 @@ export default {
 };
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+@import "scss/theme/blue.scss";
+
+.tool-panel-label {
+    background: darken($panel-bg-color, 5%);
+    border-left: 0.25rem solid darken($panel-bg-color, 25%);
+    font-size: $h5-font-size;
+    font-weight: 600;
+    padding-left: 0.75rem;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+    text-transform: uppercase;
+}
+
+.tool-panel-section .tool-panel-label {
+    /* labels within subsections */
+    margin-left: 1.5rem;
+    padding-top: 0.125rem;
+    padding-bottom: 0.125rem;
+}
+
 .slide-enter-active {
     -moz-transition-duration: 0.2s;
     -webkit-transition-duration: 0.2s;

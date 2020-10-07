@@ -19,9 +19,14 @@ from whoosh.fields import (
     Schema,
     TEXT
 )
-from whoosh.qparser import MultifieldParser
-from whoosh.qparser import OrGroup
-from whoosh.scoring import BM25F
+from whoosh.qparser import (
+    MultifieldParser,
+    OrGroup,
+)
+from whoosh.scoring import (
+    BM25F,
+    MultiWeighting,
+)
 from whoosh.writing import AsyncWriter
 
 from galaxy.util import ExecutionTimer
@@ -51,6 +56,7 @@ class ToolBoxSearch:
 
     def __init__(self, toolbox, index_dir=None, index_help=True):
         self.schema = Schema(id=ID(stored=True, unique=True),
+                             old_id=ID,
                              stub=KEYWORD,
                              name=TEXT(analyzer=analysis.SimpleAnalyzer()),
                              description=TEXT,
@@ -145,7 +151,7 @@ class ToolBoxSearch:
                     pass
         return add_doc_kwds
 
-    def search(self, q, tool_name_boost, tool_section_boost,
+    def search(self, q, tool_name_boost, tool_id_boost, tool_section_boost,
             tool_description_boost, tool_label_boost, tool_stub_boost,
             tool_help_boost, tool_search_limit, tool_enable_ngram_search,
             tool_ngram_minsize, tool_ngram_maxsize):
@@ -154,14 +160,15 @@ class ToolBoxSearch:
         """
         # Change field boosts for searcher
         self.searcher = self.index.searcher(
-            weighting=BM25F(
-                field_B={'name_B': float(tool_name_boost),
-                         'section_B': float(tool_section_boost),
-                         'description_B': float(tool_description_boost),
-                         'labels_B': float(tool_label_boost),
-                         'stub_B': float(tool_stub_boost),
-                         'help_B': float(tool_help_boost)}
-            )
+            weighting=MultiWeighting(BM25F(),
+                                     old_id=BM25F(old_id_B=float(tool_id_boost)),
+                                     name=BM25F(name_B=float(tool_name_boost)),
+                                     section=BM25F(section_B=float(tool_section_boost)),
+                                     description=BM25F(description_B=float(tool_description_boost)),
+                                     labels=BM25F(labels_B=float(tool_label_boost)),
+                                     stub=BM25F(stub_B=float(tool_stub_boost)),
+                                     help=BM25F(help_B=float(tool_help_boost))
+                                     )
         )
         # Use OrGroup to change the default operation for joining multiple terms to logical OR.
         # This means e.g. for search 'bowtie of king arthur' a document that only has 'bowtie' will be a match.
@@ -170,8 +177,10 @@ class ToolBoxSearch:
         # would have a higher score than a document with 'bowtie arthur' which is usually unexpected for a user.
         # Hence we introduce a bonus on multi-hits using the 'factory()' method using a scaling factor between 0-1.
         # https://whoosh.readthedocs.io/en/latest/parsing.html#searching-for-any-terms-instead-of-all-terms-by-default
+        # Adding the FuzzyTermPlugin to account for misspellings and typos, using a max distance of 2
         og = OrGroup.factory(0.9)
-        self.parser = MultifieldParser(['name', 'description', 'section', 'help', 'labels', 'stub'], schema=self.schema, group=og)
+        self.parser = MultifieldParser(['name', 'old_id', 'description', 'section', 'help', 'labels', 'stub'], schema=self.schema, group=og)
+
         cleaned_query = q.lower()
         if tool_enable_ngram_search is True:
             rval = self._search_ngrams(cleaned_query, tool_ngram_minsize, tool_ngram_maxsize, tool_search_limit)
@@ -179,7 +188,7 @@ class ToolBoxSearch:
         else:
             cleaned_query = ' '.join(token.text for token in self.rex(cleaned_query))
             # Use asterisk Whoosh wildcard so e.g. 'bow' easily matches 'bowtie'
-            parsed_query = self.parser.parse(cleaned_query + '*')
+            parsed_query = self.parser.parse('*' + cleaned_query + '*')
             hits = self.searcher.search(parsed_query, limit=float(tool_search_limit), sortedby='')
             return [hit['id'] for hit in hits]
 

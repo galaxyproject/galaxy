@@ -2,7 +2,6 @@
 Offload jobs to a Kubernetes cluster.
 """
 
-import errno
 import logging
 import math
 import os
@@ -63,13 +62,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_run_as_user_id=dict(map=str, valid=lambda s: s == "$uid" or s.isdigit()),
             k8s_run_as_group_id=dict(map=str, valid=lambda s: s == "$gid" or s.isdigit()),
             k8s_fs_group_id=dict(map=int),
-            k8s_default_requests_cpu=dict(map=str, default=None),
-            k8s_default_requests_memory=dict(map=str, default=None),
-            k8s_default_limits_cpu=dict(map=str, default=None),
-            k8s_default_limits_memory=dict(map=str, default=None),
             k8s_cleanup_job=dict(map=str, valid=lambda s: s in {"onsuccess", "always", "never"}, default="always"),
             k8s_pod_retries=dict(map=int, valid=lambda x: int >= 0, default=3),
-            k8s_pod_retrials=dict(map=int, valid=lambda x: int >= 0, default=3),
             k8s_walltime_limit=dict(map=int, valid=lambda x: int(x) >= 0, default=172800))
 
         if 'runner_param_specs' not in kwargs:
@@ -418,12 +412,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 max_pod_retries = int(job_destination.params['max_pod_retries'])
             elif 'k8s_pod_retries' in self.runner_params:
                 max_pod_retries = int(self.runner_params['k8s_pod_retries'])
-            elif 'max_pod_retrials' in job_destination.params:
-                # For backward compatibility
-                max_pod_retries = int(job_destination.params['max_pod_retrials'])
-            elif 'k8s_pod_retrials' in self.runner_params:
-                # For backward compatibility
-                max_pod_retries = int(self.runner_params['max_pod_retrials'])
             else:
                 max_pod_retries = 1
 
@@ -470,30 +458,14 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             # there is no job responding to this job_id, it is either lost or something happened.
             log.error("No Jobs are available under expected selector app=%s", job_state.job_id)
             self.mark_as_failed(job_state)
-            try:
-                with open(job_state.error_file, 'w') as error_file:
-                    error_file.write("No Kubernetes Jobs are available under expected selector app=%s\n" % job_state.job_id)
-            except OSError as e:
-                # Python 2/3 compatible handling of FileNotFoundError
-                if e.errno == errno.ENOENT:
-                    log.error("Job directory already cleaned up. Assuming already handled for selector app=%s", job_state.job_id)
-                else:
-                    raise
-            return job_state
+            # job is no longer viable - remove from watched jobs
+            return None
         else:
             # there is more than one job associated to the expected unique job id used as selector.
             log.error("More than one Kubernetes Job associated to job id '%s'", job_state.job_id)
             self.mark_as_failed(job_state)
-            try:
-                with open(job_state.error_file, 'w') as error_file:
-                    error_file.write("More than one Kubernetes Job associated with job id '%s'\n" % job_state.job_id)
-            except OSError as e:
-                # Python 2/3 compatible handling of FileNotFoundError
-                if e.errno == errno.ENOENT:
-                    log.error("Job directory already cleaned up. Assuming already handled for selector app=%s", job_state.job_id)
-                else:
-                    raise
-            return job_state
+            # job is no longer viable - remove from watched jobs
+            return None
 
     def _handle_job_failure(self, job, job_state):
         # Figure out why job has failed
@@ -507,7 +479,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 job_state.fail_message = "Job was active longer than specified deadline"
                 job_state.runner_state = JobState.runner_states.WALLTIME_REACHED
             else:
-                error_file.write("Exceeded max number of Kubernetes pod retrials allowed for job\n")
+                error_file.write("Exceeded max number of Kubernetes pod retries allowed for job\n")
                 job_state.fail_message = "More pods failed than allowed. See stdout for pods details."
         job_state.running = False
         self.mark_as_failed(job_state)
