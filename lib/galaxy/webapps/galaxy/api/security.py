@@ -12,7 +12,7 @@ from galaxy.webapps.base.controller import (
 log = logging.getLogger(__name__)
 
 
-class SecurityController(BaseAPIController, UsesVisualizationMixin):
+class SecurityController(BaseAPIController):
 
     @require_admin
     @expose_api
