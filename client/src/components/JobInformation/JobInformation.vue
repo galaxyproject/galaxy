@@ -10,17 +10,17 @@
                 <td>Galaxy Tool Version:</td>
                 <td>{{ jobInformation.tool_version }}</td>
             </tr>
-            <tr>
+            <tr v-if="dataset.tool_version">
                 <td>Tool Version:</td>
                 <td>{{ dataset.tool_version }}</td>
             </tr>
             <tr>
                 <td>Tool Standard Output:</td>
-                <td><a :href="getOutUrl()">stdout</a></td>
+                <td><a :href="`${getAppRoot()}datasets/${this.dataset.id}/stdout`">stdout</a></td>
             </tr>
             <tr>
                 <td>Tool Standard Error:</td>
-                <td><a :href="getOutUrl(true)">stdout</a></td>
+                <td><a :href="`${getAppRoot()}datasets/${this.dataset.id}/stderr`">stderr</a></td>
             </tr>
 
             <tr v-if="jobInformation">
@@ -118,11 +118,8 @@ export default {
         },
     },
     methods: {
-        getOutUrl(isStderr = false) {
-            let url;
-            if (isStderr) url = `${getAppRoot()}datasets/${this.dataset.id}/stderr`;
-            else url = `${getAppRoot()}datasets/${this.dataset.id}/stdout`;
-            return url;
+        getAppRoot() {
+            return getAppRoot();
         },
         ...mapCacheActions(["fetchJobInformation", "fetchDataset"]),
     },
