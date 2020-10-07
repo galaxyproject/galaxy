@@ -194,3 +194,4 @@ whoosh==2.7.4
 wrapt==1.12.1
 yacman==0.6.7
 zipp==1.2.0 ; python_version < '3.8'
+git+git://github.com/anvilproject/fs.anvilfs/@dev#egg=fs.anvilfs
