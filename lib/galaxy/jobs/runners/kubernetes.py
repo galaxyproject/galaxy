@@ -209,8 +209,11 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                     "app.kubernetes.io/instance": self.__produce_k8s_job_prefix(ajs.job_wrapper),
                     "app.kubernetes.io/version": ajs.tool_wrapper.tool.version,
                     "app.kubernetes.io/component": "tool",
-                    "app.kubernetes.io/part-of": self._galaxy_instance_id or "galaxy",
+                    "app.kubernetes.io/part-of": "galaxy",
                     "app.kubernetes.io/managed-by": "galaxy",
+                    "app.galaxy.org/job_id": ajs.job_wrapper.get_id_tag(),
+                    "app.galaxy.org/instance": self._galaxy_instance_id or "",
+                    "app.galaxy.org/handler": self.app.config.server_name,
                 }
             },
             "spec": {
