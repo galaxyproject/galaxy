@@ -69,7 +69,7 @@
             <tr>
                 <td>History API ID:</td>
                 <td>
-                    {{ dataset.id }}
+                    {{ dataset.history_id }}
                     <!--             TODO admin-->
                     <!--            %if trans.user_is_admin:-->
                     <!--                 (${hda.history_id})-->
