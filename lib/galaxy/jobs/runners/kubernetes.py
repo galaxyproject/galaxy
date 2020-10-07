@@ -221,9 +221,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                     "app.kubernetes.io/component": "tool",
                     "app.kubernetes.io/part-of": "galaxy",
                     "app.kubernetes.io/managed-by": "galaxy",
-                    "app.galaxy.org/job_id": ajs.job_wrapper.get_id_tag(),
-                    "app.galaxy.org/instance": self._galaxy_instance_id or "",
-                    "app.galaxy.org/handler": self.app.config.server_name,
+                    "app.galaxyproject.org/job_id": ajs.job_wrapper.get_id_tag(),
+                    "app.galaxyproject.org/instance": self._galaxy_instance_id or "",
+                    "app.galaxyproject.org/handler": self.app.config.server_name,
                 }
             },
             "spec": {
