@@ -59,7 +59,7 @@ futures==3.1.1
 galaxy-sequence-utils==1.1.5
 google-api-python-client==1.7.8
 google-auth-httplib2==0.0.3
-google-auth==1.18.0
+google-auth==1.22.1
 gxformat2==0.11.3
 h5py==2.10.0
 httplib2==0.18.1
@@ -194,4 +194,8 @@ whoosh==2.7.4
 wrapt==1.12.1
 yacman==0.6.7
 zipp==1.2.0 ; python_version < '3.8'
+
+# anvil specific
+fs==2.4.11
 git+git://github.com/anvilproject/fs.anvilfs/@dev#egg=fs.anvilfs
+git+git://github.com/luke-c-sargent/fiss/@master#egg=fiss
