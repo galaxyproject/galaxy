@@ -277,6 +277,21 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         t = Translations.load(dirname='locale', locales=locales, domain='ginga')
         self.template_context.update(dict(_=t.ugettext, n_=t.ugettext, N_=t.ungettext))
 
+    def set_cors_allow(self, name=None, value=None):
+        acr = 'Access-Control-Request-'
+        if name is None:
+            for key in self.request.headers.keys():
+                if key.startswith(acr):
+                    self.set_cors_allow(name=key[len(acr):], value=value)
+        else:
+            resp_name = 'Access-Control-Allow-{}'.format(name)
+            if value is None:
+                value = self.request.headers.get(acr + name, None)
+            if value:
+                self.response.headers[resp_name] = value
+            elif resp_name in self.response.headers:
+                del self.response.headers[resp_name]
+
     def set_cors_origin(self, origin=None):
         if origin is None:
             origin = self.request.headers.get("Origin", None)
