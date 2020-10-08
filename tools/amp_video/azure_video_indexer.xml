@@ -2,6 +2,7 @@
   <description>Azure Video Indexer providing video index results needed by other Azure video tools such as Azure Video OCR and Azure Shot Detection.</description>
   <requirements>
 	<requirement type="package" version="3.8">python</requirement>
+	<requirement type="package" version="1.15">boto3</requirement>
 	<requirement type="package" version="2.12">azure-cli</requirement>
   </requirements>
   <command detect_errors="exit_code">

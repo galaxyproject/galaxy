@@ -29,7 +29,7 @@
     <tool file="amp_stt/vtt_generator.xml"/>
   </section>
   
-  <section id="named_entity_recognition" name="Named Entity Recoginition">
+  <section id="named_entity_recognition" name="Named Entity Recognition">
     <tool file="amp_ner/spacy.xml"/>
     <tool file="amp_ner/aws_comprehend.xml"/>
   </section>
@@ -47,12 +47,12 @@
   <section id="facial_recognition" name="Facial Recognition">
   </section>
   
-  <section id="video_ocr" name="Video Optical Charater Recoginition">
+  <section id="video_ocr" name="Video Optical Charater Recognition">
     <tool file="amp_vocr/tesseract.xml"/>
     <tool file="amp_vocr/azure_video_ocr.xml"/>
   </section>
   
-  <section id="music_ocr" name="Music Optical Charater Recoginition">
+  <section id="music_ocr" name="Music Optical Charater Recognition">
   </section>
   
   <section id="hmgm_editor" name="Human MGM Editor">
