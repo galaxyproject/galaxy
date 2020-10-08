@@ -46,7 +46,11 @@
                     </ul>
                 </b-alert>
             </div>
-            <collection-creator :oncancel="oncancel" @hide-original-toggle="hideOriginalsToggle" @clicked-create="clickedCreate">
+            <collection-creator
+                :oncancel="oncancel"
+                @hide-original-toggle="hideOriginalsToggle"
+                @clicked-create="clickedCreate"
+            >
                 <template v-slot:help-content>
                     <p>
                         {{
@@ -165,7 +169,7 @@
                         />
                     </div>
                 </template>
-                <div @hide-original-toggle="hideOriginalsToggle"/>
+                <div @hide-original-toggle="hideOriginalsToggle" />
             </collection-creator>
         </div>
     </div>
@@ -174,8 +178,6 @@
           <v-on:drop.collection-elements="_dropElements"/>
           <v-on:collection-element.dragstart .collection-elements="_elementDragstart"/>
           <v-on:collection-element.dragend . collection-elements="_elementDragend"/>
-          <v-on:change.collection-name="_changeName"/>
-          <v-on:keydown.collection-name="_nameCheckForEnter"/>
     </div> -->
 </template>
 
@@ -234,6 +236,15 @@ export default {
             type: Function,
             required: true,
         },
+        oncreate: {
+            type: Function,
+            required: true,
+        },
+        defaultHideSourceItems: {
+            type: Boolean,
+            required: false,
+            default: true,
+        },
         /** distance from list edge to begin autoscrolling list */
         autoscrollDist: {
             type: Number,
@@ -245,11 +256,6 @@ export default {
             type: String,
             required: false,
             default: "rgba( 64, 255, 255, 1.0 )",
-        },
-        defaultHideSourceItems: {
-            type: Boolean,
-            required: false,
-            default: true,
         },
     },
     watch: {},
@@ -365,30 +371,34 @@ export default {
                 existingNames[element.name] = true;
             });
         },
-        elementSelected(e) {
+        elementSelected: function (e) {
             if (!this.selectedDatasetElems.includes(e.id)) {
                 this.selectedDatasetElems.push(e.id);
             } else {
                 this.selectedDatasetElems.splice(this.selectedDatasetElems.indexOf(e.id), 1);
             }
         },
-        elementDiscarded(e) {
+        elementDiscarded: function (e) {
             this.$delete(this.workingElements, this.workingElements.indexOf(e));
             return this.workingElements;
         },
-        clickClearAll() {
+        clickClearAll: function () {
             this.selectedDatasetElems = [];
         },
         hideOriginalsToggle: function () {
             this.defaultHideSourceItems = !this.defaultHideSourceItems;
         },
-        clickedCreate: function () {
-            this.creationFn(this.workingElements, this._getName, this.defaultHideSourceItems);
+        clickedCreate: function (collectionName) {
+            this.creationFn(this.workingElements, collectionName, this.defaultHideSourceItems);
+            this.oncreate();
         },
         /** convert element into JSON compatible with the collections API */
         _elementToJSON: function (element) {
             // return element.toJSON();
             return element;
+        },
+        _getName: function () {
+            return;
         },
         /** reset all data to the initial state */
         reset: function () {
@@ -400,16 +410,6 @@ export default {
             return "ListCollectionCreator";
         },
         //TODO: template, rendering, OR conditional rendering (i.e. belongs in template)
-        // _disableNameAndCreate: function (disable) {
-        //     disable = !_.isUndefined(disable) ? disable : true;
-        //     if (disable) {
-        //         this.$(".collection-name").prop("disabled", true);
-        //         this.$(".create-collection").toggleClass("disabled", true);
-        //         // } else {
-        //         //     this.$( '.collection-name' ).prop( 'disabled', false );
-        //         //     this.$( '.create-collection' ).removeClass( 'disable' );
-        //     }
-        // },
         // /** track the mouse drag over the list adding a placeholder to show where the drop would occur */
         // _dragoverElements: function (ev) {
         //     //this.debug( '_dragoverElements:', ev );

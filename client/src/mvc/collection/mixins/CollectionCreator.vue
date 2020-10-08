@@ -38,7 +38,11 @@
                 <div class="clear">
                     <label class="setting-prompt float-right">
                         {{ hideOriginalsText }}
-                        <input class="hide-originals float-right" type="checkbox" @click="$emit('hide-original-toggle')" />
+                        <input
+                            class="hide-originals float-right"
+                            type="checkbox"
+                            @click="$emit('hide-original-toggle')"
+                        />
                     </label>
                 </div>
                 <div class="clear">
@@ -65,7 +69,11 @@
                     </div>
                 </div>
                 <div class="main-options float-right">
-                    <button class="create-collection btn btn-primary" @click="$emit('clicked-create')" :disabled="!validInput">
+                    <button
+                        class="create-collection btn btn-primary"
+                        @click="$emit('clicked-create', collectionName)"
+                        :disabled="!validInput"
+                    >
                         {{ l("Create list") }}
                     </button>
                 </div>
