@@ -59,7 +59,9 @@
                 <td>Copied from Job API ID:</td>
                 <td>
                     <div id="encoded-copied-from-job-id">{{ jobInformation.encoded_copied_from_job_id }}</div>
-                    <div id="copied-from-job-id" v-if="jobInformation.copied_from_job_id">({{ jobInformation.copied_from_job_id }})</div>
+                    <div id="copied-from-job-id" v-if="jobInformation.copied_from_job_id">
+                        ({{ jobInformation.copied_from_job_id }})
+                    </div>
                 </td>
             </tr>
 
