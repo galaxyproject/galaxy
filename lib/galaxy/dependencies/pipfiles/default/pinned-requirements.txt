@@ -197,5 +197,5 @@ zipp==1.2.0 ; python_version < '3.8'
 
 # anvil specific
 fs==2.4.11
+firecloud==0.16.30
 git+git://github.com/anvilproject/fs.anvilfs/@dev#egg=fs.anvilfs
-git+git://github.com/luke-c-sargent/fiss/@master#egg=fiss
