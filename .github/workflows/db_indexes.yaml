@@ -1,0 +1,45 @@
+name: Database indexes
+on: [push, pull_request]
+defaults:
+  run:
+    working-directory: 'galaxy root'
+jobs:
+  check:
+    name: Check database indexes
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.7]
+        db: ['postgresql', 'sqlite']
+    services:
+      postgres:
+        image: postgres:11
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        path: 'galaxy root'
+    - uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Cache pip dir
+      uses: actions/cache@v1
+      id: pip-cache
+      with:
+        path: ~/.cache/pip
+        key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
+    - name: Install tox
+      run: pip install tox
+    - name: Check indexes on postgresql
+      if: matrix.db == 'postgresql'
+      env:
+        GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION: 'postgres://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
+      run: tox -e check_indexes
+    - name: Check indexes on sqlite
+      if: matrix.db == 'sqlite'
+      run: tox -e check_indexes

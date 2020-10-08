@@ -1125,18 +1125,18 @@ model.WorkflowInvocationOutputDatasetAssociation.table = Table(
     "workflow_invocation_output_dataset_association", metadata,
     Column("id", Integer, primary_key=True),
     Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id"), index=True),
-    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id")),
+    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True),
     Column("dataset_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
-    Column("workflow_output_id", Integer, ForeignKey("workflow_output.id")),
+    Column("workflow_output_id", Integer, ForeignKey("workflow_output.id"), index=True),
 )
 
 model.WorkflowInvocationOutputDatasetCollectionAssociation.table = Table(
     "workflow_invocation_output_dataset_collection_association", metadata,
     Column("id", Integer, primary_key=True),
     Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id", name='fk_wiodca_wii'), index=True),
-    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id", name='fk_wiodca_wsi')),
+    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id", name='fk_wiodca_wsi'), index=True),
     Column("dataset_collection_id", Integer, ForeignKey("history_dataset_collection_association.id", name='fk_wiodca_dci'), index=True),
-    Column("workflow_output_id", Integer, ForeignKey("workflow_output.id", name='fk_wiodca_woi')),
+    Column("workflow_output_id", Integer, ForeignKey("workflow_output.id", name='fk_wiodca_woi'), index=True),
 )
 
 model.WorkflowInvocationOutputValue.table = Table(
@@ -1160,7 +1160,7 @@ model.WorkflowInvocationStepOutputDatasetCollectionAssociation.table = Table(
     "workflow_invocation_step_output_dataset_collection_association", metadata,
     Column("id", Integer, primary_key=True),
     Column("workflow_invocation_step_id", Integer, ForeignKey("workflow_invocation_step.id", name='fk_wisodca_wisi'), index=True),
-    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id", name='fk_wisodca_wsi')),
+    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id", name='fk_wisodca_wsi'), index=True),
     Column("dataset_collection_id", Integer, ForeignKey("history_dataset_collection_association.id", name='fk_wisodca_dci'), index=True),
     Column("output_name", String(255), nullable=True),
 )
