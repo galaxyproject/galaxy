@@ -91,32 +91,15 @@ def js_helper(prefix, *args):
     return javascript_link(*urls)
 
 
-def js(*args):
+def dist_js(*args):
     """
     Take a prefix and list of javascript names and return appropriate
     string of script tags.
     """
-    return js_helper('static/scripts/', *args)
-
-
-def dist_js(*args):
-    """
-    Transition function 'js' helper -- this is the modern way where all bundled
-    artifacts are in the unified 'dist'.
-    """
     return js_helper('static/dist/', *args)
 
 
-def templates(*args):
-    """
-    Take a list of template names (no extension) and return appropriate
-    string of script tags.
-    """
-    return js_helper('static/scripts/templates/compiled/', *args)
-
 # Hashes
-
-
 def md5(s):
     """
     Return hex encoded md5 hash of string s

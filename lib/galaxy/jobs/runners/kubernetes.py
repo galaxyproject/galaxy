@@ -2,7 +2,6 @@
 Offload jobs to a Kubernetes cluster.
 """
 
-import errno
 import logging
 import math
 import os
@@ -459,30 +458,14 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             # there is no job responding to this job_id, it is either lost or something happened.
             log.error("No Jobs are available under expected selector app=%s", job_state.job_id)
             self.mark_as_failed(job_state)
-            try:
-                with open(job_state.error_file, 'w') as error_file:
-                    error_file.write("No Kubernetes Jobs are available under expected selector app=%s\n" % job_state.job_id)
-            except OSError as e:
-                # Python 2/3 compatible handling of FileNotFoundError
-                if e.errno == errno.ENOENT:
-                    log.error("Job directory already cleaned up. Assuming already handled for selector app=%s", job_state.job_id)
-                else:
-                    raise
-            return job_state
+            # job is no longer viable - remove from watched jobs
+            return None
         else:
             # there is more than one job associated to the expected unique job id used as selector.
             log.error("More than one Kubernetes Job associated to job id '%s'", job_state.job_id)
             self.mark_as_failed(job_state)
-            try:
-                with open(job_state.error_file, 'w') as error_file:
-                    error_file.write("More than one Kubernetes Job associated with job id '%s'\n" % job_state.job_id)
-            except OSError as e:
-                # Python 2/3 compatible handling of FileNotFoundError
-                if e.errno == errno.ENOENT:
-                    log.error("Job directory already cleaned up. Assuming already handled for selector app=%s", job_state.job_id)
-                else:
-                    raise
-            return job_state
+            # job is no longer viable - remove from watched jobs
+            return None
 
     def _handle_job_failure(self, job, job_state):
         # Figure out why job has failed
