@@ -553,6 +553,12 @@ class ToolsTestCase(ApiTestCase, TestsTools):
     def test_apply_rules_4(self):
         self._apply_rules_and_check(rules_test_data.EXAMPLE_4)
 
+    def test_apply_rules_5(self):
+        self._apply_rules_and_check(rules_test_data.EXAMPLE_5)
+
+    def test_apply_rules_6(self):
+        self._apply_rules_and_check(rules_test_data.EXAMPLE_6)
+
     @skip_without_tool("multi_select")
     def test_multi_select_as_list(self):
         with self.dataset_populator.test_history() as history_id:
