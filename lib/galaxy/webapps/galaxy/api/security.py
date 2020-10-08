@@ -5,8 +5,7 @@ from galaxy.web import (
     require_admin
 )
 from galaxy.webapps.base.controller import (
-    BaseAPIController,
-    UsesVisualizationMixin
+    BaseAPIController
 )
 
 log = logging.getLogger(__name__)

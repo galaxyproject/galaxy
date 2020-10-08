@@ -32,7 +32,7 @@
                 <td>Job Messages</td>
                 <td>
                     <ul style="padding-left: 15px; margin-bottom: 0px;">
-                        <li v-for="message in jobInformation.job_messages">{{ message }}</li>
+                        <li v-for="message in jobInformation.job_messages" :key="message">{{ message }}</li>
                     </ul>
                 </td>
             </tr>
@@ -66,14 +66,13 @@
                     <div v-if="jobInformation.copied_from_job_id">({{ jobInformation.copied_from_job_id }})</div>
                 </td>
             </tr>
-            <tr>
+            <tr v-if="dataset.history_id">
                 <td>History API ID:</td>
                 <td>
                     {{ dataset.history_id }}
-                    <!--             TODO admin-->
-                    <!--            %if trans.user_is_admin:-->
-                    <!--                 (${hda.history_id})-->
-                    <!--           %endif-->
+                    <div v-if="decoded_history_id">
+                        ({{ decoded_history_id }})
+                    </div>
                 </td>
             </tr>
 
@@ -93,8 +92,15 @@
 <script>
 import { mapCacheActions } from "vuex-cache";
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
+import { Services } from "./services";
 
 export default {
+    data() {
+        return {
+            decoded_history_id: false
+        };
+    },
     props: {
         hda_id: {
             type: String,
@@ -108,8 +114,20 @@ export default {
     created: function () {
         this.fetchDataset(this.hda_id);
         this.fetchJobInformation(this.job_id);
+        this.services = new Services({ root: this.root });
+    },
+    mounted() {
+        if (this.isAdmin) {
+            this.decoded_history_id = this.decode(this.dataset.history_id);
+        }
     },
     computed: {
+        isAdmin: function () {
+            const Galaxy = getGalaxyInstance();
+            if (Galaxy && Galaxy.user) {
+                return Galaxy.user.isAdmin();
+            } else return false;
+        },
         dataset: function () {
             return this.$store.getters.dataset(this.hda_id);
         },
@@ -120,6 +138,11 @@ export default {
     methods: {
         getAppRoot() {
             return getAppRoot();
+        },
+        decode(id) {
+            this.services.decode(id).then((decoded) => {
+                return decoded;
+            });
         },
         ...mapCacheActions(["fetchJobInformation", "fetchDataset"]),
     },
