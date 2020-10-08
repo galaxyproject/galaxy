@@ -1,34 +1,37 @@
 <template>
     <div>
         <h3>Job Information</h3>
-        <table class="tabletip">
+        <table id="job-information" class="tabletip">
             <tr v-if="jobInformation">
                 <td>Galaxy Tool ID:</td>
-                <td>{{ jobInformation.tool_id }}</td>
+                <td id="galaxy-tool-id">{{ jobInformation.tool_id }}</td>
             </tr>
             <tr v-if="jobInformation">
                 <td>Galaxy Tool Version:</td>
-                <td>{{ jobInformation.tool_version }}</td>
+                <td id="galaxy-tool-version">{{ jobInformation.tool_version }}</td>
             </tr>
             <tr v-if="dataset.tool_version">
                 <td>Tool Version:</td>
-                <td>{{ dataset.tool_version }}</td>
+                <td id="tool-version">{{ dataset.tool_version }}</td>
             </tr>
             <tr>
                 <td>Tool Standard Output:</td>
-                <td><a :href="`${getAppRoot()}datasets/${this.dataset.id}/stdout`">stdout</a></td>
+                <td id="stdout"><a :href="`${getAppRoot()}datasets/${this.dataset.id}/stdout`">stdout</a></td>
             </tr>
             <tr>
                 <td>Tool Standard Error:</td>
-                <td><a :href="`${getAppRoot()}datasets/${this.dataset.id}/stderr`">stderr</a></td>
+                <td id="stderr"><a :href="`${getAppRoot()}datasets/${this.dataset.id}/stderr`">stderr</a></td>
             </tr>
 
             <tr v-if="jobInformation">
                 <td>Tool Exit Code:</td>
-                <td>{{ jobInformation.exit_code }}</td>
+                <td id="exist-code">{{ jobInformation.exit_code }}</td>
             </tr>
 
-            <tr v-if="jobInformation && jobInformation.job_messages && jobInformation.job_messages.length > 0">
+            <tr
+                id="job-messages"
+                v-if="jobInformation && jobInformation.job_messages && jobInformation.job_messages.length > 0"
+            >
                 <td>Job Messages</td>
                 <td>
                     <ul style="padding-left: 15px; margin-bottom: 0px;">
@@ -40,50 +43,42 @@
             <tr>
                 <td>History Content API ID:</td>
                 <td>
-                    {{ dataset.id }}
-                    <div v-if="dataset.dataset_id">({{ dataset.dataset_id }})</div>
+                    <div id="dataset-id">{{ dataset.id }}</div>
+                    <div id="history-dataset-id" v-if="dataset.dataset_id">({{ dataset.dataset_id }})</div>
                 </td>
             </tr>
 
             <tr v-if="jobInformation">
                 <td>Job API ID:</td>
                 <td>
-                    {{ jobInformation.encoded_id }}
-                    <div v-if="jobInformation.id">{{ jobInformation.id }}</div>
+                    <div id="encoded-job-id">{{ jobInformation.encoded_id }}</div>
+                    <div id="job-id" v-if="jobInformation.id">{{ jobInformation.id }}</div>
                 </td>
             </tr>
             <tr v-if="jobInformation && jobInformation.encoded_copied_from_job_id">
                 <td>Copied from Job API ID:</td>
                 <td>
-                    {{ jobInformation.encoded_copied_from_job_id }}
-                    <div v-if="jobInformation.copied_from_job_id">({{ jobInformation.copied_from_job_id }})</div>
+                    <div id="encoded-copied-from-job-id">{{ jobInformation.encoded_copied_from_job_id }}</div>
+                    <div id="copied-from-job-id" v-if="jobInformation.copied_from_job_id">({{ jobInformation.copied_from_job_id }})</div>
                 </td>
             </tr>
-            <tr v-if="jobInformation && jobInformation.encoded_copied_from_job_id">
-                <td>Copied from Job API ID:</td>
-                <td>
-                    {{ jobInformation.encoded_copied_from_job_id }}
-                    <div v-if="jobInformation.copied_from_job_id">({{ jobInformation.copied_from_job_id }})</div>
-                </td>
-            </tr>
+
             <tr v-if="dataset.history_id">
                 <td>History API ID:</td>
                 <td>
-                    {{ dataset.history_id }}
-                    <div v-if="decoded_history_id">
-                        ({{ decoded_history_id }})
-                    </div>
+                    <div id="history_id">{{ dataset.history_id }}</div>
+                    <div v-if="decoded_history_id">({{ decoded_history_id }})</div>
                 </td>
             </tr>
 
             <tr v-if="dataset.uuid">
                 <td>UUID:</td>
-                <td>{{ dataset.uuid }}</td>
+                <td id="dataset-uuid">{{ dataset.uuid }}</td>
             </tr>
 
             <tr v-if="dataset.file_name">
                 <td>Full Path:</td>
-                <td>{{ dataset.file_name }}</td>
+                <td id="file_name">{{ dataset.file_name }}</td>
             </tr>
         </table>
     </div>
@@ -98,7 +93,7 @@ import { Services } from "./services";
 export default {
     data() {
         return {
-            decoded_history_id: false
+            decoded_history_id: false,
         };
     },
     props: {
