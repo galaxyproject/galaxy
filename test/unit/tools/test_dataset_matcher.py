@@ -42,7 +42,7 @@ class DatasetMatcherTestCase(TestCase, UsesApp):
         # dataset.
         self.mock_hda.extension = 'data'
         converted_hda = model.HistoryDatasetAssociation()
-        self.mock_hda.conversion_destination = ("tabular", converted_hda)
+        self.mock_hda.conversion_destination = (False, "tabular", converted_hda)
         hda_match = self.test_context.hda_match(self.mock_hda)
 
         assert hda_match
@@ -54,7 +54,7 @@ class DatasetMatcherTestCase(TestCase, UsesApp):
         # Find conversion returns a target extension to convert to, but not
         # a previously implicitly converted dataset.
         self.mock_hda.extension = 'data'
-        self.mock_hda.conversion_destination = ("tabular", None)
+        self.mock_hda.conversion_destination = (False, "tabular", None)
         hda_match = self.test_context.hda_match(self.mock_hda)
 
         assert hda_match

@@ -264,8 +264,8 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
             # so we will wrap it and keep the original around for file paths
             # Should we name this .value to maintain consistency with most other ToolParameterValueWrapper?
             if formats:
-                target_ext, converted_dataset = dataset.find_conversion_destination(formats)
-                if target_ext and converted_dataset:
+                direct_match, target_ext, converted_dataset = dataset.find_conversion_destination(formats)
+                if not direct_match and target_ext and converted_dataset:
                     dataset = converted_dataset
             self.unsanitized = dataset
             self.dataset = wrap_with_safe_string(dataset, no_wrap_classes=ToolParameterValueWrapper)

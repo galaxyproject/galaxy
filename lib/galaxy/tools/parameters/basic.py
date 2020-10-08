@@ -1262,8 +1262,8 @@ class ColumnListParameter(SelectToolParameter):
             if isinstance(dataset, trans.app.model.HistoryDatasetCollectionAssociation):
                 dataset = dataset.to_hda_representative()
             if isinstance(dataset, trans.app.model.HistoryDatasetAssociation) and self.ref_input and self.ref_input.formats:
-                target_ext, converted_dataset = dataset.find_conversion_destination(self.ref_input.formats)
-                if target_ext:
+                direct_match, target_ext, converted_dataset = dataset.find_conversion_destination(self.ref_input.formats)
+                if not direct_match and target_ext:
                     if not converted_dataset:
                         raise ImplicitConversionRequired
                     else:
