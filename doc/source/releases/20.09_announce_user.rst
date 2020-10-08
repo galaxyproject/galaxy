@@ -23,7 +23,7 @@ There will be a new button for "Choose Remote files", when sources are configure
 .. figure:: images/20.09-upload-search.png
    :alt: Search across sources. A modal dialog showing a new "Dropbox" folder amongst "FTP Directory" and library location.
 
-And then you will be able to see your load your files easily in Galaxy!
+You will be able to see and load your files easily in Galaxy!
 
 .. figure:: images/20.09-upload-dropbox-gx.png
    :alt: Screenshot of the same files from the Dropbox screenshot, accessible in Galaxy.
@@ -67,7 +67,7 @@ The old automatic workflow layout algorithm liked to hide the flow of data withi
    :alt: Screenshot of a large workflow in Galaxy. Many connections go behind tools and are hard to follow.
 
 
-So we have replaced the layout algorithm with a newer one which should make the flow of data within your workflows easier to understand. You will still probably want to make manualy adjustments after the automatic layout, but hopefully this will save you some time.
+So we have replaced the layout algorithm with a newer one which should make the flow of data within your workflows easier to understand. You will still probably want to make manual adjustments after the automatic layout, but hopefully this will save you some time.
 
 
 .. figure:: images/20.09-wf-after.png
@@ -76,7 +76,7 @@ So we have replaced the layout algorithm with a newer one which should make the 
 Workflow Reporting Improvements
 -------------------------------
 
-When one or more workflows is submitted, the status page reporting on those workflow(s) and their reports has been improved!
+When one or more workflows are submitted, the status page reporting on those workflow(s) and their reports has been improved!
 
 .. figure:: images/20.09-wf-report-list.png
    :alt: Improved workflow report listing showing a workflow generating 4 histories, with individual reports. `Pull Request 9978`_
@@ -170,7 +170,7 @@ Builtin Tool Updates
   `Pull Request 10154`_
 * Toolbox refactoring, styling, and a couple bugfixes
   `Pull Request 10170`_
-* Filtering.py failing all expressions
+* Fix filtering.py failing all expressions
   (thanks to `@almahmoud <https://github.com/almahmoud>`__).
   `Pull Request 10266`_
 
