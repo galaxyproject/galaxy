@@ -2,9 +2,9 @@ import logging
 import os
 import re
 import shutil
+from urllib.error import HTTPError
 
 from markupsafe import escape
-from six.moves.urllib.error import HTTPError
 from sqlalchemy import (
     and_,
     false,
@@ -173,7 +173,7 @@ def get_absolute_path_to_file_in_repository(repo_files_dir, file_name):
     """Return the absolute path to a specified disk file contained in a repository."""
     stripped_file_name = basic_util.strip_path(file_name)
     file_path = None
-    for root, dirs, files in os.walk(repo_files_dir):
+    for root, _, files in os.walk(repo_files_dir):
         if root.find('.hg') < 0:
             for name in files:
                 if name == stripped_file_name:

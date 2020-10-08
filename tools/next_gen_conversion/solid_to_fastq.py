@@ -41,7 +41,7 @@ def __main__():
     # common temp file setup
     tmpf = tempfile.NamedTemporaryFile()  # forward reads
     tmpqf = tempfile.NamedTemporaryFile()
-    tmpqf = replaceNeg1(open(options.input2, 'r'), tmpqf)
+    tmpqf = replaceNeg1(open(options.input2), tmpqf)
     # if paired-end data (have reverse input files)
     if options.input3 != "None" and options.input4 != "None":
         tmpr = tempfile.NamedTemporaryFile()  # reverse reads

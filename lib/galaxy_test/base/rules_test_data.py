@@ -1,5 +1,3 @@
-
-
 def check_example_1(hdca, dataset_populator):
     assert hdca["collection_type"] == "list"
     assert hdca["element_count"] == 2

@@ -581,15 +581,15 @@ def calc_subseq_boundaries(maskedseq, maskchar):
     start = 0
     for spos in range(len(maskedseq)):
         if inmask and maskedseq[spos] != maskchar:
-            blist.append(([start, spos]))
+            blist.append([start, spos])
             start = spos
             inmask = False
         elif not inmask and maskedseq[spos] == maskchar:
-            blist.append(([start, spos]))
+            blist.append([start, spos])
             start = spos
             inmask = True
 
-    blist.append(([start, spos + 1]))
+    blist.append([start, spos + 1])
 
     return blist
 
@@ -847,7 +847,7 @@ def extract_reads_from_sff(config, sff_files):
     for sff_file in sff_files:
         if not os.path.getsize(sff_file):
             raise RuntimeError('Empty file? : ' + sff_file)
-        fh = open(sff_file, 'r')
+        fh = open(sff_file)
         fh.close()
 
     openmode = 'w'
@@ -914,7 +914,7 @@ def extract_reads_from_sff(config, sff_files):
             tmpssaha_fh.close()
 
         if debug:
-            tmpssaha_fh = open("sffe.tmp.10634.ssaha2", 'r')
+            tmpssaha_fh = open("sffe.tmp.10634.ssaha2")
             read_ssaha_data(tmpssaha_fh)
 
         sys.stdout.flush()
@@ -1113,7 +1113,7 @@ def load_linker_sequences(linker_fname):
 
     if not os.path.getsize(linker_fname):
         raise RuntimeError("File empty? '" + linker_fname + "'")
-    fh = open(linker_fname, 'r')
+    fh = open(linker_fname)
     linkerseqs = read_fasta(fh)
     if len(linkerseqs) == 0:
         raise RuntimeError(linker_fname + ": no sequence found?")

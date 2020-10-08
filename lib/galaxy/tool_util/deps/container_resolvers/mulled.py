@@ -258,7 +258,7 @@ def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None)
     if len(targets) == 1:
         target = targets[0]
         target_version = target.version
-        cache_key = "ns[{}]__single__{}__@__{}".format(namespace, target.package_name, target_version)
+        cache_key = f"ns[{namespace}]__single__{target.package_name}__@__{target_version}"
         if cache_key in unresolved_cache:
             return None
         name = cached_name(cache_key)
@@ -274,7 +274,7 @@ def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None)
                 else:
                     version = tag
                 if target_version and version == target_version:
-                    name = "{}:{}".format(target.package_name, tag)
+                    name = f"{target.package_name}:{tag}"
                     break
 
     else:
@@ -294,7 +294,7 @@ def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None)
         else:
             raise Exception("Unimplemented mulled hash_func [%s]" % hash_func)
 
-        cache_key = "ns[{}]__{}__{}".format(namespace, hash_func, base_image_name)
+        cache_key = f"ns[{namespace}]__{hash_func}__{base_image_name}"
         if cache_key in unresolved_cache:
             return None
         name = cached_name(cache_key)
@@ -311,7 +311,7 @@ def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None)
             else:
                 # base_image_name of form <package_hash>, simply add build number
                 # as tag to fully qualify image.
-                name = "{}:{}".format(base_image_name, tag)
+                name = f"{base_image_name}:{tag}"
 
     if name and mulled_resolution_cache:
         mulled_resolution_cache.put(cache_key, name)
@@ -399,9 +399,9 @@ class MulledDockerContainerResolver(ContainerResolver):
 
         name = targets_to_mulled_name(targets=targets, hash_func=self.hash_func, namespace=self.namespace, resolution_cache=resolution_cache)
         if name:
-            container_id = "quay.io/{}/{}".format(self.namespace, name)
+            container_id = f"quay.io/{self.namespace}/{name}"
             if self.protocol:
-                container_id = "{}{}".format(self.protocol, container_id)
+                container_id = f"{self.protocol}{container_id}"
             container_description = ContainerDescription(
                 container_id,
                 type=self.container_type,

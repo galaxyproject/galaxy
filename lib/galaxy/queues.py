@@ -31,7 +31,7 @@ def control_queues_from_config(config):
     galaxy process's config
     """
     hostname = socket.gethostname()
-    process_name = "{server_name}@{hostname}".format(server_name=config.server_name, hostname=hostname)
+    process_name = f"{config.server_name}@{hostname}"
     exchange_queue = Queue("control.%s" % process_name, galaxy_exchange, routing_key='control.*')
     non_exchange_queue = Queue("control.%s" % process_name, routing_key='control.%s' % process_name)
     return exchange_queue, non_exchange_queue

@@ -61,7 +61,7 @@ class Download:
                 expected = download_url.split('#sha256#')[1].lower()
 
             if downloaded_checksum != expected:
-                raise Exception('Given sha256 checksum does not match with the one from the downloaded file ({} != {}).'.format(downloaded_checksum, expected))
+                raise Exception(f'Given sha256 checksum does not match with the one from the downloaded file ({downloaded_checksum} != {expected}).')
 
         if 'md5sum' in checksums or '#md5#' in download_url or '#md5=' in download_url:
             downloaded_checksum = hashlib.md5(open(file_path, 'rb').read()).hexdigest().lower()
@@ -73,7 +73,7 @@ class Download:
                 expected = re.split('#md5[#=]', download_url)[1].lower()
 
             if downloaded_checksum != expected:
-                raise Exception('Given md5 checksum does not match with the one from the downloaded file ({} != {}).'.format(downloaded_checksum, expected))
+                raise Exception(f'Given md5 checksum does not match with the one from the downloaded file ({downloaded_checksum} != {expected}).')
 
         if extract:
             if tarfile.is_tarfile(file_path) or (zipfile.is_zipfile(file_path) and not file_path.endswith('.jar')):
@@ -1596,7 +1596,7 @@ class SetupVirtualEnv(Download, RecipeStep):
         venv_directory = os.path.join(install_environment.install_dir, "venv")
         python_cmd = action_dict['python']
         # TODO: Consider making --no-site-packages optional.
-        setup_command = "{} {}/virtualenv.py --no-site-packages '{}'".format(python_cmd, venv_src_directory, venv_directory)
+        setup_command = f"{python_cmd} {venv_src_directory}/virtualenv.py --no-site-packages '{venv_directory}'"
         # POSIXLY_CORRECT forces shell commands . and source to have the same
         # and well defined behavior in bash/zsh.
         activate_command = "POSIXLY_CORRECT=1; . %s" % os.path.join(venv_directory, "bin", "activate")
@@ -1621,8 +1621,8 @@ class SetupVirtualEnv(Download, RecipeStep):
                         if not install_command:
                             install_command = line_install_command
                         else:
-                            install_command = "{} && {}".format(install_command, line_install_command)
-        full_setup_command = "{}; {}; {}".format(setup_command, activate_command, install_command)
+                            install_command = f"{install_command} && {line_install_command}"
+        full_setup_command = f"{setup_command}; {activate_command}; {install_command}"
         return_code = install_environment.handle_command(tool_dependency=tool_dependency,
                                                          cmd=full_setup_command,
                                                          return_output=False,

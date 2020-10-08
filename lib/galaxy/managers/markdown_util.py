@@ -380,7 +380,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         name = hda.name or ''
         with open(dataset.file_name, "rb") as f:
             base64_image_data = base64.b64encode(f.read()).decode("utf-8")
-        rval = ("![{}](data:image/png;base64,{})".format(name, base64_image_data), True)
+        rval = (f"![{name}](data:image/png;base64,{base64_image_data})", True)
         return rval
 
     def handle_dataset_peek(self, line, hda):
@@ -423,7 +423,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
                     walk_elements(element.child_collection, element_prefix + element.element_identifier + ":")
             else:
                 for element in collection.elements:
-                    markdown_wrapper[0] += "**Element:** {}{}\n\n".format(element_prefix, element.element_identifier)
+                    markdown_wrapper[0] += f"**Element:** {element_prefix}{element.element_identifier}\n\n"
                     markdown_wrapper[0] += self._display_dataset_content(element.hda, header="Element Contents")
         walk_elements(hdca.collection)
         markdown = '---\n%s\n---\n' % markdown_wrapper[0]
@@ -450,7 +450,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
             markdown += "**%s**\n\n" % metric_plugin
             markdown += "|   |   |\n|---|--|\n"
             for title, value in metrics_for_plugin.items():
-                markdown += "| {} | {} |\n".format(title, value)
+                markdown += f"| {title} | {value} |\n"
         return (markdown, True)
 
     def handle_job_parameters(self, line, job):
@@ -677,7 +677,7 @@ history_dataset_collection_display(input={})
                     ref_object_type = "history_dataset"
                 else:
                     ref_object_type = "history_dataset_collection"
-            line = line.replace(target_match.group(), "{}_id={}".format(ref_object_type, ref_object.id))
+            line = line.replace(target_match.group(), f"{ref_object_type}_id={ref_object.id}")
         return (line, False)
 
     workflow_markdown = _remap_galaxy_markdown_calls(

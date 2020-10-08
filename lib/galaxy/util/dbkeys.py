@@ -38,7 +38,7 @@ class GenomeBuilds:
                 datasets = trans.sa_session.query(self._app.model.HistoryDatasetAssociation) \
                                 .filter_by(deleted=False, history_id=trans.history.id, extension="len")
                 for dataset in datasets:
-                    rval.append((dataset.dbkey, "{} ({}) [History]".format(dataset.name, dataset.dbkey)))
+                    rval.append((dataset.dbkey, f"{dataset.name} ({dataset.dbkey}) [History]"))
             user = trans.user
             if user and hasattr(user, 'preferences') and 'dbkeys' in user.preferences:
                 user_keys = loads(user.preferences['dbkeys'])

@@ -78,7 +78,7 @@ def verify_tools(app, url, galaxy_config_file=None, engine_options={}):
                     msg += "automatically installed from the Galaxy tool shed at http://toolshed.g2.bx.psu.edu.\n\n"
                     msg += "To skip this process, attempt to start your Galaxy server again (e.g., sh run.sh or whatever you use).  If you do this,\n"
                     msg += "be aware that these tools will no longer be available in your Galaxy tool panel, and entries for each of them should\n"
-                    msg += "be removed from your file{} named {}.\n\n".format(plural, tool_panel_config_file_names)
+                    msg += f"be removed from your file{plural} named {tool_panel_config_file_names}.\n\n"
                     msg += "CRITICAL NOTE IF YOU PLAN TO INSTALL\n"
                     msg += "The location in which the tool repositories will be installed is the value of the 'tool_path' attribute in the <tool>\n"
                     msg += 'tag of the file named ./migrated_tool_conf.xml (i.e., <toolbox tool_path="database/shed_tools">).  The default location\n'
@@ -126,7 +126,7 @@ def verify_tools(app, url, galaxy_config_file=None, engine_options={}):
                     msg += "After the installation process finishes, you can start your Galaxy server.  As part of this installation process,\n"
                     msg += "entries for each of the following tool config files will be added to the file named ./migrated_tool_conf.xml, so these\n"
                     msg += "tools will continue to be loaded into your tool panel.  Because of this, existing entries for these tools have been\n"
-                    msg += "removed from your file{} named {}.\n\n".format(plural, tool_panel_config_file_names)
+                    msg += f"removed from your file{plural} named {tool_panel_config_file_names}.\n\n"
                     for missing_tool_config, tool_dependencies in missing_tool_configs_dict.items():
                         msg += "%s\n" % missing_tool_config
                     msg += "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n"
@@ -142,7 +142,7 @@ def migrate_to_current_version(engine, schema):
     changeset = schema.changeset(None)
     for ver, change in changeset:
         nextver = ver + changeset.step
-        log.info('Installing tools from version {} -> {}... '.format(ver, nextver))
+        log.info(f'Installing tools from version {ver} -> {nextver}... ')
         old_stdout = sys.stdout
 
         class FakeStdout:

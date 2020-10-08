@@ -6,7 +6,7 @@ def assert_has_text(output, text, n=None):
     the argument text. The exact number of occurrences can be
     optionally specified by the argument n."""
     if n is None:
-        assert output.find(text) >= 0, "Output file did not contain expected text '{}' (output '{}')".format(text, output)
+        assert output.find(text) >= 0, f"Output file did not contain expected text '{text}' (output '{output}')"
     else:
         matches = re.findall(re.escape(text), output)
         assert len(matches) == int(n), "Expected {} matches for '{}' in output file (output '{}'); found {}".format(n, text, output, len(matches))
@@ -24,7 +24,7 @@ def assert_has_line(output, line, n=None):
     specified by the argument n."""
     if n is None:
         match = re.search("^%s$" % re.escape(line), output, flags=re.MULTILINE)
-        assert match is not None, "No line of output file was '{}' (output was '{}') ".format(line, output)
+        assert match is not None, f"No line of output file was '{line}' (output was '{output}') "
     else:
         matches = re.findall("^%s$" % re.escape(line), output, flags=re.MULTILINE)
         assert len(matches) == int(n), "Expected {} lines matching '{}' in output file (output was '{}'); found {}".format(n, line, output, len(matches))
@@ -33,7 +33,7 @@ def assert_has_line(output, line, n=None):
 def assert_has_n_lines(output, n):
     """Asserts the specified output contains ``n`` lines."""
     n_lines_found = len(output.splitlines())
-    assert n_lines_found == int(n), "Expected {} lines in output, found {} lines".format(n, n_lines_found)
+    assert n_lines_found == int(n), f"Expected {n} lines in output, found {n_lines_found} lines"
 
 
 def assert_has_text_matching(output, expression):

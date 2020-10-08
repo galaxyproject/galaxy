@@ -34,7 +34,7 @@ NO_CLOUDBRIDGE_ERROR_MESSAGE = (
 
 def load_credential(credentials_file):
     print("[1/5 {}] Reading cloud authorization.".format(datetime.datetime.now().replace(microsecond=0)))
-    with open(credentials_file, "r") as f:
+    with open(credentials_file) as f:
         credentials = f.read()
     os.remove(credentials_file)
     return json.loads(credentials)

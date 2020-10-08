@@ -1,12 +1,11 @@
 """
 Universe configuration builder.
 """
+import configparser
 import logging
 import logging.config
 import os
 from datetime import timedelta
-
-from six.moves import configparser
 
 from galaxy.config import (
     BaseAppConfiguration,

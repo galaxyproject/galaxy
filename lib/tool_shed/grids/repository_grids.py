@@ -118,7 +118,7 @@ class RepositoryGrid(grids.Grid):
                 option_items = select_field.options[0][0]
                 rev_label, rev_date = option_items.split(' ')
                 rev_date = '<i><font color="#666666">%s</font></i>' % rev_date
-                return '{} {}'.format(rev_label, rev_date)
+                return f'{rev_label} {rev_date}'
             return ''
 
     class LatestInstallableRevisionColumn(grids.GridColumn):

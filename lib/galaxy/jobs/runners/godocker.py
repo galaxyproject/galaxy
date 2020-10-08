@@ -253,13 +253,13 @@ class GodockerJobRunner(AsynchronousJobRunner):
         job_wrapper.command_line = job.command_line
         ajs.job_wrapper = job_wrapper
         if job.state == model.Job.states.RUNNING:
-            log.debug("({}/{}) is still in running state, adding to the god queue".format(job.id, job.get_job_runner_external_id()))
+            log.debug(f"({job.id}/{job.get_job_runner_external_id()}) is still in running state, adding to the god queue")
             ajs.old_state = 'R'
             ajs.running = True
             self.monitor_queue.put(ajs)
 
         elif job.state == model.Job.states.QUEUED:
-            log.debug("({}/{}) is still in god queued state, adding to the god queue".format(job.id, job.get_job_runner_external_id()))
+            log.debug(f"({job.id}/{job.get_job_runner_external_id()}) is still in god queued state, adding to the god queue")
             ajs.old_state = 'Q'
             ajs.running = False
             self.monitor_queue.put(ajs)

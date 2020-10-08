@@ -8,7 +8,6 @@ import json
 import logging
 import os
 
-import six
 import yaml
 
 from galaxy.tool_util.cwl.util import (
@@ -26,8 +25,7 @@ LOAD_TOOLS_FROM_PATH = True
 DEFAULT_USE_FETCH_API = True
 
 
-@six.add_metaclass(abc.ABCMeta)
-class StagingInterace(object):
+class StagingInterace(metaclass=abc.ABCMeta):
     """Client that parses a job input and populates files into the Galaxy API.
 
     Abstract class that must override _post (and optionally other things such
@@ -213,7 +211,7 @@ class StagingInterace(object):
 
         if job_path is not None:
             assert job is None
-            with open(job_path, "r") as f:
+            with open(job_path) as f:
                 job = yaml.safe_load(f)
             job_dir = os.path.dirname(job_path)
         else:

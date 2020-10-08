@@ -72,7 +72,7 @@ def config_file(template, assign_with=''):
     os.close(fd)
     with open(path, 'w') as config:
         if assign_with:
-            assign_with = 'assign_with="{}"'.format(assign_with)
+            assign_with = f'assign_with="{assign_with}"'
         config.write(template.substitute(assign_with=assign_with))
     return path
 
@@ -83,7 +83,7 @@ class BaseWorkflowHandlerConfigurationTestCase(integration_util.IntegrationTestC
     assign_with = ""
 
     def setUp(self):
-        super(BaseWorkflowHandlerConfigurationTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
         self.history_id = self.dataset_populator.new_history()

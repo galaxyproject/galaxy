@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import os
 import sys
 
@@ -15,10 +13,10 @@ if tool_conf_file is None:
             break
 
 if tool_conf_file is None or not os.path.isfile(tool_conf_file):
-    sys.stderr.write("Tool config file not found: {}\n".format(tool_conf_file))
+    sys.stderr.write(f"Tool config file not found: {tool_conf_file}\n")
     sys.exit(1)
 
-for line in open(tool_conf_file, "r"):
+for line in open(tool_conf_file):
     if line.find("<!--") != -1:
         onoff = 0
     if line.find("file") != -1 and onoff == 1:
@@ -69,10 +67,10 @@ if len(sys.argv) == 1:
     for tool_info in tool_infos:
         if tool_info["id"].find("section") != -1:
             print("===========================================================================================================================================")
-            print("%-45s\t%-40s\t%s" % ("id", "name", tool_info["id"]))
+            print("{:<45}\t{:<40}\t{}".format("id", "name", tool_info["id"]))
             print("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -")
         else:
-            print("%-45s\t%-40s" % (tool_info["id"], tool_info["name"]))
+            print("{:<45}\t{:<40}".format(tool_info["id"], tool_info["name"]))
 else:
     for tool_info in tool_infos:
         if tool_info["id"].find("section") != -1:

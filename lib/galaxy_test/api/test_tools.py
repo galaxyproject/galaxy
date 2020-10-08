@@ -3,10 +3,10 @@ import contextlib
 import json
 import os
 import tarfile
+from io import BytesIO
 
 import pytest
 from requests import get
-from six import BytesIO
 
 from galaxy.util import galaxy_root_path
 from galaxy_test.base import rules_test_data
@@ -758,7 +758,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         private_element_id = first_element_dataset_id(private_output_response.json()["output_collections"][0])
 
         def _dataset_accessible(dataset_id):
-            contents_response = self._get("histories/{}/contents/{}".format(history_id, dataset_id)).json()
+            contents_response = self._get(f"histories/{history_id}/contents/{dataset_id}").json()
             return "name" in contents_response
 
         with self._different_user():

@@ -30,7 +30,6 @@ from datetime import timedelta
 from functools import update_wrapper
 
 import flask.ext.login as flask_login
-import six
 from flask import (
     current_app,
     Flask,
@@ -109,9 +108,9 @@ def crossdomain(origin=None, methods=None, headers=None,
                 automatic_options=True):
     if methods is not None:
         methods = ', '.join(sorted(x.upper() for x in methods))
-    if headers is not None and not isinstance(headers, six.string_types):
+    if headers is not None and not isinstance(headers, str):
         headers = ', '.join(x.upper() for x in headers)
-    if not isinstance(origin, six.string_types):
+    if not isinstance(origin, str):
         origin = ', '.join(origin)
     if isinstance(max_age, timedelta):
         max_age = max_age.total_seconds()
@@ -168,14 +167,14 @@ def static_style():
 
 @socketio.on('event connect', namespace='/chat')
 def event_connect(message):
-    log.info("%s connected" % (current_user.username,))
+    log.info(f"{current_user.username} connected")
 
 
 @socketio.on('event broadcast', namespace='/chat')
 def event_broadcast(message):
     message = sanitize_html(message['data'])
 
-    log.debug("%s broadcast '%s'" % (current_user.username, message))
+    log.debug(f"{current_user.username} broadcast '{message}'")
 
     emit('event response',
         {'data': message, 'user': current_user.username, 'gravatar': hashlib.md5(current_user.email).hexdigest()}, broadcast=True)
@@ -186,7 +185,7 @@ def send_room_message(message):
     data = sanitize_html(message['data'])
     room = sanitize_html(message['room'])
 
-    log.debug("%s sent '%s' to %s" % (current_user.username, message, room))
+    log.debug(f"{current_user.username} sent '{message}' to {room}")
 
     emit('event response room',
         {'data': data, 'user': current_user.username, 'gravatar': hashlib.md5(current_user.email).hexdigest(), 'chatroom': room}, room=room)
@@ -202,7 +201,7 @@ def event_disconnect(message):
 def join(message):
     room = sanitize_html(message['room'])
 
-    log.debug("%s joined %s" % (current_user.username, room))
+    log.debug(f"{current_user.username} joined {room}")
     join_room(room)
 
     emit('event response room',
@@ -213,7 +212,7 @@ def join(message):
 def leave(message):
     room = sanitize_html(message['room'])
 
-    log.debug("%s left %s" % (current_user.username, room))
+    log.debug(f"{current_user.username} left {room}")
     leave_room(room)
 
     emit('event response room',

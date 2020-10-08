@@ -1,6 +1,5 @@
 import os
-
-from six.moves import shlex_quote
+import shlex
 
 DEFAULT_WORKING_DIRECTORY = None
 DEFAULT_SINGULARITY_COMMAND = "singularity"
@@ -49,7 +48,7 @@ def build_singularity_run_command(
     for (key, value) in env:
         if key == 'HOME':
             home = value
-        command_parts.extend(["SINGULARITYENV_{}={}".format(key, value)])
+        command_parts.extend([f"SINGULARITYENV_{key}={value}"])
     command_parts += _singularity_prefix(
         singularity_cmd=singularity_cmd,
         sudo=sudo,
@@ -60,11 +59,11 @@ def build_singularity_run_command(
     for volume in volumes:
         command_parts.extend(["-B", str(volume)])
     if home is not None:
-        command_parts.extend(["--home", "{}:{}".format(home, home)])
+        command_parts.extend(["--home", f"{home}:{home}"])
     if run_extra_arguments:
         command_parts.append(run_extra_arguments)
     full_image = image
-    command_parts.append(shlex_quote(full_image))
+    command_parts.append(shlex.quote(full_image))
     command_parts.append(container_command)
     return " ".join(command_parts)
 

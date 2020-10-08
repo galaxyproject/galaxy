@@ -35,7 +35,7 @@ def lint_tsts(tool_xml, lint_ctx):
                 lint_ctx.warn("Found output tag without a name defined.")
             else:
                 if name not in output_data_names:
-                    lint_ctx.error("Found output tag with unknown name [{}], valid names [{}]".format(name, output_data_names))
+                    lint_ctx.error(f"Found output tag with unknown name [{name}], valid names [{output_data_names}]")
 
         for output_collection in test.findall("output_collection"):
             found_output_test = True
@@ -44,7 +44,7 @@ def lint_tsts(tool_xml, lint_ctx):
                 lint_ctx.warn("Found output_collection tag without a name defined.")
             else:
                 if name not in output_collection_names:
-                    lint_ctx.warn("Found output_collection tag with unknown name [{}], valid names [{}]".format(name, output_collection_names))
+                    lint_ctx.warn(f"Found output_collection tag with unknown name [{name}], valid names [{output_collection_names}]")
 
         has_test = has_test or found_output_test
         if not has_test:

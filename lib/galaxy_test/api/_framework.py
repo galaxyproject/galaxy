@@ -14,7 +14,7 @@ class ApiTestCase(FunctionalTestCase, UsesApiTestCaseMixin, TestCase):
     galaxy_driver_class = GalaxyTestDriver
 
     def setUp(self):
-        super(ApiTestCase, self).setUp()
+        super().setUp()
         self._setup_interactor()
 
 

@@ -3,12 +3,12 @@ import hashlib
 import logging
 import os
 from datetime import datetime, timedelta
+from urllib.parse import quote
 
 import jwt
 import requests
 from oauthlib.common import generate_nonce
 from requests_oauthlib import OAuth2Session
-from six.moves.urllib.parse import quote
 
 from galaxy import exceptions
 from galaxy import util
@@ -248,16 +248,16 @@ class CustosAuthnz(IdentityProvider):
             base_url = self.config["url"]
             # Remove potential trailing slash to avoid "//realms"
             base_url = base_url if base_url[-1] != "/" else base_url[:-1]
-            return "{}/.well-known/openid-configuration".format(base_url)
+            return f"{base_url}/.well-known/openid-configuration"
         else:
-            raise Exception("Unknown Custos provider name: {}".format(provider))
+            raise Exception(f"Unknown Custos provider name: {provider}")
 
     def _fetch_well_known_oidc_config(self, well_known_uri):
         try:
             return requests.get(well_known_uri,
                                 verify=self._get_verify_param()).json()
         except Exception:
-            log.error("Failed to load well-known OIDC config URI: {}".format(well_known_uri))
+            log.error(f"Failed to load well-known OIDC config URI: {well_known_uri}")
             raise
 
     def _load_well_known_oidc_config(self, well_known_oidc_config):

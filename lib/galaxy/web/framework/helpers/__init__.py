@@ -67,7 +67,7 @@ def css(*args):
 
     Cache-bust with time that server started running on
     """
-    urls = (url_for("/static/style/{}.css?v={}".format(name, server_starttime)) for name in args)
+    urls = (url_for(f"/static/style/{name}.css?v={server_starttime}") for name in args)
     return stylesheet_link(*urls)
 
 
@@ -76,7 +76,7 @@ def dist_css(*args):
     Transition function 'css' helper -- this is the modern way where all bundled
     artifacts are in the unified 'dist'.
     """
-    urls = (url_for("/static/dist/{}.css?v={}".format(name, server_starttime)) for name in args)
+    urls = (url_for(f"/static/dist/{name}.css?v={server_starttime}") for name in args)
     return stylesheet_link(*urls)
 
 
@@ -87,7 +87,7 @@ def js_helper(prefix, *args):
 
     Cache-bust with time that server started running on
     """
-    urls = (url_for("/{}{}.js?v={}".format(prefix, name, server_starttime)) for name in args)
+    urls = (url_for(f"/{prefix}{name}.js?v={server_starttime}") for name in args)
     return javascript_link(*urls)
 
 

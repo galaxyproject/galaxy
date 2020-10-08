@@ -31,7 +31,7 @@ def engine_true(migrate_engine):
 
 def nextval(migrate_engine, table, col='id'):
     if migrate_engine.name in ['postgres', 'postgresql']:
-        return "nextval('{}_{}_seq')".format(table, col)
+        return f"nextval('{table}_{col}_seq')"
     elif migrate_engine.name in ['mysql', 'sqlite']:
         return "null"
     else:

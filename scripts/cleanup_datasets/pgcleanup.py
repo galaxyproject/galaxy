@@ -4,7 +4,6 @@ pgcleanup.py - A script for cleaning up datasets in Galaxy efficiently, by
     bypassing the Galaxy model and operating directly on the database.
     PostgreSQL 9.1 or greater is required.
 """
-from __future__ import print_function
 
 import argparse
 import datetime
@@ -54,7 +53,7 @@ class LevelFormatter(logging.Formatter):
         return logging.Formatter.format(self, record)
 
 
-class Action(object):
+class Action:
     """Base class for all actions.
 
     When writing new actions, the following things happen automatically:
@@ -204,11 +203,11 @@ class Action(object):
 
     def _log_results(self, results, primary_key):
         for primary in sorted(results.keys()):
-            self.log.info('%s: %s' % (primary_key, primary))
+            self.log.info(f'{primary_key}: {primary}')
             for causal, s in zip(self.causals, results[primary]):
                 for r in sorted(s):
                     secondaries = ', '.join('%s: %s' % x for x in zip(causal[1:], r[1:]))
-                    self.log.info('%s %s caused %s' % (causal[0], r[0], secondaries))
+                    self.log.info('{} {} caused {}'.format(causal[0], r[0], secondaries))
 
     def handle_results(self, cur):
         results = {}
@@ -233,7 +232,7 @@ class Action(object):
         pass
 
 
-class RemovesObjects(object):
+class RemovesObjects:
     """Base class for mixins that remove objects from object stores.
     """
     def _init(self):
@@ -280,7 +279,7 @@ class RemovesObjects(object):
 #
 
 
-class PurgesHDAs(object):
+class PurgesHDAs:
     """Avoid repetition in queries that purge HDAs, since they must also delete MetadataFiles and ICDAs.
 
     To use, place ``{purge_hda_dependencies_sql}`` somewhere in your CTEs after a ``purged_hda_ids`` CTE returning HDA
@@ -336,7 +335,7 @@ class PurgesHDAs(object):
         )
 
 
-class RequiresDiskUsageRecalculation(object):
+class RequiresDiskUsageRecalculation:
     """Causes disk usage to be recalculated for affected users.
 
     To use, ensure your query returns a ``recalculate_disk_usage_user_id`` column.
@@ -626,7 +625,7 @@ class PurgeDeletedUsers(PurgesHDAs, RemovesMetadataFiles, Action):
     )
 
     def _init(self):
-        super(PurgeDeletedUsers, self)._init()
+        super()._init()
         self.__zero_disk_usage_user_ids = set()
         self._register_row_method(self.collect_zero_disk_usage_user_id)
         self._register_post_method(self.zero_disk_usage)
@@ -952,7 +951,7 @@ class PurgeDatasets(RemovesDatasets, Action):
     """
 
 
-class Cleanup(object):
+class Cleanup:
     def __init__(self):
         self.args = None
         self.config = None

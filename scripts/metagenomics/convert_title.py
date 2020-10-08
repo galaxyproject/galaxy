@@ -3,7 +3,6 @@
 convert nt and wgs data (fasta format) to giNumber_seqLen
 run formatdb in the command line: gunzip -c nt.gz |formatdb -i stdin -p F -n "nt.chunk" -v 2000
 """
-from __future__ import print_function
 
 import sys
 

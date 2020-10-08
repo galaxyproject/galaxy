@@ -75,7 +75,7 @@ def find_element_by_sizzle(driver, sizzle_selector):
         return elements[0]
     else:
         raise NoSuchElementException(
-            "Unable to locate element by Sizzle: {selector}".format(selector=sizzle_selector)
+            f"Unable to locate element by Sizzle: {sizzle_selector}"
         )
 
 
@@ -110,7 +110,7 @@ def _inject_sizzle(driver, sizzle_url, timeout):
     driver.execute_script(script)
     wait = WebDriverWait(driver, timeout)
     wait.until(lambda d: _is_sizzle_loaded(d),
-               "Can't inject Sizzle in {timeout} seconds".format(timeout=timeout))
+               f"Can't inject Sizzle in {timeout} seconds")
 
 
 def _is_sizzle_loaded(driver):

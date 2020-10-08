@@ -42,7 +42,7 @@ GALAXY_FLAVORED_MARKDOWN_CONTAINER_REGEX = r'(?P<container>%s)' % "|".join(GALAX
 ARG_VAL_REGEX = r'''[\w_\-]+|\"[^\"]+\"|\'[^\']+\''''
 FUNCTION_ARG = r'\s*\w+\s*=\s*(?:%s)\s*' % ARG_VAL_REGEX
 # embed commas between arguments
-FUNCTION_MULTIPLE_ARGS = r'(?P<firstargcall>{})(?P<restargcalls>(?:,{})*)'.format(FUNCTION_ARG, FUNCTION_ARG)
+FUNCTION_MULTIPLE_ARGS = fr'(?P<firstargcall>{FUNCTION_ARG})(?P<restargcalls>(?:,{FUNCTION_ARG})*)'
 FUNCTION_MULTIPLE_ARGS_PATTERN = re.compile(FUNCTION_MULTIPLE_ARGS)
 FUNCTION_CALL_LINE_TEMPLATE = r'\s*%s\s*\((?:' + FUNCTION_MULTIPLE_ARGS + r')?\)\s*'
 GALAXY_MARKDOWN_FUNCTION_CALL_LINE = re.compile(FUNCTION_CALL_LINE_TEMPLATE % GALAXY_FLAVORED_MARKDOWN_CONTAINER_REGEX)
@@ -119,7 +119,7 @@ def validate_galaxy_markdown(galaxy_markdown, internal=True):
 
     if expecting_container_close_for:
         template = "Invalid line %d: %s"
-        msg = template % (last_line_no, "close of block for [{expected_for}] expected".format(expected_for=expecting_container_close_for))
+        msg = template % (last_line_no, f"close of block for [{expecting_container_close_for}] expected")
         raise ValueError(msg)
 
 

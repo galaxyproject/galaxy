@@ -107,17 +107,17 @@ class CloudController(BaseAPIController):
             missing_arguments.append("authz_id")
 
         if len(missing_arguments) > 0:
-            raise ActionInputError("The following required arguments are missing in the payload: {}".format(missing_arguments))
+            raise ActionInputError(f"The following required arguments are missing in the payload: {missing_arguments}")
 
         try:
             history_id = self.decode_id(encoded_history_id)
         except exceptions.MalformedId as e:
-            raise ActionInputError('Invalid history ID. {}'.format(e))
+            raise ActionInputError(f'Invalid history ID. {e}')
 
         try:
             authz_id = self.decode_id(encoded_authz_id)
         except exceptions.MalformedId as e:
-            raise ActionInputError('Invalid authz ID. {}'.format(e))
+            raise ActionInputError(f'Invalid authz ID. {e}')
 
         if not isinstance(objects, list):
             raise ActionInputError('The `objects` should be a list, but received an object of type {} instead.'.format(
@@ -195,17 +195,17 @@ class CloudController(BaseAPIController):
             missing_arguments.append("authz_id")
 
         if len(missing_arguments) > 0:
-            raise ActionInputError("The following required arguments are missing in the payload: {}".format(missing_arguments))
+            raise ActionInputError(f"The following required arguments are missing in the payload: {missing_arguments}")
 
         try:
             history_id = self.decode_id(encoded_history_id)
         except exceptions.MalformedId as e:
-            raise ActionInputError('Invalid history ID. {}'.format(e))
+            raise ActionInputError(f'Invalid history ID. {e}')
 
         try:
             authz_id = self.decode_id(encoded_authz_id)
         except exceptions.MalformedId as e:
-            raise ActionInputError('Invalid authz ID. {}'.format(e))
+            raise ActionInputError(f'Invalid authz ID. {e}')
 
         encoded_dataset_ids = payload.get("dataset_ids", None)
         if encoded_dataset_ids is None:

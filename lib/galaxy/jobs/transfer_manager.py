@@ -5,11 +5,10 @@ IPC with multiple process configurations.
 import json
 import logging
 import os
+import shlex
 import socket
 import subprocess
 import threading
-
-from six.moves import shlex_quote
 
 from galaxy.util import (
     listify,
@@ -75,12 +74,12 @@ class TransferManager:
             # not the case, this process will need to be moved to a
             # non-blocking method.
             cmd = self.command + [tj.id]
-            log.debug('Transfer command is: %s', ' '.join(map(shlex_quote, cmd)))
+            log.debug('Transfer command is: %s', ' '.join(map(shlex.quote, cmd)))
             p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             p.wait()
             output = p.stdout.read(32768)
             if p.returncode != 0:
-                log.error('Spawning transfer job failed: {}: {}'.format(tj.id, output))
+                log.error(f'Spawning transfer job failed: {tj.id}: {output}')
                 tj.state = tj.states.ERROR
                 tj.info = 'Spawning transfer job failed: %s' % output.splitlines()[-1]
                 self.sa_session.add(tj)
@@ -154,7 +153,7 @@ class TransferManager:
                 except Exception:
                     self.sa_session.refresh(tj)
                     if tj.state == tj.states.RUNNING:
-                        log.error('Transfer job {} is marked as running but pid {} appears to be dead.'.format(tj.id, tj.pid))
+                        log.error(f'Transfer job {tj.id} is marked as running but pid {tj.pid} appears to be dead.')
                         dead.append(tj)
             if dead:
                 self.run(dead)

@@ -5,6 +5,7 @@ import inspect
 import json
 import logging
 import os
+from urllib.request import install_opener
 
 # The uwsgi module is automatically injected by the parent uwsgi process and only exists that way.  If anything works,
 # this is a uwsgi-managed process.
@@ -276,7 +277,7 @@ class UWSGIApplicationStack(MessageApplicationStack):
                 host = UWSGIApplicationStack.localhost_addrs[0]
             return proto + host + port
         except (IndexError, AttributeError):
-            return '{} {}'.format(opt, val)
+            return f'{opt} {val}'
 
     @staticmethod
     def _socket_opts():
@@ -627,7 +628,6 @@ def _do_uwsgi_postfork():
 
 
 def _mule_fixup():
-    from six.moves.urllib.request import install_opener
     install_opener(None)
 
 

@@ -42,7 +42,7 @@ def queue_worker_factory(request, database_app):
 def setup_queue_worker_test(app):
     app.some_var = 'foo'
     app.tasks_executed = []
-    server_name = "%s.%s" % (app.amqp_type, datetime.datetime.now())
+    server_name = f"{app.amqp_type}.{datetime.datetime.now()}"
     app.config.server_name = server_name
     app.config.server_names = [server_name]
     app.config.attach_to_pools = False

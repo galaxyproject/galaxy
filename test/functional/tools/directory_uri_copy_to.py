@@ -9,7 +9,7 @@ from galaxy.files import ConfiguredFileSources
 
 def get_file_sources(file_sources_path):
     assert os.path.exists(file_sources_path), "file sources path [%s] does not exist" % file_sources_path
-    with open(file_sources_path, "r") as f:
+    with open(file_sources_path) as f:
         file_sources_as_dict = json.load(f)
     file_sources = ConfiguredFileSources.from_dict(file_sources_as_dict)
     return file_sources

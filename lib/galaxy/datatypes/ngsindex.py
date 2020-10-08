@@ -36,7 +36,7 @@ class BowtieIndex(Html):
         rval = ['<html><head><title>Files for Composite Dataset %s</title></head><p/>Comprises the following files:<p/><ul>' % (bn)]
         for fname in flist:
             sfname = os.path.split(fname)[-1]
-            rval.append('<li><a href="{}">{}</a>'.format(sfname, sfname))
+            rval.append(f'<li><a href="{sfname}">{sfname}</a>')
         rval.append('</ul></html>')
         with open(dataset.file_name, 'w') as f:
             f.write("\n".join(rval))

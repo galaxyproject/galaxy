@@ -4,19 +4,18 @@
 # Harvest Bacteria
 # Connects to NCBI's Microbial Genome Projects website and scrapes it for information.
 # Downloads and converts annotations for each Genome
-from __future__ import print_function
 
 import os
 import sys
 import time
 from ftplib import FTP
+from urllib.request import urlretrieve
 
 import requests
 try:
     from bs4 import BeautifulSoup
 except ImportError:
     raise Exception("BeautifulSoup4 library not found, please install it, e.g. with 'pip install BeautifulSoup4'")
-from six.moves.urllib.request import urlretrieve
 
 from util import (  # noqa: I202
     get_bed_from_genbank,
@@ -52,7 +51,7 @@ def iter_genome_projects(url="http://www.ncbi.nlm.nih.gov/genomes/lproks.cgi?vie
 
         group = fields[3].split(">")[-1]
 
-        info_url = "%s%s" % (info_url_base, org_num)
+        info_url = f"{info_url_base}{org_num}"
 
         org_genbank = fields[7].split("\">")[-1].split("<")[0].split(".")[0]
         org_refseq = fields[8].split("\">")[-1].split("<")[0].split(".")[0]
@@ -74,7 +73,7 @@ def get_chroms_by_project_id(org_num, base_url="http://www.ncbi.nlm.nih.gov/entr
     html = None
     while html_count < 500 and html is None:
         html_count += 1
-        url = "%s%s" % (base_url, org_num)
+        url = f"{base_url}{org_num}"
         try:
             html = requests.get(url).text
         except Exception:
@@ -116,11 +115,11 @@ def get_ftp_contents(ftp_url):
 def scrape_ftp(ftp_contents, org_dir, org_num, refseq, ftp_url):
     for file_type, items in desired_ftp_files.items():
         ext = items['ext']
-        ftp_filename = "%s.%s" % (refseq, ext)
-        target_filename = os.path.join(org_dir, "%s.%s" % (refseq, ext))
+        ftp_filename = f"{refseq}.{ext}"
+        target_filename = os.path.join(org_dir, f"{refseq}.{ext}")
         if ftp_filename in ftp_contents:
             url_count = 0
-            url = "%s/%s" % (ftp_url, ftp_filename)
+            url = f"{ftp_url}/{ftp_filename}"
             results = None
             while url_count < 500 and results is None:
                 url_count += 1
@@ -152,7 +151,7 @@ def process_FASTA(filename, org_num, refseq):
 
     # Create Chrom Info File:
     chrom_info_file = open(os.path.join(os.path.split(filename)[0], "%s.info" % refseq), 'wb+')
-    chrom_info_file.write("chromosome=%s\nname=%s\nlength=%s\norganism=%s\n" % (refseq, chr_name, len(fasta), org_num))
+    chrom_info_file.write("chromosome={}\nname={}\nlength={}\norganism={}\n".format(refseq, chr_name, len(fasta), org_num))
     try:
         chrom_info_file.write("gi=%s\n" % accesions['gi'])
     except Exception:
@@ -172,7 +171,7 @@ def process_Genbank(filename, org_num, refseq):
     # extracts 'CDS', 'tRNA', 'rRNA' features from genbank file
     features = get_bed_from_genbank(filename, refseq, ['CDS', 'tRNA', 'rRNA'])
     for feature, values in features.items():
-        feature_file = open(os.path.join(os.path.split(filename)[0], "%s.%s.bed" % (refseq, feature)), 'wb+')
+        feature_file = open(os.path.join(os.path.split(filename)[0], f"{refseq}.{feature}.bed"), 'wb+')
         feature_file.write('\n'.join(values))
         feature_file.close()
     print("Genbank extraction finished for chrom:", refseq, "file:", filename)
@@ -225,7 +224,7 @@ def __main__():
     except Exception:
         print("path '%s' seems to already exist" % base_dir)
 
-    for org_num, name, chroms, kingdom, group, org_genbank, org_refseq, info_url, ftp_url in iter_genome_projects():
+    for org_num, name, chroms, kingdom, group, _, _, info_url, ftp_url in iter_genome_projects():
         if chroms is None:
             continue  # No chrom information, we can't really do anything with this organism
         # Create org directory, if exists, assume it is done and complete --> skip it

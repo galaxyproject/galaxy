@@ -146,7 +146,7 @@ def build_recipe_name(package_name, package_version, repository_owner, repositor
     owner = repository_owner.replace("-", "")
     name = repository_name
     name = name.replace("_", "").replace("-", "")
-    base = "{}_{}".format(owner, name)
+    base = f"{owner}_{name}"
     return base
 
 

@@ -1,11 +1,10 @@
 #!/usr/bin/env python
-from __future__ import print_function
 
 import optparse
 import os
 import sys
+from configparser import ConfigParser
 
-from six.moves.configparser import ConfigParser
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, 'lib'))
@@ -99,7 +98,7 @@ def get_local_tool_shed_url(config_parser):
         if config_parser.has_option('server:main', 'port'):
             port = config_parser.get('server:main', 'port')
     host = '127.0.0.1'
-    print('http://%s:%s' % (host, port))
+    print(f'http://{host}:{port}')
     return 0
 
 
@@ -115,7 +114,7 @@ def main(args):
         return check_db(config_parser)
     elif args.method == 'admin_user_info':
         (username, email, password) = admin_user_info()
-        print('%s__SEP__%s__SEP__%s' % (username, email, password))
+        print(f'{username}__SEP__{email}__SEP__{password}')
         return 0
     elif args.method == 'get_url':
         return get_local_tool_shed_url(config_parser)

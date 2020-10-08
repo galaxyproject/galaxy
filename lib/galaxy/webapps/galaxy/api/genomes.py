@@ -5,7 +5,7 @@ from galaxy.webapps.base.controller import BaseAPIController
 
 def get_id(base, format):
     if format:
-        return "{}.{}".format(base, format)
+        return f"{base}.{format}"
     else:
         return base
 

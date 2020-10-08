@@ -25,7 +25,7 @@ class TextGrid(Text):
 
     def sniff(self, filename):
 
-        with open(filename, 'r') as fd:
+        with open(filename) as fd:
             text = fd.read(len(self.header))
             return text == self.header
 
@@ -56,7 +56,7 @@ class BPF(Text):
     def set_meta(self, dataset, overwrite=True, **kwd):
         """Set the metadata for this dataset from the file contents"""
         types = set()
-        with open(dataset.dataset.file_name, 'r') as fd:
+        with open(dataset.dataset.file_name) as fd:
             for line in fd:
                 # Split the line on a colon rather than regexing it
                 parts = line.split(':')

@@ -42,7 +42,7 @@ class Shapefile(Binary):
             if composite_file.get('description'):
                 rval.append('<li><a href="{}" type="application/binary">{} ({})</a>{}</li>'.format(fn, fn, composite_file.get('description'), opt_text))
             else:
-                rval.append('<li><a href="{}" type="application/binary">{}</a>{}</li>'.format(fn, fn, opt_text))
+                rval.append(f'<li><a href="{fn}" type="application/binary">{fn}</a>{opt_text}</li>')
         rval.append('</ul></div></html>\n')
         return "\n".join(rval)
 

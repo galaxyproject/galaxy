@@ -527,7 +527,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 self.__cleanup_k8s_job(job_to_delete)
             # TODO assert whether job parallelism == 0
             # assert not job_to_delete.exists(), "Could not delete job,"+job.job_runner_external_id+" it still exists"
-            log.debug("({}/{}) Terminated at user's request".format(job.id, job.job_runner_external_id))
+            log.debug(f"({job.id}/{job.job_runner_external_id}) Terminated at user's request")
         except Exception as e:
             log.exception("({}/{}) User killed running job, but error encountered during termination: {}".format(
                 job.id, job.job_runner_external_id, e))

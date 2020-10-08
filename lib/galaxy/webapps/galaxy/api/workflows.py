@@ -480,7 +480,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 extension = "ga"
             else:
                 extension = "gxwf.json"
-            trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy-Workflow-{}.{}"'.format(sname, extension)
+            trans.response.headers["Content-Disposition"] = f'attachment; filename="Galaxy-Workflow-{sname}.{extension}"'
             trans.response.set_content_type('application/galaxy-archive')
 
         if style == "format2" and download_format != 'json-download':

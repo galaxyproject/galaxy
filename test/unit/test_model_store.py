@@ -158,7 +158,7 @@ def test_finalize_job_state():
     app, h, temp_directory, import_history = _setup_simple_export({"for_edit": False})
     u = h.user
 
-    with open(os.path.join(temp_directory, store.ATTRS_FILENAME_JOBS), "r") as f:
+    with open(os.path.join(temp_directory, store.ATTRS_FILENAME_JOBS)) as f:
         job_attrs = json.load(f)
 
     for job in job_attrs:
@@ -183,7 +183,7 @@ def test_import_export_edit_datasets():
 
     # Fabric editing metadata...
     datasets_metadata_path = os.path.join(temp_directory, store.ATTRS_FILENAME_DATASETS)
-    with open(datasets_metadata_path, "r") as f:
+    with open(datasets_metadata_path) as f:
         datasets_metadata = json.load(f)
 
     datasets_metadata[0]["name"] = "my new name 0"
@@ -233,7 +233,7 @@ def test_import_export_edit_collection():
     # Fabric editing metadata for collection...
     collections_metadata_path = os.path.join(temp_directory, store.ATTRS_FILENAME_COLLECTIONS)
     datasets_metadata_path = os.path.join(temp_directory, store.ATTRS_FILENAME_DATASETS)
-    with open(collections_metadata_path, "r") as f:
+    with open(collections_metadata_path) as f:
         hdcas_metadata = json.load(f)
 
     assert len(hdcas_metadata) == 1
@@ -337,7 +337,7 @@ def test_import_export_composite_datasets():
     composite_sub_dir = os.path.join(root_extra_files_path, "parent_dir")
     child_files = os.listdir(composite_sub_dir)
     assert len(child_files) == 1
-    with open(os.path.join(composite_sub_dir, child_files[0]), "r") as f:
+    with open(os.path.join(composite_sub_dir, child_files[0])) as f:
         contents = f.read()
         assert contents == "cool composite file"
 
@@ -428,9 +428,9 @@ def _assert_simple_cat_job_imported(imported_history, state='ok'):
     assert imported_job.input_datasets
     assert imported_job.input_datasets[0].dataset == datasets[0]
 
-    with open(datasets[0].file_name, "r") as f:
+    with open(datasets[0].file_name) as f:
         assert f.read().startswith("chr1    4225    19670")
-    with open(datasets[1].file_name, "r") as f:
+    with open(datasets[1].file_name) as f:
         assert f.read().startswith("chr1\t147962192\t147962580\tNM_005997_cds_0_0_chr1_147962193_r\t0\t-")
 
 

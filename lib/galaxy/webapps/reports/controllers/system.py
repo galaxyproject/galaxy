@@ -200,7 +200,7 @@ def nice_size(size, include_bytes=False):
         nsize = Decimal(size)
         for x in ['bytes', 'KB', 'MB', 'GB']:
             if nsize.compare(Decimal("1024.0")) == Decimal("-1"):
-                nice_string = "{:3.1f} {}".format(nsize, x)
+                nice_string = f"{nsize:3.1f} {x}"
                 niced = True
                 break
             nsize /= Decimal("1024.0")
@@ -208,7 +208,7 @@ def nice_size(size, include_bytes=False):
             nice_string = "{:3.1f} {}".format(nsize, 'TB')
             niced = True
         if include_bytes and x != 'bytes':
-            nice_string = "{} ({} bytes)".format(nice_string, size)
+            nice_string = f"{nice_string} ({size} bytes)"
     except Exception:
         pass
     return nice_string

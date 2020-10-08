@@ -159,7 +159,7 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
                                                                                          changeset_revision,
                                                                                          prior_installation_required,
                                                                                          only_if_compiling_contained_td)
-                label = "Repository <b>{}</b> revision <b>{}</b> owned by <b>{}</b>".format(name, changeset_revision, owner)
+                label = f"Repository <b>{name}</b> revision <b>{changeset_revision}</b> owned by <b>{owner}</b>"
                 folder = utility_container_manager.Folder(id=folder_id,
                                                           key=key,
                                                           label=label,
@@ -209,7 +209,7 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
                     version = 'unknown'
                     error = str(e)
                 key = self.generate_tool_dependencies_key(name, version, type)
-                label = "Version <b>{}</b> of the <b>{}</b> <b>{}</b>".format(version, name, type)
+                label = f"Version <b>{version}</b> of the <b>{name}</b> <b>{type}</b>"
                 folder = utility_container_manager.Folder(id=folder_id,
                                                           key=key,
                                                           label=label,

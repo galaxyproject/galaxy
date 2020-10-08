@@ -6,6 +6,7 @@ import string
 import unittest
 from collections import namedtuple
 from functools import wraps
+from io import StringIO
 from operator import itemgetter
 
 try:
@@ -21,7 +22,6 @@ from gxformat2 import (
 )
 from gxformat2._yaml import ordered_load
 from pkg_resources import resource_string
-from six import StringIO
 
 from galaxy.tool_util.client.staging import InteractorStaging
 from galaxy.tool_util.verify.test_data import TestDataResolver
@@ -252,7 +252,7 @@ class BaseDatasetPopulator:
             wait_on(has_active_jobs, "active jobs", timeout=timeout)
         except TimeoutAssertionError as e:
             jobs = self.history_jobs(history_id)
-            message = "Failed waiting on active jobs to complete, current jobs are [{}]. {}".format(jobs, e)
+            message = f"Failed waiting on active jobs to complete, current jobs are [{jobs}]. {e}"
             raise TimeoutAssertionError(message)
 
         if assert_ok:
@@ -262,7 +262,7 @@ class BaseDatasetPopulator:
         return wait_on_state(lambda: self.get_job_details(job_id), desc="job state", assert_ok=assert_ok, timeout=timeout)
 
     def get_job_details(self, job_id, full=False):
-        return self._get("jobs/{}?full={}".format(job_id, full))
+        return self._get(f"jobs/{job_id}?full={full}")
 
     def cancel_history_jobs(self, history_id, wait=True):
         active_jobs = self.active_history_jobs(history_id)
@@ -284,7 +284,7 @@ class BaseDatasetPopulator:
         return self._delete("jobs/%s" % job_id)
 
     def delete_dataset(self, history_id, content_id):
-        delete_response = self._delete("histories/{}/contents/{}".format(history_id, content_id))
+        delete_response = self._delete(f"histories/{history_id}/contents/{content_id}")
         return delete_response
 
     def create_tool_from_path(self, tool_path):
@@ -493,7 +493,7 @@ class BaseDatasetPopulator:
                     if history_item["hid"] == hid:
                         history_content_id = history_item["id"]
                 if history_content_id is None:
-                    raise Exception("Could not find content with HID [{}] in [{}]".format(hid, history_contents))
+                    raise Exception(f"Could not find content with HID [{hid}] in [{history_contents}]")
             else:
                 # No hid specified - just grab most recent element.
                 history_content_id = history_contents[-1]["id"]
@@ -504,7 +504,7 @@ class BaseDatasetPopulator:
             data = {}
         url = "histories/%s/contents" % history_id
         if suffix:
-            url = "{}{}".format(url, suffix)
+            url = f"{url}{suffix}"
         return self._get(url, data=data)
 
     def ds_entry(self, history_content):
@@ -554,13 +554,13 @@ class BaseDatasetPopulator:
             "access": json.dumps([role_id]),
             "manage": json.dumps([role_id]),
         }
-        url = "histories/{}/contents/{}/permissions".format(history_id, dataset_id)
+        url = f"histories/{history_id}/contents/{dataset_id}/permissions"
         update_response = self.galaxy_interactor._put(url, payload, admin=True)
         assert update_response.status_code == 200, update_response.content
         return update_response.json()
 
     def validate_dataset(self, history_id, dataset_id):
-        url = "histories/{}/contents/{}/validate".format(history_id, dataset_id)
+        url = f"histories/{history_id}/contents/{dataset_id}/validate"
         update_response = self.galaxy_interactor._put(url, {})
         assert update_response.status_code == 200, update_response.content
         return update_response.json()
@@ -604,7 +604,7 @@ class BaseDatasetPopulator:
         return download_url
 
     def get_export_url(self, export_url):
-        full_download_url = "{}?key={}".format(export_url, self._api_key)
+        full_download_url = f"{export_url}?key={self._api_key}"
         download_response = self._get(full_download_url)
         api_asserts.assert_status_code_is(download_response, 200)
         return download_response
@@ -664,7 +664,7 @@ class BaseDatasetPopulator:
         download_path = self.export_url(history_id, export_kwds, check_download=True)
 
         # Create download for history
-        full_download_url = "{}{}?key={}".format(url, download_path, api_key)
+        full_download_url = f"{url}{download_path}?key={api_key}"
 
         import_data = dict(archive_source=full_download_url, archive_type="url")
 
@@ -715,7 +715,7 @@ class DatasetPopulator(BaseDatasetPopulator):
         self.galaxy_interactor._summarize_history(history_id)
 
     def wait_for_dataset(self, history_id, dataset_id, assert_ok=False, timeout=DEFAULT_TIMEOUT):
-        return wait_on_state(lambda: self._get("histories/{}/contents/{}".format(history_id, dataset_id)), desc="dataset state", assert_ok=assert_ok, timeout=timeout)
+        return wait_on_state(lambda: self._get(f"histories/{history_id}/contents/{dataset_id}"), desc="dataset state", assert_ok=assert_ok, timeout=timeout)
 
 
 class BaseWorkflowPopulator:
@@ -781,7 +781,7 @@ class BaseWorkflowPopulator:
         return workflow_id
 
     def wait_for_invocation(self, workflow_id, invocation_id, timeout=DEFAULT_TIMEOUT):
-        url = "workflows/{}/usage/{}".format(workflow_id, invocation_id)
+        url = f"workflows/{workflow_id}/usage/{invocation_id}"
         return wait_on_state(lambda: self._get(url), desc="workflow invocation state", timeout=timeout)
 
     def history_invocations(self, history_id):
@@ -853,7 +853,7 @@ class BaseWorkflowPopulator:
             return invocation_response
 
     def workflow_report_json(self, workflow_id, invocation_id):
-        response = self._get("workflows/{}/invocations/{}/report".format(workflow_id, invocation_id))
+        response = self._get(f"workflows/{workflow_id}/invocations/{invocation_id}/report")
         api_asserts.assert_status_code_is(response, 200)
         return response.json()
 
@@ -1091,7 +1091,7 @@ class LibraryPopulator:
         return self.galaxy_interactor.post(url_rel, payload, files=files)
 
     def show_ldda(self, library_id, library_dataset_id):
-        return self.galaxy_interactor.get("libraries/{}/contents/{}".format(library_id, library_dataset_id))
+        return self.galaxy_interactor.get(f"libraries/{library_id}/contents/{library_dataset_id}")
 
     def new_library_dataset_in_private_library(self, library_name="private_dataset", wait=True):
         library = self.new_private_library(library_name)
@@ -1116,7 +1116,7 @@ class LibraryPopulator:
         all_contents = all_contents_response.json()
         matching = [c for c in all_contents if c["name"] == path]
         if len(matching) == 0:
-            raise Exception("Failed to find library contents with path [{}], contents are {}".format(path, all_contents))
+            raise Exception(f"Failed to find library contents with path [{path}], contents are {all_contents}")
         get_response = self.galaxy_interactor.get(matching[0]["url"])
         api_asserts.assert_status_code_is(get_response, 200)
         return get_response.json()
@@ -1155,7 +1155,7 @@ class BaseDatasetCollectionPopulator:
                 collection_type=nested_collection_type,
                 element_identifiers=identifiers,
             )]
-            nested_collection_type = "{}:{}".format(rank_type, nested_collection_type)
+            nested_collection_type = f"{rank_type}:{nested_collection_type}"
         return identifiers
 
     def create_nested_collection(self, history_id, collection_type, name=None, collection=None, element_identifiers=None):
@@ -1202,7 +1202,7 @@ class BaseDatasetCollectionPopulator:
         list = self.create_list_in_history(history_id, **kwds).json()['id']
         current_collection_type = 'list'
         for collection_type in collection_types[1:]:
-            current_collection_type = "{}:{}".format(current_collection_type, collection_type)
+            current_collection_type = f"{current_collection_type}:{collection_type}"
             response = self.create_nested_collection(history_id=history_id,
                                                      collection_type=current_collection_type,
                                                      name=current_collection_type,
@@ -1510,7 +1510,7 @@ def wait_on_state(state_func, desc="state", skip_states=None, assert_ok=False, t
         return wait_on(get_state, desc=desc, timeout=timeout)
     except TimeoutAssertionError as e:
         response = state_func()
-        raise TimeoutAssertionError("{} Current response containing state [{}].".format(e, response.json()))
+        raise TimeoutAssertionError(f"{e} Current response containing state [{response.json()}].")
 
 
 class GiPostGetMixin:

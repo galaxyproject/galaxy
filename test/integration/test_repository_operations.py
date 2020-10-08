@@ -24,7 +24,7 @@ class TestRepositoryInstallIntegrationTestCase(integration_util.IntegrationTestC
         cls.configure_shed(config)
 
     def setUp(self):
-        super(TestRepositoryInstallIntegrationTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
     def tearDown(self):

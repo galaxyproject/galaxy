@@ -39,7 +39,7 @@ class CliInterface:
         def __load_from_path(module_path):
             base_module = importlib.import_module(module_path)
             for module_info in pkgutil.iter_modules(base_module.__path__):
-                module = importlib.import_module('{}.{}'.format(module_path, module_info.name))
+                module = importlib.import_module(f'{module_path}.{module_info.name}')
                 yield module
 
         def __load(module_path, d):

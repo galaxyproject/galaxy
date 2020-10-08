@@ -180,7 +180,7 @@ def __rule_helper():
     return rule_helper
 
 
-class MockApp(object):
+class MockApp:
 
     def __init__(self):
         self.config = bunch.Bunch()

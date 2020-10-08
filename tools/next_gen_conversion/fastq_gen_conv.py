@@ -39,7 +39,7 @@ def __main__():
         max_blocks = int(options.blocks)
     else:
         max_blocks = -1
-    fin = open(options.input, 'r')
+    fin = open(options.input)
     fout = open(options.output, 'w')
     range_min = 1000
     range_max = -5
