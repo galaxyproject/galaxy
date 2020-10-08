@@ -121,8 +121,8 @@ class DatasetMatcher:
         else:
             if not check_implicit_conversions:
                 return False
-            target_ext, converted_dataset = hda.find_conversion_destination(formats)
-            if target_ext:
+            direct_match, target_ext, converted_dataset = hda.find_conversion_destination(formats)
+            if not direct_match and target_ext:
                 original_hda = hda
                 if converted_dataset:
                     hda = converted_dataset
@@ -219,11 +219,10 @@ class SummaryDatasetCollectionMatcher:
         formats = self.dataset_matcher.param.formats
         uses_implicit_conversion = False
         for extension in extensions:
-            if self.dataset_matcher_factory.matches_any_format(extension, formats):
-                continue
-
             datatypes_registry = self._trans.app.datatypes_registry
-            converted_ext, _ = datatypes_registry.find_conversion_destination_for_dataset_by_extensions(extension, formats)
+            direct_match, converted_ext, _ = datatypes_registry.find_conversion_destination_for_dataset_by_extensions(extension, formats)
+            if direct_match:
+                continue
             if not converted_ext:
                 return False
             else:

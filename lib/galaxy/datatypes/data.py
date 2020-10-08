@@ -649,7 +649,7 @@ class Data(metaclass=DataMeta):
         return datatypes_registry.get_converters_by_datatype(original_dataset.ext)
 
     def find_conversion_destination(self, dataset, accepted_formats, datatypes_registry, **kwd):
-        """Returns ( target_ext, existing converted dataset )"""
+        """Returns ( direct_match, converted_ext, existing converted dataset )"""
         return datatypes_registry.find_conversion_destination_for_dataset_by_extensions(dataset, accepted_formats, **kwd)
 
     def convert_dataset(self, trans, original_dataset, target_type, return_output=False, visible=True, deps=None, target_context=None, history=None):

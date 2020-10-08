@@ -89,7 +89,9 @@ class DisplayApplicationDataParameter(DisplayApplicationParameter):
                 rval = data.get_converted_files_by_type(ext)
                 if rval:
                     return rval
-            assert data.find_conversion_destination(self.formats)[0] is not None, "No conversion path found for data param: %s" % self.name
+
+            direct_match, target_ext, converted_dataset = data.find_conversion_destination(self.formats)
+            assert direct_match or target_ext is not None, "No conversion path found for data param: %s" % self.name
             return None
         return data
 
@@ -107,8 +109,12 @@ class DisplayApplicationDataParameter(DisplayApplicationParameter):
             # start conversion
             # FIXME: Much of this is copied (more than once...); should be some abstract method elsewhere called from here
             # find target ext
-            target_ext, converted_dataset = data.find_conversion_destination(self.formats, converter_safe=True)
-            if target_ext and not converted_dataset:
+            direct_match, target_ext, converted_dataset = data.find_conversion_destination(self.formats, converter_safe=True)
+            # TODO: Q: I guess we could skip the first if branch but code might
+            # be more readable
+            if direct_match:
+                pass
+            elif target_ext and not converted_dataset:
                 if isinstance(data, DisplayDataValueWrapper):
                     data = data.value
                 new_data = next(iter(data.datatype.convert_dataset(trans, data, target_ext, return_output=True, visible=False).values()))
