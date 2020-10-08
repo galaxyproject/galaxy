@@ -1897,7 +1897,7 @@ class JobWrapper(HasResourceParameters):
         filenames = [ds.file_name]
         # we will need to stage in metadata file names also
         # TODO: would be better to only stage in metadata files that are actually needed (found in command line, referenced in config files, etc.)
-        for _, value in ds.metadata.items():
+        for value in ds.metadata.values():
             if isinstance(value, model.MetadataFile):
                 filenames.append(value.file_name)
         return filenames
