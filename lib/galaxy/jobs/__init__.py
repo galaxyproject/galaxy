@@ -919,18 +919,25 @@ class JobWrapper(HasResourceParameters):
         if use_persisted_destination:
             self.job_runner_mapper.cached_job_destination = JobDestination(from_job=job)
         # Wrapper holding the info required to restore and clean up from files used for setting metadata externally
-        try:
-            metadata_strategy_override = self.get_destination_configuration('metadata_strategy', None)
-        except JobMappingException:
-            metadata_strategy_override = None
-        if job.tasks:
-            metadata_strategy_override = "directory"
-        self.external_output_metadata = get_metadata_compute_strategy(self.app.config, job.id, metadata_strategy_override=metadata_strategy_override, tool_id=job.tool_id)
+        self.__external_output_metadata = None
+        self.__has_tasks = bool(job.tasks)
 
         self.__commands_in_new_shell = True
         self.__user_system_pwent = None
         self.__galaxy_system_pwent = None
         self.__working_directory = None
+
+    @property
+    def external_output_metadata(self):
+        if self.__external_output_metadata is None:
+            try:
+                metadata_strategy_override = self.get_destination_configuration('metadata_strategy', None)
+            except JobMappingException:
+                metadata_strategy_override = None
+            if self.__has_tasks:
+                metadata_strategy_override = "directory"
+            self.__external_output_metadata = get_metadata_compute_strategy(self.app.config, self.job_id, metadata_strategy_override=metadata_strategy_override, tool_id=self.tool.id)
+        return self.__external_output_metadata
 
     @property
     def _job_dataset_path_rewriter(self):
