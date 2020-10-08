@@ -1,52 +1,10 @@
 <script>
-import _ from "underscore";
 import CollectionCreator from "./CollectionCreator";
 export default {
     components: {
         CollectionCreator,
     },
     methods: {
-        /** add (or clear if clear is truthy) a validation warning to the DOM element described in what */
-        _validationWarning: function (what, clear) {
-            var VALIDATION_CLASS = "validation-warning";
-            if (what === "name") {
-                what = this.$(".collection-name").add(this.$(".collection-name-prompt"));
-                this.$(".collection-name").focus().select();
-            }
-            if (clear) {
-                what = what || this.$(`.${VALIDATION_CLASS}`);
-                what.removeClass(VALIDATION_CLASS);
-            } else {
-                what.addClass(VALIDATION_CLASS);
-            }
-        },
-        _changeHideOriginals: function (ev) {
-            this.hideOriginals = this.$(".hide-originals").prop("checked");
-        },
-        // ........................................................................ footer
-        /** handle a collection name change */
-        _changeName: function (ev) {
-            this._validationWarning("name", !!this._getName());
-        },
-        /** check for enter key press when in the collection name and submit */
-        _nameCheckForEnter: function (ev) {
-            if (ev.keyCode === 13 && !this.blocking) {
-                this._clickCreate();
-            }
-        },
-        /** get the current collection name */
-        _getName: function () {
-            return _.escape(this.$(".collection-name").val());
-        },
-        /** attempt to create the current collection */
-        _clickCreate: function (ev) {
-            var name = this._getName();
-            if (!name) {
-                this._validationWarning("name");
-            } else if (!this.blocking) {
-                this.createList(name);
-            }
-        },
         _setUpCommonSettings: function (attributes) {
             this.hideOriginals = attributes.defaultHideSourceItems || false;
         },

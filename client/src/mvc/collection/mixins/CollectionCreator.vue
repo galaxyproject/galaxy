@@ -38,11 +38,15 @@
                 <div class="clear">
                     <label class="setting-prompt float-right">
                         {{ hideOriginalsText }}
-                        <input class="hide-originals float-right" type="checkbox" />
+                        <input class="hide-originals float-right" type="checkbox" @click="$emit('hide-original-toggle')" />
                     </label>
                 </div>
                 <div class="clear">
-                    <input class="collection-name form-control float-right" :placeholder="placeholderEnterName" />
+                    <input
+                        class="collection-name form-control float-right"
+                        :placeholder="placeholderEnterName"
+                        v-model="collectionName"
+                    />
                     <div class="collection-name-prompt float-right">
                         {{ l("Name:") }}
                     </div>
@@ -61,7 +65,7 @@
                     </div>
                 </div>
                 <div class="main-options float-right">
-                    <button class="create-collection btn btn-primary">
+                    <button class="create-collection btn btn-primary" @click="$emit('clicked-create')" :disabled="!validInput">
                         {{ l("Create list") }}
                     </button>
                 </div>
@@ -78,6 +82,15 @@ export default {
             type: Function,
             required: true,
         },
+        creationFn: {
+            type: Function,
+            required: true,
+        },
+    },
+    computed: {
+        validInput: function () {
+            return this.collectionName.length > 0;
+        },
     },
     data: function () {
         return {
@@ -87,6 +100,7 @@ export default {
             placeholderEnterName: _l("Enter a name for your new collection"),
             dropdownText: _l("Create a <i>single</> pair"),
             isExpanded: false,
+            collectionName: "",
         };
     },
     methods: {
@@ -94,14 +108,18 @@ export default {
             // _l conflicts private methods of Vue internals, expose as l instead
             return _l(str);
         },
-        // ........................................................................ header
-        /** expand help */
         _clickForHelp: function () {
             this.isExpanded = !this.isExpanded;
             return this.isExpanded;
         },
         _cancelCreate: function () {
             this.oncancel();
+        },
+        _getName: function () {
+            return this.collectionName;
+        },
+        _setUpCommonSettings: function (attributes) {
+            this.hideOriginals = attributes.defaultHideSourceItems || false;
         },
     },
 };

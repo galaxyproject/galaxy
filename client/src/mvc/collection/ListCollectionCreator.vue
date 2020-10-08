@@ -46,7 +46,7 @@
                     </ul>
                 </b-alert>
             </div>
-            <collection-creator :oncancel="oncancel">
+            <collection-creator :oncancel="oncancel" @hide-original-toggle="hideOriginalsToggle" @clicked-create="clickedCreate">
                 <template v-slot:help-content>
                     <p>
                         {{
@@ -165,18 +165,17 @@
                         />
                     </div>
                 </template>
+                <div @hide-original-toggle="hideOriginalsToggle"/>
             </collection-creator>
         </div>
     </div>
     <!-- <div>
-          <v-on:click.create-collection="_clickCreate"/>
           <v-on:dragover.collection-elements="_dravoverElements"/>
           <v-on:drop.collection-elements="_dropElements"/>
           <v-on:collection-element.dragstart .collection-elements="_elementDragstart"/>
           <v-on:collection-element.dragend . collection-elements="_elementDragend"/>
           <v-on:change.collection-name="_changeName"/>
           <v-on:keydown.collection-name="_nameCheckForEnter"/>
-          <v-on:change.hide-originals="_changeHideOriginals"/>
     </div> -->
 </template>
 
@@ -192,6 +191,12 @@ import BootstrapVue from "bootstrap-vue";
 
 Vue.use(BootstrapVue);
 export default {
+    created() {
+        this._setUpCommonSettings(this.$props);
+        this._instanceSetUp();
+        this._elementsSetUp();
+    },
+    components: { DatasetCollectionElementView },
     data: function () {
         return {
             minElements: 1,
@@ -223,12 +228,6 @@ export default {
         creationFn: {
             type: Function,
             required: true,
-        },
-        /** fn to call when the collection is created (scoped to this) */
-        oncreate: {
-            type: Function,
-            required: false,
-            default: () => {},
         },
         /** fn to call when the cancel button is clicked (scoped to this) - if falsy, no btn is displayed */
         oncancel: {
@@ -284,20 +283,6 @@ export default {
         },
     },
     methods: {
-        elementSelected(e) {
-            if (!this.selectedDatasetElems.includes(e.id)) {
-                this.selectedDatasetElems.push(e.id);
-            } else {
-                this.selectedDatasetElems.splice(this.selectedDatasetElems.indexOf(e.id), 1);
-            }
-        },
-        elementDiscarded(e) {
-            this.$delete(this.workingElements, this.workingElements.indexOf(e));
-            return this.workingElements;
-        },
-        clickClearAll() {
-            this.selectedDatasetElems = [];
-        },
         l(str) {
             // _l conflicts private methods of Vue internals, expose as l instead
             return _l(str);
@@ -326,7 +311,7 @@ export default {
             this.workingElements = this.initialElements.slice(0);
             this._ensureElementIds();
             this._validateElements();
-            // this._mangleDuplicateNames();
+            this._mangleDuplicateNames();
         },
         /** add ids to dataset objs in initial list if none */
         _ensureElementIds: function () {
@@ -362,6 +347,44 @@ export default {
             }
             return null;
         },
+        // /** mangle duplicate names using a mac-like '(counter)' addition to any duplicates */
+        _mangleDuplicateNames: function () {
+            var SAFETY = 900;
+            var counter = 1;
+            var existingNames = {};
+            this.workingElements.forEach((element) => {
+                var currName = element.name;
+                while (Object.prototype.hasOwnProperty.call(existingNames, currName)) {
+                    currName = `${element.name} (${counter})`;
+                    counter += 1;
+                    if (counter >= SAFETY) {
+                        throw new Error("Safety hit in while loop - thats impressive");
+                    }
+                }
+                element.name = currName;
+                existingNames[element.name] = true;
+            });
+        },
+        elementSelected(e) {
+            if (!this.selectedDatasetElems.includes(e.id)) {
+                this.selectedDatasetElems.push(e.id);
+            } else {
+                this.selectedDatasetElems.splice(this.selectedDatasetElems.indexOf(e.id), 1);
+            }
+        },
+        elementDiscarded(e) {
+            this.$delete(this.workingElements, this.workingElements.indexOf(e));
+            return this.workingElements;
+        },
+        clickClearAll() {
+            this.selectedDatasetElems = [];
+        },
+        hideOriginalsToggle: function () {
+            this.defaultHideSourceItems = !this.defaultHideSourceItems;
+        },
+        clickedCreate: function () {
+            this.creationFn(this.workingElements, this._getName, this.defaultHideSourceItems);
+        },
         /** convert element into JSON compatible with the collections API */
         _elementToJSON: function (element) {
             // return element.toJSON();
@@ -386,28 +409,6 @@ export default {
         //         //     this.$( '.collection-name' ).prop( 'disabled', false );
         //         //     this.$( '.create-collection' ).removeClass( 'disable' );
         //     }
-        // },
-        // /** set up event handlers on self */
-        // _setUpBehaviors: function () {
-        //     this.on("error", this._errorHandler);
-        //     this.once("rendered", function () {
-        //         this.trigger("rendered:initial", this);
-        //     });
-        //     this.on("elements:select", function (data) {
-        //         this._renderClearSelected();
-        //     });
-        //     this.on("elements:discard", function (data) {
-        //         var element = data.source.element;
-        //         this.removeElementView(data.source);
-        //         this.workingElements = _.without(this.workingElements, element);
-        //         if (!this.workingElements.length) {
-        //             this._renderNoElementsLeft();
-        //         }
-        //     });
-        //     //this.on( 'all', function(){
-        //     //    this.info( arguments );
-        //     //});
-        //     return this;
         // },
         // /** track the mouse drag over the list adding a placeholder to show where the drop would occur */
         // _dragoverElements: function (ev) {
@@ -457,51 +458,27 @@ export default {
         //     this.$dragging = null;
         // },
         //TODO: actual method - must be rewritten, assess whether methods/created/computed/etc.
-        // /** mangle duplicate names using a mac-like '(counter)' addition to any duplicates */
-        // _mangleDuplicateNames: function () {
-        //     var SAFETY = 900;
-        //     var counter = 1;
-        //     var existingNames = {};
-        //     this.workingElements.forEach((element) => {
-        //         var currName = element.name;
-        //         while (Object.prototype.hasOwnProperty.call(existingNames, currName)) {
-        //             currName = `${element.name} (${counter})`;
-        //             counter += 1;
-        //             if (counter >= SAFETY) {
-        //                 throw new Error("Safety hit in while loop - thats impressive");
-        //             }
+        /** handle errors with feedback and details to the user (if available) */
+        // _errorHandler: function (data) {
+        //     this.error(data);
+        //     var creator = this;
+        //     var content = data.message || _l("An error occurred");
+        //     if (data.xhr) {
+        //         var xhr = data.xhr;
+        //         var message = data.message;
+        //         if (xhr.readyState === 0 && xhr.status === 0) {
+        //             content += `: ${_l("Galaxy could not be reached and may be updating.")}${_l(
+        //                 " Try again in a few minutes."
+        //             )}`;
+        //         } else if (xhr.responseJSON) {
+        //             content += `:<br /><pre>${JSON.stringify(xhr.responseJSON)}</pre>`;
+        //         } else {
+        //             content += `: ${message}`;
         //         }
-        //         element.name = currName;
-        //         existingNames[element.name] = true;
-        //     });
+        //     }
+        //     creator._showAlert(content, "alert-danger");
         // },
-        //     /** handle errors with feedback and details to the user (if available) */
-        //     _errorHandler: function (data) {
-        //         this.error(data);
-        //         var creator = this;
-        //         var content = data.message || _l("An error occurred");
-        //         if (data.xhr) {
-        //             var xhr = data.xhr;
-        //             var message = data.message;
-        //             if (xhr.readyState === 0 && xhr.status === 0) {
-        //                 content += `: ${_l("Galaxy could not be reached and may be updating.")}${_l(
-        //                     " Try again in a few minutes."
-        //                 )}`;
-        //             } else if (xhr.responseJSON) {
-        //                 content += `:<br /><pre>${JSON.stringify(xhr.responseJSON)}</pre>`;
-        //             } else {
-        //                 content += `: ${message}`;
-        //             }
-        //         }
-        //         creator._showAlert(content, "alert-danger");
-        //     },
     },
-    created() {
-        this._setUpCommonSettings(this.$props);
-        this._instanceSetUp();
-        this._elementsSetUp();
-    },
-    components: { DatasetCollectionElementView },
 };
 </script>
 
