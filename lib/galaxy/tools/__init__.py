@@ -3158,9 +3158,11 @@ class ApplyRulesTool(DatabaseOperationTool):
         rule_set = RuleSet(incoming["rules"])
         copied_datasets = []
 
-        def copy_dataset(dataset):
+        def copy_dataset(dataset, tags):
             copied_dataset = dataset.copy(flush=False)
             copied_datasets.append(copied_dataset)
+            if tags is not None:
+                self.app.tag_handler.set_tags_from_list(trans.get_user(), copied_dataset, tags)
             return copied_dataset
 
         new_elements = self.app.dataset_collections_service.apply_rules(

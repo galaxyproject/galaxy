@@ -1,6 +1,6 @@
  <tool id="__APPLY_RULES__"
       name="Apply Rule to Collection"
-      version="1.0.0"
+      version="1.1.0"
       tool_type="apply_rules_to_collection">
     <type class="ApplyRulesTool" module="galaxy.tools" />
     <action module="galaxy.tools.actions.model_operations"
