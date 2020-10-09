@@ -1202,7 +1202,7 @@ class AdminToolshed(AdminGalaxy):
                 uninstalled, error_message = tool_dependency_util.remove_tool_dependency(trans.app, tool_dependency)
                 if error_message:
                     errors = True
-                    message = '{}  {}'.format(message, error_message)
+                    message = f'{message}  {error_message}'
             if errors:
                 message = "Error attempting to uninstall tool dependencies: %s" % message
                 status = 'error'

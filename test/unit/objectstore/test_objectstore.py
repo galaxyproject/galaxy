@@ -94,13 +94,13 @@ def test_disk_store_by_uuid():
             # Write empty dataset 2 in second backend, ensure it is empty and
             # exists.
             empty_dataset = MockDataset(2)
-            directory.write("", "files1/%s/dataset_%s.dat" % (empty_dataset.rel_path_for_uuid_test(), empty_dataset.uuid))
+            directory.write("", f"files1/{empty_dataset.rel_path_for_uuid_test()}/dataset_{empty_dataset.uuid}.dat")
             assert object_store.exists(empty_dataset)
             assert object_store.empty(empty_dataset)
 
             # Write non-empty dataset in backend 1, test it is not emtpy & exists.
             hello_world_dataset = MockDataset(3)
-            directory.write("Hello World!", "files1/%s/dataset_%s.dat" % (hello_world_dataset.rel_path_for_uuid_test(), hello_world_dataset.uuid))
+            directory.write("Hello World!", f"files1/{hello_world_dataset.rel_path_for_uuid_test()}/dataset_{hello_world_dataset.uuid}.dat")
             assert object_store.exists(hello_world_dataset)
             assert not object_store.empty(hello_world_dataset)
 
@@ -134,7 +134,7 @@ def test_disk_store_by_uuid():
 
             # Test delete
             to_delete_dataset = MockDataset(5)
-            to_delete_real_path = directory.write("content to be deleted!", "files1/%s/dataset_%s.dat" % (to_delete_dataset.rel_path_for_uuid_test(), to_delete_dataset.uuid))
+            to_delete_real_path = directory.write("content to be deleted!", f"files1/{to_delete_dataset.rel_path_for_uuid_test()}/dataset_{to_delete_dataset.uuid}.dat")
             assert object_store.exists(to_delete_dataset)
             assert object_store.delete(to_delete_dataset)
             assert not object_store.exists(to_delete_dataset)
@@ -740,7 +740,7 @@ def test_config_parse_azure():
             assert len(extra_dirs) == 2
 
 
-class MockDataset(object):
+class MockDataset:
 
     def __init__(self, id):
         self.id = id
@@ -755,9 +755,9 @@ class MockDataset(object):
 
 def _assert_has_keys(the_dict, keys):
     for key in keys:
-        assert key in the_dict, "key [%s] not in [%s]" % (key, the_dict)
+        assert key in the_dict, f"key [{key}] not in [{the_dict}]"
 
 
 def _assert_key_has_value(the_dict, key, value):
-    assert key in the_dict, "dict [%s] doesn't container expected key [%s]" % (key, the_dict)
-    assert the_dict[key] == value, "%s != %s" % (the_dict[key], value)
+    assert key in the_dict, f"dict [{key}] doesn't container expected key [{the_dict}]"
+    assert the_dict[key] == value, "{} != {}".format(the_dict[key], value)

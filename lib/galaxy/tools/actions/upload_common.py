@@ -4,10 +4,10 @@ import os
 import socket
 import tempfile
 from collections import OrderedDict
+from io import StringIO
 from json import dump, dumps
 from urllib.parse import urlparse
 
-from six import StringIO
 from sqlalchemy.orm import eagerload_all
 from webob.compat import cgi_FieldStorage
 
@@ -187,7 +187,7 @@ def __new_history_upload(trans, uploaded_dataset, history=None, state=None):
     else:
         hda.state = hda.states.QUEUED
     trans.sa_session.flush()
-    history.add_dataset(hda, genome_build=uploaded_dataset.dbkey)
+    history.add_dataset(hda, genome_build=uploaded_dataset.dbkey, quota=False)
     permissions = trans.app.security_agent.history_get_default_permissions(history)
     trans.app.security_agent.set_all_dataset_permissions(hda.dataset, permissions)
     trans.sa_session.flush()

@@ -24,7 +24,7 @@ def _ensure_rule_contains_keys(rule, keys):
 def _ensure_key_value_in(rule, key, values):
     value = rule[key]
     if value not in values:
-        raise ValueError("Invalid value [{}] for [{}] encountered.".format(value, key))
+        raise ValueError(f"Invalid value [{value}] for [{key}] encountered.")
 
 
 def _ensure_valid_pattern(expression):
@@ -39,7 +39,7 @@ def apply_regex(regex, target, data, replacement=None, group_count=None):
         if replacement is None:
             match = pattern.search(source)
             if not match:
-                raise Exception("Problem applying regular expression [{}] to [{}].".format(regex, source))
+                raise Exception(f"Problem applying regular expression [{regex}] to [{source}].")
 
             if group_count:
                 if len(match.groups()) != group_count:

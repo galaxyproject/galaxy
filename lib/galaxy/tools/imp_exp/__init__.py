@@ -109,4 +109,4 @@ class JobExportHistoryArchiveWrapper:
         options = "--galaxy-version '%s'" % VERSION_MAJOR
         if jeha.compressed:
             options += " -G"
-        return "{} {}".format(options, temp_output_dir)
+        return f"{options} {temp_output_dir}"

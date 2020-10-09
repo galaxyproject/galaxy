@@ -127,7 +127,7 @@ def __assert_mapper_errors_with_message(mapper, message):
     except Exception as e:
         exception = e
     assert exception
-    assert str(exception) == message, "%s != %s" % (str(exception), message)
+    assert str(exception) == message, "{} != {}".format(str(exception), message)
 
 
 def __mapper(tool_job_destination=TOOL_JOB_DESTINATION):
@@ -147,7 +147,7 @@ def __dynamic_destination(params={}):
     return JobDestination(runner="dynamic", params=params)
 
 
-class MockJobConfig(object):
+class MockJobConfig:
 
     def __init__(self):
         self.rule_response = None
@@ -195,7 +195,7 @@ class MockJobWrapper(HasResourceParameters):
         )
 
 
-class MockTool(object):
+class MockTool:
 
     def __init__(self, tool_job_destination):
         self.id = "testtoolshed/devteam/tool1/23abcd13123"

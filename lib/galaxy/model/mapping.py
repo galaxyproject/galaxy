@@ -333,14 +333,6 @@ model.ImplicitlyConvertedDatasetAssociation.table = Table(
     Column("metadata_safe", Boolean, index=True, default=True),
     Column("type", TrimmedString(255)))
 
-model.ValidationError.table = Table(
-    "validation_error", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("dataset_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
-    Column("message", TrimmedString(255)),
-    Column("err_type", TrimmedString(64)),
-    Column("attributes", TEXT))
-
 model.Group.table = Table(
     "galaxy_group", metadata,
     Column("id", Integer, primary_key=True),
@@ -1133,18 +1125,18 @@ model.WorkflowInvocationOutputDatasetAssociation.table = Table(
     "workflow_invocation_output_dataset_association", metadata,
     Column("id", Integer, primary_key=True),
     Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id"), index=True),
-    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id")),
+    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True),
     Column("dataset_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
-    Column("workflow_output_id", Integer, ForeignKey("workflow_output.id")),
+    Column("workflow_output_id", Integer, ForeignKey("workflow_output.id"), index=True),
 )
 
 model.WorkflowInvocationOutputDatasetCollectionAssociation.table = Table(
     "workflow_invocation_output_dataset_collection_association", metadata,
     Column("id", Integer, primary_key=True),
     Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id", name='fk_wiodca_wii'), index=True),
-    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id", name='fk_wiodca_wsi')),
+    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id", name='fk_wiodca_wsi'), index=True),
     Column("dataset_collection_id", Integer, ForeignKey("history_dataset_collection_association.id", name='fk_wiodca_dci'), index=True),
-    Column("workflow_output_id", Integer, ForeignKey("workflow_output.id", name='fk_wiodca_woi')),
+    Column("workflow_output_id", Integer, ForeignKey("workflow_output.id", name='fk_wiodca_woi'), index=True),
 )
 
 model.WorkflowInvocationOutputValue.table = Table(
@@ -1168,7 +1160,7 @@ model.WorkflowInvocationStepOutputDatasetCollectionAssociation.table = Table(
     "workflow_invocation_step_output_dataset_collection_association", metadata,
     Column("id", Integer, primary_key=True),
     Column("workflow_invocation_step_id", Integer, ForeignKey("workflow_invocation_step.id", name='fk_wisodca_wisi'), index=True),
-    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id", name='fk_wisodca_wsi')),
+    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id", name='fk_wisodca_wsi'), index=True),
     Column("dataset_collection_id", Integer, ForeignKey("history_dataset_collection_association.id", name='fk_wisodca_dci'), index=True),
     Column("output_name", String(255), nullable=True),
 )
@@ -1336,16 +1328,6 @@ model.HistoryTagAssociation.table = Table(
     "history_tag_association", metadata,
     Column("id", Integer, primary_key=True),
     Column("history_id", Integer, ForeignKey("history.id"), index=True),
-    Column("tag_id", Integer, ForeignKey("tag.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("user_tname", TrimmedString(255), index=True),
-    Column("value", TrimmedString(255), index=True),
-    Column("user_value", TrimmedString(255), index=True))
-
-model.DatasetTagAssociation.table = Table(
-    "dataset_tag_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("dataset_id", Integer, ForeignKey("dataset.id"), index=True),
     Column("tag_id", Integer, ForeignKey("tag.id"), index=True),
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
     Column("user_tname", TrimmedString(255), index=True),
@@ -1720,8 +1702,6 @@ mapper(model.CloudAuthz, model.CloudAuthz.table, properties=dict(
                    backref='cloudauthz')
 ))
 
-mapper(model.ValidationError, model.ValidationError.table)
-
 simple_mapping(model.DynamicTool)
 
 simple_mapping(model.HistoryDatasetAssociation,
@@ -1785,9 +1765,6 @@ simple_mapping(model.Dataset,
         primaryjoin=(
             (model.Dataset.table.c.id == model.LibraryDatasetDatasetAssociation.table.c.dataset_id) &
             (model.LibraryDatasetDatasetAssociation.table.c.deleted == false()))),
-    tags=relation(model.DatasetTagAssociation,
-        order_by=model.DatasetTagAssociation.table.c.id,
-        backref='datasets')
 )
 
 mapper(model.DatasetHash, model.DatasetHash.table, properties=dict(
@@ -2752,7 +2729,6 @@ def tag_mapping(tag_association_class, backref_name):
 
 
 tag_mapping(model.HistoryTagAssociation, "tagged_histories")
-tag_mapping(model.DatasetTagAssociation, "tagged_datasets")
 tag_mapping(model.HistoryDatasetAssociationTagAssociation, "tagged_history_dataset_associations")
 tag_mapping(model.LibraryDatasetDatasetAssociationTagAssociation, "tagged_library_dataset_dataset_associations")
 tag_mapping(model.PageTagAssociation, "tagged_pages")

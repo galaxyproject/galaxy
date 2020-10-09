@@ -16,9 +16,6 @@ class GeneTrack(binary.Binary):
     edam_format = "format_2919"
     file_ext = "genetrack"
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
 
 class UCSCTrackHub(Html):
     """
@@ -27,9 +24,6 @@ class UCSCTrackHub(Html):
 
     file_ext = 'trackhub'
     composite_type = 'auto_primary_file'
-
-    def __init__(self, **kwd):
-        Html.__init__(self, **kwd)
 
     def generate_primary_file(self, dataset=None):
         """
@@ -44,7 +38,7 @@ class UCSCTrackHub(Html):
             opt_text = ''
             if composite_file.optional:
                 opt_text = ' (optional)'
-            rval.append('<li><a href="{}">{}</a>{}'.format(composite_name, composite_name, opt_text))
+            rval.append(f'<li><a href="{composite_name}">{composite_name}</a>{opt_text}')
         rval.append('</ul></html>')
         return "\n".join(rval)
 

@@ -136,11 +136,10 @@ class Velvet(Html):
     MetadataElement(name="long_reads", desc="has long reads", default="False", readonly=False, set_in_upload=True)
     MetadataElement(name="short2_reads", desc="has 2nd short reads", default="False", readonly=False, set_in_upload=True)
     composite_type = 'auto_primary_file'
-    allow_datatype_change = False
     file_ext = 'velvet'
 
     def __init__(self, **kwd):
-        Html.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.add_composite_file('Sequences', mimetype='text/html', description='Sequences', substitute_name_with_metadata=None, is_binary=False)
         self.add_composite_file('Roadmaps', mimetype='text/html', description='Roadmaps', substitute_name_with_metadata=None, is_binary=False)
         self.add_composite_file('Log', mimetype='text/html', description='Log', optional='True', substitute_name_with_metadata=None, is_binary=False)
@@ -158,7 +157,7 @@ class Velvet(Html):
             if composite_file.get('description'):
                 rval.append('<li><a href="{}" type="text/plain">{} ({})</a>{}</li>'.format(fn, fn, composite_file.get('description'), opt_text))
             else:
-                rval.append('<li><a href="{}" type="text/plain">{}</a>{}</li>'.format(fn, fn, opt_text))
+                rval.append(f'<li><a href="{fn}" type="text/plain">{fn}</a>{opt_text}</li>')
         rval.append('</ul></div></html>')
         return "\n".join(rval)
 
@@ -205,7 +204,7 @@ class Velvet(Html):
                 if composite_file.get('description'):
                     rval.append('<li><a href="{}" type="text/plain">{} ({})</a>{}</li>'.format(fn, fn, composite_file.get('description'), opt_text))
                 else:
-                    rval.append('<li><a href="{}" type="text/plain">{}</a>{}</li>'.format(fn, fn, opt_text))
+                    rval.append(f'<li><a href="{fn}" type="text/plain">{fn}</a>{opt_text}</li>')
         rval.append('</ul></div></html>')
         with open(dataset.file_name, 'w') as f:
             f.write("\n".join(rval))

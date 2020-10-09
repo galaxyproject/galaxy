@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 FileSourcePath = namedtuple('FileSourcePath', ['file_source', 'path'])
 
 
-class ConfiguredFileSources(object):
+class ConfiguredFileSources:
     """Load plugins and resolve Galaxy URIs to FileSource objects."""
 
     def __init__(self, file_sources_config, conf_file=None, conf_dict=None, load_stock_plugins=False):
@@ -61,7 +61,12 @@ class ConfiguredFileSources(object):
         extra_kwds = {
             'file_sources_config': self._file_sources_config,
         }
-        return plugin_config.load_plugins(self._plugin_classes, plugin_source, extra_kwds)
+        return plugin_config.load_plugins(
+            self._plugin_classes,
+            plugin_source,
+            extra_kwds,
+            dict_to_list_key="id",
+        )
 
     def get_file_source_path(self, uri):
         """Parse uri into a FileSource object and a path relative to its base."""
@@ -161,7 +166,7 @@ class ConfiguredFileSources(object):
         return ConfiguredFileSources(file_sources_config, conf_dict=sources_as_dict)
 
 
-class ConfiguredFileSourcesConfig(object):
+class ConfiguredFileSourcesConfig:
 
     def __init__(self, symlink_allowlist=[], library_import_dir=None, user_library_import_dir=None, ftp_upload_dir=None, ftp_upload_purge=True):
         self.symlink_allowlist = symlink_allowlist
@@ -202,7 +207,7 @@ class ConfiguredFileSourcesConfig(object):
         )
 
 
-class ProvidesUserFileSourcesUserContext(object):
+class ProvidesUserFileSourcesUserContext:
     """Implement a FileSourcesUserContext from a Galaxy ProvidesUserContext (e.g. trans)."""
 
     def __init__(self, trans):
@@ -228,7 +233,7 @@ class ProvidesUserFileSourcesUserContext(object):
         return user and user.extra_preferences
 
 
-class DictFileSourcesUserContext(object):
+class DictFileSourcesUserContext:
 
     def __init__(self, **kwd):
         self._kwd = kwd

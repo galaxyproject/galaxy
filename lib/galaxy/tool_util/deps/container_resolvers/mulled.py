@@ -28,6 +28,7 @@ from ..mulled.util import (
     split_tag,
     v1_image_name,
     v2_image_name,
+    version_sorted,
 )
 from ..requirements import (
     ContainerDescription,
@@ -71,19 +72,17 @@ def list_docker_cached_mulled_images(namespace=None, hash_func="v2", resolution_
         except subprocess.CalledProcessError:
             log.info("Call to `docker images` failed, configured container resolution may be broken")
             return []
-        images_and_versions = [l.split()[0:2] for l in images_and_versions[1:]]
+        images_and_versions = [":".join(l.split()[0:2]) for l in images_and_versions[1:]]
         if resolution_cache is not None:
             resolution_cache[cache_key] = images_and_versions
 
-    name_filter = get_filter(namespace)
-
     def output_line_to_image(line):
-        image_name, version = line[0], line[1]
-        identifier = "{}:{}".format(image_name, version)
-        image = identifier_to_cached_target(identifier, hash_func, namespace=namespace)
+        image = identifier_to_cached_target(line, hash_func, namespace=namespace)
         return image
 
-    raw_images = [output_line_to_image(_) for _ in filter(name_filter, images_and_versions)]
+    name_filter = get_filter(namespace)
+    sorted_images = version_sorted([_ for _ in filter(name_filter, images_and_versions)])
+    raw_images = (output_line_to_image(_) for _ in sorted_images)
     return [i for i in raw_images if i is not None]
 
 
@@ -137,13 +136,14 @@ def identifier_to_cached_target(identifier, hash_func, namespace=None):
 
 def list_cached_mulled_images_from_path(directory, hash_func="v2"):
     contents = os.listdir(directory)
-    raw_images = map(lambda name: identifier_to_cached_target(name, hash_func), contents)
+    sorted_images = version_sorted(contents)
+    raw_images = map(lambda name: identifier_to_cached_target(name, hash_func), sorted_images)
     return [i for i in raw_images if i is not None]
 
 
 def get_filter(namespace):
     prefix = "quay.io/" if namespace is None else "quay.io/%s" % namespace
-    return lambda name: name[0].startswith(prefix) and name[0].count("/") == 2
+    return lambda name: name.startswith(prefix) and name.count("/") == 2
 
 
 def find_best_matching_cached_image(targets, cached_images, hash_func):
@@ -258,7 +258,7 @@ def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None)
     if len(targets) == 1:
         target = targets[0]
         target_version = target.version
-        cache_key = "ns[{}]__single__{}__@__{}".format(namespace, target.package_name, target_version)
+        cache_key = f"ns[{namespace}]__single__{target.package_name}__@__{target_version}"
         if cache_key in unresolved_cache:
             return None
         name = cached_name(cache_key)
@@ -268,21 +268,14 @@ def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None)
         tags = mulled_tags_for(namespace, target.package_name, resolution_cache=resolution_cache)
 
         if tags:
-            if target_version:
-                for tag in tags:
-                    if '--' in tag:
-                        version, build = split_tag(tag)
-                    else:
-                        version = tag
-                        build = None
-                    if version == target_version:
-                        name = "{}:{}".format(target.package_name, version)
-                        if build:
-                            name = "{}--{}".format(name, build)
-                        break
-            else:
-                version, build = split_tag(tags[0])
-                name = "{}:{}--{}".format(target.package_name, version, build)
+            for tag in tags:
+                if '--' in tag:
+                    version, _ = split_tag(tag)
+                else:
+                    version = tag
+                if target_version and version == target_version:
+                    name = f"{target.package_name}:{tag}"
+                    break
 
     else:
         def first_tag_if_available(image_name):
@@ -301,7 +294,7 @@ def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None)
         else:
             raise Exception("Unimplemented mulled hash_func [%s]" % hash_func)
 
-        cache_key = "ns[{}]__{}__{}".format(namespace, hash_func, base_image_name)
+        cache_key = f"ns[{namespace}]__{hash_func}__{base_image_name}"
         if cache_key in unresolved_cache:
             return None
         name = cached_name(cache_key)
@@ -318,7 +311,7 @@ def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None)
             else:
                 # base_image_name of form <package_hash>, simply add build number
                 # as tag to fully qualify image.
-                name = "{}:{}".format(base_image_name, tag)
+                name = f"{base_image_name}:{tag}"
 
     if name and mulled_resolution_cache:
         mulled_resolution_cache.put(cache_key, name)
@@ -406,9 +399,9 @@ class MulledDockerContainerResolver(ContainerResolver):
 
         name = targets_to_mulled_name(targets=targets, hash_func=self.hash_func, namespace=self.namespace, resolution_cache=resolution_cache)
         if name:
-            container_id = "quay.io/{}/{}".format(self.namespace, name)
+            container_id = f"quay.io/{self.namespace}/{name}"
             if self.protocol:
-                container_id = "{}{}".format(self.protocol, container_id)
+                container_id = f"{self.protocol}{container_id}"
             container_description = ContainerDescription(
                 container_id,
                 type=self.container_type,

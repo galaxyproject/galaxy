@@ -65,7 +65,7 @@ def assert_realizes_as(file_sources, uri, expected, user_context=None):
     _, temp_name = tempfile.mkstemp()
     file_source_path.file_source.realize_to(file_source_path.path, temp_name, user_context=user_context)
     try:
-        with open(temp_name, "r") as f:
+        with open(temp_name) as f:
             realized_contents = f.read()
         if realized_contents != expected:
             message = "Expected to realize contents at [{}] as [{}], instead found [{}]".format(

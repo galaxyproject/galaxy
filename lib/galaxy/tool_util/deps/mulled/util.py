@@ -48,7 +48,7 @@ def quay_versions(namespace, pkg_name):
 def quay_repository(namespace, pkg_name):
     assert namespace is not None
     assert pkg_name is not None
-    url = 'https://quay.io/api/v1/repository/{}/{}'.format(namespace, pkg_name)
+    url = f'https://quay.io/api/v1/repository/{namespace}/{pkg_name}'
     response = requests.get(url, timeout=QUAY_IO_TIMEOUT)
     data = response.json()
     return data
@@ -117,14 +117,22 @@ def split_tag(tag):
 
 def parse_tag(tag):
     """Decompose tag of mulled images into version, build string and build number."""
-    version = tag
+    version = tag.rsplit(':')[-1]
     build_string = "-1"
-    if '--' in tag:
-        version, build_string = tag.rsplit('--', 1)
-    elif '-' in tag:
+    build_number = -1
+    match = BUILD_NUMBER_REGEX.search(version)
+    if match:
+        build_number = int(match.group(0))
+    if '--' in version:
+        version, build_string = version.rsplit('--', 1)
+    elif '-' in version:
         # Should be mulled multi-container image tag
-        version, build_string = tag.rsplit('-', 1)
-    build_number = int(BUILD_NUMBER_REGEX.search(tag).group(0))
+        version, build_string = version.rsplit('-', 1)
+    else:
+        # We don't have a build number, and the BUILD_NUMBER_REGEX above is only accurate for build strings,
+        # so set build number to -1. Any matching image:version combination with a build number
+        # will be considered newer.
+        build_number = -1
     return PARSED_TAG(tag=tag,
                       version=packaging.version.parse(version),
                       build_string=packaging.version.parse(build_string),
@@ -136,7 +144,7 @@ def version_sorted(elements):
     elements = (parse_tag(tag) for tag in elements)
     elements = sorted(elements, key=lambda tag: tag.build_string, reverse=True)
     elements = sorted(elements, key=lambda tag: tag.build_number, reverse=True)
-    elements = sorted(elements, key=lambda tag: tag.version)
+    elements = sorted(elements, key=lambda tag: tag.version, reverse=True)
     return [e.tag for e in elements]
 
 
@@ -176,7 +184,7 @@ def _simple_image_name(targets, image_build=None):
         suffix += ":%s" % target.version
         if build is not None:
             suffix += "--%s" % build
-    return "{}{}".format(target.package_name, suffix)
+    return f"{target.package_name}{suffix}"
 
 
 def v1_image_name(targets, image_build=None, name_override=None):
@@ -213,7 +221,7 @@ def v1_image_name(targets, image_build=None, name_override=None):
         m = hashlib.sha1()
         m.update(requirements_buffer.encode())
         suffix = "" if not image_build else ":%s" % image_build
-        return "mulled-v1-{}{}".format(m.hexdigest(), suffix)
+        return f"mulled-v1-{m.hexdigest()}{suffix}"
 
 
 def v2_image_name(targets, image_build=None, name_override=None):
@@ -279,8 +287,8 @@ def v2_image_name(targets, image_build=None, name_override=None):
             build_suffix = image_build
         suffix = ""
         if version_hash_str or build_suffix:
-            suffix = ":{}{}".format(version_hash_str, build_suffix)
-        return "mulled-v2-{}{}".format(package_hash.hexdigest(), suffix)
+            suffix = f":{version_hash_str}{build_suffix}"
+        return f"mulled-v2-{package_hash.hexdigest()}{suffix}"
 
 
 def get_file_from_recipe_url(url):

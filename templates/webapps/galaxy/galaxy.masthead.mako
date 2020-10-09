@@ -35,11 +35,17 @@
 
     ## load the frame manager
     <script type="text/javascript">
-        config.addInitialization(function(galaxy, config) {
-            console.log("galaxy.masthead.mako", "initialize masthead");
-            let options = ${h.dumps(masthead_config)};
-            let container = document.getElementById("masthead");
-            window.bundleEntries.initMasthead(options, container);
-        });
+        if (window.self === window.top) {
+            config.addInitialization(function (galaxy, config) {
+                console.log("galaxy.masthead.mako", "initialize masthead");
+                let options = ${h.dumps(masthead_config)};
+                const container = document.getElementById("masthead");
+                window.bundleEntries.initMasthead(options, container);
+            });
+        } else {
+            console.log("galaxy.masthead.mako", "Detected embedding, not initializing masthead");
+            const container = document.getElementById("masthead");
+            container.parentNode.removeChild(container);
+        }
     </script>
 </%def>

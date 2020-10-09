@@ -19,7 +19,7 @@ class ExtendedMetadataMappingIntegrationTestCase(integration_util.IntegrationTes
         config["retry_metadata_internally"] = False
 
     def setUp(self):
-        super(ExtendedMetadataMappingIntegrationTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
 

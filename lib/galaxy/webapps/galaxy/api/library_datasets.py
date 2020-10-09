@@ -645,7 +645,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                 path += ldda.name
                 while path in seen:
                     path += '_'
-                path = "{path}.{extension}".format(path=path, extension=ldda.extension)
+                path = f"{path}.{ldda.extension}"
                 seen.append(path)
                 zpath = os.path.split(path)[-1]  # comes as base_name/fname
                 outfname, zpathext = os.path.splitext(zpath)
@@ -708,14 +708,14 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
             if archive_format == 'zip':
                 archive.close()
                 trans.response.set_content_type("application/octet-stream")
-                trans.response.headers["Content-Disposition"] = 'attachment; filename="{}.{}"'.format(fname, outext)
+                trans.response.headers["Content-Disposition"] = f'attachment; filename="{fname}.{outext}"'
                 archive = util.streamball.ZipBall(tmpf, tmpd)
                 archive.wsgi_status = trans.response.wsgi_status()
                 archive.wsgi_headeritems = trans.response.wsgi_headeritems()
                 return archive.stream
             else:
                 trans.response.set_content_type("application/x-tar")
-                trans.response.headers["Content-Disposition"] = 'attachment; filename="{}.{}"'.format(fname, outext)
+                trans.response.headers["Content-Disposition"] = f'attachment; filename="{fname}.{outext}"'
                 archive.wsgi_status = trans.response.wsgi_status()
                 archive.wsgi_headeritems = trans.response.wsgi_headeritems()
                 return archive.stream
@@ -729,7 +729,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                 fStat = os.stat(dataset.file_name)
                 trans.response.set_content_type(ldda.get_mime())
                 trans.response.headers['Content-Length'] = int(fStat.st_size)
-                fname = "{path}.{extension}".format(path=ldda.name, extension=ldda.extension)
+                fname = f"{ldda.name}.{ldda.extension}"
                 fname = ''.join(c in util.FILENAME_VALID_CHARS and c or '_' for c in fname)[0:150]
                 trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % fname
                 try:

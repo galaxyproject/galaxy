@@ -8,9 +8,9 @@ from collections import (
     OrderedDict
 )
 from errno import ENOENT
+from urllib.parse import urlparse
 
 from markupsafe import escape
-from six.moves.urllib.parse import urlparse
 
 from galaxy.exceptions import (
     ConfigurationError,
@@ -216,10 +216,13 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             )
 
         if parsing_shed_tool_conf:
-            shed_tool_conf_dict = dict(config_filename=config_filename,
-                                       tool_path=tool_path,
-                                       config_elems=config_elems)
-            self._dynamic_tool_confs.append(shed_tool_conf_dict)
+            # if read_only mode, (CVMFS consumer) don't add to dynamic_confs
+            if os.access(config_filename, os.W_OK):
+                shed_tool_conf_dict = dict(config_filename=config_filename,
+                                           tool_path=tool_path,
+                                           tool_cache_data_dir=tool_cache_data_dir,
+                                           config_elems=config_elems)
+                self._dynamic_tool_confs.append(shed_tool_conf_dict)
 
     def _get_tool_by_uuid(self, tool_uuid):
         if tool_uuid in self._tools_by_uuid:
@@ -350,7 +353,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                     new_tool_id=tool_id,
                     tool=tool,
                 )
-                log_msg = "Loaded tool id: {}, version: {} into tool panel.".format(tool.id, tool.version)
+                log_msg = f"Loaded tool id: {tool.id}, version: {tool.version} into tool panel."
         else:
             inserted = False
             index = self._integrated_tool_panel.index_of_tool_id(tool_id)
@@ -382,7 +385,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                         # integrated_tool_panel.xml, so append it to the tool
                         # panel.
                         panel_dict.append_tool(tool)
-                        log_msg = "Loaded tool id: {}, version: {} into tool panel..".format(tool.id, tool.version)
+                        log_msg = f"Loaded tool id: {tool.id}, version: {tool.version} into tool panel.."
                     else:
                         # We are in the process of installing the tool or we are reloading the whole toolbox.
                         tool_lineage = self._lineage_map.get(tool_id)
@@ -390,7 +393,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                         if not already_loaded:
                             # If the tool is not defined in integrated_tool_panel.xml, append it to the tool panel.
                             panel_dict.append_tool(tool)
-                            log_msg = "Loaded tool id: {}, version: {} into tool panel....".format(tool.id, tool.version)
+                            log_msg = f"Loaded tool id: {tool.id}, version: {tool.version} into tool panel...."
         if log_msg and (not hasattr(self.app, 'tool_cache') or tool_id in self.app.tool_cache._new_tool_ids):
             log.debug(log_msg)
 
@@ -407,7 +410,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 if workflow_id in self._workflows_by_id:
                     workflow = self._workflows_by_id[workflow_id]
                     self._tool_panel[key] = workflow
-                    log.debug("Loaded workflow: {} {}".format(workflow_id, workflow.name))
+                    log.debug(f"Loaded workflow: {workflow_id} {workflow.name}")
             elif item_type == panel_item_types.LABEL:
                 self._tool_panel[key] = val
             elif item_type == panel_item_types.SECTION:
@@ -429,7 +432,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                         if workflow_id in self._workflows_by_id:
                             workflow = self._workflows_by_id[workflow_id]
                             section.elems[section_key] = workflow
-                            log.debug("Loaded workflow: {} {}".format(workflow_id, workflow.name))
+                            log.debug(f"Loaded workflow: {workflow_id} {workflow.name}")
                     elif section_item_type == panel_item_types.LABEL:
                         if section_val:
                             section.elems[section_key] = section_val
@@ -1005,7 +1008,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         return message, status
 
     def get_sections(self):
-        for k, v in self._tool_panel.items():
+        for v in self._tool_panel.values():
             if isinstance(v, ToolSection):
                 yield (v.id, v.name)
 
@@ -1084,7 +1087,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                     rval.append(elt.to_dict(**kwargs))
         else:
             filter_method = self._build_filter_method(trans)
-            for id, tool in self._tools_by_id.items():
+            for tool in self._tools_by_id.values():
                 tool = filter_method(tool, panel_item_types.TOOL)
                 if not tool:
                     continue

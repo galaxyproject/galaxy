@@ -85,13 +85,13 @@ def get_config(argv, use_argparse=True, cwd=None):
     Read sys.argv and parse out repository of migrations and database url.
 
     >>> import os
-    >>> from six.moves.configparser import SafeConfigParser
+    >>> from configparser import ConfigParser
     >>> from shutil import rmtree
     >>> from tempfile import mkdtemp
     >>> config_dir = mkdtemp()
     >>> os.makedirs(os.path.join(config_dir, 'config'))
     >>> def write_ini(path, property, value):
-    ...     p = SafeConfigParser()
+    ...     p = ConfigParser()
     ...     p.add_section('app:main')
     ...     p.set('app:main', property, value)
     ...     with open(os.path.join(config_dir, 'config', path), 'w') as f: p.write(f)

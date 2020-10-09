@@ -369,7 +369,7 @@ workflow_editor:
     edit_annotation: '#workflow-annotation'
     edit_name: '#workflow-name'
 
-    tool_menu: '#workflow-tool-menu'
+    tool_menu: '.toolMenuContainer'
     tool_menu_section_link: '.tool-menu-section-${section_name} a span'
     tool_menu_item_link: 'a.tool-menu-item-${item_name}'
 

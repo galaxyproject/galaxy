@@ -7,8 +7,10 @@
  * will handle initializations for components individually.
  */
 
+/* jquery and _ are exposed via expose-loader while several external plugins rely on these */
 import $ from "jquery";
-import "bootstrap";
+import _ from "expose-loader?exposes[]=_&exposes[]=underscore!underscore"; // eslint-disable-line no-unused-vars
+
 export { getGalaxyInstance, setGalaxyInstance } from "app";
 import { TracksterUIView } from "viz/trackster";
 export { TracksterUI } from "viz/trackster";
@@ -96,6 +98,7 @@ export { mountWorkflowEditor } from "components/Workflow/Editor/mount";
 export { mountPageEditor } from "components/PageEditor/mount";
 export { mountPageDisplay } from "components/PageDisplay";
 export { mountDestinationParams } from "components/JobDestinationParams";
+export { mountDatasetInformation } from "components/DatasetInformation";
 
 // Used in common.mako
 export { default as store } from "storemodern";

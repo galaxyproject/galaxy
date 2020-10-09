@@ -7,9 +7,8 @@ from within Galaxy.
 """
 import logging
 import re
-
-from six.moves.html_entities import name2codepoint
-from six.moves.html_parser import HTMLParser
+from html.entities import name2codepoint
+from html.parser import HTMLParser
 
 from galaxy import exceptions, model
 from galaxy.managers import base, sharable
@@ -310,11 +309,11 @@ class PageContentProcessor(HTMLParser):
                 value = value.replace('>', '&gt;').replace('<', '&lt;').replace('"', '&quot;')
                 value = self.bare_ampersand.sub("&amp;", value)
                 uattrs.append((key, value))
-            strattrs = ''.join(' {}="{}"'.format(k, v) for k, v in uattrs)
+            strattrs = ''.join(f' {k}="{v}"' for k, v in uattrs)
         if tag in self.elements_no_end_tag:
-            self.pieces.append('<{}{} />'.format(tag, strattrs))
+            self.pieces.append(f'<{tag}{strattrs} />')
         else:
-            self.pieces.append('<{}{}>'.format(tag, strattrs))
+            self.pieces.append(f'<{tag}{strattrs}>')
 
     def handle_endtag(self, tag):
         """

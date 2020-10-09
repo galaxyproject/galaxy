@@ -2,7 +2,6 @@
 Offload jobs to a Kubernetes cluster.
 """
 
-import errno
 import logging
 import math
 import os
@@ -227,7 +226,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         (see pod selector) and an appropriate restart policy."""
         k8s_spec_template = {
             "metadata": {
-                "labels": {"app": self.__produce_unique_k8s_job_name(ajs.job_wrapper.get_id_tag())}
+                "labels": {"app": self.__produce_unique_k8s_job_name(ajs.job_wrapper.get_id_tag())[:-5]}
             },
             "spec": {
                 "volumes": self.runner_params['k8s_mountable_volumes'],
@@ -459,30 +458,14 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             # there is no job responding to this job_id, it is either lost or something happened.
             log.error("No Jobs are available under expected selector app=%s", job_state.job_id)
             self.mark_as_failed(job_state)
-            try:
-                with open(job_state.error_file, 'w') as error_file:
-                    error_file.write("No Kubernetes Jobs are available under expected selector app=%s\n" % job_state.job_id)
-            except OSError as e:
-                # Python 2/3 compatible handling of FileNotFoundError
-                if e.errno == errno.ENOENT:
-                    log.error("Job directory already cleaned up. Assuming already handled for selector app=%s", job_state.job_id)
-                else:
-                    raise
-            return job_state
+            # job is no longer viable - remove from watched jobs
+            return None
         else:
             # there is more than one job associated to the expected unique job id used as selector.
             log.error("More than one Kubernetes Job associated to job id '%s'", job_state.job_id)
             self.mark_as_failed(job_state)
-            try:
-                with open(job_state.error_file, 'w') as error_file:
-                    error_file.write("More than one Kubernetes Job associated with job id '%s'\n" % job_state.job_id)
-            except OSError as e:
-                # Python 2/3 compatible handling of FileNotFoundError
-                if e.errno == errno.ENOENT:
-                    log.error("Job directory already cleaned up. Assuming already handled for selector app=%s", job_state.job_id)
-                else:
-                    raise
-            return job_state
+            # job is no longer viable - remove from watched jobs
+            return None
 
     def _handle_job_failure(self, job, job_state):
         # Figure out why job has failed
@@ -537,14 +520,14 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         """Attempts to delete a dispatched job to the k8s cluster"""
         job = job_wrapper.get_job()
         try:
-            name = self.__produce_unique_k8s_job_name(job.get_id_tag())
+            name = job.job_runner_external_id
             namespace = self.runner_params['k8s_namespace']
             job_to_delete = find_job_object_by_name(self._pykube_api, name, namespace)
             if job_to_delete:
                 self.__cleanup_k8s_job(job_to_delete)
             # TODO assert whether job parallelism == 0
             # assert not job_to_delete.exists(), "Could not delete job,"+job.job_runner_external_id+" it still exists"
-            log.debug("({}/{}) Terminated at user's request".format(job.id, job.job_runner_external_id))
+            log.debug(f"({job.id}/{job.job_runner_external_id}) Terminated at user's request")
         except Exception as e:
             log.exception("({}/{}) User killed running job, but error encountered during termination: {}".format(
                 job.id, job.job_runner_external_id, e))

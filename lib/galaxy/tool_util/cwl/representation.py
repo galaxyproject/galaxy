@@ -149,7 +149,7 @@ def dataset_wrapper_to_file_json(inputs_dir, dataset_wrapper):
         for secondary_file_name in os.listdir(secondary_files_path):
             secondary_file_path = os.path.join(secondary_files_path, secondary_file_name)
             target = os.path.join(inputs_dir, secondary_file_name)
-            log.info("linking [{}] to [{}]".format(secondary_file_path, target))
+            log.info(f"linking [{secondary_file_path}] to [{target}]")
             os.symlink(secondary_file_path, target)
             is_dir = os.path.isdir(os.path.realpath(secondary_file_path))
             secondary_files.append({"class": "File" if not is_dir else "Directory", "location": target})
@@ -284,7 +284,7 @@ def to_cwl_job(tool, param_dict, local_working_directory):
                 array_value.append(simple_value(only_input, instance[input_name[:-len("_repeat")]]))
             input_json[input_name[:-len("_repeat")]] = array_value
         elif input.type == "conditional":
-            assert input_name in param_dict, "No value for {} in {}".format(input_name, param_dict)
+            assert input_name in param_dict, f"No value for {input_name} in {param_dict}"
             current_case = param_dict[input_name]["_cwl__type_"]
             if str(current_case) != "null":  # str because it is a wrapped...
                 case_index = input.get_current_case(current_case)
@@ -333,7 +333,7 @@ def to_galaxy_parameters(tool, as_dict):
 
             only_input = next(iter(input.inputs.values()))
             for index, value in enumerate(as_dict_value):
-                key = "{}_repeat_0|{}".format(input_name, only_input.name)
+                key = f"{input_name}_repeat_0|{only_input.name}"
                 galaxy_value = from_simple_value(only_input, value)
                 galaxy_request[key] = galaxy_value
         elif galaxy_input_type == "conditional":

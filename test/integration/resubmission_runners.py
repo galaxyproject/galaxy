@@ -60,7 +60,7 @@ class AssertionJobRunner(LocalJobRunner):
                 self._fail_job_local(job_wrapper, "Job completed too quickly")
                 return
 
-        super(AssertionJobRunner, self).queue_job(job_wrapper)
+        super().queue_job(job_wrapper)
 
 
 class FailOnlyFirstJobRunner(LocalJobRunner):
@@ -77,7 +77,7 @@ class FailOnlyFirstJobRunner(LocalJobRunner):
             return
 
         if test_name in self.tests_seen:
-            super(FailOnlyFirstJobRunner, self).queue_job(job_wrapper)
+            super().queue_job(job_wrapper)
         else:
             self.tests_seen.append(test_name)
             self._fail_job_local(job_wrapper, "Failing first attempt")

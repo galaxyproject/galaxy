@@ -1,5 +1,4 @@
 <%!
-    import six
     from galaxy.util import unicodify
     from galaxy.webapps.reports.framework.grids import TextColumn
 
@@ -210,7 +209,7 @@
                 value = column.get_value( trans, grid, item )
 
                 # Handle non-ascii chars.
-                if isinstance(value, six.binary_type):
+                if isinstance(value, bytes):
                     value = unicodify(value, 'utf-8')
                     value = value.replace('/', '//')
                 endif

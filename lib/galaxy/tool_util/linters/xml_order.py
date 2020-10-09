@@ -58,7 +58,7 @@ def _validate_for_tags(root, lint_ctx, tag_ordering):
             key = tag_ordering.index(tag)
             if last_key:
                 if last_key > key:
-                    lint_ctx.warn("Best practice violation [{}] elements should come before [{}]".format(tag, last_tag))
+                    lint_ctx.warn(f"Best practice violation [{tag}] elements should come before [{last_tag}]")
             last_tag = tag
             last_key = key
         else:

@@ -179,13 +179,6 @@ class XmlToolSource(ToolSource):
         # break or modify any configurations by default.
         return "job_tmp_if_explicit"
 
-    def parse_docker_env_pass_through(self):
-        if self.parse_profile() < "18.01":
-            return ["GALAXY_SLOTS"]
-        else:
-            # Pass home, etc...
-            return super().parse_docker_env_pass_through()
-
     def parse_interpreter(self):
         interpreter = None
         command_el = self._command_el
@@ -754,7 +747,7 @@ def __pull_up_params(parent_elem, child_elem):
 
 def __prefix_join(prefix, name, index=None):
     name = name if index is None else "%s_%d" % (name, index)
-    return name if not prefix else "{}|{}".format(prefix, name)
+    return name if not prefix else f"{prefix}|{name}"
 
 
 def _copy_to_dict_if_present(elem, rval, attributes):

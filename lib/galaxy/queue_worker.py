@@ -25,7 +25,6 @@ from kombu.mixins import ConsumerProducerMixin
 from kombu.pools import (
     producers,
 )
-from six.moves import reload_module
 
 import galaxy.queues
 from galaxy import util
@@ -45,7 +44,7 @@ def send_local_control_task(app, task, get_response=False, kwargs=None):
     log.info("Queuing {} task {} for {}.".format("sync" if get_response else "async", task, app.config.server_name))
     payload = {'task': task,
                'kwargs': kwargs}
-    routing_key = 'control.{}@{}'.format(app.config.server_name, socket.gethostname())
+    routing_key = f'control.{app.config.server_name}@{socket.gethostname()}'
     control_task = ControlTask(app.queue_worker)
     return control_task.send_task(payload, routing_key, local=True, get_response=get_response)
 
@@ -263,7 +262,7 @@ def reload_job_rules(app, **kwargs):
             if ((name == rules_module_name or name.startswith(rules_module_name + '.'))
                     and ismodule(module)):
                 log.debug("Reloading job rules module: %s", name)
-                reload_module(module)
+                importlib.reload(module)
     log.debug("Job rules reloaded %s", reload_timer)
 
 

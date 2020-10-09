@@ -11,6 +11,7 @@ the exception and displays an error page.
 """
 import sys
 import traceback
+from io import StringIO
 
 import markupsafe
 from paste import (
@@ -18,7 +19,6 @@ from paste import (
     wsgilib
 )
 from paste.exceptions import collector, formatter, reporter
-from six.moves import cStringIO as StringIO
 
 __all__ = ('ErrorMiddleware', 'handle_exception')
 

@@ -140,14 +140,14 @@ class ContainerFinder:
     def __build_container_id_from_parts(self, container_type, destination_info, mode):
         repo = ""
         owner = ""
-        repo_key = "{}_repo_{}".format(container_type, mode)
-        owner_key = "{}_owner_{}".format(container_type, mode)
+        repo_key = f"{container_type}_repo_{mode}"
+        owner_key = f"{container_type}_owner_{mode}"
         if repo_key in destination_info:
             repo = destination_info[repo_key] + "/"
         if owner_key in destination_info:
             owner = destination_info[owner_key] + "/"
-        cont_id = repo + owner + destination_info["{}_image_{}".format(container_type, mode)]
-        tag_key = "{}_tag_{}".format(container_type, mode)
+        cont_id = repo + owner + destination_info[f"{container_type}_image_{mode}"]
+        tag_key = f"{container_type}_tag_{mode}"
         if tag_key in destination_info:
             cont_id += ":" + destination_info[tag_key]
         return cont_id
@@ -259,7 +259,7 @@ class ContainerRegistry:
                 continue
 
             container_description = container_resolver.resolve(enabled_container_types, tool_info, resolution_cache=resolution_cache)
-            log.info("Checking with container resolver [{}] found description [{}]".format(container_resolver, container_description))
+            log.info(f"Checking with container resolver [{container_resolver}] found description [{container_description}]")
             if container_description:
                 assert container_description.type in enabled_container_types
                 return ResolvedContainerDescription(container_resolver, container_description)

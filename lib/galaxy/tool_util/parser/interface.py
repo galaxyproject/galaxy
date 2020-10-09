@@ -247,7 +247,7 @@ class ToolSource(metaclass=ABCMeta):
     def __str__(self):
         source_path = self.source_path
         if source_path:
-            as_str = '{}[{}]'.format(self.__class__.__name__, source_path)
+            as_str = f'{self.__class__.__name__}[{source_path}]'
         else:
             as_str = '%s[In-memory]' % (self.__class__.__name__)
         return as_str

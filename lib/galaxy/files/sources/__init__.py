@@ -2,16 +2,13 @@ import abc
 import os
 import time
 
-import six
-
 from galaxy.util.template import fill_template
 
 DEFAULT_SCHEME = "gxfiles"
 DEFAULT_WRITABLE = False
 
 
-@six.add_metaclass(abc.ABCMeta)
-class FilesSource(object):
+class FilesSource(metaclass=abc.ABCMeta):
     """
     """
 

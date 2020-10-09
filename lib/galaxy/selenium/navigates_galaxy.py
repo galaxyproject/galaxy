@@ -162,7 +162,7 @@ class NavigatesGalaxy(HasDriver):
 
     @contextlib.contextmanager
     def local_storage(self, key, value):
-        self.driver.execute_script('''window.localStorage.setItem("{}", {});'''.format(key, value))
+        self.driver.execute_script(f'''window.localStorage.setItem("{key}", {value});''')
         try:
             yield
         finally:
@@ -223,9 +223,9 @@ class NavigatesGalaxy(HasDriver):
         if history_id not in [h['id'] for h in histories]:
             return {}
         if datasets_only:
-            endpoint = 'histories/{}/contents?view={}'.format(history_id, view)
+            endpoint = f'histories/{history_id}/contents?view={view}'
         else:
-            endpoint = 'histories/{}?view={}'.format(history_id, view)
+            endpoint = f'histories/{history_id}?view={view}'
         return self.api_get(endpoint)
 
     def current_history(self):
@@ -1255,7 +1255,7 @@ class NavigatesGalaxy(HasDriver):
         try:
             history_item = [d for d in contents if d["hid"] == hid][0]
         except IndexError:
-            raise Exception("Could not find history item with hid [{}] in contents [{}]".format(hid, contents))
+            raise Exception(f"Could not find history item with hid [{hid}] in contents [{contents}]")
         history_item_selector = "#{}-{}".format(history_item["history_content_type"], history_item["id"])
         if wait:
             self.wait_for_selector_visible(history_item_selector)
@@ -1419,7 +1419,7 @@ class NavigatesGalaxy(HasDriver):
         if hasattr(expected, "text"):
             expected = expected.text
         text = self.get_tooltip_text(element, sleep=sleep, click_away=click_away)
-        assert text == expected, "Tooltip text [{}] was not expected text [{}].".format(text, expected)
+        assert text == expected, f"Tooltip text [{text}] was not expected text [{expected}]."
 
     def assert_error_message(self, contains=None):
         element = self.components._.messages["error"]
@@ -1435,7 +1435,7 @@ class NavigatesGalaxy(HasDriver):
         if contains is not None:
             text = element.text
             if contains not in text:
-                message = "Text [{}] expected inside of [{}] but not found.".format(contains, text)
+                message = f"Text [{contains}] expected inside of [{text}] but not found."
                 raise AssertionError(message)
 
     def assert_no_error_message(self):

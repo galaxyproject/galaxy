@@ -81,7 +81,7 @@ def test_posix_link_security_allowlist():
     file_sources = _configured_file_sources(include_allowlist=True)
     tmp_name = sniff.stream_url_to_file("gxfiles://test1/unsafe", file_sources=file_sources)
     try:
-        with open(tmp_name, "r") as f:
+        with open(tmp_name) as f:
             assert f.read() == "b\n"
     finally:
         os.remove(tmp_name)
@@ -90,7 +90,7 @@ def test_posix_link_security_allowlist():
 def test_posix_link_security_allowlist_write():
     file_sources = _configured_file_sources(include_allowlist=True, writable=True)
     write_from(file_sources, "gxfiles://test1/unsafe", "my test content")
-    with open(os.path.join(file_sources.test_root, "unsafe"), "r") as f:
+    with open(os.path.join(file_sources.test_root, "unsafe")) as f:
         assert f.read() == "my test content"
 
 
@@ -98,7 +98,7 @@ def test_posix_disable_link_security():
     file_sources = _configured_file_sources(plugin_extra_config={"enforce_symlink_security": False})
     tmp_name = sniff.stream_url_to_file("gxfiles://test1/unsafe", file_sources=file_sources)
     try:
-        with open(tmp_name, "r") as f:
+        with open(tmp_name) as f:
             assert f.read() == "b\n"
     finally:
         os.remove(tmp_name)
@@ -262,7 +262,6 @@ def _configured_file_sources(include_allowlist=False, plugin_extra_config=None, 
     file_sources_config = ConfiguredFileSourcesConfig(**config_kwd)
     plugin = {
         'type': 'posix',
-        'id': 'test1',
     }
     if writable is not None:
         plugin['writable'] = writable
@@ -275,7 +274,7 @@ def _configured_file_sources(include_allowlist=False, plugin_extra_config=None, 
         plugin['root'] = root
     plugin.update(plugin_extra_config or {})
     _write_file_fixtures(tmp, root)
-    file_sources = ConfiguredFileSources(file_sources_config, conf_dict=[plugin])
+    file_sources = ConfiguredFileSources(file_sources_config, conf_dict={"test1": plugin})
     file_sources.test_root = root
     return file_sources
 
@@ -312,7 +311,7 @@ def _write_file_fixtures(tmp, root):
 def _download_and_check_file(file_sources):
     tmp_name = sniff.stream_url_to_file("gxfiles://test1/a", file_sources=file_sources)
     try:
-        a_contents = open(tmp_name, "r").read()
+        a_contents = open(tmp_name).read()
         assert a_contents == "a\n"
     finally:
         os.remove(tmp_name)

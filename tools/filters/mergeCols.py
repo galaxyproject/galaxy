@@ -10,7 +10,7 @@ def stop_err(msg):
 
 def __main__():
     try:
-        infile = open(sys.argv[1], 'r')
+        infile = open(sys.argv[1])
         outfile = open(sys.argv[2], 'w')
     except Exception:
         stop_err('Cannot open or create a file\n')

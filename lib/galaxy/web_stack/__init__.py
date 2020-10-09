@@ -5,6 +5,7 @@ import inspect
 import json
 import logging
 import os
+from urllib.request import install_opener
 
 # The uwsgi module is automatically injected by the parent uwsgi process and only exists that way.  If anything works,
 # this is a uwsgi-managed process.
@@ -276,7 +277,7 @@ class UWSGIApplicationStack(MessageApplicationStack):
                 host = UWSGIApplicationStack.localhost_addrs[0]
             return proto + host + port
         except (IndexError, AttributeError):
-            return '{} {}'.format(opt, val)
+            return f'{opt} {val}'
 
     @staticmethod
     def _socket_opts():
@@ -530,6 +531,9 @@ class WeblessApplicationStack(ApplicationStack):
         # isolation if it doesn't, or DB_PREASSIGN if the job_config doesn't allow either.
         conf_class_name = job_config.__class__.__name__
         remove_methods = [HANDLER_ASSIGNMENT_METHODS.DB_SELF]
+        with self.app.model.session.connection():
+            # Force a connection so dialect.server_version_info is populated
+            pass
         dialect = self.app.model.session.bind.dialect
         if ((dialect.name == 'postgresql' and dialect.server_version_info >= (9, 5))
                 or (dialect.name == 'mysql' and dialect.server_version_info >= (8, 0, 1))):
@@ -624,7 +628,6 @@ def _do_uwsgi_postfork():
 
 
 def _mule_fixup():
-    from six.moves.urllib.request import install_opener
     install_opener(None)
 
 

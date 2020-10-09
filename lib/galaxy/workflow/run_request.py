@@ -89,7 +89,7 @@ def _normalize_inputs(steps, inputs, inputs_by):
         # start to ensure tool state is being preserved and loaded in a type safe way.
         assert isinstance(optional, bool)
         if not inputs_key and default_value is None and not optional:
-            message = "Workflow cannot be run because an expected input step '{}' ({}) is not optional and no input.".format(step.id, step.label)
+            message = f"Workflow cannot be run because an expected input step '{step.id}' ({step.label}) is not optional and no input."
             raise exceptions.MessageException(message)
         if inputs_key:
             normalized_inputs[step.id] = inputs[inputs_key]
@@ -178,7 +178,7 @@ def _flatten_step_params(param_dict, prefix=""):
     new_params = {}
     for key in list(param_dict.keys()):
         if prefix:
-            effective_key = "{}|{}".format(prefix, key)
+            effective_key = f"{prefix}|{key}"
         else:
             effective_key = key
         value = param_dict[key]
@@ -288,6 +288,8 @@ def build_workflow_run_configs(trans, workflow, payload):
         steps_by_id = workflow.steps_by_id
         # Set workflow inputs.
         for key, input_dict in normalized_inputs.items():
+            if input_dict is None:
+                continue
             step = steps_by_id[key]
             if step.type == 'parameter_input':
                 continue
@@ -499,5 +501,5 @@ def __decode_id(trans, workflow_id, model_type="workflow"):
     try:
         return trans.security.decode_id(workflow_id)
     except Exception:
-        message = "Malformed {} id ( {} ) specified, unable to decode".format(model_type, workflow_id)
+        message = f"Malformed {model_type} id ( {workflow_id} ) specified, unable to decode"
         raise exceptions.MalformedId(message)

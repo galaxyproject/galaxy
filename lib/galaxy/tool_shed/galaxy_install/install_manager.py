@@ -658,7 +658,7 @@ class InstallRepositoryManager:
             for tool_guid in tool_panel_section_mapping:
                 if tool_panel_section_mapping[tool_guid]['action'] == 'create':
                     new_tool_panel_section_name = tool_panel_section_mapping[tool_guid]['tool_panel_section']
-                    log.debug('Creating tool panel section "{}" for tool {}'.format(new_tool_panel_section_name, tool_guid))
+                    log.debug(f'Creating tool panel section "{new_tool_panel_section_name}" for tool {tool_guid}')
                     self.tpm.handle_tool_panel_section(self.app.toolbox, None, tool_panel_section_mapping[tool_guid]['tool_panel_section'])
         encoded_repository_ids = [self.app.security.encode_id(tsr.id) for tsr in created_or_updated_tool_shed_repositories]
         new_kwd = dict(includes_tools=includes_tools,

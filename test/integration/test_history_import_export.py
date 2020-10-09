@@ -7,7 +7,7 @@ class ImportExportHistoryOutputsToWorkingDirTestCase(ImportExportHistoryTestCase
     framework_tool_and_types = True
 
     def setUp(self):
-        super(ImportExportHistoryOutputsToWorkingDirTestCase, self).setUp()
+        super().setUp()
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):

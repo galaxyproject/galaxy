@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from galaxy.managers import hdas
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.histories import HistoryManager
@@ -15,7 +14,7 @@ user2_data = dict(email='user2@user2.user2', username='user2', password=default_
 class TagHandlerTestCase(BaseTestCase):
 
     def set_up_managers(self):
-        super(TagHandlerTestCase, self).set_up_managers()
+        super().set_up_managers()
         self.hda_manager = hdas.HDAManager(self.app)
         self.history_manager = HistoryManager(self.app)
         self.dataset_manager = DatasetManager(self.app)
@@ -33,12 +32,12 @@ class TagHandlerTestCase(BaseTestCase):
         actual_tags = []
         for tag in tags:
             if tag.user_value:
-                tag = "%s:%s" % (tag.user_tname, tag.user_value)
+                tag = f"{tag.user_tname}:{tag.user_value}"
             else:
                 tag = tag.user_tname
             actual_tags.append(tag)
         expected = [unicodify(e) for e in expected_tags]
-        assert sorted(expected) == sorted(actual_tags), "%s vs %s" % (expected, actual_tags)
+        assert sorted(expected) == sorted(actual_tags), f"{expected} vs {actual_tags}"
 
     def test_apply_item_tags(self):
         tag_strings = [

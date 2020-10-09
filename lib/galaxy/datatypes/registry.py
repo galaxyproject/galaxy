@@ -224,7 +224,7 @@ class Registry:
                             if ok:
                                 datatype_class = None
                                 if proprietary_path and proprietary_datatype_module and datatype_class_name:
-                                    # TODO: previously comments suggested this needs to be locked because it modifys
+                                    # TODO: previously comments suggested this needs to be locked because it modifies
                                     # the sys.path, probably true but the previous lock wasn't doing that.
                                     try:
                                         imported_module = __import_module(proprietary_path,
@@ -330,7 +330,7 @@ class Registry:
                                 self.datatype_info_dicts.append(datatype_info_dict)
 
                                 for auto_compressed_type in auto_compressed_types:
-                                    compressed_extension = "{}.{}".format(extension, auto_compressed_type)
+                                    compressed_extension = f"{extension}.{auto_compressed_type}"
                                     upper_compressed_type = auto_compressed_type[0].upper() + auto_compressed_type[1:]
                                     auto_compressed_type_name = datatype_class_name + upper_compressed_type
                                     attributes = {}
@@ -372,7 +372,7 @@ class Registry:
                                     if not override:
                                         # Do not load the datatype since it conflicts with an existing datatype which we are not supposed
                                         # to override.
-                                        self.log.debug("Ignoring conflicting datatype with extension '{}' from {}.".format(extension, config))
+                                        self.log.debug(f"Ignoring conflicting datatype with extension '{extension}' from {config}.")
             # Load datatype sniffers from the config - we'll do this even if one or more datatypes were not properly processed in the config
             # since sniffers are not tightly coupled with datatypes.
             self.load_datatype_sniffers(root,
@@ -413,7 +413,7 @@ class Registry:
             if not os.path.exists(path):
                 sample_path = "%s.sample" % path
                 if os.path.exists(sample_path):
-                    self.log.debug("Build site file [{}] not found using sample [{}].".format(path, sample_path))
+                    self.log.debug(f"Build site file [{path}] not found using sample [{sample_path}].")
                     path = sample_path
 
             self.build_sites[site_type] = path
@@ -556,7 +556,7 @@ class Registry:
             return images.Image
 
         # TODO: too inefficient - would be better to generate this once as a map and store in this object
-        for ext, datatype_obj in self.datatypes_by_extension.items():
+        for datatype_obj in self.datatypes_by_extension.values():
             datatype_obj_class = datatype_obj.__class__
             datatype_obj_class_str = str(datatype_obj_class)
             if name in datatype_obj_class_str:
@@ -703,13 +703,13 @@ class Registry:
                                     del self.datatypes_by_extension[extension].display_applications[display_app.id]
                             if inherit and (self.datatypes_by_extension[extension], display_app) in self.inherit_display_application_by_class:
                                 self.inherit_display_application_by_class.remove((self.datatypes_by_extension[extension], display_app))
-                            self.log.debug("Deactivated display application '{}' for datatype '{}'.".format(display_app.id, extension))
+                            self.log.debug(f"Deactivated display application '{display_app.id}' for datatype '{extension}'.")
                         else:
                             self.display_applications[display_app.id] = display_app
                             self.datatypes_by_extension[extension].add_display_application(display_app)
                             if inherit and (self.datatypes_by_extension[extension], display_app) not in self.inherit_display_application_by_class:
                                 self.inherit_display_application_by_class.append((self.datatypes_by_extension[extension], display_app))
-                            self.log.debug("Loaded display application '{}' for datatype '{}', inherit={}.".format(display_app.id, extension, inherit))
+                            self.log.debug(f"Loaded display application '{display_app.id}' for datatype '{extension}', inherit={inherit}.")
                 except Exception:
                     if deactivate:
                         self.log.exception("Error deactivating display application (%s)" % config_path)
@@ -720,7 +720,7 @@ class Registry:
             for d_type2, display_app in self.inherit_display_application_by_class:
                 current_app = d_type1.get_display_application(display_app.id, None)
                 if current_app is None and isinstance(d_type1, type(d_type2)):
-                    self.log.debug("Adding inherited display application '{}' to datatype '{}'".format(display_app.id, extension))
+                    self.log.debug(f"Adding inherited display application '{display_app.id}' to datatype '{extension}'")
                     d_type1.add_display_application(display_app)
 
     def reload_display_applications(self, display_application_ids=None):
@@ -894,7 +894,7 @@ class Registry:
         for convert_ext in self.get_converters_by_datatype(ext):
             convert_ext_datatype = self.get_datatype_by_extension(convert_ext)
             if convert_ext_datatype is None:
-                self.log.warning("Datatype class not found for extension '{}', which is used as target for conversion from datatype '{}'".format(convert_ext, dataset.ext))
+                self.log.warning(f"Datatype class not found for extension '{convert_ext}', which is used as target for conversion from datatype '{dataset.ext}'")
             elif convert_ext_datatype.matches_any(accepted_formats):
                 converted_dataset = dataset and dataset.get_converted_files_by_type(convert_ext)
                 if converted_dataset:
@@ -919,7 +919,7 @@ class Registry:
                     help_txt = meta_spec.desc
                     if not help_txt or help_txt == meta_name:
                         help_txt = ""
-                    inputs.append('<param type="text" name="{}" label="Set metadata value for &quot;{}&quot;" value="{}" help="{}"/>'.format(meta_name, meta_name, meta_spec.default, help_txt))
+                    inputs.append(f'<param type="text" name="{meta_name}" label="Set metadata value for &quot;{meta_name}&quot;" value="{meta_spec.default}" help="{help_txt}"/>')
             rval[ext] = "\n".join(inputs)
         if 'auto' not in rval and 'txt' in rval:  # need to manually add 'auto' datatype
             rval['auto'] = rval['txt']

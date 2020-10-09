@@ -62,7 +62,6 @@ def utf8_text_file_open(path):
 class _Isa(data.Data):
     """ Base class for implementing ISA datatypes """
     composite_type = 'auto_primary_file'
-    allow_datatype_change = False
     is_binary = True
     _main_file_regex = None
 
@@ -275,7 +274,7 @@ class _Isa(data.Data):
                    </body></html>"""
         else:
             html = '<html><body>'
-            html += '<h1>{} {}</h1>'.format(investigation.title, investigation.identifier)
+            html += f'<h1>{investigation.title} {investigation.identifier}</h1>'
 
             # Loop on all studies
             for study in investigation.studies:

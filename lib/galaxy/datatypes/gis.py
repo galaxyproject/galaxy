@@ -12,10 +12,9 @@ class Shapefile(Binary):
 
     composite_type = 'auto_primary_file'
     file_ext = "shp"
-    allow_datatype_change = False
 
     def __init__(self, **kwd):
-        Binary.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.add_composite_file('shapefile.shp', description='Geometry File (shp)', is_binary=True, optional=False)
         self.add_composite_file('shapefile.shx', description='Geometry index File (shx)', is_binary=True, optional=False)
         self.add_composite_file('shapefile.dbf', description='Columnar attributes for each shape (dbf)', is_binary=True, optional=False)
@@ -43,7 +42,7 @@ class Shapefile(Binary):
             if composite_file.get('description'):
                 rval.append('<li><a href="{}" type="application/binary">{} ({})</a>{}</li>'.format(fn, fn, composite_file.get('description'), opt_text))
             else:
-                rval.append('<li><a href="{}" type="application/binary">{}</a>{}</li>'.format(fn, fn, opt_text))
+                rval.append(f'<li><a href="{fn}" type="application/binary">{fn}</a>{opt_text}</li>')
         rval.append('</ul></div></html>\n')
         return "\n".join(rval)
 

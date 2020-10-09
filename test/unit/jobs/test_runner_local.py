@@ -113,7 +113,7 @@ class TestLocalJobRunner(TestCase, UsesApp, UsesTools):
         assert "job terminated by Galaxy shutdown" in self.job_wrapper.fail_message
 
 
-class MockJobWrapper(object):
+class MockJobWrapper:
 
     def __init__(self, app, test_directory, tool):
         working_directory = os.path.join(test_directory, "workdir")

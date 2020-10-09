@@ -108,7 +108,7 @@ class CloudAuthzController(BaseAPIController):
             missing_arguments.append('authn_id')
 
         if len(missing_arguments) > 0:
-            log.debug(msg_template.format("missing required config {}".format(missing_arguments)))
+            log.debug(msg_template.format(f"missing required config {missing_arguments}"))
             raise RequestParameterMissingException('The following required arguments are missing in the payload: '
                                                    '{}'.format(missing_arguments))
 

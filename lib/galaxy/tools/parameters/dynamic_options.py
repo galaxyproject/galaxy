@@ -5,8 +5,7 @@ on the values of other parameters or other aspects of the current state)
 import logging
 import os
 import re
-
-from six import StringIO
+from io import StringIO
 
 import galaxy.tools
 from galaxy.model import (

@@ -76,7 +76,7 @@ class AdminActions:
             quota.description = params.description
             self.sa_session.add(quota)
             self.sa_session.flush()
-            message = "Quota '{}' has been renamed to '{}'.".format(old_name, params.name)
+            message = f"Quota '{old_name}' has been renamed to '{params.name}'."
             return message
 
     def _manage_users_and_groups_for_quota(self, quota, params, decode_id=None):
@@ -122,7 +122,7 @@ class AdminActions:
         else:
             if params.default != 'no':
                 self.app.quota_agent.set_default_quota(params.default, quota)
-                message = "Quota '{}' is now the default for {} users.".format(quota.name, params.default)
+                message = f"Quota '{quota.name}' is now the default for {params.default} users."
             else:
                 if quota.default:
                     message = "Quota '{}' is no longer the default for {} users.".format(quota.name, quota.default[0].type)

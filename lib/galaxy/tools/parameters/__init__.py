@@ -120,7 +120,7 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
             'input'             : input,
             'parent'            : input_values,
             'value'             : value,
-            'prefixed_name'     : '{}{}'.format(name_prefix, input.name),
+            'prefixed_name'     : f'{name_prefix}{input.name}',
             'prefixed_label'    : '{}{}'.format(label_prefix, input.label or input.name),
             'prefix'            : parent_prefix,
             'context'           : context,

@@ -28,7 +28,7 @@ class BaseObjectStoreIntegrationTestCase(integration_util.IntegrationTestCase):
             setattr(cls, "%s_path" % dir_name, path)
 
     def setUp(self):
-        super(BaseObjectStoreIntegrationTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
 

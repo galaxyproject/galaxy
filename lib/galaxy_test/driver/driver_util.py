@@ -1,9 +1,11 @@
 """Scripts for drivers of Galaxy functional tests."""
 
+import http.client
 import logging
 import os
 import random
 import re
+import shlex
 import shutil
 import signal
 import string
@@ -12,6 +14,7 @@ import sys
 import tempfile
 import threading
 import time
+from urllib.parse import urlparse
 
 import nose.config
 import nose.core
@@ -19,11 +22,6 @@ import nose.loader
 import nose.plugins.manager
 import yaml
 from paste import httpserver
-from six.moves import (
-    http_client,
-    shlex_quote
-)
-from six.moves.urllib.parse import urlparse
 from sqlalchemy_utils import (
     create_database,
     database_exists,
@@ -188,7 +186,7 @@ def setup_galaxy_config(
             default_data_manager_config = data_manager_config
     data_manager_config_file = 'test/functional/tools/sample_data_manager_conf.xml'
     if default_data_manager_config is not None:
-        data_manager_config_file = "{},{}".format(default_data_manager_config, data_manager_config_file)
+        data_manager_config_file = f"{default_data_manager_config},{data_manager_config_file}"
     master_api_key = get_master_api_key()
     cleanup_job = 'never' if ("GALAXY_TEST_NO_CLEANUP" in os.environ or
                               "TOOL_SHED_TEST_NO_CLEANUP" in os.environ) else 'onsuccess'
@@ -206,7 +204,7 @@ def setup_galaxy_config(
         tool_conf = FRAMEWORK_UPLOAD_TOOL_CONF
 
     if shed_tool_conf is not None:
-        tool_conf = "{},{}".format(tool_conf, shed_tool_conf)
+        tool_conf = f"{tool_conf},{shed_tool_conf}"
 
     # Resolve these paths w.r.t. galaxy root; otherwise galaxy's config system will resolve them w.r.t.
     # their parent directories, as per schema.
@@ -329,7 +327,7 @@ def _tool_data_table_config_path(default_tool_data_table_config_path=None):
             if os.path.exists(tool_data_config):
                 default_tool_data_config = tool_data_config
         test_tool_data_config = 'test/functional/tool-data/sample_tool_data_tables.xml'
-        tool_data_table_config_path = '%s,%s' % (default_tool_data_config, test_tool_data_config)
+        tool_data_table_config_path = f'{default_tool_data_config},{test_tool_data_config}'
     return tool_data_table_config_path
 
 
@@ -499,7 +497,7 @@ def wait_for_http_server(host, port, sleep_amount=0.1, sleep_tries=150):
     # Test if the server is up
     for _ in range(sleep_tries):
         # directly test the app, not the proxy
-        conn = http_client.HTTPConnection(host, port)
+        conn = http.client.HTTPConnection(host, port)
         try:
             conn.request("GET", "/")
             response = conn.getresponse()
@@ -772,7 +770,7 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
         uwsgi_command = [
             "uwsgi",
             "--http",
-            "{}:{}".format(host, port),
+            f"{host}:{port}",
             "--yaml",
             yaml_config_path,
             "--module",
@@ -791,7 +789,7 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
             handle_uwsgi_cli_command(uwsgi_command)
 
         # we don't want to quote every argument but we don't want to print unquoted ones either, so do this
-        log.info("Starting uwsgi with command line: %s", ' '.join(shlex_quote(x) for x in uwsgi_command))
+        log.info("Starting uwsgi with command line: %s", ' '.join(shlex.quote(x) for x in uwsgi_command))
         p = subprocess.Popen(
             uwsgi_command,
             cwd=galaxy_root,
@@ -805,7 +803,7 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
         server_wrapper = attempt_port_bind(port)
         try:
             set_and_wait_for_http_target(prefix, host, port, sleep_tries=50)
-            log.info("Test-managed uwsgi web server for {} started at {}:{}".format(name, host, port))
+            log.info(f"Test-managed uwsgi web server for {name} started at {host}:{port}")
             return server_wrapper
         except Exception:
             server_wrapper.stop()
@@ -834,7 +832,7 @@ def launch_server(app, webapp_factory, kwargs, prefix=DEFAULT_CONFIG_PREFIX, con
         host=host, port=port
     )
     set_and_wait_for_http_target(prefix, host, port)
-    log.info("Embedded paste web server for {} started at {}:{}".format(name, host, port))
+    log.info(f"Embedded paste web server for {name} started at {host}:{port}")
     return PasteServerWrapper(
         app, server, name, host, port
     )
@@ -1014,7 +1012,7 @@ class GalaxyTestDriver(TestDriver):
                     galaxy_config,
                     config_object=config_object,
                 )
-                log.info("Functional tests will be run against external Galaxy server {}:{}".format(server_wrapper.host, server_wrapper.port))
+                log.info(f"Functional tests will be run against external Galaxy server {server_wrapper.host}:{server_wrapper.port}")
             self.server_wrappers.append(server_wrapper)
         else:
             log.info("Functional tests will be run against test managed Galaxy server %s" % self.external_galaxy)

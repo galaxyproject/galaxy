@@ -118,7 +118,7 @@ class ToolData(BaseAPIController):
     def _data_table_field(self, id, value):
         out = self._data_table(id).get_field(value)
         if out is None:
-            raise exceptions.ObjectNotFound("No such field {} in data table {}.".format(value, id))
+            raise exceptions.ObjectNotFound(f"No such field {value} in data table {id}.")
         return out
 
     def _data_table(self, id):

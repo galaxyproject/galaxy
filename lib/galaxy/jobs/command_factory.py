@@ -155,7 +155,7 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
         tool_commands,
     )
     write_script(local_container_script, script_contents, config)
-    commands = "{} {}".format(shell, local_container_script)
+    commands = f"{shell} {local_container_script}"
     # TODO: Cleanup for_pulsar hack.
     # - Integrate Pulsar sending tool_stdout/tool_stderr back
     #   https://github.com/galaxyproject/pulsar/pull/202
@@ -170,7 +170,7 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
         for_pulsar = True
     if not for_pulsar:
         commands += " > ../outputs/tool_stdout 2> ../outputs/tool_stderr"
-    log.info("Built script [{}] for tool command [{}]".format(local_container_script, tool_commands))
+    log.info(f"Built script [{local_container_script}] for tool command [{tool_commands}]")
     return commands
 
 
@@ -236,14 +236,14 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
     metadata_command = metadata_command.strip()
     if metadata_command:
         # Place Galaxy and its dependencies in environment for metadata regardless of tool.
-        metadata_command = "{}{}".format(SETUP_GALAXY_FOR_METADATA, metadata_command)
+        metadata_command = f"{SETUP_GALAXY_FOR_METADATA}{metadata_command}"
         commands_builder.capture_return_code()
         commands_builder.append_command(metadata_command)
 
 
 def __copy_if_exists_command(work_dir_output):
     source_file, destination = work_dir_output
-    return "if [ -f {} ] ; then cp {} {} ; fi".format(source_file, source_file, destination)
+    return f"if [ -f {source_file} ] ; then cp {source_file} {destination} ; fi"
 
 
 class CommandsBuilder:

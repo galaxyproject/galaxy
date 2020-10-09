@@ -53,10 +53,10 @@ class LSF(BaseJobExec):
         # Generated template.
         template_scriptargs = ''
         for k, v in scriptargs.items():
-            template_scriptargs += '#BSUB {} {}\n'.format(k, v)
+            template_scriptargs += f'#BSUB {k} {v}\n'
         # Excluded hosts use the same -R option already in use for mem, so easier adding here.
         for host in self._get_excluded_hosts():
-            template_scriptargs += '#BSUB -R \"select[hname!=\'{}\']\"\n'.format(host)
+            template_scriptargs += f'#BSUB -R \"select[hname!=\'{host}\']\"\n'
         return dict(headers=template_scriptargs)
 
     def submit(self, script_file):

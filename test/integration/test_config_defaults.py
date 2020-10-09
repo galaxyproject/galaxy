@@ -269,8 +269,7 @@ def get_config_data():
 
 
 def get_path_data():
-    for key in PATH_CONFIG_PROPERTIES:
-        yield key
+    yield from PATH_CONFIG_PROPERTIES
 
 
 def get_key(option_data):
