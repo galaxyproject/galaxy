@@ -5,16 +5,12 @@
 </template>
 
 <script>
-
 export default {
     props: {},
     data() {
-        return {
-        };
+        return {};
     },
-    created: function () {
-    },
-    methods: {
-    },
+    created: function () {},
+    methods: {},
 };
 </script>

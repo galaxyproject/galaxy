@@ -11,6 +11,10 @@
         />
         <MarkdownVisualization
             v-else-if="visualizationShow"
+            :argument-name="argumentName"
+            :labels="labels"
+            :use-labels="useLabels"
+            :history="dataHistoryId"
             @onOk="onVisualization"
             @onCancel="onCancel"
         />
@@ -161,7 +165,7 @@ export default {
         },
         onVisualization(response) {
             this.visualizationShow = false;
-            this.$emit("onInsert", `visualization(visualization_id=${response.id})`);
+            this.$emit("onInsert", response);
         },
         onCreate() {
             if (this.argumentType == "workflow_id") {
@@ -171,8 +175,8 @@ export default {
                     this.selectedShow = true;
                 } else {
                     getCurrentGalaxyHistory().then((historyId) => {
-                        this.dataShow = true;
                         this.dataHistoryId = historyId;
+                        this.dataShow = true;
                     });
                 }
             } else if (this.argumentType == "history_dataset_collection_id") {
@@ -180,8 +184,8 @@ export default {
                     this.selectedShow = true;
                 } else {
                     getCurrentGalaxyHistory().then((historyId) => {
-                        this.dataCollectionShow = true;
                         this.dataHistoryId = historyId;
+                        this.dataCollectionShow = true;
                     });
                 }
             } else if (this.argumentType == "invocation_id") {
@@ -197,7 +201,10 @@ export default {
                     this.jobShow = true;
                 }
             } else if (this.argumentType == "visualization_id") {
-                this.visualizationShow = true;
+                getCurrentGalaxyHistory().then((historyId) => {
+                    this.dataHistoryId = historyId;
+                    this.visualizationShow = true;
+                });
             }
         },
         onOk(selectedLabel) {
@@ -232,12 +239,6 @@ export default {
                     this.$emit("onInsert", `${this.argumentName}(step="${selectedLabel}")`);
                 } else {
                     this.invocationShow = true;
-                }
-            } else if (this.argumentType == "visualization_id") {
-                if (this.useLabels) {
-                    this.$emit("onInsert", `${this.argumentName}(step="${selectedLabel}")`);
-                } else {
-                    this.visualizationShow = true;
                 }
             }
         },
