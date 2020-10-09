@@ -59,7 +59,7 @@ class Torque(BaseJobExec):
                 log.warning(ERROR_MESSAGE_UNRECOGNIZED_ARG % k)
         template_pbsargs = ''
         for k, v in pbsargs.items():
-            template_pbsargs += '#PBS {} {}\n'.format(k, v)
+            template_pbsargs += f'#PBS {k} {v}\n'
         return dict(headers=template_pbsargs)
 
     def submit(self, script_file):

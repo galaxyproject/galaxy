@@ -44,7 +44,7 @@ class UsersController(BaseAPIController):
                                   confirm=password,
                                   username=username)
         if message:
-            message = 'email: {}, username: {} - {}'.format(email, username, message)
+            message = f'email: {email}, username: {username} - {message}'
             user_dict['message'] = message
             user_dict['status'] = 'error'
         else:

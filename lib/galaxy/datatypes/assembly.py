@@ -157,7 +157,7 @@ class Velvet(Html):
             if composite_file.get('description'):
                 rval.append('<li><a href="{}" type="text/plain">{} ({})</a>{}</li>'.format(fn, fn, composite_file.get('description'), opt_text))
             else:
-                rval.append('<li><a href="{}" type="text/plain">{}</a>{}</li>'.format(fn, fn, opt_text))
+                rval.append(f'<li><a href="{fn}" type="text/plain">{fn}</a>{opt_text}</li>')
         rval.append('</ul></div></html>')
         return "\n".join(rval)
 
@@ -204,7 +204,7 @@ class Velvet(Html):
                 if composite_file.get('description'):
                     rval.append('<li><a href="{}" type="text/plain">{} ({})</a>{}</li>'.format(fn, fn, composite_file.get('description'), opt_text))
                 else:
-                    rval.append('<li><a href="{}" type="text/plain">{}</a>{}</li>'.format(fn, fn, opt_text))
+                    rval.append(f'<li><a href="{fn}" type="text/plain">{fn}</a>{opt_text}</li>')
         rval.append('</ul></div></html>')
         with open(dataset.file_name, 'w') as f:
             f.write("\n".join(rval))

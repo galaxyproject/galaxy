@@ -26,7 +26,7 @@ class RepositoryGridFilterManager:
             return "Certified 2 Repository Suites %s" % trailing_string
         if filter == self.filters.SUITES:
             return "Repository Suites %s" % trailing_string
-        return "{} {}".format(default, trailing_string)
+        return f"{default} {trailing_string}"
 
     def get_filter(self, trans):
         filter = trans.get_cookie(name='toolshedrepogridfilter')

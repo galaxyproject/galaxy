@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Galaxy sphinxcontrib-simpleversioning documentation build configuration file
 #

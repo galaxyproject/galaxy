@@ -666,7 +666,7 @@ class NestedObjectStore(BaseObjectStore):
         try:
             # there are a few objects in python that don't have __class__
             obj_id = self._get_object_id(obj)
-            return '{}({}={})'.format(obj.__class__.__name__, self.store_by, obj_id)
+            return f'{obj.__class__.__name__}({self.store_by}={obj_id})'
         except AttributeError:
             return str(obj)
 
@@ -1004,7 +1004,7 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None, config_
 
     objectstore_class, objectstore_constructor_kwds = type_to_object_store_class(store, fsmon=fsmon)
     if objectstore_class is None:
-        log.error("Unrecognized object store definition: {}".format(store))
+        log.error(f"Unrecognized object store definition: {store}")
 
     if from_object == 'xml':
         return objectstore_class.from_xml(config=config, config_xml=config_xml, **objectstore_constructor_kwds)

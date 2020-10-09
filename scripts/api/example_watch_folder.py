@@ -10,7 +10,6 @@ python example_watch_folder.py <api_key> <api_url> /tmp/g_inbox/ /tmp/g_inbox/do
 
 NOTE:  The upload method used requires the data library filesystem upload allow_library_path_paste
 """
-from __future__ import print_function
 
 import os
 import shutil
@@ -65,7 +64,7 @@ def main(api_key, api_url, in_folder, out_folder, data_library, workflow):
                         # Successful upload of dataset, we have the ldda now.  Run the workflow.
                         wf_data = {}
                         wf_data['workflow_id'] = workflow['id']
-                        wf_data['history'] = "%s - %s" % (fname, workflow['name'])
+                        wf_data['history'] = "{} - {}".format(fname, workflow['name'])
                         wf_data['ds_map'] = {}
                         for step_id, ds_in in workflow['inputs'].items():
                             wf_data['ds_map'][step_id] = {'src': 'ld', 'id': ds['id']}

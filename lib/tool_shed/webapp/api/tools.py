@@ -156,7 +156,7 @@ class ToolsController(BaseAPIController):
                         found_tool = tool
                         break
         if found_tool is None:
-            message = 'Unable to find tool with guid {} in repository {}.'.format(guid, repository.name)
+            message = f'Unable to find tool with guid {guid} in repository {repository.name}.'
             trans.response.status = 404
             return {'status': 'error', 'message': message}
 

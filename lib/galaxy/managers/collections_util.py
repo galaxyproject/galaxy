@@ -78,12 +78,12 @@ def get_collection(collection, name=""):
     hdas = []
     if collection.has_subcollections:
         for element in collection.elements:
-            subnames, subhdas = get_collection_elements(element.child_collection, name="{}/{}".format(name, element.element_identifier))
+            subnames, subhdas = get_collection_elements(element.child_collection, name=f"{name}/{element.element_identifier}")
             names.extend(subnames)
             hdas.extend(subhdas)
     else:
         for element in collection.elements:
-            names.append("{}/{}".format(name, element.element_identifier))
+            names.append(f"{name}/{element.element_identifier}")
             hdas.append(element.dataset_instance)
     return names, hdas
 
@@ -92,7 +92,7 @@ def get_collection_elements(collection, name=""):
     names = []
     hdas = []
     for element in collection.elements:
-        full_element_name = "{}/{}".format(name, element.element_identifier)
+        full_element_name = f"{name}/{element.element_identifier}"
         if element.is_collection:
             subnames, subhdas = get_collection(element.child_collection, name=full_element_name)
             names.extend(subnames)

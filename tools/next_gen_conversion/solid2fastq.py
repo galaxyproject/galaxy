@@ -161,13 +161,13 @@ def main():
         Use --help for more info
         """)
 
-    fr = open(options.fr, 'r')
-    fq = open(options.fq, 'r')
+    fr = open(options.fr)
+    fq = open(options.fq)
     f_out = open(options.fout, 'w')
 
     if options.rr and options.rq:
-        rr = open(options.rr, 'r')
-        rq = open(options.rq, 'r')
+        rr = open(options.rr)
+        rq = open(options.rq)
         if not options.rout:
             parser.error("Provide the name for f3 output using --rout option. Use --help for more info")
         r_out = open(options.rout, 'w')

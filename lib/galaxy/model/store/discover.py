@@ -280,7 +280,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
 
             # Associate new dataset with job
             element_identifier_str = ":".join(element_identifiers)
-            association_name = '__new_primary_file_{}|{}__'.format(name, element_identifier_str)
+            association_name = f'__new_primary_file_{name}|{element_identifier_str}__'
             self.add_output_dataset_association(association_name, dataset)
 
         self.flush()

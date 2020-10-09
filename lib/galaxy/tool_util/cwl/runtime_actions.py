@@ -200,7 +200,7 @@ def handle_outputs(job_directory=None):
         elif isinstance(output, dict):
             prefix = "%s|__part__|" % output_name
             for record_key, record_value in output.items():
-                record_value_output_key = "{}{}".format(prefix, record_key)
+                record_value_output_key = f"{prefix}{record_key}"
                 if isinstance(record_value, dict) and "class" in record_value:
                     handle_known_output(record_value, record_value_output_key, output_name)
                 else:

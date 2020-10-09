@@ -166,7 +166,7 @@ class GalaxyInteractorApi:
         try:
             self.verify_output_dataset(history_id=history_id, hda_id=hid, outfile=outfile, attributes=attributes, tool_id=tool_id)
         except AssertionError as e:
-            raise AssertionError("Output %s: %s" % (name, str(e)))
+            raise AssertionError("Output {}: {}".format(name, str(e)))
 
         primary_datasets = attributes.get('primary_datasets', {})
         if primary_datasets:
@@ -176,7 +176,7 @@ class GalaxyInteractorApi:
         for designation, (primary_outfile, primary_attributes) in primary_datasets.items():
             primary_output = None
             for output in outputs:
-                if output["name"] == '__new_primary_file_{}|{}__'.format(name, designation):
+                if output["name"] == f'__new_primary_file_{name}|{designation}__':
                     primary_output = output
                     break
 
@@ -189,7 +189,7 @@ class GalaxyInteractorApi:
             try:
                 self.verify_output_dataset(history_id, primary_hda_id, primary_outfile, primary_attributes, tool_id=tool_id)
             except AssertionError as e:
-                raise AssertionError("Primary output %s: %s" % (name, str(e)))
+                raise AssertionError("Primary output {}: {}".format(name, str(e)))
 
     def wait_for_jobs(self, history_id, jobs, maxseconds):
         for job in jobs:
@@ -230,7 +230,7 @@ class GalaxyInteractorApi:
 
         if metadata:
             time.sleep(5)
-            dataset = self._get("histories/{}/contents/{}".format(history_id, hid)).json()
+            dataset = self._get(f"histories/{history_id}/contents/{hid}").json()
             for key, value in metadata.items():
                 try:
                     dataset_value = dataset.get(key, None)
@@ -280,13 +280,13 @@ class GalaxyInteractorApi:
 
     @nottest
     def test_data_path(self, tool_id, filename):
-        response = self._get("tools/{}/test_data_path?filename={}".format(tool_id, filename), admin=True)
+        response = self._get(f"tools/{tool_id}/test_data_path?filename={filename}", admin=True)
         return response.json()
 
     @nottest
     def test_data_download(self, tool_id, filename, mode='file'):
         if self.supports_test_data_download:
-            response = self._get("tools/{}/test_data_download?filename={}".format(tool_id, filename), admin=True)
+            response = self._get(f"tools/{tool_id}/test_data_download?filename={filename}", admin=True)
             assert response.status_code == 200, "Test file (%s) is missing. If you use planemo try --update_test_data to generate one." % filename
             if mode == 'file':
                 return response.content
@@ -324,7 +324,7 @@ class GalaxyInteractorApi:
         }
         metadata = test_data.get("metadata", {})
         if not hasattr(metadata, "items"):
-            raise Exception("Invalid metadata description found for input [{}] - [{}]".format(fname, metadata))
+            raise Exception(f"Invalid metadata description found for input [{fname}] - [{metadata}]")
         for name, value in test_data.get('metadata', {}).items():
             tool_input["files_metadata|%s" % name] = value
 
@@ -542,15 +542,15 @@ class GalaxyInteractorApi:
             print(ERROR_MESSAGE_DATASET_SEP)
 
     def format_for_summary(self, blob, empty_message, prefix="|  "):
-        contents = "\n".join("{}{}".format(prefix, line.strip()) for line in io.StringIO(blob).readlines() if line.rstrip("\n\r"))
-        return contents or "{}*{}*".format(prefix, empty_message)
+        contents = "\n".join(f"{prefix}{line.strip()}" for line in io.StringIO(blob).readlines() if line.rstrip("\n\r"))
+        return contents or f"{prefix}*{empty_message}*"
 
     def _dataset_provenance(self, history_id, id):
-        provenance = self._get("histories/{}/contents/{}/provenance".format(history_id, id)).json()
+        provenance = self._get(f"histories/{history_id}/contents/{id}/provenance").json()
         return provenance
 
     def _dataset_info(self, history_id, id):
-        dataset_json = self._get("histories/{}/contents/{}".format(history_id, id)).json()
+        dataset_json = self._get(f"histories/{history_id}/contents/{id}").json()
         return dataset_json
 
     def __contents(self, history_id):
@@ -600,7 +600,7 @@ class GalaxyInteractorApi:
 
     def __dataset_fetcher(self, history_id):
         def fetcher(hda_id, base_name=None):
-            url = "histories/{}/contents/{}/display?raw=true".format(history_id, hda_id)
+            url = f"histories/{history_id}/contents/{hda_id}/display?raw=true"
             if base_name:
                 url += "&filename=%s" % base_name
             return self._get(url).content
@@ -622,22 +622,22 @@ class GalaxyInteractorApi:
         # parameter (i.e. assume the contents is a jsonified blob instead of form parameters
         # with individual parameters jsonified if needed).
         params, data = self.__inject_api_key(data=data, key=key, admin=admin, anon=anon)
-        url = "{}/{}".format(self.api_url, path)
+        url = f"{self.api_url}/{path}"
         return galaxy_requests_post(url, data=data, files=files, params=params, as_json=json)
 
     def _delete(self, path, data=None, key=None, admin=False, anon=False):
         params, data = self.__inject_api_key(data=data, key=key, admin=admin, anon=anon)
         # no data for DELETE
         params.update(data)
-        return requests.delete("{}/{}".format(self.api_url, path), params=params)
+        return requests.delete(f"{self.api_url}/{path}", params=params)
 
     def _patch(self, path, data=None, key=None, admin=False, anon=False):
         params, data = self.__inject_api_key(data=data, key=key, admin=admin, anon=anon)
-        return requests.patch("{}/{}".format(self.api_url, path), params=params, data=data)
+        return requests.patch(f"{self.api_url}/{path}", params=params, data=data)
 
     def _put(self, path, data=None, key=None, admin=False, anon=False):
         params, data = self.__inject_api_key(data=data, key=key, admin=admin, anon=anon)
-        return requests.put("{}/{}".format(self.api_url, path), params=params, data=data)
+        return requests.put(f"{self.api_url}/{path}", params=params, data=data)
 
     def _get(self, path, data=None, key=None, admin=False, anon=False):
         params, data = self.__inject_api_key(data=data, key=key, admin=admin, anon=anon)
@@ -645,7 +645,7 @@ class GalaxyInteractorApi:
         params.update(data)
         if path.startswith("/api"):
             path = path[len("/api"):]
-        url = "{}/{}".format(self.api_url, path)
+        url = f"{self.api_url}/{path}"
         return requests.get(url, params=params)
 
 
@@ -782,7 +782,7 @@ def _verify_composite_datatype_file_content(file_name, hda_id, base_name=None, a
             mode=mode,
         )
     except AssertionError as err:
-        errmsg = 'Composite file ({}) of {} different than expected, difference:\n'.format(base_name, item_label)
+        errmsg = f'Composite file ({base_name}) of {item_label} different than expected, difference:\n'
         errmsg += util.unicodify(err)
         raise AssertionError(errmsg)
 
@@ -973,7 +973,7 @@ def _verify_outputs(testdef, history, jobs, tool_id, data_list, data_collection_
     if expect_exit_code is not None:
         exit_code = job_stdio["exit_code"]
         if str(expect_exit_code) != str(exit_code):
-            error = AssertionError("Expected job to complete with exit code {}, found {}".format(expect_exit_code, exit_code))
+            error = AssertionError(f"Expected job to complete with exit code {expect_exit_code}, found {exit_code}")
             register_exception(error)
 
     for output_index, output_dict in enumerate(testdef.outputs):
@@ -1020,7 +1020,7 @@ def _verify_outputs(testdef, history, jobs, tool_id, data_list, data_collection_
         elif message_type == "exit_code":
             stderr_prefix += (job_message.get("desc") or '') + "\n"
         else:
-            raise Exception("Unknown job message type [{}] in [{}]".format(message_type, job_message))
+            raise Exception(f"Unknown job message type [{message_type}] in [{job_message}]")
 
     for what, description in other_checks.items():
         if getattr(testdef, what, None) is not None:

@@ -69,7 +69,7 @@ def get_remote_driver(
     assert browser in ["CHROME", "EDGE", "ANDROID", "FIREFOX", "INTERNETEXPLORER", "IPAD", "IPHONE", "OPERA", "PHANTOMJS", "SAFARI"]
     desired_capabilities = getattr(DesiredCapabilities, browser)
     desired_capabilities["loggingPrefs"] = LOGGING_PREFS
-    executor = 'http://{}:{}/wd/hub'.format(host, port)
+    executor = f'http://{host}:{port}/wd/hub'
     driver = webdriver.Remote(
         command_executor=executor,
         desired_capabilities=desired_capabilities,

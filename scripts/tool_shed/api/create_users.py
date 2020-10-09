@@ -18,7 +18,6 @@ are available in the test public Tool Shed and create each of them in a local de
 
 ./create_users.py -a <api key> -f http://testtoolshed.g2.bx.psu.edu -t http://localhost:9009
 """
-from __future__ import print_function
 
 import argparse
 

@@ -274,7 +274,7 @@ def _has_extension(path, extensions):
 
 def _find_files(directory, pattern='*'):
     if not os.path.exists(directory):
-        raise ValueError("Directory not found {}".format(directory))
+        raise ValueError(f"Directory not found {directory}")
 
     matches = []
     for root, dirnames, filenames in os.walk(directory):

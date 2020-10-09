@@ -155,7 +155,7 @@ class Dataset:
         try:
             os.remove(self.data.file_name)
         except OSError as e:
-            log.critical('{} delete error {}'.format(self.__class__.__name__, e))
+            log.critical(f'{self.__class__.__name__} delete error {e}')
 
 
 class DatasetInstance:
@@ -750,7 +750,7 @@ def upgrade(migrate_engine):
                 changed_associations += 1
             # mark original Dataset as deleted and purged, it is no longer in use, but do not delete file_name contents
             dataset.deleted = True
-            dataset.external_filename = "Dataset was result of share before HDA, and has been replaced: {} mapped to Dataset {}".format(dataset.external_filename, guessed_dataset.id)
+            dataset.external_filename = f"Dataset was result of share before HDA, and has been replaced: {dataset.external_filename} mapped to Dataset {guessed_dataset.id}"
             dataset.purged = True  # we don't really purge the file here, but we mark it as purged, since this dataset is now defunct
     context.flush()
     log.debug("%i items affected, and restored." % (changed_associations))

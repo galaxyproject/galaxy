@@ -17,8 +17,7 @@ DataProvider related decorators.
 import copy
 import logging
 from functools import wraps
-
-from six.moves.urllib.parse import unquote
+from urllib.parse import unquote
 
 log = logging.getLogger(__name__)
 
@@ -104,8 +103,8 @@ def dataprovider_factory(name, settings=None):
     def named_dataprovider_factory(func):
         setattr(func, _DATAPROVIDER_METHOD_NAME_KEY, name)
 
-        setattr(func, 'parse_query_string_settings', parse_query_string_settings)
-        setattr(func, 'settings', settings)
+        func.parse_query_string_settings = parse_query_string_settings
+        func.settings = settings
         # TODO: I want a way to inherit settings from the previous provider( this_name ) instead of defining over and over
 
         @wraps(func)

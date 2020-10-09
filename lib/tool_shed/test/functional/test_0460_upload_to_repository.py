@@ -254,7 +254,7 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
         '''
         This is step 8 - Upload to complex_dependency_test_4_0460 using the url hg://<tool shed url>/repos/user1/hg_tool_dependency_0460.
         '''
-        url = 'hg://{}:{}/repos/user1/hg_tool_dependency_0460'.format(self.host, self.port)
+        url = f'hg://{self.host}:{self.port}/repos/user1/hg_tool_dependency_0460'
         repository = self.test_db_util.get_repository_by_name_and_owner('complex_dependency_test_4_0460', common.test_user_1_name)
         package_repository = self.test_db_util.get_repository_by_name_and_owner('package_bwa_0_5_9_0460', common.test_user_1_name)
         self.upload_url(repository,
@@ -278,7 +278,7 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
         '''
         This is step 9 - Upload to complex_dependency_test_5_0460 using the url hg://<tool shed url>/repos/user1/hg_subfolder_tool_dependency_0460.
         '''
-        url = 'hg://{}:{}/repos/user1/hg_subfolder_tool_dependency_0460'.format(self.host, self.port)
+        url = f'hg://{self.host}:{self.port}/repos/user1/hg_subfolder_tool_dependency_0460'
         repository = self.test_db_util.get_repository_by_name_and_owner('complex_dependency_test_5_0460', common.test_user_1_name)
         package_repository = self.test_db_util.get_repository_by_name_and_owner('package_bwa_0_5_9_0460', common.test_user_1_name)
         self.upload_url(repository,
@@ -435,7 +435,7 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
         This is step 15 - Upload to repository_dependency_test_4_0460 using the url
         hg://<tool shed url>/repos/user1/hg_repository_dependency_0460.
         '''
-        url = 'hg://{}:{}/repos/user1/hg_repository_dependency_0460'.format(self.host, self.port)
+        url = f'hg://{self.host}:{self.port}/repos/user1/hg_repository_dependency_0460'
         repository = self.test_db_util.get_repository_by_name_and_owner('repository_dependency_test_4_0460', common.test_user_1_name)
         package_repository = self.test_db_util.get_repository_by_name_and_owner('emboss_datatypes_0460', common.test_user_1_name)
         self.upload_url(repository,
@@ -460,7 +460,7 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
         This is step 16 - Upload to repository_dependency_test_5_0460 using the url
         hg://<tool shed url>/repos/user1/hg_subfolder_repository_dependency_0460.
         '''
-        url = 'hg://{}:{}/repos/user1/hg_subfolder_repository_dependency_0460'.format(self.host, self.port)
+        url = f'hg://{self.host}:{self.port}/repos/user1/hg_subfolder_repository_dependency_0460'
         repository = self.test_db_util.get_repository_by_name_and_owner('repository_dependency_test_5_0460', common.test_user_1_name)
         package_repository = self.test_db_util.get_repository_by_name_and_owner('emboss_datatypes_0460', common.test_user_1_name)
         self.upload_url(repository,

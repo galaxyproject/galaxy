@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import os
 from xml.etree import ElementTree as ET
 
@@ -36,7 +34,7 @@ def getfilenamelist(startdir):
     return filenamelist
 
 
-class ToolBox(object):
+class ToolBox:
     def __init__(self):
         from collections import defaultdict
         self.tools = defaultdict(list)

@@ -38,7 +38,7 @@ class Tool:
 
 def setup_data(job_working_directory):
     for i in range(10):
-        with open(os.path.join(job_working_directory, 'datasets_{}.txt'.format(i)), 'w') as out:
+        with open(os.path.join(job_working_directory, f'datasets_{i}.txt'), 'w') as out:
             out.write(str(i))
 
 

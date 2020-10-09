@@ -5,9 +5,9 @@ import os
 import shutil
 import sys
 import tempfile
+from io import StringIO
 
 import bdbag.bdbag_api
-from six.moves import StringIO
 
 from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry
@@ -362,7 +362,7 @@ def _handle_hash_validation(upload_config, hash_function, hash_value, path):
     if upload_config.validate_hashes:
         calculated_hash_value = memory_bound_hexdigest(hash_func_name=hash_function, path=path)
         if calculated_hash_value != hash_value:
-            raise Exception("Failed to validate upload with [{}] - expected [{}] got [{}]".format(hash_function, hash_value, calculated_hash_value))
+            raise Exception(f"Failed to validate upload with [{hash_function}] - expected [{hash_value}] got [{calculated_hash_value}]")
 
 
 def _arg_parser():
@@ -384,7 +384,7 @@ def get_file_sources():
         file_sources = None
         if os.path.exists("file_sources.json"):
             file_sources_as_dict = None
-            with open("file_sources.json", "r") as f:
+            with open("file_sources.json") as f:
                 file_sources_as_dict = json.load(f)
             if file_sources_as_dict is not None:
                 file_sources = ConfiguredFileSources.from_dict(file_sources_as_dict)
@@ -457,7 +457,7 @@ def _for_each_src(f, obj):
     if isinstance(obj, dict):
         if "src" in obj:
             f(obj)
-        for key, value in obj.items():
+        for value in obj.values():
             _for_each_src(f, value)
 
 

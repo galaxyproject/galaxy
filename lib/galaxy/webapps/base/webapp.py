@@ -9,15 +9,15 @@ import random
 import socket
 import string
 import time
+from http.cookies import CookieError
 from importlib import import_module
+from urllib.parse import urlparse
 
 import mako.lookup
 import mako.runtime
 from babel import Locale
 from babel.support import Translations
 from Cheetah.Template import Template
-from six.moves.http_cookies import CookieError
-from six.moves.urllib.parse import urlparse
 from sqlalchemy import and_, true
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.exc import NoResultFound
@@ -374,7 +374,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         try:
             self.response.cookies[name]['httponly'] = True
         except CookieError as e:
-            log.warning("Error setting httponly attribute in cookie '{}': {}".format(name, e))
+            log.warning(f"Error setting httponly attribute in cookie '{name}': {e}")
         if self.app.config.cookie_domain is not None:
             self.response.cookies[name]['domain'] = self.app.config.cookie_domain
 

@@ -8,7 +8,7 @@ from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import bunch
 
 
-class MockTrans(object):
+class MockTrans:
 
     def __init__(self):
         self.app = TestApp()
@@ -34,7 +34,7 @@ class MockTrans(object):
         return self._user
 
 
-class TestApp(object):
+class TestApp:
 
     def __init__(self):
         self.config = bunch.Bunch(
@@ -50,7 +50,7 @@ class TestApp(object):
         self.security = IdEncodingHelper(id_secret="testing")
 
 
-class TestDatatypesRegistry(object):
+class TestDatatypesRegistry:
 
     def __init__(self):
         pass
@@ -63,7 +63,7 @@ class TestDatatypesRegistry(object):
         return {"fasta": object(), "fastqsanger": object(), "txt": object()}
 
 
-class TestToolbox(object):
+class TestToolbox:
 
     def __init__(self):
         self.tools = {}

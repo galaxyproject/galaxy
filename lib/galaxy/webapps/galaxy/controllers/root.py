@@ -190,7 +190,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
                         toext = "." + toext
                     fname = data.name
                     fname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in fname)[0:150]
-                    trans.response.headers["Content-Disposition"] = 'attachment; filename="GalaxyHistoryItem-{}-[{}]{}"'.format(data.hid, fname, toext)
+                    trans.response.headers["Content-Disposition"] = f'attachment; filename="GalaxyHistoryItem-{data.hid}-[{fname}]{toext}"'
                 trans.log_event("Display dataset id: %s" % str(id))
                 try:
                     return open(data.file_name, 'rb')

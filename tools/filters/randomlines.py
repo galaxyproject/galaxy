@@ -7,7 +7,7 @@ import sys
 
 
 def main():
-    infile = open(sys.argv[1], 'r')
+    infile = open(sys.argv[1])
     total_lines = int(sys.argv[2])
 
     if total_lines < 1:

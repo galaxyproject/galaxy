@@ -305,7 +305,7 @@ class Tabular(TabularData):
                 if column_type2 == column_type:
                     return False
             # neither column type was found in our ordered list, this cannot happen
-            raise ValueError("Tried to compare unknown column types: {} and {}".format(column_type1, column_type2))
+            raise ValueError(f"Tried to compare unknown column types: {column_type1} and {column_type2}")
 
         def is_int(column_text):
             # Don't allow underscores in numeric literals (PEP 515)

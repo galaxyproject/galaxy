@@ -66,7 +66,7 @@ var FolderView = Backbone.View.extend({
             is_admin = Galaxy.user.isAdmin();
         }
         var template = this.templateFolderPermissions();
-        this.$el.html(template({ folder: this.model, is_admin: is_admin }));
+        this.$el.html(template({ folder: this.model, is_admin: is_admin, root_path: getAppRoot() }));
 
         var self = this;
         $.get(`${getAppRoot()}api/folders/${self.id}/permissions?scope=current`)
@@ -204,7 +204,7 @@ var FolderView = Backbone.View.extend({
         return _.template(
             `<div class="library_style_container">
                 <div>
-                    <a href="/library/folders/<%= folder.get("parent_id") %>">
+                    <a href="<%- root_path %>library/folders/<%= folder.get("parent_id") %>">
                         <button data-toggle="tooltip" data-placement="top" title="Go back to the parent folder"
                             class="btn btn-secondary primary-button" type="button">
                             <span class="fa fa-caret-left fa-lg"/>

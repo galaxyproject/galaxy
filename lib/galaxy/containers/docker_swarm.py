@@ -331,7 +331,7 @@ class DockerSwarmCLIInterface(DockerSwarmInterface, DockerCLIInterface):
 
     @docker_columns
     def service_ps(self, service_id):
-        return self._run_docker(subcommand='service ps', args='--no-trunc {}'.format(service_id))
+        return self._run_docker(subcommand='service ps', args=f'--no-trunc {service_id}')
 
     def service_rm(self, service_ids):
         service_ids = ' '.join(service_ids)
@@ -347,7 +347,7 @@ class DockerSwarmCLIInterface(DockerSwarmInterface, DockerCLIInterface):
 
     @docker_columns
     def node_ps(self, node_id):
-        return self._run_docker(subcommand='node ps', args='--no-trunc {}'.format(node_id))
+        return self._run_docker(subcommand='node ps', args=f'--no-trunc {node_id}')
 
     def node_update(self, node_id, **kwopts):
         return self._run_docker(subcommand='node update', args='{kwopts} {node_id}'.format(

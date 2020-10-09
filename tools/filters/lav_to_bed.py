@@ -14,7 +14,7 @@ def stop_err(msg):
 
 def main():
     try:
-        lav_file = open(sys.argv[1], 'r')
+        lav_file = open(sys.argv[1])
         bed_file1 = open(sys.argv[2], 'w')
         bed_file2 = open(sys.argv[3], 'w')
     except Exception as e:

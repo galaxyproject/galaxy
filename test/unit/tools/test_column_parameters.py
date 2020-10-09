@@ -58,7 +58,7 @@ class DataColumnParameterTestCase(BaseParameterTestCase):
         self.assertEqual('2', self.param.get_initial_value(self.trans, {"input_tsv": self.build_ready_hda()}))
 
     def setUp(self):
-        super(DataColumnParameterTestCase, self).setUp()
+        super().setUp()
         self.test_history = model.History()
         self.app.model.context.add(self.test_history)
         self.app.model.context.flush()

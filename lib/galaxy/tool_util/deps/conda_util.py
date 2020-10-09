@@ -4,12 +4,12 @@ import json
 import logging
 import os
 import re
+import shlex
 import shutil
 import sys
 import tempfile
 
 import packaging.version
-from six.moves import shlex_quote
 
 from galaxy.util import (
     commands,
@@ -226,7 +226,7 @@ class CondaContext(installable.InstallableContext):
         env = {}
         if self.condarc_override:
             env["CONDARC"] = self.condarc_override
-        cmd_string = ' '.join(map(shlex_quote, cmd))
+        cmd_string = ' '.join(map(shlex.quote, cmd))
         kwds = dict()
         try:
             if stdout_path:
@@ -372,7 +372,7 @@ class CondaTarget:
     def __str__(self):
         attributes = "package=%s" % self.package
         if self.version is not None:
-            attributes = "{},version={}".format(self.package, self.version)
+            attributes = f"{self.package},version={self.version}"
         else:
             attributes = "%s,unversioned" % self.package
 
@@ -388,7 +388,7 @@ class CondaTarget:
         """ Return a package specifier as consumed by conda install/create.
         """
         if self.version:
-            return "{}={}".format(self.package, self.version)
+            return f"{self.package}={self.version}"
         else:
             return self.package
 
@@ -399,7 +399,7 @@ class CondaTarget:
         a fixed and predictable name given package and version.
         """
         if self.version:
-            return "__{}@{}".format(self.package, self.version)
+            return f"__{self.package}@{self.version}"
         else:
             return "__%s@_uv_" % (self.package)
 

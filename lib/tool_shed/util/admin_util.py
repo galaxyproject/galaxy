@@ -173,7 +173,7 @@ class Admin:
                         role.description = new_description
                         trans.sa_session.add(role)
                         trans.sa_session.flush()
-                        message = "Role '{}' has been renamed to '{}'".format(old_name, new_name)
+                        message = f"Role '{old_name}' has been renamed to '{new_name}'"
                     return trans.response.send_redirect(web.url_for(controller='admin',
                                                                     action='roles',
                                                                     message=util.sanitize_text(message),
@@ -251,12 +251,12 @@ class Admin:
                     folder_path = ''
                     folder = ldda.library_dataset.folder
                     while not root_found:
-                        folder_path = '{} / {}'.format(folder.name, folder_path)
+                        folder_path = f'{folder.name} / {folder_path}'
                         if not folder.parent:
                             root_found = True
                         else:
                             folder = folder.parent
-                    folder_path = '{} {}'.format(folder_path, ldda.name)
+                    folder_path = f'{folder_path} {ldda.name}'
                     library = trans.sa_session.query(trans.app.model.Library) \
                                               .filter(trans.app.model.Library.table.c.root_folder_id == folder.id) \
                                               .first()
@@ -439,7 +439,7 @@ class Admin:
                         group.name = new_name
                         trans.sa_session.add(group)
                         trans.sa_session.flush()
-                        message = "Group '{}' has been renamed to '{}'".format(old_name, new_name)
+                        message = f"Group '{old_name}' has been renamed to '{new_name}'"
                     return trans.response.send_redirect(web.url_for(controller='admin',
                                                                     action='groups',
                                                                     message=util.sanitize_text(message),

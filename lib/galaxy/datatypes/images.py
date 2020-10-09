@@ -4,8 +4,7 @@ Image classes
 import base64
 import logging
 import zipfile
-
-from six.moves.urllib.parse import quote_plus
+from urllib.parse import quote_plus
 
 from galaxy.datatypes.text import Html as HtmlFromText
 from galaxy.util import nice_size
@@ -52,7 +51,7 @@ class Image(data.Data):
         name = hda.name or ''
         with open(dataset.file_name, "rb") as f:
             base64_image_data = base64.b64encode(f.read()).decode("utf-8")
-        return "![{}](data:image/{};base64,{})".format(name, self.file_ext, base64_image_data)
+        return f"![{name}](data:image/{self.file_ext};base64,{base64_image_data})"
 
 
 class Jpg(Image):
@@ -177,14 +176,14 @@ def create_applet_tag_peek(class_name, archive, params):
       height="30" width="200" align="center" >
       <param name="archive" value="{}"/>""".format(class_name, archive)
     for name, value in params.items():
-        text += """<param name="{}" value="{}"/>""".format(name, value)
+        text += f"""<param name="{name}" value="{value}"/>"""
     text += """
 <object classid="clsid:8AD9C840-044E-11D1-B3E9-00805F499D93"
         height="30" width="200" >
         <param name="code" value="{}" />
         <param name="archive" value="{}"/>""".format(class_name, archive)
     for name, value in params.items():
-        text += """<param name="{}" value="{}"/>""".format(name, value)
+        text += f"""<param name="{name}" value="{value}"/>"""
     text += """<div class="errormessage">You must install and enable Java in your browser in order to access this applet.<div></object>
 </object>
 """
@@ -265,7 +264,7 @@ class Laj(data.Text):
                     "alignfile1": "display?id=%s" % dataset.id,
                     "buttonlabel": "Launch LAJ",
                     "title": "LAJ in Galaxy",
-                    "posturl": quote_plus("history_add_to?%s" % "&".join("{}={}".format(key, value) for key, value in {'history_id': dataset.history_id, 'ext': 'lav', 'name': 'LAJ Output', 'info': 'Added by LAJ', 'dbkey': dataset.dbkey, 'copy_access_from': dataset.id}.items())),
+                    "posturl": quote_plus("history_add_to?%s" % "&".join(f"{key}={value}" for key, value in {'history_id': dataset.history_id, 'ext': 'lav', 'name': 'LAJ Output', 'info': 'Added by LAJ', 'dbkey': dataset.dbkey, 'copy_access_from': dataset.id}.items())),
                     "noseq": "true"
                 }
                 class_name = "edu.psu.cse.bio.laj.LajApplet.class"

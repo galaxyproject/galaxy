@@ -31,7 +31,7 @@ class WebDavIntegrationTestCase(integration_util.IntegrationTestCase):
         config["file_sources_config_file"] = FILE_SOURCES_JOB_CONF
 
     def setUp(self):
-        super(WebDavIntegrationTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
     def test_simple_usage(self):

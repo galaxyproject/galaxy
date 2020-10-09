@@ -23,7 +23,7 @@ def assert_converts_to_1234_convert(content, block_size=1024):
     rval = convert_newlines(tf.name, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir(), block_size=block_size)
     actual_contents = open(tf.name).read()
     assert '1 2\n3 4\n' == actual_contents, actual_contents
-    assert rval == (2, None), "rval != %s for %s" % (rval, content)
+    assert rval == (2, None), f"rval != {rval} for {content}"
 
 
 @pytest.mark.parametrize('source,block_size', [

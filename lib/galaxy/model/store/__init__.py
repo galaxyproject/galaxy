@@ -444,12 +444,12 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                             if hda_key in hdas_by_key:
                                 hda = hdas_by_key[hda_key]
                             else:
-                                raise KeyError("Failed to find exported hda with key [{}] of type [{}] in [{}]".format(hda_key, object_key, hdas_by_key))
+                                raise KeyError(f"Failed to find exported hda with key [{hda_key}] of type [{object_key}] in [{hdas_by_key}]")
                         else:
                             hda_id = hda_attrs["id"]
                             hdas_by_id = object_import_tracker.hdas_by_id
                             if hda_id not in hdas_by_id:
-                                raise Exception("Failed to find HDA with id [{}] in [{}]".format(hda_id, hdas_by_id))
+                                raise Exception(f"Failed to find HDA with id [{hda_id}] in [{hdas_by_id}]")
                             hda = hdas_by_id[hda_id]
                         dce.hda = hda
                     elif 'child_collection' in element_attrs:
@@ -1441,7 +1441,7 @@ def get_export_dataset_filename(name, ext, hid):
     Builds a filename for a dataset using its name an extension.
     """
     base = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in name)
-    return base + "_{}.{}".format(hid, ext)
+    return base + f"_{hid}.{ext}"
 
 
 def imported_store_for_metadata(directory, object_store=None):

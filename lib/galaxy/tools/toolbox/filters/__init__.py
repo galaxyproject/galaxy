@@ -78,7 +78,7 @@ class FilterFactory:
     def _import_filter(self, module_name, function_name):
         function_name = function_name.strip()
         for base_module in self.__base_modules:
-            full_module_name = "{}.{}".format(base_module, module_name.strip())
+            full_module_name = f"{base_module}.{module_name.strip()}"
             try:
                 __import__(full_module_name)
             except ImportError:

@@ -19,7 +19,7 @@ execution:
 class WorkQueuePutFailureTestCase(integration_util.IntegrationTestCase):
 
     def setUp(self):
-        super(WorkQueuePutFailureTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.history_id = self.dataset_populator.new_history()
 

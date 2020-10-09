@@ -79,7 +79,7 @@ def generate_targets(target_source):
 def tuple_from_header(header):
     fields = header[1:].split('\t')
     for field in fields:
-        assert field in KNOWN_FIELDS, "'{}' is not one of {}".format(field, KNOWN_FIELDS)
+        assert field in KNOWN_FIELDS, f"'{field}' is not one of {KNOWN_FIELDS}"
     # Make sure tuple contains all fields
     for field in KNOWN_FIELDS:
         if field not in fields:
@@ -92,7 +92,7 @@ def line_to_targets(line_str, line_tuple):
     line_parts = line_str.split("\t")
     n_fields = len(line_tuple._fields)
     targets_column = line_tuple._fields.index('targets')
-    assert len(line_parts) <= n_fields, "Too many fields in line [{}], expect at most {} - targets, image build number, and name override.".format(line_str, n_fields)
+    assert len(line_parts) <= n_fields, f"Too many fields in line [{line_str}], expect at most {n_fields} - targets, image build number, and name override."
     line_parts += [None] * (n_fields - len(line_parts))
     line_parts[targets_column] = target_str_to_targets(line_parts[targets_column])
     return line_tuple(*line_parts)

@@ -187,7 +187,7 @@ class RuleHelper:
         invocation for jobs outside of workflows.
         """
         if hash_by not in VALID_JOB_HASH_STRATEGIES:
-            message = "Do not know how to hash jobs by {}, must be one of {}".format(hash_by, VALID_JOB_HASH_STRATEGIES)
+            message = f"Do not know how to hash jobs by {hash_by}, must be one of {VALID_JOB_HASH_STRATEGIES}"
             raise Exception(message)
 
         if hash_by == "workflow_invocation":

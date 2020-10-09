@@ -211,7 +211,7 @@ def get_repository_file_contents(app, file_path, repository_id, is_admin=False):
                 large_str = \
                     '<br/>File contents truncated because file size is larger than maximum viewing size of %s<br/>' % \
                     util.nice_size(MAX_CONTENT_SIZE)
-                safe_str = '{}{}'.format(safe_str, large_str)
+                safe_str = f'{safe_str}{large_str}'
                 break
 
         if len(safe_str) > basic_util.MAX_DISPLAY_SIZE:
@@ -349,7 +349,7 @@ def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_al
             template = email_alert_template
         display_date = hg_util.get_readable_ctx_date(ctx)
         description = unicodify(ctx.description())
-        revision = '{}:{}'.format(ctx.rev(), ctx)
+        revision = f'{ctx.rev()}:{ctx}'
         admin_body = string.Template(template).safe_substitute(host=host,
                                                                sharable_link=sharable_link,
                                                                repository_name=repository.name,

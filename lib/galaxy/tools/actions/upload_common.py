@@ -4,10 +4,10 @@ import os
 import socket
 import tempfile
 from collections import OrderedDict
+from io import StringIO
 from json import dump, dumps
 from urllib.parse import urlparse
 
-from six import StringIO
 from sqlalchemy.orm import eagerload_all
 from webob.compat import cgi_FieldStorage
 

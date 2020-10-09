@@ -468,7 +468,7 @@ class ToolVersionListGrid(grids.Grid):
             if toolbox.has_tool(tool_version.tool_id, exact=True):
                 link = url_for(controller='tool_runner', tool_id=tool_version.tool_id)
                 link_str = '<a target="_blank" href="%s">' % link
-                return '<div class="count-box state-color-ok">{}{}</a></div>'.format(link_str, tool_version.tool_id)
+                return f'<div class="count-box state-color-ok">{link_str}{tool_version.tool_id}</a></div>'
             return tool_version.tool_id
 
     class ToolVersionsColumn(grids.TextColumn):
@@ -481,7 +481,7 @@ class ToolVersionListGrid(grids.Grid):
                     if toolbox.has_tool(tool_id, exact=True):
                         link = url_for(controller='tool_runner', tool_id=tool_id)
                         link_str = '<a target="_blank" href="%s">' % link
-                        tool_ids_str += '<div class="count-box state-color-ok">{}{}</a></div><br/>'.format(link_str, tool_id)
+                        tool_ids_str += f'<div class="count-box state-color-ok">{link_str}{tool_id}</a></div><br/>'
                     else:
                         tool_ids_str += '%s<br/>' % tool_version.tool_id
             else:
@@ -1049,7 +1049,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                         role.description = new_description
                         trans.sa_session.add(role)
                         trans.sa_session.flush()
-            return {'message': 'Role \'{}\' has been renamed to \'{}\'.'.format(old_name, new_name)}
+            return {'message': f'Role \'{old_name}\' has been renamed to \'{new_name}\'.'}
 
     @web.legacy_expose_api
     @web.require_admin
@@ -1215,7 +1215,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                         group.name = new_name
                         trans.sa_session.add(group)
                         trans.sa_session.flush()
-            return {'message': 'Group \'{}\' has been renamed to \'{}\'.'.format(old_name, new_name)}
+            return {'message': f'Group \'{old_name}\' has been renamed to \'{new_name}\'.'}
 
     @web.legacy_expose_api
     @web.require_admin
@@ -1464,7 +1464,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         )
         trans.sa_session.add(new_key)
         trans.sa_session.flush()
-        return ("New key '{}' generated for requested user '{}'.".format(new_key.key, user.email), "done")
+        return (f"New key '{new_key.key}' generated for requested user '{user.email}'.", "done")
 
     def _activate_user(self, trans, user_id):
         user = trans.sa_session.query(trans.model.User).get(trans.security.decode_id(user_id))

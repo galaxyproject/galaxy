@@ -86,7 +86,7 @@ class RepositoryRevisionsController(BaseAPIController):
                 tool_shed, name, owner, changeset_revision = rd_tup[0:4]
                 repository_dependency = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
                 if repository_dependency is None:
-                    log.dbug('Cannot locate repository dependency {} owned by {}.'.format(name, owner))
+                    log.dbug(f'Cannot locate repository dependency {name} owned by {owner}.')
                     continue
                 repository_dependency_id = trans.security.encode_id(repository_dependency.id)
                 repository_dependency_repository_metadata = \

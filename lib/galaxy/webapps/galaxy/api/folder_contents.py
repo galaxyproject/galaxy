@@ -81,7 +81,7 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
             pass
         else:
             if trans.user:
-                log.warning("SECURITY: User (id: {}) without proper access rights is trying to load folder with ID of {}".format(trans.user.id, decoded_folder_id))
+                log.warning(f"SECURITY: User (id: {trans.user.id}) without proper access rights is trying to load folder with ID of {decoded_folder_id}")
             else:
                 log.warning("SECURITY: Anonymous user is trying to load restricted folder with ID of %s" % (decoded_folder_id))
             raise exceptions.ObjectNotFound('Folder with the id provided ( %s ) was not found' % str(folder_id))

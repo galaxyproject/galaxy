@@ -88,7 +88,7 @@ def generate_tool_guid(repository_clone_url, tool):
     <tool shed host>/repos/<repository owner>/<repository name>/<tool id>/<tool version>
     """
     tmp_url = common_util.remove_protocol_and_user_from_clone_url(repository_clone_url)
-    return '{}/{}/{}'.format(tmp_url, tool.id, tool.version)
+    return f'{tmp_url}/{tool.id}/{tool.version}'
 
 
 def get_ctx_rev(app, tool_shed_url, name, owner, changeset_revision):

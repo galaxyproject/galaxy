@@ -13,7 +13,7 @@ from galaxy_test.base.populators import (
 from ._framework import ApiTestCase
 
 
-class BaseHistories(object):
+class BaseHistories:
 
     def _show(self, history_id):
         return self._get("histories/%s" % history_id).json()
@@ -204,7 +204,7 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories):
 class ImportExportHistoryTestCase(ApiTestCase, BaseHistories):
 
     def setUp(self):
-        super(ImportExportHistoryTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
 

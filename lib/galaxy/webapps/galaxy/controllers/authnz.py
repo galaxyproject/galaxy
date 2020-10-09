@@ -63,7 +63,7 @@ class OIDC(JSAppLauncher):
     def callback(self, trans, provider, idphint=None, **kwargs):
         user = trans.user.username if trans.user is not None else 'anonymous'
         if not bool(kwargs):
-            log.error("OIDC callback received no data for provider `{}` and user `{}`".format(provider, user))
+            log.error(f"OIDC callback received no data for provider `{provider}` and user `{user}`")
             return trans.show_error_message(
                 'Did not receive any information from the `{}` identity provider to complete user `{}` authentication '
                 'flow. Please try again, and if the problem persists, contact the Galaxy instance admin. Also note '

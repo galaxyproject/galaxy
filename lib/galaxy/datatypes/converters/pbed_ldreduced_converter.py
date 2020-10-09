@@ -60,8 +60,8 @@ def makeLDreduced(basename, infpath=None, outfpath=None, plinke='plink', forcere
     inbase = os.path.join(infpath)
     plinktasks = []
     vclbase = [plinke, '--noweb']
-    plinktasks += [['--bfile', inbase, '--indep-pairwise {} {} {}'.format(winsize, winmove, r2thresh), '--out %s' % outbase],
-                   ['--bfile', inbase, '--extract {}.prune.in --make-bed --out {}'.format(outbase, outbase)]]
+    plinktasks += [['--bfile', inbase, f'--indep-pairwise {winsize} {winmove} {r2thresh}', '--out %s' % outbase],
+                   ['--bfile', inbase, f'--extract {outbase}.prune.in --make-bed --out {outbase}']]
     vclbase = [plinke, '--noweb']
     pruneLD(plinktasks=plinktasks, cd=outfpath, vclbase=vclbase)
 
@@ -99,10 +99,10 @@ def main():
     flist = os.listdir(outfilepath)
     with open(outhtmlname, 'w') as f:
         f.write(galhtmlprefix % prog)
-        s1 = '## Rgenetics: http://rgenetics.org Galaxy Tools {} {}'.format(prog, timenow())  # becomes info
-        s2 = 'Input {}, winsize={}, winmove={}, r2thresh={}'.format(base_name, winsize, winmove, r2thresh)
-        print('{} {}'.format(s1, s2))
-        f.write('<div>{}\n{}\n<ol>'.format(s1, s2))
+        s1 = f'## Rgenetics: http://rgenetics.org Galaxy Tools {prog} {timenow()}'  # becomes info
+        s2 = f'Input {base_name}, winsize={winsize}, winmove={winmove}, r2thresh={r2thresh}'
+        print(f'{s1} {s2}')
+        f.write(f'<div>{s1}\n{s2}\n<ol>')
         for i, data in enumerate(flist):
             f.write('<li><a href="{}">{}</a></li>\n'.format(os.path.split(data)[-1], os.path.split(data)[-1]))
         f.write("</div></body></html>")
