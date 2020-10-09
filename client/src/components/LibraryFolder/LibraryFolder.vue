@@ -1,19 +1,20 @@
 <template>
     <div>
-        <div v-if="!hasLoaded" class="d-flex justify-content-center m-5">
-            <font-awesome-icon icon="spinner" spin size="9x" />
-        </div>
-        <div v-else>
+        <div>
             <FolderTopBar
                 @updateSearch="updateSearchValue($event)"
                 @refreshTable="refreshTable"
+                @refreshTableContent="refreshTableContent"
                 @fetchFolderContents="fetchFolderContents($event)"
                 @deleteFromTable="deleteFromTable"
+                @setBusy="setBusy($event)"
                 :folderContents="folderContents"
                 :include_deleted="include_deleted"
                 :folder_id="folder_id"
                 :selected="selected"
                 :metadata="folder_metadata"
+                :unselected="unselected"
+                :isAllSelectedMode="isAllSelectedMode"
             />
             <a class="btn btn-secondary btn-sm btn_open_folder" :href="parentFolder">..</a>
 
@@ -21,21 +22,18 @@
                 id="folder_list_body"
                 striped
                 hover
-                :filter="filter"
-                :filterIncludedFields="filterOn"
+                :busy.sync="isBusy"
                 :fields="fields"
                 :items="folderContents"
                 :per-page="perPage"
-                :current-page="currentPage"
                 selectable
-                :select-mode="selectMode"
-                @row-selected="onRowSelected"
+                no-select-on-click
+                @row-clicked="onRowClick"
                 ref="folder_content_table"
-                @filtered="onFiltered"
                 show-empty
             >
                 <template v-slot:empty>
-                    <div class="empty-folder-message">
+                    <div v-if="!search_text" class="empty-folder-message">
                         This folder is either empty or you do not have proper access permissions to see the contents. If
                         you expected something to show up please consult the
                         <a href="https://galaxyproject.org/data-libraries/#permissions" target="_blank">
@@ -45,11 +43,20 @@
                 </template>
                 <template v-slot:head(selected)="">
                     <font-awesome-icon
+                        v-if="isAllSelectedMode && !isAllSelectedOnPage()"
                         @click="toggleSelect"
                         class="select-checkbox cursor-pointer"
                         size="lg"
                         title="Check to select all datasets"
-                        :icon="isCheckedAll() ? ['far', 'check-square'] : ['far', 'square']"
+                        icon="minus-square"
+                    />
+                    <font-awesome-icon
+                        v-else
+                        @click="toggleSelect"
+                        class="select-checkbox cursor-pointer"
+                        size="lg"
+                        title="Check to select all datasets"
+                        :icon="isAllSelectedOnPage() ? ['far', 'check-square'] : ['far', 'square']"
                     />
                 </template>
                 <template v-slot:cell(selected)="row">
@@ -226,7 +233,7 @@
                     <b-col md="auto">
                         <b-pagination
                             v-model="currentPage"
-                            :total-rows="rows"
+                            :total-rows="total_rows"
                             :per-page="perPage"
                             aria-controls="folder_list_body"
                         >
@@ -245,7 +252,7 @@
                                     />
                                 </td>
                                 <td class="text-muted ml-1 paginator-text">
-                                    <span class="pagination-total-pages-text">per page, {{ rows }} total</span>
+                                    <span class="pagination-total-pages-text">per page, {{ total_rows }} total</span>
                                 </td>
                             </tr>
                         </table>
@@ -289,25 +296,26 @@ export default {
     data() {
         return {
             error: null,
+            isBusy: false,
             folder_metadata: null,
             currentPage: 1,
             fields: fields,
             selectMode: "multi",
             selected: [],
+            unselected: [],
             expandedMessage: [],
             folderContents: [],
-            hasLoaded: false,
             perPage: 15,
             maxDescriptionLength: 40,
             filter: null,
             include_deleted: false,
             filterOn: [],
+            search_text: "",
+            isAllSelectedMode: false,
+            deselectedDatasets: [],
         };
     },
     computed: {
-        rows() {
-            return this.folderContents.length;
-        },
         parentFolder() {
             const path = this.folder_metadata.full_path;
             if (path.length === 1) {
@@ -320,35 +328,61 @@ export default {
     created() {
         this.root = getAppRoot();
         this.services = new Services({ root: this.root });
-
         this.fetchFolderContents();
     },
     methods: {
         fetchFolderContents(include_deleted = false) {
             this.include_deleted = include_deleted;
-            this.hasLoaded = false;
+            this.setBusy(true);
             this.services
-                .getFolderContents(this.folder_id, include_deleted)
+                .getFolderContents(
+                    this.folder_id,
+                    include_deleted,
+                    this.perPage,
+                    (this.currentPage - 1) * this.perPage,
+                    this.search_text
+                )
                 .then((response) => {
                     this.folderContents = response.folder_contents;
                     this.folder_metadata = response.metadata;
-                    this.hasLoaded = true;
+                    this.total_rows = response.metadata.total_rows;
+                    if (this.isAllSelectedMode) {
+                        this.selected = [];
+                        Vue.nextTick(() => {
+                            this.selectAllRenderedRows();
+                        });
+                    } else if (this.selected.length > 0) {
+                        Vue.nextTick(() => {
+                            this.selected.forEach((row) => this.select_unselect_row_by_id(row.id));
+                        });
+                    }
+                    this.setBusy(false);
                 })
                 .catch((error) => {
                     this.error = error;
                 });
         },
         updateSearchValue(value) {
-            this.filter = value;
+            this.search_text = value;
+            this.fetchFolderContents(this.include_deleted);
         },
-        selectAllRows() {
-            this.$refs.folder_content_table.selectAllRows();
+        selectAllRenderedRows() {
+            this.$refs.folder_content_table.items.forEach((row, index) => {
+                if (!row.isNewFolder && !row.deleted && !this.unselected.some((unsel) => unsel.id === row.id)) {
+                    this.select_unselect_row(index);
+                    if (!this.selected.some((selectedItem) => selectedItem.id === row.id)) this.selected.push(row);
+                }
+            });
         },
-        clearSelected() {
+        clearRenderedSelectedRows() {
             this.$refs.folder_content_table.clearSelected();
+            this.selected = [];
         },
         refreshTable() {
             this.$refs.folder_content_table.refresh();
+        },
+        refreshTableContent() {
+            this.fetchFolderContents(this.include_deleted);
         },
         deleteFromTable(deletedItem) {
             this.folderContents = this.folderContents.filter((element) => {
@@ -357,7 +391,7 @@ export default {
                 }
             });
         },
-        isCheckedAll() {
+        isAllSelectedOnPage() {
             if (!this.$refs.folder_content_table) return false;
 
             // Since we cannot select new folders, toggle should clear all if all rows match, expect new folders
@@ -366,22 +400,47 @@ export default {
             this.$refs.folder_content_table.computedItems.forEach((row) => {
                 if (row.isNewFolder || row.deleted) unselectable++;
             });
-            return this.selected.length + unselectable == this.$refs.folder_content_table.computedItems.length;
+
+            return this.selected.length + unselectable === this.$refs.folder_content_table.computedItems.length;
         },
         toggleSelect() {
-            if (this.isCheckedAll()) {
-                this.clearSelected();
+            this.unselected = [];
+            if (this.isAllSelectedOnPage()) {
+                this.isAllSelectedMode = false;
+                this.clearRenderedSelectedRows();
             } else {
-                this.selectAllRows();
+                this.isAllSelectedMode = true;
+                this.selectAllRenderedRows();
             }
         },
-        onRowSelected(items) {
-            // make new folders not selectable
-            // https://github.com/bootstrap-vue/bootstrap-vue/issues/3134#issuecomment-526810892
-            for (let i = 0; i < items.length; i++) {
-                if (items[i].isNewFolder || items[i].deleted) this.$refs.folder_content_table.unselectRow(i);
+        onRowClick(row, index, event) {
+            // check if exists
+            const selected_array_index = this.selected.findIndex((item) => item.id === row.id);
+            if (selected_array_index > -1) {
+                this.selected.splice(selected_array_index, 1);
+                this.select_unselect_row(index, true);
+                if (this.isAllSelectedMode) {
+                    this.unselected.push(row);
+                    if (this.total_rows === this.unselected.length) {
+                        // if user presses `selectAll` and unselects everything manually
+                        this.isAllSelectedMode = false;
+                        this.unselected = [];
+                    }
+                }
+            } else {
+                if (!row.isNewFolder && !row.deleted) {
+                    this.select_unselect_row(index);
+                    this.selected.push(row);
+                }
             }
-            this.selected = items;
+        },
+        select_unselect_row_by_id(id, unselect = false) {
+            const index = this.$refs.folder_content_table.items.findIndex((row) => row.id === id);
+            this.select_unselect_row(index, unselect);
+        },
+        select_unselect_row(index, unselect = false) {
+            if (unselect) this.$refs.folder_content_table.unselectRow(index);
+            else this.$refs.folder_content_table.selectRow(index);
         },
         bytesToString(raw_size) {
             return Utils.bytesToString(raw_size);
@@ -402,6 +461,9 @@ export default {
         expandMessage(element) {
             this.expandedMessage.push(element.id);
         },
+        setBusy(value) {
+            this.isBusy = value;
+        },
         linkify(raw_text) {
             return linkify(raw_text);
         },
@@ -411,11 +473,6 @@ export default {
                 if (!item.isNewFolder) return item;
             });
             this.refreshTable();
-        },
-        onFiltered(filteredItems) {
-            // Trigger pagination to update the number of buttons/pages due to filtering
-            this.totalRows = filteredItems.length;
-            this.currentPage = 1;
         },
         createNewFolder: function (folder) {
             if (!folder.name) {
@@ -521,6 +578,13 @@ export default {
             } else {
                 Toast.info("Nothing has changed.");
             }
+        },
+    },
+    watch: {
+        currentPage: {
+            handler: function (value) {
+                this.fetchFolderContents(this.include_deleted);
+            },
         },
     },
 };

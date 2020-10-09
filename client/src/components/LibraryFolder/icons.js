@@ -15,6 +15,7 @@ import {
     faUsers,
     faDownload,
     faBook,
+    faMinusSquare,
 } from "@fortawesome/free-solid-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
 
@@ -33,6 +34,7 @@ const tableIcons = [
     faUsers,
     faCheckSquare,
     faSquare,
+    faMinusSquare,
 ];
 const topBarIcons = [faHome, faPlus, faInfoCircle, faTrash, faDownload, faBook];
 
