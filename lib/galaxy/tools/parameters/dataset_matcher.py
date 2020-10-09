@@ -116,13 +116,13 @@ class DatasetMatcher:
         """
         rval = False
         formats = self.param.formats
-        if self.dataset_matcher_factory.matches_any_format(hda.extension, formats):
+        direct_match, target_ext, converted_dataset = hda.find_conversion_destination(formats)
+        if direct_match:
             rval = HdaDirectMatch(hda)
         else:
             if not check_implicit_conversions:
                 return False
-            direct_match, target_ext, converted_dataset = hda.find_conversion_destination(formats)
-            if not direct_match and target_ext:
+            if target_ext:
                 original_hda = hda
                 if converted_dataset:
                     hda = converted_dataset

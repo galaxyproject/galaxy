@@ -110,22 +110,19 @@ class DisplayApplicationDataParameter(DisplayApplicationParameter):
             # FIXME: Much of this is copied (more than once...); should be some abstract method elsewhere called from here
             # find target ext
             direct_match, target_ext, converted_dataset = data.find_conversion_destination(self.formats, converter_safe=True)
-            # TODO: Q: I guess we could skip the first if branch but code might
-            # be more readable
-            if direct_match:
-                pass
-            elif target_ext and not converted_dataset:
-                if isinstance(data, DisplayDataValueWrapper):
-                    data = data.value
-                new_data = next(iter(data.datatype.convert_dataset(trans, data, target_ext, return_output=True, visible=False).values()))
-                new_data.hid = data.hid
-                new_data.name = data.name
-                trans.sa_session.add(new_data)
-                assoc = trans.app.model.ImplicitlyConvertedDatasetAssociation(parent=data, file_type=target_ext, dataset=new_data, metadata_safe=False)
-                trans.sa_session.add(assoc)
-                trans.sa_session.flush()
-            elif converted_dataset and converted_dataset.state == converted_dataset.states.ERROR:
-                raise Exception("Dataset conversion failed for data parameter: %s" % self.name)
+            if not direct_match:
+                if target_ext and not converted_dataset:
+                    if isinstance(data, DisplayDataValueWrapper):
+                        data = data.value
+                    new_data = next(iter(data.datatype.convert_dataset(trans, data, target_ext, return_output=True, visible=False).values()))
+                    new_data.hid = data.hid
+                    new_data.name = data.name
+                    trans.sa_session.add(new_data)
+                    assoc = trans.app.model.ImplicitlyConvertedDatasetAssociation(parent=data, file_type=target_ext, dataset=new_data, metadata_safe=False)
+                    trans.sa_session.add(assoc)
+                    trans.sa_session.flush()
+                elif converted_dataset and converted_dataset.state == converted_dataset.states.ERROR:
+                    raise Exception("Dataset conversion failed for data parameter: %s" % self.name)
         return self.get_value(other_values, dataset_hash, user_hash, trans)
 
     def is_preparing(self, other_values):
