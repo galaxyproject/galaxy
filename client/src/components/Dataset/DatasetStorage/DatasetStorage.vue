@@ -7,9 +7,12 @@
                 This data is stored in a Galaxy ObjectStore named <b>{{ storageInfo.name }}</b
                 >.
             </p>
-            <p v-if="storageInfo.object_store_id">
+            <p v-else-if="storageInfo.object_store_id">
                 This data is stored in a Galaxy ObjectStore with id <b>{{ storageInfo.object_store_id }}</b
                 >.
+            </p>
+            <p v-else>
+                This data is stored in the default configured Galaxy ObjectStore.
             </p>
             <div v-html="descriptionRendered"></div>
         </div>
