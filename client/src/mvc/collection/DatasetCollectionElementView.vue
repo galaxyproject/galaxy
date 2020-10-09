@@ -1,5 +1,5 @@
 <template>
-    <div class="collection-element" @click="selectElement()">
+    <div class="collection-element" @click="$emit('element-is-selected', element)">
         <a class="name" title="titleElementName" href="javascript:void(0)" role="button" @click="clickName">
             {{ element.name }}
         </a>
@@ -13,7 +13,6 @@
 import _l from "utils/localization";
 export default {
     props: {
-        //TODO: do we need a prop for attributes?
         element: {
             required: true,
         },
@@ -24,6 +23,7 @@ export default {
             className: "collection-element",
             titleDiscardButton: _l("Remove this dataset from the list"),
             titleElementName: _l("Click to rename"),
+            isSelected: false,
         };
     },
     computed: {},
@@ -39,10 +39,6 @@ export default {
             }
             return this.element.name;
         },
-        selectElement: function () {
-            this.$emit("element-is-selected", this.element);
-        },
-
         clickDiscard: function () {
             this.$emit("element-is-discarded", this.element);
         },

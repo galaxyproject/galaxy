@@ -1,176 +1,182 @@
 <template>
     <div class="list-collection-creator">
         <div v-if="noElementsSelected">
-            <b-alert show variant="danger" dismissible>
-                {{ noElementsHeader }}
-                {{ allInvalidElementsPartOne }}
-                <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
-                    {{ cancelText }}
-                </a>
-                {{ allInvalidElementsPartTwo }}
+            <b-alert show variant="danger">
+                {{ errorText }}
             </b-alert>
-            <div class="float-left">
-                <button class="cancel-create btn" tabindex="-1" @click="oncancel">
-                    {{ l("Cancel") }}
-                </button>
-            </div>
-        </div>
-        <div v-else-if="allElementsAreInvalid">
-            <b-alert show variant="danger" dismissible>
-                {{ invalidHeader }}
-                <ul>
-                    <li v-for="problem in returnInvalidElements" :key="problem">
-                        {{ problem }}
-                    </li>
-                </ul>
-                {{ allInvalidElementsPartOne }}
-                <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
-                    {{ cancelText }}
-                </a>
-                {{ allInvalidElementsPartTwo }}
-            </b-alert>
-            <div class="float-left">
-                <button class="cancel-create btn" tabindex="-1" @click="oncancel">
-                    {{ l("Cancel") }}
-                </button>
-            </div>
         </div>
         <div v-else>
-            <div v-if="returnInvalidElementsLength">
-                <b-alert show variant="warning" dismissible>
+            <div v-if="noElementsSelected">
+                <b-alert show variant="danger" dismissible>
+                    {{ noElementsHeader }}
+                    {{ allInvalidElementsPartOne }}
+                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
+                        {{ cancelText }}
+                    </a>
+                    {{ allInvalidElementsPartTwo }}
+                </b-alert>
+                <div class="float-left">
+                    <button class="cancel-create btn" tabindex="-1" @click="oncancel">
+                        {{ l("Cancel") }}
+                    </button>
+                </div>
+            </div>
+            <div v-else-if="allElementsAreInvalid">
+                <b-alert show variant="danger" dismissible>
                     {{ invalidHeader }}
                     <ul>
                         <li v-for="problem in returnInvalidElements" :key="problem">
                             {{ problem }}
                         </li>
                     </ul>
+                    {{ allInvalidElementsPartOne }}
+                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
+                        {{ cancelText }}
+                    </a>
+                    {{ allInvalidElementsPartTwo }}
                 </b-alert>
+                <div class="float-left">
+                    <button class="cancel-create btn" tabindex="-1" @click="oncancel">
+                        {{ l("Cancel") }}
+                    </button>
+                </div>
             </div>
-            <collection-creator
-                :oncancel="oncancel"
-                @hide-original-toggle="hideOriginalsToggle"
-                @clicked-create="clickedCreate"
-            >
-                <template v-slot:help-content>
-                    <p>
-                        {{
-                            l(
-                                [
-                                    "Collections of datasets are permanent, ordered lists of datasets that can be passed to tools ",
-                                    "and workflows in order to have analyses done on each member of the entire group. This interface allows ",
-                                    "you to create a collection and re-order the final collection.",
-                                ].join("")
-                            )
-                        }}
-                    </p>
-                    <ul>
-                        <li>
-                            {{ l("Rename elements in the list by clicking on") }}
-                            <i data-target=".collection-element .name">
-                                {{ l("the existing name") }}
+            <div v-else>
+                <div v-if="returnInvalidElementsLength">
+                    <b-alert show variant="warning" dismissible>
+                        {{ invalidHeader }}
+                        <ul>
+                            <li v-for="problem in returnInvalidElements" :key="problem">
+                                {{ problem }}
+                            </li>
+                        </ul>
+                    </b-alert>
+                </div>
+                <collection-creator
+                    :oncancel="oncancel"
+                    @hide-original-toggle="hideOriginalsToggle"
+                    @clicked-create="clickedCreate"
+                >
+                    <template v-slot:help-content>
+                        <p>
+                            {{
+                                l(
+                                    [
+                                        "Collections of datasets are permanent, ordered lists of datasets that can be passed to tools ",
+                                        "and workflows in order to have analyses done on each member of the entire group. This interface allows ",
+                                        "you to create a collection and re-order the final collection.",
+                                    ].join("")
+                                )
+                            }}
+                        </p>
+                        <ul>
+                            <li>
+                                {{ l("Rename elements in the list by clicking on") }}
+                                <i data-target=".collection-element .name">
+                                    {{ l("the existing name") }}
+                                </i>
+                                {{ l(".") }}
+                            </li>
+                            <li>
+                                {{ l("Discard elements from the final created list by clicking on the ") }}
+                                <i data-target=".collection-element .discard">
+                                    {{ l("Discard") }}
+                                </i>
+                                {{ l("button.") }}
+                            </li>
+                            <li>
+                                {{
+                                    l(
+                                        "Reorder the list by clicking and dragging elements. Select multiple elements by clicking on"
+                                    )
+                                }}
+                                <i data-target=".collection-element">
+                                    {{ l("them") }}
+                                </i>
+                                {{
+                                    l(
+                                        "and you can then move those selected by dragging the entire group. Deselect them by clicking them again or by clicking the"
+                                    )
+                                }}
+                                <i data-target=".clear-selected">
+                                    {{ l("Clear selected") }}
+                                </i>
+                                {{ l("link.") }}
+                            </li>
+                            <li>
+                                {{ l("Click the") }}
+                                <i data-target=".reset">
+                                    {{ l("Start over") }}
+                                </i>
+                                {{ l("link to begin again as if you had just opened the interface.") }}
+                            </li>
+                            <li>
+                                {{ l("Click the") }}
+                                <i data-target=".cancel-create">
+                                    {{ l("Cancel") }}
+                                </i>
+                                {{ l("button to exit the interface.") }}
+                            </li>
+                        </ul>
+                        <br />
+                        <p>
+                            {{ l("Once your collection is complete, enter a ") }}
+                            <i data-target=".collection-name">
+                                {{ l("name") }}
+                            </i>
+                            {{ l("and click") }}
+                            <i data-target=".create-collection">
+                                {{ l("Create list") }}
                             </i>
                             {{ l(".") }}
-                        </li>
-                        <li>
-                            {{ l("Discard elements from the final created list by clicking on the ") }}
-                            <i data-target=".collection-element .discard">
-                                {{ l("Discard") }}
-                            </i>
-                            {{ l("button.") }}
-                        </li>
-                        <li>
-                            {{
-                                l(
-                                    "Reorder the list by clicking and dragging elements. Select multiple elements by clicking on"
-                                )
-                            }}
-                            <i data-target=".collection-element">
-                                {{ l("them") }}
-                            </i>
-                            {{
-                                l(
-                                    "and you can then move those selected by dragging the entire group. Deselect them by clicking them again or by clicking the"
-                                )
-                            }}
-                            <i data-target=".clear-selected">
-                                {{ l("Clear selected") }}
-                            </i>
-                            {{ l("link.") }}
-                        </li>
-                        <li>
-                            {{ l("Click the") }}
-                            <i data-target=".reset">
+                        </p>
+                    </template>
+                    <template v-slot:middle-content>
+                        <div class="collection-elements-controls">
+                            <a
+                                class="reset"
+                                href="javascript:void(0);"
+                                role="button"
+                                :title="titleUndoButton"
+                                @click="reset"
+                            >
                                 {{ l("Start over") }}
-                            </i>
-                            {{ l("link to begin again as if you had just opened the interface.") }}
-                        </li>
-                        <li>
-                            {{ l("Click the") }}
-                            <i data-target=".cancel-create">
-                                {{ l("Cancel") }}
-                            </i>
-                            {{ l("button to exit the interface.") }}
-                        </li>
-                    </ul>
-                    <br />
-                    <p>
-                        {{ l("Once your collection is complete, enter a ") }}
-                        <i data-target=".collection-name">
-                            {{ l("name") }}
-                        </i>
-                        {{ l("and click") }}
-                        <i data-target=".create-collection">
-                            {{ l("Create list") }}
-                        </i>
-                        {{ l(".") }}
-                    </p>
-                </template>
-                <template v-slot:middle-content>
-                    <div class="collection-elements-controls">
-                        <a
-                            class="reset"
-                            href="javascript:void(0);"
-                            role="button"
-                            :title="titleUndoButton"
-                            @click="reset"
-                        >
-                            {{ l("Start over") }}
-                        </a>
-                        <a
-                            class="clear-selected"
-                            v-if="atLeastOneDatasetIsSelected"
-                            href="javascript:void(0);"
-                            role="button"
-                            :title="titleDeselectButton"
-                            @click="clickClearAll"
-                        >
-                            {{ l("Clear selected") }}
-                        </a>
-                    </div>
-                    <div class="collection-elements scroll-container flex-row">
-                        <div v-if="noMoreValidDatasets">
-                            <b-alert show variant="warning" dismissible>
-                                {{ discardedElementsHeader }}
-                                <a class="cancel-text" href="javascript:void(0)" role="button" @click="reset">
-                                    {{ startOverText }}
-                                </a>
-                                ?
-                            </b-alert>
+                            </a>
+                            <a
+                                class="clear-selected"
+                                v-if="atLeastOneDatasetIsSelected"
+                                href="javascript:void(0);"
+                                role="button"
+                                :title="titleDeselectButton"
+                                @click="clickClearAll"
+                            >
+                                {{ l("Clear selected") }}
+                            </a>
                         </div>
-                        <dataset-collection-element-view
-                            v-else
-                            v-for="element in returnWorkingElements"
-                            :key="element.id"
-                            @element-is-selected="elementSelected"
-                            @element-is-discarded="elementDiscarded"
-                            :can-highlight="true"
-                            :class="{ selected: getSelectedDatasetElems.includes(element.id) }"
-                            :element="element"
-                        />
-                    </div>
-                </template>
-                <div @hide-original-toggle="hideOriginalsToggle" />
-            </collection-creator>
+                        <div class="collection-elements scroll-container flex-row">
+                            <div v-if="noMoreValidDatasets">
+                                <b-alert show variant="warning" dismissible>
+                                    {{ discardedElementsHeader }}
+                                    <a class="reset-text" href="javascript:void(0)" role="button" @click="reset">
+                                        {{ startOverText }}
+                                    </a>
+                                    ?
+                                </b-alert>
+                            </div>
+                            <dataset-collection-element-view
+                                v-else
+                                v-for="element in returnWorkingElements"
+                                :key="element.id"
+                                @element-is-selected="elementSelected"
+                                @element-is-discarded="elementDiscarded"
+                                :class="{ selected: getSelectedDatasetElems.includes(element.id) }"
+                                :element="element"
+                            />
+                        </div>
+                    </template>
+                    <div @hide-original-toggle="hideOriginalsToggle" />
+                </collection-creator>
+            </div>
         </div>
     </div>
     <!-- <div>
@@ -201,6 +207,7 @@ export default {
     components: { DatasetCollectionElementView },
     data: function () {
         return {
+            state: "build", //error
             minElements: 1,
             elementViewClass: DatasetCollectionElementView,
             collectionClass: HDCA.HistoryDatasetCollection,
@@ -217,8 +224,10 @@ export default {
             cancelText: _l("cancel"),
             startOverText: _l("start over"),
             allInvalidElementsPartTwo: _l("and reselect new elements."),
+            errorText: _l("Galaxy could not be reached and may be updating.  Try again in a few minutes."),
             workingElements: [],
             invalidElements: [],
+            selectedDatasetElems: [],
         };
     },
     mixins: [CollectionCreatorMixin],
@@ -297,10 +306,6 @@ export default {
         _instanceSetUp: function () {
             /** Ids of elements that have been selected by the user - to preserve over renders */
             this.selectedDatasetElems = [];
-            /** DOM elements currently being dragged */
-            this.$dragging = null;
-            /** Used for blocking UI events during ajax/operations (don't post twice) */
-            this.blocking = false;
         },
         // ------------------------------------------------------------------------ process raw list
         /** set up main data */
@@ -389,16 +394,11 @@ export default {
             this.defaultHideSourceItems = !this.defaultHideSourceItems;
         },
         clickedCreate: function (collectionName) {
-            this.creationFn(this.workingElements, collectionName, this.defaultHideSourceItems);
-            this.oncreate();
-        },
-        /** convert element into JSON compatible with the collections API */
-        _elementToJSON: function (element) {
-            // return element.toJSON();
-            return element;
-        },
-        _getName: function () {
-            return;
+            if (this.state !== "error") {
+                return this.creationFn(this.workingElements, collectionName, this.defaultHideSourceItems)
+                    .done(this.oncreate)
+                    .fail((this.state = "error"));
+            }
         },
         /** reset all data to the initial state */
         reset: function () {
@@ -456,27 +456,6 @@ export default {
         // _elementDragend: function (ev, element) {
         //     $(".element-drop-placeholder").remove();
         //     this.$dragging = null;
-        // },
-        //TODO: actual method - must be rewritten, assess whether methods/created/computed/etc.
-        /** handle errors with feedback and details to the user (if available) */
-        // _errorHandler: function (data) {
-        //     this.error(data);
-        //     var creator = this;
-        //     var content = data.message || _l("An error occurred");
-        //     if (data.xhr) {
-        //         var xhr = data.xhr;
-        //         var message = data.message;
-        //         if (xhr.readyState === 0 && xhr.status === 0) {
-        //             content += `: ${_l("Galaxy could not be reached and may be updating.")}${_l(
-        //                 " Try again in a few minutes."
-        //             )}`;
-        //         } else if (xhr.responseJSON) {
-        //             content += `:<br /><pre>${JSON.stringify(xhr.responseJSON)}</pre>`;
-        //         } else {
-        //             content += `: ${message}`;
-        //         }
-        //     }
-        //     creator._showAlert(content, "alert-danger");
         // },
     },
 };
