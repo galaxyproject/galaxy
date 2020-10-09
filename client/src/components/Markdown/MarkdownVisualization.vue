@@ -9,18 +9,23 @@
             @onOk="onOk"
             @onCancel="onCancel"
         />
-        <DataDialog v-else :history="history" format="id" @onOk="onData" @onCancel="onCancel" />
+        <DataDialog v-if="useLabels" :history="history" format="id" @onOk="onData" @onCancel="onCancel" />
+        <b-modal v-model="formShow" title="Enter Parameters" ok-title="Continue" @ok="onOk" @cancel="onCancel">
+            <Form :inputs="formInputs" @onChange="onChange" />
+        </b-modal>
     </span>
 </template>
 
 <script>
 import MarkdownSelector from "./MarkdownSelector";
 import DataDialog from "components/DataDialog/DataDialog";
+import Form from "components/Form/Form";
 
 export default {
     components: {
         MarkdownSelector,
         DataDialog,
+        Form,
     },
     props: {
         argumentName: {
@@ -46,10 +51,19 @@ export default {
     },
     data() {
         return {
-            formShow: false,
+            formShow: true,
+            formData: {},
         };
     },
+    computed: {
+        formInputs() {
+            return this.argumentPayload.settings;
+        },
+    },
     methods: {
+        onChange(formDataNew) {
+            this.formData = formDataNew;
+        },
         onOk(response) {
             this.$emit("onOk", `${this.argumentName}(output="${response}")`);
         },
