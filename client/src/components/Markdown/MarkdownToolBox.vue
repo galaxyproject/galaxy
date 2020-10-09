@@ -27,6 +27,7 @@
             v-if="selectedShow"
             :argument-type="selectedType"
             :argument-name="selectedArgumentName"
+            :argument-payload="selectedPayload"
             :labels="selectedLabels"
             :use-labels="isWorkflow"
             @onInsert="onInsert"
@@ -63,6 +64,7 @@ export default {
             selectedType: null,
             selectedLabels: null,
             selectedShow: false,
+            visualizationIndex: {},
             error: null,
             historySection: {
                 title: "History",
@@ -292,6 +294,7 @@ export default {
         onVisualizationId(argumentName) {
             this.selectedArgumentName = argumentName;
             this.selectedType = "visualization_id";
+            this.selectedPayload = this.visualizationIndex[argumentName];
             this.selectedLabels = this.getOutputs();
             this.selectedShow = true;
         },
@@ -330,15 +333,19 @@ export default {
         async getVisualizations() {
             axios
                 .get(`${getAppRoot()}api/plugins`)
-                .then((response) => {
-                    this.visualizationSection.elems = response.data.map((x) => {
+                .then(({ data }) => {
+                    this.visualizationSection.elems = data.map((x) => {
                         return {
-                            id: `visualization(id=${x.name})`,
+                            id: x.name,
                             name: x.html,
                             description: x.description,
                             logo: x.logo ? `${getAppRoot()}${x.logo}` : null,
                             emitter: "onVisualizationId",
                         };
+                    });
+                    this.visualizationIndex = {};
+                    data.forEach((element) => {
+                        this.visualizationIndex[element.name] = element;
                     });
                 })
                 .catch((e) => {

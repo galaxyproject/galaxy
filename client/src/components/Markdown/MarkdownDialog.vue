@@ -12,6 +12,7 @@
         <MarkdownVisualization
             v-else-if="visualizationShow"
             :argument-name="argumentName"
+            :argument-payload="argumentPayload"
             :labels="labels"
             :use-labels="useLabels"
             :history="dataHistoryId"
@@ -85,6 +86,10 @@ export default {
         },
         argumentType: {
             type: String,
+            default: null,
+        },
+        argumentPayload: {
+            type: Object,
             default: null,
         },
         labels: {

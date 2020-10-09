@@ -27,6 +27,10 @@ export default {
             type: String,
             required: true,
         },
+        argumentPayload: {
+            type: Object,
+            default: null,
+        },
         history: {
             type: String,
             required: true,
