@@ -48,7 +48,7 @@ class Wiff(Binary):
             if composite_file.get('description'):
                 rval.append('<li><a href="{}" type="text/plain">{} ({})</a>{}</li>'.format(fn, fn, composite_file.get('description'), opt_text))
             else:
-                rval.append('<li><a href="{}" type="text/plain">{}</a>{}</li>'.format(fn, fn, opt_text))
+                rval.append(f'<li><a href="{fn}" type="text/plain">{fn}</a>{opt_text}</li>')
         rval.append('</ul></div></html>')
         return "\n".join(rval)
 
@@ -900,7 +900,7 @@ class SPLib(Msp):
             if composite_file.get('description'):
                 rval.append('<li><a href="{}" type="text/plain">{} ({})</a>{}</li>'.format(fn, fn, composite_file.get('description'), opt_text))
             else:
-                rval.append('<li><a href="{}" type="text/plain">{}</a>{}</li>'.format(fn, fn, opt_text))
+                rval.append(f'<li><a href="{fn}" type="text/plain">{fn}</a>{opt_text}</li>')
         rval.append('</ul></div></html>')
         return "\n".join(rval)
 
@@ -995,7 +995,7 @@ class ImzML(Binary):
             if composite_file.get('description'):
                 rval.append('<li><a href="{}" type="text/plain">{} ({})</a>{}</li>'.format(fn, fn, composite_file.get('description'), opt_text))
             else:
-                rval.append('<li><a href="{}" type="text/plain">{}</a>{}</li>'.format(fn, fn, opt_text))
+                rval.append(f'<li><a href="{fn}" type="text/plain">{fn}</a>{opt_text}</li>')
         rval.append('</ul></div></html>')
         return "\n".join(rval)
 
@@ -1041,6 +1041,6 @@ class Analyze75(Binary):
             if composite_file.get('description'):
                 rval.append('<li><a href="{}" type="text/plain">{} ({})</a>{}</li>'.format(fn, fn, composite_file.get('description'), opt_text))
             else:
-                rval.append('<li><a href="{}" type="text/plain">{}</a>{}</li>'.format(fn, fn, opt_text))
+                rval.append(f'<li><a href="{fn}" type="text/plain">{fn}</a>{opt_text}</li>')
         rval.append('</ul></div></html>')
         return "\n".join(rval)

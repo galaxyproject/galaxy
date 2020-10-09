@@ -499,6 +499,7 @@ class DatasetCollectionManager:
 
     def _build_elements_from_rule_data(self, collection_type_description, rule_set, data, sources, handle_dataset):
         identifier_columns = rule_set.identifier_columns
+        mapping_as_dict = rule_set.mapping_as_dict
         elements = OrderedDict()
         for data_index, row_data in enumerate(data):
             # For each row, find place in depth for this element.
@@ -518,7 +519,22 @@ class DatasetCollectionManager:
                         else:
                             raise Exception("Unknown indicator of paired status encountered - only values of F, R, 1, 2, R1, R2, forward, or reverse are allowed.")
 
-                    elements_at_depth[identifier] = handle_dataset(sources[data_index]["dataset"])
+                    tags = []
+                    if "group_tags" in mapping_as_dict:
+                        columns = mapping_as_dict["group_tags"]["columns"]
+                        for tag_column in columns:
+                            tag = row_data[tag_column]
+                            tags.append("group:%s" % tag)
+
+                    if "tags" in mapping_as_dict:
+                        columns = mapping_as_dict["tags"]["columns"]
+                        for tag_column in columns:
+                            tag = row_data[tag_column]
+                            tags.append(tag)
+
+                    effective_dataset = handle_dataset(sources[data_index]["dataset"], tags)
+                    elements_at_depth[identifier] = effective_dataset
+                    # log.info("Handling dataset [%s] with sources [%s], need to add tags [%s]" % (effective_dataset, sources, tags))
                 else:
                     collection_type_at_depth = collection_type_at_depth.child_collection_type_description()
                     found = False

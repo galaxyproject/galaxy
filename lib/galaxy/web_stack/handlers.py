@@ -214,7 +214,7 @@ class ConfiguresHandlers:
         for elem in parent.findall(match):
             for attrib in attribs:
                 if attrib not in elem.attrib:
-                    log.warning("required '{}' attribute is missing from <{}> element".format(attrib, match))
+                    log.warning(f"required '{attrib}' attribute is missing from <{match}> element")
                     break
             else:
                 rval.append(elem)
@@ -468,4 +468,4 @@ def _timed_flush_obj(obj):
     obj_flush_timer = ExecutionTimer()
     sa_session = object_session(obj)
     sa_session.flush()
-    log.info("Flushed transaction for {} {}".format(obj.log_str(), obj_flush_timer))
+    log.info(f"Flushed transaction for {obj.log_str()} {obj_flush_timer}")

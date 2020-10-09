@@ -29,9 +29,8 @@ import signal
 import sys
 import threading
 from argparse import ArgumentParser
+from configparser import ConfigParser
 from logging.config import fileConfig
-
-from six.moves.configparser import ConfigParser
 
 try:
     from daemonize import Daemonize

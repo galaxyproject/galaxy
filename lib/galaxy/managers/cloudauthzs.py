@@ -110,7 +110,7 @@ class CloudAuthzsDeserializer(base.ModelDeserializer):
             decoded_authn_id = self.app.security.decode_id(val)
         except Exception:
             log.debug("cannot decode authz_id `" + str(val) + "`")
-            raise MalformedId("Invalid `authz_id` {}!".format(val))
+            raise MalformedId(f"Invalid `authz_id` {val}!")
 
         trans = context.get("trans")
         if trans is None:

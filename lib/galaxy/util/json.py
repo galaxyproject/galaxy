@@ -1,10 +1,14 @@
-import collections
 import copy
 import json
 import logging
 import math
 import random
 import string
+from collections.abc import (
+    Iterable,
+    Mapping,
+    Sequence,
+)
 
 
 from ..util import unicodify
@@ -24,9 +28,9 @@ def swap_inf_nan(val):
     if isinstance(val, str):
         # basestring first, because it's a sequence and would otherwise get caught below.
         return val
-    elif isinstance(val, collections.Sequence):
+    elif isinstance(val, Sequence):
         return [swap_inf_nan(v) for v in val]
-    elif isinstance(val, collections.Mapping):
+    elif isinstance(val, Mapping):
         return {swap_inf_nan(k): swap_inf_nan(v) for (k, v) in val.items()}
     elif isinstance(val, float):
         if math.isnan(val):
@@ -49,7 +53,7 @@ def safe_loads(arg):
     """
     try:
         loaded = json.loads(arg)
-        if loaded is not None and not isinstance(loaded, collections.Iterable):
+        if loaded is not None and not isinstance(loaded, Iterable):
             loaded = arg
     except (TypeError, ValueError):
         loaded = arg

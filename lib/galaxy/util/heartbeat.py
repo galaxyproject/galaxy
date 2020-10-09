@@ -88,7 +88,7 @@ class Heartbeat(threading.Thread):
                     object = repr(threads[thread_id])
                 else:
                     object = "<No Thread object>"
-                self.file.write("Thread {}, {}:\n\n".format(thread_id, object))
+                self.file.write(f"Thread {thread_id}, {object}:\n\n")
                 traceback.print_stack(frame, file=self.file)
                 self.file.write("\n")
             self.file.write("End dump\n\n")

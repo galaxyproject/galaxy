@@ -4,6 +4,7 @@ import Backbone from "backbone";
 import { Toast } from "ui/toast";
 import { getGalaxyInstance } from "app";
 import { linkifyHtmlElements } from "mvc/library/library-util";
+import { getAppRoot } from "onload/loadConfig";
 
 // galaxy library row view
 var LibraryRowView = Backbone.View.extend({
@@ -44,6 +45,7 @@ var LibraryRowView = Backbone.View.extend({
                 library: library,
                 button_config: this.element_visibility_config,
                 edit_mode: this.edit_mode,
+                root_path: getAppRoot(),
             })
         );
         this.$el.show();
@@ -243,7 +245,7 @@ var LibraryRowView = Backbone.View.extend({
                         <td style="color:grey;"><%- library.get("name") %></td>
                     <% } else { %>
                         <td>
-                            <a href="folders/<%- library.get("root_folder_id") %>"><%- library.get("name") %></a>
+                            <a href="<%- root_path %>library/folders/<%- library.get("root_folder_id") %>"><%- library.get("name") %></a>
                         </td>
                     <% } %>
                     <% if(library.get("description")) { %>

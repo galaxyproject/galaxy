@@ -31,7 +31,7 @@ def main(argv):
 
     history_path = os.path.join(PROJECT_DIRECTORY, "HISTORY.rst")
     if not DEV_RELEASE:
-        history = open(history_path, "r").read()
+        history = open(history_path).read()
 
         def extend(from_str, line):
             from_str += "\n"
@@ -46,7 +46,7 @@ def main(argv):
         open(history_path, "w").write(history)
 
     mod_path = os.path.join(PROJECT_DIRECTORY, source_dir, PROJECT_MODULE_FILENAME)
-    mod = open(mod_path, "r").read()
+    mod = open(mod_path).read()
     if not DEV_RELEASE:
         mod = re.sub(r"__version__ = '[\d\.]+'",
                     "__version__ = '%s.dev0'" % new_version,
@@ -56,7 +56,7 @@ def main(argv):
                     "dev%s" % new_dev_version,
                     mod, 1)
     mod = open(mod_path, "w").write(mod)
-    shell(["git", "commit", "-m", "Starting work on %s %s" % (PROJECT_NAME, new_version),
+    shell(["git", "commit", "-m", f"Starting work on {PROJECT_NAME} {new_version}",
            "HISTORY.rst", mod_path])
 
 

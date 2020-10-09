@@ -97,7 +97,7 @@ def _configured_file_sources(conf_file=FILE_SOURCES_CONF):
 def _download_and_check_file(file_sources):
     tmp_name = sniff.stream_url_to_file("gxfiles://test1/a", file_sources=file_sources)
     try:
-        a_contents = open(tmp_name, "r").read()
+        a_contents = open(tmp_name).read()
         assert a_contents == "a\n"
     finally:
         os.remove(tmp_name)

@@ -97,12 +97,12 @@ class DataManagerHandler:
                         continue
                     guid = data_manager_dict.get('guid', None)
                     if guid is None:
-                        log.error("Data manager guid '{}' is not set in metadata for '{}'.".format(guid, data_manager_id))
+                        log.error(f"Data manager guid '{guid}' is not set in metadata for '{data_manager_id}'.")
                         continue
                     elem.set('guid', guid)
                     tool_guid = data_manager_dict.get('tool_guid', None)
                     if tool_guid is None:
-                        log.error("Data manager tool guid '{}' is not set in metadata for '{}'.".format(tool_guid, data_manager_id))
+                        log.error(f"Data manager tool guid '{tool_guid}' is not set in metadata for '{data_manager_id}'.")
                         continue
                     tool_dict = repository_tools_by_guid.get(tool_guid, None)
                     if tool_dict is None:

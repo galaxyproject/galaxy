@@ -27,7 +27,7 @@ variables:
 jobs:
   get_code:
     docker:
-      - image: circleci/python:3.5
+      - image: circleci/python:3.6
     <<: *set_workdir
     steps:
       # Replace standard code checkout with shallow clone to speed things up.
@@ -83,34 +83,34 @@ jobs:
           key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
           paths:
             - ~/repo
-  py35_docstring:
+  py36_docstring:
     docker:
-      - image: circleci/python:3.5
+      - image: circleci/python:3.6
     <<: *set_workdir
     steps:
       - *restore_repo_cache
       - *install_tox
-      - run: tox -e py35-lint_docstring_include_list
-  py35_lint:
+      - run: tox -e py36-lint_docstring_include_list
+  py36_lint:
     docker:
-      - image: circleci/python:3.5
+      - image: circleci/python:3.6
     <<: *set_workdir
     steps:
       - *restore_repo_cache
       - *install_tox
-      - run: tox -e py35-lint
-  py35_unit:
+      - run: tox -e py36-lint
+  py36_unit:
     docker:
-      - image: circleci/python:3.5
+      - image: circleci/python:3.6
     <<: *set_workdir
     steps:
       - *restore_repo_cache
       - *install_tox
       - *install_ffprobe
-      - run: tox -e py35-unit
-  py35_first_startup:
+      - run: tox -e py36-unit
+  py36_first_startup:
     docker:
-      - image: circleci/python:3.5
+      - image: circleci/python:3.6
     <<: *set_workdir
     steps:
       - *restore_repo_cache
@@ -118,10 +118,10 @@ jobs:
       - run: wget -q https://github.com/jmchilton/galaxy-downloads/raw/master/db_gx_rev_0141.sqlite
       - run: mv db_gx_rev_0141.sqlite database/universe.sqlite
       - *install_tox
-      - run: tox -e py35-first_startup
+      - run: tox -e py36-first_startup
   validate_test_tools:
     docker:
-      - image: circleci/python:3.5
+      - image: circleci/python:3.6
     <<: *set_workdir
     steps:
       - *restore_repo_cache
@@ -131,7 +131,7 @@ jobs:
       - run: tox -e validate_test_tools
   test_galaxy_packages:
     docker:
-      - image: circleci/python:3.5
+      - image: circleci/python:3.6
     <<: *set_workdir
     steps:
       - *restore_repo_cache
@@ -167,13 +167,13 @@ workflows:
   get_code_and_test:
     jobs:
       - get_code
-      - py35_docstring:
+      - py36_docstring:
           <<: *requires_get_code
-      - py35_lint:
+      - py36_lint:
           <<: *requires_get_code
-      - py35_unit:
+      - py36_unit:
           <<: *requires_get_code
-      - py35_first_startup:
+      - py36_first_startup:
           <<: *requires_get_code
       - test_galaxy_packages:
           <<: *requires_get_code

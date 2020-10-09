@@ -36,7 +36,6 @@ Email Template Variables:
 
 Author: Lance Parsons (lparsons@princeton.edu)
 """
-from __future__ import print_function
 
 import argparse
 import logging
@@ -134,7 +133,7 @@ def main():
         if os.path.exists(default_template):
             template_file = default_template
         elif os.path.exists(sample_template_file):
-            print("Copying %s to %s" % (sample_template_file, default_template))
+            print(f"Copying {sample_template_file} to {default_template}")
             shutil.copyfile(sample_template_file, default_template)
             template_file = default_template
         else:

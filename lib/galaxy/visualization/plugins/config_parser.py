@@ -298,7 +298,7 @@ class DataSourceParser:
             test_result = test_elem.text.strip() if test_elem.text else None
             if not test_type or not test_result:
                 log.warning('Skipping test. Needs both type attribute and text node to be parsed: ' +
-                          '{}, {}'.format(test_type, test_elem.text))
+                          f'{test_type}, {test_elem.text}')
                 continue
             test_result = test_result.strip()
 

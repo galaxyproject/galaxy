@@ -4,9 +4,9 @@ Contains the user interface in the Universe class
 
 import logging
 from datetime import datetime, timedelta
+from urllib.parse import unquote
 
 from markupsafe import escape
-from six.moves.urllib.parse import unquote
 from sqlalchemy import (
     func,
     or_
@@ -88,7 +88,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         try:
             autoreg = trans.app.auth_manager.check_auto_registration(trans, login, password)
         except Conflict as conflict:
-            return "Auto-registration failed, {}".format(conflict), None
+            return f"Auto-registration failed, {conflict}", None
         user = None
         if autoreg["auto_reg"]:
             email = autoreg["email"]

@@ -140,8 +140,8 @@ def verify(
             else:
                 raise Exception('Unimplemented Compare type: %s' % compare)
         except AssertionError as err:
-            errmsg = '{} different than expected, difference (using {}):\n'.format(item_label, compare)
-            errmsg += "( {} v. {} )\n".format(local_name, temp_name)
+            errmsg = f'{item_label} different than expected, difference (using {compare}):\n'
+            errmsg += f"( {local_name} v. {temp_name} )\n"
             errmsg += unicodify(err)
             raise AssertionError(errmsg)
         finally:
@@ -318,7 +318,7 @@ def files_re_match(file1, file2, attributes=None):
         data_line = data_line.rstrip(to_strip)
         if not re.match(regex_line, data_line):
             line_diff_count += 1
-            diffs.append('Regular Expression: {}, Data file: {}\n'.format(regex_line, data_line))
+            diffs.append(f'Regular Expression: {regex_line}, Data file: {data_line}\n')
     if line_diff_count > lines_diff:
         raise AssertionError("Regular expression did not match data file (allowed variants=%i):\n%s" % (lines_diff, "".join(diffs)))
 

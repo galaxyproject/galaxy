@@ -6,9 +6,11 @@ import gzip
 import logging
 import subprocess
 import tempfile
-
-from six.moves.urllib.parse import urlencode, urlparse
-from six.moves.urllib.request import urlopen
+from urllib.parse import (
+    urlencode,
+    urlparse,
+)
+from urllib.request import urlopen
 
 from . import (
     base,

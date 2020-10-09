@@ -29,7 +29,7 @@ ROLE_TYPE = 'system'
 
 def nextval(migrate_engine, table, col='id'):
     if migrate_engine.name in ['postgresql', 'postgres']:
-        return "nextval('{}_{}_seq')".format(table, col)
+        return f"nextval('{table}_{col}_seq')"
     elif migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite':
         return "null"
     else:
@@ -128,7 +128,7 @@ def upgrade(migrate_engine):
     cmd += ");"
     migrate_engine.execute(cmd)
     # Get the id of the REVIEWER role.
-    cmd = "SELECT id FROM role WHERE name = '{}' and type = '{}';".format(REVIEWER, ROLE_TYPE)
+    cmd = f"SELECT id FROM role WHERE name = '{REVIEWER}' and type = '{ROLE_TYPE}';"
     row = migrate_engine.execute(cmd).fetchone()
     if row:
         role_id = row[0]
@@ -186,7 +186,7 @@ def downgrade(migrate_engine):
     else:
         group_id = None
     # Get the id of the REVIEWER role.
-    cmd = "SELECT id FROM role WHERE name = '{}' and type = '{}';".format(REVIEWER, ROLE_TYPE)
+    cmd = f"SELECT id FROM role WHERE name = '{REVIEWER}' and type = '{ROLE_TYPE}';"
     row = migrate_engine.execute(cmd).fetchone()
     if row:
         role_id = row[0]

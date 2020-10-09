@@ -5,7 +5,6 @@ Submit a DRMAA job given a user id and a job template file (in JSON format)
 defining any or all of the following: args, remoteCommand, outputPath,
 errorPath, nativeSpecification, name, email, project
 """
-from __future__ import print_function
 
 import errno
 import json
@@ -118,7 +117,7 @@ def main():
     # then the pbs cluster_files_directory does not need to
     # be readable by all users
     json_file_exists(json_filename)
-    with open(json_filename, 'r') as f:
+    with open(json_filename) as f:
         data = json.load(f)
     set_user(userid, assign_all_groups)
     # Added to disable LSF generated messages that would interfer with this

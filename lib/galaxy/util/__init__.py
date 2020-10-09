@@ -28,6 +28,12 @@ from email.mime.text import MIMEText
 from functools import partial
 from hashlib import md5
 from os.path import relpath
+from urllib.parse import (
+    urlencode,
+    urlparse,
+    urlsplit,
+    urlunsplit,
+)
 
 import requests
 try:
@@ -47,10 +53,6 @@ except ImportError:
     import xml.etree.ElementTree as etree
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
-from six.moves import (
-    xrange
-)
-from six.moves.urllib import parse as urlparse
 
 try:
     import docutils.core as docutils_core
@@ -656,7 +658,7 @@ def mask_password_from_url(url):
     >>> mask_password_from_url( 'amqp://localhost')
     'amqp://localhost'
     """
-    split = urlparse.urlsplit(url)
+    split = urlsplit(url)
     if split.password:
         if url.count(split.password) == 1:
             url = url.replace(split.password, "********")
@@ -664,8 +666,8 @@ def mask_password_from_url(url):
             # This can manipulate the input other than just masking password,
             # so the previous string replace method is preferred when the
             # password doesn't appear twice in the url
-            split = split._replace(netloc=split.netloc.replace("{}:{}".format(split.username, split.password), '%s:********' % split.username))
-            url = urlparse.urlunsplit(split)
+            split = split._replace(netloc=split.netloc.replace(f"{split.username}:{split.password}", '%s:********' % split.username))
+            url = urlunsplit(split)
     return url
 
 
@@ -1018,30 +1020,24 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', strip_null=Fals
     Returns a Unicode string or None.
 
     >>> assert unicodify(None) is None
-    >>> assert unicodify('simple string') == u'simple string'
-    >>> assert unicodify(3) == u'3'
-    >>> assert unicodify(bytearray([115, 116, 114, 196, 169, 195, 177, 103])) == u'strĩñg'
-    >>> assert unicodify(Exception(u'strĩñg')) == u'strĩñg'
-    >>> assert unicodify('cómplǐcḁtëd strĩñg') == u'cómplǐcḁtëd strĩñg'
-    >>> s = u'cómplǐcḁtëd strĩñg'; assert unicodify(s) == s
-    >>> s = u'lâtín strìñg'; assert unicodify(s.encode('latin-1'), 'latin-1') == s
-    >>> s = u'lâtín strìñg'; assert unicodify(s.encode('latin-1')) == u'l\ufffdt\ufffdn str\ufffd\ufffdg'
-    >>> s = u'lâtín strìñg'; assert unicodify(s.encode('latin-1'), error='ignore') == u'ltn strg'
+    >>> assert unicodify('simple string') == 'simple string'
+    >>> assert unicodify(3) == '3'
+    >>> assert unicodify(bytearray([115, 116, 114, 196, 169, 195, 177, 103])) == 'strĩñg'
+    >>> assert unicodify(Exception('strĩñg')) == 'strĩñg'
+    >>> assert unicodify('cómplǐcḁtëd strĩñg') == 'cómplǐcḁtëd strĩñg'
+    >>> s = 'cómplǐcḁtëd strĩñg'; assert unicodify(s) == s
+    >>> s = 'lâtín strìñg'; assert unicodify(s.encode('latin-1'), 'latin-1') == s
+    >>> s = 'lâtín strìñg'; assert unicodify(s.encode('latin-1')) == 'l\ufffdt\ufffdn str\ufffd\ufffdg'
+    >>> s = 'lâtín strìñg'; assert unicodify(s.encode('latin-1'), error='ignore') == 'ltn strg'
     """
     if value is None:
         return value
     try:
         if isinstance(value, bytearray):
             value = bytes(value)
-        elif not isinstance(value, str) and not isinstance(value, bytes):
-            # In Python 2, value is not an instance of basestring (i.e. str or unicode)
-            # In Python 3, value is not an instance of bytes or str
-            try:
-                value = str(value)
-            except Exception:
-                value = str(value)
-        # Now in Python 2, value is an instance of basestring, but may be not unicode
-        # Now in Python 3, value is an instance of bytes or str
+        elif not isinstance(value, (str, bytes)):
+            value = str(value)
+        # Now value is an instance of bytes or str
         if not isinstance(value, str):
             value = str(value, encoding, error)
     except Exception as e:
@@ -1066,19 +1062,16 @@ def smart_str(s, encoding=DEFAULT_ENCODING, strings_only=False, errors='strict')
     >>> assert smart_str(3, strings_only=True) == 3
     >>> s = b'a bytes string'; assert smart_str(s) == s
     >>> s = bytearray(b'a bytes string'); assert smart_str(s) == s
-    >>> assert smart_str(u'a simple unicode string') == b'a simple unicode string'
-    >>> assert smart_str(u'à strange ünicode ڃtring') == b'\\xc3\\xa0 strange \\xc3\\xbcnicode \\xda\\x83tring'
+    >>> assert smart_str('a simple unicode string') == b'a simple unicode string'
+    >>> assert smart_str('à strange ünicode ڃtring') == b'\\xc3\\xa0 strange \\xc3\\xbcnicode \\xda\\x83tring'
     >>> assert smart_str(b'\\xc3\\xa0n \\xc3\\xabncoded utf-8 string', encoding='latin-1') == b'\\xe0n \\xebncoded utf-8 string'
     >>> assert smart_str(bytearray(b'\\xc3\\xa0n \\xc3\\xabncoded utf-8 string'), encoding='latin-1') == b'\\xe0n \\xebncoded utf-8 string'
     """
     if strings_only and isinstance(s, (type(None), int)):
         return s
-    if not isinstance(s, str) and not isinstance(s, (bytes, bytearray)):
-        # In Python 2, s is not an instance of basestring or bytearray
-        # In Python 3, s is not an instance of str, bytes or bytearray
+    if not isinstance(s, (str, bytes, bytearray)):
         s = str(s)
-    # Now in Python 2, value is an instance of basestring or bytearray
-    # Now in Python 3, value is an instance of str, bytes or bytearray
+    # Now s is an instance of str, bytes or bytearray
     if not isinstance(s, (bytes, bytearray)):
         return s.encode(encoding, errors)
     elif s and encoding != DEFAULT_ENCODING:
@@ -1164,8 +1157,8 @@ class ParamsWithSpecs(collections.defaultdict):
 
 
 def compare_urls(url1, url2, compare_scheme=True, compare_hostname=True, compare_path=True):
-    url1 = urlparse.urlparse(url1)
-    url2 = urlparse.urlparse(url2)
+    url1 = urlparse(url1)
+    url2 = urlparse(url2)
     if compare_scheme and url1.scheme and url2.scheme and url1.scheme != url2.scheme:
         return False
     if compare_hostname and url1.hostname and url2.hostname and url1.hostname != url2.hostname:
@@ -1292,7 +1285,7 @@ def mkstemp_ln(src, prefix='mkstemp_ln_'):
     """
     dir = os.path.dirname(src)
     names = tempfile._get_candidate_names()
-    for _ in xrange(tempfile.TMP_MAX):
+    for _ in range(tempfile.TMP_MAX):
         name = next(names)
         file = os.path.join(dir, prefix + name)
         try:
@@ -1397,7 +1390,7 @@ def nice_size(size):
             size = size / float(1024 ** ind)
             if word == 'bytes':  # No decimals for bytes
                 return "%s%d bytes" % (prefix, size)
-            return "{}{:.1f} {}".format(prefix, size, word)
+            return f"{prefix}{size:.1f} {word}"
     return '??? bytes'
 
 
@@ -1444,7 +1437,7 @@ def size_to_bytes(size):
     elif multiple.startswith('e'):
         return int(number * 1024 ** 6)
     else:
-        raise ValueError("Unknown multiplier '{}' in '{}'".format(multiple, size))
+        raise ValueError(f"Unknown multiplier '{multiple}' in '{size}'")
 
 
 def send_mail(frm, to, subject, body, config, html=None):
@@ -1656,7 +1649,7 @@ def build_url(base_url, port=80, scheme='http', pathspec=None, params=None, dose
         params = dict()
     if pathspec is None:
         pathspec = []
-    parsed_url = urlparse.urlparse(base_url)
+    parsed_url = urlparse(base_url)
     if scheme != 'http':
         parsed_url.scheme = scheme
     assert parsed_url.scheme in ('http', 'https', 'ftp'), 'Invalid URL scheme: %s' % scheme
@@ -1671,7 +1664,7 @@ def build_url(base_url, port=80, scheme='http', pathspec=None, params=None, dose
             key, value = query_parameter.split('=')
             params[key] = value
     if params:
-        url += '?%s' % urlparse.urlencode(params, doseq=doseq)
+        url += '?%s' % urlencode(params, doseq=doseq)
     return url
 
 
@@ -1694,7 +1687,7 @@ def download_to_file(url, dest_file_path, timeout=30, chunk_size=2 ** 20):
                 f.write(chunk)
 
 
-class classproperty(object):
+class classproperty:
 
     def __init__(self, f):
         self.f = f

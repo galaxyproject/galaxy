@@ -45,7 +45,7 @@ class ToolValidator(GalaxyToolValidator):
     def concat_messages(self, msg1, msg2):
         if msg1:
             if msg2:
-                message = '{}  {}'.format(msg1, msg2)
+                message = f'{msg1}  {msg2}'
             else:
                 message = msg1
         elif msg2:

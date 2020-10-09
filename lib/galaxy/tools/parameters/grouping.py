@@ -266,7 +266,7 @@ class UploadDataset(Group):
             if i == index:
                 rval = composite_name
                 if composite_file.description:
-                    rval = "{} ({})".format(rval, composite_file.description)
+                    rval = f"{rval} ({composite_file.description})"
                 if composite_file.optional:
                     rval = "%s [optional]" % rval
                 return rval

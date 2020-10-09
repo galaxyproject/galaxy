@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 
 import argparse
 import logging
@@ -515,7 +514,7 @@ def _purge_folder(folder, app, remove_from_disk, info_only=False):
         app.sa_session.flush()
 
 
-class CleanupDatasetsApplication(object):
+class CleanupDatasetsApplication:
     """Encapsulates the state of a Universe application"""
     def __init__(self, config):
         self.object_store = build_object_store_from_config(config)

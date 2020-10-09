@@ -49,7 +49,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
         encoded_review_id = kwd['id']
         review = review_util.get_review(trans.app, encoded_review_id)
         if kwd.get('approve_repository_review_button', False):
-            approved_select_field_name = '{}{}approved'.format(encoded_review_id, STRSEP)
+            approved_select_field_name = f'{encoded_review_id}{STRSEP}approved'
             approved_select_field_value = str(kwd[approved_select_field_name])
             review.approved = approved_select_field_value
             trans.sa_session.add(review)
@@ -254,7 +254,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                     components_dict[component_name] = component_review_dict
         # Handle a Save button click.
         save_button_clicked = False
-        save_buttons = ['{}{}review_button'.format(comp_name, STRSEP) for comp_name in components_dict.keys()]
+        save_buttons = [f'{comp_name}{STRSEP}review_button' for comp_name in components_dict.keys()]
         save_buttons.append('revision_approved_button')
         for save_button in save_buttons:
             if save_button in kwd:
@@ -280,8 +280,8 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                 rating = 0
                 private = False
                 for k, v in kwd.items():
-                    if k.startswith('{}{}'.format(component_name, STRSEP)):
-                        component_review_attr = k.replace('{}{}'.format(component_name, STRSEP), '')
+                    if k.startswith(f'{component_name}{STRSEP}'):
+                        component_review_attr = k.replace(f'{component_name}{STRSEP}', '')
                         if component_review_attr == 'component_id':
                             component_id = str(v)
                         elif component_review_attr == 'comment':

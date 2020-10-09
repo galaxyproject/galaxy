@@ -34,7 +34,7 @@ def get_file_sources():
         file_sources = None
         if os.path.exists("file_sources.json"):
             file_sources_as_dict = None
-            with open("file_sources.json", "r") as f:
+            with open("file_sources.json") as f:
                 file_sources_as_dict = load(f)
             if file_sources_as_dict is not None:
                 file_sources = ConfiguredFileSources.from_dict(file_sources_as_dict)
@@ -61,7 +61,7 @@ def file_err(msg, dataset):
 def safe_dict(d):
     """Recursively clone JSON structure with unicode dictionary keys."""
     if isinstance(d, dict):
-        return dict([(unicodify(k), safe_dict(v)) for k, v in d.items()])
+        return {unicodify(k): safe_dict(v) for k, v in d.items()}
     elif isinstance(d, list):
         return [safe_dict(x) for x in d]
     else:

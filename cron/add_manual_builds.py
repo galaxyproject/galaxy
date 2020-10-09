@@ -6,7 +6,6 @@ Adds Manually created builds and chrom info to Galaxy's info tables
 Usage:
 python add_manual_builds.py input_file builds.txt chrom_length_dir
 """
-from __future__ import print_function
 
 import os
 import sys

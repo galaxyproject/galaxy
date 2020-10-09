@@ -19,22 +19,12 @@
 % endif
 </h2>
 
-<h3>Dataset Information</h3>
-<table class="tabletip" id="dataset-details">
-    <tbody>
-        <%
-        encoded_hda_id = trans.security.encode_id( hda.id )
-        encoded_history_id = trans.security.encode_id( hda.history_id )
-        %>
-        <tr><td>Number:</td><td>${hda.hid | h}</td></tr>
-        <tr><td>Name:</td><td>${hda.name | h}</td></tr>
-        <tr><td>Created:</td><td>${unicodify(hda.create_time.strftime(trans.app.config.pretty_datetime_format))}</td></tr>
-        ##      <tr><td>Copied from another history?</td><td>${hda.source_library_dataset}</td></tr>
-        <tr><td>Filesize:</td><td>${nice_size(hda.dataset.file_size)}</td></tr>
-        <tr><td>Dbkey:</td><td>${hda.dbkey | h}</td></tr>
-        <tr><td>Format:</td><td>${hda.ext | h}</td></tr>
-    </tbody>
-</table>
+<%
+encoded_hda_id = trans.security.encode_id( hda.id )
+encoded_history_id = trans.security.encode_id( hda.history_id )
+%>
+
+<div class="dataset-information" hda_id="${encoded_hda_id}"></div>
 
 <h3>Job Information</h3>
 <table class="tabletip">
@@ -184,5 +174,6 @@ $(function(){
     window.bundleEntries.mountJobMetrics();
     window.bundleEntries.mountJobParameters();
     window.bundleEntries.mountDestinationParams();
+    window.bundleEntries.mountDatasetInformation();
 });
 </script>

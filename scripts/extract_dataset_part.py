@@ -30,7 +30,7 @@ def __main__():
     if not os.path.isfile(file_path):
         # Nothing to do - some splitters don't write a JSON file
         sys.exit(0)
-    data = json.load(open(file_path, 'r'))
+    data = json.load(open(file_path))
     try:
         class_name_parts = data['class_name'].split('.')
         module_name = '.'.join(class_name_parts[:-1])

@@ -26,7 +26,7 @@ JobEnviromentProperties = collections.namedtuple("JobEnvironmentProperties", [
 ])
 
 
-class RunsEnvironmentJobs(object):
+class RunsEnvironmentJobs:
 
     def _run_and_get_environment_properties(self, tool_id="job_environment_default"):
         with self.dataset_populator.test_history() as history_id:
@@ -53,7 +53,7 @@ class BaseJobEnvironmentIntegrationTestCase(integration_util.IntegrationTestCase
     framework_tool_and_types = True
 
     def setUp(self):
-        super(BaseJobEnvironmentIntegrationTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
 
@@ -77,7 +77,7 @@ class DefaultJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegrationTest
         assert job_env.pwd.startswith(self.jobs_directory)
         assert job_env.pwd.endswith("/working")
 
-        # Newer tools have isolated home directories in job_directory/home
+        # Newer tools get isolated home directories in job_directory/home
         job_directory = os.path.dirname(job_env.pwd)
         assert job_env.home == os.path.join(job_directory, "home"), job_env.home
 
@@ -98,11 +98,21 @@ class DefaultJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegrationTest
 
     @skip_without_tool("job_environment_explicit_shared_home")
     def test_default_environment_force_legacy_home(self):
-        # Home should not overridden because we haven't set legacy_home_dir in job_conf
-        # or app, so it should just HOME.
+        # Home should not be overridden because we haven't set legacy_home_dir in job_conf
+        # or app, so it should just be HOME.
         job_env = self._run_and_get_environment_properties("job_environment_explicit_shared_home")
         home = os.getenv("HOME")
         assert job_env.home == home, job_env.home
+
+    @skip_without_tool("job_environment_explicit_isolated_home")
+    def test_default_environment_explicit_isolated_home(self):
+        # A tool with no profile but setting `use_shared_home="false"` must get
+        # an isolated home directory in job_directory/home
+        job_env = self._run_and_get_environment_properties("job_environment_explicit_isolated_home")
+        assert job_env.pwd.startswith(self.jobs_directory)
+        assert job_env.pwd.endswith("/working")
+        job_directory = os.path.dirname(job_env.pwd)
+        assert job_env.home == os.path.join(job_directory, "home"), job_env.home
 
 
 class TmpDirToTrueJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
@@ -169,6 +179,13 @@ class SharedHomeJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegrationT
         # shared_home_dir used for newer tools if forced in tool XML
         job_env = self._run_and_get_environment_properties("job_environment_explicit_shared_home")
         assert job_env.home == self.shared_home_directory, job_env.home
+
+    @skip_without_tool("job_environment_explicit_isolated_home")
+    def test_default_environment_explicit_isolated_home(self):
+        # shared_home_dir ignored for tools setting `use_shared_home="false"`
+        job_env = self._run_and_get_environment_properties("job_environment_explicit_isolated_home")
+        job_directory = os.path.dirname(job_env.pwd)
+        assert job_env.home == os.path.join(job_directory, "home"), job_env.home
 
 
 class JobIOEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):

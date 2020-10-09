@@ -51,7 +51,7 @@ class BaseUploadContentConfigurationInstance(integration_util.IntegrationInstanc
     framework_tool_and_types = True
 
     def setUp(self):
-        super(BaseUploadContentConfigurationInstance, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.library_populator = LibraryPopulator(self.galaxy_interactor)
         self.history_id = self.dataset_populator.new_history()
@@ -687,7 +687,7 @@ class ServerDirectoryValidUsageTestCase(BaseUploadContentConfigurationTestCase):
 
         library_dataset = self.library_populator.new_library_dataset("serverdirupload", upload_option="upload_directory", server_dir=dir_to_import)
         # Check the file is still there and was not modified
-        with open(file_to_import, 'r') as fh:
+        with open(file_to_import) as fh:
             read_content = fh.read()
         assert read_content == file_content
 
@@ -749,7 +749,7 @@ class UserServerDirectoryValidUsageTestCase(BaseUploadContentConfigurationTestCa
 
         library_dataset = self.library_populator.new_library_dataset("serverdirupload", upload_option="upload_directory", server_dir=dir_to_import)
         # Check the file is still there and was not modified
-        with open(file_to_import, 'r') as fh:
+        with open(file_to_import) as fh:
             read_content = fh.read()
         assert read_content == file_content
 

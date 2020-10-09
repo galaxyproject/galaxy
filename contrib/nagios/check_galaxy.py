@@ -3,7 +3,6 @@
 check_galaxy can be run by hand, although it is meant to run from cron
 via the check_galaxy.sh script in Galaxy's cron/ directory.
 """
-from __future__ import print_function
 
 import formatter
 import getopt
@@ -14,13 +13,12 @@ import socket
 import sys
 import time
 import warnings
-from user import home
-
-from six.moves.urllib.request import (
+from urllib.request import (
     build_opener,
     HTTPCookieProcessor,
-    Request
+    Request,
 )
+from user import home
 
 with warnings.catch_warnings():
     warnings.simplefilter('ignore')
@@ -52,7 +50,7 @@ handler = args[3]
 warntime = 240
 
 new_history = False
-for o, a in opts:
+for o, _ in opts:
     if o == "-n":
         if debug:
             print("Specified -n, will create a new history")
@@ -73,7 +71,7 @@ tc.agent("Mozilla/5.0 (compatible; check_galaxy/0.2)")
 tc.config('use_tidy', 0)
 
 
-class Browser(object):
+class Browser:
     def __init__(self):
         self.server = server
         self.handler = handler
@@ -93,7 +91,7 @@ class Browser(object):
         self.opener = build_opener(HTTPCookieProcessor(tc.get_browser().cj))
 
     def get(self, path):
-        tc.go("%s%s" % (self.server, path))
+        tc.go(f"{self.server}{path}")
         tc.code(200)
 
     def req(self, path, data=None, method=None):
@@ -105,7 +103,7 @@ class Browser(object):
         if method:
             req.get_method = lambda: method
         res = self.opener.open(req)
-        print('==> at %s (%s)' % (url, method or 'GET'))
+        print('==> at {} ({})'.format(url, method or 'GET'))
         assert res.getcode() == 200, url
         return res
 
@@ -226,7 +224,7 @@ class Browser(object):
         if self.hda_state != "ok":
             self.get("/datasets/%s/stderr" % self.hda_id)
             print(tc.browser.get_html())
-            raise Exception("HDA %s NOT OK: %s" % (self.hda_id, self.hda_state))
+            raise Exception(f"HDA {self.hda_id} NOT OK: {self.hda_state}")
 
     def check_hda_content(self):
         self.get("/datasets/%s/display?to_ext=txt" % self.hda_id)
@@ -240,7 +238,7 @@ class Browser(object):
 
     def delete_datasets(self):
         for hda in self.undeleted_hdas:
-            path = '/api/histories/%s/contents/%s' % (self.history_id, hda['id'])
+            path = '/api/histories/{}/contents/{}'.format(self.history_id, hda['id'])
             self.req(path, method='DELETE')
         hdas = [hda['id'] for hda in self.undeleted_hdas]
         if hdas:

@@ -1,7 +1,11 @@
 var gtnWebhookLoaded = false;
 
 function removeOverlay() {
-    document.getElementById("gtn-container").classList.add("d-none");
+    document.getElementById("gtn-container").style.visibility = "hidden";
+}
+
+function showOverlay() {
+    document.getElementById("gtn-container").style.visibility = "visible";
 }
 
 function addIframe() {
@@ -105,7 +109,7 @@ elementReady("#gtn a").then((el) => {
         if (!gtnWebhookLoaded) {
             addIframe();
         } else {
-            document.getElementById("gtn-container").classList.toggle("d-none");
+            showOverlay();
         }
     });
 });

@@ -1010,7 +1010,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
                 encoded_dbkey = dbkey
                 user = visualization.user
                 if 'dbkeys' in user.preferences and str(dbkey) in user.preferences['dbkeys']:
-                    encoded_dbkey = "{}:{}".format(user.username, dbkey)
+                    encoded_dbkey = f"{user.username}:{dbkey}"
                 return encoded_dbkey
 
             # Set tracks.

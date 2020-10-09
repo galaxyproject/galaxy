@@ -363,7 +363,7 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
                 conda_target, conda_context=self.conda_context
             )
         if not is_installed:
-            log.debug("Removing failed conda install of {}, version '{}'".format(name, version))
+            log.debug(f"Removing failed conda install of {name}, version '{version}'")
             cleanup_failed_install(conda_target, conda_context=self.conda_context)
 
         return is_installed

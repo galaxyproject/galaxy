@@ -1,7 +1,6 @@
 import json
 import tarfile
-
-from six import BytesIO
+from io import BytesIO
 
 from galaxy_test.base.api_asserts import assert_object_id_error
 from galaxy_test.base.populators import DatasetCollectionPopulator, DatasetPopulator, skip_if_github_down
@@ -263,7 +262,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         hdca = contents[0]
         assert hdca["history_content_type"] == "dataset_collection"
         hdca_id = hdca["id"]
-        collection_response = self._get("histories/{}/contents/dataset_collections/{}".format(self.history_id, hdca_id))
+        collection_response = self._get(f"histories/{self.history_id}/contents/dataset_collections/{hdca_id}")
         self._assert_status_code_is(collection_response, 200)
         return collection_response.json()
 
@@ -274,7 +273,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         return dataset_collection
 
     def _download_dataset_collection(self, history_id, hdca_id):
-        return self._get("histories/{}/contents/dataset_collections/{}/download".format(history_id, hdca_id))
+        return self._get(f"histories/{history_id}/contents/dataset_collections/{hdca_id}/download")
 
     def test_collection_contents_security(self):
         # request contents on an hdca that doesn't belong to user

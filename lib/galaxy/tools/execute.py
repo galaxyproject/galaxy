@@ -6,9 +6,6 @@ collections from matched collections.
 import collections
 import logging
 
-import six
-import six.moves
-
 from galaxy import model
 from galaxy.model.dataset_collections.structure import get_structure, tool_output_to_structure
 from galaxy.tool_util.parser import ToolOutputCollectionPart
@@ -205,7 +202,7 @@ class ExecutionTracker:
                 job_params=None,
             )
         except Exception:
-            output_collection_name = "{} across {}".format(self.tool.name, on_text)
+            output_collection_name = f"{self.tool.name} across {on_text}"
 
         return output_collection_name
 
@@ -407,7 +404,7 @@ class ToolExecutionTracker(ExecutionTracker):
             self.outputs_by_output_name[job_output.name].append(job_output.dataset_collection)
 
     def new_collection_execution_slices(self):
-        for job_index, (param_combination, dataset_collection_elements) in enumerate(six.moves.zip(self.param_combinations, self.walk_implicit_collections())):
+        for job_index, (param_combination, dataset_collection_elements) in enumerate(zip(self.param_combinations, self.walk_implicit_collections())):
             completed_job = self.completed_jobs and self.completed_jobs[job_index]
             if not completed_job:
                 for dataset_collection_element in dataset_collection_elements.values():
@@ -430,7 +427,7 @@ class WorkflowStepExecutionTracker(ExecutionTracker):
         self.job_callback(job)
 
     def new_collection_execution_slices(self):
-        for job_index, (param_combination, dataset_collection_elements) in enumerate(six.moves.zip(self.param_combinations, self.walk_implicit_collections())):
+        for job_index, (param_combination, dataset_collection_elements) in enumerate(zip(self.param_combinations, self.walk_implicit_collections())):
             completed_job = self.completed_jobs and self.completed_jobs[job_index]
             if not completed_job:
                 found_result = False

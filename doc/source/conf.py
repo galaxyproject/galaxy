@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Galaxy documentation build configuration file, created by
 # sphinx-quickstart on Tue Mar  6 10:44:44 2012.
@@ -80,8 +79,8 @@ source_suffix = ['.rst', '.md']
 master_doc = 'index'
 
 # General information about the project.
-project = u'Galaxy Project'
-copyright = str(datetime.datetime.now().year) + u', Galaxy Committers'
+project = 'Galaxy Project'
+copyright = str(datetime.datetime.now().year) + ', Galaxy Committers'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -233,8 +232,8 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-    ('index', 'Galaxy.tex', u'Galaxy Code Documentation',
-     u'Galaxy Team', 'manual'),
+    ('index', 'Galaxy.tex', 'Galaxy Code Documentation',
+     'Galaxy Team', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -263,8 +262,8 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'galaxy', u'Galaxy Documentation',
-     [u'Galaxy Team'], 1)
+    ('index', 'galaxy', 'Galaxy Documentation',
+     ['Galaxy Team'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -277,8 +276,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    ('index', 'Galaxy', u'Galaxy Documentation',
-     u'Galaxy Team', 'Galaxy', 'Data intensive biology for everyone.',
+    ('index', 'Galaxy', 'Galaxy Documentation',
+     'Galaxy Team', 'Galaxy', 'Data intensive biology for everyone.',
      'Miscellaneous'),
 ]
 
@@ -293,7 +292,7 @@ texinfo_documents = [
 
 
 # -- ReadTheDocs.org Settings ------------------------------------------------
-class Mock(object):
+class Mock:
     def __init__(self, *args, **kwargs):
         pass
 

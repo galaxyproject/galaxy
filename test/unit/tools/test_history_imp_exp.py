@@ -23,7 +23,7 @@ HISTORY_ATTRS = '''{"hid_counter": 2, "update_time": "2016-02-08 18:38:38.705058
 JOBS_ATTRS = '''[{"info": null, "tool_id": "upload1", "update_time": "2016-02-08T18:39:23.356482", "stdout": "", "input_mapping": {}, "tool_version": "1.1.4", "traceback": null, "command_line": "python /galaxy/tools/data_source/upload.py /galaxy /scratch/tmppwU9rD /scratch/tmpP4_45Y 1:/scratch/jobs/000/dataset_1_files:/data/000/dataset_1.dat", "exit_code": 0, "output_datasets": [1], "state": "ok", "create_time": "2016-02-08T18:38:39.153873", "params": {"files": [{"to_posix_lines": "Yes", "NAME": "None", "file_data": null, "space_to_tab": null, "url_paste": "/scratch/strio_url_paste_o6nrv8", "__index__": 0, "ftp_files": "", "uuid": "None"}], "paramfile": "/scratch/tmpP4_45Y", "file_type": "auto", "files_metadata": {"file_type": "auto", "__current_case__": 41}, "async_datasets": "None", "dbkey": "?"}, "stderr": ""}]'''
 
 
-class MockSetExternalTool(object):
+class MockSetExternalTool:
 
     def regenerate_imported_metadata_if_needed(self, *args, **kwds):
         pass
@@ -149,9 +149,9 @@ def test_export_dataset():
     assert datasets[0].state == 'ok'
     assert datasets[1].state == 'ok'
 
-    with open(datasets[0].file_name, "r") as f:
+    with open(datasets[0].file_name) as f:
         assert f.read().startswith("chr1    4225    19670")
-    with open(datasets[1].file_name, "r") as f:
+    with open(datasets[1].file_name) as f:
         assert f.read().startswith("chr1\t147962192\t147962580\tNM_005997_cds_0_0_chr1_147962193_r\t0\t-")
 
 
@@ -250,9 +250,9 @@ def test_multi_inputs():
     for hid in [1, 2]:
         assert hid in hids
 
-    with open(datasets[0].file_name, "r") as f:
+    with open(datasets[0].file_name) as f:
         assert f.read().startswith("chr1    4225    19670")
-    with open(datasets[1].file_name, "r") as f:
+    with open(datasets[1].file_name) as f:
         assert f.read().startswith("chr1\t147962192\t147962580\tNM_005997_cds_0_0_chr1_147962193_r\t0\t-")
 
 
@@ -741,7 +741,7 @@ def test_history_import_abspath_in_archive():
         _run_unpack(history_archive, dest_parent, 'Absolute path in import archive allowed')
 
 
-class HistoryArchive(object):
+class HistoryArchive:
     def __init__(self, arcname_prefix=None):
         self.temp_directory = mkdtemp()
         self.arc_directory = os.path.join(self.temp_directory, 'archive')
@@ -797,5 +797,5 @@ class HistoryArchive(object):
         self.tar_file.close()
 
 
-class Dummy(object):
+class Dummy:
     pass

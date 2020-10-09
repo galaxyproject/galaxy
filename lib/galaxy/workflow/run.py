@@ -158,7 +158,7 @@ class WorkflowInvoker:
         config = self.trans.app.config
         maximum_duration = getattr(config, "maximum_workflow_invocation_duration", -1)
         if maximum_duration > 0 and workflow_invocation.seconds_since_created > maximum_duration:
-            log.debug("Workflow invocation [{}] exceeded maximum number of seconds allowed for scheduling [{}], failing.".format(workflow_invocation.id, maximum_duration))
+            log.debug(f"Workflow invocation [{workflow_invocation.id}] exceeded maximum number of seconds allowed for scheduling [{maximum_duration}], failing.")
             workflow_invocation.state = model.WorkflowInvocation.states.FAILED
             # All jobs ran successfully, so we can save now
             self.trans.sa_session.add(workflow_invocation)
@@ -206,7 +206,7 @@ class WorkflowInvoker:
                 raise
 
             if not step_delayed:
-                log.debug("Workflow step {} of invocation {} invoked {}".format(step.id, workflow_invocation.id, step_timer))
+                log.debug(f"Workflow step {step.id} of invocation {workflow_invocation.id} invoked {step_timer}")
 
         if delayed_steps:
             state = model.WorkflowInvocation.states.READY
@@ -442,7 +442,7 @@ class WorkflowProgress:
             for workflow_output in step.workflow_outputs:
                 output_name = workflow_output.output_name
                 if output_name not in outputs:
-                    message = "Failed to find expected workflow output [{}] in step outputs [{}]".format(output_name, outputs)
+                    message = f"Failed to find expected workflow output [{output_name}] in step outputs [{outputs}]"
                     # raise KeyError(message)
                     # Pre-18.01 we would have never even detected this output wasn't configured
                     # and even in 18.01 we don't have a way to tell the user something bad is
@@ -463,7 +463,7 @@ class WorkflowProgress:
 
     def mark_step_outputs_delayed(self, step, why=None):
         if why:
-            message = "Marking step {} outputs of invocation {} delayed ({})".format(step.id, self.workflow_invocation.id, why)
+            message = f"Marking step {step.id} outputs of invocation {self.workflow_invocation.id} delayed ({why})"
             log.debug(message)
         self.outputs[step.id] = STEP_OUTPUT_DELAYED
 

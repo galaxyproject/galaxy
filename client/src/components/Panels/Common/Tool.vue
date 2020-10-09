@@ -42,15 +42,19 @@ export default {
         },
         operationTitle: {
             type: String,
+            default: "",
         },
         operationIcon: {
             type: String,
+            default: "",
         },
         hideName: {
             type: Boolean,
+            default: false,
         },
         toolKey: {
             type: String,
+            default: "",
         },
     },
     computed: {

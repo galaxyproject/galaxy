@@ -5,11 +5,11 @@ this should be reusable by tool shed and pulsar as well.
 import os
 import os.path
 import sys
+from configparser import ConfigParser
 from functools import partial
 from itertools import product, starmap
 
 import yaml
-from six.moves.configparser import ConfigParser
 
 from galaxy.exceptions import InvalidFileFormatError
 from galaxy.util.path import extensions, has_ext, joinext
@@ -162,7 +162,7 @@ class NicerConfigParser(ConfigParser):
         except Exception:
             e = sys.exc_info()[1]
             args = list(e.args)
-            args[0] = 'Error in file {}: {}'.format(self.filename, e)
+            args[0] = f'Error in file {self.filename}: {e}'
             e.args = tuple(args)
             e.message = args[0]
             raise
@@ -182,7 +182,7 @@ class NicerConfigParser(ConfigParser):
             except Exception:
                 e = sys.exc_info()[1]
                 args = list(e.args)
-                args[0] = 'Error in file {}: {}'.format(parser.filename, e)
+                args[0] = f'Error in file {parser.filename}: {e}'
                 e.args = tuple(args)
                 e.message = args[0]
                 raise

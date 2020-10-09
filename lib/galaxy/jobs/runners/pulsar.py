@@ -539,7 +539,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
     def get_client_from_wrapper(self, job_wrapper):
         job_id = job_wrapper.job_id
         if hasattr(job_wrapper, 'task_id'):
-            job_id = "{}_{}".format(job_id, job_wrapper.task_id)
+            job_id = f"{job_id}_{job_wrapper.task_id}"
         params = job_wrapper.job_destination.params.copy()
         user = job_wrapper.get_job().user
         if user:
@@ -685,7 +685,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             # Remote kill
             pulsar_url = job.job_runner_name
             job_id = job.job_runner_external_id
-            log.debug("Attempt remote Pulsar kill of job with url {} and id {}".format(pulsar_url, job_id))
+            log.debug(f"Attempt remote Pulsar kill of job with url {pulsar_url} and id {job_id}")
             client = self.get_client(job.destination_params, job_id)
             client.kill()
 
@@ -1010,7 +1010,7 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         # first but that adds untested logic that wouln't ever be used.
         remote_input_path = self.path_mapper.remote_input_path_rewrite(metadata_val, client_input_path_type=CLIENT_INPUT_PATH_TYPES.INPUT_METADATA_PATH)
         if remote_input_path:
-            log.info("input_metadata_rewrite is {} from {}".format(remote_input_path, metadata_val))
+            log.info(f"input_metadata_rewrite is {remote_input_path} from {metadata_val}")
             self.path_rewrites_input_metadata[metadata_val] = remote_input_path
             return remote_input_path
 

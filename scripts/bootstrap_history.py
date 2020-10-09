@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # Little script to make HISTORY.rst more easy to format properly, lots TODO
 # pull message down and embed, use arg parse, handle multiple, etc...
-from __future__ import print_function
 
 import calendar
 import datetime
@@ -13,6 +12,7 @@ import string
 import sys
 import textwrap
 from collections import OrderedDict
+from urllib.parse import urljoin
 
 try:
     import requests
@@ -22,8 +22,6 @@ try:
     from github import Github
 except ImportError:
     Github = None
-from six import string_types
-from six.moves.urllib.parse import urljoin
 
 log = logging.getLogger(__name__)
 
@@ -31,8 +29,8 @@ PROJECT_DIRECTORY = os.path.join(os.path.dirname(__file__), os.pardir)
 GALAXY_VERSION_FILE = os.path.join(PROJECT_DIRECTORY, "lib", "galaxy", "version.py")
 PROJECT_OWNER = "galaxyproject"
 PROJECT_NAME = "galaxy"
-PROJECT_URL = "https://github.com/%s/%s" % (PROJECT_OWNER, PROJECT_NAME)
-PROJECT_API = "https://api.github.com/repos/%s/%s/" % (PROJECT_OWNER, PROJECT_NAME)
+PROJECT_URL = f"https://github.com/{PROJECT_OWNER}/{PROJECT_NAME}"
+PROJECT_API = f"https://api.github.com/repos/{PROJECT_OWNER}/{PROJECT_NAME}/"
 RELEASES_PATH = os.path.join(PROJECT_DIRECTORY, "doc", "source", "releases")
 RELEASE_DELTA_MONTHS = 4  # Number of months between releases.
 
@@ -332,7 +330,7 @@ def release_issue(argv):
     )
     release_issue_contents = RELEASE_ISSUE_TEMPLATE.safe_substitute(**release_issue_template_params)
     github = _github_client()
-    repo = github.get_repo("%s/%s" % (PROJECT_OWNER, PROJECT_NAME))
+    repo = github.get_repo(f"{PROJECT_OWNER}/{PROJECT_NAME}")
     repo.create_issue(
         title="Publication of Galaxy Release v %s" % release_name,
         body=release_issue_contents,
@@ -430,15 +428,15 @@ def check_blocking_issues(argv):
 
 
 def _pr_to_str(pr):
-    if isinstance(pr, string_types):
+    if isinstance(pr, str):
         return pr
-    return "PR #%s (%s) %s" % (pr.number, pr.title, pr.html_url)
+    return f"PR #{pr.number} ({pr.title}) {pr.html_url}"
 
 
 def _issue_to_str(pr):
-    if isinstance(pr, string_types):
+    if isinstance(pr, str):
         return pr
-    return "Issue #%s (%s) %s" % (pr.number, pr.title, pr.html_url)
+    return f"Issue #{pr.number} ({pr.title}) {pr.html_url}"
 
 
 def _next_version_params(release_name):
@@ -469,13 +467,10 @@ def _release_dates(version):
     return freeze_date, release_date
 
 
-def _get_prs(release_name, state="closed", pr_cache=[]):
+def _get_prs(release_name, state="closed"):
     github = _github_client()
-    repo = github.get_repo("%s/%s" % (PROJECT_OWNER, PROJECT_NAME))
-    add_to_cache = not pr_cache
-    pull_requests = pr_cache or repo.get_pulls(
-        state=state,
-    )
+    repo = github.get_repo(f"{PROJECT_OWNER}/{PROJECT_NAME}")
+    pull_requests = repo.get_pulls(state=state)
     reached_old_prs = False
 
     for pr in pull_requests:
@@ -490,8 +485,6 @@ def _get_prs(release_name, state="closed", pr_cache=[]):
         proper_state = state != "closed" or merged_at
         if not proper_state or not milestone or milestone.title != release_name:
             continue
-        if add_to_cache:
-            pr_cache.append(pr)
         yield pr
 
 
@@ -545,7 +538,7 @@ def main(argv):
     def extend_target(target, line, source=history):
         from_str = ".. %s\n" % target
         if target not in source:
-            raise Exception("Failed to find target [%s] in source [%s]" % (target, source))
+            raise Exception(f"Failed to find target [{target}] in source [{source}]")
         return source.replace(from_str, from_str + line + "\n")
 
     ident = argv[1]
@@ -590,10 +583,10 @@ def main(argv):
         text = ".. _Pull Request {0}: {1}/pull/{0}".format(pull_request, PROJECT_URL)
         prs_content = extend_target("github_links", text, prs_content)
         if owner:
-            to_doc += "\n(thanks to `@%s <https://github.com/%s>`__)." % (
+            to_doc += "\n(thanks to `@{} <https://github.com/{}>`__).".format(
                 owner, owner,
             )
-        to_doc += "\n`Pull Request {0}`_".format(pull_request)
+        to_doc += f"\n`Pull Request {pull_request}`_"
         labels = None
         if req and 'labels' in req:
             labels = req['labels']
@@ -602,12 +595,12 @@ def main(argv):
         issue = ident[len("issue"):]
         text = ".. _Issue {0}: {1}/issues/{0}".format(issue, PROJECT_URL)
         prs_content = extend_target("github_links", text, prs_content)
-        to_doc += "`Issue {0}`_".format(issue)
+        to_doc += f"`Issue {issue}`_"
     else:
         short_rev = ident[:7]
         text = ".. _{0}: {1}/commit/{0}".format(short_rev, PROJECT_URL)
         prs_content = extend_target("github_links", text, prs_content)
-        to_doc += "{0}_".format(short_rev)
+        to_doc += f"{short_rev}_"
 
     to_doc = wrap(to_doc)
     if text_target is not None:
@@ -626,7 +619,7 @@ def main(argv):
 
 
 def _read_file(path):
-    with open(path, "r") as f:
+    with open(path) as f:
         return f.read()
 
 
@@ -637,7 +630,7 @@ def _write_file(path, contents):
 
 def _text_target(pull_request, labels=None):
     pr_number = None
-    if isinstance(pull_request, string_types):
+    if isinstance(pull_request, str):
         pr_number = pull_request
     else:
         pr_number = pull_request.number
@@ -738,7 +731,7 @@ def _releases():
 def _github_client():
     try:
         github_json_path = os.path.expanduser("~/.github.json")
-        with open(github_json_path, "r") as fh:
+        with open(github_json_path) as fh:
             github_json_dict = json.load(fh)
         github = Github(**github_json_dict)
     except Exception:
@@ -764,7 +757,7 @@ def process_sentence(message):
     # Strip tags like [15.07].
     message = re.sub(r"^\s*\[.*\]\s*", r"", message)
     # Link issues and pull requests...
-    issue_url = "https://github.com/%s/%s/issues" % (PROJECT_OWNER, PROJECT_NAME)
+    issue_url = f"https://github.com/{PROJECT_OWNER}/{PROJECT_NAME}/issues"
     message = re.sub(r'#(\d+)', r'`#\1 <%s/\1>`__' % issue_url, message)
     return message
 

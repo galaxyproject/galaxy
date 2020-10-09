@@ -166,7 +166,7 @@ class RepositoryDependencyAttributeHandler:
                 # <repository name="molecule_datatypes" owner="test" changeset_revision="1a070566e9c6" />
                 altered, new_elem, error_message = self.handle_elem(elem)
                 if error_message:
-                    error_message = 'The {} file contains an invalid <repository> tag.  {}'.format(self.file_name, error_message)
+                    error_message = f'The {self.file_name} file contains an invalid <repository> tag.  {error_message}'
                     return False, None, error_message
                 if altered:
                     if not root_altered:

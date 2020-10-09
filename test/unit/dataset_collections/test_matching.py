@@ -106,13 +106,13 @@ def list_instance(collection_type="list", elements=None, ids=None):
     return list_collection_instance
 
 
-class MockCollectionInstance(object):
+class MockCollectionInstance:
 
     def __init__(self, collection_type, elements):
         self.collection = MockCollection(collection_type, elements)
 
 
-class MockCollection(object):
+class MockCollection:
 
     def __init__(self, collection_type, elements):
         self.collection_type = collection_type
@@ -120,7 +120,7 @@ class MockCollection(object):
         self.populated = True
 
 
-class MockCollectionElement(object):
+class MockCollectionElement:
 
     def __init__(self, element_identifier, collection):
         self.element_identifier = element_identifier
@@ -128,7 +128,7 @@ class MockCollectionElement(object):
         self.hda = None
 
 
-class MockHDAElement(object):
+class MockHDAElement:
 
     def __init__(self, element_identifier):
         self.element_identifier = element_identifier

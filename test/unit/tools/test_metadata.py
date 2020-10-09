@@ -13,7 +13,7 @@ from .. import tools_support
 class MetadataTestCase(unittest.TestCase, tools_support.UsesApp, tools_support.UsesTools):
 
     def setUp(self):
-        super(MetadataTestCase, self).setUp()
+        super().setUp()
         self.setup_app()
         model.Dataset.object_store = self.app.object_store
         job = model.Job()
@@ -30,7 +30,7 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesApp, tools_support.U
         os.mkdir(self.tool_working_directory)
 
     def tearDown(self):
-        super(MetadataTestCase, self).tearDown()
+        super().tearDown()
         self.metadata_compute_strategy = None
 
     def test_simple_output_legacy(self):
@@ -239,9 +239,9 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesApp, tools_support.U
 
     def print_command_output(self):
         print(">unit test of external metadata setting (command standard output)")
-        print(open(self.stdout_path, "r").read())
+        print(open(self.stdout_path).read())
         print(">unit test of external metadata setting (command standard error)")
-        print(open(self.stderr_path, "r").read())
+        print(open(self.stderr_path).read())
 
     @property
     def stdout_path(self):

@@ -186,7 +186,7 @@ class Sequence(data.Text):
                 ds = input_datasets[ds_no]
                 base_name = os.path.basename(ds.file_name)
                 part_path = os.path.join(dir, base_name)
-                split_data = dict(class_name='{}.{}'.format(cls.__module__, cls.__name__),
+                split_data = dict(class_name=f'{cls.__module__}.{cls.__name__}',
                                   output_name=part_path,
                                   input_name=ds.file_name,
                                   args=dict(start_sequence=start_sequence, num_sequences=sequences_per_file[part_no]))
@@ -431,7 +431,7 @@ class Fasta(Sequence):
             part_dir = subdir_generator_function()
             part_path = os.path.join(part_dir, os.path.basename(input_file))
             part_file = open(part_path, 'w')
-            log.debug("Writing {} part to {}".format(input_file, part_path))
+            log.debug(f"Writing {input_file} part to {part_path}")
             start_offset = 0
             while True:
                 offset = f.tell()
@@ -444,7 +444,7 @@ class Fasta(Sequence):
                     part_dir = subdir_generator_function()
                     part_path = os.path.join(part_dir, os.path.basename(input_file))
                     part_file = open(part_path, 'w')
-                    log.debug("Writing {} part to {}".format(input_file, part_path))
+                    log.debug(f"Writing {input_file} part to {part_path}")
                     start_offset = f.tell()
                 part_file.write(line)
         except Exception as e:
@@ -467,7 +467,7 @@ class Fasta(Sequence):
             part_dir = subdir_generator_function()
             part_path = os.path.join(part_dir, os.path.basename(input_file))
             part_file = open(part_path, 'w')
-            log.debug("Writing {} part to {}".format(input_file, part_path))
+            log.debug(f"Writing {input_file} part to {part_path}")
             rec_count = 0
             while True:
                 line = f.readline()
@@ -481,7 +481,7 @@ class Fasta(Sequence):
                         part_dir = subdir_generator_function()
                         part_path = os.path.join(part_dir, os.path.basename(input_file))
                         part_file = open(part_path, 'w')
-                        log.debug("Writing {} part to {}".format(input_file, part_path))
+                        log.debug(f"Writing {input_file} part to {part_path}")
                         rec_count = 1
                 part_file.write(line)
         except Exception as e:
@@ -633,7 +633,7 @@ class Fastg(Sequence):
             dataset.blurb += '\nversion=%s' % dataset.metadata.version
             for k, v in dataset.metadata.properties.items():
                 if k != 'version':
-                    dataset.blurb += '\n{}={}'.format(k, v)
+                    dataset.blurb += f'\n{k}={v}'
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'

@@ -96,7 +96,7 @@ def migrate_to_current_version(engine, schema):
     changeset = schema.changeset(None)
     for ver, change in changeset:
         nextver = ver + changeset.step
-        log.info('Migrating {} -> {}... '.format(ver, nextver))
+        log.info(f'Migrating {ver} -> {nextver}... ')
         old_stdout = sys.stdout
 
         class FakeStdout:

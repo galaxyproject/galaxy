@@ -52,7 +52,7 @@ class LSF(BaseJobExec):
         # Generated template.
         template_scriptargs = ''
         for k, v in scriptargs.items():
-            template_scriptargs += '#BSUB {} {}\n'.format(k, v)
+            template_scriptargs += f'#BSUB {k} {v}\n'
         return dict(headers=template_scriptargs)
 
     def submit(self, script_file):

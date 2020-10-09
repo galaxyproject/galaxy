@@ -1,9 +1,10 @@
+from urllib.parse import quote
+
 try:
     import requests
 except ImportError:
     requests = None
 import yaml
-from six.moves.urllib.parse import quote
 
 from ..locations import (
     ToolLocationResolver,

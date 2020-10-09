@@ -6,7 +6,11 @@ from paste.httpexceptions import (
     HTTPBadRequest,
     HTTPForbidden
 )
-from sqlalchemy import and_
+from sqlalchemy import (
+    and_,
+    cast,
+    Integer,
+)
 
 from galaxy import (
     exceptions,
@@ -82,7 +86,8 @@ class ToolShedRepositoriesController(BaseAPIController):
             clause_list.append(self.app.install_model.ToolShedRepository.table.c.uninstalled == util.asbool(kwd.get('uninstalled')))
         tool_shed_repository_dicts = []
         query = trans.install_model.context.query(self.app.install_model.ToolShedRepository) \
-                                           .order_by(self.app.install_model.ToolShedRepository.table.c.name)
+                                           .order_by(self.app.install_model.ToolShedRepository.table.c.name) \
+                                           .order_by(cast(self.app.install_model.ToolShedRepository.ctx_rev, Integer).desc())
         if len(clause_list) > 0:
             query = query.filter(and_(*clause_list))
         for tool_shed_repository in query.all():
@@ -267,9 +272,9 @@ class ToolShedRepositoriesController(BaseAPIController):
         errors = irm.uninstall_repository(repository=repository, remove_from_disk=remove_from_disk)
         if not errors:
             action = 'removed' if remove_from_disk else 'deactivated'
-            return {'message': 'The repository named {} has been {}.'.format(repository.name, action)}
+            return {'message': f'The repository named {repository.name} has been {action}.'}
         else:
-            raise Exception('Attempting to uninstall tool dependencies for repository named {} resulted in errors: {}'.format(repository.name, errors))
+            raise Exception(f'Attempting to uninstall tool dependencies for repository named {repository.name} resulted in errors: {errors}')
 
     def __parse_repository_from_payload(self, payload, include_changeset=False):
         # Get the information about the repository to be installed from the payload.

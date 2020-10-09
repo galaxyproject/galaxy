@@ -338,7 +338,7 @@ class FileLiteralTarget:
         self.path = path
 
     def __str__(self):
-        return "FileLiteralTarget[contents={}] with {}".format(self.contents, self.properties)
+        return f"FileLiteralTarget[contents={self.contents}] with {self.properties}"
 
 
 class FileUploadTarget:
@@ -350,7 +350,7 @@ class FileUploadTarget:
         self.properties = kwargs
 
     def __str__(self):
-        return "FileUploadTarget[path={}] with {}".format(self.path, self.properties)
+        return f"FileUploadTarget[path={self.path}] with {self.properties}"
 
 
 class ObjectUploadTarget:
@@ -394,7 +394,7 @@ def invocation_to_output(invocation, history_id, output_id):
         collection = invocation["output_collections"][output_id]
         galaxy_output = GalaxyOutput(history_id, "dataset_collection", collection["id"], None)
     else:
-        raise Exception("Failed to find output with label [{}] in [{}]".format(output_id, invocation))
+        raise Exception(f"Failed to find output with label [{output_id}] in [{invocation}]")
 
     return galaxy_output
 

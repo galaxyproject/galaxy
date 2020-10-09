@@ -103,7 +103,7 @@ def extract_steps(trans, history=None, job_ids=None, dataset_ids=None, dataset_c
     # Tool steps
     for job_id in job_ids:
         if job_id not in summary.job_id2representative_job:
-            log.warning("job_id {} not found in job_id2representative_job {}".format(job_id, summary.job_id2representative_job))
+            log.warning(f"job_id {job_id} not found in job_id2representative_job {summary.job_id2representative_job}")
             raise AssertionError("Attempt to create workflow with job not connected to current history")
         job = summary.job_id2representative_job[job_id]
         tool_inputs, associations = step_inputs(trans, job)
@@ -365,10 +365,10 @@ def __cleanup_param_values(inputs, values):
                 if input.name in values:
                     group_values = values[input.name]
                     current_case = group_values['__current_case__']
-                    cleanup("{}{}|".format(prefix, key), input.cases[current_case].inputs, group_values)
+                    cleanup(f"{prefix}{key}|", input.cases[current_case].inputs, group_values)
             elif isinstance(input, Section):
                 if input.name in values:
-                    cleanup("{}{}|".format(prefix, key), input.inputs, values[input.name])
+                    cleanup(f"{prefix}{key}|", input.inputs, values[input.name])
     cleanup("", inputs, values)
     return associations
 

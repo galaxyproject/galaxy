@@ -40,7 +40,7 @@ def main(tmpFileName):
     gf = open(tmpFileName, 'w')
 
     try:
-        in_file = open(sys.argv[1], 'r')
+        in_file = open(sys.argv[1])
         xtic = int(sys.argv[2])
         col_list = sys.argv[3].split(',')
         title = 'set title "' + sys.argv[4] + '"'

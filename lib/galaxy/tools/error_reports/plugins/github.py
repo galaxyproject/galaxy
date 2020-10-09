@@ -42,7 +42,7 @@ class GithubPlugin(BaseGitPlugin):
                 base_url=self.github_api_url
             )
             # Connect to the default repository and fill up the issue cache for it
-            repo = self.github.get_repo('{}/{}'.format(self.git_default_repo_owner, self.git_default_repo_name))
+            repo = self.github.get_repo(f'{self.git_default_repo_owner}/{self.git_default_repo_name}')
             self._fill_issue_cache(repo, "default")
 
             # We'll also cache labels which we'll use for tagging issues.

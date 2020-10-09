@@ -18,7 +18,7 @@ class DataToolParameterTestCase(BaseParameterTestCase):
     def test_to_python_multi_hdas(self):
         hda1 = self._new_hda()
         hda2 = self._new_hda()
-        as_python = self.param.to_python("%s,%s" % (hda1.id, hda2.id), self.app)
+        as_python = self.param.to_python(f"{hda1.id},{hda2.id}", self.app)
         assert as_python == [hda1, hda2]
 
     def test_to_python_multi_none(self):
@@ -145,7 +145,7 @@ class DataToolParameterTestCase(BaseParameterTestCase):
         return hda
 
     def setUp(self):
-        super(DataToolParameterTestCase, self).setUp()
+        super().setUp()
         self.test_history = model.History()
         self.app.model.context.add(self.test_history)
         self.app.model.context.flush()
@@ -177,7 +177,7 @@ class DataToolParameterTestCase(BaseParameterTestCase):
         return self._param
 
 
-class MockHistoryDatasetAssociation(object):
+class MockHistoryDatasetAssociation:
     """ Fake HistoryDatasetAssociation stubbed out for testing matching and
     stuff like that.
     """

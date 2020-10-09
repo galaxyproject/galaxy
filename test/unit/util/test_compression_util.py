@@ -2,8 +2,6 @@ import shutil
 import tempfile
 import unittest
 
-import six
-
 from galaxy.util.compression_utils import (
     CompressedFile,
     get_fileobj_raw
@@ -49,9 +47,9 @@ class CompressionUtilTestCase(unittest.TestCase):
     def assert_format_detected(self, path, expected_fmt, allowed_fmts=None):
         for mode in ['r', 'rb', 'rt', 'U']:
             if 'b' in mode:
-                expected_type = six.binary_type
+                expected_type = bytes
             else:
-                expected_type = six.text_type
+                expected_type = str
             fmt, fh = get_fileobj_raw(path, mode, allowed_fmts)
             assert fmt == expected_fmt
             assert isinstance(fh.read(0), expected_type)

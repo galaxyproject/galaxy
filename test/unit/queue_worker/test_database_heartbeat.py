@@ -10,7 +10,7 @@ import galaxy.web_stack as stack
 @pytest.fixture
 def heartbeat_app(database_app):
 
-    class QueueWorker(object):
+    class QueueWorker:
 
         def send_control_task(self, *args, **kwargs):
             return

@@ -35,7 +35,7 @@ class RBACAgent:
         return list(self.permitted_actions.__dict__.values())
 
     def get_item_actions(self, action, item):
-        raise Exception('No valid method of retrieving action ({}) for item {}.'.format(action, item))
+        raise Exception(f'No valid method of retrieving action ({action}) for item {item}.')
 
     def guess_derived_permissions_for_datasets(self, datasets=[]):
         raise Exception("Unimplemented Method")

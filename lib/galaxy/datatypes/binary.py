@@ -403,7 +403,7 @@ class BamNative(CompressedArchive):
                             # Galaxy display each tag as separate column because 'tostring()' funcition put tabs in between each tag of tags column.
                             # Below code will remove spaces between each tag.
                             bamline_modified = ('\t').join(bamline.split()[:11] + [(' ').join(bamline.split()[11:])])
-                            ck_data = "{}\n{}".format(ck_data, bamline_modified)
+                            ck_data = f"{ck_data}\n{bamline_modified}"
                     else:
                         # Nothing to enumerate; we've either offset to the end
                         # of the bamfile, or there is no data. (possible with
@@ -489,9 +489,9 @@ class Bam(BamNative):
             # we start another process and discard stderr.
             if index_flag == '-b':
                 # IOError: No such file or directory: '-b' if index_flag is set to -b (pysam 0.15.4)
-                cmd = ['python', '-c', "import pysam; pysam.set_verbosity(0); pysam.index('{}', '{}')".format(file_name, index_name)]
+                cmd = ['python', '-c', f"import pysam; pysam.set_verbosity(0); pysam.index('{file_name}', '{index_name}')"]
             else:
-                cmd = ['python', '-c', "import pysam; pysam.set_verbosity(0); pysam.index('{}', '{}', '{}')".format(index_flag, file_name, index_name)]
+                cmd = ['python', '-c', f"import pysam; pysam.set_verbosity(0); pysam.index('{index_flag}', '{file_name}', '{index_name}')"]
             with open(os.devnull, 'w') as devnull:
                 subprocess.check_call(cmd, stderr=devnull, shell=False)
             needs_sorting = False
@@ -1711,7 +1711,7 @@ class CuffDiffSQlite(SQlite):
             for gene_id, gene_name in result:
                 if gene_name is None:
                     continue
-                gene = '{}: {}'.format(gene_id, gene_name)
+                gene = f'{gene_id}: {gene_name}'
                 if gene not in genes:
                     genes.append(gene)
             samples_query = 'SELECT DISTINCT(sample_name) as sample_name FROM samples ORDER BY sample_name'
@@ -1859,7 +1859,7 @@ class BlibSQlite(SQlite):
             c = conn.cursor()
             tables_query = "SELECT majorVersion,minorVersion FROM LibInfo"
             (majorVersion, minorVersion) = c.execute(tables_query).fetchall()[0]
-            dataset.metadata.blib_version = '{}.{}'.format(majorVersion, minorVersion)
+            dataset.metadata.blib_version = f'{majorVersion}.{minorVersion}'
         except Exception as e:
             log.warning('%s, set_meta Exception: %s', self, e)
 

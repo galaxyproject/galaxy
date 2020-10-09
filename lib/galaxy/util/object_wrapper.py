@@ -2,10 +2,12 @@
 Classes for wrapping Objects and Sanitizing string output.
 """
 
-import collections
+import copyreg
 import inspect
 import logging
 import string
+from collections import UserDict
+from collections.abc import Callable
 from numbers import Number
 from types import (
     BuiltinFunctionType,
@@ -55,11 +57,6 @@ except ImportError:
     # so they are __WRAP_NO_SUBCLASS__.
     BufferType = SliceType
     DictProxyType = SliceType
-
-from six.moves import (
-    copyreg as copy_reg,
-    UserDict
-)
 
 from galaxy.util import sanitize_lists_to_string as _sanitize_lists_to_string
 
@@ -130,7 +127,7 @@ def wrap_with_safe_string(value, no_wrap_classes=None):
         if isinstance(value, SafeStringWrapper):
             # Only ever wrap one-layer
             return value
-        if isinstance(value, collections.Callable):
+        if isinstance(value, Callable):
             safe_class = CallableSafeStringWrapper
         else:
             safe_class = SafeStringWrapper
@@ -157,7 +154,7 @@ def wrap_with_safe_string(value, no_wrap_classes=None):
             wrapped_class = value.__class__
         value_mod = inspect.getmodule(value)
         if value_mod:
-            wrapped_class_name = "{}.{}".format(value_mod.__name__, wrapped_class_name)
+            wrapped_class_name = f"{value_mod.__name__}.{wrapped_class_name}"
         wrapped_class_name = "SafeStringWrapper({}:{})".format(wrapped_class_name, ",".join(sorted(map(str, no_wrap_classes))))
         do_wrap_func_name = "__do_wrap_%s" % (wrapped_class_name)
         do_wrap_func = __do_wrap
@@ -182,7 +179,7 @@ def wrap_with_safe_string(value, no_wrap_classes=None):
                 def pickle_safe_object(safe_object):
                     return (wrapped_class, (safe_object.unsanitized, do_wrap_func, ))
                 # Set pickle and copy properties
-                copy_reg.pickle(wrapped_class, pickle_safe_object, do_wrap_func)
+                copyreg.pickle(wrapped_class, pickle_safe_object, do_wrap_func)
         return wrapped_class(value, safe_string_wrapper_function=do_wrap_func)
 
     # Determine classes not to wrap
@@ -196,7 +193,7 @@ def wrap_with_safe_string(value, no_wrap_classes=None):
     return __do_wrap(value)
 
 
-# N.B. refer to e.g. https://docs.python.org/2/reference/datamodel.html for information on Python's Data Model.
+# N.B. refer to e.g. https://docs.python.org/reference/datamodel.html for information on Python's Data Model.
 
 
 class SafeStringWrapper:
@@ -492,5 +489,5 @@ def pickle_SafeStringWrapper(safe_object):
     return (cls, args)
 
 
-copy_reg.pickle(SafeStringWrapper, pickle_SafeStringWrapper, wrap_with_safe_string)
-copy_reg.pickle(CallableSafeStringWrapper, pickle_SafeStringWrapper, wrap_with_safe_string)
+copyreg.pickle(SafeStringWrapper, pickle_SafeStringWrapper, wrap_with_safe_string)
+copyreg.pickle(CallableSafeStringWrapper, pickle_SafeStringWrapper, wrap_with_safe_string)

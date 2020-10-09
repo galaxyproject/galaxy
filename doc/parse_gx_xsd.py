@@ -1,17 +1,15 @@
-# coding: utf-8
 # TODO: Add examples, tables and best practice links to command
 # TODO: Examples of truevalue, falsevalue
 # TODO: Test param extra_file
 # Things dropped from schema_template.md (still documented inside schema).
 #  - request_parameter_translation
-from __future__ import print_function
 
 import sys
+from io import StringIO
 
 from lxml import etree
-from six import StringIO
 
-with open(sys.argv[2], "r") as f:
+with open(sys.argv[2]) as f:
     xmlschema_doc = etree.parse(f)
 
 markdown_buffer = StringIO()
@@ -22,7 +20,7 @@ def main():
     toc_list = []
     content_list = []
     found_tag = False
-    with open(sys.argv[1], "r") as markdown_template:
+    with open(sys.argv[1]) as markdown_template:
         for line in markdown_template:
             if line.startswith("$tag:"):
                 found_tag = True
@@ -41,7 +39,7 @@ def main():
         print(el, end='')
 
 
-class Tag(object):
+class Tag:
 
     def __init__(self, line):
         assert line.startswith("$tag:")
@@ -71,7 +69,7 @@ class Tag(object):
         return " > ".join("``%s``" % p for p in self.title.split("|"))
 
     def build_toc_entry(self):
-        return "* [%s](%s)" % (self._pretty_title, self._anchor)
+        return f"* [{self._pretty_title}]({self._anchor})"
 
     def build_help(self):
         tag = xmlschema_doc.find(self.xpath)
@@ -113,7 +111,7 @@ def _build_tag(tag, hide_attributes):
                     doc = _doc_or_none(_type_el(element))
                 assert doc is not None, "Documentation for %s is empty" % element.attrib["name"]
                 doc = doc.strip()
-                assertions_buffer.write("``%s`` | %s\n" % (element.attrib["name"], doc))
+                assertions_buffer.write("``{}`` | {}\n".format(element.attrib["name"], doc))
             text = text.replace(line, assertions_buffer.getvalue())
     tag_help.write(text)
     best_practices = _get_bp_link(annotation_el)
@@ -165,7 +163,7 @@ def _build_attributes_table(tag, attributes, hide_attributes=False, attribute_na
             if best_practices:
                 details += """ Find the Intergalactic Utilities Commision suggested best practices for this element [here](%s).""" % best_practices
 
-            attribute_table.write("``%s`` | %s | %s\n" % (name, details, use))
+            attribute_table.write(f"``{name}`` | {details} | {use}\n")
     return attribute_table.getvalue()
 
 
