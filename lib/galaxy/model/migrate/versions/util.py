@@ -86,6 +86,7 @@ def add_column(column, table, metadata, **kwds):
     :type metadata: :class:`Metadata`
     """
     try:
+        index_to_create = None
         migrate_engine = metadata.bind
         if not isinstance(table, Table):
             table = Table(table, metadata, autoload=True)
@@ -93,10 +94,14 @@ def add_column(column, table, metadata, **kwds):
             # SQLAlchemy Migrate has a bug when adding a column with both a
             # ForeignKey and an index in SQLite. Since SQLite creates an index
             # anyway, we can drop the explicit index creation.
+            # TODO: this is hacky, but it solves this^ problem. Needs better solution.
+            index_to_create = (kwds['index_name'], table, column.name)
             del kwds['index_name']
             column.index = False
         column.create(table, **kwds)
         assert column is table.c[column.name]
+        if index_to_create:
+            add_index(*index_to_create)
     except Exception:
         log.exception("Adding column '%s' to table '%s' failed.", column, table)
 
