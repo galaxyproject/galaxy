@@ -216,11 +216,13 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             )
 
         if parsing_shed_tool_conf:
-            shed_tool_conf_dict = dict(config_filename=config_filename,
-                                       tool_path=tool_path,
-                                       tool_cache_data_dir=tool_cache_data_dir,
-                                       config_elems=config_elems)
-            self._dynamic_tool_confs.append(shed_tool_conf_dict)
+            # if read_only mode, (CVMFS consumer) don't add to dynamic_confs
+            if os.access(config_filename, os.W_OK):
+                shed_tool_conf_dict = dict(config_filename=config_filename,
+                                           tool_path=tool_path,
+                                           tool_cache_data_dir=tool_cache_data_dir,
+                                           config_elems=config_elems)
+                self._dynamic_tool_confs.append(shed_tool_conf_dict)
 
     def _get_tool_by_uuid(self, tool_uuid):
         if tool_uuid in self._tools_by_uuid:
