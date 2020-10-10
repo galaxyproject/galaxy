@@ -19,6 +19,7 @@ export default {
                 el,
                 inputs: this.inputs,
             }).on("change", this.onChange);
+            this.onChange();
         });
     },
     methods: {
