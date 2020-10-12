@@ -29,7 +29,7 @@ def __main__():
         proc = subprocess.Popen(args=cmdline, shell=True, stderr=subprocess.PIPE)
         returncode = proc.wait()
         # get stderr, allowing for case where it's very large
-        stderr = ''
+        stderr = b''
         buffsize = 1048576
         try:
             while True:
