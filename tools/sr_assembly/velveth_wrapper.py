@@ -4,7 +4,6 @@ Classes encapsulating decypher tool.
 James E Johnson - University of Minnesota
 """
 import os
-import string
 import subprocess
 import sys
 
@@ -25,7 +24,7 @@ def __main__():
     except Exception as e:
         stop_err('Error running velveth ' + str(e))
     hash_length = sys.argv[3]
-    inputs = string.join(sys.argv[4:], ' ')
+    inputs = ' '.join(sys.argv[4:])
     cmdline = 'velveth %s %s %s > /dev/null' % (working_dir, hash_length, inputs)
     try:
         proc = subprocess.Popen(args=cmdline, shell=True, stderr=subprocess.PIPE)
