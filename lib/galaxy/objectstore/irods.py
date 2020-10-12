@@ -35,7 +35,7 @@ log = logging.getLogger(__name__)
 
 
 def _config_xml_error(tag):
-    msg = 'No {tag} element in config XML tree'.format(tag=tag)
+    msg = f'No {tag} element in config XML tree'
     raise Exception(msg)
 
 
@@ -136,7 +136,7 @@ def managed_session(host='localhost', port='1247', user='rods', password='rods',
         release_session(session)
 
 
-class CloudConfigMixin(object):
+class CloudConfigMixin:
 
     def _config_to_dict(self):
         return {

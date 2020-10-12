@@ -83,14 +83,14 @@ def lint_inputs(tool_xml, lint_ctx):
 
         for option_id in option_ids:
             if option_id not in when_ids:
-                lint_ctx.warn("No <when /> block found for {} option '{}' inside conditional '{}'".format(first_param_type, option_id, conditional_name))
+                lint_ctx.warn(f"No <when /> block found for {first_param_type} option '{option_id}' inside conditional '{conditional_name}'")
 
         for when_id in when_ids:
             if when_id not in option_ids:
                 if first_param_type == 'select':
-                    lint_ctx.warn("No <option /> found for when block '{}' inside conditional '{}'".format(when_id, conditional_name))
+                    lint_ctx.warn(f"No <option /> found for when block '{when_id}' inside conditional '{conditional_name}'")
                 else:
-                    lint_ctx.warn("No truevalue/falsevalue found for when block '{}' inside conditional '{}'".format(when_id, conditional_name))
+                    lint_ctx.warn(f"No truevalue/falsevalue found for when block '{when_id}' inside conditional '{conditional_name}'")
 
     if datasource:
         for datasource_tag in ('display', 'uihints'):

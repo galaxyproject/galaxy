@@ -65,7 +65,7 @@ class DatatypeValidation:
         return DatatypeValidation("unknown", "Dataset validation unimplemented for this datatype.")
 
     def __repr__(self):
-        return "DatatypeValidation[state={},message={}]".format(self.state, self.message)
+        return f"DatatypeValidation[state={self.state},message={self.message}]"
 
 
 def validate(dataset_instance):
@@ -313,7 +313,7 @@ class Data(metaclass=DataMeta):
 
             display_name = os.path.splitext(outfname)[0]
             if not display_name.endswith(ext):
-                display_name = '{}_{}'.format(display_name, ext)
+                display_name = f'{display_name}_{ext}'
 
             error, msg = self._archive_main_file(archive, display_name, path)[:2]
             if not error:
@@ -339,7 +339,7 @@ class Data(metaclass=DataMeta):
                     outext = 'tgz'
                     if do_action == 'tbz':
                         outext = 'tbz'
-                    trans.response.headers["Content-Disposition"] = 'attachment; filename="{}.{}"'.format(outfname, outext)
+                    trans.response.headers["Content-Disposition"] = f'attachment; filename="{outfname}.{outext}"'
                     archive.wsgi_status = trans.response.wsgi_status()
                     archive.wsgi_headeritems = trans.response.wsgi_headeritems()
                     return archive.stream
@@ -438,7 +438,7 @@ class Data(metaclass=DataMeta):
                 self._clean_and_set_mime_type(trans, mime)
                 return self._yield_user_file_content(trans, data, file_path)
             else:
-                return webob.exc.HTTPNotFound("Could not find '{}' on the extra files path {}.".format(filename, file_path))
+                return webob.exc.HTTPNotFound(f"Could not find '{filename}' on the extra files path {file_path}.")
         self._clean_and_set_mime_type(trans, data.get_mime())
 
         trans.log_event("Display dataset id: %s" % str(data.id))
@@ -627,7 +627,7 @@ class Data(metaclass=DataMeta):
                 return getattr(self, self.supported_display_apps[type]['file_function'])(dataset, **kwd)
         except Exception:
             log.exception('Function %s is referred to in datatype %s for displaying as type %s, but is not accessible', self.supported_display_apps[type]['file_function'], self.__class__.__name__, type)
-        return "This display type ({}) is not implemented for this datatype ({}).".format(type, dataset.ext)
+        return f"This display type ({type}) is not implemented for this datatype ({dataset.ext})."
 
     def get_display_links(self, dataset, type, app, base_url, target_frame='_blank', **kwd):
         """
@@ -657,7 +657,7 @@ class Data(metaclass=DataMeta):
         converter = trans.app.datatypes_registry.get_converter_by_target_type(original_dataset.ext, target_type)
 
         if converter is None:
-            raise Exception("A converter does not exist for {} to {}.".format(original_dataset.ext, target_type))
+            raise Exception(f"A converter does not exist for {original_dataset.ext} to {target_type}.")
         # Generate parameter dictionary
         params = {}
         # determine input parameter name and add to params
@@ -683,7 +683,7 @@ class Data(metaclass=DataMeta):
                 value.visible = False
         if return_output:
             return converted_dataset
-        return "The file conversion of {} on data {} has been added to the Queue.".format(converter.name, original_dataset.hid)
+        return f"The file conversion of {converter.name} on data {original_dataset.hid} has been added to the Queue."
 
     # We need to clear associated files before we set metadata
     # so that as soon as metadata starts to be set, e.g. implicitly converted datasets are deleted and no longer available 'while' metadata is being set, not just after
@@ -856,7 +856,7 @@ class Text(Data):
             sample_lines = dataset_read.count('\n')
             est_lines = int(sample_lines * (float(dataset.get_size()) / float(sample_size)))
         except UnicodeDecodeError:
-            log.error('Unable to estimate lines in file {}'.format(dataset.file_name))
+            log.error(f'Unable to estimate lines in file {dataset.file_name}')
             est_lines = None
         return est_lines
 
@@ -880,7 +880,7 @@ class Text(Data):
                     if line and not line.startswith('#'):
                         data_lines += 1
             except UnicodeDecodeError:
-                log.error('Unable to count lines in file {}'.format(dataset.file_name))
+                log.error(f'Unable to count lines in file {dataset.file_name}')
                 data_lines = None
         return data_lines
 

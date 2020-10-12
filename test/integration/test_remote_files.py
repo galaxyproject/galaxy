@@ -38,7 +38,7 @@ class RemoteFilesIntegrationTestCase(integration_util.IntegrationTestCase):
         config["ftp_upload_purge"] = True
 
     def setUp(self):
-        super(RemoteFilesIntegrationTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
         for d in [self.library_dir, self.user_library_dir, self.ftp_upload_dir]:
@@ -122,7 +122,7 @@ class RemoteFilesIntegrationTestCase(integration_util.IntegrationTestCase):
             response = dataset_populator.run_tool("directory_uri", inputs, history_id)
             dataset_populator.wait_for_job(response["jobs"][0]["id"])
             assert 'helloworld' in os.listdir(ftp_dir)
-            with open(os.path.join(ftp_dir, 'helloworld'), 'r') as f:
+            with open(os.path.join(ftp_dir, 'helloworld')) as f:
                 assert 'hello world!\n' == f.read()
 
     def _assert_index_empty(self, index):

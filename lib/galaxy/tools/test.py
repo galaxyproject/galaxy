@@ -292,7 +292,7 @@ class ParamContext:
         name = self.name if self.index is None else "%s_%d" % (self.name, self.index)
         parent_for_state = self.parent_context.for_state()
         if parent_for_state:
-            return "{}|{}".format(parent_for_state, name)
+            return f"{parent_for_state}|{name}"
         else:
             return name
 
@@ -304,7 +304,7 @@ class ParamContext:
             if self.index is not None:
                 yield "%s|%s_%d" % (parent_context_param, self.name, self.index)
             else:
-                yield "{}|{}".format(parent_context_param, self.name)
+                yield f"{parent_context_param}|{self.name}"
         if self.index is not None:
             yield "%s_%d" % (self.name, self.index)
         else:

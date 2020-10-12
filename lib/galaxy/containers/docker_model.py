@@ -3,13 +3,13 @@ Model objects for docker objects
 """
 
 import logging
+import shlex
 
 try:
     import docker
 except ImportError:
     from galaxy.util.bunch import Bunch
     docker = Bunch(errors=Bunch(NotFound=None))
-from six.moves import shlex_quote
 
 from galaxy.containers import (
     Container,
@@ -106,7 +106,7 @@ class DockerVolume(ContainerVolume):
     def __str__(self):
         volume_str = ":".join(filter(lambda x: x is not None, (self.host_path, self.path, self.mode)))
         if "$" not in volume_str:
-            volume_for_cmd_line = shlex_quote(volume_str)
+            volume_for_cmd_line = shlex.quote(volume_str)
         else:
             # e.g. $_GALAXY_JOB_TMP_DIR:$_GALAXY_JOB_TMP_DIR:rw so don't single quote.
             volume_for_cmd_line = '"%s"' % volume_str
@@ -393,10 +393,10 @@ class DockerServiceConstraint:
         return hash((self._name, self._op, self._value))
 
     def __repr__(self):
-        return '{}({}{}{})'.format(self.__class__.__name__, self._name, self._op, self._value)
+        return f'{self.__class__.__name__}({self._name}{self._op}{self._value})'
 
     def __str__(self):
-        return '{}{}{}'.format(self._name, self._op, self._value)
+        return f'{self._name}{self._op}{self._value}'
 
     @staticmethod
     def split_constraint_string(constraint_str):
@@ -508,7 +508,7 @@ class DockerNode:
 
     @property
     def state(self):
-        return ('{}-{}'.format(self._status, self._availability)).lower()
+        return (f'{self._status}-{self._availability}').lower()
 
     @property
     def cpus(self):
@@ -597,10 +597,10 @@ class DockerNodeLabel:
         return hash((self._name, self._value))
 
     def __repr__(self):
-        return '{}({}: {})'.format(self.__class__.__name__, self._name, self._value)
+        return f'{self.__class__.__name__}({self._name}: {self._value})'
 
     def __str__(self):
-        return '{}: {}'.format(self._name, self._value)
+        return f'{self._name}: {self._value}'
 
     @property
     def name(self):
@@ -612,12 +612,12 @@ class DockerNodeLabel:
 
     @property
     def constraint_string(self):
-        return 'node.labels.{name}=={value}'.format(name=self.name, value=self.value)
+        return f'node.labels.{self.name}=={self.value}'
 
     @property
     def constraint(self):
         return DockerServiceConstraint(
-            name='node.labels.{name}'.format(name=self.name),
+            name=f'node.labels.{self.name}',
             op='==',
             value=self.value
         )
@@ -744,7 +744,7 @@ class DockerTask:
 
     @property
     def state(self):
-        return ('{}-{}'.format(self._desired_state, self._state)).lower()
+        return (f'{self._desired_state}-{self._state}').lower()
 
     @property
     def current_state(self):

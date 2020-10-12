@@ -100,7 +100,7 @@ class GitDataResolver(FileDataResolver):
             parent_dir = os.path.dirname(self.file_dir)
             if not os.path.exists(parent_dir):
                 os.makedirs(parent_dir)
-            self.execute("git clone '{}' '{}'".format(self.repository, self.file_dir))
+            self.execute(f"git clone '{self.repository}' '{self.file_dir}'")
         update_command = UPDATE_TEMPLATE.safe_substitute(dir=self.file_dir)
         self.execute(update_command)
 

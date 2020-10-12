@@ -4,6 +4,7 @@ Universe configuration builder.
 # absolute_import needed for tool_shed package.
 
 import collections
+import configparser
 import errno
 import ipaddress
 import logging
@@ -22,7 +23,6 @@ from datetime import timedelta
 import yaml
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
-from six.moves import configparser
 
 from galaxy.config.schema import AppSchema
 from galaxy.containers import parse_containers_config

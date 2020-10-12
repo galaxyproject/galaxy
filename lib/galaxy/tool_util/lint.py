@@ -92,7 +92,7 @@ class LintContext:
             if self.printed_linter_info:
                 return
             self.printed_linter_info = True
-            print("Applying linter {}... {}".format(name, status))
+            print(f"Applying linter {name}... {status}")
 
         for message in self.error_messages:
             self.found_errors = True

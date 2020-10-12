@@ -65,7 +65,7 @@ def main():
             hastoolboxpos = True
 
         if (not (hastags and hastoolboxpos)):
-            original = open(toolconffile, 'r')
+            original = open(toolconffile)
             contents = original.readlines()
             original.close()
 
@@ -124,7 +124,7 @@ def getfnl(startdir):
                 try:
                     doc = ET.parse(fullfn)
                 except Exception as e:
-                    raise Exception("Oops, bad XML in '%s': %s" % (fullfn, e))
+                    raise Exception(f"Oops, bad XML in '{fullfn}': {e}")
                 rootelement = doc.getroot()
                 # here we check if this xml file actually is a tool conf xml!
                 if rootelement.tag == 'tool':

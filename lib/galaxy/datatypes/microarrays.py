@@ -38,9 +38,9 @@ class GenericMicroarrayFile(data.Text):
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             if dataset.metadata.block_count == 1:
-                dataset.blurb = "{} {}: Format {}, 1 block, {} headers and {} columns".format(dataset.metadata.file_type, dataset.metadata.version_number, dataset.metadata.file_format, dataset.metadata.number_of_optional_header_records, dataset.metadata.number_of_data_columns)
+                dataset.blurb = f"{dataset.metadata.file_type} {dataset.metadata.version_number}: Format {dataset.metadata.file_format}, 1 block, {dataset.metadata.number_of_optional_header_records} headers and {dataset.metadata.number_of_data_columns} columns"
             else:
-                dataset.blurb = "{} {}: Format {}, {} blocks, {} headers and {} columns".format(dataset.metadata.file_type, dataset.metadata.version_number, dataset.metadata.file_format, dataset.metadata.block_count, dataset.metadata.number_of_optional_header_records, dataset.metadata.number_of_data_columns)
+                dataset.blurb = f"{dataset.metadata.file_type} {dataset.metadata.version_number}: Format {dataset.metadata.file_format}, {dataset.metadata.block_count} blocks, {dataset.metadata.number_of_optional_header_records} headers and {dataset.metadata.number_of_data_columns} columns"
             dataset.peek = get_file_peek(dataset.file_name)
         else:
             dataset.peek = 'file does not exist'

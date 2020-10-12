@@ -196,7 +196,7 @@ class ChronosJobRunner(AsynchronousJobRunner):
                 msg = 'Job {name!r} failed more than {retries!s} times'
                 reason = msg.format(name=job_name, retries=str(max_retries))
                 return self._mark_as_failed(job_state, reason)
-        reason = 'Job {name!r} not found'.format(name=job_name)
+        reason = f'Job {job_name!r} not found'
         return self._mark_as_failed(job_state, reason)
 
     def _mark_as_successful(self, job_state):
@@ -264,7 +264,7 @@ class ChronosJobRunner(AsynchronousJobRunner):
         jobs = self._chronos_client.list()
         job = [x for x in jobs if x['name'] == job_id]
         if len(job) > 1:
-            msg = 'Multiple jobs found with name {name!r}'.format(name=job_id)
+            msg = f'Multiple jobs found with name {job_id!r}'
             LOGGER.error(msg)
             raise ChronosRunnerException(msg)
         return job[0] if job else None

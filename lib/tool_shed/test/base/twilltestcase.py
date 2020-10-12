@@ -5,15 +5,15 @@ import string
 import tempfile
 import time
 from json import loads
+from urllib.parse import (
+    quote_plus,
+    urlencode,
+    urlparse,
+)
 
 import requests
 import twill.commands as tc
 from mercurial import commands, hg, ui
-from six.moves.urllib.parse import (
-    quote_plus,
-    urlencode,
-    urlparse
-)
 from twill.utils import ResultWrapper
 
 import galaxy.model.tool_shed_install as galaxy_model
@@ -50,10 +50,10 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         self.tool_shed_test_tmp_dir = os.environ.get('TOOL_SHED_TEST_TMP_DIR', None)
         self.host = os.environ.get('TOOL_SHED_TEST_HOST')
         self.port = os.environ.get('TOOL_SHED_TEST_PORT')
-        self.url = "http://{}:{}".format(self.host, self.port)
+        self.url = f"http://{self.host}:{self.port}"
         self.galaxy_host = os.environ.get('GALAXY_TEST_HOST')
         self.galaxy_port = os.environ.get('GALAXY_TEST_PORT')
-        self.galaxy_url = "http://{}:{}".format(self.galaxy_host, self.galaxy_port)
+        self.galaxy_url = f"http://{self.galaxy_host}:{self.galaxy_port}"
         self.shed_tool_data_table_conf = os.environ.get('TOOL_SHED_TEST_TOOL_DATA_TABLE_CONF')
         self.file_dir = os.environ.get('TOOL_SHED_TEST_FILE_DIR', None)
         self.tool_data_path = os.environ.get('GALAXY_TEST_TOOL_DATA_PATH')
@@ -86,7 +86,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         page = unicodify(self.last_page())
         if page.find(patt) == -1:
             fname = self.write_temp_file(page)
-            errmsg = "no match to '{}'\npage content written to '{}'\npage: [[{}]]".format(patt, fname, page)
+            errmsg = f"no match to '{patt}'\npage content written to '{fname}'\npage: [[{page}]]"
             raise AssertionError(errmsg)
 
     def check_string_not_in_page(self, patt):
@@ -94,7 +94,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         page = self.last_page()
         if page.find(patt) != -1:
             fname = self.write_temp_file(page)
-            errmsg = "string ({}) incorrectly displayed in page.\npage content written to '{}'".format(patt, fname)
+            errmsg = f"string ({patt}) incorrectly displayed in page.\npage content written to '{fname}'"
             raise AssertionError(errmsg)
 
     # Functions associated with user accounts
@@ -200,9 +200,9 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
             params = dict()
         parsed_url = urlparse(url)
         if len(parsed_url.netloc) == 0:
-            url = 'http://{}:{}{}'.format(self.host, self.port, parsed_url.path)
+            url = f'http://{self.host}:{self.port}{parsed_url.path}'
         else:
-            url = '{}://{}{}'.format(parsed_url.scheme, parsed_url.netloc, parsed_url.path)
+            url = f'{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}'
         if parsed_url.query:
             for query_parameter in parsed_url.query.split('&'):
                 key, value = query_parameter.split('=')
@@ -377,7 +377,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         repository_metadata = self.get_repository_metadata_by_changeset_revision(repository, changeset_revision)
         metadata = repository_metadata.metadata
         if 'tools' not in metadata:
-            raise AssertionError('No tools in {} revision {}.'.format(repository.name, changeset_revision))
+            raise AssertionError(f'No tools in {repository.name} revision {changeset_revision}.')
         for tool_dict in metadata['tools']:
             tool_id = tool_dict['id']
             tool_xml = tool_dict['tool_config']
@@ -421,16 +421,16 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
             raise AssertionError(errmsg)
 
     def clone_repository(self, repository, destination_path):
-        url = '{}/repos/{}/{}'.format(self.url, repository.user.username, repository.name)
+        url = f'{self.url}/repos/{repository.user.username}/{repository.name}'
         success, message = hg_util.clone_repository(url, destination_path, self.get_repository_tip(repository))
         assert success is True, message
 
     def commit_and_push(self, repository, hgrepo, options, username, password):
-        url = 'http://{}:{}@{}:{}/repos/{}/{}'.format(username, password, self.host, self.port, repository.user.username, repository.name)
+        url = f'http://{username}:{password}@{self.host}:{self.port}/repos/{repository.user.username}/{repository.name}'
         commands.commit(ui.ui(), hgrepo, **options)
         #  Try pushing multiple times as it transiently fails on Jenkins.
         #  TODO: Figure out why that happens
-        for i in range(5):
+        for _ in range(5):
             try:
                 commands.push(ui.ui(), hgrepo, dest=url)
             except Exception as e:
@@ -466,7 +466,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
             filename = 'tool_dependencies.xml'
             self.generate_complex_dependency_xml(filename=filename, filepath=filepath, repository_tuples=repository_tuples, package=package, version=version)
         else:
-            for toolshed_url, name, owner, changeset_revision in repository_tuples:
+            for _, name, _, _ in repository_tuples:
                 repository_names.append(name)
             dependency_description = '{} depends on {}.'.format(repository.name, ', '.join(repository_names))
             filename = 'repository_dependencies.xml'
@@ -598,7 +598,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def display_repository_clone_page(self, owner_name, repository_name, strings_displayed=None, strings_not_displayed=None):
-        url = '/repos/{}/{}'.format(owner_name, repository_name)
+        url = f'/repos/{owner_name}/{repository_name}'
         self.visit_url(url)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
@@ -611,7 +611,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         else:
             relative_path = basepath
         repository_file_list = self.get_repository_file_list(repository=repository, base_path=relative_path, current_path=None)
-        assert filename in repository_file_list, 'File {} not found in the repository under {}.'.format(filename, relative_path)
+        assert filename in repository_file_list, f'File {filename} not found in the repository under {relative_path}.'
         params = dict(file_path=os.path.join(relative_path, filename), repository_id=self.security.encode_id(repository.id))
         url = '/repository/get_file_contents'
         self.visit_url(url, params=params)
@@ -867,11 +867,11 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
 
     def get_repo_path(self, repository):
         # An entry in the hgweb.config file looks something like: repos/test/mira_assembler = database/community_files/000/repo_123
-        lhs = "repos/{}/{}".format(repository.user.username, repository.name)
+        lhs = f"repos/{repository.user.username}/{repository.name}"
         try:
             return self.hgweb_config_manager.get_entry(lhs)
         except Exception:
-            raise Exception("Entry for repository {} missing in hgweb config file {}.".format(lhs, self.hgweb_config_manager.hgweb_config))
+            raise Exception(f"Entry for repository {lhs} missing in hgweb config file {self.hgweb_config_manager.hgweb_config}.")
 
     def get_repository_changelog_tuples(self, repository):
         repo = self.get_hg_repo(self.get_repo_path(repository))
@@ -1099,7 +1099,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
                          strings_not_displayed=None,
                          strings_displayed_in_iframe=[],
                          strings_not_displayed_in_iframe=[]):
-        url = '{}/view/{}'.format(self.url, username)
+        url = f'{self.url}/view/{username}'
         # If repository name is passed in, append that to the url.
         if repository_name:
             url += '/%s' % repository_name
@@ -1496,7 +1496,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
             galaxy_repository = test_db_util.get_installed_repository_by_name_owner(repository_name, repository_owner)
             if galaxy_repository:
                 assert galaxy_repository.status == 'Installed', \
-                    'Repository {} should be installed, but is {}'.format(repository_name, galaxy_repository.status)
+                    f'Repository {repository_name} should be installed, but is {galaxy_repository.status}'
 
     def verify_installed_repository_metadata_unchanged(self, name, owner):
         installed_repository = test_db_util.get_installed_repository_by_name_owner(name, owner)
@@ -1562,7 +1562,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
                 break
         # We better have an entry like: <table comment_char="#" name="sam_fa_indexes"> in our parsed data_tables
         # or we know that the repository was not correctly installed!
-        assert found, 'No entry for {} in {}.'.format(required_data_table_entry, self.shed_tool_data_table_conf)
+        assert found, f'No entry for {required_data_table_entry} in {self.shed_tool_data_table_conf}.'
 
     def verify_repository_reviews(self, repository, reviewer=None, strings_displayed=None, strings_not_displayed=None):
         changeset_revision = self.get_repository_tip(repository)
@@ -1603,7 +1603,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         assert old_metadata == new_metadata, 'Metadata changed after reset on repository %s.' % repository.name
 
     def visit_galaxy_url(self, url, params=None, doseq=False, allowed_codes=[200]):
-        url = '{}{}'.format(self.galaxy_url, url)
+        url = f'{self.galaxy_url}{url}'
         self.visit_url(url, params=params, doseq=doseq, allowed_codes=allowed_codes)
 
     def wait_for_repository_installation(self, repository_ids):

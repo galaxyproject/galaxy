@@ -266,7 +266,7 @@ def load_versioned_deps(cellar_path, relaxed=None):
         if RELAXED:
             return []
         else:
-            raise OSError("Could not locate versioned receipt file: {}".format(v_metadata_path))
+            raise OSError(f"Could not locate versioned receipt file: {v_metadata_path}")
     with open(v_metadata_path) as f:
         metadata = json.load(f)
     return metadata['deps']

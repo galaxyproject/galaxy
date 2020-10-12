@@ -45,7 +45,7 @@ class DatasetsApiTestCase(ApiTestCase):
             'tags': ['cool:new_tag', 'cool:another_tag'],
         }
         updated_hda = self._put(
-            "histories/{history_id}/contents/{hda_id}".format(history_id=self.history_id, hda_id=hda_id),
+            f"histories/{self.history_id}/contents/{hda_id}",
             update_payload).json()
         assert 'cool:new_tag' in updated_hda['tags']
         assert 'cool:another_tag' in updated_hda['tags']
@@ -129,7 +129,7 @@ class DatasetsApiTestCase(ApiTestCase):
         }
         self._put("tags", payload).json()
         updated_hda = self._get(
-            "histories/{history_id}/contents/{hda_id}".format(history_id=self.history_id, hda_id=hda_id)).json()
+            f"histories/{self.history_id}/contents/{hda_id}").json()
         assert 'cool:tag_a' in updated_hda['tags']
         assert 'cool:tag_b' in updated_hda['tags']
         assert 'tag_c' in updated_hda['tags']
@@ -140,7 +140,7 @@ class DatasetsApiTestCase(ApiTestCase):
     def test_update_datatype(self):
         hda_id = self.dataset_populator.new_dataset(self.history_id)['id']
         original_hda = self._get(
-            "histories/{history_id}/contents/{hda_id}".format(history_id=self.history_id, hda_id=hda_id)).json()
+            f"histories/{self.history_id}/contents/{hda_id}").json()
         assert original_hda['extension'] == 'txt'
         assert original_hda['data_type'] == 'galaxy.datatypes.data.Text'
         assert 'scatterplot' not in [viz['name'] for viz in original_hda['visualizations']]
@@ -158,20 +158,20 @@ class DatasetsApiTestCase(ApiTestCase):
         queued_id = run_response.json()["outputs"][0]["id"]
 
         update_while_incomplete_response = self._put(  # try updating datatype while used as output of a running job
-            "histories/{history_id}/contents/{hda_id}".format(history_id=self.history_id, hda_id=queued_id),
+            f"histories/{self.history_id}/contents/{queued_id}",
             {'datatype': 'tabular'})
         self._assert_status_code_is(update_while_incomplete_response, 400)
 
         self.dataset_populator.wait_for_history_jobs(self.history_id)  # now wait for upload to complete
 
         successful_updated_hda_response = self._put(
-            "histories/{history_id}/contents/{hda_id}".format(history_id=self.history_id, hda_id=hda_id),
+            f"histories/{self.history_id}/contents/{hda_id}",
             {'datatype': 'tabular'}).json()
         assert successful_updated_hda_response['extension'] == 'tabular'
         assert successful_updated_hda_response['data_type'] == 'galaxy.datatypes.tabular.Tabular'
         assert 'scatterplot' in [viz['name'] for viz in successful_updated_hda_response['visualizations']]
 
         invalidly_updated_hda_response = self._put(  # try updating with invalid datatype
-            "histories/{history_id}/contents/{hda_id}".format(history_id=self.history_id, hda_id=hda_id),
+            f"histories/{self.history_id}/contents/{hda_id}",
             {'datatype': 'invalid'})
         self._assert_status_code_is(invalidly_updated_hda_response, 400)

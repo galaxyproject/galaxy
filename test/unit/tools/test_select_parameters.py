@@ -59,7 +59,7 @@ class SelectToolParameterTestCase(BaseParameterTestCase):
     # TODO: Good deal of overlap here with DataToolParameterTestCase,
     # refactor.
     def setUp(self):
-        super(SelectToolParameterTestCase, self).setUp()
+        super().setUp()
         self.test_history = model.History()
         self.app.model.context.add(self.test_history)
         self.app.model.context.flush()
@@ -98,7 +98,7 @@ class SelectToolParameterTestCase(BaseParameterTestCase):
         return self._param
 
 
-class MockToolDataTable(object):
+class MockToolDataTable:
 
     def __init__(self):
         self.columns = dict(

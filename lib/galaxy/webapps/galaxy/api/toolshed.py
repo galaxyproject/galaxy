@@ -1,7 +1,6 @@
 import json
 import logging
-
-from six.moves.urllib.parse import quote
+from urllib.parse import quote
 
 from galaxy.exceptions import MessageException
 from galaxy.util import url_get

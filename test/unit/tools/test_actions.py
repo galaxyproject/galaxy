@@ -47,7 +47,7 @@ TWO_OUTPUTS = '''<tool id="test_tool" name="Test Tool">
 def test_on_text_for_names():
     def assert_on_text_is(expected, *names):
         on_text = on_text_for_names(names)
-        assert on_text == expected, "Wrong on text value %s, expected %s" % (on_text, expected)
+        assert on_text == expected, f"Wrong on text value {on_text}, expected {expected}"
 
     assert_on_text_is("data 1", "data 1")
     assert_on_text_is("data 1 and data 2", "data 1", "data 2")
@@ -218,7 +218,7 @@ def __assert_output_format_is(expected, output, input_extensions=[], param_conte
         input_collections["hdcai"] = [(hc1, False)]
 
     actual_format = determine_output_format(output, param_context, inputs, input_collections, last_ext)
-    assert actual_format == expected, "Actual format %s, does not match expected %s" % (actual_format, expected)
+    assert actual_format == expected, f"Actual format {actual_format}, does not match expected {expected}"
 
 
 def quick_output(format, format_source=None, change_format_xml=None):
@@ -232,7 +232,7 @@ def quick_output(format, format_source=None, change_format_xml=None):
     return test_output
 
 
-class MockTrans(object):
+class MockTrans:
 
     def __init__(self, app, history, user=None):
         self.app = app
@@ -268,7 +268,7 @@ class MockTrans(object):
         pass
 
 
-class MockObjectStore(object):
+class MockObjectStore:
 
     def __init__(self):
         self.created_datasets = []

@@ -514,7 +514,7 @@ class PDB(GenericMolFile):
             hetatm_numbers = count_special_lines("^HETATM", dataset.file_name)
             chain_ids = ','.join(dataset.metadata.chain_ids) if len(dataset.metadata.chain_ids) > 0 else 'None'
             dataset.peek = get_file_peek(dataset.file_name)
-            dataset.blurb = "{} atoms and {} HET-atoms\nchain_ids: {}".format(atom_numbers, hetatm_numbers, chain_ids)
+            dataset.blurb = f"{atom_numbers} atoms and {hetatm_numbers} HET-atoms\nchain_ids: {chain_ids}"
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -565,7 +565,7 @@ class PDBQT(GenericMolFile):
             root_numbers = count_special_lines("^ROOT", dataset.file_name)
             branch_numbers = count_special_lines("^BRANCH", dataset.file_name)
             dataset.peek = get_file_peek(dataset.file_name)
-            dataset.blurb = "{} roots and {} branches".format(root_numbers, branch_numbers)
+            dataset.blurb = f"{root_numbers} roots and {branch_numbers} branches"
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'

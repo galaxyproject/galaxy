@@ -247,7 +247,7 @@ class Forms(BaseUIController):
             prefix = 'fields_%i|' % index
             if '{}{}'.format(prefix, 'label') in payload:
                 field_attributes = ['name', 'label', 'helptext', 'required', 'type', 'selectlist', 'default']
-                field_dict = {attr: payload.get('{}{}'.format(prefix, attr)) for attr in field_attributes}
+                field_dict = {attr: payload.get(f'{prefix}{attr}') for attr in field_attributes}
                 field_dict['visible'] = True
                 field_dict['required'] = field_dict['required'] == 'true'
                 if isinstance(field_dict['selectlist'], str):

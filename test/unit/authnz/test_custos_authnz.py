@@ -3,10 +3,14 @@ import os
 import unittest
 import uuid
 from datetime import datetime, timedelta
+from urllib.parse import (
+    parse_qs,
+    quote,
+    urlparse,
+)
 
 import jwt
 import requests
-from six.moves.urllib.parse import parse_qs, quote, urlparse
 
 from galaxy.authnz import custos_authnz
 from galaxy.model import CustosAuthnzToken, User
@@ -68,7 +72,7 @@ class CustosAuthnzTestCase(unittest.TestCase):
         self.test_refresh_expires_in = 1800
         self.test_user_id = str(uuid.uuid4())
         self.test_alt_user_id = str(uuid.uuid4())
-        self.trans.request.url = "https://localhost:8000/authnz/custos/oidc/callback?state={test_state}&code={test_code}".format(test_state=self.test_state, test_code=self.test_code)
+        self.trans.request.url = f"https://localhost:8000/authnz/custos/oidc/callback?state={self.test_state}&code={self.test_code}"
 
     def setupMocks(self):
         self.mock_fetch_token(self.custos_authnz)
@@ -119,7 +123,7 @@ class CustosAuthnzTestCase(unittest.TestCase):
             assert(x in request_dict)
             return Response(request_dict[x])
 
-        class Response(object):
+        class Response:
             def __init__(self, resp):
                 self.response = resp
 

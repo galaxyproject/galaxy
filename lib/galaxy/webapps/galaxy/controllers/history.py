@@ -157,7 +157,7 @@ class SharedHistoryListGrid(grids.Grid):
             for state in ('ok', 'running', 'queued', 'error'):
                 total = sum(1 for d in history.active_datasets if d.state == state)
                 if total:
-                    rval += '<div class="count-box state-color-{}">{}</div>'.format(state, total)
+                    rval += f'<div class="count-box state-color-{state}">{total}</div>'
             return rval
 
     class SharedByColumn(grids.GridColumn):
@@ -751,7 +751,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         send_to_users, send_to_err = self._get_users(trans, user, email)
         if not send_to_users:
             if not send_to_err:
-                send_to_err += "{} is not a valid Galaxy user.  {}".format(email, err_msg)
+                send_to_err += f"{email} is not a valid Galaxy user.  {err_msg}"
             return trans.fill_template("/history/share.mako",
                                        histories=histories,
                                        email=email,
@@ -847,7 +847,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                                    .filter(and_(trans.app.model.HistoryUserShareAssociation.table.c.user_id == send_to_user.id,
                                                 trans.app.model.HistoryUserShareAssociation.table.c.history_id == history.id)) \
                                    .count() > 0:
-                    send_to_err += "History ({}) already shared with user ({})".format(history.name, send_to_user.email)
+                    send_to_err += f"History ({history.name}) already shared with user ({send_to_user.email})"
                 else:
                     # Only deal with datasets that have not been purged
                     for hda in history.activatable_datasets:
@@ -931,7 +931,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                                    .filter(and_(trans.app.model.HistoryUserShareAssociation.table.c.user_id == send_to_user.id,
                                                 trans.app.model.HistoryUserShareAssociation.table.c.history_id == history.id)) \
                                    .count() > 0:
-                    send_to_err += "History ({}) already shared with user ({})".format(history.name, send_to_user.email)
+                    send_to_err += f"History ({history.name}) already shared with user ({send_to_user.email})"
                 else:
                     # Build the dict that will be used for sharing
                     if send_to_user not in histories_for_sharing:
@@ -964,7 +964,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                                    .filter(and_(trans.app.model.HistoryUserShareAssociation.table.c.user_id == send_to_user.id,
                                                 trans.app.model.HistoryUserShareAssociation.table.c.history_id == history.id)) \
                                    .count() > 0:
-                    send_to_err += "History ({}) already shared with user ({})".format(history.name, send_to_user.email)
+                    send_to_err += f"History ({history.name}) already shared with user ({send_to_user.email})"
                 else:
                     # Only deal with datasets that have not been purged
                     for hda in history.activatable_datasets:
@@ -1063,10 +1063,10 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 if hda.dataset.user_can_purge:
                     try:
                         hda.dataset.full_delete()
-                        trans.log_event("Dataset id {} has been purged upon the the purge of HDA id {}".format(hda.dataset.id, hda.id))
+                        trans.log_event(f"Dataset id {hda.dataset.id} has been purged upon the the purge of HDA id {hda.id}")
                         trans.sa_session.add(hda.dataset)
                     except Exception:
-                        log.exception('Unable to purge dataset ({}) on purge of hda ({}):'.format(hda.dataset.id, hda.id))
+                        log.exception(f'Unable to purge dataset ({hda.dataset.id}) on purge of hda ({hda.id}):')
                 count += 1
             return trans.show_ok_message("%d datasets have been deleted permanently" % count, refresh_frames=['history'])
         return trans.show_error_message("Cannot purge deleted datasets from this session.")

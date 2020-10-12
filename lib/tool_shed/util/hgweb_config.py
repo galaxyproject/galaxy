@@ -1,10 +1,9 @@
+import configparser
 import logging
 import os
 import shutil
 import threading
 from datetime import date
-
-from six.moves import configparser
 
 from galaxy.util import unicodify
 
@@ -69,7 +68,7 @@ class HgWebConfigManager:
                 self.read_config(force_read=True)
                 entry = self.in_memory_config.get('paths', lhs)
             except configparser.NoOptionError:
-                raise Exception("Entry for repository {} missing in file {}.".format(lhs, self.hgweb_config))
+                raise Exception(f"Entry for repository {lhs} missing in file {self.hgweb_config}.")
         return entry
 
     @property

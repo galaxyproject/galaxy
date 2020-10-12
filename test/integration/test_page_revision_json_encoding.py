@@ -16,7 +16,7 @@ from galaxy_test.driver import integration_util
 class PageJsonEncodingIntegrationTestCase(integration_util.IntegrationTestCase):
 
     def setUp(self):
-        super(PageJsonEncodingIntegrationTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.history_id = self.dataset_populator.new_history()
 

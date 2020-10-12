@@ -218,7 +218,7 @@ class UploadController(BaseUIController):
                                 # dictionary.
                                 error, error_message = stdtm.handle_sample_tool_data_table_conf_file(full_path, persist=False)
                                 if error:
-                                    message = '{}<br/>{}'.format(message, error_message)
+                                    message = f'{message}<br/>{error_message}'
                             # See if the content of the change set was valid.
                             admin_only = len(repository.downloadable_revisions) != 1
                             suc.handle_email_alerts(trans.app,

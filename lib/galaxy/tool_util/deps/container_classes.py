@@ -84,7 +84,7 @@ class Container(metaclass=ABCMeta):
         self.container_info = {}
 
     def prop(self, name, default):
-        destination_name = "{}_{}".format(self.container_type, name)
+        destination_name = f"{self.container_type}_{name}"
         return self.destination_info.get(destination_name, default)
 
     @property
@@ -268,7 +268,7 @@ class DockerContainer(Container, HasDockerLikeVolumes):
     def containerize_command(self, command):
         env_directives = []
         for pass_through_var in self.tool_info.env_pass_through:
-            env_directives.append('"{}=${}"'.format(pass_through_var, pass_through_var))
+            env_directives.append(f'"{pass_through_var}=${pass_through_var}"')
 
         # Allow destinations to explicitly set environment variables just for
         # docker container. Better approach is to set for destination and then
@@ -276,7 +276,7 @@ class DockerContainer(Container, HasDockerLikeVolumes):
         for key, value in self.destination_info.items():
             if key.startswith("docker_env_"):
                 env = key[len("docker_env_"):]
-                env_directives.append('"{}={}"'.format(env, value))
+                env_directives.append(f'"{env}={value}"')
 
         working_directory = self.job_info.working_directory
         if not working_directory:

@@ -1,10 +1,10 @@
 import base64
 import json
 import logging
+from html.parser import HTMLParser
+from http.client import HTTPConnection
 
 from markupsafe import escape
-from six.moves.html_parser import HTMLParser
-from six.moves.http_client import HTTPConnection
 from sqlalchemy import and_
 from sqlalchemy.orm import eagerload, joinedload, lazyload, undefer
 from sqlalchemy.sql import expression
@@ -664,7 +664,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
 
         # create workflow module models
         module_sections = []
-        for section_name, module_section in load_module_sections(trans).items():
+        for module_section in load_module_sections(trans).values():
             module_sections.append({
                 "title": module_section.get("title"),
                 "name": module_section.get("name"),
@@ -678,7 +678,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         # create data manager tool models
         data_managers = []
         if trans.user_is_admin and trans.app.data_managers.data_managers:
-            for data_manager_id, data_manager_val in trans.app.data_managers.data_managers.items():
+            for data_manager_val in trans.app.data_managers.data_managers.values():
                 tool = data_manager_val.tool
                 if not tool.hidden:
                     data_managers.append({
@@ -762,7 +762,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         request = unicodify(request_raw.strip(), 'utf-8')
 
         # Do request and get result.
-        auth_header = base64.b64encode('{}:{}'.format(myexp_username, myexp_password))
+        auth_header = base64.b64encode(f'{myexp_username}:{myexp_password}')
         headers = {"Content-type": "text/xml", "Accept": "text/xml", "Authorization": "Basic %s" % auth_header}
         myexp_url = trans.app.config.myexperiment_target_url
         conn = HTTPConnection(myexp_url)

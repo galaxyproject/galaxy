@@ -101,8 +101,8 @@ class ToolPanelManager:
         value of config_filename.
         """
         try:
-            tool_cache_data_dir = ' tool_cache_data_dir="{}"'.format(tool_cache_data_dir) if tool_cache_data_dir else ''
-            root = parse_xml_string('<?xml version="1.0"?>\n<toolbox tool_path="{}"{}></toolbox>'.format(tool_path, tool_cache_data_dir))
+            tool_cache_data_dir = f' tool_cache_data_dir="{tool_cache_data_dir}"' if tool_cache_data_dir else ''
+            root = parse_xml_string(f'<?xml version="1.0"?>\n<toolbox tool_path="{tool_path}"{tool_cache_data_dir}></toolbox>')
             for elem in config_elems:
                 root.append(elem)
             with RenamedTemporaryFile(config_filename, mode='w') as fh:

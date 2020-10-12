@@ -93,7 +93,7 @@ class GitLabPlugin(BaseGitPlugin):
             # Import GitLab here for the error handling
             import gitlab
             try:
-                log.info("GitLab error reporting - submit report - job tool id: {} - job tool version: {} - tool tool_shed: {}".format(job.tool_id, job.tool_version, tool.tool_shed))
+                log.info(f"GitLab error reporting - submit report - job tool id: {job.tool_id} - job tool version: {job.tool_version} - tool tool_shed: {tool.tool_shed}")
 
                 # Determine the ToolShed url, initially we connect with HTTP and if redirect to HTTPS is set up,
                 # this will be detected by requests and used further down the line. Also cache this so everything is

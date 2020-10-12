@@ -18,6 +18,7 @@
 # All top level imports from each package moved here and organized
 
 import atexit
+import configparser
 import errno
 import grp
 import logging
@@ -34,8 +35,6 @@ import textwrap
 import threading
 import time
 from logging.config import fileConfig
-
-from six.moves import configparser
 
 from .loadwsgi import loadapp, loadserver
 
@@ -722,7 +721,7 @@ class ServeCommand(Command):
     def record_pid(self, pid_file):
         pid = os.getpid()
         if self.verbose > 1:
-            print('Writing PID {} to {}'.format(pid, pid_file))
+            print(f'Writing PID {pid} to {pid_file}')
         f = open(pid_file, 'w')
         f.write(str(pid))
         f.close()
@@ -769,7 +768,7 @@ class ServeCommand(Command):
             return 1
         pid = live_pidfile(pid_file)
         if not pid:
-            print('PID {} in {} is not running'.format(pid, pid_file))
+            print(f'PID {pid} in {pid_file} is not running')
             return 1
         print('Server running in PID %s' % pid)
         return 0
@@ -959,7 +958,7 @@ def _remove_pid_file(written_pid, filename, verbosity):
         f.write('')
         f.close()
     except OSError as e:
-        print('Stale PID left in file: {} ({:e})'.format(filename, e))
+        print(f'Stale PID left in file: {filename} ({e:e})')
     else:
         print('Stale PID removed')
 

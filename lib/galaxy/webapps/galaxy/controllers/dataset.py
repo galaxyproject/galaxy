@@ -1,12 +1,12 @@
 import logging
 import os
+from urllib.parse import (
+    quote_plus,
+    unquote_plus,
+)
 
 import paste.httpexceptions
 from markupsafe import escape
-from six.moves.urllib.parse import (
-    quote_plus,
-    unquote_plus
-)
 
 from galaxy import (
     datatypes,
@@ -121,7 +121,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
 
         file_ext = data.metadata.spec.get(metadata_name).get("file_ext", metadata_name)
         trans.response.headers["Content-Type"] = "application/octet-stream"
-        trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy{}-[{}].{}"'.format(data.hid, fname, file_ext)
+        trans.response.headers["Content-Disposition"] = f'attachment; filename="Galaxy{data.hid}-[{fname}].{file_ext}"'
         return open(data.metadata.get(metadata_name).file_name, 'rb')
 
     def _check_dataset(self, trans, hda_id):
@@ -437,7 +437,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             trans.log_event("Problem retrieving dataset id (%s)." % dataset_id)
             return None, self.message_exception(trans, 'The dataset id is invalid.')
         if dataset_id is not None and data.history.user is not None and data.history.user != trans.user:
-            trans.log_event("User attempted to edit a dataset they do not own (encoded: {}, decoded: {}).".format(dataset_id, id))
+            trans.log_event(f"User attempted to edit a dataset they do not own (encoded: {dataset_id}, decoded: {id}).")
             return None, self.message_exception(trans, 'The dataset id is invalid.')
         if data.history.user and not data.dataset.has_manage_permissions_roles(trans):
             # Permission setting related to DATASET_MANAGE_PERMISSIONS was broken for a period of time,
@@ -751,7 +751,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             self.hda_manager.stop_creating_job(hda)
             trans.sa_session.flush()
         except Exception:
-            msg = 'HDA deletion failed (encoded: {}, decoded: {})'.format(dataset_id, id)
+            msg = f'HDA deletion failed (encoded: {dataset_id}, decoded: {id})'
             log.exception(msg)
             trans.log_event(msg)
             message = 'Dataset deletion failed'
@@ -777,7 +777,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             trans.sa_session.flush()
             trans.log_event("Dataset id %s has been undeleted" % str(id))
         except Exception:
-            msg = 'HDA undeletion failed (encoded: {}, decoded: {})'.format(dataset_id, id)
+            msg = f'HDA undeletion failed (encoded: {dataset_id}, decoded: {id})'
             log.exception(msg)
             trans.log_event(msg)
             message = 'Dataset undeletion failed'
@@ -838,13 +838,13 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             if hda.dataset.user_can_purge:
                 try:
                     hda.dataset.full_delete()
-                    trans.log_event("Dataset id {} has been purged upon the the purge of HDA id {}".format(hda.dataset.id, hda.id))
+                    trans.log_event(f"Dataset id {hda.dataset.id} has been purged upon the the purge of HDA id {hda.id}")
                     trans.sa_session.add(hda.dataset)
                 except Exception:
-                    log.exception('Unable to purge dataset ({}) on purge of HDA ({}):'.format(hda.dataset.id, hda.id))
+                    log.exception(f'Unable to purge dataset ({hda.dataset.id}) on purge of HDA ({hda.id}):')
             trans.sa_session.flush()
         except Exception:
-            msg = 'HDA purge failed (encoded: {}, decoded: {})'.format(dataset_id, id)
+            msg = f'HDA purge failed (encoded: {dataset_id}, decoded: {id})'
             log.exception(msg)
             trans.log_event(msg)
             message = 'Dataset removal from disk failed'

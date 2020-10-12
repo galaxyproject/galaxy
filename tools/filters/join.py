@@ -79,7 +79,7 @@ class SortedOffsets(OffsetList):
     def __init__(self, indexed_filename, column, split=None):
         OffsetList.__init__(self, os.stat(indexed_filename).st_size)
         self.indexed_filename = indexed_filename
-        self.indexed_file = open(indexed_filename, 'r')
+        self.indexed_file = open(indexed_filename)
         self.column = column
         self.split = split
         self.last_identifier = None
@@ -149,7 +149,7 @@ class SortedOffsets(OffsetList):
 class OffsetIndex(object):
     def __init__(self, filename, column, split=None, index_depth=3):
         self.filename = filename
-        self.file = open(filename, 'r')
+        self.file = open(filename)
         self.column = column
         self.split = split
         self._offsets = {}
@@ -243,7 +243,7 @@ class BufferedIndex(object):
     def __init__(self, filename, column, split=None, buffer=1000000, index_depth=3):
         self.index = OffsetIndex(filename, column, split, index_depth)
         self.buffered_offsets = {}
-        f = open(filename, 'r')
+        f = open(filename)
         offset = f.tell()
         identified_offset_count = 1
         while True:
@@ -298,10 +298,10 @@ def join_files(filename1, column1, filename2, column2, out_filename, split=None,
     keep_headers_done = False
     out = open(out_filename, 'w')
     index = BufferedIndex(filename2, column2, split, buffer, index_depth)
-    for line1 in open(filename1, 'r'):
+    for line1 in open(filename1):
         if keep_headers and not keep_headers_done:
             header1 = line1
-            with open(filename2, 'r') as file2:
+            with open(filename2) as file2:
                 header2 = file2.readline()
                 header2 = re.sub(r'^#', '', header2)
             out.write("%s%s%s\n" % (header1.rstrip('\r\n'), split, header2.rstrip('\r\n')))

@@ -289,7 +289,7 @@ class RelationBuilder:
             # The repository is in a different tool shed, so build an url and send a request.
             error_message = "Repository dependencies are currently supported only within the same Tool Shed.  "
             error_message += "Ignoring repository dependency definition for tool shed "
-            error_message += "{}, name {}, owner {}, changeset revision {}".format(toolshed, name, owner, changeset_revision)
+            error_message += f"{toolshed}, name {name}, owner {owner}, changeset revision {changeset_revision}"
             log.debug(error_message)
 
     def handle_next_repository_dependency(self):
@@ -466,7 +466,7 @@ class RelationBuilder:
                 common_util.parse_repository_dependency_tuple(repository_dependency)
             cleaned_toolshed = common_util.remove_protocol_from_tool_shed_url(toolshed)
             if cleaned_rd_toolshed == cleaned_toolshed and rd_name == name and rd_owner == owner:
-                debug_msg = "Removing repository dependency for repository {} owned by {} ".format(name, owner)
+                debug_msg = f"Removing repository dependency for repository {name} owned by {owner} "
                 debug_msg += 'since it refers to a revision within itself.'
                 log.debug(debug_msg)
             else:

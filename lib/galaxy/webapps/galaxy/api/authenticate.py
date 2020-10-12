@@ -12,8 +12,7 @@ Returns:
 """
 import logging
 from base64 import b64decode
-
-from six.moves.urllib.parse import unquote
+from urllib.parse import unquote
 
 from galaxy import exceptions
 from galaxy.managers import api_keys

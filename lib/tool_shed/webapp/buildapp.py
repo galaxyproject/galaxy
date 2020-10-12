@@ -5,11 +5,11 @@ import atexit
 import logging
 import os
 from inspect import isclass
+from urllib.parse import parse_qs
 
 import routes
 from paste import httpexceptions
 from routes.middleware import RoutesMiddleware
-from six.moves.urllib.parse import parse_qs
 
 import galaxy.webapps.base.webapp
 import tool_shed.webapp.model

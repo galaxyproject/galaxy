@@ -38,7 +38,7 @@ def test_model_create_context_persist_hdas():
     assert len(imported_hda.dataset.hashes) == 1
     assert imported_hda.dataset.hashes[0].hash_value == "e5d21b1ea57fc9a31f8ea0110531bf3d"
 
-    with open(imported_hda.file_name, "r") as f:
+    with open(imported_hda.file_name) as f:
         assert f.read().startswith("hello world\n")
 
 
@@ -74,7 +74,7 @@ def test_persist_target_library_dataset():
     assert len(new_root.datasets) == 1
     ldda = new_root.datasets[0].library_dataset_dataset_association
     assert ldda.metadata.data_lines == 2
-    with open(ldda.file_name, "r") as f:
+    with open(ldda.file_name) as f:
         assert f.read().startswith("hello world\n")
 
 
@@ -114,7 +114,7 @@ def test_persist_target_library_folder():
     assert len(child_folder.datasets) == 1
     ldda = child_folder.datasets[0].library_dataset_dataset_association
     assert ldda.metadata.data_lines == 2
-    with open(ldda.file_name, "r") as f:
+    with open(ldda.file_name) as f:
         assert f.read().startswith("hello world\n")
 
 
@@ -161,9 +161,9 @@ def test_persist_target_hdca():
     dataset0 = datasets[0]
     dataset1 = datasets[1]
 
-    with open(dataset0.file_name, "r") as f:
+    with open(dataset0.file_name) as f:
         assert f.read().startswith("hello world\n")
-    with open(dataset1.file_name, "r") as f:
+    with open(dataset1.file_name) as f:
         assert f.read().startswith("file 2 contents")
 
 

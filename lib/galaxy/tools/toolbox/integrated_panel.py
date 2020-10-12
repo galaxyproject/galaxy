@@ -84,7 +84,7 @@ $INTEGRATED_TOOL_PANEL
                     label_id = item.id or ''
                     label_text = item.text or ''
                     label_version = item.version or ''
-                    integrated_tool_panel.append('    <label id="{}" text="{}" version="{}" />\n'.format(label_id, label_text, label_version))
+                    integrated_tool_panel.append(f'    <label id="{label_id}" text="{label_text}" version="{label_version}" />\n')
                 elif item_type == panel_item_types.SECTION:
                     section_id = item.id or ''
                     section_name = item.name or ''
@@ -102,7 +102,7 @@ $INTEGRATED_TOOL_PANEL
                                 label_id = section_item.id or ''
                                 label_text = section_item.text or ''
                                 label_version = section_item.version or ''
-                                integrated_tool_panel.append('        <label id="{}" text="{}" version="{}" />\n'.format(label_id, label_text, label_version))
+                                integrated_tool_panel.append(f'        <label id="{label_id}" text="{label_text}" version="{label_version}" />\n')
                     integrated_tool_panel.append('    </section>\n')
         tool_panel_description = '\n    '.join(l for l in INTEGRATED_TOOL_PANEL_DESCRIPTION.split("\n") if l)
         tp_string = template.substitute(INTEGRATED_TOOL_PANEL_DESCRIPTION=tool_panel_description,

@@ -1,5 +1,6 @@
 import logging
 import os
+import queue
 import shutil
 import subprocess
 import tempfile
@@ -10,7 +11,6 @@ from contextlib import contextmanager
 # TODO: eliminate the use of fabric here.
 from fabric import state
 from fabric.operations import _AttributeString
-from six.moves import queue
 
 from galaxy.tool_shed.galaxy_install.tool_dependencies.recipe import asynchronous_reader
 from galaxy.tool_shed.util.basic_util import (

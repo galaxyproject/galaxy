@@ -1664,7 +1664,7 @@ export default {
                 this.addColumnRegexGroupCount = 1;
             }
             if (val == "replacement") {
-                this.addColumnRegexReplacement = "\0";
+                this.addColumnRegexReplacement = null;
             }
         },
     },

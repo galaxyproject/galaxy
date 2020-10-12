@@ -300,7 +300,7 @@ class XmlMacroDef:
             if token_value is REQUIRED_PARAMETER:
                 message = "Failed to expand macro - missing required parameter [%s]."
                 raise ValueError(message % key)
-            token_name = "{}{}{}".format(wrap_char, key.upper(), wrap_char)
+            token_name = f"{wrap_char}{key.upper()}{wrap_char}"
             tokens[token_name] = token_value
         return tokens
 

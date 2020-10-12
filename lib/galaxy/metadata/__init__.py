@@ -3,12 +3,11 @@
 import abc
 import json
 import os
+import pickle
 import shutil
 import tempfile
 from logging import getLogger
 from os.path import abspath
-
-from six.moves import cPickle
 
 import galaxy.model
 from galaxy.model import store
@@ -94,7 +93,7 @@ class MetadataCollectionStrategy(metaclass=abc.ABCMeta):
             rstring = "Metadata results could not be read from '%s'" % filename_results_code
 
         if not rval:
-            log.debug('setting metadata externally failed for {} {}: {}'.format(dataset.__class__.__name__, dataset.id, rstring))
+            log.debug(f'setting metadata externally failed for {dataset.__class__.__name__} {dataset.id}: {rstring}')
         return rval
 
 
@@ -137,7 +136,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
             key = name
 
             def _metadata_path(what):
-                return os.path.join(metadata_dir, "metadata_{}_{}".format(what, key))
+                return os.path.join(metadata_dir, f"metadata_{what}_{key}")
 
             _initialize_metadata_inputs(dataset, _metadata_path, tmp_dir, kwds, real_metadata_object=real_metadata_object)
 
@@ -343,7 +342,7 @@ class JobExternalOutputMetadataWrapper(MetadataCollectionStrategy):
                 # is located differently, i.e. on a cluster node with a different filesystem structure
 
                 def _metadata_path(what):
-                    return abspath(tempfile.NamedTemporaryFile(dir=tmp_dir, prefix="metadata_{}_{}_".format(what, key)).name)
+                    return abspath(tempfile.NamedTemporaryFile(dir=tmp_dir, prefix=f"metadata_{what}_{key}_").name)
 
                 filename_in, filename_out, filename_results_code, filename_kwds, filename_override_metadata = _initialize_metadata_inputs(dataset, _metadata_path, tmp_dir, kwds)
 
@@ -404,7 +403,7 @@ class JobExternalOutputMetadataWrapper(MetadataCollectionStrategy):
                 try:
                     os.remove(fname)
                 except Exception as e:
-                    log.debug('Failed to cleanup external metadata file ({}) for {}: {}'.format(key, dataset_key, e))
+                    log.debug(f'Failed to cleanup external metadata file ({key}) for {dataset_key}: {e}')
 
     def set_job_runner_external_pid(self, pid, sa_session):
         for metadata_files in sa_session.query(galaxy.model.Job).get(self.job_id).external_output_metadata:
@@ -465,7 +464,7 @@ def _dump_dataset_instance_to(dataset_instance, file_path):
     # Touch also deferred column
     dataset_instance._metadata
 
-    cPickle.dump(dataset_instance, open(file_path, 'wb+'))
+    pickle.dump(dataset_instance, open(file_path, 'wb+'))
 
 
 def _get_filename_override(output_fnames, file_name):

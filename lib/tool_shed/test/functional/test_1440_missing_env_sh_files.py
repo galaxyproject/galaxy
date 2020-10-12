@@ -10,8 +10,8 @@ package_repository_name = 'package_env_sh_1_0_1440'
 tool_repository_name = 'filter_1440'
 package_repository_description = 'Repository that should result in an env.sh file, but does not.'
 tool_repository_description = 'Galaxy filtering tool.'
-package_repository_long_description = '{}: {}'.format(package_repository_name, package_repository_description)
-tool_repository_long_description = '{}: {}'.format(tool_repository_name, tool_repository_description)
+package_repository_long_description = f'{package_repository_name}: {package_repository_description}'
+tool_repository_long_description = f'{tool_repository_name}: {tool_repository_description}'
 
 '''
 1. Create a tool dependency type repository that reliably fails to install successfully. This repository should define

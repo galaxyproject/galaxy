@@ -7,9 +7,9 @@ import inspect
 import os
 import re
 import sys
+from urllib.parse import unquote
 
 import pkg_resources
-from six.moves.urllib.parse import unquote
 
 from galaxy.util.getargspec import getfullargspec
 from galaxy.util.properties import NicerConfigParser

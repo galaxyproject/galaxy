@@ -1,8 +1,6 @@
-# -*- coding: utf-8 -*-
 import unittest
 import uuid
 
-from six import text_type
 from sqlalchemy import inspect
 
 import galaxy.datatypes.registry
@@ -128,7 +126,7 @@ class MappingTests(unittest.TestCase):
     def test_display_name(self):
 
         def assert_display_name_converts_to_unicode(item, name):
-            assert isinstance(item.get_display_name(), text_type)
+            assert isinstance(item.get_display_name(), str)
             assert item.get_display_name() == name
 
         ldda = self.model.LibraryDatasetDatasetAssociation(name='ldda_name')
@@ -147,12 +145,12 @@ class MappingTests(unittest.TestCase):
         assert_display_name_converts_to_unicode(library_folder, 'library_folder')
 
         history = self.model.History(
-            name=u'Hello₩◎ґʟⅾ'
+            name='Hello₩◎ґʟⅾ'
         )
 
-        assert isinstance(history.name, text_type)
-        assert isinstance(history.get_display_name(), text_type)
-        assert history.get_display_name() == u'Hello₩◎ґʟⅾ'
+        assert isinstance(history.name, str)
+        assert isinstance(history.get_display_name(), str)
+        assert history.get_display_name() == 'Hello₩◎ґʟⅾ'
 
     def test_tags(self):
         model = self.model
@@ -527,7 +525,7 @@ class MappingTests(unittest.TestCase):
         self.expunge()
 
         loaded_invocation = self.query(model.WorkflowInvocation).get(workflow_invocation.id)
-        assert loaded_invocation.uuid == invocation_uuid, "%s != %s" % (loaded_invocation.uuid, invocation_uuid)
+        assert loaded_invocation.uuid == invocation_uuid, f"{loaded_invocation.uuid} != {invocation_uuid}"
         assert loaded_invocation
         assert loaded_invocation.history.id == history_id
 
@@ -579,7 +577,7 @@ class MappingTests(unittest.TestCase):
         cls.model.session.expunge_all()
 
 
-class MockObjectStore(object):
+class MockObjectStore:
 
     def __init__(self):
         pass

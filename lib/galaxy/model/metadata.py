@@ -10,7 +10,10 @@ import shutil
 import sys
 import tempfile
 import weakref
-from collections import OrderedDict
+from collections import (
+    Mapping,
+    OrderedDict,
+)
 from os.path import abspath
 
 from sqlalchemy.orm import object_session
@@ -56,7 +59,7 @@ class Statement:
             statement.target(element, *args, **kwargs)  # statement.target is MetadataElementSpec, element is a Datatype class
 
 
-class MetadataCollection:
+class MetadataCollection(Mapping):
     """
     MetadataCollection is not a collection at all, but rather a proxy
     to the real metadata which is stored as a Dictionary. This class
@@ -87,16 +90,16 @@ class MetadataCollection:
         return self.parent.datatype.metadata_spec
 
     def __iter__(self):
-        return self.parent._metadata.__iter__()
+        yield from self.spec.keys()
 
-    def get(self, key, default=None):
+    def __getitem__(self, key):
         try:
-            return self.__getattr__(key) or default
+            return self.__getattr__(key)
         except Exception:
-            return default
+            return KeyError
 
-    def items(self):
-        return iter([(k, self.get(k)) for k in self.spec.keys()])
+    def __len__(self):
+        return len(self.spec)
 
     def __str__(self):
         return dict(self.items()).__str__()
@@ -156,11 +159,11 @@ class MetadataCollection:
     def from_JSON_dict(self, filename=None, path_rewriter=None, json_dict=None):
         dataset = self.parent
         if filename is not None:
-            log.debug('loading metadata from file for: {} {}'.format(dataset.__class__.__name__, dataset.id))
+            log.debug(f'loading metadata from file for: {dataset.__class__.__name__} {dataset.id}')
             with open(filename) as fh:
                 JSONified_dict = json.load(fh)
         elif json_dict is not None:
-            log.debug('loading metadata from dict for: {} {}'.format(dataset.__class__.__name__, dataset.id))
+            log.debug(f'loading metadata from dict for: {dataset.__class__.__name__} {dataset.id}')
             if isinstance(json_dict, str):
                 JSONified_dict = json.loads(json_dict)
             elif isinstance(json_dict, dict):

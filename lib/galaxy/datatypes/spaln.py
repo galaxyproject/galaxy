@@ -88,7 +88,7 @@ class _SpalnDb(Data):
         for i, fname in enumerate(flist):
             sfname = os.path.split(fname)[-1]
             f, e = os.path.splitext(fname)
-            rval.append('<li><a href="{}">{}</a></li>'.format(sfname, sfname))
+            rval.append(f'<li><a href="{sfname}">{sfname}</a></li>')
         rval.append("</ul></body></html>")
         with open(dataset.file_name, "w") as f:
             f.write("\n".join(rval))

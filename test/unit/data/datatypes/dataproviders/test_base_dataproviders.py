@@ -6,8 +6,7 @@ import logging
 import os
 import tempfile
 import unittest
-
-from six import StringIO
+from io import StringIO
 
 from galaxy.datatypes.dataproviders import base, exceptions
 from galaxy.util import clean_multiline_string
@@ -374,7 +373,7 @@ class Test_MultiSourceDataProvider(BaseTestCase):
         self.assertEqual(''.join(data), 'Two\nThree\nNine\nEleven\n')
 
 
-class TempFileCache(object):
+class TempFileCache:
     """
     Creates and caches tempfiles with/based-on the given contents.
     """

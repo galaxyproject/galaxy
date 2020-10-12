@@ -11,17 +11,13 @@ import tempfile
 import threading
 from collections import OrderedDict
 from datetime import datetime
-try:
-    from pathlib import Path
-except ImportError:
-    # Use backport on python 2
-    from pathlib2 import Path
+from pathlib import Path
+from urllib.parse import unquote_plus
 
 import packaging.version
 import webob.exc
 from lxml import etree
 from mako.template import Template
-from six.moves.urllib.parse import unquote_plus
 from webob.compat import cgi_FieldStorage
 
 from galaxy import (
@@ -372,6 +368,9 @@ class ToolBox(BaseGalaxyToolBox):
         # are now using only GALAXY_URL.
         tool_ids = listify(tool_id)
         for tool_id in tool_ids:
+            if tool_id.endswith('/'):
+                # Some data sources send back redirects ending with `/`, this takes care of that case
+                tool_id = tool_id[:-1]
             if get_loaded_tools_by_lineage:
                 tools = toolbox.get_loaded_tools_by_lineage(tool_id)
             else:
@@ -717,7 +716,7 @@ class Tool(Dictifiable):
                         break
                 else:
                     rval = job_tool_config
-        assert rval is not None, 'Could not get a job tool configuration for Tool {} with job_params {}, this is a bug'.format(self.id, job_params)
+        assert rval is not None, f'Could not get a job tool configuration for Tool {self.id} with job_params {job_params}, this is a bug'
         return rval
 
     def get_configured_job_handler(self, job_params=None):
@@ -784,7 +783,7 @@ class Tool(Dictifiable):
         if not self.name and dynamic:
             self.name = self.id
         if not dynamic and not self.name:
-            raise Exception("Missing tool 'name' for tool with id '{}' at '{}'".format(self.id, tool_source))
+            raise Exception(f"Missing tool 'name' for tool with id '{self.id}' at '{tool_source}'")
 
         self.version = tool_source.parse_version()
         if not self.version:
@@ -792,7 +791,7 @@ class Tool(Dictifiable):
                 # For backward compatibility, some tools may not have versions yet.
                 self.version = "1.0.0"
             else:
-                raise Exception("Missing tool 'version' for tool with id '{}' at '{}'".format(self.id, tool_source))
+                raise Exception(f"Missing tool 'version' for tool with id '{self.id}' at '{tool_source}'")
 
         self.edam_operations = tool_source.parse_edam_operations()
         self.edam_topics = tool_source.parse_edam_topics()
@@ -1342,7 +1341,7 @@ class Tool(Dictifiable):
         for name in param.get_dependencies():
             # Let it throw exception, but give some hint what the problem might be
             if name not in context:
-                log.error("Tool with id '{}': Could not find dependency '{}' of parameter '{}'".format(self.id, name, param.name))
+                log.error(f"Tool with id '{self.id}': Could not find dependency '{name}' of parameter '{param.name}'")
             context[name].refresh_on_change = True
         return param
 
@@ -1767,7 +1766,7 @@ class Tool(Dictifiable):
                         previous_value = value
                         value = input.get_initial_value(request_context, context)
                         if not prefixed_name.startswith('__'):
-                            messages[prefixed_name] = error if previous_value == value else '{} Using default: \'{}\'.'.format(error, value)
+                            messages[prefixed_name] = error if previous_value == value else f'{error} Using default: \'{value}\'.'
                         parent[input.name] = value
                     except Exception:
                         messages[prefixed_name] = 'Attempt to replace invalid value for \'%s\' failed.' % (prefixed_label)
@@ -1891,7 +1890,7 @@ class Tool(Dictifiable):
             original_message = ''
             if len(e.args):
                 original_message = e.args[0]
-            e.args = ("Error in '{}' hook '{}', original message: {}".format(self.name, hook_name, original_message), )
+            e.args = (f"Error in '{self.name}' hook '{hook_name}', original message: {original_message}", )
             raise
 
     def exec_before_job(self, app, inp_data, out_data, param_dict=None):
@@ -2269,13 +2268,13 @@ class Tool(Dictifiable):
         # Create index for hdas.
         hda_source_dict = {}
         for hda in history.datasets:
-            key = '{}_{}'.format(hda.hid, hda.dataset.id)
+            key = f'{hda.hid}_{hda.dataset.id}'
             hda_source_dict[hda.dataset.id] = hda_source_dict[key] = hda
 
         # Ditto for dataset collections.
         hdca_source_dict = {}
         for hdca in history.dataset_collections:
-            key = '{}_{}'.format(hdca.hid, hdca.collection.id)
+            key = f'{hdca.hid}_{hdca.collection.id}'
             hdca_source_dict[hdca.collection.id] = hdca_source_dict[key] = hdca
 
         # Map dataset or collection to current history
@@ -2290,7 +2289,7 @@ class Tool(Dictifiable):
                 source = hdca_source_dict
             else:
                 return None
-            key = '{}_{}'.format(value.hid, id)
+            key = f'{value.hid}_{id}'
             if key in source:
                 return source[key]
             elif id in source:
@@ -2335,14 +2334,14 @@ class Tool(Dictifiable):
                         else:
                             message += 'You can re-run the job with this tool version, which is a different version of the original tool. '
                 else:
-                    new_tool_shed_url = '{}/{}/'.format(tool.sharable_url, tool.changeset_revision)
+                    new_tool_shed_url = f'{tool.sharable_url}/{tool.changeset_revision}/'
                     old_tool_shed_url = get_tool_shed_url_from_tool_shed_registry(self.app, tool_id.split('/repos/')[0])
-                    old_tool_shed_url = '{}/view/{}/{}/'.format(old_tool_shed_url, tool.repository_owner, tool.repository_name)
-                    message = 'This job was run with <a href=\"{}\" target=\"_blank\">tool id \"{}\"</a>, version "{}", which is not available. '.format(old_tool_shed_url, tool_id, tool_version)
+                    old_tool_shed_url = f'{old_tool_shed_url}/view/{tool.repository_owner}/{tool.repository_name}/'
+                    message = f'This job was run with <a href=\"{old_tool_shed_url}\" target=\"_blank\">tool id \"{tool_id}\"</a>, version "{tool_version}", which is not available. '
                     if len(tools) > 1:
-                        message += 'You can re-run the job with the selected <a href=\"{}\" target=\"_blank\">tool id \"{}\"</a> or choose another derivation of the tool. '.format(new_tool_shed_url, self.id)
+                        message += f'You can re-run the job with the selected <a href=\"{new_tool_shed_url}\" target=\"_blank\">tool id \"{self.id}\"</a> or choose another derivation of the tool. '
                     else:
-                        message += 'You can re-run the job with <a href=\"{}\" target=\"_blank\">tool id \"{}\"</a>, which is a derivation of the original tool. '.format(new_tool_shed_url, self.id)
+                        message += f'You can re-run the job with <a href=\"{new_tool_shed_url}\" target=\"_blank\">tool id \"{self.id}\"</a>, which is a derivation of the original tool. '
             if not self.is_latest_version:
                 message += 'There is a newer version of this tool available.'
         except Exception as e:
@@ -2941,7 +2940,7 @@ class MergeCollectionTool(DatabaseOperationTool):
 
                     if add_suffix:
                         suffix = suffix_pattern.replace("#", str(copy + 1))
-                        effective_identifer = "{}{}".format(element_identifier, suffix)
+                        effective_identifer = f"{element_identifier}{suffix}"
                     else:
                         effective_identifer = element_identifier
 
@@ -3040,7 +3039,7 @@ class FlattenTool(DatabaseOperationTool):
             for dce in collection.elements:
                 dce_object = dce.element_object
                 dce_identifier = dce.element_identifier
-                identifier = "{}{}{}".format(prefix, join_identifier, dce_identifier) if prefix else dce_identifier
+                identifier = f"{prefix}{join_identifier}{dce_identifier}" if prefix else dce_identifier
                 if dce.is_collection:
                     add_elements(dce_object, prefix=identifier)
                 else:
@@ -3081,7 +3080,7 @@ class SortTool(DatabaseOperationTool):
                     with open(hda.file_name) as fh:
                         sorted_elements = [old_elements_dict[line.strip()] for line in fh]
                 except KeyError:
-                    hdca_history_name = "{}: {}".format(hdca.hid, hdca.name)
+                    hdca_history_name = f"{hdca.hid}: {hdca.name}"
                     message = "List of element identifiers does not match element identifiers in collection '%s'" % hdca_history_name
                     raise Exception(message)
             else:
@@ -3159,9 +3158,11 @@ class ApplyRulesTool(DatabaseOperationTool):
         rule_set = RuleSet(incoming["rules"])
         copied_datasets = []
 
-        def copy_dataset(dataset):
+        def copy_dataset(dataset, tags):
             copied_dataset = dataset.copy(flush=False)
             copied_datasets.append(copied_dataset)
+            if tags is not None:
+                self.app.tag_handler.set_tags_from_list(trans.get_user(), copied_dataset, tags)
             return copied_dataset
 
         new_elements = self.app.dataset_collections_service.apply_rules(

@@ -17,7 +17,6 @@ from abc import (
 from collections import namedtuple
 
 import yaml
-from six.moves import shlex_quote
 
 from galaxy.exceptions import ContainerCLIError
 from galaxy.util.submodules import import_submodules
@@ -234,14 +233,14 @@ class ContainerInterface(metaclass=ABCMeta):
     def _stringify_kwopt_string(self, flag, val):
         """
         """
-        return '{flag} {value}'.format(flag=flag, value=shlex_quote(str(val)))
+        return '{flag} {value}'.format(flag=flag, value=shlex.quote(str(val)))
 
     def _stringify_kwopt_list(self, flag, val):
         """
         """
         if isinstance(val, str):
             return self._stringify_kwopt_string(flag, val)
-        return ' '.join('{flag} {value}'.format(flag=flag, value=shlex_quote(str(v))) for v in val)
+        return ' '.join('{flag} {value}'.format(flag=flag, value=shlex.quote(str(v))) for v in val)
 
     def _stringify_kwopt_list_of_kvpairs(self, flag, val):
         """
@@ -253,7 +252,7 @@ class ContainerInterface(metaclass=ABCMeta):
         else:
             # {'foo': 'bar', 'baz': 'quux'}
             for k, v in dict(val).items():
-                l.append('{k}={v}'.format(k=k, v=v))
+                l.append(f'{k}={v}')
         return self._stringify_kwopt_list(flag, l)
 
     def _stringify_kwopt_list_of_kovtrips(self, flag, val):
@@ -263,7 +262,7 @@ class ContainerInterface(metaclass=ABCMeta):
             return self._stringify_kwopt_string(flag, val)
         l = []
         for k, o, v in val:
-            l.append('{k}{o}{v}'.format(k=k, o=o, v=v))
+            l.append(f'{k}{o}{v}')
         return self._stringify_kwopt_list(flag, l)
 
     def _run_command(self, command, verbose=False):
@@ -275,7 +274,7 @@ class ContainerInterface(metaclass=ABCMeta):
         if p.returncode == 0:
             return stdout.strip()
         else:
-            msg = "Command '{}' returned non-zero exit status {}".format(command, p.returncode)
+            msg = f"Command '{command}' returned non-zero exit status {p.returncode}"
             log.error(msg + ': ' + stderr.strip())
             raise ContainerCLIError(
                 msg,
@@ -324,7 +323,7 @@ class ContainerInterfaceConfig(dict):
         try:
             return self[name]
         except KeyError:
-            raise AttributeError("'{}' object has no attribute '{}'".format(self.__class__.__name__, name))
+            raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
 
     def get(self, name, default=None):
         try:

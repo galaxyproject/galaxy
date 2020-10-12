@@ -198,13 +198,13 @@ class ExpectedValues:
         return value
 
     def get_expected_database_connection(self, value):
-        return 'sqlite:///{}/universe.sqlite?isolation_level=IMMEDIATE'.format(self._config.data_dir)
+        return f'sqlite:///{self._config.data_dir}/universe.sqlite?isolation_level=IMMEDIATE'
 
     def get_expected_ftp_upload_dir_template(self, value):
         return '${ftp_upload_dir}%s${ftp_upload_dir_identifier}' % os.path.sep
 
     def get_expected_amqp_internal_connection(self, value):
-        return 'sqlalchemy+sqlite:///{}/control.sqlite?isolation_level=IMMEDIATE'.format(self._config.data_dir)
+        return f'sqlalchemy+sqlite:///{self._config.data_dir}/control.sqlite?isolation_level=IMMEDIATE'
 
 
 def get_config_data():

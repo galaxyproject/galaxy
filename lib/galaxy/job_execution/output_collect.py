@@ -386,7 +386,7 @@ def collect_primary_datasets(job_context, output, input_ext):
             if dbkey == INPUT_DBKEY_TOKEN:
                 dbkey = job_context.input_dbkey
             if filename_index == 0 and extra_file_collector.assign_primary_output and output_index == 0:
-                new_outdata_name = fields_match.name or "{} ({})".format(outdata.name, designation)
+                new_outdata_name = fields_match.name or f"{outdata.name} ({designation})"
                 outdata.change_datatype(ext)
                 outdata.dbkey = dbkey
                 outdata.designation = designation
@@ -399,7 +399,7 @@ def collect_primary_datasets(job_context, output, input_ext):
                 primary_datasets[name] = OrderedDict()
             visible = fields_match.visible
             # Create new primary dataset
-            new_primary_name = fields_match.name or "{} ({})".format(outdata.name, designation)
+            new_primary_name = fields_match.name or f"{outdata.name} ({designation})"
             info = outdata.info
 
             # TODO: should be able to disambiguate files in different directories...
@@ -418,7 +418,7 @@ def collect_primary_datasets(job_context, output, input_ext):
                 dataset_attributes=new_primary_datasets_attributes,
             )
             # Associate new dataset with job
-            job_context.add_output_dataset_association('__new_primary_file_{}|{}__'.format(name, designation), primary_data)
+            job_context.add_output_dataset_association(f'__new_primary_file_{name}|{designation}__', primary_data)
 
             if new_primary_datasets_attributes:
                 extra_files_path = new_primary_datasets_attributes.get('extra_files', None)
@@ -577,7 +577,7 @@ def read_exit_code_from(exit_code_file, id_tag):
         exit_code = int(exit_code_str)
     except ValueError:
         galaxy_id_tag = id_tag
-        log.warning("({}) Exit code '{}' invalid. Using 0.".format(galaxy_id_tag, exit_code_str))
+        log.warning(f"({galaxy_id_tag}) Exit code '{exit_code_str}' invalid. Using 0.")
         exit_code = 0
 
     return exit_code

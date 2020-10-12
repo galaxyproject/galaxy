@@ -8,15 +8,7 @@
             </a>
             <div>
                 <form class="form-inline">
-                    <b-input-group size="sm">
-                        <b-form-input
-                            class="mr-1"
-                            v-on:input="updateSearch($event)"
-                            type="search"
-                            id="filterInput"
-                            placeholder="Search"
-                        />
-                    </b-input-group>
+                    <SearchField @updateSearch="updateSearch($event)"></SearchField>
                     <button
                         v-if="metadata.can_add_library_item"
                         title="Create new folder"
@@ -163,6 +155,8 @@ import { Toast } from "ui/toast";
 import download from "./download";
 import mod_utils from "utils/utils";
 import { getAppRoot } from "onload/loadConfig";
+import SearchField from "../SearchField";
+import { Services } from "../services";
 
 initTopBarIcons();
 
@@ -179,7 +173,15 @@ export default {
             type: Boolean,
             required: true,
         },
+        isAllSelectedMode: {
+            type: Boolean,
+            required: true,
+        },
         selected: {
+            type: Array,
+            required: true,
+        },
+        unselected: {
             type: Array,
             required: true,
         },
@@ -193,12 +195,11 @@ export default {
         },
     },
     components: {
+        SearchField,
         FontAwesomeIcon,
     },
     data() {
         return {
-            dataset_manipulation: false,
-            logged_dataset_manipulation: false,
             is_admin: false,
             multiple_add_dataset_options: false,
             user_library_import_dir: false,
@@ -221,6 +222,7 @@ export default {
     },
     created() {
         const Galaxy = getGalaxyInstance();
+        this.services = new Services();
         this.is_admin = Galaxy.user.attributes.is_admin;
         this.user_library_import_dir = Galaxy.config.user_library_import_dir;
         this.library_import_dir = Galaxy.config.library_import_dir;
@@ -232,17 +234,7 @@ export default {
         ) {
             this.multiple_add_dataset_options = true;
         }
-        const contains_file_or_folder = this.folderContents.find((el) => el.type === "folder" || el.type === "file");
 
-        // logic from legacy code
-        if (contains_file_or_folder) {
-            if (Galaxy.user) {
-                this.dataset_manipulation = true;
-                if (!Galaxy.user.isAnonymous()) {
-                    this.logged_dataset_manipulation = true;
-                }
-            }
-        }
         this.fetchExtAndGenomes();
     },
     mounted() {
@@ -253,6 +245,20 @@ export default {
         });
     },
     computed: {
+        contains_file_or_folder: function () {
+            return this.folderContents.find((el) => el.type === "folder" || el.type === "file");
+        },
+        logged_dataset_manipulation: function () {
+            const Galaxy = getGalaxyInstance();
+            // logic from legacy code
+            return !!(this.contains_file_or_folder && Galaxy.user && !Galaxy.user.isAnonymous());
+        },
+        dataset_manipulation: function () {
+            const Galaxy = getGalaxyInstance();
+            // logic from legacy code
+            return !!(this.contains_file_or_folder && Galaxy.user);
+        },
+
         getHomeUrl: () => {
             return `${getAppRoot()}library/list`;
         },
@@ -265,11 +271,22 @@ export default {
             this.$emit("updateSearch", value);
         },
         deleteSelected: function () {
-            deleteSelectedItems(
-                this.selected,
-                (deletedItem) => this.$emit("deleteFromTable", deletedItem),
-                () => this.$emit("refreshTable")
+            this.getSelected().then((selected) =>
+                deleteSelectedItems(
+                    selected,
+                    (deletedItem) => this.$emit("deleteFromTable", deletedItem),
+                    () => this.$emit("refreshTable"),
+                    () => this.$emit("refreshTableContent")
+                )
             );
+        },
+        async getSelected() {
+            if (this.isAllSelectedMode) {
+                this.$emit("setBusy", true);
+                const selected = await this.services.getFilteredFolderContents(this.folder_id, this.unselected);
+                this.$emit("setBusy", false);
+                return selected;
+            } else return this.selected;
         },
         newFolder() {
             this.folderContents.unshift({
@@ -282,13 +299,14 @@ export default {
             this.$emit("refreshTable");
         },
         downloadData(format) {
-            const { datasets, folders } = this.findCheckedItems();
-            if (this.selected.length === 0) {
-                Toast.info("You must select at least one dataset to download");
-                return;
-            }
+            this.findCheckedItems().then(({ datasets, folders }) => {
+                if (this.selected.length === 0) {
+                    Toast.info("You must select at least one dataset to download");
+                    return;
+                }
 
-            download(format, datasets, folders);
+                download(format, datasets, folders);
+            });
         },
         addDatasets(source) {
             new mod_add_datasets.AddDatasets({
@@ -300,33 +318,35 @@ export default {
             });
         },
         // helper function to make legacy code compatible
-        findCheckedItems: function (idOnly = true) {
+        findCheckedItems: async function (idOnly = true) {
             const datasets = [];
             const folder = [];
-            this.selected.forEach((item) => {
+            const selected = await this.getSelected();
+            selected.forEach((item) => {
                 item.type === "file" ? datasets.push(idOnly ? item.id : item) : idOnly ? item.id : item;
             });
             return { datasets: datasets, folders: folder };
         },
         importToHistoryModal: function (isCollection) {
-            const { datasets, folders } = this.findCheckedItems(!isCollection);
-            const checkedItems = this.selected;
-            checkedItems.dataset_ids = datasets;
-            checkedItems.folder_ids = folders;
-            if (isCollection) {
-                new mod_import_collection.ImportCollectionModal({
-                    selected: checkedItems,
-                    allDatasets: this.allDatasets,
-                });
-            } else {
-                new mod_import_dataset.ImportDatasetModal({
-                    selected: checkedItems,
-                });
-            }
+            this.findCheckedItems(!isCollection).then(({ datasets, folders }) => {
+                const checkedItems = this.selected;
+                checkedItems.dataset_ids = datasets;
+                checkedItems.folder_ids = folders;
+                if (isCollection) {
+                    new mod_import_collection.ImportCollectionModal({
+                        selected: checkedItems,
+                        allDatasets: this.allDatasets,
+                    });
+                } else {
+                    new mod_import_dataset.ImportDatasetModal({
+                        selected: checkedItems,
+                    });
+                }
+            });
         },
         /*
             Slightly adopted Bootstrap code
-             */
+        */
         /**
          * Request all extensions and genomes from Galaxy
          * and save them in sorted arrays.

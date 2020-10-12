@@ -327,7 +327,7 @@ class JobLike:
         else:
             extra += "unflushed"
 
-        return "{}[{},tool_id={}]".format(self.__class__.__name__, extra, self.tool_id)
+        return f"{self.__class__.__name__}[{extra},tool_id={self.tool_id}]"
 
     @property
     def stdout(self):
@@ -1158,11 +1158,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         ''', '''
             UPDATE workflow_invocation_step
             SET update_time = :update_time
-            WHERE id in (
-                SELECT workflow_invocation_step.id
-                FROM workflow_invocation_step wis
-                WHERE wis.job_id = :job_id
-            );
+            WHERE job_id = :job_id;
         ''']
         sa_session = object_session(self)
         params = {
@@ -1306,7 +1302,7 @@ class Task(JobLike, RepresentById):
         Return an id tag suitable for identifying the task.
         This combines the task's job id and the task's own id.
         """
-        return "{}_{}".format(self.job.id, self.id)
+        return f"{self.job.id}_{self.id}"
 
     def get_command_line(self):
         return self.command_line
@@ -1564,7 +1560,7 @@ class JobExternalOutputMetadata(RepresentById):
 # uses a Dataset rather than an HDA or LDA, it's necessary to set up a
 # fake dataset association that provides the needed attributes for
 # preparing a job.
-class FakeDatasetAssociation (object):
+class FakeDatasetAssociation :
     fake_dataset_association = True
 
     def __init__(self, dataset=None):
@@ -2841,7 +2837,7 @@ class DatasetInstance:
         """
         # See if we can convert the dataset
         if target_ext not in self.get_converter_types():
-            raise NoConverterException("Conversion from '{}' to '{}' not possible".format(self.extension, target_ext))
+            raise NoConverterException(f"Conversion from '{self.extension}' to '{target_ext}' not possible")
         # See if converted dataset already exists, either in metadata in conversions.
         converted_dataset = self.get_metadata_dataset(target_ext)
         if converted_dataset:
@@ -3421,7 +3417,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
 
     @type_id.expression
     def type_id(cls):
-        return ((type_coerce(cls.content_type, types.Unicode) + u'-'
+        return ((type_coerce(cls.content_type, types.Unicode) + '-'
                  + type_coerce(cls.id, types.Unicode)).label('type_id'))
 
 
@@ -3866,7 +3862,7 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, RepresentById):
             ''').execution_options(autocommit=True)
         ret = object_session(self).execute(sql, {'library_dataset_id': ldda.library_dataset_id, 'ldda_id': ldda.id})
         if ret.rowcount < 1:
-            log.warn('Attempt to updated parent folder times failed: {} records updated.'.format(ret.rowcount))
+            log.warn(f'Attempt to updated parent folder times failed: {ret.rowcount} records updated.')
 
 
 class ExtendedMetadata(RepresentById):
@@ -3907,19 +3903,6 @@ class LibraryDatasetDatasetInfoAssociation(RepresentById):
     @property
     def inheritable(self):
         return True  # always allow inheriting, used for replacement
-
-
-class ValidationError(RepresentById):
-    def __init__(self, message=None, err_type=None, attributes=None):
-        self.message = message
-        self.err_type = err_type
-        self.attributes = attributes
-
-
-class DatasetToValidationErrorAssociation:
-    def __init__(self, dataset, validation_error):
-        self.dataset = dataset
-        self.validation_error = validation_error
 
 
 class ImplicitlyConvertedDatasetAssociation(RepresentById):
@@ -4170,7 +4153,7 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
         for element in self.elements:
             if getattr(element, get_by_attribute) == key:
                 return element
-        error_message = "Dataset collection has no {} with key {}.".format(get_by_attribute, key)
+        error_message = f"Dataset collection has no {get_by_attribute} with key {key}."
         raise KeyError(error_message)
 
     def copy(self, destination=None, element_destination=None, flush=True):
@@ -4331,7 +4314,7 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
 
     @type_id.expression
     def type_id(cls):
-        return ((type_coerce(cls.content_type, types.Unicode) + u'-'
+        return ((type_coerce(cls.content_type, types.Unicode) + '-'
                  + type_coerce(cls.id, types.Unicode)).label('type_id'))
 
     @property
@@ -5295,7 +5278,7 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         if workflow_output:
             raise Exception("Failed to find workflow output named [%s], one was defined but none registered during execution." % label)
         else:
-            raise Exception("Failed to find workflow output named [{}], workflow doesn't define output by that name - valid names are {}.".format(label, self.workflow.workflow_output_labels))
+            raise Exception(f"Failed to find workflow output named [{label}], workflow doesn't define output by that name - valid names are {self.workflow.workflow_output_labels}.")
 
     def get_input_object(self, label):
         for input_dataset_assoc in self.input_datasets:
@@ -5458,7 +5441,7 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             extra += "id=%s" % safe_id
         else:
             extra += "unflushed"
-        return "{}[{}]".format(self.__class__.__name__, extra)
+        return f"{self.__class__.__name__}[{extra}]"
 
 
 class WorkflowInvocationToSubworkflowInvocationAssociation(Dictifiable, RepresentById):
@@ -5974,7 +5957,7 @@ class CustosAuthnzToken(RepresentById):
         self.refresh_expiration_time = refresh_expiration_time
 
 
-class CloudAuthz(object):
+class CloudAuthz:
     def __init__(self, user_id, provider, config, authn_id, description=""):
         self.id = None
         self.user_id = user_id
@@ -6167,10 +6150,6 @@ class ItemTagAssociation(Dictifiable):
 
 
 class HistoryTagAssociation(ItemTagAssociation, RepresentById):
-    pass
-
-
-class DatasetTagAssociation(ItemTagAssociation, RepresentById):
     pass
 
 

@@ -27,7 +27,7 @@ def __main__():
     if "None" in species:
         species = OrderedDict()
         try:
-            for i, m in enumerate(maf.Reader(open(input_filename, 'r'))):
+            for i, m in enumerate(maf.Reader(open(input_filename))):
                 for c in m.components:
                     spec, chrom = src_split(c.src)
                     if not spec or not chrom:
@@ -52,7 +52,7 @@ def __main__():
 
     print("Restricted to species:", ",".join(species))
 
-    with open(input_filename, 'r') as file_in:
+    with open(input_filename) as file_in:
         maf_reader = maf.Reader(file_in)
 
         block_num = -1

@@ -6,10 +6,9 @@ import json
 import logging
 import os
 import re
+import shlex
 import subprocess
 import tempfile
-
-from six.moves import shlex_quote
 
 from galaxy.datatypes.data import get_file_peek, Text
 from galaxy.datatypes.metadata import MetadataElement, MetadataParameter
@@ -181,7 +180,7 @@ class Ipynb(Json):
                 ofilename = '%s.html' % ofilename
             except subprocess.CalledProcessError:
                 ofilename = dataset.file_name
-                log.exception('Command "%s" failed. Could not convert the Jupyter Notebook to HTML, defaulting to plain text.', ' '.join(map(shlex_quote, cmd)))
+                log.exception('Command "%s" failed. Could not convert the Jupyter Notebook to HTML, defaulting to plain text.', ' '.join(map(shlex.quote, cmd)))
             return open(ofilename, mode='rb')
 
     def set_meta(self, dataset, **kwd):
@@ -465,7 +464,7 @@ class Arff(Text):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "Attribute-Relation File Format (ARFF)"
-            dataset.blurb += ", {} comments, {} attributes".format(dataset.metadata.comment_lines, dataset.metadata.columns)
+            dataset.blurb += f", {dataset.metadata.comment_lines} comments, {dataset.metadata.columns} attributes"
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'

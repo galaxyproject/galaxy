@@ -138,7 +138,7 @@ def find_anaconda_versions(name, anaconda_channel='bioconda'):
     """
     Find a list of available anaconda versions for a given container name
     """
-    r = requests.get("https://anaconda.org/{}/{}/files".format(anaconda_channel, name))
+    r = requests.get(f"https://anaconda.org/{anaconda_channel}/{name}/files")
     urls = []
     for line in r.text.split('\n'):
         if 'download/linux' in line:
@@ -151,9 +151,9 @@ def open_recipe_file(file, recipes_path=None, github_repo='bioconda/bioconda-rec
     Open a file at a particular location and return contents as string
     """
     if recipes_path:
-        return open('{}/{}'.format(recipes_path, file)).read()
+        return open(f'{recipes_path}/{file}').read()
     else:  # if no clone of the repo is available locally, download from GitHub
-        r = requests.get('https://raw.githubusercontent.com/{}/master/{}'.format(github_repo, file))
+        r = requests.get(f'https://raw.githubusercontent.com/{github_repo}/master/{file}')
         if r.status_code == 404:
             raise OSError
         else:
@@ -165,10 +165,10 @@ def get_alternative_versions(filepath, filename, recipes_path=None, github_repo=
     Return files that match 'filepath/*/filename' in the bioconda-recipes repository
     """
     if recipes_path:
-        return [n.replace('%s/' % recipes_path, '') for n in glob('{}/{}/*/{}'.format(recipes_path, filepath, filename))]
+        return [n.replace('%s/' % recipes_path, '') for n in glob(f'{recipes_path}/{filepath}/*/{filename}')]
     # else use the GitHub API:
     versions = []
-    r = json.loads(requests.get('https://api.github.com/repos/{}/contents/{}'.format(github_repo, filepath)).text)
+    r = json.loads(requests.get(f'https://api.github.com/repos/{github_repo}/contents/{filepath}').text)
     for subfile in r:
         if subfile['type'] == 'dir':
             if requests.get('https://raw.githubusercontent.com/{}/master/{}/{}'.format(github_repo, subfile['path'], filename)).status_code == 200:
