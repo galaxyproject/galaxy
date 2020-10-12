@@ -130,7 +130,7 @@ export default {
                     paramString += `, ${k}="${v}"`;
                 }
             });
-            this.$emit("onOk", `visualization(id=${this.argumentName}, ${this.dataTag}${paramString})`);
+            this.$emit("onOk", `visualization(visualization_id=${this.argumentName}, ${this.dataTag}${paramString})`);
         },
         onCancel() {
             this.$emit("onCancel");
