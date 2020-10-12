@@ -2,10 +2,13 @@
 Image classes
 """
 import base64
+import json
 import logging
+import tifffile
 import zipfile
 from urllib.parse import quote_plus
 
+from galaxy.datatypes.metadata import FileParameter, MetadataElement
 from galaxy.datatypes.text import Html as HtmlFromText
 from galaxy.util import nice_size
 from galaxy.util.image_util import check_image_type
@@ -71,6 +74,23 @@ class Png(Image):
 class Tiff(Image):
     edam_format = "format_3591"
     file_ext = "tiff"
+
+
+class OMETiff(Tiff):
+    file_ext = "ome.tiff"
+    MetadataElement(name="offsets", desc="Offsets File", param=FileParameter, file_ext="json", readonly=True, no_value=None, visible=False, optional=True)
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+
+        spec_key = 'offsets'
+        offsets_file = dataset.metadata.offsets
+        if not offsets_file:
+            offsets_file = dataset.metadata.spec[spec_key].param.new_file(dataset=dataset)
+        with tifffile.TiffFile(dataset.file_name) as tif:
+            offsets = [page.offset for page in tif.pages]
+        with open(offsets_file.file_name, 'w') as f:
+            json.dump(offsets, f)
+        dataset.metadata.offsets = offsets_file
 
 
 class Hamamatsu(Image):
