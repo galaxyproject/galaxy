@@ -9,22 +9,17 @@
             @onOk="onLabel"
             @onCancel="onCancel"
         />
-        <DataDialog
-            v-if="dataShow"
-            :history="history"
-            format="id"
-            @onOk="onData"
-            @onCancel="onCancel"
-        />
+        <DataDialog v-if="dataShow" :history="history" format="id" @onOk="onData" @onCancel="onCancel" />
         <b-modal
             v-if="formShow"
             v-model="formShow"
+            modal-class="visualization-dialog-modal"
             title="Configure Visualization"
             ok-title="Continue"
             @ok="onOk"
             @cancel="onCancel"
         >
-            <Form :inputs="formInputs" @onChange="onChange" class="form-body"/>
+            <Form :inputs="formInputs" @onChange="onChange" class="form-body" />
         </b-modal>
     </span>
 </template>
@@ -82,12 +77,12 @@ export default {
                         title: "Columns",
                         name: "columns",
                         min: 1,
-                        inputs: this.argumentPayload.groups.map(x => {
+                        inputs: this.argumentPayload.groups.map((x) => {
                             if (x.type == "data_column") {
                                 x.is_workflow = true;
                             }
                             return x;
-                        })
+                        }),
                     };
                 }
             }
@@ -138,10 +133,10 @@ export default {
     },
 };
 </script>
-<style scoped>
-.form-body {
+<style>
+.visualization-dialog-modal .modal-body {
     max-height: 50vh;
     height: 50vh;
     overflow-y: auto;
 }
-</scoped>
+</style>
