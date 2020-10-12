@@ -20,7 +20,7 @@ ALIASES = {
 }
 DEFAULT_ARGS = {
     '_all_': ('pythonpath', 'threads', 'buffer-size', 'http', 'static-map', 'die-on-term', 'hook-master-start', 'enable-threads', 'umask'),
-    'galaxy': ('py-call-osafterfork',),
+    'galaxy': ('py-call-osafterfork', 'honour-range'),
     'reports': (),
     'tool_shed': ('cron',),
 }
@@ -94,6 +94,7 @@ def _get_uwsgi_args(cliargs, kwargs):
         'hook-master-start': ('unix_signal:2 gracefully_kill_them_all',
                               'unix_signal:15 gracefully_kill_them_all'),
         'py-call-osafterfork': True,
+        'honour-range': True,
         'cron': '0 -1 -1 -1 -1 python scripts/tool_shed/build_ts_whoosh_index.py %s --config-section tool_shed -d' % ts_cron_config_option,
         'umask': '027',
     }

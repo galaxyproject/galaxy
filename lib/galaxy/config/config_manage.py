@@ -168,6 +168,11 @@ UWSGI_OPTIONS = OrderedDict([
         'default': '027',
         'type': 'str',
     }),
+    ('honour-range', {
+        'desc': """Feature necessary for for the HTTP Range header""",
+        'default': True,
+        'type': 'bool',
+    }),
     # ('route-uri', {
     #     'default': '^/proxy/ goto:proxy'
     # }),
