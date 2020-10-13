@@ -226,7 +226,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         (see pod selector) and an appropriate restart policy."""
         k8s_spec_template = {
             "metadata": {
-                "labels": {"app": self.__produce_unique_k8s_job_name(ajs.job_wrapper.get_id_tag())}
+                "labels": {"app": self.__produce_unique_k8s_job_name(ajs.job_wrapper.get_id_tag())[:-5]}
             },
             "spec": {
                 "volumes": self.runner_params['k8s_mountable_volumes'],
@@ -520,7 +520,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         """Attempts to delete a dispatched job to the k8s cluster"""
         job = job_wrapper.get_job()
         try:
-            name = self.__produce_unique_k8s_job_name(job.get_id_tag())
+            name = job.job_runner_external_id
             namespace = self.runner_params['k8s_namespace']
             job_to_delete = find_job_object_by_name(self._pykube_api, name, namespace)
             if job_to_delete:

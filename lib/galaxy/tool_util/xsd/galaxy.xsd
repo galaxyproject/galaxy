@@ -4276,6 +4276,11 @@ Galaxy, including:
         <xs:documentation xml:lang="en">Directory (relative to working directory) to search for files.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="recurse" type="xs:boolean" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Indicates that the specified directory should be searched recursively for matching files.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="format" type="xs:string" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">Format (or datatype) of discovered datasets (an alias with ``ext``).</xs:documentation>
