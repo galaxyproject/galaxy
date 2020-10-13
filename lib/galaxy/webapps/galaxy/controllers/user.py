@@ -138,7 +138,8 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
             trans.app.model.User.table.c.email == login,
             trans.app.model.User.table.c.username == login
         )).first()
-        if not user and login.lower() != login:
+        if not user:
+            # Try a case-insensitive match on the email
             user = trans.sa_session.query(trans.app.model.User).filter(
                 func.lower(trans.app.model.User.table.c.email) == login.lower()
             ).first()
