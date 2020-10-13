@@ -10,11 +10,6 @@ import sys
 assert sys.version_info[:2] >= (2, 4)
 
 
-def stop_err(msg):
-    sys.stderr.write("%s\n" % msg)
-    sys.exit()
-
-
 def __main__():
     # Parse command line
     html_file = sys.argv[1]
@@ -22,7 +17,8 @@ def __main__():
     try:  # for test - needs this done
         os.makedirs(working_dir)
     except Exception as e:
-        stop_err('Error running velveth ' + str(e))
+        sys.exit('Error running velveth ' + str(e))
+
     hash_length = sys.argv[3]
     inputs = ' '.join(sys.argv[4:])
     cmdline = 'velveth %s %s %s > /dev/null' % (working_dir, hash_length, inputs)
@@ -42,7 +38,8 @@ def __main__():
         if returncode != 0:
             raise Exception(stderr)
     except Exception as e:
-        stop_err('Error running velveth ' + str(e))
+        sys.exit('Error running velveth ' + str(e))
+
     sequences_path = os.path.join(working_dir, 'Sequences')
     roadmaps_path = os.path.join(working_dir, 'Roadmaps')
     rval = ['<html><head><title>Velvet Galaxy Composite Dataset </title></head><p/>']
