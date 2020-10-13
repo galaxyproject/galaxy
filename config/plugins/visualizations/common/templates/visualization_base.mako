@@ -20,6 +20,7 @@
 <html>
     <head>
         <title>${self.title()}</title>
+        <link rel="index" href="${ h.url_for( '/' ) }"/>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         ${self.metas()}
         ${self.stylesheets()}
