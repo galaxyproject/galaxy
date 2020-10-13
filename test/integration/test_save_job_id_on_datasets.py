@@ -9,8 +9,8 @@ Here we test the creation of this reference in various contexts:
 
 import pytest
 
-from galaxy_test.driver.driver_util import GalaxyTestDriver
 from galaxy import model
+from galaxy_test.driver.driver_util import GalaxyTestDriver
 
 TEST_TOOL_IDS = [
     'boolean_conditional',  # 1 job >> 1 dataset
