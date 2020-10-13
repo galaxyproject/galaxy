@@ -153,7 +153,12 @@
                                 {{ l("Clear selected") }}
                             </a>
                         </div>
-                        <div class="collection-elements scroll-container flex-row">
+                        <draggable
+                            v-model="workingElements"
+                            class="collection-elements scroll-container flex-row drop-zone"
+                            @start="drag = true"
+                            @end="drag = false"
+                        >
                             <div v-if="noMoreValidDatasets">
                                 <b-alert show variant="warning" dismissible>
                                     {{ discardedElementsHeader }}
@@ -172,19 +177,12 @@
                                 :class="{ selected: getSelectedDatasetElems.includes(element.id) }"
                                 :element="element"
                             />
-                        </div>
+                        </draggable>
                     </template>
-                    <div @hide-original-toggle="hideOriginalsToggle" />
                 </collection-creator>
             </div>
         </div>
     </div>
-    <!-- <div>
-          <v-on:dragover.collection-elements="_dravoverElements"/>
-          <v-on:drop.collection-elements="_dropElements"/>
-          <v-on:collection-element.dragstart .collection-elements="_elementDragstart"/>
-          <v-on:collection-element.dragend . collection-elements="_elementDragend"/>
-    </div> -->
 </template>
 
 <script>
@@ -196,6 +194,7 @@ import STATES from "mvc/dataset/states";
 import "ui/hoverhighlight";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import draggable from "vuedraggable";
 
 Vue.use(BootstrapVue);
 export default {
@@ -204,7 +203,7 @@ export default {
         this._instanceSetUp();
         this._elementsSetUp();
     },
-    components: { DatasetCollectionElementView },
+    components: { DatasetCollectionElementView, draggable },
     data: function () {
         return {
             state: "build", //error
@@ -310,7 +309,6 @@ export default {
         // ------------------------------------------------------------------------ process raw list
         /** set up main data */
         _elementsSetUp: function () {
-            //this.debug( '-- _dataSetUp' );
             /** a list of invalid elements and the reasons they aren't valid */
             this.invalidElements = [];
             //TODO: handle fundamental problem of syncing DOM, views, and list here
@@ -409,6 +407,16 @@ export default {
         toString: function () {
             return "ListCollectionCreator";
         },
+        // startDrag: function (evt, element) {
+        //     evt.dataTransfer.dropEffect = "move";
+        //     evt.dataTransfer.effectAllowed = "move";
+        //     evt.dataTransfer.setData("text/json", element.id);
+        // },
+        // onDrop: function (evt) {
+        //     const elementid = evt.dataTransfer.getData("text/json");
+        //     const element = this.workingElements.find((workingElement) => element.id == itemID);
+        // },
+
         //TODO: template, rendering, OR conditional rendering (i.e. belongs in template)
         // /** track the mouse drag over the list adding a placeholder to show where the drop would occur */
         // _dragoverElements: function (ev) {

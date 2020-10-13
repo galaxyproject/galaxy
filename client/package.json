@@ -54,6 +54,7 @@
     "toastr": "^2.1.4",
     "underscore": "^1.10.2",
     "vue": "^2.6.11",
+    "vuedraggable": "2.24.1",
     "vue-infinite-scroll": "^2.0.2",
     "vue-multiselect": "^2.1.0",
     "vue-router": "^3.3.1",
