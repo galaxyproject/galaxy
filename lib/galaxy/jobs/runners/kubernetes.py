@@ -136,7 +136,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         # define job attributes in the AsyncronousJobState for follow-up
         ajs.job_id = job_id
         # store runner information for tracking if Galaxy restarts
-        job_wrapper.set_external_id(k8s_job_name)
+        job_wrapper.set_external_id(job_id)
         self.monitor_queue.put(ajs)
 
     def __get_pull_policy(self):
