@@ -65,8 +65,8 @@ class ToolDocumentCache:
                 return None
         return tool_document
 
-    def make_writable(self):
-        if not self.writeable_cache_file and self.cache_file_is_writeable:
+    def _make_writable(self):
+        if not self.writeable_cache_file:
             self.writeable_cache_file = tempfile.NamedTemporaryFile(dir=self.cache_dir, suffix='cache.sqlite.tmp', delete=False)
             if os.path.exists(self.cache_file):
                 shutil.copy(self.cache_file, self.writeable_cache_file.name)
@@ -80,7 +80,7 @@ class ToolDocumentCache:
 
     def set(self, config_file, tool_source):
         if self.cache_file_is_writeable:
-            self.make_writable()
+            self._make_writable()
             to_persist = {
                 'document': tool_source.to_string(),
                 'macro_paths': tool_source.macro_paths,
@@ -91,7 +91,7 @@ class ToolDocumentCache:
 
     def delete(self, config_file):
         if self.cache_file_is_writeable:
-            self.make_writable()
+            self._make_writable()
             try:
                 del self._cache[config_file]
             except KeyError:
