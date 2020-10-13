@@ -60,9 +60,10 @@ class ToolDocumentCache:
             return None
         if tool_document.get('tool_cache_version') != CURRENT_TOOL_CACHE_VERSION:
             return None
-        for path, modtime in tool_document['paths_and_modtimes'].items():
-            if self.cache_file_is_writeable and os.path.getmtime(path) != modtime:
-                return None
+        if self.cache_file_is_writeable:
+            for path, modtime in tool_document['paths_and_modtimes'].items():
+                if os.path.getmtime(path) != modtime:
+                    return None
         return tool_document
 
     def _make_writable(self):
