@@ -12,11 +12,6 @@ import sys
 assert sys.version_info[:2] >= (2, 6)
 
 
-def stop_err(msg):
-    sys.stderr.write("%s\n" % msg)
-    sys.exit()
-
-
 def __main__():
     # Parse Command Line
     working_dir = sys.argv[1]
@@ -41,7 +36,7 @@ def __main__():
         if returncode != 0:
             raise Exception(stderr)
     except Exception as e:
-        stop_err('Error running velvetg ' + str(e))
+        sys.exit('Error running velvetg ' + str(e))
 
 
 if __name__ == "__main__":
