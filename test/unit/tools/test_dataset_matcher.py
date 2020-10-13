@@ -64,7 +64,7 @@ class DatasetMatcherTestCase(TestCase, UsesApp):
 
     def test_hda_match_properly_skips_conversion(self):
         self.mock_hda.extension = 'data'
-        self.mock_hda.conversion_destination = ("tabular", bunch.Bunch())
+        self.mock_hda.conversion_destination = (False, "tabular", bunch.Bunch())
         hda_match = self.test_context.hda_match(self.mock_hda, check_implicit_conversions=False)
         assert not hda_match
 
