@@ -46,8 +46,8 @@ def pykube_client_from_dict(params):
     return pykube_client
 
 
-def produce_k8s_job_prefix(app_prefix=None, instance_id=None, job_id=None):
-    job_name_elems = [app_prefix or "", instance_id or "", job_id or str(uuid.uuid4())]
+def produce_k8s_job_prefix(app_prefix=None, instance_id=None):
+    job_name_elems = [app_prefix or "", instance_id or ""]
     return '-'.join(elem for elem in job_name_elems if elem)
 
 
