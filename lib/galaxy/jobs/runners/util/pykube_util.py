@@ -2,7 +2,6 @@
 import logging
 import os
 import re
-import uuid
 
 try:
     from pykube.config import KubeConfig
