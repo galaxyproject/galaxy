@@ -122,7 +122,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             return
 
         # Construction of the Kubernetes Job object follows: http://kubernetes.io/docs/user-guide/persistent-volumes/
-        k8s_job_prefix = self.__produce_k8s_job_prefix(job_wrapper)
+        k8s_job_prefix = self.__produce_k8s_job_prefix()
         k8s_job_obj = job_object_dict(
             self.runner_params,
             k8s_job_prefix,
@@ -184,7 +184,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         """Parse the ID of the Galaxy instance from runner params."""
         return galaxy_instance_id(self.runner_params)
 
-    def __produce_k8s_job_prefix(self, job_wrapper):
+    def __produce_k8s_job_prefix(self):
         instance_id = self._galaxy_instance_id or ''
         return produce_k8s_job_prefix(app_prefix='gxy', instance_id=instance_id)
 
@@ -206,7 +206,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             "metadata": {
                 "labels": {
                     "app.kubernetes.io/name": ajs.job_wrapper.tool.tool_id,
-                    "app.kubernetes.io/instance": self.__produce_unique_k8s_job_name(ajs.job_wrapper.get_id_tag()),
+                    "app.kubernetes.io/instance": self.__produce_k8s_job_prefix(),
                     "app.kubernetes.io/version": ajs.job_wrapper.tool.version,
                     "app.kubernetes.io/component": "tool",
                     "app.kubernetes.io/part-of": "galaxy",
