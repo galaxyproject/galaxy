@@ -445,7 +445,7 @@ Fixes
   `Pull Request 10042`_
 * Don't display download link for optional, non-existant metadata files
   `Pull Request 10068`_
-* Fix determining 'int', 'float' column type in Tabular
+* Fix determining 'int', 'float' column type in Tabular and BaseCSV
   (thanks to `@selten <https://github.com/selten>`__).
   `Pull Request 10155`_
 * Decrease pysam verbosity
@@ -463,7 +463,7 @@ Fixes
   `Pull Request 10060`_
 * Backport bugfix in `#10060 <https://github.com/galaxyproject/galaxy/issues/10060>`__ to 20.05
   `Pull Request 10138`_
-* Filtering.py failing all expressions
+* Fix filtering.py failing all expressions
   (thanks to `@almahmoud <https://github.com/almahmoud>`__).
   `Pull Request 10266`_
 .. bug_tag_workflows
@@ -684,4 +684,3 @@ Fixes
   `Pull Request 10300`_
 
 .. include:: 20.09_prs.rst
-
