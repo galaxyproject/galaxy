@@ -37,26 +37,19 @@ Also check out the `20.09 user release notes <20.09_announce_user.html>`__
 Configuration Changes
 =====================
 
-Changed
--------
-
 The following configuration options have been changed
 
-config/tool_shed.yml.sample
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**config/tool_shed.yml.sample:**
 
 -  uwsgi.static-safe has changed from ``client/galaxy/images`` to ``client/src/assets``
 
-config/galaxy.yml.sample
-~~~~~~~~~~~~~~~~~~~~~~~~
+**config/galaxy.yml.sample:**
 
 -  uwsgi.static-safe has changed from ``client/galaxy/images`` to ``client/src/assets``
 
-config/reports.yml.sample
-~~~~~~~~~~~~~~~~~~~~~~~~~
+**config/reports.yml.sample:**
 
 -  uwsgi.static-safe has changed from ``client/galaxy/images`` to ``client/src/assets``
-
 
 New Configuration Files
 -----------------------
