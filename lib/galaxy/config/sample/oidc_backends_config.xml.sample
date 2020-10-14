@@ -170,4 +170,16 @@ Please mind `http` and `https`.
         <api_url> ... </api_url>
     </provider>
 
+    <provider name="azure">
+        <client_id> ... </client_id>
+        <client_secret> ... </client_secret>
+        <redirect_uri>http://localhost:8080/authnz/azure/callback</redirect_uri>
+        <!-- Azure client_id, client_secret, and api_url can be obtained by folowing the instructions at 
+        https://docs.microsoft.com/en-us/azure/active-directory/develop/quickstart-register-app
+
+        The api_url will typiclly be https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/authorize
+         -->
+        <api_url> ... </api_url>
+    </provider>
+
 </OIDC>
