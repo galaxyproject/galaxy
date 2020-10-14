@@ -547,7 +547,7 @@ class WeblessApplicationStack(ApplicationStack):
         for m in remove_methods:
             try:
                 job_config.handler_assignment_methods.remove(m)
-                log.debug("%s: Removed '%s' from handler assignment methods due to use of mules", conf_class_name, m)
+                log.debug("%s: Removed '%s' from handler assignment methods due to use of --attach-to-pool", conf_class_name, m)
             except ValueError:
                 pass
         if add_method not in job_config.handler_assignment_methods:

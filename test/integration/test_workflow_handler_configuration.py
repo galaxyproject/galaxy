@@ -42,6 +42,19 @@ WORKFLOW_HANDLER_JOB_CONFIG_TEMPLATE = string.Template("""
 </job_conf>
 """)
 
+POOL_JOB_CONFIG_TEMPLATE = string.Template("""<job_conf>
+    <plugins>
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="2"/>
+    </plugins>
+    <handlers $assign_with>
+    </handlers>
+    <destinations default="local">
+        <destination id="local" runner="local">
+        </destination>
+    </destinations>
+</job_conf>
+""")
+
 WORKFLOW_SCHEDULERS_CONFIG_TEMPLATE = string.Template("""
 <workflow_schedulers default="core">
   <core id="core" />
@@ -218,6 +231,15 @@ class JobHandlerAsWorkflowHandlerWithDbSkipLocked(BaseWorkflowHandlerConfigurati
 
     def test_default_job_handler_is_workflow_handler(self):
         assert self.is_app_workflow_scheduler
+
+
+class JobHandlerAsWorkflowHandlerWithDbSkipLockedAttachToPool(JobHandlerAsWorkflowHandlerWithDbSkipLocked):
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        config["job_config_file"] = config_file(POOL_JOB_CONFIG_TEMPLATE, assign_with=cls.assign_with)
+        config["server_name"] = "handler0"
+        config["attach_to_pools"] = ["job-handlers"]
 
 
 class DefaultWorkflowHandlerIfJobHandlerOffTestCase(BaseWorkflowHandlerConfigurationTestCase):

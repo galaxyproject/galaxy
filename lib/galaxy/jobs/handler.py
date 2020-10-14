@@ -96,10 +96,11 @@ class ItemGrabber:
             HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION,
             HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED,
         }
-        try:
-            return [m for m in handler_assignment_methods if m in grabbable_methods][0]
-        except IndexError:
-            return
+        if handler_assignment_methods:
+            try:
+                return [m for m in handler_assignment_methods if m in grabbable_methods][0]
+            except IndexError:
+                return
 
     def grab_unhandled_items(self):
         """
