@@ -63,10 +63,14 @@ Enhancements
 * Connect/disconnect multiple custos
   (thanks to `@juleengraham <https://github.com/juleengraham>`__).
   `Pull Request 10182`_
+* Add missing database indexes
+  `Pull Request 10385`_
 .. enhancement_tag_viz
 
 * Add build artifact destination for plugins
   `Pull Request 9754`_
+* Plugin watchBuilding, and fixes for several older visualization builds
+  `Pull Request 10287`_
 .. enhancement_tag_datatypes
 
 * Add VCF_BGZIP to VCF converter
@@ -169,6 +173,8 @@ Enhancements
 * GitLab error reporting - further features
   (thanks to `@selten <https://github.com/selten>`__).
   `Pull Request 9775`_
+* Improve support for readonly tool caches
+  `Pull Request 10411`_
 .. enhancement
 
 * assign discovered extension, dbkey and designation for assign_primary=true
@@ -435,6 +441,8 @@ Fixes
 
 * Hyphyvision visualization dependency fix
   `Pull Request 10011`_
+* Bugfix: include an index link in visualization base
+  `Pull Request 10391`_
 .. bug_tag_datatypes
 
 * Use compression_utils to safely peek in compressed datasets
@@ -452,8 +460,11 @@ Fixes
   `Pull Request 10225`_
 * Remove references to missing types from sample config file
   `Pull Request 10269`_
-* Fix tuple assignment (fixes anndata, scanpy tool tests)
-  `Pull Request 10293`_
+* Fix ``Wav`` datatype to inherit from ``Audio``
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 10312`_
+* Fix wiggle estimated_display_viewport
+  `Pull Request 10333`_
 .. bug_tag_tools
 
 * Allow submission of tools with unset hidden parameters
@@ -486,6 +497,8 @@ Fixes
   `Pull Request 10103`_
 * Fix change datatype PJA not applied when loaded from server
   `Pull Request 10237`_
+* Fix TRS search when Galaxy deployed behind a proxy.
+  `Pull Request 10406`_
 .. bug_tag_ui
 
 * Tool recommendation node bug
@@ -515,6 +528,21 @@ Fixes
   `Pull Request 10159`_
 * Restore the use of set_job_destination() in the Pulsar runner's queue_job() method
   `Pull Request 10255`_
+* Fix webless handler --attach-to-pool
+  `Pull Request 10294`_
+* Ensure that k8s job ids are unique
+  (thanks to `@nuwang <https://github.com/nuwang>`__).
+  `Pull Request 10307`_
+* Prevent endless cleanup loops when duplicate job or k8s job not found
+  (thanks to `@nuwang <https://github.com/nuwang>`__).
+  `Pull Request 10308`_
+* enable validation of ITs
+  `Pull Request 10341`_
+* Defer metadata strategy resolution in job wrapper
+  `Pull Request 10367`_
+* Restrict k8s max job name length to 63 and shorten prefix
+  (thanks to `@nuwang <https://github.com/nuwang>`__).
+  `Pull Request 10416`_
 .. bug_tag_admin
 
 * Fix admin data_types_list bug
@@ -673,6 +701,8 @@ Fixes
   `Pull Request 10220`_
 * Fix flake8 issues in dev
   `Pull Request 10234`_
+* Logout fix and refactoring
+  `Pull Request 10248`_
 * Catch all possible repo install errors
   `Pull Request 10250`_
 * Include an upgrade warning for 20.05 regarding the drop of the blue symlink in static
@@ -682,5 +712,50 @@ Fixes
 * Bump tensorflow from 2.3.0 to 2.3.1 in /lib/galaxy/dependencies
   (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
   `Pull Request 10300`_
+* Fix container resolution when requirement version is not specified
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 10305`_
+* Fix tool search to not display 'no results' prior to result return
+  `Pull Request 10317`_
+* Respect ``use_shared_home="false"`` when running tools in container
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 10321`_
+* Fix double masthead in some spaces
+  `Pull Request 10329`_
+* Fix composite data download from collection
+  `Pull Request 10330`_
+* Handle resend_activation_email gracefully without session
+  `Pull Request 10331`_
+* Strip trailing ``/`` from tool_id for data source redirects
+  `Pull Request 10332`_
+* Allow 'planemo run' to stage in existing datasets without reuploading
+  (thanks to `@simonbray <https://github.com/simonbray>`__).
+  `Pull Request 10335`_
+* Pin pytest < 6.1
+  `Pull Request 10337`_
+* Fix 'Newer Version Available' tag in admin tool management section
+  (thanks to `@cat-bro <https://github.com/cat-bro>`__).
+  `Pull Request 10339`_
+* Use block elements for labels to handle wrapping indentation
+  `Pull Request 10342`_
+* Add missing index migrations
+  `Pull Request 10344`_
+* Bugfix: chrome forgets scroll offset upon show/hide cycle of GTN in Galaxy webhook
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
+  `Pull Request 10362`_
+* Allow GEDAs to respond to Access-Control-Request-*
+  `Pull Request 10384`_
+* Fix regex replacement wrongly appearing in rule builder
+  `Pull Request 10390`_
+* add recurse attribute for discover_datasets
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 10394`_
+* Try case-insensitive match on email also when it's lowercase
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 10401`_
+* Python 3 fix and client build fix for the proxy
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 10403`_
 
 .. include:: 20.09_prs.rst
+
