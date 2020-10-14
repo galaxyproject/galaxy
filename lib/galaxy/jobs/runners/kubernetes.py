@@ -205,7 +205,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         k8s_spec_template = {
             "metadata": {
                 "labels": {
-                    "app.kubernetes.io/name": ajs.job_wrapper.tool.tool_id,
+                    "app.kubernetes.io/name": ajs.job_wrapper.tool.id,
                     "app.kubernetes.io/instance": self.__produce_k8s_job_prefix(),
                     "app.kubernetes.io/version": ajs.job_wrapper.tool.version,
                     "app.kubernetes.io/component": "tool",
