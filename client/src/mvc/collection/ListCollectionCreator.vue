@@ -407,64 +407,6 @@ export default {
         toString: function () {
             return "ListCollectionCreator";
         },
-        // startDrag: function (evt, element) {
-        //     evt.dataTransfer.dropEffect = "move";
-        //     evt.dataTransfer.effectAllowed = "move";
-        //     evt.dataTransfer.setData("text/json", element.id);
-        // },
-        // onDrop: function (evt) {
-        //     const elementid = evt.dataTransfer.getData("text/json");
-        //     const element = this.workingElements.find((workingElement) => element.id == itemID);
-        // },
-
-        //TODO: template, rendering, OR conditional rendering (i.e. belongs in template)
-        // /** track the mouse drag over the list adding a placeholder to show where the drop would occur */
-        // _dragoverElements: function (ev) {
-        //     //this.debug( '_dragoverElements:', ev );
-        //     ev.preventDefault();
-        //     var $list = this.$list();
-        //     this._checkForAutoscroll($list, ev.originalEvent.clientY);
-        //     var $nearest = this._getNearestElement(ev.originalEvent.clientY);
-        //     //TODO: no need to re-create - move instead
-        //     this.$(".element-drop-placeholder").remove();
-        //     var $placeholder = $('<div class="element-drop-placeholder"></div>');
-        //     if (!$nearest.length) {
-        //         $list.append($placeholder);
-        //     } else {
-        //         $nearest.before($placeholder);
-        //     }
-        // },
-        // /** drop (dragged/selected elements) onto the list, re-ordering the internal list */
-        // _dropElements: function (ev) {
-        //     if (ev.originalEvent) {
-        //         ev = ev.originalEvent;
-        //     }
-        //     // both required for firefox
-        //     ev.preventDefault();
-        //     ev.dataTransfer.dropEffect = "move";
-        //     // insert before the nearest element or after the last.
-        //     var $nearest = this._getNearestElement(ev.clientY);
-        //     if ($nearest.length) {
-        //         this.$dragging.insertBefore($nearest);
-        //     } else {
-        //         // no nearest before - insert after last element
-        //         this.$dragging.insertAfter(this.$(".collection-elements .collection-element").last());
-        //     }
-        //     // resync the creator's list based on the new DOM order
-        //     this._syncOrderToDom();
-        //     return false;
-        // },
-        // /** drag communication with element sub-views: dragstart */
-        // _elementDragstart: function (ev, element) {
-        //     // auto select the element causing the event and move all selected
-        //     element.select(true);
-        //     this.$dragging = this.$(".collection-elements .collection-element.selected");
-        // },
-        // /** drag communication with element sub-views: dragend - remove the placeholder */
-        // _elementDragend: function (ev, element) {
-        //     $(".element-drop-placeholder").remove();
-        //     this.$dragging = null;
-        // },
     },
 };
 </script>
@@ -518,12 +460,6 @@ export default {
                 color: white;
             }
         }
-        &.dragging {
-            opacity: 0.4;
-            button {
-                display: none;
-            }
-        }
         .name {
             &:hover {
                 text-decoration: underline;
@@ -534,12 +470,6 @@ export default {
         }
         .discard {
             @extend .float-right !optional;
-        }
-    }
-    .element-drop-placeholder {
-        margin-left: 8px;
-        &:before {
-            margin: -8.5px 0px 0px -8px;
         }
     }
     .empty-message {
