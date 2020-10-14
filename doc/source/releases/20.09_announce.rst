@@ -34,6 +34,40 @@ Highlights
 
 Also check out the `20.09 user release notes <20.09_announce_user.html>`__
 
+Configuration Changes
+=====================
+
+Changed
+-------
+
+The following configuration options have been changed
+
+config/tool_shed.yml.sample
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  uwsgi.static-safe has changed from ``client/galaxy/images`` to ``client/src/assets``
+
+config/galaxy.yml.sample
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  uwsgi.static-safe has changed from ``client/galaxy/images`` to ``client/src/assets``
+
+config/reports.yml.sample
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  uwsgi.static-safe has changed from ``client/galaxy/images`` to ``client/src/assets``
+
+
+New Configuration Files
+-----------------------
+
+The following files are new, or recently converted to yaml
+
+-  ``config/trs_servers_conf.yml.sample``
+-  ``config/build_mulled_singularity_mapping_file.yml.sample``
+-  ``config/singularity_mapping.yml.sample``
+
+
 Get Galaxy
 ==========
 
