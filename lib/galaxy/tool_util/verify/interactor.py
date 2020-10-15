@@ -724,36 +724,29 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
             message = template % (name, expected_element_count, actual_element_count)
             raise AssertionError(message)
 
+    def get_element(elements, id):
+        for element in elements:
+            if element["element_identifier"] == id:
+                return element
+        return False
+
     def verify_elements(element_objects, element_tests):
-        sorted_test_ids = [None] * len(element_tests)
+        # sorted_test_ids = [None] * len(element_tests)
+        expected_sort_order = []
+
+        eo_ids = [_["element_identifier"] for _ in element_objects]
         for element_identifier, element_test in element_tests.items():
             if isinstance(element_test, dict):
                 element_outfile, element_attrib = None, element_test
             else:
                 element_outfile, element_attrib = element_test
-            sorted_test_ids[element_attrib["element_index"]] = element_identifier
+            if 'expected_sort_order' in element_attrib:
+                expected_sort_order.append(element_identifier)
 
-        i = 0
-        for element_identifier in sorted_test_ids:
-            element_test = element_tests[element_identifier]
-            if isinstance(element_test, dict):
-                element_outfile, element_attrib = None, element_test
-            else:
-                element_outfile, element_attrib = element_test
-
-            element = None
-            while i < len(element_objects):
-                if element_objects[i]["element_identifier"] == element_identifier:
-                    element = element_objects[i]
-                    i += 1
-                    break
-                i += 1
-
-            if element is None:
-                template = "Failed to find identifier '%s' of test collection %s in the tool generated collection elements %s (at the correct position)"
-                eo_ids = [_["element_identifier"] for _ in element_objects]
-                message = template % (element_identifier, sorted_test_ids,
-                                      eo_ids)
+            element = get_element(element_objects, element_identifier)
+            if not element:
+                template = "Failed to find identifier '%s' in the tool generated collection elements %s"
+                message = template % (element_identifier, eo_ids)
                 raise AssertionError(message)
 
             element_type = element["element_type"]
@@ -762,6 +755,21 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
             if element_type == "dataset_collection":
                 elements = element["object"]["elements"]
                 verify_elements(elements, element_attrib.get("elements", {}))
+
+        if len(expected_sort_order) > 0:
+            i = 0
+            for element_identifier in expected_sort_order:
+                element = None
+                while i < len(element_objects):
+                    if element_objects[i]["element_identifier"] == element_identifier:
+                        element = element_objects[i]
+                        i += 1
+                        break
+                    i += 1
+                if element is None:
+                    template = "Collection identifier '%s' found out of order, expected order of %s for the tool generated collection elements %s"
+                    message = template % (element_identifier, expected_sort_order, eo_ids)
+                    raise AssertionError(message)
 
     verify_elements(data_collection["elements"], output_collection_def.element_tests)
 
