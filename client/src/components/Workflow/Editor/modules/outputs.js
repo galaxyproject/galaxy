@@ -124,8 +124,9 @@ export class ActiveOutputs {
     /** Refreshes dictionary of outputs */
     _refreshIndex() {
         this.outputsIndex = {};
-        this.outputs.forEach((o) => {
-            this.outputsIndex[o.name] = o;
-        });
+        this.outputs &&
+            this.outputs.forEach((o) => {
+                this.outputsIndex[o.name] = o;
+            });
     }
 }
