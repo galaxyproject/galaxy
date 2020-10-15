@@ -2,6 +2,7 @@
 
 import imghdr
 import logging
+import tifffile
 
 try:
     import Image as PIL
@@ -28,7 +29,12 @@ def image_type(filename):
     if not fmt:
         fmt = imghdr.what(filename)
     if fmt:
-        return fmt.upper()
+        fmt = fmt.upper()
+        if fmt == 'TIFF':
+            with tifffile.TiffFile(filename) as tif:
+                if tif.is_ome:
+                    fmt = 'OME.TIFF'
+        return fmt
     else:
         return False
 
