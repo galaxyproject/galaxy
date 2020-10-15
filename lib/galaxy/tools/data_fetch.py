@@ -352,8 +352,7 @@ def _has_src_to_path(upload_config, item, is_dataset=False):
             name = "Pasted Entry"
     else:
         assert src == "path"
-        path = item.get("path", item.get("name"))
-        assert path
+        path = item["path"]
         if name is None:
             name = os.path.basename(path)
     return name, path
