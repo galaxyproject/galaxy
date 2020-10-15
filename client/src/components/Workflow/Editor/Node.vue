@@ -266,6 +266,7 @@ export default {
             Object.values(this.outputTerminals).forEach((t) => {
                 t.destroy();
             });
+            this.activeOutputs.filterOutputs({});
             this.$emit("onRemove", this);
         },
         onRedraw() {
@@ -397,7 +398,7 @@ export default {
             });
 
             // removes output from list of workflow outputs
-            this.activeOutputs.updateOutputs(outputNames);
+            this.activeOutputs.filterOutputs(outputNames);
 
             // trigger legacy events
             Vue.nextTick(() => {
