@@ -1004,6 +1004,7 @@
     <sniffer type="galaxy.datatypes.binary:RData"/>
     <sniffer type="galaxy.datatypes.images:Jpg"/>
     <sniffer type="galaxy.datatypes.images:Png"/>
+    <sniffer type="galaxy.datatypes.images:OMETiff"/>
     <sniffer type="galaxy.datatypes.images:Tiff"/>
     <sniffer type="galaxy.datatypes.images:Bmp"/>
     <sniffer type="galaxy.datatypes.images:Gif"/>
