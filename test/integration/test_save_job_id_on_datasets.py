@@ -15,7 +15,7 @@ from galaxy_test.driver.driver_util import GalaxyTestDriver
 TEST_TOOL_IDS = [
     'boolean_conditional',  # 1 job >> 1 dataset
     'color_param',          # 1 job >> multiple datasets
-    # 'multi_output',         # 1 job >> dataset + discovered dataset? (maybe; not implemented yet)
+    'multi_output',         # 1 job >> dataset + discovered dataset? (maybe; not implemented yet)
     # test upload?            # not implemented
 ]
 
