@@ -187,7 +187,7 @@
 
 <script>
 import HDCA from "mvc/history/hdca-model";
-import CollectionCreatorMixin from "mvc/collection/mixins/CollectionCreatorMixin";
+import CollectionCreator from "mvc/collection/mixins/CollectionCreator";
 import DatasetCollectionElementView from "mvc/collection/DatasetCollectionElementView";
 import _l from "utils/localization";
 import STATES from "mvc/dataset/states";
@@ -199,11 +199,10 @@ import draggable from "vuedraggable";
 Vue.use(BootstrapVue);
 export default {
     created() {
-        this._setUpCommonSettings(this.$props);
         this._instanceSetUp();
         this._elementsSetUp();
     },
-    components: { DatasetCollectionElementView, draggable },
+    components: { CollectionCreator, DatasetCollectionElementView, draggable },
     data: function () {
         return {
             state: "build", //error
@@ -229,7 +228,6 @@ export default {
             selectedDatasetElems: [],
         };
     },
-    mixins: [CollectionCreatorMixin],
     props: {
         initialElements: {
             required: true,
@@ -251,7 +249,7 @@ export default {
         defaultHideSourceItems: {
             type: Boolean,
             required: false,
-            default: true,
+            default: false,
         },
         /** distance from list edge to begin autoscrolling list */
         autoscrollDist: {
