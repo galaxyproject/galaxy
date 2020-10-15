@@ -177,7 +177,7 @@ stevedore==1.32.0
 svgwrite==1.3.1
 tempita==0.5.2
 tenacity==4.12.0
-tifffile>=2018.10.18
+tifffile==2020.9.3
 tqdm==4.46.1
 typing-extensions==3.7.4.2
 typing==3.7.4.1 ; python_version < '3.5'
