@@ -81,16 +81,18 @@ class OMETiff(Tiff):
     MetadataElement(name="offsets", desc="Offsets File", param=FileParameter, file_ext="json", readonly=True, no_value=None, visible=False, optional=True)
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-
-        spec_key = 'offsets'
-        offsets_file = dataset.metadata.offsets
-        if not offsets_file:
-            offsets_file = dataset.metadata.spec[spec_key].param.new_file(dataset=dataset)
-        with tifffile.TiffFile(dataset.file_name) as tif:
-            offsets = [page.offset for page in tif.pages]
-        with open(offsets_file.file_name, 'w') as f:
-            json.dump(offsets, f)
-        dataset.metadata.offsets = offsets_file
+        try:
+            spec_key = 'offsets'
+            offsets_file = dataset.metadata.offsets
+            if not offsets_file:
+                offsets_file = dataset.metadata.spec[spec_key].param.new_file(dataset=dataset)
+            with tifffile.TiffFile(dataset.file_name) as tif:
+                offsets = [page.offset for page in tif.pages]
+            with open(offsets_file.file_name, 'w') as f:
+                json.dump(offsets, f)
+            dataset.metadata.offsets = offsets_file
+        except:
+            pass
 
 
 class Hamamatsu(Image):
