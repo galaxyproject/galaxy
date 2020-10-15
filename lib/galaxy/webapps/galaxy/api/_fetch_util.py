@@ -82,7 +82,7 @@ def validate_and_normalize_targets(trans, payload):
         if item["src"] == "url" and item["url"].startswith("file://"):
             item["src"] = "path"
             item["path"] = item["url"][len("file://"):]
-            del item["path"]
+            del item["url"]
 
         if "in_place" in item:
             raise RequestParameterInvalidException("in_place cannot be set in the upload request")
