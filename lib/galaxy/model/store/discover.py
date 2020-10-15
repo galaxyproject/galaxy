@@ -95,13 +95,14 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                 self.persist_object(primary_data)
 
                 # TODO this is ugly and very temporary. Check back in 2030.
-                job_id = None
-                for obj in sa_session.dirty:
-                    if type(obj) is galaxy.model.Job:
-                        job_id = obj.id
-                for obj in sa_session.new:
-                    if type(obj) is galaxy.model.Dataset:
-                        obj.job_id = job_id
+                if sa_session:
+                    job_id = None
+                    for obj in sa_session.dirty:
+                        if type(obj) is galaxy.model.Job:
+                            job_id = obj.id
+                    for obj in sa_session.new:
+                        if type(obj) is galaxy.model.Dataset:
+                            obj.job_id = job_id
 
                 if init_from:
                     self.permission_provider.copy_dataset_permissions(init_from, primary_data)
