@@ -13,6 +13,9 @@ export class ActiveOutputs {
         this._refreshIndex();
         incoming &&
             incoming.forEach((entry) => {
+                if (entry.label && allLabels[entry.label]) {
+                    entry.label = null;
+                }
                 this.add(entry.output_name, entry.label);
                 if (entry.label) {
                     allLabels[entry.label] = true;
