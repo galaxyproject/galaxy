@@ -23,6 +23,7 @@ class DatasetMatcherTestCase(TestCase, UsesApp):
         # Datasets that don't match datatype are not valid.
         self.mock_hda.visible = True
         self.mock_hda.extension = 'data'
+        self.mock_hda.conversion_destination = (False, None, None)
         assert not self.test_context.hda_match(self.mock_hda)
 
     def test_valid_hda_direct_match(self):

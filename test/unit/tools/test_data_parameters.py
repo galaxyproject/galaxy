@@ -39,6 +39,7 @@ class DataToolParameterTestCase(BaseParameterTestCase):
         assert field['options']['hda'][1]['name'] == "hda1"
 
         hda2.extension = 'data'
+        hda2.conversion_destination = (False, None, None)
         field = self._simple_field()
         assert len(field['options']['hda']) == 1, field
         assert field['options']['hda'][0]['name'] == "hda1"
@@ -190,7 +191,7 @@ class MockHistoryDatasetAssociation:
         self.deleted = False
         self.dataset = test_dataset
         self.visible = True
-        self.conversion_destination = (False, None, None)
+        self.conversion_destination = (True, None, None)
         self.extension = "txt"
         self.dbkey = "hg19"
         self.implicitly_converted_parent_datasets = False
