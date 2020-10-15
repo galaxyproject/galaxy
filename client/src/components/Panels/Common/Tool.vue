@@ -5,6 +5,7 @@
             <span class="description">{{ tool.description }}</span>
         </a>
         <a :class="targetClass" @click="onClick" :href="tool.link" :target="tool.target" v-else>
+            <img v-if="tool.logo" class="logo" :src="tool.logo" />
             <span class="labels">
                 <span
                     v-for="(label, index) in tool.labels"
@@ -78,3 +79,9 @@ export default {
     },
 };
 </script>
+
+<style scoped>
+.logo {
+    width: 2.5rem;
+}
+</style>

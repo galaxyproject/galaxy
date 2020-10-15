@@ -208,7 +208,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
     def __produce_unique_k8s_job_name(self, galaxy_internal_job_id):
         # wrapper.get_id_tag() instead of job_id for compatibility with TaskWrappers.
         instance_id = self._galaxy_instance_id or ''
-        return produce_unique_k8s_job_name(app_prefix='galaxy', instance_id=instance_id, job_id=galaxy_internal_job_id)
+        return produce_unique_k8s_job_name(app_prefix='gxy', instance_id=instance_id, job_id=galaxy_internal_job_id)
 
     def __get_k8s_job_spec(self, ajs):
         """Creates the k8s Job spec. For a Job spec, the only requirement is to have a .spec.template.

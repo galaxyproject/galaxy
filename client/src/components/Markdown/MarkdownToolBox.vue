@@ -7,6 +7,9 @@
         </div>
         <div class="unified-panel-body">
             <div class="toolMenuContainer">
+                <b-alert v-if="error" variant="danger" class="my-2 mx-3 px-2 py-1" show>
+                    {{ error }}
+                </b-alert>
                 <tool-section :category="historySection" @onClick="onClick" :expanded="true" />
                 <tool-section :category="jobSection" @onClick="onClick" :expanded="true" />
                 <tool-section
@@ -17,6 +20,7 @@
                 />
                 <tool-section v-else :category="workflowSection" @onClick="onClick" :expanded="true" />
                 <tool-section :category="otherSection" @onClick="onClick" :expanded="true" />
+                <tool-section v-if="hasVisualizations" :category="visualizationSection" @onClick="onClick" />
             </div>
         </div>
         <MarkdownDialog
@@ -33,10 +37,12 @@
 
 <script>
 import Vue from "vue";
+import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
 import ToolSection from "components/Panels/Common/ToolSection";
 import MarkdownDialog from "./MarkdownDialog";
 import { showMarkdownHelp } from "./markdownHelp";
+import { getAppRoot } from "onload/loadConfig";
 
 Vue.use(BootstrapVue);
 
@@ -57,6 +63,7 @@ export default {
             selectedType: null,
             selectedLabels: null,
             selectedShow: false,
+            error: null,
             historySection: {
                 title: "History",
                 name: "history",
@@ -199,12 +206,23 @@ export default {
                     },
                 ],
             },
+            visualizationSection: {
+                title: "Visualizations",
+                name: "visualizations",
+                elems: [],
+            },
         };
     },
     computed: {
         isWorkflow() {
             return !!this.nodes;
         },
+        hasVisualizations() {
+            return this.visualizationSection.elems.length > 0;
+        },
+    },
+    created() {
+        this.getVisualizations();
     },
     methods: {
         getSteps() {
@@ -299,6 +317,24 @@ export default {
         },
         onHelp() {
             showMarkdownHelp();
+        },
+        async getVisualizations() {
+            axios
+                .get(`${getAppRoot()}api/plugins`)
+                .then((response) => {
+                    this.visualizationSection.elems = response.data.map((x) => {
+                        return {
+                            id: `visualization(id=${x.name})`,
+                            name: x.html,
+                            description: x.description,
+                            logo: x.logo ? `${getAppRoot()}${x.logo}` : null,
+                            emitter: "onHistoryId",
+                        };
+                    });
+                })
+                .catch((e) => {
+                    this.error = "Failed to load Visualizations.";
+                });
         },
     },
 };

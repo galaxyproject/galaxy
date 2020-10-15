@@ -84,6 +84,10 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
         job_manager = JobManager(trans.app)
         collection_manager = trans.app.dataset_collections_service
 
+        def _check_object(object_id, line):
+            if object_id is None:
+                raise MalformedContents("Missing object identifier [%s]." % line)
+
         def _remap(container, line):
             id_match = re.search(UNENCODED_ID_PATTERN, line)
             object_id = None
@@ -92,46 +96,44 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
                 object_id = int(id_match.group(2))
                 encoded_id = trans.security.encode_id(object_id)
                 line = line.replace(id_match.group(), "{}={}".format(id_match.group(1), encoded_id))
-
             if container == "history_dataset_display":
-                assert object_id is not None
+                _check_object(object_id, line)
                 hda = hda_manager.get_accessible(object_id, trans.user)
                 rval = self.handle_dataset_display(line, hda)
             elif container == "history_dataset_link":
-                assert object_id is not None
+                _check_object(object_id, line)
                 hda = hda_manager.get_accessible(object_id, trans.user)
                 rval = self.handle_dataset_display(line, hda)
             elif container == "history_dataset_index":
-                assert object_id is not None
+                _check_object(object_id, line)
                 hda = hda_manager.get_accessible(object_id, trans.user)
                 rval = self.handle_dataset_display(line, hda)
             elif container == "history_dataset_embedded":
-                assert object_id is not None
+                _check_object(object_id, line)
                 hda = hda_manager.get_accessible(object_id, trans.user)
                 rval = self.handle_dataset_embedded(line, hda)
             elif container == "history_dataset_as_image":
-                assert object_id is not None
+                _check_object(object_id, line)
                 hda = hda_manager.get_accessible(object_id, trans.user)
                 rval = self.handle_dataset_as_image(line, hda)
             elif container == "history_dataset_peek":
-                assert object_id is not None
+                _check_object(object_id, line)
                 hda = hda_manager.get_accessible(object_id, trans.user)
                 rval = self.handle_dataset_peek(line, hda)
             elif container == "history_dataset_info":
-                assert object_id is not None
+                _check_object(object_id, line)
                 hda = hda_manager.get_accessible(object_id, trans.user)
                 rval = self.handle_dataset_info(line, hda)
             elif container == "history_dataset_type":
-                assert object_id is not None
+                _check_object(object_id, line)
                 hda = hda_manager.get_accessible(object_id, trans.user)
                 rval = self.handle_dataset_type(line, hda)
             elif container == "history_dataset_name":
-                assert object_id is not None
+                _check_object(object_id, line)
                 hda = hda_manager.get_accessible(object_id, trans.user)
                 rval = self.handle_dataset_name(line, hda)
             elif container == "workflow_display":
                 stored_workflow = workflow_manager.get_stored_accessible_workflow(trans, encoded_id)
-                # TODO: should be workflow id...
                 rval = self.handle_workflow_display(line, stored_workflow)
             elif container == "history_dataset_collection_display":
                 hdca = collection_manager.get_dataset_collection_instance(trans, "history", encoded_id)
@@ -156,8 +158,10 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
             elif container == "invocation_time":
                 invocation = workflow_manager.get_invocation(trans, object_id)
                 rval = self.handle_invocation_time(line, invocation)
+            elif container == "visualization":
+                rval = None
             else:
-                raise MalformedContents("Unknown Galaxy Markdown directive encountered [%s]" % container)
+                raise MalformedContents("Unknown Galaxy Markdown directive encountered [%s]." % container)
             if rval is not None:
                 return rval
             else:
