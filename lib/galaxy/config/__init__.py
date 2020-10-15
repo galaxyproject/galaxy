@@ -20,8 +20,10 @@ import time
 from datetime import timedelta
 
 import yaml
+from sqlalchemy import MetaData
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
+from beaker.ext.sqla import make_cache_table
 from six.moves import configparser
 
 from galaxy.config.schema import AppSchema
@@ -1109,11 +1111,18 @@ class ConfiguresGalaxyMixin:
         )
         mulled_resolution_cache = None
         if self.config.mulled_resolution_cache_type:
-            cache_opts = {
-                'cache.type': self.config.mulled_resolution_cache_type,
-                'cache.data_dir': self.config.mulled_resolution_cache_data_dir,
-                'cache.lock_dir': self.config.mulled_resolution_cache_lock_dir,
-            }
+            if self.config.mulled_resolution_cache_type == "ext:sqla":
+                cache_opts = {
+                    'cache.type': self.config.mulled_resolution_cache_type,
+                    'cache.bind': self.engine,  # TODO how to access the main sqlalchemy connection?
+                    'cache.table': make_cache_table(MetaData())
+                }
+            else:
+                cache_opts = {
+                    'cache.type': self.config.mulled_resolution_cache_type,
+                    'cache.data_dir': self.config.mulled_resolution_cache_data_dir,
+                    'cache.lock_dir': self.config.mulled_resolution_cache_lock_dir,
+                }
             mulled_resolution_cache = CacheManager(**parse_cache_config_options(cache_opts)).get_cache('mulled_resolution')
         self.container_finder = containers.ContainerFinder(app_info, mulled_resolution_cache=mulled_resolution_cache)
         self._set_enabled_container_types()
