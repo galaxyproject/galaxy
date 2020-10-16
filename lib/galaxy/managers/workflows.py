@@ -815,7 +815,7 @@ class WorkflowContentsManager(UsesAnnotations):
                     if output_label is not None:
                         if output_label in output_label_index:
                             if output_label not in output_label_duplicate:
-                                output_label_duplicate.append(output_label)
+                                output_label_duplicate.add(output_label)
                         else:
                             output_label_index[output_label] = True
             step_dict['workflow_outputs'] = outputs
