@@ -43,7 +43,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_persistent_volume_claim_name=dict(map=str),
             k8s_persistent_volume_claim_mount_path=dict(map=str),
             k8s_namespace=dict(map=str, default="default"),
-            k8s_pod_retrials=dict(map=int, valid=lambda x: int > 0, default=3))
+            k8s_pod_retrials=dict(map=int, valid=lambda x: int(x) > 0, default=3))
 
         if 'runner_param_specs' not in kwargs:
             kwargs['runner_param_specs'] = dict()
