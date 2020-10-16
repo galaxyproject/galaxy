@@ -749,10 +749,7 @@ class WorkflowContentsManager(UsesAnnotations):
             # Load label from state of data input modules, necessary for backward compatibility
             self.__set_default_label(step, module, step.tool_inputs)
             # Fix any missing parameters
-            upgrade_message_dict = {}
-            check_and_update_messages = module.check_and_update_state()
-            if check_and_update_messages:
-                upgrade_message_dict = check_and_update_messages
+            upgrade_message_dict = module.check_and_update_state() or {}
             if hasattr(module, "version_changes") and module.version_changes:
                 upgrade_message_dict[module.tool.name] = "\n".join(module.version_changes)
             # Get user annotation.
