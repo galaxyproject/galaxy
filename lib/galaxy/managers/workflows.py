@@ -803,7 +803,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
             # workflow outputs
             outputs = []
-            output_label_duplicate = []
+            output_label_duplicate = set()
             for output in step.unique_workflow_outputs:
                 if output.workflow_step.type not in input_step_types:
                     output_label = output.label
