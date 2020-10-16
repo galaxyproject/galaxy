@@ -1,0 +1,173 @@
+@import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
+@import url(https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic);
+@import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+
+body { font-family: 'Droid Serif'; }
+
+h1, h2, h3 {
+    font-family: 'Yanone Kaffeesatz';
+    font-weight: normal;
+    text-align: center;
+}
+
+h3{
+    position: absolute;
+    top: 30px;
+    left: 0px;
+    width: 100%;
+}
+
+.packed h3{
+    position: absolute;
+    top: 10px;
+    left: 0px;
+    width: 100%;
+    margin-top:0px;
+}
+
+.hljs-monokai .hljs {
+    display: block;
+    overflow-x: auto;
+    padding: .5em;
+    background: #272822;
+    color: #ddd;
+}
+
+.remark-code, .remark-inline-code {
+    font-family: 'Ubuntu Mono';
+    text-align: left;
+}
+
+.remark-code{
+    font-size: 18px;
+}
+
+.remark-code-line {
+    min-height: 1em;
+}
+
+ul, ol {
+    text-align: left;
+}
+
+img{
+    max-height: 400px;
+    max-width: 700px;
+}
+
+.image-10 img {
+  width: 10%;
+}
+
+.image-25 img {
+  width: 25%;
+}
+
+.image-50 img {
+  width: 50%;
+}
+
+.image-75 img {
+  width: 75%;
+}
+
+.footnote {
+    position: absolute;
+    bottom: 60px;
+    left: 0px;
+    width: 100%;
+    font-size: 15px;
+    color: #444444;
+}
+
+.my-footer {
+    position: absolute;
+    bottom: 0px;
+    left: 0px;
+    height: 50px;
+    width: 100%;
+}
+
+.my-footer span {
+    font-size: 10pt;
+    position: absolute;
+    left: 15px;
+    bottom: 2px;
+}
+
+.remark-slide-number {
+    font-size: 12px;
+}
+
+a{
+    text-decoration: none;
+}
+
+td, th {
+    text-align: left;
+    padding-left: 5px;
+    padding-right: 5px;
+    border-bottom: 1px solid #ddd;
+}
+
+
+.left-column5 {
+    width: 5%;
+    float: left;
+}
+
+.right-column95 {
+    width: 93%;
+    float: right;
+}
+
+
+.left-column95 {
+    width: 93%;
+    float: left;
+}
+
+.right-column5 {
+    width: 5%;
+    float: right;
+}
+
+.reduce90 {
+    font-size: 90%;
+}
+
+.reduce90 .remark-code{
+    font-size: 16px;
+}
+
+.reduce70 {
+    font-size: 70%;
+}
+
+.reduce70 .remark-code{
+    font-size: 12px;
+}
+
+.enlarge120 {
+    font-size: 120%;
+}
+
+.enlarge120 .remark-code{
+    font-size: 22px;
+}
+
+.strike {
+    text-decoration: line-through;
+}
+
+.pull-left {
+    float: left;
+    width: 47%;
+}
+.pull-right {
+    float: right;
+    width: 47%;
+}
+.pull-right ~ p {
+    clear: both;
+}

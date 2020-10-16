@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<!-- 
+    Delay non-upload jobs indefinitely.
+-->
+<job_conf>
+    <plugins>
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="2"/>
+        <plugin id="dynamic" type="runner">
+            <param id="rules_module">integration.delay_rules</param>
+        </plugin>
+    </plugins>
+
+    <handlers>
+        <handler id="main"/>
+    </handlers>
+
+    <destinations default="local_dest">
+
+        <destination id="local_dest" runner="dynamic">
+            <param id="type">python</param>
+            <param id="function">delay</param>
+        </destination>
+
+        <destination id="upload_dest" runner="local">
+        </destination>
+
+    </destinations>
+
+    <tools>
+        <tool id="upload1" destination="upload_dest" />
+    </tools>
+
+</job_conf>

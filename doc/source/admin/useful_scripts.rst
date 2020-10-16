@@ -1,5 +1,5 @@
-Useful Scripts and Administration Tricks
-========================================
+Scripts & Tricks
+================
 
 This page aims to help ease the burden of administration with some easy to use scripts and documentation on what is available for admins to use.
 

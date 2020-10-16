@@ -42,13 +42,13 @@ def getMissval(inped=''):
     commonmissvals = {'N': 'N', '0': '0', 'n': 'n', '9': '9', '-': '-', '.': '.'}
     try:
         f = open(inped, 'r')
-    except:
+    except Exception:
         return None  # signal no in file
     missval = None
     while missval is None:  # doggedly continue until we solve the mystery
         try:
             l = f.readline()
-        except:
+        except Exception:
             break
         ll = l.split()[6:]  # ignore pedigree stuff
         for c in ll:
@@ -81,7 +81,7 @@ def main():
     """
     need to work with rgenetics composite datatypes
     so in and out are html files with data in extrafiles path
-    <command interpreter="python">lped_to_pbed_converter.py '$input1/$input1.metadata.base_name'
+    <command>python '$__tool_directory__/lped_to_pbed_converter.py' '$input1/$input1.metadata.base_name'
     '$output1' '$output1.extra_files_path' '${GALAXY_DATA_INDEX_DIR}/rg/bin/plink'
     </command>
     """
@@ -94,7 +94,7 @@ def main():
     outfilepath = sys.argv[3]
     try:
         os.makedirs(outfilepath)
-    except:
+    except Exception:
         pass
     plink = sys.argv[4]
     rgConv(inpedfilepath, outhtmlname, outfilepath, plink)
@@ -104,7 +104,7 @@ def main():
         s = '## Rgenetics: http://rgenetics.org Galaxy Tools %s %s' % (prog, timenow())  # becomes info
         print(s)
         f.write('<div>%s\n<ol>' % (s))
-        for i, data in enumerate( flist ):
+        for i, data in enumerate(flist):
             f.write('<li><a href="%s">%s</a></li>\n' % (os.path.split(data)[-1], os.path.split(data)[-1]))
         f.write("</ol></div></div></body></html>")
 

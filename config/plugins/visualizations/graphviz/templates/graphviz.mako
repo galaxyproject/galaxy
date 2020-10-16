@@ -5,26 +5,24 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 
-    <title>${hda.name} | ${visualization_name}</title>
+    <title>${hda.name | h} | ${visualization_name}</title>
     <%
         root = h.url_for( '/' )
     %>
 
     <script type="text/javascript" src="/static/scripts/libs/jquery/jquery.js"></script>
 
-    ${h.stylesheet_link( root + 'plugins/visualizations/graphviz/static/css/style.css' )}
-
-    ${h.javascript_link( root + 'plugins/visualizations/graphviz/static/js/jquery.qtip.js' )}
-    ${h.javascript_link( root + 'plugins/visualizations/graphviz/static/js/cytoscape.min.js' )}
-    ${h.javascript_link( root + 'plugins/visualizations/graphviz/static/js/collapse.js' )}
-    ${h.javascript_link( root + 'plugins/visualizations/graphviz/static/js/toolPanelFunctions.js' )}
-    ${h.javascript_link( root + 'plugins/visualizations/graphviz/static/js/graphVis.js' )}
+    ${h.stylesheet_link( root + 'static/plugins/visualizations/graphviz/static/css/style.css' )}
+    ${h.javascript_link( root + 'static/plugins/visualizations/graphviz/static/js/cytoscape.min.js' )}
+    ${h.javascript_link( root + 'static/plugins/visualizations/graphviz/static/js/collapse.js' )}
+    ${h.javascript_link( root + 'static/plugins/visualizations/graphviz/static/js/toolPanelFunctions.js' )}
+    ${h.javascript_link( root + 'static/plugins/visualizations/graphviz/static/js/graphVis.js' )}
 
 </head>
 
 ## ----------------------------------------------------------------------------
 <body>
-    ${h.javascript_link( root + 'plugins/visualizations/graphviz/static/js/wz_tooltip.js' )}
+    ${h.javascript_link( root + 'static/plugins/visualizations/graphviz/static/js/wz_tooltip.js' )}
 
     <script>
         function parseNodeEdge( data ){

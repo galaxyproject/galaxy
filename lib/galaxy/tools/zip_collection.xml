@@ -15,12 +15,19 @@
       <data name="reverse" />
     </collection>
   </outputs>
-  <help>
-    This tool takes two datasets and creates a dataset pair from
-    them. Mapping over two lists, this tool can be used to build
-    a list of dataset pairs from two individual lists of datasets.
+  <help><![CDATA[
+
+This tool takes two datasets and creates a dataset pair from them. Mapping over two lists, this tool can be used to build a list of dataset pairs from two individual lists of datasets.
+
+----
+
+**Example**
+
+If you have one collection containing only forward reads and one containing only reverse, this tools will "zip" them together into a simple paired collection.
     
-    This tool will create new history datasets for your collection
-    but your quota usage will not increase.
-  </help>
+.. class:: infomark
+
+This tool will create new history datasets for your collection but your quota usage will not increase.
+
+  ]]></help>
 </tool>

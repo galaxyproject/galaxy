@@ -84,8 +84,8 @@
           <when value="paired">
             <param name="reads1" format="fastqcssanger" label="Forward FASTQ file" type="data" />
             <param name="reads2" format="fastqcssanger" label="Reverse FASTQ file" type="data" />
-            <param label="Upperbound of pairs separation (-U)" name="upperbound" type="integer" size="8" value="100000" />
-            <param label="Lowerbound of pairs separation (-L)" name="lowerbound" type="integer" size="8" value="0" />
+            <param label="Upperbound of pairs separation (-U)" name="upperbound" type="integer" value="100000" />
+            <param label="Lowerbound of pairs separation (-L)" name="lowerbound" type="integer" value="0" />
             <param label="Exclude ambiguous pairs (-e)" name="excludeAmbiguousPairs" type="boolean" checked="false" truevalue="-e" falsevalue="" />
           </when>
         </conditional>
@@ -116,14 +116,14 @@
           <when value="paired">
             <param name="reads1" format="fastqsanger" label="Forward FASTQ file" type="data" />
             <param name="reads2" format="fastqsanger" label="Reverse FASTQ file" type="data" />
-            <param label="Upperbound of pairs separation (-U)" name="upperbound" type="integer" size="8" value="100000" />
-            <param label="Lowerbound of pairs separation (-L)" name="lowerbound" type="integer" size="8" value="0" />
+            <param label="Upperbound of pairs separation (-U)" name="upperbound" type="integer" value="100000" />
+            <param label="Lowerbound of pairs separation (-L)" name="lowerbound" type="integer" value="0" />
             <param label="Exclude ambiguous pairs (-e)" name="excludeAmbiguousPairs" type="boolean" checked="false" truevalue="-e" falsevalue="" />
           </when>
         </conditional>
       </when>
     </conditional>
-    <param label="Maximum number of mismatches permitted in one end of full read (-v)" name="valAlign" type="integer" size="5" value="2" />
+    <param label="Maximum number of mismatches permitted in one end of full read (-v)" name="valAlign" type="integer" value="2" />
     <conditional name="align">
       <param help="Use default setting or specify full parameters list" label="PerM settings to use" name="options" type="select">
         <option value="preSet">Commonly used</option>
@@ -147,7 +147,7 @@
           <option value=":">Colon</option>
           <option value="_">Underscore</option>
         </param>
-        <param label="Use the first n bases of each read for alignment (-T)" name="sTrimL" type="integer" size="5" value="50" />
+        <param name="sTrimL" type="integer" value="50" label="Use the first n bases of each read for alignment (-T)" />
         <param name="includeReadsWN" type="boolean" checked="true" truevalue="--includeReadsWN" falsevalue="" label="Include reads with 'N' or '.' by encoding '.' as 3, 'N' as 'A' (--includeReadsWN)" /> 
         <param name="statsOnly" type="boolean" checked="false" truevalue="--statsOnly" falsevalue="" label="Output mapping stats only. Don't output alignments (--statsOnly)" />
         <param name="ignoreQS" type="boolean" checked="false" truevalue="--ignoreQS" falsevalue="" label="Ignore quality scores (--ignoreQS)" />

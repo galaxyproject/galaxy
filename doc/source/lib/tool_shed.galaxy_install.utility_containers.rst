@@ -1,5 +1,5 @@
-tool_shed.galaxy_install.utility_containers package
-===================================================
+tool\_shed\.galaxy\_install\.utility\_containers package
+========================================================
 
 .. automodule:: tool_shed.galaxy_install.utility_containers
     :members:

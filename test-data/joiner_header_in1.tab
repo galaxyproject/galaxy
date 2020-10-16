@@ -1,0 +1,4 @@
+#chr	start	end	gene
+chr1	10	20	geneA
+chr1	50	80	geneB
+chr5	10	40	geneL

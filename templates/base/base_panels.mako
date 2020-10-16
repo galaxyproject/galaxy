@@ -21,9 +21,9 @@
 ## Default stylesheets
 <%def name="stylesheets()">
     ${h.css(
-        'base',
         'jquery.rating',
-        'bootstrap-tour'
+        'bootstrap-tour',
+        'base'
     )}
     <style type="text/css">
     #center {
@@ -52,36 +52,12 @@
 
     ${h.js(
         ## TODO: remove when all libs are required directly in modules
-        'bundled/libs.bundled',
         'libs/require',
+        'bundled/libs.chunk',
+        'bundled/base.chunk',
+        'bundled/extended.bundled'
     )}
-
-    <script type="text/javascript">
-        // configure require
-        // due to our using both script tags and require, we need to access the same jq in both for plugin retention
-        // source http://www.manuel-strehl.de/dev/load_jquery_before_requirejs.en.html
-        window.Galaxy = window.Galaxy || {};
-        window.Galaxy.root = '${h.url_for( "/" )}';
-        define( 'jquery', [], function(){ return jQuery; })
-        // TODO: use one system
-
-        // shims and paths
-        require.config({
-            baseUrl: "${h.url_for('/static/scripts') }",
-            shim: {
-                "libs/underscore": {
-                    exports: "_"
-                },
-                "libs/backbone": {
-                    deps: [ 'jquery', 'libs/underscore' ],
-                    exports: "Backbone"
-                }
-            },
-            // cache busting using time server was restarted
-            urlArgs: 'v=${app.server_starttime}',
-        });
-    </script>
-
+    
 </%def>
 
 <%def name="javascript_app()">
@@ -97,13 +73,13 @@
 
     %if self.has_left_panel:
         var lp = new panels.LeftPanel({ el: '#left' });
-        force_left_panel = function( x ) { lp.force_panel( x ) };
+        window.force_left_panel = function( x ) { lp.force_panel( x ) };
     %endif
 
     %if self.has_right_panel:
         var rp = new panels.RightPanel({ el: '#right' });
         window.handle_minwidth_hint = function( x ) { rp.handle_minwidth_hint( x ) };
-        force_right_panel = function( x ) { rp.force_panel( x ) };
+        window.force_right_panel = function( x ) { rp.force_panel( x ) };
     %endif
 
     %if t.webapp.name == 'galaxy' and app.config.ga_code:
@@ -136,7 +112,7 @@
         overlay_class = ""
     %>
 
-    <div id="top-modal" class="modal fade ${overlay_class}" ${display}>
+    <div id="top-modal" class="modal ${overlay_class}" ${display}>
         <div id="top-modal-backdrop" class="modal-backdrop fade ${overlay_class}" style="z-index: -1"></div>
         <div id="top-modal-dialog" class="modal-dialog">
             <div class="modal-content">
@@ -166,11 +142,13 @@
         ## Force IE to standards mode, and prefer Google Chrome Frame if the user has already installed it
         <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
 
-        %if app.config.brand:
-            <title>${self.title()} / ${app.config.brand}</title>
-        %else:
-            <title>${self.title()}</title>
-        %endif
+        <title>
+            Galaxy
+            %if app.config.brand:
+            | ${app.config.brand}
+            %endif
+            | ${self.title()}
+        </title>
         ## relative href for site root
         <link rel="index" href="${ h.url_for( '/' ) }"/>
         ${self.stylesheets()}
@@ -185,6 +163,7 @@
     if self.show_inactivity_warning:
         body_class += " has-inactivity-box"
     %>
+
 
     <body scroll="no" class="full-content ${body_class}">
         %if self.require_javascript:
@@ -215,27 +194,29 @@
                 </div>
             %endif
             ${self.overlay(visible=self.overlay_visible)}
-            %if self.has_left_panel:
-                <div id="left">
-                    ${self.left_panel()}
-                    <div class="unified-panel-footer">
-                        <div class="panel-collapse"></div>
-                        <div class="drag"></div>
-                    </div>
-                </div><!--end left-->
-            %endif
-            <div id="center" class="inbound">
-                ${self.center_panel()}
-            </div><!--end center-->
-            %if self.has_right_panel:
-                <div id="right">
-                    ${self.right_panel()}
-                    <div class="unified-panel-footer">
-                        <div class="panel-collapse right"></div>
-                        <div class="drag"></div>
-                    </div>
-                </div><!--end right-->
-            %endif
+            <div id="columns">
+                %if self.has_left_panel:
+                    <div id="left">
+                        ${self.left_panel()}
+                        <div class="unified-panel-footer">
+                            <div id="left-panel-collapse" class="panel-collapse"></div>
+                            <div id="left-panel-drag" class="drag"></div>
+                        </div>
+                    </div><!--end left-->
+                %endif
+                <div id="center" class="inbound">
+                    ${self.center_panel()}
+                </div><!--end center-->
+                %if self.has_right_panel:
+                    <div id="right">
+                        ${self.right_panel()}
+                        <div class="unified-panel-footer">
+                            <div id="right-panel-collapse" class="panel-collapse right"></div>
+                            <div id="right-panel-drag" class="drag"></div>
+                        </div>
+                    </div><!--end right-->
+                %endif
+            </div><!--end columns-->
         </div><!--end everything-->
         <div id='dd-helper' style="display: none;"></div>
         ## Allow other body level elements

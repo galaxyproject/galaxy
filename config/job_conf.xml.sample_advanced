@@ -33,7 +33,7 @@
             -->
             <param id="rules_module">galaxy.jobs.rules</param>
         </plugin>
-        <!-- Pulsar runners (see more at https://pulsar.readthedocs.org) -->
+        <!-- Pulsar runners (see more at https://pulsar.readthedocs.io/) -->
         <plugin id="pulsar_rest" type="runner" load="galaxy.jobs.runners.pulsar:PulsarRESTJobRunner">
           <!-- Allow optimized HTTP calls with libcurl (defaults to urllib) -->
           <!-- <param id="transport">curl</param> -->
@@ -73,7 +73,7 @@
           <!-- The AMQP client can provide an SSL client certificate (e.g. for
                validation), the following options configure that certificate
                (see for reference:
-                 http://kombu.readthedocs.org/en/latest/reference/kombu.connection.html
+                 https://kombu.readthedocs.io/en/latest/reference/kombu.connection.html
                ). If you simply want to use SSL but not use/validate a client
                cert, just use the ?ssl=1 query on the amqp URL instead. -->
           <!-- <param id="amqp_connect_ssl_ca_certs">/path/to/cacert.pem</param> -->
@@ -113,17 +113,17 @@
                information on configuring a Pulsar app see:
 
                https://github.com/galaxyproject/pulsar/blob/master/app.yml.sample
-               http://pulsar.readthedocs.org/en/latest/configure.html
+               https://pulsar.readthedocs.io/en/latest/configure.html
           -->
           <!-- <param id="pulsar_config">path/to/pulsar/app.yml</param> -->
         </plugin>
-        <plugin id="k8s" type="runner" load="galaxy.jobs.runners.kubernetes:kubernetes">
+        <plugin id="k8s" type="runner" load="galaxy.jobs.runners.kubernetes:KubernetesJobRunner">
             <!-- The Kubernetes (k8s) plugin allows to send jobs to a k8s cluster which shares filesystem with Galaxy.
 
                  This requires installing pykube. Install pykube by activating Galaxy's virtual
-                 and then executing the following pip command:
+                 environment and then executing the following pip command:
 
-                 pip install -e git+https://github.com/pcm32/pykube.git@feature/allMergedFeatures#egg=pykube
+                 pip install pykube==0.15.0
 
                  The shared file system needs to be exposed to k8s through a Persistent Volume (rw) and a Persistent
                  Volume Claim. An example of a Persistent Volume could be, in yaml (access modes, reclaim policy and
@@ -178,11 +178,24 @@
                  your installation. This is the file that tells the plugin where the k8s cluster is, access credentials,
                  etc. This parameter is not necessary and ignored if k8s_use_service_account is set to True -->
 
-            <param id="k8s_use_service_account">false</param>
+            <!-- <param id="k8s_pull_policy">Default</param> -->
+            <!-- Sets the pull policy to be used for all containers invoked for jobs by the Kubernetes cluster. Can take
+                 any value among the possible Kubernetes container image pull policies: Always, IfNotPresent or Never
+                 (respecting capitalization). Any other value, such as "Default", will not change the setting on k8s and
+                 leave for the containers to run with the default pull policy specified at the cluster (this is normally
+                 IfNotPresent). Container images using latest are by default always pulled, so you need to use defined
+                 versions for offline cases to work (and images need to be previously pulled). -->
+
+            <!-- <param id="k8s_use_service_account">false</param> -->
             <!-- For use when Kubernetes should be accessed from inside a Pod running Galaxy (that is,
                  galaxy is running inside Kubernetes). If this variable is True, then the previous k8s_config_path is
                  not required and actually ignored. It is not necessary to set this value if not setting it to true -->
 
+            <!-- <param id="k8s_job_api_version">batch/v1</param> -->
+            <!-- Version of the Kubernetes Job API object to use, the default one batch/v1 should be supported from
+                 Kubernetes 1.2 and on. Changing this a much newer version in the future might require changes to the
+                 plugin runner code. Value extensions/v1beta1 is also supported for pre 1.2 legacy installations.
+                 -->
             <param id="k8s_persistent_volume_claim_name">galaxy_pvc</param>
             <!-- The name of the Persisten Volume Claim (PVC) to be used, details above, needs to match the PVC's
                  metadata:name -->
@@ -192,11 +205,11 @@
                  set in universe_wsgi.ini (or equivalent general galaxy config file). This is the mount path of the
                  PVC within the docker container that will be actually running the tool -->
 
-            <param id="k8s_namespace">galaxy-instanceA</param>
+            <!-- <param id="k8s_namespace">default</param> -->
             <!-- The namespace to be used on the Kubernetes cluster, if different from default, this needs to be set
                  accordingly in the PV and PVC detailed above -->
 
-            <param id="k8s_pod_retrials">4</param>
+            <!-- <param id="k8s_pod_retrials">4</param> -->
             <!-- Allows pods to retry up to this number of times, before marking the galaxy job failed. k8s is a state
                  setter essentially, so by default it will try to take a job submitted to successful completion. A job
                  submits pods, until the number of successes (1 in this use case) is achieved, assuming that whatever is
@@ -204,27 +217,167 @@
                  This option sets a limit of retrials, so that after that number of failed pods, the job is re-scaled to
                  zero (no execution) and the stderr/stdout of the k8s job is reported in galaxy (and the galaxy job set
                  to failed) -->
-        </plugin>
 
+            <!-- <param id="k8s_galaxy_instance_id">my-instance</param> -->
+            <!-- Identifies the Galaxy instance where this runner belongs. Setting this variable means that the runner
+                 will trust k8s Jobs with the structure galaxy-my-instance-<number> to be its own. This variable needs
+                 to be DNS friendly, and up to 20 characters, as it will go in the k8s Jobs and Pods names. An instance
+                 in this context is understood as a running Galaxy setup that is bound to a particular database stored
+                 state. This is mostly relevant for long term running instances. When resetting a long term running
+                 instance to zero (database and files deleted), one would want to change this instance id to avoid
+                 clashing with previous jobs in the same k8s cluster where the older setup run. -->
+
+            <!-- <param id="k8s_timeout_seconds_job_deletion">30</param> -->
+            <!-- If the above `k8s_galaxy_instance_id` is not set, when finding an existing k8s job with the same
+                 id as a new job being generated, the runner will attempt to delete that existing job first, to proceed
+                 then to create the new job (the old job is not trusted to have been instructed to do the same as the
+                 new one). This variables controls the timeout for waiting for that job deletion. If the timeout is
+                 exceeded and the existing job is not deleted, the new job won't be added to the Galaxy queue. -->
+
+            <!-- <param id="k8s_supplemental_group_id">0</param> -->
+            <!-- <param id="k8s_fs_group_id">0</param> -->
+            <!-- If mounting an NFS / GlusterFS or other shared file system which is administered to ONLY provide access
+                 to a DEFINED user/group, these variables set the group id that Pods need to use to be able to read and
+                 write from that mount. If left to zero or deleted, these parameters are neglected. Integer values
+                 above zero trigger the addition of a security context on each Pod created to dispatch jobs:
+
+                 securityContext:
+                    supplementalGroups: [value-set-goes-here]
+                    fsGroup: fs-group-integer-value
+
+                 inside the Pod spec, applicable for all containers on the pod. Just one of them set to >0 will generate
+                 the security context.
+
+                 Using this requires that the Kubernetes cluster is not running the admission controller
+                 "SecurityContextDeny". To check this, look at the admission-control= variable setup for the
+                 api-server pod definition (normally in /etc/kubernetes/manifests/kube-apiserver.manifest), it shouldn't
+                 have the mentioned admission controller. Pods with the securityContext set will fail if such admission
+                 controller is present. Removing that admission controller from the manifest should provoke kubelet
+                 to restart the api-server pod running on that machine (although this might vary on your Kubernetes
+                 installation).
+
+                 For more information see point 21.2.4.1 Group IDs on:
+                 https://access.redhat.com/documentation/en-us/openshift_container_platform/3.4/html/
+                 installation_and_configuration/configuring-persistent-storage
+
+                 Different storage strategies might or might not require supplemental groups or fs groups, one is not
+                 a requirement of the other.
+
+                 -->
+            <!-- <param id="requests_cpu">500m</param> -->
+            <!-- <param id="requests_memory">500Mi</param> -->
+            <!-- <param id="limits_cpu">2</param> -->
+            <!-- <param id="limits_memory">2Gi</param> -->
+            <!-- Kubernetes resource Requests and Limits
+                 Parameters above (requests_* and limits_*) set default minimal (requests) and
+                 maximal (limits) CPU and memory resources to be allocated to all containers in
+                 Kubernetes jobs by default.
+
+                 Limits and requests for CPU resources are measured in cpu units. Fractional requests are allowed. A
+                 Container with requests_cpu of 0.5 is guaranteed half as much CPU as one that asks for 1 CPU. The
+                 expression 0.1 is equivalent to the expression 100m, which can be read as “one hundred millicpu”. Some
+                 people say “one hundred millicores”, and this is understood to mean the same thing. A request with a
+                 decimal point, like 0.1, is converted to 100m by the API, and precision finer than 1m is not allowed.
+                 For this reason, the form 100m might be preferred.
+
+                 You can express memory as a plain integer or as a fixed-point integer using one of these suffixes: E,
+                 P, T, G, M, K. You can also use the power-of-two equivalents: Ei, Pi, Ti, Gi, Mi, Ki.
+                 For instance, "1Gi" stands for 1 Gigabyte, and "500Mi" stands for 500 megabytes. Using other formats
+                 will make the jobs fail as Kubernetes won't recognize the assignment.
+
+                 For more details on the Kubernetes resources management, see:
+                 https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/
+                 -->
+
+        </plugin>
+        <plugin id="godocker" type="runner" load="galaxy.jobs.runners.godocker:GodockerJobRunner">
+            <!-- Go-Docker is a batch computing/cluster management tool using Docker
+                 See https://bitbucket.org/osallou/go-docker for more details.  -->
+            <!--  REST based runner , submits jobs to godocker -->
+            <param id="godocker_master">GODOCKER_URL</param>
+            <!-- Specify the instance of GoDocker -->
+            <param id="user">USERNAME</param>
+            <!-- GoDocker username -->
+            <param id="key">APIKEY</param>
+            <!-- GoDocker API key -->
+            <param id="godocker_project">galaxy</param>
+            <!-- Specify the project present in the GoDocker setup -->
+        </plugin>
+        <plugin id="chronos" type="runner" load="galaxy.jobs.runners.chronos:ChronosJobRunner">
+            <!-- Chronos is a framework for the Apache Mesos software; a software which manages
+                 computer clusters. Specifically, Chronos runs of top of Mesos and it's used
+                 for job orchestration.
+
+                 This runner requires a shared file system where the directories of
+                 `job_working_directory`, `file_path` and `new_file_path` settings defined on
+                 the `galaxy.ini` file are shared amongst the Mesos agents (i.e. nodes which
+                 actually run the jobs).
+            -->
+            <param id="chronos">`chronos_host`</param>
+            <!-- Hostname which runs Chronos instance. -->
+            <param id="owner">foo@bar.com</param>
+            <!-- The email address of the person responsible for the job. -->
+            <param id="username">username</param>
+            <!-- Username to access Mesos cluster. -->
+            <param id="password">password</param>
+            <!-- Password to access Mesos cluster. -->
+            <param id="insecure">true</param>
+            <!-- True to communicate with Chronos over HTTPS; false otherwise-->
+        </plugin>
+        <!-- Additionally any plugin or destination (below) may define an "enabled" parameter that should
+             evaluate to True or False. When setup using
+                <param id="enabled" from_environ="<VAR>">True|False</param>
+             plugins and destinations can be conditionally loaded using environment variables.
+             Setting the param body above to True or False is required and specifies the default
+             used by Galaxy is no environment variable of the specified name is found.
+        -->
     </plugins>
-    <handlers default="handlers">
-        <!-- Additional job handlers - the id should match the name of a
-             [server:<id>] in galaxy.ini.
+    <handlers>
+        <!-- Job handler processes - for a full discussion of job handlers, see the documentation at:
+             https://docs.galaxyproject.org/en/latest/admin/scaling.html
+
+             The <handlers> container tag takes three optional attributes:
+
+               <handlers assign_with="method" max_grab="count" default="id_or_tag"/>
+
+               - `assign_with` - How jobs should be assigned to handlers. The value can be a single method or a
+                 comma-separated list that will be tried in order. The default depends on whether any handlers and a job
+                 handler "pool" (such as uWSGI mules in a `job-handlers` farm) are configured. Valid methods are
+                 explained in detail in the documentation referenced above and have the values:
+
+                   - `mem-self` - In-memory Self Assignment
+                   - `db-self`- Database Self Assignment
+                   - `db-preassign` - Database Preassignment
+                   - `uwsgi-mule-message` - uWSGI Mule Messaging
+                   - `db-transaction-isolation` - Database Transaction Isolation
+                   - `db-skip-locked` - Database SKIP LOCKED
+
+               - `max_grab` - Limit the number of jobs that a handler will self-assign per jobs-ready-to-run check loop
+                 iteration. This only applies for methods that cause handlers to self-assign multiple jobs at once
+                 (db-skip-locked, db-transaction-isolation) and the value is an integer > 0. Default is to grab as many
+                 jobs ready to run as possible.
+
+               - `default` - An ID or tag of the handler(s) that should handle any jobs not assigned to a specific
+                 handler (which is probably most of them). If unset, the default is any untagged handlers plus any
+                 handlers in the `job-handlers` (no tag) pool.
+        -->
+        <!-- Explicitly defined job handlers - the id should match the handler process's `server_name`. For webless
+             handlers, this is the value of the `server-name` argument to `galaxy-main`.
          -->
-        <handler id="handler0" tags="handlers"/>
-        <handler id="handler1" tags="handlers"/>
+        <handler id="handler0"/>
+        <handler id="handler1"/>
         <!-- Handlers will load all plugins defined in the <plugins> collection
              above by default, but can be limited to a subset using <plugin>
              tags. This is useful for heterogenous environments where the DRMAA
              plugin would need to be loaded more than once with different
              configs.
-         -->
+        -->
         <handler id="sge_handler">
             <plugin id="sge"/>
         </handler>
+        <!-- Handlers are grouped by defining (comma-separated) tags -->
         <handler id="special_handler0" tags="special_handlers"/>
         <handler id="special_handler1" tags="special_handlers"/>
-        <handler id="trackster_handler"/>
     </handlers>
     <destinations default="local">
         <!-- Destinations define details about remote resources and how jobs
@@ -349,6 +502,87 @@
                a fallback. -->
           <!-- <param id="docker_default_container_id">busybox:ubuntu-14.04</param> -->
 
+          <!-- If the destination should be secured to only allow containerized jobs
+               the following parameter may be set for the job destination. Not all,
+               or even most, tools available in Galaxy core or in the Tool Shed
+               support Docker yet so this option may require a lot of extra work for
+               the deployer. -->
+          <!-- <param id="require_container">true</param> -->
+        </destination>
+        <destination id="singularity_local" runner="local">
+          <param id="singularity_enabled">true</param>
+          <!-- See the above documentation for docker_volumes, singularity_volumes works
+               almost the same way. The only difference is that $default will expand with
+               rw directories that in Docker would expand as ro if any of subdirectories are rw.
+
+               As an example consider that Docker mounts the parent of the working directory
+               (this is known as the job directory) as ro and the working directory itself as rw.
+               This doesn't work in Singularity because if any parent directory is mounted as ro
+               none of its children will be rw. So the job directory will be mounted rw for
+               Singularity.
+          -->
+          <!--
+          <param id="singularity_volumes">$defaults,/mnt/galaxyData/libraries:ro,/mnt/galaxyData/indices:ro</param>
+          -->
+          <!-- You can configure singularity to run using sudo - this probably should not
+               be set and may be removed in the future.
+          -->
+          <!-- <param id="singularity_sudo">false</param> -->
+          <!-- Following option can be used to tweak sudo command used by
+               default. -->
+          <!-- <param id="singularity_sudo_cmd">/usr/bin/sudo -extra_param</param> -->
+          <!-- Pass extra arguments to the singularity exec command not covered by the
+               above options. -->
+          <!-- <param id="singularity_run_extra_arguments"></param> -->
+          <!-- Following command can be used to tweak singularity command. -->
+          <!-- <param id="singularity_cmd">/usr/local/custom_docker/docker</param> -->
+
+          <!-- If deployer wants to use singularity for isolation, but does not
+               trust tool's specified container - a destination wide override
+               can be set. This will cause all jobs on this destination to use
+               that singularity image. -->
+          <!-- <param id="singularity_container_id_override">/path/to/singularity/image</param> -->
+
+          <!-- Likewise, if deployer wants to use singularity for isolation and
+               does trust tool's specified container - but also wants tool's not
+               configured to run in a container the following option can provide
+               a fallback. -->
+          <!-- <param id="singularity_default_container_id">/path/to/singularity/image</param> -->
+
+          <!-- If the destination should be secured to only allow containerized jobs
+               the following parameter may be set for the job destination. Not all,
+               or even most, tools available in Galaxy core or in the Tool Shed
+               support Docker yet so this option may require a lot of extra work for
+               the deployer. -->
+          <!-- <param id="require_container">true</param> -->
+        </destination>
+        <destination id="customized_container" runner="local">
+          <!-- The above Docker and Singularity examples describe how to specify
+               default and override containers but fuller descriptions can be used
+               also to tweak extra options. Like in the above examples, "container_override"
+               will override the tool centric container resolution specified by the container
+               resolvers configuration and "containers" will provide a default if no such
+               container is found during resolution.
+
+               resolve_dependencies defaults to False, but can be set to true to use
+               dependency resolution inside the container (you'll likely want to ensure
+               Galaxy's tool dependency directory and/or Conda prefix is mounted in the
+               container if this is set. shell (defaults to /bin/sh) can be used to tell
+               Galaxy to use bash for instance in the target contanier.
+
+               If using these options, docker_enabled and/or singularity_enabled should
+               also be set to true to enable the desired container technology. If multiple
+               such containers are defined (as in the example below), the first one matching
+               the enabled container types for this destination will be used.
+          -->
+          <!-- <param id="container_override">
+              <container type="docker" shell="/bin/sh" resolve_dependencies="false">busybox:ubuntu-14.04</container>
+              <container type="singularity" shell="/bin/sh" resolve_dependencies="false">/path/to/default/container</container>
+          </param> -->
+          <!-- <param id="container">
+              <container type="docker" shell="/bin/sh" resolve_dependencies="false">busybox:ubuntu-14.04</container>
+              <container type="singularity" shell="/bin/sh" resolve_dependencies="false">/path/to/default/container</container>
+          </param> -->
         </destination>
         <destination id="pbs" runner="pbs" tags="mycluster"/>
         <destination id="pbs_longjobs" runner="pbs" tags="mycluster,longjobs">
@@ -379,6 +613,23 @@
                clusters. These don't need to be available on the Galaxy server
                itself.
           -->
+        </destination>
+        <!-- Following three destinations demonstrate setting up per-job temp directory handling.
+             In these cases TEMP, TMP, and TMPDIR will be set for each job dispatched to these
+             destinations.
+             The first simply tells Galaxy to create a temp directory in the job directory, the
+             other forms can be used to issue shell commands before the job runs on the worker node to
+             allocate a temp directory. In these other cases, Galaxy will not clean up these
+             directories so either use directories managed by the job resource manager or setup
+             tooling to clean old temp directories up outside of Galaxy. -->
+        <destination id="clean_tmp_by_job" runner="drmma">
+          <param id="tmp_dir">True</param>
+        </destination>
+        <destination id="clean_tmp_drm" runner="drmma">
+          <param id="tmp_dir">"$DRM_SET_VARIABLES_FOR_THIS_JOB"</param>
+        </destination>
+        <destination id="clean_tmp_fast_scratch" runner="drmma">
+          <param id="tmp_dir">$(mktemp -d /mnt/scratch/fastest/gxyjobXXXXXXXXXXX)</param>
         </destination>
         <destination id="real_user_cluster" runner="drmaa">
             <!-- Make sure to setup 3 real user parameters in galaxy.ini. -->
@@ -428,6 +679,30 @@
             <param id="to_destination_id">shared_cluster_8_core</param>
             <param id="num_jobs">50</param>
             <!-- <param id="job_states">queued</param> -->
+        </destination>
+        <destination id="burst_if_queued" runner="dynamic">
+            <!-- Dynamic destinations can be chained together to create more
+            complex rules. In this example, the built-in burst stock rule
+            determines whether to burst, and if so, directs to burst_if_size,
+            a user-defined dynamic destination. This destination in turn will
+            conditionally route it to a remote pulsar node if the input size
+            is below a certain threshold, or route to local if not. -->
+            <param id="type">burst</param>
+            <param id="from_destination_ids">local</param>
+            <param id="to_destination_id">burst_if_size</param>
+            <param id="num_jobs">2</param>
+            <param id="job_states">queued</param>
+        </destination>
+        <destination id="burst_if_size" runner="dynamic">
+            <param id="type">python</param>
+            <param id="function">to_destination_if_size</param>
+            <!-- Also demonstrates a destination level override of the
+            rules_module. This rules_module will take precedence over the
+            plugin level rules module when resolving the dynamic function -->
+            <param id="rules_module">galaxycloudrunner.rules</param>
+            <param id="max_size">1g</param>
+            <param id="to_destination_id">pulsar</param>
+            <param id="fallback_destination_id">local</param>
         </destination>
         <destination id="docker_dispatch" runner="dynamic">
             <!-- Follow dynamic destination type will send all tool's that
@@ -525,6 +800,14 @@
             <param id="job_partition">my_partition</param>
         </destination>
 
+        <!-- Example CLI LSF Runner: 8 cores and 16 GB ram -->
+        <destination id="local_lsf_8cpu_16GbRam" runner="cli">
+            <param id="shell_plugin">LocalShell</param>
+            <param id="job_plugin">LSF</param>
+            <param id="memory">16000</param>
+            <param id="cores">8</param>
+        </destination>
+
         <destination id="condor" runner="condor">
             <!-- With no params, jobs are submitted to the 'vanilla' universe with:
                     notification = NEVER
@@ -555,22 +838,36 @@
             <!-- <param id="docker_default_container_id">busybox:ubuntu-14.04</param> -->
         </destination>
 
-        <!-- Jobs that hit the walltime on one destination can be automatically
-             resubmitted to another destination. Walltime detection is
-             currently only implemented in the slurm runner.
+        <!-- Jobs can be re-submitted for various reasons (to the same destination or others,
+             with or without a short delay). For instance, jobs that hit the walltime on one
+             destination can be automatically resubmitted to another destination. Re-submission
+             is defined on a per-destination basis using ``resubmit`` tags. Re-submission only
+             happens currently in response to problems in the job runner - so for instance if a
+             job fails to allocate memory but the job runner doesn't detect this and completes
+             the job normally but the exit code indicates the error - the job failure
+             re-submission won't run yet (this will be added in the future).
 
-             Multiple resubmit tags can be defined, the first resubmit matching
-             the terminal condition of a job will be used.
+             Multiple `resubmit` tags can be defined, the first resubmit condition that is true
+             (i.e. evaluates to a Python truthy value) will be used for a particular job failure.
 
-             The 'condition' attribute is optional, if not present, the
-             resubmit destination will be used for all conditions. The
-             conditions currently implemented are:
+             The ``condition`` attribute is optional, if not present, the
+             resubmit destination will be used for all relevant failure types.
+             Conditions are expressed as Python-like expressions (a fairly safe subset of Python
+             is available). These expressions include math and logical operators, numbers,
+             strings, etc.... The following variables are available in these expressions:
 
-               - "walltime_reached"
-               - "memory_limit_reached"
+               - "walltime_reached" (True if and only if the job runner indicates a walltime maximum was reached)
+               - "memory_limit_reached" (True if and only if the job runner indicates a memory limit was hit)
+               - "unknown_error" (True for job or job runner problems that aren't otherwise classified)
+               - "attempt" (the re-submission attempt number this is)
+               - "seconds_since_queued" (the number of seconds since the last time the job was in a queued state within Galaxy)
+               - "seconds_running" (the number of seconds the job was in a running state within Galaxy)
 
-             The 'handler' tag is optional, if not present, the job's original
-             handler will be reused for the resubmitted job.
+             The ``handler`` attribute is optional, if not present, the job's original
+             handler will be reused for the resubmitted job. The ``destination`` attriubte
+             is optional, if not present the job's original destination will be reused for the
+             re-submission. The ``delay`` attribute is optional, if present it will cause the job to
+             delay for that number of seconds before being re-submitted. 
         -->
         <destination id="short_fast" runner="slurm">
             <param id="nativeSpecification">--time=00:05:00 --nodes=1</param>
@@ -583,6 +880,11 @@
         <destination id="smallmem" runner="slurm">
             <param id="nativeSpecification">--mem-per-cpu=512</param>
             <resubmit condition="memory_limit_reached" destination="bigmem" />
+        </destination>
+        <destination id="retry_on_unknown_problems" runner="slurm">
+            <!-- Just retry the job 5 times if un-categories errors occur backing
+                 off by 30 more seconds between attempts. -->
+            <resubmit condition="unknown_error and attempt &lt;= 5" delay="attempt * 30" />
         </destination>
         <!-- Any tag param in this file can be set using an environment variable or using
              values from galaxy.ini using the from_environ and from_config attributes
@@ -647,7 +949,36 @@
                  internally by the runner. -->
             <param id="docker_enabled">true</param>
         </destination>
-
+        <destination id="god" runner="godocker">
+            <!-- The following are configurations for the container -->
+            <param id="docker_enabled">true</param>
+            <param id="docker_cpu">1</param>
+            <param id="docker_memory">2</param>
+            <param id="docker_default_container_id">centos:latest</param>
+            <!-- Specify the image on which the jobs have to be executed -->
+            <param id="godocker_volumes"></param>
+            <!-- Mount the godocker volumes 
+                 volumes must be separated by commas.
+                 eg: <param id="godocker_volumes">home,galaxy</param>
+            -->
+            <param id="virtualenv">false</param>
+            <!-- If a tool execution in container requires galaxy virtualenv, 
+                 then enable it by setting the value to true.
+                 Disable venv by setting the value to false.
+            -->
+        </destination>
+        <destination id="chronos_dest" runner="chronos">
+            <param id="docker_enabled">true</param>
+            <param id="docker_memory">512</param>
+            <param id="docker_cpu">2</param>
+            <param id="volumes">/directory/</param>
+            <!-- Directory which is mounted to the container and is parent of
+                 the  `job_working_directory`, `file_path`, `new_file_path`
+                 directories. Directories of the data used by tools are
+                 included as well.-->
+            <param id="max_retries">2</param>
+            <!-- Number of retries to attempt if a command returns a non-zero status -->
+        </destination>
 
         <!-- Templatized destinations - macros can be used to create templated
         destinations with reduced XML duplication. Here we are creating 4 destinations in 4 lines instead of 28 using the macros defined below.
@@ -726,6 +1057,13 @@
                 will be terminated by Galaxy.
          -->
         <limit type="walltime">24:00:00</limit>
+	<!-- total_walltime:
+		Total walltime that jobs may not exceed during a set period.
+		If total walltime of finished jobs exceeds this value, any
+		new jobs are paused.  `window` is a number in days,
+		representing the period.
+         -->
+        <limit type="total_walltime" window="30">24:00:00</limit>
         <!-- output_size:
                 Size that any defined tool output can grow to before the job
                 will be terminated. This does not include temporary files

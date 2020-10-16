@@ -1,5 +1,5 @@
-galaxy.jobs.splitters package
-=============================
+galaxy\.jobs\.splitters package
+===============================
 
 .. automodule:: galaxy.jobs.splitters
     :members:
@@ -9,16 +9,16 @@ galaxy.jobs.splitters package
 Submodules
 ----------
 
-galaxy.jobs.splitters.basic module
-----------------------------------
+galaxy\.jobs\.splitters\.basic module
+-------------------------------------
 
 .. automodule:: galaxy.jobs.splitters.basic
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.jobs.splitters.multi module
-----------------------------------
+galaxy\.jobs\.splitters\.multi module
+-------------------------------------
 
 .. automodule:: galaxy.jobs.splitters.multi
     :members:

@@ -6,6 +6,6 @@ February 2014 Galaxy Release (v 14.02)
 
 Please see the `Galaxy wiki`_ for announcement and release notes.
 
-.. _Galaxy wiki: https://wiki.galaxyproject.org/News/2014_02_10_Galaxy_Distribution
+.. _Galaxy wiki: https://galaxyproject.org/news/2014-02-10-galaxy-distribution/
 
 .. include:: _thanks.rst

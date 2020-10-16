@@ -1,5 +1,5 @@
-galaxy.tools.util.galaxyops package
-===================================
+galaxy\.tools\.util\.galaxyops package
+======================================
 
 .. automodule:: galaxy.tools.util.galaxyops
     :members:

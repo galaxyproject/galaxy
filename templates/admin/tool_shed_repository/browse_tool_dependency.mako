@@ -10,7 +10,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "libs/jquery/jquery-ui", "libs/jquery/jquery.dynatree" )}
+    ## ${h.js( "libs/jquery/jquery-ui", "libs/jquery/jquery.dynatree" )}
     ${browse_files(tool_dependency.name, tool_dependency.installation_directory( trans.app ))}
 </%def>
 
@@ -22,9 +22,9 @@ ${render_galaxy_repository_actions( repository )}
     ${render_msg( message, status )}
 %endif
 
-<div class="toolForm">
-    <div class="toolFormTitle">Browse tool dependency ${tool_dependency.name|h} installation directory</div>
-    <div class="toolFormBody">
+<div class="card">
+    <div class="card-header">Browse tool dependency ${tool_dependency.name|h} installation directory</div>
+    <div class="card-body">
         <div class="form-row" >
             <label>Tool shed repository:</label>
             ${repository.name|h}

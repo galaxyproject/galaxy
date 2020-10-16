@@ -11,7 +11,6 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js("libs/jquery/jquery.rating", "libs/jquery/jstorage" )}
     ${container_javascripts()}
 </%def>
 
@@ -21,9 +20,9 @@ ${render_galaxy_repository_actions( repository )}
     ${render_msg( message, status )}
 %endif
 
-<div class="toolForm">
-    <div class="toolFormTitle">Installed tool shed repository '${repository.name|h}'</div>
-    <div class="toolFormBody">
+<div class="card">
+    <div class="card-header">Installed tool shed repository '${repository.name|h}'</div>
+    <div class="card-body">
         <form name="edit_repository" id="edit_repository" action="${h.url_for( controller='admin_toolshed', action='manage_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
             <div class="form-row">
                 <label>Tool shed:</label>
@@ -37,7 +36,7 @@ ${render_galaxy_repository_actions( repository )}
             </div>
             <div class="form-row">
                 <label>Description:</label>
-                %if in_error_state:
+                %if repository.in_error_state:
                     ${description|h}
                 %else:
                     <input name="description" type="textfield" value="${description|h}" size="80"/>
@@ -52,7 +51,7 @@ ${render_galaxy_repository_actions( repository )}
                 <label>Owner:</label>
                 ${repository.owner|h}
             </div>
-            %if in_error_state:
+            %if repository.in_error_state:
                 <div class="form-row">
                     <label>Repository installation error:</label>
                     ${repository.error_message|h}
@@ -67,7 +66,7 @@ ${render_galaxy_repository_actions( repository )}
                 <label>Deleted:</label>
                 ${repository.deleted|h}
             </div>
-            %if not in_error_state:
+            %if not repository.in_error_state:
                 <div class="form-row">
                     <input type="submit" name="edit_repository_button" value="Save"/>
                 </div>
@@ -77,6 +76,6 @@ ${render_galaxy_repository_actions( repository )}
 </div>
 <p/>
 ${render_resolver_dependencies(requirements_status)}
-%if not in_error_state:
+%if not repository.in_error_state:
     ${render_repository_items( repository.metadata, containers_dict, can_set_metadata=False, render_repository_actions_for='galaxy' )}
 %endif

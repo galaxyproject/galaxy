@@ -1,0 +1,39 @@
+<tool id="__BUILD_LIST__"
+      name="Build List"
+      version="1.0.0"
+      tool_type="build_list">
+  <description>from one or more datasets</description>
+  <type class="BuildListCollectionTool" module="galaxy.tools" />
+  <action module="galaxy.tools.actions.model_operations"
+          class="ModelOperationToolAction"/>
+  <inputs>
+    <repeat name="datasets" title="Dataset">
+      <param type="data" name="input" label="Input Dataset" />
+    </repeat>
+  </inputs>
+  <outputs>
+    <collection name="output" type="list" label="${on_string} (as list)">
+    </collection>
+  </outputs>
+  <help><![CDATA[
+
+.. class:: infomark
+
+This tool will create a new collection from your history datasets but your quota usage will not increase.
+
+  ]]></help>
+  <tests>
+    <test>
+      <repeat name="datasets">
+        <param name="input" value="simple_line.txt" />
+      </repeat>
+      <output_collection name="output" type="list">
+        <element name="0">
+          <assert_contents>
+              <has_text_matching expression="^This is a line of text.\n$"/>
+          </assert_contents>
+        </element>
+      </output_collection>
+    </test>
+  </tests>
+</tool>

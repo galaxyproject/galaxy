@@ -1,9 +1,17 @@
-<tool id="hgv_codingSnps" name="aaChanges" version="1.0.0">
+<tool id="hgv_codingSnps" name="aaChanges" version="1.0.1">
   <description>amino-acid changes caused by a set of SNPs</description>
 
-  <command interpreter="perl">
-    codingSnps.pl $input1 $input2 Galaxy build=${input1.metadata.dbkey} loc=${GALAXY_DATA_INDEX_DIR}/codingSnps.loc chr=${input1.metadata.chromCol} start=${input1.metadata.startCol} end=${input1.metadata.endCol} snp=$col1 keepColumns=$keep strand=${strand_source.strand_col} unique=$uniqpos > $out_file1
-  </command>
+  <requirements>
+    <requirement type="package" version="8.25">coreutils</requirement>
+    <requirement type="package" version="357">ucsc-twobittofa</requirement>
+    <requirement type="package" version="357">ucsc-nibfrag</requirement>
+  </requirements>
+
+  <code file="codingSnps_filter.py"></code>
+
+  <command><![CDATA[
+perl '$__tool_directory__/codingSnps.pl' '$input1' '$input2' Galaxy build=${input1.metadata.dbkey} loc=${GALAXY_DATA_INDEX_DIR}/codingSnps.loc chr=${input1.metadata.chromCol} start=${input1.metadata.startCol} end=${input1.metadata.endCol} snp=$col1 keepColumns=$keep strand=${strand_source.strand_col} unique=$uniqpos > '$out_file1'
+  ]]></command>
 
   <inputs>
     <param format="interval" name="input1" type="data" label="SNP dataset">
@@ -43,13 +51,6 @@
     <data format="interval" name="out_file1" />
   </outputs>
 
-  <code file="codingSnps_filter.py"></code>
-
-  <requirements>
-    <requirement type="package">gnu_coreutils</requirement>
-    <requirement type="package">ucsc_tools</requirement>
-  </requirements>
-
   <tests>
     <test>
       <param name="input1" ftype="interval" value="codingSnps_input1.interval" dbkey="hg18" />
@@ -58,7 +59,7 @@
       <param name="strand_choice" value="all_pos" />
       <param name="strand_col" value="+" />
       <param name="uniqpos" value="0" />
-      <output name="output" file="codingSnps_output1.interval" />
+      <output name="out_file1" file="codingSnps_output1.interval" />
     </test>
     <test>
       <param name="input1" ftype="interval" value="codingSnps_input2.interval" dbkey="hg18" />
@@ -67,7 +68,7 @@
       <param name="strand_choice" value="all_pos" />
       <param name="strand_col" value="+" />
       <param name="uniqpos" value="0" />
-      <output name="output" file="codingSnps_output2.interval" />
+      <output name="out_file1" file="codingSnps_output2.interval" />
     </test>
     <test>
       <param name="input1" ftype="interval" value="codingSnps_input2.interval" dbkey="hg18" />
@@ -75,7 +76,7 @@
       <param name="col1" value="4" />
       <param name="strand_choice" value="all_neg" />
       <param name="strand_col" value="-" />
-      <output name="output" file="codingSnps_output3.interval" />
+      <output name="out_file1" file="codingSnps_output3.interval" />
     </test>
   </tests>
 
@@ -172,6 +173,5 @@ or is synonymous then it is not included in the output file.
     chr22  15848885  15848886  C/T  uc010gqs.1  Ser:Trp/Stop  200  C  TCG:TGG/TAG
     chr22  15849048  15849049  A/C  uc002zlw.1  Gly:Stop/Gly  163  G  GGA:TGA/GGA
     etc.
-
   </help>
 </tool>

@@ -1,0 +1,21 @@
+<tool id="cat_data_and_sleep" name="Concatenate datasets (with sleep)" version="0.1.0">
+    <description>tail-to-head</description>
+    <command><![CDATA[
+        cat $input1 #for $q in $queries# ${q.input2} #end for# > $out_file1;
+        sleep '$sleep_time';
+    ]]></command>
+    <inputs>
+        <param name="sleep_time" type="integer" label="Sleep" help="Optionally simulates computation before concatenating files" value="0" />
+        <param name="input1" type="data" label="Concatenate Dataset"/>
+        <repeat name="queries" title="Dataset">
+            <param name="input2" type="data" label="Select" />
+        </repeat>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format_source="input1" metadata_source="input1"/>
+    </outputs>
+    <tests>
+    </tests>
+    <help>
+    </help>
+</tool>

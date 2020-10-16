@@ -1,5 +1,5 @@
-galaxy.openid package
-=====================
+galaxy\.openid package
+======================
 
 .. automodule:: galaxy.openid
     :members:
@@ -9,8 +9,8 @@ galaxy.openid package
 Submodules
 ----------
 
-galaxy.openid.providers module
-------------------------------
+galaxy\.openid\.providers module
+--------------------------------
 
 .. automodule:: galaxy.openid.providers
     :members:

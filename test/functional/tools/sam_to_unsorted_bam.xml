@@ -1,0 +1,74 @@
+<tool id="test_sam_to_bam_conversions" name="Test sam to bam conversions">
+    <requirements>
+        <requirement type="package" version="1.6">samtools</requirement>
+    </requirements>
+    <command><![CDATA[
+    #if $input1:
+        samtools view
+            -b
+            -h
+            -@ \${GALAXY_SLOTS:-2}
+            -o '$bam_native_output'
+            '$input1'
+    #elif $input2:
+        cp '$input2' '$bam_native_output'
+    #elif $input3:
+        cp '$input3' '$bam_output'
+    #elif $input4:
+        cp '$input4' '$qname_sorted_bam_output'
+    #elif $input5:
+        cp '$input5' '$qname_input_sorted_bam_output'
+    #end if
+    ]]>
+    </command>
+    <inputs>
+        <param name="input1" type="data" format="sam" label="SAM file" optional="true"/>
+        <param name="input2" type="data" format="unsorted.bam" label="Unsorted BAM file" optional="true"/>
+        <param name="input3" type="data" format="bam" label="BAM file sorted by coordinate" optional="true"/>
+        <param name="input4" type="data" format="qname_sorted.bam" label="BAM file sorted by queryname" optional="true"/>
+        <param name="input5" type="data" format="qname_input_sorted.bam" label="BAM file with sort order determined by the aligner" optional="true"/>
+    </inputs>
+    <outputs>
+        <data name="bam_native_output" format="unsorted.bam">
+            <filter>input1 or input2</filter>
+        </data>
+        <data name="bam_output" format="bam">
+            <filter>input3</filter>
+        </data>
+        <data name="qname_sorted_bam_output" format="qname_sorted.bam">
+            <filter>input4</filter>
+        </data>
+        <data name="qname_input_sorted_bam_output" format="qname_input_sorted.bam">
+            <filter>input5</filter>
+        </data>
+    </outputs>
+    <tests>
+        <!-- Test that bam native output won't be sorted-->
+        <test>
+            <param name="input1" value="sam_with_header.sam" ftype="sam"/>
+            <output name="bam_native_output" file="bam_native_from_sam.bam" ftype="unsorted.bam"/>
+        </test>
+        <!-- Test that sam input is properly converted to bam native -->
+        <test>
+            <param name="input2" value="sam_with_header.sam" ftype="sam"/>
+            <output name="bam_native_output" file="bam_native_from_sam.bam" ftype="unsorted.bam"/>
+        </test>
+        <!-- Test that sam input is properly converted to bam -->
+        <test>
+            <param name="input3" value="sam_with_header.sam" ftype="sam"/>
+            <output name="bam_output" file="bam_from_sam.bam" ftype="bam"/>
+        </test>
+        <!-- Test that sam input is properly converted to qname_sorted.bam -->
+        <test>
+            <param name="input4" value="sam_with_header.sam" ftype="sam"/>
+            <output name="qname_sorted_bam_output" file="qname_sorted.bam" ftype="qname_sorted.bam"/>
+        </test>
+        <!-- Test that sam input is properly converted to qname_sorted.bam (which is qname_input_sorted.bam compatible) -->
+        <test>
+            <param name="input4" value="sam_with_header.sam" ftype="sam"/>
+            <output name="qname_sorted_bam_output" file="qname_sorted.bam" ftype="qname_sorted.bam"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

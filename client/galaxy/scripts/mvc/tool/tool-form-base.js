@@ -1,330 +1,303 @@
 /**
     This is the base class of the tool form plugin. This class is e.g. inherited by the regular and the workflow tool form.
 */
-define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
-        'mvc/citation/citation-model', 'mvc/citation/citation-view'],
-    function(Utils, Deferred, Ui, FormBase, CitationModel, CitationView) {
-    return FormBase.extend({
-        initialize: function(options) {
-            var self = this;
-            FormBase.prototype.initialize.call(this, options);
-            this.deferred = new Deferred();
-            if (options.inputs) {
-                this._buildForm(options);
-            } else {
-                this.deferred.execute(function(process) {
-                    self._buildModel(process, options, true);
-                });
-            }
-            // Listen to history panel
-            if ( options.listen_to_history && parent.Galaxy && parent.Galaxy.currHistoryPanel ) {
-                this.listenTo( parent.Galaxy.currHistoryPanel.collection, 'change', function() {
-                    this.refresh();
-                });
-            }
-        },
+import _ from "underscore";
+import $ from "jquery";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
+import _l from "utils/localization";
+// import Utils from "utils/utils";
+import Deferred from "utils/deferred";
+import Ui from "mvc/ui/ui-misc";
+import FormBase from "mvc/form/form-view";
+import Webhooks from "mvc/webhooks";
+import Citations from "components/Citations.vue";
+import Vue from "vue";
 
-        /** Listen to history panel changes and update the tool form */
-        refresh: function() {
-            var self = this;
-            self.deferred.reset();
-            this.deferred.execute( function (process){
-                self._updateModel( process)
+export default FormBase.extend({
+    initialize: function(options) {
+        let Galaxy = getGalaxyInstance();
+        var self = this;
+        this.deferred = new Deferred();
+        FormBase.prototype.initialize.call(this, options);
+
+        // optional model update
+        this._update(this.model.get("initialmodel"));
+
+        // listen to history panel
+        if (this.model.get("listen_to_history") && Galaxy && Galaxy.currHistoryPanel) {
+            this.listenTo(Galaxy.currHistoryPanel.collection, "change", () => {
+                self.model.get("onchange")();
             });
-        },
-
-        /** Wait for deferred build processes before removal */
-        remove: function() {
-            var self = this;
-            this.$el.hide();
-            this.deferred.execute(function(){
-                FormBase.prototype.remove.call(self);
-                Galaxy.emit.debug('tool-form-base::remove()', 'Destroy view.');
-            });
-        },
-
-        /** Build form */
-        _buildForm: function(options) {
-            var self = this;
-            this.options = Utils.merge(options, this.options);
-            this.options = Utils.merge({
-                icon            : options.icon,
-                title           : '<b>' + options.name + '</b> ' + options.description + ' (Galaxy Version ' + options.version + ')',
-                operations      : !this.options.hide_operations && this._operations(),
-                onchange        : function() {
-                    self.refresh();
-                }
-            }, this.options);
-            this.options.customize && this.options.customize( this.options );
-            this.render();
-            if ( !this.options.collapsible ) {
-                this.$el.append( $( '<div/>' ).addClass( 'ui-margin-top-large' ).append( this._footer() ) );
-            }
-        },
-
-        /** Builds a new model through api call and recreates the entire form
-        */
-        _buildModel: function(process, options, hide_message) {
-            var self = this;
-            this.options.id = options.id;
-            this.options.version = options.version;
-
-            // build request url
-            var build_url = '';
-            var build_data = {};
-            if ( options.job_id ) {
-                build_url = Galaxy.root + 'api/jobs/' + options.job_id + '/build_for_rerun';
-            } else {
-                build_url = Galaxy.root + 'api/tools/' + options.id + '/build';
-                if ( Galaxy.params && Galaxy.params.tool_id == options.id ) {
-                    build_data = $.extend( {}, Galaxy.params );
-                    options.version && ( build_data[ 'tool_version' ] = options.version );
-                }
-            }
-
-            // get initial model
-            Utils.get({
-                url     : build_url,
-                data    : build_data,
-                success : function(new_model) {
-                    new_model = new_model.tool_model || new_model;
-                    if( !new_model.display ) {
-                        window.location = Galaxy.root;
-                        return;
-                    }
-                    self._buildForm(new_model);
-                    !hide_message && self.message.update({
-                        status      : 'success',
-                        message     : 'Now you are using \'' + self.options.name + '\' version ' + self.options.version + ', id \'' + self.options.id + '\'.',
-                        persistent  : false
-                    });
-                    Galaxy.emit.debug('tool-form-base::initialize()', 'Initial tool model ready.', new_model);
-                    process.resolve();
-                },
-                error   : function(response, xhr) {
-                    var error_message = ( response && response.err_msg ) || 'Uncaught error.';
-                    if ( xhr.status == 401 ) {
-                        window.location = Galaxy.root + 'user/login?' + $.param({ redirect : Galaxy.root + '?tool_id=' + self.options.id });
-                    } else if ( self.$el.is(':empty') ) {
-                        self.$el.prepend((new Ui.Message({
-                            message     : error_message,
-                            status      : 'danger',
-                            persistent  : true,
-                            large       : true
-                        })).$el);
-                    } else {
-                        Galaxy.modal && Galaxy.modal.show({
-                            title   : 'Tool request failed',
-                            body    : error_message,
-                            buttons : {
-                                'Close' : function() {
-                                    Galaxy.modal.hide();
-                                }
-                            }
-                        });
-                    }
-                    Galaxy.emit.debug('tool-form::initialize()', 'Initial tool model request failed.', response);
-                    process.reject();
-                }
-            });
-        },
-
-        /** Request a new model for an already created tool form and updates the form inputs
-        */
-        _updateModel: function(process) {
-            // link this
-            var self = this;
-            var model_url = this.options.update_url || Galaxy.root + 'api/tools/' + this.options.id + '/build';
-            var current_state = {
-                tool_id         : this.options.id,
-                tool_version    : this.options.version,
-                inputs          : $.extend(true, {}, self.data.create())
-            }
-            this.wait(true);
-
-            // log tool state
-            Galaxy.emit.debug('tool-form-base::_updateModel()', 'Sending current state.', current_state);
-
-            // post job
-            Utils.request({
-                type    : 'POST',
-                url     : model_url,
-                data    : current_state,
-                success : function(new_model) {
-                    self.update(new_model['tool_model'] || new_model);
-                    self.options.update && self.options.update(new_model);
-                    self.wait(false);
-                    Galaxy.emit.debug('tool-form-base::_updateModel()', 'Received new model.', new_model);
-                    process.resolve();
-                },
-                error   : function(response) {
-                    Galaxy.emit.debug('tool-form-base::_updateModel()', 'Refresh request failed.', response);
-                    process.reject();
-                }
-            });
-        },
-
-        /** Create tool operation menu
-        */
-        _operations: function() {
-            var self = this;
-            var options = this.options;
-
-            // button for version selection
-            var versions_button = new Ui.ButtonMenu({
-                icon    : 'fa-cubes',
-                title   : (!options.narrow && 'Versions') || null,
-                tooltip : 'Select another tool version'
-            });
-            if (!options.sustain_version && options.versions && options.versions.length > 1) {
-                for (var i in options.versions) {
-                    var version = options.versions[i];
-                    if (version != options.version) {
-                        versions_button.addMenu({
-                            title   : 'Switch to ' + version,
-                            version : version,
-                            icon    : 'fa-cube',
-                            onclick : function() {
-                                // here we update the tool version (some tools encode the version also in the id)
-                                var id = options.id.replace(options.version, this.version);
-                                var version = this.version;
-                                // queue model request
-                                self.deferred.reset();
-                                self.deferred.execute(function(process) {
-                                    self._buildModel(process, {id: id, version: version})
-                                });
-                            }
-                        });
-                    }
-                }
-            } else {
-                versions_button.$el.hide();
-            }
-
-            // button for options e.g. search, help
-            var menu_button = new Ui.ButtonMenu({
-                icon    : 'fa-caret-down',
-                title   : (!options.narrow && 'Options') || null,
-                tooltip : 'View available options'
-            });
-            if(options.biostar_url) {
-                menu_button.addMenu({
-                    icon    : 'fa-question-circle',
-                    title   : 'Question?',
-                    tooltip : 'Ask a question about this tool (Biostar)',
-                    onclick : function() {
-                        window.open(options.biostar_url + '/p/new/post/');
-                    }
-                });
-                menu_button.addMenu({
-                    icon    : 'fa-search',
-                    title   : 'Search',
-                    tooltip : 'Search help for this tool (Biostar)',
-                    onclick : function() {
-                        window.open(options.biostar_url + '/local/search/page/?q=' + options.name);
-                    }
-                });
-            };
-            menu_button.addMenu({
-                icon    : 'fa-share',
-                title   : 'Share',
-                tooltip : 'Share this tool',
-                onclick : function() {
-                    prompt('Copy to clipboard: Ctrl+C, Enter', window.location.origin + Galaxy.root + 'root?tool_id=' + options.id);
-                }
-            });
-
-            // add admin operations
-            if (Galaxy.user && Galaxy.user.get('is_admin')) {
-                menu_button.addMenu({
-                    icon    : 'fa-download',
-                    title   : 'Download',
-                    tooltip : 'Download this tool',
-                    onclick : function() {
-                        window.location.href = Galaxy.root + 'api/tools/' + options.id + '/download';
-                    }
-                });
-            }
-
-            // button for version selection
-            if (options.requirements && options.requirements.length > 0) {
-                menu_button.addMenu({
-                    icon    : 'fa-info-circle',
-                    title   : 'Requirements',
-                    tooltip : 'Display tool requirements',
-                    onclick : function() {
-                        if (!this.visible || self.portlet.collapsed ) {
-                            this.visible = true;
-                            self.portlet.expand();
-                            self.message.update({
-                                persistent  : true,
-                                message     : self._templateRequirements(options),
-                                status      : 'info'
-                            });
-                        } else {
-                            this.visible = false;
-                            self.message.update({
-                                message     : ''
-                            });
-                        }
-                    }
-                });
-            }
-
-            // add toolshed url
-            if (options.sharable_url) {
-                menu_button.addMenu({
-                    icon    : 'fa-external-link',
-                    title   : 'See in Tool Shed',
-                    tooltip : 'Access the repository',
-                    onclick : function() {
-                        window.open(options.sharable_url);
-                    }
-                });
-            }
-
-            return {
-                menu        : menu_button,
-                versions    : versions_button
-            }
-        },
-
-        /** Create footer
-        */
-        _footer: function() {
-            var options = this.options;
-            var $el = $( '<div/>' ).append( this._templateHelp( options ) );
-            if ( options.citations ) {
-                var $citations = $( '<div/>' );
-                var citations = new CitationModel.ToolCitationCollection();
-                citations.tool_id = options.id;
-                var citation_list_view = new CitationView.CitationListView({ el: $citations, collection: citations });
-                citation_list_view.render();
-                citations.fetch();
-                $el.append( $citations );
-            }
-            return $el;
-        },
-
-        /** Templates
-        */
-        _templateHelp: function( options ) {
-            var $tmpl = $( '<div/>' ).addClass( 'ui-form-help' ).append( options.help );
-            $tmpl.find( 'a' ).attr( 'target', '_blank' );
-            return $tmpl;
-        },
-
-        _templateRequirements: function( options ) {
-            var nreq = options.requirements.length;
-            if ( nreq > 0 ) {
-                var requirements_message = 'This tool requires ';
-                _.each( options.requirements, function( req, i ) {
-                    requirements_message += req.name + ( req.version ? ' (Version ' + req.version + ')' : '' ) + ( i < nreq - 2 ? ', ' : ( i == nreq - 2 ? ' and ' : '' ) );
-                });
-                var requirements_link = $( '<a/>' ).attr( 'target', '_blank' ).attr( 'href', 'https://wiki.galaxyproject.org/Tools/Requirements' ).text( 'here' );
-                return $( '<span/>' ).append( requirements_message + '. Click ' ).append( requirements_link ).append( ' for more information.' );
-            }
-            return 'No requirements found.';
         }
-    });
+        // destroy dom elements
+        this.$el.on("remove", () => {
+            self._destroy();
+        });
+    },
+
+    /** Allows tool form variation to update tool model */
+    _update: function(callback) {
+        var self = this;
+        callback = callback || this.model.get("buildmodel");
+        if (callback) {
+            this.deferred.reset();
+            this.deferred.execute(process => {
+                callback(process, self);
+                process.then(() => {
+                    self._render();
+                });
+            });
+        } else {
+            this._render();
+        }
+    },
+
+    /** Wait for deferred build processes before removal */
+    _destroy: function() {
+        var self = this;
+        this.$el.off().hide();
+        this.deferred.execute(() => {
+            FormBase.prototype.remove.call(self);
+            let Galaxy = getGalaxyInstance();
+            Galaxy.emit.debug("tool-form-base::_destroy()", "Destroy view.");
+        });
+    },
+
+    /** Build form */
+    _render: function() {
+        var self = this;
+        var options = this.model.attributes;
+        this.model.set({
+            title:
+                options.fixed_title ||
+                `<b>${options.name}</b> ${options.description} (Galaxy Version ${options.version})`,
+            operations: !options.hide_operations && this._operations(),
+            onchange: function() {
+                let Galaxy = getGalaxyInstance();
+                self.deferred.reset();
+                self.deferred.execute(process => {
+                    self.model.get("postchange")(process, self);
+                    if (self.model.get("listen_to_history")) {
+                        process.then(() => {
+                            self.stopListening(Galaxy.currHistoryPanel.collection);
+                        });
+                    }
+                });
+            }
+        });
+        this.render();
+        if (!this.model.get("collapsible")) {
+            this.$el.append(
+                $("<div/>")
+                    .addClass("mt-2")
+                    .append(this._footer())
+            );
+        }
+        options.tool_errors &&
+            this.message.update({
+                status: "danger",
+                message: options.tool_errors,
+                persistent: true
+            });
+        this.show_message &&
+            this.message.update({
+                status: "success",
+                message: `Now you are using '${options.name}' version ${options.version}, id '${options.id}'.`,
+                persistent: false
+            });
+        this.show_message = true;
+    },
+
+    /** Create tool operation menu */
+    _operations: function() {
+        var self = this;
+        var options = this.model.attributes;
+
+        // button for version selection
+        var versions_button = new Ui.ButtonMenu({
+            icon: "fa-cubes",
+            title: (!options.narrow && "Versions") || null,
+            tooltip: "Select another tool version"
+        });
+        if (!options.sustain_version && options.versions && options.versions.length > 1) {
+            for (var i in options.versions) {
+                var version = options.versions[i];
+                if (version != options.version) {
+                    versions_button.addMenu({
+                        title: `Switch to ${version}`,
+                        version: version,
+                        icon: "fa-cube",
+                        onclick: function() {
+                            // here we update the tool version (some tools encode the version also in the id)
+                            self.model.set("id", options.id.replace(options.version, this.version));
+                            self.model.set("version", this.version);
+                            self._update();
+                        }
+                    });
+                }
+            }
+        } else {
+            versions_button.$el.hide();
+        }
+
+        // button for options e.g. search, help
+        var menu_button = new Ui.ButtonMenu({
+            id: "options",
+            icon: "fa-caret-down",
+            title: (!options.narrow && "Options") || null,
+            tooltip: "View available options"
+        });
+        if (options.biostar_url) {
+            menu_button.addMenu({
+                icon: "fa-question-circle",
+                title: "Question?",
+                onclick: function() {
+                    window.open(`${options.biostar_url}/p/new/post/`);
+                }
+            });
+            menu_button.addMenu({
+                icon: "fa-search",
+                title: _l("Search"),
+                onclick: function() {
+                    window.open(`${options.biostar_url}/local/search/page/?q=${options.name}`);
+                }
+            });
+        }
+        menu_button.addMenu({
+            icon: "fa-share",
+            title: _l("Share"),
+            onclick: function() {
+                prompt(
+                    "Copy to clipboard: Ctrl+C, Enter",
+                    `${window.location.origin + getAppRoot()}root?tool_id=${options.id}`
+                );
+            }
+        });
+
+        // add admin operations
+        let Galaxy = getGalaxyInstance();
+        if (Galaxy.user && Galaxy.user.get("is_admin")) {
+            menu_button.addMenu({
+                icon: "fa-download",
+                title: _l("Download"),
+                onclick: function() {
+                    window.location.href = `${getAppRoot()}api/tools/${options.id}/download`;
+                }
+            });
+        }
+
+        // button for version selection
+        if (options.requirements && options.requirements.length > 0) {
+            menu_button.addMenu({
+                icon: "fa-info-circle",
+                title: _l("Requirements"),
+                onclick: function() {
+                    if (!this.requirements_visible || self.portlet.collapsed) {
+                        this.requirements_visible = true;
+                        self.portlet.expand();
+                        self.message.update({
+                            persistent: true,
+                            message: self._templateRequirements(options),
+                            status: "info"
+                        });
+                    } else {
+                        this.requirements_visible = false;
+                        self.message.update({ message: "" });
+                    }
+                }
+            });
+        }
+
+        // add toolshed url
+        if (options.sharable_url) {
+            menu_button.addMenu({
+                icon: "fa-external-link",
+                title: _l("See in Tool Shed"),
+                onclick: function() {
+                    window.open(options.sharable_url);
+                }
+            });
+        }
+
+        // add tool menu webhooks
+        Webhooks.load({
+            type: "tool-menu",
+            callback: function(webhooks) {
+                webhooks.each(model => {
+                    var webhook = model.toJSON();
+                    if (webhook.activate && webhook.config.function) {
+                        menu_button.addMenu({
+                            icon: webhook.config.icon,
+                            title: webhook.config.title,
+                            onclick: function() {
+                                var func = new Function("options", webhook.config.function);
+                                func(options);
+                            }
+                        });
+                    }
+                });
+            }
+        });
+
+        return {
+            menu: menu_button,
+            versions: versions_button
+        };
+    },
+
+    /** Create footer */
+    _footer: function() {
+        var options = this.model.attributes;
+        var $el = $("<div/>").append(this._templateHelp(options));
+        if (options.citations) {
+            var citationInstance = Vue.extend(Citations);
+            var vm = document.createElement("div");
+            $el.append(vm);
+            new citationInstance({
+                propsData: {
+                    id: options.id,
+                    source: "tools"
+                }
+            }).$mount(vm);
+        }
+        return $el;
+    },
+
+    /** Templates */
+    _templateHelp: function(options) {
+        var $tmpl = $("<div/>")
+            .addClass("form-help form-text mt-4")
+            .append(options.help);
+        $tmpl.find("a").attr("target", "_blank");
+        $tmpl.find("img").each(function() {
+            var img_src = $(this).attr("src");
+            if (img_src.indexOf("admin_toolshed") !== -1) {
+                $(this).attr("src", getAppRoot() + img_src);
+            }
+        });
+        return $tmpl;
+    },
+
+    _templateRequirements: function(options) {
+        var nreq = options.requirements.length;
+        if (nreq > 0) {
+            var requirements_message = "This tool requires ";
+            _.each(options.requirements, (req, i) => {
+                requirements_message +=
+                    req.name +
+                    (req.version ? ` (Version ${req.version})` : "") +
+                    (i < nreq - 2 ? ", " : i == nreq - 2 ? " and " : "");
+            });
+            var requirements_link = $("<a/>")
+                .attr("target", "_blank")
+                .attr("href", "https://galaxyproject.org/tools/requirements/")
+                .text("here");
+            return $("<span/>")
+                .append(`${requirements_message}. Click `)
+                .append(requirements_link)
+                .append(" for more information.");
+        }
+        return "No requirements found.";
+    }
 });

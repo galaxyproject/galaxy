@@ -1,0 +1,52 @@
+//============================================================================= collection element
+.dataset-collection-element {
+    @extend .has-job-state-mixin;
+    .title-bar {
+        .subtitle {
+            margin-top: 2px;
+        }
+    }
+    .details {
+        display: none;
+    }
+}
+
+//.dataset-collection-element.dataset {
+//}
+//
+//.dataset-collection-element.dataset-collection {
+//}
+
+//============================================================================= collection
+.history-content.dataset-collection {
+    @extend .has-job-state-mixin;
+}
+
+//============================================================================= collection panel
+.dataset-collection-panel {
+    @extend .flex-vertical-container;
+
+    .vertically-spaced {
+        margin-top: 4px;
+    }
+    > .controls {
+        @extend .mx-3;
+        .navigation {
+            .back {
+                span {
+                    font-weight: bold;
+                }
+            }
+        }
+        .title {
+            .name {
+                font-weight: bold;
+            }
+        }
+    }
+    > .list-items {
+        @extend .flex-column;
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+}

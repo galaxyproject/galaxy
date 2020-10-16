@@ -1,0 +1,25 @@
+<tool id="job_environment_default" name="job_environment_default" version="0.1.0" profile="18.01">
+    <requirements>
+      <container type="docker">busybox:ubuntu-14.04</container>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+      echo `id -u` > '$user_id';
+      echo `id -g` > '$group_id';
+      echo `pwd` > '$pwd';
+      echo "\$HOME" > '$home';
+      echo "\$TMP"  > '$tmp';
+      echo "\$SOME_ENV_VAR" > '$some_env_var';
+    ]]></command>
+    <inputs>
+    </inputs>
+    <outputs>
+        <data name="user_id" format="txt" label="user_id" />
+        <data name="group_id" format="txt" label="group_id" />
+        <data name="pwd" format="txt" label="pwd" />
+        <data name="home" format="txt" label="home" />
+        <data name="tmp" format="txt" label="tmp" />
+        <data name="some_env_var" format="txt" label="env_var" />
+    </outputs>
+    <help>
+    </help>
+</tool>

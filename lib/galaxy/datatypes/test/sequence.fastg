@@ -1,0 +1,7 @@
+#FASTG:begin;
+#FASTG:version=1.0:assembly_name="tiny example";
+>chr1:chr1;
+ACGANNNNN[5:gap:size=(5,4..6)]CAGGC[1:alt:allele|C,G]TATACG
+>chr2;
+ACATACGCATATATATATATATATATAT[20:tandem:size=(10,8..12)|AT]TCAGGCA[1:alt|A,T,TT]GGAC
+#FASTG:end;

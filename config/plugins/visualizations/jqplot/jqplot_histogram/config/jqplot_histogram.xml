@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE visualization SYSTEM "../../visualization.dtd">
+<visualization name="Discrete Histogram (jqPlot)">
+    <macros>
+        <import>../../jqplot_bar/config/jqplot_shared.xml</import>
+    </macros>
+    <description>Derives a discrete histogram from tabular data using R and renders a regular bar diagram using jqPlot hosted at http://www.jqplot.com.</description>
+    <expand macro="data"/>
+    <entry_point entry_point_type="chart" src="../../jqplot_bar/static/script.js" css="../../jqplot_bar/static/script.css" load="jqplot_histogram"/>
+    <specs>
+        <expand macro="specs"/>
+        <confirm>True</confirm>
+    </specs>
+    <groups>
+        <expand macro="groups"/>
+        <input>
+            <name>x</name>
+            <label>Observations</label>
+            <type>data_column</type>
+            <is_label>true</is_label>
+        </input>
+    </groups>
+    <settings>
+        <expand macro="settings"/>
+    </settings>
+</visualization>

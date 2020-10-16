@@ -1,8 +1,8 @@
 <tool id="hgv_linkToGProfile" name="g:Profiler" version="1.0.0">
   <description>tools for functional profiling of gene lists</description>
 
-  <command interpreter="perl">
-    linkToGProfile.pl $input $type $out_file1 -region=$region -gene=$genes -chr=${input.metadata.chromCol} -start=${input.metadata.startCol} -end=${input.metadata.endCol}
+  <command detect_errors="exit_code">
+perl '$__tool_directory__/linkToGProfile.pl' '$input' $type '$out_file1' -region='$region' -gene=$genes -chr=${input.metadata.chromCol} -start=${input.metadata.startCol} -end=${input.metadata.endCol}
   </command>
 
   <inputs>
@@ -34,10 +34,10 @@
 
   <tests>
     <test>
-      <param name="input" ftype="tabular" value="linkToGProfile.tabular" />
+      <param name="input" ftype="bed" value="linkToGProfile.tabular" />
       <param name="genes" value="2" />
-      <param name="type" value="ENTREZGENE_ACC" />
-      <output name="out_file1" file="linkToGProfile_1.out" />
+      <param name="type" value="Entrez Gene Acc" />
+      <output name="out_file1" file="linkToGProfile_1.out" sort="true"/>
     </test>
   </tests>
 

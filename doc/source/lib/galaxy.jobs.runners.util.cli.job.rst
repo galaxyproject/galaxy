@@ -1,5 +1,5 @@
-galaxy.jobs.runners.util.cli.job package
-========================================
+galaxy\.jobs\.runners\.util\.cli\.job package
+=============================================
 
 .. automodule:: galaxy.jobs.runners.util.cli.job
     :members:
@@ -9,24 +9,24 @@ galaxy.jobs.runners.util.cli.job package
 Submodules
 ----------
 
-galaxy.jobs.runners.util.cli.job.slurm module
----------------------------------------------
+galaxy\.jobs\.runners\.util\.cli\.job\.slurm module
+---------------------------------------------------
 
 .. automodule:: galaxy.jobs.runners.util.cli.job.slurm
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.jobs.runners.util.cli.job.slurm_torque module
-----------------------------------------------------
+galaxy\.jobs\.runners\.util\.cli\.job\.slurm\_torque module
+-----------------------------------------------------------
 
 .. automodule:: galaxy.jobs.runners.util.cli.job.slurm_torque
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.jobs.runners.util.cli.job.torque module
-----------------------------------------------
+galaxy\.jobs\.runners\.util\.cli\.job\.torque module
+----------------------------------------------------
 
 .. automodule:: galaxy.jobs.runners.util.cli.job.torque
     :members:

@@ -1,13 +1,13 @@
 <%
     root = h.url_for( "/" )
-    app_root = root + "plugins/visualizations/csg/static/"
+    app_root = root + "static/plugins/visualizations/csg/static/"
 %>
 
 <!DOCTYPE HTML>
 <html>
     <head>
         <!-- CSG Viewer is a web application for 3D shape visualization. -->
-        <title>${hda.name} | ${visualization_name}</title>
+        <title>${hda.name | h} | ${visualization_name}</title>
         ${h.javascript_link( app_root + 'dat.gui.min.js' )}
         ${h.javascript_link( app_root + 'three.min.js' )}
         ${h.javascript_link( app_root + 'Detector.js' )}

@@ -10,9 +10,9 @@
   <tests>
     <test>
       <param name="input" value="velveth_test1/output.html" ftype="velvet" >
-        <composite_data value='velveth_test1/Sequences' ftype="Sequences"/>
-        <composite_data value='velveth_test1/Roadmaps' ftype="Roadmaps"/>
-        <composite_data value='velveth_test1/Log'/>
+        <composite_data value="velveth_test1/Sequences"/>
+        <composite_data value="velveth_test1/Roadmaps"/>
+        <composite_data value="velveth_test1/Log"/>
       </param>
       <output name="unused_reads_fasta" file="velveth_test1/Sequences" compare="diff"/>
     </test>

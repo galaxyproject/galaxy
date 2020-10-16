@@ -4754,3 +4754,5 @@ WYMeditor.WymClassSafari.prototype.getTagForStyle = function(style) {
   if(/super/.test(style)) return 'sup';
   return false;
 };
+
+window.WYMeditor = WYMeditor;

@@ -116,9 +116,9 @@ tools:
 
 default_destination:
   priority:
-    low: waffles_default_low
-    med: waffles_default_med
-    high: waffles_default_high
+    low: cluster_default_low
+    med: cluster_default_med
+    high: cluster_default_high
 users:
   user@email.com:
     priority: high

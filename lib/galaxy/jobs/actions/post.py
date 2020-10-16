@@ -2,37 +2,15 @@
 Actions to be run at job completion (or output hda creation, as in the case of
 immediate_actions listed below.  Currently only used in workflows.
 """
-
 import datetime
-import logging
 import socket
-from json import dumps
 
 from markupsafe import escape
 
 from galaxy.util import send_mail
+from galaxy.util.logging import get_logger
 
-log = logging.getLogger( __name__ )
-
-
-def get_form_template(action_type, title, content, help, on_output=True ):
-    if on_output:
-        form = """
-            if (pja.action_type == "%s"){
-                p_str = "<div class='pjaForm toolForm'><span class='action_tag' style='display:none'>"+ pja.action_type + pja.output_name + "</span><div class='toolFormTitle'> %s <br/> on " + pja.output_name + "\
-                <div style='float: right;' class='buttons'><img src='/static/images/history-buttons/delete_icon.png'></div></div><div class='toolFormBody'>";
-                %s
-                p_str += "</div><div class='toolParamHelp'>%s</div></div>";
-            }""" % (action_type, title, content, help)
-    else:
-        form = """
-            if (pja.action_type == "%s"){
-                p_str = "<div class='pjaForm toolForm'><span class='action_tag' style='display:none'>"+ pja.action_type + "</span><div class='toolFormTitle'> %s \
-                <div style='float: right;' class='buttons'><img src='/static/images/history-buttons/delete_icon.png'></div></div><div class='toolFormBody'>";
-                %s
-                p_str += "</div><div class='toolParamHelp'>%s</div></div>";
-            }""" % (action_type, title, content, help)
-    return form
+log = get_logger(__name__)
 
 
 class DefaultJobAction(object):
@@ -45,10 +23,6 @@ class DefaultJobAction(object):
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict=None):
         pass
-
-    @classmethod
-    def get_config_form(cls, trans):
-        return "<p>Default Job Action Config Form</p>"
 
     @classmethod
     def get_short_str(cls, pja):
@@ -77,19 +51,11 @@ class EmailAction(DefaultJobAction):
         to = job.user.email
         subject = "Galaxy workflow step notification '%s'" % (job.history.name)
         outdata = ', '.join(ds.dataset.display_name() for ds in job.output_datasets)
-        body = "Your Galaxy job generating dataset '%s' is complete as of %s." % (outdata, datetime.datetime.now().strftime( "%I:%M" ))
+        body = "Your Galaxy job generating dataset '%s' is complete as of %s." % (outdata, datetime.datetime.now().strftime("%I:%M"))
         try:
-            send_mail( frm, to, subject, body, app.config )
+            send_mail(frm, to, subject, body, app.config)
         except Exception as e:
             log.error("EmailAction PJA Failed, exception: %s" % e)
-
-    @classmethod
-    def get_config_form(cls, trans):
-        form = """
-            p_str += "<label for='pja__"+pja.output_name+"__EmailAction'>There are no additional options for this action.  You will be emailed upon job completion.</label>\
-                        <input type='hidden' value='%s' name='pja__"+pja.output_name+"__EmailAction__host'/><input type='hidden' name='pja__"+pja.output_name+"__EmailAction'/>";
-            """ % trans.request.host
-        return get_form_template(cls.name, cls.verbose_name, form, "This action will send an email notifying you when the job is done.", on_output=False)
 
     @classmethod
     def get_short_str(cls, pja):
@@ -107,26 +73,12 @@ class ChangeDatatypeAction(DefaultJobAction):
     def execute(cls, app, sa_session, action, job, replacement_dict):
         for dataset_assoc in job.output_datasets:
             if action.output_name == '' or dataset_assoc.name == action.output_name:
-                app.datatypes_registry.change_datatype( dataset_assoc.dataset, action.action_arguments['newtype'])
-
-    @classmethod
-    def get_config_form(cls, trans):
-        dt_list = ""
-        dtnames = [ dtype_name for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems()]
-        dtnames.sort()
-        for dt_name in dtnames:
-            dt_list += """<option id='pja__"+pja.output_name+"__ChangeDatatypeAction__newtype__%s' value='%s'>%s</option>""" % (dt_name, dt_name, dt_name)
-        ps = """
-            p_str += "<label for='pja__"+pja.output_name+"__ChangeDatatypeAction__newtype'>New Datatype:</label>\
-                <select id='pja__"+pja.output_name+"__ChangeDatatypeAction__newtype' name='pja__"+pja.output_name+"__ChangeDatatypeAction__newtype'>\
-                %s\
-                </select>";
-            if (pja.action_arguments !== undefined && pja.action_arguments.newtype !== undefined){
-                 p_str += "<scrip" + "t type='text/javascript'>$('#pja__" + pja.output_name + "__ChangeDatatypeAction__newtype').val('" + pja.action_arguments.newtype + "');</scrip" + "t>";
-            }
-            """ % dt_list
-        # Note the scrip + t hack above.  Is there a better way?
-        return get_form_template(cls.name, cls.verbose_name, ps, 'This action will change the datatype of the output to the indicated value.')
+                app.datatypes_registry.change_datatype(dataset_assoc.dataset, action.action_arguments['newtype'])
+        for dataset_collection_assoc in job.output_dataset_collection_instances:
+            if action.output_name == '' or dataset_collection_assoc.name == action.output_name:
+                for dataset_instance in dataset_collection_assoc.dataset_collection_instance.dataset_instances:
+                    if dataset_instance:
+                        app.datatypes_registry.change_datatype(dataset_instance, action.action_arguments['newtype'])
 
     @classmethod
     def get_short_str(cls, pja):
@@ -139,11 +91,27 @@ class RenameDatasetAction(DefaultJobAction):
     verbose_name = "Rename Dataset"
 
     @classmethod
-    def execute(cls, app, sa_session, action, job, replacement_dict):
+    def execute_on_mapped_over(cls, trans, sa_session, action, step_inputs, step_outputs, replacement_dict):
         # Prevent renaming a dataset to the empty string.
+        input_names = {}
+        #  Lookp through inputs find one with "to_be_replaced" input
+        #  variable name, and get the replacement name
+        for input_key, step_input in step_inputs.items():
+            if step_input and hasattr(step_input, "name"):
+                input_names[input_key] = step_input.name
+
+        new_name = cls._gen_new_name(action, input_names, replacement_dict)
+        if new_name:
+            for name, step_output in step_outputs.items():
+                if action.output_name == '' or name == action.output_name:
+                    step_output.name = new_name
+
+    @classmethod
+    def _gen_new_name(self, action, input_names, replacement_dict):
+        new_name = None
+
         if action.action_arguments and action.action_arguments.get('newname', ''):
             new_name = action.action_arguments['newname']
-
             #  TODO: Unify and simplify replacement options.
             #      Add interface through workflow editor UI
 
@@ -163,11 +131,12 @@ class RenameDatasetAction(DefaultJobAction):
             #      "replace" option so you can replace a portion of the name,
             #      support multiple #{name} in one rename action...
 
-            while new_name.find("#{") > -1:
+            start_pos = 0
+            while new_name.find("#{", start_pos) > -1:
                 to_be_replaced = ""
                 #  This assumes a single instance of #{variable} will exist
-                start_pos = new_name.find("#{") + 2
-                end_pos = new_name.find("}")
+                start_pos = new_name.find("#{", start_pos) + 2
+                end_pos = new_name.find("}", start_pos)
                 to_be_replaced = new_name[start_pos:end_pos]
                 input_file_var = to_be_replaced
                 #  Pull out the piped controls and store them for later
@@ -177,20 +146,18 @@ class RenameDatasetAction(DefaultJobAction):
                 if len(tokens) > 1:
                     input_file_var = tokens[0].strip()
 
-                    # Treat . as special symbol (breaks parameter names anyway)
-                    # to allow access to repeat elements, for instance first
-                    # repeat in cat1 would be something like queries_0.input2.
-                    input_file_var = input_file_var.replace(".", "|")
-
                     for i in range(1, len(tokens)):
                         operations.append(tokens[i].strip())
-                replacement = ""
-                #  Lookp through inputs find one with "to_be_replaced" input
-                #  variable name, and get the replacement name
-                for input_assoc in job.input_datasets:
-                    if input_assoc.name == input_file_var:
-                        replacement = input_assoc.dataset.name
 
+                # Treat . as special symbol (breaks parameter names anyway)
+                # to allow access to repeat elements, for instance first
+                # repeat in cat1 would be something like queries_0.input2.
+                input_file_var = input_file_var.replace(".", "|")
+
+                replacement = input_names.get(input_file_var, "")
+
+                # In case name was None.
+                replacement = replacement or ''
                 #  Do operations on replacement
                 #  Any control that is not defined will be ignored.
                 #  This should be moved out to a class or module function
@@ -212,34 +179,36 @@ class RenameDatasetAction(DefaultJobAction):
                 new_name = new_name.replace("#{%s}" % to_be_replaced, replacement)
 
             if replacement_dict:
-                for k, v in replacement_dict.iteritems():
+                for k, v in replacement_dict.items():
                     new_name = new_name.replace("${%s}" % k, v)
+
+        return new_name
+
+    @classmethod
+    def execute(cls, app, sa_session, action, job, replacement_dict):
+        input_names = {}
+        #  Lookp through inputs find one with "to_be_replaced" input
+        #  variable name, and get the replacement name
+        for input_assoc in job.input_datasets:
+            if input_assoc.dataset:
+                input_names[input_assoc.name] = input_assoc.dataset.name
+
+        # Ditto for collections...
+        for input_assoc in job.input_dataset_collections:
+            # Either a HDCA or a DCE - only HDCA has a name.
+            has_collection = input_assoc.dataset_collection
+            if has_collection and hasattr(has_collection, "name"):
+                input_names[input_assoc.name] = has_collection.name
+
+        new_name = cls._gen_new_name(action, input_names, replacement_dict)
+        if new_name:
             for dataset_assoc in job.output_datasets:
                 if action.output_name == '' or dataset_assoc.name == action.output_name:
                     dataset_assoc.dataset.name = new_name
 
-    @classmethod
-    def get_config_form(cls, trans):
-        form = """
-            if (pja.action_arguments && pja.action_arguments.newname){
-                p_str += "<label for='pja__"+pja.output_name+"__RenameDatasetAction__newname'>New output name:</label>\
-                          <input type='text' name='pja__"+pja.output_name+"__RenameDatasetAction__newname' value=\\"" + pja.action_arguments.newname.replace(/"/g, "&quot;") + "\\"/>";
-            }
-            else{
-                p_str += "<label for='pja__"+pja.output_name+"__RenameDatasetAction__newname'>New output name:</label>\
-                          <input type='text' name='pja__"+pja.output_name+"__RenameDatasetAction__newname' value=''/>";
-            }
-            inputlist = [];
-            $.each(node.input_terminals, function(i, v){
-                inputlist.push(v.name);
-            });
-            if (inputlist !== []){
-                p_str += "Available inputs are: <strong>" + inputlist.join(', ') + "</strong>";
-            }else{
-                p_str += "No inputs are available for templating into this action.";
-            }
-            """
-        return get_form_template(cls.name, cls.verbose_name, form, "This action will rename the result dataset.  See <a href='https://wiki.galaxyproject.org/Learn/AdvancedWorkflow/Variables'>the wiki</a> for usage information.")
+            for dataset_collection_assoc in job.output_dataset_collection_instances:
+                if action.output_name == '' or dataset_collection_assoc.name == action.output_name:
+                    dataset_collection_assoc.dataset_collection_instance.name = new_name
 
     @classmethod
     def get_short_str(cls, pja):
@@ -258,16 +227,18 @@ class HideDatasetAction(DefaultJobAction):
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict):
         for dataset_assoc in job.output_datasets:
-            if dataset_assoc.dataset.state != dataset_assoc.dataset.states.ERROR and ( action.output_name == '' or dataset_assoc.name == action.output_name ):
+            if dataset_assoc.dataset.state != dataset_assoc.dataset.states.ERROR and (action.output_name == '' or dataset_assoc.name == action.output_name):
                 dataset_assoc.dataset.visible = False
 
+        for dataset_collection_assoc in job.output_dataset_collection_instances:
+            if action.output_name == '' or dataset_collection_assoc.name == action.output_name:
+                dataset_collection_assoc.dataset_collection_instance.visible = False
+
     @classmethod
-    def get_config_form(cls, trans):
-        return """
-               if (pja.action_type == "HideDatasetAction"){
-                   p_str += "<input type='hidden' name='pja__"+pja.output_name+"__HideDatasetAction'/>";
-               }
-               """
+    def execute_on_mapped_over(cls, trans, sa_session, action, step_inputs, step_outputs, replacement_dict):
+        for name, step_output in step_outputs.items():
+            if action.output_name == '' or name == action.output_name:
+                step_output.visible = False
 
     @classmethod
     def get_short_str(cls, pja):
@@ -285,13 +256,15 @@ class DeleteDatasetAction(DefaultJobAction):
             if action.output_name == '' or dataset_assoc.name == action.output_name:
                 dataset_assoc.dataset.deleted = True
 
+        for dataset_collection_assoc in job.output_dataset_collection_instances:
+            if action.output_name == '' or dataset_collection_assoc.name == action.output_name:
+                dataset_collection_assoc.dataset_collection_instance.deleted = True
+
     @classmethod
-    def get_config_form(cls, trans):
-        form = """
-            p_str += "<label for='pja__"+pja.output_name+"__DeleteDatasetAction'>There are no additional options for this action.  This dataset will be marked deleted.</label>\
-                        <input type='hidden' name='pja__"+pja.output_name+"__DeleteDatasetAction'/>";
-            """
-        return get_form_template(cls.name, cls.verbose_name, form, "This action will rename the result dataset.")
+    def execute_on_mapped_over(cls, trans, sa_session, action, step_inputs, step_outputs, replacement_dict):
+        for name, step_output in step_outputs.items():
+            if action.output_name == '' or name == action.output_name:
+                step_output.deleted = True
 
     @classmethod
     def get_short_str(cls, pja):
@@ -307,47 +280,18 @@ class ColumnSetAction(DefaultJobAction):
         for dataset_assoc in job.output_datasets:
             if action.output_name == '' or dataset_assoc.name == action.output_name:
                 for k, v in action.action_arguments.items():
-                    if v != '':
+                    if v:
                         # Try to use both pure integer and 'cX' format.
-                        if v[0] == 'c':
-                            v = v[1:]
-                        v = int(v)
+                        if not isinstance(v, int):
+                            if v[0] == 'c':
+                                v = v[1:]
+                            v = int(v)
                         if v != 0:
                             setattr(dataset_assoc.dataset.metadata, k, v)
 
     @classmethod
-    def get_config_form(cls, trans):
-        form = """
-            if (pja.action_arguments !== undefined){
-                (pja.action_arguments.chromCol === undefined) ? chromCol = "" : chromCol=pja.action_arguments.chromCol;
-                (pja.action_arguments.startCol === undefined) ? startCol = "" : startCol=pja.action_arguments.startCol;
-                (pja.action_arguments.endCol === undefined) ? endCol = "" : endCol=pja.action_arguments.endCol;
-                (pja.action_arguments.strandCol === undefined) ? strandCol = "" : strandCol=pja.action_arguments.strandCol;
-                (pja.action_arguments.nameCol === undefined) ? nameCol = "" : nameCol=pja.action_arguments.nameCol;
-            }else{
-                chromCol = '';
-                startCol = '';
-                endCol = '';
-                strandCol = '';
-                nameCol = '';
-            }
-            p_str += "<p>Leave any of these fields blank if they do not need to be set.</p>\
-                    <label for='pja__"+pja.output_name+"__ColumnSetAction__chromCol'>Chrom Column</label>\
-                        <input type='text' value='" + chromCol + "' name='pja__"+pja.output_name+"__ColumnSetAction__chromCol'/>\
-                    <label for='pja__"+pja.output_name+"__ColumnSetAction__startCol'>Start Column</label>\
-                        <input type='text' value='" + startCol + "' name='pja__"+pja.output_name+"__ColumnSetAction__startCol'/>\
-                    <label for='pja__"+pja.output_name+"__ColumnSetAction__endCol'>End Column</label>\
-                        <input type='text' value='" + endCol + "' name='pja__"+pja.output_name+"__ColumnSetAction__endCol'/>\
-                    <label for='pja__"+pja.output_name+"__ColumnSetAction__strandCol'>Strand Column</label>\
-                        <input type='text' value='" + strandCol + "' name='pja__"+pja.output_name+"__ColumnSetAction__strandCol'/>\
-                    <label for='pja__"+pja.output_name+"__ColumnSetAction__nameCol'>Name Column</label>\
-                        <input type='text' value='" + nameCol + "' name='pja__"+pja.output_name+"__ColumnSetAction__nameCol'/>\";
-            """
-        return get_form_template(cls.name, cls.verbose_name, form, "This action will set column assignments in the output dataset.  Blank fields are ignored.")
-
-    @classmethod
     def get_short_str(cls, pja):
-        return "Set the following metadata values:<br/>" + "<br/>".join(['%s : %s' % (escape(k), escape(v)) for k, v in pja.action_arguments.iteritems()])
+        return "Set the following metadata values:<br/>" + "<br/>".join('%s : %s' % (escape(k), escape(v)) for k, v in pja.action_arguments.items())
 
 
 class SetMetadataAction(DefaultJobAction):
@@ -357,34 +301,7 @@ class SetMetadataAction(DefaultJobAction):
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict):
         for data in job.output_datasets:
-            data.set_metadata( action.action_arguments['newtype'] )
-
-    @classmethod
-    def get_config_form(cls, trans):
-        #         dt_list = ""
-        #         mdict = {}
-        #         for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems():
-        #             for mn, mt in dtype_value.metadata_spec.items():
-        #                 if mt.visible:
-        #                     mdict[mt.desc] = mt.param.get_html(value= mn).replace('"', "'").strip().replace('\n','')
-        #         for k, v in mdict.items():
-        #             dt_list += "<p><strong>" + k + ":</strong><br/>" + v + "</p>"
-        #         form = """
-        #           p_str += "%s";
-        #   """ % dt_list
-        # return get_form_template('SetMetadataAction', 'Set Metadata', form, "This action will change metadata for the dataset.")
-        form = """
-          p_str += "<p>Leave any of these fields blank if they do not need to be set.</p><label for='pja__"+pja.output_name+"__SetMetadataAction__chromCol'>Chrom Column</label>\
-                        <input type='text' name='pja__"+pja.output_name+"__SetMetadataAction__chromCol'/>\
-                    <label for='pja__"+pja.output_name+"__SetMetadataAction__startCol'>Start Column</label>\
-                        <input type='text' name='pja__"+pja.output_name+"__SetMetadataAction__startCol'/>\
-                    <label for='pja__"+pja.output_name+"__SetMetadataAction__endCol'>End Column</label>\
-                        <input type='text' name='pja__"+pja.output_name+"__SetMetadataAction__endCol'/>\
-                    <label for='pja__"+pja.output_name+"__SetMetadataAction__comment_lines'>Comment Lines</label>\
-                        <input type='text' name='pja__"+pja.output_name+"__SetMetadataAction__comment_lines'/>\
-                      ";
-            """
-        return get_form_template(cls.name, cls.verbose_name, form, "This action will set metadata in the output dataset.")
+            data.set_metadata(action.action_arguments['newtype'])
 
 
 class DeleteIntermediatesAction(DefaultJobAction):
@@ -444,7 +361,7 @@ class DeleteIntermediatesAction(DefaultJobAction):
                     safe_to_delete = True
                     for job_to_check in [d_j.job for d_j in input_dataset.dependent_jobs]:
                         if job_to_check != job and job_to_check.state not in [job.states.OK, job.states.DELETED]:
-                            log.debug("Workflow Intermediates cleanup attempted, but non-terminal state '%s' detected for job %s" % (job_to_check.state, job_to_check.id))
+                            log.trace("Workflow Intermediates cleanup attempted, but non-terminal state '%s' detected for job %s" % (job_to_check.state, job_to_check.id))
                             safe_to_delete = False
                     if safe_to_delete:
                         # Support purging here too.
@@ -455,14 +372,6 @@ class DeleteIntermediatesAction(DefaultJobAction):
             pass
 
     @classmethod
-    def get_config_form(cls, trans):
-        form = """
-            p_str += "<label for='pja__"+pja.output_name+"__DeleteIntermediatesAction'>There are no additional options for this action.</label>\
-                        <input type='hidden' name='pja__"+pja.output_name+"__DeleteIntermediatesAction'/>";
-            """
-        return get_form_template(cls.name, cls.verbose_name, form, "All non-output steps of this workflow will have datasets deleted if they are no longer being used as job inputs when the job this PostJobAction is attached to is finished.  You *must* be using workflow outputs (the snowflake) in your workflow for this to have any effect.", on_output=False)
-
-    @classmethod
     def get_short_str(cls, pja):
         return "Delete parent datasets of this step created in this workflow that aren't flagged as outputs."
 
@@ -470,55 +379,81 @@ class DeleteIntermediatesAction(DefaultJobAction):
 class TagDatasetAction(DefaultJobAction):
     name = "TagDatasetAction"
     verbose_name = "Add tag to dataset"
+    action = "Add"
+    direction = "to"
+
+    @classmethod
+    def execute_on_mapped_over(cls, trans, sa_session, action, step_inputs, step_outputs, replacement_dict):
+        if action.action_arguments:
+            tags = [t.replace('#', 'name:') if t.startswith('#') else t for t in [t.strip() for t in action.action_arguments.get('tags', '').split(',') if t.strip()]]
+            if tags:
+                for name, step_output in step_outputs.items():
+                    if action.output_name == '' or name == action.output_name:
+                        cls._execute(trans.app, trans.user, step_output, tags)
 
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict):
         if action.action_arguments:
-            tags = [t.strip() for t in action.action_arguments.get('tags', '').split(',')]
+            tags = [t.replace('#', 'name:') if t.startswith('#') else t for t in [t.strip() for t in action.action_arguments.get('tags', '').split(',') if t.strip()]]
             if tags:
                 for dataset_assoc in job.output_datasets:
                     if action.output_name == '' or dataset_assoc.name == action.output_name:
-                        app.tag_handler.set_tags_from_list( job.user, dataset_assoc.dataset, tags)
+                        cls._execute(app, job.user, dataset_assoc.dataset, tags)
+
+                for dataset_collection_assoc in job.output_dataset_collection_instances:
+                    if action.output_name == '' or dataset_collection_assoc.name == action.output_name:
+                        cls._execute(app, job.user, dataset_collection_assoc.dataset_collection_instance, tags)
+
             sa_session.flush()
 
     @classmethod
-    def get_config_form(cls, trans):
-        form = """
-            if (pja.action_arguments && pja.action_arguments.tags){
-                p_str += "<label for='pja__"+pja.output_name+"__TagDatasetAction__tags'>Tags:</label>\
-                          <input type='text' name='pja__"+pja.output_name+"__TagDatasetAction__tags' value=\\"" + pja.action_arguments.tags.replace(/"/g, "&quot;") + "\\"/>";
-            }
-            else{
-                p_str += "<label for='pja__"+pja.output_name+"__TagDatasetAction__tags'>Tags:</label>\
-                          <input type='text' name='pja__"+pja.output_name+"__TagDatasetAction__tags' value=''/>";
-            }
-            """
-        return get_form_template(cls.name, cls.verbose_name, form, "This action will set tags for the dataset.")
+    def _execute(cls, app, user, output, tags):
+        app.tag_handler.add_tags_from_list(user, output, tags)
 
     @classmethod
     def get_short_str(cls, pja):
         if pja.action_arguments and pja.action_arguments.get('tags', ''):
-            return "Add tag(s) '%s' to '%s'." % (escape(pja.action_arguments['tags']),
-                                                 escape(pja.output_name))
+            return "%s tag(s) '%s' %s '%s'." % (cls.action,
+                                                escape(pja.action_arguments['tags']),
+                                                cls.direction,
+                                                escape(pja.output_name))
         else:
-            return "Tag addition action used without a tag specified.  No tag will be added."
+            return "%s Tag action used without a tag specified.  No tag will be added." % cls.action
+
+
+class RemoveTagDatasetAction(TagDatasetAction):
+    name = "RemoveTagDatasetAction"
+    verbose_name = "Remove tag from dataset"
+    action = "Remove"
+    direction = "from"
+
+    @classmethod
+    def _execute(cls, app, user, output, tags):
+        app.tag_handler.remove_tags_from_list(user, output, tags)
 
 
 class ActionBox(object):
 
-    actions = { "RenameDatasetAction": RenameDatasetAction,
-                "HideDatasetAction": HideDatasetAction,
-                "ChangeDatatypeAction": ChangeDatatypeAction,
-                "ColumnSetAction": ColumnSetAction,
-                "EmailAction": EmailAction,
-                "DeleteIntermediatesAction": DeleteIntermediatesAction,
-                "TagDatasetAction": TagDatasetAction,
-                }
+    actions = {"RenameDatasetAction": RenameDatasetAction,
+               "HideDatasetAction": HideDatasetAction,
+               "ChangeDatatypeAction": ChangeDatatypeAction,
+               "ColumnSetAction": ColumnSetAction,
+               "EmailAction": EmailAction,
+               "DeleteIntermediatesAction": DeleteIntermediatesAction,
+               "TagDatasetAction": TagDatasetAction,
+               "RemoveTagDatasetAction": RemoveTagDatasetAction}
     public_actions = ['RenameDatasetAction', 'ChangeDatatypeAction',
                       'ColumnSetAction', 'EmailAction',
-                      'DeleteIntermediatesAction', 'TagDatasetAction']
+                      'DeleteIntermediatesAction', 'TagDatasetAction',
+                      'RemoveTagDatasetAction']
+    # Actions that can be applied ahead of the job execution while workflow is still
+    # being scheduled and jobs created.
     immediate_actions = ['ChangeDatatypeAction', 'RenameDatasetAction',
-                         'TagDatasetAction']
+                         'TagDatasetAction', 'RemoveTagDatasetAction']
+    # Actions that will be applied to implicit mapped over collection outputs and not
+    # just individual outputs when steps include mapped over tools and implicit collection outputs.
+    mapped_over_output_actions = ['RenameDatasetAction', 'HideDatasetAction',
+                                  'TagDatasetAction', 'RemoveTagDatasetAction']
 
     @classmethod
     def get_short_str(cls, action):
@@ -530,7 +465,7 @@ class ActionBox(object):
     @classmethod
     def handle_incoming(cls, incoming):
         npd = {}
-        for key, val in incoming.iteritems():
+        for key, val in incoming.items():
             if key.startswith('pja'):
                 sp = key.split('__')
                 ao_key = sp[2] + sp[1]
@@ -547,22 +482,12 @@ class ActionBox(object):
             else:
                 # Not pja stuff.
                 pass
-        return dumps(npd)
+        return npd
 
     @classmethod
-    def get_add_list(cls):
-        addlist = "<select id='new_pja_list' name='new_pja_list'>"
-        for action in ActionBox.public_actions:
-            addlist += "<option value='%s'>%s</option>" % (ActionBox.actions[action].name, ActionBox.actions[action].verbose_name)
-        addlist += "</select>"
-        return addlist
-
-    @classmethod
-    def get_forms(cls, trans):
-        forms = ""
-        for action in ActionBox.actions:
-            forms += ActionBox.actions[action].get_config_form(trans)
-        return forms
+    def execute_on_mapped_over(cls, trans, sa_session, pja, step_inputs, step_outputs, replacement_dict=None):
+        if pja.action_type in ActionBox.actions:
+            ActionBox.actions[pja.action_type].execute_on_mapped_over(trans, sa_session, pja, step_inputs, step_outputs, replacement_dict)
 
     @classmethod
     def execute(cls, app, sa_session, pja, job, replacement_dict=None):

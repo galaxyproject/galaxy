@@ -1,16 +1,16 @@
 <tool id="pbed2lpedconvert" name="Convert plink pbed to linkage lped" version="0.01">
-  <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
-  <!-- Used on the metadata edit page. -->
-  <command interpreter="python">
-   pbed_to_lped_converter.py '$input1.extra_files_path/$input1.metadata.base_name'
-   '$output1' '$output1.files_path' 'plink'
-  </command>
-  <inputs>
-    <param format="pbed" name="input1" type="data" label="Choose compressed Plink binary format genotype file"/>
-  </inputs>
-  <outputs>
-    <data format="lped" name="output1" metadata_source="input1"/>
-  </outputs>
-  <help>
-  </help>
+    <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+    <!-- Used on the metadata edit page. -->
+    <command>
+        python '$__tool_directory__/pbed_to_lped_converter.py' '$input1.extra_files_path/$input1.metadata.base_name'
+        '$output1' '$output1.files_path' plink
+    </command>
+    <inputs>
+        <param format="pbed" name="input1" type="data" label="Choose compressed Plink binary format genotype file"/>
+    </inputs>
+    <outputs>
+        <data format="lped" name="output1" metadata_source="input1"/>
+    </outputs>
+    <help>
+    </help>
 </tool>

@@ -1,5 +1,10 @@
-from baseparser import Base_Parser, PhyloTree, Node
 from xml.etree import ElementTree
+
+from .baseparser import (
+    Base_Parser,
+    Node,
+    PhyloTree
+)
 
 
 class Phyloxml_Parser(Base_Parser):
@@ -64,7 +69,7 @@ class Phyloxml_Parser(Base_Parser):
 
         return currentNode
 
-    def _makeLeafNode(self, leafNode, depth=0 ):
+    def _makeLeafNode(self, leafNode, depth=0):
         """Makes leaf nodes by calling Phylotree methods"""
         node = {}
         for child in leafNode:

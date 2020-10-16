@@ -1,12 +1,14 @@
 <tool id="Show beginning1" name="Select first" version="1.0.0">
   <description>lines from a dataset</description>
-  <command interpreter="perl">headWrapper.pl $input $lineNum $out_file1</command>
+  <command>
+perl '$__tool_directory__/headWrapper.pl' '$input' $lineNum '$out_file1'
+  </command>
   <inputs>
-    <param name="lineNum" size="5" type="integer" value="10" label="Select first" help="lines"/>
-    <param format="txt" name="input" type="data" label="from"/>
+    <param name="lineNum" type="integer" value="10" label="Select first" help="lines"/>
+    <param name="input" type="data" format="txt" label="from"/>
   </inputs>
   <outputs>
-    <data format="input" name="out_file1" metadata_source="input"/>
+    <data name="out_file1" format="input" metadata_source="input"/>
   </outputs>
   <tests>
     <test>
@@ -16,7 +18,6 @@
     </test>
   </tests>
   <help>
-
 **What it does**
 
 This tool outputs specified number of lines from the **beginning** of a dataset
@@ -37,6 +38,5 @@ will produce::
 
     chr7  56632  56652  D17003_CTCF_R6  310  +
     chr7  56736  56756  D17003_CTCF_R7  354  +
-
   </help>
 </tool>

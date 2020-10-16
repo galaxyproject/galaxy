@@ -1,19 +1,19 @@
-<tool id="CONVERTER_smiles_to_smiles" name="SMILES to SMILES" version="1.0.0">
+<tool id="CONVERTER_smiles_to_smiles" name="SMILES to SMILES" version="2.4.1">
     <description></description>
     <parallelism method="multi" split_inputs="input" split_mode="to_size" split_size="10000" shared_inputs="" merge_outputs="output"></parallelism>
     <requirements>
-        <requirement type="package" version="2.3.2">openbabel</requirement>
+        <requirement type="package" version="2.4.1">openbabel</requirement>
     </requirements>
     <command >
 <![CDATA[
         obabel
-            -ismi "${input}"
+            -ismi '${input}'
             #if $can:
                 -ocan
             #else:
                 -osmi
             #end if
-            -O "${output}"
+            -O '${output}'
             -e
             $remove_h
             #if $iso_chi or $can or $exp_h:

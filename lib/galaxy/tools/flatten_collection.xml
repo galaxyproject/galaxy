@@ -9,9 +9,9 @@
     <inputs>
         <param type="data_collection" name="input" label="Input Collection" />
         <param type="select" name="join_identifier" label="Join collection identifiers using" help="">
-            <option value="_">_</option>
-            <option value=":">:</option>
-            <option value="-">-</option>
+            <option value="_">underscore ( _ )</option>
+            <option value=":">colon ( : )</option>
+            <option value="-">dash ( - )</option>
         </param>
     </inputs>
     <outputs>
@@ -44,13 +44,13 @@
             </output_collection>
         </test>
     </tests>
-    <help>
-        This tool takes nested collections such as a list of lists or a list of
-        dataset pairs - and produces a flat list from the inputs. The collection
-        identifiers are merged together to create new collection identifiers in
-        the flattened result.
+    <help><![CDATA[
 
-        This tool will create new history datasets from your collection
-        but your quota usage will not increase.
-    </help>
+This tool takes nested collections such as a list of lists or a list of dataset pairs - and produces a flat list from the inputs. The collection identifiers are merged together to create new collection identifiers in the flattened result.
+
+.. class:: infomark
+
+This tool will create new history datasets from your collection but your quota usage will not increase.
+
+     ]]></help>
 </tool>

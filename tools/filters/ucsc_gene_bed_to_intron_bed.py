@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """
 Read a table dump in the UCSC gene table format and print a tab separated
 list of intervals corresponding to requested features of each gene.
@@ -14,34 +13,34 @@ options:
   -i, --input=inputfile       input file
   -o, --output=outputfile     output file
 """
+from __future__ import print_function
 
 import optparse
-import string
 import sys
 
-assert sys.version_info[:2] >= ( 2, 4 )
+assert sys.version_info[:2] >= (2, 6)
 
 
 def main():
-    parser = optparse.OptionParser( usage="%prog [options] " )
-    parser.add_option( "-s", "--strand", action="store_true", dest="strand",
-                       help="Print strand after interval" )
-    parser.add_option( "-i", "--input", dest="input", default=None,
-                       help="Input file" )
-    parser.add_option( "-o", "--output", dest="output", default=None,
-                       help="Output file" )
+    parser = optparse.OptionParser(usage="%prog [options] ")
+    parser.add_option("-s", "--strand", action="store_true", dest="strand",
+                      help="Print strand after interval")
+    parser.add_option("-i", "--input", dest="input", default=None,
+                      help="Input file")
+    parser.add_option("-o", "--output", dest="output", default=None,
+                      help="Output file")
     options, args = parser.parse_args()
 
     try:
         out_file = open(options.output, "w")
-    except:
-        print >> sys.stderr, "Bad output file."
+    except Exception:
+        print("Bad output file.", file=sys.stderr)
         sys.exit(0)
 
     try:
         in_file = open(options.input)
-    except:
-        print >> sys.stderr, "Bad input file."
+    except Exception:
+        print("Bad input file.", file=sys.stderr)
         sys.exit(0)
 
     # Read table and handle each gene
@@ -51,36 +50,36 @@ def main():
                 continue
 
             # Parse fields from gene tabls
-            fields = line.split( '\t' )
+            fields = line.split('\t')
             chrom = fields[0]
-            tx_start = int( fields[1] )
-            int( fields[2] )
+            tx_start = int(fields[1])
+            int(fields[2])
             name = fields[3]
             strand = fields[5].replace(" ", "_")
-            int( fields[6] )
-            int( fields[7] )
+            int(fields[6])
+            int(fields[7])
 
-            exon_starts = map( int, fields[11].rstrip( ',\n' ).split( ',' ) )
-            exon_starts = map((lambda x: x + tx_start ), exon_starts)
-            exon_ends = map( int, fields[10].rstrip( ',\n' ).split( ',' ) )
-            exon_ends = map((lambda x, y: x + y ), exon_starts, exon_ends)
+            exon_starts = [int(_) + tx_start for _ in fields[11].rstrip(',\n').split(',')]
+            exon_ends = [int(_) for _ in fields[10].rstrip(',\n').split(',')]
+            exon_ends = [x + y for x, y in zip(exon_starts, exon_ends)]
 
             i = 0
             while i < len(exon_starts) - 1:
                 intron_starts = exon_ends[i] + 1
                 intron_ends = exon_starts[i + 1] - 1
                 if strand:
-                    print_tab_sep(out_file, chrom, intron_starts, intron_ends, name, "0", strand )
+                    print_tab_sep(out_file, chrom, intron_starts, intron_ends, name, "0", strand)
                 else:
-                    print_tab_sep(out_file, chrom, intron_starts, intron_ends )
+                    print_tab_sep(out_file, chrom, intron_starts, intron_ends)
                 i += 1
-        except:
+        except Exception:
             continue
 
 
-def print_tab_sep(out_file, *args ):
+def print_tab_sep(out_file, *args):
     """Print items in `l` to stdout separated by tabs"""
-    print >>out_file, string.join( [ str( f ) for f in args ], '\t' )
+    print('\t'.join(str(f) for f in args), file=out_file)
+
 
 if __name__ == "__main__":
     main()

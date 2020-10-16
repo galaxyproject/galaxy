@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<!-- A sample job config that explicitly configures job running the way it is configured by default (if there is no explicit config). -->
+<job_conf>
+    <plugins>
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="4"/>
+    </plugins>
+    <handlers>
+        <handler id="main"/>
+    </handlers>
+    <destinations>
+        <!-- destinations for galaxy unit test -->
+        <destination id="Destination1_high" runner="local"/>
+        <destination id="Destination1_med" runner="local"/>
+        <destination id="Destination1_low" runner="local"/>
+        <destination id="Destination1" runner="local"/>
+        <destination id="Destination2_high" runner="local"/>
+        <destination id="Destination2_med" runner="local"/>
+        <destination id="Destination2_low" runner="local"/>
+        <destination id="Destination2" runner="local"/>
+        <destination id="Destination3_high" runner="local"/>
+        <destination id="Destination3_med" runner="local"/>
+        <destination id="Destination3" runner="local"/>
+        <destination id="Destination3_low" runner="local"/>
+        <destination id="Destination4_high" runner="local"/>
+        <destination id="Destination4_med" runner="local"/>
+        <destination id="Destination4_low" runner="local"/>
+        <destination id="Destination4" runner="local"/>
+        <destination id="Destination5_high" runner="local"/>
+        <destination id="Destination5_med" runner="local"/>
+        <destination id="Destination5_low" runner="local"/>
+        <destination id="Destination5" runner="local"/>
+        <destination id="Destination6_med" runner="local"/>
+        <destination id="Destination6" runner="local"/>
+        <destination id="cluster_default_high" runner="local"/>
+        <destination id="cluster_default_med" runner="local"/>
+        <destination id="cluster_default_low" runner="local"/>
+        <destination id="cluster_high" runner="local"/>
+        <destination id="cluster_low" runner="local"/>
+        <destination id="cluster_low_4" runner="local"/>
+        <destination id="cluster_high_32" runner="local"/>
+        <destination id="cluster_low_4" runner="local"/>
+        <destination id="cluster_med_4" runner="local"/>
+        <destination id="cluster_default" runner="local"/>
+        <destination id="DestinationF" runner="local"/>
+        <destination id="lame_cluster" runner="local"/>
+        <destination id="even_lamer_cluster" runner="local"/>
+        <destination id="things" runner="local"/>
+    </destinations>
+</job_conf>

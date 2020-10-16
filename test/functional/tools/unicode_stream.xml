@@ -1,20 +1,19 @@
 <tool id="unicode_stream" name="unicode_stream" version="0.1.0">
     <description>
     </description>
+    <command detect_errors="exit_code"><![CDATA[
+echo '$input1' > '$out_file1';
+cat '$cf';
+>&2 cat '$cf';
+sh -c "exit $exit"
+    ]]></command>
     <configfiles>
         <configfile name="cf">ვეპხის ტყაოსანი შოთა რუსთაველი
 </configfile>
     </configfiles>
-    <command detect_errors="exit_code">
-        echo '$input1' > $out_file1;
-        cat $cf;
-        >&amp;2 cat $cf;
-        sh -c "exit $exit"
-    </command>
     <inputs>
         <param name="input1" type="text" label="Input">
-            <sanitizer sanitize="False">
-            </sanitizer>
+            <sanitizer sanitize="False" />
         </param>
         <param name="exit" type="integer" value="0" label="Exit Code" />
     </inputs>

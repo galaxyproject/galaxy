@@ -48,6 +48,12 @@ def inherit(context):
 
         ${render_login_form()}
 
+        <br/>
+        %if hasattr(trans.app.config, 'enable_oidc') and trans.app.config.enable_oidc:
+            <br/>
+            ${render_oidc_form()}
+        %endif
+
         %if trans.app.config.enable_openid:
             <br/>
             ${render_openid_form( redirect, False, openid_providers )}
@@ -76,9 +82,10 @@ def inherit(context):
     %if header:
         ${header}
     %endif
-    <div class="toolForm">
-        <div class="toolFormTitle">Login</div>
+    <div class="card">
+        <div class="card-header">Login</div>
         <form name="login" id="login" action="${form_action}" method="post" >
+            <input type="hidden" name="session_csrf_token" value="${trans.session_csrf_token}" />
             <div class="form-row">
                 <label>Username / Email Address:</label>
                 <input type="text" name="login" value="${login or ''| h}" size="40"/>
@@ -99,9 +106,30 @@ def inherit(context):
 
 </%def>
 
+<%def name="render_oidc_form( form_action=None )">
+
+    <%
+        if form_action is None:
+            form_action = h.url_for( controller='authnz', action='login', provider='Google' )
+    %>
+
+    %if header:
+        ${header}
+    %endif
+    <div class="card">
+        <div class="card-header">OR</div>
+        <form name="oidc" id="oidc" action="${form_action}" method="post" >
+            <div class="form-row">
+                <input type="submit" value="Login with Google"/>
+            </div>
+        </form>
+    </div>
+
+</%def>
+
 <%def name="render_openid_form( redirect, auto_associate, openid_providers )">
-    <div class="toolForm">
-        <div class="toolFormTitle">OpenID Login</div>
+    <div class="card">
+        <div class="card-header">OpenID Login</div>
         <form name="openid" id="openid" action="${h.url_for( controller='user', action='openid_auth' )}" method="post" target="_parent" >
             <div class="form-row">
                 <label>OpenID URL:</label>

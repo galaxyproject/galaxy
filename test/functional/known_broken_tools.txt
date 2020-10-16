@@ -1,0 +1,15 @@
+# Deprecated, IUC provides same tool, kept for backwards compat?
+Extract genomic DNA 1
+# Relies on data table or loc file, but data table not available
+Interval2Maf1
+Interval2Maf_pairwise1
+maf_stats1
+Interval_Maf_Merged_Fasta2
+GeneBed_Maf_Fasta2
+# No dependency available
+hgv_lps
+# Some weird parameter issue
+maf_by_block_number1
+# Requires hg17.len to be present
+bed_to_bigBed
+wig_to_bigWig

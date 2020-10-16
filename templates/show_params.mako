@@ -1,6 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<% from galaxy.util import listify, nice_size, unicodify %>
+<% from galaxy.util import nice_size, unicodify %>
 
 <style>
     .inherit {
@@ -9,14 +9,24 @@
         text-align: center;
         background-color: #eee;
     }
+
+    table.info_data_table {
+        table-layout: fixed;
+        word-break: break-word;
+    }
+    table.info_data_table td:nth-child(1) {
+        width: 25%;
+    }
+
 </style>
 
 <%def name="inputs_recursive( input_params, param_values, depth=1, upgrade_messages=None )">
     <%
+        from galaxy.util import listify
         if upgrade_messages is None:
             upgrade_messages = {}
     %>
-    %for input_index, input in enumerate( input_params.itervalues() ):
+    %for input_index, input in enumerate( input_params.values() ):
         %if input.name in param_values:
             %if input.type == "repeat":
                 %for i in range( len(param_values[input.name]) ):
@@ -94,7 +104,7 @@
                 %>
                 <tr>
                     ${inputs_recursive_indent( text=label, depth=depth )}
-                    <td>${input.value_to_display_text( param_values[input.name], trans.app ) | h}</td>
+                    <td>${input.value_to_display_text( param_values[input.name] ) | h}</td>
                     <td>${ upgrade_messages.get( input.name, '' ) | h }</td>
                 </tr>
             %endif
@@ -126,16 +136,16 @@
     </td>
 </%def>
 
-<table class="tabletip">
-    <thead>
-        <tr><th colspan="2" style="font-size: 120%;">
-            % if tool:
-                Tool: ${tool.name | h}
-            % else:
-                Unknown Tool
-            % endif
-        </th></tr>
-    </thead>
+<h2>
+% if tool:
+    ${tool.name | h}
+% else:
+    Unknown Tool
+% endif
+</h2>
+
+<h3>Dataset Information</h3>
+<table class="tabletip" id="dataset-details">
     <tbody>
         <%
         encoded_hda_id = trans.security.encode_id( hda.id )
@@ -148,6 +158,12 @@
         <tr><td>Filesize:</td><td>${nice_size(hda.dataset.file_size)}</td></tr>
         <tr><td>Dbkey:</td><td>${hda.dbkey | h}</td></tr>
         <tr><td>Format:</td><td>${hda.ext | h}</td></tr>
+    </tbody>
+</table>
+
+<h3>Job Information</h3>
+<table class="tabletip">
+    <tbody>
         %if job:
             <tr><td>Galaxy Tool ID:</td><td>${ job.tool_id | h }</td></tr>
             <tr><td>Galaxy Tool Version:</td><td>${ job.tool_version | h }</td></tr>
@@ -158,31 +174,39 @@
         %if job:
             <tr><td>Tool Exit Code:</td><td>${ job.exit_code | h }</td></tr>
         %endif
-        <tr><td>History Content API ID:</td><td>${encoded_hda_id}</td></tr>
+        <tr><td>History Content API ID:</td>
+        <td>${encoded_hda_id}
+            %if trans.user_is_admin:
+                (${hda.id})
+            %endif
+        </td></tr>
         %if job:
-            <tr><td>Job API ID:</td><td>${trans.security.encode_id( job.id )}</td></tr>
+            <tr><td>Job API ID:</td>
+            <td>${trans.security.encode_id( job.id )}
+                %if trans.user_is_admin:
+                    (${job.id})
+                %endif
+            </td></tr>
         %endif
-        <tr><td>History API ID:</td><td>${encoded_history_id}</td></tr>
+        <tr><td>History API ID:</td>
+        <td>${encoded_history_id}
+            %if trans.user_is_admin:
+                (${hda.history_id})
+            %endif
+        </td></tr>
         %if hda.dataset.uuid:
         <tr><td>UUID:</td><td>${hda.dataset.uuid}</td></tr>
         %endif
-        %if trans.user_is_admin() or trans.app.config.expose_dataset_path:
-            <tr><td>Full Path:</td><td>${hda.file_name | h}</td></tr>
+        %if trans.user_is_admin or trans.app.config.expose_dataset_path:
+            %if not hda.purged:
+                <tr><td>Full Path:</td><td>${hda.file_name | h}</td></tr>
+            %endif
         %endif
-        %if job and job.command_line and trans.user_is_admin():
-            <tr><td>Job Command-Line:</td><td>${ job.command_line | h }</td></tr>
-        %endif
-        %if job and trans.user_is_admin():
-            <% job_metrics = trans.app.job_metrics %>
-            %for metric in job.metrics:
-                <% metric_title, metric_value = job_metrics.format( metric.plugin, metric.metric_name, metric.metric_value ) %>
-                <tr><td>${ metric_title | h }</td><td>${ metric_value | h }</td></tr>
-            %endfor
-        %endif
+    </tbody>
 </table>
-<br />
 
-<table class="tabletip">
+<h3>Tool Parameters</h3>
+<table class="tabletip" id="tool-parameters">
     <thead>
         <tr>
             <th>Input Parameter</th>
@@ -205,6 +229,114 @@
     ${ render_msg( 'One or more of your original parameters may no longer be valid or displayed properly.', status='warning' ) }
 %endif
 
+
+<h3>Inheritance Chain</h3>
+<div class="inherit" style="background-color: #fff; font-weight:bold;">${hda.name | h}</div>
+
+% for dep in inherit_chain:
+    <div style="font-size: 36px; text-align: center; position: relative; top: 3px">&uarr;</div>
+    <div class="inherit">
+        '${dep[0].name | h}' in ${dep[1]}<br/>
+    </div>
+% endfor
+
+
+
+%if job and job.command_line and (trans.user_is_admin or trans.app.config.expose_dataset_path):
+<h3>Command Line</h3>
+<pre class="code">
+${ job.command_line | h }</pre>
+%endif
+
+%if job and (trans.user_is_admin or trans.app.config.expose_potentially_sensitive_job_metrics):
+<h3>Job Metrics</h3>
+<% job_metrics = trans.app.job_metrics %>
+<% plugins = set([metric.plugin for metric in job.metrics]) %>
+    %for plugin in sorted(plugins):
+    %if trans.user_is_admin or plugin != 'env':
+    <h4>${ plugin | h }</h4>
+    <table class="tabletip info_data_table">
+        <tbody>
+        <%
+            plugin_metrics = filter(lambda x: x.plugin == plugin, job.metrics)
+            plugin_metric_displays = [job_metrics.format( metric.plugin, metric.metric_name, metric.metric_value ) for metric in plugin_metrics]
+            plugin_metric_displays = sorted(plugin_metric_displays, key=lambda pair: pair[0])  # Sort on displayed title
+        %>
+            %for metric_title, metric_value in plugin_metric_displays:
+                <tr><td>${ metric_title | h }</td><td>${ metric_value | h }</td></tr>
+            %endfor
+        </tbody>
+    </table>
+    %endif
+    %endfor
+%endif
+
+%if trans.user_is_admin:
+<h3>Destination Parameters</h3>
+    <table class="tabletip">
+        <tbody>
+            <tr><th scope="row">Runner</th><td>${ job.job_runner_name }</td></tr>
+            <tr><th scope="row">Runner Job ID</th><td>${ job.job_runner_external_id }</td></tr>
+            <tr><th scope="row">Handler</th><td>${ job.handler }</td></tr>
+            %if job.destination_params:
+            %for (k, v) in job.destination_params.items():
+                <tr><th scope="row">${ k | h }</th>
+                    <td>
+                        %if str(k) in ('nativeSpecification', 'rank', 'requirements'):
+                        <pre style="white-space: pre-wrap; word-wrap: break-word;">${ v | h }</pre>
+                        %else:
+                        ${ v | h }
+                        %endif
+                    </td>
+                </tr>
+            %endfor
+            %endif
+        </tbody>
+    </table>
+%endif
+
+%if job and job.dependencies:
+<h3>Job Dependencies</h3>
+    <table class="tabletip">
+        <thead>
+        <tr>
+            <th>Dependency</th>
+            <th>Dependency Type</th>
+            <th>Version</th>
+            %if trans.user_is_admin:
+            <th>Path</th>
+            %endif
+        </tr>
+        </thead>
+        <tbody>
+
+            %for dependency in job.dependencies:
+                <tr><td>${ dependency['name'] | h }</td>
+                    <td>${ dependency['dependency_type'] | h }</td>
+                    <td>${ dependency['version'] | h }</td>
+                    %if trans.user_is_admin:
+                        %if 'environment_path' in dependency:
+                        <td>${ dependency['environment_path'] | h }</td>
+                        %elif 'path' in dependency:
+                        <td>${ dependency['path'] | h }</td>
+                        %else:
+                        <td></td>
+                        %endif
+                    %endif
+                </tr>
+            %endfor
+
+        </tbody>
+    </table>
+%endif
+
+%if hda.peek:
+    <h3>Dataset peek</h3>
+    <pre class="dataset-peek">${hda.peek}
+    </pre>
+%endif
+
+
 <script type="text/javascript">
 $(function(){
     $( '.input-dataset-show-params' ).on( 'click', function( ev ){
@@ -215,13 +347,3 @@ $(function(){
     })
 });
 </script>
-
-    <h3>Inheritance Chain</h3>
-    <div class="inherit" style="background-color: #fff; font-weight:bold;">${hda.name | h}</div>
-
-    % for dep in inherit_chain:
-        <div style="font-size: 36px; text-align: center; position: relative; top: 3px">&uarr;</div>
-        <div class="inherit">
-            '${dep[0].name | h}' in ${dep[1]}<br/>
-        </div>
-    % endfor

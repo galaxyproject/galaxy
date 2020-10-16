@@ -1,4 +1,4 @@
-<tool id="Grouping1" name="Group" version="2.1.1">
+<tool id="Grouping1" name="Group" version="2.1.2">
   <description>data by a column and perform aggregate operation on other columns.</description>
   <command interpreter="python">
     grouping.py 
@@ -8,9 +8,7 @@
       "${ignorecase}"
       "${ignorelines}"
       #for $op in $operations
-       '${op.optype}
-        ${op.opcol}
-        ${op.opround}'
+        '${op.optype},${op.opcol},${op.opround},${op.opdefault}'
       #end for
   </command>
   <inputs>
@@ -57,6 +55,7 @@
          <option value="no">NO</option>
          <option value="yes">YES</option>
        </param>
+       <param name="opdefault" type="float" optional="true" label="Replace non numeric data" help="leave empty for no replacements. Will replace, e.g., empty cells and text cells."/>
     </repeat>
   </inputs>
   <outputs>

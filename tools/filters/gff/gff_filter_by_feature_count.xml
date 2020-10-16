@@ -1,10 +1,10 @@
 <tool id="gff_filter_by_feature_count" name="Filter GFF data by feature count" version="0.1.1">
   <description>using simple expressions</description>
-  <command interpreter="python">
-    gff_filter_by_feature_count.py $input_file1 $out_file1 "$feature_name" "$cond"
+  <command>
+python '$__tool_directory__/gff_filter_by_feature_count.py' '$input_file1' '$out_file1' '$feature_name' '$cond'
   </command>
   <inputs>
-    <param format="gff" name="input_file1" type="data" label="Filter"/>
+    <param name="input_file1" type="data" format="gff" label="Filter"/>
     <param name="feature_name" type="select" label="Using feature name">
         <options from_dataset="input_file1">
             <column name="name" index="2"/>
@@ -12,12 +12,12 @@
             <filter type="unique_value" name="unique" column="2"/>
         </options>
     </param>
-    <param name="cond" size="40" type="text" value=">0" label="With following condition">
+    <param name="cond" type="text" value=">0" label="With following condition">
       <validator type="empty_field" message="Enter a valid filtering condition, see syntax and examples below."/>
     </param>
   </inputs>
   <outputs>
-    <data format="input" name="out_file1" metadata_source="input_file1"/>
+    <data name="out_file1" format="input" metadata_source="input_file1"/>
   </outputs>
   <tests>
       <!-- Test GTF filtering. -->
@@ -37,8 +37,6 @@
   </tests>
 
   <help>
-
-
 .. class:: infomark
 
 Valid comparison operators are: &gt; &lt; &gt;=, &lt;=, !=, and ==
@@ -48,6 +46,5 @@ Valid comparison operators are: &gt; &lt; &gt;=, &lt;=, !=, and ==
 **Syntax**
 
 The filter tool allows you to restrict the dataset based on transcripts' feature counts.
-
-</help>
+  </help>
 </tool>

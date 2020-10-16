@@ -1,0 +1,73 @@
+// ------------------------------------ prefix mixin
+@mixin vendor-prefix-property($property, $value) {
+    #{"-webkit-" + $property}: $value;
+    // -moz-${property}: $value;
+    #{"-ms-" + $property}: $value;
+    // -o-${property}: $value;
+    #{property}: $value;
+}
+
+// ------------------------------------ containers
+.flex-vertical-container,
+.flex-horizontal-container {
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+
+    /* force ff to squish beyond content:
+       https://developer.mozilla.org/en-US/Firefox/Releases/34/Site_Compatibility#CSS */
+    // min-width: 0px;
+    // min-height: 0px;
+
+    @include vendor-prefix-property(flex-wrap, wrap);
+    @include vendor-prefix-property(align-items, stretch);
+    -ms-flex-align: stretch;
+
+    @include vendor-prefix-property(align-content, stretch);
+    -ms-flex-line-pack: stretch;
+
+    @include vendor-prefix-property(justify-content, flex-start);
+    -ms-flex-pack: start;
+}
+
+.flex-vertical-container {
+    flex-flow: column nowrap;
+}
+
+.flex-horizontal-container {
+    flex-flow: row nowrap;
+}
+
+// ------------------------------------ contents
+.flex-row,
+.flex-column {
+    @include vendor-prefix-property(flex, 1 1 auto);
+
+    @include vendor-prefix-property(align-self, auto);
+    -ms-flex-item-align: auto;
+}
+
+// ------------------------------------ convenience versions
+// has a fixed height header
+@mixin two-rows-header($header-height) {
+    @extend flex-vertical-container;
+
+    > * {
+        @extend flex-column;
+    }
+    > .header {
+        @include vendor-prefix-property(flex, 0 0 $header-height);
+    }
+    > .middle {
+        overflow: auto;
+    }
+}
+
+// has a fixed height header and footer
+@mixin three-rows-header-footer($header-height, $footer-height) {
+    @include two-rows-header($header-height);
+    > .footer {
+        @extend flex-column;
+        @include vendor-prefix-property(flex, 0 0 $footer-height);
+    }
+}

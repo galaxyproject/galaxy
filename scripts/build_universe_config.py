@@ -1,8 +1,9 @@
-from ConfigParser import ConfigParser
 from os import listdir
 from os.path import join
 from re import match
 from sys import argv
+
+from six.moves.configparser import ConfigParser
 
 
 def merge():
@@ -28,6 +29,7 @@ def merge():
         destination = argv[2]
 
     parser.write(open(destination, 'w'))
+
 
 if __name__ == '__main__':
     merge()

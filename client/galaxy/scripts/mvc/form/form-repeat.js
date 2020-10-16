@@ -1,79 +1,68 @@
+import _l from "utils/localization";
 /** This class creates a ui component which enables the dynamic creation of portlets */
-define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc'],
-        function(Utils, Table, Portlet, Ui) {
-var View = Backbone.View.extend({
-    initialize : function(options) {
-        var self = this;
-        this.options = Utils.merge(options, {
-            title       : 'Section',
-            empty_text  : 'Not available.',
-            max         : null,
-            min         : null
-        });
-        this.setElement('<div/>');
+import Utils from "utils/utils";
+import Portlet from "mvc/ui/ui-portlet";
+import Ui from "mvc/ui/ui-misc";
 
-        // create button
-        this.button_new = new Ui.ButtonIcon({
-            icon    : 'fa-plus',
-            title   : 'Insert ' + this.options.title_new,
-            tooltip : 'Add new ' + this.options.title_new + ' block',
-            floating: 'clear',
-            onclick : function() {
+export var View = Backbone.View.extend({
+    initialize: function(options) {
+        this.list = {};
+        this.options = Utils.merge(options, {
+            title: _l("Repeat"),
+            empty_text: "Not available.",
+            max: null,
+            min: null
+        });
+        this.button_new = new Ui.Button({
+            icon: "fa-plus",
+            title: `Insert ${this.options.title}`,
+            tooltip: `Add new ${this.options.title} block`,
+            cls: "btn btn-secondary float-none form-repeat-add",
+            onclick: function() {
                 if (options.onnew) {
                     options.onnew();
                 }
             }
         });
-
-        // create table
-        this.table = new Table.View({
-            cls     : 'ui-table-plain',
-            content : ''
-        });
-        this.$el.append(this.table.$el);
-        this.$el.append($('<div/>').append(this.button_new.$el));
-
-        // reset list
-        this.list = {};
-        this.n = 0;
+        this.setElement(
+            $("<div/>")
+                .append((this.$list = $("<div/>")))
+                .append($("<div/>").append(this.button_new.$el))
+        );
     },
 
     /** Number of repeat blocks */
     size: function() {
-        return this.n;
+        return _.size(this.list);
     },
 
     /** Add new repeat block */
     add: function(options) {
         if (!options.id || this.list[options.id]) {
-            Galaxy.emit.debug('form-repeat::add()', 'Duplicate repeat block id.');
+            Galaxy.emit.debug("form-repeat::add()", "Duplicate or invalid repeat block id.");
             return;
         }
-        this.n++;
-        var button_delete = new Ui.ButtonIcon({
-            icon    : 'fa-trash-o',
-            tooltip : 'Delete this repeat block',
-            cls     : 'ui-button-icon-plain',
-            onclick : function() {
+        var button_delete = new Ui.Button({
+            icon: "fa-trash-o",
+            tooltip: _l("Delete this repeat block"),
+            cls: "ui-button-icon-plain form-repeat-delete",
+            onclick: function() {
                 if (options.ondel) {
                     options.ondel();
                 }
             }
         });
         var portlet = new Portlet.View({
-            id              : options.id,
-            title           : 'placeholder',
-            cls             : options.cls || 'ui-portlet-repeat',
-            operations      : {
-                button_delete : button_delete
-            }
+            id: options.id,
+            title: _l("placeholder"),
+            cls: options.cls || "ui-portlet-section",
+            operations: { button_delete: button_delete }
         });
         portlet.append(options.$el);
-        portlet.$el.addClass('section-row');
+        portlet.$el.addClass("section-row").hide();
         this.list[options.id] = portlet;
-        this.table.add(portlet.$el);
-        this.table.append('row_' + options.id, true);
-        if (this.options.max > 0 && this.n >= this.options.max) {
+        this.$list.append(portlet.$el.fadeIn("fast"));
+        if (this.options.max > 0 && this.size() >= this.options.max) {
             this.button_new.disable();
         }
         this._refresh();
@@ -82,12 +71,10 @@ var View = Backbone.View.extend({
     /** Delete repeat block */
     del: function(id) {
         if (!this.list[id]) {
-            Galaxy.emit.debug('form-repeat::del()', 'Invalid repeat block id.');
+            Galaxy.emit.debug("form-repeat::del()", "Invalid repeat block id.");
             return;
         }
-        this.n--;
-        var table_row = this.table.get('row_' + id);
-        table_row.remove();
+        this.$list.find(`#${id}`).remove();
         delete this.list[id];
         this.button_new.enable();
         this._refresh();
@@ -95,19 +82,23 @@ var View = Backbone.View.extend({
 
     /** Remove all */
     delAll: function() {
-        for( var id in this.list ) {
-            this.del( id );
+        for (var id in this.list) {
+            this.del(id);
         }
     },
 
     /** Hides add/del options */
     hideOptions: function() {
         this.button_new.$el.hide();
-        _.each( this.list, function( portlet ) {
-            portlet.hideOperation('button_delete');
+        _.each(this.list, portlet => {
+            portlet.hideOperation("button_delete");
         });
-        if( _.isEmpty( this.list ) ) {
-            this.$el.append( $('<div/>').addClass( 'ui-form-info' ).html( this.options.empty_text ) );
+        if (_.isEmpty(this.list)) {
+            this.$el.append(
+                $("<div/>")
+                    .addClass("form-text text-muted")
+                    .html(this.options.empty_text)
+            );
         }
     },
 
@@ -116,18 +107,12 @@ var View = Backbone.View.extend({
         var index = 0;
         for (var id in this.list) {
             var portlet = this.list[id];
-            portlet.title(++index + ': ' + this.options.title);
-            if (this.n > this.options.min) {
-                portlet.showOperation('button_delete');
-            } else {
-                portlet.hideOperation('button_delete');
-            }
+            portlet.title(`${++index}: ${this.options.title}`);
+            portlet[this.size() > this.options.min ? "showOperation" : "hideOperation"]("button_delete");
         }
     }
 });
 
-return {
-    View : View
-}
-
-});
+export default {
+    View: View
+};

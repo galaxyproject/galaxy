@@ -3,11 +3,23 @@ Galaxy Core Governance
 ==================================
 
 This document informally outlines the organizational structure governing the
-Galaxy core code base hosted at https://github.com/galaxyproject/galaxy. This
+Galaxy core code base hosted at https://github.com/galaxyproject/galaxy . This
 governance extends to code-related activities of this repository such as
 releases and packaging. This governance does not include infrastructure such
 as Galaxy's Trello board, the Galaxy mailing lists, etc... or other Galaxy-
 related projects belonging to the ``galaxyproject`` organization on GitHub.
+
+
+Procedure Documents
+===================
+
+The documents whose modification requires the special process specified below
+are:
+
+- this document
+- CODE_OF_CONDUCT_.
+- SECURITY_POLICY_.
+
 
 Committers
 ==========
@@ -22,9 +34,9 @@ outlined below. In particular, in most cases
 direct commit access is not allowed and this access is restricted to merging
 pull requests issued by others.
 
-Committers may participate in formal votes - these votes typically include
-votes to modify team membership, merge pull requests, and modify or clarify
-the procedures outlined in this document and CODE_OF_CONDUCT_.
+*Committers* may participate in all formal votes, including votes to modify team
+membership, merge pull requests, and modify the *Procedure Documents* listed
+above.
 
 Members
 -------
@@ -37,18 +49,15 @@ Members
 - John Chilton (@jmchilton)
 - Dave Clements (@tnabtaf)
 - Nate Coraor (@natefoo)
-- Carl Eberhard (@carlfeberhard)
 - Jeremy Goecks (@jgoecks)
 - Björn Grüning (@bgruening)
 - Aysam Guerler (@guerler)
 - Jennifer Hillman Jackson (@jennaj)
 - Anton Nekrutenko (@nekrut)
-- Eric Rasche (@erasche)
+- Helena Rasche (@erasche)
 - Nicola Soranzo (@nsoranzo)
 - James Taylor (@jxtx)
-- Nitesh Turaga (@nitesh1989)
 - Marius van den Beek (@mvdbeek)
-
 
 Membership
 ----------
@@ -83,6 +92,27 @@ should not be interpreted as a condemnation of these inactive members but
 merely as a reflection of a desire to keep this group focused enough to remain
 effective.
 
+Direct Commit Access
+--------------------
+
+A *committer* may only commit directly to the Galaxy repository (i.e. outside of
+a pull request and not following the procedures described below) the following
+two categories of changes:
+
+* Patches for serious security vulnerabilities.
+* Cherry-picking and/or merging of existing approved commits to other branches.
+
+
+Release branches
+================
+
+A *release branch* is created every few months from the ``dev`` branch of the
+Galaxy repository. A newly created release branch is in a *freezed* state until
+the committers decide that it is ready for public consumption. At this point, a
+release tag will be assigned to a commit in the branch, changing the release
+state to *tagged*.
+
+
 Handling Pull Requests
 ======================
 
@@ -90,18 +120,28 @@ Everyone is encouraged to express opinions and issue non-binding votes on pull
 requests, but only members of the *committers* group may issue binding votes
 on pull requests.
 
-Votes on pull requests should take the form of
-`+1, 0, -1, and fractions <http://www.apache.org/foundation/voting.html>`_
-as outlined by the Apache Foundation.
+Votes on pull requests should take the form of +1, 0, -1, and fractions as
+outlined by the `Apache Software Foundation voting rules`_. The following are
+equivalent to a +1 vote:
 
-Pull requests modifying pre-existing releases should be restricted to bug fixes
-and require at least 2 *+1* binding votes from someone other than the author of
-the pull request with no *-1* binding votes.
+- a `thumbs up reaction <https://blog.github.com/2016-03-10-add-reactions-to-pull-requests-issues-and-comments/>`__
+  on the pull request description;
+- approving the pull request when submitting a
+  `review <https://help.github.com/articles/reviewing-proposed-changes-in-a-pull-request/>`__.
 
-Pull requests changing or clarifying the procedures governing this repository:
+The latter is the preferred method because it is integrated in GitHub, it allows
+tracking the moment when the review was submitted, and it sends a notification
+to subscribers.
+
+Pull requests modifying freezed and tagged release branches should be restricted
+to bug fixes. Pull requests modifying tagged release branches require at least 2
+*+1* binding votes from someone other than the author of the pull request with
+no *-1* binding votes.
+
+Pull requests changing or clarifying the *Procedure Documents* (listed above):
 
 - Must be made to the ``dev`` branch of this repository.
-- Must remain open for at least 192 hours (unless every qualified committer has
+- Must remain open for at least 192 hours (unless every qualified *committer* has
   voted).
 - Require binding *+1* votes from at least 25% of qualified *committers* with no
   *-1* binding votes.
@@ -136,13 +176,13 @@ least a few days to give everyone the opportunity to weigh in.
 Vetoes
 ------
 
-A note on vetoes (*-1* votes) taken verbatim from the
-`Apache Foundation <http://www.apache.org/foundation/voting.html>`_:
+A note on vetoes (*-1* votes), taken verbatim from the
+`Apache Software Foundation voting rules`_:
 
   "A code-modification proposal may be stopped dead in its tracks by a *-1* vote
   by a qualified voter. This constitutes a veto, and it cannot be overruled nor
   overridden by anyone. Vetoes stand until and unless withdrawn by their casters.
-  
+
   To prevent vetoes from being used capriciously, they must be accompanied by a
   technical justification showing why the change is bad (opens a security
   exposure, negatively affects performance, etc. ). A veto without a
@@ -164,20 +204,10 @@ invokes a mandatory, minimum 72 hour, review period.
   things merged without proper review and consensus.
 - The person issuing the *-1* vote will, upon commenting *-1* with technical
   justification per the vetoes section, immediately open a pull request to
-  revert the original merge in question. If any committer other than the *-1*
+  revert the original merge in question. If any *committer* other than the *-1*
   issuer deems the justification technical - regardless of whether they agree
-  with justification - that committer must then merge the pull request to
+  with justification - that *committer* must then merge the pull request to
   revert.
-
-Direct Commit Access
---------------------
-
-The Galaxy *committers* group may only commit directly to Galaxy (i.e. outside
-of a pull request and not following the procedures described here) the
-following two categories of patches:
-
-* Patches for serious security vulnerabilities.
-* Cherry-picking and/or merging of existing approved commits to other branches.
 
 Labeling and Milestones
 -----------------------
@@ -193,7 +223,8 @@ Issues (bugs, feature requests, etc.) should be reported at ISSUE_REPORT_, and
 handling of issues follows the procedures described in ISSUES_.
 
 
-.. _LICENSE: https://github.com/galaxyproject/galaxy/blob/dev/LICENSE.txt
 .. _CODE_OF_CONDUCT: https://github.com/galaxyproject/galaxy/blob/dev/CODE_OF_CONDUCT.md
+.. _SECURITY_POLICY: https://github.com/galaxyproject/galaxy/blob/dev/SECURITY_POLICY.md
+.. _Apache Software Foundation voting rules: https://www.apache.org/foundation/voting.html
 .. _ISSUES: https://github.com/galaxyproject/galaxy/blob/dev/doc/source/project/issues.rst
 .. _ISSUE_REPORT: https://github.com/galaxyproject/galaxy/issues/

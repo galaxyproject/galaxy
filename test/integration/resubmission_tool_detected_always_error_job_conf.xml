@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<job_conf>
+    <plugins>
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="2"/>
+    </plugins>
+
+    <handlers>
+        <handler id="main"/>
+    </handlers>
+
+    <destinations default="local_bad">
+        <destination id="local_bad" runner="local">
+            <env id="GX_TARGET_EXIT_CODE">4</env>
+        </destination>
+    </destinations>
+
+</job_conf>

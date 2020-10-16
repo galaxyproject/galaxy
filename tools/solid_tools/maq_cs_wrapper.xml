@@ -1,56 +1,53 @@
 <tool id="maq_cs_wrapper" name="MAQ for SOLiD" version="1.0.0">
     <description> </description>
-    <command interpreter="python">
-    maq_cs_wrapper.py 
-    $output1 
-    $output2 
-    $ref 
-    $library_type.f3_reads 
-    $library_type.f3_qual 
-    $library_type.is_paired
-    #if $library_type.is_paired == "yes":  
-     $library_type.r3_reads 
-     $library_type.r3_qual 
-    #else:
-     "None"
-     "None"
-    #end if
-    $min_mapqual
-    $max_mismatch
-    $output3
-    
+    <command>
+python '$__tool_directory__/maq_cs_wrapper.py'
+'$output1'
+'$output2'
+'$ref'
+'$library_type.f3_reads'
+'$library_type.f3_qual'
+$library_type.is_paired
+#if $library_type.is_paired == "yes":
+    '$library_type.r3_reads'
+    '$library_type.r3_qual'
+#else:
+    "None"
+    "None"
+#end if
+$min_mapqual
+$max_mismatch
+'$output3'
     </command>
 
     <inputs>
-        <param name="ref" type="data" format="fasta" label="Target Genome"/> 
+        <param name="ref" type="data" format="fasta" label="Target Genome"/>
         <conditional name="library_type">
           <param name="is_paired" type="select" label="Is the library mate-paired?" multiple="false">
              <option value="no">No</option>
              <option value="yes">Yes</option>
          </param>
          <when value="no">
-           <param name="f3_reads" type="data" format="csfasta" label="F3 reads file"/> 
-           <param format="qualsolid" name="f3_qual" type="data" label="F3 quality file" help="If your dataset doesn't show up in the menu, click the pencil icon next to your dataset and set the datatype to 'qualsolid'" /> 
+           <param name="f3_reads" type="data" format="csfasta" label="F3 reads file"/>
+           <param name="f3_qual" type="data" format="qualsolid" label="F3 quality file" help="If your dataset doesn't show up in the menu, click the pencil icon next to your dataset and set the datatype to 'qualsolid'" />
           </when>
           <when value="yes">
-           <param name="f3_reads" type="data" format="csfasta" label="F3 reads file"/> 
-           <param format="qualsolid" name="f3_qual" type="data" label="F3 quality file" help="If your dataset doesn't show up in the menu, click the pencil icon next to your dataset and set the datatype to 'qualsolid'" /> 
-           <param name="r3_reads" type="data" format="csfasta" label="R3 reads file"/> 
-           <param format="qualsolid" name="r3_qual" type="data" label="R3 quality file" help="If your dataset doesn't show up in the menu, click the pencil icon next to your dataset and set the datatype to 'qualsolid'" /> 
+           <param name="f3_reads" type="data" format="csfasta" label="F3 reads file"/>
+           <param name="f3_qual" type="data" format="qualsolid" label="F3 quality file" help="If your dataset doesn't show up in the menu, click the pencil icon next to your dataset and set the datatype to 'qualsolid'" />
+           <param name="r3_reads" type="data" format="csfasta" label="R3 reads file"/>
+           <param name="r3_qual" type="data" format="qualsolid" label="R3 quality file" help="If your dataset doesn't show up in the menu, click the pencil icon next to your dataset and set the datatype to 'qualsolid'" />
           </when>
       </conditional>
-      <param name="min_mapqual" type="integer" size="3" value="0" label="Minimum mapping quality allowed for a read to be used" help="Reads below the specified mapping quality will not be considered in coverage and SNP analysis."/> 
-      <param name="max_mismatch" type="integer" size="3" value="7" label="Maximum number of mismatches allowed for a read to be used" help="Reads above the specified threshold will not be considered in coverage and SNP analysis."/> 
+      <param name="min_mapqual" type="integer" value="0" label="Minimum mapping quality allowed for a read to be used" help="Reads below the specified mapping quality will not be considered in coverage and SNP analysis."/>
+      <param name="max_mismatch" type="integer" value="7" label="Maximum number of mismatches allowed for a read to be used" help="Reads above the specified threshold will not be considered in coverage and SNP analysis."/>
     </inputs>
     <outputs>
-        <data format="tabular" name="output1" metadata_source="ref" />
-        <data format="tabular" name="output2" metadata_source="ref" />
-        <data format="customtrack" name="output3" metadata_source="ref" />
+        <data name="output1" format="tabular" metadata_source="ref" />
+        <data name="output2" format="tabular" metadata_source="ref" />
+        <data name="output3" format="customtrack" metadata_source="ref" />
     </outputs>
-    
     <!--  "ToolTestCase does not deal with multiple outputs properly yet."
     <tests>
-        
         <test>
             <param name="ref" value="phiX_mod.fasta" />
             <param name="is_paired" value="no" />
@@ -61,24 +58,22 @@
             <output name="output1" file="phiX_solid_maq.map" />
             <output name="output2" file="phiX_solid_maq.pileup" />
             <output name="output3" file="phiX_solid_maq.ctrack" />
-            
         </test>
     </tests>
     -->
 <help>
-
 .. class:: infomark
 
 **What it does**
 
-This tool maps SOLiD color-space reads against the target genome using MAQ. It produces three output datasets: 
+This tool maps SOLiD color-space reads against the target genome using MAQ. It produces three output datasets:
 
 
-**ALIGNMENT INFO** : contains the read alignment information, 
+**ALIGNMENT INFO** : contains the read alignment information,
 
 **PILEUP** : contains the coverage and SNP statistics for every nucleotide of the target genome,
 
-**CUSTOM TRACK** : contains the coverage and SNP statistics as custom tracks displayable in the UCSC browser. 
+**CUSTOM TRACK** : contains the coverage and SNP statistics as custom tracks displayable in the UCSC browser.
 
 -----
 
@@ -113,8 +108,6 @@ This tool maps SOLiD color-space reads against the target genome using MAQ. It p
 * column 7  = number of Ts
 * column 8  = number of Gs
 * column 9  = number of Cs
-
-</help>
-<code file="maq_cs_wrapper_code.py"/>
-
+  </help>
+  <code file="maq_cs_wrapper_code.py"/>
 </tool>

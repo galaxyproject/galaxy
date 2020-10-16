@@ -1,0 +1,22 @@
+<tool id="mapper_two" name="Mapper producing two BAMs" version="0.1.0">
+    <command>
+        echo 'text 0' > '$text0';
+        cp '$__tool_directory__/1.bam' '$out_file1';
+        cp '$__tool_directory__/1.bam' '$out_file2';
+        echo 'text 1' > '$text1'
+    </command>
+    <inputs>
+        <param name="input1" type="data" format="txt" label="Fastq Input"/>
+        <param name="reference" type="data" format="txt" label="Fasta Input"/>
+    </inputs>
+    <outputs>
+        <data name="text0" format="txt" />
+        <data name="out_file1" format="bam" />
+        <data name="out_file2" format="bam" />
+        <data name="text1" format="txt" />
+    </outputs>
+    <tests>
+    </tests>
+    <help>
+    </help>
+</tool>

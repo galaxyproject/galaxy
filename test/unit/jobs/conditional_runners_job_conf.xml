@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<!-- A sample job config that explicitly configures job running the way it is configured by default (if there is no explicit config). -->
+<job_conf>
+    <plugins>
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="4"/>
+        <plugin id="local2" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="4">
+            <param id="enabled" from_environ="LOCAL2_ENABLED">True</param>
+        </plugin>
+        <plugin id="local3" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="4">
+            <param id="enabled" from_environ="LOCAL3_ENABLED">False</param>
+        </plugin>
+    </plugins>
+    <handlers>
+        <handler id="main"/>
+    </handlers>
+    <destinations default="local">
+        <destination id="local" runner="local"/>
+        <destination id="local2_dest" runner="local2">
+            <param id="enabled" from_environ="LOCAL2_ENABLED">True</param>
+        </destination>
+        <destination id="local3_dest" runner="local3">
+            <param id="enabled" from_environ="LOCAL3_ENABLED">False</param>
+        </destination>
+    </destinations>
+</job_conf>

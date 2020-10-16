@@ -10,4 +10,4 @@ from datetime import datetime
 # Return the current time in UTC without any timezone information
 now = datetime.utcnow
 
-__all__ = [now]
+__all__ = ('now', )

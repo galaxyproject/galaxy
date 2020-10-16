@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+
+<tool id="send_to_cloud" name="Send to cloud" version="0.1.0" workflow_compatible="false">
+    <requirements>
+        <requirement type="package" version="0.3.3">cloudbridge</requirement>
+    </requirements>
+    <command><![CDATA[
+        #try
+            #set $authz_record=$__app__.authnz_manager.try_get_authz_config($__app__.obj.model.context.current, int($__user_id__), $__app__.security.decode_id($authz_id.__str__()))
+            #set $credentials_file = $__app__.authnz_manager.get_cloud_access_credentials_in_file($__app__.config.new_file_path, $authz_record, $__app__.obj.model.context.current, int($__user_id__))
+        #except Exception as e:
+            echo '$e' >&2
+        #else
+            python $__tool_directory__/send.py
+                --provider=$authz_record.provider
+                --filename=$filename
+                --credentials_file=$credentials_file
+                --bucket=$bucket
+                --object_label=$filename.name.replace(" ", "_")
+                --overwrite_existing=$overwrite_existing
+        #end try
+    ]]></command>
+    <inputs>
+        <param name="filename" type="data" label="Datasets to be sent to a cloud-based storage:" />
+        <param name="bucket" type="text" label="Bucket" />
+        <param name="authz_id" type="text" label="Cloud Authorization ID" />
+        <param name="object_label" type="text" hidden="true" label="Object Label" />
+        <param name="overwrite_existing" type="boolean" label="Overwrite Existing" />
+    </inputs>
+    <outputs>
+        <data name="output" type="data" hidden="false"/>
+    </outputs>
+    <help>
+**What it does**
+        Send dataset(s) from Galaxy to cloud-based storage (e.g., AWS S3).
+
+        Supply a name of the target bucket where the data will be sent along
+        with an id for the desired cloud authorization. To get the list of Cloud
+        Authorization IDs available for your account, visit `/api/cloud/authz`.
+
+**Remarks**
+        This tool leverages OpenID Connect protocol and CloudAuthz (https://github.com/galaxyproject/cloudauthz)
+        to access cloud-based resources without requiring user credentials.
+
+        If selecting multiple datasets, make sure each dataset is named
+        differently; otherwise, only one copy of the selected datasets will be
+        copied.
+    </help>
+</tool>

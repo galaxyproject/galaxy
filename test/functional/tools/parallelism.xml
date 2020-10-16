@@ -1,7 +1,7 @@
 <tool id="parallelism" name="Split file line-by-line and rebuild dataset">
     <parallelism method="multi" split_inputs="input1" split_mode="to_size" split_size="1" merge_outputs="out_file1" />
-    <command>
-        cat $input1 > $out_file1
+    <command detect_errors="exit_code">
+        cat '$input1' > '$out_file1'
     </command>
     <inputs>
         <param name="input1" type="data" label="Dataset"/>

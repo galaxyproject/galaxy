@@ -4,10 +4,14 @@
 Updates metadata in the database to match rev 1891.
 
 Remember to backup your database before running.
+
+Deprecated - this doesn't work with modern Galaxy configurations options.
 """
 from __future__ import print_function
+
 import os
 import sys
+
 from six.moves import configparser
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
@@ -15,7 +19,7 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 import galaxy.app
 import galaxy.datatypes.tabular
 
-assert sys.version_info[:2] >= ( 2, 4 )
+assert sys.version_info[:2] >= (2, 6)
 
 
 def usage(prog):
@@ -37,7 +41,7 @@ def main():
     configuration = {}
     for key, value in conf_parser.items("app:main"):
         configuration[key] = value
-    app = galaxy.app.UniverseApplication( global_conf=ini_file, **configuration )
+    app = galaxy.app.UniverseApplication(global_conf=ini_file, **configuration)
 
     # Search out tabular datatypes (and subclasses) and initialize metadata
     print("Seeking out tabular based files and initializing metadata")
@@ -51,11 +55,12 @@ def main():
                 galaxy.datatypes.tabular.Tabular().set_meta(data)
             else:
                 data.set_meta()
-            app.model.context.add( data )
+            app.model.context.add(data)
             app.model.context.flush()
 
     app.shutdown()
     sys.exit(0)
+
 
 if __name__ == "__main__":
     main()

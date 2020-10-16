@@ -4,7 +4,7 @@ from platform import system
 from time import sleep
 
 try:
-    from psutil import Process, NoSuchProcess
+    from psutil import NoSuchProcess, Process
 except ImportError:
     """ Don't make psutil a strict requirement, but use if available. """
     Process = None
@@ -23,7 +23,7 @@ def _psutil_kill_pid(pid):
     """
     try:
         parent = Process(pid)
-        for child in parent.get_children(recursive=True):
+        for child in parent.children(recursive=True):
             child.kill()
         parent.kill()
     except NoSuchProcess:

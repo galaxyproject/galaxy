@@ -11,16 +11,16 @@ Returns:
 """
 import logging
 
-from galaxy.webapps.galaxy.api.authenticate import AuthenticationController
 from galaxy.web import _future_expose_api_raw_anonymous_and_sessionless as expose_api_raw_anonymous_and_sessionless
+from galaxy.webapps.galaxy.api.authenticate import AuthenticationController
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 
-class ToolShedAuthenticationController( AuthenticationController ):
+class ToolShedAuthenticationController(AuthenticationController):
 
     @expose_api_raw_anonymous_and_sessionless
-    def get_tool_shed_api_key( self, trans, **kwd ):
+    def get_tool_shed_api_key(self, trans, **kwd):
         """
         def get_api_key( self, trans, **kwd )
         * GET /api/authenticate/baseauth
@@ -31,4 +31,4 @@ class ToolShedAuthenticationController( AuthenticationController ):
 
         :raises: ObjectNotFound, HTTPBadRequest
         """
-        return self.get_api_key( trans, **kwd )
+        return self.get_api_key(trans, **kwd)

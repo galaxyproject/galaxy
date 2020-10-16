@@ -1,33 +1,34 @@
-<tool id="Summary_Statistics1" name="Summary Statistics" version="1.1.1">
+<tool id="Summary_Statistics1" name="Summary Statistics" version="1.1.2">
   <description>for any numerical column</description>
   <edam_topics>
     <edam_topic>topic_2269</edam_topic>
   </edam_topics>
   <requirements>
-    <requirement type="package" version="2.7.8">rpy2</requirement>
+    <requirement type="package" version="2.9.4">rpy2</requirement>
   </requirements>
   <stdio>
     <exit_code range="1" level="fatal" />
   </stdio>
-  <command>python $__tool_directory__/gsummary.py "$input" "$out_file1" "$cond"</command>
+  <command>
+python '$__tool_directory__/gsummary.py' '$input' '$out_file1' '$cond'
+  </command>
   <inputs>
-    <param format="tabular" name="input" type="data" label="Summary statistics on" help="Dataset missing? See TIP below"/>
-    <param name="cond" size="30" type="text" value="c5" label="Column or expression" help="See syntax below">
+    <param name="input" type="data" format="tabular" label="Summary statistics on" help="Dataset missing? See TIP below"/>
+    <param name="cond" type="text" value="c5" label="Column or expression" help="See syntax below">
       <validator type="empty_field" message="Enter a valid column or expression, see syntax below for examples"/>
     </param>
   </inputs>
   <outputs>
-    <data format="tabular" name="out_file1" />
+    <data name="out_file1" format="tabular" />
   </outputs>
   <tests>
     <test>
       <param name="input" value="1.bed"/>
-      <output name="out_file1" file="gsummary_out1.tabular"/>
       <param name="cond" value="c2"/>
+      <output name="out_file1" file="gsummary_out1.tabular"/>
     </test>
   </tests>
   <help>
-
 .. class:: warningmark
 
 This tool expects input datasets consisting of tab-delimited columns (blank or comment lines beginning with a # character are automatically skipped).
@@ -77,6 +78,5 @@ This tool computes basic summary statistics on a given column, or on a valid exp
 
     #sum       mean      stdev     0%        25%       50%       75%        100%
     29250.000  7312.500  7198.636  1700.000  1895.000  5280.000  10697.500  16990.000
-
-</help>
+  </help>
 </tool>

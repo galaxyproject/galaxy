@@ -10,7 +10,7 @@ import requests
 
 sites = ['http://genome.ucsc.edu/cgi-bin/',
          'http://archaea.ucsc.edu/cgi-bin/',
-         'http://genome-test.cse.ucsc.edu/cgi-bin/']
+         'http://genome-test.gi.ucsc.edu/cgi-bin/']
 names = ['main', 'archaea', 'test']
 
 
@@ -21,13 +21,13 @@ def main():
         builds = []
         try:
             text = requests.get(site).text
-        except:
+        except Exception:
             print("#Unable to connect to " + site)
             continue
 
         try:
             tree = ElementTree.fromstring(text)
-        except:
+        except Exception:
             print("#Invalid xml passed back from " + site)
             continue
         print("#Harvested from", site)
@@ -40,6 +40,7 @@ def main():
             build_dict[build] = 0
             builds = list(build_dict.keys())
         yield [names[i], trackurl, builds]
+
 
 if __name__ == "__main__":
     for site in main():

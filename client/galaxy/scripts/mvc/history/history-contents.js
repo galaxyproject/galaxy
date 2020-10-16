@@ -1,16 +1,19 @@
-define([
-    "mvc/history/history-content-model",
-    "mvc/history/hda-model",
-    "mvc/history/hdca-model",
-    "mvc/dataset/states",
-    "mvc/base-mvc",
-    "utils/localization"
-], function( HISTORY_CONTENT, HDA_MODEL, HDCA_MODEL, STATES, BASE_MVC, _l ){
+import _ from "underscore";
+import jQuery from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import CONTROLLED_FETCH_COLLECTION from "mvc/base/controlled-fetch-collection";
+import HDA_MODEL from "mvc/history/hda-model";
+import HDCA_MODEL from "mvc/history/hdca-model";
+import HISTORY_PREFS from "mvc/history/history-preferences";
+import JOB_STATES_MODEL from "mvc/history/job-states-model";
+import BASE_MVC from "mvc/base-mvc";
+import AJAX_QUEUE from "utils/ajax-queue";
 
-'use strict';
+const limitPerPageDefault = window.localStorage.getItem("historyContentsLimitPerPageDefault") || 500;
 
-var logNamespace = 'history';
 //==============================================================================
+var _super = CONTROLLED_FETCH_COLLECTION.PaginatedCollection;
 /** @class Backbone collection for history content.
  *      NOTE: history content seems like a dataset collection, but differs in that it is mixed:
  *          each element can be either an HDA (dataset) or a DatasetCollection and co-exist on
@@ -19,352 +22,497 @@ var logNamespace = 'history';
  *          HDAs or child dataset collections on one level.
  *      This is why this does not inherit from any of the DatasetCollections (currently).
  */
-var HistoryContents = Backbone.Collection
-        .extend( BASE_MVC.LoggableMixin )
-        .extend(/** @lends HistoryContents.prototype */{
-//TODO:?? may want to inherit from some MixedModelCollection
-//TODO:?? also consider inheriting from a 'DatasetList'
-//TODO: can we decorate the mixed models using the model fn below (instead of having them build their own type_id)?
+export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
+    _logNamespace: "history",
 
-    _logNamespace : logNamespace,
+    // ........................................................................ set up
+    limitPerPage: limitPerPageDefault,
 
-    /** since history content is a mix, override model fn into a factory, creating based on history_content_type */
-    model : function( attrs, options ) {
-//TODO: can we move the type_id stuff here?
-        //attrs.type_id = typeIdStr( attrs );
+    /** @type {Integer} how many contents per call to fetch when using progressivelyFetchDetails */
+    limitPerProgressiveFetch: limitPerPageDefault,
 
-        if( attrs.history_content_type === "dataset" ) {
-            return new HDA_MODEL.HistoryDatasetAssociation( attrs, options );
+    /** @type {String} order used here and when fetching from server */
+    order: "hid",
 
-        } else if( attrs.history_content_type === "dataset_collection" ) {
-            switch( attrs.collection_type ){
-                case 'list':
-                    return new HDCA_MODEL.HistoryListDatasetCollection( attrs, options );
-                case 'paired':
-                    return new HDCA_MODEL.HistoryPairDatasetCollection( attrs, options );
-                case 'list:paired':
-                    return new HDCA_MODEL.HistoryListPairedDatasetCollection( attrs, options );
-                case 'list:list':
-                    return new HDCA_MODEL.HistoryListOfListsDatasetCollection( attrs, options );
-            }
-            // This is a hack inside a hack:
-            // Raise a plain object with validationError to fake a model.validationError
-            // (since we don't have a model to use validate with)
-            // (the outer hack being the mixed content/model function in this collection)
-            var msg = 'Unknown collection_type: ' + attrs.collection_type;
-            console.warn( msg, attrs );
-            return { validationError : msg };
-        }
-        return { validationError : 'Unknown history_content_type: ' + attrs.history_content_type };
+    /** complete api url */
+    url: function() {
+        return `${this.urlRoot}/${this.historyId}/contents`;
     },
 
-    /** Set up.
-     *  @see Backbone.Collection#initialize
-     */
-    initialize : function( models, options ){
+    /** Set up */
+    initialize: function(models, options) {
+        this.on({
+            "sync add": this.trackJobStates
+        });
+
         options = options || {};
-//TODO: could probably use the contents.history_id instead
-        this.historyId = options.historyId;
-        //this._setUpListeners();
+        this.urlRoot = `${getAppRoot()}api/histories`;
+        _super.prototype.initialize.call(this, models, options);
+
+        this.history = options.history || null;
+        this.setHistoryId(options.historyId || null);
+        /** @type {Boolean} does this collection contain and fetch deleted elements */
+        this.includeDeleted = options.includeDeleted || this.includeDeleted;
+        /** @type {Boolean} does this collection contain and fetch non-visible elements */
+        this.includeHidden = options.includeHidden || this.includeHidden;
 
         // backbonejs uses collection.model.prototype.idAttribute to determine if a model is *already* in a collection
         //  and either merged or replaced. In this case, our 'model' is a function so we need to add idAttribute
         //  manually here - if we don't, contents will not merge but be replaced/swapped.
-        this.model.prototype.idAttribute = 'type_id';
+        this.model.prototype.idAttribute = "type_id";
+    },
 
-        this.on( 'all', function(){
-            this.debug( this + '.event:', arguments );
+    trackJobStates: function() {
+        this.each(historyContent => {
+            if (historyContent.has("job_states_summary")) {
+                return;
+            }
+
+            if (historyContent.attributes.history_content_type === "dataset_collection") {
+                var jobSourceType = historyContent.attributes.job_source_type;
+                var jobSourceId = historyContent.attributes.job_source_id;
+                if (jobSourceType && this.jobStateSummariesCollection) {
+                    this.jobStateSummariesCollection.add({
+                        id: jobSourceId,
+                        model: jobSourceType,
+                        history_id: this.history_id,
+                        collection_id: historyContent.attributes.id
+                    });
+                    var jobStatesSummary = this.jobStateSummariesCollection.get(jobSourceId);
+                    historyContent.jobStatesSummary = jobStatesSummary;
+                }
+            }
         });
     },
 
-    /** root api url */
-    urlRoot : Galaxy.root + 'api/histories',
-    /** complete api url */
-    url : function(){
-        return this.urlRoot + '/' + this.historyId + '/contents';
+    // ........................................................................ composite collection
+    /** since history content is a mix, override model fn into a factory, creating based on history_content_type */
+    model: function(attrs, options) {
+        if (attrs.history_content_type === "dataset") {
+            return new HDA_MODEL.HistoryDatasetAssociation(attrs, options);
+        } else if (attrs.history_content_type === "dataset_collection") {
+            return new HDCA_MODEL.HistoryDatasetCollection(attrs, options);
+        } else {
+            return {
+                validationError: `Unknown history_content_type: ${attrs.history_content_type}`
+            };
+        }
+    },
+
+    stopPolling: function() {
+        if (this.jobStateSummariesCollection) {
+            this.jobStateSummariesCollection.active = false;
+            this.jobStateSummariesCollection.clearUpdateTimeout();
+        }
+    },
+
+    setHistoryId: function(newId) {
+        this.stopPolling();
+        this.historyId = newId;
+        if (newId) {
+            // If actually reflecting a history - setup storage and monitor jobs.
+
+            this._setUpWebStorage();
+
+            this.jobStateSummariesCollection = new JOB_STATES_MODEL.JobStatesSummaryCollection();
+            this.jobStateSummariesCollection.historyId = newId;
+            this.jobStateSummariesCollection.monitor();
+        }
+    },
+
+    /** Set up client side storage. Currently PersistanStorage keyed under 'history:<id>' */
+    _setUpWebStorage: function(initialSettings) {
+        // TODO: use initialSettings
+        this.storage = new HISTORY_PREFS.HistoryPrefs({
+            id: HISTORY_PREFS.HistoryPrefs.historyStorageKey(this.historyId)
+        });
+        this.trigger("new-storage", this.storage, this);
+
+        this.on({
+            "include-deleted": function(newVal) {
+                this.storage.includeDeleted(newVal);
+            },
+            "include-hidden": function(newVal) {
+                this.storage.includeHidden(newVal);
+            }
+        });
+
+        this.includeDeleted = this.storage.includeDeleted() || false;
+        this.includeHidden = this.storage.includeHidden() || false;
+        return this;
     },
 
     // ........................................................................ common queries
-    /** Get the ids of every item in this collection
-     *  @returns array of encoded ids
-     */
-    ids : function(){
-//TODO: is this still useful since type_id
-        return this.map( function( item ){ return item.get('id'); });
+    /** @type {Object} map of collection available sorting orders containing comparator fns */
+    comparators: _.extend(_.clone(_super.prototype.comparators), {
+        name: BASE_MVC.buildComparator("name", { ascending: true }),
+        "name-dsc": BASE_MVC.buildComparator("name", {
+            ascending: false
+        }),
+        hid: BASE_MVC.buildComparator("hid", { ascending: false }),
+        "hid-asc": BASE_MVC.buildComparator("hid", { ascending: true })
+    }),
+
+    /** Get every model in this collection not in a 'ready' state (running). */
+    running: function() {
+        return this.filter(c => !c.inReadyState());
     },
 
-    /** Get contents that are not ready
-     *  @returns array of content models
-     */
-    notReady : function(){
-        return this.filter( function( content ){
-            return !content.inReadyState();
-        });
-    },
-
-    /** Get the id of every model in this collection not in a 'ready' state (running).
-     *  @returns an array of model ids
-     *  @see HistoryDatasetAssociation#inReadyState
-     */
-    running : function(){
-        function filterFn( c ){ return !c.inReadyState(); }
-        return new HistoryContents( this.filter( filterFn ) );
+    /** return contents that are not ready and not deleted/hidden */
+    runningAndActive: function() {
+        return this.filter(
+            c =>
+                !c.inReadyState() &&
+                c.get("visible") &&
+                // TODO: deletedOrPurged?
+                !c.get("deleted")
+        );
     },
 
     /** Get the model with the given hid
      *  @param {Int} hid the hid to search for
      *  @returns {HistoryDatasetAssociation} the model with the given hid or undefined if not found
      */
-    getByHid : function( hid ){
-        return _.first( this.filter( function( content ){ return content.get( 'hid' ) === hid; }) );
+    getByHid: function(hid) {
+        // note: there *can* be more than one content with a given hid, this finds the first based on order
+        return this.findWhere({ hid: hid });
     },
 
-    //TODO:?? this may belong in the containing view
-    /** Get every 'shown' model in this collection based on show_deleted/hidden
-     *  @param {Boolean} show_deleted are we showing deleted content?
-     *  @param {Boolean} show_hidden are we showing hidden content?
-     *  @returns array of content models
-     *  @see HistoryDatasetAssociation#isVisible
-     */
-    getVisible : function( show_deleted, show_hidden, filters ){
-        filters = filters || [];
-        //this.debug( 'filters:', filters );
-        // always filter by show deleted/hidden first
-        this.debug( 'checking isVisible' );
-        var filteredHdas = new HistoryContents( this.filter( function( item ){
-            return item.isVisible( show_deleted, show_hidden );
-        }));
+    /** return true if all contents have details */
+    haveDetails: function() {
+        return this.all(c => c.hasDetails());
+    },
 
-        _.each( filters, function( filterFn ){
-            if( !_.isFunction( filterFn ) ){ return; }
-            filteredHdas = new HistoryContents( filteredHdas.filter( filterFn ) );
-        });
-        return filteredHdas;
+    // ........................................................................ hidden / deleted
+    /** return a new contents collection of only hidden items */
+    hidden: function() {
+        return this.filter(c => c.hidden());
     },
 
     /** return a new contents collection of only hidden items */
-    hidden : function(){
-        function filterFn( c ){ return c.hidden(); }
-        return new HistoryContents( this.filter( filterFn ) );
+    deleted: function() {
+        return this.filter(c => c.get("deleted"));
     },
 
     /** return a new contents collection of only hidden items */
-    deleted : function(){
-        function filterFn( c ){ return c.get( 'deleted' ); }
-        return new HistoryContents( this.filter( filterFn ) );
+    visibleAndUndeleted: function() {
+        return this.filter(
+            c =>
+                c.get("visible") &&
+                // TODO: deletedOrPurged?
+                !c.get("deleted")
+        );
     },
 
-    /** return a new contents collection of only hidden items */
-    visibleAndUndeleted : function(){
-        function filterFn( c ){ return c.get( 'visible' ) && !c.get( 'deleted' ); }
-        return new HistoryContents( this.filter( filterFn ) );
+    /** create a setter in order to publish the change */
+    setIncludeDeleted: function(setting, options) {
+        if (_.isBoolean(setting) && setting !== this.includeDeleted) {
+            this.includeDeleted = setting;
+            if (_.result(options, "silent")) {
+                return;
+            }
+            this.trigger("include-deleted", setting, this);
+        }
     },
 
-    /** return true if any contents don't have details */
-    haveDetails : function(){
-        return this.all( function( content ){ return content.hasDetails(); });
+    /** create a setter in order to publish the change */
+    setIncludeHidden: function(setting, options) {
+        if (_.isBoolean(setting) && setting !== this.includeHidden) {
+            this.includeHidden = setting;
+            options = options || {};
+            if (_.result(options, "silent")) {
+                return;
+            }
+            this.trigger("include-hidden", setting, this);
+        }
     },
 
     // ........................................................................ ajax
-    /** override to use newest (versioned) api */
-    fetch : function( options ){
+    // ............ controlled fetch collection
+    /** override to get expanded ids from sessionStorage and pass to API as details */
+    fetch: function(options) {
         options = options || {};
-        options.data = _.defaults( options.data || {}, {
-            v : 'dev'
-        });
-        return Backbone.Collection.prototype.fetch.call( this, options );
-    },
-
-    /** override to use newest (versioned) api */
-    fetchUpdated : function( since, options ){
-        options = options || {};
-        options.traditional = true;
-        // TODO: this is painful - simplify here or move q/qv to named/mappable params
-        options.data = [{ name: 'v', value: 'dev' }];
-        if( since ){
-            options.data = options.data.concat( this._filtersFromMap({
-                'update_time-ge' : since.toISOString(),
-            }));
+        if (this.historyId && !options.details) {
+            var prefs = HISTORY_PREFS.HistoryPrefs.get(this.historyId).toJSON();
+            if (!_.isEmpty(prefs.expandedIds)) {
+                options.details = _.values(prefs.expandedIds).join(",");
+            }
         }
-        options.merge = true;
-        options.remove = false;
-        return this.fetch( options );
+        return _super.prototype.fetch.call(this, options);
     },
 
-    _filtersFromMap : function( filterMap ){
-        var filters = [];
-        // TODO: this seems unnecessary
-        _.each( filterMap, function( val, key ){
-            filters.push({ name: 'q',  value: key });
-            filters.push({ name: 'qv', value: val });
+    // ............. ControlledFetch stuff
+    /** override to include the API versioning flag */
+    _buildFetchData: function(options) {
+        return _.extend(_super.prototype._buildFetchData.call(this, options), {
+            v: "dev"
         });
-        return filters;
+    },
+
+    /** Extend to include details and version */
+    _fetchParams: _super.prototype._fetchParams.concat([
+        // TODO: remove (the need for) both
+        /** version */
+        "v",
+        /** dataset ids to get full details of */
+        "details"
+    ]),
+
+    /** override to add deleted/hidden filters */
+    _buildFetchFilters: function(options) {
+        var superFilters = _super.prototype._buildFetchFilters.call(this, options) || {};
+        var filters = {};
+        if (!this.includeDeleted) {
+            filters.deleted = false;
+            filters.purged = false;
+        }
+        if (!this.includeHidden) {
+            filters.visible = true;
+        }
+        return _.defaults(superFilters, filters);
+    },
+
+    // ............ paginated collection
+    getTotalItemCount: function() {
+        return this.history.contentsShown();
+    },
+
+    // ............ history contents specific ajax
+    /** override to filter requested contents to those updated after the Date 'since' */
+    fetchUpdated: function(since, options) {
+        if (since) {
+            options = options || { filters: {} };
+            options.remove = false;
+            options.filters = {
+                "update_time-ge": since.toISOString(),
+                // workflows will produce hidden datasets (non-output datasets) that still
+                // need to be updated in the collection or they'll update forever
+                // we can remove the default visible filter by using an 'empty' value
+                visible: ""
+            };
+        }
+        return this.fetch(options);
+    },
+
+    /** fetch all the deleted==true contents of this collection */
+    fetchDeleted: function(options) {
+        options = options || {};
+        options.filters = _.extend(options.filters, {
+            // all deleted, purged or not
+            deleted: true,
+            purged: undefined
+        });
+        options.remove = false;
+
+        this.trigger("fetching-deleted", this);
+        return this.fetch(options).always(() => {
+            this.trigger("fetching-deleted-done", this);
+        });
+    },
+
+    /** fetch all the visible==false contents of this collection */
+    fetchHidden: function(options) {
+        options = options || {};
+        options.filters = _.extend(options.filters, {
+            visible: false
+        });
+        options.remove = false;
+
+        this.trigger("fetching-hidden", this);
+        return this.fetch(options).always(() => {
+            this.trigger("fetching-hidden-done", this);
+        });
     },
 
     /** fetch detailed model data for all contents in this collection */
-    fetchAllDetails : function( options ){
+    fetchAllDetails: function(options) {
         options = options || {};
-        var detailsFlag = { details: 'all' };
-        options.data = ( options.data )?( _.extend( options.data, detailsFlag ) ):( detailsFlag );
-        return this.fetch( options );
+        var detailsFlag = { details: "all" };
+        options.data = _.extend(options.data || {}, detailsFlag);
+        return this.fetch(options);
     },
 
-    /** specialty fetch method for retrieving the element_counts of all hdcas in the history */
-    fetchCollectionCounts : function( options ){
-        options = options || {};
-        options.data = _.defaults({
-            keys : [ 'type_id', 'element_count' ].join( ',' ),
-            q    : 'history_content_type',
-            qv   : 'dataset_collection',
-        }, options.data || {} );
-        options.merge = true;
-        options.remove = false;
-        return this.fetch( options );
-    },
+    // ............. quasi-batch ops
+    // TODO: to batch
+    /** helper that fetches using filterParams then calls save on each fetched using updateWhat as the save params */
+    _filterAndUpdate: function(filterParams, updateWhat) {
+        var idAttribute = this.model.prototype.idAttribute;
+        var updateArgs = [updateWhat];
 
-    /** using a queue, perform ajaxFn on each of the models in this collection */
-    ajaxQueue : function( ajaxFn, options ){
-        var deferred = jQuery.Deferred(),
-            startingLength = this.length,
-            responses = [];
-
-        if( !startingLength ){
-            deferred.resolve([]);
-            return deferred;
-        }
-
-        // use reverse order (stylistic choice)
-        var ajaxFns = this.chain().reverse().map( function( content, i ){
-            return function(){
-                var xhr = ajaxFn.call( content, options );
-                // if successful, notify using the deferred to allow tracking progress
-                xhr.done( function( response ){
-                    deferred.notify({ curr: i, total: startingLength, response: response, model: content });
-                });
-                // (regardless of previous error or success) if not last ajax call, shift and call the next
-                //  if last fn, resolve deferred
-                xhr.always( function( response ){
-                    responses.push( response );
-                    if( ajaxFns.length ){
-                        ajaxFns.shift()();
-                    } else {
-                        deferred.resolve( responses );
-                    }
-                });
-            };
-        }).value();
-        // start the queue
-        ajaxFns.shift()();
-
-        return deferred;
-    },
-
-    isCopyable : function( contentsJSON ){
-        var copyableModelClasses = [
-            'HistoryDatasetAssociation',
-            'HistoryDatasetCollectionAssociation'
-        ];
-        return ( ( _.isObject( contentsJSON ) && contentsJSON.id )
-              && ( _.contains( copyableModelClasses, contentsJSON.model_class ) ) );
-    },
-
-    /** copy an existing, accessible hda into this collection */
-    copy : function( json ){
-        var id, type, contentType;
-        if( _.isString( json ) ){
-            id = json;
-            contentType = 'hda';
-            type = 'dataset';
-        } else {
-            id = json.id;
-            contentType = ({
-                'HistoryDatasetAssociation' : 'hda',
-                'LibraryDatasetDatasetAssociation' : 'ldda',
-                'HistoryDatasetCollectionAssociation' : 'hdca'
-            })[ json.model_class ] || 'hda';
-            type = ( contentType === 'hdca'? 'dataset_collection' : 'dataset' );
-        }
-        var collection = this,
-            xhr = jQuery.ajax( this.url(), {
-                method: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({
-                    content : id,
-                    source  : contentType,
-                    type    : type
-                })
-            })
-            .done( function( response ){
-                collection.add([ response ]);
-            })
-            .fail( function( error, status, message ){
-                collection.trigger( 'error', collection, xhr, {},
-                    'Error copying contents', { type: type, id: id, source: contentType });
-            });
-        return xhr;
-    },
-
-    // ........................................................................ sorting/filtering
-    /** return a new collection of contents whose attributes contain the substring matchesWhat */
-    matches : function( matchesWhat ){
-        return this.filter( function( content ){
-            return content.matches( matchesWhat );
+        return this.fetch({ filters: filterParams, remove: false }).then(fetched => {
+            // convert filtered json array to model array
+            fetched = fetched.reduce((modelArray, currJson, i) => {
+                var model = this.get(currJson[idAttribute]);
+                return model ? modelArray.concat(model) : modelArray;
+            }, []);
+            return this.ajaxQueue("save", updateArgs, fetched);
         });
     },
 
-    // ........................................................................ misc
-    /** */
-    createHDCA : function( elementIdentifiers, collectionType, name, options ){
-        //precondition: elementIdentifiers is an array of plain js objects
-        //  in the proper form to create the collectionType
-        var contents = this,
-            typeToModel = {
-                list    : HDCA_MODEL.HistoryListDatasetCollection,
-                paired  : HDCA_MODEL.HistoryPairDatasetCollection
-            },
-            hdca = new (typeToModel[ collectionType ])({
-                history_id          : this.historyId,
-                name                : name,
-                // should probably be able to just send in a bunch of json here and restruct per class
-                element_identifiers : elementIdentifiers
-            });
-        // do I even need to use new above, can I just pass the attrs here
-        return hdca.save()
-            .done( function( response ){
-                contents.add( hdca );
-            })
-            .fail( function( xhr, status, message ){
-                contents.trigger( 'error', xhr, status, message );
-            });
+    /** using a queue, perform ajaxFn on each of the models in this collection */
+    ajaxQueue: function(ajaxFn, args, collection) {
+        collection = collection || this.models;
+        return new AJAX_QUEUE.AjaxQueue(
+            collection
+                .slice()
+                .reverse()
+                .map((content, i) => {
+                    var fn = _.isString(ajaxFn) ? content[ajaxFn] : ajaxFn;
+                    return () => fn.apply(content, args);
+                })
+        ).deferred;
     },
 
+    _recursivelyFetch: function(options, detailKeys, deferred, limit, offset) {
+        offset = offset || 0;
+        var _options = _.extend(_.clone(options), {
+            view: "summary",
+            keys: detailKeys,
+            limit: limit,
+            offset: offset,
+            reset: offset === 0,
+            remove: false
+        });
+
+        _.defer(() => {
+            this.fetch
+                .call(this, _options)
+                .fail(deferred.reject)
+                .done(response => {
+                    deferred.notify(response, limit, offset);
+                    if (response.length !== limit) {
+                        this.allFetched = true;
+                        deferred.resolve(response, limit, offset);
+                    } else {
+                        this._recursivelyFetch(options, detailKeys, deferred, limit, offset + limit);
+                    }
+                });
+        });
+    },
+
+    /** fetch contents' details in batches of limitPerCall - note: only get searchable details here */
+    progressivelyFetchDetails: function(options) {
+        // TODO: only fetch tags and annotations if specifically requested
+        options = options || {};
+        let deferred = jQuery.Deferred();
+        this._recursivelyFetch(
+            options,
+            HDA_MODEL.HistoryDatasetAssociation.prototype.searchAttributes.join(","),
+            deferred,
+            options.limitPerCall || this.limitPerProgressiveFetch
+        );
+        return deferred;
+    },
+
+    /** does some bit of JSON represent something that can be copied into this contents collection */
+    isCopyable: function(contentsJSON) {
+        var copyableModelClasses = ["HistoryDatasetAssociation", "HistoryDatasetCollectionAssociation"];
+        return (
+            _.isObject(contentsJSON) && contentsJSON.id && _.contains(copyableModelClasses, contentsJSON.model_class)
+        );
+    },
+
+    /** copy an existing, accessible hda into this collection */
+    copy: function(json) {
+        // TODO: somehow showhorn all this into 'save'
+        var id;
+
+        var type;
+        var contentType;
+        if (_.isString(json)) {
+            id = json;
+            contentType = "hda";
+            type = "dataset";
+        } else {
+            id = json.id;
+            contentType =
+                {
+                    HistoryDatasetAssociation: "hda",
+                    LibraryDatasetDatasetAssociation: "ldda",
+                    HistoryDatasetCollectionAssociation: "hdca"
+                }[json.model_class] || "hda";
+            type = contentType === "hdca" ? "dataset_collection" : "dataset";
+        }
+        var collection = this;
+
+        var xhr = jQuery
+            .ajax(this.url(), {
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({
+                    content: id,
+                    source: contentType,
+                    type: type
+                })
+            })
+            .done(response => {
+                collection.add([response], { parse: true });
+            })
+            .fail((error, status, message) => {
+                collection.trigger("error", collection, xhr, {}, "Error copying contents", {
+                    type: type,
+                    id: id,
+                    source: contentType
+                });
+            });
+
+        return xhr;
+    },
+
+    /** create a new HDCA in this collection */
+    createHDCA: function(elementIdentifiers, collectionType, name, hideSourceItems, copyElements, options) {
+        // normally collection.create returns the new model, but we need the promise from the ajax, so we fake create
+        //precondition: elementIdentifiers is an array of plain js objects
+        //  in the proper form to create the collectionType
+        if (copyElements === undefined) {
+            copyElements = true;
+        }
+
+        var hdca = this.model({
+            history_content_type: "dataset_collection",
+            collection_type: collectionType,
+            history_id: this.historyId,
+            name: name,
+            hide_source_items: hideSourceItems || false,
+            copy_elements: copyElements,
+            // should probably be able to just send in a bunch of json here and restruct per class
+            // note: element_identifiers is now (incorrectly) an attribute
+            element_identifiers: elementIdentifiers
+            // do not create the model on the client until the ajax returns
+        });
+        return hdca.save(options);
+    },
+
+    // ........................................................................ searching
+    /** return true if all contents have the searchable attributes */
+    haveSearchDetails: function() {
+        return (
+            this.allFetched &&
+            this.all((
+                content // null (which is a valid returned annotation value)
+            ) =>
+                // will return false when using content.has( 'annotation' )
+                //TODO: a bit hacky - formalize
+                _.has(content.attributes, "annotation")
+            )
+        );
+    },
+
+    /** return a new collection of contents whose attributes contain the substring matchesWhat */
+    matches: function(matchesWhat) {
+        return this.filter(content => content.matches(matchesWhat));
+    },
+
+    // ........................................................................ misc
     /** In this override, copy the historyId to the clone */
-    clone : function(){
-        var clone = Backbone.Collection.prototype.clone.call( this );
+    clone: function() {
+        var clone = Backbone.Collection.prototype.clone.call(this);
         clone.historyId = this.historyId;
         return clone;
     },
 
-    /** debugging */
-    print : function(){
-        var contents = this;
-        contents.each( function( c ){
-            contents.debug( c );
-            if( c.elements ){
-                contents.debug( '\t elements:', c.elements );
-            }
-        });
-    },
-
     /** String representation. */
-    toString : function(){
-         return ([ 'HistoryContents(', [ this.historyId, this.length ].join(), ')' ].join( '' ));
+    toString: function() {
+        return ["HistoryContents(", [this.historyId, this.length].join(), ")"].join("");
     }
-});
-
-
-//==============================================================================
-    return {
-        HistoryContents : HistoryContents
-    };
 });

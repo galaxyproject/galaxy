@@ -1,13 +1,11 @@
-from math import isinf
-
 import os
 import os.path
-import tempfile
 import shutil
+import tempfile
+import unittest
+from math import isinf
 
 from galaxy.tools.parser.factory import get_tool_source
-
-import unittest
 
 
 TOOL_XML_1 = """
@@ -40,6 +38,42 @@ TOOL_XML_1 = """
             </output>
         </test>
     </tests>
+</tool>
+"""
+
+TOOL_WITH_TOKEN = r"""
+<tool id="tool_with_token" name="Token" version="1">
+    <macros>
+        <token name="@ESCAPE_IDENTIFIER@">
+<![CDATA[
+#set identifier = re.sub('[^\s\w\-]', '_', str($file.element_identifier))
+        ]]></token>
+        <token name="@NESTED_TOKEN@">
+<![CDATA[
+    before
+    @ESCAPE_IDENTIFIER@
+    after
+        ]]></token>
+    </macros>
+    <command>
+@NESTED_TOKEN@
+    </command>
+</tool>
+"""
+
+TOOL_WITH_RECURSIVE_TOKEN = r"""
+<tool id="tool_with_recursive_token" name="Token" version="1">
+    <macros>
+        <token name="@NESTED_TOKEN@">
+<![CDATA[
+    before
+    @NESTED_TOKEN@
+    after
+        ]]></token>
+    </macros>
+    <command>
+@NESTED_TOKEN@
+    </command>
 </tool>
 """
 
@@ -125,6 +159,10 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
     source_file_name = "bwa.xml"
     source_contents = TOOL_XML_1
 
+    def test_tool_source_to_string(self):
+        # Previously this threw an Exception - test for regression.
+        str(self._tool_source)
+
     def test_version(self):
         assert self._tool_source.parse_version() == "1.0.1"
 
@@ -175,11 +213,11 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
     def test_requirements(self):
         requirements, containers = self._tool_source.parse_requirements_and_containers()
         assert requirements[0].type == "package"
-        assert containers[0].identifier == "mycool/bwa"
+        assert list(containers)[0].identifier == "mycool/bwa"
 
     def test_outputs(self):
         outputs, output_collections = self._tool_source.parse_outputs(object())
-        assert len(outputs) == 1
+        assert len(outputs) == 1, outputs
         assert len(output_collections) == 0
 
     def test_stdio(self):
@@ -199,17 +237,17 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
         assert len(tests) == 2
         test_dict = tests[0]
         inputs = test_dict["inputs"]
-        assert len(inputs) == 1
+        assert len(inputs) == 1, test_dict
         input1 = inputs[0]
-        assert input1[0] == "foo"
-        assert input1[1] == "5"
+        assert input1["name"] == "foo", input1
+        assert input1["value"] == "5"
 
         outputs = test_dict["outputs"]
         assert len(outputs) == 1
         output1 = outputs[0]
-        assert output1[0] == 'out1'
-        assert output1[1] == 'moo.txt'
-        attributes1 = output1[2]
+        assert output1["name"] == 'out1'
+        assert output1["value"] == 'moo.txt'
+        attributes1 = output1["attributes"]
         assert attributes1["compare"] == "diff"
         assert attributes1["lines_diff"] == 0
 
@@ -217,9 +255,9 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
         outputs = test2["outputs"]
         assert len(outputs) == 1
         output2 = outputs[0]
-        assert output2[0] == 'out1'
-        assert output2[1] is None
-        attributes1 = output2[2]
+        assert output2["name"] == 'out1'
+        assert output2["value"] is None
+        attributes1 = output2["attributes"]
         assert attributes1["compare"] == "sim_size"
         assert attributes1["lines_diff"] == 4
 
@@ -242,13 +280,24 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
         """)
         exit, regexes = tool_source.parse_stdio()
         assert len(exit) == 2, exit
-        assert len(regexes) == 2, regexes
+        # error:, exception: various memory exception...
+        assert len(regexes) > 2, regexes
 
     def test_sanitize_option(self):
         assert self._tool_source.parse_sanitize() is True
 
     def test_refresh_option(self):
         assert self._tool_source.parse_refresh() is False
+
+    def test_nested_token(self):
+        tool_source = self._get_tool_source(source_contents=TOOL_WITH_TOKEN)
+        command = tool_source.parse_command()
+        assert command
+        assert '@' not in command
+
+    def test_recursive_token(self):
+        with self.assertRaises(Exception):
+            self._get_tool_source(source_contents=TOOL_WITH_RECURSIVE_TOKEN)
 
 
 class YamlLoaderTestCase(BaseLoaderTestCase):
@@ -336,7 +385,7 @@ class YamlLoaderTestCase(BaseLoaderTestCase):
         page_sources = input_pages.page_sources
         assert len(page_sources) == 1
         page_source = page_sources[0]
-        input_sources = page_source.parse_input_sources()
+        input_sources = list(page_source.parse_input_sources())
         assert len(input_sources) == 2
 
     def test_tests(self):
@@ -347,15 +396,15 @@ class YamlLoaderTestCase(BaseLoaderTestCase):
         inputs = test_dict["inputs"]
         assert len(inputs) == 1
         input1 = inputs[0]
-        assert input1[0] == "foo"
-        assert input1[1] == 5
+        assert input1["name"] == "foo"
+        assert input1["value"] == 5
 
         outputs = test_dict["outputs"]
         assert len(outputs) == 1
         output1 = outputs[0]
-        assert output1[0] == 'out1'
-        assert output1[1] == 'moo.txt'
-        attributes1 = output1[2]
+        assert output1["name"] == 'out1'
+        assert output1["value"] == 'moo.txt'
+        attributes1 = output1["attributes"]
         assert attributes1["compare"] == "diff"
         assert attributes1["lines_diff"] == 0
 
@@ -363,9 +412,9 @@ class YamlLoaderTestCase(BaseLoaderTestCase):
         outputs = test2["outputs"]
         assert len(outputs) == 1
         output2 = outputs[0]
-        assert output2[0] == 'out1'
-        assert output2[1] is None
-        attributes1 = output2[2]
+        assert output2["name"] == 'out1'
+        assert output2["value"] is None
+        attributes1 = output2["attributes"]
         assert attributes1["compare"] == "sim_size"
         assert attributes1["lines_diff"] == 4
 
@@ -422,6 +471,32 @@ class DataSourceLoaderTestCase(BaseLoaderTestCase):
         assert not self._tool_source.parse_hidden()
 
 
+class ApplyRulesToolLoaderTestCase(BaseLoaderTestCase):
+    source_file_name = os.path.join(os.getcwd(), "lib/galaxy/tools/apply_rules.xml")
+    source_contents = None
+
+    def test_tool_type(self):
+        tool_module = self._tool_source.parse_tool_module()
+        assert tool_module[0] == "galaxy.tools"
+        assert tool_module[1] == "ApplyRulesTool"
+        assert self._tool_source.parse_tool_type() == "apply_rules_to_collection"
+
+    def test_outputs(self):
+        outputs, output_collections = self._tool_source.parse_outputs(object())
+        assert len(outputs) == 1
+        assert len(output_collections) == 1
+
+
+class BuildListToolLoaderTestCase(BaseLoaderTestCase):
+    source_file_name = os.path.join(os.getcwd(), "lib/galaxy/tools/build_list.xml")
+    source_contents = None
+
+    def test_tool_type(self):
+        tool_module = self._tool_source.parse_tool_module()
+        assert tool_module[0] == "galaxy.tools"
+        assert tool_module[1] == "BuildListCollectionTool"
+
+
 class SpecialToolLoaderTestCase(BaseLoaderTestCase):
     source_file_name = os.path.join(os.getcwd(), "lib/galaxy/tools/imp_exp/exp_history_to_archive.xml")
     source_contents = None
@@ -445,3 +520,34 @@ class SpecialToolLoaderTestCase(BaseLoaderTestCase):
         action = self._tool_source.parse_action_module()
         assert action[0] == "galaxy.tools.actions.history_imp_exp"
         assert action[1] == "ExportHistoryToolAction"
+
+
+class CollectionTestCase(BaseLoaderTestCase):
+    source_file_name = os.path.join(os.getcwd(), "test/functional/tools/collection_two_paired.xml")
+    source_contents = None
+
+    def test_tests(self):
+        tests_dict = self._tool_source.parse_tests_to_dict()
+        tests = tests_dict["tests"]
+        assert len(tests) == 2
+        assert len(tests[0]["inputs"]) == 3, tests[0]
+        outputs, output_collections = self._tool_source.parse_outputs(None)
+        assert len(output_collections) == 0
+
+
+class CollectionOutputXmlTestCase(BaseLoaderTestCase):
+    source_file_name = os.path.join(os.getcwd(), "test/functional/tools/collection_creates_pair.xml")
+    source_contents = None
+
+    def test_tests(self):
+        outputs, output_collections = self._tool_source.parse_outputs(None)
+        assert len(output_collections) == 1
+
+
+class CollectionOutputYamlTestCase(BaseLoaderTestCase):
+    source_file_name = os.path.join(os.getcwd(), "test/functional/tools/collection_creates_pair_y.yml")
+    source_contents = None
+
+    def test_tests(self):
+        outputs, output_collections = self._tool_source.parse_outputs(None)
+        assert len(output_collections) == 1

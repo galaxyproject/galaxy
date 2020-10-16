@@ -1,5 +1,5 @@
-galaxy.tools.filters package
-============================
+galaxy\.tools\.filters package
+==============================
 
 .. automodule:: galaxy.tools.filters
     :members:

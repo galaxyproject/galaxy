@@ -1,15 +1,5 @@
-from .tool_shed import ToolShedLineage
-from .stock import StockLineage
-
-
-def remove_version_from_guid( guid ):
-    """
-    Removes version from toolshed-derived tool_id(=guid).
-    """
-    if "/repos/" not in guid:
-        return None
-    last_slash = guid.rfind('/')
-    return guid[:last_slash]
+from galaxy.util.tool_version import remove_version_from_guid
+from .interface import ToolLineage
 
 
 class LineageMap(object):
@@ -20,30 +10,45 @@ class LineageMap(object):
         self.lineage_map = {}
         self.app = app
 
-    def register(self, tool, **kwds):
+    def register(self, tool):
         tool_id = tool.id
-        versionless_tool_id = remove_version_from_guid( tool_id )
-        tool_shed_repository = kwds.get("tool_shed_repository", None)
+        versionless_tool_id = remove_version_from_guid(tool_id)
+        lineage = self.lineage_map.get(versionless_tool_id)
+        if not lineage:
+            lineage = ToolLineage.from_tool(tool)
+        else:
+            # A lineage for a tool with the same versionless_tool_id exists,
+            # but this lineage may not have the current tools' version,
+            # so we add tool.version to the lineage
+            lineage.register_version(tool.version)
         if versionless_tool_id and versionless_tool_id not in self.lineage_map:
-            self.lineage_map[versionless_tool_id] = ToolShedLineage.from_tool(self.app, tool, tool_shed_repository)
+            self.lineage_map[versionless_tool_id] = lineage
         if tool_id not in self.lineage_map:
-            if tool_shed_repository:
-                lineage = ToolShedLineage.from_tool(self.app, tool, tool_shed_repository)
-            else:
-                lineage = StockLineage.from_tool( tool )
             self.lineage_map[tool_id] = lineage
         return self.lineage_map[tool_id]
 
     def get(self, tool_id):
+        """
+        Get lineage for `tool_id`.
+
+        By preference the lineage for a version-agnostic tool_id is returned.
+        Falls back to fetching the lineage only when this fails.
+        This happens when the tool_id does not contain a version.
+        """
+        lineage = self._get_versionless(tool_id)
+        if lineage:
+            return lineage
         if tool_id not in self.lineage_map:
-            lineage = ToolShedLineage.from_tool_id( self.app, tool_id )
+            tool = self.app.toolbox._tools_by_id.get(tool_id)
+            if tool:
+                lineage = ToolLineage.from_tool(tool)
             if lineage:
                 self.lineage_map[tool_id] = lineage
+        return self.lineage_map.get(tool_id)
 
-        return self.lineage_map.get(tool_id, None)
-
-    def get_versionless(self, tool_id):
+    def _get_versionless(self, tool_id):
         versionless_tool_id = remove_version_from_guid(tool_id)
         return self.lineage_map.get(versionless_tool_id, None)
 
-__all__ = ["LineageMap"]
+
+__all__ = ("LineageMap", )

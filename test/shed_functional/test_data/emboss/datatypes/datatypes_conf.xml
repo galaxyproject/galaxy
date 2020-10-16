@@ -97,5 +97,7 @@
         <datatype extension="vectorstrip" type="galaxy.datatypes.data:Text" subclass="True"/>
         <datatype extension="wobble" type="galaxy.datatypes.data:Text" subclass="True"/>
         <datatype extension="wordcount" type="galaxy.datatypes.data:Text" subclass="True"/>
+        <datatype extension="data" type="galaxy.datatypes.data:Data" mimetype="application/octet-stream" max_optional_metadata_filesize="1048576" />
+        <datatype extension="binary" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" max_optional_metadata_filesize="1048576" />
     </registration>
 </datatypes>

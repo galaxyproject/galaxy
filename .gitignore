@@ -7,6 +7,7 @@ scripts/scramble/archives
 
 # Python virtualenv
 .venv
+.venv3
 
 # Database stuff
 database/beaker_sessions
@@ -17,9 +18,11 @@ database/files
 database/jobs_directory
 database/job_working_directory
 database/pbs
+database/test_errors
 database/tmp
 database/*.sqlite
 database/openid_consumer_cache
+database/dependencies
 
 # Python bytecode
 *.pyc
@@ -40,6 +43,9 @@ lib/tool_shed/scripts/bootstrap_tool_shed/user_info.xml
 reports_webapp.lock
 reports_webapp.log
 reports_webapp.pid
+
+# Jupyter Runtime Files
+.ipynb_checkpoints
 
 # Config files
 universe_wsgi.ini
@@ -69,6 +75,7 @@ config/plugins/interactive_environments/**/*.ini
 !config/plugins
 static/welcome.html.*
 static/welcome.html
+static/client_build_hash.txt
 
 # Tool data.
 tool-data/annotation_profiler_options.xml
@@ -89,12 +96,16 @@ tool-data/genome/*
 tool-data/*.sample
 tool-data/testtoolshed.g2.bx.psu.edu/
 tool-data/toolshed.g2.bx.psu.edu/
-tool-data/**/*.fa 
+tool-data/**/*.fa
 
 # Test output
+.pytest_cache/
+assets/
 test-data-cache
 run_framework_tests.html
 run_functional_tests.html
+run_integration_tests.html
+run_selenium_tests.html
 run_toolshed_tests.html
 run_api_tests.html
 test/tool_shed/tmp/*
@@ -106,6 +117,9 @@ test/unit/**.log
 
 # Project files
 *.kpf
+.vscode
+client/**/jsconfig.json
+
 
 # Chrom len files
 *.len
@@ -113,20 +127,30 @@ test/unit/**.log
 # Jars
 tool-data/shared/jars/
 
-# CSS build artifacts.
-sprite-*.less
-
 # JS, Local node_modules, and bower_components directories
-static/scripts/bundled
+static/maps
+static/plugins
+static/scripts
 node_modules
 bower_components
+client/galaxy/scripts/libs/*
+client/galaxy/style/less/*
 
 # Documentation build files.
 doc/build
+doc/schema.md
+doc/source/admin/config_logging_default_yaml.rst
+doc/source/api/api.rst
+doc/source/api/ts_api.rst
+doc/source/dev/schema.rst
+
+# webpack stats
+client/webpack-stats.json
 
 # Misc
 *.orig
 .DS_Store
 *.rej
 *~
-.idea/
+.idea
+.vscode

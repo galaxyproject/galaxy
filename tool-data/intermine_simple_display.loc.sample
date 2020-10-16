@@ -1,0 +1,3 @@
+# Table used for listing simple Intermine display servers
+#<unique_id>	<display_name>	<url>
+main_registry	Registry	http://registry.intermine.org/galaxy-to-im?URL=%(intermine_file_url_qp)s

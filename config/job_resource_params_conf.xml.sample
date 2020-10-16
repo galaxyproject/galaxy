@@ -1,6 +1,6 @@
 <parameters>
-  <param label="Processors" name="processors" type="integer" size="2" min="1" max="64" value="" help="Number of processing cores, 'ppn' value (1-64). Leave blank to use default value." />
-  <param label="Memory" name="memory" type="integer" size="3" min="1" max="256" value="" help="Memory size in gigabytes, 'pmem' value (1-256). Leave blank to use default value." />
-  <param label="Time" name="time" type="integer" size="3" min="1" max="744" value="" help="Maximum job time in hours, 'walltime' value (1-744). Leave blank to use default value." />
+  <param label="Processors" name="processors" type="integer" min="1" max="64" value="" help="Number of processing cores, 'ppn' value (1-64). Leave blank to use default value." />
+  <param label="Memory" name="memory" type="integer" min="1" max="256" value="" help="Memory size in gigabytes, 'pmem' value (1-256). Leave blank to use default value." />
+  <param label="Time" name="time" type="integer" min="1" max="744" value="" help="Maximum job time in hours, 'walltime' value (1-744). Leave blank to use default value." />
   <param label="Project" name="project" type="text" value="" help="Project to assign resource allocation to. Leave blank to use default value." />
 </parameters>

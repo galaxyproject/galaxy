@@ -3,14 +3,11 @@ Migration script to grow MySQL blobs.
 """
 from __future__ import print_function
 
+import logging
+
 from sqlalchemy import MetaData
 
-import datetime
-now = datetime.datetime.utcnow
-
-import logging
-log = logging.getLogger( __name__ )
-
+log = logging.getLogger(__name__)
 metadata = MetaData()
 
 BLOB_COLUMNS = [
@@ -46,10 +43,9 @@ def upgrade(migrate_engine):
     for (table, column) in BLOB_COLUMNS:
         cmd = "ALTER TABLE %s MODIFY COLUMN %s MEDIUMBLOB;" % (table, column)
         try:
-            migrate_engine.execute( cmd )
-        except Exception as e:
-            print("Failed to grow column %s.%s" % (table, column))
-            print(str( e ))
+            migrate_engine.execute(cmd)
+        except Exception:
+            log.exception("Failed to grow column %s.%s", table, column)
 
 
 def downgrade(migrate_engine):

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE visualization SYSTEM "../../visualization.dtd">
+<visualization name="Scatter plot (jqPlot)">
+    <macros>
+        <import>../../jqplot_bar/config/jqplot_shared.xml</import>
+    </macros>
+    <description>Renders a scatter plot using jqPlot hosted at http://www.jqplot.com.</description>
+    <expand macro="data"/>
+    <entry_point entry_point_type="chart" src="../../jqplot_bar/static/script.js" css="../../jqplot_bar/static/script.css" load="jqplot_scatter"/>
+    <specs>
+        <expand macro="specs"/>
+    </specs>
+    <groups>
+        <expand macro="groups"/>
+        <input>
+            <name>x</name>
+            <label>Values for x-axis</label>
+            <type>data_column</type>
+            <is_numeric>true</is_numeric>
+        </input>
+        <input>
+            <name>y</name>
+            <label>Values for y-axis</label>
+            <type>data_column</type>
+            <is_numeric>true</is_numeric>
+        </input>
+    </groups>
+    <settings>
+        <expand macro="settings"/>
+    </settings>
+</visualization>

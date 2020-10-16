@@ -1,30 +1,36 @@
 <tool id="job_properties" name="Test Job Properties">
-    <command>
+    <stdio>
+        <exit_code range="127" level="fatal" description="Failing exit code." />
+    </stdio>
+    <command><![CDATA[
         #if $thebool
-            echo "The bool is true";
-            echo "The bool is really true" 1>&amp;2;
-            echo "This is a line of text." > $out_file1
+            echo "The bool is true" &&
+            echo "The bool is really true" 1>&2 &&
+            echo "This is a line of text." > '$out_file1' &&
+            cp '$out_file1' '$one' &&
+            cp '$out_file1' '$two'
         #else
-            echo "The bool is not true";
-            echo "The bool is very not true" 1>&amp;2;
-            echo "This is a different line of text." > $out_file1;
+            echo "The bool is not true" &&
+            echo "The bool is very not true" 1>&2 &&
+            echo "This is a different line of text." > '$out_file1' &&
             sh -c "exit 2"
         #end if
         #if $failbool
             ; sh -c "exit 127"
         #end if
 
-    </command>
+    ]]></command>
     <inputs>
         <param name="thebool" type="boolean" label="The boolean property" />
         <param name="failbool" type="boolean" label="The failure property" checked="false" />
     </inputs>
     <outputs>
-        <data name="out_file1" />
+        <data name="out_file1" format="txt" />
+        <collection name="list_output" type="list" label="A list output">
+            <data name="one" format="txt" />
+            <data name="two" format="txt" />
+        </collection>
     </outputs>
-    <stdio>
-        <exit_code range="127"   level="fatal"   description="Failing exit code." />
-    </stdio>
     <tests>
         <test expect_exit_code="0">
             <param name="thebool" value="true" />

@@ -1,0 +1,21 @@
+<tool id="is_valid_xml" name="is_valid_xml" version="0.001">
+    <command>
+        cp $input $output
+    </command>
+    <inputs>
+        <param name="input" type="data" format="txt" />
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="simple.xml" />
+            <output name="output">
+                <assert_contents>
+                    <is_valid_xml />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

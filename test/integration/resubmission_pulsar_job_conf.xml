@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<!-- 
+    Slimmed down resubmission_job_conf.xml for testing default resubmission rules.
+-->
+<job_conf>
+    <plugins>
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="2"/>
+        <plugin id="pulsar_rest" type="runner" load="galaxy.jobs.runners.pulsar:PulsarRESTJobRunner"/>
+    </plugins>
+
+    <handlers>
+        <handler id="main"/>
+    </handlers>
+
+    <destinations default="initial_pulsar">
+        <destination id="initial_pulsar" runner="pulsar_rest">
+            <!-- Use a reserved, unused ip to force a resubmission -->
+            <param id="url">https://192.0.2.0:8913/</param>
+            <param id="private_token">some_token</param>
+            <resubmit condition="unknown_error" destination="local" />
+        </destination>
+
+        <!-- Upload destination. -->
+        <destination id="local" runner="local">
+        </destination>
+    </destinations>
+
+    <tools>
+        <tool id="upload1" destination="local" resources="upload" />
+    </tools>
+</job_conf>

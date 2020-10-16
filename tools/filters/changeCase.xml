@@ -3,10 +3,12 @@
   <stdio>
     <exit_code range="1:" err_level="fatal" />
   </stdio>
-  <command interpreter="perl">changeCase.pl $input "$cols" $delimiter $casing $out_file1</command>
+  <command>
+perl '$__tool_directory__/changeCase.pl' '$input' '$cols' $delimiter $casing '$out_file1'
+  </command>
   <inputs>
-    <param name="input" format="txt" type="data" label="From"/>
-    <param name="cols" size="10" type="text" value="c1,c2" label="Change case of columns"/>
+    <param name="input" type="data" format="txt" label="From"/>
+    <param name="cols" type="text" value="c1,c2" label="Change case of columns"/>
     <param name="delimiter" type="select" label="Delimited by">
       <option value="TAB">Tab</option>
       <option value="SPACE">Whitespace</option>
@@ -22,7 +24,7 @@
     </param>
   </inputs>
   <outputs>
-    <data format="tabular" name="out_file1" />
+    <data name="out_file1" format="tabular" />
   </outputs>
   <tests>
     <test>
@@ -41,7 +43,6 @@
     </test>
   </tests>
   <help>
-
 .. class:: warningmark
 
 **This tool breaks column assignments.** To re-establish column assignments run the tool and click on the pencil icon in the resulting history item.
@@ -72,6 +73,5 @@ will result in::
 
   APPLE is GOOD
   WINDOWS is BAD
-
   </help>
 </tool>

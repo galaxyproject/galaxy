@@ -1,0 +1,41 @@
+<tool id="__FILTER_EMPTY_DATASETS__"
+      name="Filter empty"
+      version="1.0.0"
+      tool_type="filter_empty_datasets_collection">
+    <description>datasets from a collection</description>
+    <type class="FilterEmptyDatasetsTool" module="galaxy.tools" />
+    <action module="galaxy.tools.actions.model_operations"
+            class="ModelOperationToolAction"/>
+    <inputs>
+        <param type="data_collection" collection_type="list,list:paired" name="input" label="Input Collection" />
+    </inputs>
+    <outputs>
+        <collection name="output" format_source="input" type_source="input" label="${on_string} (filtered empty datasets)" >
+        </collection>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input">
+                <collection type="list">
+                    <element name="e1" value="simple_line.txt" />
+                </collection>
+            </param>
+            <output_collection name="output" type="list" count="1">
+                <element name="e1">
+                  <assert_contents>
+                      <has_text_matching expression="^This is a line of text.\n$" />
+                  </assert_contents>
+                </element>
+            </output_collection>
+        </test>
+    </tests>
+    <help><![CDATA[
+
+This tool takes a dataset collection and filters out empty datasets. This is useful for continuing a multi-sample analysis when downstream tools require datasets to have content.
+
+.. class:: infomark
+
+This tool will create new history datasets from your collection but your quota usage will not increase.
+
+      ]]></help>
+</tool>

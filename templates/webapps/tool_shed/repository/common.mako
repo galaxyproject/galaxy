@@ -1,3 +1,4 @@
+<%namespace file="/webapps/tool_shed/common/common.mako" import="*" />
 <%def name="common_javascripts(repository)">
     <script type="text/javascript">
         $(function(){
@@ -72,10 +73,11 @@
 
 <%def name="container_javascripts()">
     <script type="text/javascript">
+        var store = window.bundleEntries.store;
         var init_dependencies = function() {
             var storage_id = "library-expand-state-${trans.security.encode_id(10000)}";
             var restore_folder_state = function() {
-                var state = $.jStorage.get(storage_id);
+                var state = store.get(storage_id);
                 if (state) {
                     for (var id in state) {
                         if (state[id] === true) {
@@ -93,7 +95,7 @@
                     var folder = $(this);
                     state[folder.attr("id")] = folder.hasClass("expanded");
                 });
-                $.jStorage.set(storage_id, state);
+                store.set(storage_id, state);
             };
             $(".container-table").each(function() {
                 //var container_id = this.id.split( "-" )[0];
@@ -195,7 +197,7 @@
                 </div>
             %endif
         %else:
-            ${repository_type_select_field.get_html()}
+            ${render_select(repository_type_select_field)}
             %if render_help:
                 <div class="toolParamHelp" style="clear: both;">
                     Select the repository type based on the following criteria.
@@ -280,7 +282,7 @@
                 elif folder.label == 'Invalid tool dependencies':
                     folder_label = "%s<i> - click the tool dependency to see why it is invalid</i>" % folder_label
                 elif folder.label == 'Valid tools':
-                    col_span_str = 'colspan="3"'
+                    col_span_str = 'colspan="4"'
                     if folder.description:
                         folder_label = "%s<i> - %s</i>" % ( folder_label, folder.description )
                     else:
@@ -870,6 +872,7 @@
         %endif
         <${cell_type}>${tool.description | h}</${cell_type}>
         <${cell_type}>${tool.version | h}</${cell_type}>
+        <${cell_type}>${tool.profile | h}</${cell_type}>
         ##<${cell_type}>${tool.requirements | h}</${cell_type}>
     </tr>
     <%
@@ -1026,7 +1029,39 @@
     %>
 </%def>
 
-<%def name="render_tool_dependency_resolver( requirements_status )">
+<%def name="render_dependency_status( dependency, prepare_for_install=False)">
+    <td>${dependency['name'] | h}</td>
+    <td>${dependency['version'] | h}</td>
+    %if not prepare_for_install:
+        %if dependency['dependency_type']:
+            <td>${dependency['dependency_type'].title() | h}</td>
+        %else:
+            <td>${dependency['dependency_type'] | h}</td>
+        %endif
+        <td>${dependency['exact'] | h}</td>
+    %endif
+    %if dependency['dependency_type'] == None:
+        <td>
+           <img src="${h.url_for('/static')}/images/icon_error_sml.gif" title='Dependency not resolved'/>
+           %if prepare_for_install:
+               Not Installed
+           %endif
+        </td>
+    %elif not dependency['exact']:
+        <td>
+            <img src="${h.url_for('/static')}/images/icon_warning_sml.gif" title='Dependency resolved, but version ${dependency['version']} not found'/>
+        </td>
+    %else:
+        <td>
+            <img src="${h.url_for('/static')}/june_2007_style/blue/ok_small.png"/>
+            %if prepare_for_install:
+                Installed through ${dependency['dependency_type'].title() | h}
+            %endif
+        </td>
+    %endif
+</%def>
+
+<%def name="render_tool_dependency_resolver( requirements_status, prepare_for_install=False )">
     <tr class="datasetRow">
         <td style="padding-left: 20 px;">
             <table class="grid" id="module_resolver_environment">
@@ -1034,30 +1069,17 @@
                     <tr>
                         <th>Dependency</th>
                         <th>Version</th>
-                        <th>Resolver</th>
-                        <th>Exact version</th>
-                        <th>Status<th>
+                        %if not prepare_for_install:
+                            <th>Resolver</th>
+                            <th>Exact version</th>
+                        %endif
+                        <th>Current Installation Status<th>
                     </tr>
                 </head>
                 <body>
                     %for dependency in requirements_status:
+                        ${render_dependency_status(dependency, prepare_for_install)}
                         <tr>
-                            <td>${dependency['name'] | h}</td>
-                            <td>${dependency['version'] | h}</td>
-                            <td>${dependency['dependency_type'] | h}</td>
-                            <td>${dependency['exact'] | h}</td>
-                        %if dependency['dependency_type'] == None:
-                            <td>
-                               <img src="${h.url_for('/static')}/images/icon_error_sml.gif" title='Dependency not resolved'/>
-                            </td>
-                        %elif not dependency['exact']:
-                            <td>
-                                <img src="${h.url_for('/static')}/images/icon_warning_sml.gif" title='Dependency resolved, but version ${dependency['version']} not found'/>
-                            </td>
-                        %else:
-                            <td><img src="${h.url_for('/static')}/june_2007_style/blue/ok_small.png"/></td>
-                        %endif
-                        </tr>
                     %endfor
                 </body>
             </table>
@@ -1067,9 +1089,9 @@
 
 <%def name="render_resolver_dependencies( requirements_status )">
     %if requirements_status:
-        <div class="toolForm">
-            <div class="toolFormTitle">Dependency Resolver Details</div>
-            <div class="toolFormBody">
+        <div class="card">
+            <div class="card-header">Dependency Resolver Details</div>
+            <div class="card-body">
                 <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="module_resolvers">
                     ${render_tool_dependency_resolver( requirements_status )}
                 </table>
@@ -1122,9 +1144,9 @@
     %if readme_files_root_folder:
         ${render_table_wrap_style( "readme_files" )}
         <p/>
-        <div class="toolForm">
-            <div class="toolFormTitle">Repository README files - may contain important installation or license information</div>
-            <div class="toolFormBody">
+        <div class="card">
+            <div class="card-header">Repository README files - may contain important installation or license information</div>
+            <div class="card-body">
                 <p/>
                 <% row_counter = RowCounter() %>
                 <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="readme_files">
@@ -1134,9 +1156,9 @@
         </div>
     %endif
     %if has_dependencies:
-        <div class="toolForm">
-            <div class="toolFormTitle">Dependencies of this repository</div>
-            <div class="toolFormBody">
+        <div class="card">
+            <div class="card-header">Dependencies of this repository</div>
+            <div class="card-body">
                 %if invalid_repository_dependencies_root_folder:
                     <p/>
                     <% row_counter = RowCounter() %>
@@ -1184,9 +1206,9 @@
     %endif
     %if has_contents:
         <p/>
-        <div class="toolForm">
-            <div class="toolFormTitle">Contents of this repository</div>
-            <div class="toolFormBody">
+        <div class="card">
+            <div class="card-header">Contents of this repository</div>
+            <div class="card-body">
                 %if valid_tools_root_folder:
                     <p/>
                     <% row_counter = RowCounter() %>
@@ -1235,9 +1257,9 @@
     %if tool_test_results_root_folder and trans.app.config.display_legacy_test_results:
         ${render_table_wrap_style( "test_environment" )}
         <p/>
-        <div class="toolForm">
-            <div class="toolFormTitle">Automated tool test results</div>
-            <div class="toolFormBody">
+        <div class="card">
+            <div class="card-header">Automated tool test results</div>
+            <div class="card-body">
                 <p/>
                 <% row_counter = RowCounter() %>
                 <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="test_environment">

@@ -1,7 +1,7 @@
+import random
 import shlex
 import socket
 import subprocess
-import random
 
 
 def unused_port(range=None):
@@ -33,7 +33,7 @@ def __unused_port_on_range(range):
             col = line.split()
             local_address = col[3]
             local_port = local_address.split(':')[1]
-            occupied_ports.add( int(local_port) )
+            occupied_ports.add(int(local_port))
 
     # Generate random free port number.
     while True:

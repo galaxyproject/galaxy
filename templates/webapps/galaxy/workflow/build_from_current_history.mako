@@ -64,6 +64,8 @@
                         <input type="checkbox" id="as-input-${ encoded_id }" class="as-input"
                                name="${data.history_content_type}_ids" value="${data.hid}" checked="true" />
                         <label for="as-input-${ encoded_id }" >${_('Treat as input dataset')}</label>
+                        <input type="text" id="as-named-input-${ encoded_id }" class="as-named-input"
+                               name="${data.history_content_type}_names" value="${data.display_name() | h}" />
                     %endif
                 </div>
             </td>
@@ -111,7 +113,7 @@ into a workflow will be shown in gray.</p>
         disabled = True
         tool_name = getattr( job, 'name', tool_name )
     else:
-        tool = app.toolbox.get_tool( job.tool_id )
+        tool = app.toolbox.get_tool( job.tool_id, tool_version=job.tool_version )
         if tool:
             tool_name = tool.name
         if tool is None or not( tool.is_workflow_compatible ):

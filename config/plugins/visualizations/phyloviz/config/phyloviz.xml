@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
 <visualization name="Phyloviz">
+    <description>Phylogenetic data analysis from multiple data sources.</description>
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>

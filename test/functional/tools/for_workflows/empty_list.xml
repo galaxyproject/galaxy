@@ -1,0 +1,22 @@
+<tool id="empty_list" name="empty_list" version="0.1.0">
+  <description>always produce an empty list</description>
+  <command detect_errors="exit_code">
+      mkdir outputs;
+      cd outputs;
+  </command>
+  <inputs>
+    <param name="input1" type="data" format="txt" label="Input Text" />
+  </inputs>
+  <outputs>
+    <collection name="output" type="list" label="lines">
+      <discover_datasets pattern="__name__" directory="outputs" />
+    </collection>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="simple_lines_both.txt" />
+      <output_collection name="output" type="list" count="0">
+      </output_collection>
+    </test>
+  </tests>
+</tool>

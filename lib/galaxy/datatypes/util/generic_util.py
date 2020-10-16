@@ -1,7 +1,7 @@
 import subprocess
 
 
-def count_special_lines( word, filename, invert=False ):
+def count_special_lines(word, filename, invert=False):
     """
         searching for special 'words' using the grep tool
         grep is used to speed up the searching and counting
@@ -14,6 +14,6 @@ def count_special_lines( word, filename, invert=False ):
         cmd.extend([word, filename])
         out = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         return int(out.communicate()[0].split()[0])
-    except:
+    except Exception:
         pass
     return 0

@@ -1,0 +1,5 @@
+id: phdcomics
+type:
+  - tool
+  - workflow
+activate: true

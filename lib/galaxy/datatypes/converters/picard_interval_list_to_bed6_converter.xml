@@ -1,6 +1,6 @@
 <tool id="CONVERTER_picard_interval_list_to_bed6" name="Convert Picard Interval List to BED6" version="1.0.0">
     <description>converter</description>
-    <command interpreter="python">picard_interval_list_to_bed6_converter.py "$input" "$output"</command>
+    <command>python '$__tool_directory__/picard_interval_list_to_bed6_converter.py' '$input' '$output'</command>
     <inputs>
         <param name="input" type="data" format="picard_interval_list" label="Picard Interval List file"/>
     </inputs>

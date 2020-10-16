@@ -1,5 +1,5 @@
-galaxy.jobs.runners.util package
-================================
+galaxy\.jobs\.runners\.util package
+===================================
 
 .. automodule:: galaxy.jobs.runners.util
     :members:
@@ -18,26 +18,34 @@ Subpackages
 Submodules
 ----------
 
-galaxy.jobs.runners.util.env module
------------------------------------
+galaxy\.jobs\.runners\.util\.env module
+---------------------------------------
 
 .. automodule:: galaxy.jobs.runners.util.env
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.jobs.runners.util.external module
-----------------------------------------
+galaxy\.jobs\.runners\.util\.external module
+--------------------------------------------
 
 .. automodule:: galaxy.jobs.runners.util.external
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.jobs.runners.util.kill module
-------------------------------------
+galaxy\.jobs\.runners\.util\.kill module
+----------------------------------------
 
 .. automodule:: galaxy.jobs.runners.util.kill
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy\.jobs\.runners\.util\.sudo module
+----------------------------------------
+
+.. automodule:: galaxy.jobs.runners.util.sudo
     :members:
     :undoc-members:
     :show-inheritance:

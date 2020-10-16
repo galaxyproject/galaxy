@@ -3,6 +3,7 @@
 <%namespace file="/admin/tool_shed_repository/common.mako" import="render_dependencies_section" />
 <%namespace file="/admin/tool_shed_repository/common.mako" import="render_readme_section" />
 <%namespace file="/webapps/tool_shed/repository/common.mako" import="*" />
+<%namespace file="/webapps/tool_shed/common/common.mako" import="*" />
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
@@ -11,7 +12,6 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js("libs/jquery/jquery.rating", "libs/jquery/jstorage" )}
     ${container_javascripts()}
 </%def>
 
@@ -51,20 +51,21 @@
         repository tools may include code that produces malicious behavior, so be aware of what you are installing.
     </p>
     <p>
-        If you discover a repository that causes problems after installation, contact <a href="https://wiki.galaxyproject.org/Support" target="_blank">Galaxy support</a>,
+        If you discover a repository that causes problems after installation, contact <a href="https://galaxyproject.org/support" target="_blank">Galaxy support</a>,
         sending all necessary information, and appropriate action will be taken.
     </p>
     <p>
-        <a href="https://wiki.galaxyproject.org/ToolShedRepositoryFeatures#Contact_repository_owner" target="_blank">Contact the repository owner</a> for 
+        <a href="https://galaxyproject.org/toolshed/repository-features/#contact-repository-owner" target="_blank">Contact the repository owner</a> for
         general questions or concerns.
     </p>
 </div>
-<div class="toolForm">
-    <div class="toolFormBody">
+<div class="card">
+    <div class="card-body">
         <form name="select_tool_panel_section" id="select_tool_panel_section" action="${h.url_for( controller='admin_toolshed', action='prepare_for_install' )}" method="post" >
             <div class="form-row">
                 <input type="hidden" name="includes_tools" value="${includes_tools}" />
                 <input type="hidden" name="includes_tool_dependencies" value="${includes_tool_dependencies}" />
+                <input type="hidden" name="requirements_status" value="${requirements_status}" />
                 <input type="hidden" name="includes_tools_for_display_in_tool_panel" value="${includes_tools_for_display_in_tool_panel}" />
                 <input type="hidden" name="tool_shed_url" value="${tool_shed_url}" />
                 <input type="hidden" name="encoded_repo_info_dicts" value="${encoded_repo_info_dicts}" />
@@ -85,21 +86,59 @@
                 ${render_readme_section( containers_dict )}
                 <div style="clear: both"></div>
             %endif
-            %if can_display_repository_dependencies or can_display_tool_dependencies or can_display_resolver_installation:
+            <%
+                if requirements_status and install_resolver_dependencies_check_box or includes_tool_dependencies:
+                    display_dependency_confirmation = True
+                else:
+                    display_dependency_confirmation = False
+            %>
+            %if requirements_status:
+                %if not install_resolver_dependencies_check_box and not includes_tool_dependencies:
+                <div class="form-row">
+                    <table class="colored" width="100%">
+                        <head>
+                            <th>
+                                <img src="${h.url_for('/static')}/images/icon_error_sml.gif" title='Cannot install dependencies'/>
+                                This repository requires dependencies that cannot be installed through the Tool Shed
+                            </th>
+                        </head>
+                    </table>
+                </div>
+                <div class="form-row">
+                     <p>This repository defines tool requirements that cannot be installed through the Tool Shed.</p>
+                     <p>Please activate Conda dependency resolution, activate Docker dependency resolution, setup Environment Modules
+or manually satisfy the dependencies listed below.</p>
+                     <p>For details see <a target="_blank" href="https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html">the dependency resolver documentation.</a></p>
+                </div>
+                %endif
+                <div class="form-row">
+                    <table class="colored" width="100%">
+                        <th bgcolor="#EBD9B2">The following tool dependencies are required by the current repository</th>
+                    </table>
+                </div>
+                <div class="form-row">
+                    ${render_tool_dependency_resolver( requirements_status, prepare_for_install=True )}
+                </div>
+                <div style="clear: both"></div>
+            %endif
+            %if can_display_repository_dependencies or display_dependency_confirmation:
                 <div class="form-row">
                     <table class="colored" width="100%">
                         <th bgcolor="#EBD9B2">Confirm dependency installation</th>
                     </table>
                 </div>
-                ${render_dependencies_section( install_resolver_dependencies_check_box, install_repository_dependencies_check_box, install_tool_dependencies_check_box, containers_dict, revision_label=None, export=False )}
+                ${render_dependencies_section( install_resolver_dependencies_check_box, install_repository_dependencies_check_box, install_tool_dependencies_check_box, containers_dict, revision_label=None, export=False, requirements_status=requirements_status )}
                 <div style="clear: both"></div>
             %endif
             %if shed_tool_conf_select_field:
-                <div class="form-row">
-                    <table class="colored" width="100%">
-                        <th bgcolor="#EBD9B2">Choose the tool panel section to contain the installed tools (optional)</th>
-                    </table>
-                </div>
+                %if includes_tools_for_display_in_tool_panel:
+                    <div class="form-row">
+                        <table class="colored" width="100%">
+                            <th bgcolor="#EBD9B2">Choose the tool panel section to contain the installed tools (optional)</th>
+                        </table>
+                    </div>
+                <div class="detail-section">
+                %endif
                 <%
                     if len( shed_tool_conf_select_field.options ) == 1:
                         select_help = "Your Galaxy instance is configured with 1 shed-related tool configuration file, so repositories will be "
@@ -110,33 +149,38 @@
                 %>
                 <div class="form-row">
                     <label>Shed tool configuration file:</label>
-                    ${shed_tool_conf_select_field.get_html()}
+                    ${render_select(shed_tool_conf_select_field)}
                     <div class="toolParamHelp" style="clear: both;">
                         ${select_help|h}
                     </div>
                 </div>
                 <div style="clear: both"></div>
+                </div>
             %else:
                 <input type="hidden" name="shed_tool_conf" value="${shed_tool_conf|h}"/>
             %endif
-            <div class="form-row">
-                <label>Add new tool panel section:</label>
-                <input name="new_tool_panel_section_label" type="textfield" value="${new_tool_panel_section_label|h}" size="40"/>
-                <div class="toolParamHelp" style="clear: both;">
-                    Add a new tool panel section to contain the installed tools (optional).
+            %if includes_tools_for_display_in_tool_panel:
+                <div class="form-row">
+                    <label>Add new tool panel section:</label>
+                    <input name="new_tool_panel_section_label" type="textfield" value="${new_tool_panel_section_label|h}" size="40"/>
+                    <div class="toolParamHelp" style="clear: both;">
+                        Add a new tool panel section to contain the installed tools (optional).
+                    </div>
                 </div>
-            </div>
-            <div class="form-row">
-                <label>Select existing tool panel section:</label>
-                ${tool_panel_section_select_field.get_html()}
-                <div class="toolParamHelp" style="clear: both;">
-                    Choose an existing section in your tool panel to contain the installed tools (optional).  
+                <div class="form-row">
+                    <label>Select existing tool panel section:</label>
+                    ${render_select(tool_panel_section_select_field)}
+                    <div class="toolParamHelp" style="clear: both;">
+                        Choose an existing section in your tool panel to contain the installed tools (optional).
+                    </div>
                 </div>
-            </div>
+            %endif
             <div class="form-row">
                 <input type="submit" name="select_tool_panel_section_button" value="Install"/>
                 <div class="toolParamHelp" style="clear: both;">
-                    Clicking <b>Install</b> without selecting a tool panel section will load the installed tools into the tool panel outside of any sections.
+                    %if includes_tools_for_display_in_tool_panel:
+                        Clicking <b>Install</b> without selecting a tool panel section will load the installed tools into the tool panel outside of any sections.
+                    %endif
                 </div>
             </div>
         </form>

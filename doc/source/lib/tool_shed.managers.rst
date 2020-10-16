@@ -1,5 +1,5 @@
-tool_shed.managers package
-==========================
+tool\_shed\.managers package
+============================
 
 .. automodule:: tool_shed.managers
     :members:
@@ -9,16 +9,16 @@ tool_shed.managers package
 Submodules
 ----------
 
-tool_shed.managers.groups module
---------------------------------
+tool\_shed\.managers\.groups module
+-----------------------------------
 
 .. automodule:: tool_shed.managers.groups
     :members:
     :undoc-members:
     :show-inheritance:
 
-tool_shed.managers.repositories module
---------------------------------------
+tool\_shed\.managers\.repositories module
+-----------------------------------------
 
 .. automodule:: tool_shed.managers.repositories
     :members:

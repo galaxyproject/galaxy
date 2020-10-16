@@ -5,27 +5,16 @@ This parallelizes the task over available cores using multiprocessing.
 Code mostly taken form CloudBioLinux.
 """
 
-import contextlib
-import functools
 import glob
-import multiprocessing
 import os
 import subprocess
-
-from multiprocessing.pool import IMapIterator
+import threading
 
 try:
     import boto
     from boto.s3.connection import S3Connection
 except ImportError:
     boto = None
-
-
-def map_wrap(f):
-    @functools.wraps(f)
-    def wrapper(*args, **kwargs):
-        return f(*args, **kwargs)
-    return wrapper
 
 
 def mp_from_ids(s3server, mp_id, mp_keyname, mp_bucketname):
@@ -52,7 +41,6 @@ def mp_from_ids(s3server, mp_id, mp_keyname, mp_bucketname):
     return mp
 
 
-@map_wrap
 def transfer_part(s3server, mp_id, mp_keyname, mp_bucketname, i, part):
     """Transfer a part of a multipart upload. Designed to be run in parallel.
     """
@@ -65,8 +53,6 @@ def transfer_part(s3server, mp_id, mp_keyname, mp_bucketname, i, part):
 def multipart_upload(s3server, bucket, s3_key_name, tarball, mb_size):
     """Upload large files using Amazon's multipart upload functionality.
     """
-    cores = multiprocessing.cpu_count()
-
     def split_file(in_file, mb_size, split_num=5):
         prefix = os.path.join(os.path.dirname(in_file),
                               "%sS3PART" % (os.path.basename(s3_key_name)))
@@ -81,29 +67,11 @@ def multipart_upload(s3server, bucket, s3_key_name, tarball, mb_size):
     mp = bucket.initiate_multipart_upload(s3_key_name,
                                           reduced_redundancy=s3server['use_rr'])
 
-    with multimap(cores) as pmap:
-        for _ in pmap(transfer_part, ((s3server, mp.id, mp.key_name, mp.bucket_name, i, part)
-                                      for (i, part) in
-                                      enumerate(split_file(tarball, mb_size, cores)))):
-            pass
+    for (i, part) in enumerate(split_file(tarball, mb_size)):
+        t = threading.Thread(
+            target=transfer_part,
+            args=(s3server, mp.id, mp.key_name, mp.bucket_name, i, part))
+        t.start()
+        t.join()
+
     mp.complete_upload()
-
-
-@contextlib.contextmanager
-def multimap(cores=None):
-    """Provide multiprocessing imap like function.
-
-    The context manager handles setting up the pool, worked around interrupt issues
-    and terminating the pool on completion.
-    """
-    if cores is None:
-        cores = max(multiprocessing.cpu_count() - 1, 1)
-
-    def wrapper(func):
-        def wrap(self, timeout=None):
-            return func(self, timeout=timeout if timeout is not None else 1e100)
-        return wrap
-    IMapIterator.next = wrapper(IMapIterator.next)
-    pool = multiprocessing.Pool(cores)
-    yield pool.imap
-    pool.terminate()

@@ -1,11 +1,16 @@
 """
 Abstract base class for cli job plugins.
 """
-from abc import ABCMeta, abstractmethod
+from abc import (
+    ABCMeta,
+    abstractmethod
+)
+
+import six
 
 
+@six.add_metaclass(ABCMeta)
 class BaseJobExec(object):
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def __init__(self, **params):

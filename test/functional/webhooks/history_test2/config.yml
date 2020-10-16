@@ -1,0 +1,5 @@
+id: history_test2
+title: History Menu Webhook Item 2
+type:
+  - history-menu
+activate: true

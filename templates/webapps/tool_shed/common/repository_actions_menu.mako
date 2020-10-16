@@ -10,7 +10,7 @@
         else:
             has_metadata = False
 
-        is_admin = trans.user_is_admin()
+        is_admin = trans.user_is_admin
 
         if is_admin or trans.app.security_agent.user_can_administer_repository( trans.user, repository ):
             can_administer = True

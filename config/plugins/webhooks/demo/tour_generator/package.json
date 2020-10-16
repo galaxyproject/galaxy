@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "backbone": "^1.3.3",
+    "parcel-bundler": "^1.10.3",
+    "toastr": "^2.1.4"
+  },
+  "scripts":{
+      "build": "parcel build tour_generator.js --out-dir . --out-file script.js --no-source-maps"
+  }
+}

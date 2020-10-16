@@ -1,35 +1,36 @@
 import logging
 import os
 
-from .interface import ToolSource
-from .interface import PagesSource
-from .interface import PageSource
-from .interface import ToolStdioExitCode
-from .yaml import YamlInputSource
-
+from galaxy.tools.cwl import tool_proxy
+from galaxy.tools.deps import requirements
+from galaxy.util.odict import odict
+from .error_level import StdioErrorLevel
+from .interface import (
+    PageSource,
+    PagesSource,
+    ToolSource,
+    ToolStdioExitCode
+)
 from .output_actions import ToolOutputActionGroup
 from .output_objects import ToolOutput
-
-from galaxy.tools.deps import requirements
-from galaxy.tools.cwl import tool_proxy
-
-from galaxy.util.odict import odict
+from .yaml import YamlInputSource
 
 log = logging.getLogger(__name__)
 
 
 class CwlToolSource(ToolSource):
 
-    def __init__(self, tool_file):
+    def __init__(self, tool_file, strict_cwl_validation=True):
         self._cwl_tool_file = tool_file
         self._id, _ = os.path.splitext(os.path.basename(tool_file))
         self._tool_proxy = None
         self._source_path = tool_file
+        self._strict_cwl_validation = strict_cwl_validation
 
     @property
     def tool_proxy(self):
         if self._tool_proxy is None:
-            self._tool_proxy = tool_proxy(self._source_path)
+            self._tool_proxy = tool_proxy(self._source_path, strict_cwl_validation=self._strict_cwl_validation)
         return self._tool_proxy
 
     def parse_tool_type(self):
@@ -77,8 +78,6 @@ class CwlToolSource(ToolSource):
 
     def parse_stdio(self):
         # TODO: remove duplication with YAML
-        from galaxy.jobs.error_level import StdioErrorLevel
-
         # New format - starting out just using exit code.
         exit_code_lower = ToolStdioExitCode()
         exit_code_lower.range_start = float("-inf")
@@ -97,7 +96,7 @@ class CwlToolSource(ToolSource):
         return "0.0.1"
 
     def parse_description(self):
-        return ""
+        return self.tool_proxy.description()
 
     def parse_input_pages(self):
         page_source = CwlPageSource(self.tool_proxy)
@@ -117,7 +116,7 @@ class CwlToolSource(ToolSource):
     def _parse_output(self, tool, output_instance):
         name = output_instance.name
         # TODO: handle filters, actions, change_format
-        output = ToolOutput( name )
+        output = ToolOutput(name)
         if "File" in output_instance.output_data_type:
             output.format = "_sniff_"
         else:
@@ -132,7 +131,7 @@ class CwlToolSource(ToolSource):
         output.tool = tool
         output.hidden = ""
         output.dataset_collector_descriptions = []
-        output.actions = ToolOutputActionGroup( output, None )
+        output.actions = ToolOutputActionGroup(output, None)
         return output
 
     def parse_requirements_and_containers(self):
@@ -141,8 +140,10 @@ class CwlToolSource(ToolSource):
         if docker_identifier:
             containers.append({"type": "docker",
                                "identifier": docker_identifier})
+
+        software_requirements = self.tool_proxy.software_requirements()
         return requirements.parse_requirements_from_dict(dict(
-            requirements=[],  # TODO: enable via extensions
+            requirements=list(map(lambda r: {"name": r[0], "version": r[1], "type": "package"}, software_requirements)),
             containers=containers,
         ))
 

@@ -1,5 +1,5 @@
-galaxy.model.tool_shed_install.migrate package
-==============================================
+galaxy\.model\.tool\_shed\_install\.migrate package
+===================================================
 
 .. automodule:: galaxy.model.tool_shed_install.migrate
     :members:
@@ -9,8 +9,8 @@ galaxy.model.tool_shed_install.migrate package
 Submodules
 ----------
 
-galaxy.model.tool_shed_install.migrate.check module
----------------------------------------------------
+galaxy\.model\.tool\_shed\_install\.migrate\.check module
+---------------------------------------------------------
 
 .. automodule:: galaxy.model.tool_shed_install.migrate.check
     :members:

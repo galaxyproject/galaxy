@@ -2,35 +2,47 @@
 Sequence classes
 """
 
-import gzip
 import json
 import logging
 import os
 import re
 import string
 import subprocess
+import sys
 from cgi import escape
-
-from six import PY3
-
-from galaxy import util
-from galaxy.datatypes import metadata
-from galaxy.util.checkers import is_gzip
-from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.sniff import get_headers
-from galaxy.datatypes.util.image_util import check_image_type
-from galaxy.util import nice_size
-from . import data
+from itertools import islice
 
 import bx.align.maf
 
-if PY3:
+from galaxy import util
+from galaxy.datatypes import metadata
+from galaxy.datatypes.binary import (
+    Binary
+)
+from galaxy.datatypes.metadata import DictParameter, MetadataElement
+from galaxy.datatypes.sniff import (
+    build_sniff_from_prefix,
+    get_headers,
+    iter_headers,
+)
+from galaxy.util import (
+    compression_utils,
+    nice_size
+)
+from galaxy.util.checkers import (
+    is_gzip
+)
+from galaxy.util.image_util import check_image_type
+from . import data
+
+if sys.version_info > (3,):
     long = int
 
 log = logging.getLogger(__name__)
 
 
-class SequenceSplitLocations( data.Text ):
+@build_sniff_from_prefix
+class SequenceSplitLocations(data.Text):
     """
     Class storing information about a sequence file composed of multiple gzip files concatenated as
     one OR an uncompressed file. In the GZIP case, each sub-file's location is stored in start and end.
@@ -45,12 +57,12 @@ class SequenceSplitLocations( data.Text ):
     """
     file_ext = "fqtoc"
 
-    def set_peek( self, dataset, is_multi_byte=False ):
+    def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             try:
                 parsed_data = json.load(open(dataset.file_name))
                 # dataset.peek = json.dumps(data, sort_keys=True, indent=4)
-                dataset.peek = data.get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
+                dataset.peek = data.get_file_peek(dataset.file_name)
                 dataset.blurb = '%d sections' % len(parsed_data['sections'])
             except Exception:
                 dataset.peek = 'Not FQTOC file'
@@ -59,53 +71,54 @@ class SequenceSplitLocations( data.Text ):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def sniff( self, filename ):
-        if os.path.getsize(filename) < 50000:
+    def sniff_prefix(self, file_prefix):
+        if file_prefix.file_size < 50000 and not file_prefix.truncated:
             try:
-                data = json.load(open(filename))
+                data = json.loads(file_prefix.contents_header)
                 sections = data['sections']
                 for section in sections:
                     if 'start' not in section or 'end' not in section or 'sequences' not in section:
                         return False
                 return True
-            except:
+            except Exception:
                 pass
         return False
 
 
-class Sequence( data.Text ):
+class Sequence(data.Text):
     """Class describing a sequence"""
     edam_data = "data_2044"
 
     """Add metadata elements"""
-    MetadataElement( name="sequences", default=0, desc="Number of sequences", readonly=True, visible=False, optional=True, no_value=0 )
+    MetadataElement(name="sequences", default=0, desc="Number of sequences", readonly=True, visible=False, optional=True, no_value=0)
 
-    def set_meta( self, dataset, **kwd ):
+    def set_meta(self, dataset, **kwd):
         """
         Set the number of sequences and the number of data lines in dataset.
         """
         data_lines = 0
         sequences = 0
-        for line in open( dataset.file_name ):
-            line = line.strip()
-            if line and line.startswith( '#' ):
-                # We don't count comment lines for sequence data types
-                continue
-            if line and line.startswith( '>' ):
-                sequences += 1
-                data_lines += 1
-            else:
-                data_lines += 1
-        dataset.metadata.data_lines = data_lines
-        dataset.metadata.sequences = sequences
+        with compression_utils.get_fileobj(dataset.file_name) as fh:
+            for line in fh:
+                line = line.strip()
+                if line and line.startswith('#'):
+                    # We don't count comment lines for sequence data types
+                    continue
+                if line and line.startswith('>'):
+                    sequences += 1
+                    data_lines += 1
+                else:
+                    data_lines += 1
+            dataset.metadata.data_lines = data_lines
+            dataset.metadata.sequences = sequences
 
-    def set_peek( self, dataset, is_multi_byte=False ):
+    def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
+            dataset.peek = data.get_file_peek(dataset.file_name)
             if dataset.metadata.sequences:
-                dataset.blurb = "%s sequences" % util.commaify( str( dataset.metadata.sequences ) )
+                dataset.blurb = "%s sequences" % util.commaify(str(dataset.metadata.sequences))
             else:
-                dataset.blurb = nice_size( dataset.get_size() )
+                dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -130,35 +143,23 @@ class Sequence( data.Text ):
         return sequences_per_file
     get_sequences_per_file = staticmethod(get_sequences_per_file)
 
-    def do_slow_split( cls, input_datasets, subdir_generator_function, split_params):
+    def do_slow_split(cls, input_datasets, subdir_generator_function, split_params):
         # count the sequences so we can split
         # TODO: if metadata is present, take the number of lines / 4
         if input_datasets[0].metadata is not None and input_datasets[0].metadata.sequences is not None:
             total_sequences = input_datasets[0].metadata.sequences
         else:
-            input_file = input_datasets[0].file_name
-            compress = is_gzip(input_file)
-            if compress:
-                # gzip is really slow before python 2.7!
-                in_file = gzip.GzipFile(input_file, 'r')
-            else:
-                # TODO
-                # if a file is not compressed, seek locations can be calculated and stored
-                # ideally, this would be done in metadata
-                # TODO
-                # Add BufferedReader if python 2.7?
-                in_file = open(input_file, 'rt')
-            total_sequences = long(0)
-            for i, line in enumerate(in_file):
-                total_sequences += 1
-            in_file.close()
+            with compression_utils.get_fileobj(input_datasets[0].file_name) as in_file:
+                total_sequences = long(0)
+                for i, line in enumerate(in_file):
+                    total_sequences += 1
             total_sequences /= 4
 
         sequences_per_file = cls.get_sequences_per_file(total_sequences, split_params)
         return cls.write_split_files(input_datasets, None, subdir_generator_function, sequences_per_file)
     do_slow_split = classmethod(do_slow_split)
 
-    def do_fast_split( cls, input_datasets, toc_file_datasets, subdir_generator_function, split_params):
+    def do_fast_split(cls, input_datasets, toc_file_datasets, subdir_generator_function, split_params):
         data = json.load(open(toc_file_datasets[0].file_name))
         sections = data['sections']
         total_sequences = long(0)
@@ -195,14 +196,13 @@ class Sequence( data.Text ):
                 if toc_file_datasets is not None:
                     toc = toc_file_datasets[ds_no]
                     split_data['args']['toc_file'] = toc.file_name
-                f = open(os.path.join(dir, 'split_info_%s.json' % base_name), 'w')
-                json.dump(split_data, f)
-                f.close()
+                with open(os.path.join(dir, 'split_info_%s.json' % base_name), 'w') as f:
+                    json.dump(split_data, f)
             start_sequence += sequences_per_file[part_no]
         return directories
     write_split_files = classmethod(write_split_files)
 
-    def split( cls, input_datasets, subdir_generator_function, split_params):
+    def split(cls, input_datasets, subdir_generator_function, split_params):
         """Split a generic sequence file (not sensible or possible, see subclasses)."""
         if split_params is None:
             return None
@@ -298,26 +298,27 @@ class Sequence( data.Text ):
     get_split_commands_sequential = staticmethod(get_split_commands_sequential)
 
 
-class Alignment( data.Text ):
+class Alignment(data.Text):
     """Class describing an alignment"""
     edam_data = "data_0863"
 
     """Add metadata elements"""
-    MetadataElement( name="species", desc="Species", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None )
+    MetadataElement(name="species", desc="Species", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
 
-    def split( cls, input_datasets, subdir_generator_function, split_params):
+    def split(cls, input_datasets, subdir_generator_function, split_params):
         """Split a generic alignment file (not sensible or possible, see subclasses)."""
         if split_params is None:
             return None
         raise NotImplementedError("Can't split generic alignment files")
 
 
-class Fasta( Sequence ):
+@build_sniff_from_prefix
+class Fasta(Sequence):
     """Class representing a FASTA sequence"""
     edam_format = "format_1929"
     file_ext = "fasta"
 
-    def sniff( self, filename ):
+    def sniff_prefix(self, file_prefix):
         """
         Determines whether the file is in fasta format
 
@@ -351,32 +352,26 @@ class Fasta( Sequence ):
         >>> Fasta().sniff( fname )
         True
         """
+        fh = file_prefix.string_io()
+        while True:
+            line = fh.readline()
+            if not line:
+                break  # EOF
+            line = line.strip()
+            if line:  # first non-empty line
+                if line.startswith('>'):
+                    # The next line.strip() must not be '', nor startwith '>'
+                    line = fh.readline().strip()
+                    if line == '' or line.startswith('>'):
+                        break
 
-        try:
-            fh = open( filename )
-            while True:
-                line = fh.readline()
-                if not line:
-                    break  # EOF
-                line = line.strip()
-                if line:  # first non-empty line
-                    if line.startswith( '>' ):
-                        # The next line.strip() must not be '', nor startwith '>'
-                        line = fh.readline().strip()
-                        if line == '' or line.startswith( '>' ):
-                            break
-
-                        # If there is a third line, and it isn't a header line, it may not contain chars like '()[].' otherwise it's most likely a DotBracket file
-                        line = fh.readline()
-                        if not line.startswith('>') and re.search("[\(\)\[\]\.]", line):
-                            break
-
-                        return True
-                    else:
-                        break  # we found a non-empty line, but it's not a fasta header
-            fh.close()
-        except:
-            pass
+                    # If there is a third line, and it isn't a header line, it may not contain chars like '()[].' otherwise it's most likely a DotBracket file
+                    line = fh.readline()
+                    if not line.startswith('>') and re.search(r"[\(\)\[\]\.]", line):
+                        break
+                    return True
+                else:
+                    break  # we found a non-empty line, but it's not a fasta header
         return False
 
     def split(cls, input_datasets, subdir_generator_function, split_params):
@@ -457,11 +452,11 @@ class Fasta( Sequence ):
                 part_file.write(line)
         except Exception as e:
             log.error('Unable to size split FASTA file: %s' % str(e))
-            f.close()
-            if part_file is not None:
-                part_file.close()
             raise
-        f.close()
+        finally:
+            f.close()
+            if part_file:
+                part_file.close()
     _size_split = classmethod(_size_split)
 
     def _count_split(cls, input_file, chunk_size, subdir_generator_function):
@@ -492,23 +487,23 @@ class Fasta( Sequence ):
                         log.debug("Writing %s part to %s" % (input_file, part_path))
                         rec_count = 1
                 part_file.write(line)
-            part_file.close()
         except Exception as e:
             log.error('Unable to count split FASTA file: %s' % str(e))
-            f.close()
-            if part_file is not None:
-                part_file.close()
             raise
-        f.close()
+        finally:
+            f.close()
+            if part_file:
+                part_file.close()
     _count_split = classmethod(_count_split)
 
 
-class csFasta( Sequence ):
+@build_sniff_from_prefix
+class csFasta(Sequence):
     """ Class representing the SOLID Color-Space sequence ( csfasta ) """
     edam_format = "format_3589"
     file_ext = "csfasta"
 
-    def sniff( self, filename ):
+    def sniff_prefix(self, file_prefix):
         """
         Color-space sequence:
             >2_15_85_F3
@@ -522,44 +517,139 @@ class csFasta( Sequence ):
         >>> csFasta().sniff( fname )
         True
         """
-        try:
-            fh = open( filename )
-            while True:
-                line = fh.readline()
-                if not line:
-                    break  # EOF
-                line = line.strip()
-                if line and not line.startswith( '#' ):  # first non-empty non-comment line
-                    if line.startswith( '>' ):
-                        line = fh.readline().strip()
-                        if line == '' or line.startswith( '>' ):
-                            break
-                        elif line[0] not in string.ascii_uppercase:
-                            return False
-                        elif len( line ) > 1 and not re.search( '^[\d.]+$', line[1:] ):
-                            return False
-                        return True
-                    else:
-                        break  # we found a non-empty line, but it's not a header
-            fh.close()
-        except:
-            pass
+        fh = file_prefix.string_io()
+        while True:
+            line = fh.readline()
+            if not line:
+                break  # EOF
+            line = line.strip()
+            if line and not line.startswith('#'):  # first non-empty non-comment line
+                if line.startswith('>'):
+                    line = fh.readline().strip()
+                    if line == '' or line.startswith('>'):
+                        break
+                    elif line[0] not in string.ascii_uppercase:
+                        return False
+                    elif len(line) > 1 and not re.search(r'^[\d.]+$', line[1:]):
+                        return False
+                    return True
+                else:
+                    break  # we found a non-empty line, but it's not a header
         return False
 
-    def set_meta( self, dataset, **kwd ):
+    def set_meta(self, dataset, **kwd):
         if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
             dataset.metadata.data_lines = None
             dataset.metadata.sequences = None
             return
-        return Sequence.set_meta( self, dataset, **kwd )
+        return Sequence.set_meta(self, dataset, **kwd)
 
 
-class Fastq ( Sequence ):
-    """Class representing a generic FASTQ sequence"""
+@build_sniff_from_prefix
+class Fastg(Sequence):
+    """ Class representing a FASTG sequence """
+    """ http://fastg.sourceforge.net/FASTG_Spec_v1.00.pdf """
+    edam_format = "format_3823"
+    file_ext = "fastg"
+
+    MetadataElement(name="version", default='1.0', desc="FASTG format version", readonly=True, visible=True, no_value='1.0')
+    MetadataElement(name="properties", default={}, param=DictParameter, desc="FASTG properites", readonly=True, visible=True, no_value={})
+
+    def sniff_prefix(self, file_prefix):
+        """FASTG must begin with lines:
+           #FASTG:begin;
+           #FASTG:version=*.*;
+           #FASTG:properties;
+        """
+        """Or these can be combined on a line:
+           #FASTG:begin:version=*.*:properties;
+        """
+        """FASTG must end with line:
+           #FASTG:end;
+        """
+        """ Example FASTG file:
+            #FASTG:begin;
+            #FASTG:version=1.0:assembly_name="tiny example";
+            >chr1:chr1;
+            ACGANNNNN[5:gap:size=(5,4..6)]CAGGC[1:alt:allele|C,G]TATACG
+            >chr2;
+            ACATACGCATATATATATATATATATAT[20:tandem:size=(10,8..12)|AT]TCAGGCA[1:alt|A,T,TT]GGAC
+            #FASTG:end;
+        """
+        """
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( 'sequence.fasta' )
+        >>> Fastg().sniff( fname )
+        False
+        >>> fname = get_test_fname( 'sequence.fastg' )
+        >>> Fastg().sniff( fname )
+        True
+        """
+        fh = file_prefix.string_io()
+        for i, line in enumerate(fh):
+            if not line:
+                break  # EOF
+            line = line.strip()
+            if i == 0:
+                if not line.startswith('#FASTG:begin'):
+                    break
+            elif line and not line.startswith('#'):  # first non-empty non-comment line
+                if line.startswith('>'):
+                    # The next line.strip() must not be '', nor startwith '>'
+                    line = fh.readline().strip()
+                    if line == '' or line.startswith('>'):
+                        break
+                    return True
+                else:
+                    break  # we found a non-empty line, but it's not a header
+        return False
+
+    def set_meta(self, dataset, **kwd):
+        with open(dataset.file_name) as fh:
+            for i, line in enumerate(fh):
+                if not line:
+                    break  # EOF
+                line = line.strip()
+                if i == 0:
+                    if not line.startswith('#FASTG:begin'):
+                        break
+                if line.startswith('#FASTG'):
+                    props = {x.split('=')[0][1:]: x.split('=')[1] for x in re.findall(':[a-zA-Z0-9_]+=[a-zA-Z0-9_().,\" ]+', line)}
+                    dataset.metadata.properties.update(props)
+                    if 'version' in props:
+                        dataset.metadata.version = props['version']
+                if line and line.startswith('>'):
+                    break
+        if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
+            dataset.metadata.data_lines = None
+            dataset.metadata.sequences = None
+            return
+        return Sequence.set_meta(self, dataset, **kwd)
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek(dataset.file_name)
+            if dataset.metadata.sequences:
+                dataset.blurb = "%s sequences" % util.commaify(str(dataset.metadata.sequences))
+            else:
+                dataset.blurb = nice_size(dataset.get_size())
+            dataset.blurb += '\nversion=%s' % dataset.metadata.version
+            for k, v in dataset.metadata.properties.items():
+                if k != 'version':
+                    dataset.blurb += '\n%s=%s' % (k, v)
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+
+@build_sniff_from_prefix
+class BaseFastq(Sequence):
+    """Base class for FastQ sequences"""
     edam_format = "format_1930"
     file_ext = "fastq"
+    bases_regexp = re.compile(r"^[NGTAC 0123\.]*$", re.IGNORECASE)
 
-    def set_meta( self, dataset, **kwd ):
+    def set_meta(self, dataset, **kwd):
         """
         Set the number of sequences and the number of data lines
         in dataset.
@@ -572,26 +662,27 @@ class Fastq ( Sequence ):
         data_lines = 0
         sequences = 0
         seq_counter = 0     # blocks should be 4 lines long
-        for line in open( dataset.file_name ):
-            line = line.strip()
-            if line and line.startswith( '#' ) and not data_lines:
-                # We don't count comment lines for sequence data types
-                continue
-            seq_counter += 1
-            data_lines += 1
-            if line and line.startswith( '@' ):
-                if seq_counter >= 4:
-                    # count previous block
-                    # blocks should be 4 lines long
-                    sequences += 1
-                    seq_counter = 1
-        if seq_counter >= 4:
-            # count final block
-            sequences += 1
-        dataset.metadata.data_lines = data_lines
-        dataset.metadata.sequences = sequences
+        with compression_utils.get_fileobj(dataset.file_name) as in_file:
+            for line in in_file:
+                line = line.strip()
+                if line and line.startswith('#') and not data_lines:
+                    # We don't count comment lines for sequence data types
+                    continue
+                seq_counter += 1
+                data_lines += 1
+                if line and line.startswith('@'):
+                    if seq_counter >= 4:
+                        # count previous block
+                        # blocks should be 4 lines long
+                        sequences += 1
+                        seq_counter = 1
+            if seq_counter >= 4:
+                # count final block
+                sequences += 1
+            dataset.metadata.data_lines = data_lines
+            dataset.metadata.sequences = sequences
 
-    def sniff( self, filename ):
+    def sniff_prefix(self, file_prefix):
         """
         Determines whether the file is in generic fastq format
         For details, see http://maq.sourceforge.net/fastq.shtml
@@ -600,27 +691,54 @@ class Fastq ( Sequence ):
               These differ in the representation of the quality scores
 
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname( '1.fastqsanger' )
+        >>> fname = get_test_fname('1.fastqsanger')
+        >>> FastqSanger().sniff(fname)
+        True
+        >>> fname = get_test_fname('3.fastq')
+        >>> FastqSanger().sniff(fname)
+        False
+        >>> Fastq().sniff(fname)
+        True
+        >>> fname = get_test_fname('2.fastq')
         >>> Fastq().sniff( fname )
         True
-        >>> fname = get_test_fname( '2.fastqsanger' )
-        >>> Fastq().sniff( fname )
+        >>> FastqSanger().sniff(fname)
+        False
+        >>> fname = get_test_fname('1.fastq')
+        >>> FastqSanger().sniff(fname)
+        False
+        >>> fname = get_test_fname('1.fastqcssanger')
+        >>> FastqSanger().sniff(fname)
+        False
+        >>> Fastq().sniff(fname)
+        True
+        >>> FastqCSSanger().sniff(fname)
         True
         """
-        headers = get_headers( filename, None )
-        bases_regexp = re.compile( "^[NGTAC]*" )
-        # check that first block looks like a fastq block
-        try:
-            if len( headers ) >= 4 and headers[0][0] and headers[0][0][0] == "@" and headers[2][0] and headers[2][0][0] == "+" and headers[1][0]:
-                # Check the sequence line, make sure it contains only G/C/A/T/N
-                if not bases_regexp.match( headers[1][0] ):
-                    return False
-                return True
+        compressed = file_prefix.compressed_format is not None
+        if compressed and not isinstance(self, Binary):
             return False
-        except:
+        headers = iter_headers(file_prefix, sep='\n', count=1000)
+        # check to see if the base qualities match
+        if not self.quality_check(headers):
             return False
+        return self.check_first_block(file_prefix)
 
-    def split( cls, input_datasets, subdir_generator_function, split_params):
+    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
+        if preview:
+            with compression_utils.get_fileobj(dataset.file_name) as fh:
+                max_peek_size = 1000000  # 1 MB
+                if os.stat(dataset.file_name).st_size < max_peek_size:
+                    mime = "text/plain"
+                    self._clean_and_set_mime_type(trans, mime)
+                    return fh.read()
+                return trans.stream_template_mako("/dataset/large_file.mako",
+                                                  truncated_data=fh.read(max_peek_size),
+                                                  data=dataset)
+        else:
+            return Sequence.display_data(self, trans, dataset, preview, filename, to_ext, **kwd)
+
+    def split(cls, input_datasets, subdir_generator_function, split_params):
         """
         FASTQ files are split on cluster boundaries, in increments of 4 lines
         """
@@ -667,51 +785,85 @@ class Fastq ( Sequence ):
         return True
     process_split_file = staticmethod(process_split_file)
 
+    @staticmethod
+    def quality_check(lines):
+        return True
 
-class FastqSanger( Fastq ):
+    @classmethod
+    def check_first_block(cls, file_prefix):
+        # check that first block looks like a fastq block
+        headers = get_headers(file_prefix, sep='\n', count=4)
+        if len(headers) == 4 and headers[0][0] and headers[0][0][0] == "@" and headers[2][0] and headers[2][0][0] == "+" and headers[1][0]:
+            # Check the sequence line, make sure it contains only G/C/A/T/N
+            match = cls.bases_regexp.match(headers[1][0])
+            if match:
+                start, end = match.span()
+                if (end - start) == len(headers[1][0]):
+                    return True
+        return False
+
+
+class Fastq(BaseFastq):
+    """Class representing a generic FASTQ sequence"""
+    edam_format = "format_1930"
+    file_ext = "fastq"
+
+
+class FastqSanger(Fastq):
     """Class representing a FASTQ sequence ( the Sanger variant )"""
     edam_format = "format_1932"
     file_ext = "fastqsanger"
+    bases_regexp = re.compile("^[NGTAC]*$", re.IGNORECASE)
+
+    @staticmethod
+    def quality_check(lines):
+        """Presuming lines are lines from a fastq file, return True if the qualities are compatible with sanger encoding"""
+        for line in islice(lines, 3, None, 4):
+            if not all(_ >= '!' and _ <= 'M' for _ in line[0]) or ' ' in line:
+                return False
+        return True
 
 
-class FastqSolexa( Fastq ):
+class FastqSolexa(Fastq):
     """Class representing a FASTQ sequence ( the Solexa variant )"""
     edam_format = "format_1933"
     file_ext = "fastqsolexa"
 
 
-class FastqIllumina( Fastq ):
+class FastqIllumina(Fastq):
     """Class representing a FASTQ sequence ( the Illumina 1.3+ variant )"""
     edam_format = "format_1931"
     file_ext = "fastqillumina"
 
 
-class FastqCSSanger( Fastq ):
+class FastqCSSanger(Fastq):
     """Class representing a Color Space FASTQ sequence ( e.g a SOLiD variant )"""
     file_ext = "fastqcssanger"
+    bases_regexp = re.compile(r"^[NGTAC][0123\.]*$", re.IGNORECASE)
 
 
-class Maf( Alignment ):
+@build_sniff_from_prefix
+class Maf(Alignment):
     """Class describing a Maf alignment"""
     edam_format = "format_3008"
     file_ext = "maf"
 
     # Readonly and optional, users can't unset it, but if it is not set, we are generally ok; if required use a metadata validator in the tool definition
-    MetadataElement( name="blocks", default=0, desc="Number of blocks", readonly=True, optional=True, visible=False, no_value=0 )
-    MetadataElement( name="species_chromosomes", desc="Species Chromosomes", param=metadata.FileParameter, readonly=True, no_value=None, visible=False, optional=True )
-    MetadataElement( name="maf_index", desc="MAF Index File", param=metadata.FileParameter, readonly=True, no_value=None, visible=False, optional=True )
+    MetadataElement(name="blocks", default=0, desc="Number of blocks", readonly=True, optional=True, visible=False, no_value=0)
+    MetadataElement(name="species_chromosomes", desc="Species Chromosomes", param=metadata.FileParameter, readonly=True, no_value=None, visible=False, optional=True)
+    MetadataElement(name="maf_index", desc="MAF Index File", param=metadata.FileParameter, readonly=True, no_value=None, visible=False, optional=True)
 
-    def init_meta( self, dataset, copy_from=None ):
-        Alignment.init_meta( self, dataset, copy_from=copy_from )
+    def init_meta(self, dataset, copy_from=None):
+        Alignment.init_meta(self, dataset, copy_from=copy_from)
 
-    def set_meta( self, dataset, overwrite=True, **kwd ):
+    def set_meta(self, dataset, overwrite=True, **kwd):
         """
         Parses and sets species, chromosomes, index from MAF file.
         """
         # these metadata values are not accessable by users, always overwrite
         # Imported here to avoid circular dependency
         from galaxy.tools.util.maf_utilities import build_maf_index_species_chromosomes
-        indexes, species, species_chromosomes, blocks = build_maf_index_species_chromosomes( dataset.file_name )
+        indexes, species, species_chromosomes, blocks = build_maf_index_species_chromosomes(dataset.file_name)
         if indexes is None:
             return  # this is not a MAF file
         dataset.metadata.species = species
@@ -720,25 +872,24 @@ class Maf( Alignment ):
         # write species chromosomes to a file
         chrom_file = dataset.metadata.species_chromosomes
         if not chrom_file:
-            chrom_file = dataset.metadata.spec['species_chromosomes'].param.new_file( dataset=dataset )
-        chrom_out = open( chrom_file.file_name, 'wb' )
-        for spec, chroms in species_chromosomes.items():
-            chrom_out.write( "%s\t%s\n" % ( spec, "\t".join( chroms ) ) )
-        chrom_out.close()
+            chrom_file = dataset.metadata.spec['species_chromosomes'].param.new_file(dataset=dataset)
+        with open(chrom_file.file_name, 'w') as chrom_out:
+            for spec, chroms in species_chromosomes.items():
+                chrom_out.write("%s\t%s\n" % (spec, "\t".join(chroms)))
         dataset.metadata.species_chromosomes = chrom_file
 
         index_file = dataset.metadata.maf_index
         if not index_file:
-            index_file = dataset.metadata.spec['maf_index'].param.new_file( dataset=dataset )
-        indexes.write( open( index_file.file_name, 'wb' ) )
+            index_file = dataset.metadata.spec['maf_index'].param.new_file(dataset=dataset)
+        indexes.write(open(index_file.file_name, 'wb'))
         dataset.metadata.maf_index = index_file
 
-    def set_peek( self, dataset, is_multi_byte=False ):
+    def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             # The file must exist on disk for the get_file_peek() method
-            dataset.peek = data.get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
+            dataset.peek = data.get_file_peek(dataset.file_name)
             if dataset.metadata.blocks:
-                dataset.blurb = "%s blocks" % util.commaify( str( dataset.metadata.blocks ) )
+                dataset.blurb = "%s blocks" % util.commaify(str(dataset.metadata.blocks))
             else:
                 # Number of blocks is not known ( this should not happen ), and auto-detect is
                 # needed to set metadata
@@ -747,18 +898,18 @@ class Maf( Alignment ):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def display_peek( self, dataset ):
+    def display_peek(self, dataset):
         """Returns formated html of peek"""
-        return self.make_html_table( dataset )
+        return self.make_html_table(dataset)
 
-    def make_html_table( self, dataset, skipchars=[] ):
+    def make_html_table(self, dataset, skipchars=[]):
         """Create HTML table, used for displaying peek"""
         out = ['<table cellspacing="0" cellpadding="3">']
         try:
             out.append('<tr><th>Species:&nbsp;')
             for species in dataset.metadata.species:
-                out.append( '%s&nbsp;' % species )
-            out.append( '</th></tr>' )
+                out.append('%s&nbsp;' % species)
+            out.append('</th></tr>')
             if not dataset.peek:
                 dataset.set_peek()
             data = dataset.peek
@@ -767,14 +918,14 @@ class Maf( Alignment ):
                 line = line.strip()
                 if not line:
                     continue
-                out.append( '<tr><td>%s</td></tr>' % escape( line ) )
-            out.append( '</table>' )
-            out = "".join( out )
+                out.append('<tr><td>%s</td></tr>' % escape(line))
+            out.append('</table>')
+            out = "".join(out)
         except Exception as exc:
             out = "Can't create peek %s" % exc
         return out
 
-    def sniff( self, filename ):
+    def sniff_prefix(self, file_prefix):
         """
         Determines wether the file is in maf format
 
@@ -797,43 +948,43 @@ class Maf( Alignment ):
         >>> Maf().sniff( fname )
         False
         """
-        headers = get_headers( filename, None )
+        headers = get_headers(file_prefix, None)
         try:
             if len(headers) > 1 and headers[0][0] and headers[0][0] == "##maf":
                 return True
             else:
                 return False
-        except:
+        except Exception:
             return False
 
 
-class MafCustomTrack( data.Text ):
+class MafCustomTrack(data.Text):
     file_ext = "mafcustomtrack"
 
-    MetadataElement( name="vp_chromosome", default='chr1', desc="Viewport Chromosome", readonly=True, optional=True, visible=False, no_value='' )
-    MetadataElement( name="vp_start", default='1', desc="Viewport Start", readonly=True, optional=True, visible=False, no_value='' )
-    MetadataElement( name="vp_end", default='100', desc="Viewport End", readonly=True, optional=True, visible=False, no_value='' )
+    MetadataElement(name="vp_chromosome", default='chr1', desc="Viewport Chromosome", readonly=True, optional=True, visible=False, no_value='')
+    MetadataElement(name="vp_start", default='1', desc="Viewport Start", readonly=True, optional=True, visible=False, no_value='')
+    MetadataElement(name="vp_end", default='100', desc="Viewport End", readonly=True, optional=True, visible=False, no_value='')
 
-    def set_meta( self, dataset, overwrite=True, **kwd ):
+    def set_meta(self, dataset, overwrite=True, **kwd):
         """
         Parses and sets viewport metadata from MAF file.
         """
         max_block_check = 10
         chrom = None
-        forward_strand_start = float( 'inf' )
+        forward_strand_start = float('inf')
         forward_strand_end = 0
         try:
-            maf_file = open( dataset.file_name )
+            maf_file = open(dataset.file_name)
             maf_file.readline()  # move past track line
-            for i, block in enumerate( bx.align.maf.Reader( maf_file ) ):
-                ref_comp = block.get_component_by_src_start( dataset.metadata.dbkey )
+            for i, block in enumerate(bx.align.maf.Reader(maf_file)):
+                ref_comp = block.get_component_by_src_start(dataset.metadata.dbkey)
                 if ref_comp:
-                    ref_chrom = bx.align.maf.src_split( ref_comp.src )[-1]
+                    ref_chrom = bx.align.maf.src_split(ref_comp.src)[-1]
                     if chrom is None:
                         chrom = ref_chrom
                     if chrom == ref_chrom:
-                        forward_strand_start = min( forward_strand_start, ref_comp.forward_strand_start )
-                        forward_strand_end = max( forward_strand_end, ref_comp.forward_strand_end )
+                        forward_strand_start = min(forward_strand_start, ref_comp.forward_strand_start)
+                        forward_strand_end = max(forward_strand_end, ref_comp.forward_strand_end)
                 if i > max_block_check:
                     break
 
@@ -841,11 +992,12 @@ class MafCustomTrack( data.Text ):
                 dataset.metadata.vp_chromosome = chrom
                 dataset.metadata.vp_start = forward_strand_start
                 dataset.metadata.vp_end = forward_strand_end
-        except:
+        except Exception:
             pass
 
 
-class Axt( data.Text ):
+@build_sniff_from_prefix
+class Axt(data.Text):
     """Class describing an axt alignment"""
     # gvk- 11/19/09 - This is really an alignment, but we no longer have tools that use this data type, and it is
     # here simply for backward compatibility ( although it is still in the datatypes registry ).  Subclassing
@@ -855,7 +1007,7 @@ class Axt( data.Text ):
     edam_format = "format_3013"
     file_ext = "axt"
 
-    def sniff( self, filename ):
+    def sniff_prefix(self, file_prefix):
         """
         Determines whether the file is in axt format
 
@@ -881,7 +1033,7 @@ class Axt( data.Text ):
         >>> Axt().sniff( fname )
         False
         """
-        headers = get_headers( filename, None )
+        headers = get_headers(file_prefix, None)
         if len(headers) < 4:
             return False
         for hdr in headers:
@@ -891,8 +1043,9 @@ class Axt( data.Text ):
                 if len(hdr) != 9:
                     return False
                 try:
-                    map( int, [hdr[0], hdr[2], hdr[3], hdr[5], hdr[6], hdr[8]] )
-                except:
+                    for _ in (hdr[0], hdr[2], hdr[3], hdr[5], hdr[6], hdr[8]):
+                        int(_)
+                except ValueError:
                     return False
                 if hdr[7] not in data.valid_strand:
                     return False
@@ -900,17 +1053,18 @@ class Axt( data.Text ):
                     return True
 
 
-class Lav( data.Text ):
+@build_sniff_from_prefix
+class Lav(data.Text):
     """Class describing a LAV alignment"""
     # gvk- 11/19/09 - This is really an alignment, but we no longer have tools that use this data type, and it is
     # here simply for backward compatibility ( although it is still in the datatypes registry ).  Subclassing
-    # from data.Text eliminates managing metadata elements inherited from the Alignemnt class.
+    # from data.Text eliminates managing metadata elements inherited from the Alignment class.
 
     edam_data = "data_0863"
     edam_format = "format_3014"
     file_ext = "lav"
 
-    def sniff( self, filename ):
+    def sniff_prefix(self, file_prefix):
         """
         Determines whether the file is in lav format
 
@@ -927,35 +1081,35 @@ class Lav( data.Text ):
         >>> Lav().sniff( fname )
         False
         """
-        headers = get_headers( filename, None )
+        headers = get_headers(file_prefix, None)
         try:
             if len(headers) > 1 and headers[0][0] and headers[0][0].startswith('#:lav'):
                 return True
             else:
                 return False
-        except:
+        except Exception:
             return False
 
 
-class RNADotPlotMatrix( data.Data ):
+class RNADotPlotMatrix(data.Data):
     edam_format = "format_3466"
     file_ext = "rna_eps"
 
-    def set_peek( self, dataset, is_multi_byte=False ):
+    def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             dataset.peek = 'RNA Dot Plot format (Postscript derivative)'
-            dataset.blurb = nice_size( dataset.get_size() )
+            dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
     def sniff(self, filename):
         """Determine if the file is in RNA dot plot format."""
-        if check_image_type( filename, ['EPS'] ):
+        if check_image_type(filename, ['EPS']):
             seq = False
             coor = False
             pairs = False
-            with open( filename ) as handle:
+            with open(filename) as handle:
                 for line in handle:
                     line = line.strip()
                     if line:
@@ -970,15 +1124,16 @@ class RNADotPlotMatrix( data.Data ):
         return False
 
 
-class DotBracket ( Sequence ):
+@build_sniff_from_prefix
+class DotBracket(Sequence):
     edam_data = "data_0880"
     edam_format = "format_1457"
     file_ext = "dbn"
 
-    sequence_regexp = re.compile( "^[ACGTURYKMSWBDHVN]+$", re.I)
-    structure_regexp = re.compile( "^[\(\)\.\[\]{}]+$" )
+    sequence_regexp = re.compile(r"^[ACGTURYKMSWBDHVN]+$", re.I)
+    structure_regexp = re.compile(r"^[\(\)\.\[\]{}]+$")
 
-    def set_meta( self, dataset, **kwd ):
+    def set_meta(self, dataset, **kwd):
         """
         Set the number of sequences and the number of data lines
         in dataset.
@@ -992,68 +1147,166 @@ class DotBracket ( Sequence ):
         data_lines = 0
         sequences = 0
 
-        for line in open( dataset.file_name ):
+        for line in open(dataset.file_name):
             line = line.strip()
             data_lines += 1
 
-            if line and line.startswith( '>' ):
+            if line and line.startswith('>'):
                 sequences += 1
 
         dataset.metadata.data_lines = data_lines
         dataset.metadata.sequences = sequences
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Galaxy Dbn (Dot-Bracket notation) rules:
 
         * The first non-empty line is a header line: no comment lines are allowed.
+
           * A header line starts with a '>' symbol and continues with 0 or multiple symbols until the line ends.
+
         * The second non-empty line is a sequence line.
-          * A sequence line may only include chars that match the Fasta format (https://en.wikipedia.org/wiki/FASTA_format#Sequence_representation) symbols for nucleotides: ACGTURYKMSWBDHVN, and may thus not include whitespaces.
+
+          * A sequence line may only include chars that match the FASTA format (https://en.wikipedia.org/wiki/FASTA_format#Sequence_representation) symbols for nucleotides: ACGTURYKMSWBDHVN, and may thus not include whitespaces.
           * A sequence line has no prefix and no suffix.
           * A sequence line is case insensitive.
+
         * The third non-empty line is a structure (Dot-Bracket) line and only describes the 2D structure of the sequence above it.
+
           * A structure line must consist of the following chars: '.{}[]()'.
           * A structure line must be of the same length as the sequence line, and each char represents the structure of the nucleotide above it.
           * A structure line has no prefix and no suffix.
           * A nucleotide pairs with only 1 or 0 other nucleotides.
+
             * In a structure line, the number of '(' symbols equals the number of ')' symbols, the number of '[' symbols equals the number of ']' symbols and the number of '{' symbols equals the number of '}' symbols.
+
         * The format accepts multiple entries per file, given that each entry is provided as three lines: the header, sequence and structure line.
+
             * Sniffing is only applied on the first entry.
+
         * Empty lines are allowed.
          """
 
         state = 0
 
-        with open( filename, "r" ) as handle:
-            for line in handle:
-                line = line.strip()
+        for line in file_prefix.line_iterator():
+            line = line.strip()
 
-                if line:
-                    # header line
-                    if state == 0:
-                        if(line[0] != '>'):
-                            return False
-                        else:
-                            state = 1
+            if line:
+                # header line
+                if state == 0:
+                    if(line[0] != '>'):
+                        return False
+                    else:
+                        state = 1
 
-                    # sequence line
-                    elif state == 1:
-                        if not self.sequence_regexp.match(line):
-                            return False
-                        else:
-                            sequence_size = len(line)
-                            state = 2
+                # sequence line
+                elif state == 1:
+                    if not self.sequence_regexp.match(line):
+                        return False
+                    else:
+                        sequence_size = len(line)
+                        state = 2
 
-                    # dot-bracket structure line
-                    elif state == 2:
-                        if sequence_size != len(line) or not self.structure_regexp.match(line) or \
-                                line.count('(') != line.count(')') or \
-                                line.count('[') != line.count(']') or \
-                                line.count('{') != line.count('}'):
-                            return False
-                        else:
-                            return True
+                # dot-bracket structure line
+                elif state == 2:
+                    if sequence_size != len(line) or not self.structure_regexp.match(line) or \
+                            line.count('(') != line.count(')') or \
+                            line.count('[') != line.count(']') or \
+                            line.count('{') != line.count('}'):
+                        return False
+                    else:
+                        return True
 
         # Number of lines is less than 3
         return False
+
+
+@build_sniff_from_prefix
+class Genbank(data.Text):
+    """Class representing a Genbank sequence"""
+    edam_format = "format_1936"
+    edam_data = "data_0849"
+    file_ext = "genbank"
+
+    def sniff_prefix(self, file_prefix):
+        """
+        Determine whether the file is in genbank format.
+        Works for compressed files.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( '1.genbank' )
+        >>> Genbank().sniff( fname )
+        True
+        """
+        compressed = file_prefix.compressed_format
+        if compressed and not isinstance(self, Binary):
+            return False
+        return 'LOCUS ' == file_prefix.contents_header[0:6]
+
+
+@build_sniff_from_prefix
+class MemePsp(Sequence):
+    """Class representing MEME Position Specific Priors"""
+    file_ext = "memepsp"
+
+    def sniff_prefix(self, file_prefix):
+        """
+        The format of an entry in a PSP file is:
+
+        >ID WIDTH
+        PRIORS
+
+        For complete details see http://meme-suite.org/doc/psp-format.html
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('1.memepsp')
+        >>> MemePsp().sniff(fname)
+        True
+        >>> fname = get_test_fname('sequence.fasta')
+        >>> MemePsp().sniff(fname)
+        False
+        """
+        def floats_verified(l):
+            for item in l.split():
+                try:
+                    float(item)
+                except ValueError:
+                    return False
+                try:
+                    int(item)
+                except ValueError:
+                    return True
+            return False
+        num_lines = 0
+        fh = file_prefix.string_io()
+        got_header = False
+        got_priors = False
+        while num_lines < 100:
+            line = fh.readline()
+            if not line:
+                # EOF.
+                break
+            num_lines += 1
+            line = line.strip()
+            if line:
+                if line.startswith('>'):
+                    got_header = True
+                    # The line must not be blank, nor start with '>'
+                    line = fh.readline().strip()
+                    if line == '' or line.startswith('>'):
+                        return False
+                    # All items within the line must be floats.
+                    if not floats_verified(line):
+                        return False
+                    else:
+                        got_priors = True
+                    # If there is a second line within the ID section,
+                    # all items within the line must be floats.
+                    line = fh.readline().strip()
+                    if line:
+                        if not floats_verified(line):
+                            return False
+        # We've checked the first 100 lines and they are compatible with the memepsp format
+        # and contain at least one valid entry
+        return got_header and got_priors

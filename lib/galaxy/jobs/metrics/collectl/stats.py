@@ -3,15 +3,15 @@ memory.
 """
 
 
-class StatisticsTracker( object ):
+class StatisticsTracker(object):
 
-    def __init__( self ):
+    def __init__(self):
         self.min = None
         self.max = None
         self.count = 0
         self.sum = 0
 
-    def track( self, value ):
+    def track(self, value):
         if self.min is None or value < self.min:
             self.min = value
         if self.max is None or value > self.max:
@@ -20,7 +20,7 @@ class StatisticsTracker( object ):
         self.sum += value
 
     @property
-    def avg( self ):
+    def avg(self):
         if self.count > 0:
             return self.sum / self.count
         else:

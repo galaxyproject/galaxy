@@ -1,0 +1,28 @@
+<tool id="collection_creates_list_fail" name="collection_creates_list_fail" version="0.1.0">
+  <command detect_errors="exit_code"><![CDATA[
+    #for $key in $list_output.keys()#
+      echo "identifier is $key" > "$list_output[$key]";
+    #end for#
+    echo 'ensure not empty';
+    exit 1;
+  ]]></command>
+  <inputs>
+    <param name="input1" type="data_collection" collection_type="list" label="Input" help="Input collection..." format="txt" />
+  </inputs>
+  <outputs>
+    <collection name="list_output" type="list" label="Duplicate List" structured_like="input1" inherit_format="true">
+      <!-- inherit_format can be used in conjunction with structured_like
+           to perserve format. -->
+    </collection>
+  </outputs>
+  <tests>
+    <test expect_exit_code="1" expect_failure="true">
+      <param name="input1">
+        <collection type="list">
+          <element name="l11" value="simple_line.txt" />
+          <element name="l12" value="simple_line.txt" />
+        </collection>
+      </param>
+    </test>
+  </tests>
+</tool>

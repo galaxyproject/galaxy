@@ -21,8 +21,8 @@ import tempfile
 from bx.cookbook import doc_optparse
 
 
-def stop_err( msg ):
-    sys.stderr.write( "%s\n" % msg )
+def stop_err(msg):
+    sys.stderr.write("%s\n" % msg)
     sys.exit()
 
 
@@ -37,17 +37,17 @@ def replaceNeg1(fin, fout):
 
 def __main__():
     # Parse Command Line
-    options, args = doc_optparse.parse( __doc__ )
+    options, args = doc_optparse.parse(__doc__)
     # common temp file setup
     tmpf = tempfile.NamedTemporaryFile()  # forward reads
     tmpqf = tempfile.NamedTemporaryFile()
-    tmpqf = replaceNeg1(file(options.input2, 'r'), tmpqf)
+    tmpqf = replaceNeg1(open(options.input2, 'r'), tmpqf)
     # if paired-end data (have reverse input files)
     if options.input3 != "None" and options.input4 != "None":
         tmpr = tempfile.NamedTemporaryFile()  # reverse reads
         # replace the -1 in the qualities file
         tmpqr = tempfile.NamedTemporaryFile()
-        tmpqr = replaceNeg1(file(options.input4, 'r'), tmpqr)
+        tmpqr = replaceNeg1(open(options.input4, 'r'), tmpqr)
         cmd1 = "%s/bwa_solid2fastq_modified.pl 'yes' %s %s %s %s %s %s 2>&1" % (os.path.split(sys.argv[0])[0], tmpf.name, tmpr.name, options.input1, tmpqf.name, options.input3, tmpqr.name)
         try:
             os.system(cmd1)
@@ -68,6 +68,7 @@ def __main__():
     tmpqf.close()
     tmpf.close()
     sys.stdout.write('converted SOLiD data')
+
 
 if __name__ == "__main__":
     __main__()

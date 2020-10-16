@@ -14,7 +14,7 @@
      * @param {object|string} options
      * @returns (object} jQuery object
      */
-    $.fn.autocomplete = function(options) {
+    $.fn.autocomplete_verheul = function(options) {
         var url;
         if (arguments.length > 1) {
             url = options;
@@ -24,7 +24,7 @@
             url = options;
             options = { url: url };
         }
-        var opts = $.extend({}, $.fn.autocomplete.defaults, options);
+        var opts = $.extend({}, $.fn.autocomplete_verheul.defaults, options);
         return this.each(function() {
             var $this = $(this);
             $this.data('autocompleter', new $.Autocompleter(
@@ -38,7 +38,7 @@
      * Store default options
      * @type {object}
      */
-    $.fn.autocomplete.defaults = {
+    $.fn.autocomplete_verheul.defaults = {
         inputClass: 'acInput',
         loadingClass: 'acLoading',
         resultsClass: 'acResults',
@@ -289,10 +289,10 @@
         /**
          * Sanitize options
          */
-        this.options.minChars = sanitizeInteger(this.options.minChars, $.fn.autocomplete.defaults.minChars, { min: 0 });
-        this.options.maxItemsToShow = sanitizeInteger(this.options.maxItemsToShow, $.fn.autocomplete.defaults.maxItemsToShow, { min: 0 });
-        this.options.maxCacheLength = sanitizeInteger(this.options.maxCacheLength, $.fn.autocomplete.defaults.maxCacheLength, { min: 1 });
-        this.options.delay = sanitizeInteger(this.options.delay, $.fn.autocomplete.defaults.delay, { min: 0 });
+        this.options.minChars = sanitizeInteger(this.options.minChars, $.fn.autocomplete_verheul.defaults.minChars, { min: 0 });
+        this.options.maxItemsToShow = sanitizeInteger(this.options.maxItemsToShow, $.fn.autocomplete_verheul.defaults.maxItemsToShow, { min: 0 });
+        this.options.maxCacheLength = sanitizeInteger(this.options.maxCacheLength, $.fn.autocomplete_verheul.defaults.maxCacheLength, { min: 1 });
+        this.options.delay = sanitizeInteger(this.options.delay, $.fn.autocomplete_verheul.defaults.delay, { min: 0 });
         if (this.options.preventDefaultReturn != 2) {
             this.options.preventDefaultReturn = this.options.preventDefaultReturn ? 1 : 0;
         }

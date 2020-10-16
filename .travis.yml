@@ -3,33 +3,17 @@ python: 2.7
 os:
   - linux
 env:
-  - TOX_ENV=py34-lint
-  - TOX_ENV=py27-lint
-  - TOX_ENV=py27-unit
   - TOX_ENV=qunit
-  - TOX_ENV=first_startup
-  - TOX_ENV=py27-lint-imports
-  - TOX_ENV=py27-lint-imports-include-list
 
 matrix:
   include:
-  - os: osx
-    env: TOX_ENV=first_startup
-    language: generic
-  - os: osx
-    env: TOX_ENV=py27-unit
-    language: generic
-  allow_failures:
-  - env: TOX_ENV=py27-lint-imports
-
-before_install:
-  # Workaround for https://github.com/travis-ci/travis-ci/issues/7940
-  - sudo rm -f /etc/boto.cfg
+    - env: TOX_ENV=qunit
+      addons:
+        chrome: stable
 
 install:
+  - set -e
   - pip install tox
-  - if [ "$TOX_ENV" == "qunit" ]; then bash -c 'cd test/qunit && npm install'; fi
-  - if [ "$TOX_ENV" == "first_startup" ]; then bash -c "bash scripts/common_startup.sh && wget -q https://github.com/jmchilton/galaxy-downloads/raw/master/db_gx_rev_0127.sqlite && mv db_gx_rev_0127.sqlite database/universe.sqlite && bash manage_db.sh -c ./config/galaxy.ini.sample upgrade"; fi
 
 script: tox -e $TOX_ENV
 

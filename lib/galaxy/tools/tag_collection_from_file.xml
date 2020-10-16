@@ -1,0 +1,91 @@
+<tool id="__TAG_FROM_FILE__"
+      name="Tag elements from file"
+      version="1.0.0"
+      tool_type="tag_from_file">
+    <description>from contents of a file</description>
+    <type class="TagFromFileTool" module="galaxy.tools" />
+    <action module="galaxy.tools.actions.model_operations"
+            class="ModelOperationToolAction"/>
+    <inputs>
+        <param type="data_collection" name="input" label="Input Collection" help="A tabular file indicating how to tag collection elements."/>
+        <param type="data" name="tags" format="tabular" label="Tag collection elements according to this file"/>
+        <param name="how" type="select" label="How should the tags be updated">
+            <option value="add">New tags will be added, existing tags will be kept</option>
+            <option value="set">New tags will be added, existing tags will be removed</option>
+            <option value="remove">The tags listed will be removed</option>
+        </param>
+    </inputs>
+    <outputs>
+        <collection name="output" format_source="input" type_source="input" label="${on_string} (Tagged)" >
+        </collection>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input">
+                <collection type="list">
+                    <element name="forward" value="simple_line.txt" tags="zoo" />
+                    <element name="reverse" value="simple_line_alternative.txt" />
+                </collection>
+            </param>
+            <param name="tags" value="new_tags_1.txt" ftype="txt" />
+            <param name="how" value="add"/>
+            <output_collection name="output" type="list">
+                <element name="forward">
+                    <assert_contents>
+                        <has_text_matching expression="^This is a line of text.\n$" />
+                    </assert_contents>
+                    <metadata name="tags" value="alias:f,alias:r1,orientation:forward,zoo" />
+                </element>
+                <element name="reverse">
+                    <assert_contents>
+                        <has_text_matching expression="^This is a different line of text.\n$" />
+                    </assert_contents>
+                    <metadata name="tags" value="alias:r,alias:r2,orientation:reverse" />
+                </element>
+            </output_collection>
+        </test>
+        <test>
+            <param name="input">
+                <collection type="list:paired">
+                    <element name="i1">
+                        <collection type="paired">
+                            <element name="forward" value="simple_line.txt" />
+                            <element name="reverse" value="simple_line_alternative.txt" />
+                        </collection>
+                    </element>
+                </collection>
+            </param>
+            <param name="how" value="set"/>
+            <param name="tags" value="new_tags_1.txt" ftype="txt" />
+            <output_collection name="output" type="list:paired">
+                <element name="i1">
+                    <element name="forward">
+                        <assert_contents>
+                            <has_text_matching expression="^This is a line of text.\n$" />
+                        </assert_contents>
+                        <metadata name="tags" value="alias:f,alias:r1,orientation:forward" />
+                    </element>
+                    <element name="reverse">
+                        <assert_contents>
+                            <has_text_matching expression="^This is a different line of text.\n$" />
+                        </assert_contents>
+                        <metadata name="tags" value="alias:r,alias:r2,orientation:reverse" />
+                    </element>
+                </element>
+            </output_collection>
+        </test>
+    </tests>
+    <help><![CDATA[
+
+.. class:: infomark
+
+        This tool will take an input collection and a tabular file,
+        where the first column indicates an element identifier and the
+        remaining columns contains the new tags. This file may contain
+        less entries than elements in the collection.
+        In that case only matching list identifiers will be tagged.
+
+        This tool will create new history datasets from your collection
+        but your quota usage will not increase.
+    ]]></help>
+</tool>

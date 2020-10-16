@@ -1,16 +1,14 @@
-<tool id="CONVERTER_Bam_Bai_0" name="Bam to Bai" hidden="true">
-  <requirements>
-      <requirement type="package">samtools</requirement>
-  </requirements>
-  <command>samtools index $input1 $output1</command>
-  <inputs>
-    <page>
-      <param format="bam" name="input1" type="data" label="Choose BAM"/>
-    </page>
-   </inputs>
-   <outputs>
-      <data format="bai" name="output1"/>
-   </outputs>
-  <help>
-  </help>
+<tool id="CONVERTER_Bam_Bai_0" name="Bam to Bai" version="1.0.0" hidden="true">
+    <requirements>
+        <requirement type="package">samtools</requirement>
+    </requirements>
+    <command>samtools index '$input1' '$output1'</command>
+    <inputs>
+        <param format="bam" name="input1" type="data" label="Choose BAM"/>
+    </inputs>
+    <outputs>
+        <data format="bai" name="output1"/>
+    </outputs>
+    <help>
+    </help>
 </tool>

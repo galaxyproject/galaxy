@@ -1,19 +1,12 @@
-<tool id="bibtex" name="Concatenate datasets (with a bunch of citations)">
-    <command>
-      cat $input1
-      #for $q in $queries
-            ${q.input2}
-      #end for
-      &gt; $out_file1;
-    </command>
+<tool id="bibtex" name="bibtex" version="0.1.0">
+    <command><![CDATA[
+      echo "$input1" > "$out_file1"
+   ]]></command>
     <inputs>
-        <param name="input1" type="data" label="Concatenate Dataset" />
-        <repeat name="queries" title="Dataset">
-            <param name="input2" type="data" label="Select" />
-        </repeat>
+        <param name="input1" type="integer" help="integer" value="8" />
     </inputs>
     <outputs>
-        <data name="out_file1" format="input" metadata_source="input1"/>
+        <data name="out_file1" format="txt" />
     </outputs>
     <help>
 
@@ -24,6 +17,7 @@
     </help>
     <citations>
       <citation type="doi">10.1101/gr.4086505</citation>
+      <citation type="doi">10.6084/m9.figshare.979190</citation>
       <citation type="bibtex">
 @misc{Garrison2015,
   author = {Garrison, Erik},
@@ -32,6 +26,16 @@
   publisher = {GitHub},
   journal = {GitHub repository},
   url = {https://github.com/ekg/vcflib},
+}
+      </citation>
+      <citation type="bibtex">
+@online{lh32017,
+  author = {Heng Li},
+  year = {2017},
+  title = {bwa},
+  publisher = {GitHub},
+  journal = {GitHub repository},
+  url = {https://github.com/lh3/bwa},
 }
       </citation>
       <!-- BibTeX examples taken from:
@@ -317,6 +321,5 @@
    note = "Talk at Fanstord University (this is a full UNPUBLISHED entry)",
 }
       </citation>
-      <citation type="doi">10.1101/gr.4086505</citation>
     </citations>
 </tool>

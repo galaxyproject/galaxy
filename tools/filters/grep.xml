@@ -7,7 +7,7 @@
       <option value="false">Matching</option>
       <option value="true">NOT Matching</option>
     </param>
-    <param name="pattern" size="40" type="text" value="^chr([0-9A-Za-z])+" label="the pattern" help="here you can enter text or regular expression (for syntax check lower part of this frame)">
+    <param name="pattern" type="text" value="^chr([0-9A-Za-z])+" label="the pattern" help="here you can enter text or regular expression (for syntax check lower part of this frame)">
       <sanitizer>
         <valid initial="string.printable">
          <remove value="&apos;"/>

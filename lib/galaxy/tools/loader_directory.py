@@ -19,9 +19,11 @@ PATH_AND_RECURSIVE_ERROR = "Cannot specify a single file and recursive."
 LOAD_FAILURE_ERROR = "Failed to load tool with path %s."
 TOOL_LOAD_ERROR = object()
 TOOL_REGEX = re.compile(r"<tool\s")
+DATA_MANAGER_REGEX = re.compile(r"\stool_type=\"manage_data\"")
 
 YAML_EXTENSIONS = [".yaml", ".yml", ".json"]
 CWL_EXTENSIONS = YAML_EXTENSIONS + [".cwl"]
+EXCLUDE_WALK_DIRS = ['.hg', '.git', '.venv']
 
 
 def load_exception_handler(path, exc_info):
@@ -119,7 +121,7 @@ def is_tool_load_error(obj):
     return obj is TOOL_LOAD_ERROR
 
 
-def looks_like_a_tool(path, invalid_names=[], enable_beta_formats=False):
+def looks_like_a_tool(path_or_uri_like, invalid_names=[], enable_beta_formats=False):
     """Quick check to see if a file looks like it may be a tool file.
 
     Whether true in a strict sense or not, lets say the intention and
@@ -130,6 +132,11 @@ def looks_like_a_tool(path, invalid_names=[], enable_beta_formats=False):
     invalid_names may be supplied in the context of the tool shed to quickly
     rule common tool shed XML files.
     """
+    path = resolved_path(path_or_uri_like)
+    if path is UNRESOLVED_URI:
+        # Assume the path maps to a real tool.
+        return True
+
     looks = False
 
     if os.path.basename(path) in invalid_names:
@@ -147,8 +154,7 @@ def looks_like_a_tool(path, invalid_names=[], enable_beta_formats=False):
     return looks
 
 
-def looks_like_a_tool_xml(path):
-    """Quick check to see if a file looks like it may be a Galaxy XML tool file."""
+def looks_like_xml(path, regex=TOOL_REGEX):
     full_path = os.path.abspath(path)
 
     if not full_path.endswith(".xml"):
@@ -159,17 +165,27 @@ def looks_like_a_tool_xml(path):
 
     if(checkers.check_binary(full_path) or
        checkers.check_image(full_path) or
-       checkers.check_gzip(full_path)[0] or
-       checkers.check_bz2(full_path)[0] or
-       checkers.check_zip(full_path)):
+       checkers.is_gzip(full_path) or
+       checkers.is_bz2(full_path) or
+       checkers.is_zip(full_path)):
         return False
 
     with open(path, "r") as f:
         start_contents = f.read(5 * 1024)
-        if TOOL_REGEX.search(start_contents):
+        if regex.search(start_contents):
             return True
 
     return False
+
+
+def looks_like_a_tool_xml(path):
+    """Quick check to see if a file looks like it may be a Galaxy XML tool file."""
+    return looks_like_xml(path=path, regex=TOOL_REGEX)
+
+
+def looks_like_a_data_manager_xml(path):
+    """Quick check to see if a file looks like it may be a Galaxy data manager XML file."""
+    return looks_like_xml(path=path, regex=DATA_MANAGER_REGEX)
 
 
 def is_a_yaml_with_class(path, classes):
@@ -222,7 +238,12 @@ def looks_like_a_tool_cwl(path):
     return looks_like_a_cwl_artifact(path, classes=["CommandLineTool", "ExpressionTool"])
 
 
-def _find_tool_files(path, recursive, enable_beta_formats):
+def _find_tool_files(path_or_uri_like, recursive, enable_beta_formats):
+    path = resolved_path(path_or_uri_like)
+    if path is UNRESOLVED_URI:
+        # Pass the URI through and assume it maps to a real tool.
+        return [path_or_uri_like]
+
     is_file = not os.path.isdir(path)
     if not os.path.exists(path):
         raise Exception(PATH_DOES_NOT_EXIST_ERROR)
@@ -241,11 +262,11 @@ def _find_tool_files(path, recursive, enable_beta_formats):
                 files = glob.glob(path + "/*.xml")
             else:
                 files = _find_files(path, "*.xml")
-        return map(os.path.abspath, files)
+        return [os.path.abspath(_) for _ in files]
 
 
 def _has_extension(path, extensions):
-    return any(map(lambda e: path.endswith(e), extensions))
+    return any(path.endswith(e) for e in extensions)
 
 
 def _find_files(directory, pattern='*'):
@@ -254,6 +275,8 @@ def _find_files(directory, pattern='*'):
 
     matches = []
     for root, dirnames, filenames in os.walk(directory):
+        # exclude some directories (like .hg) from traversing
+        dirnames[:] = [dir for dir in dirnames if dir not in EXCLUDE_WALK_DIRS]
         for filename in filenames:
             full_path = os.path.join(root, filename)
             if fnmatch.filter([full_path], pattern):
@@ -261,12 +284,25 @@ def _find_files(directory, pattern='*'):
     return matches
 
 
+UNRESOLVED_URI = object()
+
+
+def resolved_path(path_or_uri_like):
+    """If this is a simple file path, return the path else UNRESOLVED_URI."""
+    if "://" not in path_or_uri_like:
+        return path_or_uri_like
+    elif path_or_uri_like.startswith("file://"):
+        return path_or_uri_like[len("file://"):]
+    else:
+        return UNRESOLVED_URI
+
+
 BETA_TOOL_CHECKERS = {
     'yaml': looks_like_a_tool_yaml,
     'cwl': looks_like_a_tool_cwl,
 }
 
-__all__ = [
+__all__ = (
     "find_possible_tools_from_path",
     "is_a_yaml_with_class",
     "is_tool_load_error",
@@ -276,4 +312,4 @@ __all__ = [
     "looks_like_a_tool_cwl",
     "looks_like_a_tool_xml",
     "looks_like_a_tool_yaml",
-]
+)

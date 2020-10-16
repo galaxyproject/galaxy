@@ -1,5 +1,5 @@
-galaxy.dataset_collections.types package
-========================================
+galaxy\.dataset\_collections\.types package
+===========================================
 
 .. automodule:: galaxy.dataset_collections.types
     :members:
@@ -9,16 +9,16 @@ galaxy.dataset_collections.types package
 Submodules
 ----------
 
-galaxy.dataset_collections.types.list module
---------------------------------------------
+galaxy\.dataset\_collections\.types\.list module
+------------------------------------------------
 
 .. automodule:: galaxy.dataset_collections.types.list
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.dataset_collections.types.paired module
-----------------------------------------------
+galaxy\.dataset\_collections\.types\.paired module
+--------------------------------------------------
 
 .. automodule:: galaxy.dataset_collections.types.paired
     :members:

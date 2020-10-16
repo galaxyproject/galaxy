@@ -1,0 +1,16 @@
+<tool id="CONVERTER_tar_to_directory" name="Convert tar to directory" version="1.0.0" profile="17.05">
+    <!-- Don't use tar directly so we can verify safety of results - tar -xzf '$input1'; -->
+    <command>
+        mkdir '$output1.files_path';
+        cd '$output1.files_path';
+        python -c "from galaxy.util.compression_utils import CompressedFile; CompressedFile('$input1').extract('.');"
+    </command>
+    <inputs>
+        <param format="tar" name="input1" type="data"/>
+    </inputs>
+    <outputs>
+        <data format="directory" name="output1"/>
+    </outputs>
+    <help>
+    </help>
+</tool>

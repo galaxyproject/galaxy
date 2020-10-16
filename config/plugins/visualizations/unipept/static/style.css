@@ -1,0 +1,116 @@
+/*set all fonts to roboto */
+
+html {
+  font-family: "Roboto";
+}
+
+body {
+  padding: 20px;
+}
+
+/*outermost frame on page*/
+.outer-frame {
+  box-shadow: 10px 10px 5px #888888;
+  width: 800px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+/*applies to the container with buttons, actual image, and helper text*/
+.content-container {
+  position: relative;
+  border: 1px solid black;
+  border-top: 0;
+  display: block;
+  padding: 0;
+  margin: 0 auto;
+}
+
+/*modifies wrapper associated with each viz type*/
+.content-container .wrapper {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/*modifies header with buttons and helper text*/
+.content-container .wrapper .ghead {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding: 0;
+  line-height: 30px;
+  text-align: right;
+  color: #333;
+  height: 28px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/*reset button */
+.content-container .wrapper .ghead img {
+  padding: 5px 5px 2px 2px;
+  border: 1px solid black;
+  border-radius: 7px;
+  border-color: "rbga(0, 0, 0, 0.3)";
+  box-shadow: 2px 2px 1px #888888;
+  display: inline;
+}
+
+/*help text*/
+.content-container .wrapper .ghead .dirtext {
+  padding: 5px;
+  font-weight: 200;
+  font-size: 12px;
+}
+
+
+/* tab: from https://www.w3schools.com/howto/howto_js_tabs.asp */
+
+/* style tab*/
+div.tab {
+  overflow: hidden;
+  background-color: #2196f3;
+  border-top: 1px solid black;
+  border-left: 1px solid black;
+  border-right: 1px solid black;
+  border-bottom: 0;
+  height: 48px;
+  margin: 0;
+  padding: 0;
+}
+
+/*style text*/
+div.tab a {
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+/* style buttons inside tab*/
+div.tab a.button {
+  background-color: inherit;
+  float: left;
+  border: none;
+  cursor: pointer;
+  padding: 14px 16px 10px 10px;
+  transition: 0.2s;
+  margin-right: 5px;
+  margin-left: 5px;
+}
+
+/*change color on hover */
+div.tab a.button:hover {
+  border-bottom: 5px solid #ffc107;
+}
+
+/*create active tab class*/
+div.tab a.active {
+  border-bottom: 5px solid #ffc107;
+}
+
+/*footer */
+footer {
+  margin: 0 auto;
+  font-size: 12px;
+  padding-top: 20px;
+  text-align: center;
+}

@@ -1,16 +1,18 @@
 <tool id="addValue" name="Add column" version="1.0.0">
   <description>to an existing dataset</description>
-  <command interpreter="perl">fixedValueColumn.pl $input $out_file1 "$exp" $iterate</command>
+  <command>
+perl '$__tool_directory__/fixedValueColumn.pl' '$input' '$out_file1' '$exp' $iterate
+  </command>
   <inputs>
-     <param name="exp" size="20" type="text" value="1" label="Add this value"/>
-    <param format="tabular" name="input" type="data" label="to Dataset" help="Dataset missing? See TIP below" />
+    <param name="exp" type="text" value="1" label="Add this value"/>
+    <param name="input" type="data" format="tabular" label="to Dataset" help="Dataset missing? See TIP below" />
     <param name="iterate" type="select" label="Iterate?">
       <option value="no">NO</option>
       <option value="yes">YES</option>
     </param>    
   </inputs>
   <outputs>
-    <data format="input" name="out_file1" metadata_source="input"/>
+    <data name="out_file1" format="input" metadata_source="input"/>
   </outputs>
   <tests>
     <test>
@@ -21,7 +23,6 @@
     </test>
   </tests>
   <help>
-
 .. class:: infomark
 
 **TIP:** If your data is not TAB delimited, use *Text Manipulation-&gt;Convert*
@@ -54,8 +55,5 @@ You can also add line numbers by selecting **Iterate: YES**. In this case if you
     chr1 10  100 geneA 1
     chr2 200 300 geneB 2
     chr2 400 500 geneC 3
-
-
-
-</help>
+  </help>
 </tool>

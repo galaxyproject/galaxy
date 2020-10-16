@@ -1,5 +1,5 @@
-galaxy.webapps.tool_shed.framework package
-==========================================
+galaxy\.webapps\.tool\_shed\.framework package
+==============================================
 
 .. automodule:: galaxy.webapps.tool_shed.framework
     :members:

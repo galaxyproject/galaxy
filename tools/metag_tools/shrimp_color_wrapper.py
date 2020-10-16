@@ -12,8 +12,8 @@ import tempfile
 assert sys.version_info[:2] >= (2.4)
 
 
-def stop_err( msg ):
-    sys.stderr.write( "%s\n" % msg )
+def stop_err(msg):
+    sys.stderr.write("%s\n" % msg)
     sys.exit()
 
 
@@ -52,7 +52,7 @@ def __main__():
                 spaced_seed = sys.argv[4]
             else:
                 stop_err('Error in assigning parameter: Spaced seed.')
-        except:
+        except Exception:
             stop_err('Spaced seed must be a combination of 1s and 0s.')
 
         seed_matches_per_window = sys.argv[5]
@@ -86,7 +86,7 @@ def __main__():
     # check SHRiMP output: count number of lines
     num_hits = 0
     if shrimp_outfile:
-        for i, line in enumerate(file(shrimp_outfile)):
+        for i, line in enumerate(open(shrimp_outfile)):
             line = line.rstrip('\r\n')
             if not line or line.startswith('#'):
                 continue
@@ -99,7 +99,7 @@ def __main__():
     if num_hits == 0:   # no hits generated
         err_msg = ''
         if shrimp_log:
-            for i, line in enumerate(file(shrimp_log)):
+            for i, line in enumerate(open(shrimp_log)):
                 if line.startswith('error'):            # deal with memory error:
                     err_msg += line                     # error: realloc failed: Cannot allocate memory
                 if re.search('Reads Matched', line):    # deal with zero hits
