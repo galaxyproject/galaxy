@@ -817,7 +817,7 @@ class WorkflowContentsManager(UsesAnnotations):
                             if output_label not in output_label_duplicate:
                                 output_label_duplicate.add(output_label)
                         else:
-                            output_label_index[output_label] = True
+                            output_label_index.add(output_label)
             step_dict['workflow_outputs'] = outputs
             if len(output_label_duplicate) > 0:
                 output_label_duplicate_string = ", ".join(output_label_duplicate)
