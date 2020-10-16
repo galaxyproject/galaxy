@@ -409,14 +409,13 @@ export default {
             this.showLoading = false;
             this.$emit("onChange");
         },
-        labelOutput(output, label) {
-            return this.activeOutputs.labelOutput(output, label);
+        labelOutput(outputName, label) {
+            return this.activeOutputs.labelOutput(outputName, label);
         },
-        changeOutputDatatype(output, datatype) {
+        changeOutputDatatype(outputName, datatype) {
             if (datatype === "__empty__") {
                 datatype = null;
             }
-            const outputName = output.name;
             const outputTerminal = this.outputTerminals[outputName];
             if (datatype) {
                 this.postJobActions["ChangeDatatypeAction" + outputName] = {

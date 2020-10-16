@@ -1,6 +1,6 @@
 import Vue from "vue";
 
-const allLabels = {};
+export const allLabels = {};
 
 export class ActiveOutputs {
     constructor() {
@@ -42,9 +42,9 @@ export class ActiveOutputs {
     }
 
     /** Change label for an output */
-    labelOutput(output, newLabel) {
-        if (!allLabels[newLabel]) {
-            const oldLabel = this.update(output.name, newLabel);
+    labelOutput(outputName, newLabel) {
+        if (this.outputsIndex[outputName] && !allLabels[newLabel]) {
+            const oldLabel = this.update(outputName, newLabel);
             if (oldLabel && allLabels[oldLabel]) {
                 delete allLabels[oldLabel];
             }
@@ -53,7 +53,7 @@ export class ActiveOutputs {
             }
             return null;
         } else {
-            const activeOutput = this.get(output.name);
+            const activeOutput = this.get(outputName);
             return activeOutput && activeOutput.label;
         }
     }
