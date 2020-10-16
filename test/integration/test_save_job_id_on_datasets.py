@@ -15,9 +15,26 @@ from galaxy_test.driver.driver_util import GalaxyTestDriver
 TEST_TOOL_IDS = [
     'boolean_conditional',  # 1 job >> 1 dataset
     'color_param',          # 1 job >> multiple datasets
-    'multi_output',         # 1 job >> dataset + discovered dataset? (maybe; not implemented yet)
+    'multi_output',         # 1 job >> 1 dataset + 1 discovered dataset
     # test upload?            # not implemented
 ]
+
+
+@pytest.fixture(scope='module')
+def driver(request):
+    request.addfinalizer(DRIVER.tear_down)
+    return DRIVER
+
+
+def create_driver():
+    # Same approach as in functional/test_toolbox_pytest.py:
+    # We setup a global driver, so that the driver fixture can tear down the driver.
+    # Ideally `create_driver` would be a fixture and clean up after the yield,
+    # but that's not compatible with the use use of pytest.mark.parametrize:
+    # a fixture is not directly callable, so it cannot be used in place of get_config_data.
+    global DRIVER
+    DRIVER = GalaxyTestDriver()
+    DRIVER.setup(TestConfig)
 
 
 class TestConfig:
@@ -25,16 +42,16 @@ class TestConfig:
 
 
 @pytest.mark.parametrize('tool_id', TEST_TOOL_IDS)
-def test_tool_datasets(tool_id):
-    driver = GalaxyTestDriver()
-    driver.setup(TestConfig)
+def test_tool_datasets(tool_id, driver):
     driver.run_tool_test(tool_id)
     session = driver.app.model.context.current
-    job = session.query(model.Job).one()
-    datasets = session.query(model.Dataset).all()
+    job = session.query(model.Job).order_by(model.Job.id.desc()).first()
+    datasets = session.query(model.Dataset).filter(model.Dataset.job_id == job.id).all()
 
-    assert len(datasets) > 0
-    for d in datasets:
-        assert d.job_id == job.id  # this works because we are not reusing the driver
+    if tool_id == 'boolean_conditional':
+        assert len(datasets) == 1
+    elif tool_id in ('color_param', 'multi_output'):
+        assert len(datasets) == 2
 
-    driver.tear_down()
+
+create_driver()
