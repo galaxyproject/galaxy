@@ -1507,7 +1507,7 @@ Note that this tool uses ``assign_primary_output="true"`` for ``<discover_data_s
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 
-Define tests for extra files corresponding to an output collection.
+Define tests for extra datasets and metadata corresponding to an output collection.
 
 ``output_collection`` directives should specify a ``name`` and ``type``
 attribute to describe the expected output collection as a whole.
@@ -1515,6 +1515,12 @@ attribute to describe the expected output collection as a whole.
 Expectations about collection contents are described using child ``element``
 directives. For nested collections, these child ``element`` directives may
 themselves contain children.
+
+For tools marked as having profile 20.09 or newer, the order of elements within
+an ``output_collection`` declaration are meaningful. The test definition may
+omit any number of elements from a collection, but the ones that are specified
+will be checked against the actual resulting collection from the tool run and the
+order within the collection verified.
 
 ### Examples
 

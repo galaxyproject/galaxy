@@ -598,7 +598,7 @@ def __parse_output_collection_elem(output_collection_elem, profile=None):
 
 
 def __parse_element_tests(parent_element, profile=None):
-    element_tests = OrderedDict()
+    element_tests = {}
     for idx, element in enumerate(parent_element.findall("element")):
         element_attrib = dict(element.attrib)
         identifier = element_attrib.pop('name', None)
