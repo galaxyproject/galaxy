@@ -11,7 +11,7 @@ import Deferred from "utils/deferred";
 import Ui from "mvc/ui/ui-misc";
 import FormBase from "mvc/form/form-view";
 import Webhooks from "mvc/webhooks";
-import Citations from "components/Citations.vue";
+import Citations from "components/Citation/Citations.vue";
 import xrefs from "components/xrefs.vue";
 import Vue from "vue";
 import axios from "axios";
