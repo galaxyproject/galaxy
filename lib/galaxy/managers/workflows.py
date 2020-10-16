@@ -738,7 +738,7 @@ class WorkflowContentsManager(UsesAnnotations):
         log.info("creator_metadata is %s" % workflow.creator_metadata)
         data['creator'] = workflow.creator_metadata
 
-        output_label_index = {}
+        output_label_index = set()
         input_step_types = set(workflow.input_step_types)
         # For each step, rebuild the form and encode the state
         for step in workflow.steps:
