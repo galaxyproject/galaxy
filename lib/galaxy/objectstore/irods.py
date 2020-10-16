@@ -1,5 +1,5 @@
 """
-Object Store plugin for the Integrated Rule-Oriented Data Store (iRODS)
+Object Store plugin for the Integrated Rule-Oriented Data System (iRODS)
 """
 import logging
 import os
@@ -139,7 +139,7 @@ class CloudConfigMixin:
 
 class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
     """
-    Object store that stores objects as data objects in an iRODS collections. A local cache
+    Object store that stores files as data objects in an iRODS Zone. A local cache
     exists that is used as an intermediate location for files between Galaxy and iRODS.
     """
 
@@ -267,7 +267,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
     def _construct_path(self, obj, base_dir=None, dir_only=None, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False, **kwargs):
         # extra_dir should never be constructed from provided data but just
-        # make sure there are no shenannigans afoot
+        # make sure there are no shenanigans afoot
         if extra_dir and extra_dir != os.path.normpath(extra_dir):
             log.warning('extra_dir is not normalized: %s', extra_dir)
             raise ObjectInvalid("The requested object is invalid")
@@ -515,7 +515,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             try:
                 return os.path.getsize(self._get_cache_path(rel_path))
             except OSError as ex:
-                log.info("Could not get size of file '%s' in local cache, will try S3. Error: %s", rel_path, ex)
+                log.info("Could not get size of file '%s' in local cache, will try iRODS. Error: %s", rel_path, ex)
         elif self._exists(obj, **kwargs):
             return self._get_size_in_irods(rel_path)
         log.warning("Did not find dataset '%s', returning 0 for size", rel_path)
@@ -646,7 +646,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             self._create(obj, **kwargs)
         if self._exists(obj, **kwargs):
             rel_path = self._construct_path(obj, **kwargs)
-            # Chose whether to use the dataset file itself or an alternate file
+            # Choose whether to use the dataset file itself or an alternate file
             if file_name:
                 source_file = os.path.abspath(file_name)
                 # Copy into cache

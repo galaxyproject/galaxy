@@ -1,10 +1,10 @@
 #!/usr/bin/env python
-import subprocess
 import argparse
-from pathlib import Path
 import glob
+import subprocess
+from pathlib import Path
+
 import yaml
-from yaml import SafeLoader
 
 
 def flatten(d, path):
@@ -27,7 +27,7 @@ def flat_dict(d):
 
 
 # Load without the includes since we can't follow those across git revisions.
-class MockOrderedLoader(SafeLoader):
+class MockOrderedLoader(yaml.SafeLoader):
     def include(self, node):
         return {}
 
@@ -103,7 +103,7 @@ def report_diff(added, changed, removed, new_files):
         print("New Configuration Files")
         print("-----------------------")
         print()
-        print(f"The following files are new, or recently converted to yaml")
+        print("The following files are new, or recently converted to yaml")
         print()
         for k in new_files:
             print(f"-  ``{k}``")
