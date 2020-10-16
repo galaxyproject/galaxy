@@ -738,6 +738,7 @@ class WorkflowContentsManager(UsesAnnotations):
         log.info("creator_metadata is %s" % workflow.creator_metadata)
         data['creator'] = workflow.creator_metadata
 
+        output_label_index = {}
         input_step_types = set(workflow.input_step_types)
         # For each step, rebuild the form and encode the state
         for step in workflow.steps:
@@ -748,14 +749,12 @@ class WorkflowContentsManager(UsesAnnotations):
             # Load label from state of data input modules, necessary for backward compatibility
             self.__set_default_label(step, module, step.tool_inputs)
             # Fix any missing parameters
-            upgrade_message = module.check_and_update_state()
-            if upgrade_message:
-                data['upgrade_messages'][step.order_index] = upgrade_message
-            if (hasattr(module, "version_changes")) and (module.version_changes):
-                if step.order_index in data['upgrade_messages']:
-                    data['upgrade_messages'][step.order_index][module.tool.name] = "\n".join(module.version_changes)
-                else:
-                    data['upgrade_messages'][step.order_index] = {module.tool.name: "\n".join(module.version_changes)}
+            upgrade_message_dict = {}
+            check_and_update_messages = module.check_and_update_state()
+            if check_and_update_messages:
+                upgrade_message_dict = check_and_update_messages
+            if hasattr(module, "version_changes") and module.version_changes:
+                upgrade_message_dict[module.tool.name] = "\n".join(module.version_changes)
             # Get user annotation.
             config_form = module.get_config_form(step=step)
             annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, step) or ''
@@ -807,6 +806,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
             # workflow outputs
             outputs = []
+            output_label_duplicate = []
             for output in step.unique_workflow_outputs:
                 if output.workflow_step.type not in input_step_types:
                     output_label = output.label
@@ -815,7 +815,18 @@ class WorkflowContentsManager(UsesAnnotations):
                     outputs.append({"output_name": output_name,
                                     "uuid": output_uuid,
                                     "label": output_label})
+                    if output_label is not None:
+                        if output_label in output_label_index:
+                            if output_label not in output_label_duplicate:
+                                output_label_duplicate.append(output_label)
+                        else:
+                            output_label_index[output_label] = True
             step_dict['workflow_outputs'] = outputs
+            if len(output_label_duplicate) > 0:
+                output_label_duplicate_string = ", ".join(output_label_duplicate)
+                upgrade_message_dict['output_label_duplicate'] = "Ignoring duplicate labels: %s." % output_label_duplicate_string
+            if upgrade_message_dict:
+                data['upgrade_messages'][step.order_index] = upgrade_message_dict
 
             # Encode input connections as dictionary
             input_conn_dict = {}
