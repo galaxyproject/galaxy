@@ -212,7 +212,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         self._initialize()
         log.debug("irods __init__ %s", reload_timer)
 
-
     def shutdown(self):
         # This call will cleanup all the connections in the connection pool
         # OSError sometimes happens on GitHub Actions, after the test has successfully completed. Ignore it if it happens.
@@ -243,7 +242,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             log.error('Could not create iRODS session: ' + str(e))
             raise
         return session
-
 
     @classmethod
     def parse_xml(cls, config_xml):
@@ -303,41 +301,41 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
     # rel_path is file or folder?
     def _get_size_in_irods(self, rel_path):
-       p = Path(rel_path)
-       data_object_name = p.stem + p.suffix
-       subcollection_name = p.parent
+        p = Path(rel_path)
+        data_object_name = p.stem + p.suffix
+        subcollection_name = p.parent
 
-       collection_path = self.home + "/" + str(subcollection_name)
-       data_object_path = collection_path + "/" + str(data_object_name)
+        collection_path = self.home + "/" + str(subcollection_name)
+        data_object_path = collection_path + "/" + str(data_object_name)
 
-       try:
-           data_obj = self.session.data_objects.get(data_object_path)
-           return data_obj.__sizeof__()
-       except (DataObjectDoesNotExist, CollectionDoesNotExist):
-           log.warn("Collection or data object (%s) does not exist", data_object_path)
-           return -1
-       except NetworkException as e:
-           log.exception(e)
-           return -1
+        try:
+            data_obj = self.session.data_objects.get(data_object_path)
+            return data_obj.__sizeof__()
+        except (DataObjectDoesNotExist, CollectionDoesNotExist):
+            log.warn("Collection or data object (%s) does not exist", data_object_path)
+            return -1
+        except NetworkException as e:
+            log.exception(e)
+            return -1
 
     # rel_path is file or folder?
     def _data_object_exists(self, rel_path):
-       p = Path(rel_path)
-       data_object_name = p.stem + p.suffix
-       subcollection_name = p.parent
+        p = Path(rel_path)
+        data_object_name = p.stem + p.suffix
+        subcollection_name = p.parent
 
-       collection_path = self.home + "/" + str(subcollection_name)
-       data_object_path = collection_path + "/" + str(data_object_name)
+        collection_path = self.home + "/" + str(subcollection_name)
+        data_object_path = collection_path + "/" + str(data_object_name)
 
-       try:
-           self.session.data_objects.get(data_object_path)
-           return True
-       except (DataObjectDoesNotExist, CollectionDoesNotExist):
-           log.debug("Collection or data object (%s) does not exist", data_object_path)
-           return False
-       except NetworkException as e:
-           log.exception(e)
-           return False
+        try:
+            self.session.data_objects.get(data_object_path)
+            return True
+        except (DataObjectDoesNotExist, CollectionDoesNotExist):
+            log.debug("Collection or data object (%s) does not exist", data_object_path)
+            return False
+        except NetworkException as e:
+            log.exception(e)
+            return False
 
     def _in_cache(self, rel_path):
         """ Check if the given dataset is in the local cache and return True if so. """
@@ -355,36 +353,36 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         return file_ok
 
     def _download(self, rel_path):
-       log.debug("Pulling data object '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
+        log.debug("Pulling data object '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
 
-       p = Path(rel_path)
-       data_object_name = p.stem + p.suffix
-       subcollection_name = p.parent
+        p = Path(rel_path)
+        data_object_name = p.stem + p.suffix
+        subcollection_name = p.parent
 
-       collection_path = self.home + "/" + str(subcollection_name)
-       data_object_path = collection_path + "/" + str(data_object_name)
-       data_obj = None
+        collection_path = self.home + "/" + str(subcollection_name)
+        data_object_path = collection_path + "/" + str(data_object_name)
+        data_obj = None
 
-       try:
-           data_obj = self.session.data_objects.get(data_object_path)
-       except (DataObjectDoesNotExist, CollectionDoesNotExist):
-           log.warn("Collection or data object (%s) does not exist", data_object_path)
-           return False
-       except NetworkException as e:
-           log.exception(e)
-           return False
+        try:
+            data_obj = self.session.data_objects.get(data_object_path)
+        except (DataObjectDoesNotExist, CollectionDoesNotExist):
+            log.warn("Collection or data object (%s) does not exist", data_object_path)
+            return False
+        except NetworkException as e:
+            log.exception(e)
+            return False
 
-       if self.cache_size > 0 and data_obj.__sizeof__() > self.cache_size:
-           log.critical("File %s is larger (%s) than the cache size (%s). Cannot download.",
-                       rel_path, data_obj.__sizeof__(), self.cache_size)
-           return False
+        if self.cache_size > 0 and data_obj.__sizeof__() > self.cache_size:
+            log.critical("File %s is larger (%s) than the cache size (%s). Cannot download.",
+                        rel_path, data_obj.__sizeof__(), self.cache_size)
+            return False
 
-       log.debug("Pulled data object '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
+        log.debug("Pulled data object '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
 
-       with data_obj.open('r') as data_obj_fp, open(self._get_cache_path(rel_path), "wb") as cache_fp:
-           for chunk in iter(partial(data_obj_fp.read, CHUNK_SIZE), b''):
-               cache_fp.write(chunk)
-       return True
+        with data_obj.open('r') as data_obj_fp, open(self._get_cache_path(rel_path), "wb") as cache_fp:
+            for chunk in iter(partial(data_obj_fp.read, CHUNK_SIZE), b''):
+                cache_fp.write(chunk)
+        return True
 
     def _push_to_irods(self, rel_path, source_file=None, from_string=None):
         """
