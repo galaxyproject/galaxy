@@ -66,8 +66,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_default_limits_cpu=dict(map=str, default=None),
             k8s_default_limits_memory=dict(map=str, default=None),
             k8s_cleanup_job=dict(map=str, valid=lambda s: s in {"onsuccess", "always", "never"}, default="always"),
-            k8s_pod_retries=dict(map=int, valid=lambda x: int >= 0, default=3),
-            k8s_pod_retrials=dict(map=int, valid=lambda x: int >= 0, default=3),
+            k8s_pod_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=3),
+            k8s_pod_retrials=dict(map=int, valid=lambda x: int(x) >= 0, default=3),
             k8s_walltime_limit=dict(map=int, valid=lambda x: int(x) >= 0, default=172800))
 
         if 'runner_param_specs' not in kwargs:
