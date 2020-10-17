@@ -195,10 +195,10 @@ class ToolEvaluator:
                 for conversion_name, conversion_extensions, conversion_datatypes in input.conversions:
                     # If we are at building cmdline step, then converters
                     # have already executed
-                    conv_ext, converted_dataset = input_values[input.name].find_conversion_destination(conversion_datatypes)
+                    direct_match, conv_ext, converted_dataset = input_values[input.name].find_conversion_destination(conversion_datatypes)
                     # When dealing with optional inputs, we'll provide a
                     # valid extension to be used for None converted dataset
-                    if not conv_ext:
+                    if not direct_match and not conv_ext:
                         conv_ext = conversion_extensions[0]
                     # input_values[ input.name ] is None when optional
                     # dataset, 'conversion' of optional dataset should
