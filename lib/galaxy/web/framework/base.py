@@ -489,6 +489,7 @@ def send_file(start_response, trans, body):
     # If configured use X-Accel-Redirect header for nginx
     base = trans.app.config.nginx_x_accel_redirect_base
     apache_xsendfile = trans.app.config.apache_xsendfile
+    range_btyes = trans.request.headers.get('Range')
     if base:
         trans.response.headers['X-Accel-Redirect'] = \
             base + os.path.abspath(body.name)
@@ -503,6 +504,16 @@ def send_file(start_response, trans, body):
         trans.response.status = '204 No Content'
         body = [b""]
     # Fall back on sending the file in chunks
+    elif range_btyes and range_btyes.startswith('bytes='):
+        full_length = trans.response.headers['Content-Length']
+        start, stop = range_btyes[6:].split('-')
+        start, stop = int(start), int(stop) + 1
+        stop = min(stop, full_length)
+        trans.response.headers['Content-Length'] = stop - start
+        trans.response.headers['Accept-Ranges'] = 'bytes'
+        trans.response.status = '206 Partial Content'
+
+        body = FileIterable(body, start, stop)
     else:
         body = iterate_file(body)
     start_response(trans.response.wsgi_status(),
@@ -531,3 +542,41 @@ def flatten(seq):
                 yield smart_str(y)
         else:
             yield smart_str(x)
+
+
+class FileIterable(object):
+    def __init__(self, fileobj, start=None, stop=None):
+        self.fileobj = fileobj
+        self.start = start
+        self.stop = stop
+    def __iter__(self):
+        return FileIterator(self.fileobj, self.start, self.stop)
+    def app_iter_range(self, start, stop):
+        return self.__class__(self.fileobj, start, stop)
+
+
+class FileIterator(object):
+
+    def __init__(self, fileobj, start, stop):
+        self.fileobj = fileobj
+        if start:
+            self.fileobj.seek(start)
+        if stop is not None:
+            self.length = stop - start
+        else:
+            self.length = None
+    def __iter__(self):
+        return self
+    def next(self):
+        if self.length is not None and self.length <= 0:
+            raise StopIteration
+        chunk = self.fileobj.read(CHUNK_SIZE)
+        if not chunk:
+            raise StopIteration
+        if self.length is not None:
+            self.length -= len(chunk)
+            if self.length < 0:
+                # Chop off the extra:
+                chunk = chunk[:self.length]
+        return chunk
+    __next__ = next # py3 compat
