@@ -72,10 +72,10 @@ export default {
             if (this.argumentPayload.settings && this.argumentPayload.settings.length > 0) {
                 settings = Object.assign({}, this.argumentPayload.settings);
                 if (this.argumentPayload.groups && this.argumentPayload.groups.length > 0) {
-                    settings.__groups = {
+                    settings.groups = {
                         type: "repeat",
                         title: "Columns",
-                        name: "columns",
+                        name: "groups",
                         min: 1,
                         inputs: this.argumentPayload.groups.map((x) => {
                             if (x.type == "data_column") {
