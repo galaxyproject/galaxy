@@ -12,6 +12,12 @@ import Menu from "mvc/visualization/chart/views/menu";
 
 export default Backbone.View.extend({
     initialize: function (options) {
+        const paramsString = window.location.search;
+        const searchParams = new URLSearchParams(paramsString);
+        options.charts_dict = options.charts_dict || {};
+        for (const [k, v] of searchParams.entries()) {
+            options.charts_dict[k] = v;
+        }
         const Galaxy = getGalaxyInstance();
         this.modal = Galaxy && Galaxy.modal ? Galaxy.modal : new Modal.View();
         this.setElement(
