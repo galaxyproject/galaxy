@@ -12,7 +12,7 @@ import math
 from requests_toolbelt import MultipartEncoder
 
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
-from video_ocr import VideoOcrSchema, VideoOcrMediaSchema, VideoOcrResolutionSchema, VideoOcrFrameSchema, VideoOcrBoundingBoxSchema, VideoOcrBoundingBoxScoreSchema, VideoOcrBoundingBoxVerticesSchema
+from video_ocr import VideoOcrSchema, VideoOcrMediaSchema, VideoOcrResolutionSchema, VideoOcrFrameSchema, VideoOcrObjectSchema, VideoOcrObjectScoreSchema, VideoOcrObjectVerticesSchema
 
 def main():
 	(input_video, azure_video_index, azure_artifact_ocr, amp_vocr) = sys.argv[1:5]
@@ -53,7 +53,7 @@ def create_amp_ocr(input_video, azure_index_json, azure_ocr_json):
 	# Create a dictionary of all the frames [FrameNum : List of Terms]
 	frame_dict = createFrameDictionary(azure_index_json['videos'], framerate)
 	
-	# Convert to amp frame objects with bounding boxes
+	# Convert to amp frame objects with objects
 	amp_frames = createAmpFrames(frame_dict, framerate)
 	
 	# Add the frames to the schema
@@ -107,7 +107,7 @@ def createFrameDictionary(video_json, framerate):
 					"width" : ocr["width"],
 					"height" : ocr["height"]
 				}
-				# From the first frame to the last, add the bounding box info
+				# From the first frame to the last, add the objects info
 				for frameIndex in range(frameIndexStart, frameIndexEnd + 1):
 					# If it already exists, append it.  Otherwise create new list
 					if frameIndex in frame_dict.keys():
@@ -121,16 +121,16 @@ def createFrameDictionary(video_json, framerate):
 # Convert the dictionary into AMP objects we need
 def createAmpFrames(frame_dict, framerate):
 	amp_frames = []
-	for frameNum, boundingBoxList in frame_dict.items():
-		bounding_boxes = []
-		for b in boundingBoxList:
-			amp_score = VideoOcrBoundingBoxScoreSchema("confidence", b["confidence"])
+	for frameNum, objectList in frame_dict.items():
+		objects = []
+		for b in objectList:
+			amp_score = VideoOcrObjectScoreSchema("confidence", b["confidence"])
 			bottom = b['top'] - b['height']
 			right = b['left'] + b['width']
-			amp_vertice = VideoOcrBoundingBoxVerticesSchema(b['left'], bottom, right, b['top'])
-			amp_bounding_box = VideoOcrBoundingBoxSchema(b["text"], b["language"], amp_score, amp_vertice)
-			bounding_boxes.append(amp_bounding_box)
-		amp_frame = VideoOcrFrameSchema((frameNum) * (1/framerate), bounding_boxes)
+			amp_vertice = VideoOcrObjectVerticesSchema(b['left'], bottom, right, b['top'])
+			amp_object = VideoOcrObjectSchema(b["text"], b["language"], amp_score, amp_vertice)
+			objects.append(amp_object)
+		amp_frame = VideoOcrFrameSchema((frameNum) * (1/framerate), objects)
 		amp_frames.append(amp_frame)
 	
 	amp_frames.sort(key=lambda x: x.start, reverse = False)

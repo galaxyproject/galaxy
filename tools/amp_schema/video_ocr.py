@@ -43,18 +43,18 @@ class VideoOcrMediaSchema:
 
 class VideoOcrFrameSchema:
     start = 0
-    boundingBoxes = []
-    def __init__(self, start = None, boundingBoxes = None):
+    objects = []
+    def __init__(self, start = None, objects = None):
         self.start = start
-        if(boundingBoxes != None):
-            self.boundingBoxes = boundingBoxes
+        if(objects != None):
+            self.objects = objects
 
     @classmethod
     def from_json(cls, json_data: dict):
         return cls(**json_data)
 
     
-class VideoOcrBoundingBoxSchema:
+class VideoOcrObjectSchema:
     text = ""
     language = ""
     score = None
@@ -70,7 +70,7 @@ class VideoOcrBoundingBoxSchema:
         return cls(**json_data)
 
 
-class VideoOcrBoundingBoxScoreSchema:
+class VideoOcrObjectScoreSchema:
     type = ""
     value = None
     def __init__(self, type = "", value = None):
@@ -83,7 +83,7 @@ class VideoOcrBoundingBoxScoreSchema:
 
     
 
-class VideoOcrBoundingBoxVerticesSchema:
+class VideoOcrObjectVerticesSchema:
     xmin = 0
     ymin = 0
     xmax = 0

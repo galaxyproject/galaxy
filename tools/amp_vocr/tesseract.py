@@ -54,7 +54,7 @@ def main():
 	for num, img in enumerate(sorted(os.listdir(directory))): 
 		start_time =+ (.5*num) 
 		frameList = {"start": str(start_time),
-			"boundingBoxes": []
+			"objects": []
 			}
       
 		#Run OCR
@@ -77,10 +77,10 @@ def main():
 						"ymax": (result["top"][i] + result["height"][i])/output["media"]["resolution"]["height"]
 						}
 				 	}
-				frameList["boundingBoxes"].append(box)
+				frameList["objects"].append(box)
       
       		#save frame if it had text
-		if len(frameList["boundingBoxes"]) > 0:
+		if len(frameList["objects"]) > 0:
 			output["frames"].append(frameList)
   
 	with open(output_name, 'w') as outfile:
