@@ -121,7 +121,7 @@ export default {
         onOk() {
             let paramString = "";
             Object.entries(this.formData).forEach(([k, v]) => {
-                if (v != undefined) {
+                if (v) {
                     paramString += `, ${k}="${v}"`;
                 }
             });
