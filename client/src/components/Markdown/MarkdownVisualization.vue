@@ -71,20 +71,21 @@ export default {
             let settings = null;
             if (this.argumentPayload.settings && this.argumentPayload.settings.length > 0) {
                 settings = Object.assign({}, this.argumentPayload.settings);
-                if (this.argumentPayload.groups && this.argumentPayload.groups.length > 0) {
-                    settings.groups = {
-                        type: "repeat",
-                        title: "Columns",
-                        name: "groups",
-                        min: 1,
-                        inputs: this.argumentPayload.groups.map((x) => {
-                            if (x.type == "data_column") {
-                                x.is_workflow = true;
-                            }
-                            return x;
-                        }),
-                    };
-                }
+            }
+            if (this.argumentPayload.groups && this.argumentPayload.groups.length > 0) {
+                settings = settings || {};
+                settings.groups = {
+                    type: "repeat",
+                    title: "Columns",
+                    name: "groups",
+                    min: 1,
+                    inputs: this.argumentPayload.groups.map((x) => {
+                        if (x.type == "data_column") {
+                            x.is_workflow = true;
+                        }
+                        return x;
+                    }),
+                };
             }
             return settings;
         },
