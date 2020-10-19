@@ -8,8 +8,7 @@ drmaa
 statsd
 docker
 azure-storage==0.32.0
-# python-irodsclient==0.8.3
-python-irodsclient@https://github.com/kxk302/python-irodsclient/archive/master.zip
+python-irodsclient==0.8.4
 python-ldap==3.2.0
 python-pam
 galaxycloudrunner
