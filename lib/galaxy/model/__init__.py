@@ -2697,10 +2697,11 @@ class DatasetInstance:
         INVALID = 'invalid'
         OK = 'ok'
 
-    def __init__(self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, tool_version=None, extension=None,
-                 dbkey=None, metadata=None, history=None, dataset=None, deleted=False, designation=None,
-                 parent_id=None, validated_state='unknown', validated_state_message=None, visible=True, create_dataset=False, sa_session=None,
-                 extended_metadata=None, flush=True):
+    def __init__(self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, tool_version=None,
+                 extension=None, dbkey=None, metadata=None, history=None, dataset=None, deleted=False,
+                 designation=None, parent_id=None, validated_state='unknown', validated_state_message=None,
+                 visible=True, create_dataset=False, sa_session=None, extended_metadata=None, flush=True,
+                 creating_job_id=None):
         self.name = name or "Unnamed dataset"
         self.id = id
         self.info = info
@@ -2723,6 +2724,8 @@ class DatasetInstance:
         if not dataset and create_dataset:
             # Had to pass the sqlalchemy session in order to create a new dataset
             dataset = Dataset(state=Dataset.states.NEW)
+            if creating_job_id:
+                dataset.job_id = creating_job_id
             if flush:
                 sa_session.add(dataset)
                 sa_session.flush()

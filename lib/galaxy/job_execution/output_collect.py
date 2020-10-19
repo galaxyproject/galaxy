@@ -432,6 +432,7 @@ def collect_primary_datasets(job_context, output, input_ext):
                 info=info,
                 init_from=outdata,
                 dataset_attributes=new_primary_datasets_attributes,
+                creating_job_id=job_context.job.id if job_context and job_context.job else None
             )
             # Associate new dataset with job
             job_context.add_output_dataset_association(f'__new_primary_file_{name}|{designation}__', primary_data)
