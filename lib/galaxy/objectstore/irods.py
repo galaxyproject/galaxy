@@ -209,7 +209,13 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             raise Exception(IRODS_IMPORT_MESSAGE)
 
         self.home = "/" + self.zone + "/home/" + self.username
-        self._initialize()
+
+        if irods is None:
+            raise Exception(IRODS_IMPORT_MESSAGE)
+
+        self.session = iRODSSession(host=self.host, port=self.port, user=self.username, password=self.password, zone=self.zone)
+        # Set connection timeout
+        self.session.connection_timeout = self.timeout
         log.debug("irods __init__ %s", reload_timer)
 
     def shutdown(self):
@@ -219,29 +225,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             self.session.cleanup()
         except OSError:
             pass
-
-    def _initialize(self):
-        if irods is None:
-            raise Exception(IRODS_IMPORT_MESSAGE)
-
-        self.session = self._configure_connection(host=self.host, port=self.port, user=self.username, password=self.password, zone=self.zone, timeout=self.timeout, poolsize=self.poolsize)
-
-    def _configure_connection(self, host='localhost', port='1247', user='rods', password='rods', zone='tempZone', timeout=30, poolsize=1):
-        session = iRODSSession(host=host, port=port, user=user, password=password, zone=zone)
-        # Set connection timeout
-        session.connection_timeout = timeout
-        # Throws NetworkException if connection fails
-        try:
-            # We will create as many conections as poolsize.
-            # After creating the connection, release  it
-            # so it goes into the idle connection queue
-            for idx in range(poolsize):
-                conn = session.pool.get_connection()
-                session.pool.release_connection(conn)
-        except NetworkException as e:
-            log.error('Could not create iRODS session: ' + str(e))
-            raise
-        return session
 
     @classmethod
     def parse_xml(cls, config_xml):
