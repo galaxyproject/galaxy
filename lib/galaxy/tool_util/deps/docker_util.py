@@ -153,6 +153,7 @@ def build_docker_run_command(
         command_parts.extend(["--volumes-from", shlex.quote(str(volumes_from))])
     if memory:
         command_parts.extend(["-m", shlex.quote(memory)])
+    command_parts.extend(["--cpus", '${GALAXY_SLOTS:-1}'])
     if name:
         command_parts.extend(["--name", shlex.quote(name)])
     if working_directory:

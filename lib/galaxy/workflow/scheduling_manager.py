@@ -267,19 +267,18 @@ class WorkflowRequestMonitor(Monitors):
         self.workflow_scheduling_manager = workflow_scheduling_manager
         self._init_monitor_thread(name="WorkflowRequestMonitor.monitor_thread", target=self.__monitor, config=app.config)
         self.invocation_grabber = None
-        if self.workflow_scheduling_manager.handler_assignment_methods_configured:
-            self_handler_tags = set(self.app.job_config.self_handler_tags)
-            self_handler_tags.add(self.workflow_scheduling_manager.default_handler_id)
-            handler_assignment_method = ItemGrabber.get_grabbable_handler_assignment_method(self.workflow_scheduling_manager.handler_assignment_methods)
-            if handler_assignment_method:
-                self.invocation_grabber = ItemGrabber(
-                    app=app,
-                    grab_type='WorkflowInvocation',
-                    handler_assignment_method=handler_assignment_method,
-                    max_grab=self.workflow_scheduling_manager.handler_max_grab,
-                    self_handler_tags=self_handler_tags,
-                    handler_tags=self_handler_tags,
-                )
+        self_handler_tags = set(self.app.job_config.self_handler_tags)
+        self_handler_tags.add(self.workflow_scheduling_manager.default_handler_id)
+        handler_assignment_method = ItemGrabber.get_grabbable_handler_assignment_method(self.workflow_scheduling_manager.handler_assignment_methods)
+        if handler_assignment_method:
+            self.invocation_grabber = ItemGrabber(
+                app=app,
+                grab_type='WorkflowInvocation',
+                handler_assignment_method=handler_assignment_method,
+                max_grab=self.workflow_scheduling_manager.handler_max_grab,
+                self_handler_tags=self_handler_tags,
+                handler_tags=self_handler_tags,
+            )
 
     def __monitor(self):
         to_monitor = self.workflow_scheduling_manager.active_workflow_schedulers

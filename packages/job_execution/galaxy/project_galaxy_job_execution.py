@@ -1,4 +1,6 @@
-__version__ = '20.5.1.dev0'
+# -*- coding: utf-8 -*-
+
+__version__ = '20.9.1.dev0'
 
 PROJECT_NAME = "galaxy-job-execution"
 PROJECT_OWNER = PROJECT_USERAME = "galaxyproject"

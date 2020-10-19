@@ -99,6 +99,7 @@ export default {
     },
     methods: {
         onInsert(markdown) {
+            markdown = markdown.replace(")(", ", ");
             markdown = `${FENCE}galaxy\n${markdown}\n${FENCE}\n`;
             const textArea = this.$refs["text-area"];
             textArea.focus();

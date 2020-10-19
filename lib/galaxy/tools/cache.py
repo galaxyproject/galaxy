@@ -46,6 +46,10 @@ class ToolDocumentCache:
     def close(self):
         self._cache.close()
 
+    @property
+    def cache_file_is_writeable(self):
+        return os.access(self.cache_file, os.W_OK)
+
     def reopen_ro(self):
         self._cache = SqliteDict(self.cache_file, flag='r', encode=encoder, decode=decoder, autocommit=False)
         self.writeable_cache_file = None
@@ -56,12 +60,13 @@ class ToolDocumentCache:
             return None
         if tool_document.get('tool_cache_version') != CURRENT_TOOL_CACHE_VERSION:
             return None
-        for path, modtime in tool_document['paths_and_modtimes'].items():
-            if os.path.getmtime(path) != modtime:
-                return None
+        if self.cache_file_is_writeable:
+            for path, modtime in tool_document['paths_and_modtimes'].items():
+                if os.path.getmtime(path) != modtime:
+                    return None
         return tool_document
 
-    def make_writable(self):
+    def _make_writable(self):
         if not self.writeable_cache_file:
             self.writeable_cache_file = tempfile.NamedTemporaryFile(dir=self.cache_dir, suffix='cache.sqlite.tmp', delete=False)
             if os.path.exists(self.cache_file):
@@ -75,21 +80,23 @@ class ToolDocumentCache:
             self.reopen_ro()
 
     def set(self, config_file, tool_source):
-        self.make_writable()
-        to_persist = {
-            'document': tool_source.to_string(),
-            'macro_paths': tool_source.macro_paths,
-            'paths_and_modtimes': tool_source.paths_and_modtimes(),
-            'tool_cache_version': CURRENT_TOOL_CACHE_VERSION,
-        }
-        self._cache[config_file] = to_persist
+        if self.cache_file_is_writeable:
+            self._make_writable()
+            to_persist = {
+                'document': tool_source.to_string(),
+                'macro_paths': tool_source.macro_paths,
+                'paths_and_modtimes': tool_source.paths_and_modtimes(),
+                'tool_cache_version': CURRENT_TOOL_CACHE_VERSION,
+            }
+            self._cache[config_file] = to_persist
 
     def delete(self, config_file):
-        self.make_writable()
-        try:
-            del self._cache[config_file]
-        except KeyError:
-            pass
+        if self.cache_file_is_writeable:
+            self._make_writable()
+            try:
+                del self._cache[config_file]
+            except KeyError:
+                pass
 
     def __del__(self):
         if self.writeable_cache_file:
