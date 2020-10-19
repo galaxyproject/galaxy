@@ -10,4 +10,3 @@ def exit_if_output_not_ready(output):
     # so the HMGM job runner can requeue the step, and process will continue to wait for jira to be completed
     if not os.path.exists(output) or os.stat(output).st_size == 0:
         exit(1)
-
