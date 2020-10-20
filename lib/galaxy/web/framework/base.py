@@ -493,10 +493,10 @@ def send_file(start_response, trans, body):
     if base:
         trans.response.headers['X-Accel-Redirect'] = \
             base + os.path.abspath(body.name)
-        body = [""]
+        body = [b""]
     elif apache_xsendfile:
         trans.response.headers['X-Sendfile'] = os.path.abspath(body.name)
-        body = [""]
+        body = [b""]
     elif trans.request.method == 'OPTIONS':
         trans.response.headers['Access-Control-Max-Age'] = 1728000
         trans.response.headers['Content-Type'] = 'text/plain charset=UTF-8'

@@ -1,3 +1,4 @@
+include *.rst *.txt LICENSE
 recursive-include lib/galaxy/web/framework/templates *.mako
 recursive-include lib/galaxy/web/framework/static *
 recursive-include lib/galaxy/tools/bundled *
