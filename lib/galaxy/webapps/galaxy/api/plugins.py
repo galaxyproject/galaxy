@@ -32,7 +32,7 @@ class PluginsController(BaseAPIController):
             hda = self.hda_manager.get_accessible(self.decode_id(dataset_id), trans.user)
             return registry.get_visualizations(trans, hda)
         else:
-            return registry.get_plugins()
+            return registry.get_plugins(embeddable=True)
 
     @expose_api
     def show(self, trans, id, **kwargs):

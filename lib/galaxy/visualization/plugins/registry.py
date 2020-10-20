@@ -224,9 +224,12 @@ class VisualizationsRegistry:
             raise ObjectNotFound('Unknown or invalid visualization: ' + key)
         return self.plugins[key]
 
-    def get_plugins(self):
+    def get_plugins(self, embeddable=None):
         result = []
         for plugin in self.plugins.values():
+            if embeddable is not None:
+                if embeddable != plugin.config.get('embeddable'):
+                    continue
             result.append(plugin.to_dict())
         return sorted(result, key=lambda k: k.get('html'))
 

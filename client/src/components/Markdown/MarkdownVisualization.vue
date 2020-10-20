@@ -19,7 +19,7 @@
             @ok="onOk"
             @cancel="onCancel"
         >
-            <Form :inputs="formInputs" @onChange="onChange" class="form-body" />
+            <Form :inputs="formInputs" @onChange="onChange" />
         </b-modal>
     </span>
 </template>

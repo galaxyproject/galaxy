@@ -2,6 +2,7 @@ import logging
 
 
 import galaxy.model
+from galaxy.util import asbool
 from galaxy.util.xml_macros import load
 
 log = logging.getLogger(__name__)
@@ -67,13 +68,10 @@ class VisualizationsConfigParser:
             log.info('Visualizations plugin disabled: %s. Skipping...', returned['name'])
             return None
 
-        # record the embeddable flag - defaults to false
-        #   this is a design by contract promise that the visualization can be rendered inside another page
-        #   often by rendering only a DOM fragment. Since this is an advanced feature that requires a bit more
-        #   work from the creator's side - it defaults to False
-        returned['embeddable'] = False
+        # record the embeddable flag - defaults to true
+        returned['embeddable'] = True
         if 'embeddable' in xml_tree.attrib:
-            returned['embeddable'] = xml_tree.attrib.get('embeddable', False) == 'true'
+            returned['embeddable'] = asbool(xml_tree.attrib.get('embeddable'))
 
         # a (for now) text description of what the visualization does
         description = xml_tree.find('description')
