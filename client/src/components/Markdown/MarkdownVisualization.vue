@@ -25,9 +25,13 @@
 </template>
 
 <script>
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
 import MarkdownSelector from "./MarkdownSelector";
 import DataDialog from "components/DataDialog/DataDialog";
 import Form from "components/Form/Form";
+
+Vue.use(BootstrapVue);
 
 export default {
     components: {
@@ -70,11 +74,11 @@ export default {
         formInputs() {
             let settings = null;
             if (this.argumentPayload.settings && this.argumentPayload.settings.length > 0) {
-                settings = Object.assign({}, this.argumentPayload.settings);
+                settings = this.argumentPayload.settings.slice();
             }
             if (this.argumentPayload.groups && this.argumentPayload.groups.length > 0) {
-                settings = settings || {};
-                settings.groups = {
+                settings = settings || [];
+                settings.push({
                     type: "repeat",
                     title: "Columns",
                     name: "groups",
@@ -85,7 +89,7 @@ export default {
                         }
                         return x;
                     }),
-                };
+                });
             }
             return settings;
         },
