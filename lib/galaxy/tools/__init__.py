@@ -1654,7 +1654,7 @@ class Tool(Dictifiable):
             if len(rval) == 4:
                 execution_slice.datasets_to_persist = rval[2]
                 execution_slice.history = rval[3]
-        except (webob.exc.HTTPFound, exceptions.MessageException) as e:
+        except webob.exc.HTTPFound as e:
             # if it's a webob redirect exception, pass it up the stack
             raise e
         except ToolInputsNotReadyException as e:
