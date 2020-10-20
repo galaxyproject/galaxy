@@ -206,13 +206,13 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         k8s_spec_template = {
             "metadata": {
                 "labels": {
-                    "app.kubernetes.io/name": ajs.job_wrapper.tool.old_id,
+                    "app.kubernetes.io/name": re.sub("[^-A-Za-z0-9_.]", "-", ajs.job_wrapper.tool.old_id),
                     "app.kubernetes.io/instance": self.__produce_k8s_job_prefix(),
-                    "app.kubernetes.io/version": ajs.job_wrapper.tool.version,
+                    "app.kubernetes.io/version": re.sub("[^-A-Za-z0-9_.]", "-", ajs.job_wrapper.tool.version),
                     "app.kubernetes.io/component": "tool",
                     "app.kubernetes.io/part-of": "galaxy",
                     "app.kubernetes.io/managed-by": "galaxy",
-                    "app.galaxyproject.org/job_id": ajs.job_wrapper.get_id_tag(),
+                    "app.galaxyproject.org/job_id": re.sub("[^-A-Za-z0-9_.]", "-", ajs.job_wrapper.get_id_tag()),
                     "app.galaxyproject.org/instance": self._galaxy_instance_id or "",
                     "app.galaxyproject.org/handler": self.app.config.server_name,
                     "app.galaxyproject.org/destination": ajs.job_wrapper.job_destination.id,
