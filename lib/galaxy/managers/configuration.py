@@ -54,6 +54,7 @@ class ConfigSerializer(base.ModelSerializer):
             'screencasts_url'                   : _use_config,
             'citation_url'                      : _use_config,
             'support_url'                       : _use_config,
+            'quota_url'                         : _use_config,
             'helpsite_url'                      : _use_config,
             'lims_doc_url'                      : _defaults_to("https://usegalaxy.org/u/rkchak/p/sts"),
             'default_locale'                    : _use_config,

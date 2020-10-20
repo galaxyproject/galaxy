@@ -20,6 +20,7 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
         options: {
             warnAtPercent: 85,
             errorAtPercent: 100,
+            quotaUrl: "https://galaxyproject.org/support/account-quotas/",
         },
 
         /** Set up, accept options, and bind events */
@@ -133,10 +134,11 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
                 ? `title="Using ${data.nice_total_disk_usage}. Click for details."`
                 : "";
             const using = `${_l("Using")} ${data.quota_percent}%`;
+            const quotaUrl = this.options.quotaUrl;
             return `<div id="quota-meter" class="quota-meter progress">
     <div class="progress-bar" style="width: ${data.quota_percent}%"></div>
     <div class="quota-meter-text" data-placement="left" ${title}>
-        <a href="https://galaxyproject.org/support/account-quotas/" target="_blank">${using}</a>
+        <a href="${quotaUrl}" target="_blank">${using}</a>
     </div>
 </div>`;
         },
