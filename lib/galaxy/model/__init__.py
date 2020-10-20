@@ -4687,6 +4687,13 @@ class UCI:
 
 
 class StoredWorkflow(HasTags, Dictifiable, RepresentById):
+    """
+    StoredWorkflow represents the root node of a tree of objects that compose a workflow, including workflow revisions, steps, and subworkflows.
+    It is responsible for the metadata associated with a workflow including owner, name, published, and create/update time.
+
+    Each time a workflow is modified a revision is created, represented by a new :class:`galaxy.model.Workflow` instance.
+    See :class:`galaxy.model.Workflow` for more information
+    """
 
     dict_collection_visible_keys = ['id', 'name', 'create_time', 'update_time', 'published', 'deleted', 'hidden']
     dict_element_visible_keys = ['id', 'name', 'create_time', 'update_time', 'published', 'deleted', 'hidden']
@@ -4732,6 +4739,12 @@ class StoredWorkflow(HasTags, Dictifiable, RepresentById):
 
 
 class Workflow(Dictifiable, RepresentById):
+    """
+    Workflow represents a revision of a :class:`galaxy.model.StoredWorkflow`.
+    A new instance is created for each workflow revision and provides a common parent for the workflow steps.
+
+    See :class:`galaxy.model.WorkflowStep` for more information
+    """
 
     dict_collection_visible_keys = ['name', 'has_cycles', 'has_errors']
     dict_element_visible_keys = ['name', 'has_cycles', 'has_errors']
@@ -4854,6 +4867,11 @@ class Workflow(Dictifiable, RepresentById):
 
 
 class WorkflowStep(RepresentById):
+    """
+    WorkflowStep represents a tool or subworkflow, its inputs, annotations, and any outputs that are flagged as workflow outputs.
+
+    See :class:`galaxy.model.WorkflowStepInput` and :class:`galaxy.model.WorkflowStepConnection` for more information.
+    """
 
     def __init__(self):
         self.id = None
