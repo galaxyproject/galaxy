@@ -23,14 +23,16 @@ BACKENDS = {
     'google': 'social_core.backends.google_openidconnect.GoogleOpenIdConnect',
     'globus': 'social_core.backends.globus.GlobusOpenIdConnect',
     'elixir': 'social_core.backends.elixir.ElixirOpenIdConnect',
-    'okta': 'social_core.backends.okta_openidconnect.OktaOpenIdConnect'
+    'okta': 'social_core.backends.okta_openidconnect.OktaOpenIdConnect',
+    'azure': 'social_core.backends.azuread_tenant.AzureADTenantOAuth2'
 }
 
 BACKENDS_NAME = {
     'google': 'google-openidconnect',
     'globus': 'globus',
     'elixir': 'elixir',
-    'okta': 'okta-openidconnect'
+    'okta': 'okta-openidconnect',
+    'azure': 'azuread-tenant-oauth2'
 }
 
 AUTH_PIPELINE = (

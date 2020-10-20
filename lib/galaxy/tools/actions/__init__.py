@@ -85,15 +85,15 @@ class DefaultToolAction:
                     return None
                 if formats is None:
                     formats = input.formats
-                if not data.datatype.matches_any(formats):
-                    # Need to refresh in case this conversion just took place, i.e. input above in tool performed the same conversion
-                    trans.sa_session.refresh(data)
-                    target_ext, converted_dataset = data.find_conversion_destination(formats)
-                    if target_ext:
-                        if converted_dataset:
-                            data = converted_dataset
-                        else:
-                            data = data.get_converted_dataset(trans, target_ext, target_context=parent, history=history)
+
+                # Need to refresh in case this conversion just took place, i.e. input above in tool performed the same conversion
+                trans.sa_session.refresh(data)
+                direct_match, target_ext, converted_dataset = data.find_conversion_destination(formats)
+                if not direct_match and target_ext:
+                    if converted_dataset:
+                        data = converted_dataset
+                    else:
+                        data = data.get_converted_dataset(trans, target_ext, target_context=parent, history=history)
 
                 input_name = prefix + input.name
                 # Checked security of whole collection all at once if mapping over this input, else

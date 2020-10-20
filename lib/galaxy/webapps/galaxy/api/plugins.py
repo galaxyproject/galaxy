@@ -40,10 +40,10 @@ class PluginsController(BaseAPIController):
         GET /api/plugins/{id}:
         """
         registry = self._get_registry(trans)
-        result = {}
         history_id = kwargs.get("history_id")
         if history_id is not None:
             history = self.history_manager.get_owned(trans.security.decode_id(history_id), trans.user, current_history=trans.history)
+            result = {}
             result["hdas"] = []
             for hda in history.datasets:
                 if registry.get_visualization(trans, id, hda):
@@ -51,6 +51,8 @@ class PluginsController(BaseAPIController):
                         "id": trans.security.encode_id(hda.id),
                         "name": hda.name
                     })
+        else:
+            result = registry.get_plugin(id).to_dict()
         return result
 
     def _get_registry(self, trans):
