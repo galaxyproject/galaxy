@@ -3,7 +3,7 @@ Manager and Serializer for libraries.
 """
 import logging
 
-from sqlalchemy import false, not_, or_, true
+from sqlalchemy import and_, false, not_, or_, true
 from sqlalchemy.orm.exc import MultipleResultsFound
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -292,3 +292,18 @@ class LibraryManager:
         Return true if lib is public.
         """
         return trans.app.security_agent.library_is_public(library)
+
+
+def get_containing_library_from_library_dataset(trans, library_dataset):
+    """Given a library_dataset, get the containing library"""
+    folder = library_dataset.folder
+    while folder.parent:
+        folder = folder.parent
+    # We have folder set to the library's root folder, which has the same name as the library
+    for library in trans.sa_session.query(trans.model.Library).filter(
+        and_(trans.model.Library.table.c.deleted == false(),
+            trans.model.Library.table.c.name == folder.name)):
+        # Just to double-check
+        if library.root_folder == folder:
+            return library
+    return None
