@@ -18,7 +18,7 @@ import Circster from "viz/circster";
 export { PhylovizView as phyloviz } from "viz/phyloviz";
 export { SweepsterVisualization, SweepsterVisualizationView } from "viz/sweepster";
 import GalaxyLibrary from "galaxy.library";
-export { createTabularDatasetChunkedView } from "mvc/dataset/data";
+export { createTabularDatasetChunkedView, createJupyterNotebookView } from "mvc/dataset/data";
 import { HistoryCollection } from "mvc/history/history-model";
 export { History } from "mvc/history/history-model";
 export { HistoryContents } from "mvc/history/history-contents";

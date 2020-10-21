@@ -5,6 +5,8 @@ import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 import mod_icon_btn from "mvc/ui/icon-button";
 import { getGalaxyInstance } from "app";
+import createRenderer from 'ipynb2html';
+import { Document } from 'nodom';
 
 /**
  * Dataset metedata.
@@ -611,4 +613,15 @@ export var createTabularDatasetChunkedView = (options) => {
     }
 
     return view;
+};
+
+export var createJupyterNotebookView = (options) => {
+    // const renderNotebook = ipynb.createRenderer(new Document())
+    var parent_elt = options.parent_elt;
+    $.getJSON(`${getAppRoot()}dataset/display?dataset_id=${options.id}`).success((data) => {
+        console.log("Heya!");
+        const render = new createRenderer(new Document());
+        console.log(render(data).outerHTML);
+        // parent_elt.append(render(data).outerHTML);
+    });
 };

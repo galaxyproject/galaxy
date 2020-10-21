@@ -164,6 +164,9 @@ class Ipynb(Json):
         trust = getattr(config, 'trust_jupyter_notebook_conversion', False)
         if trust:
             return self._display_data_trusted(trans, dataset, preview=preview, filename=filename, to_ext=to_ext, **kwd)
+        elif preview:
+            return trans.fill_template("/dataset/tabular_chunked.mako",
+                                       dataset=dataset)
         else:
             return super().display_data(trans, dataset, preview=preview, filename=filename, to_ext=to_ext, **kwd)
 
