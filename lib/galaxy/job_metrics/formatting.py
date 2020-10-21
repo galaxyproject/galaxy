@@ -10,9 +10,11 @@ class JobMetricFormatter:
 
 def seconds_to_str(value):
     """Convert seconds to a simple simple string describing the amount of time."""
+    mins, secs = divmod(value, 60)
+    hours, mins = divmod(mins, 60)
     if value < 60:
-        return "%s seconds" % round(value, 2)
+        return "%s seconds" %  secs
     elif value < 3600:
-        return "%s minutes" % round(value / 60, 2)
+        return "%s minutes" % mins
     else:
-        return "{} hours and {} minutes".format(value // 3600, round((value % 3600) / 60, 2))
+        return "%s hours and %s minutes" % (hours, mins)
