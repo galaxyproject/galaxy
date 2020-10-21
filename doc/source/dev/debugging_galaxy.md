@@ -5,7 +5,7 @@
 
 The following instructions assume that you have cloned your Galaxy fork into the `~/galaxy` directory and have created a VS Code workspace per instructions [here](./debugging_tests.md)
 
-1. Download this [ini](https://raw.githubusercontent.com/galaxyproject/galaxy/release_17.09/config/galaxy.ini.sample) file and and save it as ~/galaxy/config/galaxy.ini.old
+1. Download this [ini](https://gist.github.com/kxk302/1b996e3359513e1f40d91ffbc82559c8) file and and save it as ~/galaxy/config/galaxy.ini.old
 2. Add the following code snippet to `~/galaxy/.vscode/launch.json` (create the file if it does not already exist)
     ``` 
     {
