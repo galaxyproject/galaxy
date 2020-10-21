@@ -258,7 +258,7 @@ RadioButton.View = Base.extend({
 
     /** Template for a single option */
     _templateOption: function (pair) {
-        var $el = $("<label/>").addClass("btn btn-secondary m-0").attr("role", "button");
+        var $el = $("<label/>").attr("role", "button");
         if (pair.icon) {
             $el.append(
                 $("<i/>")
@@ -284,7 +284,7 @@ RadioButton.View = Base.extend({
 
     /** Main template function */
     _template: function () {
-        return $("<div/>").addClass("btn-group ui-radiobutton");
+        return $("<div/>").addClass("ui-radiobutton");
     },
 });
 

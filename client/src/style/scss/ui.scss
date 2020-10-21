@@ -282,6 +282,17 @@ $ui-margin-horizontal-large: $margin-v * 2;
     height: 100px !important;
 }
 
+.ui-radiobutton {
+    @extend .btn-group;
+    label {
+        @extend .btn;
+        border-color: $border-color;
+    }
+    label.active {
+        @extend .alert-info;
+    }
+}
+
 .ui-options {
     .ui-options-list {
         @extend .ui-input;
