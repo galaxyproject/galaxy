@@ -5,6 +5,7 @@ import logging
 
 from galaxy import exceptions
 from galaxy.managers import hdas, histories
+from galaxy.util import asbool
 from galaxy.web import expose_api
 from galaxy.webapps.base.controller import BaseAPIController
 
@@ -32,7 +33,7 @@ class PluginsController(BaseAPIController):
             hda = self.hda_manager.get_accessible(self.decode_id(dataset_id), trans.user)
             return registry.get_visualizations(trans, hda)
         else:
-            embeddable = kwargs.get("embeddable")
+            embeddable = asbool(kwargs.get("embeddable"))
             return registry.get_plugins(embeddable=embeddable)
 
     @expose_api
