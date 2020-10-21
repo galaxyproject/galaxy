@@ -192,7 +192,7 @@ class JobHandlerQueue(Monitors):
 
     def __check_jobs_at_startup(self):
         """
-        Checks all jobs that are in the 'new', 'queued' or 'running' state in
+        Checks all jobs that are in the 'new', 'queued', 'running', or 'stopped' state in
         the database and requeues or cleans up as necessary.  Only run as the
         job handler starts.
         In case the activation is enforced it will filter out the jobs of inactive users.
