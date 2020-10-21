@@ -753,33 +753,6 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         return {'message': message, 'inputs': inputs}
 
     @expose_api
-    def get_communication(self, trans, id, payload={}, **kwd):
-        """
-        Build communication server inputs.
-        """
-        user = self._get_user(trans, id)
-        return {'inputs': [{'name': 'enable',
-                            'type': 'boolean',
-                            'label': 'Enable communication',
-                            'value': user.preferences.get('communication_server', 'false')}]}
-
-    @expose_api
-    def set_communication(self, trans, id, payload={}, **kwd):
-        """
-        Allows the user to activate/deactivate the communication server.
-        """
-        user = self._get_user(trans, id)
-        enable = payload.get('enable', 'false')
-        if enable == 'true':
-            message = 'Your communication server has been activated.'
-        else:
-            message = 'Your communication server has been disabled.'
-        user.preferences['communication_server'] = enable
-        trans.sa_session.add(user)
-        trans.sa_session.flush()
-        return {'message': message}
-
-    @expose_api
     def get_custom_builds(self, trans, id, payload={}, **kwd):
         """
         GET /api/users/{id}/custom_builds
