@@ -47,7 +47,6 @@
     "markdown-it": "^11.0.0",
     "marked": "^1.2.0",
     "moment": "2.26.0",
-    "nodom": "^2.4.0",
     "notebookjs": "^0.5.1",
     "popper.js": "^1.16.1",
     "pyre-to-regexp": "^0.0.5",
