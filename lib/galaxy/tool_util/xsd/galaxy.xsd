@@ -5906,8 +5906,8 @@ is the only supported options.</xs:documentation>
   </xs:simpleType>
 
   <xs:simpleType name="MacroImportType">
-    <xs:restriction base="xs:anyURI">
-      <xs:pattern value="([a-zA-Z0-9_\-/\.])+.xml"/>
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[a-zA-Z0-9_\-\.]+.xml"/>
     </xs:restriction>
   </xs:simpleType>
 
