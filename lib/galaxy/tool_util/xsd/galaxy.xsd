@@ -220,9 +220,66 @@ have a macro system to address this problem.
 For more information, see [planemo documentation](https://planemo.readthedocs.io/en/latest/writing_advanced.html#macros-reusable-elements)</xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:element name="import" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
-      <xs:element name="token" type="xs:anyType" minOccurs="0" maxOccurs="unbounded"/>
-      <xs:element name="xml" type="xs:anyType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="import" type="MacroImportType" minOccurs="0" maxOccurs="unbounded">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[
+The ``import`` element allows specifying an XML file containing shared macro definitions that can then
+be reused by all the tools contained in the same directory/repository.
+
+Example:
+````
+<macros>
+    <import>macros.xml</import>
+</macros>
+````]]>
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="token" type="xs:anyType" minOccurs="0" maxOccurs="unbounded">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[
+The ``token`` element defines a value, like a constant, that can then be replaced anywhere in any tool importing the token.
+
+Definition example:
+````
+<macros>
+    <token name="@TOOL_VERSION@">1.0.0</token>
+</macros>
+````
+
+Usage example:
+````
+<requirements>
+    <requirement type="package" version="@TOOL_VERSION@">mypackage</requirement>
+</requirements>
+````]]>
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="xml" type="xs:anyType" minOccurs="0" maxOccurs="unbounded">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">
+            <![CDATA[
+The ``xml`` element, inside macros, allows defining a named XML fragment that can be reused (expanded) anywhere in the tool or tools that use the macro.
+
+Definition example:
+````
+<macros>
+    <xml name="citations">
+        <citations>
+            ....
+        </citations>
+    </xml>
+</macros>
+````
+
+Usage example:
+````
+<expand macro="citations" />
+````
+       ]]></xs:documentation>
+        </xs:annotation>
+      </xs:element>
     </xs:sequence>
   </xs:complexType>
 
@@ -5845,6 +5902,12 @@ is the only supported options.</xs:documentation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="bio.tools"/>
       <!--xs:enumeration value="whatelse"/-->
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="MacroImportType">
+    <xs:restriction base="xs:anyURI">
+      <xs:pattern value="([a-zA-Z0-9_\-/\.])+.xml"/>
     </xs:restriction>
   </xs:simpleType>
 
