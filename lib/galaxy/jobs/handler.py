@@ -200,7 +200,8 @@ class JobHandlerQueue(Monitors):
         jobs_at_startup = []
         if self.track_jobs_in_database:
             in_list = (model.Job.states.QUEUED,
-                       model.Job.states.RUNNING)
+                       model.Job.states.RUNNING,
+                       model.Job.states.STOPPED)
         else:
             in_list = (model.Job.states.NEW,
                        model.Job.states.QUEUED,
@@ -890,6 +891,20 @@ class JobHandlerStopQueue(Monitors):
             # Sleep
             self._monitor_sleep(1)
 
+    def __delete(self, job, error_msg):
+        final_state = job.states.DELETED
+        if error_msg is not None:
+            final_state = job.states.ERROR
+            job.info = error_msg
+        job.set_final_state(final_state)
+        self.sa_session.add(job)
+        self.sa_session.flush()
+
+    def __stop(self, job):
+        job.set_state(job.states.STOPPED)
+        self.sa_session.add(job)
+        self.sa_session.flush()
+
     def monitor_step(self):
         """
         Called repeatedly by `monitor` to stop jobs.
@@ -901,7 +916,8 @@ class JobHandlerStopQueue(Monitors):
             self.sa_session.expunge_all()
             # Fetch all new jobs
             newly_deleted_jobs = self.sa_session.query(model.Job).enable_eagerloads(False) \
-                                     .filter((model.Job.state == model.Job.states.DELETED_NEW) &
+                                     .filter((model.Job.state.in_((model.Job.states.DELETED_NEW,
+                                                                   model.Job.states.STOP))) &
                                              (model.Job.handler == self.app.config.server_name)).all()
             for job in newly_deleted_jobs:
                 # job.stderr is always a string (job.job_stderr + job.tool_stderr, possibly `''`),
@@ -923,18 +939,17 @@ class JobHandlerStopQueue(Monitors):
         for job, error_msg in jobs_to_check:
             if (job.state not in
                     (job.states.DELETED_NEW,
-                     job.states.DELETED) and
+                     job.states.DELETED,
+                     job.states.STOP,
+                     job.states.STOPPED) and
                     job.finished):
                 # terminated before it got here
                 log.debug('Job %s already finished, not deleting or stopping', job.id)
                 continue
-            final_state = job.states.DELETED
-            if error_msg is not None:
-                final_state = job.states.ERROR
-                job.info = error_msg
-            job.set_final_state(final_state)
-            self.sa_session.add(job)
-            self.sa_session.flush()
+            if job.state == job.states.DELETED_NEW:
+                self.__delete(job, error_msg)
+            elif job.state == job.states.STOP:
+                self.__stop(job)
             if job.job_runner_name is not None:
                 # tell the dispatcher to stop the job
                 job_wrapper = JobWrapper(job, self, use_persisted_destination=True)

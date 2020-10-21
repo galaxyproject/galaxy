@@ -233,7 +233,7 @@ class InteractiveToolManager:
             job = entry_point.job
             if not job.finished:
                 log.debug('Stopping Job: %s for InteractiveToolEntryPoint: %s', job, entry_point)
-                job.mark_deleted(trans.app.config.track_jobs_in_database)
+                job.mark_stopped(trans.app.config.track_jobs_in_database)
                 # This self.job_manager.stop(job) does nothing without changing job.state, manually or e.g. with .mark_deleted()
                 self.job_manager.stop(job)
                 trans.sa_session.add(job)
