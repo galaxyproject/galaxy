@@ -548,7 +548,10 @@ upload:
     rule_source_content: 'textarea.upload-rule-source-content'
     rule_select_data_type: '.rule-data-type'
     rule_select_input_type: '.rule-select-type'
-    rule_dataset_selector: '.upload-rule-option .dataset-selector'
+    rule_dataset_selector:
+      selector: '.selection-dialog-modal'
+    rule_dataset_selector_row:
+      selector: '.selection-dialog-modal [aria-rowindex="${rowindex}"]'
 
 rule_builder:
   selectors:
