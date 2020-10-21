@@ -143,9 +143,13 @@ function searchInput(parentNode, options) {
                 '"></a>',
             ].join("")
         )
-            .tooltip({ placement: "top", trigger: "hover"})
+            .tooltip({ placement: "top", trigger: "hover" })
             .click(function () {
-                $('[data-toggle="advSearchPopover"]').popover({trigger:'focus', html: true, container: ".history-right-panel" });
+                $('[data-toggle="advSearchPopover"]').popover({
+                    trigger: "focus",
+                    html: true,
+                    container: ".history-right-panel",
+                });
             });
     }
 
