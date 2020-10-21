@@ -425,8 +425,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             if 'failed' in job.obj['status']:
                 failed = job.obj['status']['failed']
 
+            job_persisted_state = job_state.job_wrapper.get_state()
+
             # This assumes jobs dependent on a single pod, single container
-            if succeeded > 0:
+            if succeeded > 0 or job_state == model.Job.states.STOPPED:
                 job_state.running = False
                 self.mark_as_finished(job_state)
                 return None
@@ -435,7 +437,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                     job_state.running = True
                     job_state.job_wrapper.change_state(model.Job.states.RUNNING)
                 return job_state
-            elif job_state.job_wrapper.get_job().state == model.Job.states.DELETED:
+            elif job_persisted_state == model.Job.states.DELETED:
                 # Job has been deleted via stop_job and job has not been deleted,
                 # remove from watched_jobs by returning `None`
                 if job_state.job_wrapper.cleanup_job in ("always", "onsuccess"):
@@ -538,9 +540,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         ajs.command_line = job.command_line
         ajs.job_wrapper = job_wrapper
         ajs.job_destination = job_wrapper.job_destination
-        if job.state == model.Job.states.RUNNING:
-            log.debug("({}/{}) is still in running state, adding to the runner monitor queue".format(
-                job.id, job.job_runner_external_id))
+        if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
+            log.debug("({}/{}) is still in {} state, adding to the runner monitor queue".format(
+                job.id, job.job_runner_external_id, job.state))
             ajs.old_state = model.Job.states.RUNNING
             ajs.running = True
             self.monitor_queue.put(ajs)
