@@ -18,10 +18,10 @@
                 </b-button>
             </div>
             <div class="py-2" v-else-if="queryTooShort">
-                <b-badge class="w-100">Search string too short!</b-badge>
+                <b-badge class="alert-danger w-100">Search string too short!</b-badge>
             </div>
             <div class="py-2" v-else-if="queryFinished">
-                <b-badge class="w-100">No results found!</b-badge>
+                <b-badge class="alert-danger w-100">No results found!</b-badge>
             </div>
         </div>
         <div class="unified-panel-body">
