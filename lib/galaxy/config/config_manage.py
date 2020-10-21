@@ -304,7 +304,7 @@ OPTION_ACTIONS = {
     'force_beta_workflow_scheduled_min_steps': _DeprecatedAction(),
     'history_local_serial_workflow_scheduling': _ProductionPerformance(),
     'allow_library_path_paste': _RenameAction("allow_path_paste"),
-    'trust_ipython_notebook_conversion': _RenameAction("trust_jupyter_notebook_conversion"),
+    'trust_ipython_notebook_conversion': _DeprecatedAndDroppedAction("trust_jupyter_notebook_conversion"),
     'enable_beta_tool_command_isolation': _DeprecatedAndDroppedAction(),
     'enable_beta_ts_api_install': _DeprecatedAndDroppedAction(),
     'single_user': _ProductionUnsafe(True),
