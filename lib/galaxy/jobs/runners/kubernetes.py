@@ -597,7 +597,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             return False
 
         pod = Pod(self._pykube_api, pods.response['items'][0])
-        is_unschedulable = bool(len([c in pod.obj['status']['conditions'] if c.get("reason") == "Unschedulable"]))
+        is_unschedulable = bool(len([c for c in pod.obj['status']['conditions'] if c.get("reason") == "Unschedulable"]))
         if pod.obj['status']['phase'] == "Pending" and is_unschedulable:
             return True
 
