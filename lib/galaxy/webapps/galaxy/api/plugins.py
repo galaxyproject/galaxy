@@ -43,9 +43,8 @@ class PluginsController(BaseAPIController):
         history_id = kwargs.get("history_id")
         if history_id is not None:
             history = self.history_manager.get_owned(trans.security.decode_id(history_id), trans.user, current_history=trans.history)
-            result = {}
-            result["hdas"] = []
-            for hda in history.datasets:
+            result = {"hdas": []}
+            for hda in history.contents_iter(types=["dataset"], deleted=False, visible=True):
                 if registry.get_visualization(trans, id, hda):
                     result["hdas"].append({
                         "id": trans.security.encode_id(hda.id),
