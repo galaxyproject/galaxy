@@ -676,21 +676,23 @@ HistoryViewEdit.prototype.templates = (() => {
     var foundTemplate = BASE_MVC.wrapTemplate(
         [
             _l("Found"),
-            " <%- view.views.length %>, ",
+            " <%- view.views.length %>",
 
             "<% if( history.contents_active.deleted ){ %>",
+            ", ",
             "<% if( view.model.contents.includeDeleted ){ %>",
             '<a class="toggle-deleted-link" href="javascript:void(0);">',
             _l("hide deleted"),
-            "</a>, ",
+            "</a>",
             "<% } else { %>",
             '<a class="toggle-deleted-link" href="javascript:void(0);">',
             _l("show deleted"),
-            "</a>, ",
+            "</a>",
             "<% } %>",
             "<% } %>",
 
             "<% if( history.contents_active.hidden ){ %>",
+            ", ",
             "<% if( view.model.contents.includeHidden ){ %>",
             '<a class="toggle-hidden-link" href="javascript:void(0);">',
             _l("hide hidden"),
