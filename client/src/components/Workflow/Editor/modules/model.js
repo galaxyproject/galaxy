@@ -59,6 +59,7 @@ export function fromSimple(workflow, data, appendData = false) {
 
 export function toSimple(workflow) {
     const nodes = {};
+    const canvasZoom = workflow.canvasManager.canvasZoom;
     _rectifyOutputs(workflow);
     Object.values(workflow.nodes).forEach((node) => {
         const input_connections = {};
@@ -102,7 +103,7 @@ export function toSimple(workflow) {
             tool_state: node.tool_state,
             errors: node.errors,
             input_connections: input_connections,
-            position: node.element.getBoundingClientRect(),
+            position: _scaledBoundingClientRect(node.element, canvasZoom),
             annotation: node.annotation,
             post_job_actions: node.postJobActions,
             uuid: node.uuid,
@@ -113,6 +114,13 @@ export function toSimple(workflow) {
     });
     const report = workflow.report;
     return { steps: nodes, report: report };
+}
+
+function _scaledBoundingClientRect(element, canvasZoom) {
+    const rect = element.getBoundingClientRect();
+    rect.x /= canvasZoom;
+    rect.y /= canvasZoom;
+    return rect;
 }
 
 function _rectifyOutputs(workflow) {
