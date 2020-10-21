@@ -337,7 +337,7 @@ export default {
         },
         async getVisualizations() {
             axios
-                .get(`${getAppRoot()}api/plugins`)
+                .get(`${getAppRoot()}api/plugins?embeddable=True`)
                 .then(({ data }) => {
                     this.visualizationSection.elems = data.map((x) => {
                         return {

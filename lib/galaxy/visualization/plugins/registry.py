@@ -11,6 +11,7 @@ from collections import OrderedDict
 
 from galaxy.exceptions import ObjectNotFound
 from galaxy.util import (
+    asbool,
     config_directories_from_setting,
     parse_xml
 )
@@ -228,7 +229,7 @@ class VisualizationsRegistry:
         result = []
         for plugin in self.plugins.values():
             if embeddable is not None:
-                if embeddable != plugin.config.get('embeddable'):
+                if asbool(embeddable) != plugin.config.get('embeddable'):
                     continue
             result.append(plugin.to_dict())
         return sorted(result, key=lambda k: k.get('html'))
