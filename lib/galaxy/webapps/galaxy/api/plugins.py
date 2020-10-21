@@ -45,7 +45,6 @@ class PluginsController(BaseAPIController):
             history = self.history_manager.get_owned(trans.security.decode_id(history_id), trans.user, current_history=trans.history)
             result = {}
             result["hdas"] = []
-
             for hda in history.datasets:
                 if registry.get_visualization(trans, id, hda) and not hda.purged and not hda.deleted:
                     result["hdas"].append({
