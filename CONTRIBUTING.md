@@ -88,10 +88,38 @@ https://help.github.com/en/github/getting-started-with-github/git-and-github-lea
    Developers reviewing your pull request will be happy to help you add or run
    the relevant tests as part of the pull request review process.
 
-6. Commit and push your changes to your
+6. Write a useful and properly formatted commit message. 
+   Follow [these guidelines and template](https://git-scm.com/book/en/v2/Distributed-Git-Contributing-to-a-Project#_commit_guidelines):
+
+     ```
+     Capitalized, short (50 chars or less) summary (no period at the end)
+     
+     More detailed explanatory text, if necessary.  Wrap it to about 72
+     characters or so.  In some contexts, the first line is treated as the
+     subject of an email and the rest of the text as the body.  The blank
+     line separating the summary from the body is critical (unless you omit
+     the body entirely); tools like rebase will confuse you if you run the
+     two together.
+     
+     Write your commit message in the imperative: "Fix bug" and not "Fixed bug"
+     or "Fixes bug."  This convention matches up with commit messages generated
+     by commands like git merge and git revert.
+     
+     Further paragraphs come after blank lines.
+     
+     - Bullet points are okay, too
+     
+     - Typically a hyphen or asterisk is used for the bullet, followed by a
+       single space, with blank lines in between, but conventions vary here
+     ```
+   (Adapted from https://git-scm.com/book/ch5-2.html#_commit_guidelines. Also, check
+   [Tim Pope's post](https://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html) 
+   for more details).
+
+7. Commit and push your changes to your
    [fork](https://help.github.com/en/github/using-git/pushing-commits-to-a-remote-repository).
 
-7. Open a [pull
+8. Open a [pull
    request](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-a-pull-request)
    with these changes. Your pull request message ideally should include:
 
@@ -101,10 +129,10 @@ https://help.github.com/en/github/getting-started-with-github/git-and-github-lea
 
    * How to test the changes, if you haven't included specific tests already.
 
-8. The pull request should pass all the continuous integration tests which are
+9. The pull request should pass all the continuous integration tests which are
    automatically started by GitHub using e.g. Travis CI.
 
-9. Your pull request will be handled according to [some
+10. Your pull request will be handled according to [some
    rules](doc/source/project/organization.rst#handling-pull-requests).
 
 ## Style guidelines
