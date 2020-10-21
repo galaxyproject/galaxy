@@ -1,3 +1,4 @@
+import "!!script-loader!notebookjs";
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
@@ -5,8 +6,12 @@ import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 import mod_icon_btn from "mvc/ui/icon-button";
 import { getGalaxyInstance } from "app";
-import createRenderer from 'ipynb2html';
-import { Document } from 'nodom';
+import Prism from "prismjs/prism";
+import "prismjs/components/prism-python";
+import "prismjs/components/prism-markdown";
+import "prismjs/themes/prism.css";
+import ansi_up from "ansi_up";
+import markdown from "marked";
 
 /**
  * Dataset metedata.
@@ -618,10 +623,28 @@ export var createTabularDatasetChunkedView = (options) => {
 export var createJupyterNotebookView = (options) => {
     // const renderNotebook = ipynb.createRenderer(new Document())
     var parent_elt = options.parent_elt;
+    const defineHighlighter = (code, lang) => {
+        if (typeof lang === "undefined") lang = "markup";
+        if (!Prism.languages.hasOwnProperty(lang)) {
+            console.warn("Prism highlighter needs additional language for:" + lang);
+            Prism.languages[lang] = false;
+        }
+        return Prism.languages[lang] ? Prism.highlight(code, Prism.languages[lang]) : code;
+    };
+    /* configure global 'nb' */
+    nb.ansi_up = ansi_up;
+    nb.markdown = markdown;
+    nb.highlighter = (text, pre, code, lang) => {
+        var language = lang || "markup";
+        pre.className = "language-" + language;
+        if (typeof code != "undefined") {
+            code.className = "language-" + language;
+        }
+        return defineHighlighter(text, language);
+    };
+
     $.getJSON(`${getAppRoot()}dataset/display?dataset_id=${options.id}`).success((data) => {
         console.log("Heya!");
-        const render = new createRenderer(new Document());
-        console.log(render(data).outerHTML);
-        // parent_elt.append(render(data).outerHTML);
+        parent_elt.append(nb.parse(data).render().outerHTML);
     });
 };
