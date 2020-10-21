@@ -2,12 +2,11 @@
 Offload jobs to a Kubernetes cluster.
 """
 
+from datetime import datetime
 import logging
 import math
 import os
 import re
-
-from datetime import datetime
 
 import yaml
 
@@ -586,7 +585,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             return True
 
         return False
-    
+
     def __job_pending_due_to_unschedulable_pod(self, job_state):
         """
         checks the state of the pod to see if it is unschedulable.
