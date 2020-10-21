@@ -240,6 +240,12 @@ class WebApplication:
         elif isinstance(body, file_types):
             # Stream the file back to the browser
             return send_file(start_response, trans, body)
+        elif isinstance(body, tuple):
+            # Bytes range request (file_obj, start, stop)
+            body = FileIterable(*body)
+            start_response(trans.response.wsgi_status(),
+                           trans.response.wsgi_headeritems())
+            return body
         else:
             start_response(trans.response.wsgi_status(),
                            trans.response.wsgi_headeritems())
@@ -489,7 +495,6 @@ def send_file(start_response, trans, body):
     # If configured use X-Accel-Redirect header for nginx
     base = trans.app.config.nginx_x_accel_redirect_base
     apache_xsendfile = trans.app.config.apache_xsendfile
-    range_btyes = trans.request.headers.get('Range')
     if base:
         trans.response.headers['X-Accel-Redirect'] = \
             base + os.path.abspath(body.name)
@@ -498,16 +503,6 @@ def send_file(start_response, trans, body):
         trans.response.headers['X-Sendfile'] = os.path.abspath(body.name)
         body = [b""]
     # Fall back on sending the file in chunks
-    elif range_btyes and range_btyes.startswith('bytes='):
-        full_length = trans.response.headers['Content-Length']
-        start, stop = range_btyes[6:].split('-')
-        start, stop = int(start), int(stop) + 1
-        stop = min(stop, full_length)
-        trans.response.headers['Content-Length'] = stop - start
-        trans.response.headers['Accept-Ranges'] = 'bytes'
-        trans.response.status = '206 Partial Content'
-
-        body = FileIterable(body, start, stop)
     else:
         body = iterate_file(body)
     start_response(trans.response.wsgi_status(),
