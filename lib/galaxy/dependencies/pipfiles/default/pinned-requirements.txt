@@ -1,7 +1,7 @@
 -i https://wheels.galaxyproject.org/simple
 --extra-index-url https://pypi.python.org/simple
 adal==1.2.3
-amqp==2.5.2
+amqp==2.6.0
 appdirs==1.4.3
 attmap==0.12.11
 attrs==19.3.0
