@@ -2368,7 +2368,7 @@ mapping:
 
       maximum_workflow_jobs_per_scheduling_iteration:
         type: int
-        default: -1
+        default: 1000
         required: false
         desc: |
           Specify a maximum number of jobs that any given workflow scheduling iteration can create.
@@ -2376,7 +2376,7 @@ mapping:
           preventing other jobs from executing. This may also mitigate memory issues associated with
           scheduling workflows at the expense of increased total DB traffic because model objects
           are expunged from the SQL alchemy session between workflow invocation scheduling iterations.
-          Set to -1 to disable any such maximum (the default).
+          Set to -1 to disable any such maximum.
 
       history_local_serial_workflow_scheduling:
         type: bool

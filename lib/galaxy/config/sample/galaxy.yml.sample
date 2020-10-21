@@ -1577,8 +1577,8 @@ galaxy:
   # scheduling workflows at the expense of increased total DB traffic
   # because model objects are expunged from the SQL alchemy session
   # between workflow invocation scheduling iterations. Set to -1 to
-  # disable any such maximum (the default).
-  #maximum_workflow_jobs_per_scheduling_iteration: -1
+  # disable any such maximum.
+  #maximum_workflow_jobs_per_scheduling_iteration: 1000
 
   # Force serial scheduling of workflows within the context of a
   # particular history
