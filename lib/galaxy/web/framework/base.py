@@ -497,12 +497,6 @@ def send_file(start_response, trans, body):
     elif apache_xsendfile:
         trans.response.headers['X-Sendfile'] = os.path.abspath(body.name)
         body = [b""]
-    elif trans.request.method == 'OPTIONS':
-        trans.response.headers['Access-Control-Max-Age'] = 1728000
-        trans.response.headers['Content-Type'] = 'text/plain charset=UTF-8'
-        trans.response.headers['Content-Length'] = 0
-        trans.response.status = '204 No Content'
-        body = [b""]
     # Fall back on sending the file in chunks
     elif range_btyes and range_btyes.startswith('bytes='):
         full_length = trans.response.headers['Content-Length']
