@@ -87,6 +87,10 @@ uwsgi:
   # to be in the same group as the Galaxy system user
   umask: 027
 
+  # By default, uWSGI remapps stdin to /dev/null. Setting this option to
+  # `true` preserves stdin, which enables debugging with tools like pdb.
+  honour-stdin: true
+
 reports:
 
   # Verbosity of console log messages.  Acceptable values can be found

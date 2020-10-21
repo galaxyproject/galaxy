@@ -2636,6 +2636,19 @@
 :Type: float
 
 
+~~~~~~~~~~~~~~~~~
+``tool_id_boost``
+~~~~~~~~~~~~~~~~~
+
+:Description:
+    Boosts are used to customize this instance's toolbox search. The
+    higher the boost, the more importance the scoring algorithm gives
+    to the given field.  Section refers to the tool group in the tool
+    panel.  Rest of the fields are tool's attributes.
+:Default: ``9.0``
+:Type: float
+
+
 ~~~~~~~~~~~~~~~~~~~~~~
 ``tool_section_boost``
 ~~~~~~~~~~~~~~~~~~~~~~

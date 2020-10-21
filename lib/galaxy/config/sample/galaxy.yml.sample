@@ -105,6 +105,10 @@ uwsgi:
   # to be in the same group as the Galaxy system user
   umask: 027
 
+  # By default, uWSGI remapps stdin to /dev/null. Setting this option to
+  # `true` preserves stdin, which enables debugging with tools like pdb.
+  honour-stdin: true
+
 galaxy:
 
   # The directory that will be prepended to relative paths in options

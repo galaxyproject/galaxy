@@ -168,24 +168,11 @@ UWSGI_OPTIONS = OrderedDict([
         'default': '027',
         'type': 'str',
     }),
-    # ('route-uri', {
-    #     'default': '^/proxy/ goto:proxy'
-    # }),
-    # ('route', {
-    #     'default': '.* last:'
-    # }),
-    # ('route-label', {
-    #     'default': 'proxy'
-    # }),
-    # ('route-run', {
-    #     'default': 'rpcvar:TARGET_HOST galaxy_dynamic_proxy_mapper ${HTTP_HOST} ${cookie[galaxysession]}'
-    # }),
-    # ('route-run', {
-    #     'default': "['log:Proxy ${HTTP_HOST} to ${TARGET_HOST}', 'httpdumb:${TARGET_HOST}']",
-    # }),
-    # ('http-raw-body', {
-    #     'default': True
-    # }),
+    ('honour-stdin', {
+        'desc': """By default, uWSGI remapps stdin to /dev/null. Setting this option to `true` preserves stdin, which enables debugging with tools like pdb.""",
+        'default': True,
+        'type': 'bool',
+    }),
 ])
 
 SHED_ONLY_UWSGI_OPTIONS = [('cron', {
