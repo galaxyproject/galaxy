@@ -822,13 +822,13 @@ galaxy:
   # third-party server, tricking a Galaxy user to access said site.
   #enable_old_display_applications: true
 
-  # Enable InteractiveTools.
-  #interactivetools_enable: false
-
   # This flag enables an AWS cost estimate for every job based on their
   # runtime matrices. CPU, RAM and runtime usage is mapped against AWS
   # pricing table. Please note, that those numbers are only estimates.
   #aws_estimate: false
+
+  # Enable InteractiveTools.
+  #interactivetools_enable: false
 
   # Proxy host - assumed to just be hosted on the same hostname and port
   # as Galaxy by default.
@@ -838,6 +838,14 @@ galaxy:
   # The value of this option will be resolved with respect to
   # <data_dir>.
   #interactivetools_map: interactivetools_map.sqlite
+
+  # Galaxy Interactive Tools (GxITs) can be stopped from within the
+  # Galaxy interface, killing the GxIT job without completing its
+  # metadata setting post-job steps. In such a case it may be desirable
+  # to set metadata on job outputs internally (in the Galaxy job handler
+  # process). The default is is the value of
+  # `retry_metadata_internally`, which defaults to `true`.
+  #retry_interactivetool_metadata_internally: true
 
   # Show visualization tab and list in masthead.
   #visualizations_visible: true
