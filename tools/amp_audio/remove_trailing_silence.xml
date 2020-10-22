@@ -1,4 +1,4 @@
-<tool id="remove_trailing_silence" name="Remove Trailing Silence" version="1.0.2">
+<tool id="remove_trailing_silence" name="Remove Trailing Silence" version="1.0.0">
   <description>Remove trailing silence from audio file</description>
   <requirements>
     <requirement type="package" version="8.30">coreutils</requirement>

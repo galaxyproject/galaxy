@@ -1,4 +1,4 @@
-<tool id="hmgm_transcript" name="HMGM Transcript Correction" version="1.0.2">
+<tool id="hmgm_transcript" name="HMGM Transcript Correction" version="1.0.0">
   <description>Manual transcript correction by a human</description>
   <requirements>
 	<requirement type="package" version="3.8">python</requirement>

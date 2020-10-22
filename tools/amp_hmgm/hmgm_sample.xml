@@ -1,4 +1,4 @@
-<tool id="hmgm_sample" name="Sample HMGM" version="1.0.2">
+<tool id="hmgm_sample" name="Sample HMGM" version="1.0.0">
   <description>Sample Human HMGM</description>
   <requirements>
 	<requirement type="package" version="3.8">python</requirement>

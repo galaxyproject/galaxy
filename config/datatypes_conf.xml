@@ -16,6 +16,8 @@
     <datatype extension="shot" type="galaxy.datatypes.text:Shot" mimetype="application/json" subclass="true" display_in_upload="true"/>
     <datatype extension="face" type="galaxy.datatypes.text:Face" mimetype="application/json" subclass="true" display_in_upload="true"/>
     <datatype extension="vtt" type="galaxy.datatypes.text:Vtt" mimetype="text/vtt" subclass="true" display_in_upload="true"/>
+	<!-- below segments data type is deprecated, keep it for existing legacy datasets of this type -->
+    <datatype extension="segments" type="galaxy.datatypes.text:Segments" subclass="true" display_in_upload="true" />
     <!-- END AMP Data Type Extension -->
 
     <datatype extension="ab1" type="galaxy.datatypes.binary:Ab1" mimetype="application/octet-stream" display_in_upload="true" description="A binary sequence file in 'ab1' format with a '.ab1' file extension.  You must manually select this 'File Format' when uploading the file." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Ab1"/>

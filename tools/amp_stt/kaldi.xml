@@ -1,4 +1,4 @@
-<tool id="kaldi_stt" name="Kaldi Speech to Text" version="1.0.2">
+<tool id="kaldi_stt" name="Kaldi Speech to Text" version="1.0.0">
   <description>Local Kaldi Speech-to-Text transcription</description>
   <requirements>
     <requirement type="package" version="3.8">python</requirement>

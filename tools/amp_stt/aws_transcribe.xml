@@ -1,4 +1,4 @@
-<tool id="aws_transcribe_stt" name="AWS Transcribe Speech to Text" version="1.0.2">
+<tool id="aws_transcribe_stt" name="AWS Transcribe Speech to Text" version="1.0.0">
   <description>Transcribe speech to text via AWS Transcribe</description>
   <requirements>
 	<requirement type="package" version="8.30">coreutils</requirement>

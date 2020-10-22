@@ -111,6 +111,16 @@ class Json(Text):
 ######################
 
 @build_sniff_from_prefix
+class Segments(Json):
+    file_ext = "segments"
+    label = "AMP Segments JSON (depreated, use segnment instead)"
+
+    def sniff_prefix(self, file_prefix):
+        # this sniffer should not be called and it's not included as one of the sniffers in datatypes config;
+        # just in case it's called, it always returns false so no new dataset will be associated with this type 
+        return false
+       
+@build_sniff_from_prefix
 class Segment(Json):
     file_ext = "segment"
     label = "AMP Segment JSON"
