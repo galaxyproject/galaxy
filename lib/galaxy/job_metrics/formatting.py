@@ -33,4 +33,3 @@ def seconds_to_str(value):
             return f"{hours} hours and 1 minute"
         else:
             return f"{hours} hours and {mins} minutes"
-
