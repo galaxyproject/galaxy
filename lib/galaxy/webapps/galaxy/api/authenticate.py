@@ -98,8 +98,9 @@ class AuthenticationController(BaseAPIController):
             if not encoded_str:
                 raise exceptions.MessageException(
                     'Authentication is missing')
-            raise exceptions.MessageException(
-                'Failed to authenticate')
+            else:
+                raise exceptions.MessageException(
+                    'Failed to authenticate')
 
         # If split is only one element, try to decode the email and password
         # directly.
