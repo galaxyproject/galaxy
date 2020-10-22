@@ -909,6 +909,7 @@ class JobHandlerStopQueue(Monitors):
         """
         Called repeatedly by `monitor` to stop jobs.
         """
+        # TODO: removve handling of DELETED_NEW after 21.09
         # Pull all new jobs from the queue at once
         jobs_to_check = []
         if self.app.config.track_jobs_in_database:
@@ -917,7 +918,8 @@ class JobHandlerStopQueue(Monitors):
             # Fetch all new jobs
             newly_deleted_jobs = self.sa_session.query(model.Job).enable_eagerloads(False) \
                                      .filter((model.Job.state.in_((model.Job.states.DELETED_NEW,
-                                                                   model.Job.states.STOP))) &
+                                                                   model.Job.states.DELETING,
+                                                                   model.Job.states.STOPPING))) &
                                              (model.Job.handler == self.app.config.server_name)).all()
             for job in newly_deleted_jobs:
                 # job.stderr is always a string (job.job_stderr + job.tool_stderr, possibly `''`),
@@ -939,16 +941,17 @@ class JobHandlerStopQueue(Monitors):
         for job, error_msg in jobs_to_check:
             if (job.state not in
                     (job.states.DELETED_NEW,
+                     job.states.DELETING,
                      job.states.DELETED,
-                     job.states.STOP,
+                     job.states.STOPPING,
                      job.states.STOPPED) and
                     job.finished):
                 # terminated before it got here
                 log.debug('Job %s already finished, not deleting or stopping', job.id)
                 continue
-            if job.state == job.states.DELETED_NEW:
+            if job.state in (job.states.DELETED_NEW, job.states.DELETING):
                 self.__delete(job, error_msg)
-            elif job.state == job.states.STOP:
+            elif job.state == job.states.STOPPING:
                 self.__stop(job)
             if job.job_runner_name is not None:
                 # tell the dispatcher to stop the job
