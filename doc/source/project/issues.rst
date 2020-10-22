@@ -109,7 +109,7 @@ after some event.
   and committers believe a fix has been committed but are not certain and so the
   issue should be rechecked after deployment of the target branch. Typically the
   committers will close out issues when a fix has been merged, but in cases they
-  are uncertain the fix will fix the underlying issue this tag may be used.
+  are uncertain whether the fix will correct the underlying issue, this tag may be used.
 - ``status/waiting/deployment/eu`` - this is the same as above but for issues
   affecting usegalaxy.eu.
 
