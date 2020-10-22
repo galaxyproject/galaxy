@@ -17,6 +17,7 @@ from six.moves.urllib.parse import unquote
 
 from galaxy import exceptions
 from galaxy.managers import api_keys
+from galaxy.security.validate_user_input import VALID_PUBLICNAME_RE
 from galaxy.util import (
     smart_str,
     unicodify
@@ -59,10 +60,12 @@ class AuthenticationController(BaseAPIController):
 
         :raises: ObjectNotFound, HTTPBadRequest
         """
-        email, password = self._decode_baseauth(trans.environ.get('HTTP_AUTHORIZATION'))
-
-        user = trans.sa_session.query(trans.app.model.User).filter(trans.app.model.User.table.c.email == email).all()
-
+        identity, password = self._decode_baseauth(trans.environ.get('HTTP_AUTHORIZATION'))
+        # check if this is an email address or username
+        if VALID_PUBLICNAME_RE.match(identity):
+            user = trans.sa_session.query(trans.app.model.User).filter(trans.app.model.User.table.c.username == identity).all()
+        else:
+            user = trans.sa_session.query(trans.app.model.User).filter(trans.app.model.User.table.c.email == identity).all()
         if len(user) == 0:
             raise exceptions.ObjectNotFound('The user does not exist.')
         elif len(user) > 1:
