@@ -13,12 +13,8 @@ def seconds_to_str(value):
     mins, secs = divmod(value, 60)
     hours, mins = divmod(mins, 60)
 
-    if value == 0:
-        return "0 seconds"
-    elif value == 1:
-        return "1 second"
-    elif value < 60:
-        return f"{secs} seconds"
+    if value < 60:
+        return f"{secs} second{'s' if secs != 1 else ''}"
     elif value >= 60 and value <= 119:
         return "1 minute"
     elif value >= 120 and value < 3600:
