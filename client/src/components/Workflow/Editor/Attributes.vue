@@ -104,7 +104,7 @@ export default {
             for (let i = 0; i < this.versions.length; i++) {
                 const current_wf = this.versions[i];
                 const update_time = moment.utc(current_wf.update_time).format("MMM Do YYYY");
-                const label = `${current_wf.version}: ${update_time}, ${current_wf.steps} steps`;
+                const label = `${current_wf.version + 1}: ${update_time}, ${current_wf.steps} steps`;
                 versions.push({
                     version: i,
                     label: label,
