@@ -13,8 +13,8 @@ def seconds_to_str(value):
     mins, secs = divmod(value, 60)
     hours, mins = divmod(mins, 60)
     if value < 60:
-        return "%s seconds" % secs
+        return f"{secs} seconds"
     elif value < 3600:
-        return "%s minutes" % mins
+        return f"{mins} minutes"
     else:
-        return "%s hours and %s minutes" % (hours, mins)
+        return f"{hours} hours and {mins} minutes"
