@@ -42,7 +42,6 @@ from galaxy.web.form_builder import AddressField
 from galaxy.webapps.base.controller import (
     BaseAPIController,
     BaseUIController,
-    CreatesApiKeysMixin,
     UsesFormDefinitionsMixin,
     UsesTagsMixin
 )
@@ -51,7 +50,7 @@ from galaxy.webapps.base.controller import (
 log = logging.getLogger(__name__)
 
 
-class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, BaseUIController, UsesFormDefinitionsMixin):
+class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, UsesFormDefinitionsMixin):
 
     def __init__(self, app):
         super().__init__(app)
@@ -735,7 +734,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         """
         payload = payload or {}
         user = self._get_user(trans, id)
-        return self.create_api_key(trans, user)
+        return self.api_key_manager.create_api_key(trans, user)
 
     @expose_api
     def get_or_create_api_key(self, trans, id, payload={}, **kwd):
@@ -761,7 +760,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         """
         payload = payload or {}
         user = self._get_user(trans, id)
-        self.create_api_key(trans, user)
+        self.api_key_manager.create_api_key(trans, user)
         return self._build_inputs_api_key(user, message='Generated a new web API key.')
 
     def _build_inputs_api_key(self, user, message=''):
