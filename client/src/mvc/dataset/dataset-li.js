@@ -303,7 +303,7 @@ export var DatasetListItemView = _super.extend(
             if (!this.isPurged() && urls && urls.download)
                 return faIconButton({
                     faIcon: "fa-share",
-                    title: _l("Get link"),
+                    title: _l("Copy link"),
                     onclick: function () {
                         navigator.clipboard.writeText(`${window.location.origin}${urls.download}`).then(() => {
                             Toast.info("Link is copied to your clipboard");
