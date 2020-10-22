@@ -9,7 +9,6 @@ import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
 import { mountNametags } from "components/Nametags";
 import { Toast } from "ui/toast";
-import { getAppRoot } from "onload/loadConfig";
 
 var logNamespace = "dataset";
 /*==============================================================================
