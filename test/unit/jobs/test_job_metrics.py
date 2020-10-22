@@ -1,5 +1,5 @@
-from galaxy.job_metrics import JobMetrics
 from galaxy.job_metrics import formatting
+from galaxy.job_metrics import JobMetrics
 
 
 def test_job_metrics_load():
