@@ -17,11 +17,6 @@ def seconds_to_str(value):
         return f"{secs} second{'s' if secs != 1 else ''}"
     elif value < 3600:
         return f"{mins} minute{'s' if mins != 1 else ''}"
-    elif value >= 3600 and value < 7200:
-        if mins == 1:
-            return "1 hour and 1 minute"
-        else:
-            return f"1 hour and {mins} minutes"
     else:
         if mins == 1:
             return f"{hours} hours and 1 minute"
