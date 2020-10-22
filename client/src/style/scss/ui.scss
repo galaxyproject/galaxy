@@ -289,6 +289,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
         border-color: $border-color;
     }
     label.active {
+        @extend .font-weight-bold;
         border-color: $state-info-bg;
         background: lighten($state-info-bg, 10%);
     }
