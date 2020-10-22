@@ -209,6 +209,7 @@ var BaseIcons = Base.extend({
         var id = Utils.uid();
         return $("<div/>")
             .addClass("ui-option")
+            .addClass(this.model.get("cls_option"))
             .append(
                 $("<input/>").attr({
                     id: id,

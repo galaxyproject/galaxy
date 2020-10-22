@@ -195,6 +195,7 @@ export default Backbone.Model.extend({
     _fieldBoolean: function (input_def) {
         return new Ui.Radio.View({
             id: `field-${input_def.id}`,
+            cls_option: "d-inline-block mr-2",
             data: [
                 { label: "Yes", value: "true" },
                 { label: "No", value: "false" },
