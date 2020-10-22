@@ -150,6 +150,7 @@ function searchInput(parentNode, options) {
                     html: true,
                     container: ".history-right-panel",
                 });
+                $('[data-toggle="advSearchPopover"]').popover("show");
             });
     }
 
