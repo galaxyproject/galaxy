@@ -5,6 +5,8 @@ Galaxy is an open, web-based platform for accessible, reproducible, and transpar
 
 For more information on the Galaxy Project, please visit the https://galaxyproject.org
 
+The community maintains [a list of awesome Galaxy resources](https://github.com/galaxyproject/awesome-galaxy/) related to all aspects of Galaxy.
+
 
 * :ref:`release-docs`
 * :ref:`admin-docs`
