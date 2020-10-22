@@ -290,8 +290,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
     }
     label.active {
         @extend .font-weight-bold;
-        border-color: $state-info-bg;
-        background: lighten($state-info-bg, 10%);
+        background: $btn-default-bg;
     }
 }
 
