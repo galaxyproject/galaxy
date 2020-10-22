@@ -127,6 +127,57 @@ export var Input = Backbone.View.extend({
     },
 });
 
+/** Renders an input element used e.g. in the tool form */
+export var Switch = Backbone.View.extend({
+    initialize: function (options) {
+        this.model =
+            (options && options.model) ||
+            new Backbone.Model({
+                disabled: false,
+                visible: true,
+            }).set(options);
+        this.setElement($(this._template()));
+        this.$label = this.$(".label");
+        this.$input = this.$(".custom-control-input");
+        this.listenTo(this.model, "change", this.render, this);
+        this.render();
+    },
+    events: {
+        input: "_onchange",
+    },
+    value: function (new_val) {
+        new_val !== undefined && this.model.set("value", new_val);
+        return this.model.get("value");
+    },
+    render: function () {
+        if (this.model.get("value") == "true") {
+            this.$label.text("Yes");
+            this.$input.prop("checked", true);
+        } else {
+            this.$label.text("No");
+            this.$input.prop("checked", false);
+        }
+        this.model.get("disabled") ? this.$input.attr("disabled", true) : this.$input.removeAttr("disabled");
+        this.$el[this.model.get("visible") ? "show" : "hide"]();
+        return this;
+    },
+    _onchange: function () {
+        const switchValue = this.$input.prop("checked") ? "true" : "false";
+        this.value(switchValue);
+        this.model.get("onchange") && this.model.get("onchange")(this.model.get("value"));
+    },
+    _template: function () {
+        const switchId = `switch-id-${this.model.id}`;
+        return `<div class="ui-switch">
+                    <div class="custom-control" id="${this.model.id}">
+                        <input type="checkbox" class="custom-control-input" id="${switchId}" />
+                        <label class="custom-control-label" for="${switchId}"/>
+                    </div>
+                    <div class="label" />
+                </div>`;
+    },
+});
+
 /** Creates a hidden element input field used e.g. in the tool form */
 export var Hidden = Backbone.View.extend({
     initialize: function (options) {
@@ -264,6 +315,7 @@ export default {
     RadioButton: Options.RadioButton,
     Checkbox: Options.Checkbox,
     Radio: Options.Radio,
+    Switch: Switch,
     Select: Select,
     TextSelect: TextSelect,
     Hidden: Hidden,
