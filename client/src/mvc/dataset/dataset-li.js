@@ -8,6 +8,8 @@ import faIconButton from "ui/fa-icon-button";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
 import { mountNametags } from "components/Nametags";
+import { Toast } from "ui/toast";
+import { getAppRoot } from "onload/loadConfig";
 
 var logNamespace = "dataset";
 /*==============================================================================
@@ -257,7 +259,11 @@ export var DatasetListItemView = _super.extend(
                 case STATES.OK:
                 case STATES.FAILED_METADATA:
                 case STATES.ERROR:
-                    return [this._renderDownloadButton(), this._renderShowParamsButton()];
+                    return [
+                        this._renderDownloadButton(),
+                        this._renderClipboardButton(),
+                        this._renderShowParamsButton(),
+                    ];
             }
             return [this._renderShowParamsButton()];
         },
@@ -286,15 +292,31 @@ export var DatasetListItemView = _super.extend(
                 },
             });
         },
-
+        isPurged: function () {
+            // don't show anything if the data's been purged
+            return !!(this.model.get("purged") || !this.model.hasData());
+        },
+        /** Render icon-button/popupmenu to download the data (and/or the associated meta files (bai, etc.)) for this.
+         *  @returns {jQuery} rendered DOM
+         */
+        _renderClipboardButton: function () {
+            var urls = this.model.urls;
+            if (!this.isPurged() && urls && urls.download)
+                return faIconButton({
+                    faIcon: "fa-share",
+                    title: _l("Get link"),
+                    onclick: function () {
+                        navigator.clipboard.writeText(`${window.location.origin}${urls.download}`).then(() => {
+                            Toast.info("Link is copied to your clipboard");
+                        });
+                    },
+                });
+        },
         /** Render icon-button/popupmenu to download the data (and/or the associated meta files (bai, etc.)) for this.
          *  @returns {jQuery} rendered DOM
          */
         _renderDownloadButton: function () {
-            // don't show anything if the data's been purged
-            if (this.model.get("purged") || !this.model.hasData()) {
-                return null;
-            }
+            if (this.isPurged()) return null;
 
             // return either: a popupmenu with links to download assoc. meta files (if there are meta files)
             //  or a single download icon-button (if there are no meta files)
