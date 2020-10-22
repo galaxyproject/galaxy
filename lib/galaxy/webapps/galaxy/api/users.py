@@ -20,7 +20,10 @@ from galaxy import (
     web
 )
 from galaxy.exceptions import ObjectInvalid
-from galaxy.managers import users
+from galaxy.managers import (
+    api_keys,
+    users
+)
 from galaxy.security.validate_user_input import (
     validate_email,
     validate_password,
@@ -55,6 +58,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         self.user_manager = users.UserManager(app)
         self.user_serializer = users.UserSerializer(app)
         self.user_deserializer = users.UserDeserializer(app)
+        self.api_key_manager = api_keys.ApiKeyManager(app)
 
     @expose_api
     def index(self, trans, deleted='False', f_email=None, f_name=None, f_any=None, **kwd):
@@ -732,6 +736,14 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         payload = payload or {}
         user = self._get_user(trans, id)
         return self.create_api_key(trans, user)
+
+    @expose_api
+    def get_or_create_api_key(self, trans, id, payload={}, **kwd):
+        """
+        Unified 'get or create' for API key
+        """
+        user = self._get_user(trans, id)
+        return self.api_key_manager.get_or_create_api_key(user)
 
     @expose_api
     def get_api_key(self, trans, id, payload=None, **kwd):
