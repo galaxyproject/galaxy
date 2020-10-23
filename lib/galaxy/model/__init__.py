@@ -4416,6 +4416,7 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
         collection_copy = self.collection.copy(
             destination=hdca,
             element_destination=element_destination,
+            flush=False,
         )
         hdca.collection = collection_copy
         object_session(self).add(hdca)
