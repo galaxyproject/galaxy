@@ -39,11 +39,11 @@ export default Backbone.View.extend({
         this.model.get("onchange") && this.model.get("onchange")(this.model.get("value"));
     },
     _template: function () {
-        const switchId = `switch-id-${this.model.id}`;
+        const id = this.model.id;
         return `<div class="ui-switch">
-                    <div class="custom-control" id="${this.model.id}">
-                        <input type="checkbox" class="custom-control-input" id="${switchId}" />
-                        <label class="custom-control-label" for="${switchId}"/>
+                    <div class="custom-control" id="${id}">
+                        <input type="checkbox" class="custom-control-input" id="switch-id-${id}" />
+                        <label class="custom-control-label" for="switch-id-${id}"/>
                     </div>
                     <div class="label" />
                 </div>`;
