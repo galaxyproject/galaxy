@@ -56,6 +56,7 @@
                     :oncancel="oncancel"
                     @hide-original-toggle="hideOriginalsToggle"
                     @clicked-create="clickedCreate"
+                    :creationFn="creationFn"
                 >
                     <template v-slot:help-content>
                         <p>
@@ -414,9 +415,6 @@ export default {
     // ======================================================================== list
     .footer {
         margin-top: 8px;
-    }
-    .main-help {
-        cursor: pointer;
     }
     .cancel-create {
         border-color: lightgrey;

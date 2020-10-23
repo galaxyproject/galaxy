@@ -1,9 +1,9 @@
 <template>
     <div class="collection-element" @click="$emit('element-is-selected', element)">
-        <a class="name" title="titleElementName" href="javascript:void(0)" role="button" @click="clickName">
+        <a class="name" :title="titleElementName" href="javascript:void(0)" role="button" @click="clickName">
             {{ element.name }}
         </a>
-        <button class="discard-btn btn-sm" title="titleDiscardButton" @click="clickDiscard">
+        <button class="discard-btn btn-sm" :title="titleDiscardButton" @click="clickDiscard">
             {{ l("Discard") }}
         </button>
     </div>
