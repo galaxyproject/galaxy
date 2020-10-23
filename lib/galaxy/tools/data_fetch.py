@@ -36,9 +36,12 @@ def main(argv=None):
     with open(request_path) as f:
         request = json.load(f)
 
-    upload_config = UploadConfig(request, registry)
+    working_directory = args.working_directory or os.getcwd()
+    allow_failed_collections = request.get("allow_failed_collections", False)
+    upload_config = UploadConfig(request, registry, working_directory, allow_failed_collections)
     galaxy_json = _request_to_galaxy_json(upload_config, request)
-    with open("galaxy.json", "w") as f:
+    galaxy_json_path = os.path.join(working_directory, "galaxy.json")
+    with open(galaxy_json_path, "w") as f:
         json.dump(galaxy_json, f)
 
 
@@ -80,12 +83,24 @@ def _fetch_target(upload_config, target):
             del target_or_item["elements_from"]
             target_or_item["elements"] = items
 
-    _for_each_src(expand_elements_from, target)
-    items = target.get("elements", None)
-    assert items is not None, "No element definition found for destination [%s]" % destination
+    expansion_error = None
+    try:
+        _for_each_src(expand_elements_from, target)
+    except Exception as e:
+        expansion_error = "Error expanding elements/items for upload destination. %s" % str(e)
+
+    if expansion_error is None:
+        items = target.get("elements", None)
+        assert items is not None, "No element definition found for destination [%s]" % destination
+    else:
+        items = []
 
     fetched_target = {}
     fetched_target["destination"] = destination
+    destination_type = destination["type"]
+    is_collection = destination_type == "hdca"
+    failed_elements = []
+
     if "collection_type" in target:
         fetched_target["collection_type"] = target["collection_type"]
     if "name" in target:
@@ -275,8 +290,28 @@ def _fetch_target(upload_config, target):
             rval["extra_files"] = os.path.abspath(staged_extra_files)
         return _copy_and_validate_simple_attributes(item, rval)
 
-    elements = elements_tree_map(_resolve_item, items)
-    fetched_target["elements"] = elements
+    def _resolve_item_capture_error(item):
+        try:
+            return _resolve_item(item)
+        except Exception as e:
+            rval = {"error_message": str(e)}
+            rval = _copy_and_validate_simple_attributes(item, rval)
+            failed_elements.append(rval)
+            return rval
+
+    if expansion_error is None:
+        elements = elements_tree_map(_resolve_item_capture_error, items)
+        if is_collection and not upload_config.allow_failed_collections and len(failed_elements) > 0:
+            element_error = "Failed to fetch collection element(s):\n"
+            for failed_element in failed_elements:
+                element_error += "\n- %s" % failed_element["error_message"]
+            fetched_target["error_message"] = element_error
+            fetched_target["elements"] = None
+        else:
+            fetched_target["elements"] = elements
+    else:
+        fetched_target["elements"] = []
+        fetched_target["error_message"] = expansion_error
     return fetched_target
 
 
@@ -336,7 +371,11 @@ def _has_src_to_path(upload_config, item, is_dataset=False):
     name = item.get("name")
     if src == "url":
         url = item.get("url")
-        path = sniff.stream_url_to_file(url, file_sources=get_file_sources())
+        try:
+            path = sniff.stream_url_to_file(url, file_sources=get_file_sources(upload_config.working_directory))
+        except Exception as e:
+            raise Exception("Failed to fetch url %s. %s" % (url, str(e)))
+
         if not is_dataset:
             # Actual target dataset will validate and put results in dict
             # that gets passed back to Galaxy.
@@ -371,20 +410,22 @@ def _arg_parser():
     parser.add_argument("--datatypes-registry")
     parser.add_argument("--request-version")
     parser.add_argument("--request")
+    parser.add_argument("--working-directory")
     return parser
 
 
 _file_sources = None
 
 
-def get_file_sources():
+def get_file_sources(working_directory):
     global _file_sources
     if _file_sources is None:
         from galaxy.files import ConfiguredFileSources
         file_sources = None
-        if os.path.exists("file_sources.json"):
+        file_sources_path = os.path.join(working_directory, "file_sources.json")
+        if os.path.exists(file_sources_path):
             file_sources_as_dict = None
-            with open("file_sources.json", "r") as f:
+            with open(file_sources_path) as f:
                 file_sources_as_dict = json.load(f)
             if file_sources_as_dict is not None:
                 file_sources = ConfiguredFileSources.from_dict(file_sources_as_dict)
@@ -396,8 +437,10 @@ def get_file_sources():
 
 class UploadConfig:
 
-    def __init__(self, request, registry):
+    def __init__(self, request, registry, working_directory, allow_failed_collections):
         self.registry = registry
+        self.working_directory = working_directory
+        self.allow_failed_collections = allow_failed_collections
         self.check_content = request.get("check_content" , True)
         self.to_posix_lines = request.get("to_posix_lines", False)
         self.space_to_tab = request.get("space_to_tab", False)

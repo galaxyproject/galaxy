@@ -42,6 +42,31 @@ def test_model_create_context_persist_hdas():
         assert f.read().startswith("hello world\n")
 
 
+def test_model_create_context_persist_error_hda():
+    work_directory = mkdtemp()
+    with open(os.path.join(work_directory, "file1.txt"), "w") as f:
+        f.write("hello world\nhello world line 2")
+    target = {
+        "destination": {
+            "type": "hdas",
+        },
+        "elements": [{
+            "error_message": "Failed to download some URL I guess",
+        }],
+    }
+    app = _mock_app(store_by="uuid")
+    temp_directory = mkdtemp()
+    with store.DirectoryModelExportStore(temp_directory, serialize_dataset_objects=True) as export_store:
+        persist_target_to_export_store(target, export_store, app.object_store, work_directory)
+
+    import_history = _import_directory_to_history(app, temp_directory, work_directory)
+
+    assert len(import_history.datasets) == 1
+    imported_hda = import_history.datasets[0]
+    assert imported_hda.state == "error"
+    assert imported_hda.info == "Failed to download some URL I guess"
+
+
 def test_persist_target_library_dataset():
     work_directory = mkdtemp()
     with open(os.path.join(work_directory, "file1.txt"), "w") as f:

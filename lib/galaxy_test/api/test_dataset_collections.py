@@ -255,6 +255,25 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         assert element0["element_identifier"] == "4.bed"
         assert element0["object"]["file_size"] == 61
 
+    @skip_if_github_down
+    def test_upload_collection_failed_expansion_url(self):
+        targets = [{
+            "destination": {"type": "hdca"},
+            "elements_from": "bagit",
+            "collection_type": "list",
+            "src": "url",
+            "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+        }]
+        payload = {
+            "history_id": self.history_id,
+            "targets": json.dumps(targets),
+            "__files": {"files_0|file_data": open(self.test_data_resolver.get_filename("4.bed"))},
+        }
+        self.dataset_populator.fetch(payload, assert_ok=False, wait=True)
+        hdca = self._assert_one_collection_created_in_history()
+        assert hdca["populated"] is False
+        assert "bagit.txt" in hdca["populated_state_message"], hdca
+
     def _assert_one_collection_created_in_history(self):
         contents_response = self._get("histories/%s/contents/dataset_collections" % self.history_id)
         self._assert_status_code_is(contents_response, 200)
