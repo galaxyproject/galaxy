@@ -325,34 +325,34 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
     def __get_memory_request(self, job_wrapper):
         """Obtains memory requests for job, checking if available on the destination, otherwise using the default"""
-        job_destinantion = job_wrapper.job_destination
+        job_destination = job_wrapper.job_destination
 
-        if 'requests_memory' in job_destinantion.params:
-            return self.__transform_memory_value(job_destinantion.params['requests_memory'])
+        if 'requests_memory' in job_destination.params:
+            return self.__transform_memory_value(job_destination.params['requests_memory'])
         return None
 
     def __get_memory_limit(self, job_wrapper):
         """Obtains memory limits for job, checking if available on the destination, otherwise using the default"""
-        job_destinantion = job_wrapper.job_destination
+        job_destination = job_wrapper.job_destination
 
-        if 'limits_memory' in job_destinantion.params:
-            return self.__transform_memory_value(job_destinantion.params['limits_memory'])
+        if 'limits_memory' in job_destination.params:
+            return self.__transform_memory_value(job_destination.params['limits_memory'])
         return None
 
     def __get_cpu_request(self, job_wrapper):
         """Obtains cpu requests for job, checking if available on the destination, otherwise using the default"""
-        job_destinantion = job_wrapper.job_destination
+        job_destination = job_wrapper.job_destination
 
-        if 'requests_cpu' in job_destinantion.params:
-            return job_destinantion.params['requests_cpu']
+        if 'requests_cpu' in job_destination.params:
+            return job_destination.params['requests_cpu']
         return None
 
     def __get_cpu_limit(self, job_wrapper):
         """Obtains cpu requests for job, checking if available on the destination, otherwise using the default"""
-        job_destinantion = job_wrapper.job_destination
+        job_destination = job_wrapper.job_destination
 
-        if 'limits_cpu' in job_destinantion.params:
-            return job_destinantion.params['limits_cpu']
+        if 'limits_cpu' in job_destination.params:
+            return job_destination.params['limits_cpu']
         return None
 
     def __transform_memory_value(self, mem_value):

@@ -3085,33 +3085,6 @@ mapping:
           will automatically create and use a separate sqlite database located in your
           <galaxy>/database folder (indicated in the commented out line below).
 
-      enable_communication_server:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Galaxy real time communication server settings
-
-      communication_server_host:
-        type: str
-        default: http://localhost
-        required: false
-        desc: |
-          Galaxy real time communication server settings
-
-      communication_server_port:
-        type: int
-        default: 7070
-        required: false
-        desc: |
-          Galaxy real time communication server settings
-
-      persistent_communication_rooms:
-        type: str
-        required: false
-        desc: |
-          persistent_communication_rooms is a comma-separated list of rooms that should be always available.
-
       use_pbkdf2:
         type: bool
         default: true

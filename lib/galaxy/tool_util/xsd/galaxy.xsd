@@ -2933,9 +2933,16 @@ Prior to Galaxy release 19.01 the stdio block has only been used for non-legacy 
     </xs:annotation>
     <xs:simpleContent>
       <xs:extension base="xs:string">
-        <xs:attribute name="detect_errors" type="xs:string">
+        <xs:attribute name="detect_errors" type="DetectErrorType">
           <xs:annotation>
-            <xs:documentation>One of ``default``, ``exit_code``, ``aggressive``. See "Error detection" above for details.</xs:documentation>
+            <xs:documentation xml:lang="en"><![CDATA[
+The ``detect_errors`` attribute of ``command``, if present, loads a preset of error detection checks (for exit codes and content of stdio to indicate fatal tool errors or fatal out of memory errors). It can be one of:
+
+* ``default``: for non-legacy tools with absent stdio block non-zero exit codes are added. For legacy tools or if a stdio block is present nothing is added.
+* ``exit_code``: adds checks for non zero exit codes. The ``oom_exit_code`` parameter can be used to add an additional out of memory indicating exit code. This is the default when a tool specifies a ``profile`` >= 16.04.
+* ``aggressive``: adds checks for non zero exit codes, and checks for ``Exception:``, ``Error:`` in the standard error. Additionally checks for messages in the standard error that indicate an out of memory error (``MemoryError``, ``std::bad_alloc``, ``java.lang.OutOfMemoryError``, ``Out of memory``).
+]]>
+            </xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="oom_exit_code" type="xs:integer">
@@ -5908,6 +5915,14 @@ is the only supported options.</xs:documentation>
   <xs:simpleType name="MacroImportType">
     <xs:restriction base="xs:string">
       <xs:pattern value="[a-zA-Z0-9_\-\.]+.xml"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="DetectErrorType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="default"/>
+      <xs:enumeration value="exit_code"/>
+      <xs:enumeration value="aggressive"/>
     </xs:restriction>
   </xs:simpleType>
 
