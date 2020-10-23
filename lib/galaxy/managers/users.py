@@ -8,7 +8,7 @@ import time
 from datetime import datetime
 
 from markupsafe import escape
-from sqlalchemy import and_, desc, exc, func, or_, true
+from sqlalchemy import and_, desc, exc, func, true
 
 from galaxy import (
     exceptions,
@@ -21,6 +21,7 @@ from galaxy.managers import (
     deletable
 )
 from galaxy.security.validate_user_input import (
+    VALID_PUBLICNAME_RE,
     validate_email,
     validate_password,
     validate_publicname
@@ -280,16 +281,18 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
 
     def get_user_by_identity(self, identity):
         """Get user by username or email."""
-        session = self.session()
-        user = session.query(self.model_class).filter(or_(
-            self.model_class.table.c.email == identity,
-            self.model_class.table.c.username == identity,
-        )).first()
-        if not user:
-            # Try a case-insensitive match on the email
-            user = session.query(self.model_class).filter(
-                func.lower(self.model_class.table.c.email) == identity.lower()
-            ).first()
+        user = None
+        if VALID_PUBLICNAME_RE.match(identity):
+            # VALID_PUBLICNAME and VALID_EMAIL do not overlap, so 'identity' here is publicname
+            user = self.session().query(self.model_class).filter(
+                self.model_class.table.c.username == identity).first()
+        else:
+            user = self.session().query(self.model_class).filter(
+                self.model_class.table.c.email == identity).first()
+            if not user:
+                # Try a case-insensitive match on the email
+                user = self.session().query(self.model_class).filter(
+                    func.lower(self.model_class.table.c.email) == identity.lower()).first()
         return user
 
     # ---- current
