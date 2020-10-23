@@ -4593,6 +4593,7 @@ class DatasetCollectionElement(Dictifiable, RepresentById):
                 )
             else:
                 new_element_object = element_object.copy(flush=flush)
+                new_element_object.visible = False
                 if destination is not None and element_object.hidden_beneath_collection_instance:
                     new_element_object.hidden_beneath_collection_instance = destination
                 # Ideally we would not need to give the following
