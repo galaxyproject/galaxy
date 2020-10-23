@@ -1,6 +1,6 @@
 import logging
 import os
-import subprocess
+import shutil
 from datetime import datetime, timedelta
 from decimal import Decimal
 
@@ -150,34 +150,9 @@ class System(BaseUIController):
                                    message=message)
 
     def get_disk_usage(self, file_path):
-        is_sym_link = os.path.islink(file_path)
-        file_system = disk_size = disk_used = disk_avail = disk_cap_pct = mount = None
-        df_output = unicodify(subprocess.check_output(['df', '-h', file_path]))
-
-        for df_line in df_output.splitlines():
-            df_line = df_line.strip()
-            if df_line:
-                df_line = df_line.lower()
-                if 'filesystem' in df_line or 'proc' in df_line:
-                    continue
-                elif is_sym_link:
-                    if ':' in df_line and '/' in df_line:
-                        mount = df_line
-                    else:
-                        try:
-                            disk_size, disk_used, disk_avail, disk_cap_pct, file_system = df_line.split()
-                            break
-                        except Exception:
-                            pass
-                else:
-                    try:
-                        file_system, disk_size, disk_used, disk_avail, disk_cap_pct, mount = df_line.split()
-                        break
-                    except Exception:
-                        pass
-            else:
-                break  # EOF
-        return (file_system, disk_size, disk_used, disk_avail, disk_cap_pct, mount)
+        disk_usage = shutil.disk_usage(file_path)
+        pct_used = round(disk_usage.used / disk_usage.total * 100, 2)
+        return (nice_size(disk_usage.total), nice_size(disk_usage.used), nice_size(disk_usage.free), pct_used)
 
     @web.expose
     def disk_usage(self, trans, **kwd):
