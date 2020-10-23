@@ -43,9 +43,9 @@ class ConfigSerializer(base.ModelSerializer):
             'is_admin_user'                     : lambda *a, **c: False,
             'brand'                             : _use_config,
             'display_galaxy_brand'              : _use_config,
-            # TODO: this doesn't seem right
             'logo_url'                          : lambda config, key, **context: self.url_for(config.get(key, '/')),
-            'logo_src'                          : lambda config, key, **context: self.url_for('/static/favicon.png'),
+            'logo_src'                          : lambda config, key, **context: self.url_for(config.get(key, '/static/favicon.png')),
+            'logo_src_secondary'                : lambda config, key, **context: self.url_for(config.get(key)) if config.get(key) else None,
             'terms_url'                         : _use_config,
             'myexperiment_target_url'           : _use_config,
             'wiki_url'                          : _use_config,
