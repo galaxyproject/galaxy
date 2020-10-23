@@ -7,10 +7,6 @@ from datetime import datetime, timedelta
 
 from markupsafe import escape
 from six.moves.urllib.parse import unquote
-from sqlalchemy import (
-    func,
-    or_
-)
 from sqlalchemy.orm.exc import NoResultFound
 
 from galaxy import (
