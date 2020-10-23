@@ -145,12 +145,11 @@ function searchInput(parentNode, options) {
         )
             .tooltip({ placement: "top", trigger: "hover" })
             .click(function () {
-                $('[data-toggle="advSearchPopover"]').popover({
+                $(this).popover({
                     trigger: "focus",
                     html: true,
                     container: ".history-right-panel",
-                });
-                $('[data-toggle="advSearchPopover"]').popover("show");
+                }).popover('show');
             });
     }
 
