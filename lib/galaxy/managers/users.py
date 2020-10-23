@@ -8,7 +8,7 @@ import time
 from datetime import datetime
 
 from markupsafe import escape
-from sqlalchemy import and_, desc, exc, func, true
+from sqlalchemy import and_, desc, exc, func, or_, true
 
 from galaxy import (
     exceptions,
@@ -276,6 +276,20 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         if user is None:
             # TODO: code is correct (401) but should be named AuthenticationRequired (401 and 403 are flipped)
             raise exceptions.AuthenticationFailed(msg, **kwargs)
+        return user
+
+    def get_user_by_identity(self, identity):
+        """Get user by username or email."""
+        session = self.session()
+        user = session.query(self.model_class).filter(or_(
+            self.model_class.table.c.email == identity,
+            self.model_class.table.c.username == identity,
+        )).first()
+        if not user:
+            # Try a case-insensitive match on the email
+            user = session.query(self.model_class).filter(
+                func.lower(self.model_class.table.c.email) == identity.lower()
+            ).first()
         return user
 
     # ---- current
