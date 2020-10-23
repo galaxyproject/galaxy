@@ -1,0 +1,60 @@
+name: Selenium Runner
+
+# Run this workflow every time a new commit pushed to your repository
+on: push
+
+jobs:
+  prepare:
+    name: Selenium Run
+    runs-on: ubuntu-20.04
+    strategy:
+          matrix:
+            python-version: [3.8]
+    outputs:
+      matrix: ${{ steps.prepare-tests.outputs.matrix }}
+    steps:
+      # Checks out a copy of your repository on the ubuntu-latest machine
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+
+      - name: Cache multiple paths
+        uses: actions/cache@v2
+        with:
+          path: |
+            galaxy/.venv/
+          key: ${{ runner.os }}-selenium
+
+      - id: prepare-tests
+        run: |
+          TEST_VAR=$(source .ci/run_selenium.sh)
+          VAR={\"include\":$(echo $TEST_VAR)}
+          echo $VAR
+          echo "::set-output name=matrix::$(echo $VAR)"
+
+  run-selenium-tests:
+    runs-on: ubuntu-20.04
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix: ${{fromJson(needs.prepare.outputs.matrix)}}
+      
+    name: ${{ matrix.project }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+
+      - name: Cache multiple paths
+        uses: actions/cache@v2
+        with:
+          path: |
+            galaxy/.venv/
+          key: ${{ runner.os }}-selenium
+
+      - name: run
+        run: |
+          echo "${{ matrix.test_path }}"
+          ./run_tests.sh -selenium ${{ matrix.test_path }}
