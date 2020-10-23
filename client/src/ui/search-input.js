@@ -121,8 +121,10 @@ function searchInput(parentNode, options) {
     function $advancedSearchPopover() {
         return $(
             [
-                '<span class="search-advanced fa fa-question-circle" ',
+                '<a tabindex="0" ',
+                'class="search-advanced fa fa-question-circle" ',
                 'data-toggle="advSearchPopover" ',
+                'data-trigger="focus" ',
                 'data-placement="bottom" ',
                 'data-content="',
                 _l(
@@ -137,13 +139,19 @@ function searchInput(parentNode, options) {
                 "<a href='https://galaxyproject.org/tutorials/histories/#advanced-searching' target='_blank'>",
                 _l("the Hub"),
                 '.</a></p>" title="',
-                _l("search tips"),
-                '"></span>',
+                _l("Search tips"),
+                '"></a>',
             ].join("")
         )
-            .tooltip({ placement: "bottom" })
+            .tooltip({ placement: "top", trigger: "hover" })
             .click(function () {
-                $('[data-toggle="advSearchPopover"]').popover({ html: true, container: ".history-right-panel" });
+                $(this)
+                    .popover({
+                        trigger: "focus",
+                        html: true,
+                        container: ".history-right-panel",
+                    })
+                    .popover("show");
             });
     }
 
