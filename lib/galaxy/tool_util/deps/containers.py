@@ -244,6 +244,7 @@ class ContainerRegistry:
         return None if resolved_container_description is None else resolved_container_description.container_description
 
     def resolve(self, enabled_container_types, tool_info, index=None, resolver_type=None, install=True, resolution_cache=None):
+        resolution_cache = resolution_cache or self.mulled_resolution_cache
         for i, container_resolver in enumerate(self.container_resolvers):
             if index is not None and i != index:
                 continue
