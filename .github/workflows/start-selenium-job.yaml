@@ -39,7 +39,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{fromJson(needs.prepare.outputs.matrix)}}
-      
+
     name: ${{ matrix.project }}
     steps:
       - name: Checkout code

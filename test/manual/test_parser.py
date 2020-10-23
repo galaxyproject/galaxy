@@ -22,7 +22,7 @@ def is_admin(filename):
         asssings = [n for n in class_.body if isinstance(n, ast.Assign)]
         for var in asssings:
             for target in var.targets:
-                if target.id == "requires_admin" and var.value.value == True:
+                if target.id == "requires_admin" and var.value.value is True:
                     return True
         return False
 
@@ -52,6 +52,6 @@ test_files = [f for f in listdir(test_root_dir) if isfile(join(test_root_dir, f)
 selenium_tests = []
 for test_file in test_files:
     path = test_root_dir + test_file
-    if not is_admin(path):
-        selenium_tests += get_individual_tests(path)
+    # if not is_admin(path):
+    selenium_tests += get_individual_tests(path)
 print(json.dumps(selenium_tests))
