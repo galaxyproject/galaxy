@@ -97,7 +97,6 @@ class AuthenticationController(BaseAPIController):
         except AttributeError:
             raise exceptions.RequestParameterInvalidException('Authentication is missing')
 
-
         # If split is only one element, try to decode the email and password
         # directly.
         if len(split) == 1:
