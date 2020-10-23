@@ -65,4 +65,4 @@ If you have your own copy of the Galaxy source code, you can also generate your 
 
     $ make docs
 
-The generated documentation will be in ``doc/build/html/`` and can be viewed with a web browser. Note that you will need to install Sphinx and a other module dependencies which are listed in the Makefile in the Galaxy root folder.
+The generated documentation will be in ``doc/build/html/`` and can be viewed with a web browser. Note that you will need to install Sphinx and other module dependencies which are listed in the Makefile in the Galaxy root folder.
