@@ -96,7 +96,7 @@ class AuthenticationController(BaseAPIController):
             split = encoded_str.strip().split(' ')
         except AttributeError:
             if not encoded_str:
-                raise exceptions.MessageException('Authentication is missing')
+                raise exceptions.RequestParameterInvalidException('Authentication is missing')
             else:
                 raise exceptions.MessageException('Failed to authenticate')
 
