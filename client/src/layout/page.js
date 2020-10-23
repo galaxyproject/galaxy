@@ -105,7 +105,6 @@ const View = Backbone.View.extend({
             this.renderInactivityBox();
         }
         this.renderPanels();
-        this._checkCommunicationServerOnline();
         return this;
     },
 
@@ -180,36 +179,6 @@ const View = Backbone.View.extend({
 
     toString: function () {
         return "PageLayoutView";
-    },
-
-    /** Check if the communication server is online and show the icon otherwise hide the icon */
-    _checkCommunicationServerOnline: function () {
-        const Galaxy = getGalaxyInstance();
-        const host = Galaxy.config.communication_server_host;
-        const port = Galaxy.config.communication_server_port;
-        const preferences = Galaxy.user.attributes.preferences;
-        const $chat_icon_element = $("#show-chat-online");
-        /** Check if the user has deactivated the communication in it's personal settings */
-        if (preferences && ["1", "true"].indexOf(preferences.communication_server) != -1) {
-            // See if the configured communication server is available
-            $.ajax({
-                url: `${host}:${port}`,
-            })
-                .success((data) => {
-                    // enable communication only when a user is logged in
-                    if (Galaxy.user.id !== null) {
-                        if ($chat_icon_element.css("visibility") === "hidden") {
-                            $chat_icon_element.css("visibility", "visible");
-                        }
-                    }
-                })
-                .error((data) => {
-                    // hide the communication icon if the communication server is not available
-                    $chat_icon_element.css("visibility", "hidden");
-                });
-        } else {
-            $chat_icon_element.css("visibility", "hidden");
-        }
     },
 });
 

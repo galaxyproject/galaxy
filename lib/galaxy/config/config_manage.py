@@ -312,6 +312,10 @@ OPTION_ACTIONS = {
     'tool_submission_burst_at': _DeprecatedAndDroppedAction(),
     'toolform_upgrade': _DeprecatedAndDroppedAction(),
     'enable_beta_mulled_containers': _DeprecatedAndDroppedAction(),
+    'enable_communication_server': _DeprecatedAndDroppedAction(),
+    'communication_server_host': _DeprecatedAndDroppedAction(),
+    'communication_server_port': _DeprecatedAndDroppedAction(),
+    'persistent_communication_rooms': _DeprecatedAndDroppedAction(),
 }
 
 

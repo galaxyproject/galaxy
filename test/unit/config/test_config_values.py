@@ -76,7 +76,6 @@ class ExpectedValues:
             'mulled_channels': listify_strip,
             'object_store_store_by': 'uuid',
             'password_expiration_period': timedelta,
-            'persistent_communication_rooms': listify_strip,
             'pretty_datetime_format': expand_pretty_datetime_format,
             'statsd_host': '',  # TODO: do we need '' as the default?
             'tool_config_file': listify_strip,

@@ -291,7 +291,6 @@ define({
         "Associate OpenIDs with your account.": false,
         "Customize your Toolbox by displaying or omitting sets of Tools.": false,
         "Access your current API key or create a new one.": false,
-        "Enable or disable the communication feature to chat with other users.": false,
         "Allows you to change your login credentials.": false,
         "User Preferences": false,
         "Sign out": false,
@@ -300,7 +299,6 @@ define({
         "Manage Toolbox filters": false,
         "Manage API key": false,
         "Set dataset permissions for new histories": false,
-        "Change communication settings": false,
         "Change password": false,
         "Manage information": false,
         // ---------------------------------------------------------------------------- history-list
