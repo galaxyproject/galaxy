@@ -196,4 +196,4 @@ yacman==0.6.7
 zipp==1.2.0 ; python_version < '3.8'
 
 # anvil specific
-fs.anvilfs==0.0.43
+fs.anvilfs==0.0.44
