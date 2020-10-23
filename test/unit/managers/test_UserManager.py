@@ -204,6 +204,9 @@ class UserManagerTestCase(BaseTestCase):
         assert uppercase_user.username == uppercase_email_user['username']
         assert self.user_manager.get_user_by_identity(uppercase_user.email) == uppercase_user
         assert self.user_manager.get_user_by_identity(uppercase_user.username) == uppercase_user
+        # Create another user with the same email just differently capitalized.
+        # This is not normally allowed now, since registration goes through user_manager.register(),
+        # which checks for that, but was possible in earlier releases of Galaxy
         lowercase_user = self.user_manager.create(**lowercase_email_user)
         assert lowercase_user.email == lowercase_email_user['email']
         assert lowercase_user.username == lowercase_email_user['username']
