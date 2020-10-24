@@ -3206,17 +3206,10 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         hda.purged = self.purged
         hda.copy_tags_to(copy_tags)
         object_session(self).add(hda)
-        flushed = False
-        # May need to set after flushed, as MetadataFiles require dataset.id
-        if hda.set_metadata_requires_flush:
-            object_session(self).flush([self])
-            flushed = True
         hda.metadata = self.metadata
         # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
         if not self.datatype.copy_safe_peek:
-            if not flushed:
-                object_session(self).flush([self])
-
+            object_session(self).flush([self])
             hda.set_peek()
         if flush:
             object_session(self).flush()
@@ -5688,6 +5681,8 @@ class MetadataFile(StorableObject, RepresentById):
                 self.object_store_id = da.dataset.object_store_id
             object_store = da.dataset.object_store
             store_by = object_store.get_store_by(da.dataset)
+            if store_by == 'id' and self.id is None:
+                self.flush()
             identifier = getattr(self, store_by)
             alt_name = "metadata_%s.dat" % identifier
             if not object_store.exists(self, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name=alt_name):
