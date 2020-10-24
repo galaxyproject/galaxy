@@ -98,11 +98,13 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
             break
         else:
             execute_single_job(execution_slice, completed_jobs[i])
+            history = execution_slice.history or history
+            jobs_executed += 1
             if execution_slice.datasets_to_persist:
                 datasets_to_persist.extend(execution_slice.datasets_to_persist)
 
     if datasets_to_persist:
-        execution_slice.history.add_datasets(trans.sa_session, datasets_to_persist, set_hid=True, quota=False, flush=False)
+        history.add_datasets(trans.sa_session, datasets_to_persist, set_hid=True, quota=False, flush=False)
         # a side effect of history.add_datasets is a commit within db_next_hid (even with flush=False).
     else:
         # Make sure collections, implicit jobs etc are flushed even if there are no precreated output datasets

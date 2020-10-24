@@ -513,7 +513,8 @@ class XmlToolSource(ToolSource):
 
         if tests_elem is not None:
             for i, test_elem in enumerate(tests_elem.findall("test")):
-                tests.append(_test_elem_to_dict(test_elem, i))
+                profile = self.parse_profile()
+                tests.append(_test_elem_to_dict(test_elem, i, profile))
 
         return rval
 
@@ -533,10 +534,10 @@ class XmlToolSource(ToolSource):
         return python_template_version
 
 
-def _test_elem_to_dict(test_elem, i):
+def _test_elem_to_dict(test_elem, i, profile=None):
     rval = dict(
         outputs=__parse_output_elems(test_elem),
-        output_collections=__parse_output_collection_elems(test_elem),
+        output_collections=__parse_output_collection_elems(test_elem, profile=profile),
         inputs=__parse_input_elems(test_elem, i),
         expect_num_outputs=test_elem.get("expect_num_outputs"),
         command=__parse_assert_list_from_elem(test_elem.find("assert_command")),
@@ -579,36 +580,38 @@ def __parse_command_elem(test_elem):
     return __parse_assert_list_from_elem(assert_elem)
 
 
-def __parse_output_collection_elems(test_elem):
+def __parse_output_collection_elems(test_elem, profile=None):
     output_collections = []
     for output_collection_elem in test_elem.findall("output_collection"):
-        output_collection_def = __parse_output_collection_elem(output_collection_elem)
+        output_collection_def = __parse_output_collection_elem(output_collection_elem, profile=profile)
         output_collections.append(output_collection_def)
     return output_collections
 
 
-def __parse_output_collection_elem(output_collection_elem):
+def __parse_output_collection_elem(output_collection_elem, profile=None):
     attrib = dict(output_collection_elem.attrib)
     name = attrib.pop('name', None)
     if name is None:
         raise Exception("Test output collection does not have a 'name'")
-    element_tests = __parse_element_tests(output_collection_elem)
+    element_tests = __parse_element_tests(output_collection_elem, profile=profile)
     return TestCollectionOutputDef(name, attrib, element_tests).to_dict()
 
 
-def __parse_element_tests(parent_element):
+def __parse_element_tests(parent_element, profile=None):
     element_tests = {}
     for idx, element in enumerate(parent_element.findall("element")):
         element_attrib = dict(element.attrib)
         identifier = element_attrib.pop('name', None)
         if identifier is None:
             raise Exception("Test primary dataset does not have a 'identifier'")
-        element_tests[identifier] = __parse_test_attributes(element, element_attrib, parse_elements=True)
-        element_tests[identifier][1]["element_index"] = idx
+        element_tests[identifier] = __parse_test_attributes(element, element_attrib, parse_elements=True, profile=profile)
+        if profile and profile >= "20.09":
+            element_tests[identifier][1]["expected_sort_order"] = idx
+
     return element_tests
 
 
-def __parse_test_attributes(output_elem, attrib, parse_elements=False, parse_discovered_datasets=False):
+def __parse_test_attributes(output_elem, attrib, parse_elements=False, parse_discovered_datasets=False, profile=None):
     assert_list = __parse_assert_list(output_elem)
 
     # Allow either file or value to specify a target file to compare result with
@@ -638,7 +641,7 @@ def __parse_test_attributes(output_elem, attrib, parse_elements=False, parse_dis
     checksum = attrib.get("checksum", None)
     element_tests = {}
     if parse_elements:
-        element_tests = __parse_element_tests(output_elem)
+        element_tests = __parse_element_tests(output_elem, profile=profile)
 
     primary_datasets = {}
     if parse_discovered_datasets:
