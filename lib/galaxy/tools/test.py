@@ -56,6 +56,7 @@ def description_from_tool_object(tool, test_index, raw_test_dict):
             "expect_failure": raw_test_dict.get("expect_failure", False),
             "required_files": required_files,
             "tool_id": tool.id,
+            "tool_version": tool.version,
             "test_index": test_index,
             "error": False,
         }
@@ -63,6 +64,7 @@ def description_from_tool_object(tool, test_index, raw_test_dict):
         log.exception("Failed to load tool test number [%d] for %s" % (test_index, tool.id))
         processed_test_dict = {
             "tool_id": tool.id,
+            "tool_version": tool.version,
             "test_index": test_index,
             "inputs": {},
             "error": True,

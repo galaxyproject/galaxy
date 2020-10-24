@@ -6,7 +6,8 @@ import sys
 
 import yaml
 
-from .interactor import (
+from galaxy.tool_util.verify.interactor import (
+    DictClientTestConfig,
     GalaxyInteractorApi,
     verify_tool,
 )
@@ -24,6 +25,8 @@ def main(argv=None):
     if client_test_config_path is not None:
         with open(client_test_config_path, "r") as f:
             client_test_config = yaml.full_load(f)
+    else:
+        client_test_config = {}
 
     def get_option(key):
         arg_val = getattr(args, key, None)
@@ -42,6 +45,7 @@ def main(argv=None):
     }
     tool_id = args.tool_id
     tool_version = args.tool_version
+    tools_client_test_config = DictClientTestConfig(client_test_config.get("tools"))
 
     galaxy_interactor = GalaxyInteractorApi(**galaxy_interactor_kwds)
     raw_test_index = args.test_index
@@ -79,7 +83,8 @@ def main(argv=None):
         try:
             verify_tool(
                 tool_id, galaxy_interactor, test_index=test_index, tool_version=tool_version,
-                register_job_data=register, quiet=not verbose, force_path_paste=args.force_path_paste
+                register_job_data=register, quiet=not verbose, force_path_paste=args.force_path_paste,
+                client_test_config=tools_client_test_config,
             )
 
             if verbose:
