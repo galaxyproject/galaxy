@@ -21,7 +21,7 @@ from galaxy.managers import (
     deletable
 )
 from galaxy.security.validate_user_input import (
-    VALID_PUBLICNAME_RE,
+    VALID_EMAIL_RE,
     validate_email,
     validate_password,
     validate_publicname
@@ -282,17 +282,17 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
     def get_user_by_identity(self, identity):
         """Get user by username or email."""
         user = None
-        if VALID_PUBLICNAME_RE.match(identity):
-            # VALID_PUBLICNAME and VALID_EMAIL do not overlap, so 'identity' here is publicname
-            user = self.session().query(self.model_class).filter(
-                self.model_class.table.c.username == identity).first()
-        else:
+        if VALID_EMAIL_RE.match(identity):
+            # VALID_PUBLICNAME and VALID_EMAIL do not overlap, so 'identity' here is an email address
             user = self.session().query(self.model_class).filter(
                 self.model_class.table.c.email == identity).first()
             if not user:
                 # Try a case-insensitive match on the email
                 user = self.session().query(self.model_class).filter(
                     func.lower(self.model_class.table.c.email) == identity.lower()).first()
+        else:
+            user = self.session().query(self.model_class).filter(
+                self.model_class.table.c.username == identity).first()
         return user
 
     # ---- current
