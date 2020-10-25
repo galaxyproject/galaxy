@@ -4212,7 +4212,8 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
                 flush=flush
             )
         object_session(self).add(new_collection)
-        object_session(self).flush()
+        if flush:
+            object_session(self).flush()
         return new_collection
 
     def replace_failed_elements(self, replacements):
@@ -4474,7 +4475,12 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
         )
         hdca.collection = collection_copy
         object_session(self).add(hdca)
-        object_session(self).flush()
+        hdca.copy_tags_from(self.history.user, self)
+        if element_destination:
+            element_destination.stage_addition(hdca)
+            element_destination.add_pending_datasets()
+        else:
+            object_session(self).flush()
         return hdca
 
     @property
@@ -4643,7 +4649,7 @@ class DatasetCollectionElement(Dictifiable, RepresentById):
                 # Ideally we would not need to give the following
                 # element an HID and it would exist in the history only
                 # as an element of the containing collection.
-                element_destination.add_dataset(new_element_object)
+                element_destination.stage_addition(new_element_object)
                 element_object = new_element_object
 
         new_element = DatasetCollectionElement(
