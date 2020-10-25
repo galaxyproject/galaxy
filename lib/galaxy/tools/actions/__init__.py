@@ -331,8 +331,7 @@ class DefaultToolAction:
 
         if not completed_job:
             # Determine output dataset permission/roles list
-            existing_datasets = [inp for inp in inp_data.values() if inp]
-            if existing_datasets:
+            if all_permissions:
                 output_permissions = app.security_agent.guess_derived_permissions(all_permissions)
             else:
                 # No valid inputs, we will use history defaults
