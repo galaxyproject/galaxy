@@ -16,7 +16,10 @@ from base64 import b64decode
 from six.moves.urllib.parse import unquote
 
 from galaxy import exceptions
-from galaxy.managers import api_keys
+from galaxy.managers import (
+    api_keys,
+    users,
+)
 from galaxy.util import (
     smart_str,
     unicodify
@@ -31,6 +34,7 @@ class AuthenticationController(BaseAPIController):
 
     def __init__(self, app):
         super().__init__(app)
+        self.user_manager = users.UserManager(app)
         self.api_keys_manager = api_keys.ApiKeyManager(app)
 
     @expose_api_anonymous_and_sessionless
@@ -59,18 +63,12 @@ class AuthenticationController(BaseAPIController):
 
         :raises: ObjectNotFound, HTTPBadRequest
         """
-        email, password = self._decode_baseauth(trans.environ.get('HTTP_AUTHORIZATION'))
-
-        user = trans.sa_session.query(trans.app.model.User).filter(trans.app.model.User.table.c.email == email).all()
-
-        if len(user) == 0:
+        identity, password = self._decode_baseauth(trans.environ.get('HTTP_AUTHORIZATION'))
+        # check if this is an email address or username
+        user = self.user_manager.get_user_by_identity(identity)
+        if not user:
             raise exceptions.ObjectNotFound('The user does not exist.')
-        elif len(user) > 1:
-            # DB is inconsistent and we have more users with the same email.
-            raise exceptions.InconsistentDatabase('An error occurred, please contact your administrator.')
-        else:
-            user = user[0]
-            is_valid_user = self.app.auth_manager.check_password(user, password)
+        is_valid_user = self.app.auth_manager.check_password(user, password)
         if is_valid_user:
             key = self.api_keys_manager.get_or_create_api_key(user)
             return dict(api_key=key)
