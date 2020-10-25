@@ -256,7 +256,11 @@ class BaseObjectStore(ObjectStore):
 
     def _get_object_id(self, obj):
         if hasattr(obj, self.store_by):
-            return getattr(obj, self.store_by)
+            obj_id = getattr(obj, self.store_by)
+            if obj_id is None:
+                obj.flush()
+                return obj.id
+            return obj_id
         else:
             # job's don't have uuids, so always use ID in this case when creating
             # job working directories.

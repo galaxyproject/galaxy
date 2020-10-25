@@ -2275,6 +2275,11 @@ class StorableObject:
         else:
             self.uuid = UUID(str(uuid))
 
+    def flush(self):
+        sa_session = object_session(self)
+        if sa_session:
+            sa_session.flush()
+
 
 class Dataset(StorableObject, RepresentById):
     states = Bunch(NEW='new',

@@ -283,7 +283,6 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             association_name = '__new_primary_file_{}|{}__'.format(name, element_identifier_str)
             self.add_output_dataset_association(association_name, dataset)
 
-        self.flush()
         self.update_object_store_with_datasets(datasets=element_datasets['datasets'], paths=element_datasets['paths'], extra_files=element_datasets['extra_files'])
         add_datasets_timer = ExecutionTimer()
         self.add_datasets_to_history(element_datasets['datasets'])
