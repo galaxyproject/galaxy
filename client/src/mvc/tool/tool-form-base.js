@@ -184,7 +184,7 @@ export default FormBase.extend({
         });
         menu_button.addMenu({
             icon: "fa-chain",
-            title: _l("Get link"),
+            title: _l("Copy link"),
             onclick: function () {
                 if (navigator.clipboard) {
                     navigator.clipboard
