@@ -1,5 +1,4 @@
 import logging
-import os
 import shutil
 from datetime import datetime, timedelta
 from decimal import Decimal
@@ -8,7 +7,6 @@ from sqlalchemy import and_, desc, false, null, true
 from sqlalchemy.orm import eagerload
 
 from galaxy import model, util
-from galaxy.util import unicodify
 from galaxy.webapps.base.controller import BaseUIController, web
 
 log = logging.getLogger(__name__)
