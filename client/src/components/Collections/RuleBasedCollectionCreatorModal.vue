@@ -1,5 +1,5 @@
 <script>
-import CollectionCreatorModalMixin from "./mixins/CollectionCreatorModalMixin";
+import CollectionCreatorModalMixin from "./common/CollectionCreatorModalMixin";
 import _ from "underscore";
 import _l from "utils/localization";
 import Vue from "vue";

@@ -1,5 +1,5 @@
 <script>
-import CollectionCreatorModalMixin from "./mixins/CollectionCreatorModalMixin";
+import CollectionCreatorModalMixin from "./common/CollectionCreatorModalMixin";
 import _l from "utils/localization";
 import Vue from "vue";
 export default {

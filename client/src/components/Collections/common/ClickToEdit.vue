@@ -1,0 +1,34 @@
+<template>
+    <input
+        v-if="editable"
+        v-model="element"
+        @blur="editable = false"
+        @keyup.enter="
+            $emit('renamed-element', element);
+            editable = false;
+        "
+    />
+    <label v-else @click="editable = true">
+        {{ element }}
+    </label>
+</template>
+
+<script>
+export default {
+    props: {
+        element: {
+            required: true,
+            type: String,
+        },
+        title: {
+            required: false,
+            type: String,
+        },
+    },
+    data: function () {
+        return {
+            editable: false,
+        };
+    },
+};
+</script>

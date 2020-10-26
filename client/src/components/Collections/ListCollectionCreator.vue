@@ -188,8 +188,8 @@
 
 <script>
 import HDCA from "mvc/history/hdca-model";
-import CollectionCreator from "mvc/collection/mixins/CollectionCreator";
-import DatasetCollectionElementView from "mvc/collection/DatasetCollectionElementView";
+import CollectionCreator from "./common/CollectionCreator";
+import DatasetCollectionElementView from "./DatasetCollectionElementView";
 import _l from "utils/localization";
 import STATES from "mvc/dataset/states";
 import "ui/hoverhighlight";

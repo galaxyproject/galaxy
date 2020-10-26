@@ -1,5 +1,5 @@
 <script>
-import CollectionCreatorModalMixin from "./mixins/CollectionCreatorModalMixin";
+import CollectionCreatorModalMixin from "./common/CollectionCreatorModalMixin";
 import PairCollectionCreator from "./PairCollectionCreator";
 import _l from "utils/localization";
 export default {
