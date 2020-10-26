@@ -183,7 +183,7 @@ export default FormBase.extend({
             tooltip: "View available options",
         });
         menu_button.addMenu({
-            icon: "fa-share",
+            icon: "fa-chain",
             title: _l("Get link"),
             onclick: function () {
                 if (navigator.clipboard) {
