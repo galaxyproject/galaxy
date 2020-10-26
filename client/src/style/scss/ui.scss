@@ -441,20 +441,20 @@ $ui-margin-horizontal-large: $margin-v * 2;
 }
 
 .ui-dragover {
-    border-radius: 3px;
-    border: 2px solid $table-border-color;
-    background: lighten($table-border-color, 30%);
-    padding: 2px;
+    @extend .p-1;
+    border-radius: $border-radius-base;
+    border: 2px solid $state-warning-bg;
+    background: lighten($state-warning-bg, 10%);
 }
 
 .ui-dragover-danger {
     @extend .ui-dragover;
     border: 2px solid $state-danger-bg;
-    background: lighten($state-danger-bg, 10%) !important;
+    background: lighten($state-danger-bg, 10%);
 }
 
 .ui-dragover-success {
     @extend .ui-dragover;
     border: 2px solid $state-success-bg;
-    background: lighten($state-success-bg, 10%) !important;
+    background: lighten($state-success-bg, 10%);
 }
