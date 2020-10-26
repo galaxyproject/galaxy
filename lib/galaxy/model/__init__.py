@@ -40,6 +40,7 @@ from sqlalchemy.orm import (
     joinedload,
     object_session,
     Query,
+    reconstructor,
 )
 from sqlalchemy.schema import UniqueConstraint
 
@@ -1757,10 +1758,32 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
         self.datasets = []
         self.galaxy_sessions = []
         self.tags = []
+        # Objects to eventually add to history
+        self._pending_additions = []
+
+    @reconstructor
+    def init_on_load(self):
+        # Restores properties that are not tracked in the database
+        self._pending_additions = []
+
+    def stage_addition(self, items):
+        history_id = self.id
+        for item in listify(items):
+            if history_id:
+                item.history_id = history_id
+            else:
+                item.history = self
+            self._pending_additions.append(item)
 
     @property
     def empty(self):
         return self.hid_counter == 1
+
+    def add_pending_datasets(self, set_output_hid=True):
+        # These are assumed to be either copies of existing datasets or new, empty datasets,
+        # so we don't need to set the quota.
+        self.add_datasets(object_session(self), self._pending_additions, set_hid=set_output_hid, quota=False, flush=False)
+        self._pending_additions = []
 
     def _next_hid(self, n=1):
         # this is overriden in mapping.py db_next_hid() method
@@ -2283,6 +2306,11 @@ class StorableObject:
             self.uuid = uuid4()
         else:
             self.uuid = UUID(str(uuid))
+
+    def flush(self):
+        sa_session = object_session(self)
+        if sa_session:
+            sa_session.flush()
 
 
 class Dataset(StorableObject, RepresentById):
@@ -4109,14 +4137,36 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
 
     @property
     def dataset_instances(self):
-        instances = []
-        for element in self.elements:
-            if element.is_collection:
-                instances.extend(element.child_collection.dataset_instances)
-            else:
-                instance = element.dataset_instance
-                instances.append(instance)
-        return instances
+        db_session = object_session(self)
+        if db_session and self.id:
+            dc = alias(DatasetCollection.table)
+            de = alias(DatasetCollectionElement.table)
+            hda = alias(HistoryDatasetAssociation.table)
+
+            depth_collection_type = self.collection_type
+            select_from = dc.outerjoin(de, de.c.dataset_collection_id == dc.c.id)
+
+            while ":" in depth_collection_type:
+                child_collection = alias(DatasetCollection.table)
+                child_collection_element = alias(DatasetCollectionElement.table)
+                select_from = select_from.outerjoin(child_collection, child_collection.c.id == de.c.child_collection_id)
+                select_from = select_from.outerjoin(child_collection_element, child_collection_element.c.dataset_collection_id == child_collection.c.id)
+
+                de = child_collection_element
+                depth_collection_type = depth_collection_type.split(":", 1)[1]
+            select_from = select_from.outerjoin(hda, hda.c.id == de.c.hda_id)
+            select_stmt = select([hda]).select_from(select_from).where(dc.c.id == self.id).distinct()
+            return db_session.query(HistoryDatasetAssociation).select_entity_from(select_stmt).all()
+        else:
+            # Sessionless context
+            instances = []
+            for element in self.elements:
+                if element.is_collection:
+                    instances.extend(element.child_collection.dataset_instances)
+                else:
+                    instance = element.dataset_instance
+                    instances.append(instance)
+            return instances
 
     @property
     def dataset_elements(self):
@@ -4593,6 +4643,7 @@ class DatasetCollectionElement(Dictifiable, RepresentById):
                 )
             else:
                 new_element_object = element_object.copy(flush=flush)
+                new_element_object.visible = False
                 if destination is not None and element_object.hidden_beneath_collection_instance:
                     new_element_object.hidden_beneath_collection_instance = destination
                 # Ideally we would not need to give the following

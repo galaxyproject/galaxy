@@ -3194,8 +3194,8 @@
     associated with scheduling workflows at the expense of increased
     total DB traffic because model objects are expunged from the SQL
     alchemy session between workflow invocation scheduling iterations.
-    Set to -1 to disable any such maximum (the default).
-:Default: ``-1``
+    Set to -1 to disable any such maximum.
+:Default: ``1000``
 :Type: int
 
 
