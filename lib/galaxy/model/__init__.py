@@ -266,6 +266,9 @@ def cached_id(galaxy_model_object):
 class JobLike:
     MAX_NUMERIC = 10**(JOB_METRIC_PRECISION - JOB_METRIC_SCALE) - 1
 
+    def update(self):
+        self.update_time = galaxy.model.orm.now.now()
+
     def _init_metrics(self):
         self.text_metrics = []
         self.numeric_metrics = []

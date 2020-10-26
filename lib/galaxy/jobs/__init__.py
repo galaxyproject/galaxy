@@ -1380,6 +1380,12 @@ class JobWrapper(HasResourceParameters):
         self.sa_session.add(job)
         self.sa_session.flush()
 
+    def touch(self, job=None):
+        job = job or self.get_job()
+        job.update()
+        self.sa_session.add(job)
+        self.sa_session.flush()
+
     def change_state(self, state, info=False, flush=True, job=None):
         job_supplied = job is not None
         if not job_supplied:

@@ -34,6 +34,7 @@ from galaxy.util import (
     in_directory,
     ParamsWithSpecs,
     shrink_stream_by_size,
+    specs,
     unicodify,
 )
 from galaxy.util.bunch import Bunch
@@ -67,7 +68,23 @@ class RunnerParams(ParamsWithSpecs):
 
 
 class BaseJobRunner:
-    DEFAULT_SPECS = dict(recheck_missing_job_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=0))
+    DEFAULT_SPECS = {
+        'recheck_missing_job_retries': {
+            'map': int,
+            'valid': lambda x: int(x) >= 0,
+            'default': 0
+        },
+        'monitor_sleep': {
+            'map': int,
+            'valid': lambda x: int(x) >= 0,
+            'default': 1
+        },
+        'poll_jobs_older_than': {
+            'map': specs.to_datetime_interval_or_none,
+            'valid': lambda x: x is None or issubclass(x, datetime.interval),
+            'default': None
+        },
+    }
 
     def __init__(self, app, nworkers, **kwargs):
         """Start the job runner
@@ -77,8 +94,7 @@ class BaseJobRunner:
         self.sa_session = app.model.context
         self.nworkers = nworkers
         runner_param_specs = self.DEFAULT_SPECS.copy()
-        if 'runner_param_specs' in kwargs:
-            runner_param_specs.update(kwargs.pop('runner_param_specs'))
+        runner_param_specs.update(kwargs.pop('runner_param_specs', {}))
         if kwargs:
             log.debug('Loading %s with params: %s', self.runner_name, kwargs)
         self.runner_params = RunnerParams(specs=runner_param_specs, params=kwargs)
@@ -635,9 +651,12 @@ class AsynchronousJobState(JobState):
     @running.setter
     def running(self, is_running):
         self._running = is_running
-        # This will be invalid for job recovery
         if self.start_time is None:
-            self.start_time = datetime.datetime.now()
+            # For job recovery, if the state is already running, use the object's update time
+            if self.old_state = model.Job.states.RUNNING:
+                self.start_time = self.job_wrapper.get_job().update_time
+            else:
+                self.start_time = datetime.datetime.now()
 
     def check_limits(self, runtime=None):
         limit_state = None
@@ -708,7 +727,7 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
             except Exception:
                 log.exception('Unhandled exception checking active jobs')
             # Sleep a bit before the next state check
-            time.sleep(1)
+            self._monitor_sleep(self.runner_params['monitor_sleep'])
 
     def monitor_job(self, job_state):
         self.monitor_queue.put(job_state)
@@ -731,10 +750,22 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
         """
         new_watched = []
         for async_job_state in self.watched:
+            if not self.check_poll_age(async_job_state):
+                new_watched.append(async_job_state)
+                continue
             new_async_job_state = self.check_watched_item(async_job_state)
             if new_async_job_state:
                 new_watched.append(new_async_job_state)
         self.watched = new_watched
+
+    def check_poll_age(self, job_state):
+        """
+        Return False if poll_jobs_older_than is set and the job's update time is too recent.
+        """
+        if not self.runner_params.params['poll_jobs_older_than']:
+            return True
+        update_time = self.job_wrapper.get_job().update_time
+        return (datetime.datetime.now() - update_time) > self.runner_params.params['poll_jobs_older_than']
 
     # Subclasses should implement this unless they override check_watched_items all together.
     def check_watched_item(self, job_state):
