@@ -690,13 +690,13 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
                 else:
                     time.sleep(1)
                 which_try += 1
-                
+
         # AMPPD - disabling this as well long with the  above  If we don't collect the logs, continue processing
-        if not collect_output_success:
-            job_state.fail_message = stderr
-            job_state.runner_state = job_state.runner_states.JOB_OUTPUT_NOT_RETURNED_FROM_CLUSTER
-            self.mark_as_failed(job_state)
-            return
+        # if not collect_output_success:
+        #     job_state.fail_message = stderr
+        #     job_state.runner_state = job_state.runner_states.JOB_OUTPUT_NOT_RETURNED_FROM_CLUSTER
+        #     self.mark_as_failed(job_state)
+        #     return
 
         try:
             # This should be an 8-bit exit code, but read ahead anyway:
