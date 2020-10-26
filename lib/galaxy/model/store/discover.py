@@ -564,7 +564,10 @@ def persist_elements_to_folder(model_persistence_context, elements, library_fold
             sources = fields_match.sources
             hashes = fields_match.hashes
             created_from_basename = fields_match.created_from_basename
-
+            state = 'ok'
+            if hasattr(discovered_file, "error_message"):
+                info = discovered_file.error_message
+                state = "error"
             model_persistence_context.create_dataset(
                 ext=ext,
                 designation=designation,
@@ -578,6 +581,7 @@ def persist_elements_to_folder(model_persistence_context, elements, library_fold
                 sources=sources,
                 hashes=hashes,
                 created_from_basename=created_from_basename,
+                final_job_state=state,
             )
 
 
@@ -699,8 +703,9 @@ DiscoveredFileError.path = None
 
 def discovered_file_for_element(dataset, job_working_directory, parent_identifiers=[], collector=None):
     target_directory = discover_target_directory(getattr(collector, "directory", None), job_working_directory)
-    if "filename" in dataset:
-        filename = dataset["filename"]
+    filename = dataset.get("filename")
+    error_message = dataset.get("error_message")
+    if error_message is None:
         # handle link_data_only here, verify filename is in directory if not linking...
         if not dataset.get("link_data_only"):
             path = os.path.join(target_directory, filename)

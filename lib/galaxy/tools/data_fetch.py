@@ -120,6 +120,8 @@ def _fetch_target(upload_config, target):
             target_metadata["tags"] = tags
         if created_from_basename:
             target_metadata["created_from_basename"] = created_from_basename
+        if "error_message" in src_item:
+            target_metadata["error_message"] = src_item["error_message"]
         return target_metadata
 
     def _resolve_item(item):
@@ -190,6 +192,7 @@ def _fetch_target(upload_config, target):
             return _resolve_item_with_primary(item)
 
     def _resolve_item_with_primary(item):
+        error_message = None
         converted_path = None
 
         name, path = _has_src_to_path(upload_config, item, is_dataset=True)
@@ -202,88 +205,95 @@ def _fetch_target(upload_config, target):
         for hash_dict in hashes:
             hash_function = hash_dict.get("hash_function")
             hash_value = hash_dict.get("hash_value")
-            _handle_hash_validation(upload_config, hash_function, hash_value, path)
+            try:
+                _handle_hash_validation(upload_config, hash_function, hash_value, path)
+            except Exception as e:
+                error_message = str(e)
+                item["error_message"] = error_message
 
         dbkey = item.get("dbkey", "?")
-        requested_ext = item.get("ext", "auto")
         link_data_only = upload_config.link_data_only
         if "link_data_only" in item:
             # Allow overriding this on a per file basis.
             link_data_only = _link_data_only(item)
-        to_posix_lines = upload_config.get_option(item, "to_posix_lines")
-        space_to_tab = upload_config.get_option(item, "space_to_tab")
-        auto_decompress = upload_config.get_option(item, "auto_decompress")
-        in_place = item.get("in_place", False)
-        purge_source = item.get("purge_source", True)
 
-        registry = upload_config.registry
-        check_content = upload_config.check_content
-
-        stdout, ext, datatype, is_binary, converted_path = handle_upload(
-            registry=registry,
-            path=path,
-            requested_ext=requested_ext,
-            name=name,
-            tmp_prefix='data_fetch_upload_',
-            tmp_dir=".",
-            check_content=check_content,
-            link_data_only=link_data_only,
-            in_place=in_place,
-            auto_decompress=auto_decompress,
-            convert_to_posix_lines=to_posix_lines,
-            convert_spaces_to_tabs=space_to_tab,
-        )
-
-        if link_data_only:
-            # Never alter a file that will not be copied to Galaxy's local file store.
-            if datatype.dataset_content_needs_grooming(path):
-                err_msg = 'The uploaded files need grooming, so change your <b>Copy data into Galaxy?</b> selection to be ' + \
-                    '<b>Copy files into Galaxy</b> instead of <b>Link to files without copying into Galaxy</b> so grooming can be performed.'
-                raise UploadProblemException(err_msg)
-
-        # If this file is not in the workdir make sure it gets there.
-        if not link_data_only and converted_path:
-            path = upload_config.ensure_in_working_directory(converted_path, purge_source, in_place)
-        elif not link_data_only:
-            path = upload_config.ensure_in_working_directory(path, purge_source, in_place)
-
-        extra_files = item.get("extra_files")
+        ext = "data"
         staged_extra_files = None
-        if extra_files:
-            # TODO: optimize to just copy the whole directory to extra files instead.
-            assert not upload_config.link_data_only, "linking composite dataset files not yet implemented"
-            extra_files_path = path + "_extra"
-            staged_extra_files = extra_files_path
-            os.mkdir(extra_files_path)
+        if not error_message:
+            requested_ext = item.get("ext", "auto")
+            to_posix_lines = upload_config.get_option(item, "to_posix_lines")
+            space_to_tab = upload_config.get_option(item, "space_to_tab")
+            auto_decompress = upload_config.get_option(item, "auto_decompress")
+            in_place = item.get("in_place", False)
+            purge_source = item.get("purge_source", True)
 
-            def walk_extra_files(items, prefix=""):
-                for item in items:
-                    if "elements" in item:
-                        name = item.get("name")
-                        if not prefix:
-                            item_prefix = name
+            registry = upload_config.registry
+            check_content = upload_config.check_content
+
+            stdout, ext, datatype, is_binary, converted_path = handle_upload(
+                registry=registry,
+                path=path,
+                requested_ext=requested_ext,
+                name=name,
+                tmp_prefix='data_fetch_upload_',
+                tmp_dir=".",
+                check_content=check_content,
+                link_data_only=link_data_only,
+                in_place=in_place,
+                auto_decompress=auto_decompress,
+                convert_to_posix_lines=to_posix_lines,
+                convert_spaces_to_tabs=space_to_tab,
+            )
+
+            if link_data_only:
+                # Never alter a file that will not be copied to Galaxy's local file store.
+                if datatype.dataset_content_needs_grooming(path):
+                    err_msg = 'The uploaded files need grooming, so change your <b>Copy data into Galaxy?</b> selection to be ' + \
+                        '<b>Copy files into Galaxy</b> instead of <b>Link to files without copying into Galaxy</b> so grooming can be performed.'
+                    raise UploadProblemException(err_msg)
+
+            # If this file is not in the workdir make sure it gets there.
+            if not link_data_only and converted_path:
+                path = upload_config.ensure_in_working_directory(converted_path, purge_source, in_place)
+            elif not link_data_only:
+                path = upload_config.ensure_in_working_directory(path, purge_source, in_place)
+
+            extra_files = item.get("extra_files")
+            if extra_files:
+                # TODO: optimize to just copy the whole directory to extra files instead.
+                assert not upload_config.link_data_only, "linking composite dataset files not yet implemented"
+                extra_files_path = path + "_extra"
+                staged_extra_files = extra_files_path
+                os.mkdir(extra_files_path)
+
+                def walk_extra_files(items, prefix=""):
+                    for item in items:
+                        if "elements" in item:
+                            name = item.get("name")
+                            if not prefix:
+                                item_prefix = name
+                            else:
+                                item_prefix = os.path.join(prefix, name)
+                            walk_extra_files(item.get("elements"), prefix=item_prefix)
                         else:
-                            item_prefix = os.path.join(prefix, name)
-                        walk_extra_files(item.get("elements"), prefix=item_prefix)
-                    else:
-                        name, src_path = _has_src_to_path(upload_config, item)
-                        if prefix:
-                            rel_path = os.path.join(prefix, name)
-                        else:
-                            rel_path = name
+                            name, src_path = _has_src_to_path(upload_config, item)
+                            if prefix:
+                                rel_path = os.path.join(prefix, name)
+                            else:
+                                rel_path = name
 
-                        file_output_path = os.path.join(staged_extra_files, rel_path)
-                        parent_dir = os.path.dirname(file_output_path)
-                        if not os.path.exists(parent_dir):
-                            safe_makedirs(parent_dir)
-                        shutil.move(src_path, file_output_path)
-            walk_extra_files(extra_files.get("elements", []))
+                            file_output_path = os.path.join(staged_extra_files, rel_path)
+                            parent_dir = os.path.dirname(file_output_path)
+                            if not os.path.exists(parent_dir):
+                                safe_makedirs(parent_dir)
+                            shutil.move(src_path, file_output_path)
+                walk_extra_files(extra_files.get("elements", []))
 
-        # TODO:
-        # in galaxy json add 'extra_files' and point at target derived from extra_files:
-        if not link_data_only and datatype and datatype.dataset_content_needs_grooming(path):
-            # Groom the dataset content if necessary
-            datatype.groom_dataset_content(path)
+            # TODO:
+            # in galaxy json add 'extra_files' and point at target derived from extra_files:
+            if not link_data_only and datatype and datatype.dataset_content_needs_grooming(path):
+                # Groom the dataset content if necessary
+                datatype.groom_dataset_content(path)
 
         rval = {"name": name, "filename": path, "dbkey": dbkey, "ext": ext, "link_data_only": link_data_only, "sources": sources, "hashes": hashes}
         if staged_extra_files:
