@@ -303,7 +303,7 @@ export var DatasetListItemView = _super.extend(
             var urls = this.model.urls;
             if (!this.isPurged() && urls.download && isSharable)
                 return faIconButton({
-                    faIcon: "fa-share",
+                    faIcon: "fa-chain",
                     title: _l("Copy link"),
                     onclick: function () {
                         navigator.clipboard.writeText(`${window.location.origin}${urls.download}`).then(() => {
