@@ -685,11 +685,13 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
                     stdout = ''
                     stderr = job_state.runner_states.JOB_OUTPUT_NOT_RETURNED_FROM_CLUSTER
                     log.error('(%s/%s) %s: %s' % (galaxy_id_tag, external_job_id, stderr, str(e)))
-                    collect_output_success = False
+                    # AMPPD - disabling this.  If we don't collect the stdout and stderr, do  not fail the job.
+                    # collect_output_success = False
                 else:
                     time.sleep(1)
                 which_try += 1
-
+                
+        # AMPPD - disabling this as well long with the  above  If we don't collect the logs, continue processing
         if not collect_output_success:
             job_state.fail_message = stderr
             job_state.runner_state = job_state.runner_states.JOB_OUTPUT_NOT_RETURNED_FROM_CLUSTER
