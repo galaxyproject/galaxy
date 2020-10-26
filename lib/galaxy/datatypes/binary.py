@@ -966,7 +966,7 @@ class Anndata(H5):
     MetadataElement(name="varm_count", default=0, desc="varm_count", readonly=True, visible=True, no_value=0)
     MetadataElement(name="uns_layers", desc="uns_layers", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
     MetadataElement(name="uns_count", default=0, desc="uns_count", readonly=True, visible=True, no_value=0)
-    MetadataElement(name="shape", default=(), desc="shape", param=metadata.ListParameter, readonly=True, visible=True, no_value=(0, 0))
+    MetadataElement(name="shape", default=(0, 0), desc="shape", param=metadata.ListParameter, readonly=True, visible=True, no_value=(0, 0))
 
     def sniff(self, filename):
         if super().sniff(filename):
@@ -981,12 +981,15 @@ class Anndata(H5):
         super(Anndata, self).set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             with h5py.File(dataset.file_name, 'r') as anndata_file:
+                ## NOTE: It appears that 'dataset.metadata' variables can
+                ##       only be set exactly once, so tread carefully.
                 dataset.metadata.title = util.unicodify(anndata_file.attrs.get('title'))
                 dataset.metadata.description = util.unicodify(anndata_file.attrs.get('description'))
                 dataset.metadata.url = util.unicodify(anndata_file.attrs.get('url'))
                 dataset.metadata.doi = util.unicodify(anndata_file.attrs.get('doi'))
                 dataset.creation_date = util.unicodify(anndata_file.attrs.get('creation_date'))
                 # none of the above appear to work in any dataset tested, but could be useful for future
+                # dataset.metadata.shape = util.unicodify(anndata_file.attrs.get('shape'))
                 # AnnData datasets
 
                 # all possible keys
@@ -1005,12 +1008,14 @@ class Anndata(H5):
                         size = lennames
                     return (layers, count, size)
 
+                n_obs = -1
                 if 'obs' in dataset.metadata.layers_names:
                     tmp = anndata_file["obs"]
                     dataset.metadata.obs_names = [util.unicodify(x) for x in tmp["index"]]
                     dataset.metadata.obs_layers, \
                         dataset.metadata.obs_count, \
                         dataset.metadata.obs_size = _layercountsize(tmp, len(dataset.metadata.obs_names))
+                    n_obs = dataset.metadata.obs_size
 
                 if 'obsm' in dataset.metadata.layers_names:
                     tmp = anndata_file["obsm"]
@@ -1024,6 +1029,7 @@ class Anndata(H5):
                         dataset.metadata.raw_var_count, \
                         dataset.metadata.raw_var_size = _layercountsize(tmp, len(tmp["index"]))
 
+                n_var = -1
                 if 'var' in dataset.metadata.layers_names:
                     tmp = anndata_file["var"]
                     # row names are never used in preview windows
@@ -1031,6 +1037,7 @@ class Anndata(H5):
                     dataset.metadata.var_layers, \
                         dataset.metadata.var_count, \
                         dataset.metadata.var_size = _layercountsize(tmp, len(tmp["index"]))
+                    n_var = dataset.metadata.var_size
 
                 if 'varm' in dataset.metadata.layers_names:
                     tmp = anndata_file["varm"]
@@ -1040,6 +1047,7 @@ class Anndata(H5):
                     tmp = anndata_file["uns"]
                     dataset.metadata.uns_layers, dataset.metadata.uns_count, _ = _layercountsize(tmp)
 
+                ## Resolving the problematic shape parameter
                 if 'X' in dataset.metadata.layers_names:
                     # Shape we determine here due to the non-standard representation of 'X' dimensions
                     shape = anndata_file['X'].attrs.get("shape")
@@ -1047,8 +1055,12 @@ class Anndata(H5):
                         dataset.metadata.shape = tuple(shape)
                     elif hasattr(anndata_file['X'], 'shape'):
                         dataset.metadata.shape = tuple(anndata_file['X'].shape)
-                    else:
-                        dataset.metadata.shape = (int(dataset.metadata.obs_size), int(dataset.metadata.var_size))
+                ##
+                elif n_obs >=0 and n_var >= 0:
+                    dataset.metadata.shape = (int(n_obs), int(n_var))
+                else:
+                    log.warning("No shape data could be determined!")
+                    dataset.metadata.shape = tuple(-1,-1)
 
         except Exception as e:
             log.warning('%s, set_meta Exception: %s', self, e)
