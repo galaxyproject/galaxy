@@ -41,6 +41,12 @@
                         </a>
                     </div>
                 </template>
+                <template #table-busy>
+                    <div class="text-center my-2">
+                        <b-spinner class="align-middle"></b-spinner>
+                        <strong>Loading...</strong>
+                    </div>
+                </template>
                 <template v-slot:head(selected)="">
                     <font-awesome-icon
                         v-if="isAllSelectedMode && !isAllSelectedOnPage()"
@@ -297,7 +303,7 @@ export default {
         return {
             error: null,
             isBusy: false,
-            folder_metadata: null,
+            folder_metadata: {},
             currentPage: 1,
             fields: fields,
             selectMode: "multi",
@@ -312,16 +318,21 @@ export default {
             filterOn: [],
             search_text: "",
             isAllSelectedMode: false,
+            total_rows: 0,
             deselectedDatasets: [],
         };
     },
     computed: {
         parentFolder() {
-            const path = this.folder_metadata.full_path;
-            if (path.length === 1) {
-                return `${this.root}library/list/`;
+            if (this.folder_metadata && this.folder_metadata.full_path) {
+                const path = this.folder_metadata.full_path;
+                if (path.length === 1) {
+                    return `${this.root}library/list/`;
+                } else {
+                    return `${this.root}library/folders/${path[path.length - 2][0]}`;
+                }
             } else {
-                return `${this.root}library/folders/${path[path.length - 2][0]}`;
+                return false
             }
         },
     },
