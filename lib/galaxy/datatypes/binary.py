@@ -955,7 +955,7 @@ class Anndata(H5):
     MetadataElement(name="obs_names", desc="obs_names", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
     MetadataElement(name="obs_layers", desc="obs_layers", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
     MetadataElement(name="obs_count", default=0, desc="obs_count", readonly=True, visible=True, no_value=0)
-    MetadataElement(name="obs_size", default=0, desc="obs_size", readonly=True, visible=True, no_value=0)
+    MetadataElement(name="obs_size", default=-1, desc="obs_size", readonly=True, visible=True, no_value=0)
     MetadataElement(name="obsm_layers", desc="obsm_layers", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
     MetadataElement(name="obsm_count", default=0, desc="obsm_count", readonly=True, visible=True, no_value=0)
     MetadataElement(name="raw_var_layers", desc="raw_var_layers", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
@@ -963,7 +963,7 @@ class Anndata(H5):
     MetadataElement(name="raw_var_size", default=0, desc="raw_var_size", readonly=True, visible=True, no_value=0)
     MetadataElement(name="var_layers", desc="var_layers", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
     MetadataElement(name="var_count", default=0, desc="var_count", readonly=True, visible=True, no_value=0)
-    MetadataElement(name="var_size", default=0, desc="var_size", readonly=True, visible=True, no_value=0)
+    MetadataElement(name="var_size", default=-1, desc="var_size", readonly=True, visible=True, no_value=0)
     MetadataElement(name="varm_layers", desc="varm_layers", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
     MetadataElement(name="varm_count", default=0, desc="varm_count", readonly=True, visible=True, no_value=0)
     MetadataElement(name="uns_layers", desc="uns_layers", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
@@ -1010,14 +1010,12 @@ class Anndata(H5):
                         size = lennames
                     return (layers, count, size)
 
-                n_obs = -1
                 if 'obs' in dataset.metadata.layers_names:
                     tmp = anndata_file["obs"]
                     dataset.metadata.obs_names = [util.unicodify(x) for x in tmp["index"]]
                     dataset.metadata.obs_layers, \
                         dataset.metadata.obs_count, \
                         dataset.metadata.obs_size = _layercountsize(tmp, len(dataset.metadata.obs_names))
-                    n_obs = dataset.metadata.obs_size
 
                 if 'obsm' in dataset.metadata.layers_names:
                     tmp = anndata_file["obsm"]
@@ -1031,7 +1029,6 @@ class Anndata(H5):
                         dataset.metadata.raw_var_count, \
                         dataset.metadata.raw_var_size = _layercountsize(tmp, len(tmp["index"]))
 
-                n_var = -1
                 if 'var' in dataset.metadata.layers_names:
                     tmp = anndata_file["var"]
                     # row names are never used in preview windows
@@ -1039,7 +1036,6 @@ class Anndata(H5):
                     dataset.metadata.var_layers, \
                         dataset.metadata.var_count, \
                         dataset.metadata.var_size = _layercountsize(tmp, len(tmp["index"]))
-                    n_var = dataset.metadata.var_size
 
                 if 'varm' in dataset.metadata.layers_names:
                     tmp = anndata_file["varm"]
@@ -1057,12 +1053,8 @@ class Anndata(H5):
                         dataset.metadata.shape = tuple(shape)
                     elif hasattr(anndata_file['X'], 'shape'):
                         dataset.metadata.shape = tuple(anndata_file['X'].shape)
-                ##
-                elif n_obs >=0 and n_var >= 0:
-                    dataset.metadata.shape = (int(n_obs), int(n_var))
                 else:
-                    log.warning("No shape data could be determined!")
-                    dataset.metadata.shape = tuple(-1,-1)
+                    dataset.metadata.shape = (int(dataset.metadata.obs_size), int(dataset.metadata.var_size))
 
         except Exception as e:
             log.warning('%s, set_meta Exception: %s', self, e)
