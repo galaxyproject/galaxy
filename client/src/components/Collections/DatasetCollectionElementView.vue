@@ -1,8 +1,8 @@
 <template>
-    <div class="collection-element" @click="$emit('element-is-selected', element)">
-        <!-- <a class="name" :title="titleElementName" href="javascript:void(0)" role="button" @click="clickName">
+    <div class="collection-element"> <!-- @click="$emit('element-is-selected', element)"> -->
+        <a class="name" :title="titleElementName" href="javascript:void(0)" role="button" @click="clickName">
             {{ element.name }}
-        </a> -->
+        </a>
         <click-to-edit :element="element.name" :title="titleElementName" @renamed-element="renameElement"/>
         <button class="discard-btn btn-sm" :title="titleDiscardButton" @click="clickDiscard">
             {{ l("Discard") }}

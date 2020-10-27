@@ -1,6 +1,8 @@
 <template>
     <input
+        class="click-to-edit-input"
         v-if="editable"
+        contenteditable
         v-model="element"
         @blur="editable = false"
         @keyup.enter="
@@ -32,3 +34,9 @@ export default {
     },
 };
 </script>
+
+<style>
+.click-to-edit-input {
+    width: 600px;
+}
+</style>
