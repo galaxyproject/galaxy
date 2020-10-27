@@ -938,6 +938,8 @@ class Anndata(H5):
     True
     >>> Anndata().sniff(get_test_fname('test.mz5'))
     False
+    >>> Anndata().sniff(get_test_fname('import.loom.krumsiek11.h5ad'))
+    True
     """
     file_ext = 'h5ad'
 
