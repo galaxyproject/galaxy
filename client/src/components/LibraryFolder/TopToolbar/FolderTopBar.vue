@@ -7,7 +7,7 @@
                 <font-awesome-icon icon="home" />
             </a>
             <div>
-                <form class="form-inline">
+                <div class="form-inline">
                     <SearchField @updateSearch="updateSearch($event)"></SearchField>
                     <button
                         v-if="metadata.can_add_library_item"
@@ -133,7 +133,7 @@
                             include deleted
                         </b-form-checkbox>
                     </div>
-                </form>
+                </div>
             </div>
         </div>
     </div>
