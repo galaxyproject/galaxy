@@ -83,7 +83,7 @@ def mulled_tags_for(namespace, image, tag_prefix=None, resolution_cache=None):
         # Following check is pretty expensive against biocontainers... don't even bother doing it
         # if can't cache the response.
         if not _namespace_has_repo_name(namespace, image, resolution_cache):
-            log.debug("skipping mulled_tags_for [%s] no repository" % image)
+            log.info("skipping mulled_tags_for [%s] no repository" % image)
             return []
 
     cache_key = "galaxy.tool_util.deps.container_resolvers.mulled.util:tag_cache"
@@ -158,7 +158,8 @@ def build_target(package_name, version=None, build=None, tag=None):
         assert build is None
         version, build = split_tag(tag)
 
-    return Target(package_name, version, build, package_name)
+    # conda package and quay image names are lowercase
+    return Target(package_name.lower(), version, build, package_name)
 
 
 def conda_build_target_str(target):
