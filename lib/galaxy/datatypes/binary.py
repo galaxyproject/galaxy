@@ -968,7 +968,7 @@ class Anndata(H5):
     MetadataElement(name="varm_count", default=0, desc="varm_count", readonly=True, visible=True, no_value=0)
     MetadataElement(name="uns_layers", desc="uns_layers", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
     MetadataElement(name="uns_count", default=0, desc="uns_count", readonly=True, visible=True, no_value=0)
-    MetadataElement(name="shape", default=(0, 0), desc="shape", param=metadata.ListParameter, readonly=True, visible=True, no_value=(0, 0))
+    MetadataElement(name="shape", default=(-1, -1), desc="shape", param=metadata.ListParameter, readonly=True, visible=True, no_value=(0, 0))
 
     def sniff(self, filename):
         if super().sniff(filename):
@@ -991,7 +991,6 @@ class Anndata(H5):
                 dataset.metadata.doi = util.unicodify(anndata_file.attrs.get('doi'))
                 dataset.creation_date = util.unicodify(anndata_file.attrs.get('creation_date'))
                 # none of the above appear to work in any dataset tested, but could be useful for future
-                # dataset.metadata.shape = util.unicodify(anndata_file.attrs.get('shape'))
                 # AnnData datasets
 
                 # all possible keys
