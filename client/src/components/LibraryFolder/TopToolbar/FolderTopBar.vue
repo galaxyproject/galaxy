@@ -29,7 +29,6 @@
                     </button>
                     <div v-if="metadata.can_add_library_item">
                         <div
-                            v-if="multiple_add_dataset_options"
                             title="Add datasets to current folder"
                             class="dropdown add-library-items add-library-items-datasets mr-1"
                         >
@@ -200,7 +199,6 @@ export default {
             dataset_manipulation: false,
             logged_dataset_manipulation: false,
             is_admin: false,
-            multiple_add_dataset_options: false,
             user_library_import_dir: false,
             library_import_dir: false,
             allow_library_path_paste: false,
@@ -225,13 +223,6 @@ export default {
         this.user_library_import_dir = Galaxy.config.user_library_import_dir;
         this.library_import_dir = Galaxy.config.library_import_dir;
         this.allow_library_path_paste = Galaxy.config.allow_library_path_paste;
-        if (
-            this.user_library_import_dir !== null ||
-            this.allow_library_path_paste !== false ||
-            this.library_import_dir !== null
-        ) {
-            this.multiple_add_dataset_options = true;
-        }
         const contains_file_or_folder = this.folderContents.find((el) => el.type === "folder" || el.type === "file");
 
         // logic from legacy code
