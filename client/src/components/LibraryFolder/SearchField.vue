@@ -6,7 +6,7 @@
             type="search"
             id="filterInput"
             placeholder="Search"
-            @keyup.enter="startSeach()"
+            @keyup.enter="startSearch()"
         />
     </b-input-group>
 </template>
@@ -21,7 +21,7 @@ export default {
         };
     },
     methods: {
-        startSeach() {
+        startSearch() {
             this.$emit("updateSearch", this.search);
             this.awaitingSearch = false;
         },
@@ -30,7 +30,7 @@ export default {
         search: function () {
             if (!this.awaitingSearch) {
                 setTimeout(() => {
-                    this.startSeach();
+                    this.startSearch();
                 }, 1000); // 1 sec delay
             }
             this.awaitingSearch = true;
