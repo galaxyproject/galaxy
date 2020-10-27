@@ -980,16 +980,14 @@ class Anndata(H5):
         return False
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-        super(Anndata, self).set_meta(dataset, overwrite=overwrite, **kwd)
-        try:
+            super(Anndata, self).set_meta(dataset, overwrite=overwrite, **kwd)
             with h5py.File(dataset.file_name, 'r') as anndata_file:
-                ## NOTE: It appears that 'dataset.metadata' variables can
-                ##       only be set exactly once, so tread carefully.
                 dataset.metadata.title = util.unicodify(anndata_file.attrs.get('title'))
                 dataset.metadata.description = util.unicodify(anndata_file.attrs.get('description'))
                 dataset.metadata.url = util.unicodify(anndata_file.attrs.get('url'))
                 dataset.metadata.doi = util.unicodify(anndata_file.attrs.get('doi'))
                 dataset.creation_date = util.unicodify(anndata_file.attrs.get('creation_date'))
+                dataset.metadata.shape = util.unicodify(anndata_file.attrs.get('shape'))
                 # none of the above appear to work in any dataset tested, but could be useful for future
                 # AnnData datasets
 
@@ -1052,11 +1050,9 @@ class Anndata(H5):
                         dataset.metadata.shape = tuple(shape)
                     elif hasattr(anndata_file['X'], 'shape'):
                         dataset.metadata.shape = tuple(anndata_file['X'].shape)
-                else:
-                    dataset.metadata.shape = (int(dataset.metadata.obs_size), int(dataset.metadata.var_size))
 
-        except Exception as e:
-            log.warning('%s, set_meta Exception: %s', self, e)
+                if dataset.metadata.shape is None:
+                    dataset.metadata.shape = (int(dataset.metadata.obs_size), int(dataset.metadata.var_size))
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
