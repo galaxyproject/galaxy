@@ -33,16 +33,16 @@
                 show-empty
             >
                 <template v-slot:empty>
-                    <div v-if="!search_text && !isBusy" class="empty-folder-message">
+                    <div v-if="isBusy" class="text-center my-2">
+                        <b-spinner class="align-middle"></b-spinner>
+                        <strong>Loading...</strong>
+                    </div>
+                    <div v-else class="empty-folder-message">
                         This folder is either empty or you do not have proper access permissions to see the contents. If
                         you expected something to show up please consult the
                         <a href="https://galaxyproject.org/data-libraries/#permissions" target="_blank">
                             library security wikipage
                         </a>
-                    </div>
-                    <div v-if="isBusy" class="text-center my-2">
-                        <b-spinner class="align-middle"></b-spinner>
-                        <strong>Loading...</strong>
                     </div>
                 </template>
                 <template v-slot:head(selected)="">
