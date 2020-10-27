@@ -373,6 +373,7 @@ export default {
         },
         updateSearchValue(value) {
             this.search_text = value;
+            this.folderContents = []
             this.fetchFolderContents(this.include_deleted);
         },
         selectAllRenderedRows() {
