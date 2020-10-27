@@ -156,7 +156,6 @@ class RemoteUser:
                 '/user/logout',
                 '/user/toolbox_filters',
                 '/user/set_default_permissions',
-                '/user/change_communication',
             )
 
             admin_accessible_paths = (

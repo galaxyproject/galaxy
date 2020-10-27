@@ -2636,6 +2636,19 @@
 :Type: float
 
 
+~~~~~~~~~~~~~~~~~
+``tool_id_boost``
+~~~~~~~~~~~~~~~~~
+
+:Description:
+    Boosts are used to customize this instance's toolbox search. The
+    higher the boost, the more importance the scoring algorithm gives
+    to the given field.  Section refers to the tool group in the tool
+    panel.  Rest of the fields are tool's attributes.
+:Default: ``9.0``
+:Type: float
+
+
 ~~~~~~~~~~~~~~~~~~~~~~
 ``tool_section_boost``
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -3181,8 +3194,8 @@
     associated with scheduling workflows at the expense of increased
     total DB traffic because model objects are expunged from the SQL
     alchemy session between workflow invocation scheduling iterations.
-    Set to -1 to disable any such maximum (the default).
-:Default: ``-1``
+    Set to -1 to disable any such maximum.
+:Default: ``1000``
 :Type: int
 
 
@@ -4138,47 +4151,6 @@
     database located in your <galaxy>/database folder (indicated in
     the commented out line below).
 :Default: ``sqlalchemy+sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``enable_communication_server``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Galaxy real time communication server settings
-:Default: ``false``
-:Type: bool
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``communication_server_host``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Galaxy real time communication server settings
-:Default: ``http://localhost``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``communication_server_port``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Galaxy real time communication server settings
-:Default: ``7070``
-:Type: int
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``persistent_communication_rooms``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    persistent_communication_rooms is a comma-separated list of rooms
-    that should be always available.
-:Default: ``None``
 :Type: str
 
 

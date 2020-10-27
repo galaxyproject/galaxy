@@ -1,7 +1,6 @@
 import axios from "axios";
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
-import { CommunicationServerView } from "layout/communication-server-view";
 
 const POST_LOGOUT_URL = "root/login?is_logout_redirect=true";
 
@@ -53,12 +52,6 @@ export function userLogoutClient() {
 export function fetchMenu(options = {}) {
     const Galaxy = getGalaxyInstance();
     const menu = [];
-
-    //
-    // Chat server tab
-    //
-    const extendedNavItem = new CommunicationServerView();
-    menu.push(extendedNavItem.render());
 
     //
     // Analyze data tab.

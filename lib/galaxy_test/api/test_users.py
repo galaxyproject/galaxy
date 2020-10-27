@@ -164,16 +164,6 @@ class UsersApiTestCase(ApiTestCase):
         search_response = get(url).json()
         assert "cat1" in search_response
 
-    def test_communication(self):
-        user = self._setup_user(TEST_USER_EMAIL)
-        url = self.__url("communication/inputs", user)
-        self.assertEqual(self.__filter(get(url).json(), "enable", "value"), "false")
-        put(url, data=json.dumps(dict(enable="true")))
-        self.assertEqual(self.__filter(get(url).json(), "enable", "value"), "true")
-
-    def __filter(self, response, name, attr):
-        return [r[attr] for r in response["inputs"] if r["name"] == name][0]
-
     def __url(self, action, user):
         return self._api_url("users/{}/{}".format(user["id"], action), params=dict(key=self.master_api_key))
 

@@ -25,6 +25,7 @@ export default {
         },
         customFormat: {
             type: String,
+            default: null,
         },
     },
     created() {

@@ -23,7 +23,7 @@
                 <div class="fa fa-caret-left mr-1" />
                 Back
             </b-btn>
-            <b-btn size="sm" class="float-left mr-1" @click="onUpload">
+            <b-btn v-if="allowUpload" size="sm" class="float-left mr-1" @click="onUpload">
                 <div class="fa fa-upload ml-1" />
                 Upload
             </b-btn>
@@ -73,6 +73,10 @@ export default {
             required: true,
         },
         modalStatic: {
+            type: Boolean,
+            default: false,
+        },
+        allowUpload: {
             type: Boolean,
             default: false,
         },

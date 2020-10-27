@@ -42,6 +42,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
     """
     runner_name = "KubernetesRunner"
 
+    LABEL_REGEX = re.compile("[^-A-Za-z0-9_.]")
+
     def __init__(self, app, nworkers, **kwargs):
         # Check if pykube was importable, fail if not
         ensure_pykube()
@@ -206,19 +208,19 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         k8s_spec_template = {
             "metadata": {
                 "labels": {
-                    "app.kubernetes.io/name": ajs.job_wrapper.tool.old_id,
+                    "app.kubernetes.io/name": self.LABEL_REGEX.sub("_", ajs.job_wrapper.tool.old_id),
                     "app.kubernetes.io/instance": self.__produce_k8s_job_prefix(),
-                    "app.kubernetes.io/version": ajs.job_wrapper.tool.version,
+                    "app.kubernetes.io/version": self.LABEL_REGEX.sub("_", str(ajs.job_wrapper.tool.version)),
                     "app.kubernetes.io/component": "tool",
                     "app.kubernetes.io/part-of": "galaxy",
                     "app.kubernetes.io/managed-by": "galaxy",
-                    "app.galaxyproject.org/job_id": ajs.job_wrapper.get_id_tag(),
-                    "app.galaxyproject.org/instance": self._galaxy_instance_id or "",
-                    "app.galaxyproject.org/handler": self.app.config.server_name,
-                    "app.galaxyproject.org/destination": ajs.job_wrapper.job_destination.id,
+                    "app.galaxyproject.org/job_id": self.LABEL_REGEX.sub("_", ajs.job_wrapper.get_id_tag()),
+                    "app.galaxyproject.org/handler": self.LABEL_REGEX.sub("_", self.app.config.server_name),
+                    "app.galaxyproject.org/destination": self.LABEL_REGEX.sub(
+                        "_", str(ajs.job_wrapper.job_destination.id))
                 },
                 "annotations": {
-                    "app.galaxyproject.org/tool_id": ajs.job_wrapper.tool.id,
+                    "app.galaxyproject.org/tool_id": ajs.job_wrapper.tool.id
                 }
             },
             "spec": {
@@ -325,34 +327,34 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
     def __get_memory_request(self, job_wrapper):
         """Obtains memory requests for job, checking if available on the destination, otherwise using the default"""
-        job_destinantion = job_wrapper.job_destination
+        job_destination = job_wrapper.job_destination
 
-        if 'requests_memory' in job_destinantion.params:
-            return self.__transform_memory_value(job_destinantion.params['requests_memory'])
+        if 'requests_memory' in job_destination.params:
+            return self.__transform_memory_value(job_destination.params['requests_memory'])
         return None
 
     def __get_memory_limit(self, job_wrapper):
         """Obtains memory limits for job, checking if available on the destination, otherwise using the default"""
-        job_destinantion = job_wrapper.job_destination
+        job_destination = job_wrapper.job_destination
 
-        if 'limits_memory' in job_destinantion.params:
-            return self.__transform_memory_value(job_destinantion.params['limits_memory'])
+        if 'limits_memory' in job_destination.params:
+            return self.__transform_memory_value(job_destination.params['limits_memory'])
         return None
 
     def __get_cpu_request(self, job_wrapper):
         """Obtains cpu requests for job, checking if available on the destination, otherwise using the default"""
-        job_destinantion = job_wrapper.job_destination
+        job_destination = job_wrapper.job_destination
 
-        if 'requests_cpu' in job_destinantion.params:
-            return job_destinantion.params['requests_cpu']
+        if 'requests_cpu' in job_destination.params:
+            return job_destination.params['requests_cpu']
         return None
 
     def __get_cpu_limit(self, job_wrapper):
         """Obtains cpu requests for job, checking if available on the destination, otherwise using the default"""
-        job_destinantion = job_wrapper.job_destination
+        job_destination = job_wrapper.job_destination
 
-        if 'limits_cpu' in job_destinantion.params:
-            return job_destinantion.params['limits_cpu']
+        if 'limits_cpu' in job_destination.params:
+            return job_destination.params['limits_cpu']
         return None
 
     def __transform_memory_value(self, mem_value):

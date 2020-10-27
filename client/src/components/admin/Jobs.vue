@@ -37,12 +37,11 @@
                             <b-form-group
                                 id="cutoff"
                                 label="Update Jobs"
-                                label-for="cutoff-seconds"
-                                description="Cutoff in seconds"
+                                label-for="cutoff-minutes"
+                                description="Cutoff in minutes"
                             >
                                 <b-input-group>
-                                    <b-form-input id="cutoff" type="number" placeholder="180" v-model="cutoff">
-                                    </b-form-input>
+                                    <b-form-input id="cutoff" type="number" v-model="cutoffMin"> </b-form-input>
                                     <b-input-group-append>
                                         <b-btn type="submit">Refresh</b-btn>
                                     </b-input-group-append>
@@ -110,7 +109,7 @@
             >
                 <template v-slot:table-caption>
                     Unfinished Jobs: These jobs are unfinished and have had their state updated in the previous
-                    {{ cutoffDisplay }} seconds.
+                    {{ cutoffDisplay }} minutes.
                 </template>
                 <template v-slot:head(selected)>
                     <b-form-checkbox
@@ -152,7 +151,7 @@
                 :busy="busy"
             >
                 <template v-slot:table-caption>
-                    Recent Jobs: These jobs have completed in the previous {{ cutoffDisplay }} seconds.
+                    Recent Jobs: These jobs have completed in the previous {{ cutoffDisplay }} minutes.
                 </template>
                 <template v-slot:cell(job_info)="data">
                     <b-link :href="data.value.info_url" @click.prevent="clickJobInfo(data.value.id)">
@@ -202,7 +201,6 @@ export default {
                 { key: "job_runner_name", label: "Job Runner" },
                 { key: "job_runner_external_id", label: "PID/Cluster ID", sortable: true },
             ],
-            cutoff: 180,
             cutoffDisplay: 180,
             selectedStopJobIds: [],
             selectedJobId: null,
@@ -214,6 +212,7 @@ export default {
             status: "",
             loading: true,
             busy: true,
+            cutoffMin: 5,
         };
     },
     watch: {
@@ -234,14 +233,16 @@ export default {
         update() {
             this.busy = true;
             let params = [];
-            params.push(`cutoff=${this.cutoff}`);
+            const cutoff = Math.floor(this.cutoffMin * 60);
+            params.push(`cutoff=${cutoff}`);
             params = params.join("&");
             axios
                 .get(`${getAppRoot()}admin/jobs_list?${params}`)
                 .then((response) => {
                     this.jobsItems = response.data.jobs;
                     this.recentJobsItems = response.data.recent_jobs;
-                    this.cutoffDisplay = response.data.cutoff;
+                    this.cutoffMin = Math.floor(response.data.cutoff / 60);
+                    this.cutoffDisplay = this.cutoffMin;
                     this.message = response.data.message;
                     this.status = response.data.status;
                     this.loading = false;

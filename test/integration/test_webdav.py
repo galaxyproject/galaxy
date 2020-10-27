@@ -1,9 +1,7 @@
-# TODO:
-
-# nginx+webdav in Docker.
-# docker run -v /Users/john/workspace/galaxy/test/integration/webdav/data:/media  -e WEBDAV_USERNAME=alice -e WEBDAV_PASSWORD=secret1234 -p 7083:7083 jmchilton/webdavdev
-# Apache Docker host doesn't work because displayname not set in response.
-# docker run -v /Users/john/workspace/galaxy/test/integration/webdav:/var/lib/dav  -e AUTH_TYPE=Basic -e USERNAME=alice -e PASSWORD=secret1234  -e LOCATION=/ -p 7083:80 bytemark/webdav
+# Before running this test, start nginx+webdav in Docker using following command:
+# docker run -v `pwd`/test/integration/webdav/data:/media  -e WEBDAV_USERNAME=alice -e WEBDAV_PASSWORD=secret1234 -p 7083:7083 jmchilton/webdavdev
+# Apache Docker host (shown next) doesn't work because displayname not set in response.
+# docker run -v `pwd`/test/integration/webdav:/var/lib/dav  -e AUTH_TYPE=Basic -e USERNAME=alice -e PASSWORD=secret1234  -e LOCATION=/ -p 7083:80 bytemark/webdav
 
 import os
 

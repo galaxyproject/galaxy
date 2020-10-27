@@ -147,7 +147,6 @@ CUSTOM = {
     'tool_filters': listify,
     'tool_label_filters': listify,
     'tool_section_filters': listify,
-    'persistent_communication_rooms': listify,
 }
 
 

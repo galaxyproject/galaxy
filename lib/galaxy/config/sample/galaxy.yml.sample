@@ -1577,8 +1577,8 @@ galaxy:
   # scheduling workflows at the expense of increased total DB traffic
   # because model objects are expunged from the SQL alchemy session
   # between workflow invocation scheduling iterations. Set to -1 to
-  # disable any such maximum (the default).
-  #maximum_workflow_jobs_per_scheduling_iteration: -1
+  # disable any such maximum.
+  #maximum_workflow_jobs_per_scheduling_iteration: 1000
 
   # Force serial scheduling of workflows within the context of a
   # particular history
@@ -2018,19 +2018,6 @@ galaxy:
   # database located in your <galaxy>/database folder (indicated in the
   # commented out line below).
   #amqp_internal_connection: sqlalchemy+sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE
-
-  # Galaxy real time communication server settings
-  #enable_communication_server: false
-
-  # Galaxy real time communication server settings
-  #communication_server_host: http://localhost
-
-  # Galaxy real time communication server settings
-  #communication_server_port: 7070
-
-  # persistent_communication_rooms is a comma-separated list of rooms
-  # that should be always available.
-  #persistent_communication_rooms: null
 
   # Allow disabling pbkdf2 hashing of passwords for legacy situations.
   # This should normally be left enabled unless there is a specific

@@ -34,7 +34,7 @@ class PyFilesystem2FilesSource(BaseFilesSource):
                     res.extend(map(to_dict, files))
                 return res
             else:
-                res = h.scandir(path)
+                res = h.scandir(path, namespaces=['details'])
                 to_dict = functools.partial(self._resource_info_to_dict, path)
                 return list(map(to_dict, res))
 

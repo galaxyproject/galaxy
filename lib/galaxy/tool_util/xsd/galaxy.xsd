@@ -220,9 +220,66 @@ have a macro system to address this problem.
 For more information, see [planemo documentation](https://planemo.readthedocs.io/en/latest/writing_advanced.html#macros-reusable-elements)</xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:element name="import" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
-      <xs:element name="token" type="xs:anyType" minOccurs="0" maxOccurs="unbounded"/>
-      <xs:element name="xml" type="xs:anyType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="import" type="MacroImportType" minOccurs="0" maxOccurs="unbounded">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[
+The ``import`` element allows specifying an XML file containing shared macro definitions that can then
+be reused by all the tools contained in the same directory/repository.
+
+Example:
+````
+<macros>
+    <import>macros.xml</import>
+</macros>
+````]]>
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="token" type="xs:anyType" minOccurs="0" maxOccurs="unbounded">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[
+The ``token`` element defines a value, like a constant, that can then be replaced anywhere in any tool importing the token.
+
+Definition example:
+````
+<macros>
+    <token name="@TOOL_VERSION@">1.0.0</token>
+</macros>
+````
+
+Usage example:
+````
+<requirements>
+    <requirement type="package" version="@TOOL_VERSION@">mypackage</requirement>
+</requirements>
+````]]>
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="xml" type="xs:anyType" minOccurs="0" maxOccurs="unbounded">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">
+            <![CDATA[
+The ``xml`` element, inside macros, allows defining a named XML fragment that can be reused (expanded) anywhere in the tool or tools that use the macro.
+
+Definition example:
+````
+<macros>
+    <xml name="citations">
+        <citations>
+            ....
+        </citations>
+    </xml>
+</macros>
+````
+
+Usage example:
+````
+<expand macro="citations" />
+````
+       ]]></xs:documentation>
+        </xs:annotation>
+      </xs:element>
     </xs:sequence>
   </xs:complexType>
 
@@ -1507,7 +1564,7 @@ Note that this tool uses ``assign_primary_output="true"`` for ``<discover_data_s
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 
-Define tests for extra files corresponding to an output collection.
+Define tests for extra datasets and metadata corresponding to an output collection.
 
 ``output_collection`` directives should specify a ``name`` and ``type``
 attribute to describe the expected output collection as a whole.
@@ -1515,6 +1572,12 @@ attribute to describe the expected output collection as a whole.
 Expectations about collection contents are described using child ``element``
 directives. For nested collections, these child ``element`` directives may
 themselves contain children.
+
+For tools marked as having profile 20.09 or newer, the order of elements within
+an ``output_collection`` declaration are meaningful. The test definition may
+omit any number of elements from a collection, but the ones that are specified
+will be checked against the actual resulting collection from the tool run and the
+order within the collection verified.
 
 ### Examples
 
@@ -2876,9 +2939,16 @@ Prior to Galaxy release 19.01 the stdio block has only been used for non-legacy 
     </xs:annotation>
     <xs:simpleContent>
       <xs:extension base="xs:string">
-        <xs:attribute name="detect_errors" type="xs:string">
+        <xs:attribute name="detect_errors" type="DetectErrorType">
           <xs:annotation>
-            <xs:documentation>One of ``default``, ``exit_code``, ``aggressive``. See "Error detection" above for details.</xs:documentation>
+            <xs:documentation xml:lang="en"><![CDATA[
+The ``detect_errors`` attribute of ``command``, if present, loads a preset of error detection checks (for exit codes and content of stdio to indicate fatal tool errors or fatal out of memory errors). It can be one of:
+
+* ``default``: for non-legacy tools with absent stdio block non-zero exit codes are added. For legacy tools or if a stdio block is present nothing is added.
+* ``exit_code``: adds checks for non zero exit codes. The ``oom_exit_code`` parameter can be used to add an additional out of memory indicating exit code. This is the default when a tool specifies a ``profile`` >= 16.04.
+* ``aggressive``: adds checks for non zero exit codes, and checks for ``Exception:``, ``Error:`` in the standard error. Additionally checks for messages in the standard error that indicate an out of memory error (``MemoryError``, ``std::bad_alloc``, ``java.lang.OutOfMemoryError``, ``Out of memory``).
+]]>
+            </xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="oom_exit_code" type="xs:integer">
@@ -5845,6 +5915,20 @@ is the only supported options.</xs:documentation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="bio.tools"/>
       <!--xs:enumeration value="whatelse"/-->
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="MacroImportType">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[a-zA-Z0-9_\-\.]+.xml"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="DetectErrorType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="default"/>
+      <xs:enumeration value="exit_code"/>
+      <xs:enumeration value="aggressive"/>
     </xs:restriction>
   </xs:simpleType>
 
