@@ -16,6 +16,7 @@ export default {
                     showEl(vm);
                     new pairCollectionCreatorInstance({
                         propsData: {
+                            initialElements: elements,
                             creationFn: options.creationFn,
                             oncancel: options.oncancel,
                             oncreate: options.oncreate,

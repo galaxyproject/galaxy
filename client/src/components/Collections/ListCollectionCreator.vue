@@ -187,7 +187,6 @@
 </template>
 
 <script>
-import HDCA from "mvc/history/hdca-model";
 import CollectionCreator from "./common/CollectionCreator";
 import DatasetCollectionElementView from "./DatasetCollectionElementView";
 import _l from "utils/localization";
@@ -207,13 +206,6 @@ export default {
     data: function () {
         return {
             state: "build", //error
-            minElements: 1,
-            elementViewClass: DatasetCollectionElementView,
-            collectionClass: HDCA.HistoryDatasetCollection,
-            className: "list-collection-creator collection-creator flex-row-container",
-            footerSettings: {
-                ".hide-originals": "hideOriginals",
-            },
             titleUndoButton: _l("Undo all reordering and discards"),
             titleDeselectButton: _l("De-select all selected datasets"),
             noElementsHeader: _l("No datasets were selected"),
@@ -265,7 +257,6 @@ export default {
             default: "rgba( 64, 255, 255, 1.0 )",
         },
     },
-    watch: {},
     computed: {
         atLeastOneDatasetIsSelected() {
             return this.selectedDatasetElems.length > 0;
@@ -313,8 +304,6 @@ export default {
             //TODO: handle fundamental problem of syncing DOM, views, and list here
             /** data for list in progress */
             this.workingElements = [];
-            /** views for workingElements */
-            this.elementViews = [];
             // copy initial list, sort, add ids if needed
             this.workingElements = this.initialElements.slice(0);
             this._ensureElementIds();

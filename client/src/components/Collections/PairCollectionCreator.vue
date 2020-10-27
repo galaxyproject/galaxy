@@ -60,12 +60,69 @@
 
 <script>
 import CollectionCreator from "./common/CollectionCreator";
+import _l from "utils/localization";
 export default {
+    created() {
+        this._elementsSetUp();
+    },
     components: { CollectionCreator },
+    data: function () {
+        return {
+            state: "build", //error
+            minElements: 2,
+        };
+    },
+    props: {
+        initialElements: {
+            required: true,
+            type: Array,
+        },
+        creationFn: {
+            type: Function,
+            required: true,
+        },
+        /** fn to call when the cancel button is clicked (scoped to this) - if falsy, no btn is displayed */
+        oncancel: {
+            type: Function,
+            required: true,
+        },
+        oncreate: {
+            type: Function,
+            required: true,
+        },
+        defaultHideSourceItems: {
+            type: Boolean,
+            required: false,
+            default: false,
+        },
+    },
     methods: {
         l(str) {
             // _l conflicts private methods of Vue internals, expose as l instead
             return _l(str);
+        },
+        _elementsSetUp: function () {
+            /** a list of invalid elements and the reasons they aren't valid */
+            this.invalidElements = [];
+            //TODO: handle fundamental problem of syncing DOM, views, and list here
+            /** data for list in progress */
+            this.workingElements = [];
+            // copy initial list, sort, add ids if needed
+            this.workingElements = this.initialElements.slice(0);
+        },
+        clickedCreate: function (collectionName) {
+            if (this.state !== "error") {
+                return this.creationFn(this.workingElements, collectionName, this.defaultHideSourceItems)
+                    .done(this.oncreate)
+                    .fail((this.state = "error"));
+            }
+        },
+        hideOriginalsToggle: function () {
+            this.defaultHideSourceItems = !this.defaultHideSourceItems;
+        },
+        /** string rep */
+        toString: function () {
+            return "PairCollectionCreator";
         },
     },
 };
