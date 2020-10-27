@@ -10,7 +10,7 @@ import ANNOTATIONS from "mvc/annotation";
 import Vue from "vue";
 import ListCollectionCreatorModal from "components/Collections/ListCollectionCreatorModal";
 import RuleBasedCollectionCreatorModal from "components/Collections/RuleBasedCollectionCreatorModal";
-import PAIR_COLLECTION_CREATOR from "mvc/collection/pair-collection-creator";
+import PairCollectionCreatorModal from "components/Collections/PairCollectionCreatorModal";
 import LIST_OF_PAIRS_COLLECTION_CREATOR from "mvc/collection/list-of-pairs-collection-creator";
 import faIconButton from "ui/fa-icon-button";
 import BASE_MVC from "mvc/base-mvc";
@@ -379,7 +379,10 @@ var HistoryViewEdit = _super.extend(
                 inst.$mount();
                 createFunc = inst.createListCollection;
             } else if (collectionType == "paired") {
-                createFunc = PAIR_COLLECTION_CREATOR.createPairCollection;
+                const PairCollectionCreatorModalClass = Vue.extend(PairCollectionCreatorModal);
+                const inst = new PairCollectionCreatorModalClass();
+                inst.$mount();
+                createFunc = inst.createPairCollection;
             } else if (collectionType == "list:paired") {
                 createFunc = LIST_OF_PAIRS_COLLECTION_CREATOR.createListOfPairsCollection;
             } else if (collectionType.startsWith("rules")) {

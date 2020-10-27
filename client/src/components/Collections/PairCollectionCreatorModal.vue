@@ -1,7 +1,7 @@
 <script>
 import CollectionCreatorModalMixin from "./common/CollectionCreatorModalMixin";
-import PairCollectionCreator from "./PairCollectionCreator";
 import _l from "utils/localization";
+import Vue from "vue";
 export default {
     mixins: [CollectionCreatorModalMixin],
     methods: {
@@ -9,17 +9,22 @@ export default {
             options = options || {};
             options.title = _l("Create a collection from a pair of datasets");
             const { deferred, creatorOptions, showEl } = this.collectionCreatorModalSetup(options); // eslint-disable-line no-unused-vars
-            var vm = document.createElement("div");
-            showEl(vm);
-            new PairCollectionCreator({
-                propsData: {
-                    creationFn: options.creationFn,
-                    oncancel: options.oncancel,
-                    oncreate: options.oncreate,
-                    //TODO : autoscollDist, highlightClr
-                },
-            }).$mount(vm);
-            return deferred;
+            return import(/* webpackChunkName: "PairCollectionCreator" */ "./PairCollectionCreator.vue").then(
+                (module) => {
+                    var pairCollectionCreatorInstance = Vue.extend(module.default);
+                    var vm = document.createElement("div");
+                    showEl(vm);
+                    new pairCollectionCreatorInstance({
+                        propsData: {
+                            creationFn: options.creationFn,
+                            oncancel: options.oncancel,
+                            oncreate: options.oncreate,
+                            defaultHideSourceItems: options.defaultHideSourceItems,
+                        },
+                    }).$mount(vm);
+                    return deferred;
+                }
+            );
         },
         createPairCollection: function (contents, defaultHideSourceItems) {
             var elements = contents.toJSON();
