@@ -71,9 +71,12 @@ class HmgmRunner(AsynchronousJobRunner):
             try:
                 # Write the output
                 self.create_log_file(job_state, exit_code)
-            except Exception:
-                log.exception("Job wrapper finish method failed")
-                self._fail_job_local(job_state.job_wrapper, "Unable to finish job")
+            except Exception as e:
+                log.debug("Job wrapper finish method failed")
+                log.debug(str(e))
+                # AMPPD: Disable this to stop jobs with bad logs from failing.  
+                #log.exception("Job wrapper finish method failed")
+                # self._fail_job_local(job_state.job_wrapper, "Unable to finish job")
             self.mark_as_finished(job_state)
             return None
         # This is a HMGM is not complete, try again later
