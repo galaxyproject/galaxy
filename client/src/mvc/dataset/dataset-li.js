@@ -299,7 +299,8 @@ export var DatasetListItemView = _super.extend(
          *  @returns {jQuery} rendered DOM
          */
         _renderClipboardButton: function () {
-            const isSharable = this.model.attributes.permissions.access.length !== 1;
+            const isSharable =
+                this.model.attributes.permissions && this.model.attributes.permissions.access.length !== 1;
             var urls = this.model.urls;
             if (!this.isPurged() && urls.download && isSharable)
                 return faIconButton({
