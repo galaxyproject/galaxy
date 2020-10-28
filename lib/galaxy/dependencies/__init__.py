@@ -79,13 +79,34 @@ class ConditionalDependencies:
                 except OSError:
                     pass
 
-        object_store_conf_xml = self.config.get(
+        object_store_conf_path = self.config.get(
             "object_store_config_file",
             join(dirname(self.config_file), 'object_store_conf.xml'))
         try:
-            for store in parse_xml(object_store_conf_xml).iter('object_store'):
-                if 'type' in store.attrib:
-                    self.object_stores.append(store.attrib['type'])
+            if '.xml' in object_store_conf_path:
+                for store in parse_xml(object_store_conf_path).iter('object_store'):
+                    if 'type' in store.attrib:
+                        self.object_stores.append(store.attrib['type'])
+            else:
+                with open(object_store_conf_path, "r") as f:
+                    job_conf_dict = yaml.safe_load(f)
+
+                def collect_types(from_dict):
+                    if not isinstance(from_dict, dict):
+                        return
+
+                    if 'type' in from_dict:
+                        self.object_stores.append(from_dict['type'])
+
+                    for value in from_dict.values():
+                        if isinstance(value, list):
+                            for val in value:
+                                collect_types(val)
+                        else:
+                            collect_types(value)
+
+                collect_types(job_conf_dict)
+
         except OSError:
             pass
 

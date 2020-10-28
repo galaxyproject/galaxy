@@ -10,6 +10,16 @@ AZURE_BLOB_TEST_CONFIG = """<object_store type="azure_blob">
     blah...
 </object_store>
 """
+AZURE_BLOB_TEST_CONFIG_YAML = """
+type: azure_blob
+other_attributes: blah
+"""
+DISTRIBUTED_WITH_AZURE_CONFIG_YAML = """
+type: distributed
+backends:
+   - id: files1
+     type: azure_blob
+"""
 
 
 def test_default_objectstore():
@@ -21,6 +31,26 @@ def test_default_objectstore():
 def test_azure_objectstore_xml():
     with _config_context() as cc:
         object_store_config = cc.write_config("objectstore.xml", AZURE_BLOB_TEST_CONFIG)
+        config = {
+            "object_store_config_file": object_store_config,
+        }
+        cds = cc.get_cond_deps(config)
+        assert cds.check_azure_storage()
+
+
+def test_azure_objectstore_yaml():
+    with _config_context() as cc:
+        object_store_config = cc.write_config("objectstore.yml", AZURE_BLOB_TEST_CONFIG_YAML)
+        config = {
+            "object_store_config_file": object_store_config,
+        }
+        cds = cc.get_cond_deps(config)
+        assert cds.check_azure_storage()
+
+
+def test_azure_objectstore_nested_yaml():
+    with _config_context() as cc:
+        object_store_config = cc.write_config("objectstore.yml", DISTRIBUTED_WITH_AZURE_CONFIG_YAML)
         config = {
             "object_store_config_file": object_store_config,
         }
