@@ -18,8 +18,6 @@ export default {
     },
     data: function () {
         return {
-            tagName: "li",
-            className: "collection-element",
             titleDiscardButton: _l("Remove this dataset from the list"),
             titleElementName: _l("Click to rename"),
             isSelected: false,

@@ -1,13 +1,13 @@
 <template>
     <div class="list-collection-creator">
-        <div v-if="noElementsSelected">
+        <div v-if="(state = error)">
             <b-alert show variant="danger">
                 {{ errorText }}
             </b-alert>
         </div>
         <div v-else>
             <div v-if="noElementsSelected">
-                <b-alert show variant="danger" dismissible>
+                <b-alert show variant="warning" dismissible>
                     {{ noElementsHeader }}
                     {{ allInvalidElementsPartOne }}
                     <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
@@ -22,7 +22,7 @@
                 </div>
             </div>
             <div v-else-if="allElementsAreInvalid">
-                <b-alert show variant="danger" dismissible>
+                <b-alert show variant="warning" dismissible>
                     {{ invalidHeader }}
                     <ul>
                         <li v-for="problem in returnInvalidElements" :key="problem">
@@ -188,7 +188,7 @@
 
 <script>
 import CollectionCreator from "./common/CollectionCreator";
-import DatasetCollectionElementView from "./DatasetCollectionElementView";
+import DatasetCollectionElementView from "./ListDatasetCollectionElementView";
 import _l from "utils/localization";
 import STATES from "mvc/dataset/states";
 import "ui/hoverhighlight";
@@ -346,7 +346,6 @@ export default {
         },
         // /** mangle duplicate names using a mac-like '(counter)' addition to any duplicates */
         _mangleDuplicateNames: function () {
-            var SAFETY = 900;
             var counter = 1;
             var existingNames = {};
             this.workingElements.forEach((element) => {
@@ -354,9 +353,6 @@ export default {
                 while (Object.prototype.hasOwnProperty.call(existingNames, currName)) {
                     currName = `${element.name} (${counter})`;
                     counter += 1;
-                    if (counter >= SAFETY) {
-                        throw new Error("Safety hit in while loop - thats impressive");
-                    }
                 }
                 element.name = currName;
                 existingNames[element.name] = true;
@@ -401,7 +397,6 @@ export default {
 
 <style lang="scss">
 .list-collection-creator {
-    // ======================================================================== list
     .footer {
         margin-top: 8px;
     }
