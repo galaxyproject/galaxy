@@ -547,7 +547,11 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
             else:
                 # Delete from cache first
-                os.unlink(self._get_cache_path(rel_path))
+                try:
+                    os.unlink(self._get_cache_path(rel_path))
+                except FileNotFoundError:
+                    # File was not in cache. Ok to ignore the exception and move on
+                    pass
                 # Delete from irods as well
                 p = Path(rel_path)
                 data_object_name = p.stem + p.suffix
