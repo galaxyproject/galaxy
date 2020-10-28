@@ -24,7 +24,6 @@ from galaxy.util.properties import (
 class ConditionalDependencies:
     def __init__(self, config_file, config=None):
         self.config_file = config_file
-        self.config = config
         self.job_runners = []
         self.authenticators = []
         self.object_stores = []
@@ -35,6 +34,8 @@ class ConditionalDependencies:
         self.error_report_modules = []
         if config is None:
             self.config = load_app_properties(config_file=self.config_file)
+        else:
+            self.config = config
         self.parse_configs()
         self.get_conditional_requirements()
 
