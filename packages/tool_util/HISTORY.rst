@@ -6,10 +6,10 @@ History
 .. to_doc
 
 ---------------------
-20.9.1.dev0
+20.9.1 (2020-10-28)
 ---------------------
 
-
+* Bugfixes to work around & annotate expected tool test failures.
 
 ---------------------
 20.9.0.dev2
