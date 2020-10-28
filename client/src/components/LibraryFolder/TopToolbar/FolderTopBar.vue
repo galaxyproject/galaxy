@@ -229,11 +229,12 @@ export default {
         this.fetchExtAndGenomes();
     },
     mounted() {
-        new mod_path_bar.PathBar({
-            full_path: this.metadata.full_path,
-            id: this.folder_id,
-            parent_library_id: this.metadata.parent_library_id,
-        });
+        if (this.metadata.full_path)
+            new mod_path_bar.PathBar({
+                full_path: this.metadata.full_path,
+                id: this.folder_id,
+                parent_library_id: this.metadata.parent_library_id,
+            });
     },
     computed: {
         contains_file_or_folder: function () {
