@@ -496,6 +496,7 @@ Data Managers are composed of two components:
 
 - Data Manager configuration (e.g. *data_manager_conf.xml*)
 - Data Manager Tool
+- Data table configuration
 
 Data Manager Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -504,6 +505,11 @@ the set of available Data Managers using an XML description. Each
 Data Manager can add entries to one or more Tool Data Tables. For
 each Tool Data Table under consideration, the expected output entry
 columns, and how to handle the Data Manager Tool results, are defined.
+
+Upon installation, Galaxy will recursivly search for data_manager_conf.xml in the repository.
+data_manager_conf.xml should be located in the root of the repository but can be located in a sub-directory.
+The first instance of data_manager_conf.xml found will be used.
+This file defines the paths to the data manager tools within the repository directory structure.
 
 Data Manager Tool
 ~~~~~~~~~~~~~~~~~
@@ -529,6 +535,15 @@ referenced by the Data Manager Tool, if any, is stored within the
 
 A data manager tool can use a ``conda`` environment if the target
 Galaxy is version 18.09 or above (specified in the tool's XML file).
+
+Data manager tools are loaded by referring to them in the data_manager_conf.xml file for the repository.
+
+Data table configuration
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Data tables that the data managers operate on are specified in files at `tool-data/*.loc.sample` relative to the repository root.
+tool-data can contain subdirectories but files in those subdirectories must be referred to including the subdirectory path by
+anything that resolves relative to the tool-data path within Galaxy (ie. path entries in the data table).
 
 Data Manager Server Configuration Options
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
