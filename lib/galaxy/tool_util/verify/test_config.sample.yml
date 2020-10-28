@@ -23,3 +23,7 @@ tools:
   'tool_id_2':
     default:
       skip: 'skip all tests for this tool+version'
+  'tool_id_3':
+    'version1.2':
+      default:
+        skip: 'skip all tests for this version'

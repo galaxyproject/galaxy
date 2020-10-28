@@ -838,22 +838,33 @@ class DictClientTestConfig:
     def get_test_config(self, job_data):
         # TODO: allow short ids, allow versions below outer id instead of key concatenation.
         tool_id = job_data.get("tool_id")
+        tool_version = job_data.get("tool_version")
         tool_test_config = None
+        tool_version_test_config = None
+        is_default = False
         if tool_id in self._tools:
             tool_test_config = self._tools[tool_id]
         if tool_test_config is None:
-            tool_version = job_data.get("tool_version")
             tool_id = "%s/%s" % (tool_id, tool_version)
             if tool_id in self._tools:
-                tool_test_config = self._tools[tool_id]
-        if tool_test_config:
+                tool_version_test_config = self._tools[tool_id]
+        else:
+            if tool_version in tool_test_config:
+                tool_version_test_config = tool_test_config[tool_version]
+            elif "default" in tool_test_config:
+                tool_version_test_config = tool_test_config["default"]
+                is_default = True
+
+        if tool_version_test_config:
             test_index = job_data.get("test_index")
-            if test_index in tool_test_config:
-                return tool_test_config[test_index]
-            elif str(test_index) in tool_test_config:
-                return tool_test_config[str(test_index)]
-            if 'default' in tool_test_config:
-                return tool_test_config['default']
+            if test_index in tool_version_test_config:
+                return tool_version_test_config[test_index]
+            elif str(test_index) in tool_version_test_config:
+                return tool_version_test_config[str(test_index)]
+            if 'default' in tool_version_test_config:
+                return tool_version_test_config['default']
+            elif is_default:
+                return tool_version_test_config
         return None
 
 
