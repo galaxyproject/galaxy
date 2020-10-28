@@ -4,7 +4,10 @@ import argparse
 import json
 import sys
 
-from .interactor import (
+import yaml
+
+from galaxy.tool_util.verify.interactor import (
+    DictClientTestConfig,
     GalaxyInteractorApi,
     verify_tool,
 )
@@ -18,14 +21,31 @@ def main(argv=None):
         argv = sys.argv[1:]
 
     args = _arg_parser().parse_args(argv)
+    client_test_config_path = args.client_test_config
+    if client_test_config_path is not None:
+        with open(client_test_config_path, "r") as f:
+            client_test_config = yaml.full_load(f)
+    else:
+        client_test_config = {}
+
+    def get_option(key):
+        arg_val = getattr(args, key, None)
+        if arg_val is None and key in client_test_config:
+            val = client_test_config.get(key)
+        else:
+            val = arg_val
+        return val
+
+    output_json_path = get_option("output_json")
     galaxy_interactor_kwds = {
-        "galaxy_url": args.galaxy_url,
-        "master_api_key": args.admin_key,
-        "api_key": args.key,
+        "galaxy_url": get_option("galaxy_url"),
+        "master_api_key": get_option("admin_key"),
+        "api_key": get_option("key"),
         "keep_outputs_dir": args.output,
     }
     tool_id = args.tool_id
     tool_version = args.tool_version
+    tools_client_test_config = DictClientTestConfig(client_test_config.get("tools"))
 
     galaxy_interactor = GalaxyInteractorApi(**galaxy_interactor_kwds)
     raw_test_index = args.test_index
@@ -38,7 +58,8 @@ def main(argv=None):
     test_results = []
 
     if args.append:
-        with open(args.output_json) as f:
+        assert output_json_path != "-"
+        with open(output_json_path) as f:
             previous_results = json.load(f)
             test_results = previous_results["tests"]
 
@@ -62,7 +83,8 @@ def main(argv=None):
         try:
             verify_tool(
                 tool_id, galaxy_interactor, test_index=test_index, tool_version=tool_version,
-                register_job_data=register, quiet=not verbose, force_path_paste=args.force_path_paste
+                register_job_data=register, quiet=not verbose, force_path_paste=args.force_path_paste,
+                client_test_config=tools_client_test_config,
             )
 
             if verbose:
@@ -77,13 +99,11 @@ def main(argv=None):
         'version': '0.1',
         'tests': test_results,
     }
-    output_json = args.output_json
-    if output_json:
-        if args.output_json == "-":
-            assert not args.append
+    if output_json_path:
+        if output_json_path == "-":
             print(json.dumps(report_obj))
         else:
-            with open(args.output_json, "w") as f:
+            with open(output_json_path, "w") as f:
                 json.dump(report_obj, f)
 
     if exceptions:
@@ -103,6 +123,7 @@ def _arg_parser():
     parser.add_argument('--append', default=False, action="store_true", help="Extend a test record json (created with --output-json) with additional tests.")
     parser.add_argument('-j', '--output-json', default=None, help='output metadata json')
     parser.add_argument('--verbose', default=False, action="store_true", help="Verbose logging.")
+    parser.add_argument('-c', '--client-test-config', default=None, help="Test config YAML to help with client testing")
     return parser
 
 
