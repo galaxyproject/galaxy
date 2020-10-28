@@ -380,14 +380,14 @@ export default {
                     const markdown = report.markdown || reportDefault;
                     this.markdownText = markdown;
                     this.markdownConfig = report;
-                    showUpgradeMessage(data);
+                    const has_changes = showUpgradeMessage(data);
                     getVersions(this.id).then((versions) => {
                         this.versions = versions;
                     });
                     Vue.nextTick(() => {
                         this.canvasManager.drawOverview();
                         this.canvasManager.scrollToNodes();
-                        this.hasChanges = false;
+                        this.hasChanges = has_changes;
                     });
                 })
                 .catch((response) => {
