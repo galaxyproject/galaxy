@@ -541,7 +541,9 @@ Data manager tools are loaded by referring to them in the data_manager_conf.xml 
 Data table configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Data tables that the data managers operate on are specified in files at `tool-data/*.loc.sample` relative to the repository root.
+Data tables that data managers operate on are specified in `tool_data_table_conf.xml.sample` located at the repository root.
+
+Tables can be preloaded with content from files at `tool-data/*.loc.sample` relative to the repository root.
 tool-data can contain subdirectories but files in those subdirectories must be referred to including the subdirectory path by
 anything that resolves relative to the tool-data path within Galaxy (ie. path entries in the data table).
 
