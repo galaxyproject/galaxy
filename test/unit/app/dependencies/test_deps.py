@@ -20,6 +20,10 @@ backends:
    - id: files1
      type: azure_blob
 """
+FILES_SOURCES_DROPBOX = """
+- type: webdav
+- type: dropbox
+"""
 
 
 def test_default_objectstore():
@@ -56,6 +60,24 @@ def test_azure_objectstore_nested_yaml():
         }
         cds = cc.get_cond_deps(config)
         assert cds.check_azure_storage()
+
+
+def test_fs_default():
+    with _config_context() as cc:
+        cds = cc.get_cond_deps()
+        assert not cds.check_fs_dropboxfs()
+        assert not cds.check_fs_webdavfs()
+
+
+def test_fs_configured():
+    with _config_context() as cc:
+        file_sources_conf = cc.write_config("file_sources.yml", FILES_SOURCES_DROPBOX)
+        config = {
+            "file_sources_config_file": file_sources_conf,
+        }
+        cds = cc.get_cond_deps(config=config)
+        assert cds.check_fs_dropboxfs()
+        assert cds.check_fs_webdavfs()
 
 
 @contextmanager

@@ -3,7 +3,7 @@ Determine what optional dependencies are needed.
 """
 
 import sys
-from os.path import dirname, join
+from os.path import dirname, exists, join
 
 import pkg_resources
 import yaml
@@ -28,6 +28,7 @@ class ConditionalDependencies:
         self.job_runners = []
         self.authenticators = []
         self.object_stores = []
+        self.file_sources = []
         self.conditional_reqs = []
         self.container_interface_types = []
         self.job_rule_modules = []
@@ -140,6 +141,17 @@ class ConditionalDependencies:
         except OSError:
             pass
 
+        # Parse file sources config
+        file_sources_conf_yml = self.config.get(
+            "file_sources_config_file",
+            join(dirname(self.config_file), 'file_sources_conf.yml'))
+        if exists(file_sources_conf_yml):
+            with open(file_sources_conf_yml, "r") as f:
+                file_sources_conf = yaml.safe_load(f)
+        else:
+            file_sources_conf = []
+        self.file_sources = [c.get('type', None) for c in file_sources_conf]
+
     def get_conditional_requirements(self):
         crfile = join(dirname(__file__), 'conditional-requirements.txt')
         for req in pkg_resources.parse_requirements(open(crfile).readlines()):
@@ -199,6 +211,12 @@ class ConditionalDependencies:
 
     def check_python_irodsclient(self):
         return 'irods' in self.object_stores
+
+    def check_fs_dropboxfs(self):
+        return 'dropbox' in self.file_sources
+
+    def check_fs_webdavfs(self):
+        return 'webdav' in self.file_sources
 
     def check_watchdog(self):
         install_set = {'auto', 'True', 'true', 'polling'}
