@@ -22,9 +22,9 @@ from galaxy.util.properties import (
 
 
 class ConditionalDependencies:
-    def __init__(self, config_file):
+    def __init__(self, config_file, config=None):
         self.config_file = config_file
-        self.config = None
+        self.config = config
         self.job_runners = []
         self.authenticators = []
         self.object_stores = []
@@ -32,11 +32,12 @@ class ConditionalDependencies:
         self.container_interface_types = []
         self.job_rule_modules = []
         self.error_report_modules = []
+        if config is None:
+            self.config = load_app_properties(config_file=self.config_file)
         self.parse_configs()
         self.get_conditional_requirements()
 
     def parse_configs(self):
-        self.config = load_app_properties(config_file=self.config_file)
 
         def load_job_config_dict(job_conf_dict):
             for runner in job_conf_dict.get("runners"):
