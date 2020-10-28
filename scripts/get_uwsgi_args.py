@@ -118,6 +118,11 @@ def _get_uwsgi_args(cliargs, kwargs):
     # We always want to append client/src/assets as static-safe.
     __add_arg(args, 'static-safe', f'{os.getcwd()}/client/src/assets')
 
+    # Do not let uwsgi remap stdin to /dev/null if galaxy is in debug mode
+    galaxy_kwargs = load_app_properties(config_file=config_file, config_section='galaxy')
+    if __arg_set('debug', galaxy_kwargs) and not __arg_set('honour-stdin', uwsgi_kwargs):
+        __add_arg(args, 'honour-stdin', True)
+
     for arg in DEFAULT_ARGS['_all_'] + DEFAULT_ARGS[cliargs.app]:
         if not __arg_set(arg, uwsgi_kwargs):
             __add_arg(args, arg, defaults[arg])
