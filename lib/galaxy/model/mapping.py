@@ -2088,8 +2088,8 @@ mapper(model.LibraryFolderInfoAssociation, model.LibraryFolderInfoAssociation.ta
 mapper(model.LibraryDataset, model.LibraryDataset.table, properties=dict(
     folder=relation(model.LibraryFolder),
     library_dataset_dataset_association=relation(model.LibraryDatasetDatasetAssociation,
-        primaryjoin=(model.LibraryDataset.table.c.library_dataset_dataset_association_id ==
-                     model.LibraryDatasetDatasetAssociation.table.c.id)),
+        foreign_keys=model.LibraryDataset.table.c.library_dataset_dataset_association_id,
+        post_update=True),
     expired_datasets=relation(model.LibraryDatasetDatasetAssociation,
         foreign_keys=[model.LibraryDataset.table.c.id, model.LibraryDataset.table.c.library_dataset_dataset_association_id],
         primaryjoin=(
@@ -2104,7 +2104,7 @@ mapper(model.LibraryDataset, model.LibraryDataset.table, properties=dict(
 mapper(model.LibraryDatasetDatasetAssociation, model.LibraryDatasetDatasetAssociation.table, properties=dict(
     dataset=relation(model.Dataset),
     library_dataset=relation(model.LibraryDataset,
-    primaryjoin=(model.LibraryDatasetDatasetAssociation.table.c.library_dataset_id == model.LibraryDataset.table.c.id)),
+        foreign_keys=model.LibraryDatasetDatasetAssociation.table.c.library_dataset_id),
     # user=relation( model.User.mapper ),
     user=relation(model.User),
     copied_from_library_dataset_dataset_association=relation(model.LibraryDatasetDatasetAssociation,
