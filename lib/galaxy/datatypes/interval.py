@@ -947,7 +947,7 @@ class Gff3(Gff):
         >>> Gff3().sniff( fname )
         True
         >>> fname = get_test_fname( 'grch37.75.gtf' )
-        >>> Gtf().sniff( fname )
+        >>> Gff3().sniff( fname )
         False
         """
         if len(get_headers(file_prefix, '\t', count=2)) < 2:
