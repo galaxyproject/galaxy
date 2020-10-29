@@ -1246,6 +1246,19 @@ mapping:
         desc: |
           The URL linked by the "Galaxy/brand" text.
 
+      logo_src:
+        type: str
+        default: /static/favicon.png
+        required: false
+        desc: |
+          The brand image source.
+
+      logo_src_secondary:
+        type: str
+        required: false
+        desc: |
+          The custom brand image source.
+
       helpsite_url:
         type: str
         required: false

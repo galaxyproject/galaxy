@@ -1711,6 +1711,26 @@
 :Type: str
 
 
+~~~~~~~~~~~~
+``logo_src``
+~~~~~~~~~~~~
+
+:Description:
+    The brand image source.
+:Default: ``/static/favicon.png``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~
+``logo_src_secondary``
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The custom brand image source.
+:Default: ``None``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~
 ``helpsite_url``
 ~~~~~~~~~~~~~~~~

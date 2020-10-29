@@ -51,6 +51,7 @@ export function mountMasthead(el, options, mastheadState) {
             brand: options.brand,
             brandLink: options.logo_url,
             brandImage: options.logo_src,
+            brandImageSecondary: options.logo_src_secondary,
             appRoot: getAppRoot(),
             galaxy: getGalaxyInstance(),
             menuOptions: options,
