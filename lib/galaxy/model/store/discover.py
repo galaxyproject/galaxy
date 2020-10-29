@@ -564,7 +564,10 @@ def persist_elements_to_folder(model_persistence_context, elements, library_fold
             sources = fields_match.sources
             hashes = fields_match.hashes
             created_from_basename = fields_match.created_from_basename
-
+            state = 'ok'
+            if hasattr(discovered_file, "error_message"):
+                info = discovered_file.error_message
+                state = "error"
             model_persistence_context.create_dataset(
                 ext=ext,
                 designation=designation,
@@ -578,6 +581,7 @@ def persist_elements_to_folder(model_persistence_context, elements, library_fold
                 sources=sources,
                 hashes=hashes,
                 created_from_basename=created_from_basename,
+                final_job_state=state,
             )
 
 
@@ -610,6 +614,10 @@ def persist_hdas(elements, model_persistence_context, final_job_state='ok'):
                 hashes = fields_match.hashes
                 created_from_basename = fields_match.created_from_basename
                 extra_files = fields_match.extra_files
+                state = final_job_state
+                if hasattr(discovered_file, "error_message"):
+                    state = "error"
+                    info = discovered_file.error_message
                 dataset = model_persistence_context.create_dataset(
                     ext=ext,
                     designation=designation,
@@ -624,7 +632,7 @@ def persist_hdas(elements, model_persistence_context, final_job_state='ok'):
                     sources=sources,
                     hashes=hashes,
                     created_from_basename=created_from_basename,
-                    final_job_state=final_job_state,
+                    final_job_state=state,
                 )
                 if not hda_id:
                     datasets.append(dataset)
@@ -689,19 +697,26 @@ def replace_request_syntax_sugar(obj):
 
 
 DiscoveredFile = namedtuple('DiscoveredFile', ['path', 'collector', 'match'])
+DiscoveredFileError = namedtuple('DiscoveredFileError', ['error_message', 'collector', 'match'])
+DiscoveredFileError.path = None
 
 
 def discovered_file_for_element(dataset, job_working_directory, parent_identifiers=[], collector=None):
     target_directory = discover_target_directory(getattr(collector, "directory", None), job_working_directory)
-    filename = dataset["filename"]
-    # handle link_data_only here, verify filename is in directory if not linking...
-    if not dataset.get("link_data_only"):
-        path = os.path.join(target_directory, filename)
-        if not util.in_directory(path, target_directory):
-            raise Exception("Problem with tool configuration, attempting to pull in datasets from outside working directory.")
+    filename = dataset.get("filename")
+    error_message = dataset.get("error_message")
+    if error_message is None:
+        # handle link_data_only here, verify filename is in directory if not linking...
+        if not dataset.get("link_data_only"):
+            path = os.path.join(target_directory, filename)
+            if not util.in_directory(path, target_directory):
+                raise Exception("Problem with tool configuration, attempting to pull in datasets from outside working directory.")
+        else:
+            path = filename
+        return DiscoveredFile(path, collector, JsonCollectedDatasetMatch(dataset, collector, filename, path=path, parent_identifiers=parent_identifiers))
     else:
-        path = filename
-    return DiscoveredFile(path, collector, JsonCollectedDatasetMatch(dataset, collector, filename, path=path, parent_identifiers=parent_identifiers))
+        assert "error_message" in dataset
+        return DiscoveredFileError(dataset['error_message'], collector, JsonCollectedDatasetMatch(dataset, collector, None, parent_identifiers=parent_identifiers))
 
 
 def discover_target_directory(dir_name, job_working_directory):

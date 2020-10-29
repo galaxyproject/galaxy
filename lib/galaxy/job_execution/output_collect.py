@@ -120,7 +120,11 @@ def collect_dynamic_outputs(
                 collection_type_description = COLLECTION_TYPE_DESCRIPTION_FACTORY.for_collection_type(collection_type)
                 structure = UninitializedTree(collection_type_description)
                 hdca = job_context.create_hdca(name, structure)
-            persist_elements_to_hdca(job_context, elements, hdca, collector=DEFAULT_DATASET_COLLECTOR)
+            error_message = unnamed_output_dict.get("error_message")
+            if error_message:
+                hdca.collection.handle_population_failed(error_message)
+            else:
+                persist_elements_to_hdca(job_context, elements, hdca, collector=DEFAULT_DATASET_COLLECTOR)
         elif destination_type == "hdas":
             persist_hdas(elements, job_context, final_job_state=job_context.final_job_state)
 

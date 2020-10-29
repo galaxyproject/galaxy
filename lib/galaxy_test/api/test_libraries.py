@@ -190,7 +190,8 @@ class LibrariesApiTestCase(ApiTestCase, TestsDatasets):
         items = [{
             "src": "url",
             "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
-            "MD5": "37b59762b59fff860460522d271bc112"
+            "MD5": "37b59762b59fff860460522d271bc112",
+            "name": "4.bed",
         }]
         targets = [{
             "destination": destination,
@@ -207,7 +208,10 @@ class LibrariesApiTestCase(ApiTestCase, TestsDatasets):
 
         job = tool_response.json()["jobs"][0]
         details = self.dataset_populator.get_job_details(job["id"]).json()
-        assert details["state"] == "error", details
+        assert details["state"] == "ok", details
+
+        dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
+        assert dataset["state"] == "error", dataset
 
     def test_fetch_url_archive_to_folder(self):
         history_id, library, destination = self._setup_fetch_to_folder("single_url")

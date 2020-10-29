@@ -208,15 +208,17 @@ class BaseDatasetPopulator:
             self.wait_for_tool_run(history_id, run_response, assert_ok=kwds.get('assert_ok', True))
         return run_response
 
-    def fetch(self, payload, assert_ok=True, timeout=DEFAULT_TIMEOUT):
+    def fetch(self, payload, assert_ok=True, timeout=DEFAULT_TIMEOUT, wait=None):
         tool_response = self._post("tools/fetch", data=payload)
-        if assert_ok:
+        if wait is None:
+            wait = assert_ok
+        if wait:
             job = self.check_run(tool_response)
             self.wait_for_job(job["id"], timeout=timeout)
-
-            job = tool_response.json()["jobs"][0]
-            details = self.get_job_details(job["id"]).json()
-            assert details["state"] == "ok", details
+            if assert_ok:
+                job = tool_response.json()["jobs"][0]
+                details = self.get_job_details(job["id"]).json()
+                assert details["state"] == "ok", details
 
         return tool_response
 
