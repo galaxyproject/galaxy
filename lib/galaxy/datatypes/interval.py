@@ -1053,9 +1053,7 @@ class Gtf(Gff):
                     # Check attributes for gene_id, transcript_id
                     attributes = parse_gff_attributes(hdr[8])
                     if len(attributes) >= 2:
-                        if 'gene_id' not in attributes:
-                            return False
-                        if 'transcript_id' not in attributes:
+                        if 'gene_id' not in attributes and 'transcript_id' not in attributes:
                             return False
                     else:
                         return False
