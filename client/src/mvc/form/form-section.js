@@ -89,9 +89,11 @@ var View = Backbone.View.extend({
                             break;
                         }
                     }
-                    if (i == selectedCase && nonhidden) {
+                    if (i == selectedCase) {
                         const selectedView = self.elements[input_def.id + "_" + i];
                         selectedView.renderOnce();
+                    }
+                    if (i == selectedCase && nonhidden) {
                         section_row.fadeIn("fast");
                     } else {
                         section_row.hide();
