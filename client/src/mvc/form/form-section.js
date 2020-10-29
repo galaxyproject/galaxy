@@ -156,7 +156,7 @@ var View = Backbone.View.extend({
 
     /** Add a customized section */
     _addSection: function (input_def) {
-        const section = new View(this.app, { inputs: input_def.inputs, skip_render: true });
+        const section = new View(this.app, { inputs: input_def.inputs });
         var portlet = new Portlet.View({
             title: input_def.title || input_def.name,
             cls: "ui-portlet-section",
