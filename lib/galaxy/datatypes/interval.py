@@ -1053,7 +1053,8 @@ class Gtf(Gff):
                     if hdr[7] not in self.valid_gff_frame:
                         return False
 
-                    # Check attributes for gene_id, transcript_id
+                    # Check attributes for gene_id (transcript_id is also mandatory
+                    # but not for genes)
                     attributes = parse_gff_attributes(hdr[8])
                     if len(attributes) >= 2:
                         if 'gene_id' not in attributes and 'transcript_id' not in attributes:
