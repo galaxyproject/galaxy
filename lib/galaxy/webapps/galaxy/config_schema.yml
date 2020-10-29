@@ -1246,6 +1246,19 @@ mapping:
         desc: |
           The URL linked by the "Galaxy/brand" text.
 
+      logo_src:
+        type: str
+        default: /static/favicon.png
+        required: false
+        desc: |
+          The brand image source.
+
+      logo_src_secondary:
+        type: str
+        required: false
+        desc: |
+          The custom brand image source.
+
       helpsite_url:
         type: str
         required: false
@@ -1730,6 +1743,12 @@ mapping:
           and debugging: use_lint, use_profile, and use_printdebug.  It also
           causes the files used by PBS/SGE (submission script, output, and error)
           to remain on disk after the job is complete.
+
+          In addition, this will set uWSGI's `honour-stdin` option to `true`;
+          thus, preventing uWSGI from remapping stdin to `/dev/null` and
+          enabling debugging with tools like pdb. To keep uWSGI's default
+          setting, set `honor-stdin` to `false` in the `uwsgi` section of this
+          configuration file.
 
       use_lint:
         type: bool

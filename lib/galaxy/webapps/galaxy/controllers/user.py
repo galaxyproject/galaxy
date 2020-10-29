@@ -7,10 +7,6 @@ from datetime import datetime, timedelta
 from urllib.parse import unquote
 
 from markupsafe import escape
-from sqlalchemy import (
-    func,
-    or_
-)
 from sqlalchemy.orm.exc import NoResultFound
 
 from galaxy import (
@@ -134,15 +130,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         status = None
         if not login or not password:
             return self.message_exception(trans, "Please specify a username and password.")
-        user = trans.sa_session.query(trans.app.model.User).filter(or_(
-            trans.app.model.User.table.c.email == login,
-            trans.app.model.User.table.c.username == login
-        )).first()
-        if not user:
-            # Try a case-insensitive match on the email
-            user = trans.sa_session.query(trans.app.model.User).filter(
-                func.lower(trans.app.model.User.table.c.email) == login.lower()
-            ).first()
+        user = self.user_manager.get_user_by_identity(login)
         log.debug("trans.app.config.auth_config_file: %s" % trans.app.config.auth_config_file)
         if user is None:
             message, user = self.__autoregistration(trans, login, password)

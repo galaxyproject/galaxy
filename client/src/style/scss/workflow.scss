@@ -14,7 +14,7 @@
             @extend .card;
             @extend .position-absolute;
             z-index: 100;
-            width: $worfklow-node-width;
+            width: $workflow-node-width;
             border: solid $brand-primary 1px;
             &.node-active {
                 z-index: 1001;

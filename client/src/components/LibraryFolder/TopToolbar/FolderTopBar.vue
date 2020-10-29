@@ -7,7 +7,7 @@
                 <font-awesome-icon icon="home" />
             </a>
             <div>
-                <form class="form-inline">
+                <div class="form-inline">
                     <SearchField @updateSearch="updateSearch($event)"></SearchField>
                     <button
                         v-if="metadata.can_add_library_item"
@@ -21,7 +21,6 @@
                     </button>
                     <div v-if="metadata.can_add_library_item">
                         <div
-                            v-if="multiple_add_dataset_options"
                             title="Add datasets to current folder"
                             class="dropdown add-library-items add-library-items-datasets mr-1"
                         >
@@ -134,7 +133,7 @@
                             include deleted
                         </b-form-checkbox>
                     </div>
-                </form>
+                </div>
             </div>
         </div>
     </div>
@@ -201,7 +200,6 @@ export default {
     data() {
         return {
             is_admin: false,
-            multiple_add_dataset_options: false,
             user_library_import_dir: false,
             library_import_dir: false,
             allow_library_path_paste: false,
@@ -227,22 +225,16 @@ export default {
         this.user_library_import_dir = Galaxy.config.user_library_import_dir;
         this.library_import_dir = Galaxy.config.library_import_dir;
         this.allow_library_path_paste = Galaxy.config.allow_library_path_paste;
-        if (
-            this.user_library_import_dir !== null ||
-            this.allow_library_path_paste !== false ||
-            this.library_import_dir !== null
-        ) {
-            this.multiple_add_dataset_options = true;
-        }
 
         this.fetchExtAndGenomes();
     },
     mounted() {
-        new mod_path_bar.PathBar({
-            full_path: this.metadata.full_path,
-            id: this.folder_id,
-            parent_library_id: this.metadata.parent_library_id,
-        });
+        if (this.metadata.full_path)
+            new mod_path_bar.PathBar({
+                full_path: this.metadata.full_path,
+                id: this.folder_id,
+                parent_library_id: this.metadata.parent_library_id,
+            });
     },
     computed: {
         contains_file_or_folder: function () {

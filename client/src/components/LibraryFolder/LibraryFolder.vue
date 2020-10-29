@@ -33,7 +33,11 @@
                 show-empty
             >
                 <template v-slot:empty>
-                    <div v-if="!search_text" class="empty-folder-message">
+                    <div v-if="isBusy" class="text-center my-2">
+                        <b-spinner class="align-middle"></b-spinner>
+                        <strong>Loading...</strong>
+                    </div>
+                    <div v-else class="empty-folder-message">
                         This folder is either empty or you do not have proper access permissions to see the contents. If
                         you expected something to show up please consult the
                         <a href="https://galaxyproject.org/data-libraries/#permissions" target="_blank">
@@ -297,7 +301,7 @@ export default {
         return {
             error: null,
             isBusy: false,
-            folder_metadata: null,
+            folder_metadata: {},
             currentPage: 1,
             fields: fields,
             selectMode: "multi",
@@ -312,16 +316,21 @@ export default {
             filterOn: [],
             search_text: "",
             isAllSelectedMode: false,
+            total_rows: 0,
             deselectedDatasets: [],
         };
     },
     computed: {
         parentFolder() {
-            const path = this.folder_metadata.full_path;
-            if (path.length === 1) {
-                return `${this.root}library/list/`;
+            if (this.folder_metadata && this.folder_metadata.full_path) {
+                const path = this.folder_metadata.full_path;
+                if (path.length === 1) {
+                    return `${this.root}library/list/`;
+                } else {
+                    return `${this.root}library/folders/${path[path.length - 2][0]}`;
+                }
             } else {
-                return `${this.root}library/folders/${path[path.length - 2][0]}`;
+                return false;
             }
         },
     },
@@ -364,6 +373,7 @@ export default {
         },
         updateSearchValue(value) {
             this.search_text = value;
+            this.folderContents = [];
             this.fetchFolderContents(this.include_deleted);
         },
         selectAllRenderedRows() {

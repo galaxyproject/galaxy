@@ -411,7 +411,7 @@ def _write_option_rst(args, rst, key, heading_level, option_value):
     heading = heading_level * len(title)
     rst.write(f"{heading}\n{title}\n{heading}\n\n")
     option, value = _parse_option_value(option_value)
-    desc = option["desc"]
+    desc = _get_option_desc(option)
     rst.write(":Description:\n")
     # Wrap and indent desc, replacing whitespaces with a space, except
     # for double newlines which are replaced with a single newline.
@@ -737,7 +737,7 @@ def _write_header(f, section_header):
 
 def _write_option(args, f, key, option_value, as_comment=False, uwsgi_hack=False):
     option, value = _parse_option_value(option_value)
-    desc = option["desc"]
+    desc = _get_option_desc(option)
     comment = ""
     if desc and args.add_comments:
         # Wrap and comment desc, replacing whitespaces with a space, except
@@ -804,6 +804,15 @@ def _server_paste_to_uwsgi(app_desc, server_config, applied_filters):
 
 def _warn(message):
     print("WARNING: %s" % message)
+
+
+def _get_option_desc(option):
+    desc = option["desc"]
+    parent_dir = option.get("path_resolves_to")
+    if parent_dir:
+        path_resolves = f"The value of this option will be resolved with respect to <{parent_dir}>."
+        return f"{desc}\n{path_resolves}" if desc else path_resolves
+    return desc
 
 
 ACTIONS = {
