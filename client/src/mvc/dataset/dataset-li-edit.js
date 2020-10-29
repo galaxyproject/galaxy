@@ -63,7 +63,7 @@ var DatasetListItemEdit = _super.extend(
                 faIcon: "fa-pencil",
                 classes: "edit-btn",
                 onclick: function (ev) {
-                    if (!disabled) {
+                    if (!deleted && !purged) {
                         const Galaxy = getGalaxyInstance();
                         if (Galaxy.router) {
                             ev.preventDefault();
