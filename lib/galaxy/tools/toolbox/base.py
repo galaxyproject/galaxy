@@ -140,7 +140,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         if not os.path.exists(self.app.config.beta_edam_toolbox_ontology_path):
             log.debug('EDAM ontology file not present, downloading')
 
-            page = urllib.request.urlopen(self.app.config.beta_edam_ontology_url)
+            page = urllib.request.urlopen('https://edamontology.org/EDAM.tsv')
             sniff.stream_to_open_named_file(page, os.open(self.app.config.beta_edam_toolbox_ontology_path, os.O_WRONLY | os.O_CREAT), None, source_encoding=get_charset_from_http_headers(page.headers))
 
         log.debug('Processing EDAM Terms')
