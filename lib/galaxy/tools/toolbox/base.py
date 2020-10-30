@@ -112,7 +112,10 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         self._init_tools_from_configs(config_filenames)
         if self.app.name == 'galaxy' and self._integrated_tool_panel_config_has_contents:
             # Load self._tool_panel based on the order in self._integrated_tool_panel.
-            self._load_tool_panel()
+            if self.app.config.enable_beta_edam_toolbox:
+                self._load_tool_panel_edam()
+            else:
+                self._load_tool_panel()
         if save_integrated_tool_panel:
             self._save_integrated_tool_panel()
 
@@ -396,6 +399,60 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                             log_msg = f"Loaded tool id: {tool.id}, version: {tool.version} into tool panel...."
         if log_msg and (not hasattr(self.app, 'tool_cache') or tool_id in self.app.tool_cache._new_tool_ids):
             log.debug(log_msg)
+
+    def _get_edam_sec(self, tool):
+        edam = tool.edam_operations + tool.edam_topics
+        if len(edam) > 0:
+            # TODO nicer edam names.
+            sec_id, sec_nm = edam[0], edam[0]
+        else:
+            sec_id, sec_nm = 'uncategorized', 'Uncategorized'
+        return sec_id, sec_nm
+
+    def _get_section(self, val):
+        sec_id, sec_nm = self._get_edam_sec(val)
+        if sec_id not in self._tool_panel:
+            section = ToolSection({'id': sec_id, 'name': sec_nm, 'version': ''})
+            self._tool_panel[sec_id] = section
+        else:
+            section = self._tool_panel[sec_id]
+        return section
+
+    def _load_tool_panel_edam(self):
+        execution_timer = ExecutionTimer()
+        for key, item_type, val in self._integrated_tool_panel.panel_items_iter():
+            if item_type == panel_item_types.TOOL:
+                tool_id = key.replace('tool_', '', 1)
+                if tool_id in self._tools_by_id:
+                    section = self._get_section(val)
+
+                    if tool_id in self._tools_by_id:
+                        self.__add_tool_to_tool_panel(val, section, section=True)
+                        self._integrated_section_by_tool[tool_id] = key, val.name
+            elif item_type == panel_item_types.WORKFLOW:
+                workflow_id = key.replace('workflow_', '', 1)
+                if workflow_id in self._workflows_by_id:
+                    workflow = self._workflows_by_id[workflow_id]
+                    self._tool_panel[key] = workflow
+                    log.debug(f"Loaded workflow: {workflow_id} {workflow.name}")
+            elif item_type == panel_item_types.SECTION:
+                for section_key, section_item_type, section_val in val.panel_items_iter():
+                    if section_item_type == panel_item_types.TOOL:
+                        tool_id = section_key.replace('tool_', '', 1)
+                        if tool_id in self._tools_by_id:
+                            section = self._get_section(section_val)
+
+                            self.__add_tool_to_tool_panel(section_val, section, section=True)
+                            self._integrated_section_by_tool[tool_id] = key, val.name
+
+                    elif section_item_type == panel_item_types.WORKFLOW:
+                        workflow_id = section_key.replace('workflow_', '', 1)
+                        if workflow_id in self._workflows_by_id:
+                            workflow = self._workflows_by_id[workflow_id]
+                            section.elems[section_key] = workflow
+                            log.debug(f"Loaded workflow: {workflow_id} {workflow.name}")
+        log.debug("Loading tool panel finished %s", execution_timer)
+
 
     def _load_tool_panel(self):
         execution_timer = ExecutionTimer()
@@ -823,7 +880,10 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 integrated_elems[key] = tool
 
                 if async_load:
-                    self._load_tool_panel()
+                    if self.app.config.enable_beta_edam_toolbox:
+                        self._load_tool_panel_edam()
+                    else:
+                        self._load_tool_panel()
                     self._save_integrated_tool_panel()
                 return tool.id
             except Exception:

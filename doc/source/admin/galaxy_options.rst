@@ -3180,6 +3180,17 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_beta_edam_toolbox``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable beta EDAM organised toolbox which ignores admin managed
+    sections in lieu of EDAM topics only.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``default_workflow_export_format``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
