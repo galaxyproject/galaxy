@@ -299,19 +299,34 @@ export var DatasetListItemView = _super.extend(
          *  @returns {jQuery} rendered DOM
          */
         _renderClipboardButton: function () {
-            const isSharable =
-                this.model.attributes.permissions && this.model.attributes.permissions.access.length !== 1;
+            const isUnsharable =
+                this.model.attributes.permissions &&
+                this.model.attributes.permissions.access.length === 1 &&
+                this.model.attributes.permissions.access.includes(getGalaxyInstance().user.id);
+
             var urls = this.model.urls;
-            if (!this.isPurged() && urls.download && isSharable)
+            if (!this.isPurged() && urls.download) {
+                let title = _l("Copy link");
+                let style = "";
+                if (isUnsharable) {
+                    title = _l("Preferences restrict sharing");
+                    style = "opacity: 0.3";
+                }
                 return faIconButton({
                     faIcon: "fa-chain",
-                    title: _l("Copy link"),
+                    style: style,
+                    title: title,
                     onclick: function () {
-                        navigator.clipboard.writeText(`${window.location.origin}${urls.download}`).then(() => {
-                            Toast.info("Link is copied to your clipboard");
-                        });
+                        if (!isUnsharable)
+                            navigator.clipboard.writeText(`${window.location.origin}${urls.download}`).then(() => {
+                                Toast.info("Link is copied to your clipboard");
+                            });
+                        else {
+                            Toast.warning("Dataset is not sharable");
+                        }
                     },
                 });
+            }
         },
         /** Render icon-button/popupmenu to download the data (and/or the associated meta files (bai, etc.)) for this.
          *  @returns {jQuery} rendered DOM
