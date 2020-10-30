@@ -200,6 +200,8 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
             return the history with ``id``
         * GET /api/histories/deleted/{id}:
             return the deleted history with ``id``
+        * GET /api/histories/current:
+            return the current history
         * GET /api/histories/most_recently_used:
             return the most recently used history
 
@@ -217,7 +219,9 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
         history_id = id
         deleted = string_as_bool(deleted)
 
-        if history_id == "most_recently_used":
+        if history_id == "current":
+            history = self.manager.get_current(trans)
+        elif history_id == "most_recently_used":
             history = self.manager.most_recent(trans.user,
                 filters=(self.app.model.History.deleted == false()), current_history=trans.history)
         else:
