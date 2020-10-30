@@ -1029,20 +1029,17 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     else:
                         for hist in target_histories:
                             if content.history_content_type == "dataset":
-                                copy = content.copy()
-                                hist.add_dataset(copy)
+                                copy = content.copy(flush=False)
+                                hist.stage_addition(copy)
                             else:
-                                copy_collected_datasets = True
-                                copy_kwds = {}
-                                if copy_collected_datasets:
-                                    copy_kwds["element_destination"] = hist
-                                copy = content.copy(**copy_kwds)
-                                hist.add_dataset_collection(copy)
+                                copy = content.copy(element_destination=hist)
                             if user:
                                 copy.copy_tags_from(user, content)
+                        for hist in target_histories:
+                            hist.add_pending_datasets()
+                trans.sa_session.flush()
                 if current_history in target_histories:
                     refresh_frames = ['history']
-                trans.sa_session.flush()
                 hist_names_str = ", ".join('<a href="%s" target="_top">%s</a>' %
                                            (url_for(controller="history", action="switch_to_history",
                                                     hist_id=trans.security.encode_id(hist.id)), escape(hist.name))
