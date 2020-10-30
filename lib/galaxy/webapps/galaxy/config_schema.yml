@@ -2334,11 +2334,17 @@ mapping:
       beta_edam_toolbox_ontology_path:
         type: str
         default: EDAM_1.23.tsv
-        path_resolves_to: config_dir
+        path_resolves_to: data_dir
         required: false
         desc: |
           Sets the path to EDAM ontology file.
 
+      beta_edam_ontology_url:
+        type: str
+        default: <url_to_wherever we can fetch the ontology>
+        required: false
+        desc: |
+          Sets the url to the EDAM ontology file.
       default_workflow_export_format:
         type: str
         default: ga
