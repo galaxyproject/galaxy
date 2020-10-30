@@ -8,8 +8,8 @@ from collections import (
     OrderedDict
 )
 from errno import ENOENT
-from urllib.parse import urlparse
 import urllib.request
+from urllib.parse import urlparse
 
 from markupsafe import escape
 
@@ -473,7 +473,6 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             if parentTerm in self.edam[term]['parents']:
                 yield term
 
-
     def _load_tool_panel_edam(self):
         execution_timer = ExecutionTimer()
 
@@ -506,17 +505,21 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                                 uncategorized.append((tool_id, key, val, val.name))
                             else:
                                 for path in self.edam[term]['path']:
-                                    # For 2 component paths, it works, for 1 it does too.
+                                    if len(path) == 1:
+                                        t = term
+                                    else:
+                                        t = path[0]
+
                                     if path[0].startswith('operation_'):
-                                        operations[path[0]][tool_id] = (term, tool_id, key, val, val.name)
-                                    if path[0].startswith('topic_'):
-                                        topics[path[0]][tool_id] = (term, tool_id, key, val, val.name)
-            elif item_type == panel_item_types.WORKFLOW:
-                workflow_id = key.replace('workflow_', '', 1)
-                if workflow_id in self._workflows_by_id:
-                    workflow = self._workflows_by_id[workflow_id]
-                    self._tool_panel[key] = workflow
-                    log.debug(f"Loaded workflow: {workflow_id} {workflow.name}")
+                                        operations[t][tool_id] = (term, tool_id, key, val, val.name)
+                                    elif path[0].startswith('topic_'):
+                                        topics[t][tool_id] = (term, tool_id, key, val, val.name)
+            # elif item_type == panel_item_types.WORKFLOW:
+                # workflow_id = key.replace('workflow_', '', 1)
+                # if workflow_id in self._workflows_by_id:
+                    # workflow = self._workflows_by_id[workflow_id]
+                    # self._tool_panel[key] = workflow
+                    # log.debug(f"Loaded workflow: {workflow_id} {workflow.name}")
             elif item_type == panel_item_types.SECTION:
                 for section_key, section_item_type, section_val in val.panel_items_iter():
                     if section_item_type == panel_item_types.TOOL:
@@ -524,30 +527,30 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                         if tool_id in self._tools_by_id:
                             for term, label in self._get_edam_sec(section_val):
                                 if term == 'uncategorized':
-                                    uncategorized.append((tool_id, key, val, val.name))
+                                    uncategorized.append((tool_id, key, section_val, val.name))
                                 else:
                                     for path in self.edam[term]['path']:
-                                        # For 2 component paths, it works, for 1 it does too.
+                                        if len(path) == 1:
+                                            t = term
+                                        else:
+                                            t = path[0]
+
                                         if path[0].startswith('operation_'):
-                                            operations[path[0]][tool_id] = (term, tool_id, key, section_val, val.name)
+                                            operations[t][tool_id] = (term, tool_id, key, section_val, val.name)
                                         if path[0].startswith('topic_'):
-                                            topics[path[0]][tool_id] = (term, tool_id, key, section_val, val.name)
-                            # for section in self._get_section(section_val):
-                                # self.__add_tool_to_tool_panel(section_val, section, section=True)
-                                # self._integrated_section_by_tool[tool_id] = key, val.name
-                    elif section_item_type == panel_item_types.WORKFLOW:
-                        workflow_id = section_key.replace('workflow_', '', 1)
-                        if workflow_id in self._workflows_by_id:
-                            workflow = self._workflows_by_id[workflow_id]
-                            section.elems[section_key] = workflow
-                            log.debug(f"Loaded workflow: {workflow_id} {workflow.name}")
+                                            topics[t][tool_id] = (term, tool_id, key, section_val, val.name)
+                    # elif section_item_type == panel_item_types.WORKFLOW:
+                        # workflow_id = section_key.replace('workflow_', '', 1)
+                        # if workflow_id in self._workflows_by_id:
+                            # workflow = self._workflows_by_id[workflow_id]
+                            # section.elems[section_key] = workflow
+                            # log.debug(f"Loaded workflow: {workflow_id} {workflow.name}")
         log.debug("Loading tool panel finished %s", execution_timer)
 
-        # print(operations.keys())
-        # print([self._sort_edam_key(x) for x in operations.keys()])
-        # print(sorted(operations.keys(), lambda x: self._sort_edam_key(x)))
-
         for term in sorted(operations.keys(), key=lambda x: self._sort_edam_key(x)):
+            if len(operations[term].keys()) == 0:
+                continue
+
             elem = etree.Element('label')
             elem.attrib['text'] = self.edam[term]['label']
             elem.attrib['id'] = term
@@ -559,6 +562,9 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 self._integrated_section_by_tool[tool_id] = key, val_name
 
         for term in sorted(topics.keys(), key=lambda x: self._sort_edam_key(x)):
+            if len(topics[term].keys()) == 0:
+                continue
+
             elem = etree.Element('label')
             elem.attrib['text'] = self.edam[term]['label']
             elem.attrib['id'] = term
@@ -570,9 +576,10 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 self._integrated_section_by_tool[tool_id] = key, val_name
 
         section = self._get_section('uncategorized', 'Uncategorized')
-        # for (tool_id, key, val, val_name) in uncategorized:
-            # self.__add_tool_to_tool_panel(val, section, section=True)
-            # self._integrated_section_by_tool[tool_id] = key, val_name
+        for (tool_id, key, val, val_name) in uncategorized:
+            print(tool_id, key, val, val_name)
+            self.__add_tool_to_tool_panel(val, section, section=True)
+            self._integrated_section_by_tool[tool_id] = key, val_name
 
     def _sort_edam_key(self, x):
         if x in ('operation_0004', 'topic_0003'):

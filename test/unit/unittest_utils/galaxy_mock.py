@@ -162,6 +162,7 @@ class MockAppConfig(Bunch):
 
         self.shed_tool_config_file = "config/shed_tool_conf.xml"
         self.shed_tool_config_file_set = False
+        self.enable_beta_edam_toolbox = False
         self.preserve_python_environment = "always"
         self.enable_beta_gdpr = False
         self.legacy_eager_objectstore_initialization = True
