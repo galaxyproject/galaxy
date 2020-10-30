@@ -486,7 +486,7 @@ mapping:
 
       file_sources_config_file:
         type: str
-        default: file_sources_conf.yml        
+        default: file_sources_conf.yml
         path_resolves_to: config_dir
         required: false
         desc: |
@@ -2330,6 +2330,14 @@ mapping:
         desc: |
           Enable beta EDAM organised toolbox which ignores admin managed
           sections in lieu of EDAM topics only.
+
+      beta_edam_toolbox_ontology_path:
+        type: str
+        default: EDAM_1.23.tsv
+        path_resolves_to: config_dir
+        required: false
+        desc: |
+          Sets the path to EDAM ontology file.
 
       default_workflow_export_format:
         type: str

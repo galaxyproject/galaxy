@@ -110,6 +110,17 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         self._filter_factory = FilterFactory(self)
         self._tool_tag_manager = tool_tag_manager(app)
         self._init_tools_from_configs(config_filenames)
+
+        if self.app.config.enable_beta_edam_toolbox:
+            with open(self.app.config.beta_edam_toolbox_ontology_path, 'r') as handle:
+                self.edam = {}
+                for idx, line in enumerate(handle.readlines()):
+                    fields = line.split('\t')
+                    if not fields[0].startswith('http://edamontology.org/'):
+                        continue
+                    term_id = fields[0][len('http://edamontology.org/'):]
+                    self.edam[term_id] = fields[1] # preferred label
+
         if self.app.name == 'galaxy' and self._integrated_tool_panel_config_has_contents:
             # Load self._tool_panel based on the order in self._integrated_tool_panel.
             if self.app.config.enable_beta_edam_toolbox:
@@ -404,7 +415,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         edam = tool.edam_operations + tool.edam_topics
         if len(edam) > 0:
             # TODO nicer edam names.
-            sec_id, sec_nm = edam[0], edam[0]
+            sec_id, sec_nm = edam[0], self.edam.get(edam[0], 'New term')
         else:
             sec_id, sec_nm = 'uncategorized', 'Uncategorized'
         return sec_id, sec_nm

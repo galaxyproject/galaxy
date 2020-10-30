@@ -3191,6 +3191,18 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``beta_edam_toolbox_ontology_path``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Sets the path to EDAM ontology file.
+    The value of this option will be resolved with respect to
+    <config_dir>.
+:Default: ``EDAM_1.23.tsv``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``default_workflow_export_format``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
