@@ -302,6 +302,7 @@ class DatasetCollectionManager:
         if copy_elements:
             copy_kwds["element_destination"] = parent
         new_hdca = source_hdca.copy(**copy_kwds)
+        new_hdca.copy_tags_from(target_user=trans.get_user(), source=source_hdca)
         if not copy_elements:
             parent.add_dataset_collection(new_hdca)
         trans.sa_session.flush()
