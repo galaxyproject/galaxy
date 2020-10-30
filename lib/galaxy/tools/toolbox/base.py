@@ -9,9 +9,11 @@ from collections import (
 )
 from errno import ENOENT
 from urllib.parse import urlparse
+import urllib.request
 
 from markupsafe import escape
 
+from galaxy.datatypes import sniff
 from galaxy.exceptions import (
     ConfigurationError,
     MessageException,
@@ -25,6 +27,7 @@ from galaxy.tool_util.loader_directory import looks_like_a_tool
 from galaxy.util import (
     etree,
     ExecutionTimer,
+    get_charset_from_http_headers,
     listify,
     parse_xml,
     string_as_bool,
@@ -110,16 +113,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         self._filter_factory = FilterFactory(self)
         self._tool_tag_manager = tool_tag_manager(app)
         self._init_tools_from_configs(config_filenames)
-
-        if self.app.config.enable_beta_edam_toolbox:
-            with open(self.app.config.beta_edam_toolbox_ontology_path, 'r') as handle:
-                self.edam = {}
-                for idx, line in enumerate(handle.readlines()):
-                    fields = line.split('\t')
-                    if not fields[0].startswith('http://edamontology.org/'):
-                        continue
-                    term_id = fields[0][len('http://edamontology.org/'):]
-                    self.edam[term_id] = fields[1]  # preferred label
+        self._load_edam()
 
         if self.app.name == 'galaxy' and self._integrated_tool_panel_config_has_contents:
             # Load self._tool_panel based on the order in self._integrated_tool_panel.
@@ -129,6 +123,53 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 self._load_tool_panel()
         if save_integrated_tool_panel:
             self._save_integrated_tool_panel()
+
+    def _recurse_edam_parents(self, term, path=None):
+        log.debug(f"term:{term} path:{path} parents:{self.edam[term]['parents']}")
+        if self.edam[term]['parents'] and len(self.edam[term]['parents']) > 0:
+            for parent in self.edam[term]['parents']:
+                yield from self._recurse_edam_parents(parent, path + [parent])
+        else:
+            yield path
+
+    def _load_edam(self):
+        if not self.app.config.enable_beta_edam_toolbox:
+            return
+        log.debug('Loading EDAM Terms')
+
+        if not os.path.exists(self.app.config.beta_edam_toolbox_ontology_path):
+            log.debug('EDAM ontology file not present, downloading')
+
+            page = urllib.request.urlopen(self.app.config.beta_edam_ontology_url)
+            sniff.stream_to_open_named_file(page, os.open(self.app.config.beta_edam_toolbox_ontology_path, os.O_WRONLY | os.O_CREAT), None, source_encoding=get_charset_from_http_headers(page.headers))
+
+        log.debug('Processing EDAM Terms')
+        with open(self.app.config.beta_edam_toolbox_ontology_path, 'r') as handle:
+            log.debug(f'Processing {handle}')
+            self.edam = {}
+            for idx, line in enumerate(handle.readlines()):
+                fields = line.split('\t')
+                if not fields[0].startswith('http://edamontology.org/'):
+                    continue
+                term_id = fields[0][len('http://edamontology.org/'):]
+
+                # Only care about formats and operations
+                if not (term_id.startswith('operation_') or term_id.startswith('topic_')):
+                    continue
+
+                parents = fields[7].split('|')
+                self.edam[term_id] = {
+                    'label': fields[1],  # preferred label
+                    'parents': [x[len('http://edamontology.org/'):] for x in parents if x.startswith('http://edamontology.org/')],
+                }
+                log.debug(f'Loaded term {term_id} => {fields[1]}')
+
+        for term in sorted(self.edam.keys()):
+            tails = []
+            for x in self._recurse_edam_parents(term, path=[]):
+                if x[-2:] not in tails:
+                    tails.append(x[-2:])
+            self.edam[term]['path'] = tails
 
     def create_tool(self, config_file, tool_shed_repository=None, guid=None, **kwds):
         raise NotImplementedError()
@@ -414,31 +455,62 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
     def _get_edam_sec(self, tool):
         edam = tool.edam_operations + tool.edam_topics
         if len(edam) > 0:
-            # TODO nicer edam names.
             for term in edam:
-                yield term, self.edam.get(term, 'Unknown EDAM Term')
+                yield term, self.edam.get(term, {'label': f'Unknown EDAM Term {term}'})['label']
         else:
             yield 'uncategorized', 'Uncategorized'
 
-    def _get_section(self, val):
-        for sec_id, sec_nm in self._get_edam_sec(val):
-            if sec_id not in self._tool_panel:
-                section = ToolSection({'id': sec_id, 'name': sec_nm, 'version': ''})
-                self._tool_panel[sec_id] = section
-            else:
-                section = self._tool_panel[sec_id]
-            yield section
+    def _get_section(self, sec_id, sec_nm):
+        if sec_id not in self._tool_panel:
+            section = ToolSection({'id': sec_id, 'name': sec_nm, 'version': ''})
+            self._tool_panel[sec_id] = section
+        else:
+            section = self._tool_panel[sec_id]
+        return section
+
+    def _edam_children_of(self, parentTerm):
+        for term in self.edam.keys():
+            if parentTerm in self.edam[term]['parents']:
+                yield term
+
 
     def _load_tool_panel_edam(self):
         execution_timer = ExecutionTimer()
+
+        # Find the children of the top level topics
+        operations = ['operation_0004'] + list(self._edam_children_of('operation_0004'))
+        topics = ['topic_0003'] + list(self._edam_children_of('topic_0003'))
+
+        # Sort them (by english label)
+        # operations = sorted(operations, key=lambda x: self.edam[x]['label'])
+        # topics = sorted(topics, key=lambda x: self.edam[x]['label'])
+
+        # Convert these to list of dicts, wherein we'll add our tools/etc.
+        operations = {
+            x: {}
+            for x in operations
+        }
+        topics = {
+            x: {}
+            for x in topics
+        }
+        uncategorized = []
+
         for key, item_type, val in self._integrated_tool_panel.panel_items_iter():
             if item_type == panel_item_types.TOOL:
                 tool_id = key.replace('tool_', '', 1)
                 if tool_id in self._tools_by_id:
                     if tool_id in self._tools_by_id:
-                        for section in self._get_section(val):
-                            self.__add_tool_to_tool_panel(val, section, section=True)
-                            self._integrated_section_by_tool[tool_id] = key, val.name
+                        for term, label in self._get_edam_sec(val):
+                            if term == 'uncategorized':
+                                uncategorized.append((tool_id, key, val, val.name))
+                            else:
+                                for path in self.edam[term]['path']:
+                                    # For 2 component paths, it works, for 1 it does too.
+                                    if path[0].startswith('operation_'):
+                                        operations[path[0]][tool_id] = (term, tool_id, key, val, val.name)
+                                    if path[0].startswith('topic_'):
+                                        topics[path[0]][tool_id] = (term, tool_id, key, val, val.name)
             elif item_type == panel_item_types.WORKFLOW:
                 workflow_id = key.replace('workflow_', '', 1)
                 if workflow_id in self._workflows_by_id:
@@ -450,10 +522,19 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                     if section_item_type == panel_item_types.TOOL:
                         tool_id = section_key.replace('tool_', '', 1)
                         if tool_id in self._tools_by_id:
-                            for section in self._get_section(section_val):
-                                self.__add_tool_to_tool_panel(section_val, section, section=True)
-                                self._integrated_section_by_tool[tool_id] = key, val.name
-
+                            for term, label in self._get_edam_sec(section_val):
+                                if term == 'uncategorized':
+                                    uncategorized.append((tool_id, key, val, val.name))
+                                else:
+                                    for path in self.edam[term]['path']:
+                                        # For 2 component paths, it works, for 1 it does too.
+                                        if path[0].startswith('operation_'):
+                                            operations[path[0]][tool_id] = (term, tool_id, key, section_val, val.name)
+                                        if path[0].startswith('topic_'):
+                                            topics[path[0]][tool_id] = (term, tool_id, key, section_val, val.name)
+                            # for section in self._get_section(section_val):
+                                # self.__add_tool_to_tool_panel(section_val, section, section=True)
+                                # self._integrated_section_by_tool[tool_id] = key, val.name
                     elif section_item_type == panel_item_types.WORKFLOW:
                         workflow_id = section_key.replace('workflow_', '', 1)
                         if workflow_id in self._workflows_by_id:
@@ -461,6 +542,43 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                             section.elems[section_key] = workflow
                             log.debug(f"Loaded workflow: {workflow_id} {workflow.name}")
         log.debug("Loading tool panel finished %s", execution_timer)
+
+        # print(operations.keys())
+        # print([self._sort_edam_key(x) for x in operations.keys()])
+        # print(sorted(operations.keys(), lambda x: self._sort_edam_key(x)))
+
+        for term in sorted(operations.keys(), key=lambda x: self._sort_edam_key(x)):
+            elem = etree.Element('label')
+            elem.attrib['text'] = self.edam[term]['label']
+            elem.attrib['id'] = term
+            self._tool_panel['label_' + term] = ToolSectionLabel(elem)
+
+            for (term, tool_id, key, val, val_name) in operations[term].values():
+                section = self._get_section(term, self.edam[term]['label'])
+                self.__add_tool_to_tool_panel(val, section, section=True)
+                self._integrated_section_by_tool[tool_id] = key, val_name
+
+        for term in sorted(topics.keys(), key=lambda x: self._sort_edam_key(x)):
+            elem = etree.Element('label')
+            elem.attrib['text'] = self.edam[term]['label']
+            elem.attrib['id'] = term
+            self._tool_panel['label_' + term] = ToolSectionLabel(elem)
+
+            for (term, tool_id, key, val, val_name) in topics[term].values():
+                section = self._get_section(term, self.edam[term]['label'])
+                self.__add_tool_to_tool_panel(val, section, section=True)
+                self._integrated_section_by_tool[tool_id] = key, val_name
+
+        section = self._get_section('uncategorized', 'Uncategorized')
+        # for (tool_id, key, val, val_name) in uncategorized:
+            # self.__add_tool_to_tool_panel(val, section, section=True)
+            # self._integrated_section_by_tool[tool_id] = key, val_name
+
+    def _sort_edam_key(self, x):
+        if x in ('operation_0004', 'topic_0003'):
+            return '!' + x
+        else:
+            return self.edam[x]['label']
 
     def _load_tool_panel(self):
         execution_timer = ExecutionTimer()

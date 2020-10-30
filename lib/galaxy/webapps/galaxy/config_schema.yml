@@ -2341,10 +2341,11 @@ mapping:
 
       beta_edam_ontology_url:
         type: str
-        default: <url_to_wherever we can fetch the ontology>
+        default: 'https://edamontology.org/EDAM_1.23.tsv'
         required: false
         desc: |
           Sets the url to the EDAM ontology file.
+
       default_workflow_export_format:
         type: str
         default: ga

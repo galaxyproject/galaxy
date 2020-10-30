@@ -3198,8 +3198,18 @@
 :Description:
     Sets the path to EDAM ontology file.
     The value of this option will be resolved with respect to
-    <config_dir>.
+    <data_dir>.
 :Default: ``EDAM_1.23.tsv``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``beta_edam_ontology_url``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Sets the url to the EDAM ontology file.
+:Default: ``https://edamontology.org/EDAM_1.23.tsv``
 :Type: str
 
 

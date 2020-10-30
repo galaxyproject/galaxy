@@ -1595,8 +1595,11 @@ galaxy:
 
   # Sets the path to EDAM ontology file.
   # The value of this option will be resolved with respect to
-  # <config_dir>.
+  # <data_dir>.
   #beta_edam_toolbox_ontology_path: EDAM_1.23.tsv
+
+  # Sets the url to the EDAM ontology file.
+  #beta_edam_ontology_url: https://edamontology.org/EDAM_1.23.tsv
 
   # Default format for the export of workflows. Possible values are 'ga'
   # or 'format2'.
