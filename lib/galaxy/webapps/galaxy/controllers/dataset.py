@@ -1036,7 +1036,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                             if user:
                                 copy.copy_tags_from(user, content)
                         for hist in target_histories:
-                            hist.add_pending_datasets()
+                            hist.add_pending_items()
                 trans.sa_session.flush()
                 if current_history in target_histories:
                     refresh_frames = ['history']

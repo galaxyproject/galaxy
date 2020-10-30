@@ -1779,7 +1779,7 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
     def empty(self):
         return self.hid_counter == 1
 
-    def add_pending_datasets(self, set_output_hid=True):
+    def add_pending_items(self, set_output_hid=True):
         # These are assumed to be either copies of existing datasets or new, empty datasets,
         # so we don't need to set the quota.
         self.add_datasets(object_session(self), self._pending_additions, set_hid=set_output_hid, quota=False, flush=False)
@@ -4478,7 +4478,7 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
         hdca.copy_tags_from(self.history.user, self)
         if element_destination:
             element_destination.stage_addition(hdca)
-            element_destination.add_pending_datasets()
+            element_destination.add_pending_items()
         else:
             object_session(self).flush()
         return hdca
