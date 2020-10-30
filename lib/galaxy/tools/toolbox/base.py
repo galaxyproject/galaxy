@@ -119,7 +119,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                     if not fields[0].startswith('http://edamontology.org/'):
                         continue
                     term_id = fields[0][len('http://edamontology.org/'):]
-                    self.edam[term_id] = fields[1] # preferred label
+                    self.edam[term_id] = fields[1]  # preferred label
 
         if self.app.name == 'galaxy' and self._integrated_tool_panel_config_has_contents:
             # Load self._tool_panel based on the order in self._integrated_tool_panel.
@@ -415,19 +415,19 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         edam = tool.edam_operations + tool.edam_topics
         if len(edam) > 0:
             # TODO nicer edam names.
-            sec_id, sec_nm = edam[0], self.edam.get(edam[0], 'New term')
+            for term in edam:
+                yield term, self.edam.get(term, 'Unknown EDAM Term')
         else:
-            sec_id, sec_nm = 'uncategorized', 'Uncategorized'
-        return sec_id, sec_nm
+            yield 'uncategorized', 'Uncategorized'
 
     def _get_section(self, val):
-        sec_id, sec_nm = self._get_edam_sec(val)
-        if sec_id not in self._tool_panel:
-            section = ToolSection({'id': sec_id, 'name': sec_nm, 'version': ''})
-            self._tool_panel[sec_id] = section
-        else:
-            section = self._tool_panel[sec_id]
-        return section
+        for sec_id, sec_nm in self._get_edam_sec(val):
+            if sec_id not in self._tool_panel:
+                section = ToolSection({'id': sec_id, 'name': sec_nm, 'version': ''})
+                self._tool_panel[sec_id] = section
+            else:
+                section = self._tool_panel[sec_id]
+            yield section
 
     def _load_tool_panel_edam(self):
         execution_timer = ExecutionTimer()
@@ -435,11 +435,10 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             if item_type == panel_item_types.TOOL:
                 tool_id = key.replace('tool_', '', 1)
                 if tool_id in self._tools_by_id:
-                    section = self._get_section(val)
-
                     if tool_id in self._tools_by_id:
-                        self.__add_tool_to_tool_panel(val, section, section=True)
-                        self._integrated_section_by_tool[tool_id] = key, val.name
+                        for section in self._get_section(val):
+                            self.__add_tool_to_tool_panel(val, section, section=True)
+                            self._integrated_section_by_tool[tool_id] = key, val.name
             elif item_type == panel_item_types.WORKFLOW:
                 workflow_id = key.replace('workflow_', '', 1)
                 if workflow_id in self._workflows_by_id:
@@ -451,10 +450,9 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                     if section_item_type == panel_item_types.TOOL:
                         tool_id = section_key.replace('tool_', '', 1)
                         if tool_id in self._tools_by_id:
-                            section = self._get_section(section_val)
-
-                            self.__add_tool_to_tool_panel(section_val, section, section=True)
-                            self._integrated_section_by_tool[tool_id] = key, val.name
+                            for section in self._get_section(section_val):
+                                self.__add_tool_to_tool_panel(section_val, section, section=True)
+                                self._integrated_section_by_tool[tool_id] = key, val.name
 
                     elif section_item_type == panel_item_types.WORKFLOW:
                         workflow_id = section_key.replace('workflow_', '', 1)
@@ -463,7 +461,6 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                             section.elems[section_key] = workflow
                             log.debug(f"Loaded workflow: {workflow_id} {workflow.name}")
         log.debug("Loading tool panel finished %s", execution_timer)
-
 
     def _load_tool_panel(self):
         execution_timer = ExecutionTimer()
