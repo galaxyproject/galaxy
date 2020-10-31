@@ -987,7 +987,7 @@ class Anndata(H5):
                 dataset.metadata.url = util.unicodify(anndata_file.attrs.get('url'))
                 dataset.metadata.doi = util.unicodify(anndata_file.attrs.get('doi'))
                 dataset.creation_date = util.unicodify(anndata_file.attrs.get('creation_date'))
-                dataset.metadata.shape = util.unicodify(anndata_file.attrs.get('shape'))
+                dataset.metadata.shape = anndata_file.attrs.get('shape') or dataset.metadata.shape
                 # none of the above appear to work in any dataset tested, but could be useful for future
                 # AnnData datasets
 
