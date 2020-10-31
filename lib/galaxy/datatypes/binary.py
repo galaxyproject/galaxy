@@ -980,79 +980,79 @@ class Anndata(H5):
         return False
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-            super(Anndata, self).set_meta(dataset, overwrite=overwrite, **kwd)
-            with h5py.File(dataset.file_name, 'r') as anndata_file:
-                dataset.metadata.title = util.unicodify(anndata_file.attrs.get('title'))
-                dataset.metadata.description = util.unicodify(anndata_file.attrs.get('description'))
-                dataset.metadata.url = util.unicodify(anndata_file.attrs.get('url'))
-                dataset.metadata.doi = util.unicodify(anndata_file.attrs.get('doi'))
-                dataset.creation_date = util.unicodify(anndata_file.attrs.get('creation_date'))
-                dataset.metadata.shape = anndata_file.attrs.get('shape') or dataset.metadata.shape
-                # none of the above appear to work in any dataset tested, but could be useful for future
-                # AnnData datasets
+        super(Anndata, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        with h5py.File(dataset.file_name, 'r') as anndata_file:
+            dataset.metadata.title = util.unicodify(anndata_file.attrs.get('title'))
+            dataset.metadata.description = util.unicodify(anndata_file.attrs.get('description'))
+            dataset.metadata.url = util.unicodify(anndata_file.attrs.get('url'))
+            dataset.metadata.doi = util.unicodify(anndata_file.attrs.get('doi'))
+            dataset.creation_date = util.unicodify(anndata_file.attrs.get('creation_date'))
+            dataset.metadata.shape = anndata_file.attrs.get('shape') or dataset.metadata.shape
+            # none of the above appear to work in any dataset tested, but could be useful for future
+            # AnnData datasets
 
-                # all possible keys
-                dataset.metadata.layers_count = len(anndata_file)
-                dataset.metadata.layers_names = list(anndata_file.keys())
+            # all possible keys
+            dataset.metadata.layers_count = len(anndata_file)
+            dataset.metadata.layers_names = list(anndata_file.keys())
 
-                def _layercountsize(tmp, lennames=0):
-                    "From TMP and LENNAMES, return layers, their number, and the length of one of the layers (all equal)."
-                    if hasattr(tmp, 'dtype'):
-                        layers = [util.unicodify(x) for x in tmp.dtype.names]
-                        count = len(tmp.dtype)
-                        size = int(tmp.size)
-                    else:
-                        layers = [util.unicodify(x) for x in list(tmp.keys())]
-                        count = len(layers)
-                        size = lennames
-                    return (layers, count, size)
+            def _layercountsize(tmp, lennames=0):
+                "From TMP and LENNAMES, return layers, their number, and the length of one of the layers (all equal)."
+                if hasattr(tmp, 'dtype'):
+                    layers = [util.unicodify(x) for x in tmp.dtype.names]
+                    count = len(tmp.dtype)
+                    size = int(tmp.size)
+                else:
+                    layers = [util.unicodify(x) for x in list(tmp.keys())]
+                    count = len(layers)
+                    size = lennames
+                return (layers, count, size)
 
-                if 'obs' in dataset.metadata.layers_names:
-                    tmp = anndata_file["obs"]
-                    dataset.metadata.obs_names = [util.unicodify(x) for x in tmp["index"]]
-                    dataset.metadata.obs_layers, \
-                        dataset.metadata.obs_count, \
-                        dataset.metadata.obs_size = _layercountsize(tmp, len(dataset.metadata.obs_names))
+            if 'obs' in dataset.metadata.layers_names:
+                tmp = anndata_file["obs"]
+                dataset.metadata.obs_names = [util.unicodify(x) for x in tmp["index"]]
+                dataset.metadata.obs_layers, \
+                    dataset.metadata.obs_count, \
+                    dataset.metadata.obs_size = _layercountsize(tmp, len(dataset.metadata.obs_names))
 
-                if 'obsm' in dataset.metadata.layers_names:
-                    tmp = anndata_file["obsm"]
-                    dataset.metadata.obsm_layers, dataset.metadata.obsm_count, _ = _layercountsize(tmp)
+            if 'obsm' in dataset.metadata.layers_names:
+                tmp = anndata_file["obsm"]
+                dataset.metadata.obsm_layers, dataset.metadata.obsm_count, _ = _layercountsize(tmp)
 
-                if 'raw.var' in dataset.metadata.layers_names:
-                    tmp = anndata_file["raw.var"]
-                    # full set of genes would never need to be previewed
-                    # dataset.metadata.raw_var_names = tmp["index"]
-                    dataset.metadata.raw_var_layers, \
-                        dataset.metadata.raw_var_count, \
-                        dataset.metadata.raw_var_size = _layercountsize(tmp, len(tmp["index"]))
+            if 'raw.var' in dataset.metadata.layers_names:
+                tmp = anndata_file["raw.var"]
+                # full set of genes would never need to be previewed
+                # dataset.metadata.raw_var_names = tmp["index"]
+                dataset.metadata.raw_var_layers, \
+                    dataset.metadata.raw_var_count, \
+                    dataset.metadata.raw_var_size = _layercountsize(tmp, len(tmp["index"]))
 
-                if 'var' in dataset.metadata.layers_names:
-                    tmp = anndata_file["var"]
-                    # row names are never used in preview windows
-                    # dataset.metadata.var_names = tmp["index"]
-                    dataset.metadata.var_layers, \
-                        dataset.metadata.var_count, \
-                        dataset.metadata.var_size = _layercountsize(tmp, len(tmp["index"]))
+            if 'var' in dataset.metadata.layers_names:
+                tmp = anndata_file["var"]
+                # row names are never used in preview windows
+                # dataset.metadata.var_names = tmp["index"]
+                dataset.metadata.var_layers, \
+                    dataset.metadata.var_count, \
+                    dataset.metadata.var_size = _layercountsize(tmp, len(tmp["index"]))
 
-                if 'varm' in dataset.metadata.layers_names:
-                    tmp = anndata_file["varm"]
-                    dataset.metadata.varm_layers, dataset.metadata.varm_count, _ = _layercountsize(tmp)
+            if 'varm' in dataset.metadata.layers_names:
+                tmp = anndata_file["varm"]
+                dataset.metadata.varm_layers, dataset.metadata.varm_count, _ = _layercountsize(tmp)
 
-                if 'uns' in dataset.metadata.layers_names:
-                    tmp = anndata_file["uns"]
-                    dataset.metadata.uns_layers, dataset.metadata.uns_count, _ = _layercountsize(tmp)
+            if 'uns' in dataset.metadata.layers_names:
+                tmp = anndata_file["uns"]
+                dataset.metadata.uns_layers, dataset.metadata.uns_count, _ = _layercountsize(tmp)
 
-                ## Resolving the problematic shape parameter
-                if 'X' in dataset.metadata.layers_names:
-                    # Shape we determine here due to the non-standard representation of 'X' dimensions
-                    shape = anndata_file['X'].attrs.get("shape")
-                    if shape is not None:
-                        dataset.metadata.shape = tuple(shape)
-                    elif hasattr(anndata_file['X'], 'shape'):
-                        dataset.metadata.shape = tuple(anndata_file['X'].shape)
+            ## Resolving the problematic shape parameter
+            if 'X' in dataset.metadata.layers_names:
+                # Shape we determine here due to the non-standard representation of 'X' dimensions
+                shape = anndata_file['X'].attrs.get("shape")
+                if shape is not None:
+                    dataset.metadata.shape = tuple(shape)
+                elif hasattr(anndata_file['X'], 'shape'):
+                    dataset.metadata.shape = tuple(anndata_file['X'].shape)
 
-                if dataset.metadata.shape is None:
-                    dataset.metadata.shape = (int(dataset.metadata.obs_size), int(dataset.metadata.var_size))
+            if dataset.metadata.shape is None:
+                dataset.metadata.shape = (int(dataset.metadata.obs_size), int(dataset.metadata.var_size))
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
