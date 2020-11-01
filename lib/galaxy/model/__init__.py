@@ -4888,9 +4888,10 @@ class Workflow(Dictifiable, RepresentById):
         """
         return self.top_level_workflow.stored_workflow
 
-    def copy(self):
-        """ Copy a workflow (without user information) for a new
-        StoredWorkflow object.
+    def copy(self, user=None):
+        """ Copy a workflow for a new StoredWorkflow object.
+
+        Pass user if user-specific information needed.
         """
         copied_workflow = Workflow()
         copied_workflow.name = self.name
@@ -4906,7 +4907,7 @@ class Workflow(Dictifiable, RepresentById):
             step_mapping[step.id] = copied_step
 
         for old_step, new_step in zip(self.steps, copied_steps):
-            old_step.copy_to(new_step, step_mapping)
+            old_step.copy_to(new_step, step_mapping, user=user)
         copied_workflow.steps = copied_steps
         return copied_workflow
 
@@ -5048,7 +5049,7 @@ class WorkflowStep(RepresentById):
                 break
         return target_output
 
-    def copy_to(self, copied_step, step_mapping):
+    def copy_to(self, copied_step, step_mapping, user=None):
         copied_step.order_index = self.order_index
         copied_step.type = self.type
         copied_step.tool_id = self.tool_id
@@ -5060,6 +5061,17 @@ class WorkflowStep(RepresentById):
         copied_step.inputs = copy_list(self.inputs, copied_step)
 
         subworkflow_step_mapping = {}
+
+        if user is not None and self.annotations:
+            annotations = []
+            for annotation in self.annotations:
+                association = WorkflowStepAnnotationAssociation()
+                association.user = user
+                association.workflow_step = copied_step
+                association.annotation = annotation.annotation
+                annotations.append(association)
+            copied_step.annotations = annotations
+
         subworkflow = self.subworkflow
         if subworkflow:
             copied_subworkflow = subworkflow.copy()
