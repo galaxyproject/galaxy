@@ -36,13 +36,15 @@ def parse_tests(tool, tests_source):
 
 def description_from_tool_object(tool, test_index, raw_test_dict):
     required_files = []
+    required_data_tables = []
+    required_loc_files = []
 
     num_outputs = raw_test_dict.get('expect_num_outputs', None)
     if num_outputs:
         num_outputs = int(num_outputs)
 
     try:
-        processed_inputs = _process_raw_inputs(tool, tool.inputs, raw_test_dict["inputs"], required_files)
+        processed_inputs = _process_raw_inputs(tool, tool.inputs, raw_test_dict["inputs"], required_files, required_data_tables, required_loc_files)
         processed_test_dict = {
             "inputs": processed_inputs,
             "outputs": raw_test_dict["outputs"],
@@ -55,6 +57,8 @@ def description_from_tool_object(tool, test_index, raw_test_dict):
             "expect_exit_code": raw_test_dict.get("expect_exit_code", None),
             "expect_failure": raw_test_dict.get("expect_failure", False),
             "required_files": required_files,
+            "required_data_tables": required_data_tables,
+            "required_loc_files":  required_loc_files,
             "tool_id": tool.id,
             "tool_version": tool.version,
             "test_index": test_index,
@@ -74,7 +78,7 @@ def description_from_tool_object(tool, test_index, raw_test_dict):
     return ToolTestDescription(processed_test_dict)
 
 
-def _process_raw_inputs(tool, tool_inputs, raw_inputs, required_files, parent_context=None):
+def _process_raw_inputs(tool, tool_inputs, raw_inputs, required_files, required_data_tables, required_loc_files, parent_context=None):
     """
     Recursively expand flat list of inputs into "tree" form of flat list
     (| using to nest to new levels) structure and expand dataset
@@ -91,7 +95,7 @@ def _process_raw_inputs(tool, tool_inputs, raw_inputs, required_files, parent_co
             case = _matching_case_for_value(tool, value, case_value)
             if case:
                 for input_name, input_value in case.inputs.items():
-                    case_inputs = _process_raw_inputs(tool, {input_name: input_value}, raw_inputs, required_files, parent_context=cond_context)
+                    case_inputs = _process_raw_inputs(tool, {input_name: input_value}, raw_inputs, required_files, required_data_tables, required_loc_files, parent_context=cond_context)
                     expanded_inputs.update(case_inputs)
                 if not value.type == "text":
                     expanded_case_value = _split_if_str(case.value)
@@ -103,12 +107,12 @@ def _process_raw_inputs(tool, tool_inputs, raw_inputs, required_files, parent_co
                     # as a new instance with value defined and hence enter
                     # an infinite loop - hence the "case_value is not None"
                     # check.
-                    processed_value = _process_simple_value(value.test_param, expanded_case_value)
+                    processed_value = _process_simple_value(value.test_param, expanded_case_value, required_data_tables, required_loc_files)
                     expanded_inputs[case_context.for_state()] = processed_value
         elif isinstance(value, galaxy.tools.parameters.grouping.Section):
             context = ParamContext(name=value.name, parent_context=parent_context)
             for r_name, r_value in value.inputs.items():
-                expanded_input = _process_raw_inputs(tool, {context.for_state(): r_value}, raw_inputs, required_files, parent_context=context)
+                expanded_input = _process_raw_inputs(tool, {context.for_state(): r_value}, raw_inputs, required_files, required_data_tables, required_loc_files, parent_context=context)
                 if expanded_input:
                     expanded_inputs.update(expanded_input)
         elif isinstance(value, galaxy.tools.parameters.grouping.Repeat):
@@ -117,7 +121,7 @@ def _process_raw_inputs(tool, tool_inputs, raw_inputs, required_files, parent_co
                 context = ParamContext(name=value.name, index=repeat_index, parent_context=parent_context)
                 updated = False
                 for r_name, r_value in value.inputs.items():
-                    expanded_input = _process_raw_inputs(tool, {context.for_state(): r_value}, raw_inputs, required_files, parent_context=context)
+                    expanded_input = _process_raw_inputs(tool, {context.for_state(): r_value}, raw_inputs, required_files, required_data_tables, required_loc_files, parent_context=context)
                     if expanded_input:
                         expanded_inputs.update(expanded_input)
                         updated = True
@@ -149,13 +153,13 @@ def _process_raw_inputs(tool, tool_inputs, raw_inputs, required_files, parent_co
                         require_file(name, value, attributes, required_files)
                     processed_value = collection_def
                 else:
-                    processed_value = _process_simple_value(value, param_value)
+                    processed_value = _process_simple_value(value, param_value, required_data_tables, required_loc_files)
                 expanded_inputs[context.for_state()] = processed_value
     return expanded_inputs
 
 
-def _process_simple_value(param, param_value):
-    if isinstance(param, galaxy.tools.parameters.basic.SelectToolParameter) and hasattr(param, 'static_options'):
+def _process_simple_value(param, param_value, required_data_tables, required_loc_files, ):
+    if isinstance(param, galaxy.tools.parameters.basic.SelectToolParameter):
         # Tests may specify values as either raw value or the value
         # as they appear in the list - the API doesn't and shouldn't
         # accept the text value - so we need to convert the text
@@ -163,12 +167,16 @@ def _process_simple_value(param, param_value):
         def process_param_value(param_value):
             found_value = False
             value_for_text = None
-            if param.static_options:
-                for (text, opt_value, selected) in param.static_options:
-                    if param_value == opt_value:
-                        found_value = True
-                    if value_for_text is None and param_value == text:
-                        value_for_text = opt_value
+            for (text, opt_value, selected) in getattr(param, 'static_options', []):
+                if param_value == opt_value:
+                    found_value = True
+                if value_for_text is None and param_value == text:
+                    value_for_text = opt_value
+            if param.options:
+                if param.options.tool_data_table_name:
+                    required_data_tables.append(param.options.tool_data_table_name)
+                elif param.options.index_file:
+                    required_loc_files.append(param.options.index_file)
             if not found_value and value_for_text is not None:
                 processed_value = value_for_text
             else:

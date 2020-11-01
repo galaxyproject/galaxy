@@ -295,6 +295,14 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         test_data_response = self._get("tools/%s/test_data_path?filename=../CONTRIBUTORS.md" % "composite_output")
         assert test_data_response.status_code == 403, test_data_response.text
 
+    @skip_without_tool("dbkey_filter_multi_input")
+    def test_data_table_requirement_annotated(self):
+        test_data_response = self._get("tools/%s/test_data" % "dbkey_filter_multi_input")
+        assert test_data_response.status_code == 200
+        test_case = test_data_response.json()[0]
+        assert test_case['required_data_tables'][0] == 'test_fasta_indexes'
+        assert len(test_case['required_loc_files']) == 0
+
     @skip_without_tool("composite_output")
     def test_test_data_composite_output(self):
         test_data_response = self._get("tools/%s/test_data" % "composite_output")
@@ -313,6 +321,8 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         test_data = test_data_response.json()
         assert len(test_data) == 2
         test_case = test_data[0]
+        assert len(test_case['required_data_tables']) == 0
+        assert len(test_case['required_loc_files']) == 0
         self._assert_has_keys(test_case, "inputs", "outputs", "output_collections", "required_files")
         assert len(test_case["inputs"]) == 3, test_case
 
