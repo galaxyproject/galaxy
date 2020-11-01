@@ -1042,7 +1042,7 @@ class Anndata(H5):
                 tmp = anndata_file["uns"]
                 dataset.metadata.uns_layers, dataset.metadata.uns_count, _ = _layercountsize(tmp)
 
-            ## Resolving the problematic shape parameter
+            # Resolving the problematic shape parameter
             if 'X' in dataset.metadata.layers_names:
                 # Shape we determine here due to the non-standard representation of 'X' dimensions
                 shape = anndata_file['X'].attrs.get("shape")
