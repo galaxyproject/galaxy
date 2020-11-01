@@ -58,7 +58,7 @@ def description_from_tool_object(tool, test_index, raw_test_dict):
             "expect_failure": raw_test_dict.get("expect_failure", False),
             "required_files": required_files,
             "required_data_tables": required_data_tables,
-            "required_loc_files":  required_loc_files,
+            "required_loc_files": required_loc_files,
             "tool_id": tool.id,
             "tool_version": tool.version,
             "test_index": test_index,
@@ -158,7 +158,7 @@ def _process_raw_inputs(tool, tool_inputs, raw_inputs, required_files, required_
     return expanded_inputs
 
 
-def _process_simple_value(param, param_value, required_data_tables, required_loc_files, ):
+def _process_simple_value(param, param_value, required_data_tables, required_loc_files):
     if isinstance(param, galaxy.tools.parameters.basic.SelectToolParameter):
         # Tests may specify values as either raw value or the value
         # as they appear in the list - the API doesn't and shouldn't
