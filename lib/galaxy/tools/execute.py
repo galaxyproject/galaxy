@@ -103,7 +103,7 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
 
     if execution_slice:
         # a side effect of adding datasets to a history is a commit within db_next_hid (even with flush=False).
-        history.add_pending_datasets()
+        history.add_pending_items()
     else:
         # Make sure collections, implicit jobs etc are flushed even if there are no precreated output datasets
         trans.sa_session.flush()

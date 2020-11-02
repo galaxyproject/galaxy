@@ -1779,7 +1779,7 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
     def empty(self):
         return self.hid_counter == 1
 
-    def add_pending_datasets(self, set_output_hid=True):
+    def add_pending_items(self, set_output_hid=True):
         # These are assumed to be either copies of existing datasets or new, empty datasets,
         # so we don't need to set the quota.
         self.add_datasets(object_session(self), self._pending_additions, set_hid=set_output_hid, quota=False, flush=False)
@@ -3206,17 +3206,10 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         hda.purged = self.purged
         hda.copy_tags_to(copy_tags)
         object_session(self).add(hda)
-        flushed = False
-        # May need to set after flushed, as MetadataFiles require dataset.id
-        if hda.set_metadata_requires_flush:
-            object_session(self).flush([self])
-            flushed = True
         hda.metadata = self.metadata
         # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
         if not self.datatype.copy_safe_peek:
-            if not flushed:
-                object_session(self).flush([self])
-
+            object_session(self).flush([self])
             hda.set_peek()
         if flush:
             object_session(self).flush()
@@ -4219,7 +4212,8 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
                 flush=flush
             )
         object_session(self).add(new_collection)
-        object_session(self).flush()
+        if flush:
+            object_session(self).flush()
         return new_collection
 
     def replace_failed_elements(self, replacements):
@@ -4477,10 +4471,16 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
         collection_copy = self.collection.copy(
             destination=hdca,
             element_destination=element_destination,
+            flush=False,
         )
         hdca.collection = collection_copy
         object_session(self).add(hdca)
-        object_session(self).flush()
+        hdca.copy_tags_from(self.history.user, self)
+        if element_destination:
+            element_destination.stage_addition(hdca)
+            element_destination.add_pending_items()
+        else:
+            object_session(self).flush()
         return hdca
 
     @property
@@ -4649,7 +4649,7 @@ class DatasetCollectionElement(Dictifiable, RepresentById):
                 # Ideally we would not need to give the following
                 # element an HID and it would exist in the history only
                 # as an element of the containing collection.
-                element_destination.add_dataset(new_element_object)
+                element_destination.stage_addition(new_element_object)
                 element_object = new_element_object
 
         new_element = DatasetCollectionElement(
@@ -5700,6 +5700,8 @@ class MetadataFile(StorableObject, RepresentById):
                 self.object_store_id = da.dataset.object_store_id
             object_store = da.dataset.object_store
             store_by = object_store.get_store_by(da.dataset)
+            if store_by == 'id' and self.id is None:
+                self.flush()
             identifier = getattr(self, store_by)
             alt_name = "metadata_%s.dat" % identifier
             if not object_store.exists(self, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name=alt_name):
