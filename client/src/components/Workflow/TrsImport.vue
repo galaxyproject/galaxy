@@ -29,7 +29,7 @@ Vue.use(BootstrapVue);
 
 export default {
     mixins: [TrsMixin],
-    properties: {
+    props: {
         queryTrsServer: {
             type: String,
             default: null,
@@ -49,8 +49,6 @@ export default {
             toolId: null,
             trsTool: null,
             errorMessage: null,
-            queryTrsServer: null,
-            queryTrsId: null,
         };
     },
     computed: {
