@@ -56,7 +56,6 @@ class BaseExportTestCase(BaseTestCase):
 
         collection = model.DatasetCollection()
         collection.id = 1
-        elements = []
         element_forward = model.DatasetCollectionElement(
             collection=collection,
             element=hda_forward,
