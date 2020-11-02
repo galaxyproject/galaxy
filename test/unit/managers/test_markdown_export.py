@@ -58,19 +58,19 @@ class BaseExportTestCase(BaseTestCase):
         collection.id = 1
         elements = []
         element_forward = model.DatasetCollectionElement(
+            collection=collection,
             element=hda_forward,
             element_index=0,
             element_identifier="forward",
         )
         element_forward.id = 1
         element_reverse = model.DatasetCollectionElement(
+            collection=collection,
             element=hda_reverse,
             element_index=0,
             element_identifier="reverse",
         )
         element_reverse.id = 2
-        elements = [element_forward, element_reverse]
-        collection.elements = elements
         collection.collection_type = "paired"
         return collection
 

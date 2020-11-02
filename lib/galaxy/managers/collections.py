@@ -84,12 +84,12 @@ class DatasetCollectionManager:
                         element = self.precreate_dataset_collection(substructure, allow_unitialized_element=allow_unitialized_element)
 
                 element = model.DatasetCollectionElement(
+                    collection=dataset_collection,
                     element=element,
                     element_identifier=identifier,
                     element_index=index,
                 )
                 elements.append(element)
-            dataset_collection.elements = elements
             dataset_collection.element_count = len(elements)
 
         return dataset_collection
