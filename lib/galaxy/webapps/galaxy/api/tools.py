@@ -193,13 +193,25 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         internals/Pythonisms in a rough way). If this endpoint is being used from outside
         of scripts shipped with Galaxy let us know and please be prepared for the response
         from this API to change its format in some ways.
+
+        If tool version is not passed, it is assumed to be latest. Tool version can be
+        set as '*' to get tests for all configured versions.
         """
-        # TODO: eliminate copy and paste with above code.
         if 'payload' in kwd:
             kwd = kwd.get('payload')
         tool_version = kwd.get('tool_version', None)
-        tool = self._get_tool(id, tool_version=tool_version, user=trans.user)
-        return [t.to_dict() for t in tool.tests]
+        if tool_version == "*":
+            tools = self.app.toolbox.get_tool(id, get_all_versions=True)
+            for tool in tools:
+                if not tool.allow_user_access(user):
+                    raise exceptions.AuthenticationFailed("Access denied, please login for tool with id '%s'." % id)
+        else:
+            tools = [self._get_tool(id, tool_version=tool_version, user=trans.user)]
+
+        test_defs = []
+        for tool in tools:
+            test_defs.extend([t.to_dict() for t in tool.tests])
+        return test_defs
 
     @web.require_admin
     @expose_api
