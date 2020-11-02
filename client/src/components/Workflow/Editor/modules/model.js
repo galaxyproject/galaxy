@@ -6,6 +6,7 @@ export function fromSimple(workflow, data, appendData = false) {
     if (appendData) {
         offset = workflow.nodeIndex;
     } else {
+        workflow.nodeIndex = 0;
         workflow.name = data.name;
         Object.values(workflow.nodes).forEach((node) => {
             node.onRemove();
@@ -30,7 +31,6 @@ export function fromSimple(workflow, data, appendData = false) {
             Object.entries(data.steps).forEach(([id, step]) => {
                 const nodeIndex = parseInt(id) + offset;
                 const node = workflow.nodes[nodeIndex];
-
                 Object.entries(step.input_connections).forEach(([k, v]) => {
                     if (v) {
                         if (!Array.isArray(v)) {
