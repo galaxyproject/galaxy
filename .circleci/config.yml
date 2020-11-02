@@ -91,14 +91,6 @@ jobs:
       - *restore_repo_cache
       - *install_tox
       - run: tox -e py35-lint_docstring_include_list
-  py35_lint:
-    docker:
-      - image: circleci/python:3.5
-    <<: *set_workdir
-    steps:
-      - *restore_repo_cache
-      - *install_tox
-      - run: tox -e py35-lint
   py35_unit:
     docker:
       - image: circleci/python:3.5
@@ -168,8 +160,6 @@ workflows:
     jobs:
       - get_code
       - py35_docstring:
-          <<: *requires_get_code
-      - py35_lint:
           <<: *requires_get_code
       - py35_unit:
           <<: *requires_get_code
