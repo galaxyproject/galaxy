@@ -260,6 +260,17 @@ class BaseAppConfiguration:
     def _path_exists(self, path):  # factored out so we can mock it in tests
         return os.path.exists(path)
 
+    def _set_alt_paths(self, option, *alt_paths):
+        # If `option` is not set, check the default. If that path does NOT exist, check *alt_paths.
+        # Set `option` to first path that exists and return it. If none exist, use current default.
+        if not self.is_set(option):
+            curr_default = getattr(self, option, None)
+            if curr_default and not self._path_exists(curr_default):
+                for path in alt_paths:
+                    if self._path_exists(path):
+                        setattr(self, option, path)
+                        return path
+
     def _update_raw_config_from_kwargs(self, kwargs):
 
         def convert_datatype(key, value):
@@ -700,6 +711,10 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         # Configuration options for taking advantage of nginx features
         if self.nginx_upload_store:
             self.nginx_upload_store = os.path.abspath(self.nginx_upload_store)
+
+        # The default for `file_path` has changed in 20.09; we may need to fall back to the old default
+        self._set_alt_paths('file_path', self._in_data_dir('files'))
+
         self.object_store = kwargs.get('object_store', 'disk')
         self.object_store_check_old_style = string_as_bool(kwargs.get('object_store_check_old_style', False))
         self.object_store_cache_path = self._in_root_dir(kwargs.get("object_store_cache_path", self._in_data_dir("object_store_cache")))
