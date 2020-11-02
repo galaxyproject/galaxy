@@ -159,6 +159,7 @@ def collect_dynamic_outputs(
                 metadata_source_name=output_collection_def.metadata_source,
                 final_job_state=job_context.final_job_state,
             )
+            collection_builder.populate()
         except Exception:
             log.exception("Problem gathering output collection.")
             collection.handle_population_failed("Problem building datasets for collection.")
