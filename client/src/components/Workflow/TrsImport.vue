@@ -15,7 +15,7 @@
             <b-form-input v-model="toolId" />
         </div>
 
-        <trs-tool :trs-tool="trsTool" v-if="trsTool != null" @onImport="importVersion(trsTool.id, $event)" />
+        <trs-tool :trs-tool="trsTool" v-if="trsTool" @onImport="importVersion(trsTool.id, $event)" />
     </b-card>
 </template>
 
@@ -37,6 +37,14 @@ export default {
         queryTrsId: {
             type: String,
             default: null,
+        },
+        queryTrsVersionId: {
+            type: String,
+            default: null,
+        },
+        isRun: {
+            type: Boolean,
+            default: false,
         },
     },
     created() {
@@ -80,6 +88,10 @@ export default {
                 .then((tool) => {
                     this.trsTool = tool;
                     this.errorMessage = null;
+                    const version = this.trsTool.versions.find((version) => version.id === this.queryTrsVersionId);
+                    if (version) {
+                        this.importVersion(this.trsTool.id, version);
+                    }
                 })
                 .catch((errorMessage) => {
                     this.trsTool = null;
