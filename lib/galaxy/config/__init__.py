@@ -878,15 +878,10 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         ID, UUID = 'id', 'uuid'
         if self.is_set('object_store_store_by'):
             assert self.object_store_store_by in [ID, UUID], "Invalid value for object_store_store_by [{}]".format(self.object_store_store_by)
+        elif os.path.basename(self.file_path) == 'objects':
+            self.object_store_store_by = UUID
         else:
             self.object_store_store_by = ID
-            if not self.is_set('file_path'):  # choose based on default dir name
-                if os.path.basename(self.file_path) == 'objects':
-                    self.object_store_store_by = UUID
-            else:  # choose based on dataset filename format
-                filename = find_dataset(self.file_path)
-                if not filename or is_uuid(filename):  # dir has no datasets, or contains a uuid dataset
-                    self.object_store_store_by = UUID
 
     def _load_list_from_file(self, filepath):
         with open(filepath) as f:
