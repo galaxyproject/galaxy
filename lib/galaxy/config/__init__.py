@@ -873,7 +873,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             }
 
     def _configure_dataset_storage(self):
-        # The default for `file_path` has changed in 20.09; we may need to fall back to the old default
+        # The default for `file_path` has changed in 20.05; we may need to fall back to the old default
         self._set_alt_paths('file_path', self._in_data_dir('files'))  # this is called BEFORE guessing id/uuid
         ID, UUID = 'id', 'uuid'
         if self.is_set('object_store_store_by'):
