@@ -824,6 +824,50 @@ def _verify_extra_files_content(extra_files, hda_id, dataset_fetcher, test_data_
             shutil.rmtree(path)
 
 
+class NullClientTestConfig:
+
+    def get_test_config(self, job_data):
+        return None
+
+
+class DictClientTestConfig:
+
+    def __init__(self, tools):
+        self._tools = tools or {}
+
+    def get_test_config(self, job_data):
+        # TODO: allow short ids, allow versions below outer id instead of key concatenation.
+        tool_id = job_data.get("tool_id")
+        tool_version = job_data.get("tool_version")
+        tool_test_config = None
+        tool_version_test_config = None
+        is_default = False
+        if tool_id in self._tools:
+            tool_test_config = self._tools[tool_id]
+        if tool_test_config is None:
+            tool_id = "%s/%s" % (tool_id, tool_version)
+            if tool_id in self._tools:
+                tool_version_test_config = self._tools[tool_id]
+        else:
+            if tool_version in tool_test_config:
+                tool_version_test_config = tool_test_config[tool_version]
+            elif "default" in tool_test_config:
+                tool_version_test_config = tool_test_config["default"]
+                is_default = True
+
+        if tool_version_test_config:
+            test_index = job_data.get("test_index")
+            if test_index in tool_version_test_config:
+                return tool_version_test_config[test_index]
+            elif str(test_index) in tool_version_test_config:
+                return tool_version_test_config[str(test_index)]
+            if 'default' in tool_version_test_config:
+                return tool_version_test_config['default']
+            elif is_default:
+                return tool_version_test_config
+        return None
+
+
 def verify_tool(tool_id,
                 galaxy_interactor,
                 resource_parameters=None,
@@ -835,15 +879,35 @@ def verify_tool(tool_id,
                 force_path_paste=False,
                 maxseconds=DEFAULT_TOOL_TEST_WAIT,
                 tool_test_dicts=None,
+                client_test_config=None,
                 skip_on_dynamic_param_errors=False):
     if resource_parameters is None:
         resource_parameters = {}
+    if client_test_config is None:
+        client_test_config = NullClientTestConfig()
     tool_test_dicts = tool_test_dicts or galaxy_interactor.get_tool_tests(tool_id, tool_version=tool_version)
     tool_test_dict = tool_test_dicts[test_index]
     if "test_index" not in tool_test_dict:
         tool_test_dict["test_index"] = test_index
     if "tool_id" not in tool_test_dict:
         tool_test_dict["tool_id"] = tool_id
+    if tool_version is None and "tool_version" in tool_test_dict:
+        tool_version = tool_test_dict.get("tool_version")
+
+    job_data = {
+        "tool_id": tool_id,
+        "tool_version": tool_version,
+        "test_index": test_index,
+    }
+    client_config = client_test_config.get_test_config(job_data)
+    if client_config is not None:
+        job_data.update(client_config)
+        skip_message = job_data.get("skip")
+        if skip_message:
+            job_data["status"] = "skip"
+            register_job_data(job_data)
+            return
+
     tool_test_dict.setdefault('maxseconds', maxseconds)
     testdef = ToolTestDescription(tool_test_dict)
     _handle_def_errors(testdef)
@@ -898,12 +962,7 @@ def verify_tool(tool_id,
     finally:
         if register_job_data is not None:
             end_time = time.time()
-            job_data = {
-                "tool_id": tool_id,
-                "tool_version": tool_version,
-                "test_index": test_index,
-                "time_seconds": end_time - begin_time,
-            }
+            job_data["time_seconds"] = end_time - begin_time
             if tool_inputs is not None:
                 job_data["inputs"] = tool_inputs
             if job_stdio is not None:
@@ -1107,6 +1166,7 @@ class ToolTestDescription:
         self.test_index = test_index
         assert "tool_id" in processed_test_dict, "Invalid processed test description, must have a 'tool_id' for naming, etc.."
         self.tool_id = processed_test_dict["tool_id"]
+        self.tool_version = processed_test_dict.get("tool_version")
         self.name = name
         self.maxseconds = maxseconds
         self.required_files = processed_test_dict.get("required_files", [])
@@ -1162,6 +1222,7 @@ class ToolTestDescription:
             "name": self.name,
             "test_index": self.test_index,
             "tool_id": self.tool_id,
+            "tool_version": self.tool_version,
             "required_files": self.required_files,
             "error": self.error,
             "exception": self.exception,

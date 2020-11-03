@@ -477,7 +477,7 @@ def test_export_copied_collection():
     sa_session.flush()
 
     hc2 = hc1.copy(element_destination=h)
-    h.add_dataset_collection(hc2)
+    h.add_pending_items()
     assert h.hid_counter == 7
 
     sa_session.add(hc2)
@@ -513,7 +513,6 @@ def test_export_copied_objects_copied_outside_history():
     sa_session.flush()
 
     hc2 = hc1.copy(element_destination=h)
-    h.add_dataset_collection(hc2)
 
     sa_session.add(hc2)
 
@@ -521,13 +520,11 @@ def test_export_copied_objects_copied_outside_history():
     sa_session.add(other_h)
 
     hc3 = hc2.copy(element_destination=other_h)
-    other_h.add_dataset_collection(hc3)
-    sa_session.add(hc3)
-    sa_session.flush()
+    other_h.add_pending_items()
 
     hc4 = hc3.copy(element_destination=h)
-    h.add_dataset_collection(hc4)
     sa_session.add(hc4)
+    h.add_pending_items()
     sa_session.flush()
 
     assert h.hid_counter == 10

@@ -267,13 +267,23 @@ class PulsarJobRunner(AsynchronousJobRunner):
             job_wrapper = job_state.job_wrapper
             guest_ports = job_wrapper.guest_ports
             if len(guest_ports) > 0:
-                client = self.get_client_from_state(job_state)
-                job_ip = client.job_ip()
-                if job_ip:
-                    ports_dict = {}
-                    for guest_port in guest_ports:
-                        ports_dict[str(guest_port)] = dict(host=job_ip, port=guest_port, protocol="http")
-                    self.app.interactivetool_manager.configure_entry_points(job_wrapper.get_job(), ports_dict)
+                persisted_state = job_wrapper.get_state()
+                if persisted_state in model.Job.terminal_states + [model.Job.states.DELETED_NEW]:
+                    log.debug("(%s) Watched job in terminal state, will stop monitoring: %s", job_state.job_id, persisted_state)
+                    job_state = None
+                elif persisted_state == model.Job.states.RUNNING:
+                    client = self.get_client_from_state(job_state)
+                    job_ip = client.job_ip()
+                    if job_ip:
+                        ports_dict = {}
+                        for guest_port in guest_ports:
+                            ports_dict[str(guest_port)] = dict(host=job_ip, port=guest_port, protocol="http")
+                        self.app.interactivetool_manager.configure_entry_points(job_wrapper.get_job(), ports_dict)
+                        log.debug("(%s) Got ports for entry point: %s", job_state.job_id, str(ports_dict))
+                        job_state = None
+            else:
+                # No need to monitor MQ jobs that have no entry points
+                job_state = None
             return job_state
         else:
             return self.check_watched_item_state(job_state)
@@ -294,6 +304,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         return job_state
 
     def _update_job_state_for_status(self, job_state, pulsar_status, full_status=None):
+        log.debug('(%s) Received status update: %s %s', job_state.job_id, type(pulsar_status), pulsar_status)
         if pulsar_status == "complete":
             self.mark_as_finished(job_state)
             return None

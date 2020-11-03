@@ -489,6 +489,13 @@ class MappingTests(unittest.TestCase):
 
         workflow = workflow_from_steps([workflow_step_1, workflow_step_2])
         self.persist(workflow)
+        workflow_id = workflow.id
+
+        annotation = model.WorkflowStepAnnotationAssociation()
+        annotation.annotation = "Test Step Annotation"
+        annotation.user = user
+        annotation.workflow_step = workflow_step_1
+        self.persist(annotation)
 
         assert workflow_step_1.id is not None
         h1 = model.History(name="WorkflowHistory1", user=user)
@@ -541,6 +548,12 @@ class MappingTests(unittest.TestCase):
         assert isinstance(subworkflow_invocation_assoc.parent_workflow_invocation, model.WorkflowInvocation)
 
         assert subworkflow_invocation_assoc.subworkflow_invocation.history.id == history_id
+
+        loaded_workflow = self.query(model.Workflow).get(workflow_id)
+        assert len(loaded_workflow.steps[0].annotations) == 1
+        copied_workflow = loaded_workflow.copy(user=user)
+        annotations = copied_workflow.steps[0].annotations
+        assert len(annotations) == 1
 
     def new_hda(self, history, **kwds):
         return history.add_dataset(self.model.HistoryDatasetAssociation(create_dataset=True, sa_session=self.model.session, **kwds))

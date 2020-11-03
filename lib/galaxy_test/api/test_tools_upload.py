@@ -257,6 +257,37 @@ class ToolsUploadTestCase(ApiTestCase):
         # By default this appends the newline.
         self.assertEqual(content, "This is a line of text.")
 
+    @uses_test_history(require_new=False)
+    def test_upload_multiple_mixed_success(self, history_id):
+        destination = {"type": "hdas"}
+        targets = [{
+            "destination": destination,
+            "items": [
+                {
+                    "src": "url",
+                    "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed"
+                },
+                {
+                    "src": "url",
+                    "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed"
+                }
+            ]
+        }]
+        payload = {
+            "history_id": history_id,
+            "targets": json.dumps(targets),
+        }
+        fetch_response = self.dataset_populator.fetch(payload)
+        self._assert_status_code_is(fetch_response, 200)
+        outputs = fetch_response.json()["outputs"]
+        assert len(outputs) == 2
+        output0 = outputs[0]
+        output1 = outputs[1]
+        output0 = self.dataset_populator.get_history_dataset_details(history_id, dataset=output0, assert_ok=False)
+        output1 = self.dataset_populator.get_history_dataset_details(history_id, dataset=output1, assert_ok=False)
+        assert output0["state"] == "ok"
+        assert output1["state"] == "error"
+
     @skip_without_datatype("velvet")
     def test_composite_datatype(self):
         with self.dataset_populator.test_history() as history_id:

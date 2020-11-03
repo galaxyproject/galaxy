@@ -56,6 +56,7 @@ class AuthnzManager:
             file (e.g., oidc_backends_config.xml).
         """
         self.app = app
+        self.allowed_idps = None
         self._parse_oidc_config(oidc_config_file)
         self._parse_oidc_backends_config(oidc_backends_config_file)
 
