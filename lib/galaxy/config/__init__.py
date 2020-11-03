@@ -877,7 +877,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self._set_alt_paths('file_path', self._in_data_dir('files'))  # this is called BEFORE guessing id/uuid
         ID, UUID = 'id', 'uuid'
         if self.is_set('object_store_store_by'):
-            assert self.object_store_store_by in [ID, UUID], f'Invalid value for object_store_store_by [{self.object_store_store_by}]'
+            assert self.object_store_store_by in [ID, UUID], "Invalid value for object_store_store_by [{}]".format(self.object_store_store_by)
         else:
             self.object_store_store_by = ID
             if not self.is_set('file_path'):  # choose based on default dir name
