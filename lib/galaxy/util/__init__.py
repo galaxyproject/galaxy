@@ -173,6 +173,24 @@ def directory_hash_id(id):
         return list(iter(s[0:3]))
 
 
+def find_dataset(path):
+    """
+    Perform DFS starting at path. Return the first occurrence of a dataset.
+    `path` should be a directory.
+    Return a DirEntry object or None.
+    """
+    if not os.path.exists(path) or not os.path.isdir(path):
+        return
+    stack = [path]
+    while stack:
+        with os.scandir(stack.pop()) as iter:
+            for de in iter:
+                if de.is_dir():
+                    stack.append(de)
+                elif de.name.endswith('.dat'):
+                    return de
+
+
 def get_charset_from_http_headers(headers, default=None):
     rval = headers.get('content-type', None)
     if rval and 'charset=' in rval:

@@ -31,6 +31,8 @@ from galaxy.model import mapping
 from galaxy.model.tool_shed_install.migrate.check import create_or_verify_database as tsi_create_or_verify_database
 from galaxy.util import (
     ExecutionTimer,
+    find_dataset,
+    is_uuid,
     listify,
     string_as_bool,
     unicodify,
@@ -712,17 +714,11 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         if self.nginx_upload_store:
             self.nginx_upload_store = os.path.abspath(self.nginx_upload_store)
 
-        # The default for `file_path` has changed in 20.09; we may need to fall back to the old default
-        self._set_alt_paths('file_path', self._in_data_dir('files'))
-
         self.object_store = kwargs.get('object_store', 'disk')
         self.object_store_check_old_style = string_as_bool(kwargs.get('object_store_check_old_style', False))
         self.object_store_cache_path = self._in_root_dir(kwargs.get("object_store_cache_path", self._in_data_dir("object_store_cache")))
-        if self.object_store_store_by is None:
-            self.object_store_store_by = 'id'
-            if not self.is_set('file_path') and self.file_path.endswith('objects'):
-                self.object_store_store_by = 'uuid'
-        assert self.object_store_store_by in ['id', 'uuid'], "Invalid value for object_store_store_by [%s]" % self.object_store_store_by
+        self._configure_dataset_storage()
+
         # Handle AWS-specific config options for backward compatibility
         if kwargs.get('aws_access_key') is not None:
             self.os_access_key = kwargs.get('aws_access_key')
@@ -875,6 +871,22 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                 'filename': kwargs['log_destination'],
                 'filters': ['stack']
             }
+
+    def _configure_dataset_storage(self):
+        # The default for `file_path` has changed in 20.09; we may need to fall back to the old default
+        self._set_alt_paths('file_path', self._in_data_dir('files'))  # this is called BEFORE guessing id/uuid
+        ID, UUID = 'id', 'uuid'
+        if self.is_set('object_store_store_by'):
+            assert self.object_store_store_by in [ID, UUID], f'Invalid value for object_store_store_by [{self.object_store_store_by}]'
+        else:
+            self.object_store_store_by = ID
+            if not self.is_set('file_path'):  # choose based on default dir name
+                if os.path.basename(self.file_path) == 'objects':
+                    self.object_store_store_by = UUID
+            else:  # choose based on dataset filename format
+                filename = find_dataset(self.file_path)
+                if not filename or is_uuid(filename):  # dir has no datasets, or contains a uuid dataset
+                    self.object_store_store_by = UUID
 
     def _load_list_from_file(self, filepath):
         with open(filepath) as f:
