@@ -16,9 +16,9 @@ def test_find_dataset_no_dat_file():
 
 
 def test_find_dataset_exists():
-    td = tempfile.TemporaryDirectory()
-    td1 = tempfile.TemporaryDirectory(dir=td.name)
-    f = tempfile.mkstemp(dir=td1.name, suffix='.dat')
+    with tempfile.TemporaryDirectory() as td_name:
+        td1 = tempfile.TemporaryDirectory(dir=td_name)
+        f = tempfile.NamedTemporaryFile(suffix='.dat', dir=td1.name)
 
-    direntry = find_dataset(td.name)
-    assert direntry.name == os.path.basename(f[1])
+        direntry = find_dataset(td_name)
+        assert direntry.name == os.path.basename(f.name)
