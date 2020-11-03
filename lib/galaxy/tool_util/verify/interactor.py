@@ -1170,6 +1170,8 @@ class ToolTestDescription:
         self.name = name
         self.maxseconds = maxseconds
         self.required_files = processed_test_dict.get("required_files", [])
+        self.required_data_tables = processed_test_dict.get("required_data_tables", [])
+        self.required_loc_files = processed_test_dict.get("required_loc_files", [])
 
         inputs = processed_test_dict.get("inputs", {})
         loaded_inputs = {}
@@ -1224,6 +1226,8 @@ class ToolTestDescription:
             "tool_id": self.tool_id,
             "tool_version": self.tool_version,
             "required_files": self.required_files,
+            "required_data_tables": self.required_data_tables,
+            "required_loc_files": self.required_loc_files,
             "error": self.error,
             "exception": self.exception,
         }

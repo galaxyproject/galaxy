@@ -6,6 +6,8 @@ import logging
 import re
 from collections import defaultdict, OrderedDict
 
+import packaging.version
+
 from galaxy import (
     exceptions,
     model,
@@ -19,7 +21,8 @@ from galaxy.tool_util.parser.output_objects import ToolExpressionOutput
 from galaxy.tools import (
     DatabaseOperationTool,
     DefaultToolState,
-    ToolInputsNotReadyException
+    ToolInputsNotReadyException,
+    WORKFLOW_SAFE_TOOL_VERSION_UPDATES,
 )
 from galaxy.tools.actions import filter_output
 from galaxy.tools.execute import execute, MappingParameters, PartialJobExecution
@@ -1245,13 +1248,17 @@ class ToolModule(WorkflowModule):
     def __init__(self, trans, tool_id, tool_version=None, exact_tools=True, tool_uuid=None, **kwds):
         super().__init__(trans, content_id=tool_id, **kwds)
         self.tool_id = tool_id
-        self.tool_version = tool_version
+        self.tool_version = str(tool_version)
         self.tool_uuid = tool_uuid
         self.tool = trans.app.toolbox.get_tool(tool_id, tool_version=tool_version, exact=exact_tools, tool_uuid=tool_uuid)
         if self.tool:
-            if tool_version and exact_tools and str(self.tool.version) != str(tool_version):
-                log.info(f"Exact tool specified during workflow module creation for [{tool_id}] but couldn't find correct version [{tool_version}].")
-                self.tool = None
+            if tool_version and exact_tools and str(self.tool.version) != tool_version:
+                safe_version = WORKFLOW_SAFE_TOOL_VERSION_UPDATES.get(tool_id)
+                if safe_version and safe_version.current_version >= packaging.version.parse(tool_version) >= safe_version.min_version:
+                    self.tool = trans.app.toolbox.get_tool(tool_id, tool_version=tool_version, exact=False, tool_uuid=tool_uuid)
+                else:
+                    log.info(f"Exact tool specified during workflow module creation for [{tool_id}] but couldn't find correct version [{tool_version}].")
+                    self.tool = None
         self.post_job_actions = {}
         self.runtime_post_job_actions = {}
         self.workflow_outputs = []
