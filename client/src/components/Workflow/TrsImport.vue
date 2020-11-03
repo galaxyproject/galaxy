@@ -90,7 +90,7 @@ export default {
                     this.errorMessage = null;
                     const version = this.trsTool.versions.find((version) => version.id === this.queryTrsVersionId);
                     if (version) {
-                        this.importVersion(this.trsTool.id, version);
+                        this.importVersion(this.trsTool.id, version, true);
                     }
                 })
                 .catch((errorMessage) => {
