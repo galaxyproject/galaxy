@@ -203,7 +203,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         if tool_version == "*":
             tools = self.app.toolbox.get_tool(id, get_all_versions=True)
             for tool in tools:
-                if not tool.allow_user_access(user):
+                if not tool.allow_user_access(trans.user):
                     raise exceptions.AuthenticationFailed("Access denied, please login for tool with id '%s'." % id)
         else:
             tools = [self._get_tool(id, tool_version=tool_version, user=trans.user)]
