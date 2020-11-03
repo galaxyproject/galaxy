@@ -187,7 +187,7 @@ export function saveAs(workflow) {
                     workflow_name: rename_name,
                     workflow_annotation: rename_annotation,
                     from_tool_form: true,
-                    workflow_data: function () {
+                    workflow_data: () => {
                         return JSON.stringify(toSimple(workflow));
                     },
                 },
