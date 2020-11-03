@@ -183,8 +183,8 @@ def find_dataset(path):
         return
     stack = [path]
     while stack:
-        with os.scandir(stack.pop()) as iter:
-            for de in iter:
+        with os.scandir(stack.pop()) as it:
+            for de in it:
                 if de.is_dir():
                     stack.append(de)
                 elif de.name.endswith('.dat'):
