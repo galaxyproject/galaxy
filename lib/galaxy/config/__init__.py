@@ -31,8 +31,6 @@ from galaxy.model import mapping
 from galaxy.model.tool_shed_install.migrate.check import create_or_verify_database as tsi_create_or_verify_database
 from galaxy.util import (
     ExecutionTimer,
-    find_dataset,
-    is_uuid,
     listify,
     string_as_bool,
     unicodify,

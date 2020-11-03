@@ -13,7 +13,14 @@ def mock_config_file(monkeypatch):
 
 
 def test_uuid_1(mock_config_file, monkeypatch):
-    # file_path not set, default = objects
+    # file_path dir name = `objects`, set by user
+    appconfig = config.GalaxyAppConfiguration(file_path='objects')
+
+    assert appconfig.object_store_store_by == 'uuid'
+
+
+def test_uuid_2(mock_config_file, monkeypatch):
+    # file_path dir name = `objects`, not set: default value is used
     monkeypatch.setattr(BaseAppConfiguration, 'is_set', lambda a, b: False)
     appconfig = config.GalaxyAppConfiguration(file_path='objects')
 
@@ -21,32 +28,15 @@ def test_uuid_1(mock_config_file, monkeypatch):
 
 
 def test_id_1(mock_config_file, monkeypatch):
-    # file_path not set, default = files
-    monkeypatch.setattr(BaseAppConfiguration, 'is_set', lambda a, b: False)
-    appconfig = config.GalaxyAppConfiguration(file_path='files')
+    # file_path dir name = `not_objects`, set by user
+    appconfig = config.GalaxyAppConfiguration(file_path='not_objects')
 
     assert appconfig.object_store_store_by == 'id'
 
 
-def test_uuid_2(mock_config_file, monkeypatch):
-    # file_path set, no dataset found
-    monkeypatch.setattr(config, 'find_dataset', lambda a: None)
-    appconfig = config.GalaxyAppConfiguration(file_path='foo')
-
-    assert appconfig.object_store_store_by == 'uuid'
-
-
-def test_uuid_3(mock_config_file, monkeypatch):
-    # file_path set, dataset is uuid
-    monkeypatch.setattr(config, 'find_dataset', lambda a: '123e4567-e89b-12d3-a456-426614174000.dat')
-    appconfig = config.GalaxyAppConfiguration(file_path='foo')
-
-    assert appconfig.object_store_store_by == 'uuid'
-
-
 def test_id_2(mock_config_file, monkeypatch):
-    # file_path set, dataset is not uuid
-    monkeypatch.setattr(config, 'find_dataset', lambda a: '1.dat')
-    appconfig = config.GalaxyAppConfiguration(file_path='foo')
+    # file_path dir name = `files`, not set: default value is used
+    monkeypatch.setattr(BaseAppConfiguration, 'is_set', lambda a, b: False)
+    appconfig = config.GalaxyAppConfiguration(file_path='files')
 
     assert appconfig.object_store_store_by == 'id'
