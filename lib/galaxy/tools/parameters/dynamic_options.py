@@ -7,7 +7,6 @@ import logging
 import os
 import re
 from io import StringIO
-from collections import OrderedDict
 
 from galaxy.model import (
     HistoryDatasetAssociation,
@@ -206,7 +205,7 @@ class DataMetaFilter(Filter):
             if not r.metadata.element_is_set(self.key):
                 continue
             _add_meta(meta_value, r.metadata.get(self.key))
-        log.error("meta_value %s" % str(meta_value))
+
         # if no meta data value could be determined just return a copy
         # of the original options
         if len(meta_value) == 0:
