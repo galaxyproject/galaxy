@@ -9,10 +9,10 @@ def test_find_dataset_no_dir():
 
 
 def test_find_dataset_no_dat_file():
-    td = tempfile.TemporaryDirectory()
-    td1 = tempfile.TemporaryDirectory(dir=td.name)
-    tempfile.mkstemp(dir=td1.name, suffix='.not-dat')
-    assert find_dataset('no-such-path') is None
+    with tempfile.TemporaryDirectory() as td_name:
+        td1 = tempfile.TemporaryDirectory(dir=td_name)
+        tempfile.mkstemp(suffix='.not-dat', dir=td1.name)
+        assert find_dataset(td_name) is None
 
 
 def test_find_dataset_exists():
