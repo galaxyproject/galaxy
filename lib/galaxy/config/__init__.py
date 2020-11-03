@@ -261,15 +261,12 @@ class BaseAppConfiguration:
         return os.path.exists(path)
 
     def _set_alt_paths(self, option, *alt_paths):
-        # If `option` is not set, check the default. If that path does NOT exist, check *alt_paths.
-        # Set `option` to first path that exists and return it. If none exist, use current default.
+        # If `option` is not set, check *alt_paths. Set `option` to first path that exists and return it.
         if not self.is_set(option):
-            curr_default = getattr(self, option, None)
-            if curr_default and not self._path_exists(curr_default):
-                for path in alt_paths:
-                    if self._path_exists(path):
-                        setattr(self, option, path)
-                        return path
+            for path in alt_paths:
+                if self._path_exists(path):
+                    setattr(self, option, path)
+                    return path
 
     def _update_raw_config_from_kwargs(self, kwargs):
 
