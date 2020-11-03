@@ -1,6 +1,7 @@
 """
 Classes encapsulating galaxy tools and tool configuration.
 """
+import collections
 import itertools
 import json
 import logging
@@ -192,6 +193,11 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "Convert characters1": packaging.version.parse("1.0.1"),
     "substitutions1": packaging.version.parse("1.0.1"),
     "winSplitter": packaging.version.parse("1.0.1"),
+}
+safe_update = collections.namedtuple("SafeUpdate", "min_version current_version")
+# Tool updates that did not change parameters in a way that requires rebuilding workflows
+WORKFLOW_SAFE_TOOL_VERSION_UPDATES = {
+    'Filter1': safe_update(packaging.version.parse("1.1.0"), packaging.version.parse("1.1.1"))
 }
 
 
