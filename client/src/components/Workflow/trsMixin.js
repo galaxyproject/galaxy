@@ -13,14 +13,6 @@ export default {
             this.services
                 .importTrsTool(this.trsSelection.id, toolId, version.name)
                 .then((response_data) => {
-                    console.log("isRunFormRedirect", isRunFormRedirect);
-                    console.log("isRunFormRedirect", isRunFormRedirect);
-                    console.log("isRunFormRedirect", isRunFormRedirect);
-                    console.log("isRunFormRedirect", isRunFormRedirect);
-                    console.log("isRunFormRedirect", isRunFormRedirect);
-                    console.log("isRunFormRedirect", isRunFormRedirect);
-                    console.log("isRunFormRedirect", isRunFormRedirect);
-                    console.log("isRunFormRedirect", isRunFormRedirect);
                     redirectOnImport(getAppRoot(), response_data, isRunFormRedirect);
                 })
                 .catch((errorMessage) => {
