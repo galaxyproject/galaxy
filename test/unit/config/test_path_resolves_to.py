@@ -240,3 +240,31 @@ def test_check_against_root_list_of_paths(mock_check_against_root):
     config = BaseAppConfiguration(path4='foo, bar')
 
     assert config.path4 == ['root/foo', 'my-config/bar']
+
+
+def test_set_alt_paths(mock_init, monkeypatch):
+
+    def path_exists(_, path):
+        return True if path == 'foo' else False
+
+    monkeypatch.setattr(BaseAppConfiguration, '_path_exists', path_exists)
+
+    def reset_to_initial_default():
+        config.path1 = 'my-config/my-config-files'
+
+    config = BaseAppConfiguration()
+
+    # default does not exist, one alt path exists
+    assert config.path1 == 'my-config/my-config-files'
+    config._set_alt_paths('path1', 'foo')
+    assert config.path1 == 'foo'
+
+    # default does not exist, 2 alt paths passed, second exists
+    reset_to_initial_default()
+    config._set_alt_paths('path1', 'invalid', 'foo')
+    assert config.path1 == 'foo'
+
+    # default does not exist, alt paths do not exist
+    reset_to_initial_default()
+    config._set_alt_paths('path1', 'invalid', 'invalid-2')
+    assert config.path1 == 'my-config/my-config-files'
