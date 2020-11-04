@@ -178,7 +178,7 @@ class BaseJobContext:
         return filenames
 
     def get_job_id(self):
-        return None  # overwritten in subclassews
+        return None  # overwritten in subclasses
 
 
 class JobContext(ModelPersistenceContext, BaseJobContext):
