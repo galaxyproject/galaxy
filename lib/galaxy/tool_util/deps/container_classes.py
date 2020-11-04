@@ -125,8 +125,10 @@ def preprocess_volumes(volumes_raw_str, container_type):
     ['/a/b:/a:ro', '/a/b/c:/a/b:rw']
     >>> preprocess_volumes("/a/b:default_ro,/a/b/c:rw", DOCKER_CONTAINER_TYPE)
     ['/a/b:ro', '/a/b/c:rw']
+    >>> preprocess_volumes("/a/b:default_ro,/a/b/c:ro", SINGULARITY_CONTAINER_TYPE)
+    ['/a/b:ro', '/a/b/c:ro']
     >>> preprocess_volumes("/a/b:default_ro,/a/b/c:rw", SINGULARITY_CONTAINER_TYPE)
-    ['/a/b:rw', '/a/b/c:rw']
+    ['/a/b', '/a/b/c']
     """
 
     volumes_raw_strs = [v.strip() for v in volumes_raw_str.split(",")]
@@ -159,6 +161,12 @@ def preprocess_volumes(volumes_raw_str, container_type):
                         how = "rw"
 
         volume[1] = how
+
+        # for a while singularity did not allow to specify the bind type rw
+        # (which is the default). so we omit this default
+        # see https://github.com/hpcng/singularity/pull/5487
+        if container_type == SINGULARITY_CONTAINER_TYPE and volume[1] == 'rw':
+            del volume[1]
 
     return [":".join(v) for v in volumes]
 
