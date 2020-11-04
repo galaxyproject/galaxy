@@ -1,3 +1,5 @@
+import os.path
+
 import pytest
 
 from galaxy import config
@@ -12,31 +14,41 @@ def mock_config_file(monkeypatch):
     monkeypatch.setattr(config.GalaxyAppConfiguration, '_override_tempdir', lambda a, b: None)
 
 
+def test_object_store_store_by_set(mock_config_file, monkeypatch):
+    # object_store_store_by set by admin
+    appconfig = config.GalaxyAppConfiguration(object_store_store_by='id')
+    assert appconfig.object_store_store_by == 'id'
+
+
 def test_uuid_1(mock_config_file, monkeypatch):
-    # file_path dir name = `objects`, set by user
+    # object_store_store_by not set
+    # file_path set by admin to `objects` (no need for the dir to exist)
     appconfig = config.GalaxyAppConfiguration(file_path='objects')
 
     assert appconfig.object_store_store_by == 'uuid'
 
 
 def test_uuid_2(mock_config_file, monkeypatch):
-    # file_path dir name = `objects`, not set: default value is used
-    monkeypatch.setattr(BaseAppConfiguration, 'is_set', lambda a, b: False)
-    appconfig = config.GalaxyAppConfiguration(file_path='objects')
+    # object_store_store_by not set
+    # file_path not set, `files` dir doesn't exist
+    monkeypatch.setattr(BaseAppConfiguration, '_path_exists', lambda self, path: False)
+    appconfig = config.GalaxyAppConfiguration()
 
     assert appconfig.object_store_store_by == 'uuid'
 
 
 def test_id_1(mock_config_file, monkeypatch):
-    # file_path dir name = `not_objects`, set by user
+    # object_store_store_by not set
+    # file_path set by admin to `not_objects` (no need for the dir to exist)
     appconfig = config.GalaxyAppConfiguration(file_path='not_objects')
 
     assert appconfig.object_store_store_by == 'id'
 
 
 def test_id_2(mock_config_file, monkeypatch):
-    # file_path dir name = `files`, not set: default value is used
-    monkeypatch.setattr(BaseAppConfiguration, 'is_set', lambda a, b: False)
-    appconfig = config.GalaxyAppConfiguration(file_path='files')
+    # object_store_store_by not set
+    # file_path not set, `files` dir exists
+    monkeypatch.setattr(BaseAppConfiguration, '_path_exists', lambda self, path: True if os.path.basename(path) == 'files' else False)
+    appconfig = config.GalaxyAppConfiguration()
 
     assert appconfig.object_store_store_by == 'id'
