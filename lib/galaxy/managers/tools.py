@@ -81,7 +81,10 @@ class DynamicToolManager(ModelManager):
                 if not tool_format:
                     raise exceptions.ObjectAttributeMissingException("Current tool representations require 'class'.")
 
-            tool_path = tool_payload.get("path")
+            # Set tool_path to None so that in ToolBox.create_dynamic_tool()
+            # the tool source is by default recovered using
+            # get_tool_source_from_representation()
+            tool_path = None
             tool_directory = tool_payload.get("tool_directory")
             if tool_format == "GalaxyTool":
                 tool_id = representation.get("id")
@@ -90,6 +93,7 @@ class DynamicToolManager(ModelManager):
             elif tool_format in ("CommandLineTool", "ExpressionTool"):
                 # CWL tools
                 if is_path:
+                    tool_path = tool_payload.get("path")
                     proxy = tool_proxy(tool_path=tool_path, uuid=uuid)
                 else:
                     # Build a tool proxy so that we can convert to the persistable

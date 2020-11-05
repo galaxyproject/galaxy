@@ -244,8 +244,11 @@ class DatasetCollectionManager:
                 name=name,
             )
             assert isinstance(dataset_collection_instance, model.HistoryDatasetCollectionAssociation)
+
             if implicit_inputs:
                 for input_name, input_collection in implicit_inputs:
+                    if getattr(input_collection, "ephemeral", False):
+                        input_collection = input_collection.persistent_object
                     dataset_collection_instance.add_implicit_input_collection(input_name, input_collection)
 
             if implicit_output_name:
@@ -406,6 +409,8 @@ class DatasetCollectionManager:
         tags = tags or {}
         implicit_inputs = implicit_inputs or []
         for _, v in implicit_inputs:
+            if getattr(v, "ephemeral", False):
+                v = v.persistent_object
             for tag in v.auto_propagated_tags:
                 tags[tag.value] = tag
         for _, tag in tags.items():

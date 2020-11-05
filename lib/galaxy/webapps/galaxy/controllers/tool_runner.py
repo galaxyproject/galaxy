@@ -72,7 +72,7 @@ class ToolRunner(BaseUIController):
         if not tool.allow_user_access(trans.user):
             return __tool_404__()
         # FIXME: Tool class should define behavior
-        if tool.tool_type in ["default", "interactivetool"]:
+        if tool.tool_type in ["default", "interactivetool", "cwl"]:
             return trans.response.send_redirect(url_for(controller="root", tool_id=tool_id))
 
         # execute tool without displaying form
