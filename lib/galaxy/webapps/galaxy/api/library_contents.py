@@ -111,7 +111,7 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             raise exceptions.RequestParameterInvalidException('No library found with the id provided.')
         encoded_id = 'F' + trans.security.encode_id(library.root_folder.id)
 
-        types = util.listify(kwd.get('types', []))
+        types = util.listify(kwd.get('types', ''))
         # in other places we call a dataset 'file'
         if 'dataset' in types:
             types.append('file')
@@ -119,19 +119,18 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         if 'folder_id' in kwd:
             folder_id = kwd['folder_id'][1:]  # strip the leading F
             root_folder = trans.sa_session.query(trans.app.model.LibraryFolder).get(trans.security.decode_id(folder_id))
-            root_folder.api_path = ''
         else:
             # appending root folder
             rval.append(dict(id=encoded_id,
                              type='folder',
                              name='/',
                              url=url_for('library_content', library_id=library_id, id=encoded_id)))
-            library.root_folder.api_path = ''
             root_folder = library.root_folder
 
+        root_folder.api_path = ''
         # appending all other items in the library recursively
         for content in traverse(root_folder):
-            if content.api_type in types:
+            if types and content.api_type in types:
                 encoded_id = trans.security.encode_id(content.id)
                 if content.api_type == 'folder':
                     encoded_id = 'F' + encoded_id
