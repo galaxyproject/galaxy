@@ -260,6 +260,14 @@ class BaseAppConfiguration:
     def _path_exists(self, path):  # factored out so we can mock it in tests
         return os.path.exists(path)
 
+    def _set_alt_paths(self, option, *alt_paths):
+        # If `option` is not set, check *alt_paths. Set `option` to first path that exists and return it.
+        if not self.is_set(option):
+            for path in alt_paths:
+                if self._path_exists(path):
+                    setattr(self, option, path)
+                    return path
+
     def _update_raw_config_from_kwargs(self, kwargs):
 
         def convert_datatype(key, value):
@@ -699,14 +707,12 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         # Configuration options for taking advantage of nginx features
         if self.nginx_upload_store:
             self.nginx_upload_store = os.path.abspath(self.nginx_upload_store)
+
         self.object_store = kwargs.get('object_store', 'disk')
         self.object_store_check_old_style = string_as_bool(kwargs.get('object_store_check_old_style', False))
         self.object_store_cache_path = self._in_root_dir(kwargs.get("object_store_cache_path", self._in_data_dir("object_store_cache")))
-        if self.object_store_store_by is None:
-            self.object_store_store_by = 'id'
-            if not self.is_set('file_path') and self.file_path.endswith('objects'):
-                self.object_store_store_by = 'uuid'
-        assert self.object_store_store_by in ['id', 'uuid'], "Invalid value for object_store_store_by [%s]" % self.object_store_store_by
+        self._configure_dataset_storage()
+
         # Handle AWS-specific config options for backward compatibility
         if kwargs.get('aws_access_key') is not None:
             self.os_access_key = kwargs.get('aws_access_key')
@@ -859,6 +865,17 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                 'filename': kwargs['log_destination'],
                 'filters': ['stack']
             }
+
+    def _configure_dataset_storage(self):
+        # The default for `file_path` has changed in 20.05; we may need to fall back to the old default
+        self._set_alt_paths('file_path', self._in_data_dir('files'))  # this is called BEFORE guessing id/uuid
+        ID, UUID = 'id', 'uuid'
+        if self.is_set('object_store_store_by'):
+            assert self.object_store_store_by in [ID, UUID], "Invalid value for object_store_store_by [{}]".format(self.object_store_store_by)
+        elif os.path.basename(self.file_path) == 'objects':
+            self.object_store_store_by = UUID
+        else:
+            self.object_store_store_by = ID
 
     def _load_list_from_file(self, filepath):
         with open(filepath) as f:

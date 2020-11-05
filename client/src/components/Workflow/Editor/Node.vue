@@ -332,8 +332,6 @@ export default {
                             x.destroy();
                         }
                     });
-                    // Remove the rendered output terminal
-                    this.outputTerminals[name].$el.remove();
                     // Remove the reference to the output and output terminal
                     delete this.outputTerminals[name];
                     this.outputs.splice(i, 1);

@@ -3225,7 +3225,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         new_dataset.hid = self.hid
 
     def to_library_dataset_dataset_association(self, trans, target_folder, replace_dataset=None,
-                                               parent_id=None, user=None, roles=None, ldda_message='', element_identifier=None):
+                                               parent_id=None, roles=None, ldda_message='', element_identifier=None):
         """
         Copy this HDA to a library optionally replacing an existing LDDA.
         """
@@ -3238,11 +3238,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             #   applied to the new LibraryDataset, and the current user's DefaultUserPermissions will be applied
             #   to the associated Dataset.
             library_dataset = LibraryDataset(folder=target_folder, name=self.name, info=self.info)
-            object_session(self).add(library_dataset)
-            object_session(self).flush()
-        if not user:
-            # This should never happen since users must be authenticated to upload to a data library
-            user = self.history.user
+        user = trans.user or self.history.user
         ldda = LibraryDatasetDatasetAssociation(name=element_identifier or self.name,
                                                 info=self.info,
                                                 blurb=self.blurb,
@@ -3257,16 +3253,19 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                                                 parent_id=parent_id,
                                                 copied_from_history_dataset_association=self,
                                                 user=user)
-        object_session(self).add(ldda)
-        object_session(self).flush()
+        library_dataset.library_dataset_dataset_association = ldda
+        object_session(self).add(library_dataset)
         # If roles were selected on the upload form, restrict access to the Dataset to those roles
         roles = roles or []
         for role in roles:
             dp = trans.model.DatasetPermissions(trans.app.security_agent.permitted_actions.DATASET_ACCESS.action,
                                                 ldda.dataset, role)
             trans.sa_session.add(dp)
-            trans.sa_session.flush()
         # Must set metadata after ldda flushed, as MetadataFiles require ldda.id
+        flushed = False
+        if self.set_metadata_requires_flush:
+            flushed = True
+            object_session(self).flush()
         ldda.metadata = self.metadata
         # TODO: copy #tags from history
         if ldda_message:
@@ -3274,12 +3273,11 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         if not replace_dataset:
             target_folder.add_library_dataset(library_dataset, genome_build=ldda.dbkey)
             object_session(self).add(target_folder)
-            object_session(self).flush()
-        library_dataset.library_dataset_dataset_association_id = ldda.id
         object_session(self).add(library_dataset)
-        object_session(self).flush()
         if not self.datatype.copy_safe_peek:
             # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
+            if not flushed:
+                object_session(self).flush()
             ldda.set_peek()
         object_session(self).flush()
         return ldda
@@ -3628,12 +3626,6 @@ class LibraryDataset(RepresentById):
         self.name = name
         self.info = info
         self.library_dataset_dataset_association = library_dataset_dataset_association
-
-    def set_library_dataset_dataset_association(self, ldda):
-        self.library_dataset_dataset_association = ldda
-        ldda.library_dataset = self
-        object_session(self).add_all((ldda, self))
-        object_session(self).flush()
 
     def get_info(self):
         if self.library_dataset_dataset_association:
