@@ -396,7 +396,7 @@ class ToolShedRepositoriesController(BaseAPIController):
             deleted: (bool) Repository deleted
             ctx_rev: (int) Changeset revision number (0, 1, 2...)
             error_message: (string) Installation error message
-            installed_changeset_revision: (string) Initially installed changeset revision. Used to construct path to repository within Galaxies filesystem. Does not change if a tool is updated.
+            installed_changeset_revision: (string) Initially installed changeset revision. Used to construct path to repository within Galaxies filesystem. Does not change if a repository is updated.
             tool_shed: (string) Repository toolshed hostname
             dist_to_shed: (bool)
             url: (string) API url of repository
