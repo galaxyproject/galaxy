@@ -4,15 +4,21 @@
         <requirement type="package" version="23.1">galaxy-util</requirement>
     </requirements>
     <command>
+        cp '$provided_metadata' 'galaxy.json';
         mkdir '$output1.files_path';
         cd '$output1.files_path';
         python -c "from galaxy.util.compression_utils import CompressedFile; CompressedFile('$input1').extract('.');"
+        ls '$output1.files_path'
     </command>
+    <configfiles>
+        <configfile name="provided_metadata">{"output1": {"created_from_basename": "${input1.created_from_basename}"}}
+        </configfile>
+    </configfiles>
     <inputs>
         <param format="tar" name="input1" type="data"/>
     </inputs>
     <outputs>
-        <data format="directory" name="output1"/>
+        <data format="directory" name="output1" metadata_source="input1" />
     </outputs>
     <tests>
         <test>

@@ -341,6 +341,12 @@ class CwlToolRun(CwlRun):
     def job_id(self):
         return self.run_response.json()["jobs"][0]["id"]
 
+    def output(self, output_index):
+        return self.run_response.json()["outputs"][output_index]
+
+    def output_collection(self, output_index):
+        return self.run_response.json()["output_collections"][output_index]
+
     def _output_name_to_object(self, output_name):
         return tool_response_to_output(self.run_response.json(), self.history_id, output_name)
 
@@ -909,6 +915,10 @@ class BaseDatasetPopulator(BasePopulator):
                     kwds["__files"] = {}
                 kwds["__files"][key] = value
                 del inputs[key]
+
+        ir = kwds.get("inputs_representation")
+        if ir is None and "inputs_representation" in kwds:
+            del kwds["inputs_representation"]
 
         return dict(tool_id=tool_id, inputs=json.dumps(inputs), history_id=history_id, **kwds)
 
