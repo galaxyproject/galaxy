@@ -136,6 +136,7 @@
                     {{ l(". (Note: you do not have to pair all unpaired datasets to finish.)") }}
                 </p>
             </template>
+            
             <template v-slot:middle-content>
                 <div class="unpaired-columns flex-column-container scroll-container flex-row">
                     <div class="forward-column flex-column column">
