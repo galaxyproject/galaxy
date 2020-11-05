@@ -519,11 +519,12 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                         rval.append(lineage_tool)
             if not rval:
                 # still no tool, do a deeper search and try to match by old ids
+                for tool in self._tools_by_id.values():
+                    if tool.old_id == tool_id:
+                        rval.append(tool)
                 if get_all_versions and tool_id in self._tool_versions_by_id:
-                    rval.extend(self._tool_versions_by_id[tool_id].values())
-                else:
-                    for tool in self._tools_by_id.values():
-                        if tool.old_id == tool_id:
+                    for tool in self._tool_versions_by_id[tool_id].values():
+                        if tool not in rval:
                             rval.append(tool)
 
                 # if we don't have a lineage_map for this tool we need to sort by version,
