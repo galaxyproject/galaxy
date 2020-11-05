@@ -2,17 +2,23 @@ import json
 import os
 from uuid import uuid4
 
+import pytest
 import yaml
 
 from galaxy.tool_util.cwl import (
     tool_proxy,
     workflow_proxy,
 )
+from galaxy.tool_util.cwl.cwltool_deps import schema_salad
 from galaxy.tool_util.cwl.parser import (
     _to_cwl_tool_object,
     tool_proxy_from_persistent_representation,
 )
-from galaxy.tool_util.parser.cwl import CwlToolSource
+from galaxy.tool_util.cwl.representation import USE_FIELD_TYPES
+from galaxy.tool_util.parser.cwl import (
+    CWL_DEFAULT_FILE_OUTPUT,
+    CwlToolSource,
+)
 from galaxy.tool_util.parser.factory import get_tool_source as _get_tool_source
 from galaxy.util import galaxy_directory
 
@@ -40,6 +46,17 @@ def test_tool_proxy():
     tool_proxy(_cwl_tool_path("v1.0/v1.0/parseInt-tool.cwl"))
 
 
+def test_tool_source_records():
+    record_output_path = _cwl_tool_path("v1.0/v1.0/record-output.cwl")
+    tool_source = get_tool_source(record_output_path)
+    inputs = _inputs(tool_source)
+    assert len(inputs) == 1, inputs
+
+    output_data, output_collections = _outputs(tool_source)
+    assert len(output_data) == 1
+    assert len(output_collections) == 1
+
+
 def test_serialize_deserialize():
     path = _cwl_tool_path("v1.0/v1.0/cat5-tool.cwl")
     tool = tool_proxy(path)
@@ -53,6 +70,82 @@ def test_serialize_deserialize():
     tool_object = json.loads(json.dumps(tool_object))
     tool = _to_cwl_tool_object(tool_object=tool_object, uuid=expected_uuid)
     assert tool.uuid == expected_uuid
+
+
+def test_job_proxy():
+    bwa_parser = get_tool_source(_cwl_tool_path("v1.0/v1.0/bwa-mem-tool.cwl"))
+    bwa_inputs = {
+        "reference": {
+            "class": "File",
+            "location": _cwl_tool_path("v1.0/v1.0/chr20.fa"),
+            "size": 123,
+            "checksum": "sha1$hash",
+        },
+        "reads": [
+            {"class": "File", "location": _cwl_tool_path("v1.0/v1.0/example_human_Illumina.pe_1.fastq")},
+            {"class": "File", "location": _cwl_tool_path("v1.0/v1.0/example_human_Illumina.pe_2.fastq")},
+        ],
+        "min_std_max_min": [1, 2, 3, 4],
+        "minimum_seed_length": 3,
+    }
+    bwa_proxy = bwa_parser.tool_proxy
+    bwa_id = bwa_parser.parse_id()
+
+    job_proxy = bwa_proxy.job_proxy(
+        bwa_inputs,
+        {},
+        "/",
+    )
+
+    cmd = job_proxy.command_line
+    print(cmd)
+
+    bind_parser = get_tool_source(_cwl_tool_path("v1.0/v1.0/binding-test.cwl"))
+    binding_proxy = bind_parser.tool_proxy
+    binding_id = bind_parser.parse_id()
+
+    job_proxy = binding_proxy.job_proxy(
+        bwa_inputs,
+        {},
+        "/",
+    )
+
+    cmd = job_proxy.command_line
+    assert bwa_id != binding_id, bwa_id
+
+
+def test_cores_min():
+    sort_parser = get_tool_source(_cwl_tool_path("v1.0/v1.0/sorttool.cwl"))
+    bwa_parser = get_tool_source(_cwl_tool_path("v1.0/v1.0/bwa-mem-tool.cwl"))
+
+    assert sort_parser.parse_cores_min() == 1
+    assert bwa_parser.parse_cores_min() == 2
+
+
+def test_success_codes():
+    exit_success_parser = get_tool_source(_cwl_tool_path("v1.0/v1.0/exit-success.cwl"))
+
+    stdio, _ = exit_success_parser.parse_stdio()
+    assert len(stdio) == 2
+    stdio_0 = stdio[0]
+    assert stdio_0.range_start == float("-inf")
+    assert stdio_0.range_end == 0
+
+    stdio_1 = stdio[1]
+    assert stdio_1.range_start == 2
+    assert stdio_1.range_end == float("inf")
+
+    bwa_parser = get_tool_source(_cwl_tool_path("v1.0/v1.0/bwa-mem-tool.cwl"))
+    stdio, _ = bwa_parser.parse_stdio()
+
+    assert len(stdio) == 2
+    stdio_0 = stdio[0]
+    assert stdio_0.range_start == float("-inf")
+    assert stdio_0.range_end == -1
+
+    stdio_1 = stdio[1]
+    assert stdio_1.range_start == 1
+    assert stdio_1.range_end == float("inf")
 
 
 def test_serialize_deserialize_workflow_embed():
@@ -281,6 +374,9 @@ def test_load_proxy_simple():
     outputs, output_collections = tool_source.parse_outputs(None)
     assert len(outputs) == 1
 
+    output1 = outputs["output_file"]
+    assert output1.format == CWL_DEFAULT_FILE_OUTPUT, output1.format  # Have Galaxy auto-detect
+
     software_requirements, containers, resource_requirements = tool_source.parse_requirements_and_containers()
     assert software_requirements.to_dict() == []
     assert len(containers) == 1
@@ -292,6 +388,23 @@ def test_load_proxy_simple():
     }
     assert len(resource_requirements) == 1
     assert resource_requirements[0].to_dict() == {"resource_type": "ram_min", "value_or_expression": 8}
+
+
+def test_cwl_strict_parsing():
+    md5sum_non_strict_path = _cwl_tool_path("v1.0_custom/md5sum_non_strict.cwl")
+    with pytest.raises(schema_salad.exceptions.ValidationException):
+        get_tool_source(md5sum_non_strict_path).tool_proxy  # noqa: B018
+
+    get_tool_source(md5sum_non_strict_path, strict_cwl_validation=False).tool_proxy  # noqa: B018
+
+
+def test_load_proxy_bwa_mem():
+    bwa_mem = _cwl_tool_path("v1.0/v1.0/bwa-mem-tool.cwl")
+    tool_source = get_tool_source(bwa_mem)
+    tool_id = tool_source.parse_id()
+    assert tool_id == "bwa-mem-tool.cwl", tool_id
+    _inputs(tool_source)
+    # TODO: test repeat generated...
 
 
 def test_representation_id():
@@ -335,6 +448,27 @@ def test_optional_output():
     assert output.format == "expression.json", output.format
 
 
+def test_sorttool():
+    env_tool1 = _cwl_tool_path("v1.0/v1.0/sorttool.cwl")
+    tool_source = get_tool_source(env_tool1)
+
+    assert tool_source.parse_id() == "sorttool.cwl"
+
+    inputs = _inputs(tool_source)
+    assert len(inputs) == 2
+    bool_input = inputs[0]
+    file_input = inputs[1]
+    assert bool_input.parse_input_type() == "param"
+    assert bool_input.get("type") == "boolean"
+
+    assert file_input.parse_input_type() == "param"
+    assert file_input.get("type") == "data", file_input.get("type")
+
+    output_data, output_collections = _outputs(tool_source)
+    assert len(output_data) == 1
+    assert len(output_collections) == 0
+
+
 def test_schemadef_tool():
     tool_path = _cwl_tool_path("v1.0/v1.0/schemadef-tool.cwl")
     tool_source = get_tool_source(tool_path)
@@ -345,6 +479,31 @@ def test_params_tool():
     tool_path = _cwl_tool_path("v1.0/v1.0/params.cwl")
     tool_source = get_tool_source(tool_path)
     _inputs(tool_source)
+
+
+def test_cat1():
+    cat1_tool = _cwl_tool_path("v1.0/v1.0/cat1-testcli.cwl")
+    tool_source = get_tool_source(cat1_tool)
+    inputs = _inputs(tool_source)
+
+    assert len(inputs) == 3, inputs
+    file_input = inputs[0]
+
+    assert file_input.parse_input_type() == "param"
+    assert file_input.get("type") == "data", file_input.get("type")
+
+    # User needs to specify if want to select boolean or not.
+    if not USE_FIELD_TYPES:
+        null_or_bool_input = inputs[1]
+        assert null_or_bool_input.parse_input_type() == "conditional"
+    else:
+        field_input = inputs[1]
+        assert field_input.parse_input_type() == "param"
+        assert field_input.get("type") == "field", field_input.get("type")
+
+    output_data, output_collections = _outputs(tool_source)
+    assert len(output_data) == 1
+    assert len(output_collections) == 1
 
 
 def test_tool_reload():

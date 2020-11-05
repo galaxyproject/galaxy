@@ -18,7 +18,6 @@ concurrency:
 jobs:
   test:
     name: Test
-    if: ${{ false }}
     runs-on: ubuntu-latest
     continue-on-error: ${{ startsWith(matrix.marker, 'red') }}
     strategy:
@@ -26,7 +25,7 @@ jobs:
       matrix:
         python-version: ['3.8']
         marker: ['green', 'red and required', 'red and not required']
-        conformance-version: ['cwl_conformance_v1_0'] #, 'cwl_conformance_v1_1', 'cwl_conformance_v1_2']
+        conformance-version: ['cwl_conformance_v1_0', 'cwl_conformance_v1_1', 'cwl_conformance_v1_2']
     services:
       postgres:
         image: postgres:13

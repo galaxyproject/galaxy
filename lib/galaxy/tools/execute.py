@@ -280,9 +280,11 @@ class ExecutionTracker:
     @property
     def on_text(self):
         if self._on_text is None:
-            collection_names = ["collection %d" % c.hid for c in self.collection_info.collections.values()]
-            self._on_text = on_text_for_names(collection_names)
-
+            if not self.collection_info.uses_ephemeral_collections:
+                collection_names = [f"collection {c.hid}" for c in self.collection_info.collections.values()]
+                self._on_text = on_text_for_names(collection_names)
+            else:
+                self._on_text = "implicitly created collection from inputs"
         return self._on_text
 
     def output_name(self, trans, history, params, output):

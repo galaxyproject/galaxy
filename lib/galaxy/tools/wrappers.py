@@ -8,6 +8,7 @@ from typing import (
     Any,
     cast,
     Dict,
+    ItemsView,
     Iterable,
     Iterator,
     KeysView,
@@ -692,6 +693,9 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         if not self.__input_supplied:
             return []
         return self.__element_instances.keys()
+
+    def items(self) -> ItemsView[str, Union["DatasetCollectionWrapper", DatasetFilenameWrapper]]:
+        return self.__element_instances.items()
 
     @property
     def is_collection(self) -> bool:
