@@ -1925,6 +1925,12 @@ class BaseDataToolParameter(ToolParameter):
                         return hdca
 
     def to_json(self, value, app, use_security):
+        if getattr(value, "ephemeral", False):
+            # wf_wc_scatter_multiple_flattened
+            value = value.persistent_object
+            if value.id is None:
+                app.model.context.add(value)
+                app.model.context.flush()
 
         if value not in [None, "", "None"]:
             if isinstance(value, list) and len(value) > 0:
@@ -2791,6 +2797,77 @@ def raw_to_galaxy(
         return hdca
 
 
+class FieldTypeToolParameter(ToolParameter):
+    """CWL field type defined parameter source."""
+
+    def __init__(self, tool, input_source, context=None):
+        input_source = ensure_input_source(input_source)
+        ToolParameter.__init__(self, tool, input_source)
+        # self.field_type = input_source.parse_field_type()
+
+    def from_json(self, value, trans, other_values=None):
+        if trans.workflow_building_mode is workflow_building_modes.ENABLED:
+            return None
+
+        if value is None:
+            return None
+
+        if not isinstance(value, dict) or "src" not in value:
+            value = {"src": "json", "value": value}
+        return self.to_python(value, trans.app)
+
+    def to_json(self, value, app, use_security):
+        """Convert a value to a string representation suitable for persisting"""
+        assert isinstance(value, dict)
+        assert "src" in value
+        return value
+
+    def to_python(self, value, app):
+        """Convert a value created with to_json back to an object representation"""
+        if value is None:
+            return None
+        # return super(FieldTypeToolParameter, self).to_python(value, app)
+        if not isinstance(value, dict):
+            value = json.loads(value)
+        assert isinstance(value, dict)
+        assert "src" in value
+        src = value["src"]
+        if "value" in value:
+            # We have an expanded value, not an ID
+            return value
+        elif src in ["hda", "hdca", "dce"]:
+            id = value["id"] if isinstance(value["id"], int) else app.security.decode_id(value["id"])
+            if src == "dce":
+                value = app.model.context.query(app.model.DatasetCollectionElement).get(id)
+            elif src == "hdca":
+                value = app.model.context.query(app.model.HistoryDatasetCollectionAssociation).get(id)
+            else:
+                value = app.model.context.query(app.model.HistoryDatasetAssociation).get(id)
+
+            return {"src": src, "value": value}
+
+    def value_to_basic(self, value, app, use_security=False):
+        log.info(f"value_to_basic of {value} ({type(value)})")
+        if is_runtime_value(value):
+            return runtime_to_json(value)
+
+        if value is None:
+            return None
+
+        assert isinstance(value, dict), f"value [{value}] is not valid for [{self}]"
+        assert "src" in value
+        src = value["src"]
+        if src in ["hda", "hdca", "dce"]:
+            id = value["value"].id if not use_security else app.security.encode_id(value["value"].id)
+            value = {"src": "hda", "id": id}
+
+        return json.dumps(value)
+
+    def value_from_basic(self, value, app, ignore_errors=False):
+        return super().value_from_basic(value, app, ignore_errors)
+        # return json.loads(value)
+
+
 parameter_types = dict(
     text=TextToolParameter,
     integer=IntegerToolParameter,
@@ -2811,6 +2888,7 @@ parameter_types = dict(
     rules=RulesListToolParameter,
     directory_uri=DirectoryUriToolParameter,
     drill_down=DrillDownSelectToolParameter,
+    field=FieldTypeToolParameter,
 )
 
 
