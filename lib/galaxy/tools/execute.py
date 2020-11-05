@@ -77,10 +77,6 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
                 datasets = [pair[1] for pair in result if type(pair[1]) == model.HistoryDatasetAssociation]
                 if datasets:
                     job_datasets[job] = datasets
-            # if execution_slice.datasets_to_persist:
-            #     datasets = [d for d in execution_slice.datasets_to_persist if type(d) == model.HistoryDatasetAssociation]
-            #     if datasets:
-            #         job_datasets[job] = datasets
         else:
             execution_tracker.record_error(result)
 
@@ -103,7 +99,6 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
     jobs_executed = 0
     has_remaining_jobs = False
     execution_slice = None
-    datasets_to_persist = []
     job_datasets = {}  # job: list of dataset instances created by job
 
     for i, execution_slice in enumerate(execution_tracker.new_execution_slices()):
