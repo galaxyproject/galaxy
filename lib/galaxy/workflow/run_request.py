@@ -365,7 +365,10 @@ def build_workflow_run_configs(
                 if step.type == "parameter_input":
                     if normalized_key in param_map:
                         value = param_map.pop(normalized_key)
-                        normalized_inputs[normalized_key] = value["input"]
+                        input_value = value["input"]
+                        if isinstance(input_value, dict) and input_value.get("src") == "json":
+                            input_value = input_value.get("value")
+                        normalized_inputs[normalized_key] = input_value
 
         steps_by_id = workflow.steps_by_id
         # Set workflow inputs.
@@ -384,7 +387,10 @@ def build_workflow_run_configs(
                     raise exceptions.RequestParameterInvalidException(
                         f"{step.label or step.order_index + 1}: {e.message_suffix}"
                     )
-                continue
+                if (step.tool_inputs and step.tool_inputs["parameter_type"] != "field") or not isinstance(
+                    input_dict, dict
+                ):
+                    continue
             try:
                 added_to_history = False
                 try:

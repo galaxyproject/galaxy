@@ -393,6 +393,10 @@ class WorkflowProgress:
         else:
             return None
 
+    @property
+    def trans(self):
+        return self.module_injector.trans
+
     def record_executed_job_count(self, job_count: int) -> None:
         self.jobs_scheduled_this_iteration += job_count
 
@@ -428,6 +432,101 @@ class WorkflowProgress:
                 remaining_steps.append((step, invocation_step))
         return remaining_steps
 
+    def replacement_for_input_connections(self, step: "WorkflowStep", input_dict: dict[str, Any], connections):
+        replacement = NO_REPLACEMENT
+
+        prefixed_name = input_dict["name"]
+
+        merge_type = model.WorkflowStepInput.default_merge_type
+        if step_input := step.inputs_by_name.get(prefixed_name, None):
+            merge_type = step_input.merge_type
+
+        is_data = input_dict["input_type"] in ["dataset", "dataset_collection"]
+        if len(connections) == 1:
+            replacement = self.replacement_for_connection(connections[0], is_data=is_data)
+        else:
+            # We've mapped multiple individual inputs to a single parameter,
+            # promote output to a collection.
+            inputs = []
+            input_history_content_type = None
+            input_collection_type = None
+            for i, c in enumerate(connections):
+                input_from_connection = self.replacement_for_connection(c, is_data=is_data)
+                is_data = hasattr(input_from_connection, "history_content_type")
+                if is_data:
+                    input_history_content_type = input_from_connection.history_content_type
+                    if i == 0:
+                        if input_history_content_type == "dataset_collection":
+                            input_collection_type = input_from_connection.collection.collection_type
+                        else:
+                            input_collection_type = None
+                    else:
+                        if input_collection_type is None:
+                            if input_history_content_type != "dataset":
+                                raise Exception("Cannot map over a combination of datasets and collections.")
+                        else:
+                            if input_history_content_type != "dataset_collection":
+                                raise Exception("Cannot merge over combinations of datasets and collections.")
+                            elif input_from_connection.collection.collection_type != input_collection_type:
+                                raise Exception("Cannot merge collections of different collection types.")
+
+                inputs.append(input_from_connection)
+
+            if input_dict["input_type"] == "dataset_collection":
+                # TODO: Implement more nested types here...
+                if input_dict.get("collection_types") != ["list"]:
+                    return self.replacement_for_connection(connections[0], is_data=is_data)
+
+            collection = model.DatasetCollection()
+            # If individual datasets provided (type is None) - premote to a list.
+            collection.collection_type = input_collection_type or "list"
+
+            next_index = 0
+            if input_collection_type is None:
+                if merge_type == "merge_nested":
+                    raise NotImplementedError()
+
+                for input in inputs:
+                    model.DatasetCollectionElement(
+                        collection=collection,
+                        element=input,
+                        element_index=next_index,
+                        element_identifier=str(next_index),
+                    )
+                    next_index += 1
+
+            elif input_collection_type == "list":
+                if merge_type == "merge_flattened":
+                    for input in inputs:
+                        for dataset_instance in input.dataset_instances:
+                            model.DatasetCollectionElement(
+                                collection=collection,
+                                element=dataset_instance,
+                                element_index=next_index,
+                                element_identifier=str(next_index),
+                            )
+                            next_index += 1
+                elif merge_type == "merge_nested":
+                    # Increase nested level of collection
+                    collection.collection_type = f"list:{input_collection_type}"
+                    for input in inputs:
+                        model.DatasetCollectionElement(
+                            collection=collection,
+                            element=input.collection,
+                            element_index=next_index,
+                            element_identifier=str(next_index),
+                        )
+                        next_index += 1
+            else:
+                raise NotImplementedError()
+
+            return modules.EphemeralCollection(
+                collection=collection,
+                history=self.workflow_invocation.history,
+            )
+
+        return replacement
+
     def replacement_for_input(self, trans, step: "WorkflowStep", input_dict: dict[str, Any]):
         replacement: Union[
             NoReplacement,
@@ -453,7 +552,11 @@ class WorkflowProgress:
                 else:
                     replacement = temp
             else:
-                replacement = self.replacement_for_connection(connection[0], is_data=is_data)
+                replacement = self.replacement_for_input_connections(
+                    step,
+                    input_dict,
+                    connection,
+                )
         elif (
             step.state
             and (state_input := get_path(step.state.inputs, nested_key_to_path(prefixed_name), None))
@@ -589,6 +692,14 @@ class WorkflowProgress:
 
         if step.label and step.type == "parameter_input" and "output" in outputs:
             self.runtime_replacements[step.label] = str(outputs["output"])
+
+        output = outputs.get("output")
+        # TODO: handle extra files and directory types and collections and all the stuff...
+        if output and isinstance(output, dict) and output.get("class") == "File":
+            primary_data = self.raw_to_galaxy(output)
+            outputs["output"] = primary_data
+
+        log.debug("outputs are %s", outputs)
         self.set_step_outputs(invocation_step, outputs, already_persisted=already_persisted)
 
     def effective_replacement_dict(self):
@@ -689,21 +800,25 @@ class WorkflowProgress:
         subworkflow = subworkflow_invocation.workflow
         subworkflow_inputs = {}
         for input_subworkflow_step in subworkflow.input_steps:
-            connection_found = False
+            connections = []
             subworkflow_step_id = input_subworkflow_step.id
             input_connections = step.input_connections
             for input_connection in input_connections:
                 if input_connection.input_subworkflow_step_id == subworkflow_step_id:
-                    is_data = input_connection.output_step.type != "parameter_input"
-                    replacement = self.replacement_for_connection(
-                        input_connection,
-                        is_data=is_data,
-                    )
-                    subworkflow_inputs[subworkflow_step_id] = replacement
-                    connection_found = True
-                    break
+                    connections.append(input_connection)
 
-            if not input_subworkflow_step.input_optional and not connection_found:
+            if connections:
+                replacement = self.replacement_for_input_connections(
+                    step=step,
+                    input_dict={
+                        "name": input_subworkflow_step.label,  # TODO: only module knows this unfortunately
+                        "input_type": input_subworkflow_step.input_type,
+                    },
+                    connections=connections,
+                )
+                subworkflow_inputs[subworkflow_step_id] = replacement
+
+            if not input_subworkflow_step.input_optional and not connections:
 
                 if not input_connections:
                     # TODO: Prevent this on import / runtime !
@@ -723,7 +838,6 @@ class WorkflowProgress:
                         dependent_workflow_step_id=input_connection.output_step.id,
                     )
                 )
-
         return WorkflowProgress(
             subworkflow_invocation,
             subworkflow_inputs,
