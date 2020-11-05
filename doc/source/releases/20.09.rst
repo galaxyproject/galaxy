@@ -120,6 +120,8 @@ Enhancements
   `Pull Request 10177`_
 * Add user-is-owner context for display of published workflows.
   `Pull Request 10215`_
+* Allow execution of workflows for certain tool updates
+  `Pull Request 10569`_
 .. enhancement_tag_ui
 
 * Early 20.09 full client dependency update.
@@ -135,7 +137,7 @@ Enhancements
   `Pull Request 10152`_
 .. enhancement_tag_jobs
 
-* Add support for cleaning up k8s jobs after a specified number of seconds since finish
+* Add support for cleaning up kubernetes jobs after a specified number of seconds since finish
   (thanks to `@nuwang <https://github.com/nuwang>`__).
   `Pull Request 8122`_
 * Port and Vuefy AWS estimate from EU
@@ -165,6 +167,9 @@ Enhancements
 * Don't run local runner job processes in an unnecessary shell
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 10257`_
+* Improve kubernetes job selection
+  (thanks to `@nuwang <https://github.com/nuwang>`__).
+  `Pull Request 10407`_
 .. enhancement_tag_admin
 
 * It docs additional info
@@ -361,14 +366,14 @@ Enhancements
 * expose dataset 'in use state' through api
   (thanks to `@scholtalbers <https://github.com/scholtalbers>`__).
   `Pull Request 10122`_
-* Jest-based client testing.
+* Jest-based client testing
   `Pull Request 10123`_
 * Copy to clipboard, instead of pop-up
   (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
   `Pull Request 10124`_
-* Open pages API a bit to allow anonymous users to view published pages.
+* Open pages API a bit to allow anonymous users to view published pages
   `Pull Request 10129`_
-* More structured errors for tool validation problems.
+* More structured errors for tool validation problems
   `Pull Request 10146`_
 * Add hidden column, attach StoredWorkflow to subworkflows
   `Pull Request 10160`_
@@ -378,12 +383,22 @@ Enhancements
   `Pull Request 10191`_
 * Force pagination on Valid Galaxy Tools -> Tools page
   `Pull Request 10195`_
+* Rebuild config for 20.09, including missing option in galaxy_options doc
+  `Pull Request 10527`_
+* Allow specyfying tool tests we expect to fail
+  `Pull Request 10548`_
+* Various fixes for conditional dependencies handling
+  `Pull Request 10575`_
+* Fixes/enhancements to use client tool test configs in Ephemeris
+  `Pull Request 10578`_
+* Mark test cases that use data tables or loc files
+  `Pull Request 10602`_
 .. small_enhancement
 
 * Porting Masthead to Vue.js
   (thanks to `@inkuzmin <https://github.com/inkuzmin>`__).
   `Pull Request 9071`_
-* Remove unused and deprecated parameters from k8s runner
+* Remove unused and deprecated parameters from kubernetes runner
   (thanks to `@nuwang <https://github.com/nuwang>`__).
   `Pull Request 9323`_
 * Add Vue components for Workflow Inputs and Outputs, reduce Workflow loading time
@@ -429,6 +444,10 @@ Enhancements
   `Pull Request 10226`_
 * Pass user to the ObjectStorePopulator
   `Pull Request 10231`_
+* mvpapp visualization fixes and refinement
+  `Pull Request 10355`_
+* Move linting to GitHub action, fix linting
+  `Pull Request 10615`_
 
 
 Fixes
@@ -465,6 +484,9 @@ Fixes
   `Pull Request 10312`_
 * Fix wiggle estimated_display_viewport
   `Pull Request 10333`_
+* AnnData Peek Fix
+  (thanks to `@mtekman <https://github.com/mtekman>`__).
+  `Pull Request 10555`_
 .. bug_tag_tools
 
 * Allow submission of tools with unset hidden parameters
@@ -492,13 +514,28 @@ Fixes
   `Pull Request 10096`_
 * Fix tool recommendation node injection
   `Pull Request 10097`_
-* Fix name wf editor
+* Fix Workflow node insertion via recommendations
   (thanks to `@anuprulez <https://github.com/anuprulez>`__).
   `Pull Request 10103`_
 * Fix change datatype PJA not applied when loaded from server
   `Pull Request 10237`_
+* Fix db-skip-locked invocation grabbing for pool members
+  `Pull Request 10371`_
 * Fix TRS search when Galaxy deployed behind a proxy.
   `Pull Request 10406`_
+* Fix wf step annotations dropped after rename.
+  `Pull Request 10464`_
+* Fix workflow extraction if nested collection in input step
+  `Pull Request 10560`_
+* Mark workflow as changed if tools were upgraded
+  `Pull Request 10570`_
+* Fix workflow editor version switching
+  `Pull Request 10597`_
+* Fix trs_id and trs_server query strings
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 10616`_
+* Fix Workflow node input terminal not updating
+  `Pull Request 10626`_
 .. bug_tag_ui
 
 * Tool recommendation node bug
@@ -530,24 +567,42 @@ Fixes
   `Pull Request 10255`_
 * Fix webless handler --attach-to-pool
   `Pull Request 10294`_
-* Ensure that k8s job ids are unique
+* Ensure that kubernetes job ids are unique
   (thanks to `@nuwang <https://github.com/nuwang>`__).
   `Pull Request 10307`_
-* Prevent endless cleanup loops when duplicate job or k8s job not found
+* Prevent endless cleanup loops when duplicate job or kubernetes job not found
   (thanks to `@nuwang <https://github.com/nuwang>`__).
   `Pull Request 10308`_
 * enable validation of ITs
   `Pull Request 10341`_
 * Defer metadata strategy resolution in job wrapper
   `Pull Request 10367`_
-* Restrict k8s max job name length to 63 and shorten prefix
+* Restrict kubernetes max job name length to 63 and shorten prefix
   (thanks to `@nuwang <https://github.com/nuwang>`__).
   `Pull Request 10416`_
+* Fixing bug in kubernetes runner's k8s_pod_retrials
+  (thanks to `@almahmoud <https://github.com/almahmoud>`__).
+  `Pull Request 10444`_
+* Move more non-dns compliant labels to annotations
+  (thanks to `@nuwang <https://github.com/nuwang>`__).
+  `Pull Request 10470`_
+* Fix ``maximum_workflow_jobs_per_scheduling_iteration`` and set 1000 as default value
+  `Pull Request 10490`_
+* Fix get_output_path when HDA identity changes
+  `Pull Request 10552`_
+* Don't pass resources as job params when reading job config as a dict
+  `Pull Request 10561`_
+* Stop monitoring terminal Pulsar Kubernetes jobs
+  `Pull Request 10572`_
+* Fix IntegrityError when flushing DC/DCE relationship
+  `Pull Request 10606`_
 .. bug_tag_admin
 
 * Fix admin data_types_list bug
   (thanks to `@cat-bro <https://github.com/cat-bro>`__).
   `Pull Request 10148`_
+* Restore welcome html link for non-uwsgi setups
+  `Pull Request 10623`_
 .. bug
 
 * Python37 lock fix
@@ -756,6 +811,44 @@ Fixes
 * Python 3 fix and client build fix for the proxy
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 10403`_
+* Rework new collection order testing in 20.09.
+  `Pull Request 10434`_
+* backport `#10365 <https://github.com/galaxyproject/galaxy/issues/10365>`__: add test for data_column parameter referring to non-tabular data (bed) and fix bug
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 10438`_
+* Change response body from str to bytes
+  (thanks to `@qiagu <https://github.com/qiagu>`__).
+  `Pull Request 10441`_
+* Add ``*requirements.txt`` files to source packages
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 10447`_
+* Fix mulled-search to not assume conda APIs from vanilla environments
+  `Pull Request 10465`_
+* Fix trailing commas in history dataset search
+  (thanks to `@cat-bro <https://github.com/cat-bro>`__).
+  `Pull Request 10518`_
+* Allow username or email for authenticate API identity
+  `Pull Request 10521`_
+* Improved error handling for data_fetch API.
+  `Pull Request 10543`_
+* Fix composite dataset listing in upload modal
+  `Pull Request 10551`_
+* allow adding dataset to library from history by default
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 10556`_
+* Make package names lowercase for mulled dependency resolving
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 10559`_
+* Fix listing idps
+  `Pull Request 10567`_
+* Fix progress bar floating text
+  `Pull Request 10579`_
+* bugfix: external login component fetching idps when it should not
+  `Pull Request 10581`_
+* Resolve LDDA <-> Library Dataset circular dependency
+  `Pull Request 10582`_
+* Fix file_path bug; change default assignment of file_path and id/uuid
+  `Pull Request 10617`_
 
 .. include:: 20.09_prs.rst
 
