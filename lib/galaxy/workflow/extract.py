@@ -15,6 +15,7 @@ from galaxy.tools.parameters.grouping import (
     Repeat,
     Section
 )
+from galaxy.util import listify
 from .steps import (
     attach_ordered_steps,
     order_workflow_steps_with_levels
@@ -54,18 +55,9 @@ def extract_workflow(trans, user, history=None, job_ids=None, dataset_ids=None, 
 
 def extract_steps(trans, history=None, job_ids=None, dataset_ids=None, dataset_collection_ids=None, dataset_names=None, dataset_collection_names=None):
     # Ensure job_ids and dataset_ids are lists (possibly empty)
-    if job_ids is None:
-        job_ids = []
-    elif type(job_ids) is not list:
-        job_ids = [job_ids]
-    if dataset_ids is None:
-        dataset_ids = []
-    elif type(dataset_ids) is not list:
-        dataset_ids = [dataset_ids]
-    if dataset_collection_ids is None:
-        dataset_collection_ids = []
-    elif type(dataset_collection_ids) is not list:
-        dataset_collection_ids = [dataset_collection_ids]
+    job_ids = listify(job_ids)
+    dataset_ids = listify(dataset_ids)
+    dataset_collection_ids = listify(dataset_collection_ids)
     # Convert both sets of ids to integers
     job_ids = [int(_) for _ in job_ids]
     dataset_ids = [int(_) for _ in dataset_ids]
@@ -328,18 +320,16 @@ def __cleanup_param_values(inputs, values):
     def cleanup(prefix, inputs, values):
         for key, input in inputs.items():
             if isinstance(input, DataToolParameter) or isinstance(input, DataCollectionToolParameter):
-                tmp = values[key]
+                items = values[key]
                 values[key] = None
                 # HACK: Nested associations are not yet working, but we
                 #       still need to clean them up so we can serialize
                 # if not( prefix ):
-                if isinstance(tmp, model.DatasetCollectionElement):
-                    tmp = tmp.first_dataset_instance()
-                if tmp:  # this is false for a non-set optional dataset
-                    if not isinstance(tmp, list):
-                        associations.append((tmp.hid, prefix + key))
-                    else:
-                        associations.extend([(t.hid, prefix + key) for t in tmp])
+                for item in listify(items):
+                    if isinstance(item, model.DatasetCollectionElement):
+                        item = item.first_dataset_instance()
+                    if item:  # this is false for a non-set optional dataset
+                        associations.append((item.hid, prefix + key))
 
                 # Cleanup the other deprecated crap associated with datasets
                 # as well. Worse, for nested datasets all the metadata is
