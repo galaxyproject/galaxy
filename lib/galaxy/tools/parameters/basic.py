@@ -1935,6 +1935,12 @@ class BaseDataToolParameter(ToolParameter):
                         return hdca
 
     def to_json(self, value, app, use_security):
+        if getattr(value, "ephemeral", False):
+            # wf_wc_scatter_multiple_flattened
+            value = value.persistent_object
+            if value.id is None:
+                app.model.context.add(value)
+                app.model.context.flush()
 
         if value not in [None, "", "None"]:
             if isinstance(value, list) and len(value) > 0:
@@ -2879,6 +2885,72 @@ def raw_to_galaxy(
         return hdca
 
 
+class FieldTypeToolParameter(ToolParameter):
+    """CWL field type defined parameter source."""
+
+    def __init__(self, tool, input_source, context=None):
+        input_source = ensure_input_source(input_source)
+        super().__init__(tool, input_source)
+        # self.field_type = input_source.parse_field_type()
+
+    def from_json(self, value, trans, other_values=None):
+        if trans.workflow_building_mode is workflow_building_modes.ENABLED:
+            return None
+
+        if value is None:
+            return None
+
+        if not isinstance(value, dict) or "src" not in value:
+            value = {"src": "json", "value": value}
+        elif value.get("class") == "File":
+            return raw_to_galaxy(trans.app, trans.history, value)
+        return self.to_python(value, trans.app)
+
+    def to_json(self, value, app, use_security):
+        """Convert a value to a string representation suitable for persisting"""
+        log.info(f"to_json of {value} ({type(value)})")
+        if value is None:
+            return None
+        if isinstance(value, dict):
+            if "src" in value:
+                src = value["src"]
+                if src in ["hda", "hdca", "dce"]:
+                    id = value["value"].id if not use_security else app.security.encode_id(value["value"].id)
+                    value = {"src": src, "id": id}
+            else:
+                # Default file
+                assert "class" in value
+        else:
+            value = {"src": "json", "value": value}
+        return json.dumps(value)
+
+    def to_python(self, value, app):
+        """Convert a value created with to_json back to an object representation"""
+        if value is None:
+            return None
+        if not isinstance(value, dict):
+            value = json.loads(value)
+        assert isinstance(value, dict)
+        assert "src" in value or "class" in value
+        if "src" in value:
+            src = value["src"]
+            if "value" in value:
+                # We have an expanded value, not an ID
+                return value
+            elif src in ["hda", "hdca", "dce"]:
+                id = value["id"] if isinstance(value["id"], int) else app.security.decode_id(value["id"])
+                if src == "dce":
+                    value = app.model.context.get(app.model.DatasetCollectionElement, id)
+                elif src == "hdca":
+                    value = app.model.context.get(app.model.HistoryDatasetCollectionAssociation, id)
+                else:
+                    value = app.model.context.get(app.model.HistoryDatasetAssociation, id)
+
+                return {"src": src, "value": value}
+        # Reaching this if we have a default filex
+        return value
+
+
 parameter_types: dict[str, type[ToolParameter]] = dict(
     text=TextToolParameter,
     integer=IntegerToolParameter,
@@ -2899,6 +2971,7 @@ parameter_types: dict[str, type[ToolParameter]] = dict(
     rules=RulesListToolParameter,
     directory_uri=DirectoryUriToolParameter,
     drill_down=DrillDownSelectToolParameter,
+    field=FieldTypeToolParameter,
 )
 
 

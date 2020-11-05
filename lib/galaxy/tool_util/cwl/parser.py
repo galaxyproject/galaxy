@@ -203,7 +203,7 @@ class ToolProxy(metaclass=ABCMeta):
             "class": self._class,
             # Should maybe be yaml instead
             "raw_process_reference": persisted_obj,
-            "uuid": self.uuid,
+            "uuid": str(self.uuid),  # UUID is not JSON serializable
         }
 
     @staticmethod

@@ -4,6 +4,7 @@ Job runner plugin for executing jobs on the local system via the command line.
 
 import datetime
 import logging
+import math
 import os
 import subprocess
 import tempfile
@@ -67,7 +68,16 @@ class LocalJobRunner(BaseJobRunner):
         if slots:
             slots_statement = f'GALAXY_SLOTS="{int(slots)}"; export GALAXY_SLOTS; GALAXY_SLOTS_CONFIGURED="1"; export GALAXY_SLOTS_CONFIGURED;'
         else:
-            slots_statement = 'GALAXY_SLOTS="1"; export GALAXY_SLOTS;'
+            cores_min = 1
+            if job_wrapper.tool:
+                try:
+                    # In CWL 1.2 it can be a float that can be rounded to the next whole number
+                    cores_min = math.ceil(float(job_wrapper.tool.cores_min))
+                except ValueError:
+                    # TODO: in CWL this can be an expression referencing runtime
+                    # parameters, e.g. `$(inputs.special_file.size)`
+                    pass
+            slots_statement = f'GALAXY_SLOTS="{cores_min}"; export GALAXY_SLOTS;'
 
         job_id = job_wrapper.get_id_tag()
         job_file = JobState.default_job_file(job_wrapper.working_directory, job_id)
