@@ -387,7 +387,31 @@ class ToolShedRepositoriesController(BaseAPIController):
     def show(self, trans, id, **kwd):
         """
         GET /api/tool_shed_repositories/{encoded_tool_shed_repsository_id}
-        Display a dictionary containing information about a specified tool_shed_repository.
+        Display a dictionary containing information about a specified tool_shed_repository:
+        ```
+        {
+            id: (string) Galaxy ID
+            status: (string) Installation status
+            name: (string) Repository name
+            deleted: (bool) Repository deleted
+            ctx_rev: (int) Changeset revision number (0, 1, 2...)
+            error_message: (string) Installation error message
+            installed_changeset_revision: (string) Initially installed changeset revision. Used to construct path to repository within Galaxies filesystem. Does not change if a tool is updated.
+            tool_shed: (string) Repository toolshed hostname
+            dist_to_shed: (bool)
+            url: (string) API url of repository
+            uninstalled: (bool) Tool has been uninstalled
+            owner: (string) Repository owner within toolshed
+            changeset_revision: (string) Changeset revision of repository
+            include_datatypes: (bool) Repository includes installed datatypes
+            tool_shed_status: (dict) See https://github.com/galaxyproject/galaxy/issues/10453
+                latest_installable_revision: (string) Most recent version available on toolshed
+                revision_update: (string)
+                revision_upgrade: (string)
+                repository_deprecated: (string) Repository has been depreciated
+        }
+        ```
+
 
         :param id: the encoded id of the ToolShedRepository object
         """
