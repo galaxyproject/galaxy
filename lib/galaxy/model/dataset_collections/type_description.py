@@ -93,9 +93,13 @@ class CollectionTypeDescription:
         collection_type = self.collection_type
         return collection_type.endswith(other_collection_type) and collection_type != other_collection_type
 
-    def is_subcollection_of_type(self, other_collection_type):
+    def is_subcollection_of_type(self, other_collection_type, proper=True):
+        """If proper is False, than a type is consider a subcollection of itself."""
         if not hasattr(other_collection_type, "collection_type"):
             other_collection_type = self.collection_type_description_factory.for_collection_type(other_collection_type)
+        if not proper and self.can_match_type(other_collection_type):
+            return True
+
         return other_collection_type.has_subcollections_of_type(self)
 
     def can_match_type(self, other_collection_type):
