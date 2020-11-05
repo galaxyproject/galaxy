@@ -54,6 +54,12 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         :param  library_id: the encoded id of the library
         :type   library_id: str
 
+        :type   folder_id:  str
+        :param  folder_id:  (optional) a folder_id to restrict the listing to
+
+        :type   types:      str
+        :param  types:      (optional) comma seperated list if contents to index (currently dataset and folder is supportd).
+
         :returns:   list of dictionaries of the form:
             * id:   the encoded id of the library item
             * name: the 'library path'
@@ -104,21 +110,35 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         if not (trans.user_is_admin or trans.app.security_agent.can_access_library(current_user_roles, library)):
             raise exceptions.RequestParameterInvalidException('No library found with the id provided.')
         encoded_id = 'F' + trans.security.encode_id(library.root_folder.id)
-        # appending root folder
-        rval.append(dict(id=encoded_id,
-                         type='folder',
-                         name='/',
-                         url=url_for('library_content', library_id=library_id, id=encoded_id)))
-        library.root_folder.api_path = ''
-        # appending all other items in the library recursively
-        for content in traverse(library.root_folder):
-            encoded_id = trans.security.encode_id(content.id)
-            if content.api_type == 'folder':
-                encoded_id = 'F' + encoded_id
+
+        types = util.listify(kwd.get('types', []))
+        # in other places we call a dataset 'file'
+        if 'dataset' in types:
+            types.append('file')
+
+        if 'folder_id' in kwd:
+            folder_id = kwd['folder_id'][1:]  # strip the leading F
+            root_folder = trans.sa_session.query(trans.app.model.LibraryFolder).get(trans.security.decode_id(folder_id))
+            root_folder.api_path = ''
+        else:
+            # appending root folder
             rval.append(dict(id=encoded_id,
-                             type=content.api_type,
-                             name=content.api_path,
-                             url=url_for('library_content', library_id=library_id, id=encoded_id, )))
+                             type='folder',
+                             name='/',
+                             url=url_for('library_content', library_id=library_id, id=encoded_id)))
+            library.root_folder.api_path = ''
+            root_folder = library.root_folder
+
+        # appending all other items in the library recursively
+        for content in traverse(root_folder):
+            if content.api_type in types:
+                encoded_id = trans.security.encode_id(content.id)
+                if content.api_type == 'folder':
+                    encoded_id = 'F' + encoded_id
+                rval.append(dict(id=encoded_id,
+                                 type=content.api_type,
+                                 name=content.api_path,
+                                 url=url_for('library_content', library_id=library_id, id=encoded_id, )))
         return rval
 
     @expose_api
