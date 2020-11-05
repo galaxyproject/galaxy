@@ -11,7 +11,7 @@ import Vue from "vue";
 import ListCollectionCreatorModal from "components/Collections/ListCollectionCreatorModal";
 import RuleBasedCollectionCreatorModal from "components/Collections/RuleBasedCollectionCreatorModal";
 import PairCollectionCreatorModal from "components/Collections/PairCollectionCreatorModal";
-import LIST_OF_PAIRS_COLLECTION_CREATOR from "mvc/collection/list-of-pairs-collection-creator";
+import PairedListCollectionCreatorModal from "components/Collections/PairedListCollectionCreatorModal";
 import faIconButton from "ui/fa-icon-button";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
@@ -384,7 +384,10 @@ var HistoryViewEdit = _super.extend(
                 inst.$mount();
                 createFunc = inst.createPairCollection;
             } else if (collectionType == "list:paired") {
-                createFunc = LIST_OF_PAIRS_COLLECTION_CREATOR.createListOfPairsCollection;
+                const PairedListCollectionCreatorModalClass = Vue.extend(PairedListCollectionCreatorModal);
+                const inst = new PairedListCollectionCreatorModalClass();
+                inst.$mount();
+                createFunc = inst.createPairedListCollection;
             } else if (collectionType.startsWith("rules")) {
                 const RuleBasedCollectionCreatorModalClass = Vue.extend(RuleBasedCollectionCreatorModal);
                 const inst = new RuleBasedCollectionCreatorModalClass();
