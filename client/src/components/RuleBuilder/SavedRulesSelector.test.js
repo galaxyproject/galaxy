@@ -48,7 +48,7 @@ describe("SavedRulesSelector", () => {
             ],
         };
 
-        wrapper.vm.saveSession(testRules);
+        wrapper.savedRules.push((testRules));
         await Vue.nextTick();
         const sessions = wrapper.findAll("div.dropdown-menu > a.saved-rule-item");
         expect(sessions.length > 0).toBeTruthy();
