@@ -25,7 +25,6 @@ import Vue from "vue";
 import _l from "utils/localization";
 import BootstrapVue from "bootstrap-vue";
 import moment from "moment";
-import { getGalaxyInstance } from "app";
 
 Vue.use(BootstrapVue);
 export default {
