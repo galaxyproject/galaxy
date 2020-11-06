@@ -347,7 +347,11 @@
                                     :title="titleViewSource"
                                     @click="viewSource"
                                 ></span>
-                                <saved-rules-selector ref="savedRulesSelector" @update-rules="restoreRules" :savedRules="this.savedRules"/>
+                                <saved-rules-selector
+                                    ref="savedRulesSelector"
+                                    @update-rules="restoreRules"
+                                    :savedRules="this.savedRules"
+                                />
                             </span>
                             <div v-if="jaggedData" class="rule-warning">
                                 Rows contain differing numbers of columns, there was likely a problem parsing your data.
