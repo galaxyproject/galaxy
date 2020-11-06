@@ -1033,11 +1033,15 @@ class Anndata(H5):
 
                 if 'var' in dataset.metadata.layers_names:
                     tmp = anndata_file["var"]
-                    # row names are never used in preview windows
-                    # dataset.metadata.var_names = tmp["index"]
+                    if "index" in tmp:
+                        var_index = "index"
+                    else:
+                        var_index = "_index"
+                    # We never use var_names
+                    # dataset.metadata.var_names = tmp[var_index]
                     dataset.metadata.var_layers, \
                         dataset.metadata.var_count, \
-                        dataset.metadata.var_size = _layercountsize(tmp, len(tmp["index"]))
+                        dataset.metadata.var_size = _layercountsize(tmp, len(tmp[var_index]))
 
                 if 'varm' in dataset.metadata.layers_names:
                     tmp = anndata_file["varm"]
