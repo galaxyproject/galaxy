@@ -116,7 +116,7 @@ export default {
         },
         tabs() {
             const scratchbookTabs = [this.mastheadState.frame.buttonActive, this.mastheadState.frame.buttonLoad];
-            const tabs = [].concat(this.baseTabs, scratchbookTabs, this.extensionTabs);
+            const tabs = [].concat(this.baseTabs, this.extensionTabs, scratchbookTabs);
             return tabs.map(this._tabToJson);
         },
     },
