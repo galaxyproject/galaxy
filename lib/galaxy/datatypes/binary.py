@@ -895,12 +895,12 @@ class Loom(H5):
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             with h5py.File(dataset.file_name, 'r') as loom_file:
-                dataset.metadata.title = util.unicodify(loom_file.attrs.get('title'))
-                dataset.metadata.description = util.unicodify(loom_file.attrs.get('description'))
-                dataset.metadata.url = util.unicodify(loom_file.attrs.get('url'))
-                dataset.metadata.doi = util.unicodify(loom_file.attrs.get('doi'))
-                dataset.metadata.loom_spec_version = util.unicodify(loom_file.attrs.get('LOOM_SPEC_VERSION'))
-                dataset.creation_date = util.unicodify(loom_file.attrs.get('creation_date'))
+                dataset.metadata.title = loom_file.attrs.get('title')
+                dataset.metadata.description = loom_file.attrs.get('description')
+                dataset.metadata.url = loom_file.attrs.get('url')
+                dataset.metadata.doi = loom_file.attrs.get('doi')
+                dataset.metadata.loom_spec_version = loom_file.attrs.get('LOOM_SPEC_VERSION')
+                dataset.creation_date = loom_file.attrs.get('creation_date')
                 dataset.metadata.shape = tuple(loom_file['matrix'].shape)
 
                 tmp = list(loom_file.get('layers', {}).keys())
@@ -994,12 +994,12 @@ class Anndata(H5):
     def set_meta(self, dataset, overwrite=True, **kwd):
         super(Anndata, self).set_meta(dataset, overwrite=overwrite, **kwd)
         with h5py.File(dataset.file_name, 'r') as anndata_file:
-            dataset.metadata.title = util.unicodify(anndata_file.attrs.get('title'))
-            dataset.metadata.description = util.unicodify(anndata_file.attrs.get('description'))
-            dataset.metadata.url = util.unicodify(anndata_file.attrs.get('url'))
-            dataset.metadata.doi = util.unicodify(anndata_file.attrs.get('doi'))
-            dataset.creation_date = util.unicodify(anndata_file.attrs.get('creation_date'))
-            dataset.metadata.shape = anndata_file.attrs.get('shape') or dataset.metadata.shape
+            dataset.metadata.title = anndata_file.attrs.get('title')
+            dataset.metadata.description = anndata_file.attrs.get('description')
+            dataset.metadata.url = anndata_file.attrs.get('url')
+            dataset.metadata.doi = anndata_file.attrs.get('doi')
+            dataset.creation_date = anndata_file.attrs.get('creation_date')
+            dataset.metadata.shape = anndata_file.attrs.get('shape', dataset.metadata.shape)
             # none of the above appear to work in any dataset tested, but could be useful for future
             # AnnData datasets
 
@@ -1010,11 +1010,11 @@ class Anndata(H5):
             def _layercountsize(tmp, lennames=0):
                 "From TMP and LENNAMES, return layers, their number, and the length of one of the layers (all equal)."
                 if hasattr(tmp, 'dtype'):
-                    layers = [util.unicodify(x) for x in tmp.dtype.names]
+                    layers = list(tmp.dtype.names)
                     count = len(tmp.dtype)
                     size = int(tmp.size)
                 else:
-                    layers = [util.unicodify(x) for x in list(tmp.keys())]
+                    layers = list(tmp.keys())
                     count = len(layers)
                     size = lennames
                 return (layers, count, size)
@@ -1028,7 +1028,7 @@ class Anndata(H5):
                     obs_index = "_index"
                 # do not attempt to parse beyond these
                 if obs_index:
-                    dataset.metadata.obs_names = [util.unicodify(x) for x in tmp[obs_index]]
+                    dataset.metadata.obs_names = list(tmp[obs_index])
                     x, y, z = _layercountsize(tmp, len(dataset.metadata.obs_names))
                     dataset.metadata.obs_layers = x
                     dataset.metadata.obs_count = y
