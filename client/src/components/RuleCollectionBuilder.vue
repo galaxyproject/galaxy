@@ -347,7 +347,7 @@
                                     :title="titleViewSource"
                                     @click="viewSource"
                                 ></span>
-                                <saved-rules-selector ref="savedRulesSelector" @update-rules="restoreRules" />
+                                <saved-rules-selector ref="savedRulesSelector" @update-rules="restoreRules" :savedRules="this.savedRules"/>
                             </span>
                             <div v-if="jaggedData" class="rule-warning">
                                 Rows contain differing numbers of columns, there was likely a problem parsing your data.
@@ -608,6 +608,7 @@ import RuleModalMiddle from "components/RuleBuilder/RuleModalMiddle";
 import RuleModalFooter from "components/RuleBuilder/RuleModalFooter";
 import StateDiv from "components/RuleBuilder/StateDiv";
 import SavedRulesSelector from "components/RuleBuilder/SavedRulesSelector";
+import SaveRules from "components/RuleBuilder/SaveRules";
 
 Vue.use(BootstrapVue);
 
@@ -1071,6 +1072,7 @@ export default {
             return this.hotData.colHeadersPerRule;
         },
     },
+    mixins: [SaveRules],
     methods: {
         restoreRules(event) {
             const json = JSON.parse(event);
@@ -1275,7 +1277,7 @@ export default {
                 this.state = "error";
                 return;
             }
-            this.$refs.savedRulesSelector.saveSession(JSON.stringify(asJson));
+            this.saveSession(JSON.stringify(asJson));
             this.state = "wait";
             const name = this.collectionName;
             const collectionType = this.collectionType;
