@@ -1026,12 +1026,13 @@ class Anndata(H5):
                     obs_index = "index"
                 elif "_index" in tmp:
                     obs_index = "_index"
-                ## do not attempt to parse beyond these
+                # do not attempt to parse beyond these
                 if obs_index:
                     dataset.metadata.obs_names = [util.unicodify(x) for x in tmp[obs_index]]
-                    dataset.metadata.obs_layers, \
-                      dataset.metadata.obs_count, \
-                      dataset.metadata.obs_size = _layercountsize(tmp, len(dataset.metadata.obs_names))
+                    x, y, z = _layercountsize(tmp, len(dataset.metadata.obs_names))
+                    dataset.metadata.obs_layers = x
+                    dataset.metadata.obs_count = y
+                    dataset.metadata.obs_size = z
 
             if 'obsm' in dataset.metadata.layers_names:
                 tmp = anndata_file["obsm"]
@@ -1041,9 +1042,10 @@ class Anndata(H5):
                 tmp = anndata_file["raw.var"]
                 # full set of genes would never need to be previewed
                 # dataset.metadata.raw_var_names = tmp["index"]
-                dataset.metadata.raw_var_layers, \
-                    dataset.metadata.raw_var_count, \
-                    dataset.metadata.raw_var_size = _layercountsize(tmp, len(tmp["index"]))
+                x, y, z = _layercountsize(tmp, len(tmp["index"]))
+                dataset.metadata.raw_var_layers = x
+                dataset.metadata.raw_var_count = y
+                dataset.metadata.raw_var_size = z
 
             if 'var' in dataset.metadata.layers_names:
                 tmp = anndata_file["var"]
@@ -1055,9 +1057,10 @@ class Anndata(H5):
                 # We never use var_names
                 # dataset.metadata.var_names = tmp[var_index]
                 if var_index:
-                    dataset.metadata.var_layers, \
-                      dataset.metadata.var_count, \
-                      dataset.metadata.var_size = _layercountsize(tmp, len(tmp[var_index]))
+                    x, y, z = _layercountsize(tmp, len(tmp[var_index]))
+                    dataset.metadata.var_layers = x
+                    dataset.metadata.var_count = y
+                    dataset.metadata.var_size = z
 
             if 'varm' in dataset.metadata.layers_names:
                 tmp = anndata_file["varm"]
