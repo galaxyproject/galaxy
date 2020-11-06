@@ -357,6 +357,7 @@ class ObjectUploadTarget:
 
     def __init__(self, the_object):
         self.object = the_object
+        self.properties = {}
 
     def __str__(self):
         return "ObjectUploadTarget[object=%s]" % self.object

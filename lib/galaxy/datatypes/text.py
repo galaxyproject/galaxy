@@ -117,19 +117,25 @@ class ExpressionJson(Json):
     def set_meta(self, dataset, **kwd):
         """
         """
-        json_type = "null"
-        with open(dataset.file_name) as f:
-            obj = json.load(f)
-            if isinstance(obj, int):
-                json_type = "int"
-            elif isinstance(obj, float):
-                json_type = "float"
-            elif isinstance(obj, list):
-                json_type = "list"
-            elif isinstance(obj, dict):
-                json_type = "object"
-
-        dataset.metadata.json_type = json_type
+        if dataset.has_data():
+            json_type = "null"
+            file_path = dataset.file_name
+            try:
+                with open(file_path) as f:
+                    obj = json.load(f)
+                    if isinstance(obj, int):
+                        json_type = "int"
+                    elif isinstance(obj, float):
+                        json_type = "float"
+                    elif isinstance(obj, list):
+                        json_type = "list"
+                    elif isinstance(obj, dict):
+                        json_type = "object"
+            except json.decoder.JSONDecodeError:
+                with open(file_path) as f:
+                    contents = f.read(512)
+                raise Exception(f"Invalid JSON encountered {contents}")
+            dataset.metadata.json_type = json_type
 
 
 @build_sniff_from_prefix
