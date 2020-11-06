@@ -1010,7 +1010,11 @@ class Anndata(H5):
 
                 if 'obs' in dataset.metadata.layers_names:
                     tmp = anndata_file["obs"]
-                    dataset.metadata.obs_names = [util.unicodify(x) for x in tmp["index"]]
+                    if "index" in tmp:
+                        obs_index = "index"
+                    else:
+                        obs_index = "_index"
+                    dataset.metadata.obs_names = [util.unicodify(x) for x in tmp[obs_index]]
                     dataset.metadata.obs_layers, \
                         dataset.metadata.obs_count, \
                         dataset.metadata.obs_size = _layercountsize(tmp, len(dataset.metadata.obs_names))
