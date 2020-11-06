@@ -1054,10 +1054,8 @@ class Anndata(H5):
 
                 if dataset.metadata.shape is None:
                     dataset.metadata.shape = (int(dataset.metadata.obs_size), int(dataset.metadata.var_size))
-
         except Exception as e:
             log.warning('%s, set_meta Exception: %s', self, e)
-
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
