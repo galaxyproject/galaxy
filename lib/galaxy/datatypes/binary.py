@@ -940,6 +940,18 @@ class Anndata(H5):
     False
     >>> Anndata().sniff(get_test_fname('import.loom.krumsiek11.h5ad'))
     True
+    >>> Anndata().sniff(get_test_fname('adata_0_6_small2.h5ad'))
+    True
+    >>> Anndata().sniff(get_test_fname('adata_0_6_small.h5ad'))
+    True
+    >>> Anndata().sniff(get_test_fname('adata_0_7_4_small2.h5ad'))
+    True
+    >>> Anndata().sniff(get_test_fname('adata_0_7_4_small.h5ad'))
+    True
+    >>> Anndata().sniff(get_test_fname('adata_unk2.h5ad'))
+    True
+    >>> Anndata().sniff(get_test_fname('adata_unk.h5ad'))
+    True
     """
     file_ext = 'h5ad'
 
