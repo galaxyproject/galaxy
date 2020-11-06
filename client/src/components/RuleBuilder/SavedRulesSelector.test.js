@@ -12,7 +12,7 @@ describe("SavedRulesSelector", () => {
             propsData: {
                 // Add a unique prefix for this test run so the test is not affected by local storage values
                 prefix: "test_prefix_" + new Date().toISOString() + "_",
-                savedRules: []
+                savedRules: [],
             },
             attachTo: getNewAttachNode(),
         });
@@ -29,7 +29,6 @@ describe("SavedRulesSelector", () => {
     });
 
     it("should emit a click event when a session is clicked", async () => {
-        
         const testRules = {
             rules: [
                 {
@@ -46,9 +45,9 @@ describe("SavedRulesSelector", () => {
                 },
             ],
         };
-        wrapper.setProps({ 
+        wrapper.setProps({
             user: "test_user",
-            savedRules: [testRules] 
+            savedRules: [testRules],
         });
         await Vue.nextTick();
         const sessions = wrapper.findAll("div.dropdown-menu > a.saved-rule-item");
