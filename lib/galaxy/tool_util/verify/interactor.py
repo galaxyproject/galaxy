@@ -1282,7 +1282,7 @@ def galaxy_requests_post(url, data=None, files=None, as_json=False, params=None)
 
     # files doesn't really work with json, so dump the parameters
     # and do a normal POST with request's data parameter.
-    if files is not None and as_json:
+    if bool(files) and as_json:
         as_json = False
         new_items = {}
         for key, val in data.items():
