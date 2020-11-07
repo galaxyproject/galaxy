@@ -196,8 +196,6 @@ export default {
     },
     data() {
         return {
-            dataset_manipulation: false,
-            logged_dataset_manipulation: false,
             is_admin: false,
             user_library_import_dir: false,
             library_import_dir: false,
@@ -223,25 +221,17 @@ export default {
         this.user_library_import_dir = Galaxy.config.user_library_import_dir;
         this.library_import_dir = Galaxy.config.library_import_dir;
         this.allow_library_path_paste = Galaxy.config.allow_library_path_paste;
-        const contains_file_or_folder = this.folderContents.find((el) => el.type === "folder" || el.type === "file");
 
         // logic from legacy code
-        if (contains_file_or_folder) {
-            if (Galaxy.user) {
-                this.dataset_manipulation = true;
-                if (!Galaxy.user.isAnonymous()) {
-                    this.logged_dataset_manipulation = true;
-                }
-            }
-        }
         this.fetchExtAndGenomes();
     },
     mounted() {
-        new mod_path_bar.PathBar({
-            full_path: this.metadata.full_path,
-            id: this.folder_id,
-            parent_library_id: this.metadata.parent_library_id,
-        });
+        if (this.metadata.full_path)
+            new mod_path_bar.PathBar({
+                full_path: this.metadata.full_path,
+                id: this.folder_id,
+                parent_library_id: this.metadata.parent_library_id,
+            });
     },
     computed: {
         getHomeUrl: () => {
@@ -249,6 +239,16 @@ export default {
         },
         allDatasets: function () {
             return this.folderContents.filter((element) => element.type === "file");
+        },
+        dataset_manipulation: function () {
+            const contains_file_or_folder = this.folderContents.find(
+                (el) => el.type === "folder" || el.type === "file"
+            );
+            const galaxy = getGalaxyInstance();
+            return !!(contains_file_or_folder && galaxy.user);
+        },
+        logged_dataset_manipulation: function () {
+            return this.dataset_manipulation && !getGalaxyInstance().user.isAnonymous();
         },
     },
     methods: {
