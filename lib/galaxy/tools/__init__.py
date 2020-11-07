@@ -230,6 +230,7 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "CONVERTER_gff_to_interval_index_0",
     "CONVERTER_maf_to_fasta_0",
     "CONVERTER_maf_to_interval_0",
+    "CONVERTER_tar_to_directory",  # WORKAROUND FOR CWL BRANCH! GOTTA FIX THIS I GUESS
     # Tools improperly migrated to the tool shed (devteam)
     "qualityFilter",
     "pileup_interval",
