@@ -1049,7 +1049,7 @@ class Anndata(H5):
 
             if 'var' in dataset.metadata.layers_names:
                 tmp = anndata_file["var"]
-                var_index = False
+                var_index = None
                 if "index" in tmp:
                     var_index = "index"
                 elif "_index" in tmp:
