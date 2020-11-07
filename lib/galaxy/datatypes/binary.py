@@ -1021,7 +1021,7 @@ class Anndata(H5):
 
             if 'obs' in dataset.metadata.layers_names:
                 tmp = anndata_file["obs"]
-                obs_index = False
+                obs_index = None
                 if "index" in tmp:
                     obs_index = "index"
                 elif "_index" in tmp:
