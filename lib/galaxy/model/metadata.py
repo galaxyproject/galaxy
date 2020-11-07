@@ -210,10 +210,11 @@ class MetadataCollection:
             meta_dict['__validated_state__'] = dataset_meta_dict['__validated_state__']
         if '__validated_state_message__' in dataset_meta_dict:
             meta_dict['__validated_state_message__'] = dataset_meta_dict['__validated_state_message__']
+        encoded_meta_dict = galaxy.model.custom_types.json_encoder.encode(meta_dict)
         if filename is None:
-            return galaxy.model.custom_types.json_encoder.encode(meta_dict)
+            return encoded_meta_dict
         with open(filename, 'wt+') as fh:
-            fh.write(galaxy.model.custom_types.json_encoder.encode(meta_dict))
+            fh.write(encoded_meta_dict)
 
     def __getstate__(self):
         # cannot pickle a weakref item (self._parent), when
