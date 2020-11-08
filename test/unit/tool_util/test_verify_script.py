@@ -4,6 +4,7 @@ from tempfile import NamedTemporaryFile
 from unittest import mock
 
 from galaxy.tool_util.verify.script import (
+    _arg_parser,
     build_case_references,
     Results,
     test_tools as run,
@@ -12,6 +13,25 @@ from galaxy.tool_util.verify.script import (
 
 VT_PATH = 'galaxy.tool_util.verify.script.verify_tool'
 NEW_HISTORY = object()
+
+
+def test_arg_parse():
+    parser = _arg_parser()
+
+    # defaults
+    args = parser.parse_args([])
+    assert not args.with_reference_data
+    assert not args.history_per_test_case
+
+    # skip flags
+    args = parser.parse_args(["--skip-with-reference-data", "--history-per-test-case"])
+    assert not args.with_reference_data
+    assert args.history_per_test_case
+
+    # enable flags
+    args = parser.parse_args(["--with-reference-data", "--history-per-suite"])
+    assert args.with_reference_data
+    assert not args.history_per_test_case
 
 
 def test_test_tools():

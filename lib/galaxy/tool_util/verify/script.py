@@ -18,7 +18,7 @@ from galaxy.tool_util.verify.interactor import (
 
 DESCRIPTION = """Script to quickly run a tool test against a running Galaxy instance."""
 DEFAULT_SUITE_NAME = "Galaxy Tool Tests"
-ALL_TESTS = "*"
+ALL_TESTS = -1
 ALL_TOOLS = "*"
 ALL_VERSION = "*"
 LATEST_VERSION = None
@@ -213,7 +213,6 @@ def _test_tool(
         def register(job_data_):
             nonlocal job_data
             job_data = job_data_
-            job_data['id'] = test_id
 
         try:
             while run_retries >= 0:
@@ -236,7 +235,11 @@ def _test_tool(
                     run_retries -= 1
         finally:
             if job_data is not None:
-                results.register_result(job_data)
+                results.register_result({
+                    "id": test_id,
+                    "has_data": True,
+                    "data": job_data,
+                })
             if job_exception is not None:
                 was_recorded = job_data is not None
                 test_exception = TestException(tool_id, job_exception, was_recorded)
@@ -309,7 +312,7 @@ def main(argv=None):
     verify_kwds = dict(
         client_test_config=tools_client_test_config,
         force_path_paste=args.force_path_paste,
-        skip_with_reference_data=args.skip_with_reference_data,
+        skip_with_reference_data=not args.with_reference_data,
         quiet=not verbose,
     )
     test_tools(
@@ -339,8 +342,10 @@ def _arg_parser():
     parser.add_argument('--verbose', default=False, action="store_true", help="Verbose logging.")
     parser.add_argument('-c', '--client-test-config', default=None, help="Test config YAML to help with client testing")
     parser.add_argument('--suite-name', default=DEFAULT_SUITE_NAME, help="Suite name for tool test output")
-    parser.add_argument('--skip-with-reference-data', default=False, action="store_true", help="Skip tests the Galaxy server believes use data tables or loc files.")
-    parser.add_argument('--history-per-test-case', default=False, action="store_true", help="Create new history per test case.")
+    parser.add_argument('--with-reference-data', dest="with_reference_data", default=False, action="store_true")
+    parser.add_argument('--skip-with-reference-data', dest="with_reference_data", action="store_false", help="Skip tests the Galaxy server believes use data tables or loc files.")
+    parser.add_argument('--history-per-suite', dest="history_per_test_case", default=False, action="store_false", help="Create new history per test suite (all tests in same history).")
+    parser.add_argument('--history-per-test-case', dest="history_per_test_case", action="store_true", help="Create new history per test case.")
     parser.add_argument('--no-history-cleanup', default=False, action="store_true", help="Perserve histories created for testing.")
     parser.add_argument('--retries', default=0, type=int, help="Retry failed tests.")
     return parser
