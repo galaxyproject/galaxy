@@ -316,7 +316,6 @@ def main(argv=None):
         galaxy_interactor,
         test_references,
         results,
-        verify_quiet=not verbose,
         log=None,
         verify_kwds=verify_kwds,
     )
