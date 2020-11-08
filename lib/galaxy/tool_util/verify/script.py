@@ -332,7 +332,7 @@ def _arg_parser():
     parser.add_argument('--force_path_paste', default=False, action="store_true", help='This requires Galaxy-side config option "allow_path_paste" enabled. Allows for fetching test data locally. Only for admins.')
     parser.add_argument('-t', '--tool-id', default=ALL_TOOLS, help='Tool ID')
     parser.add_argument('--tool-version', default=None, help='Tool Version (if tool id supplied). Defaults to just latest version, use * to test all versions')
-    parser.add_argument('-i', '--test-index', default=ALL_TESTS, help='Tool Test Index (starting at 0) - by default all tests will run.')
+    parser.add_argument('-i', '--test-index', default=ALL_TESTS, type=int, help='Tool Test Index (starting at 0) - by default all tests will run.')
     parser.add_argument('-o', '--output', default=None, help='directory to dump outputs to')
     parser.add_argument('--append', default=False, action="store_true", help="Extend a test record json (created with --output-json) with additional tests.")
     parser.add_argument('-j', '--output-json', default=None, help='output metadata json')
@@ -342,7 +342,7 @@ def _arg_parser():
     parser.add_argument('--skip-with-reference-data', default=False, action="store_true", help="Skip tests the Galaxy server believes use data tables or loc files.")
     parser.add_argument('--history-per-test-case', default=False, action="store_true", help="Create new history per test case.")
     parser.add_argument('--no-history-cleanup', default=False, action="store_true", help="Perserve histories created for testing.")
-    parser.add_argument('--retries', default=0, help="Retry failed tests.")
+    parser.add_argument('--retries', default=0, type=int, help="Retry failed tests.")
     return parser
 
 
