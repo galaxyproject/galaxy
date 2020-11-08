@@ -250,7 +250,7 @@ class GalaxyConfigBuilder:
                 )
 
 
-def main():
+def main(func=app_loop):
     arg_parser = ArgumentParser(description=DESCRIPTION)
     GalaxyConfigBuilder.populate_options(arg_parser)
     args = arg_parser.parse_args()
@@ -283,14 +283,14 @@ def main():
         daemon = Daemonize(
             app="galaxy",
             pid=pid_file,
-            action=functools.partial(app_loop, args, log),
+            action=functools.partial(func, args, log),
             verbose=DEFAULT_VERBOSE,
             logger=log,
             keep_fds=keep_fds,
         )
         daemon.start()
     else:
-        app_loop(args, log)
+        func(args, log)
 
 
 if __name__ == "__main__":
