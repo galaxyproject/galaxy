@@ -3,6 +3,7 @@
 adal==1.2.4
 amqp==2.6.0
 appdirs==1.4.4
+argcomplete==1.12.1
 attmap==0.12.11
 attrs==19.3.0
 azure-common==1.1.14
@@ -42,7 +43,7 @@ cloudbridge==2.0.0
 cmd2==0.8.9
 coloredlogs==14.0
 cryptography==2.9.2
-cwltool==1.0.20191225192155
+cwltool==3.0.20201109103151
 debtcollector==1.22.0
 decorator==4.4.2
 defusedxml==0.6.0 ; python_version >= '3.0'
@@ -113,7 +114,6 @@ parsley==1.3
 paste==3.4.1
 pastedeploy==2.1.0
 pastescript==3.2.0
-pathlib2==2.3.5 ; python_version < '3.6'
 pbr==5.4.5
 prettytable==0.7.2
 prov==1.5.1
@@ -123,6 +123,7 @@ pyasn1-modules==0.2.8
 pyasn1==0.4.8
 pycparser==2.20
 pycryptodome==3.9.7
+pydot==1.4.1; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'
 pyeventsystem==0.1.0
 pyinotify==0.9.6 ; sys_platform != 'win32' and sys_platform != 'darwin' and sys_platform != 'sunos5'
 pyjwt==1.7.1
@@ -146,7 +147,7 @@ python3-openid==3.1.0 ; python_version >= '3.0'
 pytz==2020.1
 pyuwsgi==2.0.19.1
 pyyaml==5.3.1
-rdflib-jsonld==0.4.0
+rdflib-jsonld==0.5.0
 rdflib==4.2.2
 refgenconf==0.7.0
 repoze.lru==0.7
@@ -158,10 +159,9 @@ rfc3986==1.4.0
 routes==2.4.1
 rsa==4.6 ; python_version >= '3'
 ruamel.yaml.clib==0.2.0 ; platform_python_implementation == 'CPython' and python_version < '3.8'
-ruamel.yaml==0.16.0
+ruamel.yaml==0.16.5
 s3transfer==0.2.1
-scandir==1.10.0
-schema-salad==4.5.20191229160203
+schema-salad==7.0.20200811075006; python_version >= '3.5'
 setuptools-scm==4.1.2
 shellescape==3.4.1
 simplejson==3.17.0
