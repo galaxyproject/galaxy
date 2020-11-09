@@ -48,6 +48,7 @@ A ``data_source`` tool contains a few more relevant attributes.
         <xs:element name="edam_topics" type="EdamTopics" minOccurs="0"/>
         <xs:element name="edam_operations" type="EdamOperations" minOccurs="0"/>
         <xs:element name="xrefs" type="xrefs" minOccurs="0" />
+        <xs:element name="creator" type="Creator" minOccurs="0" />
         <xs:element name="requirements" type="Requirements" minOccurs="0"/>
         <xs:element name="entry_points" type="EntryPoints" minOccurs="0" maxOccurs="1" />
         <xs:element name="description" type="xs:string" minOccurs="0">
@@ -182,6 +183,17 @@ version that should be required to run this tool. Certain legacy behaviors such
 as using standard error content to detect errors instead of exit code are disabled
 automatically if profile is set to any version newer than ``16.01``, such as
 ``16.04``.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="license" type="xs:string">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">This string specifies any full URI or a
+a short SPDX (https://spdx.org/licenses/) identifier for a license for this tool
+wrapper. The tool wrapper version can be indepedent of the underlying tool. This
+license covers the tool XML and associated scripts shipped with the tool.
+
+This is interpreted as a shcema.org license attribute (see also https://schema.org/license).
+</xs:documentation>
         </xs:annotation>
       </xs:attribute>
       <xs:attribute name="python_template_version" type="xs:float">
@@ -361,6 +373,113 @@ This tag set is contained within the ``<entry_point>`` tag set. It contains the 
     </xs:attribute>
     <xs:attribute name="class" type="xs:string" use="required">
     </xs:attribute>
+  </xs:complexType>
+
+  <xs:attributeGroup name="Thing">
+    <xs:attribute name="name" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>https://schema.org/name</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="url" type="xs:string" use="optional">
+      <xs:annotation>
+      <xs:documentation>https://schema.org/url</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="identifier" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>https://schema.org/identifier</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="image" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>https://schema.org/image</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="address" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>https://schema.org/address</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="email" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>https://schema.org/email</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="telephone" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>https://schema.org/telephone</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="faxNumber" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>https://schema.org/faxNumber</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="alternateName" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>https://schema.org/alternateName</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+
+  <xs:complexType name="Person">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Describes a person. Tries to stay close to schema.org data model - see https://schema.org/Person.
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:attributeGroup ref="Thing"/>
+    <xs:attribute name="givenName" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>https://schema.org/givenName</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="familyName" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>https://schema.org/familyName</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="honorificPrefix" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>https://schema.org/honorificPrefix</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="honorificSuffix" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>https://schema.org/honorificSuffix</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="jobTitle" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>https://schema.org/jobTitle</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="Organization">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Describes an organization. Tries to stay close to schema.org data model - see https://schema.org/Organization.
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:attributeGroup ref="Thing"/>
+  </xs:complexType>
+
+  <xs:group name="PersonOrOrganization">
+    <xs:choice>
+      <xs:element name="person" type="Person" />
+      <xs:element name="organization" type="Organization" />
+    </xs:choice>
+  </xs:group>
+
+  <xs:complexType name="Creator">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">The creator(s) of this work. See https://schema.org/creator.</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:group ref="PersonOrOrganization" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
   </xs:complexType>
 
   <xs:complexType name="Requirements">

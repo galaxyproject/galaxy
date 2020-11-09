@@ -1,7 +1,6 @@
 /**
     This is the base class of the tool form plugin. This class is e.g. inherited by the regular and the workflow tool form.
 */
-import _ from "underscore";
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
@@ -11,11 +10,10 @@ import Deferred from "utils/deferred";
 import Ui from "mvc/ui/ui-misc";
 import FormBase from "mvc/form/form-view";
 import Webhooks from "mvc/webhooks";
-import Citations from "components/Citation/Citations.vue";
-import xrefs from "components/xrefs.vue";
+import ToolFooter from "components/Tool/ToolFooter.vue";
 import Vue from "vue";
 import axios from "axios";
-import { Toast } from "ui/toast";
+import { copy } from "utils/clipboard";
 
 export default FormBase.extend({
     initialize: function (options) {
@@ -71,10 +69,14 @@ export default FormBase.extend({
     _render: function () {
         var self = this;
         var options = this.model.attributes;
+        if (options.setupToolMicrodata) {
+            this.$el.attr("itemscope", "itemscope");
+            this.$el.attr("itemtype", "https://schema.org/CreativeWork");
+        }
         this.model.set({
             title:
                 options.fixed_title ||
-                `<b>${options.name}</b> ${options.description} (Galaxy Version ${options.version})`,
+                `<b itemprop="name">${options.name}</b> <span itemprop="description">${options.description}</span> (Galaxy Version ${options.version})`,
             operations: !options.hide_operations && this._operations(),
             onchange: function () {
                 self.deferred.reset();
@@ -186,18 +188,10 @@ export default FormBase.extend({
             icon: "fa-share",
             title: _l("Get link"),
             onclick: function () {
-                if (navigator.clipboard) {
-                    navigator.clipboard
-                        .writeText(`${window.location.origin + getAppRoot()}root?tool_id=${options.id}`)
-                        .then(() => {
-                            Toast.info("Link is copied to your clipboard");
-                        });
-                } else {
-                    prompt(
-                        "Copy to clipboard: Ctrl+C, Enter",
-                        `${window.location.origin + getAppRoot()}root?tool_id=${options.id}`
-                    );
-                }
+                copy(
+                    `${window.location.origin + getAppRoot()}root?tool_id=${options.id}`,
+                    "Link was copied to your clipboard"
+                );
             },
         });
 
@@ -208,28 +202,6 @@ export default FormBase.extend({
                 title: _l("Download"),
                 onclick: function () {
                     window.location.href = `${getAppRoot()}api/tools/${options.id}/download`;
-                },
-            });
-        }
-
-        // button for version selection
-        if (options.requirements && options.requirements.length > 0) {
-            menu_button.addMenu({
-                icon: "fa-info-circle",
-                title: _l("Requirements"),
-                onclick: function () {
-                    if (!this.requirements_visible || self.portlet.collapsed) {
-                        this.requirements_visible = true;
-                        self.portlet.expand();
-                        self.message.update({
-                            persistent: true,
-                            message: self._templateRequirements(options),
-                            status: "info",
-                        });
-                    } else {
-                        this.requirements_visible = false;
-                        self.message.update({ message: "" });
-                    }
                 },
             });
         }
@@ -275,30 +247,22 @@ export default FormBase.extend({
 
     /** Create footer */
     _footer: function () {
-        var options = this.model.attributes;
-        var $el = $("<div/>").append(this._templateHelp(options));
-        if (options.citations) {
-            var citationInstance = Vue.extend(Citations);
-            var vm = document.createElement("div");
-            $el.append(vm);
-            new citationInstance({
-                propsData: {
-                    id: options.id,
-                    source: "tools",
-                },
-            }).$mount(vm);
-        }
-        if (options.xrefs && options.xrefs.length) {
-            var xrefInstance = Vue.extend(xrefs);
-            vm = document.createElement("div");
-            $el.append(vm);
-            new xrefInstance({
-                propsData: {
-                    id: options.id,
-                    source: "tools",
-                },
-            }).$mount(vm);
-        }
+        const options = this.model.attributes;
+        const $el = $("<div/>").append(this._templateHelp(options));
+        const toolFooterInstance = Vue.extend(ToolFooter);
+        const vm = document.createElement("div");
+        $el.append(vm);
+        const propsData = {
+            id: options.id,
+            hasCitations: options.citations,
+            xrefs: options.xrefs,
+            license: options.license,
+            creators: options.creator,
+            requirements: options.requirements,
+        };
+        new toolFooterInstance({
+            propsData,
+        }).$mount(vm);
         return $el;
     },
 
@@ -313,27 +277,5 @@ export default FormBase.extend({
             }
         });
         return $tmpl;
-    },
-
-    _templateRequirements: function (options) {
-        var nreq = options.requirements.length;
-        if (nreq > 0) {
-            var requirements_message = "This tool requires ";
-            _.each(options.requirements, (req, i) => {
-                requirements_message +=
-                    req.name +
-                    (req.version ? ` (Version ${req.version})` : "") +
-                    (i < nreq - 2 ? ", " : i == nreq - 2 ? " and " : "");
-            });
-            var requirements_link = $("<a/>")
-                .attr("target", "_blank")
-                .attr("href", "https://galaxyproject.org/tools/requirements/")
-                .text("here");
-            return $("<span/>")
-                .append(`${requirements_message}. Click `)
-                .append(requirements_link)
-                .append(" for more information.");
-        }
-        return "No requirements found.";
     },
 });

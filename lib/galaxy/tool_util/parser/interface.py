@@ -222,10 +222,21 @@ class ToolSource(metaclass=ABCMeta):
         """
 
     @abstractmethod
+    def parse_license(self):
+        """Return license corresponding to tool wrapper."""
+
+    @abstractmethod
     def parse_python_template_version(self):
         """
         Return minimum python version that the tool template has been developed against.
         """
+
+    def parse_creator(self):
+        """Return list of metadata relating to creator/author of tool.
+
+        Result should be list of schema.org data model Person or Organization objects.
+        """
+        return []
 
     @property
     def macro_paths(self):
