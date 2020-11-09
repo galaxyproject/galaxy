@@ -1,12 +1,5 @@
 <template>
-    <b-navbar
-        id="masthead"
-        toggleable="lg"
-        type="dark"
-        role="navigation"
-        aria-label="Main"
-        class="justify-content-center"
-    >
+    <b-navbar id="masthead" type="dark" role="navigation" aria-label="Main" class="justify-content-center">
         <b-navbar-brand :href="brandLink" aria-label="homepage">
             <img alt="logo" class="navbar-brand-image" :src="brandImage" />
             <span class="navbar-brand-title">{{ brandTitle }}</span>
@@ -116,7 +109,7 @@ export default {
         },
         tabs() {
             const scratchbookTabs = [this.mastheadState.frame.buttonActive, this.mastheadState.frame.buttonLoad];
-            const tabs = [].concat(this.baseTabs, scratchbookTabs, this.extensionTabs);
+            const tabs = [].concat(this.baseTabs, this.extensionTabs, scratchbookTabs);
             return tabs.map(this._tabToJson);
         },
     },

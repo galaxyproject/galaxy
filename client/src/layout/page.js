@@ -200,15 +200,18 @@ const View = Backbone.View.extend({
                     if (Galaxy.user.id !== null) {
                         if ($chat_icon_element.css("visibility") === "hidden") {
                             $chat_icon_element.css("visibility", "visible");
+                            $chat_icon_element.css("display", "initial");
                         }
                     }
                 })
                 .error((data) => {
                     // hide the communication icon if the communication server is not available
                     $chat_icon_element.css("visibility", "hidden");
+                    $chat_icon_element.css("display", "none");
                 });
         } else {
             $chat_icon_element.css("visibility", "hidden");
+            $chat_icon_element.css("display", "none");
         }
     },
 });
