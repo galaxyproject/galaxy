@@ -26,7 +26,7 @@ class GenomeBuilds:
 
     def get_genome_build_names(self, trans=None):
         # FIXME: how to deal with key duplicates?
-        rval = []
+        rval = [(self.default_value, self.default_name)]
         # load user custom genome builds
         if trans is not None:
             if trans.history:
