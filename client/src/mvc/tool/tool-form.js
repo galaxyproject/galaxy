@@ -262,79 +262,84 @@ const View = Backbone.View.extend({
             return;
         }
         Galaxy.emit.debug("tool-form::submit()", "Validation complete.", job_def);
-        Utils.request({
-            type: "POST",
-            url: `${getAppRoot()}api/tools`,
-            data: job_def,
-            success: (response) => {
-                callback && callback();
-                this.$el.children().hide();
-                if (response.produces_entry_points) {
-                    for (const job of response.jobs) {
-                        const toolEntryPointsInstance = Vue.extend(ToolEntryPoints);
-                        const vm = document.createElement("div");
-                        this.$el.append(vm);
-                        const instance = new toolEntryPointsInstance({
-                            propsData: {
-                                jobId: job.id,
-                            },
-                        });
-                        instance.$mount(vm);
-                    }
-                }
-                this.$el.append(this._templateSuccess(response, job_def));
-                const enable_tool_recommendations = Galaxy.config.enable_tool_recommendations;
-                if (enable_tool_recommendations === true || enable_tool_recommendations === "true") {
-                    // show tool recommendations
-                    const ToolRecommendationInstance = Vue.extend(ToolRecommendation);
-                    const vm = document.createElement("div");
-                    this.$el.append(vm);
-                    const instance = new ToolRecommendationInstance({
-                        propsData: {
-                            toolId: job_def.tool_id,
-                        },
-                    });
-                    instance.$mount(vm);
-                }
-                this.$el.parent().scrollTop(0);
-                // Show Webhook if job is running
-                if (response.jobs && response.jobs.length > 0) {
-                    this.$el.append($("<div/>", { id: "webhook-view" }));
-                    new Webhooks.WebhookView({
-                        type: "tool",
-                        toolId: job_def.tool_id,
-                    });
-                }
-                if (Galaxy.currHistoryPanel) {
-                    this.form.stopListening(Galaxy.currHistoryPanel.collection);
-                    Galaxy.currHistoryPanel.refreshContents();
-                }
-            },
-            error: (response) => {
-                callback && callback();
-                Galaxy.emit.debug("tool-form::submit", "Submission failed.", response);
-                let input_found = false;
-                if (response && response.err_data) {
-                    const error_messages = this.form.data.matchResponse(response.err_data);
-                    for (const input_id in error_messages) {
-                        this.form.highlight(input_id, error_messages[input_id]);
-                        input_found = true;
-                        break;
-                    }
-                }
-                if (!input_found) {
-                    this.modal.show({
-                        title: _l("Job submission failed"),
-                        body: this._templateError(job_def, response && response.err_msg),
-                        buttons: {
-                            Close: () => {
-                                this.modal.hide();
-                            },
-                        },
-                    });
-                }
-            },
-        });
+        const target = window.location.host + '/ws';
+        console.log(target);
+        let ws;
+        ws = new WebSocket(`ws://${target}`);
+        ws.onopen = () => ws.send(JSON.stringify(job_def))
+        // Utils.request({
+        //     type: "POST",
+        //     url: `${getAppRoot()}api/tools`,
+        //     data: job_def,
+        //     success: (response) => {
+        //         callback && callback();
+        //         this.$el.children().hide();
+        //         if (response.produces_entry_points) {
+        //             for (const job of response.jobs) {
+        //                 const toolEntryPointsInstance = Vue.extend(ToolEntryPoints);
+        //                 const vm = document.createElement("div");
+        //                 this.$el.append(vm);
+        //                 const instance = new toolEntryPointsInstance({
+        //                     propsData: {
+        //                         jobId: job.id,
+        //                     },
+        //                 });
+        //                 instance.$mount(vm);
+        //             }
+        //         }
+        //         this.$el.append(this._templateSuccess(response, job_def));
+        //         const enable_tool_recommendations = Galaxy.config.enable_tool_recommendations;
+        //         if (enable_tool_recommendations === true || enable_tool_recommendations === "true") {
+        //             // show tool recommendations
+        //             const ToolRecommendationInstance = Vue.extend(ToolRecommendation);
+        //             const vm = document.createElement("div");
+        //             this.$el.append(vm);
+        //             const instance = new ToolRecommendationInstance({
+        //                 propsData: {
+        //                     toolId: job_def.tool_id,
+        //                 },
+        //             });
+        //             instance.$mount(vm);
+        //         }
+        //         this.$el.parent().scrollTop(0);
+        //         // Show Webhook if job is running
+        //         if (response.jobs && response.jobs.length > 0) {
+        //             this.$el.append($("<div/>", { id: "webhook-view" }));
+        //             new Webhooks.WebhookView({
+        //                 type: "tool",
+        //                 toolId: job_def.tool_id,
+        //             });
+        //         }
+        //         if (Galaxy.currHistoryPanel) {
+        //             this.form.stopListening(Galaxy.currHistoryPanel.collection);
+        //             Galaxy.currHistoryPanel.refreshContents();
+        //         }
+        //     },
+        //     error: (response) => {
+        //         callback && callback();
+        //         Galaxy.emit.debug("tool-form::submit", "Submission failed.", response);
+        //         let input_found = false;
+        //         if (response && response.err_data) {
+        //             const error_messages = this.form.data.matchResponse(response.err_data);
+        //             for (const input_id in error_messages) {
+        //                 this.form.highlight(input_id, error_messages[input_id]);
+        //                 input_found = true;
+        //                 break;
+        //             }
+        //         }
+        //         if (!input_found) {
+        //             this.modal.show({
+        //                 title: _l("Job submission failed"),
+        //                 body: this._templateError(job_def, response && response.err_msg),
+        //                 buttons: {
+        //                     Close: () => {
+        //                         this.modal.hide();
+        //                     },
+        //                 },
+        //             });
+        //         }
+        //     },
+        // });
     },
 
     /** Validate job dictionary.

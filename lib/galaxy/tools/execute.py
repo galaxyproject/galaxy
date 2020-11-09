@@ -92,6 +92,7 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
     has_remaining_jobs = False
     execution_slice = None
 
+    trans.send(f"Creating {job_count} jobs")
     for i, execution_slice in enumerate(execution_tracker.new_execution_slices()):
         if max_num_jobs and jobs_executed >= max_num_jobs:
             has_remaining_jobs = True
@@ -100,6 +101,7 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
             execute_single_job(execution_slice, completed_jobs[i])
             history = execution_slice.history or history
             jobs_executed += 1
+            trans.send(jobs_executed)
 
     if execution_slice:
         # a side effect of adding datasets to a history is a commit within db_next_hid (even with flush=False).

@@ -1,3 +1,6 @@
+import asyncio
+import json
+
 from galaxy.managers.context import (
     ProvidesAppContext,
     ProvidesHistoryContext,
@@ -18,14 +21,19 @@ class WorkRequestContext(ProvidesAppContext, ProvidesUserContext, ProvidesHistor
     objects.
     """
 
-    def __init__(self, app, user=None, history=None, workflow_building_mode=False):
+    def __init__(self, app, user=None, history=None, workflow_building_mode=False, ws=None):
         self.app = app
         self.security = app.security
         self.__user = user
         self.__user_current_roles = None
         self.__history = history
+        self.__ws = ws
         self.api_inherit_admin = False
         self.workflow_building_mode = workflow_building_mode
+    
+    def send(self, msg):
+        if self.__ws:
+            asyncio.get_event_loop().run_until_complete(self.__ws.send_str(json.dumps(msg)))
 
     def get_history(self, create=False):
         return self.__history
