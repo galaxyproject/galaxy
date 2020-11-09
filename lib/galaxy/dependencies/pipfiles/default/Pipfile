@@ -63,7 +63,7 @@ Parsley = "*"
 sortedcontainers = "*"
 Whoosh = "*"
 galaxy_sequence_utils = "*"
-"h5py" = "!=2.7.0, !=2.7.1"
+h5py = "!=2.7.0, !=2.7.1"
 pykwalify = "*"
 "Cheetah3" = "*"
 requests = "*"
@@ -84,6 +84,7 @@ social_auth_core = {version = "==3.3.0", extras = ['openidconnect']}
 cloudauthz = "==0.6.0"
 gxformat2 = "*"
 refgenconf = ">=0.7.0"
+future = "*"
 
 [requires]
 python_version = "3.6"
