@@ -4,7 +4,7 @@ import { Toast } from "ui/toast";
 import mod_library_model from "mvc/library/library-model";
 import _ from "underscore";
 import Backbone from "backbone";
-import $ from "jquery";
+import axios from "axios";
 import LIST_CREATOR from "mvc/collection/list-collection-creator";
 import PAIR_CREATOR from "mvc/collection/pair-collection-creator";
 import PAIRED_CREATOR from "mvc/collection/list-of-pairs-collection-creator";
@@ -31,7 +31,7 @@ var ImportCollectionModal = Backbone.View.extend({
         return this.histories.fetch();
     },
     createNewHistory: function (new_history_name) {
-        return $.post(`${getAppRoot()}api/histories`, { name: new_history_name });
+        return axios.post(`${getAppRoot()}api/histories`, { name: new_history_name });
     },
     showCollectionSelect: function (e) {
         const Galaxy = getGalaxyInstance();
