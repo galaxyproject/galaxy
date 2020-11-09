@@ -391,6 +391,11 @@ export default {
                 }
             });
 
+            this.inputs.forEach((input) => {
+                // Update input terminal labels
+                input.label = inputIndex[input.name].label;
+            });
+
             // removes output from list of workflow outputs
             this.activeOutputs.updateOutputs(outputNames);
 
