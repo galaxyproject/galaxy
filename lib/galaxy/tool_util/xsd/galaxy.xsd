@@ -192,7 +192,7 @@ a short SPDX (https://spdx.org/licenses/) identifier for a license for this tool
 wrapper. The tool wrapper version can be indepedent of the underlying tool. This
 license covers the tool XML and associated scripts shipped with the tool.
 
-This is interpreted as a shcema.org license attribute (see also https://schema.org/license).
+This is interpreted as a schema.org license attribute (see also https://schema.org/license).
 </xs:documentation>
         </xs:annotation>
       </xs:attribute>
