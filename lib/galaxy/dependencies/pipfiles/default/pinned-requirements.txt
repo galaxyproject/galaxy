@@ -42,7 +42,7 @@ cloudbridge==2.0.0
 cmd2==0.8.9
 coloredlogs==14.0
 cryptography==2.9.2
-cwltool==1.0.20191225192155
+cwltool==2.0.20200312183052
 debtcollector==1.22.0
 decorator==4.4.2
 defusedxml==0.6.0 ; python_version >= '3.0'
@@ -161,7 +161,7 @@ ruamel.yaml.clib==0.2.0 ; platform_python_implementation == 'CPython' and python
 ruamel.yaml==0.16.0
 s3transfer==0.2.1
 scandir==1.10.0
-schema-salad==4.5.20191229160203
+schema-salad==5.0.20200416112825
 setuptools-scm==4.1.2
 shellescape==3.4.1
 simplejson==3.17.0
