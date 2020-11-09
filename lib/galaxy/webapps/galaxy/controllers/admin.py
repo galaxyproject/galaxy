@@ -95,6 +95,10 @@ class UserListGrid(grids.Grid):
             else:
                 return ""
 
+    class DiskUsageColumn(grids.GridColumn):
+        def get_value(self, trans, grid, user):
+            return user.get_disk_usage(nice_size=True)
+
     # Grid definition
     title = "Users"
     title_id = "users-grid"
@@ -121,6 +125,7 @@ class UserListGrid(grids.Grid):
         TimeCreatedColumn("Created", attach_popup=False),
         ActivatedColumn("Activated", attach_popup=False),
         APIKeyColumn("API Key", attach_popup=False),
+        DiskUsageColumn("Disk Usage", attach_popup=False),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced"),
         grids.PurgedColumn("Purged", key="purged", visible=False, filterable="advanced")
