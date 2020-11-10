@@ -163,6 +163,9 @@
         &:empty {
             flex-grow: 0 !important;
         }
+        .list-item {
+            border-color: rgba(0,0,0, 0.15);
+        }
         .list-item:first-child {
             border-top-width: 0px;
         }
