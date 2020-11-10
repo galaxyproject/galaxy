@@ -156,15 +156,8 @@
         @extend .flex-column;
         overflow-x: hidden;
         overflow-y: auto;
-
-        &:not(:empty) {
-            border-top: 1px solid $border-color;
-        }
         &:empty {
             flex-grow: 0 !important;
-        }
-        .list-item:first-child {
-            border-top-width: 0px;
         }
     }
 
