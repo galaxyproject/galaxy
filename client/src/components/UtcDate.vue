@@ -25,8 +25,12 @@ export default {
         },
     },
     created() {
-        if (this.customFormat) this.processedDate = moment(this.date, this.customFormat).format();
-        else this.processedDate = this.date;
+        this.initialize(this.date);
+    },
+    data: function () {
+        return {
+            processedDate: null,
+        };
     },
     computed: {
         elapsedTime: function () {
@@ -34,6 +38,17 @@ export default {
         },
         fullDate: function () {
             return moment.utc(this.processedDate).format();
+        },
+    },
+    watch: {
+        date: function (newDate) {
+            this.initialize(newDate);
+        },
+    },
+    methods: {
+        initialize: function (date) {
+            if (this.customFormat) this.processedDate = moment(date, this.customFormat).format();
+            else this.processedDate = date;
         },
     },
 };
