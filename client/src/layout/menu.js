@@ -1,7 +1,6 @@
 import axios from "axios";
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
-import { CommunicationServerView } from "layout/communication-server-view";
 import { getIdentityProviders } from "components/User/ExternalIdentities/service";
 
 const POST_LOGOUT_URL = "root/login?is_logout_redirect=true";
