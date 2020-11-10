@@ -4107,7 +4107,7 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
                 depth_collection_type = depth_collection_type.split(":", 1)[1]
             select_from = select_from.outerjoin(hda, hda.c.id == de.c.hda_id)
             select_stmt = select([hda]).select_from(select_from).where(dc.c.id == self.id).distinct()
-            return db_session.query(HistoryDatasetAssociation).select_entity_from(select_stmt).all()
+            return db_session.query(HistoryDatasetAssociation).select_entity_from(select_stmt).filter(HistoryDatasetAssociation.id.isnot(None)).all()
         else:
             # Sessionless context
             instances = []
