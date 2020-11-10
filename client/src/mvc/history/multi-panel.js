@@ -866,7 +866,7 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
                 this.filters = [];
                 this.renderColumns(0);
             },
-            advsearchlink: true,
+            advsearchlink: false, // advanced search doesn't work for histories
         });
 
         // input to search datasets
