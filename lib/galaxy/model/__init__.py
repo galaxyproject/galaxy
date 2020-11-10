@@ -4316,8 +4316,9 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
         for dataset in self.collection.dataset_elements:
             rval.append(dataset.dataset_instance)
             if multiple is False:
-                return rval
-        return rval
+                break
+        if len(rval) > 0:
+            return rval if multiple else rval[0]
 
     def serialize(self, id_encoder, serialization_options, for_link=False):
         if for_link:
