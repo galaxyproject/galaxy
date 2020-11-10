@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import shlex
 import tempfile
 
 
@@ -494,11 +495,12 @@ class ToolEvaluator:
             raise
         if interpreter:
             # TODO: path munging for cluster/dataset server relocatability
-            executable = command_line.split()[0]
+            command_line_tokens = shlex.split(command_line)
+            executable = command_line_tokens[0]
             tool_dir = os.path.abspath(self.tool.tool_dir)
             abs_executable = os.path.join(tool_dir, executable)
-            command_line = command_line.replace(executable, abs_executable, 1)
-            command_line = interpreter + " " + command_line
+            command_line_tokens[0:1] = [interpreter, abs_executable]
+            command_line = ' '.join(map(shlex.quote, command_line_tokens))
         self.command_line = command_line
 
     def __build_config_files(self):
