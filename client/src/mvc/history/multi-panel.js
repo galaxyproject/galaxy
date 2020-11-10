@@ -198,10 +198,6 @@ var HistoryViewColumn = Backbone.View.extend(baseMVC.LoggableMixin).extend({
                 <strong class="current-label">
                     ${_l("Current History")}
                 </strong>
-            <% } else { %>
-                <button class="switch-to btn btn-secondary">
-                    ${_l("Switch to")}
-                </button>
             <% } %>
         </div>`,
         { variable: "data" }
@@ -212,6 +208,11 @@ var HistoryViewColumn = Backbone.View.extend(baseMVC.LoggableMixin).extend({
         `<div class="text-right col-4">
             <% if( !data.history.purged ){ %>
                 <div class="panel-menu btn-group">
+                    <% if( !data.history.isCurrentHistory ){ %>
+                        <button class="switch-to btn btn-secondary">
+                            ${_l("Switch to")}
+                        </button>
+                    <% } %>
                     <button 
                     history-dropdown-btn="<%= data.history.id %>" 
                     type="button"
