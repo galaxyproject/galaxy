@@ -22,33 +22,22 @@ export default {
         },
         customFormat: {
             type: String,
+            default: null,
         },
-    },
-    created() {
-        this.initialize(this.date);
-    },
-    data: function () {
-        return {
-            processedDate: null,
-        };
     },
     computed: {
         elapsedTime: function () {
-            return moment(moment.utc(this.processedDate)).from(moment().utc());
+            return moment(moment.utc(this.formattedDate)).from(moment().utc());
         },
         fullDate: function () {
-            return moment.utc(this.processedDate).format();
+            return moment.utc(this.formattedDate).format();
         },
-    },
-    watch: {
-        date: function (newDate) {
-            this.initialize(newDate);
-        },
-    },
-    methods: {
-        initialize: function (date) {
-            if (this.customFormat) this.processedDate = moment(date, this.customFormat).format();
-            else this.processedDate = date;
+        formattedDate: function () {
+            if (this.customFormat) {
+                return moment(this.date, this.customFormat).format();
+            } else {
+                return this.date;
+            }
         },
     },
 };
