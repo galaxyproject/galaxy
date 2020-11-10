@@ -48,11 +48,13 @@ RUN set -xe; \
 WORKDIR /tmp/ansible
 RUN rm -rf *
 ENV LC_ALL en_US.UTF-8
-RUN git clone $GALAXY_PLAYBOOK_REPO galaxy-docker
+RUN git clone --depth 1 $GALAXY_PLAYBOOK_REPO galaxy-docker
 WORKDIR /tmp/ansible/galaxy-docker
-RUN ansible-galaxy install -r requirements_roles.yml -p roles --force-with-deps
+RUN ansible-galaxy install -r requirements.yml -p roles --force-with-deps
+
+# Add Galaxy source code
 COPY . $SERVER_DIR/
-RUN ansible-playbook -i localhost, playbook.yml -e galaxy_manage_clone=false -e galaxy_manage_existing=true -vv
+RUN ansible-playbook -i localhost, playbook.yml -vv
 
 RUN cat /galaxy/server/lib/galaxy/dependencies/conditional-requirements.txt | grep psycopg2-binary | xargs /galaxy/server/.venv/bin/pip install
 
