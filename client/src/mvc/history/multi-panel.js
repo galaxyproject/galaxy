@@ -158,7 +158,7 @@ var HistoryViewColumn = Backbone.View.extend(baseMVC.LoggableMixin).extend({
     /** event map */
     events: {
         // will make this the current history
-        "click .switch-to.btn": function () {
+        "click .switch-to": function () {
             this.model.setAsCurrent();
         },
         //TODO: remove boiler plate from next 3

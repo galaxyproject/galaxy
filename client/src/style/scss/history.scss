@@ -360,7 +360,7 @@
     $mph-column_gap: 8px;
     $mph-header_height: 40px;
     $mph-footer_height: 0;
-    $mph-controls_height: 20px;
+    $mph-controls_height: 28px;
 
     // for some reason, .flex-row-container below won't be applied to multi-panel-history since it's the enclosing node
     // re-apply here
@@ -379,11 +379,6 @@
         display: -webkit-flex;
         display: -ms-flexbox;
         display: flex;
-
-        /* force ff to squish beyond content:
-           https://developer.mozilla.org/en-US/Firefox/Releases/34/Site_Compatibility#CSS */
-        min-width: 0px;
-        min-height: 0px;
 
         -webkit-align-items: stretch;
         -ms-align-items: stretch;
@@ -539,7 +534,7 @@
         }
         .panel-controls {
             width: 100%;
-            height: ($mph-controls_height + 4);
+            height: $mph-controls_height;
             background-color: $white;
 
             .btn {
