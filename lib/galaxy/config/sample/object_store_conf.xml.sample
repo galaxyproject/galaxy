@@ -49,6 +49,7 @@
             <resource name="demoResc" />
             <zone name="tempZone" />
             <connection host="localhost" port="1247" timeout="30" poolsize="3"/>
+            <icommand file_size="100000000" num_threads="3"/>
             <cache path="database/object_store_cache_irods" size="1000" />
             <extra_dir type="job_work" path="database/job_working_directory_irods"/>
             <extra_dir type="temp" path="database/tmp_irods"/>
