@@ -2622,4 +2622,3 @@ class NoopQueue:
 
     def shutdown(self):
         return
-
