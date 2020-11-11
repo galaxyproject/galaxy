@@ -92,7 +92,10 @@ def _json_wrap_input(input, value_wrapper, profile, handle_files="skip"):
     elif input_type == "integer":
         json_value = _cast_if_not_none(value_wrapper, int, empty_to_none=True)
     elif input_type == "boolean":
-        json_value = _cast_if_not_none(value_wrapper, bool)
+        if input.optional and value_wrapper is not None and value_wrapper.value is None:
+            json_value = None
+        else:
+            json_value = _cast_if_not_none(value_wrapper, bool, empty_to_none=input.optional)
     elif input_type == "select":
         if input.multiple and packaging.version.parse(str(profile)) >= packaging.version.parse('20.05'):
             json_value = [_ for _ in _cast_if_not_none(value_wrapper.value, list)]

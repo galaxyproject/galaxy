@@ -1218,6 +1218,13 @@ associated input parameter (``param``).</xs:documentation>
 values that can be assigned to an input parameter.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="value_json" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">This variant of the value parameters can be
+used to load typed parameters. This string will be loaded as JSON and its type will
+attempt to be preserved through API requests to Galaxy.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="ftype" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">This attribute name should be included
@@ -1306,6 +1313,16 @@ tag set contained within the tool's ``<outputs>`` tag set.
 If specified, this value is the name of the output file stored in the target
 ``test-data`` directory which will be used to compare the results of executing
 the tool via the functional test framework.
+
+]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="value_json" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+
+If specified, this value will be loaded as JSON and compared against the output
+generated as JSON. This can be useful for testing tool outputs that are not files.
 
 ]]></xs:documentation>
       </xs:annotation>

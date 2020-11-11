@@ -336,6 +336,19 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         self._assert_has_keys(test_case, "inputs", "outputs", "output_collections", "required_files")
         assert len(test_case["inputs"]) == 1, test_case
 
+    @skip_without_tool("expression_null_handling_1")
+    def test_test_data_null_boolean_inputs(self):
+        test_data_response = self._get("tools/%s/test_data" % "expression_null_handling_1")
+        assert test_data_response.status_code == 200
+        test_data = test_data_response.json()
+        assert len(test_data) == 3
+        test_case = test_data[2]
+        self._assert_has_keys(test_case, "inputs", "outputs", "output_collections", "required_files")
+        inputs = test_case["inputs"]
+        assert len(inputs) == 1, test_case
+        assert "bool_input" in inputs, inputs
+        assert inputs["bool_input"] is None, inputs
+
     @skip_without_tool("simple_constructs_y")
     def test_test_data_yaml_tools(self):
         test_data_response = self._get("tools/%s/test_data" % "simple_constructs_y")

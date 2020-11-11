@@ -38,10 +38,16 @@ def run(environment_path=None):
     del inputs["outputs"]
 
     result = evaluate(None, inputs)
-
     for output in outputs:
         path = output["path"]
-        from_expression = "$(" + output["from_expression"] + ")"
-        output_value = expression.interpolate(from_expression, result)
+        from_expression = output["from_expression"]
+        # if it is just a simple value, short-cut all the interpolation
+        # interpolate seems to fail with None values so this worksaround
+        # that for now.
+        if from_expression in result:
+            output_value = result[from_expression]
+        else:
+            from_expression = f"$({from_expression})"
+            output_value = expression.interpolate(from_expression, result)
         with open(path, "w") as f:
             json.dump(output_value, f)
