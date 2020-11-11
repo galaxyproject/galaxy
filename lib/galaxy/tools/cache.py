@@ -93,7 +93,10 @@ class ToolDocumentCache:
                     'paths_and_modtimes': tool_source.paths_and_modtimes(),
                     'tool_cache_version': CURRENT_TOOL_CACHE_VERSION,
                 }
-                self._cache[config_file] = to_persist
+                try:
+                    self._cache[config_file] = to_persist
+                except RuntimeError:
+                    log.debug("Tool document cache not writeable")
         except sqlite3.OperationalError:
             log.debug("Tool document cache unavailable")
 
@@ -102,7 +105,7 @@ class ToolDocumentCache:
             self._make_writable()
             try:
                 del self._cache[config_file]
-            except KeyError:
+            except (KeyError, RuntimeError):
                 pass
 
     def __del__(self):
