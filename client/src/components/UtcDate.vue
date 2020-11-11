@@ -22,18 +22,22 @@ export default {
         },
         customFormat: {
             type: String,
+            default: null,
         },
-    },
-    created() {
-        if (this.customFormat) this.processedDate = moment(this.date, this.customFormat).format();
-        else this.processedDate = this.date;
     },
     computed: {
         elapsedTime: function () {
-            return moment(moment.utc(this.processedDate)).from(moment().utc());
+            return moment(moment.utc(this.formattedDate)).from(moment().utc());
         },
         fullDate: function () {
-            return moment.utc(this.processedDate).format();
+            return moment.utc(this.formattedDate).format();
+        },
+        formattedDate: function () {
+            if (this.customFormat) {
+                return moment(this.date, this.customFormat).format();
+            } else {
+                return this.date;
+            }
         },
     },
 };
