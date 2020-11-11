@@ -618,6 +618,18 @@ class ExpressionTestToolLoaderTestCase(BaseLoaderTestCase):
         assert output0['attributes']['object'] is None
 
 
+class ExpressionOutputDataToolLoaderTestCase(BaseLoaderTestCase):
+    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/expression_pick_larger_file.xml")
+    source_contents = None
+
+    def test_output_parsing(self):
+        outputs, _ = self._tool_source.parse_outputs(None)
+        assert 'larger_file' in outputs
+        tool_output = outputs['larger_file']
+        assert tool_output.format == "data"
+        assert tool_output.from_expression == "output"
+
+
 class SpecialToolLoaderTestCase(BaseLoaderTestCase):
     source_file_name = os.path.join(galaxy_directory(), "lib/galaxy/tools/imp_exp/exp_history_to_archive.xml")
     source_contents = None

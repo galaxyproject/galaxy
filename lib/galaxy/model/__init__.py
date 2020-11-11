@@ -3181,6 +3181,25 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             self.version = self.version + 1 if self.version else 1
             session.add(past_hda)
 
+    def copy_from(self, other_hda):
+        # This deletes the old dataset, so make sure to only call this on new things
+        # in the history (e.g. during job finishing).
+        old_dataset = self.dataset
+        self._metadata = None
+        self.metadata = other_hda.metadata
+        self.info = other_hda.info
+        self.blurb = other_hda.blurb
+        self.peek = other_hda.peek
+        self.extension = other_hda.extension
+        self.designation = other_hda.designation
+        self.deleted = other_hda.deleted
+        self.visible = other_hda.visible
+        self.validated_state = other_hda.validated_state
+        self.validated_state_message = other_hda.validated_state_message
+        self.copy_tags_from(self.history.user, other_hda)
+        self.dataset = other_hda.dataset
+        old_dataset.full_delete()
+
     def copy(self, parent_id=None, copy_tags=None, flush=True, copy_hid=True, new_name=None):
         """
         Create a copy of this HDA.
