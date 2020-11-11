@@ -280,6 +280,44 @@ class DefaultToolAction:
                         preserved_tags[tag.value] = tag
         return history, inp_data, inp_dataset_collections, preserved_tags, all_permissions
 
+    def _legacy_inject_incoming(incoming, tool, inp_data, app, completed_job,
+                                execution_cache):
+        # format='input" previously would give you a random extension from
+        # the input extensions, now it should just give "input" as the output
+        # format.
+        input_ext = 'data' if tool.profile < 16.04 else "input"
+        input_dbkey = incoming.get("dbkey", "?")
+        for name, data in reversed(list(inp_data.items())):
+            if not data:
+                data = NoneDataset(datatypes_registry=app.datatypes_registry)
+                continue
+
+            # Convert LDDA to an HDA.
+            if isinstance(data, LibraryDatasetDatasetAssociation) and not completed_job:
+                data = data.to_history_dataset_association(None)
+                inp_data[name] = data
+
+            if tool.profile < 16.04:
+                input_ext = data.ext
+
+            if data.dbkey not in [None, '?']:
+                input_dbkey = data.dbkey
+
+            identifier = getattr(data, "element_identifier", None)
+            if identifier is not None:
+                incoming["%s|__identifier__" % name] = identifier
+
+        # Collect chromInfo dataset and add as parameters to incoming
+        (chrom_info, db_dataset) = execution_cache.get_chrom_info(tool.id, input_dbkey)
+
+        if db_dataset:
+            inp_data.update({"chromInfo": db_dataset})
+        incoming["chromInfo"] = chrom_info
+
+        # Add the dbkey to the incoming parameters
+        incoming["dbkey"] = input_dbkey
+        incoming["__input_ext"] = input_ext
+
     def execute(self, tool, trans, incoming=None, return_job=False, set_output_hid=True, history=None, job_params=None, rerun_remap_job_id=None, execution_cache=None, dataset_collection_elements=None, completed_job=None, collection_info=None, flush_job=True):
         """
         Executes a tool, creating job and tool outputs, associating them, and
@@ -298,42 +336,8 @@ class DefaultToolAction:
         on_text = self._get_on_text(inp_data)
 
         if tool.profile <= 21.01:
-
-            # format='input" previously would give you a random extension from
-            # the input extensions, now it should just give "input" as the output
-            # format.
-            input_ext = 'data' if tool.profile < 16.04 else "input"
-            input_dbkey = incoming.get("dbkey", "?")
-            for name, data in reversed(list(inp_data.items())):
-                if not data:
-                    data = NoneDataset(datatypes_registry=app.datatypes_registry)
-                    continue
-
-                # Convert LDDA to an HDA.
-                if isinstance(data, LibraryDatasetDatasetAssociation) and not completed_job:
-                    data = data.to_history_dataset_association(None)
-                    inp_data[name] = data
-
-                if tool.profile < 16.04:
-                    input_ext = data.ext
-
-                if data.dbkey not in [None, '?']:
-                    input_dbkey = data.dbkey
-
-                identifier = getattr(data, "element_identifier", None)
-                if identifier is not None:
-                    incoming["%s|__identifier__" % name] = identifier
-
-            # Collect chromInfo dataset and add as parameters to incoming
-            (chrom_info, db_dataset) = execution_cache.get_chrom_info(tool.id, input_dbkey)
-
-            if db_dataset:
-                inp_data.update({"chromInfo": db_dataset})
-            incoming["chromInfo"] = chrom_info
-
-            # Add the dbkey to the incoming parameters
-            incoming["dbkey"] = input_dbkey
-            incoming["__input_ext"] = input_ext
+            self._legacy_inject_incoming(incoming, tool, inp_data, app,
+                                         completed_job, execution_cache)
         else:
             for name, data in reversed(list(inp_data.items())):
                 if not data:
