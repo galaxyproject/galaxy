@@ -22,7 +22,7 @@ export default {
         },
         customFormat: {
             type: String,
-            default: null,
+            default: undefined,
         },
     },
     computed: {
@@ -33,7 +33,7 @@ export default {
             return moment.utc(this.formattedDate).format();
         },
         formattedDate: function () {
-            if (this.customFormat) {
+            if (this.customFormat !== undefined) {
                 return moment(this.date, this.customFormat).format();
             } else {
                 return this.date;
