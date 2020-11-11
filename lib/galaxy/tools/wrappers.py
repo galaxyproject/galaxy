@@ -215,9 +215,6 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
             self.compute_environment = compute_environment
 
         def __getattr__(self, name):
-            if hasattr(self.metadata, name):
-                return getattr(self.metadata, name)
-
             rval = self.metadata.get(name, None)
             if name in self.metadata.spec:
                 if rval is None:
@@ -244,6 +241,9 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
 
         def __iter__(self):
             return self.metadata.__iter__()
+
+        def element_is_set(self, name):
+            return self.metadata.element_is_set(name)
 
         def get(self, key, default=None):
             try:
