@@ -3,7 +3,6 @@
     @extend .mb-3;
     @extend .position-relative;
     border-radius: $border-radius;
-    background: transparent;
     cursor: pointer;
     .progress {
         @extend .position-absolute;
