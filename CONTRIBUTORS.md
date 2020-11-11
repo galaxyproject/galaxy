@@ -189,4 +189,4 @@ NIH and NSF grants:
 * NIH RC2 HG005542, “Dynamically scalable accessible analysis for next
   generation sequence data”
 * NIH U41 HG006620, “Democratization of data analysis in life sciences
-  through Galaxy” 
+  through Galaxy”
