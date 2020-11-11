@@ -467,7 +467,7 @@ class JobConfiguration(ConfiguresHandlers):
             if params is None:
                 params = {}
                 for key, value in tool.items():
-                    if key in ["environment", "handler", "id"]:
+                    if key in ["environment", "handler", "id", "resources"]:
                         continue
                     params[key] = value
                 tool["params"] = params
@@ -2622,3 +2622,4 @@ class NoopQueue:
 
     def shutdown(self):
         return
+
