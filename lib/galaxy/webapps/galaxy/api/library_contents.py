@@ -130,7 +130,7 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         root_folder.api_path = ''
         # appending all other items in the library recursively
         for content in traverse(root_folder):
-            if types and content.api_type in types:
+            if not types or content.api_type in types:
                 encoded_id = trans.security.encode_id(content.id)
                 if content.api_type == 'folder':
                     encoded_id = 'F' + encoded_id
