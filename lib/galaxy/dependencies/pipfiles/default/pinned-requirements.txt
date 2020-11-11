@@ -137,7 +137,6 @@ pysftp==0.2.9
 python-cinderclient==4.0.0
 python-dateutil==2.8.1
 python-glanceclient==2.12.0
-git+git://github.com/kxk302/python-irodsclient/@master#egg=python-irodsclient
 python-jose==3.1.0
 python-keystoneclient==3.17.0
 python-neutronclient==6.9.0
