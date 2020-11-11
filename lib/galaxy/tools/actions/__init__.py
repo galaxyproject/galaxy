@@ -297,37 +297,51 @@ class DefaultToolAction:
         # Build name for output datasets based on tool name and input names
         on_text = self._get_on_text(inp_data)
 
-        # format='input" previously would give you a random extension from
-        # the input extensions, now it should just give "input" as the output
-        # format.
-        input_ext = 'data' if tool.profile < 16.04 else "input"
-        input_dbkey = incoming.get("dbkey", "?")
-        for name, data in reversed(list(inp_data.items())):
-            if not data:
-                data = NoneDataset(datatypes_registry=app.datatypes_registry)
-                continue
+        if tool.profile <= 21.01:
 
-            # Convert LDDA to an HDA.
-            if isinstance(data, LibraryDatasetDatasetAssociation) and not completed_job:
-                data = data.to_history_dataset_association(None)
-                inp_data[name] = data
+            # format='input" previously would give you a random extension from
+            # the input extensions, now it should just give "input" as the output
+            # format.
+            input_ext = 'data' if tool.profile < 16.04 else "input"
+            input_dbkey = incoming.get("dbkey", "?")
+            for name, data in reversed(list(inp_data.items())):
+                if not data:
+                    data = NoneDataset(datatypes_registry=app.datatypes_registry)
+                    continue
 
-            if tool.profile < 16.04:
-                input_ext = data.ext
+                # Convert LDDA to an HDA.
+                if isinstance(data, LibraryDatasetDatasetAssociation) and not completed_job:
+                    data = data.to_history_dataset_association(None)
+                    inp_data[name] = data
 
-            if data.dbkey not in [None, '?']:
-                input_dbkey = data.dbkey
+                if tool.profile < 16.04:
+                    input_ext = data.ext
 
-            identifier = getattr(data, "element_identifier", None)
-            if identifier is not None:
-                incoming["%s|__identifier__" % name] = identifier
+                if data.dbkey not in [None, '?']:
+                    input_dbkey = data.dbkey
 
-        # Collect chromInfo dataset and add as parameters to incoming
-        (chrom_info, db_dataset) = execution_cache.get_chrom_info(tool.id, input_dbkey)
+                identifier = getattr(data, "element_identifier", None)
+                if identifier is not None:
+                    incoming["%s|__identifier__" % name] = identifier
 
-        if db_dataset:
-            inp_data.update({"chromInfo": db_dataset})
-        incoming["chromInfo"] = chrom_info
+            # Collect chromInfo dataset and add as parameters to incoming
+            (chrom_info, db_dataset) = execution_cache.get_chrom_info(tool.id, input_dbkey)
+
+            if db_dataset:
+                inp_data.update({"chromInfo": db_dataset})
+            incoming["chromInfo"] = chrom_info
+
+            # Add the dbkey to the incoming parameters
+            incoming["dbkey"] = input_dbkey
+            incoming["__input_ext"] = input_ext
+        else:
+            for name, data in reversed(list(inp_data.items())):
+                if not data:
+                    continue
+                # Convert LDDA to an HDA.
+                if isinstance(data, LibraryDatasetDatasetAssociation) and not completed_job:
+                    data = data.to_history_dataset_association(None)
+                    inp_data[name] = data
 
         if not completed_job:
             # Determine output dataset permission/roles list
@@ -337,9 +351,6 @@ class DefaultToolAction:
                 # No valid inputs, we will use history defaults
                 output_permissions = app.security_agent.history_get_default_permissions(history)
 
-        # Add the dbkey to the incoming parameters
-        incoming["dbkey"] = input_dbkey
-        incoming["__input_ext"] = input_ext
         # wrapped params are used by change_format action and by output.label; only perform this wrapping once, as needed
         wrapped_params = self._wrapped_params(trans, tool, incoming, inp_data)
 
