@@ -79,10 +79,15 @@ def validate_and_normalize_targets(trans, payload):
         validate_datatype_extension(datatypes_registry=trans.app.datatypes_registry, ext=item.get('ext'))
 
         # Normalize file:// URLs into paths.
-        if item["src"] == "url" and item["url"].startswith("file://"):
-            item["src"] = "path"
-            item["path"] = item["url"][len("file://"):]
-            del item["path"]
+        if item["src"] == "url":
+            if "url" not in item:
+                raise RequestParameterInvalidException("src specified as 'url' but 'url' not specified")
+
+            url = item["url"]
+            if url.startswith("file://"):
+                item["src"] = "path"
+                item["path"] = url[len("file://"):]
+                del item["url"]
 
         if "in_place" in item:
             raise RequestParameterInvalidException("in_place cannot be set in the upload request")

@@ -160,9 +160,13 @@ class ConfiguredFileSources:
 
     @staticmethod
     def from_dict(as_dict):
-        sources_as_dict = as_dict["file_sources"]
-        config_as_dict = as_dict["config"]
-        file_sources_config = ConfiguredFileSourcesConfig.from_dict(config_as_dict)
+        if as_dict is not None:
+            sources_as_dict = as_dict["file_sources"]
+            config_as_dict = as_dict["config"]
+            file_sources_config = ConfiguredFileSourcesConfig.from_dict(config_as_dict)
+        else:
+            sources_as_dict = []
+            file_sources_config = ConfiguredFileSourcesConfig()
         return ConfiguredFileSources(file_sources_config, conf_dict=sources_as_dict)
 
 

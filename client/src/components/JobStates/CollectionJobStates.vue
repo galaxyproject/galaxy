@@ -36,7 +36,7 @@ export default {
     mixins: [mixin],
     computed: {
         loadingNote() {
-            return `Loading job data for ${this.collectionTypeDescription}}`;
+            return `Loading job data for ${this.collectionTypeDescription}`;
         },
         generatingNote() {
             return `${this.jobsStr} generating a ${this.collectionTypeDescription}`;

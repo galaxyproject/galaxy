@@ -946,6 +946,9 @@ class Gff3(Gff):
         >>> fname = get_test_fname('gff.gff3')
         >>> Gff3().sniff( fname )
         True
+        >>> fname = get_test_fname( 'grch37.75.gtf' )
+        >>> Gff3().sniff( fname )
+        False
         """
         if len(get_headers(file_prefix, '\t', count=2)) < 2:
             return False
@@ -1021,6 +1024,9 @@ class Gtf(Gff):
         >>> fname = get_test_fname( 'test.gtf' )
         >>> Gtf().sniff( fname )
         True
+        >>> fname = get_test_fname( 'grch37.75.gtf' )
+        >>> Gtf().sniff( fname )
+        True
         """
         if len(get_headers(file_prefix, '\t', count=2)) < 2:
             return False
@@ -1047,14 +1053,10 @@ class Gtf(Gff):
                     if hdr[7] not in self.valid_gff_frame:
                         return False
 
-                    # Check attributes for gene_id, transcript_id
+                    # Check attributes for gene_id (transcript_id is also mandatory
+                    # but not for genes)
                     attributes = parse_gff_attributes(hdr[8])
-                    if len(attributes) >= 2:
-                        if 'gene_id' not in attributes:
-                            return False
-                        if 'transcript_id' not in attributes:
-                            return False
-                    else:
+                    if 'gene_id' not in attributes:
                         return False
             return True
         except Exception:

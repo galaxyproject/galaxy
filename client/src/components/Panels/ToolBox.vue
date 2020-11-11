@@ -4,12 +4,12 @@
             <div class="unified-panel-header-inner">
                 <div class="panel-header-buttons">
                     <favorites-button @onFavorites="onFavorites" v-if="isUser" />
-                    <upload-button />
                 </div>
                 <div class="panel-header-text">Tools</div>
             </div>
         </div>
         <div class="unified-panel-controls">
+            <upload-button />
             <tool-search :query="query" placeholder="search tools" @onQuery="onQuery" @onResults="onResults" />
             <div class="py-2" v-if="hasResults">
                 <b-button @click="onToggle" size="sm" class="w-100">
@@ -18,10 +18,10 @@
                 </b-button>
             </div>
             <div class="py-2" v-else-if="queryTooShort">
-                <b-badge class="w-100">Search string too short!</b-badge>
+                <b-badge class="alert-danger w-100">Search string too short!</b-badge>
             </div>
             <div class="py-2" v-else-if="queryFinished">
-                <b-badge class="w-100">No results found!</b-badge>
+                <b-badge class="alert-danger w-100">No results found!</b-badge>
             </div>
         </div>
         <div class="unified-panel-body">
@@ -35,9 +35,7 @@
                         @onClick="onOpen"
                     />
                 </div>
-
                 <tool-section :category="{ text: workflowTitle }" />
-
                 <div id="internal-workflows" class="toolSectionBody">
                     <div class="toolSectionBg" />
                     <div class="toolTitle" v-for="wf in workflows" :key="wf.id">

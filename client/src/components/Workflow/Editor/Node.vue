@@ -332,8 +332,6 @@ export default {
                             x.destroy();
                         }
                     });
-                    // Remove the rendered output terminal
-                    this.outputTerminals[name].$el.remove();
                     // Remove the reference to the output and output terminal
                     delete this.outputTerminals[name];
                     this.outputs.splice(i, 1);
@@ -391,6 +389,11 @@ export default {
                 if (inputNames[input.name] == 1) {
                     this.inputs.push(input);
                 }
+            });
+
+            this.inputs.forEach((input) => {
+                // Update input terminal labels
+                input.label = inputIndex[input.name].label;
             });
 
             // removes output from list of workflow outputs

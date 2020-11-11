@@ -6,6 +6,8 @@ import logging
 import re
 from collections import defaultdict, OrderedDict
 
+import packaging.version
+
 from galaxy import (
     exceptions,
     model,
@@ -19,7 +21,8 @@ from galaxy.tool_util.parser.output_objects import ToolExpressionOutput
 from galaxy.tools import (
     DatabaseOperationTool,
     DefaultToolState,
-    ToolInputsNotReadyException
+    ToolInputsNotReadyException,
+    WORKFLOW_SAFE_TOOL_VERSION_UPDATES,
 )
 from galaxy.tools.actions import filter_output
 from galaxy.tools.execute import execute, MappingParameters, PartialJobExecution
@@ -426,11 +429,6 @@ class SubWorkflowModule(WorkflowModule):
     def get_all_inputs(self, data_only=False, connectable_only=False):
         """ Get configure time data input descriptions. """
         # Filter subworkflow steps and get inputs
-        step_to_input_type = {
-            "data_input": "dataset",
-            "data_collection_input": "dataset_collection",
-            "parameter_input": "parameter",
-        }
         inputs = []
         if hasattr(self.subworkflow, 'input_steps'):
             for step in self.subworkflow.input_steps:
@@ -438,17 +436,16 @@ class SubWorkflowModule(WorkflowModule):
                 if not name:
                     step_module = module_factory.from_workflow_step(self.trans, step)
                     name = f"{step.order_index}:{step_module.get_name()}"
-                step_type = step.type
-                assert step_type in step_to_input_type
                 input = dict(
                     input_subworkflow_step_id=step.order_index,
                     name=name,
                     label=name,
                     multiple=False,
                     extensions=["data"],
-                    input_type=step_to_input_type[step_type],
+                    input_type=step.input_type,
                 )
-                if step.type == 'data_collection_input':
+                step_type = step.type
+                if step_type == 'data_collection_input':
                     input['collection_type'] = step.tool_inputs.get('collection_type') if step.tool_inputs else None
                 if step_type == 'parameter_input':
                     input['type'] = step.tool_inputs['parameter_type']
@@ -1245,13 +1242,17 @@ class ToolModule(WorkflowModule):
     def __init__(self, trans, tool_id, tool_version=None, exact_tools=True, tool_uuid=None, **kwds):
         super().__init__(trans, content_id=tool_id, **kwds)
         self.tool_id = tool_id
-        self.tool_version = tool_version
+        self.tool_version = str(tool_version)
         self.tool_uuid = tool_uuid
         self.tool = trans.app.toolbox.get_tool(tool_id, tool_version=tool_version, exact=exact_tools, tool_uuid=tool_uuid)
         if self.tool:
-            if tool_version and exact_tools and str(self.tool.version) != str(tool_version):
-                log.info(f"Exact tool specified during workflow module creation for [{tool_id}] but couldn't find correct version [{tool_version}].")
-                self.tool = None
+            if tool_version and exact_tools and str(self.tool.version) != tool_version:
+                safe_version = WORKFLOW_SAFE_TOOL_VERSION_UPDATES.get(tool_id)
+                if safe_version and safe_version.current_version >= packaging.version.parse(tool_version) >= safe_version.min_version:
+                    self.tool = trans.app.toolbox.get_tool(tool_id, tool_version=tool_version, exact=False, tool_uuid=tool_uuid)
+                else:
+                    log.info(f"Exact tool specified during workflow module creation for [{tool_id}] but couldn't find correct version [{tool_version}].")
+                    self.tool = None
         self.post_job_actions = {}
         self.runtime_post_job_actions = {}
         self.workflow_outputs = []

@@ -239,7 +239,11 @@
 :Description:
     Where dataset files are stored. It must be accessible at the same
     path on any cluster nodes that will run Galaxy jobs, unless using
-    Pulsar.
+    Pulsar. The default value has been changed from 'files' to
+    'objects' as of 20.05; however, Galaxy will first check if the
+    'files' directory exists before using 'objects' as the default.
+    The value of this option will be resolved with respect to
+    <data_dir>.
 :Default: ``objects``
 :Type: str
 
@@ -252,6 +256,8 @@
     Where temporary files are stored. It must be accessible at the
     same path on any cluster nodes that will run Galaxy jobs, unless
     using Pulsar.
+    The value of this option will be resolved with respect to
+    <data_dir>.
 :Default: ``tmp``
 :Type: str
 
@@ -267,6 +273,8 @@
     config/tool_conf.xml does not exist). Can be a single file, a list
     of files, or (for backwards compatibility) a comma-separated list
     of files.
+    The value of this option will be resolved with respect to
+    <config_dir>.
 :Default: ``tool_conf.xml``
 :Type: any
 
@@ -285,6 +293,8 @@
     this option is preferable. This file will be created automatically
     upon tool installation, whereas Galaxy will fail to start if any
     files in tool_config_file cannot be read.
+    The value of this option will be resolved with respect to
+    <managed_config_dir>.
 :Default: ``shed_tool_conf.xml``
 :Type: str
 
@@ -314,6 +324,8 @@
     migration scripts to install tools that have been migrated to the
     tool shed upon a new release, they will be added to this tool
     config file.
+    The value of this option will be resolved with respect to
+    <managed_config_dir>.
 :Default: ``migrated_tools_conf.xml``
 :Type: str
 
@@ -377,6 +389,8 @@
     then use Conda if available. See
     https://github.com/galaxyproject/galaxy/blob/dev/doc/source/admin/dependency_resolvers.rst
     for more information on these options.
+    The value of this option will be resolved with respect to
+    <config_dir>.
 :Default: ``dependency_resolvers_conf.xml``
 :Type: str
 
@@ -482,6 +496,8 @@
     Path to a file that provides a mapping from abstract packages to
     concrete conda packages. See
     `config/local_conda_mapping.yml.sample` for examples.
+    The value of this option will be resolved with respect to
+    <config_dir>.
 :Default: ``local_conda_mapping.yml``
 :Type: str
 
@@ -494,6 +510,8 @@
     Path to a file that provides a mapping from abstract packages to
     locally installed modules. See
     `config/environment_modules_mapping.yml.sample` for examples.
+    The value of this option will be resolved with respect to
+    <config_dir>.
 :Default: ``environment_modules_mapping.yml``
 :Type: str
 
@@ -550,6 +568,8 @@
     File containing the Galaxy Tool Sheds that should be made
     available to install from in the admin interface (.sample used if
     default does not exist).
+    The value of this option will be resolved with respect to
+    <config_dir>.
 :Default: ``tool_sheds_conf.xml``
 :Type: str
 
@@ -637,6 +657,8 @@
 
 :Description:
     Configured FileSource plugins.
+    The value of this option will be resolved with respect to
+    <config_dir>.
 :Default: ``file_sources_conf.yml``
 :Type: str
 
@@ -745,6 +767,8 @@
     XML config file that contains data table entries for the
     ToolDataTableManager.  This file is manually # maintained by the
     Galaxy administrator (.sample used if default does not exist).
+    The value of this option will be resolved with respect to
+    <config_dir>.
 :Default: ``tool_data_table_conf.xml``
 :Type: str
 
@@ -761,6 +785,8 @@
     installation, these entries are automatically added to the
     following file, which is parsed and applied to the
     ToolDataTableManager at server start up.
+    The value of this option will be resolved with respect to
+    <managed_config_dir>.
 :Default: ``shed_tool_data_table_conf.xml``
 :Type: str
 
@@ -826,6 +852,8 @@
 :Description:
     File that defines the builds (dbkeys) available at sites used by
     display applications and the URL to those sites.
+    The value of this option will be resolved with respect to
+    <config_dir>.
 :Default: ``build_sites.yml``
 :Type: str
 
@@ -865,6 +893,8 @@
     If a datatype appears in multiple files, the last definition is
     used (though the first sniffer is used so limit sniffer
     definitions to one file).
+    The value of this option will be resolved with respect to
+    <config_dir>.
 :Default: ``datatypes_conf.xml``
 :Type: str
 
@@ -972,6 +1002,8 @@
 :Description:
     If using a cluster, Galaxy will write job scripts and
     stdout/stderr to this directory.
+    The value of this option will be resolved with respect to
+    <data_dir>.
 :Default: ``pbs``
 :Type: str
 
@@ -983,6 +1015,8 @@
 :Description:
     Mako templates are compiled as needed and cached for reuse, this
     directory is used for the cache
+    The value of this option will be resolved with respect to
+    <data_dir>.
 :Default: ``compiled_templates``
 :Type: str
 
@@ -1045,6 +1079,8 @@
     stored at this path. Per tool_conf cache locations can be
     configured in (shed_)tool_conf.xml files using the
     tool_cache_data_dir attribute.
+    The value of this option will be resolved with respect to
+    <data_dir>.
 :Default: ``tool_cache``
 :Type: str
 
@@ -1054,7 +1090,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Directory in which the toolbox search index is stored.
+    Directory in which the toolbox search index is stored. The value
+    of this option will be resolved with respect to <data_dir>.
 :Default: ``tool_search_index``
 :Type: str
 
@@ -1093,6 +1130,8 @@
     fetched from external sources such as https://doi.org/ by Galaxy -
     the following parameters can be used to control the caching used
     to store this information.
+    The value of this option will be resolved with respect to
+    <data_dir>.
 :Default: ``citations/data``
 :Type: str
 
@@ -1106,6 +1145,8 @@
     fetched from external sources such as https://doi.org/ by Galaxy -
     the following parameters can be used to control the caching used
     to store this information.
+    The value of this option will be resolved with respect to
+    <data_dir>.
 :Default: ``citations/locks``
 :Type: str
 
@@ -1129,6 +1170,8 @@
 :Description:
     Data directory used by beaker for caching mulled resolution
     requests.
+    The value of this option will be resolved with respect to
+    <data_dir>.
 :Default: ``mulled/data``
 :Type: str
 
@@ -1140,6 +1183,8 @@
 :Description:
     Lock directory used by beaker for caching mulled resolution
     requests.
+    The value of this option will be resolved with respect to
+    <data_dir>.
 :Default: ``mulled/locks``
 :Type: str
 
@@ -1151,6 +1196,8 @@
 :Description:
     Configuration file for the object store If this is set and exists,
     it overrides any other objectstore settings.
+    The value of this option will be resolved with respect to
+    <config_dir>.
 :Default: ``object_store_conf.xml``
 :Type: str
 
@@ -1165,7 +1212,9 @@
     default will depend on how the object store is configured,
     starting with 20.05 Galaxy will try to default to 'uuid' if it can
     be sure this is a new Galaxy instance - but the default will be
-    'id' in many cases.
+    'id' in many cases. In particular, if the name of the directory
+    set in <file_path> is `objects`, the default will be set to
+    'uuid', otherwise it will be 'id'.
 :Default: ``None``
 :Type: str
 
@@ -1483,6 +1532,8 @@
 
 :Description:
     Map for interactivetool proxy.
+    The value of this option will be resolved with respect to
+    <data_dir>.
 :Default: ``interactivetools_map.sqlite``
 :Type: str
 
@@ -1575,6 +1626,8 @@
     'doc' may be be specified as well for each entry.
     If this is null (the default), a simple configuration containing
     just Dockstore will be used.
+    The value of this option will be resolved with respect to
+    <config_dir>.
 :Default: ``trs_servers_conf.yml``
 :Type: str
 
@@ -1586,6 +1639,8 @@
 :Description:
     Location of the configuration file containing extra user
     preferences.
+    The value of this option will be resolved with respect to
+    <config_dir>.
 :Default: ``user_preferences_extra_conf.yml``
 :Type: str
 
@@ -1657,6 +1712,26 @@
 :Description:
     The URL linked by the "Galaxy/brand" text.
 :Default: ``/``
+:Type: str
+
+
+~~~~~~~~~~~~
+``logo_src``
+~~~~~~~~~~~~
+
+:Description:
+    The brand image source.
+:Default: ``/static/favicon.png``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~
+``logo_src_secondary``
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The custom brand image source.
+:Default: ``None``
 :Type: str
 
 
@@ -2025,6 +2100,8 @@
 :Description:
     The NodeJS dynamic proxy can use an SQLite database or a JSON file
     for IPC, set that here.
+    The value of this option will be resolved with respect to
+    <data_dir>.
 :Default: ``session_map.sqlite``
 :Type: str
 
@@ -2335,6 +2412,11 @@
     use_printdebug.  It also causes the files used by PBS/SGE
     (submission script, output, and error) to remain on disk after the
     job is complete.
+    In addition, this will set uWSGI's `honour-stdin` option to
+    `true`; thus, preventing uWSGI from remapping stdin to `/dev/null`
+    and enabling debugging with tools like pdb. To keep uWSGI's
+    default setting, set `honor-stdin` to `false` in the `uwsgi`
+    section of this configuration file.
 :Default: ``false``
 :Type: bool
 
@@ -3226,6 +3308,8 @@
 
 :Description:
     Sets the path to OIDC configuration file.
+    The value of this option will be resolved with respect to
+    <config_dir>.
 :Default: ``oidc_config.xml``
 :Type: str
 
@@ -3236,6 +3320,8 @@
 
 :Description:
     Sets the path to OIDC backends configuration file.
+    The value of this option will be resolved with respect to
+    <config_dir>.
 :Default: ``oidc_backends_config.xml``
 :Type: str
 
@@ -3248,6 +3334,8 @@
     XML config file that allows the use of different authentication
     providers (e.g. LDAP) instead or in addition to local
     authentication (.sample is used if default does not exist).
+    The value of this option will be resolved with respect to
+    <config_dir>.
 :Default: ``auth_conf.xml``
 :Type: str
 
@@ -3292,6 +3380,8 @@
 
 :Description:
     If OpenID is enabled, consumer cache directory to use.
+    The value of this option will be resolved with respect to
+    <data_dir>.
 :Default: ``openid_consumer_cache``
 :Type: str
 
@@ -3469,6 +3559,8 @@
 :Description:
     XML config file that contains the job metric collection
     configuration.
+    The value of this option will be resolved with respect to
+    <config_dir>.
 :Default: ``job_metrics_conf.xml``
 :Type: str
 
@@ -3511,6 +3603,8 @@
 :Description:
     File where Data Managers are configured (.sample used if default
     does not exist).
+    The value of this option will be resolved with respect to
+    <config_dir>.
 :Default: ``data_manager_conf.xml``
 :Type: str
 
@@ -3522,6 +3616,8 @@
 :Description:
     File where Tool Shed based Data Managers are configured. This file
     will be created automatically upon data manager installation.
+    The value of this option will be resolved with respect to
+    <managed_config_dir>.
 :Default: ``shed_data_manager_conf.xml``
 :Type: str
 
@@ -3552,6 +3648,8 @@
     Jobs are run locally on the system on which Galaxy is started.
     Advanced job running capabilities can be configured through the
     job configuration file.
+    The value of this option will be resolved with respect to
+    <config_dir>.
 :Default: ``job_conf.xml``
 :Type: str
 
@@ -3879,6 +3977,8 @@
     CSS file to apply to all Markdown exports to PDF - currently used
     by WeasyPrint during rendering an HTML export of the document to
     PDF.
+    The value of this option will be resolved with respect to
+    <config_dir>.
 :Default: ``markdown_export.css``
 :Type: str
 
@@ -3891,6 +3991,8 @@
     CSS file to apply to "Galaxy Page" exports to PDF. Generally
     prefer markdown_export_css, but this is here for deployments that
     would like to tailor different kinds of exports.
+    The value of this option will be resolved with respect to
+    <config_dir>.
 :Default: ``markdown_export_pages.css``
 :Type: str
 
@@ -3903,6 +4005,8 @@
     CSS file to apply to invocation report exports to PDF. Generally
     prefer markdown_export_css, but this is here for deployments that
     would like to tailor different kinds of exports.
+    The value of this option will be resolved with respect to
+    <config_dir>.
 :Default: ``markdown_export_invocation_reports.css``
 :Type: str
 
@@ -3982,6 +4086,8 @@
     definition. These fields will be presented to users in the tool
     forms and allow them to overwrite default job resources such as
     number of processors, memory and walltime.
+    The value of this option will be resolved with respect to
+    <config_dir>.
 :Default: ``job_resource_params_conf.xml``
 :Type: str
 
@@ -3996,6 +4102,8 @@
     requires both a description of the fields available (which
     defaults to the definitions in job_resource_params_file if not
     set).
+    The value of this option will be resolved with respect to
+    <config_dir>.
 :Default: ``workflow_resource_params_conf.xml``
 :Type: str
 
@@ -4027,6 +4135,8 @@
 :Description:
     Optional configuration file similar to `job_config_file` to
     specify which Galaxy processes should schedule workflows.
+    The value of this option will be resolved with respect to
+    <config_dir>.
 :Default: ``workflow_schedulers_conf.xml``
 :Type: str
 
@@ -4240,6 +4350,8 @@
     removed from the recommendations and another is for adding
     additional tools to be recommended along side those from the deep
     learning model.
+    The value of this option will be resolved with respect to
+    <config_dir>.
 :Default: ``tool_recommendations_overwrite.yml``
 :Type: str
 
@@ -4265,6 +4377,8 @@
 
 :Description:
     Path to error reports configuration file.
+    The value of this option will be resolved with respect to
+    <config_dir>.
 :Default: ``error_report.yml``
 :Type: str
 
@@ -4277,6 +4391,8 @@
     Path to container interface configuration file. The containers
     interface is only used if `enable_beta_containers_interface`
     config option is set.
+    The value of this option will be resolved with respect to
+    <config_dir>.
 :Default: ``containers_conf.yml``
 :Type: str
 
@@ -4287,6 +4403,8 @@
 
 :Description:
     Path to dynamic tool destinations configuration file.
+    The value of this option will be resolved with respect to
+    <config_dir>.
 :Default: ``tool_destinations.yml``
 :Type: str
 

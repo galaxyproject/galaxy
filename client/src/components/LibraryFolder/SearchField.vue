@@ -3,10 +3,10 @@
         <b-form-input
             v-model="search"
             class="mr-1"
-            input="updateSearch($event)"
             type="search"
             id="filterInput"
             placeholder="Search"
+            @keyup.enter="startSearch()"
         />
     </b-input-group>
 </template>
@@ -20,13 +20,17 @@ export default {
             awaitingSearch: false,
         };
     },
-
+    methods: {
+        startSearch() {
+            this.$emit("updateSearch", this.search);
+            this.awaitingSearch = false;
+        },
+    },
     watch: {
         search: function () {
             if (!this.awaitingSearch) {
                 setTimeout(() => {
-                    this.$emit("updateSearch", this.search);
-                    this.awaitingSearch = false;
+                    this.startSearch();
                 }, 1000); // 1 sec delay
             }
             this.awaitingSearch = true;

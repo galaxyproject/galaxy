@@ -3677,6 +3677,23 @@ is the ``none`` preset.</xs:documentation>
 ``<options>`` tag set - modify (e.g. remove, add, sort, ...) the list of values obtained from a locally stored file (e.g.
 a tool data table) or a dataset in the current history.
 
+Currently the following filters are defined:
+
+* ``static_value`` filter options for which the entry in a given ``column`` of the referenced file based on equality to the ``value`` attribute of the filter. 
+* ``regexp`` similar to the ``static_value`` filter, but checks if the regular expression given by ``value`` matches the entry.
+* ``param_value`` filter options for which the entry in a given ``column`` of the referenced file based on properties of another input parameter specified by ``ref``. This property is by default the value of the parameter, but also the values of another attribute (``ref_attribute``) of the parameter can be used, e.g. the extension of a data input.
+* ``data_meta`` populate or filter options based on the metadata of another input parameter specified by ``ref``. If a ``column`` is given options are filtered for which the entry in this column ``column`` is equal to metadata of the input parameter specified by ``ref``. 
+If no ``column`` is given the metadata value of the referenced input is added to the options list (in this case the corresponding ``options`` tag must not have the ``from_data_table`` or ``from_dataset`` attributes). 
+In both cases the desired metadata is selected by ``key``.
+
+The ``static_value`` and ``regexp`` filters can be inverted by setting ``keep`` to true.
+
+* ``add_value``: add an option with a given ``name`` and ``value`` to the options. By default the new option is appended, with ``index`` the insertion position can be specified.
+* ``remove_value``: remove a value from the options. Either specified explicitly with ``value``, the value of another input specifified with ``ref``, or the metatdata ``key`` of another input ``meta_ref``.
+* ``unique_value``: remove options that have duplicate entries in the given ``column``.
+* ``sort_by``: sort options by the entries of a given ``column``.
+* ``multiple_splitter``: split the entries of the specified ``column``(s) in the referenced file using a ``separator``. Thereby the number of columns is increased. 
+
 ### Examples
 
 The following example from Mothur's
@@ -3777,28 +3794,8 @@ demonstrates splitting up strings into multiple values.
     <xs:attribute name="type" type="FilterType" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
-Currently the following filters are defined:
-
-* ``static_value`` filter options for which the entry in a given ``column`` of the referenced file based on equality to the ``value`` attribute of the filter. 
-* ``regexp`` similar to the ``static_value`` filter, but checks if the regular expression given by ``value`` matches the entry.
-* ``param_value`` filter options for which the entry in a given ``column`` of the referenced file based on properties of another input parameter specified by ``ref``. This property is by default the value of the parameter, but also the values of another attribute (``ref_attribute``) of the parameter can be used, e.g. the extension of a data input.
-* ``data_meta`` If a ``column`` is given options are filtered for which the entry in this column ``column`` is equal to metadata of another input parameter specified by ``ref``. 
-If no ``column`` is given the metadata value of the referenced input is added to the options list (in this case the corresponding ``options`` tag must not have the ``from_data_table`` or ``from_dataset`` attributes). 
-In both cases the desired metadata is selected by ``key``.
-
-The above filters can be inverted by setting ``keep`` to true.
-
-* ``add_value``: add an option with a given ``name`` and ``value`` to the options. By default the new option is appended, with ``index`` the insertion position can be specified.
-* ``remove_value``: remove a value from the options. Either specified explicitly with ``value``, the value of another input specifified with ``ref``, or the metatdata ``key`` of another input ``meta_ref``.
-* ``unique_value``: remove options that have duplicate entries in the given ``column``.
-* ``sort_by``: sort options by the entries of a given ``column``.
-* ``multiple_splitter``: split the entries of the specified ``column``(s) in the referenced file using a ``separator``. Thereby the number of columns is increased. 
-
-Note that filters that are applyed after one of the latter two filters must not refer to 
-
-These values are defined in the module
-[/lib/galaxy/tools/parameters/dynamic_options.py](https://github.com/galaxyproject/galaxy/blob/master/lib/galaxy/tools/parameters/dynamic_options.py)
-in the ``filter_types`` dictionary. 
+Currently the filters in the ``filter_types`` dictionary in the module
+[/lib/galaxy/tools/parameters/dynamic_options.py](https://github.com/galaxyproject/galaxy/blob/master/lib/galaxy/tools/parameters/dynamic_options.py) are defined. 
 
 Deprecated filter types:
 

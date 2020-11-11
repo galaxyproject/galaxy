@@ -342,9 +342,13 @@ export const getAnalysisRouter = (Galaxy) =>
         show_workflows_trs_import: function () {
             const queryTrsServer = QueryStringParsing.get("trs_server");
             const queryTrsId = QueryStringParsing.get("trs_id");
+            const queryTrsVersionId = QueryStringParsing.get("trs_version");
+            const isRun = QueryStringParsing.get("run_form") === "true";
             const propsData = {
                 queryTrsServer,
                 queryTrsId,
+                queryTrsVersionId,
+                isRun,
             };
             this._display_vue_helper(TrsImport, propsData);
         },

@@ -379,6 +379,7 @@ class AdvancedJobConfXmlParserTestCase(BaseJobConfXmlParserTestCase):
         assert self.job_config.tools["foo"][-1].params["source"] == "trackster"
         assert self.job_config.tools["longbar"][-1].destination == "dynamic"
         assert self.job_config.tools["longbar"][-1].resources == "all"
+        assert "resources" not in self.job_config.tools["longbar"][-1].params
 
     def test_handler_runner_plugins(self):
         self._with_advanced_config()

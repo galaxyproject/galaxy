@@ -101,12 +101,14 @@ export function showForm(workflow, node, datatypes) {
 export function showUpgradeMessage(data) {
     // Determine if any parameters were 'upgraded' and provide message
     var upgrade_message = "";
+    let hasToolUpgrade = false;
     _.each(data.steps, (step, step_id) => {
         var details = "";
         if (step.errors) {
             details += `<li>${step.errors}</li>`;
         }
         _.each(data.upgrade_messages[step_id], (m) => {
+            hasToolUpgrade = true;
             details += `<li>${m}</li>`;
         });
         if (details) {
@@ -122,6 +124,7 @@ export function showUpgradeMessage(data) {
     } else {
         hide_modal();
     }
+    return hasToolUpgrade;
 }
 
 export function getWorkflowParameters(nodes) {

@@ -1779,7 +1779,7 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
     def empty(self):
         return self.hid_counter == 1
 
-    def add_pending_datasets(self, set_output_hid=True):
+    def add_pending_items(self, set_output_hid=True):
         # These are assumed to be either copies of existing datasets or new, empty datasets,
         # so we don't need to set the quota.
         self.add_datasets(object_session(self), self._pending_additions, set_hid=set_output_hid, quota=False, flush=False)
@@ -3206,17 +3206,10 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         hda.purged = self.purged
         hda.copy_tags_to(copy_tags)
         object_session(self).add(hda)
-        flushed = False
-        # May need to set after flushed, as MetadataFiles require dataset.id
-        if hda.set_metadata_requires_flush:
-            object_session(self).flush([self])
-            flushed = True
         hda.metadata = self.metadata
         # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
         if not self.datatype.copy_safe_peek:
-            if not flushed:
-                object_session(self).flush([self])
-
+            object_session(self).flush([self])
             hda.set_peek()
         if flush:
             object_session(self).flush()
@@ -3232,7 +3225,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         new_dataset.hid = self.hid
 
     def to_library_dataset_dataset_association(self, trans, target_folder, replace_dataset=None,
-                                               parent_id=None, user=None, roles=None, ldda_message='', element_identifier=None):
+                                               parent_id=None, roles=None, ldda_message='', element_identifier=None):
         """
         Copy this HDA to a library optionally replacing an existing LDDA.
         """
@@ -3245,11 +3238,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             #   applied to the new LibraryDataset, and the current user's DefaultUserPermissions will be applied
             #   to the associated Dataset.
             library_dataset = LibraryDataset(folder=target_folder, name=self.name, info=self.info)
-            object_session(self).add(library_dataset)
-            object_session(self).flush()
-        if not user:
-            # This should never happen since users must be authenticated to upload to a data library
-            user = self.history.user
+        user = trans.user or self.history.user
         ldda = LibraryDatasetDatasetAssociation(name=element_identifier or self.name,
                                                 info=self.info,
                                                 blurb=self.blurb,
@@ -3264,16 +3253,19 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                                                 parent_id=parent_id,
                                                 copied_from_history_dataset_association=self,
                                                 user=user)
-        object_session(self).add(ldda)
-        object_session(self).flush()
+        library_dataset.library_dataset_dataset_association = ldda
+        object_session(self).add(library_dataset)
         # If roles were selected on the upload form, restrict access to the Dataset to those roles
         roles = roles or []
         for role in roles:
             dp = trans.model.DatasetPermissions(trans.app.security_agent.permitted_actions.DATASET_ACCESS.action,
                                                 ldda.dataset, role)
             trans.sa_session.add(dp)
-            trans.sa_session.flush()
         # Must set metadata after ldda flushed, as MetadataFiles require ldda.id
+        flushed = False
+        if self.set_metadata_requires_flush:
+            flushed = True
+            object_session(self).flush()
         ldda.metadata = self.metadata
         # TODO: copy #tags from history
         if ldda_message:
@@ -3281,12 +3273,11 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         if not replace_dataset:
             target_folder.add_library_dataset(library_dataset, genome_build=ldda.dbkey)
             object_session(self).add(target_folder)
-            object_session(self).flush()
-        library_dataset.library_dataset_dataset_association_id = ldda.id
         object_session(self).add(library_dataset)
-        object_session(self).flush()
         if not self.datatype.copy_safe_peek:
             # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
+            if not flushed:
+                object_session(self).flush()
             ldda.set_peek()
         object_session(self).flush()
         return ldda
@@ -3635,12 +3626,6 @@ class LibraryDataset(RepresentById):
         self.name = name
         self.info = info
         self.library_dataset_dataset_association = library_dataset_dataset_association
-
-    def set_library_dataset_dataset_association(self, ldda):
-        self.library_dataset_dataset_association = ldda
-        ldda.library_dataset = self
-        object_session(self).add_all((ldda, self))
-        object_session(self).flush()
 
     def get_info(self):
         if self.library_dataset_dataset_association:
@@ -4156,7 +4141,7 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
                 depth_collection_type = depth_collection_type.split(":", 1)[1]
             select_from = select_from.outerjoin(hda, hda.c.id == de.c.hda_id)
             select_stmt = select([hda]).select_from(select_from).where(dc.c.id == self.id).distinct()
-            return db_session.query(HistoryDatasetAssociation).select_entity_from(select_stmt).all()
+            return db_session.query(HistoryDatasetAssociation).select_entity_from(select_stmt).filter(HistoryDatasetAssociation.id.isnot(None)).all()
         else:
             # Sessionless context
             instances = []
@@ -4219,7 +4204,8 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
                 flush=flush
             )
         object_session(self).add(new_collection)
-        object_session(self).flush()
+        if flush:
+            object_session(self).flush()
         return new_collection
 
     def replace_failed_elements(self, replacements):
@@ -4477,10 +4463,16 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
         collection_copy = self.collection.copy(
             destination=hdca,
             element_destination=element_destination,
+            flush=False,
         )
         hdca.collection = collection_copy
         object_session(self).add(hdca)
-        object_session(self).flush()
+        hdca.copy_tags_from(self.history.user, self)
+        if element_destination:
+            element_destination.stage_addition(hdca)
+            element_destination.add_pending_items()
+        else:
+            object_session(self).flush()
         return hdca
 
     @property
@@ -4649,7 +4641,7 @@ class DatasetCollectionElement(Dictifiable, RepresentById):
                 # Ideally we would not need to give the following
                 # element an HID and it would exist in the history only
                 # as an element of the containing collection.
-                element_destination.add_dataset(new_element_object)
+                element_destination.stage_addition(new_element_object)
                 element_object = new_element_object
 
         new_element = DatasetCollectionElement(
@@ -4888,9 +4880,10 @@ class Workflow(Dictifiable, RepresentById):
         """
         return self.top_level_workflow.stored_workflow
 
-    def copy(self):
-        """ Copy a workflow (without user information) for a new
-        StoredWorkflow object.
+    def copy(self, user=None):
+        """ Copy a workflow for a new StoredWorkflow object.
+
+        Pass user if user-specific information needed.
         """
         copied_workflow = Workflow()
         copied_workflow.name = self.name
@@ -4906,7 +4899,7 @@ class Workflow(Dictifiable, RepresentById):
             step_mapping[step.id] = copied_step
 
         for old_step, new_step in zip(self.steps, copied_steps):
-            old_step.copy_to(new_step, step_mapping)
+            old_step.copy_to(new_step, step_mapping, user=user)
         copied_workflow.steps = copied_steps
         return copied_workflow
 
@@ -4923,6 +4916,11 @@ class WorkflowStep(RepresentById):
 
     See :class:`galaxy.model.WorkflowStepInput` and :class:`galaxy.model.WorkflowStepConnection` for more information.
     """
+    STEP_TYPE_TO_INPUT_TYPE = {
+        "data_input": "dataset",
+        "data_collection_input": "dataset_collection",
+        "parameter_input": "parameter",
+    }
 
     def __init__(self):
         self.id = None
@@ -4942,6 +4940,11 @@ class WorkflowStep(RepresentById):
     @property
     def tool_uuid(self):
         return self.dynamic_tool and self.dynamic_tool.uuid
+
+    @property
+    def input_type(self):
+        assert self.type and self.type in self.STEP_TYPE_TO_INPUT_TYPE, "step.input_type can only be called on input step types"
+        return self.STEP_TYPE_TO_INPUT_TYPE[self.type]
 
     @property
     def input_default_value(self):
@@ -5048,7 +5051,7 @@ class WorkflowStep(RepresentById):
                 break
         return target_output
 
-    def copy_to(self, copied_step, step_mapping):
+    def copy_to(self, copied_step, step_mapping, user=None):
         copied_step.order_index = self.order_index
         copied_step.type = self.type
         copied_step.tool_id = self.tool_id
@@ -5060,6 +5063,17 @@ class WorkflowStep(RepresentById):
         copied_step.inputs = copy_list(self.inputs, copied_step)
 
         subworkflow_step_mapping = {}
+
+        if user is not None and self.annotations:
+            annotations = []
+            for annotation in self.annotations:
+                association = WorkflowStepAnnotationAssociation()
+                association.user = user
+                association.workflow_step = copied_step
+                association.annotation = annotation.annotation
+                annotations.append(association)
+            copied_step.annotations = annotations
+
         subworkflow = self.subworkflow
         if subworkflow:
             copied_subworkflow = subworkflow.copy()
@@ -5688,6 +5702,8 @@ class MetadataFile(StorableObject, RepresentById):
                 self.object_store_id = da.dataset.object_store_id
             object_store = da.dataset.object_store
             store_by = object_store.get_store_by(da.dataset)
+            if store_by == 'id' and self.id is None:
+                self.flush()
             identifier = getattr(self, store_by)
             alt_name = "metadata_%s.dat" % identifier
             if not object_store.exists(self, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name=alt_name):

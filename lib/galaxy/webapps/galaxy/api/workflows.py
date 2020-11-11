@@ -570,7 +570,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             new_workflow_name = workflow_dict.get('name')
             if new_workflow_name and new_workflow_name != stored_workflow.name:
                 sanitized_name = sanitize_html(new_workflow_name)
-                workflow = stored_workflow.latest_workflow.copy()
+                workflow = stored_workflow.latest_workflow.copy(user=trans.user)
                 workflow.stored_workflow = stored_workflow
                 workflow.name = sanitized_name
                 stored_workflow.name = sanitized_name
@@ -678,14 +678,21 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             raise exceptions.MessageException("The data content is missing.")
         raw_workflow_description = self.__normalize_workflow(trans, data)
         workflow, missing_tool_tups = self._workflow_from_dict(trans, raw_workflow_description, source=source)
+        workflow_id = workflow.id
         workflow = workflow.latest_workflow
+
+        response = {"message": "Workflow '%s' imported successfully." % escape(workflow.name), "status": "success",
+                    "id": trans.security.encode_id(workflow_id)}
         if workflow.has_errors:
-            return {"message": "Imported, but some steps in this workflow have validation errors.", "status": "error"}
+            response["message"] = "Imported, but some steps in this workflow have validation errors."
+            response["status"] = "error"
         elif len(workflow.steps) == 0:
-            return {"message": "Imported, but this workflow has no steps.", "status": "error"}
+            response["message"] = "Imported, but this workflow has no steps."
+            response["status"] = "error"
         elif workflow.has_cycles:
-            return {"message": "Imported, but this workflow contains cycles.", "status": "error"}
-        return {"message": "Workflow '%s' imported successfully." % escape(workflow.name), "status": "success"}
+            response["message"] = "Imported, but this workflow contains cycles."
+            response["status"] = "error"
+        return response
 
     def __api_import_new_workflow(self, trans, payload, **kwd):
         data = payload['workflow']

@@ -226,7 +226,10 @@ export default {
     },
     created() {
         this.rememberIdp = this.getIdpPreference() !== null;
-        this.getCILogonIdps();
+        /* Only fetch CILogonIDPs if custos/cilogon configured */
+        if (this.cilogonListShow) {
+            this.getCILogonIdps();
+        }
     },
 };
 </script>
