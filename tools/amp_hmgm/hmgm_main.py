@@ -42,6 +42,11 @@ def main():
 		context = desanitize_context(context)
 		print ("Started HMGM task job ...")
 		
+		# as a safeguard, if input_json doesn't exist or is null throw exception to fail the step;
+		# (this could happen if there is a conversion command which fails before hmgm task creation command)
+		if not os.path.exists(input_json) or os.stat(input_json).st_size == 0:
+			raise Exception("Error: Input JSON file " + input_json + " doesn't exist or is empty.")
+		
 		if not task_created(task_json):
 			task = create_task(config, task_type, context, input_json, output_json, task_json)
 			print ("Successfully created HMGM task " + task.key)
