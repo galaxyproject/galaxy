@@ -5,7 +5,11 @@ import os
 import shutil
 import tarfile
 import tempfile
-from json import dump, dumps, load
+from json import (
+    dump,
+    dumps,
+    load,
+)
 from uuid import uuid4
 
 from bdbag import bdbag_api as bdb
@@ -19,6 +23,7 @@ from galaxy.util import FILENAME_VALID_CHARS
 from galaxy.util import in_directory
 from galaxy.util.bunch import Bunch
 from galaxy.util.path import safe_walk
+from ..custom_types import json_encoder
 from ..item_attrs import add_item_annotation, get_item_annotation_str
 from ... import model
 
@@ -1218,20 +1223,23 @@ class DirectoryModelExportStore(ModelExportStore):
             else:
                 provenance_attrs.append(dataset)
 
+        def to_json(attributes):
+            return json_encoder.encode([a.serialize(self.security, self.serialization_options) for a in attributes])
+
         datasets_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_DATASETS)
         with open(datasets_attrs_filename, 'w') as datasets_attrs_out:
-            dump(list(map(lambda d: d.serialize(self.security, self.serialization_options), datasets_attrs)), datasets_attrs_out)
+            datasets_attrs_out.write(to_json(datasets_attrs))
 
         with open(datasets_attrs_filename + ".provenance", 'w') as provenance_attrs_out:
-            dump(list(map(lambda d: d.serialize(self.security, self.serialization_options), provenance_attrs)), provenance_attrs_out)
+            provenance_attrs_out.write(to_json(provenance_attrs))
 
         libraries_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_LIBRARIES)
-        with open(libraries_attrs_filename, 'w') as librariess_attrs_out:
-            dump(list(map(lambda d: d.serialize(self.security, self.serialization_options), self.included_libraries)), librariess_attrs_out)
+        with open(libraries_attrs_filename, 'w') as libraries_attrs_out:
+            libraries_attrs_out.write(to_json(self.included_libraries))
 
         collections_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_COLLECTIONS)
         with open(collections_attrs_filename, 'w') as collections_attrs_out:
-            dump(list(map(lambda d: d.serialize(self.security, self.serialization_options), self.collections_attrs)), collections_attrs_out)
+            collections_attrs_out.write(to_json(self.collections_attrs))
 
         #
         # Write jobs attributes file.
@@ -1367,11 +1375,11 @@ class DirectoryModelExportStore(ModelExportStore):
 
         jobs_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_JOBS)
         with open(jobs_attrs_filename, 'w') as jobs_attrs_out:
-            dump(jobs_attrs, jobs_attrs_out)
+            jobs_attrs_out.write(json_encoder.encode(jobs_attrs))
 
         icjs_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_IMPLICIT_COLLECTION_JOBS)
         with open(icjs_attrs_filename, 'w') as icjs_attrs_out:
-            dump(icjs_attrs, icjs_attrs_out)
+            icjs_attrs_out.write(json_encoder.encode(icjs_attrs))
 
         export_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_EXPORT)
         with open(export_attrs_filename, 'w') as export_attrs_out:
