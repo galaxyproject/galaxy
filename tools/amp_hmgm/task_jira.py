@@ -16,6 +16,7 @@ class TaskJira (TaskManager):
          jira_server = config["jira"]["server"]
          jira_username = config["jira"]["username"]
          jira_password = config["jira"]["password"]         
+         jira_project = config["jira"]["project"]         
          self.jira = JIRA(server = jira_server, basic_auth = (jira_username, jira_password))
          
          
@@ -23,7 +24,7 @@ class TaskJira (TaskManager):
      # save information about the created issue into a JSON file, and return the issue.
      def create_task(self, task_type, context, editor_input, task_json):
          # populate the jira fields into a dictionary with information from task_type and context etc
-         project = {"key": "HMGM"}
+         project = {"key": jira_project}
          issuetype = {"name": "Task"}
          labels = [task_type]
          summary = context["primaryfileName"] + " - " + context["workflowName"] 
