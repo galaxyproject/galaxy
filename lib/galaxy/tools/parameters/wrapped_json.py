@@ -123,8 +123,10 @@ def _hda_to_object(hda):
 
     return {
         'file_ext': hda_dict['file_ext'],
+        'file_size': hda_dict['file_size'],
         'name': hda_dict['name'],
         'metadata': metadata_dict,
+        'src': {'src': 'hda', 'id': hda.id},
     }
 
 

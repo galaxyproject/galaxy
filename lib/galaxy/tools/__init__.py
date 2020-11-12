@@ -2483,6 +2483,22 @@ class ExpressionTool(Tool):
         with open(expression_inputs_path, "w") as f:
             json.dump(expression_inputs, f)
 
+    def exec_after_process(self, app, inp_data, out_data, param_dict, job=None, **kwds):
+        for key, val in self.outputs.items():
+            if val.output_type == "data":
+                with open(out_data[key].file_name, "r") as f:
+                    src = json.load(f)
+                assert isinstance(src, dict)
+                dataset_id = src["id"]
+                copy_object = None
+                for input_dataset in inp_data.values():
+                    if input_dataset.id == dataset_id:
+                        copy_object = input_dataset
+                        break
+                if copy_object is None:
+                    raise Exception("Failed to find dataset output.")
+                out_data[key].copy_from(copy_object)
+
     def parse_environment_variables(self, tool_source):
         """ Setup environment variable for inputs file.
         """

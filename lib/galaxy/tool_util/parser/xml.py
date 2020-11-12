@@ -398,7 +398,8 @@ class XmlToolSource(ToolSource):
         default_metadata_source="",
         expression_type=None,
     ):
-        output = ToolOutput(data_elem.get("name"))
+        from_expression = data_elem.get("from")
+        output = ToolOutput(data_elem.get("name"), from_expression=from_expression)
         output_format = data_elem.get("format", default_format)
         auto_format = string_as_bool(data_elem.get("auto_format", "false"))
         if auto_format and output_format != "data":
