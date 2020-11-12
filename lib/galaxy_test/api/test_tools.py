@@ -701,6 +701,20 @@ class ToolsTestCase(ApiTestCase, TestsTools):
 
     @skip_without_tool("multiple_versions")
     @uses_test_history(require_new=False)
+    def test_test_by_versions(self, history_id):
+        test_data_response = self._get("tools/%s/test_data" % "multiple_versions")
+        test_data_response.raise_for_status()
+        test_data_dicts = test_data_response.json()
+        assert len(test_data_dicts) == 1
+        assert test_data_dicts[0]["tool_version"] == "0.2"
+
+        test_data_response = self._get("tools/%s/test_data?tool_version=*" % "multiple_versions")
+        test_data_response.raise_for_status()
+        test_data_dicts = test_data_response.json()
+        assert len(test_data_dicts) == 2
+
+    @skip_without_tool("multiple_versions")
+    @uses_test_history(require_new=False)
     def test_show_with_wrong_tool_version_in_tool_id(self, history_id):
         tool_info = self._show_valid_tool("multiple_versions", tool_version="0.01")
         # Return last version
