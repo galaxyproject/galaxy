@@ -23,7 +23,7 @@ def main():
     sys.stderr = logger
 
     try:
-        # exit here if NER->IIIF conversion already done
+        # exit 1 here if NER->IIIF conversion already done
         mgm_utils.exit_if_file_generated(to_iiif)
         print("Converting from NER " + from_ner + " to IIIF: " + to_iiif)
        
@@ -42,7 +42,8 @@ def main():
         
         print("Successfully converted from NER " + from_ner + " to IIIF: " + to_iiif)
     except Exception as e:
-        # to_iiif will not be generated, which tells the HMGM task command to fail
+        # empty out to_iiif to tell the following HMGM task command to fail
+        mgm_utils.empty_file(to_iiif)
         print ("Error: Failed to convert from NER " + from_ner + " to IIIF: " + to_iiif, e)
         sys.stdout.flush()
         exit(-1)

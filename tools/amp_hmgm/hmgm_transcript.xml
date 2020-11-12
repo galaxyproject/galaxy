@@ -7,7 +7,7 @@
   <command detect_errors="exit_code">
     '$__tool_directory__/transcript_to_draftjs.py' '$__root_dir__' '$amp_transcript_uncorrected' '$amp_diarization' '$draftjs_uncorrected';
     '$__tool_directory__/hmgm_main.py' 'Transcript' '$__root_dir__' '$draftjs_uncorrected' '$draftjs_corrected' '$task_info' '$context_json';
-    '$__tool_directory__/draftjs_to_transcript.py' '$__root_dir__' '$draftjs_corrected' '$amp_transcript_corrected' '$amp_transcript_uncorrected'
+    '$__tool_directory__/draftjs_to_transcript.py' '$__root_dir__' '$draftjs_corrected' '$amp_transcript_uncorrected' '$amp_transcript_corrected'
   </command>
   <inputs>
     <param name="amp_transcript_uncorrected" type="data" format="transcript" label="AMP Transcript Uncorrected" help="Original AMP transcript file to be corrected"/>

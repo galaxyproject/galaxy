@@ -45,7 +45,7 @@ def main():
         
         print("Successfully converted from IIIF " + from_iiif + " to NER " + to_ner)
     except Exception as e:
-        # no need to create error file as there is no following command to signal to; exit -1 to let the whole job fail
+        # no need to create error file as there is no following command to notify; exit -1 to let the whole job fail
         print ("Failed to convert from IIIF " + from_iiif + " to NER " + to_ner, e)
         sys.stdout.flush()
         exit(-1)            

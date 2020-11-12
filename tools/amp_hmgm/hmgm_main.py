@@ -33,7 +33,8 @@ def main():
 	context_json = sys.argv[6]  # context info as json string needed for creating HMGM tasks
 #     context_json = '{ "submittedBy": "yingfeng", "unitId": "1", "unitName": "Test%27s Unit", "collectionId": "2", "collectionName": "Test%22s Collection", "taskManager": "Jira", "itemId": "3", "itemName": "Test%27s Item", "primaryfileId": "4", "primaryfileName": "Test%22s primaryfile", "primaryfileUrl": "http://techslides.com/demos/sample-videos/small.mp4", "primaryfileMediaInfo": "/tmp/hmgm/mediaInfo.json", "workflowId": "123456789", "workflowName": "Test%27%22 Workflow" }'
 
-	logger = MgmLogger(root_dir, "hmgm_ner" + task_type, input_json)
+	# using output instead of input filename as the latter is unique while the former could be used by multiple jobs 
+	logger = MgmLogger(root_dir, "hmgm_ner" + task_type, output_json)
 	sys.stdout = logger
 	sys.stderr = logger
 
@@ -67,10 +68,10 @@ def main():
 				sys.stdout.flush()
 				exit(1)        
 	except Exception as e:
-		print ("Failed to handle HMGM task: uncorrected JSON: " + input_json + ", corrected JSON: " + output_json, e)
-		sys.stdout.flush()
 		# create error file to notify the following conversion command to fail
 		mgm_utils.create_err_file(output_json)
+		print ("Failed to handle HMGM task: uncorrected JSON: " + input_json + ", corrected JSON: " + output_json, e)
+		sys.stdout.flush()
 		exit(-1)
 
 

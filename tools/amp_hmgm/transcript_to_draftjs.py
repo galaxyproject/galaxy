@@ -18,51 +18,55 @@ segments = list()
 # Converts AMP speech to text json to Draft JS which is used by the transcript editor.
 def main():
 
-	(root_dir, amp_json, segmentation_json, output_json) = sys.argv[1:5]
+	(root_dir, from_transcript, diarization_json, to_draftjs) = sys.argv[1:5]
 
-	logger = MgmLogger(root_dir, "hmgm_transcript", amp_json)
+	# using output instead of input filename as the latter is unique while the former could be used by multiple jobs 
+	logger = MgmLogger(root_dir, "hmgm_transcript", to_draftjs)
 	sys.stdout = logger
 	sys.stderr = logger
 
-	exit_peacefully = False
-	# Read the output file.  Check to see if we've already done this conversion. 
-	if path.exists(output_json):
-		try:
-			with open(output_json) as output_json_file:
-				draftjs_output = json.load(output_json_file)
-				# Conversion already done.  Exit
-				if 'entityMap' in draftjs_output.keys():
-					print("Json already converted.  Exiting")
-					exit_peacefully = True
-		except ValueError:
-			print("File exists, but not json.  Continue conversion")
-			
-	if exit_peacefully == False:
-		if segmentation_json is not None and segmentation_json!='None':
-			fill_speakers(segmentation_json)
+# 	exit_peacefully = False
+# 	# Read the output file.  Check to see if we've already done this conversion. 
+# 	if path.exists(to_draftjs):
+# 		try:
+# 			with open(to_draftjs) as to_draftjs_file:
+# 				draftjs_output = json.load(to_draftjs_file)
+# 				# Conversion already done.  Exit
+# 				if 'entityMap' in draftjs_output.keys():
+# 					print("Json already converted.  Exiting")
+# 					exit_peacefully = True
+# 		except ValueError:
+# 			print("File exists, but not json.  Continue conversion")
+# 			
+# 	if exit_peacefully == False:
+
+	try:
+		# exit 1 here if Transcript->DraftJs conversion already done
+		mgm_utils.exit_if_file_generated(to_iiif)
+		print("Converting from Transcript " + from_transcript + " to DraftJs: " + to_draftjs)	   	
+		
+		if diarization_json is not None and diarization_json!='None':
+			fill_speakers(diarization_json)
 		speaker_count = 0
 		out_json = dict()
 		out_json['entityMap'] = {}
 		out_json['blocks'] = []
 
 		# Open the transcribe output
-		with open(amp_json) as json_file:
+		with open(from_transcript) as json_file:
 			try:
 				json_input = json.load(json_file)
-			except ValueError:
-				print("Invalid input file, exiting")
-				exit(1)
+			except ValueError as e:
+				raise Exception("Exception: Invalid input file, exiting", e)
 
 			# Check to see if we have the required input
 			if 'results' not in json_input.keys():
-				print("Missing required results input.  Exiting")
-				exit(0)
+				raise Exception("Exception: Missing required results input. ")
 
 			ampResults = json_input['results']	
 
 			if 'words' not in ampResults.keys() or 'transcript' not in ampResults.keys():
-				print("Missing required words or transcript input.  Exiting")
-				exit(0)
+				raise Exception("Exception: Missing required words or transcript input. ")
 
 			ampResultsWords = ampResults['words']
 			ampTranscript = ampResults['transcript']
@@ -173,7 +177,15 @@ def main():
 					out_json['blocks'].append(block)
 
 			# Write the json
-			write_output_json(out_json, output_json)
+			write_to_draftjs(out_json, to_draftjs)
+				
+		print("Successfully converted from Transcript " + from_transcript + " to DraftJs: " + to_draftjs)
+	except Exception as e:
+		# empty out to_draftjs to tell the following HMGM task command to fail
+		mgm_utils.empty_file(to_draftjs)
+		print ("Error: Failed to convert from Transcript " + from_transcript + " to DraftJs: " + to_draftjs, e)
+		sys.stdout.flush()
+		exit(-1)
 
 def createBlock(depth, data, entityRanges, transcript):
 	return {
@@ -192,16 +204,16 @@ def createData(speaker, words, start):
 	data['start'] = start
 	return data
 
-def fill_speakers(segmentation_json):
+def fill_speakers(diarization_json):
 	try:
-		with open(segmentation_json) as segmentation_json:
-			segmentation = json.load(segmentation_json)
+		with open(diarization_json) as diarization_json:
+			segmentation = json.load(diarization_json)
 			# Conversion already done.  Exit
 			if 'segments' in segmentation.keys():
 				for s in range(0, len(segmentation['segments'])):
 					segments.append(segmentation['segments'][s])
 	except ValueError:
-		print("Error reading segmentation json")
+		raise Exception("Exception: failed to read Diarization json")
 
 def get_speaker_name(start, end, speaker_count):
 	if len(segments)==0:
@@ -223,7 +235,7 @@ def get_speaker_name(start, end, speaker_count):
 	return name
 
 # Serialize schema obj and write it to output file
-def write_output_json(input_json, json_file):
+def write_to_draftjs(input_json, json_file):
 	# Serialize the segmentation object
 	with open(json_file, 'w') as outfile:
 		json.dump(input_json, outfile, default=lambda x: x.__dict__)
