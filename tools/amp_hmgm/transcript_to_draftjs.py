@@ -116,10 +116,12 @@ def main():
 					this_transcript = this_transcript + " " + textWithPunct
 
 					# Create the word
+					# if score is present for word and score type is confidence, use the score value; otherwise default to 1.0
+					score_value = word['score']['scoreValue'] if 'score' in word and word['score']['type'] == 'confidence' else 1.0 
 					newWord = {
 						'start': start,
 						'end': word['end'],
-						'confidence': word['score']['scoreValue'],
+						'confidence': score_value,
 						'index':key,
 						'punct': textWithPunct,
 						'text': wordText

@@ -42,15 +42,15 @@ def main():
 	try:
 		# clean up previous error file as needed in case this is a rerun of a failed job
 		mgm_utils.cleanup_err_file(output_json)
-		print ("Starting HMGM task handling: uncorrected JSON: " + input_json + ", corrected JSON: " + output_json + ", task JSON: " + task_json)
-				
-		config = config_hmgm(root_dir)
-		context = json.loads(context_json)
-		context = desanitize_context(context)
 		
 		# as a safeguard, if input_json doesn't exist or is empty, throw exception to fail the job
 		# (this means the conversion command failed before hmgm task command)
 		mgm_utils.exception_if_file_not_exist(input_json)
+		
+		print ("Handling HMGM task: uncorrected JSON: " + input_json + ", corrected JSON: " + output_json + ", task JSON: " + task_json)				
+		config = config_hmgm(root_dir)
+		context = json.loads(context_json)
+		context = desanitize_context(context)
 		
 		if not task_created(task_json):
 			task = create_task(config, task_type, context, input_json, output_json, task_json)
