@@ -44,17 +44,17 @@ def exit_if_file_not_ready(file):
         exit(1)
          
 
-# Empty out the content of the given file as needed.
+# Empty out the content of the given (output) file as needed.
 # This method is typically called by an MGM command exiting with error code -1 upon exceptions.
 def empty_file(file):
-    # empty out the given file if it has content, so no invalid output is generated in case of exception
+    # overwrite the given file to empty if it had contents, so no invalid output is generated in case of exception
     if os.path.exists(file) and os.stat(file).st_size > 0:
-        with open(err_file, 'w') as fp: 
+        with open(file, 'w') as fp: 
             pass    
         print("File " + file + " has been emptied out")
     
  
-# Create an empty error file for the given (output) file.
+# Create an empty error file for the given (output) file to indicate it's in error.
 # This method is typically called by an MGM command exiting with error code -1 upon exceptions.
 def create_err_file(file):
     # error file has the .err suffix added to the original file path

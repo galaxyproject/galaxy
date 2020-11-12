@@ -9,10 +9,11 @@ import shutil
 
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
 from mgm_logger import MgmLogger
+import mgm_utils
+
 from task_jira import TaskJira
 from task_openproject import TaskOpenproject 
 from task_redmine import TaskRedmine
-import mgm_utils
 
 
 # It's assumed that all HMGMs generate the output file in the same directory as the input file with ".completed" suffix added to the original filename
@@ -34,12 +35,12 @@ def main():
 #     context_json = '{ "submittedBy": "yingfeng", "unitId": "1", "unitName": "Test%27s Unit", "collectionId": "2", "collectionName": "Test%22s Collection", "taskManager": "Jira", "itemId": "3", "itemName": "Test%27s Item", "primaryfileId": "4", "primaryfileName": "Test%22s primaryfile", "primaryfileUrl": "http://techslides.com/demos/sample-videos/small.mp4", "primaryfileMediaInfo": "/tmp/hmgm/mediaInfo.json", "workflowId": "123456789", "workflowName": "Test%27%22 Workflow" }'
 
 	# using output instead of input filename as the latter is unique while the former could be used by multiple jobs 
-	logger = MgmLogger(root_dir, "hmgm_ner" + task_type, output_json)
+	logger = MgmLogger(root_dir, "hmgm_" + task_type, output_json)
 	sys.stdout = logger
 	sys.stderr = logger
 
 	try:
-		# clean up previous error file in case this is a rerun of a failed job
+		# clean up previous error file as needed in case this is a rerun of a failed job
 		mgm_utils.cleanup_err_file(output_json)
 		print ("Starting HMGM task handling: uncorrected JSON: " + input_json + ", corrected JSON: " + output_json + ", task JSON: " + task_json)
 				
@@ -60,9 +61,9 @@ def main():
 			editor_output = task_completed(config, output_json)
 			if (editor_output):
 				task = close_task(config, context, editor_output, output_json, task_json)
-				print ("Successfully closed HMGM task " + task.key + ", exit 0")
+				print ("Successfully closed HMGM task " + task.key)
 				sys.stdout.flush()
-				exit(0)
+				# implicitly exit 0 as the current command completes
 			else:
 				print ("Waiting for HMGM task to complete ... exit 1")
 				sys.stdout.flush()

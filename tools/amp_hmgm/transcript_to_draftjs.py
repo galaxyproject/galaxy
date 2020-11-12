@@ -9,9 +9,7 @@ import logging
 
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
 from mgm_logger import MgmLogger
-# from adjustment import Adjustment
-
-# log = logging.getLogger(__name__)
+import mgm_utils
 
 segments = list()
 
@@ -25,24 +23,9 @@ def main():
 	sys.stdout = logger
 	sys.stderr = logger
 
-# 	exit_peacefully = False
-# 	# Read the output file.  Check to see if we've already done this conversion. 
-# 	if path.exists(to_draftjs):
-# 		try:
-# 			with open(to_draftjs) as to_draftjs_file:
-# 				draftjs_output = json.load(to_draftjs_file)
-# 				# Conversion already done.  Exit
-# 				if 'entityMap' in draftjs_output.keys():
-# 					print("Json already converted.  Exiting")
-# 					exit_peacefully = True
-# 		except ValueError:
-# 			print("File exists, but not json.  Continue conversion")
-# 			
-# 	if exit_peacefully == False:
-
 	try:
 		# exit 1 here if Transcript->DraftJs conversion already done
-		mgm_utils.exit_if_file_generated(to_iiif)
+		mgm_utils.exit_if_file_generated(to_draftjs)
 		print("Converting from Transcript " + from_transcript + " to DraftJs: " + to_draftjs)	   	
 		
 		if diarization_json is not None and diarization_json!='None':
@@ -57,7 +40,7 @@ def main():
 			try:
 				json_input = json.load(json_file)
 			except ValueError as e:
-				raise Exception("Exception: Invalid input file, exiting", e)
+				raise Exception("Exception: Invalid JSON format for input file", e)
 
 			# Check to see if we have the required input
 			if 'results' not in json_input.keys():
@@ -180,6 +163,7 @@ def main():
 			write_to_draftjs(out_json, to_draftjs)
 				
 		print("Successfully converted from Transcript " + from_transcript + " to DraftJs: " + to_draftjs)
+		# implicitly exit 0 as the current command completes
 	except Exception as e:
 		# empty out to_draftjs to tell the following HMGM task command to fail
 		mgm_utils.empty_file(to_draftjs)
@@ -212,8 +196,8 @@ def fill_speakers(diarization_json):
 			if 'segments' in segmentation.keys():
 				for s in range(0, len(segmentation['segments'])):
 					segments.append(segmentation['segments'][s])
-	except ValueError:
-		raise Exception("Exception: failed to read Diarization json")
+	except ValueError as e:
+		raise Exception("Exception: failed to read Diarization json", e)
 
 def get_speaker_name(start, end, speaker_count):
 	if len(segments)==0:

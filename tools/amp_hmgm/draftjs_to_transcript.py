@@ -26,8 +26,8 @@ def main():
     sys.stderr = logger
 
     try:
-        # if from_iiif is in error raise exception to notify HMGM job runner to fail the job
-        # otherwise if if from_iiif doesn't exist yet, exit 1 to keep waiting
+        # if from_draftjs is in error raise exception to notify HMGM job runner to fail the job
+        # otherwise if from_draftjs doesn't exist yet, exit 1 to keep waiting
         mgm_utils.exit_if_file_not_ready(from_draftjs)
         print("Converting DraftJs " + from_draftjs + " to Transcript " + to_transcript)
 
@@ -183,8 +183,9 @@ def main():
         # Write the output
         write_output_json(outputFile, to_transcript)
         print("Successfully converted from DraftJs " + from_draftjs + " to Transcript " + to_transcript)
+        # as the last command in HMGM, implicitly exit 0 here to let the whole job complete in success
     except Exception as e:
-        # no need to create error file as there is no following command to notify; exit -1 to let the whole job fail
+        # as the last command in HMGM, exit -1 to let the whole job fail
         print ("Failed to convert from DraftJs " + from_draftjs + " to Transcript " + to_transcript, e)
         sys.stdout.flush()
         exit(-1)            
