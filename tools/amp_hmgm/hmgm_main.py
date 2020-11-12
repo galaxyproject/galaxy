@@ -33,7 +33,7 @@ def main():
 	context_json = sys.argv[6]  # context info as json string needed for creating HMGM tasks
 #     context_json = '{ "submittedBy": "yingfeng", "unitId": "1", "unitName": "Test%27s Unit", "collectionId": "2", "collectionName": "Test%22s Collection", "taskManager": "Jira", "itemId": "3", "itemName": "Test%27s Item", "primaryfileId": "4", "primaryfileName": "Test%22s primaryfile", "primaryfileUrl": "http://techslides.com/demos/sample-videos/small.mp4", "primaryfileMediaInfo": "/tmp/hmgm/mediaInfo.json", "workflowId": "123456789", "workflowName": "Test%27%22 Workflow" }'
 
-	logger = MgmLogger(root_dir, "hmgm_" + task_type, input_json)
+	logger = MgmLogger(root_dir, "hmgm_ner" + task_type, input_json)
 	sys.stdout = logger
 	sys.stderr = logger
 
@@ -46,33 +46,30 @@ def main():
 		context = json.loads(context_json)
 		context = desanitize_context(context)
 		
-		# if input_json is in error or not existing, exit
-		mgm_utils.exit_if_file_not_ready(input_json)
-				
-		# as a safeguard, if input_json doesn't exist or is null throw exception to fail the step;
-		# (this could happen if there is a conversion command which fails before hmgm task creation command)
-# 		if not os.path.exists(input_json) or os.stat(input_json).st_size == 0:
-# 			raise Exception("Error: Input JSON file " + input_json + " doesn't exist or is empty.")
+		# as a safeguard, if input_json doesn't exist or is empty, throw exception to fail the job
+		# (this means the conversion command failed before hmgm task command)
+		mgm_utils.exception_if_file_not_exist(input_json)
 		
 		if not task_created(task_json):
 			task = create_task(config, task_type, context, input_json, output_json, task_json)
-			print ("Successfully created HMGM task " + task.key)
+			print ("Successfully created HMGM task " + task.key + ", exit 1")
 			sys.stdout.flush()
 			exit(1) 
 		else:
 			editor_output = task_completed(config, output_json)
 			if (editor_output):
 				task = close_task(config, context, editor_output, output_json, task_json)
-				print ("Successfully closed HMGM task " + task.key)
+				print ("Successfully closed HMGM task " + task.key + ", exit 0")
 				sys.stdout.flush()
 				exit(0)
 			else:
-				print ("Waiting for HMGM task to complete ...")
+				print ("Waiting for HMGM task to complete ... exit 1")
 				sys.stdout.flush()
 				exit(1)        
 	except Exception as e:
-		print ("Exception while handling HMGM task: ", e)
+		print ("Failed to handle HMGM task: uncorrected JSON: " + input_json + ", corrected JSON: " + output_json, e)
 		sys.stdout.flush()
+		# create error file to notify the following conversion command to fail
 		mgm_utils.create_err_file(output_json)
 		exit(-1)
 
