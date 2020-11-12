@@ -241,6 +241,9 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         def __iter__(self):
             return self.metadata.__iter__()
 
+        def element_is_set(self, name):
+            return self.metadata.element_is_set(name)
+
         def get(self, key, default=None):
             try:
                 return getattr(self, key)
