@@ -4,13 +4,17 @@ import json
 import sys
 import os
 
+sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
+import mgm_utils
+
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
 from speech_to_text import SpeechToText, SpeechToTextMedia, SpeechToTextResult, SpeechToTextScore, SpeechToTextWord
 
 # Convert kaldi output to standardized json
 def main():
 	(media_file, kaldi_file, kaldi_transcript_file, output_json_file) = sys.argv[1:5]
-
+	mgm_utils.exception_if_file_not_exist(kaldi_file)
+	mgm_utils.exception_if_file_not_exist(kaldi_transcript_file)
 	results = SpeechToTextResult()
 
 	# Open the kaldi json
