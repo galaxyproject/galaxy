@@ -71,7 +71,7 @@
   <tool file="sim_size_delta.xml" />
   <tool file="composite_shapefile.xml" />
   <tool file="is_valid_xml.xml" />
-  <tool file="param_value_from_file.xml"/>
+  <tool file="parse_values_from_file.xml"/>
   <!--
   TODO: Figure out why this transiently fails on Jenkins.
   <tool file="maxseconds.xml" />
@@ -173,6 +173,7 @@
   <tool file="expression_forty_two.xml" />
   <tool file="expression_parse_int.xml" />
   <tool file="expression_log_line_count.xml" />
+  <tool file="expression_null_handling_boolean.xml" />
   <tool file="cheetah_casting.xml" />
   <tool file="cheetah_problem_unbound_var.xml" />
   <tool file="cheetah_problem_unbound_var_input.xml" />

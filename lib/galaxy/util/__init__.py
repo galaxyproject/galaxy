@@ -958,7 +958,7 @@ def string_as_bool_or_none(string):
     string = str(string).lower()
     if string in ('true', 'yes', 'on'):
         return True
-    elif string == 'none':
+    elif string in ['none', 'null']:
         return None
     else:
         return False

@@ -1,3 +1,4 @@
+import json
 import logging
 import re
 import uuid
@@ -620,6 +621,10 @@ def __parse_test_attributes(output_elem, attrib, parse_elements=False, parse_dis
 
     # File no longer required if an list of assertions was present.
     attributes = {}
+
+    if 'value_json' in attrib:
+        attributes['object'] = json.loads(attrib.pop('value_json'))
+
     # Method of comparison
     attributes['compare'] = attrib.pop('compare', 'diff').lower()
     # Number of lines to allow to vary in logs (for dates, etc)
@@ -654,7 +659,8 @@ def __parse_test_attributes(output_elem, attrib, parse_elements=False, parse_dis
 
     has_checksum = md5sum or checksum
     has_nested_tests = extra_files or element_tests or primary_datasets
-    if not (assert_list or file or metadata or has_checksum or has_nested_tests):
+    has_object = 'object' in attributes
+    if not (assert_list or file or metadata or has_checksum or has_nested_tests or has_object):
         raise Exception("Test output defines nothing to check (e.g. must have a 'file' check against, assertions to check, metadata or checksum tests, etc...)")
     attributes['assert_list'] = assert_list
     attributes['extra_files'] = extra_files
@@ -774,8 +780,11 @@ def __parse_param_elem(param_elem, i=0):
         value = attrib['values'].split(',')
     elif 'value' in attrib:
         value = attrib['value']
+    elif 'value_json' in attrib:
+        value = json.loads(attrib['value_json'])
     else:
         value = None
+
     children_elem = param_elem
     if children_elem is not None:
         # At this time, we can assume having children only

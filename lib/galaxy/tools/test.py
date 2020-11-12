@@ -8,6 +8,7 @@ import galaxy.tools.parameters.grouping
 from galaxy.tool_util.verify.interactor import ToolTestDescription
 from galaxy.util import (
     string_as_bool,
+    string_as_bool_or_none,
     unicodify,
 )
 
@@ -271,7 +272,10 @@ def _process_bool_param_value(param, param_value):
     elif param.falsevalue == param_value:
         processed_value = False
     else:
-        processed_value = string_as_bool(param_value)
+        if param.optional:
+            processed_value = string_as_bool_or_none(param_value)
+        else:
+            processed_value = string_as_bool(param_value)
     return [processed_value] if was_list else processed_value
 
 

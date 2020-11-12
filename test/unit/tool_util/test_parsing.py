@@ -589,6 +589,35 @@ class BuildListToolLoaderTestCase(BaseLoaderTestCase):
         assert tool_module[1] == "BuildListCollectionTool"
 
 
+class ExpressionTestToolLoaderTestCase(BaseLoaderTestCase):
+    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/expression_null_handling_boolean.xml")
+    source_contents = None
+
+    def test_test(self):
+        test_dicts = self._tool_source.parse_tests_to_dict()['tests']
+        assert len(test_dicts) == 3
+        test_dict_0 = test_dicts[0]
+        assert 'outputs' in test_dict_0, test_dict_0
+        outputs = test_dict_0['outputs']
+        output0 = outputs[0]
+        assert 'object' in output0['attributes']
+        assert output0['attributes']['object'] is True
+
+        test_dict_1 = test_dicts[1]
+        assert 'outputs' in test_dict_1, test_dict_1
+        outputs = test_dict_1['outputs']
+        output0 = outputs[0]
+        assert 'object' in output0['attributes']
+        assert output0['attributes']['object'] is False
+
+        test_dict_2 = test_dicts[2]
+        assert 'outputs' in test_dict_2, test_dict_2
+        outputs = test_dict_2['outputs']
+        output0 = outputs[0]
+        assert 'object' in output0['attributes']
+        assert output0['attributes']['object'] is None
+
+
 class SpecialToolLoaderTestCase(BaseLoaderTestCase):
     source_file_name = os.path.join(galaxy_directory(), "lib/galaxy/tools/imp_exp/exp_history_to_archive.xml")
     source_contents = None

@@ -17,6 +17,7 @@ from galaxy.tool_util.parser import get_input_source as ensure_input_source
 from galaxy.util import (
     sanitize_param,
     string_as_bool,
+    string_as_bool_or_none,
     unicodify,
     XML,
 )
@@ -515,19 +516,23 @@ class BooleanToolParameter(ToolParameter):
         super().__init__(tool, input_source)
         self.truevalue = input_source.get('truevalue', 'true')
         self.falsevalue = input_source.get('falsevalue', 'false')
-        self.checked = input_source.get_bool('checked', False)
+        nullable = input_source.get_bool('optional', False)
+        self.optional = nullable
+        self.checked = input_source.get_bool('checked', None if nullable else False)
 
     def from_json(self, value, trans=None, other_values={}):
         return self.to_python(value)
 
     def to_python(self, value, app=None):
-        return (value in [True, 'True', 'true'])
+        if not self.optional:
+            ret_val = string_as_bool(value)
+        else:
+            ret_val = string_as_bool_or_none(value)
+        return ret_val
 
     def to_json(self, value, app, use_security):
-        if self.to_python(value, app):
-            return 'true'
-        else:
-            return 'false'
+        rval = json.dumps(self.to_python(value, app))
+        return rval
 
     def get_initial_value(self, trans, other_values):
         return self.checked
@@ -542,6 +547,7 @@ class BooleanToolParameter(ToolParameter):
         d = super().to_dict(trans)
         d['truevalue'] = self.truevalue
         d['falsevalue'] = self.falsevalue
+        d['optional'] = self.optional
         return d
 
     @property
