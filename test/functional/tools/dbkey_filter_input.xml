@@ -22,15 +22,19 @@
         <test>
             <param name="inputs" value="simple_line.txt" dbkey="hg19" />
             <param name="index" value="hg19" />
-            <output name="output" file="simple_line.txt"/>
+            <output name="output" file="simple_line.txt" />
         </test>
-        <!-- cannot pick index otherwise -->
-        <!-- Does this make sense - if no dbkey is defined there is no option
-             available? -->
-        <test expect_failure="true">
+        <!-- choose any dbkey if not specified in reference -->
+        <test>
             <param name="inputs" value="simple_line.txt" />
-            <param name="index" value="hg18" />
-            <output name="output" file="simple_line.txt"/>
+            <param name="index" value="hg19" />
+            <output name="output" file="simple_line.txt" />
+        </test>
+        <!-- cant choose a dkkey different from reference -->
+        <test expect_failure="true">
+            <param name="inputs" value="simple_line.txt" dbkey="hg18" />
+            <param name="index" value="hg19" />
+            <output name="output" file="simple_line.txt" />
         </test>
     </tests>
 
