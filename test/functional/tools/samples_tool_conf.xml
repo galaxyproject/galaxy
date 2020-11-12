@@ -175,6 +175,9 @@
   <tool file="expression_parse_int.xml" />
   <tool file="expression_log_line_count.xml" />
   <tool file="expression_null_handling_boolean.xml" />
+  <tool file="expression_null_handling_integer.xml" />
+  <tool file="expression_null_handling_float.xml" />
+  <tool file="expression_null_handling_text.xml" />
   <tool file="cheetah_casting.xml" />
   <tool file="cheetah_problem_unbound_var.xml" />
   <tool file="cheetah_problem_unbound_var_input.xml" />

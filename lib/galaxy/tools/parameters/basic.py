@@ -302,12 +302,16 @@ class SimpleTextToolParameter(ToolParameter):
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source)
-        self.value = ''
+        self.optional = input_source.get_bool('optional', False)
+        if self.optional:
+            self.value = None
+        else:
+            self.value = ''
 
     def to_json(self, value, app, use_security):
         """Convert a value to a string representation suitable for persisting"""
         if value is None:
-            rval = ''
+            rval = '' if not self.optional else None
         else:
             rval = unicodify(value)
         return rval
@@ -346,6 +350,7 @@ class TextToolParameter(SimpleTextToolParameter):
         d = super().to_dict(trans)
         d['area'] = self.area
         d['datalist'] = self.datalist
+        d['optional'] = self.optional
         return d
 
 
