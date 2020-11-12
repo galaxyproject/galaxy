@@ -14,7 +14,7 @@ from segmentation import SegmentationSchema, SegmentationSchemaMedia, Segmentati
 def main():
 	(media_file, transcribe_file, output_stt_json_file, output_seg_json_file) = sys.argv[1:5]
 		
-	mgm_utils.exit_if_output_not_ready(transcribe_file)
+	mgm_utils.exit_if_file_not_ready(transcribe_file)
 
 	# Open the transcribe output
 	with open(transcribe_file) as json_file:

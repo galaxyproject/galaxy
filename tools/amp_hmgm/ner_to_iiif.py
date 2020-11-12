@@ -16,29 +16,36 @@ def main():
     input_iiif = sys.argv[3]    # input file to feed to NER editor in IIIF json format to convert to
     context_json = sys.argv[4]  # context info as json string needed for creating HMGM tasks    
 #     context_json = '{ "submittedBy": "yingfeng", "unitId": "1", "unitName": "Test Unit", "collectionId": "2", "collectionName": "Test Collection", "taskManager": "Jira", "itemId": "3", "itemName": "Test Item", "primaryfileId": "4", "primaryfileName": "Test primaryfile", "primaryfileUrl": "http://techslides.com/demos/sample-videos/small.mp4", "primaryfileMediaInfo": "/tmp/hmgm/mediaInfo.json", "workflowId": "123456789", "workflowName": "Test Workflow" }'
-    
-    
-    logger = MgmLogger(root_dir, "hmgm_ner", input_ner)
-
+        
+    # using output instead of input filename as the latter is unique while the former could be used by multiple jobs 
+    logger = MgmLogger(root_dir, "hmgm_ner_to_iiif", input_iiif)
     sys.stdout = logger
     sys.stderr = logger
 
-    print ("input_ner: " + input_ner)
-    print ("input_iiif: " + input_iiif)
-    print ("context_json: " + context_json)
-
-    # parse input NER and context JSON
-    context = json.loads(context_json)
-    with open(input_ner, 'r') as ner_file:
-        ner_data = json.load(ner_file)
-
-    # generate IIIF JSON from inputs 
-    iiif_data = generate_iiif_other_fields(context, ner_data)
-    iiif_data["annotations"] = generate_iiif_annotations(ner_data)
-
-    # write IIIF JSON to file
-    with open(input_iiif, "w") as iiif_file: 
-        json.dump(iiif_data, iiif_file) 
+    try:
+        # clean up previous error file if exists, exit 1 if NER->IIIF conversion already done
+        mgm_utils.exit_if_file_generated(input_iiif)
+        print("Converting uncorrected NER " + input_ner + " to uncorrected IIIF: " + input_iiif)
+       
+        # parse input NER and context JSON
+        context = json.loads(context_json)
+        with open(input_ner, 'r') as ner_file:
+            ner_data = json.load(ner_file)
+    
+        # generate IIIF JSON from inputs 
+        iiif_data = generate_iiif_other_fields(context, ner_data)
+        iiif_data["annotations"] = generate_iiif_annotations(ner_data)
+    
+        # write IIIF JSON to file
+        with open(input_iiif, "w") as iiif_file: 
+            json.dump(iiif_data, iiif_file) 
+        
+        print("Successfully converted uncorrected NER " + input_ner + " to uncorrected IIIF: " + input_iiif)
+    except Exception as e:
+        mgm_utils.create_err_file(input_iiif)
+        print ("Exception while converting uncorrected NER " + input_ner + " to uncorrected IIIF: " + input_iiif + ", error file created for " + input_iiif, e)
+        sys.stdout.flush()
+        exit(-1)
 
 
 # Populate IIIF fields other than annotations, using the provide context and ner_data.

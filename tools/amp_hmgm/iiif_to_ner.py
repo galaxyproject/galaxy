@@ -18,25 +18,36 @@ def main():
     input_ner = sys.argv[3]     # input file to feed to NER editor in IIIF json format to convert to
     output_ner = sys.argv[4]    # context info as json string needed for creating HMGM tasks
 
-    logger = MgmLogger(root_dir, "hmgm_ner", input_ner)
+    # using output instead of input filename as the latter is unique while the former could be used by multiple jobs 
+    logger = MgmLogger(root_dir, "hmgm_ner", output_ner)
     sys.stdout = logger
     sys.stderr = logger
 
-    mgm_utils.exit_if_output_not_ready(output_iiif)
+    try:
+        # if output_iiif is in error or not existing, exit
+        mgm_utils.exit_if_file_not_ready(output_iiif)
+        print("Converting corrected IIIF " + output_iiif + " to corrected NER " + output_ner)
+
+        # parse output IIIF and original input NER
+        with open(output_iiif, 'r') as iiif_file:
+            iiif_data = json.load(iiif_file)
+        with open(input_ner, 'r') as ner_file:
+            ner_data = json.load(ner_file)
+    
+        # update entities in original input NER
+        entity_dict = build_ner_entity_dictionary(ner_data)
+        ner_data["entities"] = generate_ner_entities(iiif_data, entity_dict)
+    
+        # write entities back to output NER
+        with open(output_ner, "w") as outfile: 
+            json.dump(ner_data, outfile) 
         
-    # parse output IIIF and original input NER
-    with open(output_iiif, 'r') as iiif_file:
-        iiif_data = json.load(iiif_file)
-    with open(input_ner, 'r') as ner_file:
-        ner_data = json.load(ner_file)
-
-    # update entities in original input NER
-    entity_dict = build_ner_entity_dictionary(ner_data)
-    ner_data["entities"] = generate_ner_entities(iiif_data, entity_dict)
-
-    # write entities back to output NER
-    with open(output_ner, "w") as outfile: 
-        json.dump(ner_data, outfile) 
+        print("Successfully converted corrected IIIF " + output_iiif + " to corrected NER " + output_ner)
+    except Exception as e:
+        # no need to create error file as there is no following command to signal to; exit -1 to let the whole job fail
+        print ("Exception while converting corrected IIIF " + output_iiif + " to corrected NER " + output_ner, e)
+        sys.stdout.flush()
+        exit(-1)            
 
 
 # Build a dictionary for NER entities with start time as key and entity as value, to allow efficient searching of entity by timestamp.

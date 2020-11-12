@@ -12,6 +12,7 @@ from mgm_logger import MgmLogger
 from task_jira import TaskJira
 from task_openproject import TaskOpenproject 
 from task_redmine import TaskRedmine
+import mgm_utils
 
 
 # It's assumed that all HMGMs generate the output file in the same directory as the input file with ".completed" suffix added to the original filename
@@ -32,20 +33,26 @@ def main():
 	context_json = sys.argv[6]  # context info as json string needed for creating HMGM tasks
 #     context_json = '{ "submittedBy": "yingfeng", "unitId": "1", "unitName": "Test%27s Unit", "collectionId": "2", "collectionName": "Test%22s Collection", "taskManager": "Jira", "itemId": "3", "itemName": "Test%27s Item", "primaryfileId": "4", "primaryfileName": "Test%22s primaryfile", "primaryfileUrl": "http://techslides.com/demos/sample-videos/small.mp4", "primaryfileMediaInfo": "/tmp/hmgm/mediaInfo.json", "workflowId": "123456789", "workflowName": "Test%27%22 Workflow" }'
 
+	logger = MgmLogger(root_dir, "hmgm_" + task_type, input_json)
+	sys.stdout = logger
+	sys.stderr = logger
+
 	try:
-		logger = MgmLogger(root_dir, "hmgm_" + task_type, input_json)
-		sys.stdout = logger
-		sys.stderr = logger
-		
+		# clean up previous error file in case this is a rerun of a failed job
+		mgm_utils.cleanup_err_file(output_json)
+		print ("Starting HMGM task handling: uncorrected JSON: " + input_json + ", corrected JSON: " + output_json + ", task JSON: " + task_json)
+				
 		config = config_hmgm(root_dir)
 		context = json.loads(context_json)
 		context = desanitize_context(context)
-		print ("Started HMGM task job ...")
 		
+		# if input_json is in error or not existing, exit
+		mgm_utils.exit_if_file_not_ready(input_json)
+				
 		# as a safeguard, if input_json doesn't exist or is null throw exception to fail the step;
 		# (this could happen if there is a conversion command which fails before hmgm task creation command)
-		if not os.path.exists(input_json) or os.stat(input_json).st_size == 0:
-			raise Exception("Error: Input JSON file " + input_json + " doesn't exist or is empty.")
+# 		if not os.path.exists(input_json) or os.stat(input_json).st_size == 0:
+# 			raise Exception("Error: Input JSON file " + input_json + " doesn't exist or is empty.")
 		
 		if not task_created(task_json):
 			task = create_task(config, task_type, context, input_json, output_json, task_json)
@@ -66,6 +73,7 @@ def main():
 	except Exception as e:
 		print ("Exception while handling HMGM task: ", e)
 		sys.stdout.flush()
+		mgm_utils.create_err_file(output_json)
 		exit(-1)
 
 

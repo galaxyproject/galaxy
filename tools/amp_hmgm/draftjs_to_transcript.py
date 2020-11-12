@@ -24,7 +24,7 @@ def main():
     sys.stdout = logger
     sys.stderr = logger
 
-    mgm_utils.exit_if_output_not_ready(editor_output_file)
+    mgm_utils.exit_if_file_not_ready(editor_output_file)
 
     with open(editor_output_file) as json_file:
         d = json.load(json_file)
