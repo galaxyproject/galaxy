@@ -67,12 +67,12 @@ RUN rm -rf \
         .git \
         .venv/bin/node \
         .venv/include/node \
-        .venv/lib/node_modules \
         .venv/src/node* \
-        client/node_modules \
         doc \
         test \
         test-data
+# Clean up *all* node_modules, including plugins.  Everything is already built+staged.
+RUN find . -name "node_modules" -type d -prune -exec rm -rf '{}' +
 
 # Stage-2
 FROM $STAGE2_BASE
