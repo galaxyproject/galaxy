@@ -86,7 +86,10 @@ def _json_wrap_input(input, value_wrapper, profile, handle_files="skip"):
             return SKIP_INPUT
         raise NotImplementedError()
     elif input_type in ["text", "color", "hidden"]:
-        json_value = _cast_if_not_none(value_wrapper, str)
+        if getattr(input, "optional", False) and value_wrapper is not None and value_wrapper.value is None:
+            json_value = None
+        else:
+            json_value = _cast_if_not_none(value_wrapper, str)
     elif input_type == "float":
         json_value = _cast_if_not_none(value_wrapper, float, empty_to_none=True)
     elif input_type == "integer":
