@@ -36,7 +36,7 @@
     </tests>
     <help><![CDATA[
 
-This tool takes a dataset collection and filters out datasets in the failed state. This is useful for continuing a multi-sample analysis when one of more of the samples fails at some point.
+This tool takes a dataset collection and filters out datasets in the failed state. This is useful for continuing a multi-sample analysis when one or more of the samples fails at some point.
 
 .. class:: infomark
 
