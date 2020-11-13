@@ -78,6 +78,9 @@ preferences:
 
 toolbox_filters:
   selectors:
+    input:
+      type: xpath
+      selector: "//span[contains(. ,'${description}')]/../div/div[@class=\"custom-control\"]"
     submit: '#submit'
 
 change_user_email:
