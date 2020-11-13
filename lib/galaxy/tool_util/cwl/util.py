@@ -360,7 +360,7 @@ class ObjectUploadTarget:
         self.properties = {}
 
     def __str__(self):
-        return "ObjectUploadTarget[object=%s]" % self.object
+        return f"ObjectUploadTarget[object={self.object} with {self.properties}]"
 
 
 class DirectoryUploadTarget:
@@ -394,6 +394,9 @@ def invocation_to_output(invocation, history_id, output_id):
     elif output_id in invocation["output_collections"]:
         collection = invocation["output_collections"][output_id]
         galaxy_output = GalaxyOutput(history_id, "dataset_collection", collection["id"], None)
+    elif output_id in invocation["output_values"]:
+        output_value = invocation["output_values"][output_id]
+        galaxy_output = GalaxyOutput(None, "raw_value", output_value, None)
     else:
         raise Exception(f"Failed to find output with label [{output_id}] in [{invocation}]")
 
@@ -435,7 +438,9 @@ def output_to_cwl_json(
             with open(dataset_dict["path"]) as f:
                 return json.safe_load(f)
 
-    if output_metadata["history_content_type"] == "dataset":
+    if galaxy_output.history_content_type == "raw_value":
+        return galaxy_output.history_content_id
+    elif output_metadata["history_content_type"] == "dataset":
         ext = output_metadata["file_ext"]
         assert output_metadata["state"] == "ok"
         if ext == "expression.json":

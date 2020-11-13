@@ -62,6 +62,17 @@ except ImportError:
     command_line_tool = None
 
 try:
+    from cwltool.load_tool import resolve_and_validate_document
+except ImportError:
+    resolve_and_validate_document = None
+
+try:
+    from cwltool import command_line_tool
+    command_line_tool.ACCEPTLIST_RE = command_line_tool.ACCEPTLIST_EN_RELAXED_RE
+except ImportError:
+    command_line_tool = None
+
+try:
     import shellescape
 except ImportError:
     shellescape = None
