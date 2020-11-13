@@ -86,7 +86,7 @@ class OIDC(JSAppLauncher):
             raise
         if success is False:
             return trans.show_error_message(message)
-        if "/login/confirm" in redirect_url:
+        if "?confirm" in redirect_url:
             return trans.response.send_redirect(url_for(redirect_url))
         elif redirect_url is None:
             redirect_url = url_for('/')

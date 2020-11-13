@@ -113,7 +113,7 @@ class CustosAuthnz(IdentityProvider):
                         log.exception(message)
                         raise exceptions.AuthenticationFailed(message)
                 else:
-                    login_redirect_url = login_redirect_url + 'login/confirm?token=' + json.dumps(token)
+                    login_redirect_url = login_redirect_url + 'root/login?confirm=true&custos_token=' + json.dumps(token)
                     return login_redirect_url, None
 
             custos_authnz_token = CustosAuthnzToken(user=user,
@@ -216,6 +216,7 @@ class CustosAuthnz(IdentityProvider):
         return session
 
     def _fetch_token(self, oauth2_session, trans):
+
         if self.config.get('iam_client_secret'):
             # Custos uses the Keycloak client secret to get the token
             client_secret = self.config['iam_client_secret']
