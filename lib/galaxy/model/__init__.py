@@ -3972,8 +3972,10 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
             extensions = set()
             states = set()
             for extension, state in db_session.execute(select_stmt).fetchall():
-                states.add(state)
-                extensions.add(extension)
+                if state is not None:
+                    # query may return (None, None) if not collection elements present
+                    states.add(state)
+                    extensions.add(extension)
 
             self._dataset_states_and_extensions_summary = (states, extensions)
 
