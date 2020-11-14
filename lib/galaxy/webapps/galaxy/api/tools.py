@@ -5,6 +5,7 @@ from json import dumps, loads
 from galaxy import exceptions, managers, util, web
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
 from galaxy.tools import global_tool_errors
+from galaxy.tools.parameters import params_to_incoming
 from galaxy.web import (
     expose_api,
     expose_api_anonymous,
@@ -511,9 +512,14 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             target_history = None
 
         # Set up inputs.
-        inputs = payload.get('inputs', {})
-        if not isinstance(inputs, dict):
-            raise exceptions.RequestParameterInvalidException("inputs invalid %s" % inputs)
+        submitted_inputs = payload.get('inputs', {})
+        if not isinstance(submitted_inputs, dict):
+            raise exceptions.RequestParameterInvalidException("inputs invalid %s" % submitted_inputs)
+        try:
+            inputs = {}
+            params_to_incoming(inputs, tool.inputs, submitted_inputs, tool.app)
+        except KeyError:
+            inputs = submitted_inputs
 
         # Find files coming in as multipart file data and add to inputs.
         for k, v in payload.items():
