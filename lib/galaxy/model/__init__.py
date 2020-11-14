@@ -1135,6 +1135,8 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
                     }
             rval['outputs'] = output_dict
 
+            rval['remappable'] = self.remappable()
+
         return rval
 
     def set_final_state(self, final_state):
@@ -1257,6 +1259,21 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         }
         for statement in statements:
             sa_session.execute(statement, params)
+
+    def remappable(self):
+        """
+        Find if job is remappable when rerun
+        """
+        if self.state == self.states.ERROR:
+            try:
+                if [hda.dependent_jobs for hda in [jtod.dataset for jtod in self.output_datasets] if hda.dependent_jobs]:
+                    return True
+                elif self.output_dataset_collection_instances:
+                    # We'll want to replace this item
+                    return 'job_produced_collection_elements'
+            except Exception as exception:
+                log.error(str(exception))
+        return False
 
 
 class Task(JobLike, RepresentById):

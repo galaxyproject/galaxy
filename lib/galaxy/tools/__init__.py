@@ -2252,16 +2252,7 @@ class Tool(Dictifiable):
 
     def _get_job_remap(self, job):
         if job:
-            if job.state == job.states.ERROR:
-                try:
-                    if [hda.dependent_jobs for hda in [jtod.dataset for jtod in job.output_datasets] if hda.dependent_jobs]:
-                        return True
-                    elif job.output_dataset_collection_instances:
-                        # We'll want to replace this item
-                        return 'job_produced_collection_elements'
-                except Exception as exception:
-                    log.error(str(exception))
-        return False
+            return job.remappable()
 
     def _map_source_to_history(self, trans, tool_inputs, params):
         # Need to remap dataset parameters. Job parameters point to original
