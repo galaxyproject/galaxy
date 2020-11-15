@@ -2404,6 +2404,24 @@ data_input:
   type: File
 """, history_id=history_id, wait=True, assert_ok=True)
 
+    def test_run_with_int_parameter_nested(self):
+        with self.dataset_populator.test_history() as history_id:
+            workflow = self.workflow_populator.load_workflow_from_resource("test_subworkflow_with_integer_input")
+            workflow_id = self.workflow_populator.create_workflow(workflow)
+            hda = self.dataset_populator.new_dataset(history_id, content="1 2 3")
+            workflow_request = {
+                'history_id': history_id,
+                'workflow_id': workflow_id,
+                'inputs_by': 'name',
+                'inputs': json.dumps({
+                    'input_dataset': {'src': 'hda', 'id': hda['id']},
+                    'int_parameter': 1,
+                })
+            }
+            invocation_response = self.workflow_populator.invoke_workflow_raw(workflow_id, workflow_request)
+            assert invocation_response.status_code == 200, invocation_response.text
+            self.workflow_populator.wait_for_invocation(workflow_id, invocation_response.json()['id'])
+
     def test_run_with_validated_parameter_connection_default_values(self):
         with self.dataset_populator.test_history() as history_id:
             self._run_jobs(WORKFLOW_PARAMETER_INPUT_INTEGER_DEFAULT, test_data="""
