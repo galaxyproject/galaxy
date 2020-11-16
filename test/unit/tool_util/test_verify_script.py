@@ -22,6 +22,8 @@ def test_arg_parse():
     args = parser.parse_args([])
     assert not args.with_reference_data
     assert not args.history_per_test_case
+    assert args.page_size == 0
+    assert args.page_number == 0
 
     # skip flags
     args = parser.parse_args(["--skip-with-reference-data", "--history-per-test-case"])
@@ -32,6 +34,11 @@ def test_arg_parse():
     args = parser.parse_args(["--with-reference-data", "--history-per-suite"])
     assert args.with_reference_data
     assert not args.history_per_test_case
+
+    # pagination
+    args = parser.parse_args(["--page-size", "5", "--page-number", "40"])
+    assert args.page_size == 5
+    assert args.page_number == 40
 
 
 def test_test_tools():
@@ -199,6 +206,15 @@ def test_build_references():
 
     test_references = build_case_references(interactor, 'cat1', tool_version="*")
     assert len(test_references) == 6
+
+    test_references = build_case_references(interactor, 'cat1', tool_version="*", page_size=3, page_number=1)
+    assert len(test_references) == 3
+
+    test_references = build_case_references(interactor, 'cat1', tool_version="*", page_size=3, page_number=2)
+    assert len(test_references) == 0
+
+    test_references = build_case_references(interactor, 'cat1', tool_version="*", page_size=3, page_number=3)
+    assert len(test_references) == 0
 
     test_references = build_case_references(interactor, 'cat1', tool_version=None)
     assert len(test_references) == 4
