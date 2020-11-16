@@ -22,6 +22,8 @@ def test_arg_parse():
     args = parser.parse_args([])
     assert not args.with_reference_data
     assert not args.history_per_test_case
+    assert args.page_size == 0
+    assert args.page_number == 0
 
     # skip flags
     args = parser.parse_args(["--skip-with-reference-data", "--history-per-test-case"])
@@ -32,6 +34,11 @@ def test_arg_parse():
     args = parser.parse_args(["--with-reference-data", "--history-per-suite"])
     assert args.with_reference_data
     assert not args.history_per_test_case
+
+    # pagination
+    args = parser.parse_args(["--page-size", "5", "--page-number", "40"])
+    assert args.page_size == 5
+    assert args.page_number == 40
 
 
 def test_test_tools():
@@ -165,7 +172,7 @@ def test_test_tools_records_retry_exception():
 def test_results():
     f = NamedTemporaryFile()
     results = Results("my suite", f.name)
-    results.register_result({"id": "foo", "status": "success"})
+    results.register_result({"id": "foo", "has_data": True, "data": {"status": "success"}})
     results.write()
     message = results.info_message()
 
@@ -173,14 +180,14 @@ def test_results():
         report_obj = json.load(f)
     assert "tests" in report_obj
     assert len(report_obj["tests"]) == 1
-    assert report_obj["results"]["total"] == 1
+    assert report_obj["results"]["total"] == 1, report_obj["results"]
     assert report_obj["results"]["errors"] == 0
     assert report_obj["results"]["skips"] == 0
 
     assert "Passed tool tests (1)" in message
     assert "Skipped tool tests (0)" in message
 
-    results.register_result({"id": "bar", "status": "skip"})
+    results.register_result({"id": "bar", "has_data": True, "data": {"status": "skip"}})
     results.write()
     message = results.info_message()
 
@@ -199,6 +206,15 @@ def test_build_references():
 
     test_references = build_case_references(interactor, 'cat1', tool_version="*")
     assert len(test_references) == 6
+
+    test_references = build_case_references(interactor, 'cat1', tool_version="*", page_size=3, page_number=1)
+    assert len(test_references) == 3
+
+    test_references = build_case_references(interactor, 'cat1', tool_version="*", page_size=3, page_number=2)
+    assert len(test_references) == 0
+
+    test_references = build_case_references(interactor, 'cat1', tool_version="*", page_size=3, page_number=3)
+    assert len(test_references) == 0
 
     test_references = build_case_references(interactor, 'cat1', tool_version=None)
     assert len(test_references) == 4

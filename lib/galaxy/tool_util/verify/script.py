@@ -57,15 +57,20 @@ class Results:
         n_passed, n_failures, n_skips = 0, 0, 0
         n_errors = len([e for e in self.test_exceptions if not e.was_recorded])
         for test in tests:
-            status = test['status']
-            if status == "success":
-                n_passed += 1
-            elif status == "error":
-                n_errors += 1
-            elif status == "skip":
-                n_skips += 1
-            elif status == "failure":
-                n_failures += 1
+            has_data = test.get('has_data', False)
+            if has_data:
+                test_data = test.get("data", {})
+                if 'status' not in test_data:
+                    raise Exception(f"Test result data {test_data} doesn't contain a status key.")
+                status = test_data['status']
+                if status == "success":
+                    n_passed += 1
+                elif status == "error":
+                    n_errors += 1
+                elif status == "skip":
+                    n_skips += 1
+                elif status == "failure":
+                    n_failures += 1
         report_obj = {
             'version': '0.1',
             'suitename': self.suitename,
@@ -124,7 +129,7 @@ class Results:
         return self._tests_with_status('failure')
 
     def _tests_with_status(self, status):
-        return [t for t in self.test_results if t.get("status") == status]
+        return [t for t in self.test_results if t.get("data", {}).get("status") == status]
 
 
 def test_tools(
@@ -248,7 +253,14 @@ def _test_tool(
     executor.submit(run_test)
 
 
-def build_case_references(galaxy_interactor, tool_id=ALL_TOOLS, tool_version=LATEST_VERSION, test_index=ALL_TESTS):
+def build_case_references(
+    galaxy_interactor,
+    tool_id=ALL_TOOLS,
+    tool_version=LATEST_VERSION,
+    test_index=ALL_TESTS,
+    page_size=0,
+    page_number=0
+):
     test_references = []
     if tool_id == ALL_TOOLS:
         tests_summary = galaxy_interactor.get_tests_summary()
@@ -266,6 +278,10 @@ def build_case_references(galaxy_interactor, tool_id=ALL_TOOLS, tool_version=LAT
             if test_index == ALL_TESTS or i == test_index:
                 test_reference = TestReference(tool_id, this_tool_version, this_test_index)
                 test_references.append(test_reference)
+    if page_size > 0:
+        slice_start = page_size * page_number
+        slice_end = page_size * (page_number + 1)
+        test_references = test_references[slice_start:slice_end]
     return test_references
 
 
@@ -307,6 +323,8 @@ def main(argv=None):
         tool_id=tool_id,
         tool_version=tool_version,
         test_index=args.test_index,
+        page_size=args.page_size,
+        page_number=args.page_number,
     )
     results = Results(args.suite_name, output_json_path, append=args.append)
     verify_kwds = dict(
@@ -348,6 +366,8 @@ def _arg_parser():
     parser.add_argument('--history-per-test-case', dest="history_per_test_case", action="store_true", help="Create new history per test case.")
     parser.add_argument('--no-history-cleanup', default=False, action="store_true", help="Perserve histories created for testing.")
     parser.add_argument('--retries', default=0, type=int, help="Retry failed tests.")
+    parser.add_argument('--page-size', default=0, type=int, help="If positive, use pagination and just run one 'page' to tool tests.")
+    parser.add_argument('--page-number', default=0, type=int, help="If page size is used, run this 'page' of tests - starts with 0.")
     return parser
 
 
