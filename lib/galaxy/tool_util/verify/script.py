@@ -57,15 +57,20 @@ class Results:
         n_passed, n_failures, n_skips = 0, 0, 0
         n_errors = len([e for e in self.test_exceptions if not e.was_recorded])
         for test in tests:
-            status = test['status']
-            if status == "success":
-                n_passed += 1
-            elif status == "error":
-                n_errors += 1
-            elif status == "skip":
-                n_skips += 1
-            elif status == "failure":
-                n_failures += 1
+            has_data = test.get('has_data', False)
+            if has_data:
+                test_data = test.get("data", {})
+                if 'status' not in test_data:
+                    raise Exception(f"Test result data {test_data} doesn't contain a status key.")
+                status = test_data['status']
+                if status == "success":
+                    n_passed += 1
+                elif status == "error":
+                    n_errors += 1
+                elif status == "skip":
+                    n_skips += 1
+                elif status == "failure":
+                    n_failures += 1
         report_obj = {
             'version': '0.1',
             'suitename': self.suitename,
@@ -124,7 +129,7 @@ class Results:
         return self._tests_with_status('failure')
 
     def _tests_with_status(self, status):
-        return [t for t in self.test_results if t.get("status") == status]
+        return [t for t in self.test_results if t.get("data", {}).get("status") == status]
 
 
 def test_tools(

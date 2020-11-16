@@ -172,7 +172,7 @@ def test_test_tools_records_retry_exception():
 def test_results():
     f = NamedTemporaryFile()
     results = Results("my suite", f.name)
-    results.register_result({"id": "foo", "status": "success"})
+    results.register_result({"id": "foo", "has_data": True, "data": {"status": "success"}})
     results.write()
     message = results.info_message()
 
@@ -180,14 +180,14 @@ def test_results():
         report_obj = json.load(f)
     assert "tests" in report_obj
     assert len(report_obj["tests"]) == 1
-    assert report_obj["results"]["total"] == 1
+    assert report_obj["results"]["total"] == 1, report_obj["results"]
     assert report_obj["results"]["errors"] == 0
     assert report_obj["results"]["skips"] == 0
 
     assert "Passed tool tests (1)" in message
     assert "Skipped tool tests (0)" in message
 
-    results.register_result({"id": "bar", "status": "skip"})
+    results.register_result({"id": "bar", "has_data": True, "data": {"status": "skip"}})
     results.write()
     message = results.info_message()
 
