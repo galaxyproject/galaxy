@@ -1135,8 +1135,6 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
                     }
             rval['outputs'] = output_dict
 
-            rval['remappable'] = self.remappable()
-
         return rval
 
     def set_final_state(self, final_state):
