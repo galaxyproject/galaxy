@@ -938,7 +938,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
         decoded_workflow_invocation_id = self.decode_id(invocation_id)
-        workflow_invocation = self.workflow_manager.get_invocation(trans, decoded_workflow_invocation_id)
+        workflow_invocation = self.workflow_manager.get_invocation(trans, decoded_workflow_invocation_id, eager=True)
         if workflow_invocation:
             step_details = util.string_as_bool(kwd.get('step_details', 'False'))
             legacy_job_state = util.string_as_bool(kwd.get('legacy_job_state', 'False'))

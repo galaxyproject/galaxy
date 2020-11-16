@@ -329,6 +329,31 @@ class LibrariesApiTestCase(ApiTestCase, TestsDatasets):
     def test_ldda_collection_import_to_history_hide_source(self):
         self._import_to_history(visible=False)
 
+    def test_import_paired_collection(self):
+        ld = self._create_dataset_in_folder_in_library("ForHistoryImport").json()
+        history_id = self.dataset_populator.new_history()
+        url = "histories/%s/contents" % history_id
+        collection_name = 'Paired-end data (from library)'
+        payload = {
+            'name': collection_name,
+            'collection_type': 'list:paired',
+            "type": "dataset_collection",
+            'element_identifiers': json.dumps([
+                {
+                    'src': 'new_collection',
+                    'name': 'pair1',
+                    'collection_type': 'paired',
+                    'element_identifiers': [{'name': 'forward', 'src': 'ldda', 'id': ld['id']},
+                                            {'name': 'reverse', 'src': 'ldda', 'id': ld['id']}]
+                }
+            ])
+        }
+        new_collection = self._post(url, payload).json()
+        assert new_collection['name'] == collection_name
+        pair = new_collection['elements'][0]
+        assert pair['element_identifier'] == 'pair1'
+        assert pair['object']['elements'][0]['object']['history_id'] == history_id
+
     def _import_to_history(self, visible=True):
         ld = self._create_dataset_in_folder_in_library("ForHistoryImport").json()
         history_id = self.dataset_populator.new_history()
