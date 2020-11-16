@@ -41,7 +41,7 @@ cloudauthz==0.6.0
 cloudbridge==2.0.0
 cmd2==0.8.9
 coloredlogs==14.0
-cryptography==2.9.2
+cryptography==3.2.1
 cwltool==1.0.20191225192155
 debtcollector==1.22.0
 decorator==4.4.2
