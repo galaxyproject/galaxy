@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div id="path-bar" />
+        <div v-if="pathBar" id="path-bar" />
 
         <div class="form-inline d-flex align-items-center mb-2">
             <a class="mr-1 btn btn-secondary" :href="getHomeUrl" data-toggle="tooltip" title="Go to first page">
@@ -225,15 +225,17 @@ export default {
         // logic from legacy code
         this.fetchExtAndGenomes();
     },
-    mounted() {
-        if (this.metadata.full_path)
-            new mod_path_bar.PathBar({
-                full_path: this.metadata.full_path,
-                id: this.folder_id,
-                parent_library_id: this.metadata.parent_library_id,
-            });
-    },
     computed: {
+        //reference https://stackoverflow.com/a/49579149/4870846
+        pathBar: function () {
+            if (this.metadata.full_path) {
+                this.$nextTick(function () {
+                    this.initPathBar()
+                });
+                return true;
+            } else
+                return false;
+        },
         getHomeUrl: () => {
             return `${getAppRoot()}library/list`;
         },
@@ -252,6 +254,13 @@ export default {
         },
     },
     methods: {
+        initPathBar: function () {
+            new mod_path_bar.PathBar({
+                full_path: this.metadata.full_path,
+                id: this.folder_id,
+                parent_library_id: this.metadata.parent_library_id,
+            });
+        },
         updateSearch: function (value) {
             this.$emit("updateSearch", value);
         },
