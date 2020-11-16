@@ -230,11 +230,10 @@ export default {
         pathBar: function () {
             if (this.metadata.full_path) {
                 this.$nextTick(function () {
-                    this.initPathBar()
+                    this.initPathBar();
                 });
                 return true;
-            } else
-                return false;
+            } else return false;
         },
         getHomeUrl: () => {
             return `${getAppRoot()}library/list`;
