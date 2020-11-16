@@ -69,7 +69,7 @@ class TestsTools:
     def _run_cat(self, history_id, inputs, assert_ok=False, **kwargs):
         return self._run('cat', history_id, inputs, assert_ok=assert_ok, **kwargs)
 
-    def _run(self, tool_id=None, history_id=None, inputs=None, tool_uuid=None, assert_ok=False, tool_version=None, use_cached_job=False, wait_for_job=False):
+    def _run(self, tool_id=None, history_id=None, inputs=None, tool_uuid=None, assert_ok=False, tool_version=None, use_cached_job=False, wait_for_job=False, legacy_config_form_payload=True):
         if inputs is None:
             inputs = {}
         if tool_id is None:
@@ -78,6 +78,7 @@ class TestsTools:
             tool_id=tool_id,
             inputs=inputs,
             history_id=history_id,
+            legacy_config_form_payload=legacy_config_form_payload,
         )
         if tool_uuid:
             payload['tool_uuid'] = tool_uuid
@@ -1591,12 +1592,37 @@ class ToolsTestCase(ApiTestCase, TestsTools):
 
     @skip_without_tool("identifier_in_conditional")
     @uses_test_history(require_new=False)
+    def test_identifier_map_over_multiple_input_in_conditional_new_payload_form(self, history_id):
+        hdca_id = self._build_pair(history_id, ["123", "456"])
+        inputs = {
+            "outer_cond": {
+                'multi_input': True,
+                '__current_case__': 0,
+                "input1": {
+                    'id': hdca_id, 'src': 'hdca'
+                },
+            },
+        }
+        create_response = self._run("identifier_in_conditional", history_id, inputs, legacy_config_form_payload=False)
+        self._assert_status_code_is(create_response, 200)
+        create = create_response.json()
+        outputs = create['outputs']
+        jobs = create['jobs']
+        implicit_collections = create['implicit_collections']
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(len(outputs), 1)
+        self.assertEqual(len(implicit_collections), 0)
+        output1 = outputs[0]
+        output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
+        self.assertEqual(output1_content.strip(), "forward\nreverse")
+
+    @skip_without_tool("identifier_in_conditional")
+    @uses_test_history(require_new=False)
     def test_identifier_map_over_input_in_conditional(self, history_id):
         hdca_id = self._build_pair(history_id, ["123", "456"])
         inputs = {
             "outer_cond|input1": {'batch': True, 'values': [{'src': 'hdca', 'id': hdca_id}]},
             "outer_cond|multi_input": False,
-
         }
         create_response = self._run("identifier_in_conditional", history_id, inputs)
         self._assert_status_code_is(create_response, 200)

@@ -466,6 +466,9 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         """
         POST /api/tools
         Execute tool with a given parameter payload
+
+        :param legacy_config_form_payload: whether the payload is specified in the legacy format, i.e. conditionals and repeats are represented with the '|' symbol (default True).
+        :type legacy_config_form_payload:  bool
         """
         tool_id = payload.get("tool_id")
         tool_uuid = payload.get("tool_uuid")
@@ -515,11 +518,11 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         submitted_inputs = payload.get('inputs', {})
         if not isinstance(submitted_inputs, dict):
             raise exceptions.RequestParameterInvalidException("inputs invalid %s" % submitted_inputs)
-        try:
+        if payload.get('legacy_config_form_payload', True) not in ['False', False]:
+            inputs = submitted_inputs
+        else:
             inputs = {}
             params_to_incoming(inputs, tool.inputs, submitted_inputs, tool.app)
-        except KeyError:
-            inputs = submitted_inputs
 
         # Find files coming in as multipart file data and add to inputs.
         for k, v in payload.items():
