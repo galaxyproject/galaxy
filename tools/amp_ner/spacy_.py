@@ -16,13 +16,12 @@ from speech_to_text import SpeechToText, SpeechToTextMedia, SpeechToTextResult, 
 
 
 def main():
-    (input_file, json_file) = sys.argv[1:3]
-
+    (input_file, json_file, csv_file) = sys.argv[1:4]
     # Read a list of categories to ignore when outputting entity list
     ignore_cats_list = list()
-    if len(sys.argv) > 3:
-        print("Categories to ignore:" + sys.argv[3])
-        ignore_cats_list = split_ignore_list(sys.argv[3])
+    if len(sys.argv) > 4:
+        print("Categories to ignore:" + sys.argv[4])
+        ignore_cats_list = split_ignore_list(sys.argv[4])
 
     # Load English tokenizer, tagger, parser, NER and word vectors
     nlp = spacy.load("en_core_web_lg")
@@ -38,13 +37,14 @@ def main():
         ner.media = EntityExtractionMedia(len(stt.results.transcript), input_file)
         # Write the json file
         write_json_file(ner, json_file)
+        ner.toCsv(csv_file)
         exit(0)
 
     doc = nlp(stt.results.transcript)
 
     # Add the media information
     ner.media = EntityExtractionMedia(len(stt.results.transcript), input_file)
-    
+
     # Variables for filling time offsets based on speech to text
     lastPos = 0  # Iterator to keep track of location in STT word
     sttWords = len(stt.results.words) # Number of STT words
@@ -75,9 +75,11 @@ def main():
         # Ignore certain categories
         if clean_text(entity.label_) not in ignore_cats_list:
             ner.addEntity(entity.label_, text, None, None, None, None, start, None)   #AMP-636 removed startOffset=endOffset=end=None
-    
+
     # Write the json file
     write_json_file(ner, json_file)
+    # Write the csv file
+    ner.toCsv(csv_file)
 
 # Standardize ignore list text
 def clean_text(text):
@@ -109,6 +111,6 @@ def write_json_file(obj, output_file):
         json.dump(obj, outfile, default=lambda x: x.__dict__)
 
 
-        
+
 if __name__ == "__main__":
     main()

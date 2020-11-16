@@ -1,3 +1,5 @@
+import csv
+
 class EntityExtraction:
 	def __init__(self, media=None, entities=None):
 		if media is None:
@@ -14,6 +16,22 @@ class EntityExtraction:
 		if scoreType is not None and scoreValue is not None:
 			entity.score = EntityExtractionEntityScore(scoreType, scoreValue)
 		self.entities.append(entity)
+
+	def toCsv(self, outputFile):
+		# Write as csv
+		with open(outputFile, mode='w') as csv_file:
+			csv_writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+			csv_writer.writerow(['Type', 'Text', 'Start', 'Score Type', 'Score Value'])
+			for e in self.entities:
+				if e.score is not None:
+					csv_writer.writerow([e.type, e.text, e.start, e.score.type, e.score.scoreValue])
+				else:
+					csv_writer.writerow([e.type, e.text, e.start, '', ''])
+
+	def toCsvFromDict(self, json_data: dict, outputFile):
+		ner = EntityExtraction.from_json(json_data)
+		# Write as csv
+		return toCsv(outputFile)
 
 	@classmethod
 	def from_json(cls, json_data: dict):
@@ -73,5 +91,3 @@ class EntityExtractionEntity:
 		if 'end' in json_data.keys():
 			end = json_data['end']
 		return cls(json_data['type'], json_data['text'], beginOffset, endOffset, start, end)
-
-	

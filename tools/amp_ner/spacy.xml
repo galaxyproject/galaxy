@@ -5,7 +5,7 @@
     <requirement type="package" version="8.30">coreutils</requirement>
   </requirements>
   <command detect_errors="exit_code">
-    '$__tool_directory__/spacy_.py' '$amp_transcript' '$amp_entities' '$ignore_categories'
+    '$__tool_directory__/spacy_.py' '$amp_transcript' '$amp_entities' '$amp_entities_csv' '$ignore_categories'
   </command>
   <inputs>
     <param name="amp_transcript" type="data" format="transcript" label="AMP Transcript" help="AMP Transcript file from speech-to-text with timestamp adjusted"/>
@@ -16,6 +16,7 @@
   </inputs>
   <outputs>
     <data name="amp_entities" format="ner" label="AMP Entities Extracted"/>
+    <data name="amp_entities_csv" format="csv" label="AMP Entities Extracted CSV"/>
   </outputs>
   <tests>
   </tests>
