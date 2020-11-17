@@ -6,6 +6,7 @@
             </b-breadcrumb-item>
             <template v-for="path_item in this.metadata.full_path">
                 <b-breadcrumb-item
+                    :key="path_item[0]"
                     :title="isCurrentFolder(path_item[0]) ? `You are in this folder` : `Return to this folder`"
                     :active="isCurrentFolder(path_item[0])"
                     :href="path_item[0]"
