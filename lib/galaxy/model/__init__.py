@@ -1269,8 +1269,8 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
                 elif self.output_dataset_collection_instances:
                     # We'll want to replace this item
                     return 'job_produced_collection_elements'
-            except Exception as exception:
-                log.error(str(exception))
+            except Exception:
+                log.error(f"Error trying to determine if job {{self.id}} is remappable")
         return False
 
 

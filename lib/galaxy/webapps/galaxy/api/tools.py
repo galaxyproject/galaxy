@@ -517,7 +517,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         # Set up inputs.
         submitted_inputs = payload.get('inputs', {})
         if not isinstance(submitted_inputs, dict):
-            raise exceptions.RequestParameterInvalidException("inputs invalid %s" % submitted_inputs)
+            raise exceptions.RequestParameterInvalidException(f"inputs invalid {{submitted_inputs}}")
         if payload.get('legacy_config_form_payload', True) not in ['False', False]:
             inputs = submitted_inputs
         else:
