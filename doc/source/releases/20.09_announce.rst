@@ -25,7 +25,7 @@ Highlights
 **Simplified workflow submission form**
   Galaxy now presents a simpler and cleaner interface for submitting workflows
   that focuses on the parameters to set and datasets to choose.
-  (`Pull Request 9151`).
+  (`Pull Request 9151`_).
 
 **Accelerate batch job creation and workflow step scheduling**
   Galaxy now batches database interactions for the creation of batch jobs.

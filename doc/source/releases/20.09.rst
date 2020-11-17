@@ -9,7 +9,6 @@
 Enhancements
 -------------------------------
 
-.. major_feature
 * Simplified Workflow Run Form
   `Pull Request 9151`_
 * Allow uploading directly from the tool form
@@ -33,9 +32,6 @@ Enhancements
 * Improve workflow layout algorithm
   (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 10045`_
-
-.. feature
-
 * Added documentation for debugging Galaxy and unit/integration tests
   (thanks to `@kxk302 <https://github.com/kxk302>`__).
   `Pull Request 9664`_
@@ -48,7 +44,7 @@ Enhancements
 * Add allowed_cilogon list functionality (idphint short list)
   (thanks to `@juleengraham <https://github.com/juleengraham>`__).
   `Pull Request 9862`_
-* Add lastdb datatype for last tool (PR `#2749 <https://github.com/galaxyproject/galaxy/issues/2749>`__)
+* Add lastdb datatype for last tool
   (thanks to `@RomainDallet <https://github.com/RomainDallet>`__).
   `Pull Request 9872`_
 * Adding user id to key so savedRules are specific for users
@@ -65,14 +61,10 @@ Enhancements
   `Pull Request 10182`_
 * Add missing database indexes
   `Pull Request 10385`_
-.. enhancement_tag_viz
-
 * Add build artifact destination for plugins
   `Pull Request 9754`_
 * Plugin watchBuilding, and fixes for several older visualization builds
   `Pull Request 10287`_
-.. enhancement_tag_datatypes
-
 * Add VCF_BGZIP to VCF converter
   (thanks to `@almahmoud <https://github.com/almahmoud>`__).
   `Pull Request 7926`_
@@ -85,8 +77,6 @@ Enhancements
 * Add "tgz" datatype to config sample file for toolfactory and any other tools generating gzipped tar files
   (thanks to `@fubar2 <https://github.com/fubar2>`__).
   `Pull Request 10080`_
-.. enhancement_tag_tools
-
 * Citations overhaul
   `Pull Request 9757`_
 * Fix and simplify built-in trim tool
@@ -97,8 +87,6 @@ Enhancements
   `Pull Request 10154`_
 * Toolbox refactoring, styling, and a couple bugfixes
   `Pull Request 10170`_
-.. enhancement_tag_workflows
-
 * Support for BioCompute Object Export
   (thanks to `@biocompute-objects <https://github.com/biocompute-objects>`__).
   `Pull Request 9077`_
@@ -122,8 +110,6 @@ Enhancements
   `Pull Request 10215`_
 * Allow execution of workflows for certain tool updates
   `Pull Request 10569`_
-.. enhancement_tag_ui
-
 * Early 20.09 full client dependency update.
   `Pull Request 9739`_
 * Improve mocha test output for rule DSL specification tests.
@@ -135,8 +121,6 @@ Enhancements
   `Pull Request 10078`_
 * Infrastructure for writing to pluggable Galaxy file sources.
   `Pull Request 10152`_
-.. enhancement_tag_jobs
-
 * Add support for cleaning up kubernetes jobs after a specified number of seconds since finish
   (thanks to `@nuwang <https://github.com/nuwang>`__).
   `Pull Request 8122`_
@@ -170,8 +154,6 @@ Enhancements
 * Improve kubernetes job selection
   (thanks to `@nuwang <https://github.com/nuwang>`__).
   `Pull Request 10407`_
-.. enhancement_tag_admin
-
 * It docs additional info
   (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
   `Pull Request 9650`_
@@ -180,8 +162,9 @@ Enhancements
   `Pull Request 9775`_
 * Improve support for readonly tool caches
   `Pull Request 10411`_
-.. enhancement
-
+* Dynamic options and metadata filter fixes
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 8599`_
 * assign discovered extension, dbkey and designation for assign_primary=true
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 9127`_
@@ -393,8 +376,9 @@ Enhancements
   `Pull Request 10578`_
 * Mark test cases that use data tables or loc files
   `Pull Request 10602`_
-.. small_enhancement
-
+* Fix saving rule builder rules when uploading in rule editing view
+  (thanks to `@assuntad23 <https://github.com/assuntad23>`__).
+  `Pull Request 10637`_
 * Porting Masthead to Vue.js
   (thanks to `@inkuzmin <https://github.com/inkuzmin>`__).
   `Pull Request 9071`_
@@ -453,17 +437,10 @@ Enhancements
 Fixes
 -------------------------------
 
-.. major_bug
-
-
-.. bug_tag_viz
-
 * Hyphyvision visualization dependency fix
   `Pull Request 10011`_
 * Bugfix: include an index link in visualization base
   `Pull Request 10391`_
-.. bug_tag_datatypes
-
 * Use compression_utils to safely peek in compressed datasets
   (thanks to `@pvanheus <https://github.com/pvanheus>`__).
   `Pull Request 9990`_
@@ -487,8 +464,9 @@ Fixes
 * AnnData Peek Fix
   (thanks to `@mtekman <https://github.com/mtekman>`__).
   `Pull Request 10555`_
-.. bug_tag_tools
-
+* Fix Anndata index access, use numpy-safe JSON encoder
+  (thanks to `@mtekman <https://github.com/mtekman>`__).
+  `Pull Request 10640`_
 * Allow submission of tools with unset hidden parameters
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 9656`_
@@ -499,11 +477,9 @@ Fixes
 * Fix filtering.py failing all expressions
   (thanks to `@almahmoud <https://github.com/almahmoud>`__).
   `Pull Request 10266`_
-.. bug_tag_workflows
-
 * Rev gxformat2 for a bunch of bug fixes.
   `Pull Request 10028`_
-* Fix running workflows with parameters restricted on connections...
+* Fix running workflows with parameters restricted on connections
   `Pull Request 10048`_
 * Count all terminal jobs when rendering job complete string
   `Pull Request 10089`_
@@ -536,15 +512,15 @@ Fixes
   `Pull Request 10616`_
 * Fix Workflow node input terminal not updating
   `Pull Request 10626`_
-.. bug_tag_ui
-
+* Rework pollUntil* to avoid building up queries
+  `Pull Request 10710`_
+* Speed up invocation serialization
+  `Pull Request 10711`_
 * Tool recommendation node bug
   (thanks to `@juleengraham <https://github.com/juleengraham>`__).
   `Pull Request 9836`_
 * Fix history sharing link (ref. `#10040 <https://github.com/galaxyproject/galaxy/issues/10040>`__)
   `Pull Request 10112`_
-.. bug_tag_jobs
-
 * fix history import and export for real user setups
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 9001`_
@@ -596,15 +572,11 @@ Fixes
   `Pull Request 10572`_
 * Fix IntegrityError when flushing DC/DCE relationship
   `Pull Request 10606`_
-.. bug_tag_admin
-
 * Fix admin data_types_list bug
   (thanks to `@cat-bro <https://github.com/cat-bro>`__).
   `Pull Request 10148`_
 * Restore welcome html link for non-uwsgi setups
   `Pull Request 10623`_
-.. bug
-
 * Python37 lock fix
   `Pull Request 9642`_
 * Fix history panel collapse
@@ -849,6 +821,39 @@ Fixes
   `Pull Request 10582`_
 * Fix file_path bug; change default assignment of file_path and id/uuid
   `Pull Request 10617`_
+* Fix masthead items disappearing on small screens
+  `Pull Request 10641`_
+* Fix hide history panel glitch
+  `Pull Request 10644`_
+* Fix cache key for lint CI workflow
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 10649`_
+* Fix creating hdas without history when creating collection from library
+  `Pull Request 10654`_
+* Backport: Fix saving rule builder rules when uploading in rule editing view
+  `Pull Request 10661`_
+* Fix border between list items
+  `Pull Request 10675`_
+* Fix UTC Date date change
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 10678`_
+* Several fixes for multipanel interface
+  `Pull Request 10680`_
+* Fix element_is_set for MetadataWrapper
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 10691`_
+* Bugfix for tool search filtering for tools outside sections.
+  `Pull Request 10693`_
+* Bump cryptography dependency to 3.2.1
+  `Pull Request 10704`_
+* Add 'Constant' to allowed node types.
+  (thanks to `@brinkmanlab <https://github.com/brinkmanlab>`__).
+  `Pull Request 10709`_
+* Pathbar race bugfix
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 10724`_
+* Use newer setup-miniconda action
+  `Pull Request 10731`_
 
 .. include:: 20.09_prs.rst
 
