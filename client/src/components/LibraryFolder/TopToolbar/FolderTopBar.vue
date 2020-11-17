@@ -1,6 +1,10 @@
 <template>
     <div>
-        <div v-if="pathBar" id="path-bar" />
+        <PathBar
+            :full_path="this.metadata.full_path"
+            :id="this.folder_id"
+            :parent_library_id="this.metadata.parent_library_id"
+        />
 
         <div class="form-inline d-flex align-items-center mb-2">
             <a class="mr-1 btn btn-secondary" :href="getHomeUrl" data-toggle="tooltip" title="Go to first page">
@@ -151,10 +155,10 @@ import BootstrapVue from "bootstrap-vue";
 import { getGalaxyInstance } from "app";
 import Vue from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import PathBar from "./PathBar/PathBar";
 import { showLocInfo } from "./details-modal";
 import { deleteSelectedItems } from "./delete-selected";
 import { initTopBarIcons } from "components/LibraryFolder/icons";
-import mod_path_bar from "components/LibraryFolder/path-bar";
 import mod_import_dataset from "./import-to-history/import-dataset";
 import mod_import_collection from "./import-to-history/import-collection";
 import mod_add_datasets from "./add-datasets";
@@ -193,6 +197,7 @@ export default {
     },
     components: {
         FontAwesomeIcon,
+        PathBar,
     },
     data() {
         return {
@@ -226,15 +231,6 @@ export default {
         this.fetchExtAndGenomes();
     },
     computed: {
-        //reference https://stackoverflow.com/a/49579149/4870846
-        pathBar: function () {
-            if (this.metadata.full_path) {
-                this.$nextTick(function () {
-                    this.initPathBar();
-                });
-                return true;
-            } else return false;
-        },
         getHomeUrl: () => {
             return `${getAppRoot()}library/list`;
         },
@@ -253,13 +249,6 @@ export default {
         },
     },
     methods: {
-        initPathBar: function () {
-            new mod_path_bar.PathBar({
-                full_path: this.metadata.full_path,
-                id: this.folder_id,
-                parent_library_id: this.metadata.parent_library_id,
-            });
-        },
         updateSearch: function (value) {
             this.$emit("updateSearch", value);
         },
