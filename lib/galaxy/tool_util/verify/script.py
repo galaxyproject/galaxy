@@ -3,8 +3,10 @@
 import argparse
 import datetime as dt
 import json
+import logging
 import os
 import sys
+import tempfile
 from collections import namedtuple
 from concurrent.futures import thread, ThreadPoolExecutor
 
@@ -51,6 +53,20 @@ class Results:
 
     def register_exception(self, test_exception):
         self.test_exceptions.append(test_exception)
+
+    def already_successful(self, test_reference):
+        test_id = _test_id_for_reference(test_reference)
+        for test_result in self.test_results:
+            if test_result.get('id') != test_id:
+                continue
+
+            has_data = test_result.get('has_data', False)
+            if has_data:
+                test_data = test_result.get("data", {})
+                if 'status' in test_data and test_data['status'] == 'success':
+                    return True
+
+        return False
 
     def write(self):
         tests = sorted(self.test_results, key=lambda el: el['id'])
@@ -187,6 +203,22 @@ def test_tools(
                 galaxy_interactor.delete_history(test_history)
 
 
+def _test_id_for_reference(test_reference):
+    tool_id = test_reference.tool_id
+    tool_version = test_reference.tool_version
+    test_index = test_reference.test_index
+
+    if tool_version and tool_id.endswith("/" + tool_version):
+        tool_id = tool_id[:-len("/" + tool_version)]
+
+    label_base = tool_id
+    if tool_version:
+        label_base += "/" + str(tool_version)
+
+    test_id = label_base + "-" + str(test_index)
+    return test_id
+
+
 def _test_tool(
     executor,
     test_reference,
@@ -204,11 +236,7 @@ def _test_tool(
     if tool_version and tool_id.endswith("/" + tool_version):
         tool_id = tool_id[:-len("/" + tool_version)]
 
-    label_base = tool_id
-    if tool_version:
-        label_base += "/" + str(tool_version)
-
-    test_id = label_base + "-" + str(test_index)
+    test_id = _test_id_for_reference(test_reference)
 
     def run_test():
         run_retries = retries
@@ -259,7 +287,9 @@ def build_case_references(
     tool_version=LATEST_VERSION,
     test_index=ALL_TESTS,
     page_size=0,
-    page_number=0
+    page_number=0,
+    check_against=None,
+    log=None,
 ):
     test_references = []
     if tool_id == ALL_TOOLS:
@@ -278,10 +308,23 @@ def build_case_references(
             if test_index == ALL_TESTS or i == test_index:
                 test_reference = TestReference(tool_id, this_tool_version, this_test_index)
                 test_references.append(test_reference)
+
+    if check_against:
+        filtered_test_references = []
+        for test_reference in test_references:
+            if check_against.already_successful(test_reference):
+                if log is not None:
+                    log.debug(f"Found successful test for {test_reference}, skipping")
+                continue
+            filtered_test_references.append(test_reference)
+        log.info(f"Skipping {len(test_references)-len(filtered_test_references)} out of {len(test_references)} tests.")
+        test_references = filtered_test_references
+
     if page_size > 0:
         slice_start = page_size * page_number
         slice_end = page_size * (page_number + 1)
         test_references = test_references[slice_start:slice_end]
+
     return test_references
 
 
@@ -290,8 +333,10 @@ def main(argv=None):
         argv = sys.argv[1:]
 
     args = _arg_parser().parse_args(argv)
+    log = setup_global_logger(__name__, verbose=args.verbose)
     client_test_config_path = args.client_test_config
     if client_test_config_path is not None:
+        log.debug(f"Reading client config path {client_test_config_path}")
         with open(client_test_config_path, "r") as f:
             client_test_config = yaml.full_load(f)
     else:
@@ -318,6 +363,8 @@ def main(argv=None):
     verbose = args.verbose
 
     galaxy_interactor = GalaxyInteractorApi(**galaxy_interactor_kwds)
+    results = Results(args.suite_name, output_json_path, append=args.append)
+    check_against = None if not args.skip_successful else results
     test_references = build_case_references(
         galaxy_interactor,
         tool_id=tool_id,
@@ -325,8 +372,10 @@ def main(argv=None):
         test_index=args.test_index,
         page_size=args.page_size,
         page_number=args.page_number,
+        check_against=check_against,
+        log=log,
     )
-    results = Results(args.suite_name, output_json_path, append=args.append)
+    log.debug(f"Built {len(test_references)} test references to executed.")
     verify_kwds = dict(
         client_test_config=tools_client_test_config,
         force_path_paste=args.force_path_paste,
@@ -337,12 +386,39 @@ def main(argv=None):
         galaxy_interactor,
         test_references,
         results,
-        log=None,
+        log=log,
+        parallel_tests=args.parallel_tests,
+        history_per_test_case=args.history_per_test_case,
+        no_history_cleanup=args.no_history_cleanup,
         verify_kwds=verify_kwds,
     )
     exceptions = results.test_exceptions
     if exceptions:
+        exception = exceptions[0]
+        if hasattr(exception, "exception"):
+            exception = exception.exception
         raise exceptions[0]
+
+
+def setup_global_logger(name, log_file=None, verbose=False):
+    formatter = logging.Formatter('%(asctime)s %(levelname)-5s - %(message)s')
+    console = logging.StreamHandler()
+    console.setFormatter(formatter)
+
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.DEBUG if verbose else logging.INFO)
+    logger.addHandler(console)
+
+    if not log_file:
+        # delete = false is chosen here because it is always nice to have a log file
+        # ready if you need to debug. Not having the "if only I had set a log file"
+        # moment after the fact.
+        temp = tempfile.NamedTemporaryFile(prefix="ephemeris_", delete=False)
+        log_file = temp.name
+    file_handler = logging.FileHandler(log_file)
+    logger.addHandler(file_handler)
+    logger.info("Storing log file in: {0}".format(log_file))
+    return logger
 
 
 def _arg_parser():
@@ -356,6 +432,7 @@ def _arg_parser():
     parser.add_argument('-i', '--test-index', default=ALL_TESTS, type=int, help='Tool Test Index (starting at 0) - by default all tests will run.')
     parser.add_argument('-o', '--output', default=None, help='directory to dump outputs to')
     parser.add_argument('--append', default=False, action="store_true", help="Extend a test record json (created with --output-json) with additional tests.")
+    parser.add_argument('--skip-successful', default=False, action="store_true", help="When used with --append, skip previously run successful tests.")
     parser.add_argument('-j', '--output-json', default=None, help='output metadata json')
     parser.add_argument('--verbose', default=False, action="store_true", help="Verbose logging.")
     parser.add_argument('-c', '--client-test-config', default=None, help="Test config YAML to help with client testing")
@@ -365,6 +442,7 @@ def _arg_parser():
     parser.add_argument('--history-per-suite', dest="history_per_test_case", default=False, action="store_false", help="Create new history per test suite (all tests in same history).")
     parser.add_argument('--history-per-test-case', dest="history_per_test_case", action="store_true", help="Create new history per test case.")
     parser.add_argument('--no-history-cleanup', default=False, action="store_true", help="Perserve histories created for testing.")
+    parser.add_argument('--parallel-tests', default=1, type=int, help="Parallel tests.")
     parser.add_argument('--retries', default=0, type=int, help="Retry failed tests.")
     parser.add_argument('--page-size', default=0, type=int, help="If positive, use pagination and just run one 'page' to tool tests.")
     parser.add_argument('--page-number', default=0, type=int, help="If page size is used, run this 'page' of tests - starts with 0.")
