@@ -46,7 +46,7 @@ For updated tutorials, tools will be highlighted as blue buttons. When clicked, 
 
 Thanks `@pvanheus <https://github.com/pvanheus>`__ for the video of it in action!
 
-Upload Directly from the Tool From
+Upload Directly from the Tool Form
 ----------------------------------
 
 Did you ever start configuring a tool but forgot to upload your datasets first? And had to start over? Now you can upload datasets directly in the tool form thanks to `@jmchilton <https://github.com/jmchilton>`__. `Pull Request 9809`_
