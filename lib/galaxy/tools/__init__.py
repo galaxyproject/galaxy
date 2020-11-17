@@ -2496,7 +2496,7 @@ class ExpressionTool(Tool):
                 dataset_id = src["id"]
                 copy_object = None
                 for input_dataset in inp_data.values():
-                    if input_dataset.id == dataset_id:
+                    if input_dataset and input_dataset.id == dataset_id:
                         copy_object = input_dataset
                         break
                 if copy_object is None:
