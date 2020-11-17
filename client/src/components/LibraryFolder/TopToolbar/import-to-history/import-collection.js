@@ -166,7 +166,8 @@ var ImportCollectionModal = Backbone.View.extend({
             collection_type: collectionType,
             history_id: history_id,
             name: name,
-            hide_source_items: hideSourceItems || false,
+            hide_source_items: hideSourceItems,
+            copy_elements: !hideSourceItems,
             element_identifiers: elementIdentifiers,
         });
         return hdca.save(options);
