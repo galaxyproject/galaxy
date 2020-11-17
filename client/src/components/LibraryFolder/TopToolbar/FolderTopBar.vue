@@ -1,10 +1,18 @@
 <template>
     <div>
-        <PathBar
-            :full_path="this.metadata.full_path"
-            :id="this.folder_id"
-            :parent_library_id="this.metadata.parent_library_id"
-        />
+        <b-breadcrumb>
+            <b-breadcrumb-item title="Return to the list of libraries" :href="getHomeUrl">
+                Libraries
+            </b-breadcrumb-item>
+            <template v-for="path_item in this.metadata.full_path">
+                <b-breadcrumb-item
+                    :title="isCurrentFolder(path_item[0]) ? `You are in this folder` : `Return to this folder`"
+                    :active="isCurrentFolder(path_item[0])"
+                    :href="path_item[0]"
+                    >{{ path_item[1] }}</b-breadcrumb-item
+                >
+            </template>
+        </b-breadcrumb>
 
         <div class="form-inline d-flex align-items-center mb-2">
             <a class="mr-1 btn btn-secondary" :href="getHomeUrl" data-toggle="tooltip" title="Go to first page">
@@ -155,7 +163,6 @@ import BootstrapVue from "bootstrap-vue";
 import { getGalaxyInstance } from "app";
 import Vue from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import PathBar from "./PathBar/PathBar";
 import { showLocInfo } from "./details-modal";
 import { deleteSelectedItems } from "./delete-selected";
 import { initTopBarIcons } from "components/LibraryFolder/icons";
@@ -197,7 +204,6 @@ export default {
     },
     components: {
         FontAwesomeIcon,
-        PathBar,
     },
     data() {
         return {
@@ -311,6 +317,9 @@ export default {
                     selected: checkedItems,
                 });
             }
+        },
+        isCurrentFolder(id) {
+            return this.folder_id === id;
         },
         /*
             Slightly adopted Bootstrap code
