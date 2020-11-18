@@ -90,7 +90,7 @@ class ConditionalDependencies:
                     if 'type' in store.attrib:
                         self.object_stores.append(store.attrib['type'])
             else:
-                with open(object_store_conf_path, "r") as f:
+                with open(object_store_conf_path) as f:
                     job_conf_dict = yaml.safe_load(f)
 
                 def collect_types(from_dict):
@@ -147,7 +147,7 @@ class ConditionalDependencies:
             "file_sources_config_file",
             join(dirname(self.config_file), 'file_sources_conf.yml'))
         if exists(file_sources_conf_yml):
-            with open(file_sources_conf_yml, "r") as f:
+            with open(file_sources_conf_yml) as f:
                 file_sources_conf = yaml.safe_load(f)
         else:
             file_sources_conf = []

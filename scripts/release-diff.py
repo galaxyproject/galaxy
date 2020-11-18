@@ -115,7 +115,7 @@ def load_at_time(path, revision=None):
             ["git", "show", f"{revision}:{path}"], stderr=subprocess.STDOUT
         )
     else:
-        with open(path, "r") as handle:
+        with open(path) as handle:
             return handle.read()
 
 

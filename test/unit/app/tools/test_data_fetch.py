@@ -246,5 +246,5 @@ class ExecuteContext:
     @property
     def galaxy_json(self):
         assert os.path.exists(self.galaxy_json_path)
-        with open(self.galaxy_json_path, "r") as f:
+        with open(self.galaxy_json_path) as f:
             return json.load(f)
