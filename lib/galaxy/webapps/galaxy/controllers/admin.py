@@ -88,6 +88,10 @@ class UserListGrid(grids.Grid):
             else:
                 return 'N'
 
+    class DiskUsageColumn(grids.GridColumn):
+        def get_value(self, trans, grid, user):
+            return user.get_disk_usage(nice_size=True)
+
     # Grid definition
     title = "Users"
     title_id = "users-grid"
@@ -96,23 +100,22 @@ class UserListGrid(grids.Grid):
     columns = [
         EmailColumn("Email",
                     key="email",
-                    model_class=model.User,
                     link=(lambda item: dict(controller="user", action="information", id=item.id, webapp="galaxy")),
                     attach_popup=True,
                     filterable="advanced",
                     target="top"),
         UserNameColumn("User Name",
                        key="username",
-                       model_class=model.User,
                        attach_popup=False,
                        filterable="advanced"),
-        GroupsColumn("Groups", attach_popup=False),
-        RolesColumn("Roles", attach_popup=False),
-        ExternalColumn("External", attach_popup=False),
         LastLoginColumn("Last Login", format=time_ago),
+        DiskUsageColumn("Disk Usage", key="disk_usage", attach_popup=False),
         StatusColumn("Status", attach_popup=False),
         TimeCreatedColumn("Created", attach_popup=False),
         ActivatedColumn("Activated", attach_popup=False),
+        GroupsColumn("Groups", attach_popup=False),
+        RolesColumn("Roles", attach_popup=False),
+        ExternalColumn("External", attach_popup=False),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced"),
         grids.PurgedColumn("Purged", key="purged", visible=False, filterable="advanced")
