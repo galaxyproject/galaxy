@@ -578,15 +578,8 @@ class JobHandlerQueue(Monitors):
 
         if state == JOB_READY:
             state = self.__check_user_jobs(job, job_wrapper)
-        if state == JOB_READY and self.app.config.enable_quotas:
-            quota = self.app.quota_agent.get_quota(job.user)
-            if quota is not None:
-                try:
-                    usage = self.app.quota_agent.get_usage(user=job.user, history=job.history)
-                    if usage > quota:
-                        return JOB_USER_OVER_QUOTA, job_destination
-                except AssertionError:
-                    pass  # No history, should not happen with an anon user
+        if state == JOB_READY and self.app.quota_agent.is_over_quota(self.app, job, job_destination):
+            return JOB_USER_OVER_QUOTA, job_destination
         # Check total walltime limits
         if (state == JOB_READY and
                 "delta" in self.app.job_config.limits.total_walltime):

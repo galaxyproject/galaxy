@@ -1276,6 +1276,13 @@ mapping:
         desc: |
           The URL linked by the "Wiki" link in the "Help" menu.
 
+      quota_url:
+        type: str
+        default: https://galaxyproject.org/support/account-quotas/
+        required: false
+        desc: |
+          The URL linked for quota information in the UI.
+
       support_url:
         type: str
         default: https://galaxyproject.org/support/
