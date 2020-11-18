@@ -90,10 +90,6 @@
                 <b-button @click="setSharing('make_accessible_via_link')"
                     >Make {{ model_class }} Accessible via Link</b-button
                 >
-                <p v-if="hasPossibleMembers" class="mt-2">
-                    Also make all objects within the {{ model_class }} accessible.
-                    <input type="checkbox" v-model="makeMembersPublic" />
-                </p>
                 <div class="toolParamHelp">
                     Generates a web link that you can share with other people so that they can view and import the
                     {{ modelClassLower }}.
@@ -102,10 +98,6 @@
                 <b-button id="make_accessible_and_publish" @click="setSharing('make_accessible_and_publish')"
                     >Make {{ model_class }} Accessible and Publish</b-button
                 >
-                <p v-if="hasPossibleMembers" class="mt-2">
-                    Also make all objects within the {{ model_class }} accessible.
-                    <input type="checkbox" v-model="makeMembersPublic" />
-                </p>
                 <div class="toolParamHelp">
                     Makes the {{ modelClassLower }} accessible via link (see above) and publishes the
                     {{ modelClassLower }} to Galaxy's
@@ -232,9 +224,6 @@ export default {
         slugUrl() {
             return `${getAppRoot()}${this.modelClassLower}/set_slug_async/?id=${this.id}`;
         },
-        hasPossibleMembers() {
-            return ["history"].indexOf(this.modelClassLower) > -1;
-        },
         showDanger() {
             return this.errMsg !== null;
         },
@@ -292,9 +281,6 @@ export default {
                 action: action,
                 user_id: user_id,
             };
-            if (this.hasPossibleMembers) {
-                data.make_members_public = this.makeMembersPublic;
-            }
             axios
                 .post(`${getAppRoot()}api/${this.pluralNameLower}/${this.id}/sharing`, data)
                 .then((response) => {
