@@ -24,6 +24,7 @@ def test_arg_parse():
     assert not args.history_per_test_case
     assert args.page_size == 0
     assert args.page_number == 0
+    assert args.parallel_tests == 1
 
     # skip flags
     args = parser.parse_args(["--skip-with-reference-data", "--history-per-test-case"])
@@ -36,9 +37,10 @@ def test_arg_parse():
     assert not args.history_per_test_case
 
     # pagination
-    args = parser.parse_args(["--page-size", "5", "--page-number", "40"])
+    args = parser.parse_args(["--page-size", "5", "--page-number", "40", "--parallel-tests", "3"])
     assert args.page_size == 5
     assert args.page_number == 40
+    assert args.parallel_tests == 3
 
 
 def test_test_tools():
