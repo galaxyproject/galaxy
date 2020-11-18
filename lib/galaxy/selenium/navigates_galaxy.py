@@ -648,10 +648,10 @@ class NavigatesGalaxy(HasDriver):
         input_type_element = upload.rule_select_input_type.wait_for_visible()
         self.select2_set_value(input_type_element, input_description)
 
-    def upload_rule_set_dataset(self, dataset_description="1:"):
+    def upload_rule_set_dataset(self, row=1):
         upload = self.components.upload
-        rule_dataset_element = upload.rule_dataset_selector.wait_for_visible()
-        self.select2_set_value(rule_dataset_element, dataset_description)
+        upload.rule_dataset_selector.wait_for_visible()
+        upload.rule_dataset_selector_row(rowindex=row).wait_for_and_click()
 
     def rule_builder_set_collection_name(self, name):
         rule_builder = self.components.rule_builder
