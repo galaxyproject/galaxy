@@ -30,7 +30,11 @@ export default {
     },
     methods: {
         onChange() {
-            this.$emit("onChange", this.slugInput);
+            const slugFormatted = this.slugInput
+                .replace(/\s+/g, "-")
+                .replace(/[^a-zA-Z0-9-]/g, "")
+                .toLowerCase();
+            this.$emit("onChange", slugFormatted);
         },
         onCancel() {
             this.$emit("onChange", this.slug);

@@ -3,12 +3,12 @@
         <h2>Share or Publish {{ model_class }} `{{ item.title }}`</h2>
         <b-alert :show="showDanger" variant="danger" dismissible> {{ err_msg }} </b-alert>
         <br />
-        <div v-if="!has_username">
+        <div v-if="!hasUsername">
             <div>
                 To make a {{ modelClassLower }} accessible via link or publish it, you must create a public username:
             </div>
             <form class="form-group" @submit.prevent="setUsername()">
-                <label /> <input class="form-control" type="text" v-model="new_username" />
+                <label /> <input class="form-control" type="text" v-model="newUsername" />
             </form>
             <b-button type="submit" variant="primary" @click="setUsername()">Set Username</b-button>
         </div>
@@ -24,7 +24,7 @@
                         <b-button title="Edit URL" @click="onEdit" v-b-tooltip.hover variant="link" size="sm">
                             <font-awesome-icon icon="edit" />
                         </b-button>
-                        <b-button id="tooltip-clipboard" @click="onCopy" variant="link" size="sm">
+                        <b-button id="tooltip-clipboard" @click="onCopy" @mouseout="onCopyOut" variant="link" size="sm">
                             <font-awesome-icon :icon="['far', 'clipboard']" />
                         </b-button>
                         <b-tooltip target="tooltip-clipboard" triggers="hover">
@@ -94,7 +94,7 @@
                 >
                 <p v-if="hasPossibleMembers" class="mt-2">
                     Also make all objects within the {{ model_class }} accessible.
-                    <input type="checkbox" v-model="make_members_public" id="chk_make_members_public" />
+                    <input type="checkbox" v-model="makeMembersPublic" />
                 </p>
                 <div class="toolParamHelp">
                     Generates a web link that you can share with other people so that they can view and import the
@@ -106,7 +106,7 @@
                 >
                 <p v-if="hasPossibleMembers" class="mt-2">
                     Also make all objects within the {{ model_class }} accessible.
-                    <input type="checkbox" v-model="make_members_public" id="chk_make_members_public" />
+                    <input type="checkbox" v-model="makeMembersPublic" />
                 </p>
                 <div class="toolParamHelp">
                     Makes the {{ modelClassLower }} accessible via link (see above) and publishes the
@@ -119,7 +119,7 @@
             <h3>Share {{ model_class }} with Individual Users</h3>
             <div>
                 <div v-if="item.users_shared_with && item.users_shared_with.length > 0">
-                    <b-table small caption-top :fields="share_fields" :items="item.users_shared_with">
+                    <b-table small caption-top :fields="shareFields" :items="item.users_shared_with">
                         <template v-slot:table-caption>
                             The following users will see this {{ modelClassLower }} in their {{ modelClassLower }} list
                             and will be able to view, import and run it.
@@ -182,9 +182,9 @@ export default {
         const Galaxy = getGalaxyInstance();
         return {
             ready: false,
-            has_username: Galaxy.user.get("username"),
-            new_username: "",
-            err_msg: null,
+            hasUsername: Galaxy.user.get("username"),
+            newUsername: "",
+            errMsg: null,
             item: {
                 title: "title",
                 username_and_slug: "username_and_slug",
@@ -192,8 +192,8 @@ export default {
                 published: false,
                 users_shared_with: [],
             },
-            share_fields: ["email", { key: "id", label: "" }],
-            make_members_public: false,
+            shareFields: ["email", { key: "id", label: "" }],
+            makeMembersPublic: false,
             showUrl: true,
             tooltipClipboard: "Copy URL",
         };
@@ -238,7 +238,7 @@ export default {
             return ["history"].indexOf(this.modelClassLower) > -1;
         },
         showDanger() {
-            return this.err_msg !== null;
+            return this.errMsg !== null;
         },
     },
     created: function () {
@@ -254,15 +254,17 @@ export default {
             document.body.removeChild(clipboard);
             this.tooltipClipboard = "Copied!";
         },
+        onCopyOut() {
+            this.tooltipClipboard = "Copy URL";
+        },
         onEdit() {
             this.showUrl = false;
         },
         onChange(newSlug) {
             this.showUrl = true;
-            this.tooltipClipboard = "Copy URL";
             this.item.username_and_slug = `${this.itemSlugParts[0]}${newSlug}`;
             const requestUrl = `${this.slugUrl}&new_slug=${newSlug}`;
-            axios.get(requestUrl).catch((error) => (this.err_msg = error.response.data.err_msg));
+            axios.get(requestUrl).catch((error) => (this.errMsg = error.response.data.err_msg));
         },
         getModel() {
             this.ready = false;
@@ -272,20 +274,20 @@ export default {
                     this.item = response.data;
                     this.ready = true;
                 })
-                .catch((error) => (this.err_msg = error.response.data.err_msg));
+                .catch((error) => (this.errMsg = error.response.data.err_msg));
         },
         setUsername() {
             const Galaxy = getGalaxyInstance();
             axios
                 .put(`${getAppRoot()}api/users/${Galaxy.user.id}/information/inputs`, {
-                    username: this.new_username || "",
+                    username: this.newUsername || "",
                 })
                 .then((response) => {
-                    this.err_msg = null;
-                    this.has_username = true;
+                    this.errMsg = null;
+                    this.hasUsername = true;
                     this.getModel();
                 })
-                .catch((error) => (this.err_msg = error.response.data.err_msg));
+                .catch((error) => (this.errMsg = error.response.data.err_msg));
         },
         setSharing(action, user_id) {
             const data = {
@@ -293,17 +295,17 @@ export default {
                 user_id: user_id,
             };
             if (this.hasPossibleMembers) {
-                data.make_members_public = this.make_members_public;
+                data.make_members_public = this.makeMembersPublic;
             }
             axios
                 .post(`${getAppRoot()}api/${this.pluralNameLower}/${this.id}/sharing`, data)
                 .then((response) => {
                     Object.assign(this.item, response.data);
                     if (response.data.skipped) {
-                        this.err_msg = "Some of the items within this object were not published due to an error.";
+                        this.errMsg = "Some of the items within this object were not published due to an error.";
                     }
                 })
-                .catch((error) => (this.err_msg = error.response.data.err_msg));
+                .catch((error) => (this.errMsg = error.response.data.err_msg));
         },
     },
 };
