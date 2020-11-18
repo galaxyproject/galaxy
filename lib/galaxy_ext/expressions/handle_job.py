@@ -36,8 +36,10 @@ def run(environment_path=None):
     outputs = raw_inputs["outputs"]
     inputs = raw_inputs.copy()
     del inputs["outputs"]
-
     result = evaluate(None, inputs)
+
+    if '__error_message' in result:
+        raise Exception(result['__error_message'])
     for output in outputs:
         path = output["path"]
         from_expression = output["from_expression"]
