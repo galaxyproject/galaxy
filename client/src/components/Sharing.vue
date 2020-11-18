@@ -21,9 +21,18 @@
                 <div>
                     <p>Anyone can view and import this {{ modelClassLower }} by visiting the following URL:</p>
                     <blockquote>
-                        <font-awesome-icon role="button" icon="edit" title="Edit URL" @click="onEdit" />
-                        <font-awesome-icon role="button" :icon="['far', 'clipboard']" class="ml-1" @click="onCopy" />
-                        <a v-if="showUrl" id="item-url" :href="itemUrl" target="_top" class="ml-2">{{ itemUrl }}</a>
+                        <b-button title="Edit URL" @click="onEdit" v-b-tooltip.hover variant="link" size="sm">
+                            <font-awesome-icon icon="edit" />
+                        </b-button>
+                        <b-button id="tooltip-clipboard" @click="onCopy" variant="link" size="sm">
+                            <font-awesome-icon :icon="['far', 'clipboard']" />
+                        </b-button>
+                        <b-tooltip target="tooltip-clipboard" triggers="hover">
+                            {{ tooltipClipboard }}
+                        </b-tooltip>
+                        <a v-if="showUrl" id="item-url" :href="itemUrl" target="_top" class="ml-2">
+                            {{ itemUrl }}
+                        </a>
                         <span v-else id="item-url-text">
                             {{ itemUrlParts[0] }}<SlugInput class="ml-1" :slug="itemUrlParts[1]" @onChange="onChange" />
                         </span>
@@ -186,6 +195,7 @@ export default {
             share_fields: ["email", { key: "id", label: "" }],
             make_members_public: false,
             showUrl: true,
+            tooltipClipboard: "Copy URL",
         };
     },
     computed: {
@@ -236,18 +246,20 @@ export default {
     },
     methods: {
         onCopy() {
-            const clipboard = document.createElement('input');
+            const clipboard = document.createElement("input");
             document.body.appendChild(clipboard);
             clipboard.value = this.itemUrl;
             clipboard.select();
-            document.execCommand('copy');
+            document.execCommand("copy");
             document.body.removeChild(clipboard);
+            this.tooltipClipboard = "Copied!";
         },
         onEdit() {
             this.showUrl = false;
         },
         onChange(newSlug) {
             this.showUrl = true;
+            this.tooltipClipboard = "Copy URL";
             this.item.username_and_slug = `${this.itemSlugParts[0]}${newSlug}`;
             const requestUrl = `${this.slugUrl}&new_slug=${newSlug}`;
             axios.get(requestUrl).catch((error) => (this.err_msg = error.response.data.err_msg));
