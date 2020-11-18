@@ -68,7 +68,7 @@ import { getAppRoot } from "onload/loadConfig";
 import infiniteScroll from "vue-infinite-scroll";
 import isotope from "vueisotope";
 import axios from "axios";
-import Citations from "components/Citations.vue";
+import Citations from "components/Citation/Citations.vue";
 import { setTimeout } from "timers";
 
 export default {

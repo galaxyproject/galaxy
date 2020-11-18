@@ -15,6 +15,15 @@ TOOL_XML_1 = """
     <xrefs>
         <xref type="bio.tools">bwa</xref>
     </xrefs>
+    <creator>
+        <person
+            givenName="Björn"
+            familyName="Grüning"
+            identifier="http://orcid.org/0000-0002-3079-6586" />
+        <organization
+            url="https://galaxyproject.org/iuc/"
+            name="Galaxy IUC" />
+    </creator>
     <version_command interpreter="python">bwa.py --version</version_command>
     <parallelism method="multi" split_inputs="input1" split_mode="to_size" split_size="1" merge_outputs="out_file1" />
     <command interpreter="python">bwa.py --arg1=42</command>
@@ -386,6 +395,17 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
     def test_recursive_token(self):
         with self.assertRaises(Exception):
             self._get_tool_source(source_contents=TOOL_WITH_RECURSIVE_TOKEN)
+
+    def test_creator(self):
+        creators = self._tool_source.parse_creator()
+        assert len(creators) == 2
+        creator1 = creators[0]
+        assert creator1["class"] == "Person"
+        assert creator1["identifier"] == "http://orcid.org/0000-0002-3079-6586"
+
+        creator2 = creators[1]
+        assert creator2["class"] == "Organization"
+        assert creator2["name"] == "Galaxy IUC"
 
 
 class YamlLoaderTestCase(BaseLoaderTestCase):
