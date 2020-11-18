@@ -21,13 +21,12 @@
                 <div>
                     <p>Anyone can view and import this {{ model_class_lc }} by visiting the following URL:</p>
                     <blockquote>
-                        <a id="item-url" :href="item_url" target="_top">{{ item_url }}</a>
+                        <font-awesome-icon icon="edit" id="edit-identifier" title="Edit URL" />
+                        <font-awesome-icon :icon="['far', 'clipboard']" class="ml-1" @click="onCopy"/>
+                        <a id="item-url" :href="item_url" target="_top" class="ml-2">{{ item_url }}</a>
                         <span id="item-url-text" style="display: none;">
                             {{ item_url_parts[0] }}<span id="item-identifier">{{ item_url_parts[1] }}</span>
                         </span>
-                        <a href="javascript:void(0)" id="edit-identifier"
-                            ><img :src="pencil_url" alt="Edit Share Url"
-                        /></a>
                     </blockquote>
                     <div v-if="item.published">
                         <p>
@@ -136,17 +135,26 @@
 </template>
 
 <script>
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faClipboard, faEdit } from "@fortawesome/free-regular-svg-icons";
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import axios from "axios";
 import async_save_text from "utils/async-save-text";
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
 
 Vue.use(BootstrapVue);
 
+library.add(faClipboard);
+library.add(faEdit);
+
 export default {
+    components: {
+        FontAwesomeIcon,
+    },
     props: {
         id: {
             type: String,
@@ -224,7 +232,10 @@ export default {
         this.createSlugHandler();
     },
     methods: {
-        getModel: function () {
+        onCopy() {
+            alert("Copy");
+        },
+        getModel() {
             this.ready = false;
             axios
                 .get(`${getAppRoot()}api/${this.plural_name_lc}/${this.id}/sharing`)
@@ -234,7 +245,7 @@ export default {
                 })
                 .catch((error) => (this.err_msg = error.response.data.err_msg));
         },
-        setUsername: function () {
+        setUsername() {
             const Galaxy = getGalaxyInstance();
             axios
                 .put(`${getAppRoot()}api/users/${Galaxy.user.id}/information/inputs`, {
@@ -247,7 +258,7 @@ export default {
                 })
                 .catch((error) => (this.err_msg = error.response.data.err_msg));
         },
-        setSharing: function (action, user_id) {
+        setSharing(action, user_id) {
             const data = {
                 action: action,
                 user_id: user_id,
@@ -265,7 +276,7 @@ export default {
                 })
                 .catch((error) => (this.err_msg = error.response.data.err_msg));
         },
-        createSlugHandler: function () {
+        createSlugHandler() {
             const on_start = function (text_elt) {
                 // Replace URL with URL text.
                 $("#item-url").hide();
