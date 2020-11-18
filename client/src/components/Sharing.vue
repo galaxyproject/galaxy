@@ -21,10 +21,10 @@
                 <div>
                     <p>Anyone can view and import this {{ model_class_lc }} by visiting the following URL:</p>
                     <blockquote>
-                        <font-awesome-icon icon="edit" id="edit-identifier" title="Edit URL" />
-                        <font-awesome-icon :icon="['far', 'clipboard']" class="ml-1" @click="onCopy"/>
-                        <a id="item-url" :href="item_url" target="_top" class="ml-2">{{ item_url }}</a>
-                        <span id="item-url-text" style="display: none;">
+                        <font-awesome-icon icon="edit" id="edit-identifier" role="button" title="Edit URL" />
+                        <font-awesome-icon :icon="['far', 'clipboard']" class="ml-1" role="button" @click="onCopy" />
+                        <a v-if="showUrl" id="item-url" :href="item_url" target="_top" class="ml-2">{{ item_url }}</a>
+                        <span v-else id="item-url-text">
                             {{ item_url_parts[0] }}<span id="item-identifier">{{ item_url_parts[1] }}</span>
                         </span>
                     </blockquote>
@@ -169,6 +169,25 @@ export default {
             required: true,
         },
     },
+    data() {
+        const Galaxy = getGalaxyInstance();
+        return {
+            ready: false,
+            has_username: Galaxy.user.get("username"),
+            new_username: "",
+            err_msg: null,
+            item: {
+                title: "title",
+                username_and_slug: "username_and_slug",
+                importable: false,
+                published: false,
+                users_shared_with: [],
+            },
+            share_fields: ["email", { key: "id", label: "" }],
+            make_members_public: false,
+            showUrl: true,
+        };
+    },
     computed: {
         model_class_lc() {
             return this.model_class.toLowerCase();
@@ -205,25 +224,6 @@ export default {
         show_danger() {
             return this.err_msg !== null;
         },
-    },
-    data() {
-        const Galaxy = getGalaxyInstance();
-        return {
-            ready: false,
-            has_username: Galaxy.user.get("username"),
-            new_username: "",
-            err_msg: null,
-            pencil_url: `${getAppRoot()}static/images/fugue/pencil.png`,
-            item: {
-                title: "title",
-                username_and_slug: "username_and_slug",
-                importable: false,
-                published: false,
-                users_shared_with: [],
-            },
-            share_fields: ["email", { key: "id", label: "" }],
-            make_members_public: false,
-        };
     },
     created: function () {
         this.getModel();
