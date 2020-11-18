@@ -88,13 +88,6 @@ class UserListGrid(grids.Grid):
             else:
                 return 'N'
 
-    class APIKeyColumn(grids.GridColumn):
-        def get_value(self, trans, grid, user):
-            if user.api_keys:
-                return user.api_keys[0].key
-            else:
-                return ""
-
     class DiskUsageColumn(grids.GridColumn):
         def get_value(self, trans, grid, user):
             return user.get_disk_usage(nice_size=True)
@@ -123,7 +116,6 @@ class UserListGrid(grids.Grid):
         GroupsColumn("Groups", attach_popup=False),
         RolesColumn("Roles", attach_popup=False),
         ExternalColumn("External", attach_popup=False),
-        APIKeyColumn("API Key", attach_popup=False),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced"),
         grids.PurgedColumn("Purged", key="purged", visible=False, filterable="advanced")
