@@ -557,13 +557,16 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                          annotation defaults to existing annotation
             * menu_entry optional boolean marking if the workflow should appear in the user's menu,
                          if not present, workflow menu entries are not modified
+            * tags       optional list containing list of tags to add to the workflow (overwriting
+                         existing tags), if not present, tags are not modified
             * from_tool_form True iff encoded state coming in is encoded for the tool form.
 
         :rtype:     dict
         :returns:   serialized version of the workflow
         """
         stored_workflow = self.__get_stored_workflow(trans, id, **kwds)
-        workflow_dict = payload.get('workflow') or payload
+        workflow_dict = payload.get('workflow', {})
+        workflow_dict.update({k: v for k, v in payload.items() if k not in workflow_dict})
         if workflow_dict:
             raw_workflow_description = self.__normalize_workflow(trans, workflow_dict)
             workflow_dict = raw_workflow_description.as_dict
@@ -598,6 +601,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 stored_workflow.hidden = workflow_dict['hidden']
                 trans.sa_session.flush()
 
+            if 'published' in workflow_dict and stored_workflow.published != workflow_dict['published']:
+                stored_workflow.published = workflow_dict['published']
+                trans.sa_session.flush()
+
             if 'annotation' in workflow_dict:
                 newAnnotation = sanitize_html(workflow_dict['annotation'])
                 self.add_item_annotation(trans.sa_session, trans.get_user(), stored_workflow, newAnnotation)
@@ -628,6 +635,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                     )
                 except workflows.MissingToolsException:
                     raise exceptions.MessageException("This workflow contains missing tools. It cannot be saved until they have been removed from the workflow or installed.")
+
         else:
             message = "Updating workflow requires dictionary containing 'workflow' attribute with new JSON description."
             raise exceptions.RequestParameterInvalidException(message)
