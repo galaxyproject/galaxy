@@ -517,7 +517,7 @@ class DefaultToolAction:
                         completed_job=completed_job,
                         **element_kwds
                     )
-                    log.info("Handled collection output named {} for tool {} {}".format(name, tool.id, handle_output_timer))
+                    log.info(f"Handled collection output named {name} for tool {tool.id} {handle_output_timer}")
                 else:
                     handle_output(name, output)
                     log.info(f"Handled output named {name} for tool {tool.id} {handle_output_timer}")

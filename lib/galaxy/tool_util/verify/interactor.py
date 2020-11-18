@@ -845,7 +845,7 @@ class DictClientTestConfig:
         if tool_id in self._tools:
             tool_test_config = self._tools[tool_id]
         if tool_test_config is None:
-            tool_id = "%s/%s" % (tool_id, tool_version)
+            tool_id = f"{tool_id}/{tool_version}"
             if tool_id in self._tools:
                 tool_version_test_config = self._tools[tool_id]
         else:

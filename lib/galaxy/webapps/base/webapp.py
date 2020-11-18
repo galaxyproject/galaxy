@@ -284,7 +284,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
                 if key.startswith(acr):
                     self.set_cors_allow(name=key[len(acr):], value=value)
         else:
-            resp_name = 'Access-Control-Allow-{}'.format(name)
+            resp_name = f'Access-Control-Allow-{name}'
             if value is None:
                 value = self.request.headers.get(acr + name, None)
             if value:
