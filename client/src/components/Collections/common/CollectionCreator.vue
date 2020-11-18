@@ -371,30 +371,30 @@ export default {
                 span {
                     display: inline-block;
                     overflow: hidden;
-                }
-                .forward-dataset-name {
-                    text-align: right;
-                    border-right: 1px solid grey;
-                    padding-right: 8px;
-                    &:after {
-                        @extend .fas !optional;
-                        margin-left: 8px;
-                        content: fa-content($fa-var-arrow-right);
+                    .forward-dataset-name {
+                        text-align: right;
+                        border-right: 1px solid grey;
+                        padding-right: 8px;
+                        &:after {
+                            @extend .fas !optional;
+                            margin-left: 8px;
+                            content: fa-content($fa-var-arrow-right);
+                        }
                     }
-                }
-                .pair-name-column {
-                    text-align: center;
-                    .pair-name:hover {
-                        text-decoration: underline;
+                    .pair-name-column {
+                        text-align: center;
+                        .pair-name:hover {
+                            text-decoration: underline;
+                        }
                     }
-                }
-                .reverse-dataset-name {
-                    border-left: 1px solid grey;
-                    padding-left: 8px;
-                    &:before {
-                        @extend .fas !optional;
-                        margin-right: 8px;
-                        content: fa-content($fa-var-arrow-left);
+                    .reverse-dataset-name {
+                        border-left: 1px solid grey;
+                        padding-left: 8px;
+                        &:before {
+                            @extend .fas !optional;
+                            margin-right: 8px;
+                            content: fa-content($fa-var-arrow-left);
+                        }
                     }
                 }
             }
@@ -413,7 +413,7 @@ export default {
     }
     // ---- unpaired
     .unpaired-columns {
-        @extend .flex-bordered-vertically;
+        //@extend .flex-bordered-vertically;
         .forward-column {
             .dataset.unpaired {
                 margin-right: 32px;
@@ -469,7 +469,7 @@ export default {
     }
     // ---- paired datasets
     .paired-columns {
-        @extend .flex-bordered-vertically;
+        // @extend .flex-bordered-vertically;
         margin-bottom: 8px;
         .column-datasets {
             width: 100%;

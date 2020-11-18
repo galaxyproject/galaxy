@@ -38,7 +38,7 @@ export default {
         },
         /** string rep */
         toString() {
-            return "DatasetCollectionElementView()";
+            return "ListDatasetCollectionElementView()";
         },
     },
 };

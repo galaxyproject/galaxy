@@ -304,7 +304,7 @@
 
     // ---- unpaired
     .unpaired-columns {
-        @extend .flex-bordered-vertically;
+        //@extend .flex-bordered-vertically;
 
         .forward-column {
             .dataset.unpaired {
@@ -363,7 +363,7 @@
 
     // ---- paired datasets
     .paired-columns {
-        @extend .flex-bordered-vertically;
+        //@extend .flex-bordered-vertically;
         margin-bottom: 8px;
 
         .column-datasets {

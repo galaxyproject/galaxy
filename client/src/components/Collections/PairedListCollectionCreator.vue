@@ -6,8 +6,8 @@
             @clicked-create="clickedCreate"
             :creationFn="creationFn"
         >
-            <template v-slot:help-content
-                ><p>
+            <template v-slot:help-content>
+                <p>
                     {{
                         l(
                             [
@@ -136,21 +136,86 @@
                     {{ l(". (Note: you do not have to pair all unpaired datasets to finish.)") }}
                 </p>
             </template>
-            
             <template v-slot:middle-content>
+                <div class="column-headers vertically-spaced flex-column-container">
+                    <div class="forward-column flex-column column">
+                        <div class="column-header">
+                            <div class="column-title">
+                                <span class="title">
+                                    {{ l("Unpaired forward") }}
+                                </span>
+                                <span class="title-info unpaired-info"> </span>
+                            </div>
+                            <div class="unpaired-filter forward-unpaired-filter float-left search-input">
+                                <input
+                                    class="search-query"
+                                    :placeholder="filterTextPlaceholder"
+                                    v-model="forwardFilterText"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="paired-column flex-column no-flex column">
+                        <div class="column-header">
+                            <a class="choose-filters-link" href="javascript:void(0)" role="button">
+                                {{ l("Choose Filters") }}
+                            </a>
+                            <a class="clear-filters-link" href="javascript:void(0);" role="button">
+                                {{ l("Clear Filters") }}
+                            </a>
+                            <br />
+                            <a class="autopair-link" href="javascript:void(0);" role="button">
+                                {{ l("Auto-pair") }}
+                            </a>
+                        </div>
+                    </div>
+                    <div class="reverse-column flex-column column">
+                        <div class="column-header">
+                            <div class="column-title">
+                                <span class="title">
+                                    {{ l("Unpaired reverse") }}
+                                </span>
+                                <span class="title-info unpaired-info"></span>
+                            </div>
+                            <div class="unpaired-filter reverse-unpaired-filter float-left search-input">
+                                <input
+                                    class="search-query"
+                                    :placeholder="filterTextPlaceholder"
+                                    v-model="reverseFilterText"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="unpaired-columns flex-column-container scroll-container flex-row">
                     <div class="forward-column flex-column column">
-                        <ol class="column-datasets"></ol>
+                        <ol class="column-datasets">
+                            <dataset-collection-element-view
+                                v-for="element in forwardElements"
+                                :key="element.id"
+                                @element-is-selected="forwardElementSelected"
+                                :class="{ selected: selectedForwardElement && element.id == selectedForwardElement.id }"
+                                :element="element"
+                            />
+                        </ol>
                     </div>
                     <div class="paired-column flex-column no-flex column">
                         <ol class="column-datasets"></ol>
                     </div>
                     <div class="reverse-column flex-column column">
-                        <ol class="column-datasets"></ol>
+                        <ol class="column-datasets">
+                            <dataset-collection-element-view
+                                v-for="element in reverseElements"
+                                :key="element.id"
+                                @element-is-selected="reverseElementSelected"
+                                :class="{ selected: selectedReverseElement && element.id == selectedReverseElement.id }"
+                                :element="element"
+                            />
+                        </ol>
                     </div>
                 </div>
                 <div class="flexible-partition">
-                    <div class="flexible-partition-drag" title="dragToChangeTitle"></div>
+                    <div class="flexible-partition-drag" :title="dragToChangeTitle"></div>
                     <div class="column-header">
                         <div class="column-title paired-column-title">
                             <span class="title"></span>
@@ -161,7 +226,14 @@
                     </div>
                 </div>
                 <div class="paired-columns flex-column-container scroll-container flex-row">
-                    <ol class="column-datasets"></ol>
+                    <ol class="column-datasets">
+                        <paired-element-view
+                            class="dataset paired"
+                            v-for="pair in pairedElements"
+                            :key="pair.id"
+                            :pair="pair"
+                        />
+                    </ol>
                 </div>
             </template>
         </collection-creator>
@@ -171,13 +243,45 @@
 import _l from "utils/localization";
 import CollectionCreator from "./common/CollectionCreator";
 import DatasetCollectionElementView from "./PairedListDatasetCollectionElementView";
+import PairedElementView from "./PairedListPairedElementView";
+import STATES from "mvc/dataset/states";
+//import { filter } from "rxjs/operators";
 export default {
-    created() {},
-    components: { CollectionCreator, DatasetCollectionElementView }, //draggable?
+    created() {
+        this._elementsSetUp();
+        this.filters = this.commonFilters[this.filters] || this.commonFilters[this.DEFAULT_FILTERS];
+    },
+    components: { CollectionCreator, DatasetCollectionElementView, PairedElementView }, //draggable?
     data: function () {
         return {
             state: "build", //error
             dragToChangeTitle: "Drag to change",
+            filterTextPlaceholder: "Filter this list",
+            pairedElements: [{ forward: { name: "bob" }, reverse: { name: "sue" }, name: "blank" }],
+            unpairedElements: [],
+            commonFilters: {
+                illumina: ["_1", "_2"],
+                Rs: ["_R1", "_R2"],
+            },
+            DEFAULT_FILTERS: "illumina",
+            filters: this.DEFAULT_FILTERS,
+            automaticallyPair: true,
+            strategies: {
+                simple: "autopairSimple",
+                lcs: "autopairLCS",
+                levenshtein: "autopairLevenshtein",
+            },
+            DEFAULT_STRATEGY: "lcs",
+            strategy: "lcs",
+            matchPercentage: 0.9,
+            twoPassAutoPairing: true,
+            workingElements: [],
+            forwardElements: [],
+            reverseElements: [],
+            forwardFilter: "",
+            reverseFilter: "",
+            selectedForwardElement: null,
+            selectedReverseElement: null,
         };
     },
     props: {
@@ -209,7 +313,305 @@ export default {
             // _l conflicts private methods of Vue internals, expose as l instead
             return _l(str);
         },
+        /** set up main data */
+        _elementsSetUp: function () {
+            /** a list of invalid elements and the reasons they aren't valid */
+            this.invalidElements = [];
+            //TODO: handle fundamental problem of syncing DOM, views, and list here
+            /** data for list in progress */
+            this.workingElements = [];
+            //TODO: this should maybe be in it's own method as it will get called everytime selected array has two elements and dumps again.
+            this.selectedDatasetElems = [];
+            // copy initial list, sort, add ids if needed
+            this.workingElements = this.initialElements.slice(0);
+            this._ensureElementIds();
+            this._validateElements();
+            // this._mangleDuplicateNames();
+            this.forwardElements.push.apply(this.forwardElements, this.workingElements);
+            this.reverseElements.push.apply(this.reverseElements, this.workingElements);
+        },
+        /** add ids to dataset objs in initial list if none */
+        _ensureElementIds: function () {
+            this.workingElements.forEach((element) => {
+                if (!Object.prototype.hasOwnProperty.call(element, "id")) {
+                    element.id = element._uid;
+                }
+            });
+            return this.workingElements;
+        },
+        // /** separate working list into valid and invalid elements for this collection */
+        _validateElements: function () {
+            this.workingElements = this.workingElements.filter((element) => {
+                var problem = this._isElementInvalid(element);
+                if (problem) {
+                    this.invalidElements.push(element.name + "  " + problem);
+                }
+                return !problem;
+            });
+            return this.workingElements;
+        },
+        /** describe what is wrong with a particular element if anything */
+        _isElementInvalid: function (element) {
+            if (element.history_content_type === "dataset_collection") {
+                return _l("is a collection, this is not allowed");
+            }
+            var validState = element.state === STATES.OK || STATES.NOT_READY_STATE.contains(element.state);
+            if (!validState) {
+                return _l("has errored, is paused, or is not accessible");
+            }
+            if (element.deleted || element.purged) {
+                return _l("has been deleted or purged");
+            }
+            return null;
+        },
+        filterElements: function (elements, filterText) {
+            return elements.filter((e) => e.name.includes(filterText));
+        },
+        forwardElementSelected: function (e) {
+            if (this.selectedForwardElement == null || !this.selectedForwardElement.id == e.id) {
+                this.selectedForwardElement = e;
+            } else {
+                this.selectedForwardElement = null;
+            }
+            if (this.selectedForwardElement && this.selectedReverseElement) {
+                this._pair(this.selectedForwardElement, this.selectedReverseElement);
+            }
+        },
+        reverseElementSelected: function (e) {
+            if (this.selectedReverseElement == null || !this.selectedReverseElement.id == e.id) {
+                this.selectedReverseElement = e;
+            } else {
+                this.selectedReverseElement = null;
+            }
+            if (this.selectedForwardElement && this.selectedReverseElement) {
+                this._pair(this.selectedForwardElement, this.selectedReverseElement);
+            }
+        },
+        // ------------------------------------------------------------------------ pairing / unpairing
+        /** create a pair from fwd and rev, removing them from unpaired, and placing the new pair in paired */
+        _pair: function (fwd, rev, options) {
+            options = options || {};
+            console.log("_pair:", fwd, rev);
+            var pair = this._createPair(fwd, rev, options.name);
+            this.pairedElements.push(pair);
+            this.unpairedElements = this.unpairedElements.splice(this.unpairedElements.indexOf(fwd), 1);
+            console.log(this.unpairedElements);
+            this.unpairedElements = this.unpairedElements.splice(this.unpairedElements.indexOf(rev), 1);
+            console.log(this.unpairedElements);
+            if (!options.silent) {
+                this.$emit("pair:new", pair);
+            }
+            return pair;
+        },
+        /** create a pair Object from fwd and rev, adding the name attribute (will guess if not given) */
+        _createPair: function (fwd, rev, name) {
+            // ensure existance and don't pair something with itself
+            if (!(fwd && rev) || fwd === rev) {
+                throw new Error(`Bad pairing: ${[JSON.stringify(fwd), JSON.stringify(rev)]}`);
+            }
+            name = name || this._guessNameForPair(fwd, rev);
+            return { forward: fwd, name: name, reverse: rev };
+        },
+        /** try to find a good pair name for the given fwd and rev datasets */
+        _guessNameForPair: function (fwd, rev, removeExtensions) {
+            removeExtensions = removeExtensions !== undefined ? removeExtensions : this.removeExtensions;
+            var fwdName = fwd.name;
+            var revName = rev.name;
+
+            var lcs = this._naiveStartingAndEndingLCS(
+                fwdName.replace(new RegExp(this.filters[0]), ""),
+                revName.replace(new RegExp(this.filters[1]), "")
+            );
+
+            /** remove url prefix if files were uploaded by url */
+            var lastSlashIndex = lcs.lastIndexOf("/");
+            if (lastSlashIndex > 0) {
+                var urlprefix = lcs.slice(0, lastSlashIndex + 1);
+                lcs = lcs.replace(urlprefix, "");
+                fwdName = fwdName.replace(extension, "");
+                revName = revName.replace(extension, "");
+            }
+
+            if (removeExtensions) {
+                var lastDotIndex = lcs.lastIndexOf(".");
+                if (lastDotIndex > 0) {
+                    var extension = lcs.slice(lastDotIndex, lcs.length);
+                    lcs = lcs.replace(extension, "");
+                    fwdName = fwdName.replace(extension, "");
+                    revName = revName.replace(extension, "");
+                }
+            }
+            return lcs || `${fwdName} & ${revName}`;
+        },
+        newPair: function (pair) {},
+        /** return the concat'd longest common prefix and suffix from two strings */
+        _naiveStartingAndEndingLCS: function (s1, s2) {
+            var fwdLCS = "";
+            var revLCS = "";
+            var i = 0;
+            var j = 0;
+            while (i < s1.length && i < s2.length) {
+                if (s1[i] !== s2[i]) {
+                    break;
+                }
+                fwdLCS += s1[i];
+                i += 1;
+            }
+            if (i === s1.length) {
+                return s1;
+            }
+            if (i === s2.length) {
+                return s2;
+            }
+
+            i = s1.length - 1;
+            j = s2.length - 1;
+            while (i >= 0 && j >= 0) {
+                if (s1[i] !== s2[j]) {
+                    break;
+                }
+                revLCS = [s1[i], revLCS].join("");
+                i -= 1;
+                j -= 1;
+            }
+            return fwdLCS + revLCS;
+        },
+        // ============================================================================
+        /** returns an autopair function that uses the provided options.match function */
+        autoPairFnBuilder: function (options) {
+            options = options || {};
+            options.createPair =
+                options.createPair ||
+                function _defaultCreatePair(params) {
+                    params = params || {};
+                    var a = params.listA.splice(params.indexA, 1)[0];
+                    var b = params.listB.splice(params.indexB, 1)[0];
+                    var aInBIndex = params.listB.indexOf(a);
+                    var bInAIndex = params.listA.indexOf(b);
+                    if (aInBIndex !== -1) {
+                        params.listB.splice(aInBIndex, 1);
+                    }
+                    if (bInAIndex !== -1) {
+                        params.listA.splice(bInAIndex, 1);
+                    }
+                    return this._pair(a, b, { silent: true });
+                };
+            // compile these here outside of the loop
+            var _regexps = [];
+            function getRegExps() {
+                if (!_regexps.length) {
+                    _regexps = [new RegExp(this.filters[0]), new RegExp(this.filters[1])];
+                }
+                return _regexps;
+            }
+            // mangle params as needed
+            options.preprocessMatch =
+                options.preprocessMatch ||
+                function _defaultPreprocessMatch(params) {
+                    var regexps = getRegExps.call(this);
+                    return Object.assign(params, {
+                        matchTo: params.matchTo.name.replace(regexps[0], ""),
+                        possible: params.possible.name.replace(regexps[1], ""),
+                    });
+                };
+
+            return function _strategy(params) {
+                this.debug("autopair _strategy ---------------------------");
+                params = params || {};
+                var listA = params.listA;
+                var listB = params.listB;
+                var indexA = 0;
+                var indexB;
+
+                var bestMatch = {
+                    score: 0.0,
+                    index: null,
+                };
+
+                var paired = [];
+                //console.debug( 'params:', JSON.stringify( params, null, '  ' ) );
+                this.debug("starting list lens:", listA.length, listB.length);
+                this.debug("bestMatch (starting):", JSON.stringify(bestMatch, null, "  "));
+
+                while (indexA < listA.length) {
+                    var matchTo = listA[indexA];
+                    bestMatch.score = 0.0;
+
+                    for (indexB = 0; indexB < listB.length; indexB++) {
+                        var possible = listB[indexB];
+                        this.debug(`${indexA}:${matchTo.name}`);
+                        this.debug(`${indexB}:${possible.name}`);
+
+                        // no matching with self
+                        if (listA[indexA] !== listB[indexB]) {
+                            bestMatch = options.match.call(
+                                this,
+                                options.preprocessMatch.call(this, {
+                                    matchTo: matchTo,
+                                    possible: possible,
+                                    index: indexB,
+                                    bestMatch: bestMatch,
+                                })
+                            );
+                            this.debug("bestMatch:", JSON.stringify(bestMatch, null, "  "));
+                            if (bestMatch.score === 1.0) {
+                                this.debug("breaking early due to perfect match");
+                                break;
+                            }
+                        }
+                    }
+                    var scoreThreshold = options.scoreThreshold.call(this);
+                    this.debug("scoreThreshold:", scoreThreshold);
+                    this.debug("bestMatch.score:", bestMatch.score);
+
+                    if (bestMatch.score >= scoreThreshold) {
+                        //console.debug( 'autoPairFnBuilder.strategy', listA[ indexA ].name, listB[ bestMatch.index ].name );
+                        paired.push(
+                            options.createPair.call(this, {
+                                listA: listA,
+                                indexA: indexA,
+                                listB: listB,
+                                indexB: bestMatch.index,
+                            })
+                        );
+                        //console.debug( 'list lens now:', listA.length, listB.length );
+                    } else {
+                        indexA += 1;
+                    }
+                    if (!listA.length || !listB.length) {
+                        return paired;
+                    }
+                }
+                this.debug("paired:", JSON.stringify(paired, null, "  "));
+                this.debug("autopair _strategy ---------------------------");
+                return paired;
+            };
+        },
+    },
+    computed: {
+        forwardFilterText: {
+            get() {
+                return this.forwardFilter;
+            },
+            set(filterText) {
+                this.forwardFilter = filterText;
+                this.forwardElements = this.filterElements(this.workingElements, filterText);
+            },
+        },
+        reverseFilterText: {
+            get() {
+                return this.reverseFilter;
+            },
+            set(filterText) {
+                this.reverseFilter = filterText;
+                this.reverseElements = this.filterElements(this.workingElements, filterText);
+            },
+        },
     },
 };
 </script>
-<style scoped></style>
+<style scoped>
+.column-headers {
+    margin-bottom: 8px;
+}
+</style>
