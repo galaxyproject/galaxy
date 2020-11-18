@@ -15,6 +15,7 @@ import pwd
 import random
 import string
 import time
+from collections import defaultdict
 from datetime import datetime, timedelta
 from string import Template
 from uuid import UUID, uuid4
@@ -381,7 +382,7 @@ class User(Dictifiable, RepresentById):
 
     @property
     def extra_preferences(self):
-        data = {}
+        data = defaultdict(lambda: None)
         extra_user_preferences = self.preferences.get('extra_user_preferences')
         if extra_user_preferences:
             try:
