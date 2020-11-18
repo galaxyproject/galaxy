@@ -4013,6 +4013,15 @@ input_c:
             usage_details_response = self._get(f"workflows/{workflow_id}/usage/{invocation_id}")
             self._assert_status_code_is(usage_details_response, 403)
 
+    def test_workflow_publishing(self):
+        workflow_id = self.workflow_populator.simple_workflow("dummy")
+        response = self._show_workflow(workflow_id)
+        assert not response['published']
+        published_worklow = self._put(f'workflows/{workflow_id}', data=json.dumps({'published': True})).json()
+        assert published_worklow['published']
+        unpublished_worklow = self._put(f'workflows/{workflow_id}', data=json.dumps({'published': False})).json()
+        assert not unpublished_worklow['published']
+
     def _invoke_paused_workflow(self, history_id):
         workflow = self.workflow_populator.load_workflow_from_resource("test_workflow_pause")
         workflow_id = self.workflow_populator.create_workflow(workflow)
