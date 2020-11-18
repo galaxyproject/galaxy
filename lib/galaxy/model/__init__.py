@@ -3223,6 +3223,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                                         flush=False)
         # update init non-keywords as well
         hda.purged = self.purged
+
         hda.copy_tags_to(copy_tags)
         object_session(self).add(hda)
         hda.metadata = self.metadata
@@ -3236,7 +3237,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
 
     def copy_tags_to(self, copy_tags=None):
         if copy_tags is not None:
-            for tag in copy_tags.values():
+            for tag in copy_tags:
                 copied_tag = tag.copy(cls=HistoryDatasetAssociationTagAssociation)
                 self.tags.append(copied_tag)
 
@@ -4655,7 +4656,7 @@ class DatasetCollectionElement(Dictifiable, RepresentById):
                     flush=flush
                 )
             else:
-                new_element_object = element_object.copy(flush=flush)
+                new_element_object = element_object.copy(flush=flush, copy_tags=element_object.tags)
                 new_element_object.visible = False
                 if destination is not None and element_object.hidden_beneath_collection_instance:
                     new_element_object.hidden_beneath_collection_instance = destination
