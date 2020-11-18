@@ -13,8 +13,6 @@
             <b-button type="submit" variant="primary" @click="setUsername()">Set Username</b-button>
         </div>
         <div v-else>
-            <br />
-            <h3>Make {{ model_class }} Accessible via Link and Publish It</h3>
             <div v-if="item.importable">
                 This {{ modelClassLower }} is currently <strong>{{ itemStatus }}</strong
                 >.
