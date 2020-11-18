@@ -1,23 +1,31 @@
 <template>
     <div v-if="ready">
-        <h2>Share or Publish {{ model_class }} `{{ item.title }}`</h2>
-        <b-alert :show="showDanger" variant="danger" dismissible> {{ err_msg }} </b-alert>
+        <h3>Share or Publish {{ model_class }} `{{ item.title }}`</h3>
+        <b-alert :show="showDanger" variant="danger" dismissible> {{ errMsg }} </b-alert>
         <br />
         <div v-if="!hasUsername">
-            <div>
-                To make a {{ modelClassLower }} accessible via link or publish it, you must create a public username:
-            </div>
+            <div>To make a {{ model_class }} accessible via link or publish it, you must create a public username:</div>
             <form class="form-group" @submit.prevent="setUsername()">
-                <label /> <input class="form-control" type="text" v-model="newUsername" />
+                <input class="form-control" type="text" v-model="newUsername" />
             </form>
             <b-button type="submit" variant="primary" @click="setUsername()">Set Username</b-button>
         </div>
         <div v-else>
-            <div v-if="item.importable">
-                This {{ modelClassLower }} is currently <strong>{{ itemStatus }}</strong
-                >.
-                <div>
-                    <p>Anyone can view and import this {{ modelClassLower }} by visiting the following URL:</p>
+            <b-form-checkbox switch v-model="item.importable" @change="onImportable">
+                Make {{ model_class }} accessible via link.
+            </b-form-checkbox>
+            <b-form-checkbox switch v-model="item.published" @change="onPublish">
+                Make {{ model_class }} publicly available in
+                <a :href="published_url" target="_top">Published {{ plural_name }}</a> section.
+            </b-form-checkbox>
+            <br />
+            <div>
+                <div v-if="item.importable">
+                    <div>
+                        This {{ model_class }} is currently <strong>{{ itemStatus }}</strong
+                        >.
+                    </div>
+                    <p>Anyone can view and import this {{ model_class }} by visiting the following URL:</p>
                     <blockquote>
                         <b-button title="Edit URL" @click="onEdit" v-b-tooltip.hover variant="link" size="sm">
                             <font-awesome-icon icon="edit" />
@@ -35,84 +43,20 @@
                             {{ itemUrlParts[0] }}<SlugInput class="ml-1" :slug="itemUrlParts[1]" @onChange="onChange" />
                         </span>
                     </blockquote>
-                    <div v-if="item.published">
-                        <p>
-                            This {{ modelClassLower }} is publicly listed and searchable in Galaxy's
-                            <a :href="published_url" target="_top">Published {{ plural_name }}</a> section.
-                        </p>
-                        <p>You can:</p>
-                    </div>
-                </div>
-                <div v-if="!item.published">
-                    <!-- Item is importable but not published. User can disable importable or publish. -->
-                    <b-button @click="setSharing('disable_link_access')"
-                        >Disable Access to {{ model_class }} Link</b-button
-                    >
-                    <div class="toolParamHelp">Disables {{ modelClassLower }}'s link so that it is not accessible.</div>
-                    <br />
-                    <b-button id="make_accessible_and_publish" @click="setSharing('publish')"
-                        >Publish {{ model_class }}</b-button
-                    >
-                    <div class="toolParamHelp">
-                        Publishes the {{ modelClassLower }} to Galaxy's
-                        <a :href="published_url" target="_top">Published {{ plural_name }}</a> section, where it is
-                        publicly listed and searchable.
-                    </div>
-                    <br />
                 </div>
                 <div v-else>
-                    <!-- Item is importable and published. User can unpublish or disable import and unpublish. -->
-                    <b-button
-                        id="disable_link_access_and_unpublish"
-                        @click="setSharing('disable_link_access_and_unpublish')"
-                        >Disable Access to {{ model_class }} via Link and Unpublish</b-button
-                    >
-                    <div class="toolParamHelp">
-                        Disables this {{ modelClassLower }}'s link so that it is not accessible and removes
-                        {{ modelClassLower }} from Galaxy's
-                        <a :href="published_url" target="_top">Published {{ plural_name }}</a> section so that it is not
-                        publicly listed or searchable.
-                    </div>
-                    <br />
-                    <b-button @click="setSharing('unpublish')">Unpublish {{ model_class }}</b-button>
-                    <div class="toolParamHelp">
-                        Removes this {{ modelClassLower }} from Galaxy's
-                        <a :href="published_url" target="_top">Published {{ plural_name }}</a> section so that it is not
-                        publicly listed or searchable.
-                    </div>
+                    Access to this {{ model_class }} is currently restricted so that only you and the users listed below
+                    can access it. Note that sharing a History will also allow access to all of its datasets. 
                 </div>
             </div>
-            <div v-else>
-                <p>
-                    This {{ modelClassLower }} is currently restricted so that only you and the users listed below can
-                    access it. You can:
-                </p>
-                <b-button @click="setSharing('make_accessible_via_link')"
-                    >Make {{ model_class }} Accessible via Link</b-button
-                >
-                <div class="toolParamHelp">
-                    Generates a web link that you can share with other people so that they can view and import the
-                    {{ modelClassLower }}.
-                </div>
-                <br />
-                <b-button id="make_accessible_and_publish" @click="setSharing('make_accessible_and_publish')"
-                    >Make {{ model_class }} Accessible and Publish</b-button
-                >
-                <div class="toolParamHelp">
-                    Makes the {{ modelClassLower }} accessible via link (see above) and publishes the
-                    {{ modelClassLower }} to Galaxy's
-                    <a :href="published_url" target="_top">Published {{ plural_name }}</a> section, where it is publicly
-                    listed and searchable.
-                </div>
-            </div>
-            <br /><br />
-            <h3>Share {{ model_class }} with Individual Users</h3>
+            <br />
+            <h4>Share {{ model_class }} with Individual Users</h4>
             <div>
                 <div v-if="item.users_shared_with && item.users_shared_with.length > 0">
                     <b-table small caption-top :fields="shareFields" :items="item.users_shared_with">
                         <template v-slot:table-caption>
-                            The following users will see this {{ modelClassLower }} in their {{ modelClassLower }} list
-                            and will be able to view, import and run it.
+                            The following users will see this {{ model_class }} in their {{ model_class }} list and will
+                            be able to view, import and run it.
                         </template>
                         <template v-slot:cell(id)="cell">
                             <b-button
@@ -125,7 +69,7 @@
                     </b-table>
                 </div>
                 <div v-else>
-                    <p>You have not shared this {{ modelClassLower }} with any users.</p>
+                    <p>You have not shared this {{ model_class }} with any users.</p>
                 </div>
                 <b-button :href="shareUrl" id="share_with_a_user"> <span>Share with a user</span> </b-button>
             </div>
@@ -253,6 +197,28 @@ export default {
             const requestUrl = `${this.slugUrl}&new_slug=${newSlug}`;
             axios.get(requestUrl).catch((error) => (this.errMsg = error.response.data.err_msg));
         },
+        onImportable(importable) {
+            if (importable) {
+                this.setSharing("make_accessible_via_link");
+                if (this.item.published) {
+                    this.setSharing('publish');
+                } else {
+                    this.setSharing('unpublish');
+                }
+            } else {
+                this.item.published = false;
+                this.setSharing("disable_link_access");
+                this.setSharing('unpublish');
+            }
+        },
+        onPublish(published) {
+            if (published) {
+                this.item.importable = true;
+                this.setSharing("make_accessible_and_publish");
+            } else {
+                this.setSharing('unpublish');
+            }
+        },
         getModel() {
             this.ready = false;
             axios
@@ -284,7 +250,6 @@ export default {
             axios
                 .post(`${getAppRoot()}api/${this.pluralNameLower}/${this.id}/sharing`, data)
                 .then((response) => {
-                    Object.assign(this.item, response.data);
                     if (response.data.skipped) {
                         this.errMsg = "Some of the items within this object were not published due to an error.";
                     }
