@@ -356,6 +356,8 @@ def main(argv=None):
         "master_api_key": get_option("admin_key"),
         "api_key": get_option("key"),
         "keep_outputs_dir": args.output,
+        "download_attempts": get_option("download_attempts"),
+        "download_sleep": get_option("download_sleep"),
     }
     tool_id = args.tool_id
     tool_version = args.tool_version
@@ -397,7 +399,7 @@ def main(argv=None):
         exception = exceptions[0]
         if hasattr(exception, "exception"):
             exception = exception.exception
-        raise exceptions[0]
+        raise exception
 
 
 def setup_global_logger(name, log_file=None, verbose=False):
@@ -446,6 +448,8 @@ def _arg_parser():
     parser.add_argument('--retries', default=0, type=int, help="Retry failed tests.")
     parser.add_argument('--page-size', default=0, type=int, help="If positive, use pagination and just run one 'page' to tool tests.")
     parser.add_argument('--page-number', default=0, type=int, help="If page size is used, run this 'page' of tests - starts with 0.")
+    parser.add_argument('--download-attempts', default=1, type=int, help="Galaxy may return a transient 500 status code for download if test results are written but not yet accessible.")
+    parser.add_argument('--download-sleep', default=1, type=int, help="If download attempts is greater than 1, the amount to sleep between download attempts.")
     return parser
 
 
