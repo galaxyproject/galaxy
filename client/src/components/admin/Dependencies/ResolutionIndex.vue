@@ -36,7 +36,13 @@
         <template v-slot:body>
             <b-table id="requirements-table" striped :fields="fields" :items="items" @row-clicked="showRowDetails">
                 <template v-slot:cell(selected)="data">
-                    <b-form-checkbox v-model="data.item.selected"></b-form-checkbox>
+                    <b-form-checkbox
+                        v-model="data.item.selected"
+                        @change="changeToggleCheckboxState($event)"
+                    ></b-form-checkbox>
+                </template>
+                <template v-slot:head(selected)="">
+                    <b-form-checkbox v-model="toggleState" @change="toggleSelectAll"></b-form-checkbox>
                 </template>
                 <template v-slot:cell(requirement)="row">
                     <requirements :requirements="row.item.requirements" />
@@ -107,6 +113,7 @@ export default {
     components: { ResolutionDetails },
     data() {
         return {
+            toggleState: false,
             expandToolIds: false,
             error: null,
             loading: true,
@@ -184,6 +191,16 @@ export default {
         },
     },
     methods: {
+        unchecked: function () {
+            return this.items.filter((item) => item.selected === false);
+        },
+        changeToggleCheckboxState(event) {
+            if (event && this.unchecked().length === 1) this.toggleState = true;
+            else this.toggleState = false;
+        },
+        toggleSelectAll: function (event) {
+            this.items.forEach((item) => (item.selected = event));
+        },
         load() {
             this.loading = true;
             getToolboxDependencies(this.apiParams())
