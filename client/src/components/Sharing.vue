@@ -140,9 +140,9 @@ import BootstrapVue from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faClipboard, faEdit } from "@fortawesome/free-regular-svg-icons";
-import SlugInput from "components/Common/SlugInput";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
+import SlugInput from "components/Common/SlugInput";
 import axios from "axios";
 
 Vue.use(BootstrapVue);
@@ -198,11 +198,12 @@ export default {
         itemStatus() {
             return this.item.published ? "accessible via link and published" : "accessible via link";
         },
-        itemUrl() {
+        itemRoot() {
             const port = window.location.port ? `:${window.location.port}` : "";
-            return `${window.location.protocol}//${window.location.hostname}${port}${getAppRoot()}${
-                this.item.username_and_slug
-            }`;
+            return `${window.location.protocol}//${window.location.hostname}${port}${getAppRoot()}`;
+        },
+        itemUrl() {
+            return `${this.itemRoot}${this.item.username_and_slug}`;
         },
         itemSlugParts() {
             const str = this.item.username_and_slug;
@@ -235,7 +236,12 @@ export default {
     },
     methods: {
         onCopy() {
-            alert("Copy");
+            const clipboard = document.createElement('input');
+            document.body.appendChild(clipboard);
+            clipboard.value = this.itemUrl;
+            clipboard.select();
+            document.execCommand('copy');
+            document.body.removeChild(clipboard);
         },
         onEdit() {
             this.showUrl = false;
