@@ -31,7 +31,7 @@
                             <font-awesome-icon icon="edit" />
                         </b-button>
                         <b-button id="tooltip-clipboard" @click="onCopy" @mouseout="onCopyOut" variant="link" size="sm">
-                            <font-awesome-icon :icon="['far', 'clipboard']" />
+                            <font-awesome-icon icon="link" />
                         </b-button>
                         <b-tooltip target="tooltip-clipboard" triggers="hover">
                             {{ tooltipClipboard }}
@@ -46,7 +46,7 @@
                 </div>
                 <div v-else>
                     Access to this {{ model_class }} is currently restricted so that only you and the users listed below
-                    can access it. Note that sharing a History will also allow access to all of its datasets. 
+                    can access it. Note that sharing a History will also allow access to all of its datasets.
                 </div>
             </div>
             <br />
@@ -82,7 +82,7 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faClipboard, faEdit } from "@fortawesome/free-regular-svg-icons";
+import { faLink, faEdit } from "@fortawesome/free-solid-svg-icons";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import SlugInput from "components/Common/SlugInput";
@@ -90,7 +90,7 @@ import axios from "axios";
 
 Vue.use(BootstrapVue);
 
-library.add(faClipboard);
+library.add(faLink);
 library.add(faEdit);
 
 export default {
@@ -201,14 +201,14 @@ export default {
             if (importable) {
                 this.setSharing("make_accessible_via_link");
                 if (this.item.published) {
-                    this.setSharing('publish');
+                    this.setSharing("publish");
                 } else {
-                    this.setSharing('unpublish');
+                    this.setSharing("unpublish");
                 }
             } else {
                 this.item.published = false;
                 this.setSharing("disable_link_access");
-                this.setSharing('unpublish');
+                this.setSharing("unpublish");
             }
         },
         onPublish(published) {
@@ -216,7 +216,7 @@ export default {
                 this.item.importable = true;
                 this.setSharing("make_accessible_and_publish");
             } else {
-                this.setSharing('unpublish');
+                this.setSharing("unpublish");
             }
         },
         getModel() {
