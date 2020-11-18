@@ -69,7 +69,7 @@
                 <td>History API ID:</td>
                 <td>
                     <div id="history_id">{{ dataset.history_id }}</div>
-                    <div v-if="decoded_history_id">({{ decoded_history_id }})</div>
+                    <div v-if="isAdmin && decoded_history_id">({{ decoded_history_id }})</div>
                 </td>
             </tr>
 
@@ -113,16 +113,15 @@ export default {
         this.fetchJobInformation(this.job_id);
         this.services = new Services({ root: this.root });
     },
-    mounted() {
-        if (this.isAdmin) {
-            this.decoded_history_id = this.decode(this.dataset.history_id);
-        }
-    },
     computed: {
         isAdmin: function () {
             const Galaxy = getGalaxyInstance();
             if (Galaxy && Galaxy.user) {
-                return Galaxy.user.isAdmin();
+                const isAdmin = Galaxy.user.isAdmin();
+                if (isAdmin) {
+                    this.get_decoded_history_id();
+                }
+                return isAdmin;
             } else return false;
         },
         dataset: function () {
@@ -133,13 +132,16 @@ export default {
         },
     },
     methods: {
+        get_decoded_history_id: async function () {
+            this.decode(this.dataset.history_id).then((response) => {
+                this.decoded_history_id = response.data.decoded_id;
+            });
+        },
         getAppRoot() {
             return getAppRoot();
         },
         decode(id) {
-            this.services.decode(id).then((decoded) => {
-                return decoded;
-            });
+            return this.services.decode(id);
         },
         ...mapCacheActions(["fetchJobInformation", "fetchDataset"]),
     },
