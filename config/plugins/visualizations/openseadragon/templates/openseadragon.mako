@@ -13,7 +13,7 @@
         <title>${hda.name | h} | ${visualization_name}</title>
 
         ## external scripts
-        ${h.javascript_link(app_root + "scripts/openseadragon.min.js")}
+        ${h.javascript_link(app_root + "dist/openseadragon.min.js")}
     </head>
     <body>
         <!-- Div which will hold the Output -->
