@@ -1,7 +1,7 @@
 <template>
     <div v-if="ready">
         <h2>Share or Publish {{ model_class }} `{{ item.title }}`</h2>
-        <b-alert :show="show_danger" variant="danger" dismissible> {{ err_msg }} </b-alert>
+        <b-alert :show="showDanger" variant="danger" dismissible> {{ err_msg }} </b-alert>
         <br />
         <div v-if="!has_username">
             <div>
@@ -21,11 +21,11 @@
                 <div>
                     <p>Anyone can view and import this {{ model_class_lc }} by visiting the following URL:</p>
                     <blockquote>
-                        <font-awesome-icon icon="edit" id="edit-identifier" role="button" title="Edit URL" />
-                        <font-awesome-icon :icon="['far', 'clipboard']" class="ml-1" role="button" @click="onCopy" />
-                        <a v-if="showUrl" id="item-url" :href="item_url" target="_top" class="ml-2">{{ item_url }}</a>
+                        <font-awesome-icon role="button" icon="edit" title="Edit URL" @click="onEdit" />
+                        <font-awesome-icon role="button" :icon="['far', 'clipboard']" class="ml-1" @click="onCopy" />
+                        <a v-if="showUrl" id="item-url" :href="itemUrl" target="_top" class="ml-2">{{ itemUrl }}</a>
                         <span v-else id="item-url-text">
-                            {{ item_url_parts[0] }}<span id="item-identifier">{{ item_url_parts[1] }}</span>
+                            {{ itemUrlParts[0] }}<SlugInput class="ml-1" :slug="itemUrlParts[1]" @onChange="onChange"/>
                         </span>
                     </blockquote>
                     <div v-if="item.published">
@@ -140,6 +140,7 @@ import BootstrapVue from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faClipboard, faEdit } from "@fortawesome/free-regular-svg-icons";
+import SlugInput from "components/Common/SlugInput";
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
@@ -154,6 +155,7 @@ library.add(faEdit);
 export default {
     components: {
         FontAwesomeIcon,
+        SlugInput,
     },
     props: {
         id: {
@@ -198,14 +200,19 @@ export default {
         item_status() {
             return this.item.published ? "accessible via link and published" : "accessible via link";
         },
-        item_url() {
+        itemUrl() {
             const port = window.location.port ? `:${window.location.port}` : "";
             return `${window.location.protocol}//${window.location.hostname}${port}${getAppRoot()}${
                 this.item.username_and_slug
             }`;
         },
-        item_url_parts() {
-            const str = this.item_url;
+        itemSlugParts() {
+            const str = this.item.username_and_slug;
+            const index = str.lastIndexOf("/");
+            return [str.substring(0, index + 1), str.substring(index + 1)];
+        },
+        itemUrlParts() {
+            const str = this.itemUrl;
             const index = str.lastIndexOf("/");
             return [str.substring(0, index + 1), str.substring(index + 1)];
         },
@@ -215,25 +222,29 @@ export default {
         share_url() {
             return `${getAppRoot()}${this.model_class_lc}/share/?id=${this.id}`;
         },
-        slug_url() {
+        slugUrl() {
             return `${getAppRoot()}${this.model_class_lc}/set_slug_async/?id=${this.id}`;
         },
         has_possible_members() {
             return ["history"].indexOf(this.model_class_lc) > -1;
         },
-        show_danger() {
+        showDanger() {
             return this.err_msg !== null;
         },
     },
     created: function () {
         this.getModel();
     },
-    updated: function () {
-        this.createSlugHandler();
-    },
     methods: {
         onCopy() {
             alert("Copy");
+        },
+        onEdit() {
+            this.showUrl = false;
+        },
+        onChange(newSlug) {
+            this.showUrl = true;
+            this.item.username_and_slug = `${this.itemSlugParts[0]}${newSlug}`;
         },
         getModel() {
             this.ready = false;
@@ -278,9 +289,7 @@ export default {
         },
         createSlugHandler() {
             const on_start = function (text_elt) {
-                // Replace URL with URL text.
-                $("#item-url").hide();
-                $("#item-url-text").show();
+                this.showUrl = false;
 
                 // Allow only lowercase alphanumeric and '-' characters in slug.
                 text_elt.keyup(function () {
@@ -295,19 +304,18 @@ export default {
             };
             const on_finish = function (text_elt) {
                 // Replace URL text with URL.
-                $("#item-url-text").hide();
-                $("#item-url").show();
+                this.showUrl = true;
 
                 // Set URL to new value.
                 const new_url = $("#item-url-text").text();
-                const item_url_obj = $("#item-url");
-                item_url_obj.attr("href", new_url);
-                item_url_obj.text(new_url);
+                const itemUrlObj = $("#item-url");
+                itemUrlObj.attr("href", new_url);
+                itemUrlObj.text(new_url);
             };
             async_save_text(
                 "edit-identifier",
                 "item-identifier",
-                this.slug_url,
+                this.slugUrl,
                 "new_slug",
                 null,
                 false,
