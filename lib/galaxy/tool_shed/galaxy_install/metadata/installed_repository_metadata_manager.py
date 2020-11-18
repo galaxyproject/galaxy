@@ -74,7 +74,7 @@ class InstalledRepositoryMetadataManager(MetadataGenerator):
                 guid = tool_dict.get('guid', None)
                 if relative_path and guid:
                     try:
-                        tool = self.app.toolbox.load_tool(os.path.abspath(load_relative_path), guid=guid, use_cached=False)
+                        tool = self.app.toolbox.load_tool(os.path.abspath(load_relative_path), guid=guid, use_cached=False, from_cache=False)
                     except Exception:
                         log.exception("Error while loading tool at path '%s'", load_relative_path)
                         tool = None
