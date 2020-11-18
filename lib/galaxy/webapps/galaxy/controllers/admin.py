@@ -88,13 +88,6 @@ class UserListGrid(grids.Grid):
             else:
                 return 'N'
 
-    class APIKeyColumn(grids.GridColumn):
-        def get_value(self, trans, grid, user):
-            if user.api_keys:
-                return user.api_keys[0].key
-            else:
-                return ""
-
     # Grid definition
     title = "Users"
     title_id = "users-grid"
@@ -120,7 +113,6 @@ class UserListGrid(grids.Grid):
         StatusColumn("Status", attach_popup=False),
         TimeCreatedColumn("Created", attach_popup=False),
         ActivatedColumn("Activated", attach_popup=False),
-        APIKeyColumn("API Key", attach_popup=False),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced"),
         grids.PurgedColumn("Purged", key="purged", visible=False, filterable="advanced")
