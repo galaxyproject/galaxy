@@ -413,7 +413,7 @@ class DefaultToolAction:
                 trans.sa_session.add(data)
                 if not completed_job:
                     trans.app.security_agent.set_all_dataset_permissions(data.dataset, output_permissions, new=True, flush=False)
-            data.copy_tags_to(preserved_tags)
+            data.copy_tags_to(preserved_tags.values())
 
             if not completed_job and trans.app.config.legacy_eager_objectstore_initialization:
                 # Must flush before setting object store id currently.
