@@ -2,6 +2,11 @@ WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES = """
 class: GalaxyWorkflow
 doc: |
   Simple workflow that no-op cats a file and then selects 10 random lines.
+creator:
+  - class: Person
+    name: John Chilton
+    email: jmchilton@gmail.com
+    identifier: https://orcid.org/0000-0002-6794-0756
 inputs:
   the_input:
     type: data

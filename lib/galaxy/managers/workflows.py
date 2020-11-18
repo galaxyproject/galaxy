@@ -158,10 +158,18 @@ class WorkflowsManager:
 
         return True
 
-    def get_invocation(self, trans, decoded_invocation_id):
-        workflow_invocation = trans.sa_session.query(
+    def get_invocation(self, trans, decoded_invocation_id, eager=False):
+        q = trans.sa_session.query(
             self.app.model.WorkflowInvocation
-        ).get(decoded_invocation_id)
+        )
+        if eager:
+            q = q.options(subqueryload(self.app.model.WorkflowInvocation.steps).joinedload(
+                'implicit_collection_jobs').joinedload(
+                    'jobs').joinedload(
+                        'job').joinedload(
+                            'input_datasets')
+            )
+        workflow_invocation = q.get(decoded_invocation_id)
         if not workflow_invocation:
             encoded_wfi_id = trans.security.encode_id(decoded_invocation_id)
             message = "'%s' is not a valid workflow invocation id" % encoded_wfi_id
@@ -726,6 +734,9 @@ class WorkflowContentsManager(UsesAnnotations):
         data['steps'] = {}
         data['upgrade_messages'] = {}
         data['report'] = workflow.reports_config or {}
+        data['license'] = workflow.license
+        log.info("creator_metadata is %s" % workflow.creator_metadata)
+        data['creator'] = workflow.creator_metadata
 
         input_step_types = set(workflow.input_step_types)
         # For each step, rebuild the form and encode the state
@@ -940,6 +951,8 @@ class WorkflowContentsManager(UsesAnnotations):
         data['steps'] = {}
         if workflow.reports_config:
             data['report'] = workflow.reports_config
+        if workflow.creator_metadata:
+            data['creator'] = workflow.creator_metadata
         # For each step, rebuild the form and encode the state
         for step in workflow.steps:
             # Load from database representation

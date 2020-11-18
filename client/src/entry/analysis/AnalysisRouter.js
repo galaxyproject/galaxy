@@ -43,7 +43,7 @@ import PluginList from "components/PluginList.vue";
 import QueryStringParsing from "utils/query-string-parsing";
 import DatasetError from "mvc/dataset/dataset-error";
 import DatasetEditAttributes from "mvc/dataset/dataset-edit-attributes";
-import Citations from "components/Citations.vue";
+import Citations from "components/Citation/Citations.vue";
 import DisplayStructure from "components/DisplayStructured.vue";
 import { CloudAuth } from "components/User/CloudAuth";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
@@ -342,9 +342,13 @@ export const getAnalysisRouter = (Galaxy) =>
         show_workflows_trs_import: function () {
             const queryTrsServer = QueryStringParsing.get("trs_server");
             const queryTrsId = QueryStringParsing.get("trs_id");
+            const queryTrsVersionId = QueryStringParsing.get("trs_version");
+            const isRun = QueryStringParsing.get("run_form") === "true";
             const propsData = {
                 queryTrsServer,
                 queryTrsId,
+                queryTrsVersionId,
+                isRun,
             };
             this._display_vue_helper(TrsImport, propsData);
         },

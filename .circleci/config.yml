@@ -91,14 +91,6 @@ jobs:
       - *restore_repo_cache
       - *install_tox
       - run: tox -e py36-lint_docstring_include_list
-  py36_lint:
-    docker:
-      - image: circleci/python:3.6
-    <<: *set_workdir
-    steps:
-      - *restore_repo_cache
-      - *install_tox
-      - run: tox -e py36-lint
   py36_unit:
     docker:
       - image: circleci/python:3.6
@@ -168,8 +160,6 @@ workflows:
     jobs:
       - get_code
       - py36_docstring:
-          <<: *requires_get_code
-      - py36_lint:
           <<: *requires_get_code
       - py36_unit:
           <<: *requires_get_code

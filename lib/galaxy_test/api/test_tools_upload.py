@@ -240,6 +240,32 @@ class ToolsUploadTestCase(ApiTestCase):
         self.assertEqual(content, "This is a line of text.\n")
 
     @uses_test_history(require_new=False)
+    def test_stage_object(self, history_id):
+        job = {
+            "input1": "randomstr"
+        }
+        inputs, datasets = stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False, use_fetch_api=False)
+        dataset = datasets[0][0]
+        content = self.dataset_populator.get_history_dataset_content(
+            history_id=history_id,
+            dataset=dataset
+        )
+        self.assertEqual(content.strip(), '"randomstr"')
+
+    @uses_test_history(require_new=False)
+    def test_stage_object_fetch(self, history_id):
+        job = {
+            "input1": "randomstr"
+        }
+        inputs, datasets = stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False)
+        dataset = datasets[0][0]
+        content = self.dataset_populator.get_history_dataset_content(
+            history_id=history_id,
+            dataset=dataset
+        )
+        self.assertEqual(content, '"randomstr"')
+
+    @uses_test_history(require_new=False)
     def test_newlines_stage_fetch_configured(self, history_id):
         job = {
             "input1": {

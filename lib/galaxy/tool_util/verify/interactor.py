@@ -466,7 +466,7 @@ class GalaxyInteractorApi:
         return output_data['id']
 
     def delete_history(self, history):
-        return None
+        self._delete(f"histories/{history}")
 
     def __job_ready(self, job_id, history_id=None):
         if job_id is None:
@@ -876,10 +876,12 @@ def verify_tool(tool_id,
                 tool_version=None,
                 quiet=False,
                 test_history=None,
+                no_history_cleanup=False,
                 force_path_paste=False,
                 maxseconds=DEFAULT_TOOL_TEST_WAIT,
                 tool_test_dicts=None,
                 client_test_config=None,
+                skip_with_reference_data=False,
                 skip_on_dynamic_param_errors=False):
     if resource_parameters is None:
         resource_parameters = {}
@@ -900,20 +902,34 @@ def verify_tool(tool_id,
         "test_index": test_index,
     }
     client_config = client_test_config.get_test_config(job_data)
+    skip_message = None
     if client_config is not None:
         job_data.update(client_config)
         skip_message = job_data.get("skip")
-        if skip_message:
-            job_data["status"] = "skip"
-            register_job_data(job_data)
-            return
+
+    if not skip_message and skip_with_reference_data:
+        required_data_tables = tool_test_dict.get("required_data_tables")
+        required_loc_files = tool_test_dict.get("required_loc_files")
+        # TODO: actually hit the API and see if these tables are available.
+        if required_data_tables:
+            skip_message = f"Skipping test because of required data tables ({required_data_tables})"
+        if required_loc_files:
+            skip_message = f"Skipping test because of required loc files ({required_loc_files})"
+
+    if skip_message:
+        job_data["status"] = "skip"
+        register_job_data(job_data)
+        return
 
     tool_test_dict.setdefault('maxseconds', maxseconds)
     testdef = ToolTestDescription(tool_test_dict)
     _handle_def_errors(testdef)
 
+    created_history = False
     if test_history is None:
-        test_history = galaxy_interactor.new_history()
+        created_history = True
+        history_name = f"Tool Test History for {tool_id}/{tool_version}-{test_index}"
+        test_history = galaxy_interactor.new_history(history_name=history_name)
 
     # Upload data to test_history, run the tool and check the outputs - record
     # API input, job info, tool run exception, as well as exceptions related to
@@ -979,7 +995,8 @@ def verify_tool(tool_id,
             job_data["status"] = status
             register_job_data(job_data)
 
-    galaxy_interactor.delete_history(test_history)
+    if created_history and not no_history_cleanup:
+        galaxy_interactor.delete_history(test_history)
 
 
 def _handle_def_errors(testdef):
@@ -1170,6 +1187,8 @@ class ToolTestDescription:
         self.name = name
         self.maxseconds = maxseconds
         self.required_files = processed_test_dict.get("required_files", [])
+        self.required_data_tables = processed_test_dict.get("required_data_tables", [])
+        self.required_loc_files = processed_test_dict.get("required_loc_files", [])
 
         inputs = processed_test_dict.get("inputs", {})
         loaded_inputs = {}
@@ -1224,6 +1243,8 @@ class ToolTestDescription:
             "tool_id": self.tool_id,
             "tool_version": self.tool_version,
             "required_files": self.required_files,
+            "required_data_tables": self.required_data_tables,
+            "required_loc_files": self.required_loc_files,
             "error": self.error,
             "exception": self.exception,
         }
@@ -1278,7 +1299,7 @@ def galaxy_requests_post(url, data=None, files=None, as_json=False, params=None)
 
     # files doesn't really work with json, so dump the parameters
     # and do a normal POST with request's data parameter.
-    if files is not None and as_json:
+    if bool(files) and as_json:
         as_json = False
         new_items = {}
         for key, val in data.items():

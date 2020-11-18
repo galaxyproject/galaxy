@@ -48,6 +48,7 @@ A ``data_source`` tool contains a few more relevant attributes.
         <xs:element name="edam_topics" type="EdamTopics" minOccurs="0"/>
         <xs:element name="edam_operations" type="EdamOperations" minOccurs="0"/>
         <xs:element name="xrefs" type="xrefs" minOccurs="0" />
+        <xs:element name="creator" type="Creator" minOccurs="0" />
         <xs:element name="requirements" type="Requirements" minOccurs="0"/>
         <xs:element name="entry_points" type="EntryPoints" minOccurs="0" maxOccurs="1" />
         <xs:element name="description" type="xs:string" minOccurs="0">
@@ -182,6 +183,17 @@ version that should be required to run this tool. Certain legacy behaviors such
 as using standard error content to detect errors instead of exit code are disabled
 automatically if profile is set to any version newer than ``16.01``, such as
 ``16.04``.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="license" type="xs:string">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">This string specifies any full URI or a
+a short SPDX (https://spdx.org/licenses/) identifier for a license for this tool
+wrapper. The tool wrapper version can be indepedent of the underlying tool. This
+license covers the tool XML and associated scripts shipped with the tool.
+
+This is interpreted as a schema.org license attribute (see also https://schema.org/license).
+</xs:documentation>
         </xs:annotation>
       </xs:attribute>
       <xs:attribute name="python_template_version" type="xs:float">
@@ -361,6 +373,113 @@ This tag set is contained within the ``<entry_point>`` tag set. It contains the 
     </xs:attribute>
     <xs:attribute name="class" type="xs:string" use="required">
     </xs:attribute>
+  </xs:complexType>
+
+  <xs:attributeGroup name="Thing">
+    <xs:attribute name="name" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>https://schema.org/name</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="url" type="xs:string" use="optional">
+      <xs:annotation>
+      <xs:documentation>https://schema.org/url</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="identifier" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>https://schema.org/identifier</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="image" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>https://schema.org/image</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="address" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>https://schema.org/address</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="email" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>https://schema.org/email</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="telephone" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>https://schema.org/telephone</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="faxNumber" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>https://schema.org/faxNumber</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="alternateName" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>https://schema.org/alternateName</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+
+  <xs:complexType name="Person">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Describes a person. Tries to stay close to schema.org data model - see https://schema.org/Person.
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:attributeGroup ref="Thing"/>
+    <xs:attribute name="givenName" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>https://schema.org/givenName</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="familyName" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>https://schema.org/familyName</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="honorificPrefix" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>https://schema.org/honorificPrefix</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="honorificSuffix" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>https://schema.org/honorificSuffix</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="jobTitle" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation>https://schema.org/jobTitle</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="Organization">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Describes an organization. Tries to stay close to schema.org data model - see https://schema.org/Organization.
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:attributeGroup ref="Thing"/>
+  </xs:complexType>
+
+  <xs:group name="PersonOrOrganization">
+    <xs:choice>
+      <xs:element name="person" type="Person" />
+      <xs:element name="organization" type="Organization" />
+    </xs:choice>
+  </xs:group>
+
+  <xs:complexType name="Creator">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">The creator(s) of this work. See https://schema.org/creator.</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:group ref="PersonOrOrganization" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
   </xs:complexType>
 
   <xs:complexType name="Requirements">
@@ -1218,6 +1337,13 @@ associated input parameter (``param``).</xs:documentation>
 values that can be assigned to an input parameter.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="value_json" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">This variant of the value parameters can be
+used to load typed parameters. This string will be loaded as JSON and its type will
+attempt to be preserved through API requests to Galaxy.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="ftype" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">This attribute name should be included
@@ -1306,6 +1432,16 @@ tag set contained within the tool's ``<outputs>`` tag set.
 If specified, this value is the name of the output file stored in the target
 ``test-data`` directory which will be used to compare the results of executing
 the tool via the functional test framework.
+
+]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="value_json" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+
+If specified, this value will be loaded as JSON and compared against the output
+generated as JSON. This can be useful for testing tool outputs that are not files.
 
 ]]></xs:documentation>
       </xs:annotation>
@@ -3677,6 +3813,23 @@ is the ``none`` preset.</xs:documentation>
 ``<options>`` tag set - modify (e.g. remove, add, sort, ...) the list of values obtained from a locally stored file (e.g.
 a tool data table) or a dataset in the current history.
 
+Currently the following filters are defined:
+
+* ``static_value`` filter options for which the entry in a given ``column`` of the referenced file based on equality to the ``value`` attribute of the filter. 
+* ``regexp`` similar to the ``static_value`` filter, but checks if the regular expression given by ``value`` matches the entry.
+* ``param_value`` filter options for which the entry in a given ``column`` of the referenced file based on properties of another input parameter specified by ``ref``. This property is by default the value of the parameter, but also the values of another attribute (``ref_attribute``) of the parameter can be used, e.g. the extension of a data input.
+* ``data_meta`` populate or filter options based on the metadata of another input parameter specified by ``ref``. If a ``column`` is given options are filtered for which the entry in this column ``column`` is equal to metadata of the input parameter specified by ``ref``. 
+If no ``column`` is given the metadata value of the referenced input is added to the options list (in this case the corresponding ``options`` tag must not have the ``from_data_table`` or ``from_dataset`` attributes). 
+In both cases the desired metadata is selected by ``key``.
+
+The ``static_value`` and ``regexp`` filters can be inverted by setting ``keep`` to true.
+
+* ``add_value``: add an option with a given ``name`` and ``value`` to the options. By default the new option is appended, with ``index`` the insertion position can be specified.
+* ``remove_value``: remove a value from the options. Either specified explicitly with ``value``, the value of another input specifified with ``ref``, or the metatdata ``key`` of another input ``meta_ref``.
+* ``unique_value``: remove options that have duplicate entries in the given ``column``.
+* ``sort_by``: sort options by the entries of a given ``column``.
+* ``multiple_splitter``: split the entries of the specified ``column``(s) in the referenced file using a ``separator``. Thereby the number of columns is increased. 
+
 ### Examples
 
 The following example from Mothur's
@@ -3777,28 +3930,8 @@ demonstrates splitting up strings into multiple values.
     <xs:attribute name="type" type="FilterType" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
-Currently the following filters are defined:
-
-* ``static_value`` filter options for which the entry in a given ``column`` of the referenced file based on equality to the ``value`` attribute of the filter. 
-* ``regexp`` similar to the ``static_value`` filter, but checks if the regular expression given by ``value`` matches the entry.
-* ``param_value`` filter options for which the entry in a given ``column`` of the referenced file based on properties of another input parameter specified by ``ref``. This property is by default the value of the parameter, but also the values of another attribute (``ref_attribute``) of the parameter can be used, e.g. the extension of a data input.
-* ``data_meta`` If a ``column`` is given options are filtered for which the entry in this column ``column`` is equal to metadata of another input parameter specified by ``ref``. 
-If no ``column`` is given the metadata value of the referenced input is added to the options list (in this case the corresponding ``options`` tag must not have the ``from_data_table`` or ``from_dataset`` attributes). 
-In both cases the desired metadata is selected by ``key``.
-
-The above filters can be inverted by setting ``keep`` to true.
-
-* ``add_value``: add an option with a given ``name`` and ``value`` to the options. By default the new option is appended, with ``index`` the insertion position can be specified.
-* ``remove_value``: remove a value from the options. Either specified explicitly with ``value``, the value of another input specifified with ``ref``, or the metatdata ``key`` of another input ``meta_ref``.
-* ``unique_value``: remove options that have duplicate entries in the given ``column``.
-* ``sort_by``: sort options by the entries of a given ``column``.
-* ``multiple_splitter``: split the entries of the specified ``column``(s) in the referenced file using a ``separator``. Thereby the number of columns is increased. 
-
-Note that filters that are applyed after one of the latter two filters must not refer to 
-
-These values are defined in the module
-[/lib/galaxy/tools/parameters/dynamic_options.py](https://github.com/galaxyproject/galaxy/blob/master/lib/galaxy/tools/parameters/dynamic_options.py)
-in the ``filter_types`` dictionary. 
+Currently the filters in the ``filter_types`` dictionary in the module
+[/lib/galaxy/tools/parameters/dynamic_options.py](https://github.com/galaxyproject/galaxy/blob/master/lib/galaxy/tools/parameters/dynamic_options.py) are defined. 
 
 Deprecated filter types:
 

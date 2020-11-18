@@ -88,10 +88,23 @@ https://help.github.com/en/github/getting-started-with-github/git-and-github-lea
    Developers reviewing your pull request will be happy to help you add or run
    the relevant tests as part of the pull request review process.
 
-6. Commit and push your changes to your
+6. Write a useful and properly formatted commit message. 
+   Follow [these guidelines and template](https://git-scm.com/book/en/v2/Distributed-Git-Contributing-to-a-Project#_commit_guidelines),
+   in particular start your message with a short imperative sentence on a single
+   line, possibly followed by a blank line and a more detailed explanation.
+
+   In the detailed explanation it's good to include relevant external references
+   (e.g. GitHub issue fixed) using full URLs, and errors or tracebacks the
+   commit is supposed to fix.
+   You can use the Markdown syntax for lists and code highlighting, wrapping the
+   explanation text at 72 characters when possible.
+
+   Example of a good commit message: https://github.com/galaxyproject/galaxy/commit/0429c4d515536f9cca6b70b2abeb019de807c955
+
+7. Commit and push your changes to your
    [fork](https://help.github.com/en/github/using-git/pushing-commits-to-a-remote-repository).
 
-7. Open a [pull
+8. Open a [pull
    request](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-a-pull-request)
    with these changes. Your pull request message ideally should include:
 
@@ -101,10 +114,10 @@ https://help.github.com/en/github/getting-started-with-github/git-and-github-lea
 
    * How to test the changes, if you haven't included specific tests already.
 
-8. The pull request should pass all the continuous integration tests which are
+9. The pull request should pass all the continuous integration tests which are
    automatically started by GitHub using e.g. Travis CI.
 
-9. Your pull request will be handled according to [some
+10. Your pull request will be handled according to [some
    rules](doc/source/project/organization.rst#handling-pull-requests).
 
 ## Style guidelines

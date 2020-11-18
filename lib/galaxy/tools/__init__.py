@@ -1,6 +1,7 @@
 """
 Classes encapsulating galaxy tools and tool configuration.
 """
+import collections
 import itertools
 import json
 import logging
@@ -187,6 +188,11 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "Convert characters1": packaging.version.parse("1.0.1"),
     "substitutions1": packaging.version.parse("1.0.1"),
     "winSplitter": packaging.version.parse("1.0.1"),
+}
+safe_update = collections.namedtuple("SafeUpdate", "min_version current_version")
+# Tool updates that did not change parameters in a way that requires rebuilding workflows
+WORKFLOW_SAFE_TOOL_VERSION_UPDATES = {
+    'Filter1': safe_update(packaging.version.parse("1.1.0"), packaging.version.parse("1.1.1"))
 }
 
 
@@ -884,6 +890,8 @@ class Tool(Dictifiable):
 
         # Is this a 'hidden' tool (hidden in tool menu)
         self.hidden = tool_source.parse_hidden()
+        self.license = tool_source.parse_license()
+        self.creator = tool_source.parse_creator()
 
         self.__parse_legacy_features(tool_source)
 
@@ -2192,6 +2200,8 @@ class Tool(Dictifiable):
             'history_id'    : trans.security.encode_id(history.id) if history else None,
             'display'       : self.display_interface,
             'action'        : action,
+            'license'       : self.license,
+            'creator'       : self.creator,
             'method'        : self.method,
             'enctype'       : self.enctype
         })
@@ -2476,6 +2486,26 @@ class ExpressionTool(Tool):
         expressions.write_evalute_script(os.path.join(local_working_directory))
         with open(expression_inputs_path, "w") as f:
             json.dump(expression_inputs, f)
+
+    def exec_after_process(self, app, inp_data, out_data, param_dict, job=None, **kwds):
+        for key, val in self.outputs.items():
+            if key not in out_data:
+                # Skip filtered outputs
+                continue
+            if val.output_type == "data":
+
+                with open(out_data[key].file_name, "r") as f:
+                    src = json.load(f)
+                assert isinstance(src, dict), f"Expected dataset 'src' to be a dictionary - actual type is {type(src)}"
+                dataset_id = src["id"]
+                copy_object = None
+                for input_dataset in inp_data.values():
+                    if input_dataset and input_dataset.id == dataset_id:
+                        copy_object = input_dataset
+                        break
+                if copy_object is None:
+                    raise Exception("Failed to find dataset output.")
+                out_data[key].copy_from(copy_object)
 
     def parse_environment_variables(self, tool_source):
         """ Setup environment variable for inputs file.

@@ -76,6 +76,7 @@ model.User.table = Table(
     Column("deleted", Boolean, index=True, default=False),
     Column("purged", Boolean, index=True, default=False),
     Column("disk_usage", Numeric(15, 0), index=True),
+    # Column("person_metadata", JSONType),  # TODO: add persistent, configurable metadata rep for workflow creator
     Column("active", Boolean, index=True, default=True, nullable=False),
     Column("activation_token", TrimmedString(64), nullable=True, index=True))
 
@@ -999,6 +1000,8 @@ model.Workflow.table = Table(
     Column("has_cycles", Boolean),
     Column("has_errors", Boolean),
     Column("reports_config", JSONType),
+    Column("creator_metadata", JSONType),
+    Column("license", TEXT),
     Column("uuid", UUIDType, nullable=True))
 
 model.WorkflowStep.table = Table(
@@ -2088,8 +2091,8 @@ mapper(model.LibraryFolderInfoAssociation, model.LibraryFolderInfoAssociation.ta
 mapper(model.LibraryDataset, model.LibraryDataset.table, properties=dict(
     folder=relation(model.LibraryFolder),
     library_dataset_dataset_association=relation(model.LibraryDatasetDatasetAssociation,
-        primaryjoin=(model.LibraryDataset.table.c.library_dataset_dataset_association_id ==
-                     model.LibraryDatasetDatasetAssociation.table.c.id)),
+        foreign_keys=model.LibraryDataset.table.c.library_dataset_dataset_association_id,
+        post_update=True),
     expired_datasets=relation(model.LibraryDatasetDatasetAssociation,
         foreign_keys=[model.LibraryDataset.table.c.id, model.LibraryDataset.table.c.library_dataset_dataset_association_id],
         primaryjoin=(
@@ -2104,7 +2107,7 @@ mapper(model.LibraryDataset, model.LibraryDataset.table, properties=dict(
 mapper(model.LibraryDatasetDatasetAssociation, model.LibraryDatasetDatasetAssociation.table, properties=dict(
     dataset=relation(model.Dataset),
     library_dataset=relation(model.LibraryDataset,
-    primaryjoin=(model.LibraryDatasetDatasetAssociation.table.c.library_dataset_id == model.LibraryDataset.table.c.id)),
+        foreign_keys=model.LibraryDatasetDatasetAssociation.table.c.library_dataset_id),
     # user=relation( model.User.mapper ),
     user=relation(model.User),
     copied_from_library_dataset_dataset_association=relation(model.LibraryDatasetDatasetAssociation,
@@ -2625,6 +2628,14 @@ simple_mapping(
 simple_mapping(
     model.WorkflowInvocationOutputValue,
     workflow_invocation=relation(model.WorkflowInvocation, backref="output_values"),
+    workflow_invocation_step=relation(model.WorkflowInvocationStep,
+        foreign_keys=[model.WorkflowInvocationStep.table.c.workflow_invocation_id, model.WorkflowInvocationStep.table.c.workflow_step_id],
+        primaryjoin=and_(
+            model.WorkflowInvocationStep.table.c.workflow_invocation_id == model.WorkflowInvocationOutputValue.table.c.workflow_invocation_id,
+            model.WorkflowInvocationStep.table.c.workflow_step_id == model.WorkflowInvocationOutputValue.table.c.workflow_step_id,
+        ),
+        backref='output_value'
+    ),
     workflow_step=relation(model.WorkflowStep),
     workflow_output=relation(model.WorkflowOutput),
 )

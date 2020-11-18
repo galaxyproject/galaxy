@@ -1,8 +1,10 @@
 import { getGalaxyInstance } from "app";
+import { getAppRoot } from "onload/loadConfig";
 import { Toast } from "ui/toast";
 import mod_library_model from "mvc/library/library-model";
 import _ from "underscore";
 import Backbone from "backbone";
+import axios from "axios";
 import LIST_CREATOR from "components/Collections/ListCollectionCreator";
 import LIST_CREATOR_MODAL from "components/Collections/ListCollectionCreatorModal";
 import PAIR_CREATOR from "components/Collections/PairCollectionCreator";
@@ -30,6 +32,9 @@ var ImportCollectionModal = Backbone.View.extend({
     fetchUserHistories: function () {
         this.histories = new mod_library_model.GalaxyHistories();
         return this.histories.fetch();
+    },
+    createNewHistory: function (new_history_name) {
+        return axios.post(`${getAppRoot()}api/histories`, { name: new_history_name });
     },
     showCollectionSelect: function (e) {
         const Galaxy = getGalaxyInstance();
@@ -164,7 +169,8 @@ var ImportCollectionModal = Backbone.View.extend({
             collection_type: collectionType,
             history_id: history_id,
             name: name,
-            hide_source_items: hideSourceItems || false,
+            hide_source_items: hideSourceItems,
+            copy_elements: !hideSourceItems,
             element_identifiers: elementIdentifiers,
         });
         return hdca.save(options);

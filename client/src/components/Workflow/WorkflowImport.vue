@@ -31,6 +31,7 @@ import { getGalaxyInstance } from "app";
 import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import { redirectOnImport } from "./utils";
 
 Vue.use(BootstrapVue);
 
@@ -67,9 +68,7 @@ export default {
                 axios
                     .post(`${getAppRoot()}api/workflows`, formData)
                     .then((response) => {
-                        window.location = `${getAppRoot()}workflows/list?message=${
-                            response.data.message
-                        }&status=success`;
+                        redirectOnImport(getAppRoot(), response.data);
                     })
                     .catch((error) => {
                         const message = error.response.data && error.response.data.err_msg;

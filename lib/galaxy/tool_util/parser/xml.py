@@ -1,3 +1,4 @@
+import json
 import logging
 import re
 import uuid
@@ -397,7 +398,8 @@ class XmlToolSource(ToolSource):
         default_metadata_source="",
         expression_type=None,
     ):
-        output = ToolOutput(data_elem.get("name"))
+        from_expression = data_elem.get("from")
+        output = ToolOutput(data_elem.get("name"), from_expression=from_expression)
         output_format = data_elem.get("format", default_format)
         auto_format = string_as_bool(data_elem.get("auto_format", "false"))
         if auto_format and output_format != "data":
@@ -527,11 +529,33 @@ class XmlToolSource(ToolSource):
         # - Enable buggy interpreter attribute.
         return self.root.get("profile", "16.01")
 
+    def parse_license(self):
+        return self.root.get("license")
+
     def parse_python_template_version(self):
         python_template_version = self.root.get("python_template_version", None)
         if python_template_version is not None:
             python_template_version = packaging.version.parse(python_template_version)
         return python_template_version
+
+    def parse_creator(self):
+        creators_el = self.root.find("creator")
+        if creators_el is None:
+            return None
+
+        creators = []
+        for creator_el in creators_el:
+            creator_as_dict = {}
+            if creator_el.tag == "person":
+                clazz = "Person"
+            elif creator_el.tag == "organization":
+                clazz = "Organization"
+            else:
+                continue
+            creator_as_dict["class"] = clazz
+            creator_as_dict.update(creator_el.attrib)
+            creators.append(creator_as_dict)
+        return creators
 
 
 def _test_elem_to_dict(test_elem, i, profile=None):
@@ -620,6 +644,10 @@ def __parse_test_attributes(output_elem, attrib, parse_elements=False, parse_dis
 
     # File no longer required if an list of assertions was present.
     attributes = {}
+
+    if 'value_json' in attrib:
+        attributes['object'] = json.loads(attrib.pop('value_json'))
+
     # Method of comparison
     attributes['compare'] = attrib.pop('compare', 'diff').lower()
     # Number of lines to allow to vary in logs (for dates, etc)
@@ -654,7 +682,8 @@ def __parse_test_attributes(output_elem, attrib, parse_elements=False, parse_dis
 
     has_checksum = md5sum or checksum
     has_nested_tests = extra_files or element_tests or primary_datasets
-    if not (assert_list or file or metadata or has_checksum or has_nested_tests):
+    has_object = 'object' in attributes
+    if not (assert_list or file or metadata or has_checksum or has_nested_tests or has_object):
         raise Exception("Test output defines nothing to check (e.g. must have a 'file' check against, assertions to check, metadata or checksum tests, etc...)")
     attributes['assert_list'] = assert_list
     attributes['extra_files'] = extra_files
@@ -774,8 +803,11 @@ def __parse_param_elem(param_elem, i=0):
         value = attrib['values'].split(',')
     elif 'value' in attrib:
         value = attrib['value']
+    elif 'value_json' in attrib:
+        value = json.loads(attrib['value_json'])
     else:
         value = None
+
     children_elem = param_elem
     if children_elem is not None:
         # At this time, we can assume having children only

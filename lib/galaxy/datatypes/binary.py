@@ -895,12 +895,12 @@ class Loom(H5):
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             with h5py.File(dataset.file_name, 'r') as loom_file:
-                dataset.metadata.title = util.unicodify(loom_file.attrs.get('title'))
-                dataset.metadata.description = util.unicodify(loom_file.attrs.get('description'))
-                dataset.metadata.url = util.unicodify(loom_file.attrs.get('url'))
-                dataset.metadata.doi = util.unicodify(loom_file.attrs.get('doi'))
-                dataset.metadata.loom_spec_version = util.unicodify(loom_file.attrs.get('LOOM_SPEC_VERSION'))
-                dataset.creation_date = util.unicodify(loom_file.attrs.get('creation_date'))
+                dataset.metadata.title = loom_file.attrs.get('title')
+                dataset.metadata.description = loom_file.attrs.get('description')
+                dataset.metadata.url = loom_file.attrs.get('url')
+                dataset.metadata.doi = loom_file.attrs.get('doi')
+                dataset.metadata.loom_spec_version = loom_file.attrs.get('LOOM_SPEC_VERSION')
+                dataset.creation_date = loom_file.attrs.get('creation_date')
                 dataset.metadata.shape = tuple(loom_file['matrix'].shape)
 
                 tmp = list(loom_file.get('layers', {}).keys())
@@ -939,6 +939,18 @@ class Anndata(H5):
     >>> Anndata().sniff(get_test_fname('test.mz5'))
     False
     >>> Anndata().sniff(get_test_fname('import.loom.krumsiek11.h5ad'))
+    True
+    >>> Anndata().sniff(get_test_fname('adata_0_6_small2.h5ad'))
+    True
+    >>> Anndata().sniff(get_test_fname('adata_0_6_small.h5ad'))
+    True
+    >>> Anndata().sniff(get_test_fname('adata_0_7_4_small2.h5ad'))
+    True
+    >>> Anndata().sniff(get_test_fname('adata_0_7_4_small.h5ad'))
+    True
+    >>> Anndata().sniff(get_test_fname('adata_unk2.h5ad'))
+    True
+    >>> Anndata().sniff(get_test_fname('adata_unk.h5ad'))
     True
     """
     file_ext = 'h5ad'
@@ -982,12 +994,12 @@ class Anndata(H5):
     def set_meta(self, dataset, overwrite=True, **kwd):
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         with h5py.File(dataset.file_name, 'r') as anndata_file:
-            dataset.metadata.title = util.unicodify(anndata_file.attrs.get('title'))
-            dataset.metadata.description = util.unicodify(anndata_file.attrs.get('description'))
-            dataset.metadata.url = util.unicodify(anndata_file.attrs.get('url'))
-            dataset.metadata.doi = util.unicodify(anndata_file.attrs.get('doi'))
-            dataset.creation_date = util.unicodify(anndata_file.attrs.get('creation_date'))
-            dataset.metadata.shape = anndata_file.attrs.get('shape') or dataset.metadata.shape
+            dataset.metadata.title = anndata_file.attrs.get('title')
+            dataset.metadata.description = anndata_file.attrs.get('description')
+            dataset.metadata.url = anndata_file.attrs.get('url')
+            dataset.metadata.doi = anndata_file.attrs.get('doi')
+            dataset.creation_date = anndata_file.attrs.get('creation_date')
+            dataset.metadata.shape = anndata_file.attrs.get('shape', dataset.metadata.shape)
             # none of the above appear to work in any dataset tested, but could be useful for future
             # AnnData datasets
 
@@ -998,21 +1010,29 @@ class Anndata(H5):
             def _layercountsize(tmp, lennames=0):
                 "From TMP and LENNAMES, return layers, their number, and the length of one of the layers (all equal)."
                 if hasattr(tmp, 'dtype'):
-                    layers = [util.unicodify(x) for x in tmp.dtype.names]
+                    layers = list(tmp.dtype.names)
                     count = len(tmp.dtype)
                     size = int(tmp.size)
                 else:
-                    layers = [util.unicodify(x) for x in list(tmp.keys())]
+                    layers = list(tmp.keys())
                     count = len(layers)
                     size = lennames
                 return (layers, count, size)
 
             if 'obs' in dataset.metadata.layers_names:
                 tmp = anndata_file["obs"]
-                dataset.metadata.obs_names = [util.unicodify(x) for x in tmp["index"]]
-                dataset.metadata.obs_layers, \
-                    dataset.metadata.obs_count, \
-                    dataset.metadata.obs_size = _layercountsize(tmp, len(dataset.metadata.obs_names))
+                obs_index = None
+                if "index" in tmp:
+                    obs_index = "index"
+                elif "_index" in tmp:
+                    obs_index = "_index"
+                # do not attempt to parse beyond these
+                if obs_index:
+                    dataset.metadata.obs_names = list(tmp[obs_index])
+                    x, y, z = _layercountsize(tmp, len(dataset.metadata.obs_names))
+                    dataset.metadata.obs_layers = x
+                    dataset.metadata.obs_count = y
+                    dataset.metadata.obs_size = z
 
             if 'obsm' in dataset.metadata.layers_names:
                 tmp = anndata_file["obsm"]
@@ -1022,17 +1042,25 @@ class Anndata(H5):
                 tmp = anndata_file["raw.var"]
                 # full set of genes would never need to be previewed
                 # dataset.metadata.raw_var_names = tmp["index"]
-                dataset.metadata.raw_var_layers, \
-                    dataset.metadata.raw_var_count, \
-                    dataset.metadata.raw_var_size = _layercountsize(tmp, len(tmp["index"]))
+                x, y, z = _layercountsize(tmp, len(tmp["index"]))
+                dataset.metadata.raw_var_layers = x
+                dataset.metadata.raw_var_count = y
+                dataset.metadata.raw_var_size = z
 
             if 'var' in dataset.metadata.layers_names:
                 tmp = anndata_file["var"]
-                # row names are never used in preview windows
-                # dataset.metadata.var_names = tmp["index"]
-                dataset.metadata.var_layers, \
-                    dataset.metadata.var_count, \
-                    dataset.metadata.var_size = _layercountsize(tmp, len(tmp["index"]))
+                var_index = None
+                if "index" in tmp:
+                    var_index = "index"
+                elif "_index" in tmp:
+                    var_index = "_index"
+                # We never use var_names
+                # dataset.metadata.var_names = tmp[var_index]
+                if var_index:
+                    x, y, z = _layercountsize(tmp, len(tmp[var_index]))
+                    dataset.metadata.var_layers = x
+                    dataset.metadata.var_count = y
+                    dataset.metadata.var_size = z
 
             if 'varm' in dataset.metadata.layers_names:
                 tmp = anndata_file["varm"]

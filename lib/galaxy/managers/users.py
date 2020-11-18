@@ -349,7 +349,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
 
     def quota(self, user, total=False):
         if total:
-            return self.app.quota_agent.get_quota(user, nice_size=True)
+            return self.app.quota_agent.get_quota_nice_size(user)
         return self.app.quota_agent.get_percent(user=user)
 
     def tags_used(self, user, tag_models=None):

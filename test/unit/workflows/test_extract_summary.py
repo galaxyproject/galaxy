@@ -151,4 +151,3 @@ class MockHdca:
         element.dataset_instance.creating_job_associations = [
             creating,
         ]
-        self.collection.elements = [element]

@@ -84,12 +84,12 @@ class DatasetCollectionManager:
                         element = self.precreate_dataset_collection(substructure, allow_unitialized_element=allow_unitialized_element)
 
                 element = model.DatasetCollectionElement(
+                    collection=dataset_collection,
                     element=element,
                     element_identifier=identifier,
                     element_index=index,
                 )
                 elements.append(element)
-            dataset_collection.elements = elements
             dataset_collection.element_count = len(elements)
 
         return dataset_collection
@@ -219,7 +219,7 @@ class DatasetCollectionManager:
                                          history=None):
         if collection_type_description.has_subcollections():
             # Nested collection - recursively create collections and update identifiers.
-            self.__recursively_create_collections_for_identifiers(trans, element_identifiers, hide_source_items, copy_elements)
+            self.__recursively_create_collections_for_identifiers(trans, element_identifiers, hide_source_items, copy_elements, history=history)
         new_collection = False
         for element_identifier in element_identifiers:
             if element_identifier.get("src") == "new_collection" and element_identifier.get('collection_type') == '':
@@ -350,7 +350,7 @@ class DatasetCollectionManager:
             context.flush()
         return dataset_collection_instance
 
-    def __recursively_create_collections_for_identifiers(self, trans, element_identifiers, hide_source_items, copy_elements):
+    def __recursively_create_collections_for_identifiers(self, trans, element_identifiers, hide_source_items, copy_elements, history=None):
         for index, element_identifier in enumerate(element_identifiers):
             try:
                 if element_identifier.get("src", None) != "new_collection":
@@ -368,6 +368,7 @@ class DatasetCollectionManager:
                 element_identifiers=element_identifier["element_identifiers"],
                 hide_source_items=hide_source_items,
                 copy_elements=copy_elements,
+                history=history,
             )
             element_identifier["__object__"] = collection
 

@@ -55,7 +55,11 @@ class ToolDocumentCache:
         self.writeable_cache_file = None
 
     def get(self, config_file):
-        tool_document = self._cache.get(config_file)
+        try:
+            tool_document = self._cache.get(config_file)
+        except sqlite3.OperationalError:
+            log.debug("Tool document cache unavailable")
+            return None
         if not tool_document:
             return None
         if tool_document.get('tool_cache_version') != CURRENT_TOOL_CACHE_VERSION:
@@ -80,22 +84,28 @@ class ToolDocumentCache:
             self.reopen_ro()
 
     def set(self, config_file, tool_source):
-        if self.cache_file_is_writeable:
-            self._make_writable()
-            to_persist = {
-                'document': tool_source.to_string(),
-                'macro_paths': tool_source.macro_paths,
-                'paths_and_modtimes': tool_source.paths_and_modtimes(),
-                'tool_cache_version': CURRENT_TOOL_CACHE_VERSION,
-            }
-            self._cache[config_file] = to_persist
+        try:
+            if self.cache_file_is_writeable:
+                self._make_writable()
+                to_persist = {
+                    'document': tool_source.to_string(),
+                    'macro_paths': tool_source.macro_paths,
+                    'paths_and_modtimes': tool_source.paths_and_modtimes(),
+                    'tool_cache_version': CURRENT_TOOL_CACHE_VERSION,
+                }
+                try:
+                    self._cache[config_file] = to_persist
+                except RuntimeError:
+                    log.debug("Tool document cache not writeable")
+        except sqlite3.OperationalError:
+            log.debug("Tool document cache unavailable")
 
     def delete(self, config_file):
         if self.cache_file_is_writeable:
             self._make_writable()
             try:
                 del self._cache[config_file]
-            except KeyError:
+            except (KeyError, RuntimeError):
                 pass
 
     def __del__(self):

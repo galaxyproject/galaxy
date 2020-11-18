@@ -1,11 +1,11 @@
-FROM python:3.5
+FROM python:3.6
 
 ENV DEBIAN_FRONTEND noninteractive
 ENV LC_ALL C.UTF-8
 ENV LANG C.UTF-8
 
 # Install Pipenv
-RUN apt update && apt -y upgrade
+RUN apt-get update && apt-get -y upgrade
 RUN pip install pipenv
 
 ADD docker_script.sh /docker_script.sh

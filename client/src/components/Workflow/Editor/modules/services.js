@@ -24,7 +24,7 @@ export async function getModule(request_data) {
 
 export async function loadWorkflow(workflow, id, version, appendData) {
     try {
-        const versionQuery = version ? `version=${version}` : "";
+        const versionQuery = Number.isInteger(version) ? `version=${version}` : "";
         const { data } = await axios.get(`${getAppRoot()}workflow/load_workflow?_=true&id=${id}&${versionQuery}`);
         fromSimple(workflow, data, appendData);
         return data;

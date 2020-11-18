@@ -1,3 +1,4 @@
+import collections
 import unittest
 import uuid
 
@@ -12,7 +13,41 @@ datatypes_registry.load_datatypes()
 galaxy.model.set_datatypes_registry(datatypes_registry)
 
 
-class MappingTests(unittest.TestCase):
+class BaseModelTestCase(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        # Start the database and connect the mapping
+        cls.model = mapping.init("/tmp", "sqlite:///:memory:", create_tables=True, object_store=MockObjectStore())
+        assert cls.model.engine is not None
+
+    @classmethod
+    def query(cls, type):
+        return cls.model.session.query(type)
+
+    @classmethod
+    def persist(cls, *args, **kwargs):
+        session = cls.session()
+        flush = kwargs.get('flush', True)
+        for arg in args:
+            session.add(arg)
+            if flush:
+                session.flush()
+        if kwargs.get('expunge', not flush):
+            cls.expunge()
+        return arg  # Return last or only arg.
+
+    @classmethod
+    def session(cls):
+        return cls.model.session
+
+    @classmethod
+    def expunge(cls):
+        cls.model.session.flush()
+        cls.model.session.expunge_all()
+
+
+class MappingTests(BaseModelTestCase):
 
     def test_annotations(self):
         model = self.model
@@ -151,6 +186,36 @@ class MappingTests(unittest.TestCase):
         assert isinstance(history.name, str)
         assert isinstance(history.get_display_name(), str)
         assert history.get_display_name() == 'Hello₩◎ґʟⅾ'
+
+    def test_hda_to_library_dataset_dataset_association(self):
+        u = self.model.User(email="mary@example.com", password="password")
+        hda = self.model.HistoryDatasetAssociation(name='hda_name')
+        self.persist(hda)
+        trans = collections.namedtuple('trans', 'user')
+        target_folder = self.model.LibraryFolder(name='library_folder')
+        ldda = hda.to_library_dataset_dataset_association(
+            trans=trans(user=u),
+            target_folder=target_folder,
+        )
+        assert target_folder.item_count == 1
+        assert ldda.id
+        assert ldda.library_dataset.id
+        assert ldda.library_dataset_id
+        assert ldda.library_dataset.library_dataset_dataset_association
+        assert ldda.library_dataset.library_dataset_dataset_association_id
+        library_dataset_id = ldda.library_dataset_id
+        replace_dataset = ldda.library_dataset
+        new_ldda = hda.to_library_dataset_dataset_association(
+            trans=trans(user=u),
+            target_folder=target_folder,
+            replace_dataset=replace_dataset
+        )
+        assert new_ldda.id != ldda.id
+        assert new_ldda.library_dataset_id == library_dataset_id
+        assert new_ldda.library_dataset.library_dataset_dataset_association_id == new_ldda.id
+        assert len(new_ldda.library_dataset.expired_datasets) == 1
+        assert new_ldda.library_dataset.expired_datasets[0] == ldda
+        assert target_folder.item_count == 1
 
     def test_tags(self):
         model = self.model
@@ -557,37 +622,6 @@ class MappingTests(unittest.TestCase):
 
     def new_hda(self, history, **kwds):
         return history.add_dataset(self.model.HistoryDatasetAssociation(create_dataset=True, sa_session=self.model.session, **kwds))
-
-    @classmethod
-    def setUpClass(cls):
-        # Start the database and connect the mapping
-        cls.model = mapping.init("/tmp", "sqlite:///:memory:", create_tables=True, object_store=MockObjectStore())
-        assert cls.model.engine is not None
-
-    @classmethod
-    def query(cls, type):
-        return cls.model.session.query(type)
-
-    @classmethod
-    def persist(cls, *args, **kwargs):
-        session = cls.session()
-        flush = kwargs.get('flush', True)
-        for arg in args:
-            session.add(arg)
-            if flush:
-                session.flush()
-        if kwargs.get('expunge', not flush):
-            cls.expunge()
-        return arg  # Return last or only arg.
-
-    @classmethod
-    def session(cls):
-        return cls.model.session
-
-    @classmethod
-    def expunge(cls):
-        cls.model.session.flush()
-        cls.model.session.expunge_all()
 
 
 class MockObjectStore:
