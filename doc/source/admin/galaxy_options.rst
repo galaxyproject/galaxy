@@ -435,7 +435,7 @@
 :Description:
     conda channels to enable by default
     (https://conda.io/docs/user-guide/tasks/manage-channels.html)
-:Default: ``iuc,conda-forge,bioconda,defaults``
+:Default: ``conda-forge,bioconda,defaults``
 :Type: str
 
 

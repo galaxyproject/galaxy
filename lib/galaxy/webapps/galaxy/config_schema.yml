@@ -331,7 +331,7 @@ mapping:
 
       conda_ensure_channels:
         type: str
-        default: iuc,conda-forge,bioconda,defaults
+        default: conda-forge,bioconda,defaults
         required: false
         desc: |
           conda channels to enable by default
