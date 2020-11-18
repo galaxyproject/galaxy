@@ -75,7 +75,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         label = editor.label_input.wait_for_value()
         assert label == "input1", label
         annotation = editor.annotation_input.wait_for_value()
-        assert annotation == "my cool annotation"
+        assert annotation == "my cool annotation", annotation
         data_input_node.destroy.wait_for_and_click()
         data_input_node.wait_for_absent()
         self.screenshot("workflow_editor_data_input_deleted")
@@ -100,7 +100,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         label = editor.label_input.wait_for_value()
         assert label == "input1", label
         annotation = editor.annotation_input.wait_for_value()
-        assert annotation == "my cool annotation"
+        assert annotation == "my cool annotation", annotation
         data_input_node.destroy.wait_for_and_click()
         data_input_node.wait_for_absent()
         self.sleep_for(self.wait_types.UX_RENDER)
@@ -126,7 +126,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         label = editor.label_input.wait_for_value()
         assert label == "input1", label
         annotation = editor.annotation_input.wait_for_value()
-        assert annotation == "my cool annotation"
+        assert annotation == "my cool annotation", annotation
         data_input_node.destroy.wait_for_and_click()
         data_input_node.wait_for_absent()
         self.sleep_for(self.wait_types.UX_RENDER)

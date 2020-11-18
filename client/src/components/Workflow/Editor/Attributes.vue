@@ -27,7 +27,7 @@
         <div id="workflow-annotation-area" class="mt-2">
             <b>Annotation</b>
             <meta itemprop="description" :content="annotation" />
-            <b-textarea id="workflow-annotation" :value="annotation" @change="onAnnotation" />
+            <b-textarea id="workflow-annotation" :value="annotation" @input="onAnnotation" />
             <div class="form-text text-muted">
                 These notes will be visible when this workflow is viewed.
             </div>
@@ -165,7 +165,12 @@ export default {
             this.onAttributes({ tags });
         },
         onAnnotation(annotation) {
-            this.onAttributes({ annotation });
+            if (this.annotationTimeout) {
+                clearTimeout(this.annotationTimeout);
+            }
+            this.annotationTimeout = setTimeout(() => {
+                this.onAttributes({ annotation });
+            }, 300);
         },
         onRename(name) {
             this.onAttributes({ name });
@@ -192,6 +197,9 @@ export default {
             this.services.updateWorkflow(this.id, data).catch((error) => {
                 this.onError(error);
             });
+        },
+        beforeDestroy: function () {
+            clearTimeout(this.annotationTimeout);
         },
     },
 };
