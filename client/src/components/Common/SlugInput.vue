@@ -2,8 +2,8 @@
     <b-input
         v-model="slugInput"
         @change="onChange"
+        @keydown.enter="onChange"
         @keydown.esc="onCancel"
-        @keydown.enter="onCancel"
         class="d-inline w-auto h-auto px-1 py-0"
         ref="input"
     />

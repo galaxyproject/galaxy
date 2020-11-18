@@ -25,7 +25,7 @@
                         <font-awesome-icon role="button" :icon="['far', 'clipboard']" class="ml-1" @click="onCopy" />
                         <a v-if="showUrl" id="item-url" :href="itemUrl" target="_top" class="ml-2">{{ itemUrl }}</a>
                         <span v-else id="item-url-text">
-                            {{ itemUrlParts[0] }}<SlugInput class="ml-1" :slug="itemUrlParts[1]" @onChange="onChange"/>
+                            {{ itemUrlParts[0] }}<SlugInput class="ml-1" :slug="itemUrlParts[1]" @onChange="onChange" />
                         </span>
                     </blockquote>
                     <div v-if="item.published">
@@ -128,7 +128,7 @@
                 <div v-else>
                     <p>You have not shared this {{ modelClassLower }} with any users.</p>
                 </div>
-                <b-button :href="share_url" id="share_with_a_user"> <span>Share with a user</span> </b-button>
+                <b-button :href="shareUrl" id="share_with_a_user"> <span>Share with a user</span> </b-button>
             </div>
         </div>
     </div>
@@ -141,11 +141,9 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faClipboard, faEdit } from "@fortawesome/free-regular-svg-icons";
 import SlugInput from "components/Common/SlugInput";
-import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import axios from "axios";
-import async_save_text from "utils/async-save-text";
 
 Vue.use(BootstrapVue);
 
@@ -219,7 +217,7 @@ export default {
         published_url() {
             return `${getAppRoot()}${this.pluralNameLower}/list_published`;
         },
-        share_url() {
+        shareUrl() {
             return `${getAppRoot()}${this.modelClassLower}/share/?id=${this.id}`;
         },
         slugUrl() {
@@ -245,6 +243,8 @@ export default {
         onChange(newSlug) {
             this.showUrl = true;
             this.item.username_and_slug = `${this.itemSlugParts[0]}${newSlug}`;
+            const requestUrl = `${this.slugUrl}&new_slug=${newSlug}`;
+            axios.get(requestUrl).catch((error) => (this.err_msg = error.response.data.err_msg));
         },
         getModel() {
             this.ready = false;
@@ -286,43 +286,6 @@ export default {
                     }
                 })
                 .catch((error) => (this.err_msg = error.response.data.err_msg));
-        },
-        createSlugHandler() {
-            const on_start = function (text_elt) {
-                this.showUrl = false;
-
-                // Allow only lowercase alphanumeric and '-' characters in slug.
-                text_elt.keyup(function () {
-                    text_elt.val(
-                        $(this)
-                            .val()
-                            .replace(/\s+/g, "-")
-                            .replace(/[^a-zA-Z0-9-]/g, "")
-                            .toLowerCase()
-                    );
-                });
-            };
-            const on_finish = function (text_elt) {
-                // Replace URL text with URL.
-                this.showUrl = true;
-
-                // Set URL to new value.
-                const new_url = $("#item-url-text").text();
-                const itemUrlObj = $("#item-url");
-                itemUrlObj.attr("href", new_url);
-                itemUrlObj.text(new_url);
-            };
-            async_save_text(
-                "edit-identifier",
-                "item-identifier",
-                this.slugUrl,
-                "new_slug",
-                null,
-                false,
-                0,
-                on_start,
-                on_finish
-            );
         },
     },
 };
