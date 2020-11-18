@@ -70,6 +70,7 @@ describe("DatasetInformation/DatasetInformation.vue", () => {
             { htmlAttribute: "name", backend_key: "name" },
             { htmlAttribute: "dbkey", backend_key: "metadata_dbkey" },
             { htmlAttribute: "format", backend_key: "file_ext" },
+            { htmlAttribute: "file-contents", backend_key: "download_url" },
         ];
 
         rendered_entries.forEach((entry) => {

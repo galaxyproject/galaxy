@@ -29,6 +29,10 @@
                     <td>Format</td>
                     <td id="format">{{ dataset.file_ext }}</td>
                 </tr>
+                <tr>
+                    <td>File contents</td>
+                    <td id="file-contents"><a :href=dataset.download_url>contents</a></td>
+                </tr>
             </tbody>
         </table>
     </div>
