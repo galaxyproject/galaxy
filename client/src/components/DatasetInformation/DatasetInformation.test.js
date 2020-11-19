@@ -76,7 +76,7 @@ describe("DatasetInformation/DatasetInformation.vue", () => {
         rendered_entries.forEach((entry) => {
             const renderedText = datasetInfoTable.find(`#${entry.htmlAttribute}`).text();
             if (entry.htmlAttribute === "file-contents") {
-                expect(renderedText).toBe("contents")
+                expect(renderedText).toBe("contents");
             } else {
                 expect(renderedText).toBe(datasetResponse[entry.backend_key].toString());
             }
