@@ -22,6 +22,8 @@ import subprocess
 import sys
 import time
 
+import requests
+
 from ._cli import arg_parser
 from .mulled_build import (
     add_build_arguments,
@@ -58,6 +60,7 @@ def _new_versions(quay, conda):
 
 def run_channel(args, build_last_n_versions=1):
     """Build list of involucro commands (as shell snippet) to run."""
+    session = requests.session()
     for pkg_name, pkg_tests in get_affected_packages(args):
         repo_data = _fetch_repo_data(args)
         c = conda_versions(pkg_name, repo_data)
@@ -66,7 +69,7 @@ def run_channel(args, build_last_n_versions=1):
 
         if not args.force_rebuild:
             time.sleep(1)
-            q = quay_versions(args.namespace, pkg_name)
+            q = quay_versions(args.namespace, pkg_name, session)
             versions = _new_versions(q, c)
         else:
             versions = c
