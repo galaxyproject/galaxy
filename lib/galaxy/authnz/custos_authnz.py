@@ -2,10 +2,10 @@ import base64
 import hashlib
 import logging
 import os
+import json
 from datetime import datetime, timedelta
 from urllib.parse import quote
 
-import json
 import jwt
 import requests
 from oauthlib.common import generate_nonce
@@ -87,8 +87,6 @@ class CustosAuthnz(IdentityProvider):
         else:
             userinfo = self._get_userinfo(oauth2_session)
         email = userinfo['email']
-        # Check if username if already taken
-        username = userinfo.get('preferred_username', self._generate_username(trans, email))
         user_id = userinfo['sub']
 
         # Create or update custos_authnz_token record
