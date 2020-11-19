@@ -49,8 +49,8 @@ describe("DatasetInformation/DatasetInformation.vue", () => {
         // table should exist
         expect(datasetInfoTable).toBeTruthy();
         const rows = datasetInfoTable.findAll("tbody > tr");
-        // should contain 6 rows
-        expect(rows.length).toBe(6);
+        // should contain 7 rows
+        expect(rows.length).toBe(7);
     });
 
     it("filesize should be formatted", async () => {
@@ -75,7 +75,11 @@ describe("DatasetInformation/DatasetInformation.vue", () => {
 
         rendered_entries.forEach((entry) => {
             const renderedText = datasetInfoTable.find(`#${entry.htmlAttribute}`).text();
-            expect(renderedText).toBe(datasetResponse[entry.backend_key].toString());
+            if (entry.htmlAttribute === "file-contents") {
+                expect(renderedText).toBe("contents")
+            } else {
+                expect(renderedText).toBe(datasetResponse[entry.backend_key].toString());
+            }
         });
     });
 });
