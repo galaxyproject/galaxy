@@ -103,7 +103,7 @@ export default {
         },
         iconClasses() {
             return Object.fromEntries([
-                ["fa", true],
+                ["fa fa-fw", true],
                 ["toggle", this.tab.toggle],
                 [this.tab.icon, this.tab.icon],
             ]);
@@ -182,10 +182,10 @@ export default {
 .nav-note-port {
     position: absolute;
     font-weight: 700;
-    font-size: 0.7rem;
+    font-size: 0.6rem;
     color: gold;
-    line-height: 3.5rem;
-    margin-left: 1px;
+    top: 2.1rem;
+    margin-left: 1.5rem;
 }
 
 li .nav-link > span.toggle {
