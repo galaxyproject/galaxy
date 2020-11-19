@@ -99,9 +99,9 @@ class CollectlPlugin(InstrumentPlugin):
         pid = open(self.__pid_file(job_directory)).read().strip()
         contents = os.listdir(job_directory)
         try:
-            rel_path = filter(self._is_instrumented_collectl_log, contents)[0]
+            rel_path = next(iter(filter(self._is_instrumented_collectl_log, contents)))
             path = os.path.join(job_directory, rel_path)
-        except IndexError:
+        except StopIteration:
             message = "Failed to find collectl log in directory {}, files were {}".format(job_directory, contents)
             raise Exception(message)
 
