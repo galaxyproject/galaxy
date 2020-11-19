@@ -10,15 +10,21 @@
                         <b-card-body>
                             <p>Looks like you are about to create a new account!</p>
                             <p>
-                                Do you already have a Galaxy account?
-                                If you already have an account, hit <em>'No, go back'</em> to log in using your username 
-                                and password to connect this account via <strong>User Preferences</strong>. 
-                                <a href="https://galaxyproject.org/authnz/use/oidc/idps/custos/#link-an-existing-galaxy-account" target="_blank">See here</a> how.
+                                Do you already have a Galaxy account? If you already have an account, hit
+                                <em>'No, go back'</em> to log in using your username and password to connect this
+                                account via <strong>User Preferences</strong>.
+                                <a
+                                    href="https://galaxyproject.org/authnz/use/oidc/idps/custos/#link-an-existing-galaxy-account"
+                                    target="_blank"
+                                    >See here</a
+                                >
+                                how.
                             </p>
                             <p>If you wish to continue with the new account, select <em>'Create new account'</em>.</p>
                             <p>
-                                Reminder: Registration and usage of multiple accounts is tracked and such accounts are subject
-                                to termination and data deletion on public Galaxy servers. Connect existing account now to avoid continue to use your existing data and possible loss of data.
+                                Reminder: Registration and usage of multiple accounts is tracked and such accounts are
+                                subject to termination and data deletion on public Galaxy servers. Connect existing
+                                account now to avoid continue to use your existing data and possible loss of data.
                             </p>
 
                             <b-form-group>
@@ -26,7 +32,9 @@
                                     I have read and accept these terms to create a new Galaxy account.
                                 </b-form-checkbox>
                             </b-form-group>
-                            <b-button name="confirm" type="submit" @click.prevent="submit" :disabled="!termsRead">Yes, create new account</b-button>
+                            <b-button name="confirm" type="submit" @click.prevent="submit" :disabled="!termsRead"
+                                >Yes, create new account</b-button
+                            >
                             <b-button name="cancel" type="submit" @click.prevent="login">No, go back to login</b-button>
                         </b-card-body>
                         <b-card-footer v-if="!isAdmin">
@@ -93,20 +101,19 @@ export default {
             const rootUrl = getAppRoot();
             // set url to redirect user to 3rd party management after login
             this.$emit("setRedirect", "user/external_ids");
-            window.location = rootUrl + 'login';
+            window.location = rootUrl + "login";
         },
         submit() {
             const rootUrl = getAppRoot();
             const urlParams = new URLSearchParams(window.location.search);
-            const token = urlParams.get('custos_token');
-            
+            const token = urlParams.get("custos_token");
+
             axios
                 .post(`${rootUrl}authnz/custos/create_user?token=${token}`)
                 .then((response) => {
                     if (response.data.redirect_uri) {
                         window.location = response.data.redirect_uri;
-                    }
-                    else {
+                    } else {
                         window.location = rootUrl;
                     }
                 })
