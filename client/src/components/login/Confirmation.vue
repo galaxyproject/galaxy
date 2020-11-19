@@ -12,17 +12,18 @@
                             <p>
                                 Do you already have a Galaxy account?
                                 If you already have an account, hit <em>'No, go back'</em> to log in using your username 
-                                and password to connect this account via <strong>User Preferences</strong>.
+                                and password to connect this account via <strong>User Preferences</strong>. 
+                                <a href="https://galaxyproject.org/authnz/use/oidc/idps/custos/#link-an-existing-galaxy-account" target="_blank">See here</a> how.
                             </p>
                             <p>If you wish to continue with the new account, select <em>'Create new account'</em>.</p>
                             <p>
                                 Reminder: Registration and usage of multiple accounts is tracked and such accounts are subject
-                                to termination and data deletion. Connect existing account now to avoid possible loss of data.
+                                to termination and data deletion on public Galaxy servers. Connect existing account now to avoid continue to use your existing data and possible loss of data.
                             </p>
 
                             <b-form-group>
                                 <b-form-checkbox v-model="termsRead">
-                                    I have read and accept these terms.
+                                    I have read and accept these terms to create a new Galaxy account.
                                 </b-form-checkbox>
                             </b-form-group>
                             <b-button name="confirm" type="submit" @click.prevent="submit" :disabled="!termsRead">Yes, create new account</b-button>
