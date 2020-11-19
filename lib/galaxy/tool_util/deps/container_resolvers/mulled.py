@@ -447,7 +447,7 @@ class MulledSingularityContainerResolver(MulledDockerContainerResolver):
         self.hash_func = hash_func
         self.auto_install = string_as_bool(auto_install)
 
-    def cached_container_description(self, targets, namespace, hash_func):
+    def cached_container_description(self, targets, namespace, hash_func, resolution_cache):
         return singularity_cached_container_description(targets,
                                                         cache_directory=self.cache_directory,
                                                         hash_func=hash_func)
