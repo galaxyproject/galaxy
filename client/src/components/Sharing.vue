@@ -14,7 +14,7 @@
             <b-form-checkbox switch v-model="item.importable" @change="onImportable">
                 Make {{ model_class }} accessible via link.
             </b-form-checkbox>
-            <b-form-checkbox switch v-model="item.published" @change="onPublish">
+            <b-form-checkbox v-if="item.importable" switch v-model="item.published" @change="onPublish">
                 Make {{ model_class }} publicly available in
                 <a :href="published_url" target="_top">Published {{ plural_name }}</a> section.
             </b-form-checkbox>
