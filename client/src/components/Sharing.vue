@@ -12,7 +12,7 @@
         </div>
         <div v-else>
             <b-form-checkbox switch v-model="item.importable" @change="onImportable">
-                Make {{ model_class }} accessible via link.
+                Make {{ model_class }} accessible.
             </b-form-checkbox>
             <b-form-checkbox v-if="item.importable" switch v-model="item.published" @change="onPublish">
                 Make {{ model_class }} publicly available in
