@@ -243,7 +243,7 @@ class ContainerRegistry:
             return None
         return None if resolved_container_description is None else resolved_container_description.container_description
 
-    def resolve(self, enabled_container_types, tool_info, index=None, resolver_type=None, install=True, resolution_cache=None):
+    def resolve(self, enabled_container_types, tool_info, index=None, resolver_type=None, install=True, resolution_cache=None, session=None):
         resolution_cache = resolution_cache or self.mulled_resolution_cache
         for i, container_resolver in enumerate(self.container_resolvers):
             if index is not None and i != index:
@@ -259,7 +259,7 @@ class ContainerRegistry:
             if not install and container_resolver.builds_on_resolution:
                 continue
 
-            container_description = container_resolver.resolve(enabled_container_types, tool_info, resolution_cache=resolution_cache)
+            container_description = container_resolver.resolve(enabled_container_types, tool_info, resolution_cache=resolution_cache, session=session)
             log.info("Checking with container resolver [{}] found description [{}]".format(container_resolver, container_description))
             if container_description:
                 assert container_description.type in enabled_container_types
