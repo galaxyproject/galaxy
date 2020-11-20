@@ -116,10 +116,13 @@ function _addLabelAnnotation(self, node) {
     inputs.unshift({
         type: "text",
         name: "__annotation",
-        label: "Annotation",
+        label: "Step Annotation",
         fixed: true,
         value: node.annotation,
         area: true,
+        onchange: function (new_annotation) {
+            node.setAnnotation(new_annotation);
+        },
         help: "Add an annotation or notes to this step. Annotations are available when a workflow is viewed.",
     });
     inputs.unshift({

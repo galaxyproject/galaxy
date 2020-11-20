@@ -292,6 +292,14 @@ export default {
                 this.$emit("onActivate", this);
             });
         },
+        setAnnotation(annotation) {
+            if (this.annotationTimeout) {
+                clearTimeout(this.annotationTimeout);
+            }
+            this.annotationTimeout = setTimeout(() => {
+                this.annotation = annotation;
+            }, 100);
+        },
         setData(data) {
             this.config_form = data.config_form;
             this.tool_state = data.tool_state;
