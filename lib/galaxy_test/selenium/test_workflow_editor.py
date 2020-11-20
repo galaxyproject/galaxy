@@ -138,16 +138,16 @@ steps:
       inttest: input_int
 """)
         self.screenshot("workflow_editor_parameter_connection_simple")
-        self.assert_connected("input_int#output", "simple_constructs#inttest")
+        self.assert_connected("input_int#output", "tool_exec#inttest")
 
         editor = self.components.workflow_editor
 
-        tool_node = editor.node._(label="simple_constructs")
+        tool_node = editor.node._(label="tool_exec")
         tool_input = tool_node.input_terminal(name="inttest")
         tool_input.wait_for_and_click()
 
         editor.connector_destroy_callout.wait_for_and_click()
-        self.assert_not_connected("input_int#output", "simple_constructs#inttest")
+        self.assert_not_connected("input_int#output", "tool_exec#inttest")
         self.screenshot("workflow_editor_parameter_connection_destroyed")
 
         # When connected, cannot turn it into a RuntimeValue..
@@ -169,8 +169,8 @@ steps:
         tool_input.wait_for_visible()
         collapse_input.wait_for_absent_or_hidden()
 
-        self.workflow_editor_connect("input_int#output", "simple_constructs#inttest", screenshot_partial="workflow_editor_parameter_connection_dragging")
-        self.assert_connected("input_int#output", "simple_constructs#inttest")
+        self.workflow_editor_connect("input_int#output", "tool_exec#inttest", screenshot_partial="workflow_editor_parameter_connection_dragging")
+        self.assert_connected("input_int#output", "tool_exec#inttest")
 
     @selenium_test
     def test_existing_connections(self):
