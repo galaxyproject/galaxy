@@ -1,120 +1,62 @@
 <template>
     <div v-if="ready">
-        <h2>Share or Publish {{ model_class }} `{{ item.title }}`</h2>
-        <b-alert :show="show_danger" variant="danger" dismissible> {{ err_msg }} </b-alert>
+        <h3>Share or Publish {{ model_class }} `{{ item.title }}`</h3>
+        <b-alert :show="showDanger" variant="danger" dismissible> {{ errMsg }} </b-alert>
         <br />
-        <div v-if="!has_username">
-            <div>
-                To make a {{ model_class_lc }} accessible via link or publish it, you must create a public username:
-            </div>
+        <div v-if="!hasUsername">
+            <div>To make a {{ model_class }} accessible via link or publish it, you must create a public username:</div>
             <form class="form-group" @submit.prevent="setUsername()">
-                <label /> <input class="form-control" type="text" v-model="new_username" />
+                <input class="form-control" type="text" v-model="newUsername" />
             </form>
             <b-button type="submit" variant="primary" @click="setUsername()">Set Username</b-button>
         </div>
         <div v-else>
+            <b-form-checkbox switch v-model="item.importable" @change="onImportable">
+                Make {{ model_class }} accessible.
+            </b-form-checkbox>
+            <b-form-checkbox v-if="item.importable" switch v-model="item.published" @change="onPublish">
+                Make {{ model_class }} publicly available in
+                <a :href="published_url" target="_top">Published {{ plural_name }}</a> section.
+            </b-form-checkbox>
             <br />
-            <h3>Make {{ model_class }} Accessible via Link and Publish It</h3>
-            <div v-if="item.importable">
-                This {{ model_class_lc }} is currently <strong>{{ item_status }}</strong
-                >.
-                <div>
-                    <p>Anyone can view and import this {{ model_class_lc }} by visiting the following URL:</p>
+            <div>
+                <div v-if="item.importable">
+                    <div>
+                        This {{ model_class }} is currently <strong>{{ itemStatus }}</strong
+                        >.
+                    </div>
+                    <p>Anyone can view and import this {{ model_class }} by visiting the following URL:</p>
                     <blockquote>
-                        <a id="item-url" :href="item_url" target="_top">{{ item_url }}</a>
-                        <span id="item-url-text" style="display: none;">
-                            {{ item_url_parts[0] }}<span id="item-identifier">{{ item_url_parts[1] }}</span>
+                        <b-button title="Edit URL" @click="onEdit" v-b-tooltip.hover variant="link" size="sm">
+                            <font-awesome-icon icon="edit" />
+                        </b-button>
+                        <b-button id="tooltip-clipboard" @click="onCopy" @mouseout="onCopyOut" variant="link" size="sm">
+                            <font-awesome-icon icon="link" />
+                        </b-button>
+                        <b-tooltip target="tooltip-clipboard" triggers="hover">
+                            {{ tooltipClipboard }}
+                        </b-tooltip>
+                        <a v-if="showUrl" id="item-url" :href="itemUrl" target="_top" class="ml-2">
+                            {{ itemUrl }}
+                        </a>
+                        <span v-else id="item-url-text">
+                            {{ itemUrlParts[0] }}<SlugInput class="ml-1" :slug="itemUrlParts[1]" @onChange="onChange" />
                         </span>
-                        <a href="javascript:void(0)" id="edit-identifier"
-                            ><img :src="pencil_url" alt="Edit Share Url"
-                        /></a>
                     </blockquote>
-                    <div v-if="item.published">
-                        <p>
-                            This {{ model_class_lc }} is publicly listed and searchable in Galaxy's
-                            <a :href="published_url" target="_top">Published {{ plural_name }}</a> section.
-                        </p>
-                        <p>You can:</p>
-                    </div>
-                </div>
-                <div v-if="!item.published">
-                    <!-- Item is importable but not published. User can disable importable or publish. -->
-                    <b-button @click="setSharing('disable_link_access')"
-                        >Disable Access to {{ model_class }} Link</b-button
-                    >
-                    <div class="toolParamHelp">Disables {{ model_class_lc }}'s link so that it is not accessible.</div>
-                    <br />
-                    <b-button id="make_accessible_and_publish" @click="setSharing('publish')"
-                        >Publish {{ model_class }}</b-button
-                    >
-                    <div class="toolParamHelp">
-                        Publishes the {{ model_class_lc }} to Galaxy's
-                        <a :href="published_url" target="_top">Published {{ plural_name }}</a> section, where it is
-                        publicly listed and searchable.
-                    </div>
-                    <br />
                 </div>
                 <div v-else>
-                    <!-- Item is importable and published. User can unpublish or disable import and unpublish. -->
-                    <b-button
-                        id="disable_link_access_and_unpublish"
-                        @click="setSharing('disable_link_access_and_unpublish')"
-                        >Disable Access to {{ model_class }} via Link and Unpublish</b-button
-                    >
-                    <div class="toolParamHelp">
-                        Disables this {{ model_class_lc }}'s link so that it is not accessible and removes
-                        {{ model_class_lc }} from Galaxy's
-                        <a :href="published_url" target="_top">Published {{ plural_name }}</a> section so that it is not
-                        publicly listed or searchable.
-                    </div>
-                    <br />
-                    <b-button @click="setSharing('unpublish')">Unpublish {{ model_class }}</b-button>
-                    <div class="toolParamHelp">
-                        Removes this {{ model_class_lc }} from Galaxy's
-                        <a :href="published_url" target="_top">Published {{ plural_name }}</a> section so that it is not
-                        publicly listed or searchable.
-                    </div>
+                    Access to this {{ model_class }} is currently restricted so that only you and the users listed below
+                    can access it. Note that sharing a History will also allow access to all of its datasets.
                 </div>
             </div>
-            <div v-else>
-                <p>
-                    This {{ model_class_lc }} is currently restricted so that only you and the users listed below can
-                    access it. You can:
-                </p>
-                <b-button @click="setSharing('make_accessible_via_link')"
-                    >Make {{ model_class }} Accessible via Link</b-button
-                >
-                <p v-if="has_possible_members" class="mt-2">
-                    Also make all objects within the {{ model_class }} accessible.
-                    <input type="checkbox" v-model="make_members_public" id="chk_make_members_public" />
-                </p>
-                <div class="toolParamHelp">
-                    Generates a web link that you can share with other people so that they can view and import the
-                    {{ model_class_lc }}.
-                </div>
-                <br />
-                <b-button id="make_accessible_and_publish" @click="setSharing('make_accessible_and_publish')"
-                    >Make {{ model_class }} Accessible and Publish</b-button
-                >
-                <p v-if="has_possible_members" class="mt-2">
-                    Also make all objects within the {{ model_class }} accessible.
-                    <input type="checkbox" v-model="make_members_public" id="chk_make_members_public" />
-                </p>
-                <div class="toolParamHelp">
-                    Makes the {{ model_class_lc }} accessible via link (see above) and publishes the
-                    {{ model_class_lc }} to Galaxy's
-                    <a :href="published_url" target="_top">Published {{ plural_name }}</a> section, where it is publicly
-                    listed and searchable.
-                </div>
-            </div>
-            <br /><br />
-            <h3>Share {{ model_class }} with Individual Users</h3>
+            <br />
+            <h4>Share {{ model_class }} with Individual Users</h4>
             <div>
                 <div v-if="item.users_shared_with && item.users_shared_with.length > 0">
-                    <b-table small caption-top :fields="share_fields" :items="item.users_shared_with">
+                    <b-table small caption-top :fields="shareFields" :items="item.users_shared_with">
                         <template v-slot:table-caption>
-                            The following users will see this {{ model_class_lc }} in their {{ model_class_lc }} list
-                            and will be able to view, import and run it.
+                            The following users will see this {{ model_class }} in their {{ model_class }} list and will
+                            be able to view, import and run it.
                         </template>
                         <template v-slot:cell(id)="cell">
                             <b-button
@@ -127,26 +69,35 @@
                     </b-table>
                 </div>
                 <div v-else>
-                    <p>You have not shared this {{ model_class_lc }} with any users.</p>
+                    <p>You have not shared this {{ model_class }} with any users.</p>
                 </div>
-                <b-button :href="share_url" id="share_with_a_user"> <span>Share with a user</span> </b-button>
+                <b-button :href="shareUrl" id="share_with_a_user"> <span>Share with a user</span> </b-button>
             </div>
         </div>
     </div>
 </template>
 
 <script>
-import $ from "jquery";
-import { getAppRoot } from "onload/loadConfig";
-import { getGalaxyInstance } from "app";
-import axios from "axios";
-import async_save_text from "utils/async-save-text";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faLink, faEdit } from "@fortawesome/free-solid-svg-icons";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
+import SlugInput from "components/Common/SlugInput";
+import axios from "axios";
 
 Vue.use(BootstrapVue);
 
+library.add(faLink);
+library.add(faEdit);
+
 export default {
+    components: {
+        FontAwesomeIcon,
+        SlugInput,
+    },
     props: {
         id: {
             type: String,
@@ -161,51 +112,13 @@ export default {
             required: true,
         },
     },
-    computed: {
-        model_class_lc() {
-            return this.model_class.toLowerCase();
-        },
-        plural_name_lc() {
-            return this.plural_name.toLowerCase();
-        },
-        item_status() {
-            return this.item.published ? "accessible via link and published" : "accessible via link";
-        },
-        item_url() {
-            const port = window.location.port ? `:${window.location.port}` : "";
-            return `${window.location.protocol}//${window.location.hostname}${port}${getAppRoot()}${
-                this.item.username_and_slug
-            }`;
-        },
-        item_url_parts() {
-            const str = this.item_url;
-            const index = str.lastIndexOf("/");
-            return [str.substring(0, index + 1), str.substring(index + 1)];
-        },
-        published_url() {
-            return `${getAppRoot()}${this.plural_name_lc}/list_published`;
-        },
-        share_url() {
-            return `${getAppRoot()}${this.model_class_lc}/share/?id=${this.id}`;
-        },
-        slug_url() {
-            return `${getAppRoot()}${this.model_class_lc}/set_slug_async/?id=${this.id}`;
-        },
-        has_possible_members() {
-            return ["history"].indexOf(this.model_class_lc) > -1;
-        },
-        show_danger() {
-            return this.err_msg !== null;
-        },
-    },
     data() {
         const Galaxy = getGalaxyInstance();
         return {
             ready: false,
-            has_username: Galaxy.user.get("username"),
-            new_username: "",
-            err_msg: null,
-            pencil_url: `${getAppRoot()}static/images/fugue/pencil.png`,
+            hasUsername: Galaxy.user.get("username"),
+            newUsername: "",
+            errMsg: null,
             item: {
                 title: "title",
                 username_and_slug: "username_and_slug",
@@ -213,97 +126,135 @@ export default {
                 published: false,
                 users_shared_with: [],
             },
-            share_fields: ["email", { key: "id", label: "" }],
-            make_members_public: false,
+            shareFields: ["email", { key: "id", label: "" }],
+            makeMembersPublic: false,
+            showUrl: true,
+            tooltipClipboard: "Copy URL",
         };
+    },
+    computed: {
+        modelClassLower() {
+            return this.model_class.toLowerCase();
+        },
+        pluralNameLower() {
+            return this.plural_name.toLowerCase();
+        },
+        itemStatus() {
+            return this.item.published ? "accessible via link and published" : "accessible via link";
+        },
+        itemRoot() {
+            const port = window.location.port ? `:${window.location.port}` : "";
+            return `${window.location.protocol}//${window.location.hostname}${port}${getAppRoot()}`;
+        },
+        itemUrl() {
+            return `${this.itemRoot}${this.item.username_and_slug}`;
+        },
+        itemSlugParts() {
+            const str = this.item.username_and_slug;
+            const index = str.lastIndexOf("/");
+            return [str.substring(0, index + 1), str.substring(index + 1)];
+        },
+        itemUrlParts() {
+            const str = this.itemUrl;
+            const index = str.lastIndexOf("/");
+            return [str.substring(0, index + 1), str.substring(index + 1)];
+        },
+        published_url() {
+            return `${getAppRoot()}${this.pluralNameLower}/list_published`;
+        },
+        shareUrl() {
+            return `${getAppRoot()}${this.modelClassLower}/share/?id=${this.id}`;
+        },
+        slugUrl() {
+            return `${getAppRoot()}${this.modelClassLower}/set_slug_async/?id=${this.id}`;
+        },
+        showDanger() {
+            return this.errMsg !== null;
+        },
     },
     created: function () {
         this.getModel();
     },
-    updated: function () {
-        this.createSlugHandler();
-    },
     methods: {
-        getModel: function () {
+        onCopy() {
+            const clipboard = document.createElement("input");
+            document.body.appendChild(clipboard);
+            clipboard.value = this.itemUrl;
+            clipboard.select();
+            document.execCommand("copy");
+            document.body.removeChild(clipboard);
+            this.tooltipClipboard = "Copied!";
+        },
+        onCopyOut() {
+            this.tooltipClipboard = "Copy URL";
+        },
+        onEdit() {
+            this.showUrl = false;
+        },
+        onChange(newSlug) {
+            this.showUrl = true;
+            this.item.username_and_slug = `${this.itemSlugParts[0]}${newSlug}`;
+            const requestUrl = `${this.slugUrl}&new_slug=${newSlug}`;
+            axios.get(requestUrl).catch((error) => (this.errMsg = error.response.data.err_msg));
+        },
+        onImportable(importable) {
+            if (importable) {
+                this.setSharing("make_accessible_via_link");
+                if (this.item.published) {
+                    this.setSharing("publish");
+                } else {
+                    this.setSharing("unpublish");
+                }
+            } else {
+                this.item.published = false;
+                this.setSharing("disable_link_access");
+                this.setSharing("unpublish");
+            }
+        },
+        onPublish(published) {
+            if (published) {
+                this.item.importable = true;
+                this.setSharing("make_accessible_and_publish");
+            } else {
+                this.setSharing("unpublish");
+            }
+        },
+        getModel() {
             this.ready = false;
             axios
-                .get(`${getAppRoot()}api/${this.plural_name_lc}/${this.id}/sharing`)
+                .get(`${getAppRoot()}api/${this.pluralNameLower}/${this.id}/sharing`)
                 .then((response) => {
                     this.item = response.data;
                     this.ready = true;
                 })
-                .catch((error) => (this.err_msg = error.response.data.err_msg));
+                .catch((error) => (this.errMsg = error.response.data.err_msg));
         },
-        setUsername: function () {
+        setUsername() {
             const Galaxy = getGalaxyInstance();
             axios
                 .put(`${getAppRoot()}api/users/${Galaxy.user.id}/information/inputs`, {
-                    username: this.new_username || "",
+                    username: this.newUsername || "",
                 })
                 .then((response) => {
-                    this.err_msg = null;
-                    this.has_username = true;
+                    this.errMsg = null;
+                    this.hasUsername = true;
                     this.getModel();
                 })
-                .catch((error) => (this.err_msg = error.response.data.err_msg));
+                .catch((error) => (this.errMsg = error.response.data.err_msg));
         },
-        setSharing: function (action, user_id) {
+        setSharing(action, user_id) {
             const data = {
                 action: action,
                 user_id: user_id,
             };
-            if (this.has_possible_members) {
-                data.make_members_public = this.make_members_public;
-            }
             axios
-                .post(`${getAppRoot()}api/${this.plural_name_lc}/${this.id}/sharing`, data)
+                .post(`${getAppRoot()}api/${this.pluralNameLower}/${this.id}/sharing`, data)
                 .then((response) => {
-                    Object.assign(this.item, response.data);
                     if (response.data.skipped) {
-                        this.err_msg = "Some of the items within this object were not published due to an error.";
+                        this.errMsg = "Some of the items within this object were not published due to an error.";
                     }
                 })
-                .catch((error) => (this.err_msg = error.response.data.err_msg));
-        },
-        createSlugHandler: function () {
-            const on_start = function (text_elt) {
-                // Replace URL with URL text.
-                $("#item-url").hide();
-                $("#item-url-text").show();
-
-                // Allow only lowercase alphanumeric and '-' characters in slug.
-                text_elt.keyup(function () {
-                    text_elt.val(
-                        $(this)
-                            .val()
-                            .replace(/\s+/g, "-")
-                            .replace(/[^a-zA-Z0-9-]/g, "")
-                            .toLowerCase()
-                    );
-                });
-            };
-            const on_finish = function (text_elt) {
-                // Replace URL text with URL.
-                $("#item-url-text").hide();
-                $("#item-url").show();
-
-                // Set URL to new value.
-                const new_url = $("#item-url-text").text();
-                const item_url_obj = $("#item-url");
-                item_url_obj.attr("href", new_url);
-                item_url_obj.text(new_url);
-            };
-            async_save_text(
-                "edit-identifier",
-                "item-identifier",
-                this.slug_url,
-                "new_slug",
-                null,
-                false,
-                0,
-                on_start,
-                on_finish
-            );
+                .catch((error) => (this.errMsg = error.response.data.err_msg));
         },
     },
 };

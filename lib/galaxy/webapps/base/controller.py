@@ -1424,18 +1424,18 @@ class SharableMixin:
             action = payload.get("action")
             if action == "make_accessible_via_link":
                 self._make_item_accessible(trans.sa_session, item)
-                if hasattr(item, "has_possible_members") and item.has_possible_members and payload.get("make_members_public", False):
-                    shared, skipped = self._make_members_public(trans, item)
+                if hasattr(item, "has_possible_members") and item.has_possible_members:
+                    skipped = self._make_members_public(trans, item)
             elif action == "make_accessible_and_publish":
                 self._make_item_accessible(trans.sa_session, item)
-                if hasattr(item, "has_possible_members") and item.has_possible_members and payload.get("make_members_public", False):
-                    shared, skipped = self._make_members_public(trans, item)
+                if hasattr(item, "has_possible_members") and item.has_possible_members:
+                    skipped = self._make_members_public(trans, item)
                 item.published = True
             elif action == "publish":
                 if item.importable:
                     item.published = True
-                    if hasattr(item, "has_possible_members") and item.has_possible_members and payload.get("make_members_public", False):
-                        shared, skipped = self._make_members_public(trans, item)
+                    if hasattr(item, "has_possible_members") and item.has_possible_members:
+                        skipped = self._make_members_public(trans, item)
                 else:
                     raise exceptions.MessageException("%s not importable." % class_name)
             elif action == "disable_link_access":
@@ -1482,7 +1482,7 @@ class SharableMixin:
                 else:
                     log.warning("User without permissions tried to make dataset with id: %s public", dataset.id)
                     skipped = True
-        return item, skipped
+        return skipped
 
     # -- Abstract methods. --
 
