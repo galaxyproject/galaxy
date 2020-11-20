@@ -19,7 +19,7 @@ from entity_extraction import EntityExtraction, EntityExtractionMedia, EntityExt
 from speech_to_text import SpeechToText, SpeechToTextMedia, SpeechToTextResult, SpeechToTextScore, SpeechToTextWord
 
 def main():
-    (input_file, json_file, csv_file, bucketName, dataAccessRoleArn) = sys.argv[1:6]
+    (input_file, json_file, bucketName, dataAccessRoleArn) = sys.argv[1:5]
 
     # Read a list of categories to ignore when outputting entity list
     ignore_cats_list = list()
@@ -51,7 +51,6 @@ def main():
     if mediaLength == 0:
         ner.media = EntityExtractionMedia(mediaLength, input_file)
         write_json_file(ner, json_file)
-        ner.toCsv(csv_file)
         exit(0)
 
     # Create a temp file to upload to S3
@@ -109,8 +108,6 @@ def main():
 
     #Write the json file
     write_json_file(ner, json_file)
-    #Write the csv file
-    ner.toCsv(csv_file)
 
     #Cleanup temp files
     safe_delete(uncompressed_file)

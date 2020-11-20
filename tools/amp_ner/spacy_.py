@@ -16,12 +16,13 @@ from speech_to_text import SpeechToText, SpeechToTextMedia, SpeechToTextResult, 
 
 
 def main():
-    (input_file, json_file, csv_file) = sys.argv[1:4]
+    (input_file, json_file) = sys.argv[1:3]
+
     # Read a list of categories to ignore when outputting entity list
     ignore_cats_list = list()
-    if len(sys.argv) > 4:
-        print("Categories to ignore:" + sys.argv[4])
-        ignore_cats_list = split_ignore_list(sys.argv[4])
+    if len(sys.argv) > 3:
+        print("Categories to ignore:" + sys.argv[3])
+        ignore_cats_list = split_ignore_list(sys.argv[3])
 
     # Load English tokenizer, tagger, parser, NER and word vectors
     nlp = spacy.load("en_core_web_lg")
@@ -37,7 +38,6 @@ def main():
         ner.media = EntityExtractionMedia(len(stt.results.transcript), input_file)
         # Write the json file
         write_json_file(ner, json_file)
-        ner.toCsv(csv_file)
         exit(0)
 
     doc = nlp(stt.results.transcript)
@@ -78,8 +78,6 @@ def main():
 
     # Write the json file
     write_json_file(ner, json_file)
-    # Write the csv file
-    ner.toCsv(csv_file)
 
 # Standardize ignore list text
 def clean_text(text):

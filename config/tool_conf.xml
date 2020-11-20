@@ -32,6 +32,7 @@
   <section id="named_entity_recognition" name="Named Entity Recognition">
     <tool file="amp_ner/spacy.xml"/>
     <tool file="amp_ner/aws_comprehend.xml"/>
+    <tool file="amp_ner/ner_to_csv.xml"/>
   </section>
 
   <section id="video_processing" name="Video Indexing">
@@ -58,7 +59,7 @@
   <section id="hmgm_editor" name="Human MGM Editor">
     <tool file="amp_hmgm/hmgm_sample.xml"/>
     <tool file="amp_hmgm/hmgm_transcript.xml"/>
-    <tool file="amp_hmgm/hmgm_ner_1.xml"/>
+    <tool file="amp_hmgm/hmgm_ner.xml"/>
     <tool file="amp_hmgm/hmgm_segmentation.xml"/>
   </section>
 

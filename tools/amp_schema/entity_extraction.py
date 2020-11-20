@@ -28,14 +28,11 @@ class EntityExtraction:
 				else:
 					csv_writer.writerow([e.type, e.text, e.start, '', ''])
 
-	def toCsvFromDict(self, json_data: dict, outputFile):
-		ner = EntityExtraction.from_json(json_data)
-		# Write as csv
-		return toCsv(outputFile)
-
 	@classmethod
 	def from_json(cls, json_data: dict):
-		return cls(json_data['media'], json_data['entities'])
+		entities = list(map(EntityExtractionEntity.from_json, json_data["entities"]))
+		media = list(map(EntityExtractionMedia.from_json, json_data["media"]))
+		return cls(media, entities)
 
 class EntityExtractionMedia:
 	filename = ""
