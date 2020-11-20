@@ -1281,6 +1281,9 @@ class NavigatesGalaxy(HasDriver):
         details_component = item_component.details
         details_displayed = details_component.is_displayed
         item_component.title.wait_for_and_click()
+        # for i in range(88888):
+        #     self.sleep_for(WAIT_TYPES.UX_RENDER)
+
         if kwds.get("wait", False):
             if details_displayed:
                 details_component.wait_for_absent_or_hidden()

@@ -37,6 +37,8 @@ var faIconButton = (options) => {
         // could go with something less specific here - like 'html'
         '<span class="fa ',
         options.faIcon,
+        '" style="',
+        options.style,
         '"></span>',
         "</a>",
     ].join("");
