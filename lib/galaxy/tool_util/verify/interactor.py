@@ -291,7 +291,7 @@ class GalaxyInteractorApi:
             response = self._get(f"tools/{tool_id}/test_data_download?filename={filename}", admin=True)
             if response.status_code != 200:
                 if is_output:
-                    raise AssertionError(f"Test output file ({filename}) is missing. If you use planemo try --update_test_data to generate one.")
+                    raise AssertionError(f"Test output file ({filename}) is missing. If you are using planemo, try adding --update_test_data to generate it.")
                 else:
                     raise AssertionError(f"Test input file ({filename}) cannot be found.")
             if mode == 'file':
@@ -969,7 +969,7 @@ def verify_tool(tool_id,
                                 maxseconds=maxseconds)
         except Exception as e:
             input_staging_exception = e
-            raise e
+            raise
         try:
             tool_response = galaxy_interactor.run_tool(testdef, test_history, resource_parameters=resource_parameters)
             data_list, jobs, tool_inputs = tool_response.outputs, tool_response.jobs, tool_response.inputs
