@@ -1971,7 +1971,7 @@ var PeptideView = (function (pv) {
 
         option.scoreSummary = true;
 
-        psmDetailDP = new AjaxDataProvider(option);
+        let psmDetailDP = new AjaxDataProvider(option);
         psmDetailDP.generateTable();
         //Move to table
         $("html, body").animate(
