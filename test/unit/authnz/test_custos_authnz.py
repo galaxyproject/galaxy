@@ -1,4 +1,5 @@
 import hashlib
+import json
 import os
 import unittest
 import uuid
@@ -64,6 +65,7 @@ class CustosAuthnzTestCase(unittest.TestCase):
         self.test_code = "test-code"
         self.test_username = "test-username"
         self.test_email = "test-email"
+        self.test_sub = "test-sub"
         self.test_alt_username = "test-alt-username"
         self.test_alt_email = "test-alt-email"
         self.test_access_token = "test_access_token"
@@ -274,6 +276,29 @@ class CustosAuthnzTestCase(unittest.TestCase):
         """Verify that state from cookie is passed to OAuth2Session constructor."""
         self.trans.set_cookie(value=self.test_state, name=custos_authnz.STATE_COOKIE_NAME)
         self.trans.set_cookie(value=self.test_nonce, name=custos_authnz.NONCE_COOKIE_NAME)
+        old_access_token = "old-access-token"
+        old_id_token = "old-id-token"
+        old_refresh_token = "old-refresh-token"
+        old_expiration_time = datetime.now() - timedelta(days=1)
+        old_refresh_expiration_time = datetime.now() - timedelta(hours=3)
+        existing_custos_authnz_token = CustosAuthnzToken(
+            user=User(email=self.test_email, username=self.test_username),
+            external_user_id=self.test_user_id,
+            provider=self.custos_authnz.config['provider'],
+            access_token=old_access_token,
+            id_token=old_id_token,
+            refresh_token=old_refresh_token,
+            expiration_time=old_expiration_time,
+            refresh_expiration_time=old_refresh_expiration_time,
+        )
+
+        self.trans.sa_session._query.custos_authnz_token = existing_custos_authnz_token
+        self.assertIsNotNone(
+            self.trans.sa_session.query(CustosAuthnzToken)
+                .filter_by(external_user_id=self.test_user_id,
+                           provider=self.custos_authnz.config['provider'])
+                .one_or_none()
+        )
         self.trans.sa_session._query.user = User(email=self.test_email, username=self.test_username)
 
         # Mock _create_oauth2_session to make sure it is created with cookie state token
@@ -307,7 +332,7 @@ class CustosAuthnzTestCase(unittest.TestCase):
         self.assertTrue(self._fetch_token_called)
         self.assertFalse(self._get_userinfo_called)
 
-    def test_callback_galaxy_user_created_when_no_custos_authnz_token_exists(self):
+    def test_callback_user_not_created_when_does_not_exists(self):
         self.trans.set_cookie(value=self.test_state, name=custos_authnz.STATE_COOKIE_NAME)
         self.trans.set_cookie(value=self.test_nonce, name=custos_authnz.NONCE_COOKIE_NAME)
 
@@ -322,8 +347,42 @@ class CustosAuthnzTestCase(unittest.TestCase):
             state_token="xxx",
             authz_code=self.test_code, trans=self.trans,
             login_redirect_url="http://localhost:8000/")
-        self.trans.set_user(user)
+        self.assertIsNone(user)
+        self.assertTrue("http://localhost:8000/root/login?confirm=true&custos_token=" in login_redirect_url)
         self.assertTrue(self._fetch_token_called)
+
+    def test_create_user(self):
+        # self.trans.set_cookie(value=self.test_state, name=custos_authnz.STATE_COOKIE_NAME)
+        # self.trans.set_cookie(value=self.test_nonce, name=custos_authnz.NONCE_COOKIE_NAME)
+
+        self.assertIsNone(
+            self.trans.sa_session.query(CustosAuthnzToken)
+                .filter_by(external_user_id=self.test_user_id,
+                           provider=self.custos_authnz.config['provider'])
+                .one_or_none()
+        )
+        self.assertEqual(0, len(self.trans.sa_session.items))
+
+        test_id_token = jwt.encode({
+            'nonce': self.test_nonce_hash,
+            'email': self.test_email,
+            'preferred_username': self.test_username,
+            'sub': self.test_sub},
+            key=None, algorithm=None).decode
+
+        self._raw_token = {
+            "access_token": self.test_access_token,
+            "id_token": test_id_token,
+            "refresh_token": self.test_refresh_token,
+            "expires_in": self.test_expires_in,
+            "refresh_expires_in": self.test_refresh_expires_in
+        }
+        login_redirect_url, user = self.custos_authnz.create_user(
+            token=json.dumps(self._raw_token),
+            trans=self.trans,
+            login_redirect_url="http://localhost:8000/")
+        self.assertEqual(login_redirect_url, "http://localhost:8000/")
+        self.trans.set_user(user)
         self.assertTrue(self._get_userinfo_called)
         self.assertEqual(1, len(self.trans.sa_session.items), "Session has new CustosAuthnzToken")
         added_user = self.trans.get_user()
