@@ -133,6 +133,7 @@ function _addLabelAnnotation(self, node) {
         help: _l("Add a step label."),
         fixed: true,
         onchange: function (new_label) {
+            node.setLabel(new_label);
             let duplicate = false;
             for (const i in workflow.nodes) {
                 const n = workflow.nodes[i];
@@ -148,7 +149,6 @@ function _addLabelAnnotation(self, node) {
                 "error_text",
                 duplicate && "Duplicate label. Please fix this before saving the workflow."
             );
-            self.form.trigger("change");
         },
     });
 }

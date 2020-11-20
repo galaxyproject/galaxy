@@ -300,6 +300,14 @@ export default {
                 this.annotation = annotation;
             }, 100);
         },
+        setLabel(label) {
+            if (this.labelTimeout) {
+                clearTimeout(this.labelTimeout);
+            }
+            this.labelTimeout = setTimeout(() => {
+                this.label = label;
+            }, 100);
+        },
         setData(data) {
             this.config_form = data.config_form;
             this.tool_state = data.tool_state;
