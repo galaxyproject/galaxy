@@ -8,11 +8,15 @@ export default Backbone.View.extend({
             new Backbone.Model({
                 disabled: false,
                 visible: true,
+                onchange: () => {},
             }).set(options);
         this.setElement(this._template());
         this.$label = this.$(".label");
         this.$input = this.$(".custom-control-input");
-        this.listenTo(this.model, "change", this.render, this);
+        this.listenTo(this, "change", () => {
+            this.render();
+            this.model.get("onchange")(this.value());
+        });
         this.render();
     },
     events: {
@@ -36,7 +40,7 @@ export default Backbone.View.extend({
     },
     _onchange: function () {
         this.value(this.$input.prop("checked") ? "true" : "false");
-        this.model.get("onchange") && this.model.get("onchange")(this.model.get("value"));
+        this.trigger("change");
     },
     _template: function () {
         const id = this.model.id;
