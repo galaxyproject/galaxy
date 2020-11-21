@@ -13,8 +13,8 @@ export default Backbone.View.extend({
         this.setElement(this._template());
         this.$label = this.$(".label");
         this.$input = this.$(".custom-control-input");
+        this.listenTo(this.model, "change", this.render, this);
         this.listenTo(this, "change", () => {
-            this.render();
             this.model.get("onchange")(this.value());
         });
         this.render();
