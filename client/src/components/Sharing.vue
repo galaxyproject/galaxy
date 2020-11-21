@@ -11,10 +11,16 @@
             <b-button type="submit" variant="primary" @click="setUsername()">Set Username</b-button>
         </div>
         <div v-else>
-            <b-form-checkbox switch v-model="item.importable" @change="onImportable">
+            <b-form-checkbox switch class="make-accessible" v-model="item.importable" @change="onImportable">
                 Make {{ model_class }} accessible.
             </b-form-checkbox>
-            <b-form-checkbox v-if="item.importable" switch v-model="item.published" @change="onPublish">
+            <b-form-checkbox
+                v-if="item.importable"
+                class="make-publishable"
+                switch
+                v-model="item.published"
+                @change="onPublish"
+            >
                 Make {{ model_class }} publicly available in
                 <a :href="published_url" target="_top">Published {{ plural_name }}</a> section.
             </b-form-checkbox>
