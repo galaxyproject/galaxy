@@ -216,6 +216,10 @@ class NavigatesGalaxy(HasDriver):
     def history_panel_name(self):
         return self.history_panel_name_element().text
 
+    def make_accessible_and_publishable(self):
+        self.components.histories.sharing.make_accessible.wait_for_and_click()
+        self.components.histories.sharing.make_publishable.wait_for_and_click()
+
     def history_contents(self, history_id=None, view='summary', datasets_only=True):
         if history_id is None:
             history_id = self.current_history_id()

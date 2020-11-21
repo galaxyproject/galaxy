@@ -286,7 +286,8 @@ histories:
     selectors:
       unshare_user_button: '.unshare_user'
       share_with_a_user_button: '#share_with_a_user'
-      make_accessible_and_publish: '#make_accessible_and_publish'
+      make_accessible: '.make-accessible label'
+      make_publishable: '.make-publishable label'
     labels:
       unshare: 'Unshare'
 
