@@ -62,6 +62,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         self.screenshot("workflow_editor_data_input_new")
         editor.label_input.wait_for_and_send_keys("input1")
         editor.annotation_input.wait_for_and_send_keys("my cool annotation")
+        self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_data_input_filled_in")
         self.workflow_editor_click_save()
 
@@ -85,6 +86,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         self.screenshot("workflow_editor_data_collection_input_new")
         editor.label_input.wait_for_and_send_keys("input1")
         editor.annotation_input.wait_for_and_send_keys("my cool annotation")
+        self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_data_collection_input_filled_in")
         self.workflow_editor_click_save()
 
@@ -109,6 +111,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         self.screenshot("workflow_editor_parameter_input_new")
         editor.label_input.wait_for_and_send_keys("input1")
         editor.annotation_input.wait_for_and_send_keys("my cool annotation")
+        self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_parameter_input_filled_in")
         self.workflow_editor_click_save()
 
