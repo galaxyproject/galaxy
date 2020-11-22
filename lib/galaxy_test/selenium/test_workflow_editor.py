@@ -63,9 +63,6 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         editor.label_input.wait_for_and_send_keys("input1")
         editor.annotation_input.wait_for_and_send_keys("my cool annotation")
         self.sleep_for(self.wait_types.UX_RENDER)
-        self.screenshot("workflow_editor_data_input_filled_in PRECLICK")
-        editor.label_input.wait_for_and_click()  # Seems to help force the save of whole annotation.
-        self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_data_input_filled_in")
         self.workflow_editor_click_save()
 
@@ -75,7 +72,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         label = editor.label_input.wait_for_value()
         assert label == "input1", label
         annotation = editor.annotation_input.wait_for_value()
-        assert annotation == "my cool annotation"
+        assert annotation == "my cool annotation", annotation
         data_input_node.destroy.wait_for_and_click()
         data_input_node.wait_for_absent()
         self.screenshot("workflow_editor_data_input_deleted")
@@ -89,7 +86,6 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         self.screenshot("workflow_editor_data_collection_input_new")
         editor.label_input.wait_for_and_send_keys("input1")
         editor.annotation_input.wait_for_and_send_keys("my cool annotation")
-        editor.label_input.wait_for_and_click()  # Seems to help force the save of whole annotation.
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_data_collection_input_filled_in")
         self.workflow_editor_click_save()
@@ -100,7 +96,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         label = editor.label_input.wait_for_value()
         assert label == "input1", label
         annotation = editor.annotation_input.wait_for_value()
-        assert annotation == "my cool annotation"
+        assert annotation == "my cool annotation", annotation
         data_input_node.destroy.wait_for_and_click()
         data_input_node.wait_for_absent()
         self.sleep_for(self.wait_types.UX_RENDER)
@@ -115,7 +111,6 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         self.screenshot("workflow_editor_parameter_input_new")
         editor.label_input.wait_for_and_send_keys("input1")
         editor.annotation_input.wait_for_and_send_keys("my cool annotation")
-        editor.label_input.wait_for_and_click()  # Seems to help force the save of whole annotation.
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_parameter_input_filled_in")
         self.workflow_editor_click_save()
@@ -126,7 +121,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         label = editor.label_input.wait_for_value()
         assert label == "input1", label
         annotation = editor.annotation_input.wait_for_value()
-        assert annotation == "my cool annotation"
+        assert annotation == "my cool annotation", annotation
         data_input_node.destroy.wait_for_and_click()
         data_input_node.wait_for_absent()
         self.sleep_for(self.wait_types.UX_RENDER)
@@ -146,16 +141,16 @@ steps:
       inttest: input_int
 """)
         self.screenshot("workflow_editor_parameter_connection_simple")
-        self.assert_connected("input_int#output", "simple_constructs#inttest")
+        self.assert_connected("input_int#output", "tool_exec#inttest")
 
         editor = self.components.workflow_editor
 
-        tool_node = editor.node._(label="simple_constructs")
+        tool_node = editor.node._(label="tool_exec")
         tool_input = tool_node.input_terminal(name="inttest")
         tool_input.wait_for_and_click()
 
         editor.connector_destroy_callout.wait_for_and_click()
-        self.assert_not_connected("input_int#output", "simple_constructs#inttest")
+        self.assert_not_connected("input_int#output", "tool_exec#inttest")
         self.screenshot("workflow_editor_parameter_connection_destroyed")
 
         # When connected, cannot turn it into a RuntimeValue..
@@ -177,8 +172,8 @@ steps:
         tool_input.wait_for_visible()
         collapse_input.wait_for_absent_or_hidden()
 
-        self.workflow_editor_connect("input_int#output", "simple_constructs#inttest", screenshot_partial="workflow_editor_parameter_connection_dragging")
-        self.assert_connected("input_int#output", "simple_constructs#inttest")
+        self.workflow_editor_connect("input_int#output", "tool_exec#inttest", screenshot_partial="workflow_editor_parameter_connection_dragging")
+        self.assert_connected("input_int#output", "tool_exec#inttest")
 
     @selenium_test
     def test_existing_connections(self):

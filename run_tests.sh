@@ -393,7 +393,7 @@ do
           ;;
       -selenium|--selenium)
           GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
-          test_script="./scripts/functional_tests.py"
+          test_script="pytest"
           report_file="./run_selenium_tests.html"
           skip_client_build=""
           selenium_test=1;
@@ -617,8 +617,8 @@ setup_python
 if [ -n "$framework_test" -o -n "$installed_test" -o -n "$migrated_test" -o -n "$data_managers_test" ] ; then
     [ -n "$test_id" ] && selector="-k $test_id" || selector=""
     extra_args="test/functional/test_toolbox_pytest.py $selector $marker"
-elif [ -n "$selenium_test" ] ; then
-    extra_args="$selenium_script -selenium"
+elif [ -n "$selenium_script" ]; then
+    extra_args="$selenium_script"
 elif [ -n "$toolshed_script" ]; then
     extra_args="$toolshed_script"
 elif [ -n "$api_script" ]; then

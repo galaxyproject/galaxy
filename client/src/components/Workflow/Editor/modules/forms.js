@@ -116,10 +116,13 @@ function _addLabelAnnotation(self, node) {
     inputs.unshift({
         type: "text",
         name: "__annotation",
-        label: "Annotation",
+        label: "Step Annotation",
         fixed: true,
         value: node.annotation,
         area: true,
+        onchange: function (new_annotation) {
+            node.setAnnotation(new_annotation);
+        },
         help: "Add an annotation or notes to this step. Annotations are available when a workflow is viewed.",
     });
     inputs.unshift({
@@ -130,6 +133,7 @@ function _addLabelAnnotation(self, node) {
         help: _l("Add a step label."),
         fixed: true,
         onchange: function (new_label) {
+            node.setLabel(new_label);
             let duplicate = false;
             for (const i in workflow.nodes) {
                 const n = workflow.nodes[i];
@@ -145,7 +149,6 @@ function _addLabelAnnotation(self, node) {
                 "error_text",
                 duplicate && "Duplicate label. Please fix this before saving the workflow."
             );
-            self.form.trigger("change");
         },
     });
 }
