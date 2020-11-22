@@ -43,7 +43,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
         # Publish the history
         self.click_grid_popup_option(self.history2_name, 'Share or Publish')
-        self.make_accessible_publishable()
+        self.make_accessible_and_publishable()
 
         self.navigate_to_histories_page()
 
