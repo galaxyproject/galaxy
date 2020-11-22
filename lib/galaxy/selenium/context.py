@@ -1,6 +1,8 @@
+import os
 from abc import abstractmethod
 from typing import Optional
 
+import yaml
 from six.moves.urllib.parse import urljoin
 
 from .driver_factory import ConfiguredDriver
@@ -58,3 +60,15 @@ class GalaxySeleniumContextImpl(GalaxySeleniumContext):
 
     def _screenshot_path(self, label, extension=".png"):
         return label + extension
+
+
+def init(config=None, clazz=GalaxySeleniumContextImpl) -> GalaxySeleniumContext:
+    if os.path.exists("galaxy_selenium_context.yml"):
+        with open("galaxy_selenium_context.yml", "r") as f:
+            as_dict = yaml.safe_load(f)
+        context = clazz(as_dict)
+    else:
+        config = config or {}
+        context = clazz(config)
+
+    return context
