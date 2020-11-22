@@ -1,7 +1,11 @@
 <template>
     <div class="tool-footer">
         <!-- <b-button v-b-toggle.collapse-about>About this tool</b-button> -->
-        <b-link :aria-expanded="expanded" aria-controls="collapse-about" @click="expanded = !expanded"
+        <b-link
+            :aria-expanded="expanded"
+            aria-controls="collapse-about"
+            class="collapse-about"
+            @click="expanded = !expanded"
             >About this tool
             <font-awesome-icon :icon="expanded ? 'angle-double-up' : 'angle-double-down'" />
         </b-link>
@@ -17,6 +21,7 @@
                         @click="copyBibtex"
                     />
                     <Citation
+                        class="formatted-reference"
                         v-for="(citation, index) in citations"
                         :key="index"
                         :citation="citation"
