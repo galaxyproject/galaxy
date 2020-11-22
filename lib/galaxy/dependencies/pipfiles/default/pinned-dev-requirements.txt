@@ -45,6 +45,7 @@ pytest-metadata==1.10.0; python_version >= '2.7' and python_version not in '3.0,
 pytest-mock==3.3.1
 pytest-postgresql==2.5.2
 pytest-pythonpath==0.7.3
+pytest-shard==0.1.1
 pytest==6.1.2
 python-irodsclient==0.8.5
 pytz==2020.4
