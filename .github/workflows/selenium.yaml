@@ -2,7 +2,7 @@ name: Selenium tests
 on: [push, pull_request]
 env:
   GALAXY_TEST_DBURI: 'postgres://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
-  SKIP_FLAKEY_TESTS_ON_ERROR: 'true'
+  GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR: 'true'
 jobs:
   test:
     name: Test
