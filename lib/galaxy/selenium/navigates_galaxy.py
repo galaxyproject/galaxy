@@ -14,8 +14,9 @@ import requests
 import yaml
 
 from . import sizzle
+from .components import Component
 from .data import (
-    NAVIGATION,
+    load_root_component,
 )
 from .has_driver import (
     exception_indicates_not_clickable,
@@ -123,17 +124,22 @@ class NavigatesGalaxy(HasDriver):
     class. For instance, the method for clicking an option in the workflow editor is
     workflow_editor_click_option instead of click_workflow_editor_option.
     """
-
     default_password = DEFAULT_PASSWORD
     wait_types = WAIT_TYPES
+    # set to True to reload each invocation (good for interactive test building)
+    _interactive_components: bool = False
+    _root_component: Component = load_root_component()
 
     def get(self, url=""):
         full_url = self.build_url(url)
         return self.driver.get(full_url)
 
     @property
-    def navigation(self):
-        return NAVIGATION
+    def navigation(self) -> Component:
+        if self._interactive_components:
+            return load_root_component()
+        else:
+            return self._root_component
 
     @property
     def components(self):

@@ -32,6 +32,7 @@ TEST_DIR = 'tests'
 PACKAGES = [
     'galaxy_test',
     'galaxy_test.selenium',
+    'galaxy_test.selenium.jupyter',
 ]
 ENTRY_POINTS = '''
         [console_scripts]
