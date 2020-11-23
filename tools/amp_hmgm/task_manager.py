@@ -15,20 +15,20 @@ class TaskManager:
 	def __init__(self, config):
 		self.config = config
 		self.amppd_server = config["amppd"]["server"]
+		self.auth_string = config["hmgm"]["auth_string"]
 
 		# for Transcript
-		self.transcript_api = config["amppd"]["transcript_api"]
-		self.transcript_input = config["amppd"]["transcript_input"]
-		self.transcript_media = config["amppd"]["transcript_media"]
-		self.auth_string = config["amppd"]["auth_string"]
+		self.transcript_api = config["hmgm"]["transcript_api"]
+		self.transcript_input = config["hmgm"]["transcript_input"]
+		self.transcript_media = config["hmgm"]["transcript_media"]
 
 		# for NER
-		self.ner_api = config["amppd"]["ner_api"]
-		self.ner_input = config["amppd"]["ner_input"]
+		self.ner_api = config["hmgm"]["ner_api"]
+		self.ner_input = config["hmgm"]["ner_input"]
 
 		# for Segmentation
-		self.segmentation_api = config["amppd"]["segmentation_api"]
-		self.segmentation_input = config["amppd"]["segmentation_input"]
+		self.segmentation_api = config["hmgm"]["segmentation_api"]
+		self.segmentation_input = config["hmgm"]["segmentation_input"]
 
 		# TODO set up properties for other HMGM tools
 
@@ -36,7 +36,7 @@ class TaskManager:
 	# Returns an auth string to use in the URL as well as a user token to provide the user in the task manager ticket. 
 	def create_auth_string(self, editor_input):
 		m = hashlib.sha256()
-		key = self.config["amppd"]["hmgm_key"]
+		key = self.config["hmgm"]["auth_key"]
 		user_token = str(uuid.uuid1())
 		m.update(user_token.encode('utf-8'))
 		m.update(editor_input.encode('utf-8'))
