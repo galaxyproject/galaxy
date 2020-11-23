@@ -45,9 +45,9 @@
                         <span v-if="requirement.version"> (Version {{ requirement.version }}) </span>
                     </div>
                 </div>
-                <div class="metadata-section">
+                <div class="metadata-section" v-if="license">
                     <span class="metadata-key">License:</span>
-                    <License v-if="license" :licenseId="license" />
+                    <License :licenseId="license" />
                 </div>
                 <div v-if="xrefs && xrefs.length > 0" class="metadata-section">
                     <span class="metadata-key">References:</span>
