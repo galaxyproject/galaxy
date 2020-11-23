@@ -1,4 +1,4 @@
-<tool id="CONVERTER_Xtc_or_Trr_to_Dcd_0" name="XTC or TRR to DCD" version="1.0.0" hidden="true">
+<tool id="CONVERTER_Xtc_or_Trr_to_Dcd_0" name="XTC or TRR to DCD" version="1.0.0" hidden="true" profile="20.09">
     <requirements>
         <requirement type="package" version="1.9.4">mdtraj</requirement>
     </requirements>
