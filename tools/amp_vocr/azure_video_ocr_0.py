@@ -30,9 +30,9 @@ def main():
 		import httplib as http_client
 
 	config = read_config(root_dir)
-	s3_bucket = config['videoindexer']['s3Bucket']
-	accountId = config['videoindexer']['accountId']
-	apiKey = config['videoindexer']['apiKey']
+	s3_bucket = config['azure']['s3Bucket']
+	accountId = config['azure']['accountId']
+	apiKey = config['azure']['apiKey']
 
 	# You must initialize logging, otherwise you'll not see debug output.
 	logging.basicConfig()
@@ -296,7 +296,7 @@ def delete_from_s3(s3_path, bucket):
 
 def read_config(root_dir):
 	config = configparser.ConfigParser()
-	config.read(root_dir + "/config/azure.ini")
+	config.read(root_dir + "/config/mgm.ini")
 	return config
 
 # Serialize obj and write it to output file
