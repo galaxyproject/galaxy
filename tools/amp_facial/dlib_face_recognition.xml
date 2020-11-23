@@ -1,0 +1,26 @@
+<tool id="dlib_face_recognition" name="Dlib Face Recoginition" version="1.0.0">
+  <description>Train with a set of images of known faces and recognize unknown faces in a video</description>
+  <requirements>
+	<requirement type="package" version="3.8">python</requirement>
+    <requirement type="package" version="19.21.0">dlib</requirement>
+    <requirement type="package" version="4.4.0">opencv</requirement>
+    <requirement type="package" version="1.2.3">face_recognition</requirement>
+  </requirements>
+  <command detect_errors="exit_code"> 
+  	'$__tool_directory__/dlib_face_recognition.py' '$train_photos' '$threshold' 
+  </command>
+  <inputs>
+	<param name="input_video" type="data" format="video" label="Input Video" help="An input video file for shot detection"/>
+	<param name="threshold" type="integer" label="(Optional) Threshold" value="30" min="0" max="100" optional="true" help="Sensitivity of the shot detection. The default is 30"/>
+  </inputs>
+  <outputs>
+    <data name="amp_shots" format="shot" label="AMP Shots Generated" />
+    <data name="frame_stats" format="csv" label="Frame Statistics"/>
+  </outputs>
+  <help>
+.. class:: infomark
+
+Train Face Recognition with a set of photos of known faces and run Face Recognition on a video to identify unknown faces using the training results.
+
+  </help>
+</tool>
