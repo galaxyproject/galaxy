@@ -200,21 +200,23 @@ automatically if profile is set to any version newer than ``16.01``, such as
 18.09 
 
 - References to other inputs need to be fully qualified by using `|`.
-- do not allow provided but illegal default values.
+- Do not allow provided but illegal default values.
 - Do not use Galaxy python environment for `manage_data` tools.
 
 19.05
-- Use python 3.5 as default (before 2.7)
+
+- Change default Python version from 2.7 to 3.5
 
 20.05
+
 - json config files: 
    - unselected optional `select` and `data_column` parameters get `None` instead of `"None"`
    - multiple `select` and `data_column` parameters are lists (before comma separated string)
 
 20.09
 
-- use strict shell (`set -e`) for tool execution
-- assume sort order for collection elements
+- Exit immediately if a command exits with a non-zero status (`set -e`)
+- Assume sort order for collection elements
   </xs:documentation>
         </xs:annotation>
       </xs:attribute>
