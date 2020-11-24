@@ -995,6 +995,13 @@ be present in ``test`` definition.</xs:documentation>
         <xs:documentation xml:lang="en">Maximum amount of time to let test run.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="title" type="xs:string" use="optional">
+        <xs:annotation>
+            <xs:documentation xml:lang="en">Title given to a test to be displayed
+when using planemo test. Use of this will change the CL output from "tool_id[0]: passed/failed"
+to tool_id[specific name]: passed/failed"</xs:documentation>
+        </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
   <xs:group name="TestParamElement">
     <xs:choice>
@@ -6009,7 +6016,7 @@ A tool can have any number of EDAM operation references.
       <xs:documentation xml:lang="en"><![CDATA[
 Container tag set for the ``<xref>`` tags.
 A tool can refer multiple reference IDs.
-	
+
 ```xml
    <!-- Example: this tool is seqtk -->
    <xrefs>
