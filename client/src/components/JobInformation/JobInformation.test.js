@@ -2,31 +2,31 @@ import Vuex from "vuex";
 import { mount, createLocalVue } from "@vue/test-utils";
 import JobInformation from "./JobInformation";
 import datasetResponse from "components/DatasetInformation/testData/datasetResponse";
-import jobInformationResponse from "./testData/jobInformationResponse.json";
+import jobResponse from "./testData/jobInformationResponse.json";
 
 import flushPromises from "flush-promises";
 import createCache from "vuex-cache";
 
 const HDA_ID = "FOO_HDA_ID";
-const JOB_ID = "8c959c9304a2bc4b";
+const JOB_ID = "test_id";
 
 const localVue = createLocalVue();
 localVue.use(Vuex);
 
-const jobInformationStore = new Vuex.Store({
+const jobStore = new Vuex.Store({
     plugins: [createCache()],
     modules: {
-        jobInformationStore: {
+        jobStore: {
             actions: {
                 fetchDataset: jest.fn(),
-                fetchJobInformation: jest.fn(),
+                fetchJob: jest.fn(),
             },
             getters: {
                 dataset: (state) => (hda_id) => {
                     return datasetResponse;
                 },
-                jobInformation: (state) => (hda_id) => {
-                    return jobInformationResponse;
+                job: (state) => (hda_id) => {
+                    return jobResponse;
                 },
             },
         },
@@ -54,7 +54,7 @@ describe("JobInformation/JobInformation.vue", () => {
         };
 
         wrapper = mount(JobInformation, {
-            store: jobInformationStore,
+            store: jobStore,
             propsData,
             localVue,
         });
@@ -80,10 +80,10 @@ describe("JobInformation/JobInformation.vue", () => {
 
     it("job messages", async () => {
         const rendered_link = jobInfoTable.findAll(`#job-messages li`);
-        expect(rendered_link.length).toBe(jobInformationResponse.job_messages.length);
+        expect(rendered_link.length).toBe(jobResponse.job_messages.length);
         for (let i = 0; i < rendered_link.length; i++) {
             const msg = rendered_link.at(i).text();
-            expect(jobInformationResponse.job_messages.includes(msg));
+            expect(jobResponse.job_messages.includes(msg));
         }
     });
 
@@ -91,12 +91,10 @@ describe("JobInformation/JobInformation.vue", () => {
         const rendered_entries = [
             { id: "galaxy-tool-id", backend_key: "tool_id" },
             { id: "galaxy-tool-version", backend_key: "tool_version" },
-            { id: "encoded-job-id", backend_key: "encoded_id" },
-            { id: "encoded-copied-from-job-id", backend_key: "encoded_copied_from_job_id" },
-            { id: "copied-from-job-id", backend_key: "copied_from_job_id", wrapped_in_brackets: true },
-            { id: "job-id", backend_key: "id" },
+            { id: "encoded-job-id", backend_key: "id" },
+            { id: "encoded-copied-from-job-id", backend_key: "copied_from_job_id" },
         ];
-        verifyValues(rendered_entries, jobInfoTable, jobInformationResponse);
+        verifyValues(rendered_entries, jobInfoTable, jobResponse);
     });
 
     it("dataset API content", async () => {

@@ -3,8 +3,6 @@
     "tool_version": "1.1.7",
     "exit_code": 0,
     "job_messages": ["test-msg1", "test-msg2", "test-msg3", "test-msg4"],
-    "encoded_id": "8c959c9304a2bc4b",
-    "encoded_copied_from_job_id": "encoded_test_id",
-    "id": 78,
-    "copied_from_job_id": "test_id"
+    "id": "test_id",
+    "copied_from_job_id": "test_copied_from_job_id"
 }
