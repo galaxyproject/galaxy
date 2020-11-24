@@ -21,6 +21,10 @@ if ($expression =~ m/^\d+$/) {
 
 while (<DATA>) {
   chop;
+  if (length($_) == 0 || substr($_,0,1) eq "#") {
+    print OUT "$_\n";
+    next;
+  }
   if ($iterate eq "no") {
     print OUT "$_\t$expression\n";
   } else {
