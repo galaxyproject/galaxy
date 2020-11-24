@@ -234,7 +234,7 @@ def singularity_cached_container_description(targets, cache_directory, hash_func
     return container
 
 
-def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None):
+def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None, session=None):
     unresolved_cache_key = "galaxy.tool_util.deps.container_resolvers.mulled:unresolved"
     if resolution_cache is not None:
         if unresolved_cache_key not in resolution_cache:
@@ -265,7 +265,7 @@ def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None)
         if name:
             return name
 
-        tags = mulled_tags_for(namespace, target.package_name, resolution_cache=resolution_cache)
+        tags = mulled_tags_for(namespace, target.package_name, resolution_cache=resolution_cache, session=session)
 
         if tags:
             for tag in tags:
@@ -284,7 +284,7 @@ def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None)
             else:
                 repo_name = image_name
                 tag_prefix = None
-            tags = mulled_tags_for(namespace, repo_name, tag_prefix=tag_prefix, resolution_cache=resolution_cache)
+            tags = mulled_tags_for(namespace, repo_name, tag_prefix=tag_prefix, resolution_cache=resolution_cache, session=session)
             return tags[0] if tags else None
 
         if hash_func == "v2":
@@ -388,7 +388,7 @@ class MulledDockerContainerResolver(ContainerResolver):
         command = container.build_pull_command()
         shell(command)
 
-    def resolve(self, enabled_container_types, tool_info, install=False, **kwds):
+    def resolve(self, enabled_container_types, tool_info, install=False, session=None, **kwds):
         resolution_cache = kwds.get("resolution_cache")
         if tool_info.requires_galaxy_python_environment or self.container_type not in enabled_container_types:
             return None
@@ -397,7 +397,7 @@ class MulledDockerContainerResolver(ContainerResolver):
         if len(targets) == 0:
             return None
 
-        name = targets_to_mulled_name(targets=targets, hash_func=self.hash_func, namespace=self.namespace, resolution_cache=resolution_cache)
+        name = targets_to_mulled_name(targets=targets, hash_func=self.hash_func, namespace=self.namespace, resolution_cache=resolution_cache, session=session)
         if name:
             container_id = f"quay.io/{self.namespace}/{name}"
             if self.protocol:
@@ -447,7 +447,7 @@ class MulledSingularityContainerResolver(MulledDockerContainerResolver):
         self.hash_func = hash_func
         self.auto_install = string_as_bool(auto_install)
 
-    def cached_container_description(self, targets, namespace, hash_func):
+    def cached_container_description(self, targets, namespace, hash_func, resolution_cache):
         return singularity_cached_container_description(targets,
                                                         cache_directory=self.cache_directory,
                                                         hash_func=hash_func)

@@ -2791,7 +2791,7 @@ class DatabaseOperationTool(Tool):
 
             if self.require_dataset_ok:
                 if state != model.Dataset.states.OK:
-                    raise ValueError("Tool requires inputs to be in valid state.")
+                    raise ValueError("Tool requires inputs to be in valid state, but dataset {} is in state '{}'".format(input_dataset, input_dataset.state))
 
         for input_dataset in input_datasets.values():
             check_dataset_state(input_dataset.state)

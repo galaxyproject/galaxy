@@ -54,11 +54,9 @@ The following configuration options have been changed
 New Configuration Files
 -----------------------
 
-The following files are new, or recently converted to yaml
+The following configuration file is new:
 
 -  ``config/trs_servers_conf.yml.sample``
--  ``config/build_mulled_singularity_mapping_file.yml.sample``
--  ``config/singularity_mapping.yml.sample``
 
 
 Get Galaxy
