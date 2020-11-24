@@ -1022,7 +1022,6 @@ def populate_api_routes(webapp, app):
     # Job metrics and parameters by job id or dataset id (for slightly different accessibility checking)
     webapp.mapper.connect('metrics', '/api/jobs/{job_id}/metrics', controller='jobs', action='metrics', conditions=dict(method=['GET']))
     webapp.mapper.connect('destination_params', '/api/jobs/{job_id}/destination_params', controller='jobs', action='destination_params', conditions=dict(method=['GET']))
-    webapp.mapper.connect('job_information', '/api/jobs/{job_id}/job_information', controller='jobs', action='job_information', conditions=dict(method=['GET']))
     webapp.mapper.connect('show_job_lock', '/api/job_lock', controller='jobs', action='show_job_lock', conditions=dict(method=['GET']))
     webapp.mapper.connect('update_job_lock', '/api/job_lock', controller='jobs', action='update_job_lock', conditions=dict(method=['PUT']))
     webapp.mapper.connect('dataset_metrics', '/api/datasets/{dataset_id}/metrics', controller='jobs', action='metrics', conditions=dict(method=['GET']))

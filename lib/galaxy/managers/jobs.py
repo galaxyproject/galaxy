@@ -662,24 +662,3 @@ def summarize_job_parameters(trans, job):
 
     parameters = inputs_recursive(tool.inputs, params_objects, depth=1, upgrade_messages=upgrade_messages)
     return {"parameters": parameters, "has_parameter_errors": has_parameter_errors}
-
-
-def summarize_job_information(trans, job):
-    """Produce a dict-ified version of job information
-
-    Precondition: the caller has verified the job is accessible to the user
-    represented by the trans parameter.
-    """
-
-    job_information = {'tool_id': job.tool_id,
-                       'tool_version': job.tool_version,
-                       'exit_code': job.exit_code,
-                       'job_messages': job.job_messages,
-                       'encoded_id': trans.security.encode_id(job.id),
-                       'encoded_copied_from_job_id': trans.security.encode_id(job.copied_from_job_id) if job.copied_from_job_id else "",
-                       }
-    if trans.user_is_admin:
-        job_information['id'] = job.id
-        job_information['copied_from_job_id'] = job.copied_from_job_id if job.copied_from_job_id else "",
-
-    return job_information

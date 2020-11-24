@@ -18,7 +18,6 @@ from galaxy.managers.jobs import (
     JobManager,
     JobSearch,
     summarize_destination_params,
-    summarize_job_information,
     summarize_job_metrics,
     summarize_job_parameters,
 )
@@ -148,10 +147,15 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
         job_dict = self.encode_all_ids(trans, job.to_dict('element', system_details=is_admin), True)
         full_output = util.asbool(kwd.get('full', 'false'))
         if full_output:
-
+            if job.copied_from_job_id is not None:
+                encoded_copied_from_job_id = trans.security.encode_id(job.copied_from_job_id)
+            else:
+                encoded_copied_from_job_id = None
             job_dict.update(dict(
                 tool_stdout=job.tool_stdout,
                 tool_stderr=job.tool_stderr,
+                tool_version=job.tool_version,
+                copied_from_job_id=encoded_copied_from_job_id,
                 job_stdout=job.job_stdout,
                 job_stderr=job.job_stderr,
                 stderr=job.stderr,
@@ -334,22 +338,6 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
         """
         job = self.__get_job(trans, **kwd)
         return summarize_job_parameters(trans, job)
-
-    @require_admin
-    @expose_api
-    def job_information(self, trans, **kwd):
-        """
-        * GET /api/jobs/{job_id}/summarize_job_information
-            Return job information for specified job.
-
-        :type   job_id: string
-        :param  job_id: Encoded job id
-
-        :rtype:     list
-        :returns:   list containing job information
-        """
-        job = self.__get_job(trans, **kwd)
-        return summarize_job_information(trans, job)
 
     @expose_api_anonymous
     def build_for_rerun(self, trans, id, **kwd):
