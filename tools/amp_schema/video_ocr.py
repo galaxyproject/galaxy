@@ -6,7 +6,7 @@ class VideoOcr:
         if media is None:
             self.media = VideoOcrMedia()
         else:
-             self.media = media
+            self.media = media
              
 class VideoOcrResolution:
     width = None
@@ -77,7 +77,6 @@ class VideoOcrObjectScore:
     @classmethod
     def from_json(cls, json_data: dict):
         return cls(**json_data)
-
     
 
 class VideoOcrObjectVertices:
