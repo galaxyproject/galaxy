@@ -5,7 +5,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
-from segmentation import SegmentationSchema, SegmentationSchemaMedia, SegmentationSchemaSegment
+from segmentation import Segmentation, SegmentationMedia, SegmentationSegment
 from adjustment import Adjustment
 
 def main():
@@ -18,7 +18,7 @@ def main():
 
     # Turn segmentation json into objects
     with open(segmentation_json, 'r') as file:
-        seg = SegmentationSchema().from_json(json.load(file))
+        seg = Segmentation().from_json(json.load(file))
     
     # List of adjustments (start, end, adjustment)
     offset_adj = []

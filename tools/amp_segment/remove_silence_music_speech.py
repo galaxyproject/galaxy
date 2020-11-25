@@ -11,7 +11,7 @@ import time
 from shutil import copyfile
 
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
-from segmentation import SegmentationSchema
+from segmentation import Segmentation
 
 # Seconds to buffer beginning and end of audio segments by
 buffer = 1
@@ -21,7 +21,7 @@ def main():
 
 	# Turn segmentation json file into segmentation object
 	with open(input_segmentation_json, 'r') as file:
-		seg_data = SegmentationSchema().from_json(json.load(file))
+		seg_data = Segmentation().from_json(json.load(file))
 	
 	# Remove silence and get a list of kept segments
 	kept_segments = remove_silence(remove_type, seg_data, input_file, output_file)

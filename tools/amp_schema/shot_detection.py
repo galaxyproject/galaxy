@@ -1,19 +1,18 @@
-from collections import namedtuple
 import json
 
-class ShotDetectionSchema:
+class ShotDetection:
     def __init__(self, media = None, shots = None):
         self.shots = []
         if media is None:
-            self.media = ShotDetectionMediaSchema()
+            self.media = ShotDetectionMedia()
         else:
              self.media = media
         if shots is None:
             self.shots = []
         else:
-             self.shots = shots
+            self.shots = shots
              
-class ShotDetectionMediaSchema:
+class ShotDetectionMedia:
     filename = ""
     duration = 0
 
@@ -25,7 +24,7 @@ class ShotDetectionMediaSchema:
     def from_json(cls, json_data):
         return cls(**json_data)
 
-class ShotDetectionShotSchema:
+class ShotDetectionShot:
     type = ""
     start = 0
     end = 0

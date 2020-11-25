@@ -49,9 +49,6 @@ def main():
 	if sys.argv[11] != '':
 		padding = int(sys.argv[11])
 
-
-
-
 	# Print for debugging purposes
 	print("Input File: " + input_file)
 	print("type: " + type)
