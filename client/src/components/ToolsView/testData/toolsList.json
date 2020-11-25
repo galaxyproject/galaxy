@@ -692,7 +692,7 @@
         "form_style": "regular",
         "edam_topics": [],
         "panel_section_id": "textutil",
-        "version": "1.0.0",
+        "version": "1.0.1",
         "link": "/tool_runner?tool_id=addValue",
         "target": "galaxy_main",
         "min_width": -1,
