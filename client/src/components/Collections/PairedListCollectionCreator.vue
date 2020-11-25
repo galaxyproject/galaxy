@@ -150,7 +150,7 @@
                                 <input
                                     class="search-query"
                                     :placeholder="filterTextPlaceholder"
-                                    v-model="forwardFilterText"
+                                    v-model="forwardFilter"
                                 />
                             </div>
                         </div>
@@ -164,7 +164,7 @@
                                 {{ l("Clear Filters") }}
                             </a>
                             <br />
-                            <a class="autopair-link" href="javascript:void(0);" role="button">
+                            <a class="autopair-link" href="javascript:void(0);" role="button" @click="clickAutopair">
                                 {{ l("Auto-pair") }}
                             </a>
                         </div>
@@ -181,7 +181,7 @@
                                 <input
                                     class="search-query"
                                     :placeholder="filterTextPlaceholder"
-                                    v-model="reverseFilterText"
+                                    v-model="reverseFilter"
                                 />
                             </div>
                         </div>
@@ -243,6 +243,7 @@
 import _l from "utils/localization";
 import CollectionCreator from "./common/CollectionCreator";
 import DatasetCollectionElementView from "./PairedListDatasetCollectionElementView";
+import levenshteinDistance from "utils/levenshtein";
 import PairedElementView from "./PairedListPairedElementView";
 import STATES from "mvc/dataset/states";
 //import { filter } from "rxjs/operators";
@@ -257,7 +258,7 @@ export default {
             state: "build", //error
             dragToChangeTitle: "Drag to change",
             filterTextPlaceholder: "Filter this list",
-            pairedElements: [{ forward: { name: "bob" }, reverse: { name: "sue" }, name: "blank" }],
+            pairedElements: [],
             unpairedElements: [],
             commonFilters: {
                 illumina: ["_1", "_2"],
@@ -266,22 +267,73 @@ export default {
             DEFAULT_FILTERS: "illumina",
             filters: this.DEFAULT_FILTERS,
             automaticallyPair: true,
-            strategies: {
-                simple: "autopairSimple",
-                lcs: "autopairLCS",
-                levenshtein: "autopairLevenshtein",
-            },
-            DEFAULT_STRATEGY: "lcs",
-            strategy: "lcs",
             matchPercentage: 0.9,
             twoPassAutoPairing: true,
             workingElements: [],
-            forwardElements: [],
-            reverseElements: [],
             forwardFilter: "",
             reverseFilter: "",
             selectedForwardElement: null,
             selectedReverseElement: null,
+            /** autopair by exact match */
+            autopairSimple: this.autoPairFnBuilder({
+                scoreThreshold: function () {
+                    return 0.6;
+                },
+                match: function _match(params) {
+                    params = params || {};
+                    if (params.matchTo === params.possible) {
+                        return {
+                            index: params.index,
+                            score: 1.0,
+                        };
+                    }
+                    return params.bestMatch;
+                },
+            }),
+            /** autopair by levenshtein edit distance scoring */
+            autopairLevenshtein: this.autoPairFnBuilder({
+                scoreThreshold: function () {
+                    return this.matchPercentage;
+                },
+                match: function _matches(params) {
+                    params = params || {};
+
+                    var distance = levenshteinDistance(params.matchTo, params.possible);
+
+                    var score = 1.0 - distance / Math.max(params.matchTo.length, params.possible.length);
+
+                    if (score > params.bestMatch.score) {
+                        return {
+                            index: params.index,
+                            score: score,
+                        };
+                    }
+                    return params.bestMatch;
+                },
+            }),
+            /** autopair by longest common substrings scoring */
+            autopairLCS: this.autoPairFnBuilder({
+                scoreThreshold: function () {
+                    return this.matchPercentage;
+                },
+                match: function _matches(params) {
+                    params = params || {};
+
+                    var match = this._naiveStartingAndEndingLCS(params.matchTo, params.possible).length;
+
+                    var score = match / Math.max(params.matchTo.length, params.possible.length);
+
+                    if (score > params.bestMatch.score) {
+                        return {
+                            index: params.index,
+                            score: score,
+                        };
+                    }
+                    return params.bestMatch;
+                },
+            }),
+            DEFAULT_STRATEGY: this.autopairLCS,
+            strategy: this.DEFAULT_STRATEGY,
         };
     },
     props: {
@@ -322,13 +374,12 @@ export default {
             this.workingElements = [];
             //TODO: this should maybe be in it's own method as it will get called everytime selected array has two elements and dumps again.
             this.selectedDatasetElems = [];
+
             // copy initial list, sort, add ids if needed
             this.workingElements = this.initialElements.slice(0);
             this._ensureElementIds();
             this._validateElements();
             // this._mangleDuplicateNames();
-            this.forwardElements.push.apply(this.forwardElements, this.workingElements);
-            this.reverseElements.push.apply(this.reverseElements, this.workingElements);
         },
         /** add ids to dataset objs in initial list if none */
         _ensureElementIds: function () {
@@ -365,7 +416,10 @@ export default {
             return null;
         },
         filterElements: function (elements, filterText) {
-            return elements.filter((e) => e.name.includes(filterText));
+            return elements.filter((e) => this.filterElement(e, filterText));
+        },
+        filterElement: function (element, filterText) {
+            return filterText == "" || element.name.toLowerCase().includes(filterText.toLowerCase());
         },
         forwardElementSelected: function (e) {
             if (this.selectedForwardElement == null || !this.selectedForwardElement.id == e.id) {
@@ -373,7 +427,11 @@ export default {
             } else {
                 this.selectedForwardElement = null;
             }
-            if (this.selectedForwardElement && this.selectedReverseElement) {
+            if (
+                this.selectedForwardElement &&
+                this.selectedReverseElement &&
+                this.selectedReverseElement != this.selectedForwardElement
+            ) {
                 this._pair(this.selectedForwardElement, this.selectedReverseElement);
             }
         },
@@ -383,7 +441,11 @@ export default {
             } else {
                 this.selectedReverseElement = null;
             }
-            if (this.selectedForwardElement && this.selectedReverseElement) {
+            if (
+                this.selectedForwardElement &&
+                this.selectedReverseElement &&
+                this.selectedReverseElement != this.selectedForwardElement
+            ) {
                 this._pair(this.selectedForwardElement, this.selectedReverseElement);
             }
         },
@@ -394,14 +456,17 @@ export default {
             console.log("_pair:", fwd, rev);
             var pair = this._createPair(fwd, rev, options.name);
             this.pairedElements.push(pair);
-            this.unpairedElements = this.unpairedElements.splice(this.unpairedElements.indexOf(fwd), 1);
-            console.log(this.unpairedElements);
-            this.unpairedElements = this.unpairedElements.splice(this.unpairedElements.indexOf(rev), 1);
-            console.log(this.unpairedElements);
+            this.removePairFromUnpaired(fwd, rev);
             if (!options.silent) {
                 this.$emit("pair:new", pair);
             }
             return pair;
+        },
+        removePairFromUnpaired: function (fwd, rev) {
+            this.workingElements.splice(this.workingElements.indexOf(rev), 1);
+            this.workingElements.splice(this.workingElements.indexOf(fwd), 1);
+            this.selectedForwardElement = null;
+            this.selectedReverseElement = null;
         },
         /** create a pair Object from fwd and rev, adding the name attribute (will guess if not given) */
         _createPair: function (fwd, rev, name) {
@@ -443,7 +508,6 @@ export default {
             }
             return lcs || `${fwdName} & ${revName}`;
         },
-        newPair: function (pair) {},
         /** return the concat'd longest common prefix and suffix from two strings */
         _naiveStartingAndEndingLCS: function (s1, s2) {
             var fwdLCS = "";
@@ -475,6 +539,59 @@ export default {
                 j -= 1;
             }
             return fwdLCS + revLCS;
+        },
+        clickAutopair: function () {
+            // Unselect any selected elements
+            this.selectedForwardElement = null;
+            this.selectedReverseElement = null;
+            this.pairedElements = this.pairedElements.concat(this.autoPair(this.autopairLCS));
+            this.workingElements = this.workingElements.filter((e) => !this.pairedElements.includes(e));
+        },
+        splitByFilter: function () {
+            var split = [[], []];
+            this.workingElements.forEach((e) => {
+                console.log("in loop ", e);
+                if (this.filterElement(e, this.forwardFilter)) {
+                    split[0].push(e);
+                }
+                if (this.filterElement(e, this.reverseFilter)) {
+                    split[1].push(e);
+                }
+            });
+            return split;
+        },
+        // ------------------------------------------------------------------------ auto pairing
+        /** two passes to automatically create pairs:
+         *  use both simpleAutoPair, then the fn mentioned in strategy
+         */
+        autoPair: function (strategy) {
+            
+            var split = this.splitByFilter();
+            console.log("after ", split);
+            var paired = [];
+            if (this.twoPassAutopairing) {
+                paired = this.autopairSimple({
+                    listA: split[0],
+                    listB: split[1],
+                });
+                split = this.splitByFilter();
+            }
+            console.log("after2 ", split);
+
+            // uncomment to see printlns while running tests
+            //this.debug = function(){ console.log.apply( console, arguments ); };
+
+            // then try the remainder with something less strict
+            strategy = strategy || this.strategy;
+            split = this.splitByFilter();
+            console.log("after3 ", split);
+            paired = paired.concat(
+                strategy.call(this, {
+                    listA: split[0],
+                    listB: split[1],
+                })
+            );
+            return paired;
         },
         // ============================================================================
         /** returns an autopair function that uses the provided options.match function */
@@ -516,7 +633,7 @@ export default {
                 };
 
             return function _strategy(params) {
-                this.debug("autopair _strategy ---------------------------");
+                // this.debug("autopair _strategy ---------------------------");
                 params = params || {};
                 var listA = params.listA;
                 var listB = params.listB;
@@ -530,8 +647,8 @@ export default {
 
                 var paired = [];
                 //console.debug( 'params:', JSON.stringify( params, null, '  ' ) );
-                this.debug("starting list lens:", listA.length, listB.length);
-                this.debug("bestMatch (starting):", JSON.stringify(bestMatch, null, "  "));
+                // this.debug("starting list lens:", listA.length, listB.length);
+                // this.debug("bestMatch (starting):", JSON.stringify(bestMatch, null, "  "));
 
                 while (indexA < listA.length) {
                     var matchTo = listA[indexA];
@@ -539,8 +656,8 @@ export default {
 
                     for (indexB = 0; indexB < listB.length; indexB++) {
                         var possible = listB[indexB];
-                        this.debug(`${indexA}:${matchTo.name}`);
-                        this.debug(`${indexB}:${possible.name}`);
+                        // this.debug(`${indexA}:${matchTo.name}`);
+                        // this.debug(`${indexB}:${possible.name}`);
 
                         // no matching with self
                         if (listA[indexA] !== listB[indexB]) {
@@ -553,16 +670,16 @@ export default {
                                     bestMatch: bestMatch,
                                 })
                             );
-                            this.debug("bestMatch:", JSON.stringify(bestMatch, null, "  "));
+                            // this.debug("bestMatch:", JSON.stringify(bestMatch, null, "  "));
                             if (bestMatch.score === 1.0) {
-                                this.debug("breaking early due to perfect match");
+                                // this.debug("breaking early due to perfect match");
                                 break;
                             }
                         }
                     }
                     var scoreThreshold = options.scoreThreshold.call(this);
-                    this.debug("scoreThreshold:", scoreThreshold);
-                    this.debug("bestMatch.score:", bestMatch.score);
+                    // this.debug("scoreThreshold:", scoreThreshold);
+                    // this.debug("bestMatch.score:", bestMatch.score);
 
                     if (bestMatch.score >= scoreThreshold) {
                         //console.debug( 'autoPairFnBuilder.strategy', listA[ indexA ].name, listB[ bestMatch.index ].name );
@@ -582,29 +699,21 @@ export default {
                         return paired;
                     }
                 }
-                this.debug("paired:", JSON.stringify(paired, null, "  "));
-                this.debug("autopair _strategy ---------------------------");
+                // this.debug("paired:", JSON.stringify(paired, null, "  "));
+                // this.debug("autopair _strategy ---------------------------");
                 return paired;
             };
         },
     },
     computed: {
-        forwardFilterText: {
+        forwardElements: {
             get() {
-                return this.forwardFilter;
-            },
-            set(filterText) {
-                this.forwardFilter = filterText;
-                this.forwardElements = this.filterElements(this.workingElements, filterText);
+                return this.filterElements(this.workingElements, this.forwardFilter);
             },
         },
-        reverseFilterText: {
+        reverseElements: {
             get() {
-                return this.reverseFilter;
-            },
-            set(filterText) {
-                this.reverseFilter = filterText;
-                this.reverseElements = this.filterElements(this.workingElements, filterText);
+                return this.filterElements(this.workingElements, this.reverseFilter);
             },
         },
     },
