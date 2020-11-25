@@ -5,17 +5,19 @@
     <requirement type="package" version="19.21.0">dlib</requirement>
     <requirement type="package" version="4.4.0">opencv</requirement>
     <requirement type="package" version="1.2.3">face_recognition</requirement>
+    <requirement type="package" version="4.53.0">tqdm</requirement>
   </requirements>
   <command detect_errors="exit_code"> 
-  	'$__tool_directory__/dlib_face_recognition.py' '$train_photos' '$threshold' 
+  	'$__tool_directory__/dlib_face_recognition.py' '$__root_dir__' '$input_video' '$training_photos' '$reuse_trained' '$tolerance' '$amp_faces' 
   </command>
   <inputs>
-	<param name="input_video" type="data" format="video" label="Input Video" help="An input video file for shot detection"/>
-	<param name="threshold" type="integer" label="(Optional) Threshold" value="30" min="0" max="100" optional="true" help="Sensitivity of the shot detection. The default is 30"/>
+	<param name="input_video" type="data" format="video" label="Input Video" help="An input video file for facial recognition"/>
+	<param name="training_photos" type="data" format="zip" label="Training Photos" help="A zip file with subdirectories each named after a person containing his/her photos"/>
+	<param name="reuse_trained" type="boolean" label="Reuse Previous Training Results" help="A Flag indicating whether or not to reuse previous training results from the same training photos if exist"/>
+	<param name="tolerance" type="integer" label="Face Match Tolerance Percentage" value="60" min="0" max="100" optional="true" help="percentage of tolerance level when matching faces, a lower value means stricter match"/>
   </inputs>
   <outputs>
-    <data name="amp_shots" format="shot" label="AMP Shots Generated" />
-    <data name="frame_stats" format="csv" label="Frame Statistics"/>
+    <data name="amp_faces" format="face" label="AMP Faces Recognized" />
   </outputs>
   <help>
 .. class:: infomark
