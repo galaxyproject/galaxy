@@ -1,6 +1,6 @@
 <template>
     <div>
-        <b-card title="GA4GH Tool Registry Server (TRS) Workflow Import">
+        <b-card v-if="isRegistered" title="GA4GH Tool Registry Server (TRS) Workflow Import">
             <b-alert :show="hasErrorMessage" variant="danger">{{ errorMessage }}</b-alert>
             <div>
                 <b>TRS Server:</b>
@@ -23,6 +23,9 @@
                 <trs-tool :trs-tool="trsTool" v-if="trsTool" @onImport="importVersion(trsTool.id, $event)" />
             </div>
         </b-card>
+        <b-alert v-else show variant="danger" class="text-center my-2"
+            >Only registered users can import workflows!</b-alert
+        >
     </div>
 </template>
 
@@ -32,6 +35,7 @@ import BootstrapVue from "bootstrap-vue";
 import { Services } from "./services";
 import TrsMixin from "./trsMixin";
 import { Toast } from "ui/toast";
+import { getGalaxyInstance } from "app";
 
 Vue.use(BootstrapVue);
 
@@ -71,6 +75,9 @@ export default {
     computed: {
         hasErrorMessage() {
             return this.errorMessage != null;
+        },
+        isRegistered() {
+            return !getGalaxyInstance().user.isAnonymous();
         },
     },
     watch: {
