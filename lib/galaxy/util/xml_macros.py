@@ -24,7 +24,9 @@ def load_with_references(path):
     # Expand xml macros
     macro_dict = _macros_of_type(root, 'xml', lambda el: XmlMacroDef(el))
     _expand_macros([root], macro_dict, tokens)
-
+    for el in root.xpath('//macros'):
+        el.getparent().remove(el)
+    _expand_tokens_for_el(root, tokens)
     return tree, macro_paths
 
 
@@ -131,8 +133,6 @@ def _expand_macros(elements, macros, tokens):
             if expand_el is None:
                 break
             _expand_macro(element, expand_el, macros, tokens)
-
-        _expand_tokens_for_el(element, tokens)
 
 
 def _expand_macro(element, expand_el, macros, tokens):
