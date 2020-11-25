@@ -16,7 +16,7 @@ import boto3
 from requests_toolbelt import MultipartEncoder
 
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
-from video_ocr import VideoOcr, VideoOcrMedia, VideoOcrResolution, VideoOcrFrame, VideoOcrBoundingBoxSchema, VideoOcrBoundingBoxScoreSchema, VideoOcrBoundingBoxVerticesSchema
+from video_ocr import VideoOcr, VideoOcrMedia, VideoOcrResolution, VideoOcrFrame, VideoOcrObject, VideoOcrObjectScore, VideoOcrObjectVertices
 
 def main():
 	apiUrl = "https://api.videoindexer.ai"
@@ -174,11 +174,11 @@ def createAmpFrames(frame_dict, framerate):
 	for frameNum, boundingBoxList in frame_dict.items():
 		bounding_boxes = []
 		for b in boundingBoxList:
-			amp_score = VideoOcrBoundingBoxScoreSchema("confidence", b["confidence"])
+			amp_score = VideoOcrObjectScore("confidence", b["confidence"])
 			bottom = b['top'] - b['height']
 			right = b['left'] + b['width']
-			amp_vertice = VideoOcrBoundingBoxVerticesSchema(b['left'], bottom, right, b['top'])
-			amp_bounding_box = VideoOcrBoundingBoxSchema(b["text"], b["language"], amp_score, amp_vertice)
+			amp_vertice = VideoOcrObjectVertices(b['left'], bottom, right, b['top'])
+			amp_bounding_box = VideoOcrObject(b["text"], b["language"], amp_score, amp_vertice)
 			bounding_boxes.append(amp_bounding_box)
 		amp_frame = VideoOcrFrame((frameNum) * (1/framerate), bounding_boxes)
 		amp_frames.append(amp_frame)
