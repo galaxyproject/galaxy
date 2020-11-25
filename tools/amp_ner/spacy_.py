@@ -44,7 +44,7 @@ def main():
 
     # Add the media information
     ner.media = EntityExtractionMedia(len(stt.results.transcript), input_file)
-    
+
     # Variables for filling time offsets based on speech to text
     lastPos = 0  # Iterator to keep track of location in STT word
     sttWords = len(stt.results.words) # Number of STT words
@@ -75,7 +75,7 @@ def main():
         # Ignore certain categories
         if clean_text(entity.label_) not in ignore_cats_list:
             ner.addEntity(entity.label_, text, None, None, None, None, start, None)   #AMP-636 removed startOffset=endOffset=end=None
-    
+
     # Write the json file
     write_json_file(ner, json_file)
 
@@ -109,6 +109,6 @@ def write_json_file(obj, output_file):
         json.dump(obj, outfile, default=lambda x: x.__dict__)
 
 
-        
+
 if __name__ == "__main__":
     main()

@@ -1,0 +1,23 @@
+<tool id="ner_to_csv" name="AMP Named Entity JSON to CSV Converter" version="1.1.0">
+  <description>Convert NER output to CSV</description>
+  <requirements>
+	<requirement type="package" version="3.8">python</requirement>
+  </requirements>
+  <command detect_errors="exit_code">
+    '$__tool_directory__/ner_to_csv_.py' '$amp_entities' '$amp_entities_csv';
+  </command>
+  <inputs>
+    <param name="amp_entities" type="data" format="ner" label="AMP Named Entities" help="AMP NER output file" ></param>
+  </inputs>
+  <outputs>
+    <data name="amp_entities_csv" format="csv" label="AMP Entities CSV Converted"/>
+  </outputs>
+  <tests>
+  </tests>
+  <help>
+.. class:: infomark
+
+Convert NER output to CSV and output CSV file
+
+  </help>
+</tool>
