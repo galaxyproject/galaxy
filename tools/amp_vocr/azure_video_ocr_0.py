@@ -13,7 +13,7 @@ import math
 import uuid
 import boto3
 
-from requests_toolbelt import MultipartEncoder
+#from requests_toolbelt import MultipartEncoder
 
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
 from video_ocr import VideoOcr, VideoOcrMedia, VideoOcrResolution, VideoOcrFrame, VideoOcrObject, VideoOcrObjectScore, VideoOcrObjectVertices

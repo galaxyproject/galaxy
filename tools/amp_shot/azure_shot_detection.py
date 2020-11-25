@@ -1,18 +1,13 @@
 #!/usr/bin/env python3
 import sys
 import logging
-import time
 import json
-import tempfile
 import os
-from datetime import timedelta
 from datetime import datetime
-import math
-
-from requests_toolbelt import MultipartEncoder
 
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
 from shot_detection import ShotDetection, ShotDetectionMedia, ShotDetectionShot
+
 
 def main():
 	(input_video, azure_video_index, amp_shots) = sys.argv[1:4]

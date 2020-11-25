@@ -1,15 +1,10 @@
 #!/usr/bin/env python3
 import sys
 import logging
-import time
 import json
-import tempfile
 import os
-from datetime import timedelta
 from datetime import datetime
 import math
-
-from requests_toolbelt import MultipartEncoder
 
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
 from video_ocr import VideoOcr, VideoOcrMedia, VideoOcrResolution, VideoOcrFrame, VideoOcrObject, VideoOcrObjectScore, VideoOcrObjectVertices

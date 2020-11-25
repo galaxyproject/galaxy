@@ -10,8 +10,6 @@ import os
 import uuid
 import boto3
 
-from requests_toolbelt import MultipartEncoder
-
 
 def main():
 	apiUrl = "https://api.videoindexer.ai"
