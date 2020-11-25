@@ -3,6 +3,7 @@ on: [push, pull_request]
 env:
   GALAXY_TEST_DBURI: 'postgres://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
   GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR: 'true'
+  GALAXY_TEST_SELENIUM_RETRIES: 1
 jobs:
   test:
     name: Test
