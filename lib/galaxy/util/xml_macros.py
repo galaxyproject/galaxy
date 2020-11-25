@@ -24,8 +24,10 @@ def load_with_references(path):
     # Expand xml macros
     macro_dict = _macros_of_type(root, 'xml', lambda el: XmlMacroDef(el))
     _expand_macros([root], macro_dict, tokens)
-    for el in root.xpath('//macros'):
-        el.getparent().remove(el)
+    for el in root.xpath('//macro'):
+        if el.get('type') != 'template':
+            # Only keep template macros
+            el.getparent().remove(el)
     _expand_tokens_for_el(root, tokens)
     return tree, macro_paths
 
