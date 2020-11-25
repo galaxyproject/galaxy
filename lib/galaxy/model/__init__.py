@@ -2599,6 +2599,8 @@ class DatasetHash(RepresentById):
 
 
 def datatype_for_extension(extension, datatypes_registry=None):
+    if extension is not None:
+        extension = extension.lower()
     if datatypes_registry is None:
         datatypes_registry = _get_datatypes_registry()
     if not extension or extension == 'auto' or extension == '_sniff_':
