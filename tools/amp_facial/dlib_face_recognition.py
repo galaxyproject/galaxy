@@ -9,16 +9,24 @@ import shutil
 import face_recognition
 import cv2
 import pickle
-from tqdm.notebook import tqdm
-from zipfile import ZipFile
+# from tqdm.notebook import tqdm
+import dlib_face_training
+from test.test_tracemalloc import frame
+
+sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
+from face_recognition import FaceRecognition, FaceRecognitionMedia, FaceRecognitionMediaResolution, FaceRecognitionFrame, FaceRecognitionFrameObject, FaceRecognitionFrameObjectScore, FaceRecognitionFrameObjectVertices
 
 
 FR_TRAINED_MODEL_SUFFIX = ".frt"
+FR_SCORE_TYPE = "confidence"
+FR_DEFAULT_TOLERANCE = 0.6
 
 
 # Usage: dlib_face_recognition.py root_dir, input_video, training_photos, reuse_trained, tolerance, amp_faces 
 def main():
     (root_dir, input_video, training_photos, reuse_trained, tolerance, amp_faces) = sys.argv[1:6]
+    if not tolerance:
+        tolerance = FR_DEFAULT_TOLERANCE
     
     # if reuse_trained is set to true, retrieve previous training results
     if reuse_trained:
@@ -29,143 +37,143 @@ def main():
         known_names, known_faces = train_faces(training_photos)
               
     # run face recognition on the given video using the trained results at the given tolerance level
-    recognized_faces = recognize_faces(input_video, known_names, known_faces, tolerance)
+    fr_result = recognize_faces(input_video, known_names, known_faces, tolerance)
     
     # save the recognized_faces in the standard AMP Face JSON file
-    save_faces(recognized_faces, amp_faces)
+    save_faces(fr_result, amp_faces)
     
-              
-# Get the file path of the trained model for the given training_photos.
-def get_model_file(training_photos):
-    # model file has the same file path as training_photos, but with extension .frt replacing .zip
-    filename, file_extension = os.path.splitext(training_photos)
-    model_file = os.path.join(filename, FR_TRAINED_MODEL_SUFFIX)
-    return model_file
-            
+    
+# Recognize faces in the input_video, given the known_names and known_faces from trained FR model, and the tolerance;
+# return a list of identified names and faces. 
+def recognized_faces(input_video, known_names, known_faces, tolerance):
+    print ("Starting face recognition on video " + input_video + " with tolerance " + tolerance)
+    
+    # load the input video file with cv2
+    cv2_video = cv2.VideoCapture(input_video)
+    frame_count = cv2_video.get(cv2.CAP_PROP_FRAME_COUNT)
+    fps = cv2_video.get(cv2.CAP_PROP_FPS)
 
-# Get the facial recognition working directory path for training and matching.
-def get_facial_dir(root_dir):
-    config = configparser.ConfigParser()
-    config.read(root_dir + "/config/mgm.ini")    
-    facial_dir = config["general"]["facial_dir"]
-    return facial_dir
+    # create AMP FR result object 
+    fr_result = FaceRecognition()
+    fr_result.media = FaceRecognitionMedia()
+    fr_result.media.filename = input_video
+    fr_result.media.duration = float(frame_count) / float(fps)
+    fr_result.media.frameRate = fps
+    fr_result.media.numFrames = frame_count
+    fr_result.media.resolution = FaceRecognitionMediaResolution()
+    fr_result.media.resolution.width = cv2_video.get(cv2.CAP_PROP_FRAME_WIDTH)
+    fr_result.media.resolution.height = cv2_video.get(cv2.CAP_PROP_FRAME_HEIGHT)
+    fr_result.frames = [];
+    
+    print ("Successfully loaded video " + input_video + ", total number of frames: " + frame_count)
 
-    
-# Get the known faces names and encodings from previously trained face recognition model for training_photos.
-def get_trained_results(training_photos):
-    model_file = get_model_file(training_photos)
-    known_names, known_faces = [], []
-    try:
-        if os.path.exists(model_file) and os.stat(model_file).st_size > 0:
-            trained_model = pickle.load(open("model.p", "rb"))
-            known_names = [face["name"] for face in trained_model]
-            known_faces = [face["encoding"] for face in trained_model]
-            print(len(known_names) + " previous trained faces are retrieved for training photos: " + training_photos)
-        else:
-            print("Could not find previously trained Face Recognition model: " + model_file + " for training photos: " + training_photos)
-    except Exception as e:
-        print("Failed to read previously trained Face Recognition model: " + model_file + " for training photos: " + training_photos, e)
-    return known_names, known_faces
-    
-    
-# Train Face Recognition model with the provided training_photos,  
-# save the results in a FRT model file with the same file path as training_photos, replacing extension .zip with .frt, 
-# and return the trained results as a list of known_names and a list of known_faces encodings. 
-# If training fails for any reason, exit in error, as face recognition won't work without training.
-def train_faces(training_photos):
-    # unzip training_photos
-    facial_dir = get_facial_dir(root_dir)
-    photos_dir = unzip_training_photos(training_photos, facial_dir)
-    
-    # get all persons photo directories
-    person_dirs = [d for d in os.listdir(photos_dir) if os.path.isdir(os.path.join(image_dir, d))]
+    # process frames in the video
+    for frame_number in range(0, frame_count):
+        # grab a single frame of video
+        ret, cv2_frame = cv2_video.read()
+      
+        # quit when the input video file ends
+        if not ret:
+            break
 
-    # exit in error if no training data found    
-    if (len(person_dirs) == 0):
-        print("Training failed as training photos " + training_photos + " contains no sub-directory")
-        exit(-1)
-         
-    known_names = []
-    known_faces = []
-    model = []
-    
-    # train the face photos in each person's photo directory
-    for person_dir in person_dirs:
-        name = person_dir   # each directory of photos is named after the person
-        photos = [f for f in os.listdir(person_dir) if os.path.isfile(os.path.join(person_dir, f))]
-
-        # skip the current person if no training photo found    
-        if (len(photos) == 0):
-            print("Skipped " + name + " as no training photo is found in the corresponding sub-directory")
+        # skip FR in every fps frames, i.e. take only one frame per second
+        if frame_number % fps != 0:
             continue
         
-        # train each photo in the sub-directory
-        for photo in tqdm(photos):
-            path = os.path.join(person_dir, photo)
-            face = face_recognition.load_image_file(path)
-            face_bounding_boxes = face_recognition.face_locations(face) # Find faces in the photo
+        # convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
+        rgb_frame = cv2_frame[:, :, ::-1]
 
-            # if training photo contains exactly one face
-            # add face encoding for the current photo with the corresponding person name to the training model
-            if len(face_bounding_boxes) == 1:
-                face_enc = face_recognition.face_encodings(face)[0]
-                known_names.append(name)
-                known_faces.append(face_enc)
-                model.append({"name": name, "encoding": face_enc})
-                print("Added face encoding from " + photo + " for " + name + " to training model")
-            # otherwise we can't use this photo
-            else:
-                print("Skipped " + photo + " for " + name + " as it contains no or more than one faces")
-              
-    # save the trained model into model file for future use
-    save_model(training_photos, model)
-    
-    # return the training results as known_names and known_faces if any
-    if (len(known_faces) > 0):
-        print("Successfully trained a total of " + len(known_faces)  + " faces for a total of " + len(person_dirs) + " people")
-        return known_names, known_faces
-    # otherwise exit in error
-    else:
-        print("Failed training as there is no valid face detected in the given training photos " + training_photos)
-        exit(-1)
+        # find all the faces and face encodings in the current frame of video
+        face_locations = face_recognition.face_locations(rgb_frame)
+        face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
 
+        # if no face found in the current frame, skip it and move on to the next one
+        if (not face_encodings or len(face_encodings) == 0):
+            continue
 
-# Unzip training_photos zip file to a sub-directory with the same name as training_photos under facial_dir.
-def unzip_training_photos(training_photos, facial_dir):
-    dirname = os.path.splitext(os.path.basename(training_photos))[0]
-    dirpath = os.path.join(facial_dir, dirname)
-    # TODO
-    # It's assumed that the zip file contains directories of photos; 
-    # if instead the zip file contains a parent directory which contains sub-directories of photos, 
-    # we should put the parent directory in faical_dir without creating another layer of parent dir.
-    try:
-        with ZipFile(training_photos, 'r') as zipobj:
-            zipobj.extractall(dirpath)
-        print("Successfully unziped training photos " + training_photos + " into directory " + dirpath)
-        return dirpath
-    except Exception as e:
-        print ("Failed to unzip training photos: " + training_photos + "to working directory for facial recognition: " + facial_dir, e)
-        exit(-1)
-    
+        # otherwise create an AMP FR frame object in the AMP FR result object
+        frame = FaceRecognitionFrame()
+        frame.start = float(frame_number) / float(fps)
+        frame.objects = []
+         
+        print ("Found " + len(face_encodings) + " faces in frame # " + frame_number)
+        
+        # initialize index of the current face_location or face_encoding among all faces found in the frame 
+        location_index = 0;
 
-# Save the given face model trained from the training_photos.
-def save_model(training_photos, model):
-    try:
-        model_file = get_trained_results(training_photos)
-        pickle.dump(model, open(model_file, "wb"))        
-        print ("Successfully saved model trained from training photos " + training_photos + " to file " + model_file)
-    except Exception as e:
-        print ("Failed to save model trained from training photos " + training_photos + " to file " + model_file, e)
+        # for each face in the frame, see if it's a match for any known faces, if so use the first match
+        for face_encoding in face_encodings:  
+            matches = face_recognition.compare_faces(known_faces, face_encoding, tolerance)
+            if any(matches):
+                # find the index of the first match in known_faces
+                matched_index = matches.index(True)
+                
+                # create an AMP FR face object in the AMP FR frame
+                object = FaceRecognitionFrameObject()
+                object.name = known_names[matched_index]
+                object.score = FaceRecognitionFrameObjectScore()
+                object.score.type = FR_SCORE_TYPE
+                object.score.value = 1.0 - tolerance              
+                object.vertices = FaceRecognitionFrameObjectVertices()
+                object.vertices.ymin, object.vertices.xmin, object.vertices.ymax, object.vertices.xmax = face_locations[i]
+                
+                # add face object to the list
+                frame.objects.append(object)
             
+                print ("Recognized face of " + object.name + " in frame # " + frame_number)
 
-# Remove the temporary working directory for storing training photos.
-def cleanup_training_photos(photos_dir):    
-    try:
-        shutil.rmtree(photos_dir)
-        print("Successfully cleaned up training photos directory: " + photos_dir)
-    except Exception as e:
-        print ("Failed to clean up training photos directory: " + photos_dir, e)        
+            # move on to the next face in the frame
+            location_index += 1          
+
+        # if any face in the frame is recognized as a known face, add the current frame to AMP FR result
+        if (frame and len(frame.objects) > 0):
+            fr_result.frames.append(frame)
+            
+    # done with all frames, release resource 
+    cv2_video.release()
+    cv2.destroyAllWindows()
+    print ("Completed face recognition on video " + input_video)
+
+    # save FR result into AMP Face JSON file
+    with open(amp_faces, 'w') as fr_file:
+        json.dump(fr_result, fr_file, default = lambda x: x.__dict__)
+    print ("Saved face recognition result to file " + amp_faces)
+                        
+
+# Serialize the given object and write it to given output_file
+def write_json_file(object, output_file):
+    # Serialize the object
+    with open(output_file, 'w') as outfile:
+        json.dump(object, outfile, default = lambda x: x.__dict__)
+        
+                        
+# # Convert number of frames to formatted time.
+# def frame_to_time(frames, fps):
+#     h =  int(frames/(3600*fps))
+#     m = int(frames/(60*fps) % 60)
+#     s = int(frames/fps % 60)
+#     return ("%02d:%02d:%02d" % ( h, m, s))
+# 
+# 
+# # Convert formatted time to number of frames.
+# def time_to_frame(time, fps):
+#     h,m,s = time.split(":")
+#     seconds = (int(h)*3600) + (int(m)*60) + int(s)
+#     return seconds*fps
+# 
+# 
+# # Convert formatted time to number of seconds.
+# def time_to_second(time):
+#     h,m,s = time.split(":")
+#     return (int(h)*3600) + (int(m)*60) + int(s)
+# 
+# # Convert number of seconds to formatted time.
+# def second_to_time(seconds):
+#     h = seconds/3600
+#     m = (seconds/60) % 60
+#     s = seconds % 60
+#     return ("%02d:%02d:%02d" % ( h, m, s))    
     
-    
+
 if __name__ == "__main__":
     main()    
