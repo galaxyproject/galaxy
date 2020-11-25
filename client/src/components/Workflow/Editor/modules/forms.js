@@ -248,7 +248,7 @@ function _makeSection(self, node, output) {
                 fixed: true,
                 onchange: (newLabel) => {
                     self.form.data.create();
-                    const oldLabel = node.labelOutput(output, newLabel);
+                    const oldLabel = node.labelOutput(output.name, newLabel);
                     const input_id = self.form.data.match(`__label__${output.name}`);
                     const input_element = self.form.element_list[input_id];
                     if (oldLabel) {
@@ -279,7 +279,7 @@ function _makeSection(self, node, output) {
                 options: extensions,
                 help: "This action will change the datatype of the output to the indicated datatype.",
                 onchange: function (datatype) {
-                    node.changeOutputDatatype(output, datatype);
+                    node.changeOutputDatatype(output.name, datatype);
                 },
             },
             {

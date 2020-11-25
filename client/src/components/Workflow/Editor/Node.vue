@@ -266,6 +266,7 @@ export default {
             Object.values(this.outputTerminals).forEach((t) => {
                 t.destroy();
             });
+            this.activeOutputs.filterOutputs({});
             this.$emit("onRemove", this);
         },
         onRedraw() {
@@ -413,7 +414,7 @@ export default {
             });
 
             // removes output from list of workflow outputs
-            this.activeOutputs.updateOutputs(outputNames);
+            this.activeOutputs.filterOutputs(outputNames);
 
             // trigger legacy events
             Vue.nextTick(() => {
@@ -424,14 +425,13 @@ export default {
             this.showLoading = false;
             this.$emit("onChange");
         },
-        labelOutput(output, label) {
-            return this.activeOutputs.labelOutput(output, label);
+        labelOutput(outputName, label) {
+            return this.activeOutputs.labelOutput(outputName, label);
         },
-        changeOutputDatatype(output, datatype) {
+        changeOutputDatatype(outputName, datatype) {
             if (datatype === "__empty__") {
                 datatype = null;
             }
-            const outputName = output.name;
             const outputTerminal = this.outputTerminals[outputName];
             if (datatype) {
                 this.postJobActions["ChangeDatatypeAction" + outputName] = {
