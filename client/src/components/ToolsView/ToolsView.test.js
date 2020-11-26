@@ -32,7 +32,7 @@ describe("ToolsView/ToolsView.vue", () => {
     });
 
     it("should return defined number of tools", async () => {
-        expect(wrapper.vm.getToolsNumber() === 84).toBeTruthy();
+        expect(wrapper.vm.getToolsNumber() === 5).toBeTruthy();
     });
 
     it("should render only specific number of tools, equal to current buffer", async () => {
@@ -69,7 +69,6 @@ describe("ToolsView/ToolsView.vue", () => {
 
         infoButton.trigger("click");
         await flushPromises();
-
         expect(infoButton.attributes("aria-expanded") === "true").toBeTruthy();
         expect(citation.element).toBeVisible();
     });
