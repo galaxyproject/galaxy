@@ -1,11 +1,11 @@
 <tool id="dlib_face_recognition" name="Dlib Face Recoginition" version="1.0.0">
-  <description>Train with a set of images of known faces and recognize unknown faces in a video</description>
+  <description>Train with a set of known faces photos and recognize unknown faces in a video</description>
   <requirements>
 	<requirement type="package" version="3.8">python</requirement>
     <requirement type="package" version="19.21.0">dlib</requirement>
     <requirement type="package" version="4.4.0">opencv</requirement>
     <requirement type="package" version="1.2.3">face_recognition</requirement>
-    <requirement type="package" version="4.53.0">tqdm</requirement>
+    <!-- <requirement type="package" version="4.53.0">tqdm</requirement>  -->
   </requirements>
   <command detect_errors="exit_code"> 
   	'$__tool_directory__/dlib_face_recognition.py' '$__root_dir__' '$input_video' '$training_photos' '$reuse_trained' '$tolerance' '$amp_faces' 
@@ -22,7 +22,7 @@
   <help>
 .. class:: infomark
 
-Train Face Recognition with a set of photos of known faces and run Face Recognition on a video to identify unknown faces using the training results.
+Train face recognition model with a zip file of photos of known faces and run face recognition on a video to identify unknown faces using the trained model.
 
   </help>
 </tool>

@@ -13,6 +13,8 @@ class FaceRecognition:
              
 class FaceRecognitionMedia:
     def __init__(self, filename = "", duration = 0, frameRate = 0, numFrames = 0, resolution = None):
+        self.filename = filename
+        self.duration = duration
         self.frameRate = frameRate
         self.numFrames = numFrames
         if resolution is None:

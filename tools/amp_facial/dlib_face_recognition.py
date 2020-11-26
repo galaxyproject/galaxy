@@ -1,17 +1,14 @@
 #!/usr/bin/env python3
 
-import configparser
 import json
 import os
 import os.path
 import sys
-import shutil
 import face_recognition
 import cv2
-import pickle
 # from tqdm.notebook import tqdm
-import dlib_face_training
-from test.test_tracemalloc import frame
+
+import dlib_face_training as train
 
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
 from face_recognition import FaceRecognition, FaceRecognitionMedia, FaceRecognitionMediaResolution, FaceRecognitionFrame, FaceRecognitionFrameObject, FaceRecognitionFrameObjectScore, FaceRecognitionFrameObjectVertices
@@ -21,7 +18,6 @@ from mgm_logger import MgmLogger
 import mgm_utils
 
 
-FR_TRAINED_MODEL_SUFFIX = ".frt"
 FR_SCORE_TYPE = "confidence"
 FR_DEFAULT_TOLERANCE = 0.6
 
@@ -41,11 +37,11 @@ def main():
     
     # if reuse_trained is set to true, retrieve previous training results
     if reuse_trained:
-        known_names, known_faces = get_trained_results(training_photos)
+        known_names, known_faces = train.retrieve_trained_results(training_photos)
               
     # if no valid previous trained results is available, do the training
     if (known_names == [] or known_faces == []):
-        known_names, known_faces = train_faces(training_photos)
+        known_names, known_faces = train.train_faces(training_photos)
               
     # run face recognition on the given video using the trained results at the given tolerance level
     fr_result = recognize_faces(input_video, known_names, known_faces, tolerance)
@@ -54,8 +50,8 @@ def main():
     mgm_utils.write_json_file(fr_result, amp_faces)
     
     
-# Recognize faces in the input_video, given the known_names and known_faces from trained FR model, and the tolerance;
-# return a list of identified names and faces. 
+# Recognize faces in the input_video at the tolerance level, given the known_names and known_faces from trained FR model;
+# return the result as an AMP Face Recognition schema object. 
 def recognized_faces(input_video, known_names, known_faces, tolerance):
     print ("Starting face recognition on video " + input_video + " with tolerance " + tolerance)
     
@@ -87,14 +83,14 @@ def recognized_faces(input_video, known_names, known_faces, tolerance):
         if not ret:
             break
 
-        # skip FR in every fps frames, i.e. take only one frame per second
+        # skip every fps frames, i.e. take only one frame per second
         if frame_number % fps != 0:
             continue
         
         # convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
         rgb_frame = cv2_frame[:, :, ::-1]
 
-        # find all the faces and face encodings in the current frame of video
+        # find all the faces locations and face encodings in the current frame of video
         face_locations = face_recognition.face_locations(rgb_frame)
         face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
 
@@ -102,15 +98,13 @@ def recognized_faces(input_video, known_names, known_faces, tolerance):
         if (not face_encodings or len(face_encodings) == 0):
             continue
 
-        # otherwise create an AMP FR frame object in the AMP FR result object
-        frame = FaceRecognitionFrame()
-        frame.start = float(frame_number) / float(fps)
-        frame.objects = []
-         
-        print ("Found " + len(face_encodings) + " faces in frame # " + frame_number)
-        
-        # initialize index of the current face_location or face_encoding among all faces found in the frame 
+        # otherwise, initialize an AMP FR frame object list
+        objects = []
+
+        # initialize index of the current face_location / face_encoding among all faces found in the frame 
         location_index = 0;
+
+        print ("Found " + len(face_encodings) + " faces in frame # " + frame_number + ", starting to match them with known faces")
 
         # for each face in the frame, see if it's a match for any known faces, if so use the first match
         for face_encoding in face_encodings:  
@@ -124,20 +118,24 @@ def recognized_faces(input_video, known_names, known_faces, tolerance):
                 object.name = known_names[matched_index]
                 object.score = FaceRecognitionFrameObjectScore()
                 object.score.type = FR_SCORE_TYPE
-                object.score.value = 1.0 - tolerance              
+                object.score.value = 1.0 - tolerance # the higher the tolerance, the less accurate the match             
                 object.vertices = FaceRecognitionFrameObjectVertices()
-                object.vertices.ymin, object.vertices.xmin, object.vertices.ymax, object.vertices.xmax = face_locations[i]
+                object.vertices.ymin, object.vertices.xmin, object.vertices.ymax, object.vertices.xmax = face_locations[location_index]
                 
                 # add face object to the list
-                frame.objects.append(object)
+                objects.append(object)
             
                 print ("Recognized face of " + object.name + " in frame # " + frame_number)
 
             # move on to the next face in the frame
             location_index += 1          
 
-        # if any face in the frame is recognized as a known face, add the current frame to AMP FR result
-        if (frame and len(frame.objects) > 0):
+        # if any face in the current frame is recognized as a known face, create an AMP FR frame object 
+        # to contain the face objects, and add the current frame to the AMP FR result
+        if (len(objects) > 0):
+            frame = FaceRecognitionFrame()
+            frame.start = float(frame_number) / float(fps)
+            frame.objects = objects     
             fr_result.frames.append(frame)
             
     # done with all frames, release resource and return the result
