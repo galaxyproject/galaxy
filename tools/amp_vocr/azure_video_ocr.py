@@ -9,6 +9,10 @@ import math
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
 from video_ocr import VideoOcr, VideoOcrMedia, VideoOcrResolution, VideoOcrFrame, VideoOcrObject, VideoOcrObjectScore, VideoOcrObjectVertices
 
+sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
+import mgm_utils
+
+
 def main():
 	(input_video, azure_video_index, azure_artifact_ocr, amp_vocr) = sys.argv[1:5]
 
@@ -27,7 +31,7 @@ def main():
 	amp_vocr_obj = create_amp_ocr(input_video, azure_index_json, azure_ocr_json)
 	
 	# write AMP Video OCR JSON file
-	write_json_file(amp_vocr_obj, amp_vocr)
+	mgm_utils.write_json_file(amp_vocr_obj, amp_vocr)
 
 # Parse the results
 def create_amp_ocr(input_video, azure_index_json, azure_ocr_json):
@@ -131,11 +135,6 @@ def createAmpFrames(frame_dict, framerate):
 	amp_frames.sort(key=lambda x: x.start, reverse = False)
 	return amp_frames
 
-# Serialize obj and write it to output file
-def write_json_file(obj, output_file):
-	# Serialize the object
-	with open(output_file, 'w') as outfile:
-		json.dump(obj, outfile, default=lambda x: x.__dict__)
 
 if __name__ == "__main__":
 	main()

@@ -10,6 +10,9 @@ import os
 import uuid
 import boto3
 
+sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
+import mgm_utils
+
 
 def main():
 	apiUrl = "https://api.videoindexer.ai"
@@ -67,7 +70,7 @@ def main():
 	# Get the simple video index json
 	auth_token = get_auth_token(apiUrl, location, accountId, apiKey)
 	index_json = get_video_index_json(apiUrl, location, accountId, videoId, auth_token, apiKey)
-	write_json_file(index_json, index_file)
+	mgm_utils.write_json_file(index_json, index_file)
 
 	# Get the advanced OCR json via the artifact URL if requested
 	if include_ocr.lower() == 'true':
@@ -191,11 +194,6 @@ def read_config(root_dir):
 # 	print("config:" + config)
 	return config
 
-# Serialize obj and write it to output file
-def write_json_file(obj, output_file):
-	# Serialize the object
-	with open(output_file, 'w') as outfile:
-		json.dump(obj, outfile, default=lambda x: x.__dict__)
 
 if __name__ == "__main__":
 	main()

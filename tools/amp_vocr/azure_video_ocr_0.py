@@ -18,6 +18,10 @@ import boto3
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
 from video_ocr import VideoOcr, VideoOcrMedia, VideoOcrResolution, VideoOcrFrame, VideoOcrObject, VideoOcrObjectScore, VideoOcrObjectVertices
 
+sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
+import mgm_utils
+
+
 def main():
 	apiUrl = "https://api.videoindexer.ai"
 
@@ -72,7 +76,7 @@ def main():
 	# Get the video index json (simple)
 	auth_token = get_auth_token(apiUrl, location, accountId, apiKey)
 	simple_json = get_video_index_json(apiUrl, location, accountId, videoId, auth_token, apiKey)
-	write_json_file(simple_json, output_from_azure_simple)
+	mgm_utils.write_json_file(simple_json, output_from_azure_simple)
 
 	# Get the advanced OCR via a URL 
 	artifacts_url = get_artifacts_url(apiUrl, location, accountId, videoId, auth_token)
@@ -136,7 +140,7 @@ def parse_json(input_file, output_file, advanced_json, simple_json):
 	amp_ocr.frames = amp_frames
 
 	# Write the output json file
-	write_json_file(amp_ocr, output_file)
+	mgm_utils.write_json_file(amp_ocr, output_file)
 
 # Create a list of terms for each of the frames
 def createFrameDictionary(video_json, framerate):
@@ -299,11 +303,6 @@ def read_config(root_dir):
 	config.read(root_dir + "/config/mgm.ini")
 	return config
 
-# Serialize obj and write it to output file
-def write_json_file(obj, output_file):
-	# Serialize the object
-	with open(output_file, 'w') as outfile:
-		json.dump(obj, outfile, default=lambda x: x.__dict__)
 
 if __name__ == "__main__":
 	main()

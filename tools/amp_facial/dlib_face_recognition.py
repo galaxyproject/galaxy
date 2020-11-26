@@ -16,6 +16,10 @@ from test.test_tracemalloc import frame
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
 from face_recognition import FaceRecognition, FaceRecognitionMedia, FaceRecognitionMediaResolution, FaceRecognitionFrame, FaceRecognitionFrameObject, FaceRecognitionFrameObjectScore, FaceRecognitionFrameObjectVertices
 
+sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
+from mgm_logger import MgmLogger
+import mgm_utils
+
 
 FR_TRAINED_MODEL_SUFFIX = ".frt"
 FR_SCORE_TYPE = "confidence"
@@ -25,6 +29,13 @@ FR_DEFAULT_TOLERANCE = 0.6
 # Usage: dlib_face_recognition.py root_dir, input_video, training_photos, reuse_trained, tolerance, amp_faces 
 def main():
     (root_dir, input_video, training_photos, reuse_trained, tolerance, amp_faces) = sys.argv[1:6]
+    
+    # using output instead of input filename as the latter is unique while the former could be used by multiple jobs 
+    logger = MgmLogger(root_dir, "face_recognition", amp_faces)
+    sys.stdout = logger
+    sys.stderr = logger
+
+    # if tolerance is not specified in command, use the default value
     if not tolerance:
         tolerance = FR_DEFAULT_TOLERANCE
     
@@ -40,7 +51,7 @@ def main():
     fr_result = recognize_faces(input_video, known_names, known_faces, tolerance)
     
     # save the recognized_faces in the standard AMP Face JSON file
-    save_faces(fr_result, amp_faces)
+    mgm_utils.write_json_file(fr_result, amp_faces)
     
     
 # Recognize faces in the input_video, given the known_names and known_faces from trained FR model, and the tolerance;
@@ -129,22 +140,11 @@ def recognized_faces(input_video, known_names, known_faces, tolerance):
         if (frame and len(frame.objects) > 0):
             fr_result.frames.append(frame)
             
-    # done with all frames, release resource 
+    # done with all frames, release resource and return the result
     cv2_video.release()
     cv2.destroyAllWindows()
     print ("Completed face recognition on video " + input_video)
-
-    # save FR result into AMP Face JSON file
-    with open(amp_faces, 'w') as fr_file:
-        json.dump(fr_result, fr_file, default = lambda x: x.__dict__)
-    print ("Saved face recognition result to file " + amp_faces)
-                        
-
-# Serialize the given object and write it to given output_file
-def write_json_file(object, output_file):
-    # Serialize the object
-    with open(output_file, 'w') as outfile:
-        json.dump(object, outfile, default = lambda x: x.__dict__)
+    return fr_result
         
                         
 # # Convert number of frames to formatted time.

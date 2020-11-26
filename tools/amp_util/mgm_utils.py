@@ -71,3 +71,12 @@ def cleanup_err_file(file):
     if os.path.exists(err_file):
         os.remove(err_file)
         print("Error file for " + file + " has been cleaned up")
+        
+        
+# Serialize the given object and write it to rgw given output_file
+def write_json_file(object, output_file):
+    # Serialize the object
+    with open(output_file, 'w') as outfile:
+        json.dump(object, outfile, default = lambda x: x.__dict__)
+        
+        

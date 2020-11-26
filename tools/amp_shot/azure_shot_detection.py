@@ -8,6 +8,9 @@ from datetime import datetime
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
 from shot_detection import ShotDetection, ShotDetectionMedia, ShotDetectionShot
 
+sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
+import mgm_utils
+
 
 def main():
 	(input_video, azure_video_index, amp_shots) = sys.argv[1:4]
@@ -23,7 +26,8 @@ def main():
 	amp_shots_obj = create_amp_shots(input_video, azure_index_json)
 	
 	# write AMP Video OCR JSON file
-	write_json_file(amp_shots_obj, amp_shots)
+	mgm_utils.write_json_file(amp_shots_obj, amp_shots)
+
 
 # Parse the results
 def create_amp_shots(input_video, azure_index_json):
@@ -47,6 +51,7 @@ def create_amp_shots(input_video, azure_index_json):
 
 	return amp_shots
 
+
 # Add the given Azure shot list to the given AMP shot list using the given type.
 def addShots(amp_shot_list, azure_shot_list, type):
 	for shot in azure_shot_list:
@@ -60,6 +65,7 @@ def addShots(amp_shot_list, azure_shot_list, type):
 	# we can combine all instances of an Azure shot (i.e. take start of the first instance and end of the last instance) into one AMP shot.  
 	# Here we use the former option. In reality the instances most likely only contain one instance.
 
+
 # Convert the timestamp to total seconds
 def convertTimestampToSeconds(timestamp):
 	try:
@@ -71,11 +77,6 @@ def convertTimestampToSeconds(timestamp):
 	total_seconds = hourSec + minSec + x.second + x.microsecond/600000
 	return total_seconds
 
-# Serialize obj and write it to output file
-def write_json_file(obj, output_file):
-	# Serialize the object
-	with open(output_file, 'w') as outfile:
-		json.dump(obj, outfile, default=lambda x: x.__dict__)
 
 if __name__ == "__main__":
 	main()
