@@ -340,7 +340,7 @@ export default {
         moveToParentFolder() {
             const path = this.folder_metadata.full_path;
             if (path.length === 1) {
-                return window.location = `${this.root}library/list/`;
+                window.location = `${this.root}library/list/`;
             } else {
                 return this.changeFolderId(path[path.length - 2][0]);
             }
