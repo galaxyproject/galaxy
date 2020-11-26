@@ -22,7 +22,7 @@ FR_SCORE_TYPE = "confidence"
 FR_DEFAULT_TOLERANCE = 0.6
 
 
-# Usage: dlib_face_recognition.py root_dir, input_video, training_photos, reuse_trained, tolerance, amp_faces 
+# Usage: dlib_face_recognition.py root_dir input_video training_photos reuse_trained tolerance amp_faces 
 def main():
     (root_dir, input_video, training_photos, reuse_trained, tolerance, amp_faces) = sys.argv[1:6]
     
