@@ -5,7 +5,6 @@ from json import dumps, loads
 from galaxy import exceptions, managers, util, web
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
 from galaxy.tools import global_tool_errors
-from galaxy.tools.parameters import params_to_incoming
 from galaxy.web import (
     expose_api,
     expose_api_anonymous,
@@ -515,14 +514,13 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             target_history = None
 
         # Set up inputs.
-        submitted_inputs = payload.get('inputs', {})
-        if not isinstance(submitted_inputs, dict):
-            raise exceptions.RequestParameterInvalidException(f"inputs invalid {{submitted_inputs}}")
-        if payload.get('legacy_config_form_payload', True) not in ['False', False]:
-            inputs = submitted_inputs
-        else:
-            inputs = {}
-            params_to_incoming(inputs, tool.inputs, submitted_inputs, tool.app)
+        inputs = payload.get('inputs', {})
+        if not isinstance(inputs, dict):
+            raise exceptions.RequestParameterInvalidException("inputs invalid %s" % inputs)
+        # TODO: encode data ids and decode ids.
+        # TODO: handle dbkeys
+        params = util.Params(inputs, sanitize=False)
+        incoming = params.__dict__
 
         # Find files coming in as multipart file data and add to inputs.
         for k, v in payload.items():
@@ -532,16 +530,14 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         # for inputs that are coming from the Library, copy them into the history
         self._patch_library_inputs(trans, inputs, target_history)
 
-        # TODO: encode data ids and decode ids.
-        # TODO: handle dbkeys
-        params = util.Params(inputs, sanitize=False)
-        incoming = params.__dict__
-
         # use_cached_job can be passed in via the top-level payload or among the tool inputs.
         # I think it should be a top-level parameter, but because the selector is implemented
         # as a regular tool parameter we accept both.
         use_cached_job = payload.get('use_cached_job', False) or util.string_as_bool(inputs.get('use_cached_job', 'false'))
-        vars = tool.handle_input(trans, incoming, history=target_history, use_cached_job=use_cached_job)
+
+        legacy_param_form = kwd.get('legacy_config_form_payload') not in [False, 'False']
+
+        vars = tool.handle_input(trans, incoming, history=target_history, use_cached_job=use_cached_job, legacy_param_form=legacy_param_form)
 
         # TODO: check for errors and ensure that output dataset(s) are available.
         output_datasets = vars.get('out_data', [])
