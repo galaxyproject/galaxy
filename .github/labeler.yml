@@ -1,0 +1,16 @@
+triage: /**/*
+
+area/client:
+  - client/**/*
+
+area/admin:
+  - client/src/components/admin/**/*
+  - doc/source/admin
+
+area/datatypes:
+  - lib/galaxy/datatypes/**/*
+  - lib/galaxy/config/sample/datatypes_conf.xml.sample
+
+area/tools: tools/**/*
+area/selenium: lib/galaxy/selenium
+area/visualizations: config/plugins/visualizations/**/*

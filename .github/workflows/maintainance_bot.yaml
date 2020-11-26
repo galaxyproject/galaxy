@@ -1,0 +1,11 @@
+name: "Maintenance Bot"
+on:
+- pull_request_target
+
+jobs:
+  triage:
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/labeler@main
+      with:
+        repo-token: "${{ secrets.GITHUB_TOKEN }}"
