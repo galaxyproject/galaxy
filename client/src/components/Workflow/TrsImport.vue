@@ -1,6 +1,6 @@
 <template>
     <div>
-        <b-card v-if="isRegistered" title="GA4GH Tool Registry Server (TRS) Workflow Import">
+        <b-card v-if="isAnonymous" title="GA4GH Tool Registry Server (TRS) Workflow Import">
             <b-alert :show="hasErrorMessage" variant="danger">{{ errorMessage }}</b-alert>
             <div>
                 <b>TRS Server:</b>
@@ -11,7 +11,7 @@
                     @onError="onTrsSelectionError"
                 />
             </div>
-            <div v-if="isAutoImport" class="text-center my-2">
+            <div v-if="isAutoImport && !hasErrorMessage" class="text-center my-2">
                 <b-spinner class="align-middle"></b-spinner>
                 <strong>Loading your Workflow...</strong>
             </div>
@@ -76,7 +76,7 @@ export default {
         hasErrorMessage() {
             return this.errorMessage != null;
         },
-        isRegistered() {
+        isAnonymous() {
             return !getGalaxyInstance().user.isAnonymous();
         },
     },
