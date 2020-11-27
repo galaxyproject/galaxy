@@ -35,7 +35,6 @@ class FaceRecognitionMediaResolution:
     def from_json(cls, json_data):
         return cls(**json_data)
 
-
 class FaceRecognitionFrame:
     def __init__(self, start = 0, objects = None):
         self.start = start
