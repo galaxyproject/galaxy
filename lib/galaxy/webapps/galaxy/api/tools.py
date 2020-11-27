@@ -517,10 +517,6 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         inputs = payload.get('inputs', {})
         if not isinstance(inputs, dict):
             raise exceptions.RequestParameterInvalidException("inputs invalid %s" % inputs)
-        # TODO: encode data ids and decode ids.
-        # TODO: handle dbkeys
-        params = util.Params(inputs, sanitize=False)
-        incoming = params.__dict__
 
         # Find files coming in as multipart file data and add to inputs.
         for k, v in payload.items():
@@ -529,6 +525,11 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
 
         # for inputs that are coming from the Library, copy them into the history
         self._patch_library_inputs(trans, inputs, target_history)
+
+        # TODO: encode data ids and decode ids.
+        # TODO: handle dbkeys
+        params = util.Params(inputs, sanitize=False)
+        incoming = params.__dict__
 
         # use_cached_job can be passed in via the top-level payload or among the tool inputs.
         # I think it should be a top-level parameter, but because the selector is implemented
