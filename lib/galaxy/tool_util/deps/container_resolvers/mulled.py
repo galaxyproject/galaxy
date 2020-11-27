@@ -414,13 +414,13 @@ class MulledDockerContainerResolver(ContainerResolver):
                     hash_func=self.hash_func,
                     resolution_cache=resolution_cache,
             ):
-                destination = {}
+                destination_info = {}
                 if destination_for_container_type:
-                    destination = destination_for_container_type(self.container_type)
+                    destination_info = destination_for_container_type(self.container_type)
                 container = CONTAINER_CLASSES[self.container_type](container_description.identifier,
                                                                    self.app_info,
                                                                    tool_info,
-                                                                   destination,
+                                                                   destination_info,
                                                                    {},
                                                                    container_description)
                 self.pull(container)
