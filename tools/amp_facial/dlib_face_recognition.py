@@ -149,7 +149,7 @@ def recognize_faces(input_video, known_names, known_faces, tolerance):
     # done with all frames, release resource and return the result
     cv2_video.release()
     cv2.destroyAllWindows()
-    print ("Completed face recognition on video " + input_video)
+    print (f"Completed face recognition on video {input_video}, total number of frames with recognized faces: {len(fr_result.frames)}")
     return fr_result
         
                         
