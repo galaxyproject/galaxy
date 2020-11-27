@@ -408,16 +408,19 @@ class MulledDockerContainerResolver(ContainerResolver):
                 shell=self.shell,
             )
             destination_for_container_type = kwds.get('destination_for_container_type')
-            if install and destination_for_container_type and not self.cached_container_description(
+            if install and not self.cached_container_description(
                     targets,
                     namespace=self.namespace,
                     hash_func=self.hash_func,
                     resolution_cache=resolution_cache,
             ):
+                destination = {}
+                if destination_for_container_type:
+                    destination = destination_for_container_type(self.container_type)
                 container = CONTAINER_CLASSES[self.container_type](container_description.identifier,
                                                                    self.app_info,
                                                                    tool_info,
-                                                                   destination_for_container_type(self.container_type),
+                                                                   destination,
                                                                    {},
                                                                    container_description)
                 self.pull(container)
