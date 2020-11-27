@@ -108,6 +108,7 @@ export function fetchMenu(options = {}) {
         title: _l("Shared Data"),
         url: "javascript:void(0)",
         tooltip: _l("Access published resources"),
+        disabled: !Galaxy.user.id,
         menu: [
             {
                 title: _l("Data Libraries"),
