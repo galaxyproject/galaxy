@@ -246,7 +246,7 @@ class VideoOcr(Json):
         else:
             start = file_prefix.string_io().read(500).strip()
             if start:
-                return "\"media\":" in start and "\"frames\":" in start and "\"objects\":" in start 
+                return "\"media\":" in start and "\"frames\":" in start and "\"objects\":" in start and "\"text\":" in start
             return False    
 
 # Note that the schema for VideoOcr and Face are very similar, except that the former contains "text" while the latter contains "name"
@@ -274,7 +274,7 @@ class Face(Json):
         else:
             start = file_prefix.string_io().read(500).strip()
             if start:
-                return "\"media\":" in start and "\"faces\":" in start
+                return "\"media\":" in start and "\"frames\":" in start and "\"objects\":" in start and "\"name\":" in start
             return False
            
 @build_sniff_from_prefix
