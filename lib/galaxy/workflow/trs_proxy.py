@@ -54,9 +54,8 @@ class TrsProxy:
                 server_list = yaml.safe_load(f)
         else:
             server_list = DEFAULT_TRS_SERVERS
-        self._server_list = server_list
-        if self._server_list:
-            self._server_dict = {t["id"]: t for t in self._server_list}
+        self._server_list = server_list if server_list else []
+        self._server_dict = {t["id"]: t for t in self._server_list} if self._server_list else {}
 
     def get_servers(self):
         return self._server_list
