@@ -1,37 +1,30 @@
-area/client:
-  - client/**/*
-
+---
 area/admin:
   - client/src/components/admin/**/*
   - doc/source/admin
-
+area/client:
+  - client/**/*
 area/datatypes:
   - lib/galaxy/datatypes/**/*
   - lib/galaxy/config/sample/datatypes_conf.xml.sample
-
-area/tools:
-  - tools/**/*
-  - lib/galaxy/webapps/galaxy/api/tools.py
-  - tool-data/**/*
-
+area/documentation:
+  - doc/**/*
+area/libraries:
+  - client/src/components/LibraryFolder/**/*
+  - lib/galaxy/webapps/galaxy/api/libraries.py
 area/testing:
   - test/**/*
   - test-data/**/*
   - lib/galaxy/tools/test.py
   - run_tests.sh
-
 area/testing/selenium:
   - lib/galaxy/selenium/**/*
-
+area/tools:
+  - tools/**/*
+  - lib/galaxy/webapps/galaxy/api/tools.py
+  - tool-data/**/*
 area/toolshed:
   - client/src/toolshed/**/*
   - lib/galaxy/webapps/galaxy/api/toolshed.py
-
-area/libraries:
-  -  client/src/components/LibraryFolder/**/*
-  -  lib/galaxy/webapps/galaxy/api/libraries.py
-
 area/visualizations:
   - config/plugins/visualizations/**/*
-area/documentation:
-  - doc/**/*
