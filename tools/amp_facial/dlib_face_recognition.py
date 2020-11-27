@@ -12,7 +12,7 @@ import dlib_face_training as train
 
 # sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
 sys.path.insert(0, os.path.abspath('/home/yingfeng/Work/Amp/galaxy/tools/amp_schema'))
-from face_recognition import FaceRecognition, FaceRecognitionMedia, FaceRecognitionMediaResolution, FaceRecognitionFrame, FaceRecognitionFrameObject, FaceRecognitionFrameObjectScore, FaceRecognitionFrameObjectVertices
+from facial_recognition import FaceRecognition, FaceRecognitionMedia, FaceRecognitionMediaResolution, FaceRecognitionFrame, FaceRecognitionFrameObject, FaceRecognitionFrameObjectScore, FaceRecognitionFrameObjectVertices
 
 # sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
 sys.path.insert(0, os.path.abspath('/home/yingfeng/Work/Amp/galaxy/tools/amp_util'))

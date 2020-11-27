@@ -1,5 +1,8 @@
 import json
 
+def foo():
+    print ("in face_rec")
+
 class FaceRecognition:
     def __init__(self, media = None, frames = None):
         if media is None:
