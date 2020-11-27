@@ -63,9 +63,9 @@ def main():
 def recognize_faces(input_video, known_names, known_faces, tolerance):
     print (f"Starting face recognition on video {input_video} with tolerance {tolerance}")
     
-    # load the input video file with cv2
+    # load the input video file with cv2, note: all cv2 property values are float instead of int 
     cv2_video = cv2.VideoCapture(input_video)
-    frame_count = int(cv2_video.get(cv2.CAP_PROP_FRAME_COUNT))
+    frame_count = cv2_video.get(cv2.CAP_PROP_FRAME_COUNT)
     fps = cv2_video.get(cv2.CAP_PROP_FPS)
 
     # create AMP FR result object 
@@ -83,7 +83,7 @@ def recognize_faces(input_video, known_names, known_faces, tolerance):
     print (f"Successfully loaded video {input_video}, total number of frames: {frame_count}")
 
     # process frames in the video
-    for frame_number in range(0, frame_count):
+    for frame_number in range(0, int(frame_count)):
         # grab a single frame of video
         ret, cv2_frame = cv2_video.read()
       
@@ -92,7 +92,7 @@ def recognize_faces(input_video, known_names, known_faces, tolerance):
             break
 
         # skip every fps frames, i.e. take only one frame per second
-        if frame_number % fps != 0:
+        if frame_number % int(fps) != 0:
             continue
         
         # convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
