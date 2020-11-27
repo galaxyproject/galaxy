@@ -28,3 +28,12 @@ jobs:
           --header 'authorization: token ${{ secrets.GITHUB_TOKEN }}' \
           --data-raw '{"milestone":  '$MILESTONE_NUMBER'}'
 
+  onMerged:
+    name: "Check Labels on merge"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Labels on merge
+        if: github.event.pull_request.merged == true
+        run: |
+          echo ${{ github.event.pull_request }}
+
