@@ -15,13 +15,13 @@ jobs:
     name: "Assign Milestone"
     runs-on: ubuntu-latest
     steps:
-    - name: Assign Milestone
-      env:
-        MILESTONE_NUMBER: 1
-      run: |
-        echo ${{ github.event.pull_request.title }}
-        curl --request PATCH \
-        --url ${{ github.event.pull_request.issue_url }} \
-        --header 'authorization: token ${{ secrets.GITHUB_TOKEN }}' \
-        --data-raw '{"milestone":  '$MILESTONE_NUMBER'}'
+      - name: Assign Milestone
+        if: contains(github.event.pull_request.title, 'WIP')
+        env:
+          MILESTONE_NUMBER: 1
+        run: |
+          curl --request PATCH \
+          --url ${{ github.event.pull_request.issue_url }} \
+          --header 'authorization: token ${{ secrets.GITHUB_TOKEN }}' \
+          --data-raw '{"milestone":  '$MILESTONE_NUMBER'}'
 
