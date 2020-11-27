@@ -271,10 +271,11 @@ class ToolBox(BaseGalaxyToolBox):
         that re-opens the database after forking.
         """
         for region in self.cache_regions.values():
-            region.persist()
-            if register_postfork:
-                region.close()
-                self.app.application_stack.register_postfork_function(region.reopen_ro)
+            if not region.disabled:
+                region.persist()
+                if register_postfork:
+                    region.close()
+                    self.app.application_stack.register_postfork_function(region.reopen_ro)
 
     def can_load_config_file(self, config_filename):
         if config_filename == self.app.config.shed_tool_config_file and not self.app.config.is_set('shed_tool_config_file'):
@@ -308,8 +309,8 @@ class ToolBox(BaseGalaxyToolBox):
         return self.cache_regions[tool_cache_data_dir]
 
     def create_tool(self, config_file, tool_cache_data_dir=None, **kwds):
-        if config_file.endswith('.xml'):
-            cache = self.get_cache_region(tool_cache_data_dir or self.app.config.tool_cache_data_dir)
+        cache = self.get_cache_region(tool_cache_data_dir or self.app.config.tool_cache_data_dir)
+        if config_file.endswith('.xml') and not cache.disabled:
             tool_document = cache.get(config_file)
             if tool_document:
                 tool_source = self.get_expanded_tool_source(
