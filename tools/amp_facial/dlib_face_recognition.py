@@ -61,7 +61,7 @@ def main():
 # Recognize faces in the input_video at the tolerance level, given the known_names and known_faces from trained FR model;
 # return the result as an AMP Face Recognition schema object. 
 def recognize_faces(input_video, known_names, known_faces, tolerance):
-    print ("Starting face recognition on video " + input_video + " with tolerance " + tolerance)
+    print (f"Starting face recognition on video {input_video} with tolerance {tolerance}")
     
     # load the input video file with cv2
     cv2_video = cv2.VideoCapture(input_video)
