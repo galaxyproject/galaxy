@@ -37,6 +37,10 @@ def main():
     if not tolerance:
         tolerance = FR_DEFAULT_TOLERANCE
     
+    # initialize training results
+    known_names = []
+    known_faces = []
+    
     # if reuse_trained is set to true, retrieve previous training results
     if reuse_trained:
         known_names, known_faces = train.retrieve_trained_results(training_photos)
@@ -74,7 +78,7 @@ def recognized_faces(input_video, known_names, known_faces, tolerance):
     fr_result.media.resolution.height = cv2_video.get(cv2.CAP_PROP_FRAME_HEIGHT)
     fr_result.frames = [];
     
-    print ("Successfully loaded video " + input_video + ", total number of frames: " + frame_count)
+    print (f"Successfully loaded video {input_video}, total number of frames: {frame_count}")
 
     # process frames in the video
     for frame_number in range(0, frame_count):
@@ -106,7 +110,7 @@ def recognized_faces(input_video, known_names, known_faces, tolerance):
         # initialize index of the current face_location / face_encoding among all faces found in the frame 
         location_index = 0;
 
-        print ("Found " + len(face_encodings) + " faces in frame # " + frame_number + ", starting to match them with known faces")
+        print (f"Found {len(face_encodings)} faces in frame # {frame_number}, matching them with known faces")
 
         # for each face in the frame, see if it's a match for any known faces, if so use the first match
         for face_encoding in face_encodings:  
@@ -127,7 +131,7 @@ def recognized_faces(input_video, known_names, known_faces, tolerance):
                 # add face object to the list
                 objects.append(object)
             
-                print ("Recognized face of " + object.name + " in frame # " + frame_number)
+                print (f"Recognized face of {object.name} in frame # {frame_number}")
 
             # move on to the next face in the frame
             location_index += 1          

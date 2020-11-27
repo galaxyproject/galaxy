@@ -78,7 +78,7 @@ def train_faces(training_photos, root_dir):
     # return the training results as known_names and known_faces
     if (len(model) > 0):       
         save_trained_model(model, training_photos)
-        print("Successfully trained a total of " + len(known_faces)  + " faces for a total of " + len(person_dir_names) + " people")
+        print(f"Successfully trained a total of {len(known_faces)} faces for a total of {len(person_dir_names)} people")
         return known_names, known_faces
     # otherwise report error and exit in error as FR can't continue without any trained results
     else:
@@ -95,11 +95,11 @@ def retrieve_trained_results(training_photos):
             trained_model = pickle.load(open(model_file, "rb"))
             known_names = [face["name"] for face in trained_model]
             known_faces = [face["encoding"] for face in trained_model]
-            print("Successfully retrieved " + len(known_names) + " previous trained faces from " + model_file + " for training photos " + training_photos)
+            print(f"Successfully retrieved a total of {len(known_faces)} previously trained faces from {model_file} for training photos {training_photos}")
         else:
-            print("Could not find previously trained model " + model_file + " for training photos " + training_photos)
+            print("Warning: Could not find previously trained model " + model_file + " for training photos " + training_photos + ", will retrain")
     except Exception as e:
-        print("Failed to read previously trained model from " + model_file + " for training photos " + training_photos, e)
+        print("Failed to read previously trained model from " + model_file + " for training photos " + training_photos + ", will retrain", e)
     return known_names, known_faces
     
     
@@ -107,7 +107,7 @@ def retrieve_trained_results(training_photos):
 def get_model_file(training_photos):
     # model file has the same file path as training_photos, but with extension .frt replacing .zip
     filename, file_extension = os.path.splitext(training_photos)
-    model_file = os.path.join(filename, FR_TRAINED_MODEL_SUFFIX)
+    model_file = filename + FR_TRAINED_MODEL_SUFFIX
     return model_file
             
 
