@@ -19,8 +19,9 @@ area/testing:
   - test-data/**/*
   - lib/galaxy/tools/test.py
   - run_tests.sh
-  -
-area/testing/selenium: lib/galaxy/selenium/**/*
+
+area/testing/selenium:
+  - lib/galaxy/selenium/**/*
 
 area/toolshed:
   - client/src/toolshed/**/*
@@ -30,5 +31,7 @@ area/libraries:
   -  client/src/components/LibraryFolder/**/*
   -  lib/galaxy/webapps/galaxy/api/libraries.py
 
-area/visualizations: config/plugins/visualizations/**/*
-area/documentation: doc/**/*
+area/visualizations:
+  - config/plugins/visualizations/**/*
+area/documentation:
+  - doc/**/*
