@@ -24,7 +24,7 @@
             </div>
         </b-card>
         <b-alert v-else show variant="danger" class="text-center my-2"
-            >Only registered users can import workflows!</b-alert
+            >Anonymous user cannot import workflows, please register or log in</b-alert
         >
     </div>
 </template>
