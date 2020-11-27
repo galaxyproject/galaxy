@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Assign Milestone
-        if:  contains(github.event.pull_request.title, 'WIP') != true
+        if:  contains(github.event.pull_request.title, 'WIP') && contains(github.event.pull_request.title, 'merge') != true
         env:
           MILESTONE_NUMBER: 1
         run: |
