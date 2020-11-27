@@ -20,6 +20,6 @@ jobs:
         curl --request PATCH \
         --url ${{ github.event.pull_request.issue_url }} \
         --header 'authorization: token ${{ secrets.GITHUB_TOKEN }}' \
-        --data-raw '{"milestone": $MILESTONE_NUMBER}'
+        --data-raw '{"milestone":  '$MILESTONE_NUMBER'}'
       env:
         MILESTONE_NUMBER: 1
