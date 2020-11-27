@@ -53,6 +53,8 @@
 import Vue from "vue";
 import { VBPopoverPlugin, VBTooltipPlugin } from "bootstrap-vue";
 import { BNavItem, BNavItemDropdown, BDropdownItem } from "bootstrap-vue";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 
 Vue.use(VBPopoverPlugin);
 Vue.use(VBTooltipPlugin);
@@ -71,19 +73,13 @@ export default {
         activeTab: {
             type: String,
         },
-        appRoot: {
-            type: String,
-        },
-        galaxy: {
-            type: Object,
-        },
     },
     computed: {
         menu() {
             return this.tab.menu;
         },
         popoverNote() {
-            return `Please <a href="${this.appRoot}login">login or register</a> to use this feature.`;
+            return `Please <a href="${getAppRoot()}login">login or register</a> to use this feature.`;
         },
         classes() {
             const isActiveTab = this.tab.id == this.activeTab;
@@ -143,6 +139,7 @@ export default {
                 }, 3000);
             } else if (!tab.menu) {
                 event.preventDefault();
+                const galaxy = getGalaxyInstance();
                 if (tab.target === "__use_router__" && typeof this.galaxy.page !== "undefined") {
                     this.galaxy.page.router.executeUseRouter(this.formatUrl(tab.url));
                 } else {
@@ -162,9 +159,11 @@ export default {
             }
         },
         formatUrl(url) {
-            return typeof url === "string" && url.indexOf("//") === -1 && url.charAt(0) != "/"
-                ? this.appRoot + url
-                : url;
+            if (typeof url === "string" && url.indexOf("//") === -1 && url.charAt(0) != "/") {
+                return getAppRoot() + url;
+            } else {
+                return url;
+            }
         },
     },
 };

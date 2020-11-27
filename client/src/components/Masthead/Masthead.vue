@@ -11,7 +11,6 @@
                 :tab="tab"
                 :active-tab="activeTab"
                 :key="`tab-${idx}`"
-                :app-root="appRoot"
                 :galaxy="galaxy"
                 v-show="!(tab.hidden === undefined ? false : tab.hidden)"
             >
@@ -55,14 +54,6 @@ export default {
             default: null,
         },
         mastheadState: {
-            type: Object,
-            default: null,
-        },
-        appRoot: {
-            type: String,
-            default: null,
-        },
-        galaxy: {
             type: Object,
             default: null,
         },
