@@ -140,11 +140,11 @@ export default {
             } else if (!tab.menu) {
                 event.preventDefault();
                 const galaxy = getGalaxyInstance();
-                if (tab.target === "__use_router__" && typeof this.galaxy.page !== "undefined") {
-                    this.galaxy.page.router.executeUseRouter(this.formatUrl(tab.url));
+                if (tab.target === "__use_router__" && typeof galaxy.page !== "undefined") {
+                    galaxy.page.router.executeUseRouter(this.formatUrl(tab.url));
                 } else {
                     try {
-                        this.galaxy.frame.add({ ...tab, url: this.formatUrl(tab.url) });
+                        galaxy.frame.add({ ...tab, url: this.formatUrl(tab.url) });
                     } catch (err) {
                         console.warn("Missing frame element on galaxy instance", err);
                     }

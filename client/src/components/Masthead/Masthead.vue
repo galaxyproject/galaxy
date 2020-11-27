@@ -11,7 +11,6 @@
                 :tab="tab"
                 :active-tab="activeTab"
                 :key="`tab-${idx}`"
-                :galaxy="galaxy"
                 v-show="!(tab.hidden === undefined ? false : tab.hidden)"
             >
             </masthead-item>
