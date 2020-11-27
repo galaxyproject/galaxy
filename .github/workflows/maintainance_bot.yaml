@@ -1,11 +1,23 @@
 name: "Maintenance Bot"
 on:
-- pull_request_target
+  - pull_request_target
 
 jobs:
-  triage:
+  labeler:
+    name: "Assign Labels"
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/labeler@main
-      with:
-        repo-token: "${{ secrets.GITHUB_TOKEN }}"
+      - uses: actions/labeler@main
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+
+  milestone:
+    name: "Assign Milestone"
+    runs-on: ubuntu-latest
+    steps:
+    - name: Assign Milestone
+      run: |
+        curl --request PATCH \
+        --url ${{ github.event.pull_request.issue_url }} \
+        --header 'authorization: token ${{ secrets.GITHUB_TOKEN }}' \
+        --data '{"milestone": 20.01}'
