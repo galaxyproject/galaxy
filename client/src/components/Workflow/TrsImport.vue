@@ -1,6 +1,6 @@
 <template>
     <div>
-        <b-card v-if="isAnonymous" title="GA4GH Tool Registry Server (TRS) Workflow Import">
+        <b-card v-if="!isAnonymous" title="GA4GH Tool Registry Server (TRS) Workflow Import">
             <b-alert :show="hasErrorMessage" variant="danger">{{ errorMessage }}</b-alert>
             <div>
                 <b>TRS Server:</b>
