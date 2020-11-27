@@ -63,7 +63,7 @@ def recognize_faces(input_video, known_names, known_faces, tolerance):
     
     # load the input video file with cv2
     cv2_video = cv2.VideoCapture(input_video)
-    frame_count = cv2_video.get(cv2.CAP_PROP_FRAME_COUNT)
+    frame_count = int(cv2_video.get(cv2.CAP_PROP_FRAME_COUNT))
     fps = cv2_video.get(cv2.CAP_PROP_FPS)
 
     # create AMP FR result object 
