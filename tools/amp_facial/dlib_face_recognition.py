@@ -128,7 +128,7 @@ def recognize_faces(input_video, known_names, known_faces, tolerance):
                 object.score.type = FR_SCORE_TYPE
                 object.score.value = 1.0 - tolerance # the higher the tolerance, the less accurate the match             
                 object.vertices = FaceRecognitionFrameObjectVertices()
-                object.vertices.ymin, object.vertices.xmin, object.vertices.ymax, object.vertices.xmax = face_locations[location_index]
+                object.vertices.ymin, object.vertices.xmax, object.vertices.ymax, object.vertices.xmin = face_locations[location_index]
                 
                 # add face object to the list
                 objects.append(object)
