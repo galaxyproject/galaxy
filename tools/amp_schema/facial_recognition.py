@@ -52,7 +52,7 @@ class FaceRecognitionFrame:
 
 class FaceRecognitionFrameObject:
     def __init__(self, name = "", score = None, vertices = None):
-        self.start = start
+        self.name = name
         if score is None:
             self.score = FaceRecognitionFrameObjectScore()
         else:
