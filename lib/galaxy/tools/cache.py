@@ -161,11 +161,11 @@ class ToolCache:
         removed_tool_ids = []
         try:
             with self._lock:
-                persist_tool_document_cache = False
+                persist_callback = None
                 paths_to_cleanup = {(path, tool) for path, tool in self._tools_by_path.items() if self._should_cleanup(path)}
                 for config_filename, tool in paths_to_cleanup:
                     tool.remove_from_cache()
-                    persist_tool_document_cache = True
+                    persist_callback = tool.app.toolbox.persist_cache
                     del self._hash_by_tool_paths[config_filename]
                     if os.path.exists(config_filename):
                         # This tool has probably been broken while editing on disk
@@ -181,8 +181,8 @@ class ToolCache:
                     self._removed_tool_ids.add(tool_id)
                     if tool_id in self._new_tool_ids:
                         self._new_tool_ids.remove(tool_id)
-                if persist_tool_document_cache:
-                    tool.toolbox.persist_cache()
+                if persist_callback:
+                    persist_callback()
         except Exception as e:
             log.debug("Exception while checking tools to remove from cache: %s", unicodify(e))
             # If by chance the file is being removed while calculating the hash or modtime
