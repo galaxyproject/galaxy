@@ -16,10 +16,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Assign Milestone
-      env:
-       MILESTONE: "20.01"
       run: |
         curl --request PATCH \
         --url ${{ github.event.pull_request.issue_url }} \
         --header 'authorization: token ${{ secrets.GITHUB_TOKEN }}' \
-        --data '{"milestone": $MILESTONE}'
+        --data-raw '{"milestone": $MILESTONE_NUMBER}'
+      env:
+        MILESTONE_NUMBER: 1
