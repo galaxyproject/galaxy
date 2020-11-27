@@ -195,35 +195,7 @@ class Ner(Json):
             if start:
                 return "\"media\":" in start and "\"entities\":" in start
             return False
-       
-@build_sniff_from_prefix
-class VideoOcr(Json):
-    file_ext = "vocr"
-    label = "AMP Video OCR JSON"
-
-    def _looks_like(self, file_prefix):
-        # Pattern used by SequenceSplitLocations
-        if file_prefix.file_size < 50000 and not file_prefix.truncated:
-            # If the file is small enough - don't guess just check.
-            try:
-                # exclude simple types, must set format in these cases
-                item = json.loads(file_prefix.contents_header)
-                assert isinstance(item, (list, dict))
-                if not ('frames' in item and 'media' in item):
-                    return False                
-                frames = item['frames']
-                if  (len(frames) == 0 or 'objects' in frames[0]):
-                    return True
-                else:
-                    return False
-            except Exception:
-                return False
-        else:
-            start = file_prefix.string_io().read(500).strip()
-            if start:
-                return "\"media\":" in start and "\"frames\":" in start and "\"objects\":" in start 
-            return False    
-   
+ 
 @build_sniff_from_prefix
 class Shot(Json):
     file_ext = "shot"
@@ -250,6 +222,37 @@ class Shot(Json):
             return False
            
 @build_sniff_from_prefix
+class VideoOcr(Json):
+    file_ext = "vocr"
+    label = "AMP Video OCR JSON"
+
+    def _looks_like(self, file_prefix):
+        # Pattern used by SequenceSplitLocations
+        if file_prefix.file_size < 50000 and not file_prefix.truncated:
+            # If the file is small enough - don't guess just check.
+            try:
+                # exclude simple types, must set format in these cases
+                item = json.loads(file_prefix.contents_header)
+                assert isinstance(item, (list, dict))
+                if not ('frames' in item and 'media' in item):
+                    return False                
+                frames = item['frames']
+                if len(frames) > 0 and 'objects' in frames[0] and len(frames[0].objects) > 0 and 'text' in frames[0].objects[0]:
+                    return True
+                else:
+                    return False
+            except Exception:
+                return False
+        else:
+            start = file_prefix.string_io().read(500).strip()
+            if start:
+                return "\"media\":" in start and "\"frames\":" in start and "\"objects\":" in start 
+            return False    
+
+# Note that the schema for VideoOcr and Face are very similar, except that the former contains "text" while the latter contains "name"
+# If there is no frame or no objects in a frame then we can't tell the two types apart, and the sniffer may fall back to JSON.
+   
+@build_sniff_from_prefix
 class Face(Json):
     file_ext = "face"
     label = "AMP Face JSON"
@@ -262,7 +265,7 @@ class Face(Json):
                 # exclude simple types, must set format in these cases
                 item = json.loads(file_prefix.contents_header)
                 assert isinstance(item, (list, dict))
-                if 'faces' in item and 'media' in item:
+                if len(frames) > 0 and 'objects' in frames[0] and len(frames[0].objects) > 0 and 'name' in frames[0].objects[0]:
                     return True
                 else:
                     return False
