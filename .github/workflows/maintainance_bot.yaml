@@ -21,7 +21,7 @@ jobs:
           contains(github.event.pull_request.title, 'merge') == false &&
           github.event.pull_request.draft == false
         env:
-          MILESTONE_NUMBER: 1
+          MILESTONE_NUMBER: 18
         run: |
           curl --request PATCH \
           --url ${{ github.event.pull_request.issue_url }} \
