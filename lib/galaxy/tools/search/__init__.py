@@ -91,6 +91,8 @@ class ToolBoxSearch:
         for indexed_tool_id in indexed_tool_ids:
             indexed_tool = tool_cache.get_tool_by_id(indexed_tool_id)
             if indexed_tool:
+                if indexed_tool.is_latest_version:
+                    continue
                 latest_version = indexed_tool.latest_version
                 if latest_version and latest_version.hidden:
                     continue
