@@ -53,7 +53,8 @@ class ToolDocumentCache:
                 if flag == 'r':
                     self._cache.flag = flag
             else:
-                self._cache = SqliteDict(self.writeable_cache_file and self.writeable_cache_file.name or self.cache_file, flag=flag, encode=encoder, decode=decoder, autocommit=False)
+                cache_file = self.writeable_cache_file.name if self.writeable_cache_file else self.cache_file
+                self._cache = SqliteDict(cache_file, flag=flag, encode=encoder, decode=decoder, autocommit=False)
         except sqlite3.OperationalError:
             log.warning('Tool document cache unavailable')
             self._cache = None
