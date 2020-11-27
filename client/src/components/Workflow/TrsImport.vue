@@ -77,7 +77,7 @@ export default {
             return this.errorMessage != null;
         },
         isAnonymous() {
-            return !getGalaxyInstance().user.isAnonymous();
+            return getGalaxyInstance().user.isAnonymous();
         },
     },
     watch: {
