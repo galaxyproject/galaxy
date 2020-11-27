@@ -193,18 +193,19 @@ class ToolCache:
 
     def _should_cleanup(self, config_filename):
         """Return True if `config_filename` does not exist or if modtime and hash have changes, else return False."""
-        if not os.path.exists(config_filename):
+        try:
+            new_mtime = os.path.getmtime(config_filename)
+            tool_hash = self._hash_by_tool_paths.get(config_filename)
+            if tool_hash.modtime < new_mtime:
+                if md5_hash_file(config_filename) != tool_hash.hash:
+                    return True
+            tool = self._tools_by_path[config_filename]
+            for macro_path in tool._macro_paths:
+                new_mtime = os.path.getmtime(macro_path)
+                if self._hash_by_tool_paths.get(macro_path).modtime < new_mtime:
+                    return True
+        except FileNotFoundError:
             return True
-        new_mtime = os.path.getmtime(config_filename)
-        tool_hash = self._hash_by_tool_paths.get(config_filename)
-        if tool_hash.modtime < new_mtime:
-            if md5_hash_file(config_filename) != tool_hash.hash:
-                return True
-        tool = self._tools_by_path[config_filename]
-        for macro_path in tool._macro_paths:
-            new_mtime = os.path.getmtime(macro_path)
-            if self._hash_by_tool_paths.get(macro_path).modtime < new_mtime:
-                return True
         return False
 
     def get_tool(self, config_filename):
