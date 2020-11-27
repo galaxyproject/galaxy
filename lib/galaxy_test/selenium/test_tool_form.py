@@ -134,8 +134,8 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
 
         references = assert_citations_visible()
 
-        doi_resolved_citation = references[0]
-        assert "Galaxy: A platform for interactive" in doi_resolved_citation.text
+        doi_resolved_citation = references[1]
+        assert "enabling efficient sequence analysis" in doi_resolved_citation.text
         self.screenshot("tool_form_citations_formatted")
 
     def _check_dataset_details_for_inttest_value(self, hid, expected_value="42"):
