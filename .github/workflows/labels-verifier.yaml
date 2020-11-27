@@ -1,0 +1,14 @@
+name: "Labels Verifier"
+on:
+  pull_request:
+    types: [closed]
+
+    jobs:
+      onMerged:
+        name: "Check Labels on merge"
+        runs-on: ubuntu-latest
+        steps:
+          - name: Check Labels on merge
+            if: github.event.pull_request.merged == true
+            run: |
+              echo ${{ github.event.pull_request }}
