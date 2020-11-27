@@ -16,7 +16,7 @@
     >
         <template v-if="tab.icon">
             <span :class="iconClasses" />
-            <span v-if="tab.show_note" :class="['nav-note-port', tab.note_cls]">{{ tab.note }}</span>
+            <span v-if="tab.show_note" :class="['nav-note', tab.note_cls]">{{ tab.note }}</span>
         </template>
         <template v-else>
             {{ tab.title }}
@@ -177,18 +177,3 @@ export default {
     },
 };
 </script>
-
-<style scoped>
-.nav-note-port {
-    position: absolute;
-    font-weight: 700;
-    font-size: 0.6rem;
-    color: gold;
-    top: 2.1rem;
-    margin-left: 1.5rem;
-}
-
-li .nav-link > span.toggle {
-    color: gold;
-}
-</style>

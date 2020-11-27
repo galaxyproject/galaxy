@@ -354,6 +354,7 @@ body {
                 }
             }
             .nav-link {
+                position: relative;
                 cursor: pointer;
                 text-decoration: none;
                 color: $brand-masthead-text;
@@ -362,19 +363,17 @@ body {
                 }
                 &.nav-icon {
                     font-size: 1.7em;
+                    .nav-note {
+                        @extend .font-weight-bold;
+                        @extend .position-absolute;
+                        left: 2.2rem;
+                        top: 2.2rem;
+                        font-size: 0.6rem;
+                    }
                 }
                 &.toggle {
                     color: $brand-masthead-text-hover;
                 }
-            }
-            .nav-note {
-                @extend .font-weight-bold;
-                @extend .position-relative;
-                right: 0.4rem;
-                top: 0.7rem;
-                font-size: 0.7rem;
-                color: $brand-masthead-text-hover;
-                width: 0;
             }
         }
     }
