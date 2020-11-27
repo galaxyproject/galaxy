@@ -17,8 +17,9 @@ jobs:
     steps:
       - name: Assign Milestone
         if:  |
-        contains(github.event.pull_request.title, 'WIP') && contains(github.event.pull_request.title, 'merge') == false
-        github.event.pull_request.draft == false
+          contains(github.event.pull_request.title, 'WIP') == false &&
+          contains(github.event.pull_request.title, 'merge') == false &&
+          github.event.pull_request.draft == false
         env:
           MILESTONE_NUMBER: 1
         run: |
