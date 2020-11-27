@@ -36,13 +36,15 @@ def main():
     # if tolerance is not specified in command, use the default value
     if not tolerance:
         tolerance = FR_DEFAULT_TOLERANCE
+    else:
+        tolerance = float(tolerance)
     
     # initialize training results
     known_names = []
     known_faces = []
     
     # if reuse_trained is set to true, retrieve previous training results
-    if reuse_trained:
+    if reuse_trained.lower() == "true":
         known_names, known_faces = train.retrieve_trained_results(training_photos)
               
     # if no valid previous trained results is available, do the training
