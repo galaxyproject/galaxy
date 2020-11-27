@@ -262,7 +262,7 @@ class ContainerRegistry:
             if not install and container_resolver.builds_on_resolution:
                 continue
 
-            container_description = container_resolver.resolve(enabled_container_types, tool_info, resolution_cache=resolution_cache, session=session)
+            container_description = container_resolver.resolve(enabled_container_types, tool_info, install=install, resolution_cache=resolution_cache, session=session)
             log.info("Checking with container resolver [{}] found description [{}]".format(container_resolver, container_description))
             if container_description:
                 assert container_description.type in enabled_container_types
