@@ -19,6 +19,7 @@ area/testing:
   - run_tests.sh
 area/testing/selenium:
   - lib/galaxy/selenium/**/*
+  - lib/galaxy_test/selenium/**/*
 area/tools:
   - tools/**/*
   - lib/galaxy/webapps/galaxy/api/tools.py
