@@ -14,11 +14,11 @@ from zipfile import ZipFile
 FR_TRAINED_MODEL_SUFFIX = ".frt"
 
 
-# Train Face Recognition model with the provided training_photos,  
+# Train Face Recognition model with the provided training_photos, using the facial directory under the given root_dir,
 # save the results in a FRT model file with the same file path as training_photos, replacing extension .zip with .frt, 
 # and return the trained results as a list of known_names and a list of known_faces encodings. 
 # If training fails for any reason, exit in error, as face recognition won't work without training.
-def train_faces(training_photos):
+def train_faces(training_photos, root_dir):
     # unzip training_photos
     facial_dir = get_facial_dir(root_dir)
     photos_dir = unzip_training_photos(training_photos, facial_dir)

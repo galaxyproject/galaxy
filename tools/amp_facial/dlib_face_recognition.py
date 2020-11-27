@@ -26,7 +26,7 @@ FR_DEFAULT_TOLERANCE = 0.6
 
 # Usage: dlib_face_recognition.py root_dir input_video training_photos reuse_trained tolerance amp_faces 
 def main():
-    (root_dir, input_video, training_photos, reuse_trained, tolerance, amp_faces) = sys.argv[1:6]
+    (root_dir, input_video, training_photos, reuse_trained, tolerance, amp_faces) = sys.argv[1:7]
     
     # using output instead of input filename as the latter is unique while the former could be used by multiple jobs 
     logger = MgmLogger(root_dir, "face_recognition", amp_faces)
@@ -43,7 +43,7 @@ def main():
               
     # if no valid previous trained results is available, do the training
     if (known_names == [] or known_faces == []):
-        known_names, known_faces = train.train_faces(training_photos)
+        known_names, known_faces = train.train_faces(training_photos, root_dir)
               
     # run face recognition on the given video using the trained results at the given tolerance level
     fr_result = recognize_faces(input_video, known_names, known_faces, tolerance)
