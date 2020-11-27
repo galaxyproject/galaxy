@@ -407,7 +407,6 @@ class MulledDockerContainerResolver(ContainerResolver):
                 type=self.container_type,
                 shell=self.shell,
             )
-            destination_for_container_type = kwds.get('destination_for_container_type')
             if install and not self.cached_container_description(
                     targets,
                     namespace=self.namespace,
@@ -415,6 +414,7 @@ class MulledDockerContainerResolver(ContainerResolver):
                     resolution_cache=resolution_cache,
             ):
                 destination_info = {}
+                destination_for_container_type = kwds.get('destination_for_container_type')
                 if destination_for_container_type:
                     destination_info = destination_for_container_type(self.container_type)
                 container = CONTAINER_CLASSES[self.container_type](container_description.identifier,
