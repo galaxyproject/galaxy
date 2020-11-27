@@ -98,9 +98,9 @@ class CondorJobRunner(AsynchronousJobRunner):
 
         galaxy_slots = query_params.get('request_cpus', None)
         if galaxy_slots:
-            galaxy_slots_statement = 'GALAXY_SLOTS="%s"; export GALAXY_SLOTS_CONFIGURED="1"' % galaxy_slots
+            galaxy_slots_statement = 'GALAXY_SLOTS="%s"; export GALAXY_SLOTS; GALAXY_SLOTS_CONFIGURED="1"; export GALAXY_SLOTS_CONFIGURED;' % galaxy_slots
         else:
-            galaxy_slots_statement = 'GALAXY_SLOTS="1"'
+            galaxy_slots_statement = 'GALAXY_SLOTS="1"; export GALAXY_SLOTS;'
 
         # define job attributes
         cjs = CondorJobState(
