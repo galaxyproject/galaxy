@@ -23,8 +23,8 @@ describe("ToolsView/ToolsView.vue", () => {
         const tools = wrapper.vm.createToolsJson(testToolsListResponse);
         const schemaElement = document.getElementById("schema-json");
         const schemaText = JSON.parse(schemaElement.text);
-        expect(tools["@graph"].length === 84).toBeTruthy();
-        expect(schemaText["@graph"].length === 84).toBeTruthy();
+        expect(tools["@graph"].length === 5).toBeTruthy();
+        expect(schemaText["@graph"].length === 5).toBeTruthy();
         expect(schemaElement.type === defaultSchemaElementTag).toBeTruthy();
     });
 });
