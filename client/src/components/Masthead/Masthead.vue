@@ -5,7 +5,6 @@
             <img alt="logo" class="navbar-brand-image" :src="brandImageSecondary" v-if="brandImageSecondary" />
             <span class="navbar-brand-title">{{ brandTitle }}</span>
         </b-navbar-brand>
-
         <b-navbar-nav>
             <masthead-item
                 v-for="(tab, idx) in tabs"
@@ -18,7 +17,6 @@
             >
             </masthead-item>
         </b-navbar-nav>
-
         <div ref="quota-meter-container" class="quota-meter-container" />
     </b-navbar>
 </template>

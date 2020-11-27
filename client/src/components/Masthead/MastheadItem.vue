@@ -3,7 +3,6 @@
         v-if="!menu"
         :class="classes"
         :style="styles"
-        :active="!tab.disabled"
         :id="tab.id"
         :href="formatUrl(tab.url)"
         :target="tab.target || '_parent'"
@@ -83,28 +82,25 @@ export default {
         menu() {
             return this.tab.menu;
         },
-        active() {
-            return this.tab.id == this.activeTab;
-        },
         popoverNote() {
             return `Please <a href="${this.appRoot}login">login or register</a> to use this feature.`;
         },
         classes() {
-            let classesString = this.tab.cls || "";
-            if (this.active) {
-                classesString = `${classesString} active`;
-            }
-            return classesString;
+            const isActiveTab = this.tab.id == this.activeTab;
+            return Object.fromEntries([
+                ["active", isActiveTab],
+                [this.tab.cls, true],
+            ]);
         },
         linkClasses() {
             return {
                 "nav-icon": this.tab.icon,
+                "toggle": this.tab.toggle,
             };
         },
         iconClasses() {
             return Object.fromEntries([
                 ["fa fa-fw", true],
-                ["toggle", this.tab.toggle],
                 [this.tab.icon, this.tab.icon],
             ]);
         },
@@ -138,13 +134,10 @@ export default {
             if (tab.onclick) {
                 return this.propogateClick(tab, event);
             }
-
             if (tab.disabled) {
                 event.preventDefault();
-
                 this.$root.$emit("bv::hide::tooltip");
                 this.$root.$emit("bv::show::popover", tab.id);
-
                 setTimeout(() => {
                     this.$root.$emit("bv::hide::popover", tab.id);
                 }, 3000);
@@ -164,7 +157,6 @@ export default {
         propogateClick(tab, event) {
             event.preventDefault();
             tab.onclick();
-
             if (tab.id === "enable-scratchbook") {
                 this.$emit("updateScratchbookTab", tab);
             }

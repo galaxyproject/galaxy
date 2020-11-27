@@ -349,9 +349,6 @@ body {
             align-items: center;
             &.active {
                 background: darken($brand-masthead, 10%);
-                .nav-link {
-                    color: $brand-masthead-text-active;
-                }
             }
             .nav-link {
                 position: relative;
