@@ -27,7 +27,6 @@ class DependencyResolver(Dictifiable, metaclass=ABCMeta):
     # resolution.
     disabled = False
     resolves_simple_dependencies = True
-    can_uninstall_dependencies = False
     config_options: Dict[str, Any] = {}
     read_only = True
 
@@ -43,6 +42,22 @@ class DependencyResolver(Dictifiable, metaclass=ABCMeta):
         version (which may differ from requested version for instance if the
         request version is 'default'.)
         """
+
+    def install_dependency(self, name, version, type, **kwds):
+        if self.read_only:
+            return False
+        else:
+            return self._install_dependency(name, version, type, **kwds)
+
+    def _install_dependency(self, name, version, type, **kwds):
+        """ Attempt to install this dependency if a recipe to do so
+        has been registered in some way.
+        """
+        return False
+
+    @property
+    def can_uninstall_dependencies(self):
+        return not self.read_only
 
 
 class MultipleDependencyResolver:
@@ -236,25 +251,6 @@ class SpecificationPatternDependencyResolver(SpecificationAwareDependencyResolve
             requirement.version = version
 
         return requirement
-
-
-class InstallableDependencyResolver(metaclass=ABCMeta):
-    """ Mix this into a ``DependencyResolver`` and implement to indicate
-    the dependency resolver can attempt to install new dependencies.
-    """
-    read_only = False
-
-    def install_dependency(self, name, version, type, **kwds):
-        if self.read_only:
-            return False
-        else:
-            return self._install_dependency(name, version, type, **kwds)
-
-    @abstractmethod
-    def _install_dependency(self, name, version, type, **kwds):
-        """ Attempt to install this dependency if a recipe to do so
-        has been registered in some way.
-        """
 
 
 class Dependency(Dictifiable, metaclass=ABCMeta):

@@ -13,7 +13,6 @@ from . import (
     Dependency,
     DependencyException,
     DependencyResolver,
-    InstallableDependencyResolver,
     ListableDependencyResolver,
     MappableDependencyResolver,
     MultipleDependencyResolver,
@@ -64,7 +63,7 @@ done
 log = logging.getLogger(__name__)
 
 
-class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, ListableDependencyResolver, InstallableDependencyResolver, SpecificationPatternDependencyResolver, MappableDependencyResolver):
+class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, ListableDependencyResolver, SpecificationPatternDependencyResolver, MappableDependencyResolver):
     dict_collection_visible_keys = DependencyResolver.dict_collection_visible_keys + ['prefix', 'versionless', 'ensure_channels', 'auto_install', 'auto_init', 'use_local']
     resolver_type = "conda"
     config_options = {
@@ -82,7 +81,6 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
     def __init__(self, dependency_manager, **kwds):
         read_only = _string_as_bool(kwds.get('read_only', 'false'))
         self.read_only = read_only
-        self.can_uninstall_dependencies = not read_only
         self._setup_mapping(dependency_manager, **kwds)
         self.versionless = _string_as_bool(kwds.get('versionless', 'false'))
         self.dependency_manager = dependency_manager

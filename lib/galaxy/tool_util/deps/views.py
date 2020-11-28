@@ -144,8 +144,8 @@ class DependencyResolversView:
         False if not successful
         """
         resolver = self._dependency_resolver(index)
-        if not hasattr(resolver, "install_dependency"):
-            raise exceptions.NotImplemented()
+        if resolver.read_only:
+            raise exceptions.RequestParameterInvalidException("Attempted to install on a read_only dependency resolver.")
 
         name, version, type, extra_kwds = self._parse_dependency_info(payload)
         return resolver.install_dependency(
@@ -198,7 +198,7 @@ class DependencyResolversView:
         """
         List index for all active resolvers that have the 'install_dependency' attribute.
         """
-        return [index for index, resolver in enumerate(self._dependency_resolvers) if hasattr(resolver, "install_dependency") and not resolver.disabled]
+        return [index for index, resolver in enumerate(self._dependency_resolvers) if not resolver.read_only and not resolver.disabled]
 
     @property
     def uninstallable_resolvers(self):
