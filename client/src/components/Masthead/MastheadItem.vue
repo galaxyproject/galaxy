@@ -91,7 +91,7 @@ export default {
         linkClasses() {
             return {
                 "nav-icon": this.tab.icon,
-                "toggle": this.tab.toggle,
+                toggle: this.tab.toggle,
             };
         },
         iconClasses() {
