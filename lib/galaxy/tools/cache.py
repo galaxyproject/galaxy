@@ -53,7 +53,8 @@ class ToolDocumentCache:
                 if flag == 'r':
                     self._cache.flag = flag
             else:
-                self._cache = SqliteDict(self.cache_file, flag=flag, encode=encoder, decode=decoder, autocommit=False)
+                cache_file = self.writeable_cache_file.name if self.writeable_cache_file else self.cache_file
+                self._cache = SqliteDict(cache_file, flag=flag, encode=encoder, decode=decoder, autocommit=False)
         except sqlite3.OperationalError:
             log.warning('Tool document cache unavailable')
             self._cache = None
@@ -182,7 +183,7 @@ class ToolCache:
                     if tool_id in self._new_tool_ids:
                         self._new_tool_ids.remove(tool_id)
                 if persist_tool_document_cache:
-                    tool.toolbox.persist_cache()
+                    tool.app.toolbox.persist_cache()
         except Exception as e:
             log.debug("Exception while checking tools to remove from cache: %s", unicodify(e))
             # If by chance the file is being removed while calculating the hash or modtime
@@ -193,18 +194,19 @@ class ToolCache:
 
     def _should_cleanup(self, config_filename):
         """Return True if `config_filename` does not exist or if modtime and hash have changes, else return False."""
-        if not os.path.exists(config_filename):
+        try:
+            new_mtime = os.path.getmtime(config_filename)
+            tool_hash = self._hash_by_tool_paths.get(config_filename)
+            if tool_hash.modtime < new_mtime:
+                if md5_hash_file(config_filename) != tool_hash.hash:
+                    return True
+            tool = self._tools_by_path[config_filename]
+            for macro_path in tool._macro_paths:
+                new_mtime = os.path.getmtime(macro_path)
+                if self._hash_by_tool_paths.get(macro_path).modtime < new_mtime:
+                    return True
+        except FileNotFoundError:
             return True
-        new_mtime = os.path.getmtime(config_filename)
-        tool_hash = self._hash_by_tool_paths.get(config_filename)
-        if tool_hash.modtime < new_mtime:
-            if md5_hash_file(config_filename) != tool_hash.hash:
-                return True
-        tool = self._tools_by_path[config_filename]
-        for macro_path in tool._macro_paths:
-            new_mtime = os.path.getmtime(macro_path)
-            if self._hash_by_tool_paths.get(macro_path).modtime < new_mtime:
-                return True
         return False
 
     def get_tool(self, config_filename):
