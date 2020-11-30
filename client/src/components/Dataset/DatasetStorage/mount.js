@@ -1,20 +1,16 @@
 /**
  * Endpoint for mounting job metrics from non-Vue environment.
  */
-import JobMetrics from "./JobMetrics.vue";
+import DatasetStorage from "./DatasetStorage.vue";
 import { mountVueComponent } from "utils/mountVueComponent";
 
-export const mountJobMetrics = (propsData = {}) => {
-    const elements = document.querySelectorAll(".job-metrics");
+export const mountDatasetStorage = (propsData = {}) => {
+    const elements = document.querySelectorAll(".dataset-storage");
     Array.prototype.forEach.call(elements, function (el, i) {
-        const jobId = el.getAttribute("job_id");
-        const aws_estimate = el.getAttribute("aws_estimate");
         const datasetId = el.getAttribute("dataset_id");
         const datasetType = el.getAttribute("dataset_type") || "hda";
-        propsData.jobId = jobId;
         propsData.datasetId = datasetId;
         propsData.datasetType = datasetType;
-        propsData.aws_estimate = aws_estimate;
-        mountVueComponent(JobMetrics)(propsData, el);
+        mountVueComponent(DatasetStorage)(propsData, el);
     });
 };

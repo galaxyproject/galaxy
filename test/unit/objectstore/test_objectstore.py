@@ -197,12 +197,20 @@ MIXED_STORE_BY_HIERARCHICAL_TEST_CONFIG = """<?xml version="1.0"?>
 HIERARCHICAL_TEST_CONFIG = """<?xml version="1.0"?>
 <object_store type="hierarchical">
     <backends>
-        <backend id="files1" type="disk" weight="1" order="0">
+        <backend id="files1" type="disk" weight="1" order="0" name="Newer Cool Storage">
+            <description>
+              This is our new storage cluster, check out the storage
+              on our institute's system page for [Fancy New Storage](http://computecenter.example.com/systems/fancystorage).
+            </description>
             <files_dir path="${temp_directory}/files1"/>
             <extra_dir type="temp" path="${temp_directory}/tmp1"/>
             <extra_dir type="job_work" path="${temp_directory}/job_working_directory1"/>
         </backend>
-        <backend id="files2" type="disk" weight="1" order="1">
+        <backend id="files2" type="disk" weight="1" order="1" name="Older Legacy Storage">
+            <description>
+              This is our older legacy storage cluster, check out the storage
+              on our institute's system page for [Legacy Storage](http://computecenter.example.com/systems/legacystorage).
+            </description>
             <files_dir path="${temp_directory}/files2"/>
             <extra_dir type="temp" path="${temp_directory}/tmp2"/>
             <extra_dir type="job_work" path="${temp_directory}/job_working_directory2"/>
@@ -215,6 +223,10 @@ HIERARCHICAL_TEST_CONFIG_YAML = """
 type: hierarchical
 backends:
    - id: files1
+     name: Newer Cool Storage
+     description: |
+      This is our new storage cluster, check out the storage
+      on our institute's system page for [Fancy New Storage](http://computecenter.example.com/systems/fancystorage).
      type: disk
      weight: 1
      files_dir: "${temp_directory}/files1"
@@ -224,6 +236,10 @@ backends:
      - type: job_work
        path: "${temp_directory}/job_working_directory1"
    - id: files2
+     name: Older Legacy Storage
+     description: |
+      This is our older legacy storage cluster, check out the storage
+      on our institute's system page for [Legacy Storage](http://computecenter.example.com/systems/legacystorage).
      type: disk
      weight: 1
      files_dir: "${temp_directory}/files2"
@@ -248,10 +264,20 @@ def test_hierarchical_store():
             assert object_store.exists(MockDataset(2))
             assert object_store.empty(MockDataset(2))
 
-            # Write non-empty dataset in backend 1, test it is not emtpy & exists.
+            # Write non-empty dataset in backend 1, test it is not empty & exists.
             directory.write("Hello World!", "files1/000/dataset_3.dat")
             assert object_store.exists(MockDataset(3))
             assert not object_store.empty(MockDataset(3))
+
+            # check and description routed correctly
+            files1_desc = object_store.get_concrete_store_description_markdown(MockDataset(3))
+            files1_name = object_store.get_concrete_store_name(MockDataset(3))
+            files2_desc = object_store.get_concrete_store_description_markdown(MockDataset(2))
+            files2_name = object_store.get_concrete_store_name(MockDataset(2))
+            assert "fancy" in files1_desc
+            assert "Newer Cool" in files1_name
+            assert "older" in files2_desc
+            assert "Legacy" in files2_name
 
             # Assert creation always happens in first backend.
             for i in range(100):
