@@ -1,17 +1,14 @@
-from collections import namedtuple
 import json
 
-class VideoOcrSchema:
+class VideoOcr:
     def __init__(self, media=None, frames = []):
         self.frames = []
         if media is None:
-            self.media = VideoOcrMediaSchema()
+            self.media = VideoOcrMedia()
         else:
-             self.media = media
+            self.media = media
              
-
-
-class VideoOcrResolutionSchema:
+class VideoOcrResolution:
     width = None
     height = None
     frames = []
@@ -23,12 +20,12 @@ class VideoOcrResolutionSchema:
     def from_json(cls, json_data):
         return cls(**json_data)
 
-class VideoOcrMediaSchema:
+class VideoOcrMedia:
     filename = ""
     duration = 0
     framerate = None
     numFrames = None
-    resolution = VideoOcrResolutionSchema()
+    resolution = VideoOcrResolution()
 
     def __init__(self, duration = 0, filename = "", framerate = None, numFrames = None, resolution = None):
         self.duration = duration
@@ -41,7 +38,7 @@ class VideoOcrMediaSchema:
     def from_json(cls, json_data):
         return cls(**json_data)
 
-class VideoOcrFrameSchema:
+class VideoOcrFrame:
     start = 0
     objects = []
     def __init__(self, start = None, objects = None):
@@ -54,7 +51,7 @@ class VideoOcrFrameSchema:
         return cls(**json_data)
 
     
-class VideoOcrObjectSchema:
+class VideoOcrObject:
     text = ""
     language = ""
     score = None
@@ -70,7 +67,7 @@ class VideoOcrObjectSchema:
         return cls(**json_data)
 
 
-class VideoOcrObjectScoreSchema:
+class VideoOcrObjectScore:
     type = ""
     value = None
     def __init__(self, type = "", value = None):
@@ -80,10 +77,9 @@ class VideoOcrObjectScoreSchema:
     @classmethod
     def from_json(cls, json_data: dict):
         return cls(**json_data)
-
     
 
-class VideoOcrObjectVerticesSchema:
+class VideoOcrObjectVertices:
     xmin = 0
     ymin = 0
     xmax = 0

@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
 import sys
 import logging
-import time
 import json
-import tempfile
 import os
-from datetime import timedelta
 from datetime import datetime
 import math
 
-from requests_toolbelt import MultipartEncoder
-
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
-from video_ocr import VideoOcrSchema, VideoOcrMediaSchema, VideoOcrResolutionSchema, VideoOcrFrameSchema, VideoOcrObjectSchema, VideoOcrObjectScoreSchema, VideoOcrObjectVerticesSchema
+from video_ocr import VideoOcr, VideoOcrMedia, VideoOcrResolution, VideoOcrFrame, VideoOcrObject, VideoOcrObjectScore, VideoOcrObjectVertices
+
+sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
+import mgm_utils
+
 
 def main():
 	(input_video, azure_video_index, azure_artifact_ocr, amp_vocr) = sys.argv[1:5]
@@ -32,22 +31,22 @@ def main():
 	amp_vocr_obj = create_amp_ocr(input_video, azure_index_json, azure_ocr_json)
 	
 	# write AMP Video OCR JSON file
-	write_json_file(amp_vocr_obj, amp_vocr)
+	mgm_utils.write_json_file(amp_vocr_obj, amp_vocr)
 
 # Parse the results
 def create_amp_ocr(input_video, azure_index_json, azure_ocr_json):
-	amp_ocr = VideoOcrSchema()
+	amp_ocr = VideoOcr()
 
 	# Create the resolution obj
 	width = azure_ocr_json["width"]
 	height = azure_ocr_json["height"]
-	resolution = VideoOcrResolutionSchema(width, height)
+	resolution = VideoOcrResolution(width, height)
 
 	# Create the media object
 	framerate = azure_ocr_json["framerate"]
 	duration = azure_index_json["summarizedInsights"]["duration"]["seconds"]
 	frames = int(framerate * duration)
-	amp_media  = VideoOcrMediaSchema(duration, input_video, framerate, frames, resolution)
+	amp_media  = VideoOcrMedia(duration, input_video, framerate, frames, resolution)
 	amp_ocr.media = amp_media
 
 	# Create a dictionary of all the frames [FrameNum : List of Terms]
@@ -124,23 +123,18 @@ def createAmpFrames(frame_dict, framerate):
 	for frameNum, objectList in frame_dict.items():
 		objects = []
 		for b in objectList:
-			amp_score = VideoOcrObjectScoreSchema("confidence", b["confidence"])
+			amp_score = VideoOcrObjectScore("confidence", b["confidence"])
 			bottom = b['top'] - b['height']
 			right = b['left'] + b['width']
-			amp_vertice = VideoOcrObjectVerticesSchema(b['left'], bottom, right, b['top'])
-			amp_object = VideoOcrObjectSchema(b["text"], b["language"], amp_score, amp_vertice)
+			amp_vertice = VideoOcrObjectVertices(b['left'], bottom, right, b['top'])
+			amp_object = VideoOcrObject(b["text"], b["language"], amp_score, amp_vertice)
 			objects.append(amp_object)
-		amp_frame = VideoOcrFrameSchema((frameNum) * (1/framerate), objects)
+		amp_frame = VideoOcrFrame((frameNum) * (1/framerate), objects)
 		amp_frames.append(amp_frame)
 	
 	amp_frames.sort(key=lambda x: x.start, reverse = False)
 	return amp_frames
 
-# Serialize obj and write it to output file
-def write_json_file(obj, output_file):
-	# Serialize the object
-	with open(output_file, 'w') as outfile:
-		json.dump(obj, outfile, default=lambda x: x.__dict__)
 
 if __name__ == "__main__":
 	main()

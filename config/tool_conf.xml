@@ -46,6 +46,7 @@
   </section>
 
   <section id="facial_recognition" name="Facial Recognition">
+    <tool file="amp_facial/dlib_face_recognition.xml"/>  
   </section>
 
   <section id="video_ocr" name="Video Optical Charater Recognition">

@@ -14,6 +14,8 @@ sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
 from entity_extraction import EntityExtraction, EntityExtractionMedia, EntityExtractionEntity
 from speech_to_text import SpeechToText, SpeechToTextMedia, SpeechToTextResult, SpeechToTextScore, SpeechToTextWord
 
+sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
+import mgm_utils
 
 def main():
     (input_file, json_file) = sys.argv[1:3]
@@ -37,7 +39,7 @@ def main():
     if(stt is None or stt.results is None):
         ner.media = EntityExtractionMedia(len(stt.results.transcript), input_file)
         # Write the json file
-        write_json_file(ner, json_file)
+        mgm_utils.write_json_file(ner, json_file)
         exit(0)
 
     doc = nlp(stt.results.transcript)
@@ -77,7 +79,7 @@ def main():
             ner.addEntity(entity.label_, text, None, None, None, None, start, None)   #AMP-636 removed startOffset=endOffset=end=None
 
     # Write the json file
-    write_json_file(ner, json_file)
+    mgm_utils.write_json_file(ner, json_file)
 
 # Standardize ignore list text
 def clean_text(text):
@@ -101,13 +103,6 @@ def read_ignore_list(ignore_list_filename):
         ignore_cats_list.append(clean_text(val))
     print(ignore_cats_list)
     return ignore_cats_list
-
-# Serialize obj and write it to output file
-def write_json_file(obj, output_file):
-    # Serialize the object
-    with open(output_file, 'w') as outfile:
-        json.dump(obj, outfile, default=lambda x: x.__dict__)
-
 
 
 if __name__ == "__main__":

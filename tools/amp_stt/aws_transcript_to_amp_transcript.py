@@ -9,7 +9,7 @@ import mgm_utils
 
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
 from speech_to_text import SpeechToText, SpeechToTextMedia, SpeechToTextResult, SpeechToTextScore, SpeechToTextWord
-from segmentation import SegmentationSchema, SegmentationSchemaMedia, SegmentationSchemaSegment
+from segmentation import Segmentation, SegmentationMedia, SegmentationSegment
 
 def main():
 	(media_file, transcribe_file, output_stt_json_file, output_seg_json_file) = sys.argv[1:5]
@@ -83,10 +83,10 @@ def main():
 	# Start segmentation schema with diarization data
 	if "speaker_labels" in aws_results.keys():
     	# Create a segmentation object to serialize
-		seg_schema = SegmentationSchema()
+		seg_schema = Segmentation()
 
 		# Create the media object
-		segMedia = SegmentationSchemaMedia(duration, media_file)
+		segMedia = SegmentationMedia(duration, media_file)
 		seg_schema.media = segMedia
 
 		speakerLabels = aws_results["speaker_labels"]
