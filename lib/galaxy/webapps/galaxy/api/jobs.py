@@ -5,10 +5,24 @@ API operations on a jobs.
 """
 
 import logging
+import typing
+from functools import lru_cache
 
-from sqlalchemy import or_
+from fastapi import (
+    APIRouter,
+    Cookie,
+    Depends,
+)
+from fastapi_utils.cbv import cbv
+from sqlalchemy import (
+    and_,
+    or_,
+    true,
+)
+from sqlalchemy.orm import joinedload
 
 from galaxy import (
+    app as galaxy_app,
     exceptions,
     model,
     util,
@@ -30,9 +44,98 @@ from galaxy.webapps.base.controller import (
     BaseAPIController,
     UsesVisualizationMixin
 )
-from galaxy.work.context import WorkRequestContext
+from galaxy.work.context import (
+    SessionRequestContext,
+    WorkRequestContext,
+)
 
 log = logging.getLogger(__name__)
+
+router = APIRouter()
+
+
+@lru_cache
+def get_session(galaxysession: typing.Optional[str] = Cookie(None)) -> model.GalaxySession:
+    app = galaxy_app.app
+    session_key = app.security.decode_guid(galaxysession)
+    sa_session = app.model.session
+    if session_key:
+        # Retrieve the galaxy_session id via the unique session_key
+        galaxy_session = sa_session.query(app.model.GalaxySession).filter(
+            and_(
+                app.model.GalaxySession.table.c.session_key == session_key,
+                app.model.GalaxySession.table.c.is_valid == true())
+        ).options(joinedload("user")).first()
+        return galaxy_session
+
+
+@lru_cache
+def get_user(galaxy_session: typing.Optional[model.GalaxySession] = Depends(get_session)):
+    return galaxy_session.user
+
+
+@lru_cache()
+def get_job_manager() -> JobManager:
+    return JobManager(galaxy_app.app)
+
+
+@lru_cache()
+def get_job_search() -> JobSearch:
+    return JobSearch(galaxy_app.app)
+
+
+@lru_cache()
+def get_hda_manager() -> hdas.HDAManager:
+    return hdas.HDAManager(galaxy_app.app)
+
+
+@lru_cache
+def get_trans(user: typing.Optional[model.User] = Depends(get_user),
+              galaxy_session: typing.Optional[model.GalaxySession] = Depends(get_session),
+              ) -> SessionRequestContext:
+    return SessionRequestContext(app=galaxy_app.app, user=user, galaxy_session=galaxy_session)
+
+
+@cbv(router)
+class FastAPIJobs:
+    job_manager: JobManager = Depends(get_job_manager)
+    job_search: JobSearch = Depends(get_job_search)
+    hda_manager: hdas.HDAManager = Depends(get_hda_manager)
+    trans: SessionRequestContext = Depends(get_trans)
+
+    @router.get("/")
+    def show(self, id: str, full: typing.Optional[bool] = False) -> typing.Dict:
+        """
+        Return dictionary containing description of job data
+
+        Parameters
+        - id: ID of job to return
+        - full: Return extra information ?
+        """
+        trans = self.trans
+        id = trans.app.security.decode_id(id)
+        job = self.job_manager.get_accessible_job(trans, id)
+        is_admin = trans.user_is_admin
+        job_dict = trans.app.security.encode_all_ids(job.to_dict('element', system_details=is_admin), True)
+        if full:
+            job_dict.update(dict(
+                tool_stdout=job.tool_stdout,
+                tool_stderr=job.tool_stderr,
+                job_stdout=job.job_stdout,
+                job_stderr=job.job_stderr,
+                stderr=job.stderr,
+                stdout=job.stdout,
+                job_messages=job.job_messages
+            ))
+
+            if is_admin:
+                if job.user:
+                    job_dict['user_email'] = job.user.email
+                else:
+                    job_dict['user_email'] = None
+
+                job_dict['job_metrics'] = summarize_job_metrics(trans, job)
+        return job_dict
 
 
 class JobController(BaseAPIController, UsesVisualizationMixin):
