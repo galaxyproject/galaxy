@@ -961,12 +961,14 @@ def verify_tool(tool_id,
     begin_time = time.time()
     try:
         try:
-            stage_data_in_history(galaxy_interactor,
-                                tool_id,
-                                testdef.test_data(),
-                                history=test_history,
-                                force_path_paste=force_path_paste,
-                                maxseconds=maxseconds)
+            stage_data_in_history(
+                galaxy_interactor,
+                tool_id,
+                testdef.test_data(),
+                history=test_history,
+                force_path_paste=force_path_paste,
+                maxseconds=maxseconds,
+            )
         except Exception as e:
             input_staging_exception = e
             raise
