@@ -54,7 +54,7 @@ log = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@lru_cache
+@lru_cache()
 def get_session(galaxysession: typing.Optional[str] = Cookie(None)) -> model.GalaxySession:
     app = galaxy_app.app
     session_key = app.security.decode_guid(galaxysession)
@@ -69,7 +69,7 @@ def get_session(galaxysession: typing.Optional[str] = Cookie(None)) -> model.Gal
         return galaxy_session
 
 
-@lru_cache
+@lru_cache()
 def get_user(galaxy_session: typing.Optional[model.GalaxySession] = Depends(get_session)):
     return galaxy_session.user
 
@@ -89,7 +89,7 @@ def get_hda_manager() -> hdas.HDAManager:
     return hdas.HDAManager(galaxy_app.app)
 
 
-@lru_cache
+@lru_cache()
 def get_trans(user: typing.Optional[model.User] = Depends(get_user),
               galaxy_session: typing.Optional[model.GalaxySession] = Depends(get_session),
               ) -> SessionRequestContext:
