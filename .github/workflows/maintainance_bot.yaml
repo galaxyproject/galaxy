@@ -1,0 +1,29 @@
+name: "Maintenance Bot"
+on:
+  - pull_request_target
+
+jobs:
+  labeler:
+    name: "Assign Labels"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/labeler@main
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+
+  milestone:
+    name: "Assign Milestone"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Assign Milestone
+        if:  |
+          contains(github.event.pull_request.title, 'WIP') == false &&
+          contains(github.event.pull_request.title, 'merge') == false &&
+          github.event.pull_request.draft == false
+        env:
+          MILESTONE_NUMBER: 18
+        run: |
+          curl --request PATCH \
+          --url ${{ github.event.pull_request.issue_url }} \
+          --header 'authorization: token ${{ secrets.GITHUB_TOKEN }}' \
+          --data-raw '{"milestone":  '$MILESTONE_NUMBER'}'
