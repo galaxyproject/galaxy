@@ -490,6 +490,7 @@ class GalaxyInteractorApi:
             history_contents = self.__contents(history_id)
         except Exception:
             print("*TEST FRAMEWORK FAILED TO FETCH HISTORY DETAILS*")
+            return
 
         for history_content in history_contents:
 
@@ -556,8 +557,9 @@ class GalaxyInteractorApi:
         return dataset_json
 
     def __contents(self, history_id):
-        history_contents_json = self._get("histories/%s/contents" % history_id).json()
-        return history_contents_json
+        history_contents_response = self._get("histories/%s/contents" % history_id)
+        history_contents_response.raise_for_status()
+        return history_contents_response.json()
 
     def _state_ready(self, state_str, error_msg):
         if state_str == 'ok':
