@@ -9,11 +9,11 @@ import typing
 from functools import lru_cache
 
 from fastapi import (
-    APIRouter,
     Cookie,
     Depends,
 )
 from fastapi_utils.cbv import cbv
+from fastapi_utils.inferring_router import InferringRouter as APIRouter
 from sqlalchemy import (
     and_,
     or_,
