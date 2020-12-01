@@ -12,7 +12,6 @@ from galaxy.jobs.actions.post import ActionBox
 from galaxy.model import LibraryDatasetDatasetAssociation, WorkflowRequestInputParameter
 from galaxy.model.dataset_collections.builder import CollectionBuilder
 from galaxy.model.none_like import NoneDataset
-from galaxy.objectstore import ObjectStorePopulator
 from galaxy.tools.parameters import update_dataset_ids
 from galaxy.tools.parameters.basic import DataCollectionToolParameter, DataToolParameter, RuntimeValue
 from galaxy.tools.parameters.wrapped import WrappedParameters
@@ -363,7 +362,6 @@ class DefaultToolAction:
         # datasets first, then create the associations
         parent_to_child_pairs = []
         child_dataset_names = set()
-        object_store_populator = ObjectStorePopulator(app, trans.user)
         async_tool = tool.tool_type == 'data_source_async'
 
         def handle_output(name, output, hidden=None):
@@ -414,11 +412,6 @@ class DefaultToolAction:
                 if not completed_job:
                     trans.app.security_agent.set_all_dataset_permissions(data.dataset, output_permissions, new=True, flush=False)
             data.copy_tags_to(preserved_tags.values())
-
-            if not completed_job and trans.app.config.legacy_eager_objectstore_initialization:
-                # Must flush before setting object store id currently.
-                trans.sa_session.flush()
-                object_store_populator.set_object_store_id(data)
 
             # This may not be neccesary with the new parent/child associations
             data.designation = name
@@ -543,7 +536,6 @@ class DefaultToolAction:
         job, galaxy_session = self._new_job_for_session(trans, tool, history)
         self._record_inputs(trans, tool, job, incoming, inp_data, inp_dataset_collections)
         self._record_outputs(job, out_data, output_collections)
-        job.object_store_id = object_store_populator.object_store_id
         if job_params:
             job.params = dumps(job_params)
         if completed_job:
