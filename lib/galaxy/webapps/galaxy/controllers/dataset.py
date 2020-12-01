@@ -328,6 +328,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
     @web.legacy_expose_api_anonymous
     def set_edit(self, trans, payload=None, **kwd):
         """Allows user to modify parameters of an HDA."""
+        security_agent = trans.app.security_agent
         status = 'success'
         operation = payload.get('operation')
         dataset_id = payload.get('dataset_id')
@@ -399,22 +400,22 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         elif operation == 'permission':
             if not trans.user:
                 return self.message_exception(trans, 'You must be logged in if you want to change permissions.')
-            if trans.app.security_agent.can_manage_dataset(trans.get_current_user_roles(), data.dataset):
+            if security_agent.can_manage_dataset(trans.get_current_user_roles(), data.dataset):
                 payload_permissions = {}
                 for action in trans.app.model.Dataset.permitted_actions.keys():
                     payload_permissions[action] = [trans.security.decode_id(role_id) for role_id in util.listify(payload.get(action))]
                 # The user associated the DATASET_ACCESS permission on the dataset with 1 or more roles.  We
                 # need to ensure that they did not associate roles that would cause accessibility problems.
                 permissions, in_roles, error, message = \
-                    trans.app.security_agent.derive_roles_from_access(trans, data.dataset.id, 'root', **payload_permissions)
+                    security_agent.derive_roles_from_access(trans, data.dataset.id, 'root', **payload_permissions)
                 if error:
                     # Keep the original role associations for the DATASET_ACCESS permission on the dataset.
-                    access_action = trans.app.security_agent.get_action(trans.app.security_agent.permitted_actions.DATASET_ACCESS.action)
-                    permissions[access_action] = data.dataset.get_access_roles(trans)
+                    access_action = security_agent.get_action(security_agent.permitted_actions.DATASET_ACCESS.action)
+                    permissions[access_action] = data.dataset.get_access_roles(security_agent)
                     trans.sa_session.refresh(data.dataset)
                     return self.message_exception(trans, message)
                 else:
-                    error = trans.app.security_agent.set_all_dataset_permissions(data.dataset, permissions)
+                    error = security_agent.set_all_dataset_permissions(data.dataset, permissions)
                     trans.sa_session.refresh(data.dataset)
                     if error:
                         return self.message_exception(trans, error)
@@ -439,7 +440,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         if dataset_id is not None and data.history.user is not None and data.history.user != trans.user:
             trans.log_event(f"User attempted to edit a dataset they do not own (encoded: {dataset_id}, decoded: {id}).")
             return None, self.message_exception(trans, 'The dataset id is invalid.')
-        if data.history.user and not data.dataset.has_manage_permissions_roles(trans):
+        if data.history.user and not data.dataset.has_manage_permissions_roles(trans.app.security_agent):
             # Permission setting related to DATASET_MANAGE_PERMISSIONS was broken for a period of time,
             # so it is possible that some Datasets have no roles associated with the DATASET_MANAGE_PERMISSIONS
             # permission.  In this case, we'll reset this permission to the hda user's private role.

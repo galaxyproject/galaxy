@@ -225,16 +225,17 @@ class HDAManager(datasets.DatasetAssociationManager,
     def _set_permissions(self, trans, hda, role_ids_dict):
         # The user associated the DATASET_ACCESS permission on the dataset with 1 or more roles.  We
         # need to ensure that they did not associate roles that would cause accessibility problems.
+        security_agent = trans.app.security_agent
         permissions, in_roles, error, message = \
-            trans.app.security_agent.derive_roles_from_access(trans, hda.dataset.id, 'root', **role_ids_dict)
+            security_agent.derive_roles_from_access(trans, hda.dataset.id, 'root', **role_ids_dict)
         if error:
             # Keep the original role associations for the DATASET_ACCESS permission on the dataset.
-            access_action = trans.app.security_agent.get_action(trans.app.security_agent.permitted_actions.DATASET_ACCESS.action)
-            permissions[access_action] = hda.dataset.get_access_roles(trans)
+            access_action = security_agent.get_action(security_agent.permitted_actions.DATASET_ACCESS.action)
+            permissions[access_action] = hda.dataset.get_access_roles(security_agent)
             trans.sa_session.refresh(hda.dataset)
             raise exceptions.RequestParameterInvalidException(message)
         else:
-            error = trans.app.security_agent.set_all_dataset_permissions(hda.dataset, permissions)
+            error = security_agent.set_all_dataset_permissions(hda.dataset, permissions)
             trans.sa_session.refresh(hda.dataset)
             if error:
                 raise exceptions.RequestParameterInvalidException(error)

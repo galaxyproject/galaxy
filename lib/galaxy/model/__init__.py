@@ -2532,23 +2532,23 @@ class Dataset(StorableObject, RepresentById):
         self.deleted = True
         self.purged = True
 
-    def get_access_roles(self, trans):
+    def get_access_roles(self, security_agent):
         roles = []
         for dp in self.actions:
-            if dp.action == trans.app.security_agent.permitted_actions.DATASET_ACCESS.action:
+            if dp.action == security_agent.permitted_actions.DATASET_ACCESS.action:
                 roles.append(dp.role)
         return roles
 
-    def get_manage_permissions_roles(self, trans):
+    def get_manage_permissions_roles(self, security_agent):
         roles = []
         for dp in self.actions:
-            if dp.action == trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
+            if dp.action == security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
                 roles.append(dp.role)
         return roles
 
-    def has_manage_permissions_roles(self, trans):
+    def has_manage_permissions_roles(self, security_agent):
         for dp in self.actions:
-            if dp.action == trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
+            if dp.action == security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
                 return True
         return False
 
@@ -3315,11 +3315,11 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         for assoc in self.implicitly_converted_parent_datasets:
             assoc.clear(purge=purge, delete_dataset=False)
 
-    def get_access_roles(self, trans):
+    def get_access_roles(self, security_agent):
         """
         Return The access roles associated with this HDA's dataset.
         """
-        return self.dataset.get_access_roles(trans)
+        return self.dataset.get_access_roles(security_agent)
 
     def purge_usage_from_quota(self, user):
         """Remove this HDA's quota_amount from user's quota.
@@ -3554,10 +3554,10 @@ class Library(Dictifiable, HasName, RepresentById):
             active_folders.extend(self.get_active_folders(active_folder, folders))
         return sort_by_attr(active_folders, 'id')
 
-    def get_access_roles(self, trans):
+    def get_access_roles(self, security_agent):
         roles = []
         for lp in self.actions:
-            if lp.action == trans.app.security_agent.permitted_actions.LIBRARY_ACCESS.action:
+            if lp.action == security_agent.permitted_actions.LIBRARY_ACCESS.action:
                 roles.append(lp.role)
         return roles
 
@@ -3808,14 +3808,14 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, RepresentById):
     def clear_associated_files(self, metadata_safe=False, purge=False):
         return
 
-    def get_access_roles(self, trans):
-        return self.dataset.get_access_roles(trans)
+    def get_access_roles(self, security_agent):
+        return self.dataset.get_access_roles(security_agent)
 
-    def get_manage_permissions_roles(self, trans):
-        return self.dataset.get_manage_permissions_roles(trans)
+    def get_manage_permissions_roles(self, security_agent):
+        return self.dataset.get_manage_permissions_roles(security_agent)
 
-    def has_manage_permissions_roles(self, trans):
-        return self.dataset.has_manage_permissions_roles(trans)
+    def has_manage_permissions_roles(self, security_agent):
+        return self.dataset.has_manage_permissions_roles(security_agent)
 
     def serialize(self, id_encoder, serialization_options, for_link=False):
         if for_link:
