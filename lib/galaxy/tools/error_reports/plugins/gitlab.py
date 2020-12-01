@@ -145,17 +145,17 @@ class GitLabPlugin(BaseGitPlugin):
                 # Determine the user to assign to the issue
                 gl_userid = None
                 if len(gl_project.commits.list()) > 0:
-                    gl_username = gl_project.commits.list()[0].attributes['author_name']
+                    gl_useremail = gl_project.commits.list()[0].attributes['author_email']
                     if not self.redact_user_details_in_bugreport:
-                        log.debug("GitLab error reporting - Last commiter username: %s" % gl_username)
-                    if gl_username not in self.git_username_id_cache:
-                        gl_userquery = self.gitlab.users.list(username=gl_username)
-                        log.debug("GitLab error reporting - User list: %s" % gl_userquery)
-                        if len(gl_userquery) > 0:
+                        log.debug("GitLab error reporting - Last author email: %s" % gl_useremail)
+                    if gl_useremail not in self.git_username_id_cache:
+                        gl_emailquery = self.gitlab.users.list(search=gl_useremail)
+                        log.debug("GitLab error reporting - User list: %s" % gl_emailquery)
+                        if len(gl_emailquery) > 0:
                             log.debug("GitLab error reporting - Last Committer user ID: %d" %
-                                      gl_userquery[0].get_id())
-                            self.git_username_id_cache[gl_username] = gl_userquery[0].get_id()
-                    gl_userid = self.git_username_id_cache.get(gl_username, None)
+                                      gl_emailquery[0].get_id())
+                            self.git_username_id_cache[gl_useremail] = gl_emailquery[0].get_id()
+                    gl_userid = self.git_username_id_cache.get(gl_useremail, None)
 
                 log.info(error_title in self.issue_cache[issue_cache_key])
                 if error_title not in self.issue_cache[issue_cache_key]:
