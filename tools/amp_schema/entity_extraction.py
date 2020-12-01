@@ -31,7 +31,7 @@ class EntityExtraction:
 	@classmethod
 	def from_json(cls, json_data: dict):
 		entities = list(map(EntityExtractionEntity.from_json, json_data["entities"]))
-		media = list(map(EntityExtractionMedia.from_json, json_data["media"]))
+		media = map(EntityExtractionMedia.from_json, json_data["media"])
 		return cls(media, entities)
 
 class EntityExtractionMedia:
