@@ -9,6 +9,8 @@ area/datatypes:
   - lib/galaxy/config/sample/datatypes_conf.xml.sample
 area/documentation:
   - doc/**/*
+area/jobs:
+  - lib/galaxy/jobs/**/*
 area/libraries:
   - client/src/components/LibraryFolder/**/*
   - lib/galaxy/webapps/galaxy/api/libraries.py
@@ -23,7 +25,9 @@ area/testing/selenium:
 area/tools:
   - tools/**/*
   - lib/galaxy/webapps/galaxy/api/tools.py
+  - lib/galaxy/tools/**/*
   - tool-data/**/*
+  - lib/galaxy/tool_util/**/*
 area/toolshed:
   - client/src/toolshed/**/*
   - lib/galaxy/webapps/galaxy/api/toolshed.py
