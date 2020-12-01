@@ -9,24 +9,20 @@ import typing
 from functools import lru_cache
 
 from fastapi import (
-    Cookie,
     Depends,
 )
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter as APIRouter
 from sqlalchemy import (
-    and_,
     or_,
-    true,
 )
-from sqlalchemy.orm import joinedload
 
 from galaxy import (
-    app as galaxy_app,
     exceptions,
     model,
     util,
 )
+from galaxy.app import UniverseApplication
 from galaxy.managers import hdas
 from galaxy.managers.jobs import (
     JobManager,
@@ -48,6 +44,10 @@ from galaxy.work.context import (
     SessionRequestContext,
     WorkRequestContext,
 )
+from .dependencies import (
+    get_app,
+    get_trans,
+)
 
 log = logging.getLogger(__name__)
 
@@ -55,45 +55,18 @@ router = APIRouter()
 
 
 @lru_cache()
-def get_session(galaxysession: typing.Optional[str] = Cookie(None)) -> model.GalaxySession:
-    app = galaxy_app.app
-    session_key = app.security.decode_guid(galaxysession)
-    sa_session = app.model.session
-    if session_key:
-        # Retrieve the galaxy_session id via the unique session_key
-        galaxy_session = sa_session.query(app.model.GalaxySession).filter(
-            and_(
-                app.model.GalaxySession.table.c.session_key == session_key,
-                app.model.GalaxySession.table.c.is_valid == true())
-        ).options(joinedload("user")).first()
-        return galaxy_session
+def get_job_manager(app: UniverseApplication = Depends(get_app)) -> JobManager:
+    return JobManager(app=app)
 
 
 @lru_cache()
-def get_user(galaxy_session: typing.Optional[model.GalaxySession] = Depends(get_session)):
-    return galaxy_session.user
+def get_job_search(app: UniverseApplication = Depends(get_app)) -> JobSearch:
+    return JobSearch(app=app)
 
 
 @lru_cache()
-def get_job_manager() -> JobManager:
-    return JobManager(galaxy_app.app)
-
-
-@lru_cache()
-def get_job_search() -> JobSearch:
-    return JobSearch(galaxy_app.app)
-
-
-@lru_cache()
-def get_hda_manager() -> hdas.HDAManager:
-    return hdas.HDAManager(galaxy_app.app)
-
-
-@lru_cache()
-def get_trans(user: typing.Optional[model.User] = Depends(get_user),
-              galaxy_session: typing.Optional[model.GalaxySession] = Depends(get_session),
-              ) -> SessionRequestContext:
-    return SessionRequestContext(app=galaxy_app.app, user=user, galaxy_session=galaxy_session)
+def get_hda_manager(app: UniverseApplication = Depends(get_app)) -> hdas.HDAManager:
+    return hdas.HDAManager(app=app)
 
 
 @cbv(router)

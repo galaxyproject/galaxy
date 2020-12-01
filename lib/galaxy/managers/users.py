@@ -9,6 +9,7 @@ from datetime import datetime
 
 from markupsafe import escape
 from sqlalchemy import and_, desc, exc, func, true
+from sqlalchemy.orm.exc import NoResultFound
 
 from galaxy import (
     exceptions,
@@ -229,6 +230,22 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         filters = self._munge_filters(self.model_class.email.like(email_with_wildcards), filters)
         order_by = order_by or (model.User.email, )
         return super().list(filters=filters, order_by=order_by, **kwargs)
+
+    def by_api_key(self, api_key, sa_session=None):
+        """
+        Find a user by API key.
+        """
+        sa_session = sa_session or self.app.model.session
+        try:
+            provided_key = sa_session.query(self.app.model.APIKeys).filter(self.app.model.APIKeys.table.c.key == api_key).one()
+        except NoResultFound:
+            raise exceptions.AuthenticationFailed('Provided API key is not valid.')
+        if provided_key.user.deleted:
+            raise exceptions.AuthenticationFailed('User account is deactivated, please contact an administrator.')
+        newest_key = provided_key.user.api_keys[0]
+        if newest_key.key != provided_key.key:
+            raise exceptions.AuthenticationFailed('Provided API key has expired.')
+        return provided_key.user
 
     # ---- admin
     def is_admin(self, user, trans=None):
