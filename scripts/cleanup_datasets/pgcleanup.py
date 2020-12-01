@@ -96,8 +96,8 @@ class Action:
 
     def __init__(self, app):
         self._log_dir = app.args.log_dir
+        self._log_file = app.args.log_file
         self._dry_run = app.args.dry_run
-        self._log_to_stdout = app.args.log_to_stdout
         self._debug = app.args.debug
         self._update_time = app.args.update_time
         self._force_retry = app.args.force_retry
@@ -120,13 +120,13 @@ class Action:
             self.__close_log()
 
     def __open_log(self):
-        logf = os.path.join(self._log_dir, self.name + '.log')
+        if self._log_file:
+            logf = os.path.join(self._log_dir, self._log_file)
+        else:
+            logf = os.path.join(self._log_dir, self.name + '.log')
         if self._dry_run:
             log.info('--dry-run specified, logging changes to stderr instead of log file: %s' % logf)
             h = set_log_handler()
-        elif self._log_to_stdout:
-            log.info('--log-to-stdout specified, logging changes to stdout instead of log file: %s' % logf)
-            h = set_log_handler(stream=sys.stdout)
         else:
             log.info('Opening log file: %s' % logf)
             h = set_log_handler(filename=logf)
@@ -1013,12 +1013,6 @@ class Cleanup:
             default=False,
             help="Dry run (rollback all transactions)")
         parser.add_argument(
-            '--log-to-stdout',
-            action='store_true',
-            dest='log_to_stdout',
-            default=False,
-            help='Send logging output to stdout')
-        parser.add_argument(
             '--force-retry',
             action='store_true',
             default=False,
@@ -1049,6 +1043,10 @@ class Cleanup:
             '-l', '--log-dir',
             default=DEFAULT_LOG_DIR,
             help='Log file directory')
+        parser.add_argument(
+            '-g', '--log-file',
+            default=None,
+            help='Log file name')
         parser.add_argument(
             'actions',
             nargs='*',
