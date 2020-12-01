@@ -9,10 +9,15 @@ import typing
 from functools import lru_cache
 
 from fastapi import (
+    Body,
     Depends,
 )
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter as APIRouter
+from pydantic import (
+    BaseModel,
+    Field,
+)
 from sqlalchemy import (
     or_,
 )
@@ -31,6 +36,7 @@ from galaxy.managers.jobs import (
     summarize_job_metrics,
     summarize_job_parameters,
 )
+from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.web import (
     expose_api,
     expose_api_anonymous,
@@ -45,13 +51,14 @@ from galaxy.work.context import (
     WorkRequestContext,
 )
 from .dependencies import (
+    get_admin_user,
     get_app,
     get_trans,
 )
 
 log = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(tags=["jobs"])
 
 
 @lru_cache()
@@ -69,6 +76,10 @@ def get_hda_manager(app: UniverseApplication = Depends(get_app)) -> hdas.HDAMana
     return hdas.HDAManager(app=app)
 
 
+class JobLock(BaseModel):
+    active: bool = Field(title="Job lock status", description="If active, jobs will not dispatch")
+
+
 @cbv(router)
 class FastAPIJobs:
     job_manager: JobManager = Depends(get_job_manager)
@@ -76,8 +87,19 @@ class FastAPIJobs:
     hda_manager: hdas.HDAManager = Depends(get_hda_manager)
     trans: SessionRequestContext = Depends(get_trans)
 
-    @router.get("/")
-    def show(self, id: str, full: typing.Optional[bool] = False) -> typing.Dict:
+    @router.get('/job_lock')
+    def job_lock_status(self, admin_user=Depends(get_admin_user)) -> JobLock:
+        """Get job lock status."""
+        return JobLock(active=self.trans.app.job_manager.job_lock)
+
+    @router.put('/job_lock')
+    def update_job_lock(self, admin_user=Depends(get_admin_user), job_lock: JobLock = Body(...)) -> JobLock:
+        """Set job lock status."""
+        self.trans.app.queue_worker.send_control_task('admin_job_lock', kwargs={'job_lock': job_lock.active}, get_response=True)
+        return JobLock(active=self.trans.app.job_manager.job_lock)
+
+    @router.get("/{id}")
+    def show(self, id: EncodedDatabaseIdField, full: typing.Optional[bool] = False) -> typing.Dict:
         """
         Return dictionary containing description of job data
 

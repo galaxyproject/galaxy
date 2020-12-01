@@ -81,3 +81,11 @@ def get_trans(app=Depends(get_app), user: Optional[User] = Depends(get_user),
               galaxy_session: Optional[model.GalaxySession] = Depends(get_session),
               ) -> SessionRequestContext:
     return SessionRequestContext(app=app, user=user, galaxy_session=galaxy_session)
+
+
+@lru_cache()
+def get_admin_user(trans: SessionRequestContext = Depends(get_trans), user_manager: UserManager = Depends(get_user_manager)):
+    if user_manager.is_admin(trans.user):
+        return trans.user
+    else:
+        raise HTTPException(status_code=403, detail="You must be an administrator to access this feature.")
