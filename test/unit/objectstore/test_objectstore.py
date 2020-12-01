@@ -177,23 +177,6 @@ def test_disk_store_alt_name_abspath():
             pass
 
 
-MIXED_STORE_BY_HIERARCHICAL_TEST_CONFIG = """<?xml version="1.0"?>
-<object_store type="hierarchical">
-    <backends>
-        <backend id="files1" type="disk" weight="1" order="0" store_by="id">
-            <files_dir path="${temp_directory}/files1"/>
-            <extra_dir type="temp" path="${temp_directory}/tmp1"/>
-            <extra_dir type="job_work" path="${temp_directory}/job_working_directory1"/>
-        </backend>
-        <backend id="files2" type="disk" weight="1" order="1" store_by="uuid">
-            <files_dir path="${temp_directory}/files2"/>
-            <extra_dir type="temp" path="${temp_directory}/tmp2"/>
-            <extra_dir type="job_work" path="${temp_directory}/job_working_directory2"/>
-        </backend>
-    </backends>
-</object_store>
-"""
-
 HIERARCHICAL_TEST_CONFIG = """<?xml version="1.0"?>
 <object_store type="hierarchical">
     <backends>
@@ -288,6 +271,24 @@ def test_hierarchical_store():
             as_dict = object_store.to_dict()
             _assert_has_keys(as_dict, ["backends", "extra_dirs", "type"])
             _assert_key_has_value(as_dict, "type", "hierarchical")
+
+
+MIXED_STORE_BY_HIERARCHICAL_TEST_CONFIG = """<?xml version="1.0"?>
+<object_store type="hierarchical">
+    <backends>
+        <backend id="files1" type="disk" weight="1" order="0" store_by="id">
+            <files_dir path="${temp_directory}/files1"/>
+            <extra_dir type="temp" path="${temp_directory}/tmp1"/>
+            <extra_dir type="job_work" path="${temp_directory}/job_working_directory1"/>
+        </backend>
+        <backend id="files2" type="disk" weight="1" order="1" store_by="uuid">
+            <files_dir path="${temp_directory}/files2"/>
+            <extra_dir type="temp" path="${temp_directory}/tmp2"/>
+            <extra_dir type="job_work" path="${temp_directory}/job_working_directory2"/>
+        </backend>
+    </backends>
+</object_store>
+"""
 
 
 def test_mixed_store_by():
