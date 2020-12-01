@@ -19,12 +19,17 @@ from babel import Locale
 from babel.support import Translations
 from Cheetah.Template import Template
 from sqlalchemy import and_, true
-from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.exc import NoResultFound
 
 from galaxy import util
-from galaxy.exceptions import ConfigurationError, MessageException
+from galaxy.exceptions import (
+    AuthenticationFailed,
+    ConfigurationError,
+    MessageException,
+)
 from galaxy.managers import context
+from galaxy.managers.session import GalaxySessionManager
+from galaxy.managers.users import UserManager
 from galaxy.util import (
     asbool,
     safe_makedirs,
@@ -185,6 +190,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         self.app = app
         self.webapp = webapp
         self.security = webapp.security
+        self.user_manager = UserManager(app)
+        self.session_manager = GalaxySessionManager(app.model.session)
         base.DefaultWebTransaction.__init__(self, environ)
         self.setup_i18n()
         self.expunge_all()
@@ -408,15 +415,10 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         elif api_key_supplied:
             # Sessionless API transaction, we just need to associate a user.
             try:
-                provided_key = self.sa_session.query(self.app.model.APIKeys).filter(self.app.model.APIKeys.table.c.key == api_key).one()
-            except NoResultFound:
-                return 'Provided API key is not valid.'
-            if provided_key.user.deleted:
-                return 'User account is deactivated, please contact an administrator.'
-            newest_key = provided_key.user.api_keys[0]
-            if newest_key.key != provided_key.key:
-                return 'Provided API key has expired.'
-            self.set_user(provided_key.user)
+                user = self.user_manager.by_api_key(api_key)
+            except AuthenticationFailed as e:
+                return str(e)
+            self.set_user(user)
         elif secure_id:
             # API authentication via active session
             # Associate user using existing session
@@ -463,10 +465,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             try:
                 session_key = self.security.decode_guid(secure_id)
                 if session_key:
-                    # Retrieve the galaxy_session id via the unique session_key
-                    galaxy_session = self.sa_session.query(self.app.model.GalaxySession) \
-                                                    .filter(and_(self.app.model.GalaxySession.table.c.session_key == session_key,
-                                                                 self.app.model.GalaxySession.table.c.is_valid == true())).options(joinedload("user")).first()
+                    galaxy_session = self.session_manager.get_session_from_session_key(session_key=session_key)
             except Exception:
                 # We'll end up creating a new galaxy_session
                 session_key = None
