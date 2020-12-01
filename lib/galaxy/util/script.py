@@ -90,7 +90,7 @@ def _arg_parser():
     return parser
 
 
-def set_log_handler(filename=None, stream=sys.stderr):
+def set_log_handler(filename=None, stream=None):
     if filename:
         handler = logging.FileHandler(filename)
     else:
