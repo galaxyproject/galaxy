@@ -147,20 +147,32 @@
                                 <span class="title-info unpaired-info"> </span>
                             </div>
                             <div class="unpaired-filter forward-unpaired-filter float-left search-input">
-                                <input
-                                    class="search-query"
-                                    :placeholder="filterTextPlaceholder"
-                                    v-model="forwardFilter"
-                                />
+                                <div class="input-group-prepend" :title="chooseFilterTitle">
+                                    <button
+                                        class="btn btn-outline-secondary dropdown-toggle"
+                                        type="button"
+                                        data-toggle="dropdown"
+                                        aria-haspopup="true"
+                                        aria-expanded="false"
+                                    ></button>
+                                    <div class="dropdown-menu">
+                                        <a class="dropdown-item" @click="changeFilters('illumina')">_1</a>
+                                        <a class="dropdown-item" @click="changeFilters('Rs')">_R1</a>
+                                        <a class="dropdown-item" @click="changeFilters('FRs')">_F</a>
+                                    </div>
+                                </div>
+                                <input type="text" :placeholder="filterTextPlaceholder" v-model="forwardFilter" />
                             </div>
                         </div>
                     </div>
                     <div class="paired-column flex-column no-flex column">
                         <div class="column-header">
-                            <a class="choose-filters-link" href="javascript:void(0)" role="button">
-                                {{ l("Choose Filters") }}
-                            </a>
-                            <a class="clear-filters-link" href="javascript:void(0);" role="button">
+                            <a
+                                class="clear-filters-link"
+                                href="javascript:void(0);"
+                                role="button"
+                                @click="clickClearFilters"
+                            >
                                 {{ l("Clear Filters") }}
                             </a>
                             <br />
@@ -177,12 +189,22 @@
                                 </span>
                                 <span class="title-info unpaired-info"></span>
                             </div>
-                            <div class="unpaired-filter reverse-unpaired-filter float-left search-input">
-                                <input
-                                    class="search-query"
-                                    :placeholder="filterTextPlaceholder"
-                                    v-model="reverseFilter"
-                                />
+                            <div class="unpaired-filter reverse-unpaired-filter float-left search-input search-query">
+                                <div class="input-group-prepend" :title="chooseFilterTitle">
+                                    <button
+                                        class="btn btn-outline-secondary dropdown-toggle"
+                                        type="button"
+                                        data-toggle="dropdown"
+                                        aria-haspopup="true"
+                                        aria-expanded="false"
+                                    ></button>
+                                    <div class="dropdown-menu">
+                                        <a class="dropdown-item" @click="changeFilters('illumina')">_2</a>
+                                        <a class="dropdown-item" @click="changeFilters('Rs')">_R2</a>
+                                        <a class="dropdown-item" @click="changeFilters('FRs')">_R</a>
+                                    </div>
+                                </div>
+                                <input type="text" :placeholder="filterTextPlaceholder" v-model="reverseFilter" />
                             </div>
                         </div>
                     </div>
@@ -220,7 +242,7 @@
                         <div class="column-title paired-column-title">
                             <span class="title"></span>
                         </div>
-                        <a class="unpair-all-link" href="javascript:void(0);" role="button">
+                        <a class="unpair-all-link" href="javascript:void(0);" role="button" @click="unpairAll">
                             {{ l("Unpair all") }}
                         </a>
                     </div>
@@ -232,6 +254,7 @@
                             v-for="pair in pairedElements"
                             :key="pair.id"
                             :pair="pair"
+                            :unlinkFn="clickUnpair(pair)"
                         />
                     </ol>
                 </div>
@@ -246,23 +269,27 @@ import DatasetCollectionElementView from "./PairedListDatasetCollectionElementVi
 import levenshteinDistance from "utils/levenshtein";
 import PairedElementView from "./PairedListPairedElementView";
 import STATES from "mvc/dataset/states";
+import naturalSort from "utils/natural-sort";
 //import { filter } from "rxjs/operators";
 export default {
     created() {
         this._elementsSetUp();
+        this.strategy = this.autopairLCS;
         this.filters = this.commonFilters[this.filters] || this.commonFilters[this.DEFAULT_FILTERS];
     },
     components: { CollectionCreator, DatasetCollectionElementView, PairedElementView }, //draggable?
     data: function () {
         return {
             state: "build", //error
-            dragToChangeTitle: "Drag to change",
-            filterTextPlaceholder: "Filter this list",
+            dragToChangeTitle: _l("Drag to change"),
+            chooseFilterTitle: _l("Choose from common filters"),
+            filterTextPlaceholder: _l("Filter text"),
             pairedElements: [],
             unpairedElements: [],
             commonFilters: {
                 illumina: ["_1", "_2"],
                 Rs: ["_R1", "_R2"],
+                FRs: ["_F", "_R"],
             },
             DEFAULT_FILTERS: "illumina",
             filters: this.DEFAULT_FILTERS,
@@ -332,8 +359,7 @@ export default {
                     return params.bestMatch;
                 },
             }),
-            DEFAULT_STRATEGY: this.autopairLCS,
-            strategy: this.DEFAULT_STRATEGY,
+            strategy: null,
         };
     },
     props: {
@@ -453,7 +479,6 @@ export default {
         /** create a pair from fwd and rev, removing them from unpaired, and placing the new pair in paired */
         _pair: function (fwd, rev, options) {
             options = options || {};
-            console.log("_pair:", fwd, rev);
             var pair = this._createPair(fwd, rev, options.name);
             this.pairedElements.push(pair);
             this.removePairFromUnpaired(fwd, rev);
@@ -544,19 +569,25 @@ export default {
             // Unselect any selected elements
             this.selectedForwardElement = null;
             this.selectedReverseElement = null;
-            this.pairedElements = this.pairedElements.concat(this.autoPair(this.autopairLCS));
+            this.autoPair();
             this.workingElements = this.workingElements.filter((e) => !this.pairedElements.includes(e));
         },
+        clickUnpair: function (pair) {
+            return () => this._unpair(pair);
+        },
+        clickClearFilters: function () {
+            this.forwardFilter = "";
+            this.reverseFilter = "";
+        },
         splitByFilter: function () {
+            var filters = [new RegExp(this.forwardFilter), new RegExp(this.reverseFilter)];
             var split = [[], []];
             this.workingElements.forEach((e) => {
-                console.log("in loop ", e);
-                if (this.filterElement(e, this.forwardFilter)) {
-                    split[0].push(e);
-                }
-                if (this.filterElement(e, this.reverseFilter)) {
-                    split[1].push(e);
-                }
+                filters.forEach((filter, i) => {
+                    if (filter.test(e.name)) {
+                        split[i].push(e);
+                    }
+                });
             });
             return split;
         },
@@ -565,9 +596,7 @@ export default {
          *  use both simpleAutoPair, then the fn mentioned in strategy
          */
         autoPair: function (strategy) {
-            
             var split = this.splitByFilter();
-            console.log("after ", split);
             var paired = [];
             if (this.twoPassAutopairing) {
                 paired = this.autopairSimple({
@@ -576,7 +605,6 @@ export default {
                 });
                 split = this.splitByFilter();
             }
-            console.log("after2 ", split);
 
             // uncomment to see printlns while running tests
             //this.debug = function(){ console.log.apply( console, arguments ); };
@@ -584,7 +612,6 @@ export default {
             // then try the remainder with something less strict
             strategy = strategy || this.strategy;
             split = this.splitByFilter();
-            console.log("after3 ", split);
             paired = paired.concat(
                 strategy.call(this, {
                     listA: split[0],
@@ -592,6 +619,50 @@ export default {
                 })
             );
             return paired;
+        },
+        /** add a dataset to the unpaired list in it's proper order */
+        _addToUnpaired: function (dataset) {
+            // currently, unpaired is natural sorted by name, use binary search to find insertion point
+            var binSearchSortedIndex = (low, hi) => {
+                if (low === hi) {
+                    return low;
+                }
+
+                var mid = Math.floor((hi - low) / 2) + low;
+
+                var compared = naturalSort(dataset.name, this.workingElements[mid].name);
+
+                if (compared < 0) {
+                    return binSearchSortedIndex(low, mid);
+                } else if (compared > 0) {
+                    return binSearchSortedIndex(mid + 1, hi);
+                }
+                // walk the equal to find the last
+                while (this.workingElements[mid] && this.workingElements[mid].name === dataset.name) {
+                    mid++;
+                }
+                return mid;
+            };
+
+            this.workingElements.splice(binSearchSortedIndex(0, this.workingElements.length), 0, dataset);
+        },
+        /** unpair a pair, removing it from paired, and adding the fwd,rev datasets back into unpaired */
+        _unpair: function (pair) {
+            if (!pair) {
+                throw new Error(`Bad pair: ${JSON.stringify(pair)}`);
+            }
+            this.pairedElements.splice(this.pairedElements.indexOf(pair), 1);
+            this._addToUnpaired(pair.forward);
+            this._addToUnpaired(pair.reverse);
+
+            return pair;
+        },
+        /** unpair all paired datasets */
+        unpairAll: function () {
+            var pairs = [];
+            while (this.pairedElements.length) {
+                pairs.push(this._unpair(this.pairedElements[0], { silent: true }));
+            }
         },
         // ============================================================================
         /** returns an autopair function that uses the provided options.match function */
@@ -703,6 +774,10 @@ export default {
                 // this.debug("autopair _strategy ---------------------------");
                 return paired;
             };
+        },
+        changeFilters: function (filter) {
+            this.forwardFilter = this.commonFilters[filter][0];
+            this.reverseFilter = this.commonFilters[filter][1];
         },
     },
     computed: {

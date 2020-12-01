@@ -370,7 +370,7 @@ export default {
                 background: #aff1af;
                 span {
                     display: inline-block;
-                    overflow: hidden;
+                    overflow: visible !important;
                     .forward-dataset-name {
                         text-align: right;
                         border-right: 1px solid grey;
