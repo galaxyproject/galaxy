@@ -4413,8 +4413,7 @@ would appear as ``$options.vcf_output`` having the values ``'--vcf'`` when true 
     </outputs>
 ```
 
-Variables that have the type attribute ``select`` need a special python statement of
-the form ``selection and "option" in selection`` inside the ``<filter>`` tags. 
+Note that variables that correspond to optional select parameters are `None` if nothing is selected. Therefore a filter for such a variable looks like the following example.
 
 ### Example
 
