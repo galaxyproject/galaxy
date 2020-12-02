@@ -4427,8 +4427,8 @@ the form ``selection and "option" in selection`` inside the ``<filter>`` tags.
     </inputs>
 
     <outputs>
-        <data name="phase_out" format="tiff" label="${movie.name[:-4]}_phase">
-            <filter>outputs and "save_phase" in outputs</filter>
+        <data name="phase_out" format="tiff">
+            <filter>output_type and "save_phase" in output_type</filter>
         </data>
         <data name="period_out" format="tiff" label="${movie.name[:-4]}_period">
             <filter>outputs and "save_period" in outputs</filter>
