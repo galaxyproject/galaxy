@@ -191,7 +191,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         self.webapp = webapp
         self.security = webapp.security
         self.user_manager = UserManager(app)
-        self.session_manager = GalaxySessionManager(app.model.session)
+        self.session_manager = GalaxySessionManager(app.model)
         base.DefaultWebTransaction.__init__(self, environ)
         self.setup_i18n()
         self.expunge_all()

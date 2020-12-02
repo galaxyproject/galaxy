@@ -44,8 +44,9 @@ def get_user_manager(app: UniverseApplication = Depends(get_app)):
 
 
 @lru_cache()
-def get_session_manager(db=Depends(get_db)) -> GalaxySessionManager:
-    return GalaxySessionManager(db)
+def get_session_manager(app=Depends(get_app)) -> GalaxySessionManager:
+    # TODO: find out how to adapt dependency for Galaxy/Report/TS
+    return GalaxySessionManager(app.model)
 
 
 @lru_cache()
