@@ -4387,7 +4387,7 @@ appear as ``$options.selection_mode`` in Cheetah. Similarly ``options["vcf_outpu
 would appear as ``$options.vcf_output`` having the values ``'--vcf'`` when true and
 ``''`` when false in Cheetah.
 
-### Example 
+### Example
 
 ```xml
     <inputs>
