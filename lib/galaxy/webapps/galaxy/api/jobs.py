@@ -50,7 +50,7 @@ from galaxy.work.context import (
     SessionRequestContext,
     WorkRequestContext,
 )
-from .dependencies import (
+from . import (
     get_admin_user,
     get_app,
     get_trans,
