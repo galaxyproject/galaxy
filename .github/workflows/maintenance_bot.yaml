@@ -19,8 +19,13 @@ jobs:
           ! contains(github.event.pull_request.labels.*.name, 'status/WIP') &&
           ! contains(github.event.pull_request.title, 'WIP') &&
           ! github.event.pull_request.draft
-        run: |
-          curl --request PATCH \
-          --url ${{ github.event.pull_request.issue_url }} \
-          --header 'authorization: token ${{ secrets.GITHUB_TOKEN }}' \
-          --data-raw '{"milestone": '$MILESTONE_NUMBER'}'
+        uses: actions/github-script@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              milestone: ${{ env.MILESTONE_NUMBER }},
+            });
