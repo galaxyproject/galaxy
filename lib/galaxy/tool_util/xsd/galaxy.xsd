@@ -4420,7 +4420,7 @@ the form ``selection and "option" in selection`` inside the ``<filter>`` tags.
 
 ```xml
     <inputs>
-       <param name="outputs" type="select" optional="true">
+       <param name="output_type" type="select" optional="true">
             <option value="save_phase">Phase Movie</option>
             <option value="save_period">Period Movie</option>
         </param>
