@@ -173,7 +173,7 @@ class ContactSheet:
 		
 		for i, shot in enumerate(data["frames"]):
 			# Find the timestamp for the middle frame of the shot
-			start = float(self.get_seconds_from_time_string(shot["start"]))
+			start = float(shot["start"])
 			times.append(start)
 
 			# Save a formatted time range for this shot in the list of times
