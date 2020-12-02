@@ -11,7 +11,8 @@ jobs:
       - name: Check Labels on merge
         if: |
           github.event.pull_request.merged == true &&
-          ! contains(join(github.event.pull_request.labels.*.name, ', '), 'kind/')
+          ! contains(join(github.event.pull_request.labels.*.name, ', '), 'kind/') &&
+          ! contains(github.event.pull_request.labels.*.name, 'merge')
         uses: actions/github-script@0.3.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
