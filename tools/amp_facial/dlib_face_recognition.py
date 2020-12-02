@@ -10,12 +10,10 @@ import cv2
 
 import dlib_face_training as train
 
-# sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
-sys.path.insert(0, os.path.abspath('/home/yingfeng/Work/Amp/galaxy/tools/amp_schema'))
+sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
 from facial_recognition import FaceRecognition, FaceRecognitionMedia, FaceRecognitionMediaResolution, FaceRecognitionFrame, FaceRecognitionFrameObject, FaceRecognitionFrameObjectScore, FaceRecognitionFrameObjectVertices
 
-# sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
-sys.path.insert(0, os.path.abspath('/home/yingfeng/Work/Amp/galaxy/tools/amp_util'))
+sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
 from mgm_logger import MgmLogger
 import mgm_utils
 
