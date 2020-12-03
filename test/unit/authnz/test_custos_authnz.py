@@ -352,9 +352,6 @@ class CustosAuthnzTestCase(unittest.TestCase):
         self.assertTrue(self._fetch_token_called)
 
     def test_create_user(self):
-        # self.trans.set_cookie(value=self.test_state, name=custos_authnz.STATE_COOKIE_NAME)
-        # self.trans.set_cookie(value=self.test_nonce, name=custos_authnz.NONCE_COOKIE_NAME)
-
         self.assertIsNone(
             self.trans.sa_session.query(CustosAuthnzToken)
                 .filter_by(external_user_id=self.test_user_id,
@@ -368,7 +365,7 @@ class CustosAuthnzTestCase(unittest.TestCase):
             'email': self.test_email,
             'preferred_username': self.test_username,
             'sub': self.test_sub},
-            key=None, algorithm=None).decode
+            key=None, algorithm=None).decode()
 
         self._raw_token = {
             "access_token": self.test_access_token,
@@ -383,19 +380,18 @@ class CustosAuthnzTestCase(unittest.TestCase):
             login_redirect_url="http://localhost:8000/")
         self.assertEqual(login_redirect_url, "http://localhost:8000/")
         self.trans.set_user(user)
-        self.assertTrue(self._get_userinfo_called)
-        self.assertEqual(1, len(self.trans.sa_session.items), "Session has new CustosAuthnzToken")
+        self.assertEqual(2, len(self.trans.sa_session.items), "Session has new User & new CustosAuthnzToken")
         added_user = self.trans.get_user()
         self.assertIsInstance(added_user, User)
         self.assertEqual(self.test_username, added_user.username)
         self.assertEqual(self.test_email, added_user.email)
         self.assertIsNotNone(added_user.password)
         # Verify added_custos_authnz_token
-        added_custos_authnz_token = self.trans.sa_session.items[0]
+        added_custos_authnz_token = self.trans.sa_session.items[1]
         self.assertIsInstance(added_custos_authnz_token, CustosAuthnzToken)
         self.assertIs(user, added_custos_authnz_token.user)
         self.assertEqual(self.test_access_token, added_custos_authnz_token.access_token)
-        self.assertEqual(self.test_id_token, added_custos_authnz_token.id_token)
+        self.assertEqual(test_id_token, added_custos_authnz_token.id_token)
         self.assertEqual(self.test_refresh_token, added_custos_authnz_token.refresh_token)
         expected_expiration_time = datetime.now() + timedelta(seconds=self.test_expires_in)
         expiration_timedelta = expected_expiration_time - added_custos_authnz_token.expiration_time
