@@ -1,18 +1,20 @@
 <template>
     <div class="tool-footer">
-        <!-- <b-button v-b-toggle.collapse-about>About this tool</b-button> -->
         <b-link
+            v-if="hasContent"
             :aria-expanded="expanded"
             aria-controls="collapse-about"
             class="collapse-about"
             @click="expanded = !expanded"
-            >About this tool
-            <font-awesome-icon :icon="expanded ? 'angle-double-up' : 'angle-double-down'" />
+        >
+            About this tool
+            <font-awesome-icon v-if="expanded" icon="angle-double-up" />
+            <font-awesome-icon v-else icon="angle-double-down" />
         </b-link>
         <b-collapse id="collapse-about" class="mt-2" v-model="expanded">
             <b-card>
-                <div v-if="hasCitations" class="metadata-section">
-                    <span class="metadata-key">Citations:</span>
+                <div v-if="hasCitations" class="mb-1">
+                    <span class="font-weight-bold">Citations:</span>
                     <font-awesome-icon
                         v-b-tooltip.hover
                         title="Copy all citations as BibTeX"
@@ -29,8 +31,8 @@
                         prefix="-"
                     />
                 </div>
-                <div v-if="hasRequirements" class="metadata-section">
-                    <span class="metadata-key"
+                <div v-if="hasRequirements" class="mb-1">
+                    <span class="font-weight-bold"
                         >Requirements:
                         <a href="https://galaxyproject.org/tools/requirements/" target="_blank">
                             <font-awesome-icon
@@ -45,18 +47,18 @@
                         <span v-if="requirement.version"> (Version {{ requirement.version }}) </span>
                     </div>
                 </div>
-                <div class="metadata-section" v-if="license">
-                    <span class="metadata-key">License:</span>
+                <div class="mb-1" v-if="hasLicense">
+                    <span class="font-weight-bold">License:</span>
                     <License :licenseId="license" />
                 </div>
-                <div v-if="hasReferences" class="metadata-section">
-                    <span class="metadata-key">References:</span>
+                <div v-if="hasReferences" class="mb-1">
+                    <span class="font-weight-bold">References:</span>
                     <div v-for="(xref, index) in xrefs" :key="index">
                         - {{ xref.reftype }}:
                         <template v-if="xref.reftype == 'bio.tools'">
                             {{ xref.value }}
-                            (<a :href="`https://bio.tools/${xref.value}`" target="_blank"
-                                >bio.tools
+                            (<a :href="`https://bio.tools/${xref.value}`" target="_blank">
+                                bio.tools
                                 <font-awesome-icon
                                     v-b-tooltip.hover
                                     title="Visit bio.tools reference"
@@ -76,8 +78,8 @@
                         </template>
                     </div>
                 </div>
-                <div v-if="hasCreators" class="metadata-section">
-                    <span class="metadata-key">Creators:</span>
+                <div v-if="hasCreators" class="mb-1">
+                    <span class="font-weight-bold">Creators:</span>
                     <Creators :creators="creators" />
                 </div>
             </b-card>
@@ -130,13 +132,21 @@ export default {
         hasRequirements() {
             return this.requirements && this.requirements.length > 0;
         },
-        hasRequirements() {
+        hasReferences() {
             return this.xrefs && this.xrefs.length > 0;
         },
         hasCreators() {
             return this.creators && this.creators.length > 0;
         },
-    }
+        hasLicense() {
+            return !!this.license;
+        },
+        hasContent() {
+            return (
+                this.hasRequirements || this.hasReferences || this.hasCreators || this.hasCitations || this.hasLicense
+            );
+        },
+    },
     data() {
         return {
             citations: [],
@@ -167,12 +177,3 @@ export default {
     },
 };
 </script>
-
-<style scoped>
-.metadata-key {
-    font-weight: bold;
-}
-.metadata-section {
-    margin-bottom: 5px;
-}
-</style>
