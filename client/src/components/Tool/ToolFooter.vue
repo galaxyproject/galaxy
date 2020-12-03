@@ -1,90 +1,71 @@
 <template>
-    <div class="tool-footer">
-        <b-link
-            v-if="hasContent"
-            :aria-expanded="expanded"
-            aria-controls="collapse-about"
-            class="collapse-about"
-            @click="expanded = !expanded"
-        >
-            About this tool
-            <font-awesome-icon v-if="expanded" icon="angle-double-up" />
-            <font-awesome-icon v-else icon="angle-double-down" />
-        </b-link>
-        <b-collapse id="collapse-about" class="mt-2" v-model="expanded">
-            <b-card>
-                <div v-if="hasCitations" class="mb-1">
-                    <span class="font-weight-bold">Citations:</span>
-                    <font-awesome-icon
-                        v-b-tooltip.hover
-                        title="Copy all citations as BibTeX"
-                        icon="copy"
-                        style="cursor: pointer;"
-                        @click="copyBibtex"
-                    />
-                    <Citation
-                        class="formatted-reference"
-                        v-for="(citation, index) in citations"
-                        :key="index"
-                        :citation="citation"
-                        output-format="bibliography"
-                        prefix="-"
-                    />
-                </div>
-                <div v-if="hasRequirements" class="mb-1">
-                    <span class="font-weight-bold"
-                        >Requirements:
-                        <a href="https://galaxyproject.org/tools/requirements/" target="_blank">
-                            <font-awesome-icon
-                                v-b-tooltip.hover
-                                title="Learn more about Galaxy Requirements"
-                                icon="question"
-                            />
-                        </a>
-                    </span>
-                    <div v-for="(requirement, index) in requirements" :key="index">
-                        - {{ requirement.name }}
-                        <span v-if="requirement.version"> (Version {{ requirement.version }}) </span>
-                    </div>
-                </div>
-                <div class="mb-1" v-if="hasLicense">
-                    <span class="font-weight-bold">License:</span>
-                    <License :licenseId="license" />
-                </div>
-                <div v-if="hasReferences" class="mb-1">
-                    <span class="font-weight-bold">References:</span>
-                    <div v-for="(xref, index) in xrefs" :key="index">
-                        - {{ xref.reftype }}:
-                        <template v-if="xref.reftype == 'bio.tools'">
-                            {{ xref.value }}
-                            (<a :href="`https://bio.tools/${xref.value}`" target="_blank">
-                                bio.tools
-                                <font-awesome-icon
-                                    v-b-tooltip.hover
-                                    title="Visit bio.tools reference"
-                                    icon="external-link-alt"
-                                /> </a
-                            >) (<a :href="`https://openebench.bsc.es/tool/${xref.value}`" target="_blank"
-                                >OpenEBench
-                                <font-awesome-icon
-                                    v-b-tooltip.hover
-                                    title="Visit OpenEBench reference"
-                                    icon="external-link-alt"
-                                /> </a
-                            >)
-                        </template>
-                        <template v-else>
-                            {{ xref.value }}
-                        </template>
-                    </div>
-                </div>
-                <div v-if="hasCreators" class="mb-1">
-                    <span class="font-weight-bold">Creators:</span>
-                    <Creators :creators="creators" />
-                </div>
-            </b-card>
-        </b-collapse>
-    </div>
+    <b-card class="tool-footer" v-if="hasContent">
+        <div v-if="hasCitations" class="mb-1">
+            <span class="font-weight-bold">Citations:</span>
+            <font-awesome-icon
+                v-b-tooltip.hover
+                title="Copy all citations as BibTeX"
+                icon="copy"
+                style="cursor: pointer;"
+                @click="copyBibtex"
+            />
+            <Citation
+                class="formatted-reference"
+                v-for="(citation, index) in citations"
+                :key="index"
+                :citation="citation"
+                output-format="bibliography"
+                prefix="-"
+            />
+        </div>
+        <div v-if="hasRequirements" class="mb-1">
+            <span class="font-weight-bold"
+                >Requirements:
+                <a href="https://galaxyproject.org/tools/requirements/" target="_blank">
+                    <font-awesome-icon v-b-tooltip.hover title="Learn more about Galaxy Requirements" icon="question" />
+                </a>
+            </span>
+            <div v-for="(requirement, index) in requirements" :key="index">
+                - {{ requirement.name }}
+                <span v-if="requirement.version"> (Version {{ requirement.version }}) </span>
+            </div>
+        </div>
+        <div class="mb-1" v-if="hasLicense">
+            <span class="font-weight-bold">License:</span>
+            <License :licenseId="license" />
+        </div>
+        <div v-if="hasReferences" class="mb-1">
+            <span class="font-weight-bold">References:</span>
+            <div v-for="(xref, index) in xrefs" :key="index">
+                - {{ xref.reftype }}:
+                <template v-if="xref.reftype == 'bio.tools'">
+                    {{ xref.value }}
+                    (<a :href="`https://bio.tools/${xref.value}`" target="_blank">
+                        bio.tools
+                        <font-awesome-icon
+                            v-b-tooltip.hover
+                            title="Visit bio.tools reference"
+                            icon="external-link-alt"
+                        /> </a
+                    >) (<a :href="`https://openebench.bsc.es/tool/${xref.value}`" target="_blank"
+                        >OpenEBench
+                        <font-awesome-icon
+                            v-b-tooltip.hover
+                            title="Visit OpenEBench reference"
+                            icon="external-link-alt"
+                        /> </a
+                    >)
+                </template>
+                <template v-else>
+                    {{ xref.value }}
+                </template>
+            </div>
+        </div>
+        <div v-if="hasCreators" class="mb-1">
+            <span class="font-weight-bold">Creators:</span>
+            <Creators :creators="creators" />
+        </div>
+    </b-card>
 </template>
 
 <script>
@@ -150,7 +131,6 @@ export default {
     data() {
         return {
             citations: [],
-            expanded: false,
         };
     },
     created() {
