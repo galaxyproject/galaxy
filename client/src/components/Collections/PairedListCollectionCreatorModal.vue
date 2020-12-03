@@ -27,28 +27,36 @@ export default {
                 return deferred;
             });
         },
-        /** Use a modal to create a list of pair collection, then add it to the given history contents.
+        /** Use a modal to create a list collection, then add it to the given history contents.
          *  @returns {Deferred} resolved when the collection is added to the history.
          */
         createPairedListCollection: function (contents, defaultHideSourceItems) {
             const elements = contents.toJSON();
-            // const copyElements = !defaultHideSourceItems;
-            // const promise = this.pairedListCollectionCreatorModal(elements, {
-            //     defaultHideSourceItems: defaultHideSourceItems,
-            //     creationFn: function (elements, name, hideSourceItems) {
-            //         elements = elements.map((element) => ({
-            //             id: element.id,
-            //             name: element.name,
-            //             //TODO: this allows for list:list even if the filter above does not - reconcile
-            //             src: element.history_content_type === "dataset" ? "hda" : "hdca",
-            //         }));
-            //         return contents.createHDCA(elements, "list", name, hideSourceItems, copyElements);
-            //     },
-            // });
-            return this.pairedListCollectionCreatorModal(elements, {
-                historyId: contents.historyId,
+            const copyElements = !defaultHideSourceItems;
+            const promise = this.pairedListCollectionCreatorModal(elements, {
                 defaultHideSourceItems: defaultHideSourceItems,
+                creationFn: function (elements, name, hideSourceItems) {
+                    elements = elements.map((pair) => ({
+                        collection_type: "paired",
+                        src: "new_collection",
+                        name: pair.name,
+                        element_identifiers: [
+                            {
+                                name: "forward",
+                                id: pair.forward.id,
+                                src: pair.forward.src || "hda",
+                            },
+                            {
+                                name: "reverse",
+                                id: pair.reverse.id,
+                                src: pair.reverse.src || "hda",
+                            },
+                        ],
+                    }));
+                    return contents.createHDCA(elements, "list:paired", name, hideSourceItems, copyElements);
+                },
             });
+            return promise;
         },
     },
 };

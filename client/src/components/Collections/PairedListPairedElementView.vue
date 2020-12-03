@@ -1,6 +1,6 @@
 <template>
     <div>
-        <li>
+        <li class="dataset paired">
             <span class="forward-dataset-name flex-column">{{ pair.forward.name }}</span>
             <span class="pair-name-column flex-column">
                 <span class="pair-name">

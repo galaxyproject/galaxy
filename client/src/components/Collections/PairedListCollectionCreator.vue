@@ -146,8 +146,11 @@
                                 </span>
                                 <span class="title-info unpaired-info"> </span>
                             </div>
-                            <div class="unpaired-filter forward-unpaired-filter float-left search-input">
-                                <div class="input-group-prepend" :title="chooseFilterTitle">
+                            <div
+                                class="unpaired-filter forward-unpaired-filter float-left search-input search-query input-group"
+                            >
+                                <input type="text" :placeholder="filterTextPlaceholder" v-model="forwardFilter" />
+                                <div class="input-group-append" :title="chooseFilterTitle">
                                     <button
                                         class="btn btn-outline-secondary dropdown-toggle"
                                         type="button"
@@ -161,7 +164,6 @@
                                         <a class="dropdown-item" @click="changeFilters('FRs')">_F</a>
                                     </div>
                                 </div>
-                                <input type="text" :placeholder="filterTextPlaceholder" v-model="forwardFilter" />
                             </div>
                         </div>
                     </div>
@@ -189,8 +191,11 @@
                                 </span>
                                 <span class="title-info unpaired-info"></span>
                             </div>
-                            <div class="unpaired-filter reverse-unpaired-filter float-left search-input search-query">
-                                <div class="input-group-prepend" :title="chooseFilterTitle">
+                            <div
+                                class="unpaired-filter reverse-unpaired-filter float-left search-input search-query input-group"
+                            >
+                                <input type="text" :placeholder="filterTextPlaceholder" v-model="reverseFilter" />
+                                <div class="input-group-append" :title="chooseFilterTitle">
                                     <button
                                         class="btn btn-outline-secondary dropdown-toggle"
                                         type="button"
@@ -204,7 +209,6 @@
                                         <a class="dropdown-item" @click="changeFilters('FRs')">_R</a>
                                     </div>
                                 </div>
-                                <input type="text" :placeholder="filterTextPlaceholder" v-model="reverseFilter" />
                             </div>
                         </div>
                     </div>
@@ -250,7 +254,6 @@
                 <div class="paired-columns flex-column-container scroll-container flex-row">
                     <ol class="column-datasets">
                         <paired-element-view
-                            class="dataset paired"
                             v-for="pair in pairedElements"
                             :key="pair.id"
                             :pair="pair"
@@ -779,6 +782,13 @@ export default {
             this.forwardFilter = this.commonFilters[filter][0];
             this.reverseFilter = this.commonFilters[filter][1];
         },
+        clickedCreate: function (collectionName) {
+            if (this.state !== "error") {
+                return this.creationFn(this.pairedElements, collectionName, this.defaultHideSourceItems)
+                    .done(this.oncreate)
+                    .fail((this.state = "error"));
+            }
+        },
     },
     computed: {
         forwardElements: {
@@ -794,8 +804,23 @@ export default {
     },
 };
 </script>
-<style scoped>
+<style scoped lang="scss">
+.paired-column {
+    text-align: center;
+    // mess with these two to make center more/scss priority
+    width: 22%;
+}
 .column-headers {
     margin-bottom: 8px;
+}
+.input-group {
+    width: auto;
+    border: none;
+}
+ol.column-datasets {
+    width: auto;
+}
+div.paired-columns {
+    margin: auto;
 }
 </style>

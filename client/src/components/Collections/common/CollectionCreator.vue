@@ -264,11 +264,6 @@ export default {
             }
         }
     }
-    .paired-column {
-        text-align: center;
-        // mess with these two to make center more/scss priority
-        width: 22%;
-    }
     // ------------------------------------------------------------------------ header
     .header {
         .main-help {
@@ -473,7 +468,6 @@ export default {
         margin-bottom: 8px;
         .column-datasets {
             width: 100%;
-            overflow: auto;
         }
         .unpair-btn {
             float: right;
