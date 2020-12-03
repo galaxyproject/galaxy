@@ -49,7 +49,7 @@
                     <span class="metadata-key">License:</span>
                     <License :licenseId="license" />
                 </div>
-                <div v-if="xrefs && xrefs.length > 0" class="metadata-section">
+                <div v-if="hasReferences" class="metadata-section">
                     <span class="metadata-key">References:</span>
                     <div v-for="(xref, index) in xrefs" :key="index">
                         - {{ xref.reftype }}:
@@ -128,7 +128,10 @@ export default {
     },
     computed: {
         hasRequirements() {
-            return requirements && requirements.length > 0;
+            return this.requirements && this.requirements.length > 0;
+        },
+        hasRequirements() {
+            return this.xrefs && this.xrefs.length > 0
         },
     }
     data() {
