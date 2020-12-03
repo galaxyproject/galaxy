@@ -237,8 +237,12 @@ class VideoOcr(Json):
                 if not ('frames' in item and 'media' in item):
                     return False                
                 frames = item['frames']
-                if len(frames) > 0 and 'objects' in frames[0] and len(frames[0].objects) > 0 and 'text' in frames[0].objects[0]:
-                    return True
+                if len(frames) > 0 and 'objects' in frames[0]:
+                    objects = frames[0]['objects']
+                    if len(objects) > 0 and 'text' in objects[0]:
+                        return True
+                    else:
+                        return False
                 else:
                     return False
             except Exception:
@@ -265,8 +269,15 @@ class Face(Json):
                 # exclude simple types, must set format in these cases
                 item = json.loads(file_prefix.contents_header)
                 assert isinstance(item, (list, dict))
-                if len(frames) > 0 and 'objects' in frames[0] and len(frames[0].objects) > 0 and 'name' in frames[0].objects[0]:
-                    return True
+                if not ('frames' in item and 'media' in item):
+                    return False                
+                frames = item['frames']
+                if len(frames) > 0 and 'objects' in frames[0]:
+                    objects = frames[0]['objects']
+                    if len(objects) > 0 and 'name' in objects[0]:
+                        return True
+                    else:
+                        return False
                 else:
                     return False
             except Exception:
