@@ -12,6 +12,7 @@
 # Init ARGs
 ARG ROOT_DIR=/galaxy
 ARG SERVER_DIR=$ROOT_DIR/server
+
 # For much faster build time override this with image0 (Dockerfile.0 build):
 #   docker build --build-arg BASE=<image0 name>...
 ARG STAGE1_BASE=ubuntu:20.04
@@ -26,19 +27,25 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG SERVER_DIR
 ARG GALAXY_PLAYBOOK_REPO
 
+# Init Env
+ENV LC_ALL=en_US.UTF-8
+ENV LANG=en_US.UTF-8
+
 # Install build dependencies + ansible
 RUN set -xe; \
-    apt-get -qq update && apt-get install -y --no-install-recommends \
+    echo "force-unsafe-io" > /etc/dpkg/dpkg.cfg.d/02apt-speedup \
+    && echo "Acquire::http {No-Cache=True;};" > /etc/apt/apt.conf.d/no-cache \
+    && apt-get -qq update && apt-get install -y --no-install-recommends \
+        locales locales-all \
         apt-transport-https \
         git \
         make \
-        python3-virtualenv \
+        libpython3.6 \
         python3-dev \
+        python3-virtualenv \
         software-properties-common \
         ssh \
         gcc \
-        libpython3.6 \
-        locales locales-all \
     && apt-get -qq update && apt-get install -y --no-install-recommends \
         ansible \
     && apt-get autoremove -y && apt-get clean \
@@ -54,7 +61,7 @@ RUN ansible-galaxy install -r requirements.yml -p roles --force-with-deps
 
 # Add Galaxy source code
 COPY . $SERVER_DIR/
-RUN ansible-playbook -i localhost, playbook.yml -vv
+RUN ansible-playbook -i localhost, playbook.yml -v
 
 RUN cat /galaxy/server/lib/galaxy/dependencies/conditional-requirements.txt | grep psycopg2-binary | xargs /galaxy/server/.venv/bin/pip install
 
@@ -81,13 +88,21 @@ ARG ROOT_DIR
 ARG SERVER_DIR
 ARG GALAXY_USER
 
+# Init Env
+ENV LC_ALL=en_US.UTF-8
+ENV LANG=en_US.UTF-8
+
 # Install python-virtualenv
 RUN set -xe; \
-    apt-get -qq update && apt-get install -y --no-install-recommends \
+    echo "force-unsafe-io" > /etc/dpkg/dpkg.cfg.d/02apt-speedup \
+    && echo "Acquire::http {No-Cache=True;};" > /etc/apt/apt.conf.d/no-cache \
+    && apt-get -qq update && apt-get install -y --no-install-recommends \
+        locales \
+        libpython3.6 \
         python3-virtualenv \
         vim \
-        libpython3.6 \
         curl \
+    && locale-gen $LANG && update-locale LANG=$LANG \
     && apt-get autoremove -y && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/*
 
