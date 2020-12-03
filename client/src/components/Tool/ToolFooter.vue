@@ -76,7 +76,7 @@
                         </template>
                     </div>
                 </div>
-                <div v-if="creators && creators.length > 0" class="metadata-section">
+                <div v-if="hasCreators" class="metadata-section">
                     <span class="metadata-key">Creators:</span>
                     <Creators :creators="creators" />
                 </div>
@@ -131,7 +131,10 @@ export default {
             return this.requirements && this.requirements.length > 0;
         },
         hasRequirements() {
-            return this.xrefs && this.xrefs.length > 0
+            return this.xrefs && this.xrefs.length > 0;
+        },
+        hasCreators() {
+            return this.creators && this.creators.length > 0;
         },
     }
     data() {
