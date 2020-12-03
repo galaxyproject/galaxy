@@ -23,14 +23,14 @@ class VideoOcrResolution:
 class VideoOcrMedia:
     filename = ""
     duration = 0
-    framerate = None
+    frameRate = None
     numFrames = None
     resolution = VideoOcrResolution()
 
-    def __init__(self, duration = 0, filename = "", framerate = None, numFrames = None, resolution = None):
+    def __init__(self, duration = 0, filename = "", frameRate = None, numFrames = None, resolution = None):
         self.duration = duration
         self.filename = filename
-        self.framerate = framerate
+        self.frameRate = frameRate
         self.numFrames = numFrames
         self.resolution = resolution
 
