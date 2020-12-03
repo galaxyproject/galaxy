@@ -29,7 +29,7 @@
                         prefix="-"
                     />
                 </div>
-                <div v-if="requirements && requirements.length > 0" class="metadata-section">
+                <div v-if="hasRequirements" class="metadata-section">
                     <span class="metadata-key"
                         >Requirements:
                         <a href="https://galaxyproject.org/tools/requirements/" target="_blank">
@@ -126,6 +126,11 @@ export default {
             type: Array,
         },
     },
+    computed: {
+        hasRequirements() {
+            return requirements && requirements.length > 0;
+        },
+    }
     data() {
         return {
             citations: [],
