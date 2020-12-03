@@ -35,10 +35,10 @@ def main():
 	#output_name =  input_file[:-4]+ "-ocr_"+str(dateTimeObj)+".json"
 	
 	# Get some stats on the video
-	(dim, framerate, numFrames) = findVideoMetada(input_file)
+	(dim, frameRate, numFrames) = findVideoMetada(input_file)
 
 	output = {"media": {"filename": input_file,
-          		"framerate": framerate,
+          		"frameRate": frameRate,
           		"numFrames": numFrames,
           		"resolution": {
               			"width": int(dim[0]),

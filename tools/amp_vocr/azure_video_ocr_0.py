@@ -124,17 +124,17 @@ def parse_json(input_file, output_file, advanced_json, simple_json):
 	resolution = VideoOcrResolution(width, height)
 
 	# Create the media object
-	framerate = advanced_json["framerate"]
+	frameRate = advanced_json["frameRate"]
 	duration = simple_json["summarizedInsights"]["duration"]["seconds"]
-	frames = int(framerate * duration)
-	amp_media  = VideoOcrMedia(duration, input_file, framerate, frames, resolution)
+	frames = int(frameRate * duration)
+	amp_media  = VideoOcrMedia(duration, input_file, frameRate, frames, resolution)
 	amp_ocr.media = amp_media
 
 	# Create a dictionary of all the frames [FrameNum : List of Terms]
-	frame_dict = createFrameDictionary(simple_json['videos'], framerate)
+	frame_dict = createFrameDictionary(simple_json['videos'], frameRate)
 	
 	# Convert to amp frame objects with bounding boxes
-	amp_frames = createAmpFrames(frame_dict, framerate)
+	amp_frames = createAmpFrames(frame_dict, frameRate)
 	
 	# Add the frames to the schema
 	amp_ocr.frames = amp_frames
@@ -143,14 +143,14 @@ def parse_json(input_file, output_file, advanced_json, simple_json):
 	mgm_utils.write_json_file(amp_ocr, output_file)
 
 # Create a list of terms for each of the frames
-def createFrameDictionary(video_json, framerate):
+def createFrameDictionary(video_json, frameRate):
 	frame_dict={}
 	for v in video_json:
 		for ocr in v['insights']['ocr']:
 			for i in ocr['instances']:
 				# Get where this term starts and end in terms of frame number
-				frameIndexStart = getFrameIndex(i['start'], framerate)
-				frameIndexEnd = getFrameIndex(i['end'], framerate)
+				frameIndexStart = getFrameIndex(i['start'], frameRate)
+				frameIndexEnd = getFrameIndex(i['end'], frameRate)
 				# Create a temp obj to store the results
 				newOcr = {
 					"text" : ocr["text"],
@@ -173,7 +173,7 @@ def createFrameDictionary(video_json, framerate):
 	return frame_dict
 
 # Convert the dictionary into AMP objects we need
-def createAmpFrames(frame_dict, framerate):
+def createAmpFrames(frame_dict, frameRate):
 	amp_frames = []
 	for frameNum, boundingBoxList in frame_dict.items():
 		bounding_boxes = []
@@ -184,7 +184,7 @@ def createAmpFrames(frame_dict, framerate):
 			amp_vertice = VideoOcrObjectVertices(b['left'], bottom, right, b['top'])
 			amp_bounding_box = VideoOcrObject(b["text"], b["language"], amp_score, amp_vertice)
 			bounding_boxes.append(amp_bounding_box)
-		amp_frame = VideoOcrFrame((frameNum) * (1/framerate), bounding_boxes)
+		amp_frame = VideoOcrFrame((frameNum) * (1/frameRate), bounding_boxes)
 		amp_frames.append(amp_frame)
 	
 	amp_frames.sort(key=lambda x: x.start, reverse = False)
