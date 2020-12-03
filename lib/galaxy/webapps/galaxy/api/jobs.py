@@ -147,10 +147,15 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
         job_dict = self.encode_all_ids(trans, job.to_dict('element', system_details=is_admin), True)
         full_output = util.asbool(kwd.get('full', 'false'))
         if full_output:
-
+            if job.copied_from_job_id is not None:
+                encoded_copied_from_job_id = trans.security.encode_id(job.copied_from_job_id)
+            else:
+                encoded_copied_from_job_id = None
             job_dict.update(dict(
                 tool_stdout=job.tool_stdout,
                 tool_stderr=job.tool_stderr,
+                tool_version=job.tool_version,
+                copied_from_job_id=encoded_copied_from_job_id,
                 job_stdout=job.job_stdout,
                 job_stderr=job.job_stderr,
                 stderr=job.stderr,
