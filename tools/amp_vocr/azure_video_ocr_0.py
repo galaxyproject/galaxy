@@ -124,7 +124,7 @@ def parse_json(input_file, output_file, advanced_json, simple_json):
 	resolution = VideoOcrResolution(width, height)
 
 	# Create the media object
-	frameRate = advanced_json["frameRate"]
+	frameRate = advanced_json["framerate"]
 	duration = simple_json["summarizedInsights"]["duration"]["seconds"]
 	frames = int(frameRate * duration)
 	amp_media  = VideoOcrMedia(duration, input_file, frameRate, frames, resolution)
