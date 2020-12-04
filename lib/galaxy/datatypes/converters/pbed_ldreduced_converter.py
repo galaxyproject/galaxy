@@ -34,7 +34,8 @@ def timenow():
 def pruneLD(plinktasks=[], cd='./', vclbase=[]):
     """
     """
-    fplog, plog = tempfile.mkstemp()
+    fd, plog = tempfile.mkstemp()
+    os.close(fd)
     alog = []
     alog.append('## Rgenetics: http://rgenetics.org Galaxy Tools rgQC.py Plink pruneLD runner\n')
     for task in plinktasks:  # each is a list
