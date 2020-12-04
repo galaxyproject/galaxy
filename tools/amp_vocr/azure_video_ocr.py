@@ -43,7 +43,7 @@ def create_amp_ocr(input_video, azure_index_json, azure_ocr_json):
 	resolution = VideoOcrResolution(width, height)
 
 	# Create the media object
-	frameRate = azure_ocr_json["frameRate"]
+	frameRate = azure_ocr_json["framerate"]	
 	duration = azure_index_json["summarizedInsights"]["duration"]["seconds"]
 	frames = int(frameRate * duration)
 	amp_media  = VideoOcrMedia(duration, input_video, frameRate, frames, resolution)
