@@ -437,7 +437,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
                 log.debug("Parallel pulled key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
                 ncores = multiprocessing.cpu_count()
                 url = key.generate_url(7200)
-                ret_code = subprocess.call(['axel', '-a', '-n', ncores, url])
+                ret_code = subprocess.call(['axel', '-a', '-n', str(ncores), url])
                 if ret_code == 0:
                     return True
             else:
