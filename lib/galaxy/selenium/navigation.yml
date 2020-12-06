@@ -328,7 +328,7 @@ tool_form:
     execute: 'button#execute'
     parameter_div: 'div.ui-form-element[tour_id="${parameter}"]'
     reference: '.formatted-reference'
-    about: '.collapse-about'
+    about: '.tool-footer'
 
   labels:
     generate_tour: 'Generate Tour'
