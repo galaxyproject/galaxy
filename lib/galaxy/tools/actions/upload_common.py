@@ -8,7 +8,7 @@ from io import StringIO
 from json import dump, dumps
 from urllib.parse import urlparse
 
-from sqlalchemy.orm import eagerload_all
+from sqlalchemy.orm import joinedload
 from webob.compat import cgi_FieldStorage
 
 from galaxy import datatypes, util
@@ -455,6 +455,6 @@ def active_folders(trans, folder):
     # performance of the mapper.  This query also eagerloads the permissions on each folder.
     return trans.sa_session.query(trans.app.model.LibraryFolder) \
                            .filter_by(parent=folder, deleted=False) \
-                           .options(eagerload_all("actions")) \
+                           .options(joinedload("actions")) \
                            .order_by(trans.app.model.LibraryFolder.table.c.name) \
                            .all()

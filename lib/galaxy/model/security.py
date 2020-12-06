@@ -3,7 +3,7 @@ import socket
 from datetime import datetime, timedelta
 
 from sqlalchemy import and_, false, not_, or_
-from sqlalchemy.orm import eagerload_all
+from sqlalchemy.orm import joinedload
 
 import galaxy.model
 from galaxy.security import Action, get_permitted_actions, RBACAgent
@@ -1375,7 +1375,7 @@ class GalaxyRBACAgent(RBACAgent):
                                .join("library_dataset") \
                                .filter(self.model.LibraryDataset.folder == folder) \
                                .join("dataset") \
-                               .options(eagerload_all("dataset.actions")) \
+                               .options(joinedload("dataset").joinedload("actions")) \
                                .all()
 
         for ldda in lddas:
