@@ -71,12 +71,20 @@ class Repeat(Group):
 
     def __init__(self):
         Group.__init__(self)
-        self.title = None
+        self._title = None
         self.inputs = None
         self.help = None
         self.default = 0
         self.min = None
         self.max = None
+
+    @property
+    def title(self):
+        return self._title or self.name
+
+    @title.setter
+    def title(self, value):
+        self._title = value
 
     @property
     def title_plural(self):
