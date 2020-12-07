@@ -1,7 +1,7 @@
 name: "Maintenance Bot"
 on:
   pull_request_target:
-    types: [opened]
+    types: [opened, reopened]
 
 jobs:
   labeler:
@@ -10,7 +10,9 @@ jobs:
     env:
       MILESTONE_NUMBER: 18
     steps:
-      - uses: actions/labeler@main
+      - name: Add area labels
+        if: ! contains(join(github.event.pull_request.labels.*.name, ', '), 'area/')
+        uses: actions/labeler@main
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
       - name: Assign milestone
