@@ -255,7 +255,7 @@ class LibraryManager:
         """
         Load access roles for all library permissions
         """
-        return set(library.get_access_roles(trans))
+        return set(library.get_access_roles(trans.app.security_agent))
 
     def get_modify_roles(self, trans, library):
         """

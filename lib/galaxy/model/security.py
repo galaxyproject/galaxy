@@ -158,7 +158,7 @@ class GalaxyRBACAgent(RBACAgent):
         # User will see all the roles derived from the access roles on the item
         else:
             # If item has roles associated with the access permission, we need to start with them.
-            access_roles = item.get_access_roles(trans)
+            access_roles = item.get_access_roles(self)
             for role in access_roles:
                 if self.ok_to_display(trans.user, role):
                     roles.append(role)
@@ -213,7 +213,7 @@ class GalaxyRBACAgent(RBACAgent):
                 (isinstance(item, self.model.Dataset) and self.dataset_is_public(item)):
             return self.get_all_roles(trans, cntrller)
         # If item has roles associated with the access permission, we need to start with them.
-        access_roles = item.get_access_roles(trans)
+        access_roles = item.get_access_roles(self)
         for role in access_roles:
             if admin_controller or self.ok_to_display(trans.user, role):
                 roles.add(role)
@@ -936,7 +936,7 @@ class GalaxyRBACAgent(RBACAgent):
                         # Permission setting related to DATASET_MANAGE_PERMISSIONS was broken for a period of time,
                         # so it is possible that some Datasets have no roles associated with the DATASET_MANAGE_PERMISSIONS
                         # permission.  In this case, we'll reset this permission to the library_item user's private role.
-                        if not library_item.dataset.has_manage_permissions_roles(trans):
+                        if not library_item.dataset.has_manage_permissions_roles(self):
                             # Well this looks like a bug, this should be looked at.
                             # Default permissions above is single hash that keeps getting reeditted here
                             # because permission is being defined instead of permissions. -John
@@ -1042,7 +1042,7 @@ class GalaxyRBACAgent(RBACAgent):
         Different implementation of the method above with signature:
         def dataset_is_public( self, dataset )
         """
-        return len(dataset.library_dataset_dataset_association.get_access_roles(trans)) == 0
+        return len(dataset.library_dataset_dataset_association.get_access_roles(self)) == 0
 
     def dataset_is_private_to_user(self, trans, dataset):
         """
@@ -1050,7 +1050,7 @@ class GalaxyRBACAgent(RBACAgent):
         the current user's private role then we consider the dataset private.
         """
         private_role = self.get_private_user_role(trans.user)
-        access_roles = dataset.get_access_roles(trans)
+        access_roles = dataset.get_access_roles(self)
 
         if len(access_roles) != 1:
             return False
