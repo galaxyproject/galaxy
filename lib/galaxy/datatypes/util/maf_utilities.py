@@ -353,12 +353,11 @@ def build_maf_index_species_chromosomes(filename, index_species=None):
 
 # builds and returns ( index, index_filename ) for specified maf_file
 def build_maf_index(maf_file, species=None):
-    indexes, found_species, species_chromosomes, blocks = build_maf_index_species_chromosomes(maf_file, species)
+    indexes, *_ = build_maf_index_species_chromosomes(maf_file, species)
     if indexes is not None:
-        fd, index_filename = tempfile.mkstemp()
-        with os.fdopen(fd, 'w') as out:
-            indexes.write(out)
-        return (bx.align.maf.Indexed(maf_file, index_filename=index_filename, keep_open=True, parse_e_rows=False), index_filename)
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as index:
+            indexes.write(index)
+        return (bx.align.maf.Indexed(maf_file, index_filename=index.name, keep_open=True, parse_e_rows=False), index.name)
     return (None, None)
 
 
