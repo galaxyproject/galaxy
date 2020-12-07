@@ -46,6 +46,9 @@ jobs:
         run: make docs
       - name: Deploy docs
         if: github.event_name == 'push' && github.repository_owner == 'galaxyproject'
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
           case "$TARGET_BRANCH" in
               release_[[:digit:]][[:digit:]].[[:digit:]][[:digit:]]|master)
