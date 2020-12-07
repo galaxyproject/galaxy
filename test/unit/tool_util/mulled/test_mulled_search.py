@@ -32,7 +32,7 @@ def test_github_search():
     search1 = t.process_json(t.get_json("adsfasdf"), "adsfasdf")
     search2 = t.process_json(t.get_json("bioconductor-gosemsim"), "bioconductor-gosemsim")
     assert search1 == []
-    assert {'path': 'recipes/bioconductor-gosemsim/build.sh', 'name': 'build.sh'} in search2
+    assert {'path': 'recipes/bioconductor-gosemsim/meta.yaml', 'name': 'meta.yaml'} in search2
 
 
 @external_dependency_management
