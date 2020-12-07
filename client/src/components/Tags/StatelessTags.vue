@@ -136,7 +136,7 @@ export default {
             background-color: transparent;
         }
         input:not(:focus) {
-            background: url("/static/images/tags-solid.svg");
+            background: url("../../assets/images/tags-solid.svg");
             background-repeat: no-repeat;
             color: transparent;
             &::placeholder {
