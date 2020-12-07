@@ -177,6 +177,7 @@ def make_temp_fname(fname=None):
     """Safe temp name - preserve the file extension for tools that interpret it."""
     suffix = os.path.split(fname)[-1]  # ignore full path
     fd, temp_prefix = tempfile.mkstemp(prefix='tmp', suffix=suffix)
+    os.close(fd)
     return temp_prefix
 
 

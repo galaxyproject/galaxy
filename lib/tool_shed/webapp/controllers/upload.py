@@ -80,6 +80,7 @@ class UploadController(BaseUIController):
                     uploaded_file = None
                 if valid_url:
                     fd, uploaded_file_name = tempfile.mkstemp()
+                    os.close(fd)
                     uploaded_file = open(uploaded_file_name, 'wb')
                     for chunk in stream.iter_content(chunk_size=util.CHUNK_SIZE):
                         if chunk:

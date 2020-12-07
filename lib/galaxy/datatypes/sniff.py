@@ -51,6 +51,7 @@ def stream_url_to_file(path, file_sources=None):
     if file_sources and file_sources.looks_like_uri(path):
         file_source_path = file_sources.get_file_source_path(path)
         _, temp_name = tempfile.mkstemp(prefix=prefix)
+        os.close(_)
         file_source_path.file_source.realize_to(file_source_path.path, temp_name)
         return temp_name
     else:
