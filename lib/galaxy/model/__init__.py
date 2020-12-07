@@ -617,30 +617,6 @@ class User(Dictifiable, RepresentById):
         role_name = self.email
         role_desc = f'Private Role for {self.email}'
         role_type = Role.types.PRIVATE
-#         if "postgres" in session.bind.dialect.name:
-#             trans = session.begin()
-#             try:
-#                 statement = """
-# WITH insert_role AS (
-#    INSERT INTO role(name, description, type)
-#    VALUES (:role_name, :role_description, :role_type)
-#    -- ON CONFLICT DO NOTHING -- if we knew postgres >= 9.5
-#    RETURNING id AS role_id
-# )
-# INSERT INTO user_role_association (user_id, role_id)
-# SELECT :user_id, role_id from insert_role
-# """
-#                 session.execute(statement, {
-#                     'role_type': role_type,
-#                     'role_name': role_name,
-#                     'role_description': role_desc,
-#                     'user_id': self.id,
-#                 })
-#                 trans.commit()
-#             except Exception:
-#                 trans.rollback()
-#                 raise
-#         else:
         role = Role(name=role_name, description=role_desc, type=role_type)
         assoc = UserRoleAssociation(self, role)
         session.add(assoc)
