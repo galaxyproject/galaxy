@@ -5,6 +5,7 @@ import uuid
 
 import pytest
 from sqlalchemy import inspect
+from sqlalchemy_utils import create_database
 
 import galaxy.datatypes.registry
 import galaxy.model
@@ -773,7 +774,6 @@ class PostgresMappingTests(MappingTests):
         base = os.environ.get("GALAXY_TEST_UNIT_MAPPING_URI_POSTGRES_BASE")
         dbname = "gxtest" + str(uuid.uuid4())
         postgres_url = base + dbname
-        from sqlalchemy_utils import create_database
         create_database(postgres_url)
         return postgres_url
 
