@@ -11,7 +11,7 @@ jobs:
       MILESTONE_NUMBER: 18
     steps:
       - name: Add area labels
-        if: ! contains(join(github.event.pull_request.labels.*.name, ', '), 'area/')
+        if: ${{ ! contains(join(github.event.pull_request.labels.*.name, ', '), 'area/') }}
         uses: actions/labeler@main
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
