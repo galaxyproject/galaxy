@@ -4,10 +4,11 @@ import os
 import threading
 import time
 
-from sqlalchemy import create_engine, event
-from sqlalchemy.engine import (
-    Engine,
+from sqlalchemy import (
+    create_engine,
+    event,
 )
+from sqlalchemy.engine import Engine
 
 log = logging.getLogger(__name__)
 
