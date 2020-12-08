@@ -451,11 +451,13 @@ class SubWorkflowModule(WorkflowModule):
                     extensions=["data"],
                     input_type=step_to_input_type[step_type],
                 )
-                if step.type == 'data_collection_input':
-                    input['collection_type'] = step.tool_inputs.get('collection_type') if step.tool_inputs else None
-                if step_type == 'parameter_input':
-                    input['type'] = step.tool_inputs['parameter_type']
-                inputs.append(input)
+                if step_type in step_to_input_type:
+                    if step_type == 'data_collection_input':
+                        input['collection_type'] = step.tool_inputs.get('collection_type') if step.tool_inputs else None
+                    if step_type == 'parameter_input':
+                        input['type'] = step.tool_inputs['parameter_type']
+                    input['optional'] = step.tool_inputs.get('optional', False)
+                    inputs.append(input)
         return inputs
 
     def get_modules(self):

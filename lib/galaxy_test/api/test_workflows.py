@@ -581,6 +581,23 @@ test_data:
             imported_subworkflow_content_id = get_subworkflow_content_id(imported_workflow_id)
             assert subworkflow_content_id != imported_subworkflow_content_id
 
+    def test_subworkflow_inputs_optional_editor(self):
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+  nested_workflow:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        - id: inner_input
+          optional: true
+      outputs:
+        - outputSource: inner_input/output
+      steps: []
+""")
+        workflow_contents = self._download_workflow(workflow_id, style="editor")
+        assert workflow_contents['steps']['0']['inputs'][0]['optional']
+
     def test_not_importable_prevents_import(self):
         workflow_id = self.workflow_populator.simple_workflow("test_not_importportable")
         with self._different_user():
