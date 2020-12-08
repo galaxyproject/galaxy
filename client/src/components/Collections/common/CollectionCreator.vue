@@ -99,8 +99,8 @@ export default {
         },
         renderExtensionsToggle: {
             type: Boolean,
-            default: false
-        }
+            default: false,
+        },
     },
     computed: {
         validInput: function () {

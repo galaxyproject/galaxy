@@ -1,277 +1,383 @@
 <template>
     <div class="paired-list-collection-creator">
-        <collection-creator
-            :oncancel="oncancel"
-            @hide-original-toggle="hideOriginalsToggle"
-            @clicked-create="clickedCreate"
-            @remove-extensions-toggle="removeExtensionsToggle"
-            :renderExtensionsToggle="true"
-            :creationFn="creationFn"
-        >
-            <template v-slot:help-content>
-                <p>
-                    {{
-                        l(
-                            [
-                                "Collections of paired datasets are ordered lists of dataset pairs (often forward and reverse reads). ",
-                                "These collections can be passed to tools and workflows in order to have analyses done on each member of ",
-                                "the entire group. This interface allows you to create a collection, choose which datasets are paired, ",
-                                "and re-order the final collection.",
-                            ].join("")
-                        )
-                    }}
-                </p>
-                <p>
-                    {{ l("Unpaired datasets are shown in the") }}
-                    <i data-target=".unpaired-columns">
-                        {{ l("unpaired section") }}
-                    </i>
-                    {{ "." }}
-                    {{ l("Paired datasets are shown in the") }}
-                    <i data-target=".paired-columns">
-                        {{ l("paired section") }}
-                    </i>
-                    {{ "." }}
-                </p>
-                <ul>
-                    {{
-                        l("To pair datasets, you can:")
-                    }}
-                    <li>
-                        {{ l("Click a dataset in the") }}
-                        <i data-target=".forward-column">
-                            {{ l("forward column") }}
-                        </i>
-                        {{ l("to select it then click a dataset in the") }}
-                        <i data-target=".reverse-column">
-                            {{ l("reverse column") }}
-                        </i>
-                    </li>
-                    <li>
-                        {{
-                            l(
-                                "Click one of the Pair these datasets buttons in the middle column to pair the datasets in a particular row."
-                            )
-                        }}
-                    </li>
-                    <li>
-                        {{ l("Click") }}
-                        <i data-target=".autopair-link">
-                            {{ l("Auto-pair") }}
-                        </i>
-                        {{ l("to have your datasets automatically paired based on name.") }}
-                    </li>
-                </ul>
-                <ul>
-                    {{
-                        l("You can filter what is shown in the unpaired sections by:")
-                    }}
-                    <li>
-                        {{ l("Entering partial dataset names in either the ") }}
-                        <i data-target=".forward-unpaired-filter input">
-                            {{ l("forward filter") }}
-                        </i>
-                        {{ l("or ") }}
-                        <i data-target=".reverse-unpaired-filter input">
-                            {{ l("reverse filter") }}
-                        </i>
-                        {{ "." }}
-                    </li>
-                    <li>
-                        {{ l("Choosing from a list of preset filters by clicking the") }}
-                        <i data-target=".choose-filters-link">
-                            {{ l("Choose filters link") }}
-                        </i>
-                        {{ "." }}
-                    </li>
-                    <li>
-                        {{ l("Entering regular expressions to match dataset names. See:") }}
-                        <a
-                            href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions"
-                            target="_blank"
-                        >
-                            {{ l("MDN's JavaScript Regular Expression Tutorial") }}</a
-                        >
-                        {{ l("Note: forward slashes (\\) are not needed.") }}
-                    </li>
-                    <li>
-                        {{ l("Clearing the filters by clicking the ") }}
-                        <i data-target=".clear-filters-link">
-                            {{ l("Clear filters link") }}
-                        </i>
-                        {{ "." }}
-                    </li>
-                </ul>
-                <p>
-                    {{ l("To unpair individual dataset pairs, click the ") }}
-                    <i data-target=".unpair-btn">
-                        {{ l("unpair buttons (") }}
-                        <span class="fa fa-unlink"></span>
-                        {{ ")" }}
-                    </i>
-                    {{ l("Click the") }}
-                    <i data-target=".unpair-all-link">
-                        {{ l("Unpair all") }}
-                    </i>
-                    {{ l("link to unpair all pairs.") }}
-                </p>
-                <p>
-                    {{
-                        l(
-                            'You can include or remove the file extensions (e.g. ".fastq") from your pair names by toggling the'
-                        )
-                    }}
-                    <i data-target=".remove-extensions-prompt">
-                        {{ l("Remove file extensions from pair names?") }}
-                    </i>
-                    {{ l("control.") }}
-                </p>
-                <p>
-                    {{ l("Once your collection is complete, enter a") }}
-                    <i data-target=".collection-name">
-                        {{ l("name") }}
-                    </i>
-                    {{ l("and click ") }}
-                    <i data-target=".create-collection">
-                        {{ l("Create list") }}
-                    </i>
-                    {{ l(". (Note: you do not have to pair all unpaired datasets to finish.)") }}
-                </p>
-            </template>
-            <template v-slot:middle-content>
-                <div class="column-headers vertically-spaced flex-column-container">
-                    <div class="forward-column flex-column column">
-                        <div class="column-header">
-                            <div class="column-title">
-                                <span class="title">
-                                    {{ l("Unpaired forward") }}
-                                </span>
-                                <span class="title-info unpaired-info"> </span>
-                            </div>
-                            <div
-                                class="unpaired-filter forward-unpaired-filter float-left search-input search-query input-group"
-                            >
-                                <input type="text" :placeholder="filterTextPlaceholder" v-model="forwardFilter" />
-                                <div class="input-group-append" :title="chooseFilterTitle">
-                                    <button
-                                        class="btn btn-outline-secondary dropdown-toggle"
-                                        type="button"
-                                        data-toggle="dropdown"
-                                        aria-haspopup="true"
-                                        aria-expanded="false"
-                                    ></button>
-                                    <div class="dropdown-menu">
-                                        <a class="dropdown-item" @click="changeFilters('illumina')">_1</a>
-                                        <a class="dropdown-item" @click="changeFilters('Rs')">_R1</a>
-                                        <a class="dropdown-item" @click="changeFilters('FRs')">_F</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="paired-column flex-column no-flex column">
-                        <div class="column-header">
-                            <a
-                                class="clear-filters-link"
-                                href="javascript:void(0);"
-                                role="button"
-                                @click="clickClearFilters"
-                            >
-                                {{ l("Clear Filters") }}
-                            </a>
-                            <br />
-                            <a class="autopair-link" href="javascript:void(0);" role="button" @click="clickAutopair">
-                                {{ l("Auto-pair") }}
-                            </a>
-                        </div>
-                    </div>
-                    <div class="reverse-column flex-column column">
-                        <div class="column-header">
-                            <div class="column-title">
-                                <span class="title">
-                                    {{ l("Unpaired reverse") }}
-                                </span>
-                                <span class="title-info unpaired-info"></span>
-                            </div>
-                            <div
-                                class="unpaired-filter reverse-unpaired-filter float-left search-input search-query input-group"
-                            >
-                                <input type="text" :placeholder="filterTextPlaceholder" v-model="reverseFilter" />
-                                <div class="input-group-append" :title="chooseFilterTitle">
-                                    <button
-                                        class="btn btn-outline-secondary dropdown-toggle"
-                                        type="button"
-                                        data-toggle="dropdown"
-                                        aria-haspopup="true"
-                                        aria-expanded="false"
-                                    ></button>
-                                    <div class="dropdown-menu">
-                                        <a class="dropdown-item" @click="changeFilters('illumina')">_2</a>
-                                        <a class="dropdown-item" @click="changeFilters('Rs')">_R2</a>
-                                        <a class="dropdown-item" @click="changeFilters('FRs')">_R</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+        <div v-if="(state = error)">
+            <b-alert show variant="danger">
+                {{ errorText }}
+            </b-alert>
+        </div>
+        <div v-else>
+            <div v-if="noElementsSelected">
+                <b-alert show variant="warning" dismissible>
+                    {{ noElementsHeader }}
+                    {{ allInvalidElementsPartOne }}
+                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
+                        {{ cancelText }}
+                    </a>
+                    {{ allInvalidElementsPartTwo }}
+                </b-alert>
+                <div class="float-left">
+                    <button class="cancel-create btn" tabindex="-1" @click="oncancel">
+                        {{ l("Cancel") }}
+                    </button>
                 </div>
-                <splitpanes horizontal style="height: 400px;">
-                    <pane>
-                        <div class="unpaired-columns flex-column-container scroll-container flex-row">
+            </div>
+            <div v-else-if="allElementsAreInvalid">
+                <b-alert show variant="warning" dismissible>
+                    {{ invalidHeader }}
+                    <ul>
+                        <li v-for="problem in returnInvalidElements" :key="problem">
+                            {{ problem }}
+                        </li>
+                    </ul>
+                    {{ allInvalidElementsPartOne }}
+                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
+                        {{ cancelText }}
+                    </a>
+                    {{ allInvalidElementsPartTwo }}
+                </b-alert>
+                <div class="float-left">
+                    <button class="cancel-create btn" tabindex="-1" @click="oncancel">
+                        {{ l("Cancel") }}
+                    </button>
+                </div>
+            </div>
+            <div v-else-if="tooFewElementsSelected">
+                <div v-if="returnInvalidElementsLength">
+                    <b-alert show variant="warning" dismissible>
+                        {{ invalidHeader }}
+                        <ul>
+                            <li v-for="problem in returnInvalidElements" :key="problem">
+                                {{ problem }}
+                            </li>
+                        </ul>
+                    </b-alert>
+                </div>
+                <b-alert show variant="warning" dismissible>
+                    {{ allInvalidElementsPartOne }}
+                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
+                        {{ cancelText }}
+                    </a>
+                    {{ allInvalidElementsPartTwo }}
+                </b-alert>
+                <div class="float-left">
+                    <button class="cancel-create btn" tabindex="-1" @click="oncancel">
+                        {{ l("Cancel") }}
+                    </button>
+                </div>
+            </div>
+            <div v-else>
+                <div v-if="returnInvalidElementsLength">
+                    <b-alert show variant="warning" dismissible>
+                        {{ invalidHeader }}
+                        <ul>
+                            <li v-for="problem in returnInvalidElements" :key="problem">
+                                {{ problem }}
+                            </li>
+                        </ul>
+                    </b-alert>
+                </div>
+                <collection-creator
+                    :oncancel="oncancel"
+                    @hide-original-toggle="hideOriginalsToggle"
+                    @clicked-create="clickedCreate"
+                    @remove-extensions-toggle="removeExtensionsToggle"
+                    :renderExtensionsToggle="true"
+                    :creationFn="creationFn"
+                >
+                    <template v-slot:help-content>
+                        <p>
+                            {{
+                                l(
+                                    [
+                                        "Collections of paired datasets are ordered lists of dataset pairs (often forward and reverse reads). ",
+                                        "These collections can be passed to tools and workflows in order to have analyses done on each member of ",
+                                        "the entire group. This interface allows you to create a collection, choose which datasets are paired, ",
+                                        "and re-order the final collection.",
+                                    ].join("")
+                                )
+                            }}
+                        </p>
+                        <p>
+                            {{ l("Unpaired datasets are shown in the") }}
+                            <i data-target=".unpaired-columns">
+                                {{ l("unpaired section") }}
+                            </i>
+                            {{ "." }}
+                            {{ l("Paired datasets are shown in the") }}
+                            <i data-target=".paired-columns">
+                                {{ l("paired section") }}
+                            </i>
+                            {{ "." }}
+                        </p>
+                        <ul>
+                            {{
+                                l("To pair datasets, you can:")
+                            }}
+                            <li>
+                                {{ l("Click a dataset in the") }}
+                                <i data-target=".forward-column">
+                                    {{ l("forward column") }}
+                                </i>
+                                {{ l("to select it then click a dataset in the") }}
+                                <i data-target=".reverse-column">
+                                    {{ l("reverse column") }}
+                                </i>
+                            </li>
+                            <li>
+                                {{
+                                    l(
+                                        "Click one of the Pair these datasets buttons in the middle column to pair the datasets in a particular row."
+                                    )
+                                }}
+                            </li>
+                            <li>
+                                {{ l("Click") }}
+                                <i data-target=".autopair-link">
+                                    {{ l("Auto-pair") }}
+                                </i>
+                                {{ l("to have your datasets automatically paired based on name.") }}
+                            </li>
+                        </ul>
+                        <ul>
+                            {{
+                                l("You can filter what is shown in the unpaired sections by:")
+                            }}
+                            <li>
+                                {{ l("Entering partial dataset names in either the ") }}
+                                <i data-target=".forward-unpaired-filter input">
+                                    {{ l("forward filter") }}
+                                </i>
+                                {{ l("or ") }}
+                                <i data-target=".reverse-unpaired-filter input">
+                                    {{ l("reverse filter") }}
+                                </i>
+                                {{ "." }}
+                            </li>
+                            <li>
+                                {{ l("Choosing from a list of preset filters by clicking the") }}
+                                <i data-target=".choose-filters-link">
+                                    {{ l("Choose filters link") }}
+                                </i>
+                                {{ "." }}
+                            </li>
+                            <li>
+                                {{ l("Entering regular expressions to match dataset names. See:") }}
+                                <a
+                                    href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions"
+                                    target="_blank"
+                                >
+                                    {{ l("MDN's JavaScript Regular Expression Tutorial") }}</a
+                                >
+                                {{ l("Note: forward slashes (\\) are not needed.") }}
+                            </li>
+                            <li>
+                                {{ l("Clearing the filters by clicking the ") }}
+                                <i data-target=".clear-filters-link">
+                                    {{ l("Clear filters link") }}
+                                </i>
+                                {{ "." }}
+                            </li>
+                        </ul>
+                        <p>
+                            {{ l("To unpair individual dataset pairs, click the ") }}
+                            <i data-target=".unpair-btn">
+                                {{ l("unpair buttons (") }}
+                                <span class="fa fa-unlink"></span>
+                                {{ ")" }}
+                            </i>
+                            {{ l("Click the") }}
+                            <i data-target=".unpair-all-link">
+                                {{ l("Unpair all") }}
+                            </i>
+                            {{ l("link to unpair all pairs.") }}
+                        </p>
+                        <p>
+                            {{
+                                l(
+                                    'You can include or remove the file extensions (e.g. ".fastq") from your pair names by toggling the'
+                                )
+                            }}
+                            <i data-target=".remove-extensions-prompt">
+                                {{ l("Remove file extensions from pair names?") }}
+                            </i>
+                            {{ l("control.") }}
+                        </p>
+                        <p>
+                            {{ l("Once your collection is complete, enter a") }}
+                            <i data-target=".collection-name">
+                                {{ l("name") }}
+                            </i>
+                            {{ l("and click ") }}
+                            <i data-target=".create-collection">
+                                {{ l("Create list") }}
+                            </i>
+                            {{ l(". (Note: you do not have to pair all unpaired datasets to finish.)") }}
+                        </p>
+                    </template>
+                    <template v-slot:middle-content>
+                        <div class="column-headers vertically-spaced flex-column-container">
                             <div class="forward-column flex-column column">
-                                <ol class="column-datasets">
-                                    <dataset-collection-element-view
-                                        v-for="element in forwardElements"
-                                        :key="element.id"
-                                        @element-is-selected="forwardElementSelected"
-                                        :class="{
-                                            selected: selectedForwardElement && element.id == selectedForwardElement.id,
-                                        }"
-                                        :element="element"
-                                    />
-                                </ol>
+                                <div class="column-header">
+                                    <div class="column-title">
+                                        <span class="title">
+                                            {{ numOfUnpairedForwardElements }}
+                                            {{ l("unpaired forward") }}
+                                        </span>
+                                        <span class="title-info unpaired-info">
+                                            {{ numOfFilteredOutForwardElements }} {{ l("filtered out") }}
+                                        </span>
+                                    </div>
+                                    <div
+                                        class="unpaired-filter forward-unpaired-filter float-left search-input search-query input-group"
+                                    >
+                                        <input
+                                            type="text"
+                                            :placeholder="filterTextPlaceholder"
+                                            v-model="forwardFilter"
+                                        />
+                                        <div class="input-group-append" :title="chooseFilterTitle">
+                                            <button
+                                                class="btn btn-outline-secondary dropdown-toggle"
+                                                type="button"
+                                                data-toggle="dropdown"
+                                                aria-haspopup="true"
+                                                aria-expanded="false"
+                                            ></button>
+                                            <div class="dropdown-menu">
+                                                <a class="dropdown-item" @click="changeFilters('illumina')">_1</a>
+                                                <a class="dropdown-item" @click="changeFilters('Rs')">_R1</a>
+                                                <a class="dropdown-item" @click="changeFilters('FRs')">_F</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             <div class="paired-column flex-column no-flex column">
-                                <ol class="column-datasets"></ol>
+                                <div class="column-header">
+                                    <a
+                                        class="clear-filters-link"
+                                        href="javascript:void(0);"
+                                        role="button"
+                                        @click="clickClearFilters"
+                                    >
+                                        {{ l("Clear Filters") }}
+                                    </a>
+                                    <br />
+                                    <a
+                                        class="autopair-link"
+                                        href="javascript:void(0);"
+                                        role="button"
+                                        @click="clickAutopair"
+                                    >
+                                        {{ l("Auto-pair") }}
+                                    </a>
+                                </div>
                             </div>
                             <div class="reverse-column flex-column column">
-                                <ol class="column-datasets">
-                                    <dataset-collection-element-view
-                                        v-for="element in reverseElements"
-                                        :key="element.id"
-                                        @element-is-selected="reverseElementSelected"
-                                        :class="{
-                                            selected: selectedReverseElement && element.id == selectedReverseElement.id,
-                                        }"
-                                        :element="element"
-                                    />
-                                </ol>
+                                <div class="column-header">
+                                    <div class="column-title">
+                                        <span class="title">
+                                            {{ numOfUnpairedReverseElements }}
+                                            {{ l("unpaired reverse") }}
+                                        </span>
+                                        <span class="title-info unpaired-info">
+                                            {{ numOfFilteredOutReverseElements }} {{ l("filtered out") }}</span
+                                        >
+                                    </div>
+                                    <div
+                                        class="unpaired-filter reverse-unpaired-filter float-left search-input search-query input-group"
+                                    >
+                                        <input
+                                            type="text"
+                                            :placeholder="filterTextPlaceholder"
+                                            v-model="reverseFilter"
+                                        />
+                                        <div class="input-group-append" :title="chooseFilterTitle">
+                                            <button
+                                                class="btn btn-outline-secondary dropdown-toggle"
+                                                type="button"
+                                                data-toggle="dropdown"
+                                                aria-haspopup="true"
+                                                aria-expanded="false"
+                                            ></button>
+                                            <div class="dropdown-menu">
+                                                <a class="dropdown-item" @click="changeFilters('illumina')">_2</a>
+                                                <a class="dropdown-item" @click="changeFilters('Rs')">_R2</a>
+                                                <a class="dropdown-item" @click="changeFilters('FRs')">_R</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </pane>
-                    <pane>
-                        <div class="column-header">
-                            <div class="column-title paired-column-title">
-                                <span class="title"></span>
-                            </div>
-                            <a class="unpair-all-link" href="javascript:void(0);" role="button" @click="unpairAll">
-                                {{ l("Unpair all") }}
-                            </a>
-                        </div>
-                        <div class="paired-columns flex-column-container scroll-container flex-row">
-                            <ol class="column-datasets">
-                                <paired-element-view
-                                    v-for="pair in pairedElements"
-                                    :key="pair.id"
-                                    :pair="pair"
-                                    :unlinkFn="clickUnpair(pair)"
-                                />
-                            </ol>
-                        </div>
-                    </pane>
-                </splitpanes>
-            </template>
-        </collection-creator>
+                        <splitpanes horizontal style="height: 400px;">
+                            <pane>
+                                <div class="unpaired-columns flex-column-container scroll-container flex-row">
+                                    <div class="forward-column flex-column column">
+                                        <ol class="column-datasets">
+                                            <dataset-collection-element-view
+                                                v-for="element in forwardElements"
+                                                :key="element.id"
+                                                @element-is-selected="forwardElementSelected"
+                                                :class="{
+                                                    selected:
+                                                        selectedForwardElement &&
+                                                        element.id == selectedForwardElement.id,
+                                                }"
+                                                :element="element"
+                                            />
+                                        </ol>
+                                    </div>
+                                    <div class="paired-column flex-column no-flex column">
+                                        <ol class="column-datasets"></ol>
+                                    </div>
+                                    <div class="reverse-column flex-column column">
+                                        <ol class="column-datasets">
+                                            <dataset-collection-element-view
+                                                v-for="element in reverseElements"
+                                                :key="element.id"
+                                                @element-is-selected="reverseElementSelected"
+                                                :class="{
+                                                    selected:
+                                                        selectedReverseElement &&
+                                                        element.id == selectedReverseElement.id,
+                                                }"
+                                                :element="element"
+                                            />
+                                        </ol>
+                                    </div>
+                                </div>
+                            </pane>
+                            <pane>
+                                <div class="column-header">
+                                    <div class="column-title paired-column-title">
+                                        <span class="title"> {{ numOfPairs }} {{ l(" pairs") }}</span>
+                                    </div>
+                                    <a
+                                        class="unpair-all-link"
+                                        href="javascript:void(0);"
+                                        role="button"
+                                        @click="unpairAll"
+                                    >
+                                        {{ l("Unpair all") }}
+                                    </a>
+                                </div>
+                                <div class="paired-columns flex-column-container scroll-container flex-row">
+                                    <ol class="column-datasets">
+                                        <paired-element-view
+                                            v-for="pair in pairedElements"
+                                            :key="pair.id"
+                                            :pair="pair"
+                                            :unlinkFn="clickUnpair(pair)"
+                                        />
+                                    </ol>
+                                </div>
+                            </pane>
+                        </splitpanes>
+                    </template>
+                </collection-creator>
+            </div>
+        </div>
     </div>
 </template>
 <script>
@@ -375,6 +481,12 @@ export default {
                 },
             }),
             strategy: null,
+            errorText: _l("Galaxy could not be reached and may be updating.  Try again in a few minutes."),
+            invalidHeader: _l("The following selections could not be included due to problems:"),
+            allInvalidElementsPartOne: _l("At least two elements are needed for the collection. You may need to"),
+            cancelText: _l("cancel"),
+            allInvalidElementsPartTwo: _l("and reselect new elements."),
+            errorText: _l("Galaxy could not be reached and may be updating.  Try again in a few minutes."),
         };
     },
     props: {
@@ -824,6 +936,36 @@ export default {
             get() {
                 return this.filterElements(this.workingElements, this.reverseFilter);
             },
+        },
+        numOfUnpairedForwardElements: function () {
+            return this.forwardElements.length;
+        },
+        numOfFilteredOutForwardElements: function () {
+            return this.workingElements.length - this.numOfUnpairedForwardElements;
+        },
+        numOfUnpairedReverseElements: function () {
+            return this.reverseElements.length;
+        },
+        numOfFilteredOutReverseElements: function () {
+            return this.workingElements.length - this.numOfUnpairedReverseElements;
+        },
+        numOfPairs: function () {
+            return this.pairedElements.length;
+        },
+        returnInvalidElementsLength: function () {
+            return this.invalidElements.length > 0;
+        },
+        returnInvalidElements: function () {
+            return this.invalidElements;
+        },
+        allElementsAreInvalid: function () {
+            return this.initialElements.length == this.invalidElements.length;
+        },
+        noElementsSelected: function () {
+            return this.initialElements.length == 0;
+        },
+        tooFewElementsSelected: function () {
+            return this.workingElements.length < 2 && this.pairedElements.length == 0;
         },
     },
 };
