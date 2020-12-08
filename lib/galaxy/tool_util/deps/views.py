@@ -333,6 +333,7 @@ class ContainerResolutionView:
             'install': False,
             'enabled_container_types': ['docker', 'singularity'],
             'resolution_cache': kwds.get("resolution_cache"),
+            'session': kwds.get('session'),
         }
 
         if 'index' in kwds:

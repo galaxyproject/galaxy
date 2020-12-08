@@ -124,7 +124,7 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         citations_api = self.api_get("tools/bibtex/citations")
         assert len(citations_api) == 29, len(citations_api)
         self.tool_open("bibtex")
-        self.components.tool_form.citations.wait_for_visible()
+        self.components.tool_form.about.wait_for_and_click()
 
         @retry_assertion_during_transitions
         def assert_citations_visible():
@@ -134,15 +134,9 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
 
         references = assert_citations_visible()
 
-        doi_resolved_citation = references[0]
-        assert "Galaxy: A platform for interactive" in doi_resolved_citation.text
+        doi_resolved_citation = references[1]
+        assert "enabling efficient sequence analysis" in doi_resolved_citation.text
         self.screenshot("tool_form_citations_formatted")
-
-        self.components.tool_form.show_bibtex.wait_for_and_click()
-        references = assert_citations_visible()
-        r0text = references[0].text
-        assert "@article{Giardine_2005" in r0text
-        self.screenshot("tool_form_citations_bibtex")
 
     def _check_dataset_details_for_inttest_value(self, hid, expected_value="42"):
         self.hda_click_primary_action_button(hid, "info")

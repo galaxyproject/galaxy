@@ -220,6 +220,7 @@ body {
     }
     .unified-panel-header-inner {
         @extend .w-100;
+        min-width: max-content;
         align-items: center;
         justify-content: space-between;
     }

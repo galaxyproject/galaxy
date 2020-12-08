@@ -100,6 +100,8 @@ class GalaxyInteractorApi:
         if kwds.get('user_api_key_is_admin_key', False):
             self.master_api_key = self.api_key
         self.keep_outputs_dir = kwds["keep_outputs_dir"]
+        self.download_attempts = kwds.get("download_attempts", 1)
+        self.download_sleep = kwds.get("download_sleep", 1)
         self._target_galaxy_version = None
 
         self.uploads = {}
@@ -603,7 +605,18 @@ class GalaxyInteractorApi:
             url = f"histories/{history_id}/contents/{hda_id}/display?raw=true"
             if base_name:
                 url += "&filename=%s" % base_name
-            return self._get(url).content
+            response = None
+            for _ in range(self.download_attempts):
+                response = self._get(url)
+                if response.status_code == 500:
+                    print(f"Retrying failed download with status code {response.status_code}")
+                    time.sleep(self.download_sleep)
+                    continue
+                else:
+                    break
+
+            response.raise_for_status()
+            return response.content
 
         return fetcher
 
@@ -845,7 +858,7 @@ class DictClientTestConfig:
         if tool_id in self._tools:
             tool_test_config = self._tools[tool_id]
         if tool_test_config is None:
-            tool_id = "%s/%s" % (tool_id, tool_version)
+            tool_id = f"{tool_id}/{tool_version}"
             if tool_id in self._tools:
                 tool_version_test_config = self._tools[tool_id]
         else:

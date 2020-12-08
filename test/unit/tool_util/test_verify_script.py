@@ -178,7 +178,7 @@ def test_results():
     results.write()
     message = results.info_message()
 
-    with open(f.name, "r") as f:
+    with open(f.name) as f:
         report_obj = json.load(f)
     assert "tests" in report_obj
     assert len(report_obj["tests"]) == 1
@@ -193,7 +193,7 @@ def test_results():
     results.write()
     message = results.info_message()
 
-    with open(f.name, "r") as f:
+    with open(f.name) as f:
         report_obj = json.load(f)
     assert len(report_obj["tests"]) == 2
     assert report_obj["results"]["skips"] == 1
@@ -245,7 +245,7 @@ def assert_results_not_written(results):
 
 def assert_results_written(results):
     assert os.stat(results.test_json).st_size > 0
-    with open(results.test_json, "r") as f:
+    with open(results.test_json) as f:
         json.load(f)
 
 

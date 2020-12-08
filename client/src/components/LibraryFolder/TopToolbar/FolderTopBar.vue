@@ -9,7 +9,8 @@
                     :key="path_item[0]"
                     :title="isCurrentFolder(path_item[0]) ? `You are in this folder` : `Return to this folder`"
                     :active="isCurrentFolder(path_item[0])"
-                    :href="path_item[0]"
+                    @click="changeFolderId(path_item[0])"
+                    href="#"
                     >{{ path_item[1] }}</b-breadcrumb-item
                 >
             </template>
@@ -265,6 +266,9 @@ export default {
     methods: {
         updateSearch: function (value) {
             this.$emit("updateSearch", value);
+        },
+        changeFolderId: function (value) {
+            this.$emit("changeFolderId", value);
         },
         deleteSelected: function () {
             this.getSelected().then((selected) =>

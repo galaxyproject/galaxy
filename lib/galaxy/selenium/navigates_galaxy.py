@@ -216,6 +216,10 @@ class NavigatesGalaxy(HasDriver):
     def history_panel_name(self):
         return self.history_panel_name_element().text
 
+    def make_accessible_and_publishable(self):
+        self.components.histories.sharing.make_accessible.wait_for_and_click()
+        self.components.histories.sharing.make_publishable.wait_for_and_click()
+
     def history_contents(self, history_id=None, view='summary', datasets_only=True):
         if history_id is None:
             history_id = self.current_history_id()
@@ -1281,6 +1285,9 @@ class NavigatesGalaxy(HasDriver):
         details_component = item_component.details
         details_displayed = details_component.is_displayed
         item_component.title.wait_for_and_click()
+        # for i in range(88888):
+        #     self.sleep_for(WAIT_TYPES.UX_RENDER)
+
         if kwds.get("wait", False):
             if details_displayed:
                 details_component.wait_for_absent_or_hidden()

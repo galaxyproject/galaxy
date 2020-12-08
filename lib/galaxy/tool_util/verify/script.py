@@ -107,22 +107,22 @@ class Results:
     def info_message(self):
         messages = []
         passed_tests = self._tests_with_status('success')
-        messages.append("Passed tool tests ({0}): {1}".format(
+        messages.append("Passed tool tests ({}): {}".format(
             len(passed_tests),
             [t["id"] for t in passed_tests]
         ))
         failed_tests = self._tests_with_status('failure')
-        messages.append("Failed tool tests ({0}): {1}".format(
+        messages.append("Failed tool tests ({}): {}".format(
             len(failed_tests),
             [t["id"] for t in failed_tests]
         ))
         skiped_tests = self._tests_with_status('skip')
-        messages.append("Skipped tool tests ({0}): {1}".format(
+        messages.append("Skipped tool tests ({}): {}".format(
             len(skiped_tests),
             [t["id"] for t in skiped_tests]
         ))
         errored_tests = self._tests_with_status('error')
-        messages.append("Errored tool tests ({0}): {1}".format(
+        messages.append("Errored tool tests ({}): {}".format(
             len(errored_tests),
             [t["id"] for t in errored_tests]
         ))
@@ -198,7 +198,7 @@ def test_tools(
             if log:
                 log.info("Report written to '%s'", os.path.abspath(results.test_json))
                 log.info(results.info_message())
-                log.info("Total tool test time: {0}".format(dt.datetime.now() - tool_test_start))
+                log.info("Total tool test time: {}".format(dt.datetime.now() - tool_test_start))
             if history_created and not no_history_cleanup:
                 galaxy_interactor.delete_history(test_history)
 
@@ -337,7 +337,7 @@ def main(argv=None):
     client_test_config_path = args.client_test_config
     if client_test_config_path is not None:
         log.debug(f"Reading client config path {client_test_config_path}")
-        with open(client_test_config_path, "r") as f:
+        with open(client_test_config_path) as f:
             client_test_config = yaml.full_load(f)
     else:
         client_test_config = {}
@@ -356,6 +356,8 @@ def main(argv=None):
         "master_api_key": get_option("admin_key"),
         "api_key": get_option("key"),
         "keep_outputs_dir": args.output,
+        "download_attempts": get_option("download_attempts"),
+        "download_sleep": get_option("download_sleep"),
     }
     tool_id = args.tool_id
     tool_version = args.tool_version
@@ -397,7 +399,7 @@ def main(argv=None):
         exception = exceptions[0]
         if hasattr(exception, "exception"):
             exception = exception.exception
-        raise exceptions[0]
+        raise exception
 
 
 def setup_global_logger(name, log_file=None, verbose=False):
@@ -417,7 +419,7 @@ def setup_global_logger(name, log_file=None, verbose=False):
         log_file = temp.name
     file_handler = logging.FileHandler(log_file)
     logger.addHandler(file_handler)
-    logger.info("Storing log file in: {0}".format(log_file))
+    logger.info(f"Storing log file in: {log_file}")
     return logger
 
 
@@ -446,6 +448,8 @@ def _arg_parser():
     parser.add_argument('--retries', default=0, type=int, help="Retry failed tests.")
     parser.add_argument('--page-size', default=0, type=int, help="If positive, use pagination and just run one 'page' to tool tests.")
     parser.add_argument('--page-number', default=0, type=int, help="If page size is used, run this 'page' of tests - starts with 0.")
+    parser.add_argument('--download-attempts', default=1, type=int, help="Galaxy may return a transient 500 status code for download if test results are written but not yet accessible.")
+    parser.add_argument('--download-sleep', default=1, type=int, help="If download attempts is greater than 1, the amount to sleep between download attempts.")
     return parser
 
 

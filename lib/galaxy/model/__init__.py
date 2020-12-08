@@ -15,6 +15,7 @@ import pwd
 import random
 import string
 import time
+from collections import defaultdict
 from datetime import datetime, timedelta
 from string import Template
 from uuid import UUID, uuid4
@@ -381,7 +382,7 @@ class User(Dictifiable, RepresentById):
 
     @property
     def extra_preferences(self):
-        data = {}
+        data = defaultdict(lambda: None)
         extra_user_preferences = self.preferences.get('extra_user_preferences')
         if extra_user_preferences:
             try:
@@ -2531,23 +2532,23 @@ class Dataset(StorableObject, RepresentById):
         self.deleted = True
         self.purged = True
 
-    def get_access_roles(self, trans):
+    def get_access_roles(self, security_agent):
         roles = []
         for dp in self.actions:
-            if dp.action == trans.app.security_agent.permitted_actions.DATASET_ACCESS.action:
+            if dp.action == security_agent.permitted_actions.DATASET_ACCESS.action:
                 roles.append(dp.role)
         return roles
 
-    def get_manage_permissions_roles(self, trans):
+    def get_manage_permissions_roles(self, security_agent):
         roles = []
         for dp in self.actions:
-            if dp.action == trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
+            if dp.action == security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
                 roles.append(dp.role)
         return roles
 
-    def has_manage_permissions_roles(self, trans):
+    def has_manage_permissions_roles(self, security_agent):
         for dp in self.actions:
-            if dp.action == trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
+            if dp.action == security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
                 return True
         return False
 
@@ -2599,6 +2600,8 @@ class DatasetHash(RepresentById):
 
 
 def datatype_for_extension(extension, datatypes_registry=None):
+    if extension is not None:
+        extension = extension.lower()
     if datatypes_registry is None:
         datatypes_registry = _get_datatypes_registry()
     if not extension or extension == 'auto' or extension == '_sniff_':
@@ -3223,6 +3226,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                                         flush=False)
         # update init non-keywords as well
         hda.purged = self.purged
+
         hda.copy_tags_to(copy_tags)
         object_session(self).add(hda)
         hda.metadata = self.metadata
@@ -3236,7 +3240,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
 
     def copy_tags_to(self, copy_tags=None):
         if copy_tags is not None:
-            for tag in copy_tags.values():
+            for tag in copy_tags:
                 copied_tag = tag.copy(cls=HistoryDatasetAssociationTagAssociation)
                 self.tags.append(copied_tag)
 
@@ -3311,11 +3315,11 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         for assoc in self.implicitly_converted_parent_datasets:
             assoc.clear(purge=purge, delete_dataset=False)
 
-    def get_access_roles(self, trans):
+    def get_access_roles(self, security_agent):
         """
         Return The access roles associated with this HDA's dataset.
         """
-        return self.dataset.get_access_roles(trans)
+        return self.dataset.get_access_roles(security_agent)
 
     def purge_usage_from_quota(self, user):
         """Remove this HDA's quota_amount from user's quota.
@@ -3550,10 +3554,10 @@ class Library(Dictifiable, HasName, RepresentById):
             active_folders.extend(self.get_active_folders(active_folder, folders))
         return sort_by_attr(active_folders, 'id')
 
-    def get_access_roles(self, trans):
+    def get_access_roles(self, security_agent):
         roles = []
         for lp in self.actions:
-            if lp.action == trans.app.security_agent.permitted_actions.LIBRARY_ACCESS.action:
+            if lp.action == security_agent.permitted_actions.LIBRARY_ACCESS.action:
                 roles.append(lp.role)
         return roles
 
@@ -3804,14 +3808,14 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, RepresentById):
     def clear_associated_files(self, metadata_safe=False, purge=False):
         return
 
-    def get_access_roles(self, trans):
-        return self.dataset.get_access_roles(trans)
+    def get_access_roles(self, security_agent):
+        return self.dataset.get_access_roles(security_agent)
 
-    def get_manage_permissions_roles(self, trans):
-        return self.dataset.get_manage_permissions_roles(trans)
+    def get_manage_permissions_roles(self, security_agent):
+        return self.dataset.get_manage_permissions_roles(security_agent)
 
-    def has_manage_permissions_roles(self, trans):
-        return self.dataset.has_manage_permissions_roles(trans)
+    def has_manage_permissions_roles(self, security_agent):
+        return self.dataset.has_manage_permissions_roles(security_agent)
 
     def serialize(self, id_encoder, serialization_options, for_link=False):
         if for_link:
@@ -4655,7 +4659,7 @@ class DatasetCollectionElement(Dictifiable, RepresentById):
                     flush=flush
                 )
             else:
-                new_element_object = element_object.copy(flush=flush)
+                new_element_object = element_object.copy(flush=flush, copy_tags=element_object.tags)
                 new_element_object.visible = False
                 if destination is not None and element_object.hidden_beneath_collection_instance:
                     new_element_object.hidden_beneath_collection_instance = destination

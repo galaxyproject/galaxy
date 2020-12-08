@@ -356,9 +356,8 @@ def build_maf_index(maf_file, species=None):
     indexes, found_species, species_chromosomes, blocks = build_maf_index_species_chromosomes(maf_file, species)
     if indexes is not None:
         fd, index_filename = tempfile.mkstemp()
-        out = os.fdopen(fd, 'w')
-        indexes.write(out)
-        out.close()
+        with os.fdopen(fd, 'w') as out:
+            indexes.write(out)
         return (bx.align.maf.Indexed(maf_file, index_filename=index_filename, keep_open=True, parse_e_rows=False), index_filename)
     return (None, None)
 

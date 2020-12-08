@@ -185,8 +185,8 @@ export default FormBase.extend({
             tooltip: "View available options",
         });
         menu_button.addMenu({
-            icon: "fa-share",
-            title: _l("Get link"),
+            icon: "fa-chain",
+            title: _l("Copy link"),
             onclick: function () {
                 copy(
                     `${window.location.origin + getAppRoot()}root?tool_id=${options.id}`,

@@ -8,15 +8,21 @@
                 @fetchFolderContents="fetchFolderContents($event)"
                 @deleteFromTable="deleteFromTable"
                 @setBusy="setBusy($event)"
+                @changeFolderId="changeFolderId($event)"
                 :folderContents="folderContents"
                 :include_deleted="include_deleted"
-                :folder_id="folder_id"
+                :folder_id="current_folder_id"
                 :selected="selected"
                 :metadata="folder_metadata"
                 :unselected="unselected"
                 :isAllSelectedMode="isAllSelectedMode"
             />
-            <a class="btn btn-secondary btn-sm btn_open_folder" :href="parentFolder">..</a>
+            <a
+                class="btn btn-secondary btn-sm btn_open_folder"
+                v-if="folder_metadata && folder_metadata.full_path"
+                @click="moveToParentFolder()"
+                >..</a
+            >
 
             <b-table
                 id="folder_list_body"
@@ -91,7 +97,10 @@
                         />
                     </div>
                     <div v-else-if="!row.item.deleted">
-                        <a :href="createContentLink(row.item)">{{ row.item.name }}</a>
+                        <a v-if="row.item.type === 'folder'" href="#" @click="changeFolderId(row.item.id)">{{
+                            row.item.name
+                        }}</a>
+                        <a v-else :href="createContentLink(row.item)">{{ row.item.name }}</a>
                     </div>
                     <!-- Deleted Item-->
                     <div v-else>
@@ -299,6 +308,7 @@ export default {
     },
     data() {
         return {
+            current_folder_id: null,
             error: null,
             isBusy: false,
             folder_metadata: {},
@@ -320,32 +330,27 @@ export default {
             deselectedDatasets: [],
         };
     },
-    computed: {
-        parentFolder() {
-            if (this.folder_metadata && this.folder_metadata.full_path) {
-                const path = this.folder_metadata.full_path;
-                if (path.length === 1) {
-                    return `${this.root}library/list/`;
-                } else {
-                    return `${this.root}library/folders/${path[path.length - 2][0]}`;
-                }
-            } else {
-                return false;
-            }
-        },
-    },
     created() {
+        this.current_folder_id = this.folder_id;
         this.root = getAppRoot();
         this.services = new Services({ root: this.root });
         this.fetchFolderContents();
     },
     methods: {
+        moveToParentFolder() {
+            const path = this.folder_metadata.full_path;
+            if (path.length === 1) {
+                window.location = `${this.root}library/list/`;
+            } else {
+                return this.changeFolderId(path[path.length - 2][0]);
+            }
+        },
         fetchFolderContents(include_deleted = false) {
             this.include_deleted = include_deleted;
             this.setBusy(true);
             this.services
                 .getFolderContents(
-                    this.folder_id,
+                    this.current_folder_id,
                     include_deleted,
                     this.perPage,
                     (this.currentPage - 1) * this.perPage,
@@ -373,6 +378,11 @@ export default {
         },
         updateSearchValue(value) {
             this.search_text = value;
+            this.folderContents = [];
+            this.fetchFolderContents(this.include_deleted);
+        },
+        changeFolderId(id) {
+            this.current_folder_id = id;
             this.folderContents = [];
             this.fetchFolderContents(this.include_deleted);
         },
@@ -457,7 +467,7 @@ export default {
         },
         createContentLink(element) {
             if (element.type === "file")
-                return `${this.root}library/list#folders/${this.folder_id}/datasets/${element.id}`;
+                return `${this.root}library/list#folders/${this.current_folder_id}/datasets/${element.id}`;
             else if (element.type === "folder") return `${this.root}library/folders/${element.id}`;
         },
         createPermissionLink(element) {
@@ -492,7 +502,7 @@ export default {
             } else {
                 this.services.newFolder(
                     {
-                        parent_id: this.folder_id,
+                        parent_id: this.current_folder_id,
                         name: folder.name,
                         description: folder.description,
                     },
@@ -539,9 +549,9 @@ export default {
                         this.refreshTable();
                         Toast.success("Dataset undeleted. Click this to see it.", "", {
                             onclick: function () {
-                                window.location = `${getAppRoot()}library/list#folders/${this.folder_id}/datasets/${
-                                    element.id
-                                }`;
+                                window.location = `${getAppRoot()}library/list#folders/${
+                                    this.current_folder_id
+                                }/datasets/${element.id}`;
                             },
                         });
                     },

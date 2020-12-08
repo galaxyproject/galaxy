@@ -7,7 +7,6 @@ import Buttons from "mvc/ui/ui-buttons";
 
 var Base = Backbone.View.extend({
     initialize: function (options) {
-        var self = this;
         this.model =
             (options && options.model) ||
             new Backbone.Model({
@@ -19,14 +18,14 @@ var Base = Backbone.View.extend({
                 wait_text: "Please wait...",
                 multiple: false,
                 optional: false,
-                onchange: function () {},
+                onchange: () => {},
             }).set(options);
         this.listenTo(this.model, "change:value", this._changeValue, this);
         this.listenTo(this.model, "change:wait", this._changeWait, this);
         this.listenTo(this.model, "change:data", this._changeData, this);
         this.listenTo(this.model, "change:visible", this._changeVisible, this);
-        this.on("change", () => {
-            self.model.get("onchange")(self.value());
+        this.listenTo(this, "change", () => {
+            this.model.get("onchange")(this.value());
         });
         this.render();
     },

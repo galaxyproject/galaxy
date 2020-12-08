@@ -12,7 +12,8 @@ JOB_RESOURCE_PARAMETERS_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "selection_
 DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template("""<?xml version="1.0"?>
 <object_store type="distributed" id="primary" order="0">
     <backends>
-        <backend id="default" type="disk" weight="1">
+        <backend id="default" type="disk" weight="1" name="Default Store">
+            <description>This is my description of the default store with *markdown*.</description>
             <files_dir path="${temp_directory}/files_default"/>
             <extra_dir type="temp" path="${temp_directory}/tmp_default"/>
             <extra_dir type="job_work" path="${temp_directory}/job_working_directory_default"/>
@@ -86,6 +87,9 @@ class ObjectStoreSelectionIntegrationTestCase(BaseObjectStoreIntegrationTestCase
             hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3")
             self.dataset_populator.wait_for_history(history_id)
             hda1_input = {"src": "hda", "id": hda1["id"]}
+            storage_info = self.dataset_populator.dataset_storage_info(hda1["id"])
+            assert "Default Store" == storage_info["name"]
+            assert "*markdown*" in storage_info["description"]
 
             # One file uploaded, added to default object store ID.
             self._assert_file_counts(1, 0, 0, 0)
