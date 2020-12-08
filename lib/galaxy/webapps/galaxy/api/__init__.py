@@ -53,10 +53,11 @@ def get_session_manager(app=Depends(get_app)) -> GalaxySessionManager:
 def get_session(session_manager: GalaxySessionManager = Depends(get_session_manager),
                 app: UniverseApplication = Depends(get_app),
                 galaxysession: Optional[str] = Cookie(None)) -> Optional[model.GalaxySession]:
-    session_key = app.security.decode_guid(galaxysession)
-    if session_key:
-        return session_manager.get_session_from_session_key(session_key)
-    # TODO: What should we do if there is no session? Since this is the API, maybe nothing is the right choice?
+    if galaxysession:
+        session_key = app.security.decode_guid(galaxysession)
+        if session_key:
+            return session_manager.get_session_from_session_key(session_key)
+        # TODO: What should we do if there is no session? Since this is the API, maybe nothing is the right choice?
 
 
 @lru_cache()
