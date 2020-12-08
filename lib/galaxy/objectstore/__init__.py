@@ -929,7 +929,7 @@ class HierarchicalObjectStore(NestedObjectStore):
     store_type = 'hierarchical'
 
     def __init__(self, config, config_dict, fsmon=False):
-        """The default contructor. Extends `NestedObjectStore`."""
+        """The default constructor. Extends `NestedObjectStore`."""
         super().__init__(config, config_dict)
 
         backends = OrderedDict()
