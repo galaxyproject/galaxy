@@ -1526,7 +1526,7 @@ class Tool(Dictifiable):
         if self.check_values:
             visit_input_values(self.inputs, values, callback)
 
-    def expand_incoming(self, trans, incoming, request_context, legacy_param_form=True):
+    def expand_incoming(self, trans, incoming, request_context, input_format='legacy'):
         rerun_remap_job_id = None
         if 'rerun_remap_job_id' in incoming:
             try:
@@ -1567,7 +1567,7 @@ class Tool(Dictifiable):
             else:
                 # Update state for all inputs on the current page taking new
                 # values from `incoming`.
-                populate_state(request_context, self.inputs, expanded_incoming, params, errors, simple_errors=False, legacy_param_form=legacy_param_form)
+                populate_state(request_context, self.inputs, expanded_incoming, params, errors, simple_errors=False, input_format=input_format)
                 # If the tool provides a `validate_input` hook, call it.
                 validate_input = self.get_hook('validate_input')
                 if validate_input:
@@ -1579,7 +1579,7 @@ class Tool(Dictifiable):
         log.info(validation_timer)
         return all_params, all_errors, rerun_remap_job_id, collection_info
 
-    def handle_input(self, trans, incoming, history=None, use_cached_job=False, legacy_param_form=True):
+    def handle_input(self, trans, incoming, history=None, use_cached_job=False, input_format='legacy'):
         """
         Process incoming parameters for this tool from the dict `incoming`,
         update the tool state (or create if none existed), and either return
@@ -1587,7 +1587,7 @@ class Tool(Dictifiable):
         there were no errors).
         """
         request_context = WorkRequestContext(app=trans.app, user=trans.user, history=history or trans.history)
-        all_params, all_errors, rerun_remap_job_id, collection_info = self.expand_incoming(trans=trans, incoming=incoming, request_context=request_context, legacy_param_form=legacy_param_form)
+        all_params, all_errors, rerun_remap_job_id, collection_info = self.expand_incoming(trans=trans, incoming=incoming, request_context=request_context, input_format=input_format)
         # If there were errors, we stay on the same page and display them
         if any(all_errors):
             # simple param_key -> message string for tool form.
@@ -2194,7 +2194,7 @@ class Tool(Dictifiable):
             'tool_errors'   : self.tool_errors,
             'state_inputs'  : params_to_strings(self.inputs, state_inputs, self.app, use_security=True, nested=True),
             'job_id'        : trans.security.encode_id(job.id) if job else None,
-            'job_remap'     : self._get_job_remap(job),
+            'job_remap'     : job.remappable() if job else None,
             'history_id'    : trans.security.encode_id(history.id) if history else None,
             'display'       : self.display_interface,
             'action'        : action,
@@ -2249,10 +2249,6 @@ class Tool(Dictifiable):
                 group_inputs.append(tool_dict)
             else:
                 group_inputs[input_index] = tool_dict
-
-    def _get_job_remap(self, job):
-        if job:
-            return job.remappable()
 
     def _map_source_to_history(self, trans, tool_inputs, params):
         # Need to remap dataset parameters. Job parameters point to original

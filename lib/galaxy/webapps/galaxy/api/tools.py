@@ -466,8 +466,8 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         POST /api/tools
         Execute tool with a given parameter payload
 
-        :param legacy_config_form_payload: whether the payload is specified in the legacy format, i.e. conditionals and repeats are represented with the '|' symbol (default True).
-        :type legacy_config_form_payload:  bool
+        :param input_format: input format for the payload. Options are the default 'legacy' (i.e. conditionals and repeats are represented with the '|' symbol) or '21.01).
+        :type input_format:  string
         """
         tool_id = payload.get("tool_id")
         tool_uuid = payload.get("tool_uuid")
@@ -536,9 +536,9 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         # as a regular tool parameter we accept both.
         use_cached_job = payload.get('use_cached_job', False) or util.string_as_bool(inputs.get('use_cached_job', 'false'))
 
-        legacy_param_form = kwd.get('legacy_config_form_payload') not in [False, 'False']
+        input_format = kwd.get('input_format', 'legacy')
 
-        vars = tool.handle_input(trans, incoming, history=target_history, use_cached_job=use_cached_job, legacy_param_form=legacy_param_form)
+        vars = tool.handle_input(trans, incoming, history=target_history, use_cached_job=use_cached_job, input_format=input_format)
 
         # TODO: check for errors and ensure that output dataset(s) are available.
         output_datasets = vars.get('out_data', [])

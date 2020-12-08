@@ -69,7 +69,7 @@ class TestsTools:
     def _run_cat(self, history_id, inputs, assert_ok=False, **kwargs):
         return self._run('cat', history_id, inputs, assert_ok=assert_ok, **kwargs)
 
-    def _run(self, tool_id=None, history_id=None, inputs=None, tool_uuid=None, assert_ok=False, tool_version=None, use_cached_job=False, wait_for_job=False, legacy_config_form_payload=True):
+    def _run(self, tool_id=None, history_id=None, inputs=None, tool_uuid=None, assert_ok=False, tool_version=None, use_cached_job=False, wait_for_job=False, input_format='legacy'):
         if inputs is None:
             inputs = {}
         if tool_id is None:
@@ -78,7 +78,7 @@ class TestsTools:
             tool_id=tool_id,
             inputs=inputs,
             history_id=history_id,
-            legacy_config_form_payload=legacy_config_form_payload,
+            input_format=input_format,
         )
         if tool_uuid:
             payload['tool_uuid'] = tool_uuid
@@ -1602,7 +1602,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
                 },
             },
         }
-        create_response = self._run("identifier_in_conditional", history_id, inputs, legacy_config_form_payload=False)
+        create_response = self._run("identifier_in_conditional", history_id, inputs, input_format='21.01')
         self._assert_status_code_is(create_response, 200)
         create = create_response.json()
         outputs = create['outputs']
@@ -1630,7 +1630,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
                 }
             ],
         }
-        create_response = self._run("identifier_multiple_in_repeat", history_id, inputs, legacy_config_form_payload=False)
+        create_response = self._run("identifier_multiple_in_repeat", history_id, inputs, input_format='21.01')
         self._assert_status_code_is(create_response, 200)
         create = create_response.json()
         outputs = create['outputs']
