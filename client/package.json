@@ -52,6 +52,7 @@
     "requirejs": "2.3.6",
     "rxjs": "^6.5.5",
     "slugify": "^1.4.0",
+    "splitpanes": "2.3.6",
     "toastr": "^2.1.4",
     "underscore": "^1.10.2",
     "vue": "^2.6.11",

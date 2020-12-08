@@ -22,7 +22,7 @@ export default {
     data: function () {
         return {
             name: "",
-            unpairButtonTitle:_l("Unpair"),
+            unpairButtonTitle: _l("Unpair"),
         };
     },
     computed: {
@@ -42,8 +42,8 @@ export default {
         },
         unlinkFn: {
             required: true,
-            type: Function
-        }
+            type: Function,
+        },
     },
     methods: {
         l(str) {

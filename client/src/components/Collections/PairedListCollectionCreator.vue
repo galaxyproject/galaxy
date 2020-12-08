@@ -4,6 +4,8 @@
             :oncancel="oncancel"
             @hide-original-toggle="hideOriginalsToggle"
             @clicked-create="clickedCreate"
+            @remove-extensions-toggle="removeExtensionsToggle"
+            :renderExtensionsToggle="true"
             :creationFn="creationFn"
         >
             <template v-slot:help-content>
@@ -213,54 +215,61 @@
                         </div>
                     </div>
                 </div>
-                <div class="unpaired-columns flex-column-container scroll-container flex-row">
-                    <div class="forward-column flex-column column">
-                        <ol class="column-datasets">
-                            <dataset-collection-element-view
-                                v-for="element in forwardElements"
-                                :key="element.id"
-                                @element-is-selected="forwardElementSelected"
-                                :class="{ selected: selectedForwardElement && element.id == selectedForwardElement.id }"
-                                :element="element"
-                            />
-                        </ol>
-                    </div>
-                    <div class="paired-column flex-column no-flex column">
-                        <ol class="column-datasets"></ol>
-                    </div>
-                    <div class="reverse-column flex-column column">
-                        <ol class="column-datasets">
-                            <dataset-collection-element-view
-                                v-for="element in reverseElements"
-                                :key="element.id"
-                                @element-is-selected="reverseElementSelected"
-                                :class="{ selected: selectedReverseElement && element.id == selectedReverseElement.id }"
-                                :element="element"
-                            />
-                        </ol>
-                    </div>
-                </div>
-                <div class="flexible-partition">
-                    <div class="flexible-partition-drag" :title="dragToChangeTitle"></div>
-                    <div class="column-header">
-                        <div class="column-title paired-column-title">
-                            <span class="title"></span>
+                <splitpanes horizontal style="height: 400px;">
+                    <pane>
+                        <div class="unpaired-columns flex-column-container scroll-container flex-row">
+                            <div class="forward-column flex-column column">
+                                <ol class="column-datasets">
+                                    <dataset-collection-element-view
+                                        v-for="element in forwardElements"
+                                        :key="element.id"
+                                        @element-is-selected="forwardElementSelected"
+                                        :class="{
+                                            selected: selectedForwardElement && element.id == selectedForwardElement.id,
+                                        }"
+                                        :element="element"
+                                    />
+                                </ol>
+                            </div>
+                            <div class="paired-column flex-column no-flex column">
+                                <ol class="column-datasets"></ol>
+                            </div>
+                            <div class="reverse-column flex-column column">
+                                <ol class="column-datasets">
+                                    <dataset-collection-element-view
+                                        v-for="element in reverseElements"
+                                        :key="element.id"
+                                        @element-is-selected="reverseElementSelected"
+                                        :class="{
+                                            selected: selectedReverseElement && element.id == selectedReverseElement.id,
+                                        }"
+                                        :element="element"
+                                    />
+                                </ol>
+                            </div>
                         </div>
-                        <a class="unpair-all-link" href="javascript:void(0);" role="button" @click="unpairAll">
-                            {{ l("Unpair all") }}
-                        </a>
-                    </div>
-                </div>
-                <div class="paired-columns flex-column-container scroll-container flex-row">
-                    <ol class="column-datasets">
-                        <paired-element-view
-                            v-for="pair in pairedElements"
-                            :key="pair.id"
-                            :pair="pair"
-                            :unlinkFn="clickUnpair(pair)"
-                        />
-                    </ol>
-                </div>
+                    </pane>
+                    <pane>
+                        <div class="column-header">
+                            <div class="column-title paired-column-title">
+                                <span class="title"></span>
+                            </div>
+                            <a class="unpair-all-link" href="javascript:void(0);" role="button" @click="unpairAll">
+                                {{ l("Unpair all") }}
+                            </a>
+                        </div>
+                        <div class="paired-columns flex-column-container scroll-container flex-row">
+                            <ol class="column-datasets">
+                                <paired-element-view
+                                    v-for="pair in pairedElements"
+                                    :key="pair.id"
+                                    :pair="pair"
+                                    :unlinkFn="clickUnpair(pair)"
+                                />
+                            </ol>
+                        </div>
+                    </pane>
+                </splitpanes>
             </template>
         </collection-creator>
     </div>
@@ -273,14 +282,16 @@ import levenshteinDistance from "utils/levenshtein";
 import PairedElementView from "./PairedListPairedElementView";
 import STATES from "mvc/dataset/states";
 import naturalSort from "utils/natural-sort";
-//import { filter } from "rxjs/operators";
+import "splitpanes/dist/splitpanes.css";
+import { Splitpanes, Pane } from "splitpanes";
+
 export default {
     created() {
         this._elementsSetUp();
         this.strategy = this.autopairLCS;
         this.filters = this.commonFilters[this.filters] || this.commonFilters[this.DEFAULT_FILTERS];
     },
-    components: { CollectionCreator, DatasetCollectionElementView, PairedElementView }, //draggable?
+    components: { CollectionCreator, DatasetCollectionElementView, PairedElementView, Splitpanes, Pane }, //draggable?
     data: function () {
         return {
             state: "build", //error
@@ -299,6 +310,7 @@ export default {
             automaticallyPair: true,
             matchPercentage: 0.9,
             twoPassAutoPairing: true,
+            removeExtensions: true,
             workingElements: [],
             forwardFilter: "",
             reverseFilter: "",
@@ -507,7 +519,7 @@ export default {
         },
         /** try to find a good pair name for the given fwd and rev datasets */
         _guessNameForPair: function (fwd, rev, removeExtensions) {
-            removeExtensions = removeExtensions !== undefined ? removeExtensions : this.removeExtensions;
+            removeExtensions = removeExtensions ? removeExtensions : this.removeExtensions;
             var fwdName = fwd.name;
             var revName = rev.name;
 
@@ -789,6 +801,18 @@ export default {
                     .fail((this.state = "error"));
             }
         },
+        hideOriginalsToggle: function () {
+            this.defaultHideSourceItems = !this.defaultHideSourceItems;
+        },
+        removeExtensionsToggle: function () {
+            this.removeExtensions = !this.removeExtensions;
+            this.pairedElements.forEach((pair) => {
+                pair.name = this._guessNameForPair(pair.forward, pair.reverse, this.removeExtensions);
+            });
+        },
+        stripExtension(name) {
+            return name.includes(".") ? name.substring(0, name.lastIndexOf(".")) : name;
+        },
     },
     computed: {
         forwardElements: {
@@ -804,7 +828,12 @@ export default {
     },
 };
 </script>
-<style scoped lang="scss">
+<style lang="scss">
+$fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
+@import "~@fortawesome/fontawesome-free/scss/_variables";
+@import "../../../node_modules/@fortawesome/fontawesome-free/scss/solid";
+@import "../../../node_modules/@fortawesome/fontawesome-free/scss/fontawesome";
+@import "../../../node_modules/@fortawesome/fontawesome-free/scss/brands";
 .paired-column {
     text-align: center;
     // mess with these two to make center more/scss priority
@@ -820,7 +849,141 @@ export default {
 ol.column-datasets {
     width: auto;
 }
-div.paired-columns {
+li.dataset.paired {
     margin: auto;
+    text-align: center;
+}
+.column-datasets {
+    list-style: none;
+    overflow: hidden;
+    .dataset {
+        height: 32px;
+        margin-top: 2px;
+        &:last-of-type {
+            margin-bottom: 2px;
+        }
+        border: 1px solid lightgrey;
+        border-radius: 3px;
+        padding: 0 8px 0 8px;
+        line-height: 28px;
+        cursor: pointer;
+        &.unpaired {
+            border-color: grey;
+        }
+        &.paired {
+            margin-left: 34px;
+            margin-right: 34px;
+            border: 2px solid grey;
+            background: #aff1af;
+            span {
+                display: inline-block;
+                overflow: visible !important;
+            }
+            .forward-dataset-name {
+                text-align: right;
+                border-right: 1px solid grey;
+                padding-right: 8px;
+                &:after {
+                    @extend .fas;
+                    margin-left: 8px;
+                    content: fa-content($fa-var-arrow-right);
+                }
+            }
+            .pair-name-column {
+                text-align: center;
+                .pair-name:hover {
+                    text-decoration: underline;
+                }
+            }
+            .reverse-dataset-name {
+                border-left: 1px solid grey;
+                padding-left: 8px;
+                &:before {
+                    @extend .fas;
+                    margin-right: 8px;
+                    content: fa-content($fa-var-arrow-left);
+                }
+            }
+        }
+        &:hover {
+            border-color: black;
+        }
+        &.selected {
+            border-color: black;
+            background: black;
+            color: white;
+            a {
+                color: white;
+            }
+        }
+    }
+}
+// ---- unpaired
+.unpaired-columns {
+    //@extend .flex-bordered-vertically;
+    .forward-column {
+        .dataset.unpaired {
+            margin-right: 32px;
+        }
+    }
+    .paired-column {
+        .dataset.unpaired {
+            border-color: lightgrey;
+            color: lightgrey;
+            &:hover {
+                border-color: black;
+                color: black;
+            }
+        }
+    }
+    .reverse-column {
+        .dataset.unpaired {
+            text-align: right;
+            margin-left: 32px;
+        }
+    }
+}
+.column-header {
+    width: 100%;
+    text-align: center;
+    .column-title {
+        display: inline;
+    }
+    & > *:not(:last-child) {
+        margin-right: 8px;
+    }
+    .remove-extensions-link {
+        display: none;
+    }
+}
+// ---- paired datasets
+.paired-columns {
+    // @extend .flex-bordered-vertically;
+    margin-bottom: 8px;
+    .column-datasets {
+        width: 100%;
+    }
+    .unpair-btn {
+        float: right;
+        margin-top: -32px;
+        width: 31px;
+        height: 32px;
+        //z-index: 1;
+        border-color: transparent;
+        //border-color: #BFBFBF;
+        background: transparent;
+        font-size: 120%;
+        &:hover {
+            border-color: #bfbfbf;
+            background: #dedede;
+        }
+    }
+    .empty-message {
+        text-align: center;
+    }
+}
+.splitpanes--horizontal > .splitpanes__splitter {
+    min-height: 6px;
+    background: linear-gradient(0deg, #ccc, #111);
 }
 </style>

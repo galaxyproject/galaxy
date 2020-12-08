@@ -36,6 +36,15 @@
         <div class="footer flex-row no-flex">
             <div class="attributes clear">
                 <div class="clear">
+                    <label class="setting-prompt float-right" v-if="renderExtensionsToggle">
+                        {{ removeFileExtensionsText }}
+                        <input
+                            class="remove-extensions float-right"
+                            type="checkbox"
+                            @click="$emit('remove-extensions-toggle')"
+                            checked
+                        />
+                    </label>
                     <label class="setting-prompt float-right">
                         {{ hideOriginalsText }}
                         <input
@@ -61,12 +70,6 @@
                     <button class="cancel-create btn" tabindex="-1" @click="_cancelCreate">
                         {{ l("Cancel") }}
                     </button>
-                    <div class="other-options create-other btn-group dropup">
-                        <button class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">
-                            {{ l("Create a different kind of collection") }}
-                            <span class="caret"></span>
-                        </button>
-                    </div>
                 </div>
                 <div class="main-options float-right">
                     <button
@@ -94,6 +97,10 @@ export default {
             type: Function,
             required: true,
         },
+        renderExtensionsToggle: {
+            type: Boolean,
+            default: false
+        }
     },
     computed: {
         validInput: function () {
@@ -109,6 +116,7 @@ export default {
             dropdownText: _l("Create a <i>single</> pair"),
             isExpanded: false,
             collectionName: "",
+            removeFileExtensionsText: "Remove file extensions?",
         };
     },
     methods: {
@@ -134,7 +142,11 @@ export default {
 </script>
 
 <style lang="scss">
+$fa-font-path: "../../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
 @import "~@fortawesome/fontawesome-free/scss/_variables";
+@import "../../../../node_modules/@fortawesome/fontawesome-free/scss/solid";
+@import "../../../../node_modules/@fortawesome/fontawesome-free/scss/fontawesome";
+@import "../../../node_modules/@fortawesome/fontawesome-free/scss/brands";
 .collection-creator {
     height: 100%;
     overflow: hidden;
@@ -341,160 +353,13 @@ export default {
         border: 1px solid lightgrey;
         border-width: 1px 0 1px 0;
     }
-    .column-datasets {
-        list-style: none;
-        overflow: hidden;
-        .dataset {
-            height: 32px;
-            margin-top: 2px;
-            &:last-of-type {
-                margin-bottom: 2px;
-            }
-            border: 1px solid lightgrey;
-            border-radius: 3px;
-            padding: 0 8px 0 8px;
-            line-height: 28px;
-            cursor: pointer;
-            &.unpaired {
-                border-color: grey;
-            }
-            &.paired {
-                margin-left: 34px;
-                margin-right: 34px;
-                border: 2px solid grey;
-                background: #aff1af;
-                span {
-                    display: inline-block;
-                    overflow: visible !important;
-                    .forward-dataset-name {
-                        text-align: right;
-                        border-right: 1px solid grey;
-                        padding-right: 8px;
-                        &:after {
-                            @extend .fas !optional;
-                            margin-left: 8px;
-                            content: fa-content($fa-var-arrow-right);
-                        }
-                    }
-                    .pair-name-column {
-                        text-align: center;
-                        .pair-name:hover {
-                            text-decoration: underline;
-                        }
-                    }
-                    .reverse-dataset-name {
-                        border-left: 1px solid grey;
-                        padding-left: 8px;
-                        &:before {
-                            @extend .fas !optional;
-                            margin-right: 8px;
-                            content: fa-content($fa-var-arrow-left);
-                        }
-                    }
-                }
-            }
-            &:hover {
-                border-color: black;
-            }
-            &.selected {
-                border-color: black;
-                background: black;
-                color: white;
-                a {
-                    color: white;
-                }
-            }
-        }
-    }
-    // ---- unpaired
-    .unpaired-columns {
-        //@extend .flex-bordered-vertically;
-        .forward-column {
-            .dataset.unpaired {
-                margin-right: 32px;
-            }
-        }
-        .paired-column {
-            .dataset.unpaired {
-                border-color: lightgrey;
-                color: lightgrey;
-                &:hover {
-                    border-color: black;
-                    color: black;
-                }
-            }
-        }
-        .reverse-column {
-            .dataset.unpaired {
-                text-align: right;
-                margin-left: 32px;
-            }
-        }
-    }
-    // ---- paritition/divider
-    .flexible-partition {
-        .flexible-partition-drag {
-            width: 100%;
-            height: 8px;
-            cursor: ns-resize;
-            &:before {
-                content: "...";
-            }
-            line-height: 2px;
-            text-align: center;
-            color: lightgrey;
-            &:hover {
-                background: lightgrey;
-                color: black;
-            }
-        }
-        .column-header {
-            width: 100%;
-            text-align: center;
-            .column-title {
-                display: inline;
-            }
-            & > *:not(:last-child) {
-                margin-right: 8px;
-            }
-            .remove-extensions-link {
-                display: none;
-            }
-        }
-    }
-    // ---- paired datasets
-    .paired-columns {
-        // @extend .flex-bordered-vertically;
-        margin-bottom: 8px;
-        .column-datasets {
-            width: 100%;
-        }
-        .unpair-btn {
-            float: right;
-            margin-top: -32px;
-            width: 31px;
-            height: 32px;
-            //z-index: 1;
-            border-color: transparent;
-            //border-color: #BFBFBF;
-            background: transparent;
-            font-size: 120%;
-            &:hover {
-                border-color: #bfbfbf;
-                background: #dedede;
-            }
-        }
-        .empty-message {
-            text-align: center;
-        }
-    }
     .element-drop-placeholder {
         width: 60px;
         height: 3px;
         margin: 2px 0px 0px 14px;
         background: black;
         &:before {
-            @extend .fas !optional;
+            @extend .fas;
             float: left;
             font-size: 120%;
             margin: -9px 0px 0px -8px;

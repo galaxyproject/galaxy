@@ -80,6 +80,7 @@
                     :oncancel="oncancel"
                     @hide-original-toggle="hideOriginalsToggle"
                     @clicked-create="clickedCreate"
+                    @remove-extensions-toggle="removeExtensionsToggle"
                     :creationFn="creationFn"
                 >
                     <template v-slot:help-content>

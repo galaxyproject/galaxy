@@ -56,6 +56,7 @@
                     :oncancel="oncancel"
                     @hide-original-toggle="hideOriginalsToggle"
                     @clicked-create="clickedCreate"
+                    @remove-extensions-toggle="removeExtensionsToggle"
                     :creationFn="creationFn"
                 >
                     <template v-slot:help-content>
@@ -219,6 +220,7 @@ export default {
             workingElements: [],
             invalidElements: [],
             selectedDatasetElems: [],
+            removeExtensions: true,
         };
     },
     props: {
@@ -381,6 +383,21 @@ export default {
                     .done(this.oncreate)
                     .fail((this.state = "error"));
             }
+        },
+        removeExtensionsToggle: function () {
+            this.removeExtensions = !this.removeExtensions;
+            if (this.removeExtensions == true) {
+                this.removeExtensionsFn();
+            }
+        },
+        removeExtensionsFn: function () {
+            this.workingElements.forEach((e) => {
+                var lastDotIndex = e.lastIndexOf(".");
+                if (lastDotIndex > 0) {
+                    var extension = e.slice(lastDotIndex, e.length);
+                    e = e.replace(extension, "");
+                }
+            });
         },
         /** reset all data to the initial state */
         reset: function () {
