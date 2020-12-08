@@ -192,7 +192,9 @@ GALAXY_LIB_TOOLS_VERSIONED = {
 safe_update = collections.namedtuple("SafeUpdate", "min_version current_version")
 # Tool updates that did not change parameters in a way that requires rebuilding workflows
 WORKFLOW_SAFE_TOOL_VERSION_UPDATES = {
-    'Filter1': safe_update(packaging.version.parse("1.1.0"), packaging.version.parse("1.1.1"))
+    'Filter1': safe_update(packaging.version.parse("1.1.0"), packaging.version.parse("1.1.1")),
+    '__BUILD_LIST__': safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.0.1")),
+    '__APPLY_RULES__': safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.1.0")),
 }
 
 
@@ -2864,8 +2866,8 @@ class BuildListCollectionTool(DatabaseOperationTool):
         new_elements = OrderedDict()
 
         for i, incoming_repeat in enumerate(incoming["datasets"]):
-            new_dataset = incoming_repeat["input"].copy(copy_tags=tags)
-            new_elements["%d" % i] = new_dataset
+            if incoming_repeat["input"]:
+                new_elements["%d" % i] = incoming_repeat["input"].copy(copy_tags=tags)
 
         self._add_datasets_to_history(history, new_elements.values())
         output_collections.create_collection(
