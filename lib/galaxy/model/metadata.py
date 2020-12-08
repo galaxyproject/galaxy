@@ -10,10 +10,8 @@ import shutil
 import sys
 import tempfile
 import weakref
-from collections import (
-    Mapping,
-    OrderedDict,
-)
+from collections import OrderedDict
+from collections.abc import Mapping
 from os.path import abspath
 
 from sqlalchemy.orm import object_session
