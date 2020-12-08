@@ -327,8 +327,7 @@ def populate_state(request_context, inputs, incoming, state, errors={}, context=
 
     """
     if input_format == 'legacy':
-        prefix = ''
-        _populate_state_legacy(request_context, inputs, incoming, state, errors, prefix, context, check, simple_errors)
+        _populate_state_legacy(request_context, inputs, incoming, state, errors=errors, context=context, check=check, simple_errors=simple_errors)
         return
     elif input_format == '21.01':
         context = ExpressionContext(state, context)
@@ -341,15 +340,11 @@ def populate_state(request_context, inputs, incoming, state, errors={}, context=
                 else:
                     del group_state[:]
                     for rep_index, rep in enumerate(incoming[input.name]):
-                        new_state = {'__index__' : rep_index}
+                        new_state = {}
                         group_state.append(new_state)
                         populate_state(request_context, input.inputs, rep, new_state, errors, context=context, check=check, simple_errors=simple_errors, input_format='21.01')
 
             elif input.type == 'conditional':
-                # if input.value_ref and not input.value_ref_in_group:
-                #     test_param_key = prefix + input.test_param.name
-                # else:
-                #     test_param_key = group_prefix + input.test_param.name
                 test_param_value = incoming.get(input.name).get(input.test_param.name)
                 value, error = check_param(request_context, input.test_param, test_param_value, context, simple_errors=simple_errors) if check else [test_param_value, None]
                 if error:
@@ -368,18 +363,8 @@ def populate_state(request_context, inputs, incoming, state, errors={}, context=
                 populate_state(request_context, input.inputs, incoming.get(input.name), group_state, errors, context=context, check=check, simple_errors=simple_errors, input_format='21.01')
 
             elif input.type == 'upload_dataset':
-                file_count = input.get_file_count(request_context, context)
-                while len(group_state) > file_count:
-                    del group_state[-1]
-                while file_count > len(group_state):
-                    new_state = {'__index__' : len(group_state)}
-                    for upload_item in input.inputs.values():
-                        new_state[upload_item.name] = upload_item.get_initial_value(request_context, context)
-                    group_state.append(new_state)
-                for i, rep_state in enumerate(group_state):
-                    rep_index = rep_state['__index__']
-                    rep_prefix = '%s_%d|' % (input.name, rep_index)
-                    populate_state(request_context, input.inputs, incoming.get(rep_prefix, []), rep_state, errors, context=context, check=check, simple_errors=simple_errors, input_format='21.01')
+                raise NotImplementedError
+
             else:
                 param_value = _get_incoming_value(incoming, input.name, state.get(input.name))
                 value, error = check_param(request_context, input, param_value, context, simple_errors=simple_errors) if check else [param_value, None]
@@ -394,8 +379,6 @@ def _populate_state_legacy(request_context, inputs, incoming, state, errors={}, 
     context = ExpressionContext(state, context)
     for input in inputs.values():
         state[input.name] = input.get_initial_value(request_context, context)
-        print(prefix)
-        print(input.name)
         key = prefix + input.name
         group_state = state[input.name]
         group_prefix = '%s|' % (key)
