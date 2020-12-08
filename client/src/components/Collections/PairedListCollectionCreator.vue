@@ -486,7 +486,6 @@ export default {
             allInvalidElementsPartOne: _l("At least two elements are needed for the collection. You may need to"),
             cancelText: _l("cancel"),
             allInvalidElementsPartTwo: _l("and reselect new elements."),
-            errorText: _l("Galaxy could not be reached and may be updating.  Try again in a few minutes."),
         };
     },
     props: {
@@ -527,12 +526,15 @@ export default {
             this.workingElements = [];
             //TODO: this should maybe be in it's own method as it will get called everytime selected array has two elements and dumps again.
             this.selectedDatasetElems = [];
-
+            this.initialFiltersSet();
             // copy initial list, sort, add ids if needed
             this.workingElements = this.initialElements.slice(0);
             this._ensureElementIds();
             this._validateElements();
             // this._mangleDuplicateNames();
+        },
+        initialFiltersSet: function () {
+            this.changeFilters("illumina");
         },
         /** add ids to dataset objs in initial list if none */
         _ensureElementIds: function () {
