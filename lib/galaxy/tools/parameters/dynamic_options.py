@@ -339,6 +339,25 @@ class MultipleSplitterFilter(Filter):
         return rval
 
 
+class DuplicateColumnFilter(Filter):
+    """
+    Required Attributes:
+        column: column in options to compare with
+    """
+
+    def __init__(self, d_option, elem):
+        Filter.__init__(self, d_option, elem)
+        column = elem.get("column", None)
+        assert column is not None, "Required 'column' attribute missing from filter"
+        self.column = d_option.column_spec_to_index(column)
+
+    def filter_options(self, options, trans, other_values):
+        rval = []
+        for fields in options:
+            rval.append(fields[0:self.column] + [fields[self.column]] + fields[self.column:])
+        return rval
+
+
 class AttributeValueSplitterFilter(Filter):
     """
     Filters a list of attribute-value pairs to be unique attribute names.
@@ -505,6 +524,7 @@ filter_types = dict(data_meta=DataMetaFilter,
                     unique_value=UniqueValueFilter,
                     multiple_splitter=MultipleSplitterFilter,
                     attribute_value_splitter=AttributeValueSplitterFilter,
+                    duplicate_column=DuplicateColumnFilter,
                     add_value=AdditionalValueFilter,
                     remove_value=RemoveValueFilter,
                     sort_by=SortByColumnFilter)

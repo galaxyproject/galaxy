@@ -5882,6 +5882,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
       <xs:enumeration value="static_value"/>
       <xs:enumeration value="regexp"/>
       <xs:enumeration value="unique_value"/>
+      <xs:enumeration value="duplicate_column"/>
       <xs:enumeration value="multiple_splitter"/>
       <xs:enumeration value="add_value"/>
       <xs:enumeration value="remove_value"/>

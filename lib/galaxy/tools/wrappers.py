@@ -141,6 +141,9 @@ class SelectToolParameterWrapper(ToolParameterValueWrapper):
             self._compute_environment = compute_environment
 
         def __getattr__(self, name):
+            return self[name]
+
+        def __getitem__(self, name):
             if name not in self._fields:
                 self._fields[name] = self._input.options.get_field_by_name_for_value(name, self._value, None, self._other_values)
             values = map(str, self._fields[name])
