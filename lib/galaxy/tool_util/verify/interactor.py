@@ -490,6 +490,7 @@ class GalaxyInteractorApi:
             history_contents = self.__contents(history_id)
         except Exception:
             print("*TEST FRAMEWORK FAILED TO FETCH HISTORY DETAILS*")
+            return
 
         for history_content in history_contents:
 
@@ -556,8 +557,9 @@ class GalaxyInteractorApi:
         return dataset_json
 
     def __contents(self, history_id):
-        history_contents_json = self._get("histories/%s/contents" % history_id).json()
-        return history_contents_json
+        history_contents_response = self._get("histories/%s/contents" % history_id)
+        history_contents_response.raise_for_status()
+        return history_contents_response.json()
 
     def _state_ready(self, state_str, error_msg):
         if state_str == 'ok':
@@ -577,7 +579,12 @@ class GalaxyInteractorApi:
 
     def ensure_user_with_email(self, email, password=None):
         admin_key = self.master_api_key
-        all_users = self._get('users', key=admin_key).json()
+        all_users_response = self._get('users', key=admin_key)
+        try:
+            all_users_response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            raise Exception(f"Failed to verify user with email [{email}] exists - perhaps you're targetting the wrong Galaxy server or using an incorrect admin API key. HTTP error: {e}")
+        all_users = all_users_response.json()
         try:
             test_user = [user for user in all_users if user["email"] == email][0]
         except IndexError:
