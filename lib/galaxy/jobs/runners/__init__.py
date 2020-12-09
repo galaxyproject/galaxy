@@ -650,9 +650,24 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
         """
         new_watched = []
         for async_job_state in self.watched:
-            new_async_job_state = self.check_watched_item(async_job_state)
-            if new_async_job_state:
-                new_watched.append(new_async_job_state)
+            # AMPPD - don't fail the whole thing if we have a single error. 
+            try:
+                new_async_job_state = self.check_watched_item(async_job_state)
+                if new_async_job_state:
+                    new_watched.append(new_async_job_state)
+            except Exception as e:
+                try:
+                    log.exception('AMPPD: Unhandled exception checking watched item')
+                    log.debug(str(e))
+                    log.debug("Async Job Id: " + str(async_job_state.job_wrapper.job_id))
+                    if async_job_state is not None:
+                        log.debug("*** Async Job State: ****")
+                        log.debug(repr(async_job_state))
+                        log.debug("*** End Async Job State: ****")
+                    else:
+                        log.debug("Job state was empty")
+                except Exception:
+                    log.debug("Could not print job details");
         self.watched = new_watched
 
     # Subclasses should implement this unless they override check_watched_items all together.
