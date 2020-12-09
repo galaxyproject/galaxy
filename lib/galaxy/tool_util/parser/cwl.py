@@ -159,6 +159,9 @@ class CwlToolSource(ToolSource):
     def parse_profile(self):
         return "16.04"
 
+    def parse_license(self):
+        return None
+
     def parse_python_template_version(self):
         return '3.5'
 

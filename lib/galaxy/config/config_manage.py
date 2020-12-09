@@ -316,6 +316,7 @@ OPTION_ACTIONS = {
     'communication_server_host': _DeprecatedAndDroppedAction(),
     'communication_server_port': _DeprecatedAndDroppedAction(),
     'persistent_communication_rooms': _DeprecatedAndDroppedAction(),
+    'legacy_eager_objectstore_initialization': _DeprecatedAndDroppedAction(),
 }
 
 

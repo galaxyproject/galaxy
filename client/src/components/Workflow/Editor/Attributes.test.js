@@ -23,6 +23,9 @@ describe("Attributes", () => {
                 parameters: ["workflow_parameter_0", "workflow_parameter_1"],
                 versions: ["workflow_version_0"],
             },
+            stubs: {
+                LicenseSelector: true,
+            },
         });
         const name = wrapper.find("#workflow-name");
         expect(name.element.value).toBe("workflow_name");

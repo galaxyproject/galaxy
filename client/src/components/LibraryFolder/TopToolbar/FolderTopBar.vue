@@ -1,6 +1,20 @@
 <template>
     <div>
-        <div id="path-bar" />
+        <b-breadcrumb>
+            <b-breadcrumb-item title="Return to the list of libraries" :href="getHomeUrl">
+                Libraries
+            </b-breadcrumb-item>
+            <template v-for="path_item in this.metadata.full_path">
+                <b-breadcrumb-item
+                    :key="path_item[0]"
+                    :title="isCurrentFolder(path_item[0]) ? `You are in this folder` : `Return to this folder`"
+                    :active="isCurrentFolder(path_item[0])"
+                    @click="changeFolderId(path_item[0])"
+                    href="#"
+                    >{{ path_item[1] }}</b-breadcrumb-item
+                >
+            </template>
+        </b-breadcrumb>
 
         <div class="form-inline d-flex align-items-center mb-2">
             <a class="mr-1 btn btn-secondary" :href="getHomeUrl" data-toggle="tooltip" title="Go to first page">
@@ -146,7 +160,6 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { showLocInfo } from "./details-modal";
 import { deleteSelectedItems } from "./delete-selected";
 import { initTopBarIcons } from "components/LibraryFolder/icons";
-import mod_path_bar from "components/LibraryFolder/path-bar";
 import mod_import_dataset from "./import-to-history/import-dataset";
 import mod_import_collection from "./import-to-history/import-collection";
 import mod_add_datasets from "./add-datasets";
@@ -228,14 +241,6 @@ export default {
 
         this.fetchExtAndGenomes();
     },
-    mounted() {
-        if (this.metadata.full_path)
-            new mod_path_bar.PathBar({
-                full_path: this.metadata.full_path,
-                id: this.folder_id,
-                parent_library_id: this.metadata.parent_library_id,
-            });
-    },
     computed: {
         contains_file_or_folder: function () {
             return this.folderContents.find((el) => el.type === "folder" || el.type === "file");
@@ -261,6 +266,9 @@ export default {
     methods: {
         updateSearch: function (value) {
             this.$emit("updateSearch", value);
+        },
+        changeFolderId: function (value) {
+            this.$emit("changeFolderId", value);
         },
         deleteSelected: function () {
             this.getSelected().then((selected) =>
@@ -335,6 +343,9 @@ export default {
                     });
                 }
             });
+        },
+        isCurrentFolder(id) {
+            return this.folder_id === id;
         },
         /*
             Slightly adopted Bootstrap code

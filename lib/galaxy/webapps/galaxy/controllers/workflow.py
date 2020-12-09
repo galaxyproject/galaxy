@@ -653,7 +653,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         # The following query loads all user-owned workflows,
         # So that they can be copied or inserted in the workflow editor.
         workflows = trans.sa_session.query(model.StoredWorkflow) \
-            .filter_by(user=trans.user, deleted=False) \
+            .filter_by(user=trans.user, deleted=False, hidden=False) \
             .order_by(desc(model.StoredWorkflow.table.c.update_time)) \
             .options(joinedload('latest_workflow').joinedload('steps')) \
             .all()

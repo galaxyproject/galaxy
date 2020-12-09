@@ -385,8 +385,8 @@
                                     manage column definitions.
                                 </div>
                             </ol>
-                            <div class="rules-buttons">
-                                <div class="btn-group dropup">
+                            <div class="rules-buttons btn-group">
+                                <div class="dropup">
                                     <button
                                         type="button"
                                         v-b-tooltip.hover.bottom
@@ -411,7 +411,7 @@
                                         >
                                     </div>
                                 </div>
-                                <div class="btn-group dropup">
+                                <div class="dropup">
                                     <button
                                         type="button"
                                         v-b-tooltip.hover.bottom
@@ -431,7 +431,7 @@
                                         <rule-target-component :builder="this" rule-type="add_filter_count" />
                                     </div>
                                 </div>
-                                <div class="btn-group dropup">
+                                <div class="dropup">
                                     <button
                                         type="button"
                                         v-b-tooltip.hover.bottom
@@ -1729,7 +1729,7 @@ export default {
     padding: 5px;
 }
 .rules-container-vertical {
-    width: 280px;
+    width: 300px;
     height: 400px;
 }
 .rules-container-horizontal {

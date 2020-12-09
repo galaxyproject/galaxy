@@ -192,7 +192,9 @@ GALAXY_LIB_TOOLS_VERSIONED = {
 safe_update = collections.namedtuple("SafeUpdate", "min_version current_version")
 # Tool updates that did not change parameters in a way that requires rebuilding workflows
 WORKFLOW_SAFE_TOOL_VERSION_UPDATES = {
-    'Filter1': safe_update(packaging.version.parse("1.1.0"), packaging.version.parse("1.1.1"))
+    'Filter1': safe_update(packaging.version.parse("1.1.0"), packaging.version.parse("1.1.1")),
+    '__BUILD_LIST__': safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.0.1")),
+    '__APPLY_RULES__': safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.1.0")),
 }
 
 
@@ -271,10 +273,11 @@ class ToolBox(BaseGalaxyToolBox):
         that re-opens the database after forking.
         """
         for region in self.cache_regions.values():
-            region.persist()
-            if register_postfork:
-                region.close()
-                self.app.application_stack.register_postfork_function(region.reopen_ro)
+            if not region.disabled:
+                region.persist()
+                if register_postfork:
+                    region.close()
+                    self.app.application_stack.register_postfork_function(region.reopen_ro)
 
     def can_load_config_file(self, config_filename):
         if config_filename == self.app.config.shed_tool_config_file and not self.app.config.is_set('shed_tool_config_file'):
@@ -308,8 +311,8 @@ class ToolBox(BaseGalaxyToolBox):
         return self.cache_regions[tool_cache_data_dir]
 
     def create_tool(self, config_file, tool_cache_data_dir=None, **kwds):
-        if config_file.endswith('.xml'):
-            cache = self.get_cache_region(tool_cache_data_dir or self.app.config.tool_cache_data_dir)
+        cache = self.get_cache_region(tool_cache_data_dir or self.app.config.tool_cache_data_dir)
+        if config_file.endswith('.xml') and not cache.disabled:
             tool_document = cache.get(config_file)
             if tool_document:
                 tool_source = self.get_expanded_tool_source(
@@ -890,6 +893,8 @@ class Tool(Dictifiable):
 
         # Is this a 'hidden' tool (hidden in tool menu)
         self.hidden = tool_source.parse_hidden()
+        self.license = tool_source.parse_license()
+        self.creator = tool_source.parse_creator()
 
         self.__parse_legacy_features(tool_source)
 
@@ -2198,6 +2203,8 @@ class Tool(Dictifiable):
             'history_id'    : trans.security.encode_id(history.id) if history else None,
             'display'       : self.display_interface,
             'action'        : action,
+            'license'       : self.license,
+            'creator'       : self.creator,
             'method'        : self.method,
             'enctype'       : self.enctype
         })
@@ -2483,6 +2490,26 @@ class ExpressionTool(Tool):
         with open(expression_inputs_path, "w") as f:
             json.dump(expression_inputs, f)
 
+    def exec_after_process(self, app, inp_data, out_data, param_dict, job=None, **kwds):
+        for key, val in self.outputs.items():
+            if key not in out_data:
+                # Skip filtered outputs
+                continue
+            if val.output_type == "data":
+
+                with open(out_data[key].file_name) as f:
+                    src = json.load(f)
+                assert isinstance(src, dict), f"Expected dataset 'src' to be a dictionary - actual type is {type(src)}"
+                dataset_id = src["id"]
+                copy_object = None
+                for input_dataset in inp_data.values():
+                    if input_dataset and input_dataset.id == dataset_id:
+                        copy_object = input_dataset
+                        break
+                if copy_object is None:
+                    raise Exception("Failed to find dataset output.")
+                out_data[key].copy_from(copy_object)
+
     def parse_environment_variables(self, tool_source):
         """ Setup environment variable for inputs file.
         """
@@ -2767,7 +2794,7 @@ class DatabaseOperationTool(Tool):
 
             if self.require_dataset_ok:
                 if state != model.Dataset.states.OK:
-                    raise ValueError("Tool requires inputs to be in valid state.")
+                    raise ValueError("Tool requires inputs to be in valid state, but dataset {} is in state '{}'".format(input_dataset, input_dataset.state))
 
         for input_dataset in input_datasets.values():
             check_dataset_state(input_dataset.state)
@@ -2839,8 +2866,8 @@ class BuildListCollectionTool(DatabaseOperationTool):
         new_elements = OrderedDict()
 
         for i, incoming_repeat in enumerate(incoming["datasets"]):
-            new_dataset = incoming_repeat["input"].copy(copy_tags=tags)
-            new_elements["%d" % i] = new_dataset
+            if incoming_repeat["input"]:
+                new_elements["%d" % i] = incoming_repeat["input"].copy(copy_tags=tags)
 
         self._add_datasets_to_history(history, new_elements.values())
         output_collections.create_collection(

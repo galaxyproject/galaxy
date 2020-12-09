@@ -384,7 +384,7 @@ def _has_src_to_path(upload_config, item, is_dataset=False):
         try:
             path = sniff.stream_url_to_file(url, file_sources=get_file_sources(upload_config.working_directory))
         except Exception as e:
-            raise Exception("Failed to fetch url %s. %s" % (url, str(e)))
+            raise Exception("Failed to fetch url {}. {}".format(url, str(e)))
 
         if not is_dataset:
             # Actual target dataset will validate and put results in dict

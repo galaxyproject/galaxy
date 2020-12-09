@@ -557,22 +557,41 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                          annotation defaults to existing annotation
             * menu_entry optional boolean marking if the workflow should appear in the user's menu,
                          if not present, workflow menu entries are not modified
+            * tags       optional list containing list of tags to add to the workflow (overwriting
+                         existing tags), if not present, tags are not modified
             * from_tool_form True iff encoded state coming in is encoded for the tool form.
 
         :rtype:     dict
         :returns:   serialized version of the workflow
         """
         stored_workflow = self.__get_stored_workflow(trans, id, **kwds)
-        workflow_dict = payload.get('workflow') or payload
+        workflow_dict = payload.get('workflow', {})
+        workflow_dict.update({k: v for k, v in payload.items() if k not in workflow_dict})
         if workflow_dict:
             raw_workflow_description = self.__normalize_workflow(trans, workflow_dict)
             workflow_dict = raw_workflow_description.as_dict
             new_workflow_name = workflow_dict.get('name')
-            if new_workflow_name and new_workflow_name != stored_workflow.name:
-                sanitized_name = sanitize_html(new_workflow_name)
-                workflow = stored_workflow.latest_workflow.copy(user=trans.user)
+            license_set = 'license' in workflow_dict
+            creator_set = 'creator' in workflow_dict
+            old_workflow = stored_workflow.latest_workflow
+            name_updated = (new_workflow_name and new_workflow_name != stored_workflow.name)
+            license_updated = license_set and workflow_dict['license'] != old_workflow.license
+            update_attributes = name_updated or license_updated or creator_set
+            if update_attributes:
+                sanitized_name = sanitize_html(new_workflow_name or old_workflow.name)
+                workflow = old_workflow.copy(user=trans.user)
                 workflow.stored_workflow = stored_workflow
                 workflow.name = sanitized_name
+                if license_set:
+                    new_workflow_license = workflow_dict.get('license')
+                else:
+                    new_workflow_license = old_workflow.license
+                if creator_set:
+                    new_workflow_creator = workflow_dict.get('creator')
+                else:
+                    new_workflow_creator = old_workflow.creator_metadata
+                workflow.license = new_workflow_license
+                workflow.creator_metadata = new_workflow_creator
                 stored_workflow.name = sanitized_name
                 stored_workflow.latest_workflow = workflow
                 trans.sa_session.add(workflow, stored_workflow)
@@ -580,6 +599,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
             if 'hidden' in workflow_dict and stored_workflow.hidden != workflow_dict['hidden']:
                 stored_workflow.hidden = workflow_dict['hidden']
+                trans.sa_session.flush()
+
+            if 'published' in workflow_dict and stored_workflow.published != workflow_dict['published']:
+                stored_workflow.published = workflow_dict['published']
                 trans.sa_session.flush()
 
             if 'annotation' in workflow_dict:
@@ -612,6 +635,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                     )
                 except workflows.MissingToolsException:
                     raise exceptions.MessageException("This workflow contains missing tools. It cannot be saved until they have been removed from the workflow or installed.")
+
         else:
             message = "Updating workflow requires dictionary containing 'workflow' attribute with new JSON description."
             raise exceptions.RequestParameterInvalidException(message)
@@ -938,7 +962,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
         decoded_workflow_invocation_id = self.decode_id(invocation_id)
-        workflow_invocation = self.workflow_manager.get_invocation(trans, decoded_workflow_invocation_id)
+        workflow_invocation = self.workflow_manager.get_invocation(trans, decoded_workflow_invocation_id, eager=True)
         if workflow_invocation:
             step_details = util.string_as_bool(kwd.get('step_details', 'False'))
             legacy_job_state = util.string_as_bool(kwd.get('legacy_job_state', 'False'))

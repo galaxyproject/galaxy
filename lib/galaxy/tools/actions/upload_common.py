@@ -14,7 +14,6 @@ from webob.compat import cgi_FieldStorage
 from galaxy import datatypes, util
 from galaxy.exceptions import (
     ConfigDoesNotAllowException,
-    ObjectInvalid,
     RequestParameterInvalidException,
 )
 from galaxy.model import tags
@@ -430,14 +429,6 @@ def create_job(trans, params, tool, json_file_path, outputs, folder=None, histor
                 job.add_output_library_dataset(output_name, dataset)
             else:
                 job.add_output_dataset(output_name, dataset)
-            # Create an empty file immediately
-            if not dataset.dataset.external_filename and trans.app.config.legacy_eager_objectstore_initialization:
-                dataset.dataset.object_store_id = object_store_id
-                try:
-                    trans.app.object_store.create(dataset.dataset)
-                except ObjectInvalid:
-                    raise Exception('Unable to create output dataset: object store is full')
-                object_store_id = dataset.dataset.object_store_id
 
         trans.sa_session.add(output_object)
 

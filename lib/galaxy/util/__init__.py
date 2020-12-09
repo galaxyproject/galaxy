@@ -958,7 +958,7 @@ def string_as_bool_or_none(string):
     string = str(string).lower()
     if string in ('true', 'yes', 'on'):
         return True
-    elif string == 'none':
+    elif string in ['none', 'null']:
         return None
     else:
         return False
@@ -1170,10 +1170,7 @@ def compare_urls(url1, url2, compare_scheme=True, compare_hostname=True, compare
 
 def read_dbnames(filename):
     """ Read build names from file """
-    class DBNames(list):
-        default_value = "?"
-        default_name = "unspecified (?)"
-    db_names = DBNames()
+    db_names = []
     try:
         ucsc_builds = {}
         man_builds = []  # assume these are integers
@@ -1213,16 +1210,14 @@ def read_dbnames(filename):
             ucsc_builds[db_base].sort()
             ucsc_builds[db_base].reverse()
             ucsc_builds[db_base] = [(build, name) for _, build, name in ucsc_builds[db_base]]
-            db_names = DBNames(db_names + ucsc_builds[db_base])
+            db_names = list(db_names + ucsc_builds[db_base])
         if len(db_names) > 1 and len(man_builds) > 0:
             db_names.append((db_names.default_value, '----- Additional Species Are Below -----'))
         man_builds.sort()
         man_builds = [(build, name) for name, build in man_builds]
-        db_names = DBNames(db_names + man_builds)
+        db_names = list(db_names + man_builds)
     except Exception as e:
         log.error("ERROR: Unable to read builds file: %s", unicodify(e))
-    if len(db_names) < 1:
-        db_names = DBNames([(db_names.default_value, db_names.default_name)])
     return db_names
 
 

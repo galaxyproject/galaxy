@@ -1,6 +1,9 @@
 import logging
 import os
-from collections import namedtuple
+from collections import (
+    defaultdict,
+    namedtuple,
+)
 
 from galaxy import exceptions
 from galaxy.util import (
@@ -234,7 +237,7 @@ class ProvidesUserFileSourcesUserContext:
     @property
     def preferences(self):
         user = self.trans.user
-        return user and user.extra_preferences
+        return user and user.extra_preferences or defaultdict(lambda: None)
 
 
 class DictFileSourcesUserContext:

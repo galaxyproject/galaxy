@@ -100,6 +100,8 @@ class GalaxyInteractorApi:
         if kwds.get('user_api_key_is_admin_key', False):
             self.master_api_key = self.api_key
         self.keep_outputs_dir = kwds["keep_outputs_dir"]
+        self.download_attempts = kwds.get("download_attempts", 1)
+        self.download_sleep = kwds.get("download_sleep", 1)
         self._target_galaxy_version = None
 
         self.uploads = {}
@@ -284,10 +286,14 @@ class GalaxyInteractorApi:
         return response.json()
 
     @nottest
-    def test_data_download(self, tool_id, filename, mode='file'):
+    def test_data_download(self, tool_id, filename, mode='file', is_output=True):
         if self.supports_test_data_download:
             response = self._get(f"tools/{tool_id}/test_data_download?filename={filename}", admin=True)
-            assert response.status_code == 200, "Test file (%s) is missing. If you use planemo try --update_test_data to generate one." % filename
+            if response.status_code != 200:
+                if is_output:
+                    raise AssertionError(f"Test output file ({filename}) is missing. If you are using planemo, try adding --update_test_data to generate it.")
+                else:
+                    raise AssertionError(f"Test input file ({filename}) cannot be found.")
             if mode == 'file':
                 return response.content
             elif mode == 'directory':
@@ -338,7 +344,7 @@ class GalaxyInteractorApi:
                         "files_%d|url_paste" % i: "file://" + file_path
                     })
                 else:
-                    file_content = self.test_data_download(tool_id, file_name)
+                    file_content = self.test_data_download(tool_id, file_name, is_output=False)
                     files["files_%s|file_data" % i] = file_content
                 tool_input.update({
                     "files_%d|type" % i: "upload_dataset",
@@ -357,7 +363,7 @@ class GalaxyInteractorApi:
                     "files_0|url_paste": "file://" + file_name
                 })
             else:
-                file_content = self.test_data_download(tool_id, fname)
+                file_content = self.test_data_download(tool_id, fname, is_output=False)
                 files = {
                     "files_0|file_data": file_content
                 }
@@ -466,7 +472,7 @@ class GalaxyInteractorApi:
         return output_data['id']
 
     def delete_history(self, history):
-        return None
+        self._delete(f"histories/{history}")
 
     def __job_ready(self, job_id, history_id=None):
         if job_id is None:
@@ -488,6 +494,7 @@ class GalaxyInteractorApi:
             history_contents = self.__contents(history_id)
         except Exception:
             print("*TEST FRAMEWORK FAILED TO FETCH HISTORY DETAILS*")
+            return
 
         for history_content in history_contents:
 
@@ -554,8 +561,9 @@ class GalaxyInteractorApi:
         return dataset_json
 
     def __contents(self, history_id):
-        history_contents_json = self._get("histories/%s/contents" % history_id).json()
-        return history_contents_json
+        history_contents_response = self._get("histories/%s/contents" % history_id)
+        history_contents_response.raise_for_status()
+        return history_contents_response.json()
 
     def _state_ready(self, state_str, error_msg):
         if state_str == 'ok':
@@ -575,7 +583,12 @@ class GalaxyInteractorApi:
 
     def ensure_user_with_email(self, email, password=None):
         admin_key = self.master_api_key
-        all_users = self._get('users', key=admin_key).json()
+        all_users_response = self._get('users', key=admin_key)
+        try:
+            all_users_response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            raise Exception(f"Failed to verify user with email [{email}] exists - perhaps you're targetting the wrong Galaxy server or using an incorrect admin API key. HTTP error: {e}")
+        all_users = all_users_response.json()
         try:
             test_user = [user for user in all_users if user["email"] == email][0]
         except IndexError:
@@ -603,7 +616,18 @@ class GalaxyInteractorApi:
             url = f"histories/{history_id}/contents/{hda_id}/display?raw=true"
             if base_name:
                 url += "&filename=%s" % base_name
-            return self._get(url).content
+            response = None
+            for _ in range(self.download_attempts):
+                response = self._get(url)
+                if response.status_code == 500:
+                    print(f"Retrying failed download with status code {response.status_code}")
+                    time.sleep(self.download_sleep)
+                    continue
+                else:
+                    break
+
+            response.raise_for_status()
+            return response.content
 
         return fetcher
 
@@ -845,7 +869,7 @@ class DictClientTestConfig:
         if tool_id in self._tools:
             tool_test_config = self._tools[tool_id]
         if tool_test_config is None:
-            tool_id = "%s/%s" % (tool_id, tool_version)
+            tool_id = f"{tool_id}/{tool_version}"
             if tool_id in self._tools:
                 tool_version_test_config = self._tools[tool_id]
         else:
@@ -876,10 +900,12 @@ def verify_tool(tool_id,
                 tool_version=None,
                 quiet=False,
                 test_history=None,
+                no_history_cleanup=False,
                 force_path_paste=False,
                 maxseconds=DEFAULT_TOOL_TEST_WAIT,
                 tool_test_dicts=None,
                 client_test_config=None,
+                skip_with_reference_data=False,
                 skip_on_dynamic_param_errors=False):
     if resource_parameters is None:
         resource_parameters = {}
@@ -900,20 +926,34 @@ def verify_tool(tool_id,
         "test_index": test_index,
     }
     client_config = client_test_config.get_test_config(job_data)
+    skip_message = None
     if client_config is not None:
         job_data.update(client_config)
         skip_message = job_data.get("skip")
-        if skip_message:
-            job_data["status"] = "skip"
-            register_job_data(job_data)
-            return
+
+    if not skip_message and skip_with_reference_data:
+        required_data_tables = tool_test_dict.get("required_data_tables")
+        required_loc_files = tool_test_dict.get("required_loc_files")
+        # TODO: actually hit the API and see if these tables are available.
+        if required_data_tables:
+            skip_message = f"Skipping test because of required data tables ({required_data_tables})"
+        if required_loc_files:
+            skip_message = f"Skipping test because of required loc files ({required_loc_files})"
+
+    if skip_message:
+        job_data["status"] = "skip"
+        register_job_data(job_data)
+        return
 
     tool_test_dict.setdefault('maxseconds', maxseconds)
     testdef = ToolTestDescription(tool_test_dict)
     _handle_def_errors(testdef)
 
+    created_history = False
     if test_history is None:
-        test_history = galaxy_interactor.new_history()
+        created_history = True
+        history_name = f"Tool Test History for {tool_id}/{tool_version}-{test_index}"
+        test_history = galaxy_interactor.new_history(history_name=history_name)
 
     # Upload data to test_history, run the tool and check the outputs - record
     # API input, job info, tool run exception, as well as exceptions related to
@@ -923,15 +963,22 @@ def verify_tool(tool_id,
     job_stdio = None
     job_output_exceptions = None
     tool_execution_exception = None
+    input_staging_exception = None
     expected_failure_occurred = False
     begin_time = time.time()
     try:
-        stage_data_in_history(galaxy_interactor,
-                            tool_id,
-                            testdef.test_data(),
-                            history=test_history,
-                            force_path_paste=force_path_paste,
-                            maxseconds=maxseconds)
+        try:
+            stage_data_in_history(
+                galaxy_interactor,
+                tool_id,
+                testdef.test_data(),
+                history=test_history,
+                force_path_paste=force_path_paste,
+                maxseconds=maxseconds,
+            )
+        except Exception as e:
+            input_staging_exception = e
+            raise
         try:
             tool_response = galaxy_interactor.run_tool(testdef, test_history, resource_parameters=resource_parameters)
             data_list, jobs, tool_inputs = tool_response.outputs, tool_response.jobs, tool_response.inputs
@@ -976,10 +1023,14 @@ def verify_tool(tool_id,
                 dynamic_param_error = getattr(tool_execution_exception, "dynamic_param_error", False)
                 job_data["dynamic_param_error"] = dynamic_param_error
                 status = "error" if not skip_on_dynamic_param_errors or not dynamic_param_error else "skip"
+            if input_staging_exception:
+                job_data["execution_problem"] = "Input staging problem: %s" % util.unicodify(input_staging_exception)
+                status = "error"
             job_data["status"] = status
             register_job_data(job_data)
 
-    galaxy_interactor.delete_history(test_history)
+    if created_history and not no_history_cleanup:
+        galaxy_interactor.delete_history(test_history)
 
 
 def _handle_def_errors(testdef):

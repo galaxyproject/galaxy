@@ -128,13 +128,18 @@ class HistoryContentsApiTestCase(ApiTestCase, TestsDatasets):
 
     def _assert_other_user_cannot_access(self, history_content_id):
         with self._different_user():
-            contents_response = self._get(f"histories/{self.history_id}/contents/{history_content_id}").json()
-            assert "name" not in contents_response
+            contents_response = self.dataset_populator.get_history_dataset_details_raw(
+                history_id=self.history_id, dataset_id=history_content_id
+            )
+            assert contents_response.status_code == 403
 
     def _assert_other_user_can_access(self, history_content_id):
         with self._different_user():
-            contents_response = self._get(f"histories/{self.history_id}/contents/{history_content_id}").json()
-            assert "name" in contents_response
+            contents_response = self.dataset_populator.get_history_dataset_details_raw(
+                history_id=self.history_id, dataset_id=history_content_id
+            )
+            contents_response.raise_for_status()
+            assert "name" in contents_response.json()
 
     def test_index_hda_all_details(self):
         hda1 = self._new_dataset(self.history_id)

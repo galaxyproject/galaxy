@@ -159,7 +159,7 @@ body {
     @extend .unified-panel;
     right: 0px;
     width: $panel-width;
-    overflow: unset !important;
+    overflow: unset;
 }
 #right > .unified-panel-footer {
     .drag {
@@ -220,6 +220,7 @@ body {
     }
     .unified-panel-header-inner {
         @extend .w-100;
+        min-width: max-content;
         align-items: center;
         justify-content: space-between;
     }

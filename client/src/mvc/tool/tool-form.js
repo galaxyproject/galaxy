@@ -22,6 +22,7 @@ const View = Backbone.View.extend({
         this.form = new ToolFormBase(
             Utils.merge(
                 {
+                    setupToolMicrodata: true,
                     listen_to_history: true,
                     always_refresh: false,
                     buildmodel: (process, form) => {

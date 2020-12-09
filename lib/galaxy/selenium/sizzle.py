@@ -1,6 +1,6 @@
 """Utilities for using sizzle (jQuery-style) selectors with Selenium."""
 
-import re
+import json
 
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support.ui import WebDriverWait
@@ -119,11 +119,9 @@ def _is_sizzle_loaded(driver):
 
 
 def _make_sizzle_string(sizzle_selector):
-    try:
-        selector = sizzle_selector.decode("utf-8")
-    except (AttributeError, UnicodeEncodeError):
-        selector = sizzle_selector
-    return "return Sizzle(\"{selector}\");".format(selector=re.escape(selector))
+    # Use json.dumps to escape quotes
+    selector = json.dumps(sizzle_selector)
+    return f"return Sizzle({selector});"
 
 
 __all__ = (

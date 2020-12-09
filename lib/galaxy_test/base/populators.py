@@ -443,9 +443,13 @@ class BaseDatasetPopulator:
 
     def get_history_dataset_details(self, history_id, **kwds):
         dataset_id = self.__history_content_id(history_id, **kwds)
-        details_response = self._get_contents_request(history_id, "/datasets/%s" % dataset_id)
-        assert details_response.status_code == 200
+        details_response = self.get_history_dataset_details_raw(history_id, dataset_id)
+        details_response.raise_for_status()
         return details_response.json()
+
+    def get_history_dataset_details_raw(self, history_id, dataset_id):
+        details_response = self._get_contents_request(history_id, f"/datasets/{dataset_id}")
+        return details_response
 
     def get_history_dataset_extra_files(self, history_id, **kwds):
         dataset_id = self.__history_content_id(history_id, **kwds)
@@ -515,6 +519,11 @@ class BaseDatasetPopulator:
             src = 'hdca'
         return dict(src=src, id=history_content["id"])
 
+    def dataset_storage_info(self, dataset_id):
+        storage_response = self.galaxy_interactor.get("datasets/{}/storage".format(dataset_id))
+        storage_response.raise_for_status()
+        return storage_response.json()
+
     def get_roles(self):
         roles_response = self.galaxy_interactor.get("roles", admin=True)
         assert roles_response.status_code == 200
@@ -548,6 +557,16 @@ class BaseDatasetPopulator:
         role_response = self.galaxy_interactor.post("roles", data=payload, admin=True)
         assert role_response.status_code == 200
         return role_response.json()[0]
+
+    def create_quota(self, quota_payload):
+        quota_response = self.galaxy_interactor.post("quotas", data=quota_payload, admin=True)
+        quota_response.raise_for_status()
+        return quota_response.json()
+
+    def get_quotas(self):
+        quota_response = self.galaxy_interactor.get("quotas", admin=True)
+        quota_response.raise_for_status()
+        return quota_response.json()
 
     def make_private(self, history_id, dataset_id):
         role_id = self.user_private_role_id()

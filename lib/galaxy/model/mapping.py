@@ -76,6 +76,7 @@ model.User.table = Table(
     Column("deleted", Boolean, index=True, default=False),
     Column("purged", Boolean, index=True, default=False),
     Column("disk_usage", Numeric(15, 0), index=True),
+    # Column("person_metadata", JSONType),  # TODO: add persistent, configurable metadata rep for workflow creator
     Column("active", Boolean, index=True, default=True, nullable=False),
     Column("activation_token", TrimmedString(64), nullable=True, index=True))
 
@@ -999,6 +1000,8 @@ model.Workflow.table = Table(
     Column("has_cycles", Boolean),
     Column("has_errors", Boolean),
     Column("reports_config", JSONType),
+    Column("creator_metadata", JSONType),
+    Column("license", TEXT),
     Column("uuid", UUIDType, nullable=True))
 
 model.WorkflowStep.table = Table(
@@ -2625,6 +2628,14 @@ simple_mapping(
 simple_mapping(
     model.WorkflowInvocationOutputValue,
     workflow_invocation=relation(model.WorkflowInvocation, backref="output_values"),
+    workflow_invocation_step=relation(model.WorkflowInvocationStep,
+        foreign_keys=[model.WorkflowInvocationStep.table.c.workflow_invocation_id, model.WorkflowInvocationStep.table.c.workflow_step_id],
+        primaryjoin=and_(
+            model.WorkflowInvocationStep.table.c.workflow_invocation_id == model.WorkflowInvocationOutputValue.table.c.workflow_invocation_id,
+            model.WorkflowInvocationStep.table.c.workflow_step_id == model.WorkflowInvocationOutputValue.table.c.workflow_step_id,
+        ),
+        backref='output_value'
+    ),
     workflow_step=relation(model.WorkflowStep),
     workflow_output=relation(model.WorkflowOutput),
 )

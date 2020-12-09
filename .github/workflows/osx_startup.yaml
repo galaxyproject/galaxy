@@ -19,7 +19,7 @@ jobs:
     - name: Install tox
       run: pip install tox
     - name: Install and activate miniconda  # use this job to test using Python from a conda environment
-      uses: goanpeca/setup-miniconda@v1
+      uses: conda-incubator/setup-miniconda@v2
       with:
         activate-environment: ''
     - name: run tests

@@ -104,7 +104,9 @@
                                     :parameters="parameters"
                                     :annotation="annotation"
                                     :version="version"
+                                    :license="license"
                                     :versions="versions"
+                                    :creator="creator"
                                     @onVersion="onVersion"
                                     @onRename="onRename"
                                 />
@@ -173,6 +175,14 @@ export default {
         annotation: {
             type: String,
             default: "",
+        },
+        license: {
+            type: String,
+            default: "",
+        },
+        creator: {
+            type: Object,
+            default: null,
         },
         moduleSections: {
             type: Array,
@@ -381,6 +391,8 @@ export default {
                     this.markdownText = markdown;
                     this.markdownConfig = report;
                     const has_changes = showUpgradeMessage(data);
+                    this.license = data.license;
+                    this.creator = data.creator;
                     getVersions(this.id).then((versions) => {
                         this.versions = versions;
                     });

@@ -165,7 +165,7 @@ class DataMetaFilter(Filter):
             if isinstance(m, list):
                 meta_value |= set(m)
             elif isinstance(m, dict):
-                meta_value |= set(["%s,%s" % (k, v) for k, v in m.items()])
+                meta_value |= {f"{k},{v}" for k, v in m.items()}
             elif isinstance(m, str) and os.path.isfile(m):
                 with open(m) as fh:
                     for line in fh:
@@ -679,7 +679,7 @@ class DynamicOptions:
                 else:
                     # Pass just the first megabyte to parse_file_fields.
                     log.warning("Attempting to load options from large file, reading just first megabyte")
-                    with open(path, 'r') as fh:
+                    with open(path) as fh:
                         contents = fh.read(1048576)
                     options += self.parse_file_fields(StringIO(contents))
         elif self.tool_data_table:

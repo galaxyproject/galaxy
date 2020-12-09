@@ -67,7 +67,7 @@ class MockApp:
         self.security_agent = self.model.security_agent
         self.visualizations_registry = MockVisualizationsRegistry()
         self.tag_handler = tags.GalaxyTagHandler(self.model.context)
-        self.quota_agent = quota.QuotaAgent(self.model)
+        self.quota_agent = quota.DatabaseQuotaAgent(self.model)
         self.init_datatypes()
         self.job_config = Bunch(
             dynamic_params=None,
@@ -164,7 +164,6 @@ class MockAppConfig(Bunch):
         self.shed_tool_config_file_set = False
         self.preserve_python_environment = "always"
         self.enable_beta_gdpr = False
-        self.legacy_eager_objectstore_initialization = True
 
         self.version_major = "19.09"
 
