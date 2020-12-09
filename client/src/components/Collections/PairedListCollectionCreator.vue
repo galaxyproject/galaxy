@@ -76,6 +76,19 @@
                         </ul>
                     </b-alert>
                 </div>
+                <div v-if="!initialPairsPossible">
+                    <b-alert show variant="danger" dismissible>
+                        {{
+                            l(
+                                "Could not automatically create any pairs from the given dataset names. You may want to choose or enter different filters and try auto-pairing again."
+                            )
+                        }}
+                        <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
+                            {{ cancelText }}
+                        </a>
+                        {{ allInvalidElementsPartTwo }}
+                    </b-alert>
+                </div>
                 <collection-creator
                     :oncancel="oncancel"
                     @hide-original-toggle="hideOriginalsToggle"
@@ -393,8 +406,8 @@ import { Splitpanes, Pane } from "splitpanes";
 
 export default {
     created() {
-        this._elementsSetUp();
         this.strategy = this.autopairLCS;
+        this._elementsSetUp();
         this.filters = this.commonFilters[this.filters] || this.commonFilters[this.DEFAULT_FILTERS];
     },
     components: { CollectionCreator, DatasetCollectionElementView, PairedElementView, Splitpanes, Pane }, //draggable?
@@ -414,6 +427,7 @@ export default {
             DEFAULT_FILTERS: "illumina",
             filters: this.DEFAULT_FILTERS,
             automaticallyPair: true,
+            initialPairsPossible: true,
             matchPercentage: 0.9,
             twoPassAutoPairing: true,
             removeExtensions: true,
@@ -484,6 +498,7 @@ export default {
             errorText: _l("Galaxy could not be reached and may be updating.  Try again in a few minutes."),
             invalidHeader: _l("The following selections could not be included due to problems:"),
             allInvalidElementsPartOne: _l("At least two elements are needed for the collection. You may need to"),
+            noElementsHeader: _l("No datasets were selected"),
             cancelText: _l("cancel"),
             allInvalidElementsPartTwo: _l("and reselect new elements."),
         };
@@ -531,7 +546,12 @@ export default {
             this.workingElements = this.initialElements.slice(0);
             this._ensureElementIds();
             this._validateElements();
+            // TODO mangle names and autopair initially
             // this._mangleDuplicateNames();
+            if (this.automaticallyPair == true) {
+                this.autoPair();
+                this.initialPairsPossible = this.pairedElements.length > 0;
+            }
         },
         initialFiltersSet: function () {
             this.changeFilters("illumina");
@@ -728,10 +748,11 @@ export default {
             var split = this.splitByFilter();
             var paired = [];
             if (this.twoPassAutopairing) {
-                paired = this.autopairSimple({
+                var simplePaired = this.autopairSimple({
                     listA: split[0],
                     listB: split[1],
                 });
+                paired = simplePaired ? simplePaired : paired;
                 split = this.splitByFilter();
             }
 
@@ -741,12 +762,11 @@ export default {
             // then try the remainder with something less strict
             strategy = strategy || this.strategy;
             split = this.splitByFilter();
-            paired = paired.concat(
-                strategy.call(this, {
-                    listA: split[0],
-                    listB: split[1],
-                })
-            );
+            var pairedStrategy = strategy.call(this, {
+                listA: split[0],
+                listB: split[1],
+            });
+            paired = pairedStrategy ? paired.concat(pairedStrategy) : paired;
             return paired;
         },
         /** add a dataset to the unpaired list in it's proper order */
