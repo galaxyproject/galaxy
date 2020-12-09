@@ -1,4 +1,5 @@
 import io
+import json
 import os
 import re
 import shutil
@@ -276,9 +277,20 @@ class GalaxyInteractorApi:
     def __get_job_stdio(self, job_id):
         return self._get('jobs/%s?full=true' % job_id)
 
-    def new_history(self, history_name='test_history'):
-        history_json = self._post("histories", {"name": history_name}).json()
-        return history_json['id']
+    def new_history(self, history_name='test_history', publish_history=False):
+        create_response = self._post("histories", {"name": history_name})
+        try:
+            create_response.raise_for_status()
+        except Exception as e:
+            raise Exception(f"Error occured while creating history with name '{history_name}': {e}")
+        history_id = create_response.json()['id']
+        if publish_history:
+            self.publish_history(history_id)
+        return history_id
+
+    def publish_history(self, history_id):
+        response = self._put(f'histories/{history_id}', json.dumps({'published': True}))
+        response.raise_for_status()
 
     @nottest
     def test_data_path(self, tool_id, filename):
@@ -631,46 +643,41 @@ class GalaxyInteractorApi:
 
         return fetcher
 
-    def __inject_api_key(self, data, key, admin, anon):
-        if data is None:
-            data = {}
-        params = {}
+    def api_key_header(self, key, admin, anon):
+        header = {}
         if not anon:
             if not key:
                 key = self.api_key if not admin else self.master_api_key
-            params['key'] = key
-        return params, data
+            header['x-api-key'] = key
+        return header
 
     def _post(self, path, data=None, files=None, key=None, admin=False, anon=False, json=False):
         # If json=True, use post payload using request's json parameter instead of the data
         # parameter (i.e. assume the contents is a jsonified blob instead of form parameters
         # with individual parameters jsonified if needed).
-        params, data = self.__inject_api_key(data=data, key=key, admin=admin, anon=anon)
+        headers = self.api_key_header(key=key, admin=admin, anon=anon)
         url = f"{self.api_url}/{path}"
-        return galaxy_requests_post(url, data=data, files=files, params=params, as_json=json)
+        return galaxy_requests_post(url, data=data, files=files, as_json=json, headers=headers)
 
     def _delete(self, path, data=None, key=None, admin=False, anon=False):
-        params, data = self.__inject_api_key(data=data, key=key, admin=admin, anon=anon)
-        # no data for DELETE
-        params.update(data)
-        return requests.delete(f"{self.api_url}/{path}", params=params)
+        headers = self.api_key_header(key=key, admin=admin, anon=anon)
+        return requests.delete(f"{self.api_url}/{path}", params=data, headers=headers)
 
     def _patch(self, path, data=None, key=None, admin=False, anon=False):
-        params, data = self.__inject_api_key(data=data, key=key, admin=admin, anon=anon)
-        return requests.patch(f"{self.api_url}/{path}", params=params, data=data)
+        headers = self.api_key_header(key=key, admin=admin, anon=anon)
+        return requests.patch(f"{self.api_url}/{path}", data=data, headers=headers)
 
     def _put(self, path, data=None, key=None, admin=False, anon=False):
-        params, data = self.__inject_api_key(data=data, key=key, admin=admin, anon=anon)
-        return requests.put(f"{self.api_url}/{path}", params=params, data=data)
+        headers = self.api_key_header(key=key, admin=admin, anon=anon)
+        return requests.put(f"{self.api_url}/{path}", data=data, headers=headers)
 
     def _get(self, path, data=None, key=None, admin=False, anon=False):
-        params, data = self.__inject_api_key(data=data, key=key, admin=admin, anon=anon)
-        # no data for GET
-        params.update(data)
+        headers = self.api_key_header(key=key, admin=admin, anon=anon)
         if path.startswith("/api"):
             path = path[len("/api"):]
         url = f"{self.api_url}/{path}"
-        return requests.get(url, params=params)
+        # no data for GET
+        return requests.get(url, params=data, headers=headers)
 
 
 def ensure_tool_run_response_okay(submit_response_object, request_desc, inputs=None):
@@ -901,6 +908,7 @@ def verify_tool(tool_id,
                 quiet=False,
                 test_history=None,
                 no_history_cleanup=False,
+                publish_history=False,
                 force_path_paste=False,
                 maxseconds=DEFAULT_TOOL_TEST_WAIT,
                 tool_test_dicts=None,
@@ -953,7 +961,7 @@ def verify_tool(tool_id,
     if test_history is None:
         created_history = True
         history_name = f"Tool Test History for {tool_id}/{tool_version}-{test_index}"
-        test_history = galaxy_interactor.new_history(history_name=history_name)
+        test_history = galaxy_interactor.new_history(history_name=history_name, publish_history=publish_history)
 
     # Upload data to test_history, run the tool and check the outputs - record
     # API input, job info, tool run exception, as well as exceptions related to
@@ -1308,7 +1316,7 @@ def test_data_iter(required_files):
         yield data_dict
 
 
-def galaxy_requests_post(url, data=None, files=None, as_json=False, params=None):
+def galaxy_requests_post(url, data=None, files=None, as_json=False, params=None, headers=None):
     """Handle some Galaxy conventions and work around requests issues.
 
     This is admittedly kind of hacky, so the interface may change frequently - be
@@ -1344,6 +1352,8 @@ def galaxy_requests_post(url, data=None, files=None, as_json=False, params=None)
     kwd = {
         'files': files,
     }
+    if headers:
+        kwd['headers'] = headers
     if as_json:
         kwd['json'] = data
         kwd['params'] = params
