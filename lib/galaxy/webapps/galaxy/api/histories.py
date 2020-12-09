@@ -348,6 +348,7 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
         else:
             new_history = self.manager.create(user=trans.user, name=hist_name)
 
+        trans.app.security_agent.history_set_default_permissions(new_history)
         trans.sa_session.add(new_history)
         trans.sa_session.flush()
 
