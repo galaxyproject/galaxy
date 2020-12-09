@@ -81,14 +81,14 @@ def main():
 	write_output_json(outputFile, output_stt_json_file)
 
 	# Start segmentation schema with diarization data
+	# Create a segmentation object to serialize
+	seg_schema = Segmentation()
+
+	# Create the media object
+	segMedia = SegmentationMedia(duration, media_file)
+	seg_schema.media = segMedia
+	
 	if "speaker_labels" in aws_results.keys():
-    	# Create a segmentation object to serialize
-		seg_schema = Segmentation()
-
-		# Create the media object
-		segMedia = SegmentationMedia(duration, media_file)
-		seg_schema.media = segMedia
-
 		speakerLabels = aws_results["speaker_labels"]
 		seg_schema.numSpeakers = speakerLabels["speakers"]
 
@@ -97,8 +97,8 @@ def main():
 		for segment in segments:
 			seg_schema.addSegment(None, None, float(segment["start_time"]), float(segment["end_time"]), segment["speaker_label"])
 		
-		# Write the output
-		write_output_json(seg_schema, output_seg_json_file)
+	# Write the output
+	write_output_json(seg_schema, output_seg_json_file)
 
 # Serialize schema obj and write it to output file
 def write_output_json(input_json, json_file):

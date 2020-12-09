@@ -1,7 +1,7 @@
 import json
 
 class Segmentation:
-	def __init__(self, segments=[], media=None, numSpeakers=None):
+	def __init__(self, segments=[], media=None, numSpeakers=0):
 		self.segments = segments
 		self.numSpeakers = numSpeakers
 		if media is None:
