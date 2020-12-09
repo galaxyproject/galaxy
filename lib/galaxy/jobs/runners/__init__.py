@@ -656,9 +656,9 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
                 if new_async_job_state:
                     new_watched.append(new_async_job_state)
             except Exception as e:
-                log.exception('AMPPD: Unhandled exception checking watched item')
-                log.debug(str(e))
                 try:
+                    log.exception('AMPPD: Unhandled exception checking watched item')
+                    log.debug(str(e))
                     log.debug("Async Job Id: " + str(async_job_state.job_wrapper.job_id))
                     if async_job_state is not None:
                         log.debug("*** Async Job State: ****")
