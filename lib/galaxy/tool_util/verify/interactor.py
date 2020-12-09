@@ -286,10 +286,14 @@ class GalaxyInteractorApi:
         return response.json()
 
     @nottest
-    def test_data_download(self, tool_id, filename, mode='file'):
+    def test_data_download(self, tool_id, filename, mode='file', is_output=True):
         if self.supports_test_data_download:
             response = self._get(f"tools/{tool_id}/test_data_download?filename={filename}", admin=True)
-            assert response.status_code == 200, "Test file (%s) is missing. If you use planemo try --update_test_data to generate one." % filename
+            if response.status_code != 200:
+                if is_output:
+                    raise AssertionError(f"Test output file ({filename}) is missing. If you are using planemo, try adding --update_test_data to generate it.")
+                else:
+                    raise AssertionError(f"Test input file ({filename}) cannot be found.")
             if mode == 'file':
                 return response.content
             elif mode == 'directory':
@@ -340,7 +344,7 @@ class GalaxyInteractorApi:
                         "files_%d|url_paste" % i: "file://" + file_path
                     })
                 else:
-                    file_content = self.test_data_download(tool_id, file_name)
+                    file_content = self.test_data_download(tool_id, file_name, is_output=False)
                     files["files_%s|file_data" % i] = file_content
                 tool_input.update({
                     "files_%d|type" % i: "upload_dataset",
@@ -359,7 +363,7 @@ class GalaxyInteractorApi:
                     "files_0|url_paste": "file://" + file_name
                 })
             else:
-                file_content = self.test_data_download(tool_id, fname)
+                file_content = self.test_data_download(tool_id, fname, is_output=False)
                 files = {
                     "files_0|file_data": file_content
                 }
@@ -959,15 +963,22 @@ def verify_tool(tool_id,
     job_stdio = None
     job_output_exceptions = None
     tool_execution_exception = None
+    input_staging_exception = None
     expected_failure_occurred = False
     begin_time = time.time()
     try:
-        stage_data_in_history(galaxy_interactor,
-                            tool_id,
-                            testdef.test_data(),
-                            history=test_history,
-                            force_path_paste=force_path_paste,
-                            maxseconds=maxseconds)
+        try:
+            stage_data_in_history(
+                galaxy_interactor,
+                tool_id,
+                testdef.test_data(),
+                history=test_history,
+                force_path_paste=force_path_paste,
+                maxseconds=maxseconds,
+            )
+        except Exception as e:
+            input_staging_exception = e
+            raise
         try:
             tool_response = galaxy_interactor.run_tool(testdef, test_history, resource_parameters=resource_parameters)
             data_list, jobs, tool_inputs = tool_response.outputs, tool_response.jobs, tool_response.inputs
@@ -1012,6 +1023,9 @@ def verify_tool(tool_id,
                 dynamic_param_error = getattr(tool_execution_exception, "dynamic_param_error", False)
                 job_data["dynamic_param_error"] = dynamic_param_error
                 status = "error" if not skip_on_dynamic_param_errors or not dynamic_param_error else "skip"
+            if input_staging_exception:
+                job_data["execution_problem"] = "Input staging problem: %s" % util.unicodify(input_staging_exception)
+                status = "error"
             job_data["status"] = status
             register_job_data(job_data)
 
