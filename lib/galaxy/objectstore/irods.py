@@ -4,7 +4,6 @@ Object Store plugin for the Integrated Rule-Oriented Data System (iRODS)
 import logging
 import os
 import shutil
-import subprocess
 from datetime import datetime
 from functools import partial
 try:
@@ -31,10 +30,6 @@ from ..objectstore import DiskObjectStore
 IRODS_IMPORT_MESSAGE = ('The Python irods package is required to use this feature, please install it')
 # 1 MB
 CHUNK_SIZE = 2**20
-# 100MB. Default file size (configurable) after which icommands are used instead of client code for performance reasons
-ICOMMAND_FILE_SIZE = 100 * (2**20)
-# Default number of threads (configurable) used in icommands for performance reasons
-ICOMMAND_NUM_THREADS = 3
 log = logging.getLogger(__name__)
 
 
@@ -75,12 +70,6 @@ def parse_config_xml(config_xml):
         poolsize = int(c_xml[0].get('poolsize', 3))
         refresh_time = int(c_xml[0].get('refresh_time', 300))
 
-        i_xml = config_xml.findall('icommand')
-        if not i_xml:
-            _config_xml_error('icommand')
-        icommand_file_size = int(i_xml[0].get('file_size', ICOMMAND_FILE_SIZE))
-        icommand_num_threads = int(i_xml[0].get('num_threads', ICOMMAND_NUM_THREADS))
-
         c_xml = config_xml.findall('cache')
         if not c_xml:
             _config_xml_error('cache')
@@ -110,10 +99,6 @@ def parse_config_xml(config_xml):
                 'timeout': timeout,
                 'poolsize': poolsize,
                 'refresh_time' : refresh_time
-            },
-            'icommand': {
-                'file_size': icommand_file_size,
-                'num_threads': icommand_num_threads,
             },
             'cache': {
                 'size': cache_size,
@@ -147,10 +132,6 @@ class CloudConfigMixin:
                 'timeout': self.timeout,
                 'poolsize': self.poolsize,
                 'refresh_time': self.refresh_time,
-            },
-            'icommand': {
-                'file_size': self.icommand_file_size,
-                'num_threads': self.icommand_num_threads,
             },
             'cache': {
                 'size': self.cache_size,
@@ -214,16 +195,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         self.refresh_time = connection_dict.get('refresh_time')
         if self.refresh_time is None:
             _config_dict_error('connection->refresh_time')
-
-        icommand_dict = config_dict['icommand']
-        if icommand_dict is None:
-            _config_dict_error('icommand')
-        self.icommand_file_size = icommand_dict.get('file_size')
-        if self.icommand_file_size is None:
-            _config_dict_error('icommand->file_size')
-        self.icommand_num_threads = icommand_dict.get('num_threads')
-        if self.icommand_num_threads is None:
-            _config_dict_error('icommand->num_threads')
 
         cache_dict = config_dict['cache']
         if cache_dict is None:
@@ -464,7 +435,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                 # Create sub-collection first
                 self.session.collections.create(collection_path, recurse=True)
 
-                self.put_data_object(source_file, collection_path)
+                # Add the source file to the irods collection
+                self.session.data_objects.put(source_file, collection_path + "/", **options)
 
                 end_time = datetime.now()
                 log.debug("Pushed cache file '%s' to collection '%s' (%s bytes transfered in %s sec)",
@@ -747,23 +719,3 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
     def _get_store_usage_percent(self):
         return 0.0
-
-    def put_data_object(self, source_file, collection_path):
-        options = {kw.FORCE_FLAG_KW: ''}
-        source_file_size = os.path.getsize(source_file)
-
-        log.debug("source_file: {}".format(source_file))
-        log.debug("source_file_size: {}".format(source_file_size))
-        log.debug("collection_path: {}".format(collection_path))
-        log.debug("icommand_num_threads: {}".format(self.icommand_num_threads))
-
-        if source_file_size < self.icommand_file_size:
-            log.debug("Adding file to irods via client")
-            self.session.data_objects.put(source_file, collection_path + "/", **options)
-        else:
-            log.debug("Adding file to irods via icommands")
-            ret_val = subprocess.call(["/Applications/icommands/iput", "-f", "-K", "-N", str(self.icommand_num_threads) , source_file, collection_path])
-            log.debug("iput ret_val: {}".format(ret_val))
-            if ret_val != 0:
-                log.error("iput command failed with return value {}. Number of threads: {}, source file: {}. collection path: {}".format(ret_val, self.icommand_num_threads , source_file, collection_path))
-                raise Exception("iput command failed with return value {}. Number of threads: {}, source file: {}. collection path: {}".format(ret_val, self.icommand_num_threads , source_file, collection_path))
