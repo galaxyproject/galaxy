@@ -255,7 +255,7 @@ class MockGalaxyInteractor:
         self.history_deleted = False
         self.history_created = False
 
-    def new_history(self, history_name=""):
+    def new_history(self, history_name="", publish_history=False):
         self.history_created = True
         return NEW_HISTORY
 

@@ -32,8 +32,9 @@ TestException = namedtuple("TestException", ["tool_id", "exception", "was_record
 
 class Results:
 
-    def __init__(self, default_suitename, test_json, append=False):
+    def __init__(self, default_suitename, test_json, append=False, galaxy_url=None):
         self.test_json = test_json or "-"
+        self.galaxy_url = galaxy_url
         test_results = []
         test_exceptions = []
         suitename = default_suitename
@@ -98,6 +99,8 @@ class Results:
             },
             'tests': tests,
         }
+        if self.galaxy_url:
+            report_obj['galaxy_url'] = self.galaxy_url
         if self.test_json == "-":
             print(json.dumps(report_obj))
         else:
@@ -351,8 +354,9 @@ def main(argv=None):
         return val
 
     output_json_path = get_option("output_json")
+    galaxy_url = get_option("galaxy_url")
     galaxy_interactor_kwds = {
-        "galaxy_url": get_option("galaxy_url"),
+        "galaxy_url": galaxy_url,
         "master_api_key": get_option("admin_key"),
         "api_key": get_option("key"),
         "keep_outputs_dir": args.output,
@@ -365,7 +369,7 @@ def main(argv=None):
     verbose = args.verbose
 
     galaxy_interactor = GalaxyInteractorApi(**galaxy_interactor_kwds)
-    results = Results(args.suite_name, output_json_path, append=args.append)
+    results = Results(args.suite_name, output_json_path, append=args.append, galaxy_url=galaxy_url)
     check_against = None if not args.skip_successful else results
     test_references = build_case_references(
         galaxy_interactor,
