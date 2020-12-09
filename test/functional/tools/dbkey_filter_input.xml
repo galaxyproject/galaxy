@@ -21,19 +21,19 @@ cat '$inputs' > '$output'
         <!-- can choose a dbkey if it matches input -->
         <test>
             <param name="inputs" value="simple_line.txt" dbkey="hg19" />
-            <param name="index" value="hg19" />
+            <param name="index" value="hg19_value" />
             <output name="output" file="simple_line.txt" />
         </test>
         <!-- choose any dbkey if not specified in reference -->
         <test>
             <param name="inputs" value="simple_line.txt" />
-            <param name="index" value="hg19" />
+            <param name="index" value="hg19_value" />
             <output name="output" file="simple_line.txt" />
         </test>
         <!-- cant choose a dkkey different from reference -->
         <test expect_failure="true">
             <param name="inputs" value="simple_line.txt" dbkey="hg18" />
-            <param name="index" value="hg19" />
+            <param name="index" value="hg19_value" />
             <output name="output" file="simple_line.txt" />
         </test>
     </tests>

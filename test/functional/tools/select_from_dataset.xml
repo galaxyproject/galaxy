@@ -5,7 +5,7 @@ echo select_single '$select_single' > '$output' &&
 echo select_multiple '$select_multiple' >> '$output' &&
 echo select_collection '$select_collection' >> '$output'
     ]]></command>
-	<inputs>
+    <inputs>
         <param name="single" type="data" format="tabular" label="single"/>
         <param name="select_single" type="select" label="select_single">
             <options from_dataset="single">
@@ -22,14 +22,14 @@ echo select_collection '$select_collection' >> '$output'
                 <validator type="no_options" message="No data is available in single" />
             </options>
         </param>
-		<param name="collection" type="data_collection" format="tabular" collection_type="list" label="collection"/>
+        <param name="collection" type="data_collection" format="tabular" collection_type="list" label="collection"/>
         <param name="select_collection" type="select" multiple="true" label="select_collection">
             <options from_dataset="collection">
                 <column name="name" index="0"/>
                 <column name="value" index="0"/>
                 <validator type="no_options" message="No data is available in single" />
             </options>
-		</param>
+        </param>
     </inputs>
 
     <outputs>
@@ -39,16 +39,16 @@ echo select_collection '$select_collection' >> '$output'
     <tests>
         <test>
             <param name="single" value="1.tabular" />
-			<param name="select_single" value="chr10" />
+            <param name="select_single" value="chr10" />
             <param name="multiple" value="1.tabular,2.tabular" />
             <param name="select_multiple" value="chr10,7" />
-			<param name="collection">
-			    <collection type="list">
-					<element name="1" value="1.tabular" />
-					<element name="2" value="2.tabular" />
+            <param name="collection">
+                <collection type="list">
+                    <element name="1" value="1.tabular" />
+                    <element name="2" value="2.tabular" />
                 </collection>
-	        </param>
-			<param name="select_collection" value="chr10,7" />
+            </param>
+            <param name="select_collection" value="chr10,7" />
             <output name="output">
                 <assert_contents>
                     <has_text text="select_single chr10" />    
