@@ -460,7 +460,7 @@ class Data(metaclass=DataMeta):
             # Sanitize anytime we respond with plain text/html content.
             # Check to see if this dataset's parent job is allowlisted
             # We cannot currently trust imported datasets for rendering.
-            if not from_dataset.creating_job.imported and from_dataset.creating_job.tool_id in trans.app.config.sanitize_allowlist:
+            if not from_dataset.creating_job.imported and from_dataset.creating_job.tool_id.startswith(tuple(trans.app.config.sanitize_allowlist)):
                 return open(filename, mode='rb')
 
             # This is returning to the browser, it needs to be encoded.
