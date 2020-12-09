@@ -1,5 +1,7 @@
 # Client Build System
 
+Foo
+
 Installs, stages, and builds the client-side scripts necessary for running the
 Galaxy webapp. When started through `run.sh` or any other method that utilizes
 `scripts/common_startup.sh`, Galaxy will (since 18.09) _automatically_ build
