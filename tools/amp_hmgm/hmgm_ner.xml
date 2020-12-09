@@ -20,7 +20,7 @@
     <data name="iiif_uncorrected" format="json" label="IIIF Uncorrected" help="IIIF file converted from the original AMP named entity file" />
     <data name="iiif_corrected" format="json" label="IIIF Corrected" help="IIIF file with corrected named entities" />
     <data name="amp_entities_corrected" format="ner" label="AMP Entities Corrected" help="AMP NER file converted from the corrected IIIF JSON file" />
-    <data name="task_info" format="json" label="HMGM Task INFO" help="Information about the Human MMGM task created for NER Correction" />
+    <data name="task_info" format="json" label="HMGM Task Info" help="Information about the Human MMGM task created for NER Correction" />
   </outputs>
   <tests>
   </tests>
