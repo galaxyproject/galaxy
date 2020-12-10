@@ -375,7 +375,12 @@
                                         {{ l("Unpair all") }}
                                     </a>
                                 </div>
-                                <div class="paired-columns flex-column-container scroll-container flex-row">
+                                <draggable 
+                                v-model= pairedElements
+                                class="paired-columns flex-column-container scroll-container flex-row"
+                                @start="drag = true"
+                                @end="drag = false"
+                                >
                                     <ol class="column-datasets">
                                         <paired-element-view
                                             v-for="pair in pairedElements"
@@ -384,7 +389,7 @@
                                             :unlinkFn="clickUnpair(pair)"
                                         />
                                     </ol>
-                                </div>
+                                </draggable>
                             </pane>
                         </splitpanes>
                     </template>
@@ -403,6 +408,8 @@ import STATES from "mvc/dataset/states";
 import naturalSort from "utils/natural-sort";
 import "splitpanes/dist/splitpanes.css";
 import { Splitpanes, Pane } from "splitpanes";
+import BootstrapVue from "bootstrap-vue";
+import draggable from "vuedraggable";
 
 export default {
     created() {
@@ -410,7 +417,7 @@ export default {
         this.filters = this.commonFilters[this.filters] || this.commonFilters[this.DEFAULT_FILTERS];
         this._elementsSetUp();
     },
-    components: { CollectionCreator, DatasetCollectionElementView, PairedElementView, Splitpanes, Pane }, //draggable?
+    components: { CollectionCreator, DatasetCollectionElementView, PairedElementView, Splitpanes, Pane, draggable },
     data: function () {
         return {
             state: "build", //error
