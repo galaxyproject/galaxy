@@ -1649,6 +1649,16 @@ def simple_mapping(model, **kwds):
 
 simple_mapping(model.WorkerProcess)
 
+
+# User tables.
+mapper(model.UserPreference, model.UserPreference.table, properties={})
+mapper(model.UserAction, model.UserAction.table, properties=dict(
+    # user=relation( model.User.mapper )
+    user=relation(model.User)
+))
+mapper(model.APIKeys, model.APIKeys.table, properties={})
+
+
 mapper(model.FormValues, model.FormValues.table, properties=dict(
     form_definition=relation(model.FormDefinition,
         primaryjoin=(model.FormValues.table.c.form_definition_id == model.FormDefinition.table.c.id))
@@ -2296,40 +2306,6 @@ mapper(model.PostJobActionAssociation, model.PostJobActionAssociation.table, pro
     post_job_action=relation(model.PostJobAction)
 ))
 
-mapper(model.Job, model.Job.table, properties=dict(
-    # user=relation( model.User.mapper ),
-    user=relation(model.User),
-    galaxy_session=relation(model.GalaxySession),
-    history=relation(model.History, backref="jobs"),
-    library_folder=relation(model.LibraryFolder, lazy=True),
-    parameters=relation(model.JobParameter, lazy=True),
-    input_datasets=relation(model.JobToInputDatasetAssociation),
-    input_dataset_collections=relation(model.JobToInputDatasetCollectionAssociation, lazy=True),
-    input_dataset_collection_elements=relation(model.JobToInputDatasetCollectionElementAssociation, lazy=True),
-    output_datasets=relation(model.JobToOutputDatasetAssociation, lazy=True),
-    any_output_dataset_deleted=column_property(
-        exists([model.HistoryDatasetAssociation],
-               and_(model.Job.table.c.id == model.JobToOutputDatasetAssociation.table.c.job_id,
-                    model.HistoryDatasetAssociation.table.c.id == model.JobToOutputDatasetAssociation.table.c.dataset_id,
-                    model.HistoryDatasetAssociation.table.c.deleted == true())
-               )
-    ),
-    any_output_dataset_collection_instances_deleted=column_property(
-        exists([model.HistoryDatasetCollectionAssociation.table.c.id],
-               and_(model.Job.table.c.id == model.JobToOutputDatasetCollectionAssociation.table.c.job_id,
-                    model.HistoryDatasetCollectionAssociation.table.c.id == model.JobToOutputDatasetCollectionAssociation.table.c.dataset_collection_id,
-                    model.HistoryDatasetCollectionAssociation.table.c.deleted == true())
-               )
-    ),
-    output_dataset_collection_instances=relation(model.JobToOutputDatasetCollectionAssociation, lazy=True),
-    output_dataset_collections=relation(model.JobToImplicitOutputDatasetCollectionAssociation, lazy=True),
-    post_job_actions=relation(model.PostJobActionAssociation, lazy=False),
-    input_library_datasets=relation(model.JobToInputLibraryDatasetAssociation),
-    output_library_datasets=relation(model.JobToOutputLibraryDatasetAssociation, lazy=True),
-    external_output_metadata=relation(model.JobExternalOutputMetadata, lazy=True),
-    tasks=relation(model.Task)
-))
-
 mapper(model.Task, model.Task.table, properties=dict(
     job=relation(model.Job)
 ))
@@ -2785,6 +2761,41 @@ rating_mapping(model.HistoryDatasetCollectionRatingAssociation,
 rating_mapping(model.LibraryDatasetCollectionRatingAssociation,
     libary_dataset_collection=model.LibraryDatasetCollectionAssociation)
 
+
+mapper(model.Job, model.Job.table, properties=dict(
+    # user=relation( model.User.mapper ),
+    user=relation(model.User),
+    galaxy_session=relation(model.GalaxySession),
+    history=relation(model.History, backref="jobs"),
+    library_folder=relation(model.LibraryFolder, lazy=True),
+    parameters=relation(model.JobParameter, lazy=True),
+    input_datasets=relation(model.JobToInputDatasetAssociation),
+    input_dataset_collections=relation(model.JobToInputDatasetCollectionAssociation, lazy=True),
+    input_dataset_collection_elements=relation(model.JobToInputDatasetCollectionElementAssociation, lazy=True),
+    output_datasets=relation(model.JobToOutputDatasetAssociation, lazy=True),
+    output_dataset_collection_instances=relation(model.JobToOutputDatasetCollectionAssociation, lazy=True),
+    output_dataset_collections=relation(model.JobToImplicitOutputDatasetCollectionAssociation, lazy=True),
+    post_job_actions=relation(model.PostJobActionAssociation, lazy=False),
+    input_library_datasets=relation(model.JobToInputLibraryDatasetAssociation),
+    output_library_datasets=relation(model.JobToOutputLibraryDatasetAssociation, lazy=True),
+    external_output_metadata=relation(model.JobExternalOutputMetadata, lazy=True),
+    tasks=relation(model.Task)
+))
+model.Job.any_output_dataset_deleted = column_property(
+    exists([model.HistoryDatasetAssociation],
+           and_(model.Job.table.c.id == model.JobToOutputDatasetAssociation.table.c.job_id,
+                model.HistoryDatasetAssociation.table.c.id == model.JobToOutputDatasetAssociation.table.c.dataset_id,
+                model.HistoryDatasetAssociation.table.c.deleted == true())
+           )
+)
+model.Job.any_output_dataset_collection_instances_deleted = column_property(
+    exists([model.HistoryDatasetCollectionAssociation.table.c.id],
+           and_(model.Job.table.c.id == model.JobToOutputDatasetCollectionAssociation.table.c.job_id,
+                model.HistoryDatasetCollectionAssociation.table.c.id == model.JobToOutputDatasetCollectionAssociation.table.c.dataset_collection_id,
+                model.HistoryDatasetCollectionAssociation.table.c.deleted == true())
+           )
+)
+
 # Data Manager tables
 mapper(model.DataManagerHistoryAssociation, model.DataManagerHistoryAssociation.table, properties=dict(
     history=relation(model.History),
@@ -2797,14 +2808,6 @@ mapper(model.DataManagerJobAssociation, model.DataManagerJobAssociation.table, p
         backref=backref('data_manager_association', uselist=False),
         uselist=False)
 ))
-
-# User tables.
-mapper(model.UserPreference, model.UserPreference.table, properties={})
-mapper(model.UserAction, model.UserAction.table, properties=dict(
-    # user=relation( model.User.mapper )
-    user=relation(model.User)
-))
-mapper(model.APIKeys, model.APIKeys.table, properties={})
 
 # model.HistoryDatasetAssociation.mapper.add_property( "creating_job_associations",
 #     relation( model.JobToOutputDatasetAssociation ) )

@@ -10,7 +10,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import (
     eagerload,
-    eagerload_all,
+    joinedload,
     undefer
 )
 
@@ -475,7 +475,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         # with a bunch of eager loaded joins
         trans.sa_session.expunge(trans.history)
         history = trans.sa_session.query(model.History).options(
-            eagerload_all('active_datasets.creating_job_associations.job.workflow_invocation_step.workflow_invocation.workflow'),
+            joinedload('active_datasets').joinedload('creating_job_associations').joinedload('job').joinedload('workflow_invocation_step').joinedload('workflow_invocation').joinedload('workflow'),
         ).get(id)
         if not (history and ((history.user and trans.user and history.user.id == trans.user.id) or
                              (trans.history and history.id == trans.history.id) or

@@ -14,7 +14,7 @@ from uuid import uuid4
 
 from bdbag import bdbag_api as bdb
 from boltons.iterutils import remap
-from sqlalchemy.orm import eagerload_all
+from sqlalchemy.orm import joinedload
 from sqlalchemy.sql import expression
 
 from galaxy.exceptions import MalformedContents, ObjectNotFound
@@ -1162,7 +1162,7 @@ class DirectoryModelExportStore(ModelExportStore):
         query = (sa_session.query(model.HistoryDatasetAssociation)
                  .filter(model.HistoryDatasetAssociation.history == history)
                  .join("dataset")
-                 .options(eagerload_all("dataset.actions"))
+                 .options(joinedload("dataset").joinedload("actions"))
                  .order_by(model.HistoryDatasetAssociation.hid)
                  .filter(model.Dataset.purged == expression.false()))
         datasets = query.all()
