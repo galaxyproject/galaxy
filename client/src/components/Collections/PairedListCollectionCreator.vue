@@ -320,7 +320,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                </div> 
+                                </div>
                             </div>
                         </div>
                         <splitpanes horizontal style="height: 400px;">
@@ -375,21 +375,18 @@
                                         {{ l("Unpair all") }}
                                     </a>
                                 </div>
-                                <draggable 
-                                v-model= pairedElements
-                                class="paired-columns flex-column-container scroll-container flex-row"
-                                @start="drag = true"
-                                @end="drag = false"
-                                >
+                                <div class="paired-columns flex-column-container scroll-container flex-row">
                                     <ol class="column-datasets">
-                                        <paired-element-view
-                                            v-for="pair in pairedElements"
-                                            :key="pair.id"
-                                            :pair="pair"
-                                            :unlinkFn="clickUnpair(pair)"
-                                        />
+                                        <draggable v-model="pairedElements" @start="drag = true" @end="drag = false">
+                                            <paired-element-view
+                                                v-for="pair in pairedElements"
+                                                :key="pair.id"
+                                                :pair="pair"
+                                                :unlinkFn="clickUnpair(pair)"
+                                            />
+                                        </draggable>
                                     </ol>
-                                </draggable>
+                                </div>
                             </pane>
                         </splitpanes>
                     </template>

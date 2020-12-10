@@ -4,7 +4,7 @@
             <span class="forward-dataset-name flex-column">{{ pair.forward.name }}</span>
             <span class="pair-name-column flex-column">
                 <span class="pair-name">
-                    <click-to-edit :element="pair.name" />
+                    <click-to-edit :element="pair.name" :title="titlePairName" @renamed-element="renamePair"/>
                 </span>
             </span>
             <span class="reverse-dataset-name flex-column">{{ pair.reverse.name }}</span>
@@ -23,18 +23,8 @@ export default {
         return {
             name: "",
             unpairButtonTitle: _l("Unpair"),
+            titlePairName: _l("Click to rename"),
         };
-    },
-    computed: {
-        pairName: {
-            get() {
-                return this.name;
-            },
-            set(newName) {
-                this.name = newName;
-                this.$emit("pair-name-changed", this.name);
-            },
-        },
     },
     props: {
         pair: {
@@ -49,6 +39,10 @@ export default {
         l(str) {
             // _l conflicts private methods of Vue internals, expose as l instead
             return _l(str);
+        },
+        renamePair: function (response) {
+            this.pair.name = response;
+            return this.pair.name;
         },
     },
 };
