@@ -96,7 +96,7 @@ class CollectionBuildersTestCase(SeleniumTestCase):
         self.collection_builder_set_name("my awesome paired list")
 
         self.collection_builder_create()
-        self.history_panel_wait_for_hid_ok(3)
+        self.history_panel_wait_for_hid_ok(5)
         self.history_panel_wait_for_hid_hidden(1)
         self.history_panel_wait_for_hid_hidden(2)
 

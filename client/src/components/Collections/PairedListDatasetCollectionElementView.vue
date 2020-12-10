@@ -1,7 +1,7 @@
 <template>
-    <div class="dataset" @click="$emit('element-is-selected', element)">
+    <li class="dataset" @click="$emit('element-is-selected', element)">
         <click-to-edit :element="element.name" :title="titleElementName" @renamed-element="renameElement" />
-    </div>
+    </li>
 </template>
 
 <script>
