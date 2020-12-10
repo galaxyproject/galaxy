@@ -612,6 +612,16 @@ class User(Dictifiable, RepresentById):
         # https://github.com/python-social-auth/social-examples/blob/master/example-cherrypy/example/db/user.py
         return True
 
+    def attempt_create_private_role(self):
+        session = object_session(self)
+        role_name = self.email
+        role_desc = f'Private Role for {self.email}'
+        role_type = Role.types.PRIVATE
+        role = Role(name=role_name, description=role_desc, type=role_type)
+        assoc = UserRoleAssociation(self, role)
+        session.add(assoc)
+        session.flush()
+
 
 class PasswordResetToken:
     def __init__(self, user, token=None):
