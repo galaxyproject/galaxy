@@ -405,7 +405,6 @@ import STATES from "mvc/dataset/states";
 import naturalSort from "utils/natural-sort";
 import "splitpanes/dist/splitpanes.css";
 import { Splitpanes, Pane } from "splitpanes";
-import BootstrapVue from "bootstrap-vue";
 import draggable from "vuedraggable";
 
 export default {
