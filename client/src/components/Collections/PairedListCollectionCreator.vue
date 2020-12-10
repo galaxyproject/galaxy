@@ -259,7 +259,7 @@
                                             <div class="dropdown-menu">
                                                 <a class="dropdown-item" @click="changeFilters('illumina')">_1</a>
                                                 <a class="dropdown-item" @click="changeFilters('Rs')">_R1</a>
-                                                <a class="dropdown-item" @click="changeFilters('FRs')">_F</a>
+                                                <a class="dropdown-item" @click="changeFilters('dot12s')">.1.fastq</a>
                                             </div>
                                         </div>
                                     </div>
@@ -316,11 +316,11 @@
                                             <div class="dropdown-menu">
                                                 <a class="dropdown-item" @click="changeFilters('illumina')">_2</a>
                                                 <a class="dropdown-item" @click="changeFilters('Rs')">_R2</a>
-                                                <a class="dropdown-item" @click="changeFilters('FRs')">_R</a>
+                                                <a class="dropdown-item" @click="changeFilters('dot12s')">.2.fastq</a>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                                </div> 
                             </div>
                         </div>
                         <splitpanes horizontal style="height: 400px;">
@@ -422,7 +422,7 @@ export default {
             commonFilters: {
                 illumina: ["_1", "_2"],
                 Rs: ["_R1", "_R2"],
-                FRs: ["_F", "_R"],
+                dot12s: [".1.fastq", ".2.fastq"],
             },
             DEFAULT_FILTERS: "illumina",
             filters: this.DEFAULT_FILTERS,
