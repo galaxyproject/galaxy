@@ -337,7 +337,7 @@ export default {
             if (element.history_content_type === "dataset_collection") {
                 return _l("is a collection, this is not allowed");
             }
-            var validState = element.state === STATES.OK || STATES.NOT_READY_STATES.contains(element.state);
+            var validState = element.state === STATES.OK || STATES.NOT_READY_STATES.includes(element.state);
             if (!validState) {
                 return _l("has errored, is paused, or is not accessible");
             }
