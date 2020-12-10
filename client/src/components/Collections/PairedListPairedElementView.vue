@@ -4,7 +4,7 @@
             <span class="forward-dataset-name flex-column">{{ pair.forward.name }}</span>
             <span class="pair-name-column flex-column">
                 <span class="pair-name">
-                    <click-to-edit :element="pair.name" :title="titlePairName" @renamed-element="renamePair"/>
+                    <click-to-edit :element="pair.name" :title="titlePairName" @renamed-element="renamePair" />
                 </span>
             </span>
             <span class="reverse-dataset-name flex-column">{{ pair.reverse.name }}</span>
