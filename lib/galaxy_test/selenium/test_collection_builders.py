@@ -19,7 +19,7 @@ class CollectionBuildersTestCase(SeleniumTestCase):
         self.collection_builder_set_name("my cool list")
         self.screenshot("collection_builder_list")
         self.collection_builder_create()
-        self.history_panel_wait_for_hid_ok(3)
+        self.history_panel_wait_for_hid_ok(2)
 
     @selenium_test
     def test_build_list_and_hide_items(self):
@@ -50,7 +50,7 @@ class CollectionBuildersTestCase(SeleniumTestCase):
         self.collection_builder_set_name("my awesome pair")
         self.screenshot("collection_builder_pair")
         self.collection_builder_create()
-        self.history_panel_wait_for_hid_ok(5)
+        self.history_panel_wait_for_hid_ok(3)
 
     @selenium_test
     def test_build_paired_list_simple(self):
@@ -96,7 +96,7 @@ class CollectionBuildersTestCase(SeleniumTestCase):
         self.collection_builder_set_name("my awesome paired list")
 
         self.collection_builder_create()
-        self.history_panel_wait_for_hid_ok(5)
+        self.history_panel_wait_for_hid_ok(3)
         self.history_panel_wait_for_hid_hidden(1)
         self.history_panel_wait_for_hid_hidden(2)
 

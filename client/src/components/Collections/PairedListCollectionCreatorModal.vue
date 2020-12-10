@@ -32,7 +32,7 @@ export default {
          */
         createPairedListCollection: function (contents, defaultHideSourceItems) {
             const elements = contents.toJSON();
-            const copyElements = !defaultHideSourceItems;
+            var copyElements;
             const promise = this.pairedListCollectionCreatorModal(elements, {
                 defaultHideSourceItems: defaultHideSourceItems,
                 creationFn: function (elements, name, hideSourceItems) {
@@ -53,6 +53,7 @@ export default {
                             },
                         ],
                     }));
+                    copyElements = !hideSourceItems;
                     return contents.createHDCA(elements, "list:paired", name, hideSourceItems, copyElements);
                 },
             });

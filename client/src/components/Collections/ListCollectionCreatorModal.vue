@@ -32,7 +32,7 @@ export default {
          */
         createListCollection: function (contents, defaultHideSourceItems) {
             const elements = contents.toJSON();
-            const copyElements = !defaultHideSourceItems;
+            var copyElements;
             const promise = this.listCollectionCreatorModal(elements, {
                 defaultHideSourceItems: defaultHideSourceItems,
                 creationFn: function (elements, name, hideSourceItems) {
@@ -42,6 +42,7 @@ export default {
                         //TODO: this allows for list:list even if the filter above does not - reconcile
                         src: element.history_content_type === "dataset" ? "hda" : "hdca",
                     }));
+                    copyElements = hideSourceItems;
                     return contents.createHDCA(elements, "list", name, hideSourceItems, copyElements);
                 },
             });
