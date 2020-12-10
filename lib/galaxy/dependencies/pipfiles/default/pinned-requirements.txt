@@ -81,7 +81,7 @@ jsonschema==3.2.0
 keystoneauth1==3.18.0
 kombu==4.6.6
 lockfile==0.12.2
-lxml==4.4.2
+lxml==4.6.2
 mako==1.1.0
 markdown==3.1.1
 markupsafe==1.1.1
