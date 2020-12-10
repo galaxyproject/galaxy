@@ -547,6 +547,7 @@ export default {
             this._ensureElementIds();
             this._validateElements();
             this._mangleDuplicateNames();
+            this._sortInitialList();
             //attempt to autopair
             if (this.automaticallyPair == true) {
                 this.autoPair();
@@ -603,6 +604,18 @@ export default {
                 element.name = currName;
                 existingNames[element.name] = true;
             });
+        },
+        /** sort initial list */
+        _sortInitialList: function () {
+            //this.debug( '-- _sortInitialList' );
+            this._sortDatasetList(this.initialList);
+        },
+
+        /** sort a list of datasets */
+        _sortDatasetList: function (list) {
+            // currently only natural sort by name
+            list.sort((a, b) => naturalSort(a.name, b.name));
+            return list;
         },
         filterElements: function (elements, filterText) {
             return elements.filter((e) => this.filterElement(e, filterText));
