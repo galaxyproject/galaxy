@@ -52,11 +52,12 @@ class RoleAPIController(BaseAPIController):
         return item
 
     @web.legacy_expose_api
-    def create(self, trans, payload, **kwd):
+    def create(self, trans, payload=None, **kwd):
         """
         POST /api/roles
         Creates a new role.
         """
+        payload = payload or {}
         if not trans.user_is_admin:
             trans.response.status = 403
             return "You are not authorized to create a new role."
