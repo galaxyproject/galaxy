@@ -881,17 +881,7 @@ class SelectToolParameter(ToolParameter):
         """
         determine the set of values of legal options
         """
-        if self.options:
-            return {v for _, v, _ in self.options.get_options(trans, other_values)}
-        elif self.dynamic_options:
-            try:
-                call_other_values = self._get_dynamic_options_call_other_values(trans, other_values)
-                return {v for _, v, _ in eval(self.dynamic_options, self.tool.code_namespace, call_other_values)}
-            except Exception as e:
-                log.debug("Determining legal values failed for '%s': %s", self.name, unicodify(e))
-                return set()
-        else:
-            return self.legal_values
+        return {v for _, v, _ in self.get_options(trans, other_values)}
 
     def get_legal_names(self, trans, other_values):
         """
