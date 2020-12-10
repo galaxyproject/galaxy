@@ -51,6 +51,39 @@ class HmgmRunner(AsynchronousJobRunner):
         # Proceed with general initialization
         self.monitor_queue.put(ajs)
 
+    def check_watched_items(self):
+            """
+            This method is responsible for iterating over self.watched and handling
+            state changes and updating self.watched with a new list of watched job
+            states. Subclasses can opt to override this directly (as older job runners will
+            initially) or just override check_watched_item and allow the list processing to
+            reuse the logic here.
+            """
+            log.debug("Inside hmgm.py check_watched_items")
+            new_watched = []
+            for async_job_state in self.watched:
+                # AMPPD - don't fail the whole thing if we have a single error. 
+                try:
+                    new_async_job_state = self.check_watched_item(async_job_state)
+                    if new_async_job_state:
+                        new_watched.append(new_async_job_state)
+                except Exception as e:
+                    try:
+                        log.exception('AMPPD: Unhandled exception checking watched item')
+                        log.debug(str(e))
+                        log.debug("Async Job Id: " + str(async_job_state.job_wrapper.job_id))
+                        if async_job_state is not None:
+                            log.debug("*** Async Job State: ****")
+                            log.debug(repr(async_job_state))
+                            log.debug("*** End Async Job State: ****")
+                            self._fail_job_local(async_job_state.job_wrapper, "Exception checking HMGM watched item")
+                        else:
+                            log.debug("Job state was empty")
+                    except Exception as ex:
+                        log.debug("Could not print job details");
+                        log.debug(str(ex))
+            self.watched = new_watched
+
     # This is the main logic to determine what to do with thread.  Should it re-queue, be killed, or complete
     def check_watched_item(self, job_state):
         # If this job has been deleted, don't execute again.  Exit. 
