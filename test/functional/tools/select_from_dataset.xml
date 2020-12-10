@@ -57,6 +57,26 @@ echo select_collection '$select_collection' >> '$output'
                 </assert_contents>
             </output>
         </test>
+        <!-- test that dynamic selects can be chosen by name -->
+        <test>
+            <param name="single" value="2.tabular" />
+            <param name="select_single" value="68" />
+            <param name="multiple" value="2.tabular" />
+            <param name="select_multiple" value="71,62" />
+            <param name="collection">
+                <collection type="list">
+                    <element name="2" value="2.tabular" />
+                </collection>
+            </param>
+            <param name="select_collection" value="75,58" />
+            <output name="output">
+                <assert_contents>
+                    <has_text text="select_single 1" />    
+                    <has_text text="select_multiple 2,3" />    
+                    <has_text text="select_collection 4,5" />    
+                </assert_contents>
+            </output>
+        </test>
     </tests>
     <help>
     </help>
