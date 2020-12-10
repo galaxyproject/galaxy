@@ -407,8 +407,8 @@ import { Splitpanes, Pane } from "splitpanes";
 export default {
     created() {
         this.strategy = this.autopairLCS;
-        this._elementsSetUp();
         this.filters = this.commonFilters[this.filters] || this.commonFilters[this.DEFAULT_FILTERS];
+        this._elementsSetUp();
     },
     components: { CollectionCreator, DatasetCollectionElementView, PairedElementView, Splitpanes, Pane }, //draggable?
     data: function () {
@@ -546,8 +546,8 @@ export default {
             this.workingElements = this.initialElements.slice(0);
             this._ensureElementIds();
             this._validateElements();
-            // TODO mangle names and autopair initially
-            // this._mangleDuplicateNames();
+            this._mangleDuplicateNames();
+            //attempt to autopair
             if (this.automaticallyPair == true) {
                 this.autoPair();
                 this.initialPairsPossible = this.pairedElements.length > 0;
@@ -589,6 +589,20 @@ export default {
                 return _l("has been deleted or purged");
             }
             return null;
+        },
+        // /** mangle duplicate names using a mac-like '(counter)' addition to any duplicates */
+        _mangleDuplicateNames: function () {
+            var counter = 1;
+            var existingNames = {};
+            this.workingElements.forEach((element) => {
+                var currName = element.name;
+                while (Object.prototype.hasOwnProperty.call(existingNames, currName)) {
+                    currName = `${element.name} (${counter})`;
+                    counter += 1;
+                }
+                element.name = currName;
+                existingNames[element.name] = true;
+            });
         },
         filterElements: function (elements, filterText) {
             return elements.filter((e) => this.filterElement(e, filterText));
