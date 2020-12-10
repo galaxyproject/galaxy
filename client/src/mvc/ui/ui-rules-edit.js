@@ -4,7 +4,7 @@ import axios from "axios";
 import _l from "utils/localization";
 import Ui from "mvc/ui/ui-misc";
 import Vue from "vue";
-import RuleCollectionCreatorModal from "components/Collections/RuleBasedCollectionCreatorModal";
+import RuleBasedCollectionCreatorModal from "components/Collections/RuleBasedCollectionCreatorModal";
 import RulesDisplay from "components/RulesDisplay.vue";
 
 /**
@@ -77,12 +77,10 @@ var View = Backbone.View.extend({
             saveRulesFn: (rules) => this._handleRulesSave(rules),
             initialRules: value,
         };
-        RuleCollectionCreatorModal.ruleBasedCollectionCreatorModal(
-            elements,
-            elementsType,
-            importType,
-            options
-        ).done(() => {});
+        const RuleBasedCollectionCreatorModalClass = Vue.extend(RuleBasedCollectionCreatorModal);
+        const inst = new RuleBasedCollectionCreatorModalClass();
+        inst.$mount();
+        inst.ruleBasedCollectionCreatorModal(elements, elementsType, importType, options).done(() => {});
     },
 
     _handleRulesSave: function (rules) {
