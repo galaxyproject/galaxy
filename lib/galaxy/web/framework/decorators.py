@@ -4,6 +4,7 @@ from json import loads
 from traceback import format_exc
 
 import paste.httpexceptions
+from pydantic import BaseModel
 
 from galaxy.exceptions import error_codes, MessageException
 from galaxy.util import (
@@ -326,7 +327,10 @@ def format_return_as_json(rval, jsonp_callback=None, pretty=False):
     Use `pretty=True` to return pretty printed json.
     """
     dumps_kwargs = dict(indent=4, sort_keys=True) if pretty else {}
-    json = safe_dumps(rval, **dumps_kwargs)
+    if isinstance(rval, BaseModel):
+        json = rval.json()
+    else:
+        json = safe_dumps(rval, **dumps_kwargs)
     if jsonp_callback:
         json = f"{jsonp_callback}({json});"
     return json

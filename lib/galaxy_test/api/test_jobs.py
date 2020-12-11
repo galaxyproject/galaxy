@@ -137,6 +137,10 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         job = jobs_response.json()[0]
         job_id = job["id"]
 
+        job_lock_response = self._get("job_lock", admin=True)
+        job_lock_response.raise_for_status()
+        assert not job_lock_response.json()["active"]
+
         show_jobs_response = self._get("jobs/%s" % job_id, admin=False)
         self._assert_not_has_keys(show_jobs_response.json(), "command_line", "external_id")
 
