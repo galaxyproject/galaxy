@@ -554,6 +554,7 @@ def uvicorn_serve(app, port=None, host=None):
 
     Return the port the webapp is running on.
     """
+    import asyncio
     server = None
     for port in attempt_ports(port):
         try:
@@ -567,7 +568,12 @@ def uvicorn_serve(app, port=None, host=None):
                 continue
             raise
 
-    t = threading.Thread(target=server.run)
+    def run_in_loop(loop):
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(server.serve())
+
+    loop = asyncio.new_event_loop()
+    t = threading.Thread(target=run_in_loop, args=(loop,))
     t.start()
 
     return server, port
@@ -839,10 +845,7 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
             server_wrapper.stop()
 
 
-
 def launch_uvicorn_multi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=None):
-    name = prefix.lower()
-
     host, port = explicitly_configured_host_and_port(prefix, config_object)
 
     config = {}
