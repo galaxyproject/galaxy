@@ -58,7 +58,7 @@
                         <ol>
                             <li v-for="name in duplicateNames" :key="name">{{ name }}</li>
                         </ol>
-                        {{ l("Please fix these duplicates and try again.")}}
+                        {{ l("Please fix these duplicates and try again.") }}
                     </b-alert>
                 </div>
                 <collection-creator
@@ -230,7 +230,7 @@ export default {
             invalidElements: [],
             selectedDatasetElems: [],
             removeExtensions: true,
-            duplicateNames: []
+            duplicateNames: [],
         };
     },
     props: {
@@ -299,7 +299,7 @@ export default {
         },
         showDuplicateError() {
             return this.duplicateNames.length > 0;
-        }
+        },
     },
     methods: {
         l(str) {
