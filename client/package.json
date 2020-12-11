@@ -52,6 +52,7 @@
     "markdown-it": "^11.0.0",
     "moment": "2.26.0",
     "popper.js": "^1.16.1",
+    "pouchdb": "^7.2.2",
     "pouchdb-adapter-memory": "^7.2.2",
     "pouchdb-browser": "^7.2.2",
     "pouchdb-debug": "^7.2.1",

@@ -1,4 +1,4 @@
-import { mount, createLocalVue } from "@vue/test-utils";
+import { shallowMount, createLocalVue } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import JobMetrics from "./JobMetrics";
 import ec2 from "./ec2.json";
@@ -29,7 +29,7 @@ describe("JobMetrics/JobMetrics.vue", () => {
         const propsData = {
             jobId: JOB_ID,
         };
-        const wrapper = mount(JobMetrics, {
+        const wrapper = shallowMount(JobMetrics, {
             store: testStore,
             propsData,
             localVue,
@@ -47,7 +47,7 @@ describe("JobMetrics/JobMetrics.vue", () => {
             { plugin: "core", title: "memory", value: 146 },
             { plugin: "extended", title: "awesomeness", value: 42 },
         ];
-        const wrapper = mount(JobMetrics, {
+        const wrapper = shallowMount(JobMetrics, {
             store: testStore,
             propsData,
             localVue,
@@ -84,7 +84,7 @@ describe("JobMetrics/JobMetrics.vue", () => {
                 { plugin: "core", name: "runtime_seconds", raw_value: seconds },
                 { plugin: "core", name: "galaxy_memory_mb", raw_value: memory },
             ];
-            const wrapper = mount(JobMetrics, {
+            const wrapper = shallowMount(JobMetrics, {
                 store: testStore,
                 propsData,
                 localVue,

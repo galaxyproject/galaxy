@@ -126,7 +126,7 @@ export default {
         },
         job: function () {
             const job = this.$store.getters.job(this.job_id);
-            console.log(job);
+            // console.log(job);
             return job;
         },
         isEligibleForDecode: function () {
