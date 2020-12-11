@@ -2,65 +2,69 @@
 API operations on Role objects.
 """
 import logging
+from typing import List
 
-from sqlalchemy import false
+from pydantic import (
+    BaseModel,
+    Field,
+)
 
 from galaxy import web
+from galaxy.managers.base import decode_id
+from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.webapps.base.controller import BaseAPIController, url_for
 
 log = logging.getLogger(__name__)
 
 
+class RoleModel(BaseModel):
+    id: EncodedDatabaseIdField = Field("ID", description="Encoded ID of the role")
+    name: str = Field(title="Name", description="Name of the role")
+    description: str = Field(title="Description", description="Description of the role")
+    type: str = Field(title="Type", description="Type or category of the role")
+    url: str = Field(title="URL", description="URL for the role")
+    model_class: str = Field(title="Model class", description="Database model class (Role)")
+
+
+class RoleListModel(BaseModel):
+    __root__: List[RoleModel]
+
+
+def role_to_model(trans, role):
+    item = role.to_dict(view='element', value_mapper={'id': trans.security.encode_id})
+    role_id = trans.security.encode_id(role.id)
+    item['url'] = url_for('role', id=role_id)
+    return RoleModel(**item)
+
+
 class RoleAPIController(BaseAPIController):
 
-    @web.legacy_expose_api
+    @web.expose_api
     def index(self, trans, **kwd):
         """
         GET /api/roles
         Displays a collection (list) of roles.
         """
-        rval = []
-        for role in trans.sa_session.query(trans.app.model.Role).filter(trans.app.model.Role.table.c.deleted == false()):
-            if trans.user_is_admin or trans.app.security_agent.ok_to_display(trans.user, role):
-                item = role.to_dict(value_mapper={'id': trans.security.encode_id})
-                encoded_id = trans.security.encode_id(role.id)
-                item['url'] = url_for('role', id=encoded_id)
-                rval.append(item)
-        return rval
+        roles = self._role_manager.list_displayable_roles(trans)
+        return RoleListModel(__root__=list(map(lambda r: role_to_model(trans, r), roles)))
 
-    @web.legacy_expose_api
+    @web.expose_api
     def show(self, trans, id, **kwd):
         """
         GET /api/roles/{encoded_role_id}
         Displays information about a role.
         """
-        role_id = id
-        try:
-            decoded_role_id = trans.security.decode_id(role_id)
-        except Exception:
-            trans.response.status = 400
-            return "Malformed role id ( %s ) specified, unable to decode." % str(role_id)
-        try:
-            role = trans.sa_session.query(trans.app.model.Role).get(decoded_role_id)
-        except Exception:
-            role = None
-        if not role or not (trans.user_is_admin or trans.app.security_agent.ok_to_display(trans.user, role)):
-            trans.response.status = 400
-            return "Invalid role id ( %s ) specified." % str(role_id)
-        item = role.to_dict(view='element', value_mapper={'id': trans.security.encode_id})
-        item['url'] = url_for('role', id=role_id)
-        return item
+        role_id = decode_id(self.app, id)
+        role = self._role_manager.get(trans, role_id)
+        return role_to_model(trans, role)
 
-    @web.legacy_expose_api
-    def create(self, trans, payload=None, **kwd):
+    @web.require_admin
+    @web.expose_api
+    def create(self, trans, payload, **kwd):
         """
         POST /api/roles
         Creates a new role.
         """
-        payload = payload or {}
-        if not trans.user_is_admin:
-            trans.response.status = 403
-            return "You are not authorized to create a new role."
         name = payload.get('name', None)
         description = payload.get('description', None)
         if not name or not description:
@@ -88,7 +92,8 @@ class RoleAPIController(BaseAPIController):
             trans.app.security_agent.associate_group_role(group, role)
 
         trans.sa_session.flush()
-        encoded_id = trans.security.encode_id(role.id)
-        item = role.to_dict(view='element', value_mapper={'id': trans.security.encode_id})
-        item['url'] = url_for('role', id=encoded_id)
-        return [item]
+        return role_to_model(trans, role)
+
+    @property
+    def _role_manager(self):
+        return self.app.role_manager

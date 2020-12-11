@@ -19,7 +19,7 @@ class RolesApiTestCase(ApiTestCase):
     def test_list_and_show(self):
 
         def check_roles_response(response):
-            assert response.status_code == 200
+            assert_status_code_is(response, 200)
             as_list = response.json()
             assert isinstance(as_list, list)
             assert len(as_list) > 0
@@ -48,7 +48,7 @@ class RolesApiTestCase(ApiTestCase):
 
         # Check showing a valid, role.
         role_response = self._get("roles/%s" % user_role_id)
-        assert role_response.status_code == 200
+        assert_status_code_is(role_response, 200)
         role = role_response.json()
         RolesApiTestCase.check_role_dict(role, assert_id=user_role_id)
 
@@ -62,9 +62,7 @@ class RolesApiTestCase(ApiTestCase):
         }
         response = self._post("roles", payload, admin=True)
         assert_status_code_is(response, 200)
-        # TODO: Why does this return a singleton list - that is bad - should be deprecated
-        # and return a single role.
-        role = response.json()[0]
+        role = response.json()
         RolesApiTestCase.check_role_dict(role)
 
         assert role["name"] == name

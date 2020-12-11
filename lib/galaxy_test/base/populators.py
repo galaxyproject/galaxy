@@ -546,7 +546,9 @@ class BaseDatasetPopulator:
         roles = self.get_roles()
         users_roles = [r for r in roles if r["name"] == user_email]
         assert len(users_roles) == 1, f"Did not find exactly one role for email {user_email} - {users_roles}"
-        return users_roles[0]["id"]
+        role = users_roles[0]
+        assert "id" in role, role
+        return role["id"]
 
     def create_role(self, user_ids, description=None):
         payload = {

@@ -17,6 +17,7 @@ from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.interactivetool import InteractiveToolManager
 from galaxy.managers.libraries import LibraryManager
+from galaxy.managers.roles import RoleManager
 from galaxy.managers.tools import DynamicToolManager
 from galaxy.managers.users import UserManager
 from galaxy.managers.workflows import WorkflowsManager
@@ -108,6 +109,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self.test_data_resolver = test_data.TestDataResolver(file_dirs=self.config.tool_test_data_directories)
         self.library_folder_manager = FolderManager()
         self.library_manager = LibraryManager()
+        self.role_manager = RoleManager(self)
         self.dynamic_tool_manager = DynamicToolManager(self)
 
         # ConfiguredFileSources
