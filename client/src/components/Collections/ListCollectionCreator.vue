@@ -1,6 +1,6 @@
 <template>
     <div class="list-collection-creator">
-        <div v-if="(state = error)">
+        <div v-if="(state == error)">
             <b-alert show variant="danger">
                 {{ errorText }}
             </b-alert>
@@ -50,6 +50,15 @@
                                 {{ problem }}
                             </li>
                         </ul>
+                    </b-alert>
+                </div>
+                <div v-if="showDuplicateError">
+                    <b-alert show variant="danger">
+                        {{ l("Collections cannot have duplicated names. The following list names are duplicated: ") }}
+                        <ol>
+                            <li v-for="name in duplicateNames" :key="name">{{ name }}</li>
+                        </ol>
+                        {{ l("Please fix these duplicates and try again.")}}
                     </b-alert>
                 </div>
                 <collection-creator
@@ -221,6 +230,7 @@ export default {
             invalidElements: [],
             selectedDatasetElems: [],
             removeExtensions: true,
+            duplicateNames: []
         };
     },
     props: {
@@ -287,6 +297,9 @@ export default {
         noElementsLeft: function () {
             return this.workingElements.length == 0;
         },
+        showDuplicateError() {
+            return this.duplicateNames.length > 0;
+        }
     },
     methods: {
         l(str) {
@@ -310,7 +323,7 @@ export default {
             this.workingElements = this.initialElements.slice(0);
             this._ensureElementIds();
             this._validateElements();
-            this._mangleDuplicateNames();
+            // this._mangleDuplicateNames();
         },
         /** add ids to dataset objs in initial list if none */
         _ensureElementIds: function () {
@@ -346,20 +359,20 @@ export default {
             }
             return null;
         },
-        // /** mangle duplicate names using a mac-like '(counter)' addition to any duplicates */
-        _mangleDuplicateNames: function () {
-            var counter = 1;
-            var existingNames = {};
-            this.workingElements.forEach((element) => {
-                var currName = element.name;
-                while (Object.prototype.hasOwnProperty.call(existingNames, currName)) {
-                    currName = `${element.name} (${counter})`;
-                    counter += 1;
-                }
-                element.name = currName;
-                existingNames[element.name] = true;
-            });
-        },
+        // // /** mangle duplicate names using a mac-like '(counter)' addition to any duplicates */
+        // _mangleDuplicateNames: function () {
+        //     var counter = 1;
+        //     var existingNames = {};
+        //     this.workingElements.forEach((element) => {
+        //         var currName = element.name;
+        //         while (Object.prototype.hasOwnProperty.call(existingNames, currName)) {
+        //             currName = `${element.name} (${counter})`;
+        //             counter += 1;
+        //         }
+        //         element.name = currName;
+        //         existingNames[element.name] = true;
+        //     });
+        // },
         elementSelected: function (e) {
             if (!this.selectedDatasetElems.includes(e.id)) {
                 this.selectedDatasetElems.push(e.id);
@@ -378,11 +391,25 @@ export default {
             this.defaultHideSourceItems = !this.defaultHideSourceItems;
         },
         clickedCreate: function (collectionName) {
+            this.checkForDuplicates();
             if (this.state !== "error") {
                 return this.creationFn(this.workingElements, collectionName, this.defaultHideSourceItems)
                     .done(this.oncreate)
                     .fail((this.state = "error"));
             }
+        },
+        checkForDuplicates: function () {
+            var existingNames = {};
+            this.duplicateNames = [];
+            var valid = true;
+            this.workingElements.forEach((element) => {
+                if (Object.prototype.hasOwnProperty.call(existingNames, element.name)) {
+                    valid = false;
+                    this.duplicateNames.push(element.name);
+                }
+                existingNames[element.name] = true;
+            });
+            this.state = valid ? "build" : "error";
         },
         removeExtensionsToggle: function () {
             this.removeExtensions = !this.removeExtensions;
