@@ -32,8 +32,9 @@ TestException = namedtuple("TestException", ["tool_id", "exception", "was_record
 
 class Results:
 
-    def __init__(self, default_suitename, test_json, append=False):
+    def __init__(self, default_suitename, test_json, append=False, galaxy_url=None):
         self.test_json = test_json or "-"
+        self.galaxy_url = galaxy_url
         test_results = []
         test_exceptions = []
         suitename = default_suitename
@@ -98,6 +99,8 @@ class Results:
             },
             'tests': tests,
         }
+        if self.galaxy_url:
+            report_obj['galaxy_url'] = self.galaxy_url
         if self.test_json == "-":
             print(json.dumps(report_obj))
         else:
@@ -156,6 +159,7 @@ def test_tools(
     parallel_tests=1,
     history_per_test_case=False,
     no_history_cleanup=False,
+    publish_history=False,
     retries=0,
     verify_kwds=None,
 ):
@@ -170,7 +174,7 @@ def test_tools(
         test_history = None
     else:
         history_created = True
-        test_history = galaxy_interactor.new_history(history_name=f"History for {results.suitename}")
+        test_history = galaxy_interactor.new_history(history_name=f"History for {results.suitename}", publish_history=publish_history)
     verify_kwds.update({
         "no_history_cleanup": no_history_cleanup,
         "test_history": test_history,
@@ -186,6 +190,7 @@ def test_tools(
                     log=log,
                     retries=retries,
                     verify_kwds=verify_kwds,
+                    publish_history=publish_history,
                 )
         finally:
             # Always write report, even if test was cancelled.
@@ -226,6 +231,7 @@ def _test_tool(
     galaxy_interactor,
     log,
     retries,
+    publish_history,
     verify_kwds,
 ):
     tool_id = test_reference.tool_id
@@ -255,7 +261,7 @@ def _test_tool(
                         log.info("Executing test '%s'", test_id)
                     verify_tool(
                         tool_id, galaxy_interactor, test_index=test_index, tool_version=tool_version,
-                        register_job_data=register, **verify_kwds
+                        register_job_data=register, publish_history=publish_history, **verify_kwds
                     )
                     if log:
                         log.info("Test '%s' passed", test_id)
@@ -351,8 +357,9 @@ def main(argv=None):
         return val
 
     output_json_path = get_option("output_json")
+    galaxy_url = get_option("galaxy_url")
     galaxy_interactor_kwds = {
-        "galaxy_url": get_option("galaxy_url"),
+        "galaxy_url": galaxy_url,
         "master_api_key": get_option("admin_key"),
         "api_key": get_option("key"),
         "keep_outputs_dir": args.output,
@@ -365,7 +372,7 @@ def main(argv=None):
     verbose = args.verbose
 
     galaxy_interactor = GalaxyInteractorApi(**galaxy_interactor_kwds)
-    results = Results(args.suite_name, output_json_path, append=args.append)
+    results = Results(args.suite_name, output_json_path, append=args.append, galaxy_url=galaxy_url)
     check_against = None if not args.skip_successful else results
     test_references = build_case_references(
         galaxy_interactor,
@@ -392,6 +399,7 @@ def main(argv=None):
         parallel_tests=args.parallel_tests,
         history_per_test_case=args.history_per_test_case,
         no_history_cleanup=args.no_history_cleanup,
+        publish_history=get_option("publish_history"),
         verify_kwds=verify_kwds,
     )
     exceptions = results.test_exceptions
@@ -444,6 +452,7 @@ def _arg_parser():
     parser.add_argument('--history-per-suite', dest="history_per_test_case", default=False, action="store_false", help="Create new history per test suite (all tests in same history).")
     parser.add_argument('--history-per-test-case', dest="history_per_test_case", action="store_true", help="Create new history per test case.")
     parser.add_argument('--no-history-cleanup', default=False, action="store_true", help="Perserve histories created for testing.")
+    parser.add_argument('--publish-history', default=False, action="store_true", help="Publish test history. Useful for CI testing.")
     parser.add_argument('--parallel-tests', default=1, type=int, help="Parallel tests.")
     parser.add_argument('--retries', default=0, type=int, help="Retry failed tests.")
     parser.add_argument('--page-size', default=0, type=int, help="If positive, use pagination and just run one 'page' to tool tests.")
