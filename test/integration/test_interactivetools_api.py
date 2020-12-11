@@ -1,5 +1,4 @@
 """Integration tests for realtime tools."""
-
 import os
 import tempfile
 
@@ -116,6 +115,18 @@ class RunsInterativeToolTests:
 
         content1 = self.wait_on_proxied_content(target1)
         assert content1 == "moo cow\n", content1
+        stop_response = self.dataset_populator._delete(f'entry_points/{entry_point0["id"]}')
+        stop_response.raise_for_status()
+        self.dataset_populator.wait_for_job(job0['id'], assert_ok=True)
+        job_details = self.dataset_populator.get_job_details(job0['id'], full=True)
+        job_details.raise_for_status()
+        job_details = job_details.json()
+        assert job_details['state'] == 'ok'
+        it_output_details = self.dataset_populator.get_history_dataset_details_raw(self.history_id, dataset_id=job_details['outputs']['test_output']['id'])
+        it_output_details.raise_for_status()
+        it_output_details = it_output_details.json()
+        assert it_output_details['state'] == 'ok'
+        assert not it_output_details['deleted']
 
 
 class InteractiveToolsIntegrationTestCase(BaseInteractiveToolsIntegrationTestCase, RunsInterativeToolTests):

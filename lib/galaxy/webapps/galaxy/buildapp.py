@@ -400,6 +400,7 @@ def populate_api_routes(webapp, app):
 
     webapp.mapper.connect('/api/entry_points', action='index', controller="tool_entry_points")
     webapp.mapper.connect('/api/entry_points/{id:.+?}/access', action='access_entry_point', controller="tool_entry_points")
+    webapp.mapper.connect('/api/entry_points/{id:.+?}', action='stop_entry_point', controller="tool_entry_points", conditions={'method': ['DELETE']})
 
     webapp.mapper.connect('/api/dependency_resolvers/clean', action="clean", controller="tool_dependencies", conditions=dict(method=["POST"]))
     webapp.mapper.connect('/api/dependency_resolvers/dependency', action="manager_dependency", controller="tool_dependencies", conditions=dict(method=["GET"]))
