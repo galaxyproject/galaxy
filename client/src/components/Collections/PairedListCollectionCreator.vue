@@ -89,6 +89,15 @@
                         {{ allInvalidElementsPartTwo }}
                     </b-alert>
                 </div>
+                <div v-if="showDuplicateError">
+                    <b-alert show variant="danger">
+                        {{ l("Collections cannot have duplicated names. The following list names are duplicated: ") }}
+                        <ol>
+                            <li v-for="name in duplicatePairNames" :key="name">{{ name }}</li>
+                        </ol>
+                        {{ l("Please fix these duplicates and try again.") }}
+                    </b-alert>
+                </div>
                 <collection-creator
                     :oncancel="oncancel"
                     @hide-original-toggle="hideOriginalsToggle"
@@ -325,6 +334,11 @@
                         </div>
                         <splitpanes horizontal style="height: 400px;">
                             <pane>
+                                <div v-if="noUnpairedElementsDisplayed">
+                                    <b-alert show variant="warning">
+                                        {{ l("No datasets were found matching the current filters.") }}
+                                    </b-alert>
+                                </div>
                                 <div class="unpaired-columns flex-column-container scroll-container flex-row">
                                     <div class="forward-column flex-column column">
                                         <ol class="column-datasets">
@@ -504,6 +518,7 @@ export default {
             noElementsHeader: _l("No datasets were selected"),
             cancelText: _l("cancel"),
             allInvalidElementsPartTwo: _l("and reselect new elements."),
+            duplicatePairNames: [],
         };
     },
     props: {
@@ -959,11 +974,25 @@ export default {
             this.reverseFilter = this.commonFilters[filter][1];
         },
         clickedCreate: function (collectionName) {
+            this.checkForDuplicates();
             if (this.state !== "error") {
                 return this.creationFn(this.pairedElements, collectionName, this.defaultHideSourceItems)
                     .done(this.oncreate)
                     .fail((this.state = "error"));
             }
+        },
+        checkForDuplicates: function () {
+            var existingPairNames = {};
+            this.duplicatePairNames = [];
+            var valid = true;
+            this.pairedElements.forEach((pair) => {
+                if (Object.prototype.hasOwnProperty.call(existingPairNames, pair.name)) {
+                    valid = false;
+                    this.duplicatePairNames.push(pair.name);
+                }
+                existingPairNames[pair.name] = true;
+            });
+            this.state = valid ? "build" : "error";
         },
         hideOriginalsToggle: function () {
             this.defaultHideSourceItems = !this.defaultHideSourceItems;
@@ -1018,6 +1047,12 @@ export default {
         },
         tooFewElementsSelected: function () {
             return this.workingElements.length < 2 && this.pairedElements.length == 0;
+        },
+        showDuplicateError() {
+            return this.duplicatePairNames.length > 0;
+        },
+        noUnpairedElementsDisplayed() {
+            return this.numOfUnpairedForwardElements + this.numOfUnpairedReverseElements == 0;
         },
     },
 };
@@ -1179,5 +1214,8 @@ li.dataset.paired {
 .splitpanes--horizontal > .splitpanes__splitter {
     min-height: 6px;
     background: linear-gradient(0deg, #ccc, #111);
+}
+.splitpanes__pane {
+    overflow: scroll;
 }
 </style>

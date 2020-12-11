@@ -323,7 +323,7 @@ export default {
             this.workingElements = this.initialElements.slice(0);
             this._ensureElementIds();
             this._validateElements();
-            // this._mangleDuplicateNames();
+            this._mangleDuplicateNames();
         },
         /** add ids to dataset objs in initial list if none */
         _ensureElementIds: function () {
@@ -359,20 +359,20 @@ export default {
             }
             return null;
         },
-        // // /** mangle duplicate names using a mac-like '(counter)' addition to any duplicates */
-        // _mangleDuplicateNames: function () {
-        //     var counter = 1;
-        //     var existingNames = {};
-        //     this.workingElements.forEach((element) => {
-        //         var currName = element.name;
-        //         while (Object.prototype.hasOwnProperty.call(existingNames, currName)) {
-        //             currName = `${element.name} (${counter})`;
-        //             counter += 1;
-        //         }
-        //         element.name = currName;
-        //         existingNames[element.name] = true;
-        //     });
-        // },
+        // /** mangle duplicate names using a mac-like '(counter)' addition to any duplicates */
+        _mangleDuplicateNames: function () {
+            var counter = 1;
+            var existingNames = {};
+            this.workingElements.forEach((element) => {
+                var currName = element.name;
+                while (Object.prototype.hasOwnProperty.call(existingNames, currName)) {
+                    currName = `${element.name} (${counter})`;
+                    counter += 1;
+                }
+                element.name = currName;
+                existingNames[element.name] = true;
+            });
+        },
         elementSelected: function (e) {
             if (!this.selectedDatasetElems.includes(e.id)) {
                 this.selectedDatasetElems.push(e.id);
