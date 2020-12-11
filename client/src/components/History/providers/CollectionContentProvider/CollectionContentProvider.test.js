@@ -4,7 +4,7 @@ import { createLocalVue } from "@vue/test-utils";
 import { cacheContent, cacheCollectionContent, bulkCacheDscContent, wipeDatabase } from "../../caching";
 import { SearchParams } from "../../model/SearchParams";
 import CollectionContentProvider from "./CollectionContentProvider";
-import { wait, mountRenderless, watchForChange  } from "jest/helpers";
+import { wait, mountRenderless, watchForChange } from "jest/helpers";
 
 // sample data
 import rawRootCollection from "../../test/json/DatasetCollection.json";

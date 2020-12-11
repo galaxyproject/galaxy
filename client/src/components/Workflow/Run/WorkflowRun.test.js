@@ -6,17 +6,16 @@ import { watchForChange } from "jest/helpers";
 
 import sampleRunData1 from "./testdata/run1.json";
 
-import { getRunData } from "./services"
+import { getRunData } from "./services";
 jest.mock("./services");
 
 getRunData.mockImplementation(async () => {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
         setTimeout(() => {
             resolve(sampleRunData1);
         }, 0);
-    })
+    });
 });
-
 
 jest.mock("app");
 const run1WorkflowId = "ebab00128497f9d7";
