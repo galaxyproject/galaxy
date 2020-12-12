@@ -42,7 +42,7 @@ from galaxy.model.custom_types import JSONType, MetadataType, TrimmedString, UUI
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
 from galaxy.model.security import GalaxyRBACAgent
-from galaxy.model.triggers import install_timestamp_triggers
+from galaxy.model.triggers import drop_timestamp_triggers
 from galaxy.model.view import HistoryDatasetCollectionJobStateSummary
 from galaxy.model.view.utils import install_views
 
@@ -2894,9 +2894,11 @@ def init(file_path, url, engine_options=None, create_tables=False, map_install_m
     # Create tables if needed
     if create_tables:
         metadata.create_all()
-        install_timestamp_triggers(engine)
         install_views(engine)
         # metadata.engine.commit()
+    else:
+        # TODO: replace this in 21.01 with a migration.
+        drop_timestamp_triggers(engine)
 
     result.create_tables = create_tables
     # load local galaxy security policy
