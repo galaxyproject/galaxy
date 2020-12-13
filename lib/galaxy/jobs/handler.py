@@ -909,7 +909,7 @@ class JobHandlerStopQueue(Monitors):
         """
         Called repeatedly by `monitor` to stop jobs.
         """
-        # TODO: removve handling of DELETED_NEW after 21.09
+        # TODO: remove handling of DELETED_NEW after 21.09
         # Pull all new jobs from the queue at once
         jobs_to_check = []
         if self.app.config.track_jobs_in_database:
