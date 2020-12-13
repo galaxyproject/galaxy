@@ -70,7 +70,7 @@ class JobManager:
         job = trans.sa_session.query(trans.app.model.Job).filter(trans.app.model.Job.id == decoded_job_id).first()
         if job is None:
             raise ObjectNotFound()
-        belongs_to_user = (job.user == trans.user) if job.user else (job.session_id == trans.get_galaxy_session().id)
+        belongs_to_user = (job.user_id == trans.user.id) if job.user_id and trans.user else (job.session_id == trans.get_galaxy_session().id)
         if not trans.user_is_admin and not belongs_to_user:
             # Check access granted via output datasets.
             if not job.output_datasets:
