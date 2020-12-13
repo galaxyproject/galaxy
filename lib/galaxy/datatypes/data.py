@@ -360,7 +360,7 @@ class Data(metaclass=DataMeta):
         trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename
         return open(dataset.file_name, mode='rb')
 
-    def to_archive(self, trans, dataset, name=""):
+    def to_archive(self, dataset, name=""):
         """
         Collect archive paths and file handles that need to be exported when archiving `dataset`.
 
@@ -368,19 +368,17 @@ class Data(metaclass=DataMeta):
         :param name: archive name, in collection context corresponds to collection name(s) and element_identifier,
                      joined by '/', e.g 'fastq_collection/sample1/forward'
         """
-        composite_extensions = trans.app.datatypes_registry.get_composite_extensions()
-        composite_extensions.append('html')  # for archiving composite datatypes
         rel_paths = []
         file_paths = []
-        if dataset.extension in composite_extensions:
-            main_file = "{}.{}".format(name, 'html')
+        if dataset.datatype.composite_type or dataset.extension == 'html':
+            main_file = f"{name}.html"
             rel_paths.append(main_file)
             file_paths.append(dataset.file_name)
             for fpath, rpath in self.__archive_extra_files_path(dataset.extra_files_path):
                 rel_paths.append(os.path.join(name, rpath))
                 file_paths.append(fpath)
         else:
-            rel_paths.append("{}.{}".format(name or dataset.file_name, dataset.extension))
+            rel_paths.append(f"{name or dataset.file_name}.{dataset.extension}")
             file_paths.append(dataset.file_name)
         return zip(file_paths, rel_paths)
 
