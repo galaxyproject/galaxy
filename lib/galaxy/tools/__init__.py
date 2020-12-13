@@ -25,6 +25,7 @@ from galaxy import (
     exceptions,
     model
 )
+from galaxy.exceptions import ToolInputsNotReadyException
 from galaxy.job_execution import output_collect
 from galaxy.managers.jobs import JobSearch
 from galaxy.metadata import get_metadata_compute_strategy
@@ -215,10 +216,6 @@ class ToolErrorLog:
 
 
 global_tool_errors = ToolErrorLog()
-
-
-class ToolInputsNotReadyException(Exception):
-    pass
 
 
 class ToolNotFoundException(Exception):
@@ -1067,7 +1064,7 @@ class Tool(Dictifiable):
         repository_dir = self._repository_dir
         test_data = None
         if repository_dir:
-            return self.__walk_test_data(dir=repository_dir, filename=filename)
+            test_data = self.__walk_test_data(dir=repository_dir, filename=filename)
         else:
             if self.tool_dir:
                 tool_dir = self.tool_dir
@@ -1075,6 +1072,9 @@ class Tool(Dictifiable):
                     tool_dir = os.path.dirname(self.tool_dir)
                 test_data = self.__walk_test_data(tool_dir, filename=filename)
         if not test_data:
+            # Fallback to Galaxy test data directory for builtin tools, tools
+            # under development, and some older ToolShed published tools that
+            # used stock test data.
             test_data = self.app.test_data_resolver.get_filename(filename)
         return test_data
 

@@ -56,6 +56,22 @@ class Results:
         self.test_exceptions.append(test_exception)
 
     def already_successful(self, test_reference):
+        test_data = self._previous_test_data(test_reference)
+        if test_data:
+            if 'status' in test_data and test_data['status'] == 'success':
+                return True
+
+        return False
+
+    def already_executed(self, test_reference):
+        test_data = self._previous_test_data(test_reference)
+        if test_data:
+            if 'status' in test_data and test_data['status'] != 'skipped':
+                return True
+
+        return False
+
+    def _previous_test_data(self, test_reference):
         test_id = _test_id_for_reference(test_reference)
         for test_result in self.test_results:
             if test_result.get('id') != test_id:
@@ -64,10 +80,9 @@ class Results:
             has_data = test_result.get('has_data', False)
             if has_data:
                 test_data = test_result.get("data", {})
-                if 'status' in test_data and test_data['status'] == 'success':
-                    return True
+                return test_data
 
-        return False
+        return None
 
     def write(self):
         tests = sorted(self.test_results, key=lambda el: el['id'])
@@ -201,7 +216,11 @@ def test_tools(
                 thread._threads_queues.clear()
             results.write()
             if log:
-                log.info("Report written to '%s'", os.path.abspath(results.test_json))
+                if results.test_json == "-":
+                    destination = 'standard output'
+                else:
+                    destination = os.path.abspath(results.test_json)
+                log.info(f"Report written to '{destination}'")
                 log.info(results.info_message())
                 log.info("Total tool test time: {}".format(dt.datetime.now() - tool_test_start))
             if history_created and not no_history_cleanup:
@@ -294,7 +313,7 @@ def build_case_references(
     test_index=ALL_TESTS,
     page_size=0,
     page_number=0,
-    check_against=None,
+    test_filters=None,
     log=None,
 ):
     test_references = []
@@ -315,14 +334,17 @@ def build_case_references(
                 test_reference = TestReference(tool_id, this_tool_version, this_test_index)
                 test_references.append(test_reference)
 
-    if check_against:
+    if test_filters is not None and len(test_filters) > 0:
         filtered_test_references = []
         for test_reference in test_references:
-            if check_against.already_successful(test_reference):
-                if log is not None:
-                    log.debug(f"Found successful test for {test_reference}, skipping")
-                continue
-            filtered_test_references.append(test_reference)
+            skip_test = False
+            for test_filter in test_filters:
+                if test_filter(test_reference):
+                    if log is not None:
+                        log.debug(f"Filtering test for {test_reference}, skipping")
+                    skip_test = True
+            if not skip_test:
+                filtered_test_references.append(test_reference)
         log.info(f"Skipping {len(test_references)-len(filtered_test_references)} out of {len(test_references)} tests.")
         test_references = filtered_test_references
 
@@ -338,8 +360,16 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
 
-    args = _arg_parser().parse_args(argv)
-    log = setup_global_logger(__name__, verbose=args.verbose)
+    args = arg_parser().parse_args(argv)
+    run_tests(args)
+
+
+def run_tests(args, test_filters=None, log=None):
+    # Split out argument parsing so we can quickly build other scripts - such as a script
+    # to run all tool tests for a workflow by just passing in a custom test_filters.
+    test_filters = test_filters or []
+    log = log or setup_global_logger(__name__, verbose=args.verbose)
+
     client_test_config_path = args.client_test_config
     if client_test_config_path is not None:
         log.debug(f"Reading client config path {client_test_config_path}")
@@ -365,6 +395,7 @@ def main(argv=None):
         "keep_outputs_dir": args.output,
         "download_attempts": get_option("download_attempts"),
         "download_sleep": get_option("download_sleep"),
+        "test_data": get_option("test_data"),
     }
     tool_id = args.tool_id
     tool_version = args.tool_version
@@ -373,7 +404,13 @@ def main(argv=None):
 
     galaxy_interactor = GalaxyInteractorApi(**galaxy_interactor_kwds)
     results = Results(args.suite_name, output_json_path, append=args.append, galaxy_url=galaxy_url)
-    check_against = None if not args.skip_successful else results
+
+    skip = args.skip
+    if skip == "executed":
+        test_filters.append(results.already_executed)
+    elif skip == "successful":
+        test_filters.append(results.already_successful)
+
     test_references = build_case_references(
         galaxy_interactor,
         tool_id=tool_id,
@@ -381,7 +418,7 @@ def main(argv=None):
         test_index=args.test_index,
         page_size=args.page_size,
         page_number=args.page_number,
-        check_against=check_against,
+        test_filters=test_filters,
         log=log,
     )
     log.debug(f"Built {len(test_references)} test references to executed.")
@@ -431,7 +468,7 @@ def setup_global_logger(name, log_file=None, verbose=False):
     return logger
 
 
-def _arg_parser():
+def arg_parser():
     parser = argparse.ArgumentParser(description=DESCRIPTION)
     parser.add_argument('-u', '--galaxy-url', default="http://localhost:8080", help='Galaxy URL')
     parser.add_argument('-k', '--key', default=None, help='Galaxy User API Key')
@@ -442,15 +479,18 @@ def _arg_parser():
     parser.add_argument('-i', '--test-index', default=ALL_TESTS, type=int, help='Tool Test Index (starting at 0) - by default all tests will run.')
     parser.add_argument('-o', '--output', default=None, help='directory to dump outputs to')
     parser.add_argument('--append', default=False, action="store_true", help="Extend a test record json (created with --output-json) with additional tests.")
-    parser.add_argument('--skip-successful', default=False, action="store_true", help="When used with --append, skip previously run successful tests.")
+    skip_group = parser.add_mutually_exclusive_group()
+    skip_group.add_argument('--skip-previously-executed', dest="skip", default="no", action="store_const", const="executed", help="When used with --append, skip any test previously executed.")
+    skip_group.add_argument('--skip-previously-successful', dest="skip", default="no", action="store_const", const="successful", help="When used with --append, skip any test previously executed successfully.")
     parser.add_argument('-j', '--output-json', default=None, help='output metadata json')
     parser.add_argument('--verbose', default=False, action="store_true", help="Verbose logging.")
     parser.add_argument('-c', '--client-test-config', default=None, help="Test config YAML to help with client testing")
     parser.add_argument('--suite-name', default=DEFAULT_SUITE_NAME, help="Suite name for tool test output")
     parser.add_argument('--with-reference-data', dest="with_reference_data", default=False, action="store_true")
     parser.add_argument('--skip-with-reference-data', dest="with_reference_data", action="store_false", help="Skip tests the Galaxy server believes use data tables or loc files.")
-    parser.add_argument('--history-per-suite', dest="history_per_test_case", default=False, action="store_false", help="Create new history per test suite (all tests in same history).")
-    parser.add_argument('--history-per-test-case', dest="history_per_test_case", action="store_true", help="Create new history per test case.")
+    history_per_group = parser.add_mutually_exclusive_group()
+    history_per_group.add_argument('--history-per-suite', dest="history_per_test_case", default=False, action="store_false", help="Create new history per test suite (all tests in same history).")
+    history_per_group.add_argument('--history-per-test-case', dest="history_per_test_case", action="store_true", help="Create new history per test case.")
     parser.add_argument('--no-history-cleanup', default=False, action="store_true", help="Perserve histories created for testing.")
     parser.add_argument('--publish-history', default=False, action="store_true", help="Publish test history. Useful for CI testing.")
     parser.add_argument('--parallel-tests', default=1, type=int, help="Parallel tests.")
@@ -459,6 +499,7 @@ def _arg_parser():
     parser.add_argument('--page-number', default=0, type=int, help="If page size is used, run this 'page' of tests - starts with 0.")
     parser.add_argument('--download-attempts', default=1, type=int, help="Galaxy may return a transient 500 status code for download if test results are written but not yet accessible.")
     parser.add_argument('--download-sleep', default=1, type=int, help="If download attempts is greater than 1, the amount to sleep between download attempts.")
+    parser.add_argument('--test-data', action='append', help='Add local test data path to search for missing test data')
     return parser
 
 

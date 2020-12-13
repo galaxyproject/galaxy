@@ -103,6 +103,9 @@ class GalaxyInteractorApi:
         self.keep_outputs_dir = kwds["keep_outputs_dir"]
         self.download_attempts = kwds.get("download_attempts", 1)
         self.download_sleep = kwds.get("download_sleep", 1)
+        # Local test data directories.
+        self.test_data_directories = kwds.get("test_data", [])
+
         self._target_galaxy_version = None
 
         self.uploads = {}
@@ -299,31 +302,46 @@ class GalaxyInteractorApi:
 
     @nottest
     def test_data_download(self, tool_id, filename, mode='file', is_output=True):
+        result = None
+        local_path = None
+
         if self.supports_test_data_download:
             response = self._get(f"tools/{tool_id}/test_data_download?filename={filename}", admin=True)
-            if response.status_code != 200:
-                if is_output:
-                    raise AssertionError(f"Test output file ({filename}) is missing. If you are using planemo, try adding --update_test_data to generate it.")
-                else:
-                    raise AssertionError(f"Test input file ({filename}) cannot be found.")
-            if mode == 'file':
-                return response.content
-            elif mode == 'directory':
-                prefix = os.path.basename(filename)
-                path = tempfile.mkdtemp(prefix=prefix)
-                with tarfile.open(fileobj=io.BytesIO(response.content)) as tar_contents:
-                    tar_contents.extractall(path=path)
-                return path
+            if response.status_code == 200:
+                if mode == 'file':
+                    result = response.content
+                elif mode == 'directory':
+                    prefix = os.path.basename(filename)
+                    path = tempfile.mkdtemp(prefix=prefix)
+                    with tarfile.open(fileobj=io.BytesIO(response.content)) as tar_contents:
+                        tar_contents.extractall(path=path)
+                    result = path
         else:
             # We can only use local data
-            file_name = self.test_data_path(tool_id, filename)
+            local_path = self.test_data_path(tool_id, filename)
+
+        if result is None and (local_path is None or not os.path.exists(local_path)):
+            for test_data_directory in self.test_data_directories:
+                local_path = os.path.join(test_data_directory, filename)
+                if os.path.exists(local_path):
+                    break
+
+        if result is None and os.path.exists(local_path):
             if mode == 'file':
-                return open(file_name, mode='rb')
+                result = open(local_path, mode='rb')
             elif mode == 'directory':
                 # Make a copy, since we are going to clean up the returned path
                 path = tempfile.mkdtemp()
-                shutil.copytree(file_name, path)
-                return path
+                shutil.copytree(local_path, path)
+                result = path
+
+        if result is None:
+            if is_output:
+                raise AssertionError(f"Test output file ({filename}) is missing. If you are using planemo, try adding --update_test_data to generate it.")
+            else:
+                raise AssertionError(f"Test input file ({filename}) cannot be found.")
+
+        return result
 
     def __output_id(self, output_data):
         # Allow data structure coming out of tools API - {id: <id>, output_name: <name>, etc...}
@@ -420,7 +438,16 @@ class GalaxyInteractorApi:
             if isinstance(value, list) and len(value) == 1:
                 inputs_tree[key] = value[0]
 
-        submit_response = self.__submit_tool(history_id, tool_id=testdef.tool_id, tool_input=inputs_tree)
+        submit_response = None
+        for _ in range(30):
+            submit_response = self.__submit_tool(history_id, tool_id=testdef.tool_id, tool_input=inputs_tree)
+            if _are_tool_inputs_not_ready(submit_response):
+                print("Tool inputs not ready yet")
+                time.sleep(1)
+                continue
+            else:
+                break
+
         submit_response_object = ensure_tool_run_response_okay(submit_response, "execute tool", inputs_tree)
         try:
             return Bunch(
@@ -706,6 +733,16 @@ def ensure_tool_run_response_okay(submit_response_object, request_desc, inputs=N
         raise RunToolException(message, inputs, dynamic_param_error=dynamic_param_error)
     submit_response = submit_response_object.json()
     return submit_response
+
+
+def _are_tool_inputs_not_ready(submit_response):
+    if submit_response.status_code != 400:
+        return False
+    try:
+        submit_json = submit_response.json()
+        return submit_json.get("err_code") == 400015
+    except Exception:
+        return False
 
 
 class RunToolException(Exception):
