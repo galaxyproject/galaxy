@@ -7,6 +7,7 @@ import sys
 import tarfile
 import tempfile
 import time
+import zipfile
 from collections import OrderedDict
 from json import dumps
 from logging import getLogger
@@ -313,8 +314,14 @@ class GalaxyInteractorApi:
                 elif mode == 'directory':
                     prefix = os.path.basename(filename)
                     path = tempfile.mkdtemp(prefix=prefix)
-                    with tarfile.open(fileobj=io.BytesIO(response.content)) as tar_contents:
-                        tar_contents.extractall(path=path)
+                    fileobj = io.BytesIO(response.content)
+                    if zipfile.is_zipfile(fileobj):
+                        with zipfile.ZipFile(fileobj) as contents:
+                            contents.extractall(path=path)
+                    else:
+                        # Galaxy < 21.01
+                        with tarfile.open(fileobj=fileobj) as tar_contents:
+                            tar_contents.extractall(path=path)
                     result = path
         else:
             # We can only use local data

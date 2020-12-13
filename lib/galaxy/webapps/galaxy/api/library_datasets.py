@@ -4,10 +4,9 @@ import logging
 import os
 import os.path
 import string
-import tempfile
-import zipfile
 from json import dumps
 
+import zipstream
 from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError
 
 from galaxy import (
@@ -32,7 +31,6 @@ from galaxy.util.path import (
     safe_relpath,
     unsafe_walk,
 )
-from galaxy.util.streamball import StreamBall
 from galaxy.web import (
     expose_api,
     expose_api_anonymous,
@@ -584,55 +582,15 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         if not library_datasets:
             raise exceptions.RequestParameterMissingException('Request has to contain a list of dataset ids or folder ids to download.')
 
-        if archive_format in ['zip', 'tgz', 'tbz']:
+        if archive_format == 'zip':
+            archive = zipstream.ZipFile(allowZip64=True, compression=zipstream.ZIP_STORED)
             # error = False
             killme = string.punctuation + string.whitespace
             trantab = str.maketrans(killme, '_' * len(killme))
-            try:
-                outext = 'zip'
-                if archive_format == 'zip':
-                    # Can't use mkstemp - the file must not exist first
-                    tmpd = tempfile.mkdtemp()
-                    util.umask_fix_perms(tmpd, trans.app.config.umask, 0o777, self.app.config.gid)
-                    tmpf = os.path.join(tmpd, 'library_download.' + archive_format)
-                    if trans.app.config.upstream_gzip:
-                        archive = zipfile.ZipFile(tmpf, 'w', zipfile.ZIP_STORED, True)
-                    else:
-                        archive = zipfile.ZipFile(tmpf, 'w', zipfile.ZIP_DEFLATED, True)
-
-                    def zipfile_add(fpath, arcname):
-                        encoded_arcname = arcname.encode('CP437')
-                        try:
-                            archive.write(fpath, encoded_arcname)
-                        except TypeError:
-                            # Despite documenting the need for CP437 encoded arcname,
-                            # python 3 actually needs this to be a unicode string ...
-                            # https://bugs.python.org/issue24110
-                            archive.write(fpath, arcname)
-                    archive.add = zipfile_add
-
-                elif archive_format == 'tgz':
-                    if trans.app.config.upstream_gzip:
-                        archive = StreamBall('w|')
-                        outext = 'tar'
-                    else:
-                        archive = StreamBall('w|gz')
-                        outext = 'tgz'
-                elif archive_format == 'tbz':
-                    archive = StreamBall('w|bz2')
-                    outext = 'tbz2'
-            except (OSError, zipfile.BadZipfile):
-                log.exception("Unable to create archive for download")
-                raise exceptions.InternalServerError("Unable to create archive for download.")
-            except Exception:
-                log.exception("Unexpected error in create archive for download")
-                raise exceptions.InternalServerError("Unable to create archive for download.")
-            composite_extensions = trans.app.datatypes_registry.get_composite_extensions()
             seen = []
             for ld in library_datasets:
                 ldda = ld.library_dataset_dataset_association
-                ext = ldda.extension
-                is_composite = ext in composite_extensions
+                is_composite = ldda.datatype.composite_type
                 path = ""
                 parent_folder = ldda.library_dataset.folder
                 while parent_folder is not None:
@@ -656,9 +614,9 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                         zpath = '%s.html' % zpath  # fake the real nature of the html file
                     try:
                         if archive_format == 'zip':
-                            archive.add(ldda.dataset.file_name, zpath)  # add the primary of a composite set
+                            archive.write(ldda.dataset.file_name, zpath)  # add the primary of a composite set
                         else:
-                            archive.add(ldda.dataset.file_name, zpath, check_file=True)  # add the primary of a composite set
+                            archive.write(ldda.dataset.file_name, zpath)  # add the primary of a composite set
                     except OSError:
                         log.exception("Unable to add composite parent %s to temporary library download archive", ldda.dataset.file_name)
                         raise exceptions.InternalServerError("Unable to create archive for download.")
@@ -675,10 +633,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                         if fname > '':
                             fname = fname.translate(trantab)
                         try:
-                            if archive_format == 'zip':
-                                archive.add(fpath, fname)
-                            else:
-                                archive.add(fpath, fname, check_file=True)
+                            archive.write(fpath, fname)
                         except OSError:
                             log.exception("Unable to add %s to temporary library download archive %s", fname, outfname)
                             raise exceptions.InternalServerError("Unable to create archive for download.")
@@ -690,10 +645,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                             raise exceptions.InternalServerError("Unable to add dataset to temporary library download archive . " + util.unicodify(e))
                 else:
                     try:
-                        if archive_format == 'zip':
-                            archive.add(ldda.dataset.file_name, path)
-                        else:
-                            archive.add(ldda.dataset.file_name, path, check_file=True)
+                        archive.write(ldda.dataset.file_name, path)
                     except OSError:
                         log.exception("Unable to write %s to temporary library download archive", ldda.dataset.file_name)
                         raise exceptions.InternalServerError("Unable to create archive for download")
@@ -705,20 +657,9 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                         raise exceptions.InternalServerError("Unknown error. " + util.unicodify(e))
             lname = 'selected_dataset'
             fname = lname.replace(' ', '_') + '_files'
-            if archive_format == 'zip':
-                archive.close()
-                trans.response.set_content_type("application/octet-stream")
-                trans.response.headers["Content-Disposition"] = f'attachment; filename="{fname}.{outext}"'
-                archive = util.streamball.ZipBall(tmpf, tmpd)
-                archive.wsgi_status = trans.response.wsgi_status()
-                archive.wsgi_headeritems = trans.response.wsgi_headeritems()
-                return archive.stream
-            else:
-                trans.response.set_content_type("application/x-tar")
-                trans.response.headers["Content-Disposition"] = f'attachment; filename="{fname}.{outext}"'
-                archive.wsgi_status = trans.response.wsgi_status()
-                archive.wsgi_headeritems = trans.response.wsgi_headeritems()
-                return archive.stream
+            trans.response.set_content_type("application/zip")
+            trans.response.headers["Content-Disposition"] = f'attachment; filename="{fname}.zip"'
+            return iter(archive)
         elif archive_format == 'uncompressed':
             if len(library_datasets) != 1:
                 raise exceptions.RequestParameterInvalidException("You can download only one uncompressed file at once.")
@@ -728,7 +669,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                 dataset = ldda.dataset
                 fStat = os.stat(dataset.file_name)
                 trans.response.set_content_type(ldda.get_mime())
-                trans.response.headers['Content-Length'] = int(fStat.st_size)
+                trans.response.headers['Content-Length'] = fStat.st_size
                 fname = f"{ldda.name}.{ldda.extension}"
                 fname = ''.join(c in util.FILENAME_VALID_CHARS and c or '_' for c in fname)[0:150]
                 trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % fname

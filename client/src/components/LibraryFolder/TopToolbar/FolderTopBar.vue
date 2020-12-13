@@ -105,20 +105,10 @@
                         class="dropdown dataset-manipulation mr-1"
                         v-if="dataset_manipulation"
                     >
-                        <button
-                            type="button"
-                            id="download-dropdown-btn"
-                            class="primary-button dropdown-toggle"
-                            data-toggle="dropdown"
-                        >
+                        <button type="button" id="download--btn" class="primary-button" @click="downloadData('zip')">
                             <font-awesome-icon icon="download" />
-                            Download <span class="caret"></span>
+                            Download
                         </button>
-                        <div class="dropdown-menu" role="menu">
-                            <a class="dropdown-item cursor-pointer" @click="downloadData('tgz')">.tar.gz</a>
-                            <a class="dropdown-item cursor-pointer" @click="downloadData('tbz')">.tar.bz</a>
-                            <a class="dropdown-item cursor-pointer" @click="downloadData('zip')">.zip</a>
-                        </div>
                     </div>
                     <button
                         v-if="logged_dataset_manipulation"

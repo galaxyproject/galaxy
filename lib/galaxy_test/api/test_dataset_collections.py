@@ -1,5 +1,5 @@
 import json
-import tarfile
+import zipfile
 from io import BytesIO
 
 from galaxy_test.base.api_asserts import assert_object_id_error
@@ -99,12 +99,12 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         assert len(returned_dce) == 3, dataset_collection
         create_response = self._download_dataset_collection(history_id=self.history_id, hdca_id=dataset_collection['id'])
         self._assert_status_code_is(create_response, 200)
-        tar_contents = tarfile.open(fileobj=BytesIO(create_response.content))
-        namelist = tar_contents.getnames()
+        archive = zipfile.ZipFile(BytesIO(create_response.content))
+        namelist = archive.namelist()
         assert len(namelist) == 3, "Expected 3 elements in [%s]" % namelist
         collection_name = dataset_collection['name']
         for element, zip_path in zip(returned_dce, namelist):
-            assert "{}/{}.{}".format(collection_name, element['element_identifier'], element['object']['file_ext']) == zip_path
+            assert f"{collection_name}/{element['element_identifier']}.{element['object']['file_ext']}" == zip_path
 
     def test_pair_download(self):
         fetch_response = self.dataset_collection_populator.create_pair_in_history(self.history_id, direct_upload=True).json()
@@ -114,8 +114,8 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         hdca_id = dataset_collection['id']
         create_response = self._download_dataset_collection(history_id=self.history_id, hdca_id=hdca_id)
         self._assert_status_code_is(create_response, 200)
-        tar_contents = tarfile.open(fileobj=BytesIO(create_response.content))
-        namelist = tar_contents.getnames()
+        archive = zipfile.ZipFile(BytesIO(create_response.content))
+        namelist = archive.namelist()
         assert len(namelist) == 2, "Expected 2 elements in [%s]" % namelist
         collection_name = dataset_collection['name']
         for element, zip_path in zip(returned_dce, namelist):
@@ -130,8 +130,8 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         pair = returned_dce[0]
         create_response = self._download_dataset_collection(history_id=self.history_id, hdca_id=dataset_collection['id'])
         self._assert_status_code_is(create_response, 200)
-        tar_contents = tarfile.open(fileobj=BytesIO(create_response.content))
-        namelist = tar_contents.getnames()
+        archive = zipfile.ZipFile(BytesIO(create_response.content))
+        namelist = archive.namelist()
         assert len(namelist) == 2, "Expected 2 elements in [%s]" % namelist
         pair_collection_name = pair['element_identifier']
         for element, zip_path in zip(pair['object']['elements'], namelist):
@@ -144,8 +144,8 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         assert len(returned_dce) == 1, dataset_collection
         create_response = self._download_dataset_collection(history_id=self.history_id, hdca_id=dataset_collection['id'])
         self._assert_status_code_is(create_response, 200)
-        tar_contents = tarfile.open(fileobj=BytesIO(create_response.content))
-        namelist = tar_contents.getnames()
+        archive = zipfile.ZipFile(BytesIO(create_response.content))
+        namelist = archive.namelist()
         assert len(namelist) == 3, "Expected 3 elements in [%s]" % namelist
 
     def test_list_list_list_download(self):
@@ -155,8 +155,8 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         assert len(returned_dce) == 1, dataset_collection
         create_response = self._download_dataset_collection(history_id=self.history_id, hdca_id=dataset_collection['id'])
         self._assert_status_code_is(create_response, 200)
-        tar_contents = tarfile.open(fileobj=BytesIO(create_response.content))
-        namelist = tar_contents.getnames()
+        archive = zipfile.ZipFile(BytesIO(create_response.content))
+        namelist = archive.namelist()
         assert len(namelist) == 3, "Expected 3 elements in [%s]" % namelist
 
     def test_hda_security(self):
