@@ -46,7 +46,7 @@ class RoleAPIController(BaseAPIController):
         Displays a collection (list) of roles.
         """
         roles = self._role_manager.list_displayable_roles(trans)
-        return RoleListModel(__root__=list(map(lambda r: role_to_model(trans, r), roles)))
+        return RoleListModel(__root__=[role_to_model(trans, r) for r in roles])
 
     @web.expose_api
     def show(self, trans, id, **kwd):
