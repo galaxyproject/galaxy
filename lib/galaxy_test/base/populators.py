@@ -558,7 +558,7 @@ class BaseDatasetPopulator:
         }
         role_response = self.galaxy_interactor.post("roles", data=payload, admin=True)
         assert role_response.status_code == 200
-        return role_response.json()[0]
+        return role_response.json()
 
     def create_quota(self, quota_payload):
         quota_response = self.galaxy_interactor.post("quotas", data=quota_payload, admin=True)
