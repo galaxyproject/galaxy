@@ -341,7 +341,7 @@ class BamNative(CompressedArchive):
         except Exception:
             return "Binary bam alignments file (%s)" % (nice_size(dataset.get_size()))
 
-    def to_archive(self, trans, dataset, name=""):
+    def to_archive(self, dataset, name=""):
         rel_paths = []
         file_paths = []
         rel_paths.append("{}.{}".format(name or dataset.file_name, dataset.extension))

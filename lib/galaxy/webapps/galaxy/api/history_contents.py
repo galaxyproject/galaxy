@@ -19,7 +19,6 @@ from galaxy.managers import (
 from galaxy.managers.collections_util import (
     api_payload_to_create_params,
     dictify_dataset_collection_instance,
-    get_hda_and_element_identifiers
 )
 from galaxy.managers.jobs import fetch_job_states, summarize_jobs_to_dict
 from galaxy.util.json import safe_dumps
@@ -297,19 +296,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             return {'error': util.unicodify(e)}
 
     def __stream_dataset_collection(self, trans, dataset_collection_instance):
-        archive_type_string = 'w|gz'
-        archive_ext = 'tgz'
-        if self.app.config.upstream_gzip:
-            archive_type_string = 'w|'
-            archive_ext = 'tar'
-        archive = StreamBall(mode=archive_type_string)
-        names, hdas = get_hda_and_element_identifiers(dataset_collection_instance)
-        for name, hda in zip(names, hdas):
-            if hda.state != hda.states.OK:
-                continue
-            for file_path, relpath in hda.datatype.to_archive(trans=trans, dataset=hda, name=name):
-                archive.add(file=file_path, relpath=relpath)
-        archive_name = f"{dataset_collection_instance.hid}: {dataset_collection_instance.name}.{archive_ext}"
+        archive_name, archive = hdcas.stream_dataset_collection(dataset_collection_instance=dataset_collection_instance, upstream_gzip=self.app.config.upstream_gzip)
         trans.response.set_content_type("application/x-tar")
         trans.response.headers["Content-Disposition"] = f'attachment; filename="{archive_name}"'
         archive.wsgi_status = trans.response.wsgi_status()

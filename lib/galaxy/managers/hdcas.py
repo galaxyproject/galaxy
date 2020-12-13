@@ -15,8 +15,27 @@ from galaxy.managers import (
     secured,
     taggable
 )
+from galaxy.managers.collections_util import get_hda_and_element_identifiers
+from galaxy.util.streamball import StreamBall
 
 log = logging.getLogger(__name__)
+
+
+def stream_dataset_collection(dataset_collection_instance, upstream_gzip=False):
+    archive_type_string = 'w|gz'
+    archive_ext = 'tgz'
+    if upstream_gzip:
+        archive_type_string = 'w|'
+        archive_ext = 'tar'
+    archive = StreamBall(mode=archive_type_string)
+    names, hdas = get_hda_and_element_identifiers(dataset_collection_instance)
+    for name, hda in zip(names, hdas):
+        if hda.state != hda.states.OK:
+            continue
+        for file_path, relpath in hda.datatype.to_archive(dataset=hda, name=name):
+            archive.add(file=file_path, relpath=relpath)
+
+    return f"{dataset_collection_instance.hid}: {dataset_collection_instance.name}.{archive_ext}", archive
 
 
 # TODO: to DatasetCollectionInstanceManager
