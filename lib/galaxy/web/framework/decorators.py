@@ -161,7 +161,6 @@ def legacy_expose_api(func, to_json=True, user_required=True):
                 return "Malformed user id ( %s ) specified, unable to decode." % str(kwargs['payload']['run_as'])
             try:
                 user = trans.sa_session.query(trans.app.model.User).get(decoded_user_id)
-                trans.api_inherit_admin = trans.user_is_admin
                 trans.set_user(user)
             except Exception:
                 trans.response.status = 400
@@ -286,7 +285,6 @@ def expose_api(func, to_json=True, user_required=True, user_or_session_required=
                 return __api_error_response(trans, err_code=error_code, err_msg=error_message, status_code=400)
             try:
                 user = trans.sa_session.query(trans.app.model.User).get(decoded_user_id)
-                trans.api_inherit_admin = trans.user_is_admin
                 trans.set_user(user)
             except Exception:
                 error_code = error_codes.USER_INVALID_RUN_AS

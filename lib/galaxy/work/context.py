@@ -24,7 +24,6 @@ class WorkRequestContext(ProvidesAppContext, ProvidesUserContext, ProvidesHistor
         self.__user = user
         self.__user_current_roles = None
         self.__history = history
-        self.api_inherit_admin = False
         self.workflow_building_mode = workflow_building_mode
 
     def get_history(self, create=False):

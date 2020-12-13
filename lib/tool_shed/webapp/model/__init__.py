@@ -33,6 +33,7 @@ class APIKeys:
 class User(Dictifiable):
     dict_collection_visible_keys = ['id', 'username']
     dict_element_visible_keys = ['id', 'username']
+    bootstrap_admin_user = False
 
     def __init__(self, email=None, password=None):
         self.email = email

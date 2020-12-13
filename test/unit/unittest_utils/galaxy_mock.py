@@ -211,6 +211,7 @@ class MockTrans:
         self.error_message = None
         self.anonymous = False
         self.debug = True
+        self.user_is_admin = False
 
         self.galaxy_session = None
         self.__user = user

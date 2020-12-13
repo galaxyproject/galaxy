@@ -422,7 +422,7 @@ class CommonConfigurationMixin:
 
     def is_admin_user(self, user):
         """Determine if the provided user is listed in `admin_users`."""
-        return user is not None and user.email in self.admin_users_list
+        return user and (user.email in self.admin_users_list or user.bootstrap_admin_user)
 
     @property
     def sentry_dsn_public(self):

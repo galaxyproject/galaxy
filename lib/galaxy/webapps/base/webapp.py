@@ -1,7 +1,6 @@
 """
 """
 import datetime
-import hashlib
 import inspect
 import logging
 import os
@@ -33,8 +32,6 @@ from galaxy.managers.users import UserManager
 from galaxy.util import (
     asbool,
     safe_makedirs,
-    safe_str_cmp,
-    smart_str,
     unicodify
 )
 from galaxy.util.sanitize_html import sanitize_html
@@ -204,8 +201,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         # that the current history should not be used for parameter values
         # and such).
         self.workflow_building_mode = False
-        # Flag indicating whether this is an API call and the API key user is an administrator
-        self.api_inherit_admin = False
         self.__user = None
         self.galaxy_session = None
         self.error_message = None
@@ -362,9 +357,10 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
     def set_user(self, user):
         """Set the current user."""
         if self.galaxy_session:
-            self.galaxy_session.user = user
-            self.sa_session.add(self.galaxy_session)
-            self.sa_session.flush()
+            if user.bootstrap_admin_user:
+                self.galaxy_session.user = user
+                self.sa_session.add(self.galaxy_session)
+                self.sa_session.flush()
         self.__user = user
 
     user = property(get_user, set_user)
@@ -407,12 +403,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         api_key = self.request.params.get('key', None) or self.request.headers.get('x-api-key', None)
         secure_id = self.get_cookie(name=session_cookie)
         api_key_supplied = self.environ.get('is_api_request', False) and api_key
-        if api_key_supplied and self._check_master_api_key(api_key):
-            self.api_inherit_admin = True
-            log.info("Session authenticated using Galaxy master api key")
-            self.user = None
-            self.galaxy_session = None
-        elif api_key_supplied:
+        if api_key_supplied:
             # Sessionless API transaction, we just need to associate a user.
             try:
                 user = self.user_manager.by_api_key(api_key)
@@ -433,15 +424,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             # Anonymous API interaction -- anything but @expose_api_anonymous will fail past here.
             self.user = None
             self.galaxy_session = None
-
-    def _check_master_api_key(self, api_key):
-        master_api_key = getattr(self.app.config, 'master_api_key', None)
-        if not master_api_key:
-            return False
-        # Hash keys to make them the same size, so we can do safe comparison.
-        master_hash = hashlib.sha256(smart_str(master_api_key)).hexdigest()
-        provided_hash = hashlib.sha256(smart_str(api_key)).hexdigest()
-        return safe_str_cmp(master_hash, provided_hash)
 
     def _ensure_valid_session(self, session_cookie, create=True):
         """
