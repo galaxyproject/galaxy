@@ -237,12 +237,12 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         """
         Find a user by API key.
         """
+        if self.check_master_api_key(api_key=api_key):
+            return schema.BoostrapAdminUser()
         sa_session = sa_session or self.app.model.session
         try:
             provided_key = sa_session.query(self.app.model.APIKeys).filter(self.app.model.APIKeys.table.c.key == api_key).one()
         except NoResultFound:
-            if self.check_master_api_key(api_key=api_key):
-                return schema.BoostrapAdminUser()
             raise exceptions.AuthenticationFailed('Provided API key is not valid.')
         if provided_key.user.deleted:
             raise exceptions.AuthenticationFailed('User account is deactivated, please contact an administrator.')
