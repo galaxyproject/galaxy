@@ -6,7 +6,6 @@ API operations on a jobs.
 
 import logging
 import typing
-from functools import lru_cache
 
 from fastapi import (
     Body,
@@ -59,17 +58,14 @@ log = logging.getLogger(__name__)
 router = APIRouter(tags=["jobs"])
 
 
-@lru_cache()
 def get_job_manager(app: UniverseApplication = Depends(get_app)) -> JobManager:
     return JobManager(app=app)
 
 
-@lru_cache()
 def get_job_search(app: UniverseApplication = Depends(get_app)) -> JobSearch:
     return JobSearch(app=app)
 
 
-@lru_cache()
 def get_hda_manager(app: UniverseApplication = Depends(get_app)) -> hdas.HDAManager:
     return app.hda_manager
 
