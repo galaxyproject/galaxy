@@ -75,7 +75,6 @@ class FastAPIJobs:
     job_manager: JobManager = Depends(get_job_manager)
     job_search: JobSearch = Depends(get_job_search)
     hda_manager: hdas.HDAManager = Depends(get_hda_manager)
-    trans: SessionRequestContext = Depends(get_trans)
 
     @router.get('/job_lock')
     def job_lock_status(self, admin_user=Depends(get_admin_user)) -> JobLock:
@@ -88,7 +87,7 @@ class FastAPIJobs:
         return self.job_manager.job_lock(job_lock)
 
     @router.get("/{id}")
-    def show(self, id: EncodedDatabaseIdField, full: typing.Optional[bool] = False) -> typing.Dict:
+    def show(self, id: EncodedDatabaseIdField, trans: SessionRequestContext = Depends(get_trans), full: typing.Optional[bool] = False) -> typing.Dict:
         """
         Return dictionary containing description of job data
 
@@ -96,7 +95,6 @@ class FastAPIJobs:
         - id: ID of job to return
         - full: Return extra information ?
         """
-        trans = self.trans
         id = trans.app.security.decode_id(id)
         job = self.job_manager.get_accessible_job(trans, id)
         return view_show_job(trans, job, full)
