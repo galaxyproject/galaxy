@@ -28,12 +28,12 @@ class SanitizeAllowlistController(BaseAPIController):
                 if toolbox_id.startswith(tool_id):
                     tool_name = tool.name
                     break
-            sanitize_tuple = dict(tool_name=tool.name, tool_id=tool_id, allowed=True, toolshed='/' in tool_id)
-            allowlist.append(sanitize_tuple)
+            tool_dict = dict(tool_name=tool.name, tool_id=tool_id.split('/'), allowed=True, toolshed='/' in tool_id)
+            allowlist.append(tool_dict)
         for tool_id in sorted(trans.app.toolbox.tools_by_id):
             tool = trans.app.toolbox.tools_by_id[tool_id]
             if not tool_id.startswith(tuple(trans.app.config.sanitize_allowlist)):
-                tool_status = dict(tool_name=tool.name, tool_id=tool_id, allowed=False, toolshed='/' in tool_id)
+                tool_status = dict(tool_name=tool.name, tool_id=tool_id.split('/'), allowed=False, toolshed='/' in tool_id)
                 allowlist.append(tool_status)
         return {'status': 'done', 'message': 'Tool allow list loaded.', 'data': allowlist}
 

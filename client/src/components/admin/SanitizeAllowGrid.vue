@@ -5,9 +5,30 @@
             <template v-for="(row, index) in rows">
                 <tr :key="row.tool_id" :class="[index % 2 === 0 ? 'tr' : 'odd_row']">
                     <td>{{ row.tool_name }}</td>
-                    <td>{{ row.tool_id }}</td>
-                    <td>{{ row.allowed }}</td>
-                    <td>{{ row.toolshed }}</td>
+                    <td v-if="row.allowed">
+                        <template v-if="row.toolshed">
+                            <template v-for="(part, index) in row.tool_id"><span>{{ part }}</span>/</template>
+                        </template>
+                        <template v-else>
+                            <span>{{ row.tool_id }}</span>
+                        </template>
+                    </td>
+                    <td v-else>
+                        <template v-if="row.toolshed">
+                            <span>{{ row.tool_id[0] }}</span>/<span>{{ row.tool_id[1] }}</span>/<a :data-tool-id="{{ row.tool_id.slice(0, 3).join('/') }}" @click="allowHTML">{{ row.tool_id[2] }}</a>/<a :data-tool-id="{{ row.tool_id.slice(0, 4).join('/') }}" @click="allowHTML">{{ row.tool_id[3] }}</a>/<a :data-tool-id="{{ row.tool_id.slice(0, 5).join('/') }}" @click="allowHTML">{{ row.tool_id[4] }}</a>/<a :data-tool-id="{{ row.tool_id.join('/') }}"  @click="allowHTML">{{ row.tool_id[5] }}</a>
+                        </template>
+                        <template v-else>
+                            <span>{{ row.tool_id }}</span>
+                        </template>
+                    </td>
+                    <td v-if="row.allowed">
+                        <button :data-tool-id="{{ row.tool_id.join('/') }}" @click="sanitizeHTML">Sanitize HTML</button>
+                    </td>
+                    <td v-else>
+                        <template v-if="row.toolshed">
+                            <button :data-tool-id="{{ row.tool_id  }}" @click="allowHTML">Allow HTML</button>
+                        </template>
+                    </td>
                 </tr>
             </template>
         </template>
@@ -34,8 +55,7 @@ export default {
             columns: [
                 { text: "Tool Name", dataIndex: "tool_name" },
                 { text: "Tool ID", dataIndex: "tool_id" },
-                { text: "Allowed", dataIndex: "allowed" },
-                { text: "Tool Type", dataIndex: "tool_type" },
+                { text: "Action", dataIndex: "action" },
             ],
         };
     },
