@@ -3166,8 +3166,6 @@ class ApplyRulesTool(DatabaseOperationTool):
 
         def copy_dataset(dataset):
             copied_dataset = dataset.copy(flush=False)
-            if tags is not None:
-                tag_handler.set_tags_from_list(trans.get_user(), copied_dataset, tags, flush=False)
             copied_dataset.history_id = history.id
             copied_datasets.append(copied_dataset)
             return copied_dataset
