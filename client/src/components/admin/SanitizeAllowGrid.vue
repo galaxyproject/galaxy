@@ -1,32 +1,52 @@
 <template>
     <base-grid :is-loaded="isLoaded" :columns="columns" id="sanitize-allow-grid">
-        <template v-slot:title> Tool Sanitization Allowlist </template>
-        <template v-slot:rows>
-            <template v-for="(row, index) in rows">
+        <template v-slot:title> Tool HTML Allowlist </template>
+        <template v-slot:allow>
+            <template v-for="(row, index) in allow">
                 <tr :key="row.tool_id" :class="[index % 2 === 0 ? 'tr' : 'odd_row']">
                     <td>{{ row.tool_name }}</td>
-                    <td v-if="row.allowed">
+                    <td>
                         <template v-if="row.toolshed">
-                            <template v-for="(part, index) in row.tool_id"><span>{{ part }}</span>/</template>
+                            <template v-for="(part, index) in row.tool_id">
+                                <span>{{ part }}</span>
+                                <strong>/</strong>
+                            </template>
                         </template>
                         <template v-else>
-                            <span>{{ row.tool_id }}</span>
+                            <span>{{ row.tool_id[0] }}</span>
                         </template>
                     </td>
-                    <td v-else>
+                    <td>
+                        <button @click="sanitizeHTML(row.ids.allowed)">Sanitize HTML</button>
+                    </td>
+                </tr>
+            </template>
+        </template>
+        <template v-slot:title> Tool HTML Blocklist </template>
+        <template v-slot:sanitize>
+            <template v-for="(row, index) in sanitize">
+                <tr :key="row.tool_id" :class="[index % 2 === 0 ? 'tr' : 'odd_row']">
+                    <td>
                         <template v-if="row.toolshed">
-                            <span>{{ row.tool_id[0] }}</span>/<span>{{ row.tool_id[1] }}</span>/<a :data-tool-id="{{ row.tool_id.slice(0, 3).join('/') }}" @click="allowHTML">{{ row.tool_id[2] }}</a>/<a :data-tool-id="{{ row.tool_id.slice(0, 4).join('/') }}" @click="allowHTML">{{ row.tool_id[3] }}</a>/<a :data-tool-id="{{ row.tool_id.slice(0, 5).join('/') }}" @click="allowHTML">{{ row.tool_id[4] }}</a>/<a :data-tool-id="{{ row.tool_id.join('/') }}"  @click="allowHTML">{{ row.tool_id[5] }}</a>
+                            <span>{{ row.tool_id[0] }}</span>
+                            <strong>/</strong>
+                            <span>{{ row.tool_id[1] }}</span>
+                            <strong>/</strong>
+                            <a @click="allowHTML(row.ids.owner)">{{ row.tool_id[2] }}</a>
+                            <strong>/</strong>
+                            <a @click="allowHTML(row.ids.repository)">{{ row.tool_id[3] }}</a>
+                            <strong>/</strong>
+                            <a @click="allowHTML(row.ids.tool)">{{ row.tool_id[4] }}</a>
+                            <strong>/</strong>
+                            <a @click="allowHTML(row.ids.full)">{{ row.tool_id[5] }}</a>
                         </template>
                         <template v-else>
-                            <span>{{ row.tool_id }}</span>
+                            <span>{{ row.tool_id[0] }}</span>
                         </template>
                     </td>
-                    <td v-if="row.allowed">
-                        <button :data-tool-id="{{ row.tool_id.join('/') }}" @click="sanitizeHTML">Sanitize HTML</button>
-                    </td>
-                    <td v-else>
-                        <template v-if="row.toolshed">
-                            <button :data-tool-id="{{ row.tool_id  }}" @click="allowHTML">Allow HTML</button>
+                    <td>
+                        <template v-if="!row.toolshed">
+                            <button @click="allowHTML(row.ids.full)">Allow HTML</button>
                         </template>
                     </td>
                 </tr>
@@ -37,6 +57,8 @@
 
 <script>
 import BaseGrid from "./BaseGrid.vue";
+import axios from "axios";
+import { getAppRoot } from "onload/loadConfig";
 
 export default {
     props: {
@@ -44,7 +66,11 @@ export default {
             type: Boolean,
             required: true,
         },
-        rows: {
+        sanitize: {
+            type: Array,
+            required: true,
+        },
+        allow: {
             type: Array,
             required: true,
         },
@@ -62,6 +88,43 @@ export default {
 
     components: {
         "base-grid": BaseGrid,
+    },
+
+    methods: {
+        allowHTML(tool_id) {
+            axios
+                .put(`${getAppRoot()}api/sanitize_allowlist?tool_id=${tool_id}`, {
+                    params: {
+                        tool_id: tool_id,
+                    },
+                })
+                .then((response) => {
+                    this.allowList = response.data.data.allow;
+                    this.blockList = response.data.data.sanitize;
+                    this.message = response.data.message;
+                    this.status = response.data.status;
+                })
+                .catch((error) => {
+                    console.error(error);
+                });
+        },
+        sanitizeHTML(tool_id) {
+            axios
+                .delete(`${getAppRoot()}api/sanitize_allowlist`, {
+                    params: {
+                        tool_id: tool_id,
+                    },
+                })
+                .then((response) => {
+                    this.allowList = response.data.data.allow;
+                    this.blockList = response.data.data.sanitize;
+                    this.message = response.data.message;
+                    this.status = response.data.status;
+                })
+                .catch((error) => {
+                    console.error(error);
+                });
+        },
     },
 
 };

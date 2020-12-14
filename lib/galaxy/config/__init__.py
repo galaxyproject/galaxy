@@ -962,7 +962,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                 log.warning("Sanitize log file explicitly specified as '%s' but does not exist, continuing with no tools allowlisted.", self.sanitize_allowlist_file)
         else:
             with open(self.sanitize_allowlist_file) as f:
-                self.sanitize_allowlist = [line.strip() for line in f.readlines() if not line.startswith('#')]
+                self.sanitize_allowlist = sorted([line.strip() for line in f.readlines() if not line.startswith('#')])
 
     def ensure_tempdir(self):
         self._ensure_directory(self.new_file_path)

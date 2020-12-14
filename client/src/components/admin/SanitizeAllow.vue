@@ -22,6 +22,7 @@ export default {
             currentView: "sanitize-allow-grid",
             isLoaded: false,
             allowList: [],
+            blockList: [],
             message: "",
             status: "",
         };
@@ -39,10 +40,10 @@ export default {
             if (this.currentView === "sanitize-allow-grid") {
                 props = {
                     isLoaded: this.isLoaded,
-                    rows: this.allowList,
+                    allow: this.allowList,
+                    sanitize: this.blockList,
                 };
             }
-            console.log(props);
 
             return props;
         },
@@ -53,7 +54,8 @@ export default {
             .get(`${getAppRoot()}api/sanitize_allowlist`)
             .then((response) => {
                 this.isLoaded = true;
-                this.allowList = response.data.data;
+                this.allowList = response.data.data.allow;
+                this.blockList = response.data.data.sanitize;
                 this.message = response.data.message;
                 this.status = response.data.status;
             })
