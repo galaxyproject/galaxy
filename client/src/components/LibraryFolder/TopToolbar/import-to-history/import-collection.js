@@ -9,7 +9,7 @@ import LIST_CREATOR from "components/Collections/ListCollectionCreator";
 import LIST_CREATOR_MODAL from "components/Collections/ListCollectionCreatorModal";
 import PAIR_CREATOR from "components/Collections/PairCollectionCreator";
 import PAIR_CREATOR_MODAL from "components/Collections/PairCollectionCreatorModal";
-import PAIRED_CREATOR from "mvc/collection/list-of-pairs-collection-creator";
+import PAIRED_CREATOR from "components/Collections/PairedListCollectionCreatorModal";
 import RULE_CREATOR_MODAL from "components/Collections/RuleBasedCollectionCreatorModal";
 import HDCA_MODEL from "mvc/history/hdca-model";
 

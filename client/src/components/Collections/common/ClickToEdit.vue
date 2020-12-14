@@ -6,7 +6,7 @@
         v-model="element"
         @blur="
             $emit('renamed-element', element);
-            editable = false
+            editable = false;
         "
         @keyup.enter="
             $emit('renamed-element', element);
