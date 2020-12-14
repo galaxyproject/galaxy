@@ -189,8 +189,8 @@ class ContactSheet:
 				continue
 
 			# Find the timestamp for the middle frame of the shot
-			start = float(self.get_seconds_from_time_string(shot["start"]))
-			end = float(self.get_seconds_from_time_string(shot["end"]))
+			start = float(shot["start"])
+			end = float(shot["end"])
 			middle = str(timedelta(seconds=(end-start)/2 + start))
 			times.append(middle)
 
