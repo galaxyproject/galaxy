@@ -14,7 +14,7 @@
   		input_audio allows formats other than wav, however, setting format to 'audio' disallows wav file to be used.
   	 	This appears to be a bug in Galaxy, as subtype (wav) should be allowed to feed into parent type (audio).
   	-->
-    <param name="input_audio" type="data" format="wav" label="Input Audio" help="Audio file to transcribe"/>
+    <param name="input_audio" type="data" format="audio" label="Input Audio" help="Audio file to transcribe"/>
     <param name="audio_format" type="select" label="Audio Format" help="Format of the audio file. For best results use a lossless format such as FLAC or WAV with PCM 16-bit encoding.">
       <option value="wav">WAV</option>
       <option value="flac">FLAC</option>

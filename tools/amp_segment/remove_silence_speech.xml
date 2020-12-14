@@ -16,7 +16,7 @@
   		music_audio format should be music, however, setting so disallows it to be fed into tools taking wav as input.
   	 	This appears to be a bug in Galaxy, as subtype (music) should be allowed to feed into parent type (wav).
   	-->  
-    <data name="music_audio" format="wav" label="Music Audio"/>
+    <data name="music_audio" format="music" label="Music Audio"/>
     <data name="kept_segments" format="json" label="Kept Segments" />
   </outputs>
   <tests>
