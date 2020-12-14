@@ -4,7 +4,10 @@
         v-if="editable"
         contenteditable
         v-model="element"
-        @blur="editable = false"
+        @blur="
+            $emit('renamed-element', element);
+            editable = false
+        "
         @keyup.enter="
             $emit('renamed-element', element);
             editable = false;

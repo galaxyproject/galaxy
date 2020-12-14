@@ -352,11 +352,20 @@
                                                         element.id == selectedForwardElement.id,
                                                 }"
                                                 :element="element"
-                                            />
+                                            />forwardElem
                                         </ol>
                                     </div>
                                     <div class="paired-column flex-column no-flex column">
-                                        <ol class="column-datasets"></ol>
+                                        <ol class="column-datasets" v-if="forwardFilter !== '' && reverseFilter !== ''">
+                                            <li
+                                                v-for="(pairableElement, index) in pairableElements"
+                                                :key="index"
+                                                @click="_pair(pairableElement.forward, pairableElement.reverse)"
+                                                class="dataset"
+                                            >
+                                                {{ l("Pair these datasets") }}
+                                            </li>
+                                        </ol>
                                     </div>
                                     <div class="reverse-column flex-column column">
                                         <ol class="column-datasets">
@@ -564,7 +573,6 @@ export default {
             this.workingElements = this.initialElements.slice(0);
             this._ensureElementIds();
             this._validateElements();
-            this._mangleDuplicateNames();
             this._sortInitialList();
             //attempt to autopair
             if (this.automaticallyPair == true) {
@@ -608,20 +616,6 @@ export default {
                 return _l("has been deleted or purged");
             }
             return null;
-        },
-        // /** mangle duplicate names using a mac-like '(counter)' addition to any duplicates */
-        _mangleDuplicateNames: function () {
-            var counter = 1;
-            var existingNames = {};
-            this.workingElements.forEach((element) => {
-                var currName = element.name;
-                while (Object.prototype.hasOwnProperty.call(existingNames, currName)) {
-                    currName = `${element.name} (${counter})`;
-                    counter += 1;
-                }
-                element.name = currName;
-                existingNames[element.name] = true;
-            });
         },
         /** sort initial list */
         _sortInitialList: function () {
@@ -1018,6 +1012,20 @@ export default {
                 return this.filterElements(this.workingElements, this.reverseFilter);
             },
         },
+        pairableElements: {
+            get() {
+                var pairable = [];
+                this.forwardElements.forEach((elem, index) => {
+                    if (this.reverseElements[index]) {
+                        pairable.push({
+                            forward: this.forwardElements[index],
+                            reverse: this.reverseElements[index],
+                        });
+                    }
+                });
+                return pairable;
+            },
+        },
         numOfUnpairedForwardElements: function () {
             return this.forwardElements.length;
         },
@@ -1053,6 +1061,9 @@ export default {
         },
         noUnpairedElementsDisplayed() {
             return this.numOfUnpairedForwardElements + this.numOfUnpairedReverseElements == 0;
+        },
+        renderPairButton() {
+            return this;
         },
     },
 };
