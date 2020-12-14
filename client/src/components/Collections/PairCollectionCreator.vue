@@ -167,7 +167,7 @@ export default {
         return {
             state: "build", //error
             errorText: _l("Galaxy could not be reached and may be updating.  Try again in a few minutes."),
-            noElementsHeader: _l("No datasets were selected"),
+            noElementsHeader: _l("No datasets were selected."),
             allInvalidElementsPartOne: _l("Exactly two elements needed for the collection. You may need to"),
             cancelText: _l("cancel"),
             allInvalidElementsPartTwo: _l("and reselect new elements."),

@@ -176,11 +176,11 @@
                                 {{ "." }}
                             </li>
                             <li>
-                                {{ l("Choosing from a list of preset filters by clicking the") }}
-                                <i data-target=".choose-filters-link">
-                                    {{ l("Choose filters link") }}
-                                </i>
-                                {{ "." }}
+                                {{
+                                    l(
+                                        "Choosing from a list of preset filters by clicking the arrow beside the filter input."
+                                    )
+                                }}
                             </li>
                             <li>
                                 {{ l("Entering regular expressions to match dataset names. See:") }}
@@ -429,6 +429,7 @@ import naturalSort from "utils/natural-sort";
 import "splitpanes/dist/splitpanes.css";
 import { Splitpanes, Pane } from "splitpanes";
 import draggable from "vuedraggable";
+import BootstrapVue from "bootstrap-vue";
 
 export default {
     created() {
