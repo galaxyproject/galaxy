@@ -342,7 +342,7 @@
                                 <div class="unpaired-columns flex-column-container scroll-container flex-row">
                                     <div class="forward-column flex-column column">
                                         <ol class="column-datasets">
-                                            <dataset-collection-element-view
+                                            <unpaired-dataset-element-view
                                                 v-for="element in forwardElements"
                                                 :key="element.id"
                                                 @element-is-selected="forwardElementSelected"
@@ -352,7 +352,7 @@
                                                         element.id == selectedForwardElement.id,
                                                 }"
                                                 :element="element"
-                                            />forwardElem
+                                            />
                                         </ol>
                                     </div>
                                     <div class="paired-column flex-column no-flex column">
@@ -369,7 +369,7 @@
                                     </div>
                                     <div class="reverse-column flex-column column">
                                         <ol class="column-datasets">
-                                            <dataset-collection-element-view
+                                            <unpaired-dataset-element-view
                                                 v-for="element in reverseElements"
                                                 :key="element.id"
                                                 @element-is-selected="reverseElementSelected"
@@ -421,9 +421,9 @@
 <script>
 import _l from "utils/localization";
 import CollectionCreator from "./common/CollectionCreator";
-import DatasetCollectionElementView from "./PairedListDatasetCollectionElementView";
+import UnpairedDatasetElementView from "./UnpairedDatasetElementView";
 import levenshteinDistance from "utils/levenshtein";
-import PairedElementView from "./PairedListPairedElementView";
+import PairedElementView from "./PairedElementView";
 import STATES from "mvc/dataset/states";
 import naturalSort from "utils/natural-sort";
 import "splitpanes/dist/splitpanes.css";
@@ -436,7 +436,7 @@ export default {
         this.filters = this.commonFilters[this.filters] || this.commonFilters[this.DEFAULT_FILTERS];
         this._elementsSetUp();
     },
-    components: { CollectionCreator, DatasetCollectionElementView, PairedElementView, Splitpanes, Pane, draggable },
+    components: { CollectionCreator, UnpairedDatasetElementView, PairedElementView, Splitpanes, Pane, draggable },
     data: function () {
         return {
             state: "build", //error

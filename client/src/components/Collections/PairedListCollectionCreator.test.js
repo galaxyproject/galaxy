@@ -1,7 +1,7 @@
 import Vue from "vue";
 import { mount } from "@vue/test-utils";
 import PairedListCollectionCreator from "components/Collections/PairedListCollectionCreator";
-import DATA from "../test-data/paired-collection-creator.data";
+import DATA from "../../../tests/qunit/test-data/paired-collection-creator.data.js";
 import { getNewAttachNode } from "jest/helpers";
 
 describe("PairedListCollectionCreator", () => {
@@ -31,7 +31,7 @@ describe("PairedListCollectionCreator", () => {
     });
 
     it("autopairs the dataset", async () => {
-        wrapper._autopair();
-        expect(wrapper.workingElements.length == 0);
+        // Autopair is called on startup
+        expect(wrapper.findAll("li.dataset").length == 0).toBeTruthy();
     });
 });
