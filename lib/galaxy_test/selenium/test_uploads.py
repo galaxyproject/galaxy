@@ -1,6 +1,6 @@
 import os
-import pytest
 
+import pytest
 from selenium.webdriver.common.keys import Keys
 
 from .framework import (
