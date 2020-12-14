@@ -3,6 +3,7 @@
 import sys
 import os
 import json
+import datetime
 
 # Standard PySceneDetect imports:
 from scenedetect.video_manager import VideoManager
@@ -32,7 +33,8 @@ def main():
 
 # Get the duration based on the last output
 def get_duration(shots):
-    return shots[len(shots) - 1][1].get_timecode()
+    tc = shots[len(shots) - 1][1].get_timecode()
+    return get_seconds_from_timecode(tc)
 
 # Find a list of shots using pyscenedetect api
 def find_shots(video_path, stats_file, threshold):
@@ -83,6 +85,10 @@ def find_shots(video_path, stats_file, threshold):
 
     return scene_list
 
+def get_seconds_from_timecode(time_string):
+    dt = datetime.datetime.strptime(time_string, "%H:%M:%S.%f")
+    a_timedelta = dt - datetime.datetime(1900, 1, 1)
+    return a_timedelta.total_seconds()
 
 def convert_to_json(shots, input_file, output_json):
     duration = get_duration(shots)
@@ -95,10 +101,12 @@ def convert_to_json(shots, input_file, output_json):
     }
 
     for s in shots:
+        start_seconds = get_seconds_from_timecode(s[0].get_timecode())
+        end_seconds = get_seconds_from_timecode(s[1].get_timecode())
         shot = {
             "type": "shot",
-            "start": s[0].get_timecode(),
-            "end": s[1].get_timecode()
+            "start": start_seconds,
+            "end": end_seconds
         }
         outputDict["shots"].append(shot)
 
