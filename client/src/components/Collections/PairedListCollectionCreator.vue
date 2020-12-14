@@ -633,7 +633,7 @@ export default {
             return elements.filter((e) => this.filterElement(e, filterText));
         },
         filterElement: function (element, filterText) {
-            return filterText == "" || element.name.toLowerCase().includes(filterText.toLowerCase());
+            return filterText == "" || new RegExp(filterText).test(element.name);
         },
         forwardElementSelected: function (e) {
             if (this.selectedForwardElement == null || !this.selectedForwardElement.id == e.id) {
