@@ -246,6 +246,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             raise exceptions.AuthenticationFailed('Provided API key is not valid.')
         if provided_key.user.deleted:
             raise exceptions.AuthenticationFailed('User account is deactivated, please contact an administrator.')
+        sa_session.refresh(provided_key.user)
         newest_key = provided_key.user.api_keys[0]
         if newest_key.key != provided_key.key:
             raise exceptions.AuthenticationFailed('Provided API key has expired.')
