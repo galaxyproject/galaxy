@@ -313,9 +313,9 @@ def populate_state(request_context, inputs, incoming, state, errors={}, context=
     >>> print(state['b'][0]['d'][0]['f']['h'])
     4
     >>> # now test with input_format='21.01'
-    >>> flat_new = {'a': 1, 'b': [{'c': 2, 'd': [{'e': 3, 'f': {'h': 4, 'g': True}}]}]}
+    >>> nested = {'a': 1, 'b': [{'c': 2, 'd': [{'e': 3, 'f': {'h': 4, 'g': True}}]}]}
     >>> state_new = OrderedDict()
-    >>> populate_state(trans, inputs, flat_new, state_new, check=False, input_format='21.01')
+    >>> populate_state(trans, inputs, nested, state_new, check=False, input_format='21.01')
     >>> print(state_new['a'])
     1
     >>> print(state_new['b'][0]['c'])

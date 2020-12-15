@@ -1271,7 +1271,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
                     # We'll want to replace this item
                     return 'job_produced_collection_elements'
             except Exception:
-                log.error(f"Error trying to determine if job {self.id} is remappable")
+                log.exception(f"Error trying to determine if job {self.id} is remappable")
         return False
 
 

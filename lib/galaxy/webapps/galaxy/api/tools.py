@@ -466,7 +466,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         POST /api/tools
         Execute tool with a given parameter payload
 
-        :param input_format: input format for the payload. Options are the default 'legacy' (i.e. conditionals and repeats are represented with the '|' symbol) or '21.01).
+        :param input_format: input format for the payload. Possible values are the default 'legacy' (where inputs nested inside conditionals or repeats are identified with e.g. '<conditional_name>|<input_name>') or '21.01' (where inputs inside conditionals or repeats are nested elements).
         :type input_format:  string
         """
         tool_id = payload.get("tool_id")
