@@ -111,7 +111,7 @@ class UploadsTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.history_panel_wait_for_hid_hidden(2)
 
     @selenium_test
-    @pytest.mark.screenshot
+    @pytest.mark.gtn_screenshot
     @pytest.mark.local
     def test_rules_example_1_datasets(self):
         # Test case generated for:
@@ -151,7 +151,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         # self.screenshot("rules_example_1_6_download_complete")
 
     @selenium_test
-    @pytest.mark.screenshot
+    @pytest.mark.gtn_screenshot
     @pytest.mark.local
     def test_rules_example_2_list(self):
         self.perform_upload(self.get_filename("rules/PRJDA60709.tsv"))
@@ -178,7 +178,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         # self.screenshot("rules_example_2_5_download_complete")
 
     @selenium_test
-    @pytest.mark.screenshot
+    @pytest.mark.gtn_screenshot
     @pytest.mark.local
     def test_rules_example_3_list_pairs(self):
         self.perform_upload(self.get_filename("rules/PRJDB3920.tsv"))
