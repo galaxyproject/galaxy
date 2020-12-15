@@ -439,7 +439,7 @@ class GalaxyInteractorApi:
                 inputs_tree[key] = value[0]
 
         submit_response = None
-        for _ in range(30):
+        for _ in range(DEFAULT_TOOL_TEST_WAIT):
             submit_response = self.__submit_tool(history_id, tool_id=testdef.tool_id, tool_input=inputs_tree)
             if _are_tool_inputs_not_ready(submit_response):
                 print("Tool inputs not ready yet")
