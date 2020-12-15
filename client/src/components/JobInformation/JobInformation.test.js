@@ -7,6 +7,8 @@ import jobResponse from "./testData/jobInformationResponse.json";
 import flushPromises from "flush-promises";
 import createCache from "vuex-cache";
 
+jest.mock("app");
+
 const HDA_ID = "FOO_HDA_ID";
 const JOB_ID = "test_id";
 

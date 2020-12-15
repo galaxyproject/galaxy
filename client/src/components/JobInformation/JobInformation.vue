@@ -117,16 +117,13 @@ export default {
     computed: {
         isAdmin: function () {
             const Galaxy = getGalaxyInstance();
-            if (Galaxy && Galaxy.user) {
-                return Galaxy.user.isAdmin();
-            } else return false;
+            return Galaxy?.user?.isAdmin() || false;
         },
         dataset: function () {
             return this.$store.getters.dataset(this.hda_id);
         },
         job: function () {
             const job = this.$store.getters.job(this.job_id);
-            console.log(job);
             return job;
         },
         isEligibleForDecode: function () {
