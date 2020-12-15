@@ -177,16 +177,23 @@ class DefaultToolAction:
                 for action, role_id in action_tuples:
                     record_permission(action, role_id)
 
-                replace_collection = False
+                _, extensions = collection.dataset_states_and_extensions_summary
+                conversion_required = False
+                for ext in extensions:
+                    if ext:
+                        datatype = trans.app.datatypes_registry.get_datatype_by_extension(ext)
+                        if not datatype.matches_any(input.formats):
+                            conversion_required = True
+                            break
                 processed_dataset_dict = {}
                 for i, v in enumerate(collection.dataset_instances):
-                    processed_dataset = process_dataset(v)
-                    if processed_dataset is not v:
-                        replace_collection = True
-                        processed_dataset_dict[v] = processed_dataset
-                    input_datasets[prefix + input.name + str(i + 1)] = processed_dataset
-
-                if replace_collection:
+                    processed_dataset = None
+                    if conversion_required:
+                        processed_dataset = process_dataset(v)
+                        if processed_dataset is not v:
+                            processed_dataset_dict[v] = processed_dataset
+                    input_datasets[prefix + input.name + str(i + 1)] = processed_dataset or v
+                if conversion_required:
                     collection_type_description = trans.app.dataset_collections_service.collection_type_descriptions.for_collection_type(collection.collection_type)
                     collection_builder = CollectionBuilder(collection_type_description)
                     collection_builder.replace_elements_in_collection(
@@ -245,12 +252,9 @@ class DefaultToolAction:
 
     def _collect_inputs(self, tool, trans, incoming, history, current_user_roles, collection_info):
         """ Collect history as well as input datasets and collections. """
-        app = trans.app
         # Set history.
         if not history:
             history = tool.get_default_history_by_trans(trans, create=True)
-        if history not in trans.sa_session:
-            history = trans.sa_session.query(app.model.History).get(history.id)
 
         # Track input dataset collections - but replace with simply lists so collect
         # input datasets can process these normally.
@@ -327,8 +331,7 @@ class DefaultToolAction:
 
         if not completed_job:
             # Determine output dataset permission/roles list
-            existing_datasets = [inp for inp in inp_data.values() if inp]
-            if existing_datasets:
+            if all_permissions:
                 output_permissions = app.security_agent.guess_derived_permissions(all_permissions)
             else:
                 # No valid inputs, we will use history defaults
@@ -455,7 +458,6 @@ class DefaultToolAction:
             # Flush all datasets at once.
             return data
 
-        datasets_to_persist = []
         for name, output in tool.outputs.items():
             if not filter_output(output, incoming):
                 handle_output_timer = ExecutionTimer()
@@ -492,7 +494,7 @@ class DefaultToolAction:
 
                         effective_output_name = output_part_def.effective_output_name
                         element = handle_output(effective_output_name, output_part_def.output_def, hidden=True)
-                        datasets_to_persist.append(element)
+                        history.stage_addition(element)
                         # TODO: this shouldn't exist in the top-level of the history at all
                         # but for now we are still working around that by hiding the contents
                         # there.
@@ -509,16 +511,12 @@ class DefaultToolAction:
                         element_kwds = dict(elements=collections_manager.ELEMENTS_UNINITIALIZED)
                     else:
                         element_kwds = dict(element_identifiers=element_identifiers)
-                    hdca = output_collections.create_collection(
+                    output_collections.create_collection(
                         output=output,
                         name=name,
-                        set_hid=True if flush_job else False,
-                        flush=flush_job,
                         completed_job=completed_job,
                         **element_kwds
                     )
-                    if hdca:
-                        datasets_to_persist.append(hdca)
                     log.info("Handled collection output named {} for tool {} {}".format(name, tool.id, handle_output_timer))
                 else:
                     handle_output(name, output)
@@ -531,7 +529,7 @@ class DefaultToolAction:
         # Add all the top-level (non-child) datasets to the history unless otherwise specified
         for name, data in out_data.items():
             if name not in child_dataset_names and name not in incoming:  # don't add children; or already existing datasets, i.e. async created
-                datasets_to_persist.append(data)
+                history.stage_addition(data)
 
         # Add all the children to their parents
         for parent_name, child_name in parent_to_child_pairs:
@@ -556,14 +554,13 @@ class DefaultToolAction:
         if app.config.track_jobs_in_database and rerun_remap_job_id is not None:
             # We need a flush here and get hids in order to rewrite jobs parameter,
             # but remapping jobs should only affect single jobs anyway, so this is not too costly.
+            history.add_pending_datasets(set_output_hid=set_output_hid)
             trans.sa_session.flush()
-            history.add_datasets(trans.sa_session, datasets_to_persist, set_hid=set_output_hid, quota=False, flush=False)
             self._remap_job_on_rerun(trans=trans,
                                      galaxy_session=galaxy_session,
                                      rerun_remap_job_id=rerun_remap_job_id,
                                      current_job=job,
                                      out_data=out_data)
-            datasets_to_persist = []
         log.info("Setup for job {} complete, ready to be enqueued {}".format(job.log_str(), job_setup_timer))
 
         # Some tools are not really executable, but jobs are still created for them ( for record keeping ).
@@ -589,8 +586,7 @@ class DefaultToolAction:
         else:
             if flush_job:
                 # Set HID and add to history.
-                # This is brand new and certainly empty so don't worry about quota.
-                history.add_datasets(trans.sa_session, datasets_to_persist, set_hid=set_output_hid, quota=False, flush=False)
+                history.add_pending_datasets(set_output_hid=set_output_hid)
                 job_flush_timer = ExecutionTimer()
                 trans.sa_session.flush()
                 log.info("Flushed transaction for job {} {}".format(job.log_str(), job_flush_timer))
@@ -598,7 +594,7 @@ class DefaultToolAction:
                 # Dispatch to a job handler. enqueue() is responsible for flushing the job
                 app.job_manager.enqueue(job, tool=tool)
                 trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
-            return job, out_data, datasets_to_persist, history
+            return job, out_data, history
 
     def _remap_job_on_rerun(self, trans, galaxy_session, rerun_remap_job_id, current_job, out_data):
         """
@@ -821,7 +817,7 @@ class OutputCollections:
         self.out_collection_instances = {}
         self.tags = tags
 
-    def create_collection(self, output, name, collection_type=None, set_hid=True, flush=True, completed_job=None, **element_kwds):
+    def create_collection(self, output, name, collection_type=None, completed_job=None, **element_kwds):
         input_collections = self.input_collections
         collections_manager = self.trans.app.dataset_collections_service
         collection_type = collection_type or output.structure.collection_type
@@ -900,16 +896,16 @@ class OutputCollections:
                 collection_type=collection_type,
                 trusted_identifiers=True,
                 tags=self.tags,
-                set_hid=set_hid,
-                flush=flush,
+                set_hid=False,
+                flush=False,
                 completed_job=completed_job,
                 output_name=name,
                 **element_kwds
             )
             # name here is name of the output element - not name
             # of the hdca.
+            self.history.stage_addition(hdca)
             self.out_collection_instances[name] = hdca
-            return hdca
 
 
 def on_text_for_names(input_names):

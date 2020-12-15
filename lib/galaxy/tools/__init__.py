@@ -32,7 +32,6 @@ from galaxy import (
 from galaxy.job_execution import output_collect
 from galaxy.managers.jobs import JobSearch
 from galaxy.metadata import get_metadata_compute_strategy
-from galaxy.model.tags import GalaxyTagHandler
 from galaxy.tool_shed.util.repository_util import get_installed_repository
 from galaxy.tool_shed.util.shed_util_common import set_image_paths
 from galaxy.tool_util.deps import (
@@ -1658,9 +1657,8 @@ class Tool(Dictifiable):
             )
             job = rval[0]
             out_data = rval[1]
-            if len(rval) == 4:
-                execution_slice.datasets_to_persist = rval[2]
-                execution_slice.history = rval[3]
+            if len(rval) > 2:
+                execution_slice.history = rval[2]
         except (webob.exc.HTTPFound, exceptions.MessageException) as e:
             # if it's a webob redirect exception, pass it up the stack
             raise e
@@ -2768,36 +2766,33 @@ class DatabaseOperationTool(Tool):
         return not self.require_dataset_ok
 
     def check_inputs_ready(self, input_datasets, input_dataset_collections):
-        def check_dataset_instance(input_dataset):
-            if input_dataset.is_pending:
+        def check_dataset_state(state):
+            if state in model.Dataset.non_ready_states:
                 raise ToolInputsNotReadyException("An input dataset is pending.")
 
             if self.require_dataset_ok:
-                if input_dataset.state != input_dataset.dataset.states.OK:
+                if state != model.Dataset.states.OK:
                     raise ValueError("Tool requires inputs to be in valid state, but dataset {} is in state '{}'".format(input_dataset, input_dataset.state))
 
         for input_dataset in input_datasets.values():
-            check_dataset_instance(input_dataset)
+            check_dataset_state(input_dataset.state)
 
         for input_dataset_collection_pairs in input_dataset_collections.values():
             for input_dataset_collection, _ in input_dataset_collection_pairs:
-                if not input_dataset_collection.collection.populated:
+                if not input_dataset_collection.collection.populated_optimized:
                     raise ToolInputsNotReadyException("An input collection is not populated.")
 
-            for dataset_instance in input_dataset_collection.dataset_instances:
-                check_dataset_instance(dataset_instance)
+            states, _ = input_dataset_collection.collection.dataset_states_and_extensions_summary
+            for state in states:
+                check_dataset_state(state)
 
     def _add_datasets_to_history(self, history, elements, datasets_visible=False):
-        datasets = []
         for element_object in elements:
             if getattr(element_object, "history_content_type", None) == "dataset":
                 element_object.visible = datasets_visible
-                datasets.append(element_object)
+                history.stage_addition(element_object)
 
-        if datasets:
-            history.add_datasets(self.sa_session, datasets, set_hid=True)
-
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history):
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         return self._outputs_dict()
 
     def _outputs_dict(self):
@@ -2807,7 +2802,7 @@ class DatabaseOperationTool(Tool):
 class UnzipCollectionTool(DatabaseOperationTool):
     tool_type = 'unzip_collection'
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, tags=None):
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, tags=None, **kwds):
         has_collection = incoming["input"]
         if hasattr(has_collection, "element_type"):
             # It is a DCE
@@ -2845,7 +2840,7 @@ class ZipCollectionTool(DatabaseOperationTool):
 class BuildListCollectionTool(DatabaseOperationTool):
     tool_type = 'build_list'
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, tags=None):
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, tags=None, **kwds):
         new_elements = OrderedDict()
 
         for i, incoming_repeat in enumerate(incoming["datasets"]):
@@ -2861,7 +2856,7 @@ class BuildListCollectionTool(DatabaseOperationTool):
 class ExtractDatasetCollectionTool(DatabaseOperationTool):
     tool_type = 'extract_dataset'
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, tags=None):
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, tags=None, **kwds):
         has_collection = incoming["input"]
         if hasattr(has_collection, "element_type"):
             # It is a DCE
@@ -3164,13 +3159,14 @@ class RelabelFromFileTool(DatabaseOperationTool):
 class ApplyRulesTool(DatabaseOperationTool):
     tool_type = 'apply_rules'
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, tag_handler, **kwds):
         hdca = incoming["input"]
         rule_set = RuleSet(incoming["rules"])
         copied_datasets = []
 
         def copy_dataset(dataset):
             copied_dataset = dataset.copy(flush=False)
+            copied_dataset.history_id = history.id
             copied_datasets.append(copied_dataset)
             return copied_dataset
 
@@ -3179,19 +3175,18 @@ class ApplyRulesTool(DatabaseOperationTool):
         )
         self._add_datasets_to_history(history, copied_datasets)
         output_collections.create_collection(
-            next(iter(self.outputs.values())), "output", collection_type=rule_set.collection_type, elements=new_elements
+            next(iter(self.outputs.values())), "output", collection_type=rule_set.collection_type, elements=new_elements,
         )
 
 
 class TagFromFileTool(DatabaseOperationTool):
     tool_type = 'tag_from_file'
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, tag_handler, **kwds):
         hdca = incoming["input"]
         how = incoming['how']
         new_tags_dataset_assoc = incoming["tags"]
         new_elements = OrderedDict()
-        tags_manager = GalaxyTagHandler(trans.app.model.context)
         new_datasets = []
 
         def add_copied_value_to_new_elements(new_tags_dict, dce):
@@ -3204,13 +3199,13 @@ class TagFromFileTool(DatabaseOperationTool):
                 if new_tags:
                     if how in ('add', 'remove') and dce.element_object.tags:
                         # We need get the original tags and update them with the new tags
-                        old_tags = {tag for tag in tags_manager.get_tags_str(dce.element_object.tags).split(',') if tag}
+                        old_tags = {tag for tag in tag_handler.get_tags_str(dce.element_object.tags).split(',') if tag}
                         if how == 'add':
                             old_tags.update(set(new_tags))
                         elif how == 'remove':
                             old_tags = old_tags - set(new_tags)
                         new_tags = old_tags
-                    tags_manager.add_tags_from_list(user=history.user, item=copied_value, new_tags_list=new_tags)
+                    tag_handler.add_tags_from_list(user=history.user, item=copied_value, new_tags_list=new_tags, flush=False)
             else:
                 # We have a collection, and we copy the elements so that we don't manipulate the original tags
                 copied_value = dce.element_object.copy(element_destination=history)
@@ -3220,14 +3215,14 @@ class TagFromFileTool(DatabaseOperationTool):
                     new_element.element_object.visible = False
                     new_tags = new_tags_dict.get(new_element.element_identifier)
                     if how in ('add', 'remove'):
-                        old_tags = {tag for tag in tags_manager.get_tags_str(old_element.element_object.tags).split(',') if tag}
+                        old_tags = {tag for tag in tag_handler.get_tags_str(old_element.element_object.tags).split(',') if tag}
                         if new_tags:
                             if how == 'add':
                                 old_tags.update(set(new_tags))
                             elif how == 'remove':
                                 old_tags = old_tags - set(new_tags)
                         new_tags = old_tags
-                    tags_manager.add_tags_from_list(user=history.user, item=new_element.element_object, new_tags_list=new_tags)
+                    tag_handler.add_tags_from_list(user=history.user, item=new_element.element_object, new_tags_list=new_tags, flush=False)
             new_elements[dce.element_identifier] = copied_value
 
         new_tags_path = new_tags_dataset_assoc.file_name
@@ -3277,10 +3272,10 @@ class FilterFromFileTool(DatabaseOperationTool):
                 discarded_elements[element_identifier] = copied_value
 
         self._add_datasets_to_history(history, filtered_elements.values())
-        self._add_datasets_to_history(history, discarded_elements.values())
         output_collections.create_collection(
             self.outputs["output_filtered"], "output_filtered", elements=filtered_elements
         )
+        self._add_datasets_to_history(history, discarded_elements.values())
         output_collections.create_collection(
             self.outputs["output_discarded"], "output_discarded", elements=discarded_elements
         )
