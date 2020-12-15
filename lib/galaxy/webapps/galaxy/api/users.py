@@ -143,36 +143,59 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         return rval
 
     @expose_api_anonymous
-    def show(self, trans, id, deleted='False', **kwd):
+    def show(self, trans, id, **kwd):
         """
         GET /api/users/{encoded_id}
         GET /api/users/deleted/{encoded_id}
         GET /api/users/current
         Displays information about a user.
         """
+        user = self._get_user_full(trans, id, **kwd)
+        if user is not None:
+            return self.user_serializer.serialize_to_view(user, view='detailed')
+        else:
+            item = self.anon_user_api_value(trans)
+            return item
+
+    def _get_user_full(self, trans, user_id, **kwd):
+        """Return referenced user or None if anonymous user is referenced."""
+        deleted = kwd.get("deleted", "False")
         deleted = util.string_as_bool(deleted)
         try:
             # user is requesting data about themselves
-            if id == "current":
+            if user_id == "current":
                 # ...and is anonymous - return usage and quota (if any)
                 if not trans.user:
-                    item = self.anon_user_api_value(trans)
-                    return item
+                    return None
 
                 # ...and is logged in - return full
                 else:
                     user = trans.user
             else:
-                user = self.get_user(trans, id, deleted=deleted)
+                user = self.get_user(trans, user_id, deleted=deleted)
             # check that the user is requesting themselves (and they aren't del'd) unless admin
             if not trans.user_is_admin:
                 assert trans.user == user
                 assert not user.deleted
+            return user
         except exceptions.ItemDeletionException:
             raise
         except Exception:
-            raise exceptions.RequestParameterInvalidException('Invalid user id specified', id=id)
-        return self.user_serializer.serialize_to_view(user, view='detailed')
+            raise exceptions.RequestParameterInvalidException('Invalid user id specified', id=user_id)
+
+    @expose_api
+    def usage(self, trans, user_id, **kwd):
+        """
+        GET /api/users/{user_id}/usage
+
+        Get user's disk usage broken down by quota source.
+        """
+        user = self._get_user_full(trans, user_id, **kwd)
+        if user:
+            rval = self.user_serializer.serialize_disk_usage(user)
+            return rval
+        else:
+            return []
 
     @expose_api
     def create(self, trans, payload, **kwd):
@@ -274,7 +297,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
     # TODO: move to more basal, common resource than this
     def anon_user_api_value(self, trans):
         """Return data for an anonymous user, truncated to only usage and quota_percent"""
-        usage = trans.app.quota_agent.get_usage(trans)
+        usage = trans.app.quota_agent.get_usage(trans, history=trans.history)
         percent = trans.app.quota_agent.get_percent(trans=trans, usage=usage)
         return {'total_disk_usage': int(usage),
                 'nice_total_disk_usage': util.nice_size(usage),

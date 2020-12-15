@@ -672,6 +672,9 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         if trans.request.method == 'GET':
             all_users = []
             all_groups = []
+            labels = trans.app.object_store.get_quota_source_map().get_quota_source_labels()
+            label_options = [("Default Quota", None)]
+            label_options.extend([(l, l) for l in labels])
             for user in trans.sa_session.query(trans.app.model.User) \
                                         .filter(trans.app.model.User.table.c.deleted == false()) \
                                         .order_by(trans.app.model.User.table.c.email):
@@ -683,30 +686,42 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             default_options = [('No', 'no')]
             for typ in trans.app.model.DefaultQuotaAssociation.types.__dict__.values():
                 default_options.append(('Yes, ' + typ, typ))
-            return {'title'  : 'Create Quota',
-                    'inputs' : [
-                        {
-                            'name'    : 'name',
-                            'label'   : 'Name'
-                        }, {
-                            'name'    : 'description',
-                            'label'   : 'Description'
-                        }, {
-                            'name'    : 'amount',
-                            'label'   : 'Amount',
-                            'help'    : 'Examples: "10000MB", "99 gb", "0.2T", "unlimited"'
-                        }, {
-                            'name'    : 'operation',
-                            'label'   : 'Assign, increase by amount, or decrease by amount?',
-                            'options' : [('=', '='), ('+', '+'), ('-', '-')]
-                        }, {
-                            'name'    : 'default',
-                            'label'   : 'Is this quota a default for a class of users (if yes, what type)?',
-                            'options' : default_options,
-                            'help'    : 'Warning: Any users or groups associated with this quota will be disassociated.'
-                        },
-                        build_select_input('in_groups', 'Groups', all_groups, []),
-                        build_select_input('in_users', 'Users', all_users, [])]}
+            rval = {
+                'title'  : 'Create Quota',
+                'inputs' : [
+                    {
+                        'name'    : 'name',
+                        'label'   : 'Name'
+                    }, {
+                        'name'    : 'description',
+                        'label'   : 'Description'
+                    }, {
+                        'name'    : 'amount',
+                        'label'   : 'Amount',
+                        'help'    : 'Examples: "10000MB", "99 gb", "0.2T", "unlimited"'
+                    }, {
+                        'name'    : 'operation',
+                        'label'   : 'Assign, increase by amount, or decrease by amount?',
+                        'options' : [('=', '='), ('+', '+'), ('-', '-')]
+                    }, {
+                        'name'    : 'default',
+                        'label'   : 'Is this quota a default for a class of users (if yes, what type)?',
+                        'options' : default_options,
+                        'help'    : 'Warning: Any users or groups associated with this quota will be disassociated.'
+                    }
+                ],
+            }
+            if len(label_options) > 1:
+                rval["inputs"].append({
+                    'name'    : 'quota_source_label',
+                    'label'   : 'Apply quota to labeled object stores.',
+                    'options' : label_options,
+                })
+            rval["inputs"].extend([
+                build_select_input('in_groups', 'Groups', all_groups, []),
+                build_select_input('in_users', 'Users', all_users, []),
+            ])
+            return rval
         else:
             try:
                 quota, message = self._create_quota(util.Params(payload), decode_id=trans.security.decode_id)

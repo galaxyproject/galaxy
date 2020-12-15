@@ -20,6 +20,7 @@ export class MastheadState {
         Galaxy.quotaMeter = this.quotaMeter = new QuotaMeter.UserQuotaMeter({
             model: Galaxy.user,
             quotaUrl: Galaxy.config.quota_url,
+            quotaSourceLabels: Galaxy.config.quota_source_labels,
         });
 
         // loop through beforeunload functions if the user attempts to unload the page

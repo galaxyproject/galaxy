@@ -548,6 +548,11 @@ class BaseDatasetPopulator:
         assert len(users_roles) == 1, f"Did not find exactly one role for email {user_email} - {users_roles}"
         return users_roles[0]["id"]
 
+    def get_usage(self):
+        usage_response = self.galaxy_interactor.get("users/current/usage")
+        usage_response.raise_for_status()
+        return usage_response.json()
+
     def create_role(self, user_ids, description=None):
         payload = {
             "name": self.get_random_name(prefix="testpop"),

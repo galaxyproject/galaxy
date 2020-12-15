@@ -401,6 +401,7 @@ model.Quota.table = Table(
     Column("description", TEXT),
     Column("bytes", BigInteger),
     Column("operation", String(8)),
+    Column("quota_source_label", String(32), index=True),
     Column("deleted", Boolean, index=True, default=False))
 
 model.DefaultQuotaAssociation.table = Table(
@@ -408,8 +409,20 @@ model.DefaultQuotaAssociation.table = Table(
     Column("id", Integer, primary_key=True),
     Column("create_time", DateTime, default=now),
     Column("update_time", DateTime, default=now, onupdate=now),
-    Column("type", String(32), index=True, unique=True),
+    Column("type", String(32), index=True),
     Column("quota_id", Integer, ForeignKey("quota.id"), index=True))
+
+# Call it user_quota_source_usage instead of quota_source_usage so we can
+# implement group-allocated storage in the future.
+model.UserQuotaSourceUsage.table = Table(
+    "user_quota_source_usage", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
+    Column("quota_source_label", String(32), index=True),
+    # user had an index on disk_usage - does that make any sense? -John
+    Column("disk_usage", Numeric(15, 0), default=0, nullable=False),
+    UniqueConstraint('user_id', 'quota_source_label', name="uqsu_unique_label_per_user"),
+)
 
 model.DatasetPermissions.table = Table(
     "dataset_permissions", metadata,
@@ -1992,6 +2005,9 @@ mapper(model.GroupQuotaAssociation, model.GroupQuotaAssociation.table, propertie
     group=relation(model.Group, backref="quotas"),
     quota=relation(model.Quota)
 ))
+
+simple_mapping(model.UserQuotaSourceUsage,
+    user=relation(model.User, backref="quota_source_usages", uselist=True))
 
 mapper(model.DefaultQuotaAssociation, model.DefaultQuotaAssociation.table, properties=dict(
     quota=relation(model.Quota, backref="default")

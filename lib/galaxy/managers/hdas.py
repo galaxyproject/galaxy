@@ -143,8 +143,9 @@ class HDAManager(datasets.DatasetAssociationManager,
             quota_amount_reduction = hda.quota_amount(user)
         super().purge(hda, flush=flush)
         # decrease the user's space used
-        if quota_amount_reduction:
-            user.adjust_total_disk_usage(-quota_amount_reduction)
+        quota_source_info = hda.dataset.quota_source_info
+        if quota_amount_reduction and quota_source_info.use:
+            user.adjust_total_disk_usage(-quota_amount_reduction, quota_source_info.label)
         return hda
 
     # .... states

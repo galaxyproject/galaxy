@@ -25,6 +25,7 @@ from social_core.storage import AssociationMixin, CodeMixin, NonceMixin, Partial
 from sqlalchemy import (
     alias,
     and_,
+    bindparam,
     func,
     inspect,
     join,
@@ -354,6 +355,102 @@ class JobLike:
         raise NotImplementedError("Attempt to set stdout, must set tool_stderr or job_stderr")
 
 
+UNIQUE_DATASET_USER_USAGE = """
+WITH per_user_histories AS
+(
+    SELECT id
+    FROM history
+    WHERE user_id = :id
+        AND NOT purged
+),
+per_hist_hdas AS (
+    SELECT DISTINCT dataset_id
+    FROM history_dataset_association
+    WHERE NOT purged
+        AND history_id IN (SELECT id FROM per_user_histories)
+)
+SELECT COALESCE(SUM(COALESCE(dataset.total_size, dataset.file_size, 0)), 0)
+FROM dataset
+LEFT OUTER JOIN library_dataset_dataset_association ON dataset.id = library_dataset_dataset_association.dataset_id
+WHERE dataset.id IN (SELECT dataset_id FROM per_hist_hdas)
+    AND library_dataset_dataset_association.id IS NULL
+    AND (
+        {dataset_condition}
+    )
+"""
+
+
+def calculate_user_disk_usage_statements(user_id, quota_source_map, for_sqlite=False):
+    """Standalone function so can be reused for postgres directly in pgcleanup.py."""
+    statements = []
+    default_quota_enabled = quota_source_map.default_quota_enabled
+    default_exclude_ids = quota_source_map.default_usage_excluded_ids()
+    default_cond = "dataset.object_store_id IS NULL" if default_quota_enabled else ""
+    exclude_cond = "dataset.object_store_id NOT IN :exclude_object_store_ids" if default_exclude_ids else ""
+    use_or = " OR " if (default_cond != "" and exclude_cond != "") else ""
+    default_usage_dataset_condition = "{default_cond} {use_or} {exclude_cond}".format(
+        default_cond=default_cond,
+        exclude_cond=exclude_cond,
+        use_or=use_or,
+    )
+    default_usage = UNIQUE_DATASET_USER_USAGE.format(
+        dataset_condition=default_usage_dataset_condition
+    )
+    default_usage = """
+UPDATE galaxy_user SET disk_usage = (%s)
+WHERE id = :id
+""" % default_usage
+    params = {"id": user_id}
+    if default_exclude_ids:
+        params["exclude_object_store_ids"] = default_exclude_ids
+    statements.append((default_usage, params))
+    source = quota_source_map.ids_per_quota_source()
+    # TODO: Merge a lot of these settings together by generating a temp table for
+    # the object_store_id to quota_source_label into a temp table of values
+    for (quota_source_label, object_store_ids) in source.items():
+        label_usage = UNIQUE_DATASET_USER_USAGE.format(
+            dataset_condition="dataset.object_store_id IN :include_object_store_ids"
+        )
+        if for_sqlite:
+            # hacky alternative for older sqlite
+            statement = """
+WITH new (user_id, quota_source_label, disk_usage) AS (
+    VALUES(:id, :label, ({label_usage}))
+)
+INSERT OR REPLACE INTO user_quota_source_usage (id, user_id, quota_source_label, disk_usage)
+SELECT old.id, new.user_id, new.quota_source_label, new.disk_usage
+FROM new
+    LEFT JOIN user_quota_source_usage AS old
+        ON new.user_id = old.user_id
+            AND new.quota_source_label = old.quota_source_label
+""".format(label_usage=label_usage)
+        else:
+            statement = """
+INSERT INTO user_quota_source_usage(user_id, quota_source_label, disk_usage)
+VALUES(:user_id, :label, ({label_usage}))
+ON CONFLICT
+ON constraint uqsu_unique_label_per_user
+DO UPDATE SET disk_usage = excluded.disk_usage
+""".format(label_usage=label_usage)
+        statements.append((statement, {"id": user_id, "label": quota_source_label, "include_object_store_ids": object_store_ids}))
+
+    params = {"id": user_id}
+    source_labels = list(source.keys())
+    if len(source_labels) > 0:
+        clean_old_statement = """
+DELETE FROM user_quota_source_usage
+WHERE user_id = :id AND quota_source_label NOT IN :labels
+"""
+        params["labels"] = source_labels
+    else:
+        clean_old_statement = """
+DELETE FROM user_quota_source_usage
+WHERE user_id = :id AND quota_source_label IS NOT NULL
+"""
+    statements.append((clean_old_statement, params))
+    return statements
+
+
 class User(Dictifiable, RepresentById):
     use_pbkdf2 = True
     """
@@ -482,14 +579,31 @@ class User(Dictifiable, RepresentById):
                     roles.append(role)
         return roles
 
-    def get_disk_usage(self, nice_size=False):
+    def get_disk_usage(self, nice_size=False, quota_source_label=None):
         """
         Return byte count of disk space used by user or a human-readable
         string if `nice_size` is `True`.
         """
-        rval = 0
-        if self.disk_usage is not None:
-            rval = self.disk_usage
+        if quota_source_label is None:
+            rval = 0
+            if self.disk_usage is not None:
+                rval = self.disk_usage
+        else:
+            statement = """
+SELECT DISK_USAGE
+FROM user_quota_source_usage
+WHERE user_id = :user_id and quota_source_label = :label
+"""
+            sa_session = object_session(self)
+            params = {
+                'user_id': self.id,
+                'label': quota_source_label,
+            }
+            row = sa_session.execute(statement, params).fetchone()
+            if row is not None:
+                rval = row[0]
+            else:
+                rval = 0
         if nice_size:
             rval = galaxy.util.nice_size(rval)
         return rval
@@ -502,9 +616,36 @@ class User(Dictifiable, RepresentById):
 
     total_disk_usage = property(get_disk_usage, set_disk_usage)
 
-    def adjust_total_disk_usage(self, amount):
+    def adjust_total_disk_usage(self, amount, quota_source_label):
+        assert amount is not None
         if amount != 0:
-            self.disk_usage = func.coalesce(self.table.c.disk_usage, 0) + amount
+            if quota_source_label is None:
+                self.disk_usage = func.coalesce(self.table.c.disk_usage, 0) + amount
+            else:
+                # else would work on newer sqlite - 3.24.0
+                sa_session = object_session(self)
+                if "sqlite" in sa_session.bind.dialect.name:
+                    # hacky alternative for older sqlite
+                    statement = """
+WITH new (user_id, quota_source_label) AS ( VALUES(:user_id, :label) )
+INSERT OR REPLACE INTO user_quota_source_usage (id, user_id, quota_source_label, disk_usage)
+SELECT old.id, new.user_id, new.quota_source_label, COALESCE(old.disk_usage + :amount, :amount)
+FROM new LEFT JOIN user_quota_source_usage AS old ON new.user_id = old.user_id AND NEW.quota_source_label = old.quota_source_label;
+"""
+                else:
+                    statement = """
+INSERT INTO user_quota_source_usage(user_id, disk_usage, quota_source_label)
+VALUES(:user_id, :amount, :label)
+ON CONFLICT
+    ON constraint uqsu_unique_label_per_user
+    DO UPDATE SET disk_usage = user_quota_source_usage.disk_usage + :amount
+"""
+                params = {
+                    'user_id': self.id,
+                    'amount': int(amount),
+                    'label': quota_source_label,
+                }
+                sa_session.execute(statement, params)
 
     @property
     def nice_total_disk_usage(self):
@@ -513,51 +654,57 @@ class User(Dictifiable, RepresentById):
         """
         return self.get_disk_usage(nice_size=True)
 
-    def calculate_disk_usage(self):
+    def calculate_disk_usage_default_source(self, object_store):
         """
         Return byte count total of disk space used by all non-purged, non-library
-        HDAs in non-purged histories.
+        HDAs in non-purged histories assigned to default quota source.
         """
-        # maintain a list so that we don't double count
-        return self._calculate_or_set_disk_usage(dryrun=True)
+        # only used in set_user_disk_usage.py
+        assert object_store is not None
+        quota_source_map = object_store.get_quota_source_map()
+        default_quota_enabled = quota_source_map.default_quota_enabled
+        default_cond = "dataset.object_store_id IS NULL OR" if default_quota_enabled else ""
+        default_usage_dataset_condition = "{default_cond} dataset.object_store_id NOT IN :exclude_object_store_ids".format(
+            default_cond=default_cond,
+        )
+        default_usage = UNIQUE_DATASET_USER_USAGE.format(
+            dataset_condition=default_usage_dataset_condition
+        )
+        sql_calc = text(default_usage)
+        sql_calc = sql_calc.bindparams(
+            bindparam("id"),
+            bindparam("exclude_object_store_ids", expanding=True)
+        )
+        params = {'id': self.id, "exclude_object_store_ids": quota_source_map.default_usage_excluded_ids()}
+        sa_session = object_session(self)
+        usage = sa_session.scalar(sql_calc, params)
+        return usage
 
-    def calculate_and_set_disk_usage(self):
+    def calculate_and_set_disk_usage(self, object_store):
         """
         Calculates and sets user disk usage.
         """
-        self._calculate_or_set_disk_usage(dryrun=False)
+        self._calculate_or_set_disk_usage(object_store=object_store)
 
-    def _calculate_or_set_disk_usage(self, dryrun=True):
+    def _calculate_or_set_disk_usage(self, object_store):
         """
         Utility to calculate and return the disk usage.  If dryrun is False,
         the new value is set immediately.
         """
-        sql_calc = """
-            WITH per_user_histories AS
-            (
-                SELECT id
-                FROM history
-                WHERE user_id = :id
-                    AND NOT purged
-            ),
-            per_hist_hdas AS (
-                SELECT DISTINCT dataset_id
-                FROM history_dataset_association
-                WHERE NOT purged
-                    AND history_id IN (SELECT id FROM per_user_histories)
-            )
-            SELECT SUM(COALESCE(dataset.total_size, dataset.file_size, 0))
-            FROM dataset
-            LEFT OUTER JOIN library_dataset_dataset_association ON dataset.id = library_dataset_dataset_association.dataset_id
-            WHERE dataset.id IN (SELECT dataset_id FROM per_hist_hdas)
-                AND library_dataset_dataset_association.id IS NULL
-        """
+        assert object_store is not None
+        quota_source_map = object_store.get_quota_source_map()
         sa_session = object_session(self)
-        usage = sa_session.scalar(sql_calc, {'id': self.id})
-        if not dryrun:
-            self.set_disk_usage(usage)
+        for_sqlite = "sqlite" in sa_session.bind.dialect.name
+        statements = calculate_user_disk_usage_statements(self.id, quota_source_map, for_sqlite)
+        for (sql, args) in statements:
+            statement = text(sql)
+            binds = []
+            for key, val in args.items():
+                expand_binding = key.endswith("s")
+                binds.append(bindparam(key, expanding=expand_binding))
+            statement = statement.bindparams(*binds)
+            sa_session.execute(statement, args)
             sa_session.flush()
-        return usage
 
     @staticmethod
     def user_template_environment(user):
@@ -621,6 +768,18 @@ class User(Dictifiable, RepresentById):
         assoc = UserRoleAssociation(self, role)
         session.add(assoc)
         session.flush()
+
+    def dictify_usage(self):
+        rval = [{
+            'quota_source_label': None,
+            'total_disk_usage': float(self.disk_usage or 0),
+        }]
+        for quota_source_usage in self.quota_source_usages:
+            rval.append({
+                'quota_source_label': quota_source_usage.quota_source_label,
+                'total_disk_usage': float(quota_source_usage.disk_usage),
+            })
+        return rval
 
 
 class PasswordResetToken:
@@ -1801,7 +1960,9 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
             if set_hid:
                 dataset.hid = self._next_hid()
         if quota and is_dataset and self.user:
-            self.user.adjust_total_disk_usage(dataset.quota_amount(self.user))
+            quota_source_info = dataset.dataset.quota_source_info
+            if quota_source_info.use:
+                self.user.adjust_total_disk_usage(dataset.quota_amount(self.user), quota_source_info.label)
         dataset.history = self
         if is_dataset and genome_build not in [None, '?']:
             self.genome_build = genome_build
@@ -1816,8 +1977,12 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
         if optimize:
             self.__add_datasets_optimized(datasets, genome_build=genome_build)
             if quota and self.user:
-                disk_usage = sum([d.get_total_size() for d in datasets if is_hda(d)])
-                self.user.adjust_total_disk_usage(disk_usage)
+                hdas = [d for d in datasets if is_hda(d)]
+                disk_usage = sum([d.get_total_size() for d in hdas])
+                if disk_usage:
+                    quota_source_info = hdas[0].dataset.quota_source_info
+                    if quota_source_info.use:
+                        self.user.adjust_total_disk_usage(disk_usage, quota_source_info.label)
             sa_session.add_all(datasets)
             if flush:
                 sa_session.flush()
@@ -2149,6 +2314,10 @@ class Role(Dictifiable, RepresentById):
         self.deleted = deleted
 
 
+class UserQuotaSourceUsage(Dictifiable, RepresentById):
+    dict_element_visible_keys = ['disk_usage', 'quota_source_label']
+
+
 class UserQuotaAssociation(Dictifiable, RepresentById):
     dict_element_visible_keys = ['user']
 
@@ -2166,11 +2335,11 @@ class GroupQuotaAssociation(Dictifiable, RepresentById):
 
 
 class Quota(Dictifiable, RepresentById):
-    dict_collection_visible_keys = ['id', 'name']
-    dict_element_visible_keys = ['id', 'name', 'description', 'bytes', 'operation', 'display_amount', 'default', 'users', 'groups']
+    dict_collection_visible_keys = ['id', 'name', 'quota_source_label']
+    dict_element_visible_keys = ['id', 'name', 'description', 'bytes', 'operation', 'display_amount', 'default', 'users', 'groups', 'quota_source_label']
     valid_operations = ('+', '-', '=')
 
-    def __init__(self, name="", description="", amount=0, operation="="):
+    def __init__(self, name="", description="", amount=0, operation="=", quota_source_label=None):
         self.name = name
         self.description = description
         if amount is None:
@@ -2178,6 +2347,7 @@ class Quota(Dictifiable, RepresentById):
         else:
             self.bytes = amount
         self.operation = operation
+        self.quota_source_label = quota_source_label
 
     def get_amount(self):
         if self.bytes == -1:
@@ -2369,6 +2539,16 @@ class Dataset(StorableObject, RepresentById):
             filename = self.external_filename
         # Make filename absolute
         return os.path.abspath(filename)
+
+    @property
+    def quota_source_label(self):
+        return self.get_quota_source_info(self.object_store_id).label
+
+    @property
+    def quota_source_info(self):
+        object_store_id = self.object_store_id
+        quota_source_map = self.object_store.get_quota_source_map()
+        return quota_source_map.get_quota_source_info(object_store_id)
 
     def set_file_name(self, filename):
         if not filename:
@@ -3298,11 +3478,11 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         """
         return self.dataset.get_access_roles(security_agent)
 
-    def purge_usage_from_quota(self, user):
+    def purge_usage_from_quota(self, user, quota_source_info):
         """Remove this HDA's quota_amount from user's quota.
         """
-        if user:
-            user.adjust_total_disk_usage(-self.quota_amount(user))
+        if user and quota_source_info.use:
+            user.adjust_total_disk_usage(-self.quota_amount(user), quota_source_info.label)
 
     def quota_amount(self, user):
         """

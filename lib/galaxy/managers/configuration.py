@@ -105,6 +105,7 @@ class ConfigSerializer(base.ModelSerializer):
             'python'                            : _defaults_to((sys.version_info.major, sys.version_info.minor)),
             'select_type_workflow_threshold'    : _use_config,
             'file_sources_configured'           : lambda config, key, **context: self.app.file_sources.custom_sources_configured,
+            'quota_source_labels'               : lambda config, key, **context: list(self.app.object_store.get_quota_source_map().get_quota_source_labels()),
             'upload_from_form_button'           : _use_config,
         }
 

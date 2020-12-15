@@ -106,6 +106,12 @@ def test_galaxy_routes():
         action="resolver_dependency"
     )
 
+    test_webapp.assert_maps(
+        "/api/users/current/usage",
+        controller="users",
+        action="usage"
+    )
+
 
 def assert_url_is(actual, expected):
     assert actual == expected, f"Expected URL [{expected}] but obtained [{actual}]"

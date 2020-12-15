@@ -62,21 +62,15 @@ class QuotaAPIController(BaseAPIController, AdminActions, UsesQuotaMixin, QuotaP
         return quota.to_dict(view='element', value_mapper={'id': trans.security.encode_id, 'total_disk_usage': float})
 
     @web.require_admin
-    @web.legacy_expose_api
+    @web.expose_api
     def create(self, trans, payload, **kwd):
         """
         POST /api/quotas
         Creates a new quota.
         """
-        try:
-            self.validate_in_users_and_groups(trans, payload)
-        except Exception as e:
-            raise HTTPBadRequest(detail=util.unicodify(e))
+        self.validate_in_users_and_groups(trans, payload)
         params = self.get_quota_params(payload)
-        try:
-            quota, message = self._create_quota(params)
-        except ActionInputError as e:
-            raise HTTPBadRequest(detail=util.unicodify(e))
+        quota, message = self._create_quota(params)
         item = quota.to_dict(value_mapper={'id': trans.security.encode_id})
         item['url'] = url_for('quota', id=trans.security.encode_id(quota.id))
         item['message'] = message

@@ -427,6 +427,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/container_resolvers/{index}/toolbox/install', action="resolve_toolbox_with_install", controller="container_resolution", conditions=dict(method=["POST"]))
     webapp.mapper.connect('/api/workflows/get_tool_predictions', action='get_tool_predictions', controller="workflows", conditions=dict(method=["POST"]))
 
+    webapp.mapper.connect('/api/users/{user_id}/usage', action='usage', controller="users", conditions=dict(method=["GET"]))
     webapp.mapper.resource_with_deleted('user', 'users', path_prefix='/api')
     webapp.mapper.resource('genome', 'genomes', path_prefix='/api')
     webapp.mapper.connect('/api/genomes/{id}/indexes', controller='genomes', action='indexes')

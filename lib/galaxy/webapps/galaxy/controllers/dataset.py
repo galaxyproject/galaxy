@@ -806,7 +806,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             hda.deleted = True
             # HDA is purgeable
             # Decrease disk usage first
-            hda.purge_usage_from_quota(user)
+            hda.purge_usage_from_quota(user, hda.dataset.quota_source_info)
             # Mark purged
             hda.purged = True
             trans.sa_session.add(hda)

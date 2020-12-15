@@ -347,10 +347,10 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
     def default_permissions(self, user):
         return self.app.security_agent.user_get_default_permissions(user)
 
-    def quota(self, user, total=False):
+    def quota(self, user, total=False, quota_source_label=None):
         if total:
-            return self.app.quota_agent.get_quota_nice_size(user)
-        return self.app.quota_agent.get_percent(user=user)
+            return self.app.quota_agent.get_quota_nice_size(user, quota_source_label=quota_source_label)
+        return self.app.quota_agent.get_percent(user=user, quota_source_label=quota_source_label)
 
     def tags_used(self, user, tag_models=None):
         """
@@ -596,6 +596,15 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
 
             'tags_used'     : lambda i, k, **c: self.user_manager.tags_used(i),
         })
+
+    def serialize_disk_usage(self, user):
+        rval = user.dictify_usage()
+        for usage in rval:
+            quota_source_label = usage["quota_source_label"]
+            usage["quota_percent"] = self.user_manager.quota(user, quota_source_label=quota_source_label)
+            usage["quota"] = self.user_manager.quota(user, total=True, quota_source_label=quota_source_label)
+            usage["nice_total_disk_usage"] = util.nice_size(usage["total_disk_usage"])
+        return rval
 
 
 class UserDeserializer(base.ModelDeserializer):

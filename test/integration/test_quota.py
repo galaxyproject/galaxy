@@ -30,3 +30,20 @@ class QuotaIntegrationTestCase(integration_util.IntegrationTestCase):
 
         quotas = self.dataset_populator.get_quotas()
         assert len(quotas) == 1
+
+        payload = {
+            'name': 'defaultmylabeledquota1',
+            'description': 'first default quota that is labeled',
+            'amount': '120MB',
+            'operation': '=',
+            'default': 'registered',
+            'quota_source_label': 'mylabel',
+        }
+        self.dataset_populator.create_quota(payload)
+
+        quotas = self.dataset_populator.get_quotas()
+        assert len(quotas) == 2
+
+        labels = [q["quota_source_label"] for q in quotas]
+        assert None in labels
+        assert 'mylabel' in labels
