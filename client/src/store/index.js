@@ -30,10 +30,6 @@ export function createStore() {
     const storeConfig = {
         plugins: [
             createCache(),
-            (store) => {
-                store.dispatch("user/$init", { store });
-                store.dispatch("config/$init", { store });
-            },
         ],
         modules: {
             gridSearch: gridSearchStore,
