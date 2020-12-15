@@ -50,7 +50,7 @@
     "popper.js": "^1.16.1",
     "pyre-to-regexp": "^0.0.5",
     "requirejs": "2.3.6",
-    "rxjs": "^6.5.5",
+    "rxjs": "^6.6.3",
     "slugify": "^1.4.0",
     "toastr": "^2.1.4",
     "underscore": "^1.10.2",
