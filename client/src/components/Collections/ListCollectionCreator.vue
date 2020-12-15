@@ -438,7 +438,7 @@ export default {
         },
         /** reset all data to the initial state */
         reset: function () {
-            this._instanceSetUp();            
+            this._instanceSetUp();
             this.getOriginalNames();
         },
         /** string rep */
