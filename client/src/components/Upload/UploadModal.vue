@@ -35,11 +35,8 @@
 </template>
 
 <script>
-import Backbone from "backbone";
-import $ from "jquery";
 import _l from "utils/localization";
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
+import Backbone from "backbone";
 import { getGalaxyInstance } from "app";
 import UploadUtils from "mvc/upload/upload-utils";
 import { getDatatypesMapper } from "components/Datatypes";
@@ -48,8 +45,8 @@ import Collection from "./Collection";
 import Default from "./Default";
 import RulesInput from "./RulesInput";
 import LoadingSpan from "components/LoadingSpan";
-
-Vue.use(BootstrapVue);
+import { mapState } from "vuex";
+import { BModal, BTabs, BTab } from "bootstrap-vue";
 
 export default {
     components: {
@@ -58,6 +55,9 @@ export default {
         Default,
         RulesInput,
         LoadingSpan,
+        BModal,
+        BTabs,
+        BTab
     },
     props: {
         modalStatic: {
@@ -121,8 +121,6 @@ export default {
         return {
             id: "",
             title: _l("Download from web or upload from disk"),
-            historyAvailable: false,
-            currentUser: null,
             listGenomes: [],
             listExtensions: [],
             genomesSet: false,
@@ -131,7 +129,7 @@ export default {
             datatypesMapperReady: true,
         };
     },
-    created: function () {
+    created() {
         this.model = new Backbone.Model({
             label: "Load Data",
             percentage: 0,
@@ -139,7 +137,6 @@ export default {
             onunload: function () {},
             onclick: function () {},
         });
-        $(window).on("beforeunload", () => this.model.get("onunload")());
 
         // load extensions
         UploadUtils.getUploadDatatypes(
@@ -157,7 +154,6 @@ export default {
             this.listGenomes = listGenomes;
         }, this.defaultGenome);
 
-        this.initStateWhenHistoryReady();
         if (this.formats !== null) {
             this.datatypesMapperReady = false;
             getDatatypesMapper().then((datatypesMapper) => {
@@ -168,13 +164,39 @@ export default {
             this.datatypesMapperReady = true;
         }
     },
+    beforeDestroy() {
+        const modelUnload = this.model.get("onunload");
+        modelUnload();
+    },
     computed: {
+        ...mapState("user", {
+            currentUserId: (state) => state.currentUser.id,
+        }),
+
+        currentHistoryId() {
+            // TODO: currentHistory is only in Vuex if beta is enabled
+            // Remove when no longer in beta
+            if ("betaHistory/currentHistoryId" in this.$store.getters) {
+                return this.$store.getters["betaHistory/currentHistoryId"];
+            } else {
+                const Galaxy = getGalaxyInstance();
+                const legacyId = Galaxy.currHistoryPanel?.model.get("id");
+                return legacyId;
+            }
+        },
+
+        historyAvailable() {
+            return Boolean(this.currentHistoryId);
+        },
+
         ready() {
             return this.genomesSet && this.extensionsSet && this.historyAvailable && this.datatypesMapperReady;
         },
+
         unrestricted() {
             return this.formats === null && this.multiple;
         },
+
         effectiveExtensions() {
             if (this.formats === null || !this.datatypesMapperReady) {
                 return this.listExtensions;
@@ -243,25 +265,10 @@ export default {
                 this.hide();
             }
         },
-        initStateWhenHistoryReady() {
-            const Galaxy = getGalaxyInstance();
-            if (!Galaxy.currHistoryPanel || !Galaxy.currHistoryPanel.model) {
-                window.setTimeout(() => {
-                    this.initStateWhenHistoryReady();
-                }, 500);
-                return;
-            }
-            this.historyAvailable = true;
-            this.currentUser = Galaxy.user.id;
-        },
         currentFtp: function () {
-            return this.currentUser && this.ftpUploadSite;
+            return this.currentUserId && this.ftpUploadSite;
         },
-        /** Refresh user and current history */
-        currentHistory: function () {
-            const Galaxy = getGalaxyInstance();
-            return this.currentUser && Galaxy.currHistoryPanel.model.get("id");
-        },
+
         /**
          * Package API data from array of models
          * @param{Array} items - Upload items/rows filtered from a collection
@@ -271,7 +278,7 @@ export default {
             var data = {
                 payload: {
                     tool_id: "upload1",
-                    history_id: history_id || this.currentHistory(),
+                    history_id: history_id || this.currentHistoryId,
                     inputs: {},
                 },
                 files: [],
@@ -335,5 +342,3 @@ export default {
     },
 };
 </script>
-
-<style></style>
