@@ -211,6 +211,7 @@ export default {
     created() {
         this._instanceSetUp();
         this._elementsSetUp();
+        this.saveOriginalNames();
     },
     components: { CollectionCreator, DatasetCollectionElementView, draggable },
     data: function () {
@@ -227,6 +228,7 @@ export default {
             allInvalidElementsPartTwo: _l("and reselect new elements."),
             errorText: _l("Galaxy could not be reached and may be updating.  Try again in a few minutes."),
             workingElements: [],
+            originalNamedElements: [],
             invalidElements: [],
             selectedDatasetElems: [],
             removeExtensions: true,
@@ -373,6 +375,14 @@ export default {
                 existingNames[element.name] = true;
             });
         },
+        saveOriginalNames: function () {
+            // Deep copy elements
+            this.originalNamedElements = JSON.parse(JSON.stringify(this.workingElements));
+        },
+        getOriginalNames: function () {
+            // Deep copy elements
+            this.workingElements = JSON.parse(JSON.stringify(this.originalNamedElements));
+        },
         elementSelected: function (e) {
             if (!this.selectedDatasetElems.includes(e.id)) {
                 this.selectedDatasetElems.push(e.id);
@@ -428,8 +438,8 @@ export default {
         },
         /** reset all data to the initial state */
         reset: function () {
-            this._instanceSetUp();
-            this._elementsSetUp();
+            this._instanceSetUp();            
+            this.getOriginalNames();
         },
         /** string rep */
         toString: function () {

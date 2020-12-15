@@ -256,6 +256,7 @@
                                             type="text"
                                             :placeholder="filterTextPlaceholder"
                                             v-model="forwardFilter"
+                                            title="filterTextTitle"
                                         />
                                         <div class="input-group-append" :title="chooseFilterTitle">
                                             <button
@@ -313,6 +314,7 @@
                                             type="text"
                                             :placeholder="filterTextPlaceholder"
                                             v-model="reverseFilter"
+                                            title="filterTextTitle"
                                         />
                                         <div class="input-group-append" :title="chooseFilterTitle">
                                             <button
@@ -429,7 +431,7 @@ import naturalSort from "utils/natural-sort";
 import "splitpanes/dist/splitpanes.css";
 import { Splitpanes, Pane } from "splitpanes";
 import draggable from "vuedraggable";
-import BootstrapVue from "bootstrap-vue";
+import BAlert from "bootstrap-vue";
 
 export default {
     created() {
@@ -437,13 +439,22 @@ export default {
         this.filters = this.commonFilters[this.filters] || this.commonFilters[this.DEFAULT_FILTERS];
         this._elementsSetUp();
     },
-    components: { CollectionCreator, UnpairedDatasetElementView, PairedElementView, Splitpanes, Pane, draggable },
+    components: {
+        BAlert,
+        CollectionCreator,
+        UnpairedDatasetElementView,
+        PairedElementView,
+        Splitpanes,
+        Pane,
+        draggable,
+    },
     data: function () {
         return {
             state: "build", //error
             dragToChangeTitle: _l("Drag to change"),
             chooseFilterTitle: _l("Choose from common filters"),
             filterTextPlaceholder: _l("Filter text"),
+            filterTextTitle: _l("Use this box to filter elements, using simple matching or regular expressions."),
             pairedElements: [],
             unpairedElements: [],
             commonFilters: {

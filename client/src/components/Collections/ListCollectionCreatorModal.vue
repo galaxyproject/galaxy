@@ -42,7 +42,7 @@ export default {
                         //TODO: this allows for list:list even if the filter above does not - reconcile
                         src: element.history_content_type === "dataset" ? "hda" : "hdca",
                     }));
-                    copyElements = hideSourceItems;
+                    copyElements = !hideSourceItems;
                     return contents.createHDCA(elements, "list", name, hideSourceItems, copyElements);
                 },
             });

@@ -51,6 +51,7 @@
                             class="hide-originals float-right"
                             type="checkbox"
                             @click="$emit('hide-original-toggle')"
+                            checked
                         />
                     </label>
                 </div>

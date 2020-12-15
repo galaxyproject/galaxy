@@ -1,14 +1,12 @@
-import Vue from "vue";
-import { mount } from "@vue/test-utils";
+import { shallowMount } from "@vue/test-utils";
 import PairedListCollectionCreator from "components/Collections/PairedListCollectionCreator";
 import DATA from "../../../tests/qunit/test-data/paired-collection-creator.data.js";
-import { getNewAttachNode } from "jest/helpers";
 
 describe("PairedListCollectionCreator", () => {
     let wrapper;
 
     beforeEach(async () => {
-        wrapper = mount(PairedListCollectionCreator, {
+        wrapper = shallowMount(PairedListCollectionCreator, {
             propsData: {
                 initialElements: DATA._1,
                 creationFn: () => {
@@ -21,13 +19,12 @@ describe("PairedListCollectionCreator", () => {
                     return;
                 },
             },
-            attachTo: getNewAttachNode(),
         });
-        await Vue.nextTick();
+        await wrapper.vm.$nextTick();
     });
 
     afterEach(async () => {
-        await Vue.nextTick();
+        await wrapper.vm.$nextTick();
     });
 
     it("autopairs the dataset", async () => {

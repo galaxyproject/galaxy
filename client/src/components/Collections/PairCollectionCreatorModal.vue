@@ -37,7 +37,7 @@ export default {
                         { name: "forward", src: "hda", id: elements[0].id },
                         { name: "reverse", src: "hda", id: elements[1].id },
                     ];
-                    copyElements = hideSourceItems;
+                    copyElements = !hideSourceItems;
                     return contents.createHDCA(elements, "paired", name, hideSourceItems, copyElements);
                 },
             });
