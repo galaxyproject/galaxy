@@ -10,7 +10,7 @@ import {
     // legacyNavigationPlugin,
     eventHubPlugin,
     localizationPlugin,
-    vueRxShortcutPlugin
+    vueRxShortcutPlugin,
 } from "components/plugins";
 
 // Bootstrap components

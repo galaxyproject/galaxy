@@ -1,7 +1,6 @@
 import Vue from "vue";
 import UploadModal from "./UploadModal";
 import { initializeUploadDefaults } from "./config";
-import store from "../../store";
 
 export function mount(propsData = {}) {
     propsData = initializeUploadDefaults(propsData);
@@ -10,6 +9,5 @@ export function mount(propsData = {}) {
     document.getElementsByTagName("body")[0].appendChild(vm);
     new instance({
         propsData: propsData,
-        store,
     }).$mount(vm);
 }

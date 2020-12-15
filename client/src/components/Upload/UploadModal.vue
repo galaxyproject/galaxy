@@ -48,7 +48,7 @@ import LoadingSpan from "components/LoadingSpan";
 import { mapState } from "vuex";
 import { BModal, BTabs, BTab } from "bootstrap-vue";
 
-export default {
+const UploadModal = {
     components: {
         Collection,
         Composite,
@@ -57,7 +57,7 @@ export default {
         LoadingSpan,
         BModal,
         BTabs,
-        BTab
+        BTab,
     },
     props: {
         modalStatic: {
@@ -174,15 +174,9 @@ export default {
         }),
 
         currentHistoryId() {
-            // TODO: currentHistory is only in Vuex if beta is enabled
-            // Remove when no longer in beta
-            if ("betaHistory/currentHistoryId" in this.$store.getters) {
-                return this.$store.getters["betaHistory/currentHistoryId"];
-            } else {
-                const Galaxy = getGalaxyInstance();
-                const legacyId = Galaxy.currHistoryPanel?.model.get("id");
-                return legacyId;
-            }
+            const Galaxy = getGalaxyInstance();
+            const legacyId = Galaxy.currHistoryPanel?.model.get("id");
+            return legacyId;
         },
 
         historyAvailable() {
@@ -341,4 +335,14 @@ export default {
         },
     },
 };
+
+// Beta history patch
+const useBetaHistory = sessionStorage.getItem("useBetaHistory");
+if (useBetaHistory) {
+    UploadModal.computed.currentHistoryId = function () {
+        return this.$store.getters["betaHistory/currentHistoryId"];
+    };
+}
+
+export default UploadModal;
 </script>
