@@ -580,12 +580,12 @@ class Registry:
         """Returns a datatype object based on an extension"""
         return self.datatypes_by_extension.get(ext, None)
 
-    def change_datatype(self, data, ext):
+    def change_datatype(self, data, ext, dataset_is_new=False):
         data.extension = ext
         # call init_meta and copy metadata from itself.  The datatype
         # being converted *to* will handle any metadata copying and
         # initialization.
-        if data.has_data():
+        if not dataset_is_new and data.has_data():
             data.set_size()
             data.init_meta(copy_from=data)
         return data

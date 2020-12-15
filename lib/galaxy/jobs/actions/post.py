@@ -95,12 +95,12 @@ class ChangeDatatypeAction(DefaultJobAction):
     def execute(cls, app, sa_session, action, job, replacement_dict):
         for dataset_assoc in job.output_datasets:
             if action.output_name == '' or dataset_assoc.name == action.output_name:
-                app.datatypes_registry.change_datatype(dataset_assoc.dataset, action.action_arguments['newtype'])
+                app.datatypes_registry.change_datatype(dataset_assoc.dataset, action.action_arguments['newtype'], dataset_is_new=True)
         for dataset_collection_assoc in job.output_dataset_collection_instances:
             if action.output_name == '' or dataset_collection_assoc.name == action.output_name:
                 for dataset_instance in dataset_collection_assoc.dataset_collection_instance.dataset_instances:
                     if dataset_instance:
-                        app.datatypes_registry.change_datatype(dataset_instance, action.action_arguments['newtype'])
+                        app.datatypes_registry.change_datatype(dataset_instance, action.action_arguments['newtype'], dataset_is_new=True)
 
     @classmethod
     def get_short_str(cls, pja):
