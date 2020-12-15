@@ -319,6 +319,53 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             'state', 'deleted', 'visible'
         ])
 
+        # fields for new beta web client, there is no summary/detailed split any more
+        self.add_view('betawebclient', [
+            # common to hdca
+            'create_time',
+            'deleted',
+            'hid',
+            'history_content_type',
+            'history_id',
+            'id',
+            'name',
+            'tags',
+            'type',
+            'type_id',
+            'update_time',
+            'url',
+            'visible',
+            # dataset only
+            'accessible',
+            'api_type',
+            'annotation',
+            'created_from_basename',
+            'creating_job',
+            'dataset_id',
+            'data_type',
+            'display_apps',
+            'display_types',
+            'download_url',
+            'extension',
+            'file_ext',
+            'file_name',
+            'file_size',
+            'genome_build',
+            'hda_ldda',
+            'meta_files',
+            'misc_blurb',
+            'misc_info',
+            'model_class',
+            'peek',
+            'purged',
+            'rerunnable',
+            'resubmitted',
+            'state',
+            'uuid',
+            'validated_state',
+            'validated_state_message',
+        ])
+
     def add_serializers(self):
         super().add_serializers()
         taggable.TaggableSerializerMixin.add_serializers(self)
