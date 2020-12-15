@@ -132,9 +132,11 @@
 import { mapState, mapGetters } from "vuex";
 import { Dataset } from "../../model";
 import { PriorityMenu, PriorityMenuItem } from "components/PriorityMenu";
+import { legacyNavigationMixin } from "components/plugins";
 
 export default {
     inject: ["STATES"],
+    mixins: [legacyNavigationMixin],
 
     components: {
         PriorityMenu,

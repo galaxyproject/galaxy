@@ -47,8 +47,10 @@ import { PriorityMenuItem, PriorityMenu } from "components/PriorityMenu";
 import HistorySelector from "./HistorySelector";
 import { createNewHistory } from "./model/queries";
 import { wipeDatabase, clearHistoryDateStore } from "./caching";
+import { legacyNavigationMixin } from "components/plugins";
 
 export default {
+    mixins: [legacyNavigationMixin],
     components: {
         PriorityMenu,
         PriorityMenuItem,

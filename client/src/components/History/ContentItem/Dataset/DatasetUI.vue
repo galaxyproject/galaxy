@@ -112,9 +112,11 @@ import { StatusIcon, StateBtn } from "../../StatusIcon";
 import DatasetMenu from "./DatasetMenu";
 import DatasetSummary from "./Summary";
 import ContentTags from "../../ContentTags";
+import { legacyNavigationMixin } from "components/plugins";
 
 export default {
     inject: ["listState", "STATES"],
+    mixins: [legacyNavigationMixin],
     components: {
         ClickToEdit,
         Annotation,

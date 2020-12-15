@@ -153,8 +153,10 @@ import Annotation from "components/Annotation";
 import { PriorityMenuItem, PriorityMenu } from "components/PriorityMenu";
 import HistoryTags from "./HistoryTags";
 import CopyModal from "./CopyModal";
+import { legacyNavigationMixin } from "components/plugins";
 
 export default {
+    mixins: [legacyNavigationMixin],
     components: {
         HistoryTags,
         CopyModal,
