@@ -5,6 +5,7 @@
 import Vue from "vue";
 import Vuex from "vuex";
 import createCache from "vuex-cache";
+import config from "config";
 
 import { gridSearchStore } from "./gridSearchStore";
 import { tagStore } from "./tagStore";
@@ -20,10 +21,13 @@ import { datasetExtFilesStore } from "./datasetExtFilesStore";
 import { datasetsStore } from "./datasetsStore";
 import { jobStore } from "./jobStore";
 
+// beta features
+import { historyStore as betaHistoryStore, historyPersist } from "components/History/model/historyStore";
+
 Vue.use(Vuex);
 
 export function createStore() {
-    return new Vuex.Store({
+    const storeConfig = {
         plugins: [
             createCache(),
             (store) => {
@@ -46,7 +50,34 @@ export function createStore() {
             datasets: datasetsStore,
             informationStore: jobStore,
         },
-    });
+    };
+
+    // TODO: Remove conditional loads when history beta is complete
+
+    // beta history panel features features
+    const useBetaHistory = sessionStorage.getItem("useBetaHistory");
+    if (useBetaHistory) {
+        storeConfig.modules.betaHistory = betaHistoryStore;
+        storeConfig.plugins.push(historyPersist.plugin);
+    }
+
+    // Do not run initialization ajax calls when unit testing
+    if (!config.testBuild) {
+        const userInitPlugin = (store) => {
+            store.dispatch("user/$init", { store });
+            store.dispatch("config/$init", { store });
+        };
+        storeConfig.plugins.push(userInitPlugin);
+
+        if (useBetaHistory) {
+            const loadUserHistories = (store) => {
+                store.dispatch("betaHistory/$init", { store });
+            };
+            storeConfig.plugins.push(loadUserHistories);
+        }
+    }
+
+    return new Vuex.Store(storeConfig);
 }
 
 const store = createStore();
