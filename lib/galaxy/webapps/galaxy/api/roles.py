@@ -19,24 +19,26 @@ from galaxy import web
 from galaxy.app import UniverseApplication
 from galaxy.managers.base import decode_id
 from galaxy.managers.roles import (
+    RoleDefinitionModel,
     RoleManager,
-    RoleDefeinitionModel,
     RoleModel,
 )
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.webapps.base.controller import BaseAPIController, url_for
+from galaxy.work.context import (
+    SessionRequestContext,
+)
 from . import (
     get_admin_user,
     get_app,
     get_trans,
 )
-from galaxy.work.context import (
-    SessionRequestContext,
-)
 
 log = logging.getLogger(__name__)
 
 
+# Empty paths (e.g. /api/roles) only work if a prefix is defined right here.
+# https://github.com/tiangolo/fastapi/pull/415/files
 router = APIRouter(tags=["roles"])
 
 
@@ -58,7 +60,6 @@ def get_role_manager(app: UniverseApplication = Depends(get_app)) -> RoleManager
     return app.role_manager
 
 
-
 @cbv(router)
 class FastAPIRoles:
     role_manager: RoleManager = Depends(get_role_manager)
@@ -75,7 +76,7 @@ class FastAPIRoles:
         return role_to_model(trans, role)
 
     @router.post("/api/roles")
-    def create(self, trans: SessionRequestContext = Depends(get_trans), admin_user=Depends(get_admin_user), role_definition_model: RoleDefeinitionModel = Body(...)) -> RoleModel:
+    def create(self, trans: SessionRequestContext = Depends(get_trans), admin_user=Depends(get_admin_user), role_definition_model: RoleDefinitionModel = Body(...)) -> RoleModel:
         role = self.role_manager.create(trans, role_definition_model)
         return role_to_model(trans, role)
 
@@ -109,7 +110,7 @@ class RoleAPIController(BaseAPIController):
         Creates a new role.
         """
         expand_json_keys(payload, ["user_ids", "group_ids"])
-        role_definition_model = RoleDefeinitionModel(**payload)
+        role_definition_model = RoleDefinitionModel(**payload)
         role = self._role_manager.create(trans, role_definition_model)
         return role_to_model(trans, role)
 

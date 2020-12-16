@@ -1,5 +1,3 @@
-import json
-
 from galaxy.exceptions import error_codes
 from galaxy_test.base.api_asserts import (
     assert_error_code_is,

@@ -34,7 +34,7 @@ class RoleModel(BaseModel):
     model_class: str = Field(title="Model class", description="Database model class (Role)")
 
 
-class RoleDefeinitionModel(BaseModel):
+class RoleDefinitionModel(BaseModel):
     name: str = RoleNameField
     description: str = RoleDescriptionField
     user_ids: Optional[List[EncodedDatabaseIdField]] = Field(title="User IDs", default=[])

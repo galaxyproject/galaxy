@@ -1,4 +1,5 @@
 import uvicorn
+from fastapi import FastAPI
 from galaxy_main import (
     GalaxyConfigBuilder,
     main,

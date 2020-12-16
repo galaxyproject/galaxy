@@ -859,7 +859,6 @@ def launch_uvicorn_multi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_o
 def launch_uvicorn(gx_app, webapp_factory, kwargs, prefix=DEFAULT_CONFIG_PREFIX, config_object=None):
     name = prefix.lower()
 
-    from fastapi.middleware.wsgi import WSGIMiddleware
     host, port = explicitly_configured_host_and_port(prefix, config_object)
 
     gx = webapp_factory(

@@ -1,9 +1,7 @@
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.wsgi import WSGIMiddleware
 from fastapi.responses import JSONResponse
-from pydantic.error_wrappers import ValidationError
-from fastapi.exceptions import RequestValidationError
-from starlette.middleware.base import RequestResponseEndpoint
 from starlette.responses import Response
 
 from galaxy.exceptions import MessageException
@@ -15,7 +13,7 @@ def add_exception_handler(
 ) -> None:
 
     @app.exception_handler(RequestValidationError)
-    async def exception_middleware(request: Request, exc: MessageException) -> Response:
+    async def validate_exception_middleware(request: Request, exc: MessageException) -> Response:
         exc = validation_error_to_message_exception(exc)
         error_dict = api_error_message(None, exception=exc)
         return JSONResponse(
@@ -24,7 +22,7 @@ def add_exception_handler(
         )
 
     @app.exception_handler(MessageException)
-    async def exception_middleware(request: Request, exc: MessageException) -> Response:
+    async def message_exception_middleware(request: Request, exc: MessageException) -> Response:
         error_dict = api_error_message(None, exception=exc)
         return JSONResponse(
             status_code=exc.status_code,
