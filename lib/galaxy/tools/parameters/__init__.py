@@ -271,7 +271,7 @@ def update_dataset_ids(input_values, translate_values, src):
     return remap(input_values, visit=replace_dataset_ids)
 
 
-def populate_state(request_context, inputs, incoming, state, errors={}, context=None, check=True, simple_errors=True, input_format='legacy'):
+def populate_state(request_context, inputs, incoming, state, errors=None, context=None, check=True, simple_errors=True, input_format='legacy'):
     """
     Populates nested state dict from incoming parameter values.
     >>> from collections import OrderedDict
@@ -326,6 +326,8 @@ def populate_state(request_context, inputs, incoming, state, errors={}, context=
     4
 
     """
+    if errors is None:
+        errors = {}
     if input_format == 'legacy':
         _populate_state_legacy(request_context, inputs, incoming, state, errors=errors, context=context, check=check, simple_errors=simple_errors)
         return
