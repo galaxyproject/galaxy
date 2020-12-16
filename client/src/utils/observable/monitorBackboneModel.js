@@ -7,6 +7,6 @@ export function monitorBackboneModel(sourceModel, prop) {
         sourceModel.on(evtName, changeHandler);
         return () => {
             sourceModel.off(evtName, changeHandler);
-        }
+        };
     });
 }
