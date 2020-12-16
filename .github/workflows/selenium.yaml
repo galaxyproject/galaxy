@@ -34,7 +34,7 @@ jobs:
         with:
           path: ~/.cache/pip
           key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
-      - uses: nanasess/setup-chromedriver@master
+      - uses: nanasess/setup-chromedriver@1e17a06902b9926f1baa08758ba90769022fc205
       - name: Run tests
         run: ./run_tests.sh -selenium lib/galaxy_test/selenium -- --num-shards=3 --shard-id=${{ matrix.chunk }}
         working-directory: 'galaxy root'
