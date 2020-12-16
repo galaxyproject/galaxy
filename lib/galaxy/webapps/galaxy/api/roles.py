@@ -63,18 +63,18 @@ def get_role_manager(app: UniverseApplication = Depends(get_app)) -> RoleManager
 class FastAPIRoles:
     role_manager: RoleManager = Depends(get_role_manager)
 
-    @router.get('/')
+    @router.get('/api/roles')
     def index(self, trans: SessionRequestContext = Depends(get_trans)) -> RoleListModel:
         roles = self.role_manager.list_displayable_roles(trans)
         return RoleListModel(__root__=[role_to_model(trans, r) for r in roles])
 
-    @router.get('/{id}')
+    @router.get('/api/roles/{id}')
     def show(self, id: EncodedDatabaseIdField, trans: SessionRequestContext = Depends(get_trans)) -> RoleModel:
         role_id = trans.app.security.decode_id(id)
         role = self.role_manager.get(trans, role_id)
         return role_to_model(trans, role)
 
-    @router.put("/")
+    @router.post("/api/roles")
     def create(self, trans: SessionRequestContext = Depends(get_trans), admin_user=Depends(get_admin_user), role_definition_model: RoleDefeinitionModel = Body(...)) -> RoleModel:
         role = self.role_manager.create(trans, role_definition_model)
         return role_to_model(trans, role)

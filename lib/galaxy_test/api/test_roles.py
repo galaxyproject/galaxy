@@ -65,9 +65,9 @@ class RolesApiTestCase(ApiTestCase):
         description = "A test role."
         payload = {
             "name": name,
-            "user_ids": json.dumps([self.dataset_populator.user_id()]),
+            "user_ids": [self.dataset_populator.user_id()],
         }
-        response = self._post("roles", payload, admin=True)
+        response = self._post("roles", payload, admin=True, json=True)
         assert_status_code_is(response, 400)
         assert_error_code_is(response, error_codes.USER_REQUEST_MISSING_PARAMETER)
         assert "description" in response.json()["err_msg"]
@@ -76,9 +76,9 @@ class RolesApiTestCase(ApiTestCase):
         payload = {
             "name": None,
             "description": description,
-            "user_ids": json.dumps([self.dataset_populator.user_id()]),
+            "user_ids": [self.dataset_populator.user_id()],
         }
-        response = self._post("roles", payload, admin=True)
+        response = self._post("roles", payload, admin=True, json=True)
         assert_status_code_is(response, 400)
         assert_error_code_is(response, error_codes.USER_REQUEST_MISSING_PARAMETER)
         assert "name" in response.json()["err_msg"]
@@ -87,12 +87,13 @@ class RolesApiTestCase(ApiTestCase):
         payload = {
             "name": ["a test", "name"],
             "description": description,
-            "user_ids": json.dumps([self.dataset_populator.user_id()]),
+            "user_ids": [self.dataset_populator.user_id()],
         }
-        response = self._post("roles", payload, admin=True)
+        response = self._post("roles", payload, admin=True, json=True)
         assert_status_code_is(response, 400)
         assert_error_code_is(response, error_codes.USER_REQUEST_INVALID_PARAMETER)
         assert "name" in response.json()["err_msg"]
+        assert "validation_errors" in response.json()
 
     def test_create_valid(self):
         name = self.dataset_populator.get_random_name()
@@ -100,9 +101,9 @@ class RolesApiTestCase(ApiTestCase):
         payload = {
             "name": name,
             "description": description,
-            "user_ids": json.dumps([self.dataset_populator.user_id()]),
+            "user_ids": [self.dataset_populator.user_id()],
         }
-        response = self._post("roles", payload, admin=True)
+        response = self._post("roles", payload, admin=True, json=True)
         assert_status_code_is(response, 200)
         role = response.json()
         RolesApiTestCase.check_role_dict(role)
@@ -133,7 +134,7 @@ class RolesApiTestCase(ApiTestCase):
         assert_status_code_is(response, 400)
 
     def test_create_only_admin(self):
-        response = self._post("roles")
+        response = self._post("roles", json=True)
         assert_status_code_is(response, 403)
 
     @staticmethod

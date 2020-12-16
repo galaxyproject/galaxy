@@ -299,17 +299,7 @@ def expose_api(func, to_json=True, user_required=True, user_or_session_required=
             try:
                 rval = func(self, trans, *args, **kwargs)
             except ValidationError as e:
-                invalid_found = False
-                missing_found = False
-                for error in e.errors():
-                    if error["type"] == "value_error.missing":
-                        missing_found = True
-                    elif error["type"].startswith("type_error"):
-                        invalid_found = True
-                if missing_found and not invalid_found:
-                    raise RequestParameterMissingException(str(e))
-                else:
-                    raise RequestParameterInvalidException(str(e))
+                raise validation_error_to_message_exception(e)
             if to_json:
                 rval = format_return_as_json(rval, jsonp_callback, pretty=trans.debug)
             return rval
@@ -353,7 +343,21 @@ def format_return_as_json(rval, jsonp_callback=None, pretty=False):
     return json
 
 
-def __api_error_message(trans, **kwds):
+def validation_error_to_message_exception(e):
+    invalid_found = False
+    missing_found = False
+    for error in e.errors():
+        if error["type"] == "value_error.missing" or error["type"] == "type_error.none.not_allowed":
+            missing_found = True
+        elif error["type"].startswith("type_error"):
+            invalid_found = True
+    if missing_found and not invalid_found:
+        return RequestParameterMissingException(str(e), validation_errors=loads(e.json()))
+    else:
+        return RequestParameterInvalidException(str(e), validation_errors=loads(e.json()))
+
+
+def api_error_message(trans, **kwds):
     exception = kwds.get("exception", None)
     if exception:
         # If we are passed a MessageException use err_msg.
@@ -379,13 +383,13 @@ def __api_error_message(trans, **kwds):
     # err_msg used a good number of places already. Might as well not change
     # it?
     error_response = dict(err_msg=err_msg, err_code=error_code, **extra_error_info)
-    if trans.debug:  # TODO: Should admins get to see traceback as well?
+    if trans and trans.debug:  # TODO: Should admins get to see traceback as well?
         error_response["traceback"] = traceback_string
     return error_response
 
 
 def __api_error_response(trans, **kwds):
-    error_dict = __api_error_message(trans, **kwds)
+    error_dict = api_error_message(trans, **kwds)
     exception = kwds.get("exception", None)
     # If we are given an status code directly - use it - otherwise check
     # the exception for a status_code attribute.
