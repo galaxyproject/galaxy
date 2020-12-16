@@ -13,7 +13,7 @@ import { jobMetricsStore } from "./jobMetricsStore";
 import { jobDestinationParametersStore } from "./jobDestinationParametersStore";
 import { invocationStore } from "./invocationStore";
 import { historyStore } from "./historyStore";
-import { userStore } from "./userStore";
+import { userStore, syncUserToGalaxy } from "./userStore";
 import { configStore } from "./configStore";
 import { workflowStore } from "./workflowStore";
 import { datasetPathDestinationStore } from "./datasetPathDestinationStore";
@@ -23,6 +23,7 @@ import { jobStore } from "./jobStore";
 
 // beta features
 import { historyStore as betaHistoryStore } from "components/History/model/historyStore";
+import { syncCurrentHistoryToGalaxy } from "components/History/model/syncCurrentHistoryToGalaxy";
 
 Vue.use(Vuex);
 
@@ -30,6 +31,7 @@ export function createStore() {
     const storeConfig = {
         plugins: [createCache()],
         modules: {
+            // TODO: namespace all these modules
             gridSearch: gridSearchStore,
             histories: historyStore,
             tags: tagStore,
@@ -43,24 +45,29 @@ export function createStore() {
             workflows: workflowStore,
             datasets: datasetsStore,
             informationStore: jobStore,
+            betaHistory: betaHistoryStore,
         },
     };
 
-    // Initialize store
+    // Initialize state
+
     if (!config.testBuild) {
         storeConfig.plugins.push((store) => {
-            store.dispatch("user/$init", { store });
             store.dispatch("config/$init", { store });
-        });
-    }
-
-    const useBetaHistory = sessionStorage.getItem("useBetaHistory");
-    if (useBetaHistory) {
-        storeConfig.modules.betaHistory = betaHistoryStore;
-        storeConfig.plugins.push((store) => {
+            store.dispatch("user/$init", { store });
             store.dispatch("betaHistory/$init", { store });
         });
     }
+
+    // Create watchers to monitor legacy galaxy instance for important values
+
+    syncUserToGalaxy((user) => {
+        store.commit("user/setCurrentUser", user);
+    });
+
+    syncCurrentHistoryToGalaxy((id) => {
+        store.commit("betaHistory/setCurrentHistoryId", id);
+    });
 
     return new Vuex.Store(storeConfig);
 }
