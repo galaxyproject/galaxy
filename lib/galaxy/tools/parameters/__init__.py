@@ -342,10 +342,10 @@ def populate_state(request_context, inputs, incoming, state, errors={}, context=
                     for rep_index, rep in enumerate(incoming[input.name]):
                         new_state = {}
                         group_state.append(new_state)
-                        populate_state(request_context, input.inputs, rep, new_state, errors, context=context, check=check, simple_errors=simple_errors, input_format='21.01')
+                        populate_state(request_context, input.inputs, rep, new_state, errors, context=context, check=check, simple_errors=simple_errors, input_format=input_format)
 
             elif input.type == 'conditional':
-                test_param_value = incoming.get(input.name).get(input.test_param.name)
+                test_param_value = incoming.get(input.name, {}).get(input.test_param.name)
                 value, error = check_param(request_context, input.test_param, test_param_value, context, simple_errors=simple_errors) if check else [test_param_value, None]
                 if error:
                     errors[input.test_param.name] = error
@@ -353,14 +353,14 @@ def populate_state(request_context, inputs, incoming, state, errors={}, context=
                     try:
                         current_case = input.get_current_case(value)
                         group_state = state[input.name] = {}
-                        populate_state(request_context, input.cases[current_case].inputs, incoming.get(input.name), group_state, errors, context=context, check=check, simple_errors=simple_errors, input_format='21.01')
+                        populate_state(request_context, input.cases[current_case].inputs, incoming.get(input.name), group_state, errors, context=context, check=check, simple_errors=simple_errors, input_format=input_format)
                         group_state['__current_case__'] = current_case
                     except Exception:
                         errors[input.test_param.name] = 'The selected case is unavailable/invalid.'
                 group_state[input.test_param.name] = value
 
             elif input.type == 'section':
-                populate_state(request_context, input.inputs, incoming.get(input.name), group_state, errors, context=context, check=check, simple_errors=simple_errors, input_format='21.01')
+                populate_state(request_context, input.inputs, incoming.get(input.name), group_state, errors, context=context, check=check, simple_errors=simple_errors, input_format=input_format)
 
             elif input.type == 'upload_dataset':
                 raise NotImplementedError
@@ -375,7 +375,7 @@ def populate_state(request_context, inputs, incoming, state, errors={}, context=
         raise Exception(f'Input format {input_format} not recognized; input_format must be either legacy or 21.01.')
 
 
-def _populate_state_legacy(request_context, inputs, incoming, state, errors={}, prefix='', context=None, check=True, simple_errors=True):
+def _populate_state_legacy(request_context, inputs, incoming, state, errors, prefix='', context=None, check=True, simple_errors=True):
     context = ExpressionContext(state, context)
     for input in inputs.values():
         state[input.name] = input.get_initial_value(request_context, context)
