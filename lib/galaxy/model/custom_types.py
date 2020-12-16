@@ -16,6 +16,7 @@ from sqlalchemy.types import (
     TypeDecorator
 )
 from sqlalchemy_mutable.mutable import Mutable
+from sqlalchemy_mutable.mutable_list import MutableList
 
 from galaxy.util import (
     smart_str,
@@ -113,6 +114,13 @@ class JSONType(sqlalchemy.types.TypeDecorator):
         return (x == y)
 
 
+# Monkey-patch MutableList until https://github.com/dsbowen/sqlalchemy-mutable/pull/1 gets merged
+def _sort(self, *, key=None, reverse=False):
+    self._changed()
+    return super(MutableList, self).sort(key=key, reverse=reverse)
+
+
+MutableList.sort = _sort
 Mutable.associate_with(JSONType)
 
 metadata_pickler = AliasPickleModule({
