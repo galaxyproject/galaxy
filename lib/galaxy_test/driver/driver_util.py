@@ -869,12 +869,8 @@ def launch_uvicorn(gx_app, webapp_factory, kwargs, prefix=DEFAULT_CONFIG_PREFIX,
         static_enabled=True,
         register_shutdown_at_exit=False
     )
-    wsgi_handler = WSGIMiddleware(gx)
-    from galaxy.webapps.galaxy.api import jobs
-    from fastapi import FastAPI
-    app = FastAPI()
-    app.include_router(jobs.router, prefix='/api/jobs')
-    app.mount('/', wsgi_handler)
+    from galaxy.webapps.galaxy.fast_app import initialize_fast_app
+    app = initialize_fast_app(gx)
     server, port = uvicorn_serve(app, host=host, port=port)
     set_and_wait_for_http_target(prefix, host, port)
     log.info(f"Embedded uvicorn web server for {name} started at {host}:{port}")

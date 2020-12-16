@@ -5,19 +5,39 @@ import json
 import logging
 from typing import List
 
+from fastapi import (
+    Body,
+    Depends,
+)
+from fastapi_utils.cbv import cbv
+from fastapi_utils.inferring_router import InferringRouter as APIRouter
 from pydantic import (
     BaseModel,
 )
 
 from galaxy import web
+from galaxy.app import UniverseApplication
 from galaxy.managers.base import decode_id
 from galaxy.managers.roles import (
+    RoleManager,
     RoleDefeinitionModel,
     RoleModel,
 )
+from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.webapps.base.controller import BaseAPIController, url_for
+from . import (
+    get_admin_user,
+    get_app,
+    get_trans,
+)
+from galaxy.work.context import (
+    SessionRequestContext,
+)
 
 log = logging.getLogger(__name__)
+
+
+router = APIRouter(tags=["roles"])
 
 
 class RoleListModel(BaseModel):
@@ -27,8 +47,37 @@ class RoleListModel(BaseModel):
 def role_to_model(trans, role):
     item = role.to_dict(view='element', value_mapper={'id': trans.security.encode_id})
     role_id = trans.security.encode_id(role.id)
-    item['url'] = url_for('role', id=role_id)
+    try:
+        item['url'] = url_for('role', id=role_id)
+    except AttributeError:
+        item['url'] = "*deprecated attribute not filled in by FastAPI server*"
     return RoleModel(**item)
+
+
+def get_role_manager(app: UniverseApplication = Depends(get_app)) -> RoleManager:
+    return app.role_manager
+
+
+
+@cbv(router)
+class FastAPIRoles:
+    role_manager: RoleManager = Depends(get_role_manager)
+
+    @router.get('/')
+    def index(self, trans: SessionRequestContext = Depends(get_trans)) -> RoleListModel:
+        roles = self.role_manager.list_displayable_roles(trans)
+        return RoleListModel(__root__=[role_to_model(trans, r) for r in roles])
+
+    @router.get('/{id}')
+    def show(self, id: EncodedDatabaseIdField, trans: SessionRequestContext = Depends(get_trans)) -> RoleModel:
+        role_id = trans.app.security.decode_id(id)
+        role = self.role_manager.get(trans, role_id)
+        return role_to_model(trans, role)
+
+    @router.put("/")
+    def create(self, trans: SessionRequestContext = Depends(get_trans), admin_user=Depends(get_admin_user), role_definition_model: RoleDefeinitionModel = Body(...)) -> RoleModel:
+        role = self.role_manager.create(trans, role_definition_model)
+        return role_to_model(trans, role)
 
 
 class RoleAPIController(BaseAPIController):
