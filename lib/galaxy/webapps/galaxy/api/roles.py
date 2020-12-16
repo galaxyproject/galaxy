@@ -1,26 +1,33 @@
 """
 API operations on Role objects.
 """
+import json
 import logging
-from typing import List
+from typing import List, Optional
 
 from pydantic import (
     BaseModel,
     Field,
+
 )
 
 from galaxy import web
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.managers.base import decode_id
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.webapps.base.controller import BaseAPIController, url_for
 
 log = logging.getLogger(__name__)
 
+RoleIdField = Field("ID", description="Encoded ID of the role")
+RoleNameField = Field(title="Name", description="Name of the role")
+RoleDescriptionField = Field(title="Description", description="Description of the role")
+
 
 class RoleModel(BaseModel):
-    id: EncodedDatabaseIdField = Field("ID", description="Encoded ID of the role")
-    name: str = Field(title="Name", description="Name of the role")
-    description: str = Field(title="Description", description="Description of the role")
+    id: EncodedDatabaseIdField = RoleIdField
+    name: str = RoleNameField
+    description: str = RoleDescriptionField
     type: str = Field(title="Type", description="Type or category of the role")
     url: str = Field(title="URL", description="URL for the role")
     model_class: str = Field(title="Model class", description="Database model class (Role)")
@@ -35,6 +42,13 @@ def role_to_model(trans, role):
     role_id = trans.security.encode_id(role.id)
     item['url'] = url_for('role', id=role_id)
     return RoleModel(**item)
+
+
+class RoleDefeinition(BaseModel):
+    name: str = RoleNameField
+    description: str = RoleDescriptionField
+    user_ids: Optional[List[EncodedDatabaseIdField]] = Field(title="User IDs", default=[])
+    group_ids: Optional[List[EncodedDatabaseIdField]] = Field(title="Group IDs", default=[])
 
 
 class RoleAPIController(BaseAPIController):
@@ -65,22 +79,21 @@ class RoleAPIController(BaseAPIController):
         POST /api/roles
         Creates a new role.
         """
-        name = payload.get('name', None)
-        description = payload.get('description', None)
-        if not name or not description:
-            trans.response.status = 400
-            return "Enter a valid name and a description"
+        expand_json_keys(payload, ["user_ids", "group_ids"])
+        role_definition_model = RoleDefeinition(**payload)
+        name = role_definition_model.name
+        description = role_definition_model.description
+        user_ids = role_definition_model.user_ids or []
+        group_ids = role_definition_model.group_ids or []
+
         if trans.sa_session.query(trans.app.model.Role).filter(trans.app.model.Role.table.c.name == name).first():
-            trans.response.status = 400
-            return "A role with that name already exists"
+            raise RequestParameterInvalidException(f"A role with that name already exists [{name}]")
 
         role_type = trans.app.model.Role.types.ADMIN  # TODO: allow non-admins to create roles
 
         role = trans.app.model.Role(name=name, description=description, type=role_type)
         trans.sa_session.add(role)
-        user_ids = payload.get('user_ids', [])
         users = [trans.sa_session.query(trans.model.User).get(trans.security.decode_id(i)) for i in user_ids]
-        group_ids = payload.get('group_ids', [])
         groups = [trans.sa_session.query(trans.model.Group).get(trans.security.decode_id(i)) for i in group_ids]
 
         # Create the UserRoleAssociations
@@ -97,3 +110,14 @@ class RoleAPIController(BaseAPIController):
     @property
     def _role_manager(self):
         return self.app.role_manager
+
+
+def expand_json_keys(payload, keys):
+    for key in keys:
+        value = payload.get(key)
+        if isinstance(value, str):
+            try:
+                new_value = json.loads(value)
+                payload[key] = new_value
+            except Exception:
+                pass

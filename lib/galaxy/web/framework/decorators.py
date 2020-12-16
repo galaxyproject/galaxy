@@ -5,11 +5,13 @@ from traceback import format_exc
 
 import paste.httpexceptions
 from pydantic import BaseModel
+from pydantic.error_wrappers import ValidationError
 
-from galaxy.exceptions import error_codes, MessageException
-from galaxy.util import (
-    parse_non_hex_float,
-    unicodify
+from galaxy.exceptions import (
+    error_codes,
+    MessageException,
+    RequestParameterInvalidException,
+    RequestParameterMissingException,
 )
 from galaxy.util.getargspec import getfullargspec
 from galaxy.util.json import safe_dumps
@@ -290,7 +292,20 @@ def expose_api(func, to_json=True, user_required=True, user_or_session_required=
                 error_code = error_codes.USER_INVALID_RUN_AS
                 return __api_error_response(trans, err_code=error_code, status_code=400)
         try:
-            rval = func(self, trans, *args, **kwargs)
+            try:
+                rval = func(self, trans, *args, **kwargs)
+            except ValidationError as e:
+                invalid_found = False
+                missing_found = False
+                for error in e.errors():
+                    if error["type"] == "value_error.missing":
+                        missing_found = True
+                    elif error["type"].startswith("type_error"):
+                        invalid_found = True
+                if missing_found and not invalid_found:
+                    raise RequestParameterMissingException(str(e))
+                else:
+                    raise RequestParameterInvalidException(str(e))
             if to_json:
                 rval = format_return_as_json(rval, jsonp_callback, pretty=trans.debug)
             return rval
