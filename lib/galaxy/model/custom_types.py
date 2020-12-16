@@ -9,6 +9,7 @@ from sys import getsizeof
 
 import numpy
 import sqlalchemy
+from sqlalchemy import event
 from sqlalchemy.ext.mutable import (
     Mutable,
     MutableDict,
@@ -126,6 +127,97 @@ class MutationObj(Mutable):
         if isinstance(value, list) and not isinstance(value, MutableList):
             return MutableList.coerce(key, value)
         return value
+
+    @classmethod
+    def _listen_on_attribute(cls, attribute, coerce, parent_cls):
+        """Establish this type as a mutation listener for the given
+        mapped descriptor.
+
+        Copied from https://github.com/zzzeek/sqlalchemy/blame/09fac89debfbdcccbf2bcc433f7bec7921cf62be/lib/sqlalchemy/ext/mutable.py#L593
+        with modified set_ method
+
+        """
+        key = attribute.key
+        if parent_cls is not attribute.class_:
+            return
+
+        # rely on "propagate" here
+        parent_cls = attribute.class_
+
+        listen_keys = cls._get_listen_keys(attribute)
+
+        def load(state, *args):
+            """Listen for objects loaded or refreshed.
+
+            Wrap the target data member's value with
+            ``Mutable``.
+
+            """
+            val = state.dict.get(key, None)
+            if val is not None:
+                if coerce:
+                    val = cls.coerce(key, val)
+                    state.dict[key] = val
+                # isinstance check is not present in upstream, see comment in set_
+                if isinstance(val, cls):
+                    val._parents[state.obj()] = key
+
+        def load_attrs(state, ctx, attrs):
+            if not attrs or listen_keys.intersection(attrs):
+                load(state)
+
+        def set_(target, value, oldvalue, initiator):
+            """Listen for set/replace events on the target
+            data member.
+
+            Establish a weak reference to the parent object
+            on the incoming value, remove it for the one
+            outgoing.
+
+            """
+            if value is oldvalue:
+                return value
+
+            if not isinstance(value, cls):
+                value = cls.coerce(key, value)
+            # The upstream implementation does `if value is not None`,
+            # but that fails for non-list or non-dict json types with an attribute error
+            # when accessing value._parents.
+            # That is because we associate all JSONType columns with MutationObj,
+            # while it appears the upstream usecase is to associate only specific columns
+            # with MutationList or MutationDict as needed (and to not assign non list / non dict values).
+            if isinstance(value, cls):
+                value._parents[target.obj()] = key
+            if isinstance(oldvalue, cls):
+                oldvalue._parents.pop(target.obj(), None)
+            return value
+
+        def pickle(state, state_dict):
+            val = state.dict.get(key, None)
+            if isinstance(val, cls):
+                if "ext.mutable.values" not in state_dict:
+                    state_dict["ext.mutable.values"] = []
+                state_dict["ext.mutable.values"].append(val)
+
+        def unpickle(state, state_dict):
+            if "ext.mutable.values" in state_dict:
+                for val in state_dict["ext.mutable.values"]:
+                    val._parents[state.obj()] = key
+
+        event.listen(parent_cls, "load", load, raw=True, propagate=True)
+        event.listen(
+            parent_cls, "refresh", load_attrs, raw=True, propagate=True
+        )
+        event.listen(
+            parent_cls, "refresh_flush", load_attrs, raw=True, propagate=True
+        )
+        event.listen(
+            attribute, "set", set_, raw=True, retval=True, propagate=True
+        )
+        event.listen(parent_cls, "pickle", pickle, raw=True, propagate=True)
+        event.listen(
+            parent_cls, "unpickle", unpickle, raw=True, propagate=True
+        )
 
 
 MutationObj.associate_with(JSONType)
