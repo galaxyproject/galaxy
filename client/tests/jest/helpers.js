@@ -5,14 +5,6 @@ import { timer } from "rxjs";
 import { take } from "rxjs/operators";
 import { shallowMount } from "@vue/test-utils";
 
-export function getNewAttachNode() {
-    const attachElement = document.createElement("div");
-    if (document.body) {
-        document.body.appendChild(attachElement);
-    }
-    return attachElement;
-}
-
 // Creates a watcher on the indicated vm/prop for use in testing
 export function watchForChange({ vm, opts, propName, timeout = 1000, label = '' }) {
     const start = new Date();
