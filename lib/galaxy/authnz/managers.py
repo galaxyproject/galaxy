@@ -306,6 +306,21 @@ class AuthnzManager:
             log.exception(msg)
             return False, msg, (None, None)
 
+    def create_user(self, provider, token, trans, login_redirect_url):
+        try:
+            success, message, backend = self._get_authnz_backend(provider)
+            if success is False:
+                return False, message, (None, None)
+            return success, message, backend.create_user(token, trans, login_redirect_url)
+        except exceptions.AuthenticationFailed as e:
+            log.exception(e.message)
+            raise exceptions.AuthenticationFailed(e.message)
+        except Exception as e:
+            msg = 'The following error occurred when handling callback from `{}` identity provider: ' \
+                  '{}'.format(provider, str(e))
+            log.exception(msg)
+            return False, msg, (None, None)
+
     def logout(self, provider, trans, post_logout_redirect_url=None):
         """
         Log the user out of the identity provider.
