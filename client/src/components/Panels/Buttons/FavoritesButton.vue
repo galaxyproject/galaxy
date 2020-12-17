@@ -25,6 +25,7 @@ export default {
     data() {
         return {
             tooltipText: "Show favorites",
+            toggle: false,
         };
     },
     directives: {
@@ -32,7 +33,12 @@ export default {
     },
     methods: {
         onFavorites() {
-            this.$emit("onFavorites", "#favorites");
+            this.toggle = !this.toggle;
+            if (this.toggle) {
+                this.$emit("onFavorites", "#favorites");
+            } else {
+                this.$emit("onFavorites", null);
+            }
         },
     },
 };
