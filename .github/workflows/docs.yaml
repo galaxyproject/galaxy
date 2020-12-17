@@ -27,7 +27,7 @@ jobs:
           path: ~/.cache/pip
           key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
       - name: Install Python dependencies
-        run: pip install -r requirements.txt -r lib/galaxy/dependencies/dev-requirements.txt sphinxcontrib-simpleversioning awscli
+        run: pip install -r requirements.txt -r lib/galaxy/dependencies/dev-requirements.txt sphinxcontrib-simpleversioning
       - name: Add Google Analytics to doc/source/conf.py
         run: |
           sed -i -e "/html_theme_options = {/a\
@@ -50,6 +50,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
+          pip install awscli
           case "$TARGET_BRANCH" in
               release_[[:digit:]][[:digit:]].[[:digit:]][[:digit:]]|master)
                   UPLOAD_DIR=$TARGET_BRANCH
