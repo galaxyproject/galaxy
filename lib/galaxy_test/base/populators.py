@@ -554,9 +554,9 @@ class BaseDatasetPopulator:
         payload = {
             "name": self.get_random_name(prefix="testpop"),
             "description": description or "Test Role",
-            "user_ids": json.dumps(user_ids),
+            "user_ids": user_ids,
         }
-        role_response = self.galaxy_interactor.post("roles", data=payload, admin=True)
+        role_response = self.galaxy_interactor.post("roles", data=payload, admin=True, json=True)
         assert role_response.status_code == 200
         return role_response.json()
 
