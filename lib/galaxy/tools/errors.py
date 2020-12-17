@@ -10,6 +10,7 @@ from galaxy import (
     util,
     web
 )
+from galaxy.security.validate_user_input import validate_email_str
 from galaxy.util import unicodify
 
 error_report_template = """
@@ -237,23 +238,18 @@ class EmailErrorReporter(ErrorReporter):
     def _send_report(self, user, email=None, message=None, **kwd):
         smtp_server = self.app.config.smtp_server
         assert smtp_server, ValueError("Mail is not configured for this Galaxy instance")
-        to_address = self.app.config.error_email_to
-        assert to_address, ValueError("Error reporting has been disabled for this Galaxy instance")
+        to = self.app.config.error_email_to
+        assert to, ValueError("Error reporting has been disabled for this Galaxy instance")
 
         frm = self.app.config.email_from
-        # Check email a bit
-        email = email or ''
-        email = email.strip()
-        parts = email.split()
-        if len(parts) == 1 and len(email) > 0 and self._can_access_dataset(user):
-            to = to_address + ", " + email
-        else:
-            to = to_address
+        error_msg = validate_email_str(email)
+        if not error_msg and self._can_access_dataset(user):
+            to += ', ' + email.strip()
         subject = "Galaxy tool error report from %s" % email
         try:
-            subject = "{} ({})".format(subject, self.app.toolbox.get_tool(self.job.tool_id, self.job.tool_version).old_id)
+            subject = "{} ({})".format(
+                subject, self.app.toolbox.get_tool(self.job.tool_id, self.job.tool_version).old_id)
         except Exception:
             pass
 
-        # Send it
         return util.send_mail(frm, to, subject, self.report, self.app.config, html=self.html_report)
