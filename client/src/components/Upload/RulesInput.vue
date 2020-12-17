@@ -74,8 +74,6 @@
 import _l from "utils/localization";
 import { getGalaxyInstance } from "app";
 import UploadBoxMixin from "./UploadBoxMixin";
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
 import UploadUtils from "mvc/upload/upload-utils";
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
@@ -83,13 +81,13 @@ import { filesDialog } from "utils/data";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEdit } from "@fortawesome/free-solid-svg-icons";
+import { BButton, BLink } from "bootstrap-vue";
+
 library.add(faEdit);
 
-Vue.use(BootstrapVue);
-
 export default {
-    components: { FontAwesomeIcon },
     mixins: [UploadBoxMixin],
+    components: { BLink, BButton, FontAwesomeIcon },
     data() {
         return {
             l: _l,

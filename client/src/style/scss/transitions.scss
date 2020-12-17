@@ -1,0 +1,36 @@
+// Vue Transitions
+// ex: <transition name="shutterfade">
+
+.shutterfade-enter,
+.shutterfade-leave-to {
+    opacity: 0;
+    max-height: 0%;
+}
+
+.shutterfade-enter-to,
+.shutterfade-leave {
+    opacity: 1;
+    max-height: 100%;
+}
+
+.shutterfade-enter-active,
+.shutterfade-leave-active {
+    transition-property: opacity max-height;
+    transition-duration: 0.35s;
+}
+
+.fade-enter,
+.fade-leave-to {
+    opacity: 0;
+}
+
+.fade-enter-to,
+.fade-leave {
+    opacity: 1;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+    transition-property: opacity;
+    transition-duration: 0.35s;
+}
