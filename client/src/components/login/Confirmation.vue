@@ -26,7 +26,7 @@
                             <p>
                                 Reminder: Registration and usage of multiple accounts is tracked and such accounts are
                                 subject to termination and data deletion on public Galaxy servers. Connect existing
-                                account now to avoid continue to use your existing data and possible loss of data.
+                                account now to continue to use your existing data and possible loss of data.
                             </p>
 
                             <b-form-group>
