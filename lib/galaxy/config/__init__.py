@@ -274,13 +274,17 @@ class BaseAppConfiguration:
             datatype = self.schema.app_schema[key].get('type')
             # check for `not None` explicitly (value can be falsy)
             if value is not None and datatype in type_converters:
-                return type_converters[datatype](value)
+                # convert value or each item in value to type `datatype`
+                if type(value) is list:
+                    return [type_converters[datatype](item) for item in value]
+                else:
+                    return type_converters[datatype](value)
             return value
 
         def strip_deprecated_dir(key, value):
             resolves_to = self.schema.paths_to_resolve.get(key)
             if resolves_to:  # value contains paths that will be resolved
-                paths = [path.strip() for path in value.split(',')]
+                paths = listify(value, do_strip=True)
                 for i, path in enumerate(paths):
                     first_dir = path.split(os.sep)[0]  # get first directory component
                     if first_dir == self.deprecated_dirs.get(resolves_to):  # first_dir is deprecated for this option
