@@ -275,6 +275,7 @@ export default {
         },
         clickedCreate: function (collectionName) {
             if (this.state !== "error") {
+                this.$emit("clicked-create", this.workingElements, this.collectionName, this.defaultHideSourceItems);
                 return this.creationFn(this.workingElements, collectionName, this.defaultHideSourceItems)
                     .done(this.oncreate)
                     .fail((this.state = "error"));

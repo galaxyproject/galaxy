@@ -403,6 +403,7 @@ export default {
         clickedCreate: function (collectionName) {
             this.checkForDuplicates();
             if (this.state !== "error") {
+                this.$emit("clicked-create", this.workingElements, this.collectionName, this.defaultHideSourceItems);
                 return this.creationFn(this.workingElements, collectionName, this.defaultHideSourceItems)
                     .done(this.oncreate)
                     .fail((this.state = "error"));
@@ -421,21 +422,22 @@ export default {
             });
             this.state = valid ? "build" : "error";
         },
-        removeExtensionsToggle: function () {
-            this.removeExtensions = !this.removeExtensions;
-            if (this.removeExtensions == true) {
-                this.removeExtensionsFn();
-            }
-        },
-        removeExtensionsFn: function () {
-            this.workingElements.forEach((e) => {
-                var lastDotIndex = e.lastIndexOf(".");
-                if (lastDotIndex > 0) {
-                    var extension = e.slice(lastDotIndex, e.length);
-                    e = e.replace(extension, "");
-                }
-            });
-        },
+        //TODO: issue #9497
+        // removeExtensionsToggle: function () {
+        //     this.removeExtensions = !this.removeExtensions;
+        //     if (this.removeExtensions == true) {
+        //         this.removeExtensionsFn();
+        //     }
+        // },
+        // removeExtensionsFn: function () {
+        //     this.workingElements.forEach((e) => {
+        //         var lastDotIndex = e.lastIndexOf(".");
+        //         if (lastDotIndex > 0) {
+        //             var extension = e.slice(lastDotIndex, e.length);
+        //             e = e.replace(extension, "");
+        //         }
+        //     });
+        // },
         /** reset all data to the initial state */
         reset: function () {
             this._instanceSetUp();

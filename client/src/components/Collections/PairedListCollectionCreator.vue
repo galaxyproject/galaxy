@@ -982,6 +982,7 @@ export default {
         clickedCreate: function (collectionName) {
             this.checkForDuplicates();
             if (this.state !== "error") {
+                this.$emit("clicked-create", this.workingElements, this.collectionName, this.defaultHideSourceItems);
                 return this.creationFn(this.pairedElements, collectionName, this.defaultHideSourceItems)
                     .done(this.oncreate)
                     .fail((this.state = "error"));
