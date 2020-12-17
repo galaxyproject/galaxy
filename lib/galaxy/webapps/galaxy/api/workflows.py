@@ -248,7 +248,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         return [{'version': i, 'update_time': str(w.update_time), 'steps': len(w.steps)} for i, w in enumerate(reversed(stored_workflow.workflows))]
 
     @expose_api
-    def create(self, trans, payload, **kwd):
+    def create(self, trans, payload=None, **kwd):
         """
         POST /api/workflows
 
@@ -313,7 +313,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             'workflow',
         }
 
-        if len(ways_to_create.intersection(payload)) == 0:
+        if payload is None or len(ways_to_create.intersection(payload)) == 0:
             message = "One parameter among - %s - must be specified" % ", ".join(ways_to_create)
             raise exceptions.RequestParameterMissingException(message)
 

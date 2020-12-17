@@ -47,6 +47,7 @@ import Citations from "components/Citation/Citations.vue";
 import DisplayStructure from "components/DisplayStructured.vue";
 import { CloudAuth } from "components/User/CloudAuth";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
+import Confirmation from "components/login/Confirmation.vue";
 import Vue from "vue";
 import store from "store";
 
@@ -56,6 +57,7 @@ export const getAnalysisRouter = (Galaxy) =>
         routes: {
             "(/)(#)(_=_)": "home",
             "(/)root*": "home",
+            "(/)login/confirm": "show_new_user_confirmation",
             "(/)tools/view": "show_tools_view",
             "(/)tools/json": "show_tools_json",
             "(/)tours(/)(:tour_id)": "show_tours",
@@ -120,6 +122,10 @@ export const getAnalysisRouter = (Galaxy) =>
             } else {
                 this.page.display(new Tours.ToursView());
             }
+        },
+
+        show_new_user_confirmation: function () {
+            this._display_vue_helper(Confirmation);
         },
 
         show_user: function () {

@@ -32,18 +32,23 @@ jobs:
         run: |
           sed -i -e "/html_theme_options = {/a\
           \    'analytics_id': 'UA-45719423-17'," -e "s#https://docs.galaxyproject.org/en/[^/]*/#https://docs.galaxyproject.org/en/$TARGET_BRANCH/#" doc/source/conf.py
-      - name: Add the latest doc/source/conf.versioning.py
+      - name: Checkout the latest doc/source/conf.versioning.py
+        if: github.event_name != 'push' || github.ref != 'refs/heads/dev'
         run: |
           # We cannot just download the latest version from dev, because it may be newer in this branch/PR
           git fetch origin dev:dev
           if [ ! -f doc/source/conf.versioning.py ] || [ "$(git log -1 --pretty="format:%ct" dev -- doc/source/conf.versioning.py)" -gt "$(git log -1 --pretty="format:%ct" -- doc/source/conf.versioning.py)" ]; then
               git checkout dev -- doc/source/conf.versioning.py
           fi
-          cat doc/source/conf.versioning.py >> doc/source/conf.py
+      - name: Append doc/source/conf.versioning.py
+        run: cat doc/source/conf.versioning.py >> doc/source/conf.py
       - name: Build docs
         run: make docs
       - name: Deploy docs
         if: github.event_name == 'push' && github.repository_owner == 'galaxyproject'
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
           case "$TARGET_BRANCH" in
               release_[[:digit:]][[:digit:]].[[:digit:]][[:digit:]]|master)

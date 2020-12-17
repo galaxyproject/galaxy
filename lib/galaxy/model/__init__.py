@@ -612,6 +612,16 @@ class User(Dictifiable, RepresentById):
         # https://github.com/python-social-auth/social-examples/blob/master/example-cherrypy/example/db/user.py
         return True
 
+    def attempt_create_private_role(self):
+        session = object_session(self)
+        role_name = self.email
+        role_desc = f'Private Role for {self.email}'
+        role_type = Role.types.PRIVATE
+        role = Role(name=role_name, description=role_desc, type=role_type)
+        assoc = UserRoleAssociation(self, role)
+        session.add(assoc)
+        session.flush()
+
 
 class PasswordResetToken:
     def __init__(self, user, token=None):
@@ -1141,34 +1151,17 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
     def set_final_state(self, final_state):
         self.set_state(final_state)
         # TODO: migrate to where-in subqueries?
-        statements = ['''
-            UPDATE history_dataset_collection_association
-            SET update_time = :update_time
-            WHERE id in (
-                SELECT hdca.id
-                FROM history_dataset_collection_association hdca
-                INNER JOIN implicit_collection_jobs icj
-                    on icj.id = hdca.implicit_collection_jobs_id
-                INNER JOIN implicit_collection_jobs_job_association icjja
-                    on icj.id = icjja.implicit_collection_jobs_id
-                WHERE icjja.job_id = :job_id
-                UNION
-                SELECT hdca2.id
-                FROM history_dataset_collection_association hdca2
-                WHERE hdca2.job_id = :job_id
-            );
-        ''', '''
+        statement = '''
             UPDATE workflow_invocation_step
             SET update_time = :update_time
             WHERE job_id = :job_id;
-        ''']
+        '''
         sa_session = object_session(self)
         params = {
             'job_id': self.id,
             'update_time': galaxy.model.orm.now.now()
         }
-        for statement in statements:
-            sa_session.execute(statement, params)
+        sa_session.execute(statement, params)
 
     def get_destination_configuration(self, dest_params, config, key, default=None):
         """ Get a destination parameter that can be defaulted back
@@ -1193,22 +1186,6 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
     def update_output_states(self):
         # TODO: migrate to where-in subqueries?
         statements = ['''
-            UPDATE history_dataset_collection_association
-            SET update_time = :update_time
-            WHERE id in (
-                SELECT hdca.id
-                FROM history_dataset_collection_association hdca
-                INNER JOIN implicit_collection_jobs icj
-                    on icj.id = hdca.implicit_collection_jobs_id
-                INNER JOIN implicit_collection_jobs_job_association icjja
-                    on icj.id = icjja.implicit_collection_jobs_id
-                WHERE icjja.job_id = :job_id
-                UNION
-                SELECT hdca2.id
-                FROM history_dataset_collection_association hdca2
-                WHERE hdca2.job_id = :job_id
-            );
-        ''', '''
             UPDATE dataset
             SET
                 state = :state,

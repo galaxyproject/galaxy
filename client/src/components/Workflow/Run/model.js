@@ -1,4 +1,3 @@
-import $ from "jquery";
 import _ from "underscore";
 
 import FormData from "mvc/form/form-data";
@@ -192,7 +191,7 @@ export class WorkflowRunModel {
 
 /** Is data input module/step */
 export function isDataStep(steps) {
-    var lst = $.isArray(steps) ? steps : [steps];
+    var lst = Array.isArray(steps) ? steps : [steps];
     for (var i = 0; i < lst.length; i++) {
         var step = lst[i];
         if (!step || !step.step_type || !step.step_type.startsWith("data")) {

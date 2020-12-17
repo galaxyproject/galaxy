@@ -114,13 +114,11 @@ import _ from "underscore";
 import { getGalaxyInstance } from "app";
 import UploadRow from "mvc/upload/default/default-row";
 import UploadBoxMixin from "./UploadBoxMixin";
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-
-Vue.use(BootstrapVue);
+import { BButton } from "bootstrap-vue";
 
 export default {
     mixins: [UploadBoxMixin],
+    components: { BButton },
     props: {
         multiple: {
             type: Boolean,
@@ -210,6 +208,13 @@ export default {
         appModel() {
             return this.app.model;
         },
+        history_id() {
+            const storeId = this.$store?.getters["betaHistory/currentHistoryId"];
+            if (storeId) {
+                return storeId;
+            }
+            return this.app.currentHistoryId;
+        },
     },
     watch: {
         extension: function (value) {
@@ -265,7 +270,7 @@ export default {
 
                 this.appModel.set({ percentage: 0, status: "success" });
                 this.counterRunning = this.counterAnnounce;
-                this.history_id = this.app.currentHistory();
+
                 // package ftp files separately, and remove them from queue
                 this._uploadFtp();
 

@@ -443,9 +443,13 @@ class BaseDatasetPopulator:
 
     def get_history_dataset_details(self, history_id, **kwds):
         dataset_id = self.__history_content_id(history_id, **kwds)
-        details_response = self._get_contents_request(history_id, "/datasets/%s" % dataset_id)
-        assert details_response.status_code == 200
+        details_response = self.get_history_dataset_details_raw(history_id, dataset_id)
+        details_response.raise_for_status()
         return details_response.json()
+
+    def get_history_dataset_details_raw(self, history_id, dataset_id):
+        details_response = self._get_contents_request(history_id, f"/datasets/{dataset_id}")
+        return details_response
 
     def get_history_dataset_extra_files(self, history_id, **kwds):
         dataset_id = self.__history_content_id(history_id, **kwds)
@@ -541,7 +545,7 @@ class BaseDatasetPopulator:
         user_email = self.user_email()
         roles = self.get_roles()
         users_roles = [r for r in roles if r["name"] == user_email]
-        assert len(users_roles) == 1
+        assert len(users_roles) == 1, f"Did not find exactly one role for email {user_email} - {users_roles}"
         return users_roles[0]["id"]
 
     def create_role(self, user_ids, description=None):

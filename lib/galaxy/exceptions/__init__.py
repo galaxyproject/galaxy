@@ -121,6 +121,11 @@ class RequestParameterInvalidException(MessageException):
     err_code = error_codes.USER_REQUEST_INVALID_PARAMETER
 
 
+class ToolInputsNotReadyException(MessageException):
+    status_code = 400
+    error_code = error_codes.TOOL_INPUTS_NOT_READY
+
+
 class AuthenticationFailed(MessageException):
     status_code = 401
     err_code = error_codes.USER_AUTHENTICATION_FAILED

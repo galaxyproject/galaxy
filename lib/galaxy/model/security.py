@@ -3,7 +3,7 @@ import socket
 from datetime import datetime, timedelta
 
 from sqlalchemy import and_, false, not_, or_
-from sqlalchemy.orm import eagerload_all
+from sqlalchemy.orm import joinedload
 
 import galaxy.model
 from galaxy.security import Action, get_permitted_actions, RBACAgent
@@ -240,14 +240,15 @@ class GalaxyRBACAgent(RBACAgent):
         - a role is private and is the current user's private role
         - a role is a sharing role and belongs to the current user
         """
+        role_type = role.type
         if user:
-            if role.type == self.model.Role.types.PRIVATE:
+            if role_type == self.model.Role.types.PRIVATE:
                 return role == self.get_private_user_role(user)
-            if role.type == self.model.Role.types.SHARING:
+            if role_type == self.model.Role.types.SHARING:
                 return role in self.get_sharing_roles(user)
-            # If role.type is neither private nor sharing, it's ok to display
+            # If role_type is neither private nor sharing, it's ok to display
             return True
-        return role.type != self.model.Role.types.PRIVATE and role.type != self.model.Role.types.SHARING
+        return role_type != self.model.Role.types.PRIVATE and role_type != self.model.Role.types.SHARING
 
     def allow_action(self, roles, action, item):
         """
@@ -668,20 +669,15 @@ class GalaxyRBACAgent(RBACAgent):
                 self.user_set_default_permissions(user, history=True, dataset=True)
 
     def create_private_user_role(self, user):
-        # Create private role
-        role = self.model.Role(name=user.email, description='Private Role for ' + user.email, type=self.model.Role.types.PRIVATE)
-        self.sa_session.add(role)
-        self.sa_session.flush()
-        # Add user to role
-        self.associate_components(role=role, user=user)
-        return role
+        user.attempt_create_private_role()
+        return self.get_private_user_role(user)
 
     def get_private_user_role(self, user, auto_create=False):
         role = self.sa_session.query(self.model.Role) \
                               .filter(and_(self.model.UserRoleAssociation.table.c.user_id == user.id,
                                            self.model.Role.table.c.id == self.model.UserRoleAssociation.table.c.role_id,
                                            self.model.Role.table.c.type == self.model.Role.types.PRIVATE)) \
-                              .first()
+                              .one_or_none()
         if not role:
             if auto_create:
                 return self.create_private_user_role(user)
@@ -1375,7 +1371,7 @@ class GalaxyRBACAgent(RBACAgent):
                                .join("library_dataset") \
                                .filter(self.model.LibraryDataset.folder == folder) \
                                .join("dataset") \
-                               .options(eagerload_all("dataset.actions")) \
+                               .options(joinedload("dataset").joinedload("actions")) \
                                .all()
 
         for ldda in lddas:
