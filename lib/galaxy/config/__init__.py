@@ -275,10 +275,11 @@ class BaseAppConfiguration:
             # check for `not None` explicitly (value can be falsy)
             if value is not None and datatype in type_converters:
                 # convert value or each item in value to type `datatype`
+                f = type_converters[datatype]
                 if isinstance(value, list):
-                    return [type_converters[datatype](item) for item in value]
+                    return [f(item) for item in value]
                 else:
-                    return type_converters[datatype](value)
+                    return f(value)
             return value
 
         def strip_deprecated_dir(key, value):
