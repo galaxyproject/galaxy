@@ -2367,20 +2367,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``trust_jupyter_notebook_conversion``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Set to true to use Jupyter nbconvert to build HTML from Jupyter
-    notebooks in Galaxy histories.  This process may allow users to
-    execute arbitrary code or serve arbitrary HTML.  If enabled,
-    Jupyter must be available and on Galaxy's PATH, to do this run
-    `pip install jinja2 pygments jupyter` in Galaxy's virtualenv.
-:Default: ``false``
-:Type: bool
-
-
 ~~~~~~~~~
 ``debug``
 ~~~~~~~~~

@@ -166,28 +166,11 @@ class Ipynb(Json):
                 return False
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
-        config = trans.app.config
-        trust = getattr(config, 'trust_jupyter_notebook_conversion', False)
-        if trust:
-            return self._display_data_trusted(trans, dataset, preview=preview, filename=filename, to_ext=to_ext, **kwd)
+        if preview:
+            return trans.fill_template("/dataset/tabular_chunked.mako",
+                                       dataset=dataset)
         else:
             return super().display_data(trans, dataset, preview=preview, filename=filename, to_ext=to_ext, **kwd)
-
-    def _display_data_trusted(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
-        preview = string_as_bool(preview)
-        if to_ext or not preview:
-            return self._serve_raw(trans, dataset, to_ext, **kwd)
-        else:
-            with tempfile.NamedTemporaryFile(delete=False) as ofile_handle:
-                ofilename = ofile_handle.name
-            try:
-                cmd = ['jupyter', 'nbconvert', '--to', 'html', '--template', 'full', dataset.file_name, '--output', ofilename]
-                subprocess.check_call(cmd)
-                ofilename = '%s.html' % ofilename
-            except subprocess.CalledProcessError:
-                ofilename = dataset.file_name
-                log.exception('Command "%s" failed. Could not convert the Jupyter Notebook to HTML, defaulting to plain text.', ' '.join(map(shlex.quote, cmd)))
-            return open(ofilename, mode='rb')
 
     def set_meta(self, dataset, **kwd):
         """

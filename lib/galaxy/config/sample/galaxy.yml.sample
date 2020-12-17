@@ -1202,13 +1202,6 @@ galaxy:
   # https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
   #allowed_origin_hostnames: null
 
-  # Set to true to use Jupyter nbconvert to build HTML from Jupyter
-  # notebooks in Galaxy histories.  This process may allow users to
-  # execute arbitrary code or serve arbitrary HTML.  If enabled, Jupyter
-  # must be available and on Galaxy's PATH, to do this run `pip install
-  # jinja2 pygments jupyter` in Galaxy's virtualenv.
-  #trust_jupyter_notebook_conversion: false
-
   # Debug enables access to various config options useful for
   # development and debugging: use_lint, use_profile, and
   # use_printdebug.  It also causes the files used by PBS/SGE

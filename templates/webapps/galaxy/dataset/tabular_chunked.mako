@@ -9,6 +9,7 @@
     ${parent.javascript_app()}
 
     <script type="text/javascript">
+    %if dataset.datatype.file_ext != 'ipynb':
         config.addInitialization(function(galaxy) {
             var dataset = ${ h.dumps( trans.security.encode_dict_ids( dataset.to_dict() ) )};
             var firstChunk = ${chunk};
@@ -19,6 +20,21 @@
                 parent_elt : $('body')
             });
         });
+
+    %elif dataset.datatype.file_ext == 'ipynb':
+            config.addInitialization(function() {
+                console.log("display.mako", "chunkable init");
+
+                var target = $('body');
+                var item = ${h.dumps(dataset.to_dict())};
+
+                $(target).children().remove();
+                window.bundleEntries.createJupyterNotebookView({
+                    id: item.id,
+                    parent_elt: target
+                });
+            })
+    %endif
     </script>
     
 </%def>

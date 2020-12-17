@@ -1719,17 +1719,6 @@ mapping:
           E.g. mysite.com,google.com,usegalaxy.org,/^[\w\.]*example\.com/
           See: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
 
-      trust_jupyter_notebook_conversion:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Set to true to use Jupyter nbconvert to build HTML from Jupyter
-          notebooks in Galaxy histories.  This process may allow users to execute
-          arbitrary code or serve arbitrary HTML.  If enabled, Jupyter must be
-          available and on Galaxy's PATH, to do this run
-          `pip install jinja2 pygments jupyter` in Galaxy's virtualenv.
-
       debug:
         type: bool
         default: false

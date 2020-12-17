@@ -657,10 +657,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.sanitize_allowlist_file = _sanitize_allowlist_path
 
         self.allowed_origin_hostnames = self._parse_allowed_origin_hostnames(self.allowed_origin_hostnames)
-        if "trust_jupyter_notebook_conversion" not in kwargs:
-            # if option not set, check IPython-named alternative, falling back to schema default if not set either
-            _default = self.trust_jupyter_notebook_conversion
-            self.trust_jupyter_notebook_conversion = string_as_bool(kwargs.get('trust_ipython_notebook_conversion', _default))
         # Configuration for the message box directly below the masthead.
         self.blog_url = kwargs.get('blog_url')
         self.user_library_import_symlink_allowlist = listify(self.user_library_import_symlink_allowlist, do_strip=True)
