@@ -9,20 +9,20 @@ from fastapi import (
     Cookie,
     Depends,
     Header,
-    HTTPException,
     Query,
 )
 from sqlalchemy.orm import Session
 
 from galaxy import (
     app as galaxy_app,
-    exceptions,
     model,
 )
 from galaxy.app import UniverseApplication
+from galaxy.exceptions import AdminRequiredException
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.users import UserManager
 from galaxy.model import User
+from galaxy.web.framework.decorators import require_admin_message
 from galaxy.work.context import SessionRequestContext
 
 
@@ -58,10 +58,7 @@ def get_api_user(user_manager: UserManager = Depends(get_user_manager), key: Opt
     api_key = key or x_api_key
     if not api_key:
         return None
-    try:
-        return user_manager.by_api_key(api_key=api_key)
-    except exceptions.AuthenticationFailed as e:
-        raise HTTPException(status_code=e.status_code, detail=str(e))
+    return user_manager.by_api_key(api_key=api_key)
 
 
 def get_user(galaxy_session: Optional[model.GalaxySession] = Depends(get_session), api_user: Optional[User] = Depends(get_api_user)) -> Optional[User]:
@@ -78,7 +75,6 @@ def get_trans(app: UniverseApplication = Depends(get_app), user: Optional[User] 
 
 
 def get_admin_user(trans: SessionRequestContext = Depends(get_trans), user_manager: UserManager = Depends(get_user_manager)):
-    if user_manager.is_admin(trans.user):
-        return trans.user
-    else:
-        raise HTTPException(status_code=403, detail="You must be an administrator to access this feature.")
+    if not trans.user_is_admin:
+        raise AdminRequiredException(require_admin_message(trans.app.config, trans.user))
+    return trans.user

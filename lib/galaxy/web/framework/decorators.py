@@ -93,12 +93,7 @@ def require_admin(func):
     @wraps(func)
     def decorator(self, trans, *args, **kwargs):
         if not trans.user_is_admin:
-            msg = "You must be an administrator to access this feature."
-            user = trans.get_user()
-            if not trans.app.config.admin_users_list:
-                msg = "You must be logged in as an administrator to access this feature, but no administrators are set in the Galaxy configuration."
-            elif not user:
-                msg = "You must be logged in as an administrator to access this feature."
+            msg = require_admin_message(trans.app.config, trans.trans.get_user())
             trans.response.status = 403
             if trans.response.get_content_type() == 'application/json':
                 return msg
@@ -106,6 +101,16 @@ def require_admin(func):
                 return trans.show_error_message(msg)
         return func(self, trans, *args, **kwargs)
     return decorator
+
+
+def require_admin_message(config, user):
+    if not config.admin_users_list:
+        msg = "You must be logged in as an administrator to access this feature, but no administrators are set in the Galaxy configuration."
+    elif not user:
+        msg = "You must be logged in as an administrator to access this feature."
+    else:
+        msg = "You must be an administrator to access this feature."
+    return msg
 
 
 def do_not_cache(func):
