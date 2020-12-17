@@ -1,6 +1,5 @@
 import MarkdownVisualization from "./MarkdownVisualization";
 import { shallowMount } from "@vue/test-utils";
-import Vue from "vue";
 
 describe("Markdown/MarkdownVisualization", () => {
     it("test wizard", async () => {
@@ -16,7 +15,7 @@ describe("Markdown/MarkdownVisualization", () => {
                 useLabels: false,
             },
         });
-        await Vue.nextTick();
+        await wrapper.vm.$nextTick();
         expect(wrapper.vm.labelShow).toBe(false);
         expect(Object.keys(wrapper.vm.formInputs).length).toBe(3);
         wrapper.vm.onData("history_dataset_id");
@@ -35,7 +34,7 @@ describe("Markdown/MarkdownVisualization", () => {
                 useLabels: true,
             },
         });
-        await Vue.nextTick();
+        await wrapper.vm.$nextTick();
         expect(wrapper.vm.labelShow).toBe(true);
         expect(wrapper.vm.formInputs).toBe(null);
     });

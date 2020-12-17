@@ -1,7 +1,12 @@
-import { default as Masthead, __RewireAPI__ as rewire } from "./Masthead.vue";
+import { default as Masthead } from "./Masthead.vue";
 import { mount, createLocalVue } from "@vue/test-utils";
 import Scratchbook from "layout/scratchbook";
-import { getNewAttachNode } from "jest/helpers";
+import { fetchMenu } from "layout/menu";
+import { loadWebhookMenuItems } from "./_webhooks";
+
+jest.mock("app");
+jest.mock("layout/menu");
+jest.mock("./_webhooks");
 
 describe("Masthead.vue", () => {
     let wrapper;
@@ -24,10 +29,10 @@ describe("Masthead.vue", () => {
         });
     }
 
-    beforeEach(() => {
-        rewire.__Rewire__("fetchMenu", stubFetchMenu);
-        rewire.__Rewire__("loadWebhookMenuItems", stubLoadWebhooks);
+    fetchMenu.mockImplementation(stubFetchMenu);
+    loadWebhookMenuItems.mockImplementation(stubLoadWebhooks);
 
+    beforeEach(() => {
         localVue = createLocalVue();
         quotaRendered = false;
         quotaEl = null;
@@ -83,7 +88,6 @@ describe("Masthead.vue", () => {
                 appRoot: "prefix/",
             },
             localVue,
-            attachTo: getNewAttachNode(),
         });
     });
 

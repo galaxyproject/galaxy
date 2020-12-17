@@ -1,6 +1,5 @@
 import { mount } from "@vue/test-utils";
 import Node from "./Node";
-import { getNewAttachNode } from "jest/helpers";
 import flushPromises from "flush-promises";
 
 jest.mock("app");
@@ -16,7 +15,6 @@ describe("Node", () => {
                 getManager: () => {},
                 getCanvasManager: () => {},
             },
-            attachTo: getNewAttachNode(),
         });
         await flushPromises();
         const icon = wrapper.findAll("i");

@@ -1,12 +1,10 @@
 import { mount } from "@vue/test-utils";
 import DatasetName from "./DatasetName";
-import { getNewAttachNode } from "jest/helpers";
 
 describe("Dataset Name", () => {
     it("test dataset default", async () => {
         const wrapper = mount(DatasetName, {
             propsData: { item: { name: "name", state: "success" } },
-            attachTo: getNewAttachNode(),
         });
         const state = wrapper.findAll(".name");
         expect(state.length).toBe(1);
@@ -21,7 +19,6 @@ describe("Dataset Name", () => {
     it("test dataset error", async () => {
         const wrapper = mount(DatasetName, {
             propsData: { item: { name: "name", state: "error" } },
-            attachTo: getNewAttachNode(),
         });
         const state = wrapper.findAll(".name");
         expect(state.length).toBe(1);
@@ -33,7 +30,6 @@ describe("Dataset Name", () => {
     it("test dataset paused", async () => {
         const wrapper = mount(DatasetName, {
             propsData: { item: { name: "name", state: "paused" } },
-            attachTo: getNewAttachNode(),
         });
         const state = wrapper.findAll(".name");
         expect(state.length).toBe(1);

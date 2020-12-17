@@ -9,6 +9,8 @@ import testCitation from "./testData/citation";
 import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
 
+jest.mock("app");
+
 describe("ToolsView/ToolsView.vue", () => {
     const localVue = createLocalVue();
     localVue.filter("localize", (value) => _l(value));

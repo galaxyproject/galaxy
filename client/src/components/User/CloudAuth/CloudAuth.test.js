@@ -7,8 +7,6 @@ import CloudAuthItem from "./CloudAuthItem";
 import _l from "utils/localization";
 import BootstrapVue from "bootstrap-vue";
 
-import { getNewAttachNode } from "jest/helpers";
-
 jest.mock("./model/service", () => ({
     listCredentials: async () => {
         const listCredentials = require("./testdata/listCredentials.json");
@@ -25,7 +23,7 @@ describe("CloudAuth component", () => {
     let wrapper;
 
     beforeEach(async () => {
-        wrapper = shallowMount(CloudAuth, { localVue, attachTo: getNewAttachNode() });
+        wrapper = shallowMount(CloudAuth, { localVue });
         await flushPromises();
     });
 

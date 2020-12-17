@@ -6,7 +6,6 @@ import testInteractiveToolsResponse from "./testData/testInteractiveToolsRespons
 
 import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
-import { getNewAttachNode } from "jest/helpers";
 
 describe("InteractiveTools/InteractiveTools.vue", () => {
     const localVue = createLocalVue();
@@ -24,7 +23,6 @@ describe("InteractiveTools/InteractiveTools.vue", () => {
                     };
                 },
             },
-            attachTo: getNewAttachNode(),
         });
         axiosMock.onGet("/api/entry_points?running=true").reply(200, testInteractiveToolsResponse);
         axiosMock.onPost("/interactivetool/list").reply(200, { status: "ok", message: "ok" });

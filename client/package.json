@@ -120,7 +120,6 @@
     "babel-eslint": "^10.1.0",
     "babel-jest": "^26.3.0",
     "babel-loader": "^8.1.0",
-    "babel-plugin-rewire": "^1.2.0",
     "babel-plugin-transform-inline-environment-variables": "^0.4.3",
     "babel-plugin-transform-vue-template": "^0.4.2",
     "chai": "^4.2.0",
