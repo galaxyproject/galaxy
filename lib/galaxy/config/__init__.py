@@ -413,10 +413,7 @@ class CommonConfigurationMixin:
     @admin_users.setter
     def admin_users(self, value):
         self._admin_users = value
-        if value:
-            self.admin_users_list = [u.strip() for u in value.split(',') if u]
-        else:  # provide empty list for convenience (check membership, etc.)
-            self.admin_users_list = []
+        self.admin_users_list = listify(value)
 
     def is_admin_user(self, user):
         """Determine if the provided user is listed in `admin_users`."""
