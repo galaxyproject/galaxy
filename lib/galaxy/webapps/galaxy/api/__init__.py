@@ -74,7 +74,7 @@ def get_trans(app: UniverseApplication = Depends(get_app), user: Optional[User] 
     return SessionRequestContext(app=app, user=user, galaxy_session=galaxy_session)
 
 
-def get_admin_user(trans: SessionRequestContext = Depends(get_trans), user_manager: UserManager = Depends(get_user_manager)):
+def get_admin_user(trans: SessionRequestContext = Depends(get_trans)):
     if not trans.user_is_admin:
         raise AdminRequiredException(require_admin_message(trans.app.config, trans.user))
     return trans.user
