@@ -28,6 +28,8 @@ export function userLogout(logoutAll = false) {
         .then((response) => {
             if (response.data?.redirect_uri) {
                 window.top.location.href = response.data.redirect_uri;
+            } else if (galaxy.config.use_remote_user && galaxy.config.remote_user_logout_href) {
+                window.top.location.href = galaxy.config.remote_user_logout_href;
             } else {
                 window.top.location.href = `${galaxy.root}${POST_LOGOUT_URL}`;
             }
