@@ -44,7 +44,7 @@
     "is-promise": "^4.0.0",
     "isotope-layout": "^3.0.6",
     "iter-tools": "7.0.0-rc.0",
-    "jquery": "2",
+    "jquery": "3",
     "jquery-migrate": "~1.4",
     "jquery-mousewheel": "^3.1.13",
     "jquery-ui": "^1.12.1",
