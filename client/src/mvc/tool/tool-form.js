@@ -236,9 +236,15 @@ const View = Backbone.View.extend({
      */
     submit: function (options, callback) {
         const Galaxy = getGalaxyInstance();
-        const history_id = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
+        const historyPanel = Galaxy.currHistoryPanel;
+        const historyId = historyPanel && historyPanel.model && historyPanel.model.id;
+        if (!historyId) {
+            console.log(
+                "Submitting a tool without a history, jobs may be sent to disparate histories if current history changes."
+            );
+        }
         const job_def = {
-            history_id: history_id,
+            history_id: historyId,
             tool_id: options.id,
             tool_version: options.version,
             inputs: this.form.data.create(),
