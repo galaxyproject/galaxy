@@ -8,7 +8,8 @@
         role="button"
         aria-label="Show favorite tools"
     >
-        <font-awesome-icon :icon="['far', 'star']" />
+        <font-awesome-icon v-if="toggle" :icon="['fas', 'star']" />
+        <font-awesome-icon v-else :icon="['far', 'star']" />
     </a>
 </template>
 
@@ -17,7 +18,10 @@ import { VBTooltip } from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faStar } from "@fortawesome/free-regular-svg-icons";
+import { faStar as faStarSolid } from "@fortawesome/free-solid-svg-icons";
+
 library.add(faStar);
+library.add(faStarSolid);
 
 export default {
     name: "FavoritesButton",
