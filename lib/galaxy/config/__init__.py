@@ -275,7 +275,7 @@ class BaseAppConfiguration:
             # check for `not None` explicitly (value can be falsy)
             if value is not None and datatype in type_converters:
                 # convert value or each item in value to type `datatype`
-                if type(value) is list:
+                if isinstance(value, list):
                     return [type_converters[datatype](item) for item in value]
                 else:
                     return type_converters[datatype](value)
