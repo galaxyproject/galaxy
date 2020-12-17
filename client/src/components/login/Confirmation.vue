@@ -10,17 +10,19 @@
                         <b-card-body>
                             <p>Looks like you are about to create a new account!</p>
                             <p>
-                                Do you already have a Galaxy account? If you already have an account, hit
-                                <em>'No, go back'</em> to log in using your username and password to connect this
-                                account via <strong>User Preferences</strong>.
+                                Do you already have a Galaxy account? If so, click
+                                <em>'No, go back to login'</em> to log in using your existing username and password to
+                                connect this account via <strong>User Preferences</strong>.
                                 <a
                                     href="https://galaxyproject.org/authnz/use/oidc/idps/custos/#link-an-existing-galaxy-account"
                                     target="_blank"
-                                    >See here</a
+                                    >More details here.</a
                                 >
-                                how.
                             </p>
-                            <p>If you wish to continue with the new account, select <em>'Create new account'</em>.</p>
+                            <p>
+                                If you wish to continue and create a new account, select
+                                <em>'Yes, create new account'</em>.
+                            </p>
                             <p>
                                 Reminder: Registration and usage of multiple accounts is tracked and such accounts are
                                 subject to termination and data deletion on public Galaxy servers. Connect existing
