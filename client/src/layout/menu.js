@@ -52,7 +52,7 @@ export function userLogoutClient() {
 export function fetchMenu(options = {}) {
     const Galaxy = getGalaxyInstance();
     const menu = [];
-
+    const version = 
     //
     // Analyze data tab.
     //
@@ -191,6 +191,11 @@ export function fetchMenu(options = {}) {
             {
                 title: _l("Interactive Tours"),
                 url: "tours",
+            },
+            {
+                title: _l("Galaxy Version: " + Galaxy.config.version_major),
+                url: options.release_url + Galaxy.config.version_major + "_announce.html",
+                target: "_blank",
             },
         ],
     };
