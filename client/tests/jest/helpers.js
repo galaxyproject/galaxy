@@ -60,6 +60,7 @@ export function getLocalVue() {
         bind() {},
     };
     localVue.directive("b-tooltip", mockedDirective);
+    localVue.directive("b-popover", mockedDirective);
     return localVue;
 }
 
