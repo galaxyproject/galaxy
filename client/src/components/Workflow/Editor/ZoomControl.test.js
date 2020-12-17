@@ -1,15 +1,17 @@
-import { mount, createLocalVue } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 import ZoomControl from "./ZoomControl";
 
 jest.mock("app");
 
 describe("ZoomControl", () => {
     it("test zoom control", async () => {
-        const localVue = createLocalVue();
+        const localVue = getLocalVue();
         const wrapper = mount(ZoomControl, {
             propsData: {
                 zoomLevel: 10,
             },
+            localVue,
         });
         const buttons = wrapper.findAll("button");
         expect(buttons.length).toBe(3);

@@ -1,8 +1,11 @@
 import { mount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 import Node from "./Node";
 import flushPromises from "flush-promises";
 
 jest.mock("app");
+
+const localVue = getLocalVue();
 
 describe("Node", () => {
     it("test attributes", async () => {
@@ -15,6 +18,7 @@ describe("Node", () => {
                 getManager: () => {},
                 getCanvasManager: () => {},
             },
+            localVue,
         });
         await flushPromises();
         const icon = wrapper.findAll("i");

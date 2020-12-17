@@ -1,5 +1,6 @@
 import { default as Masthead } from "./Masthead.vue";
-import { mount, createLocalVue } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 import Scratchbook from "layout/scratchbook";
 import { fetchMenu } from "layout/menu";
 import { loadWebhookMenuItems } from "./_webhooks";
@@ -33,7 +34,7 @@ describe("Masthead.vue", () => {
     loadWebhookMenuItems.mockImplementation(stubLoadWebhooks);
 
     beforeEach(() => {
-        localVue = createLocalVue();
+        localVue = getLocalVue();
         quotaRendered = false;
         quotaEl = null;
 

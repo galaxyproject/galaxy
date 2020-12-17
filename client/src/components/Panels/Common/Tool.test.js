@@ -1,5 +1,8 @@
 import { mount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 import Tool from "./Tool";
+
+const localVue = getLocalVue();
 
 describe("Tool", () => {
     test("test tool", () => {
@@ -7,6 +10,7 @@ describe("Tool", () => {
             propsData: {
                 tool: {},
             },
+            localVue,
         });
         const nameElement = wrapper.findAll(".name");
         expect(nameElement.at(0).text()).toBe("");
@@ -28,6 +32,7 @@ describe("Tool", () => {
                 operationIcon: "operationIconClass",
                 operationTitle: "operationTitle",
             },
+            localVue,
         });
         const nameElement = wrapper.findAll(".name");
         expect(nameElement.at(0).text()).toBe("name");
@@ -45,6 +50,7 @@ describe("Tool", () => {
                 },
                 hideName: true,
             },
+            localVue,
         });
         const nameElement = wrapper.findAll(".name");
         expect(nameElement.length).toBe(0);

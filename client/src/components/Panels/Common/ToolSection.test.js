@@ -1,5 +1,8 @@
 import { mount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 import ToolSection from "./ToolSection";
+
+const localVue = getLocalVue();
 
 describe("ToolSection", () => {
     test("test tool section", () => {
@@ -9,6 +12,7 @@ describe("ToolSection", () => {
                     name: "name",
                 },
             },
+            localVue,
         });
         const nameElement = wrapper.findAll(".name");
         expect(nameElement.at(0).text()).toBe("name");
@@ -31,6 +35,7 @@ describe("ToolSection", () => {
                     ],
                 },
             },
+            localVue,
         });
         expect(wrapper.vm.opened).toBe(false);
         const $sectionName = wrapper.find(".name");
@@ -62,6 +67,7 @@ describe("ToolSection", () => {
                 },
                 queryFilter: "test",
             },
+            localVue,
         });
         expect(wrapper.vm.opened).toBe(true);
         const $sectionName = wrapper.find(".name");

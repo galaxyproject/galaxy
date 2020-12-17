@@ -1,5 +1,6 @@
 import flushPromises from "flush-promises";
-import { shallowMount, createLocalVue } from "@vue/test-utils";
+import { shallowMount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 
 import { default as CloudAuth } from "./CloudAuth";
 import CloudAuthItem from "./CloudAuthItem";
@@ -15,7 +16,7 @@ jest.mock("./model/service", () => ({
     },
 }));
 
-const localVue = createLocalVue();
+const localVue = getLocalVue();
 localVue.use(BootstrapVue);
 localVue.filter("localize", (value) => _l(value));
 

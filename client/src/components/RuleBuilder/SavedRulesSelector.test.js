@@ -1,5 +1,8 @@
 import { mount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 import SavedRulesSelector from "components/RuleBuilder/SavedRulesSelector";
+
+const localVue = getLocalVue();
 
 describe("SavedRulesSelector", () => {
     let wrapper;
@@ -12,6 +15,7 @@ describe("SavedRulesSelector", () => {
                 prefix: "test_prefix_" + new Date().toISOString() + "_",
                 savedRules: [],
             },
+            localVue,
         });
         await wrapper.vm.$nextTick();
     });

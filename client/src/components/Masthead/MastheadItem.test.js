@@ -1,4 +1,5 @@
-import { shallowMount, createLocalVue } from "@vue/test-utils";
+import { shallowMount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 import MastheadItem from "./MastheadItem.vue";
 
 describe("MastheadItem.vue", () => {
@@ -8,7 +9,7 @@ describe("MastheadItem.vue", () => {
     let menu;
 
     beforeEach(() => {
-        localVue = createLocalVue();
+        localVue = getLocalVue();
     });
 
     function m() {
