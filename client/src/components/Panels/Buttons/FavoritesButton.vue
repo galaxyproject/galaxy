@@ -25,9 +25,15 @@ library.add(faStarSolid);
 
 export default {
     name: "FavoritesButton",
+    props: {
+        query: {
+            type: String,
+        },
+    },
     components: { FontAwesomeIcon },
     data() {
         return {
+            searchKey: "#favorites",
             tooltipText: "Show favorites",
             toggle: false,
         };
@@ -35,11 +41,16 @@ export default {
     directives: {
         "v-b-tooltip": VBTooltip,
     },
+    watch: {
+        query() {
+            this.toggle = this.query == this.searchKey;
+        },
+    },
     methods: {
         onFavorites() {
             this.toggle = !this.toggle;
             if (this.toggle) {
-                this.$emit("onFavorites", "#favorites");
+                this.$emit("onFavorites", this.searchKey);
             } else {
                 this.$emit("onFavorites", null);
             }
