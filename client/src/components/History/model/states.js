@@ -1,5 +1,4 @@
 // Stolen from existing model.
-// It is stupid.
 
 export const STATES = {
     /** is uploading and not ready */

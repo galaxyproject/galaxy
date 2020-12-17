@@ -4,7 +4,8 @@
  * create paired collection, etc.
  *
  * The goal is to use the existing "crateListCollection", etc. functions but doctor
- * the content parameter to have the API of a horrible backbone model.
+ * the content parameter to have the API of a backbone model which requires a
+ * deprecated jquery Deferred object.
  */
 
 import jQuery from "jquery";

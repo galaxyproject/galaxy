@@ -2,8 +2,6 @@
  * This is a backbone view adapter for a Vue component. It's just
  * a Vue mount function with the interface of a backbone view so
  * that it can fit into the existing backbone layout scheme.
- *
- * TODO: Delete this abomination when Backbone is finally gone.
  */
 
 import { mountVueComponent } from "utils/mountVueComponent";

@@ -23,7 +23,7 @@ export class ModelBase {
  * Mixins
  */
 
-// converts barbaric string date to a moment object
+// converts string date to a moment object
 export const dateMixin = (superclass) =>
     class extends superclass {
         get updateDate() {

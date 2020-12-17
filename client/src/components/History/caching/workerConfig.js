@@ -1,7 +1,7 @@
 /**
  * Configuration var for inside the worker, must be set when worker
- * is fired up because we can't reach the document and that's how stupid,
- * stupid, stupid, stupid, galaxy backbone code gets some of its config.
+ * is fired up because we can't reach the document and that's how galaxy
+ * backbone code gets some of its config.
  */
 export const workerConfig = { root: "/" };
 

@@ -1,11 +1,8 @@
 /**
  * Simple ajax queries that run against the api.
  *
- * A few history queries still hit routes that don't begin with /api though. I have noted them
- * in the comments for your amusement. Also beware of our obscenely bad amateur querystring
- * formatting, the likes of which would get you immediately fired at any other job.
- *
- * Find all the non-standard conventions: It's like a game!
+ * A few history queries still hit routes that don't begin with /api. I have noted them
+ * in the comments.
  */
 
 import axios from "axios";
@@ -34,44 +31,35 @@ const doResponse = (response) => {
 };
 
 /**
- * More incompetence.
- *
- * We have a demented query param structure which should probably be murdered
- * instead of passing param=value we pass q=paramName&qv=paramValue because
- * whoever authored this API has never worked on a web application. Anywhere.
+ * Legacy query string rendering. (generates q/qv syntax queries).
+ * TODO: remove these converters when the api is modernized.
  *
  * @param {Object} fields Object with parameters to pass to our dumb api
  */
 
-function buildIncompetentQueryString(fields = {}) {
-    const badParams = buildIncompetentParams(fields);
+function buildLegacyQueryString(fields = {}) {
+    const badParams = buildLegacyParam(fields);
     return Object.keys(badParams)
         .map((key) => `q=${key}&qv=${badParams[key]}`)
         .join("&");
 }
 
-function buildIncompetentParams(fields = {}) {
+function buildLegacyParam(fields = {}) {
     return Object.keys(fields).reduce((result, key) => {
-        result[key] = ruinBooleans(fields[key]);
+        result[key] = pythonBooleanFormat(fields[key]);
         return result;
     }, {});
 }
 
-/**
- * Oh yeah! And to add even more stupid, the API doesn't take standard true/false
- * it takes a string representation of a python Boolean
- */
-
-function ruinBooleans(val) {
+function pythonBooleanFormat(val) {
     if (val === true) return "True";
     if (val === false) return "False";
     return val;
 }
 
 /**
- * Some of the current endpoints mysteriously don't accept JSON, so we need to
- * do some massaging to send in old form post data. (See if axios can just do
- * this for us.)
+ * Some of the current endpoints don't accept JSON, so we need to
+ * do some massaging to send in old form post data.
  * @param {Object} fields
  */
 
@@ -97,14 +85,14 @@ const stdHistoryParams = {
 export async function getHistoriesForCurrentUser(lastUpdate = null) {
     const url = `/histories`;
 
-    // TODO: remove q,qv syntax from all API endpoints because it is a war crime
-    const incompetentParams = {
+    // TODO: remove q,qv syntax
+    const legacyParams = {
         deleted: "None",
     };
     if (lastUpdate) {
-        incompetentParams["update_time-gt"] = moment.utc(lastUpdate);
+        legacyParams["update_time-gt"] = moment.utc(lastUpdate);
     }
-    const incomptentQueryString = buildIncompetentQueryString(incompetentParams);
+    const incomptentQueryString = buildLegacyQueryString(legacyParams);
 
     const response = await api.get(`${url}?${incomptentQueryString}`, {
         params: stdHistoryParams,
@@ -250,7 +238,7 @@ export async function loadContentFields(content, fields = []) {
 
 /**
  * Generic content query function originally intended to help with bulk updates
- * so we don't have to go through the barbaric legacy /history endpoints and
+ * so we don't have to go through the legacy /history endpoints and
  * can stay in the /api as much as possible.
  *
  * @param {*} history
@@ -258,7 +246,7 @@ export async function loadContentFields(content, fields = []) {
  */
 export async function getAllContentByFilter(history, filterParams = {}) {
     const { id } = history;
-    const strFilter = buildIncompetentQueryString(filterParams);
+    const strFilter = buildLegacyQueryString(filterParams);
     const params = { v: "dev", view: "summary", keys: "file_size,accessible,creating_job,job_source_id" };
     const url = `/histories/${id}/contents?${strFilter}`;
     const response = await api.get(url, { params });
@@ -328,14 +316,13 @@ export async function purgeContent(history, content) {
 }
 
 /**
- * Horrible and absurb bulk update endpoint that definitely needs to be rewritten.
+ * Bulk update endpoint (TODO: rewrite)
  *
  * @param {*} history
  * @param {*} type_ids
  * @param {*} fields
  */
 export async function bulkContentUpdate(history, type_ids = [], fields = {}) {
-    // transform into the absurd selection format requred for the bulk update api
     const items = type_ids.map((type_id) => {
         const [history_content_type, id] = type_id.split("-");
         return { id, type_id, history_content_type };
@@ -353,8 +340,6 @@ export async function bulkContentUpdate(history, type_ids = [], fields = {}) {
 
 // #region Collections
 
-// TODO: Yet another api endpoint that needs fixing
-
 export async function createDatasetCollection(history, inputs = {}) {
     const defaults = {
         collection_type: "list",
@@ -366,10 +351,6 @@ export async function createDatasetCollection(history, inputs = {}) {
     };
 
     const payload = Object.assign({}, defaults, inputs);
-
-    // this endpoint is so hosed, passing return keys in URL because
-    // it doesn't look in the fields payload as described in the comments
-    // const keys = contentFields.join(",");
     const url = `/histories/${history.id}/contents?view=betawebclient`; // keys=${keys}`;
     const response = await api.post(url, payload);
     return doResponse(response);
@@ -378,7 +359,7 @@ export async function createDatasetCollection(history, inputs = {}) {
 export async function deleteDatasetCollection(collection, recursive = false, purge = false) {
     const { history_id, id } = collection;
     const url = `/histories/${history_id}/contents/dataset_collections/${id}`;
-    const params = buildIncompetentParams({ recursive, purge });
+    const params = buildLegacyParam({ recursive, purge });
     const response = await api.delete(url, { params });
     return doResponse(response);
 }

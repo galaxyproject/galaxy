@@ -1,6 +1,6 @@
 /**
- * Read-only class takes raw data and applies some poorly-defined degenerate nonsense rules
- * to determine an amalgam state.
+ * Read-only class takes raw data and applies some rules
+ * to determine an amalgam state for a collection.
  */
 import { STATES } from "./states";
 

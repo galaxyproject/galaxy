@@ -1052,9 +1052,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         result size of limit. Additional counts for total matches of both seeks
         provided in the http headers.
 
-        I've also abandoned the wierd q/qv syntax. If I can just get rid of the
-        need to provide capitalized True and False, this might start to look
-        like a grown-up api.
+        I've also abandoned the wierd q/qv syntax.
 
         * GET /api/histories/{history_id}/contents/near/{hid}/{limit}
         """
@@ -1127,8 +1125,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
                 rval.append(collection)
         return rval
 
-    # Parsing query string according to REST standards. Still need to fix
-    # capitalization of True/False but apparently that is done elsewhere
+    # Parsing query string according to REST standards.
     def _parse_rest_params(self, qdict):
         DEFAULT_OP = 'eq'
         splitchar = '-'

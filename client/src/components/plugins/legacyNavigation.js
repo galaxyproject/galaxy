@@ -56,8 +56,7 @@ export const legacyNavigationMixin = {
             }
         },
 
-        // arbitrary Galaxy wrapper for all that bizarre logic that shouldn't
-        // exist but we can't kill yet
+        // arbitrary Galaxy wrapper
         useGalaxy(fn) {
             return fn(getGalaxyInstance());
         },

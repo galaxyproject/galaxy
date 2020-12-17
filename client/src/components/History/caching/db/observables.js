@@ -107,7 +107,6 @@ export const bulkCacheDscContent = (returnDocs = false) => pipe(
     map((list) => (returnDocs ? list.map((result) => result.doc) : list))
 );
 
-// unscrew the bent api result format
 // need to deal with both the bent api format that comes in from the ajax call
 // as well as re-processing an existing collection item on a subsequent update
 // cache operation.

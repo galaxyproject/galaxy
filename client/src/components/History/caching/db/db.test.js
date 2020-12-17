@@ -176,8 +176,7 @@ describe("collection content operators and functions", () => {
         // well as working on existing (already converted) objects
 
         test("should return valid results for pre-processed cache results (on update)", () => {
-            // simulate a collection that has already been cached, and therefore
-            // untwisted from the horrible api
+            // simulate a collection that has already been cached
 
             const updateMe = {
                 id: "fb85969571388350",

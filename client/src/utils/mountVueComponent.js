@@ -6,18 +6,10 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import store from "../store";
 
-import {
-    // legacyNavigationPlugin,
-    eventHubPlugin,
-    localizationPlugin,
-    vueRxShortcutPlugin,
-} from "components/plugins";
+import { eventHubPlugin, localizationPlugin, vueRxShortcutPlugin } from "components/plugins";
 
 // Bootstrap components
 Vue.use(BootstrapVue);
-
-// Install horrible plugin for navigation with backbone client
-// Vue.use(legacyNavigationPlugin);
 
 // Add a global event bus. We could just use root but I don't think that will
 // work right when we have more than one root, which we often will until the

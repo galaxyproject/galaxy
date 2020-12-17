@@ -42,10 +42,8 @@ export default {
         return this.$scopedSlots.default({
             value: this.value,
             input: (e) => {
-                // Of course Vue Bootstrap does not conform to the standard
-                // event object, so we have to check for their incompetence
-                // if we want to use this with the Vue Bootstrap components
-                // console.log("input event handler", e, arguments);
+                // Vue Bootstrap does not conform to the standard
+                // event object format, so check there first
                 this.incomingValue = e && e.target ? e.target.value : e;
             },
         });

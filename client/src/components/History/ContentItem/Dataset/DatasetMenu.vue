@@ -241,7 +241,7 @@ export default {
             });
         },
 
-        // wierd iframe navigation. This must die.
+        // wierd iframe navigation
         visualize() {
             const redirectParams = {
                 path: this.dataset.getUrl("show_params"),
