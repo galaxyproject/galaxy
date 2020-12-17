@@ -442,18 +442,32 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         activation_token = self.__get_activation_token(trans, escape(email))
         activation_link = url_for(controller='user', action='activate', activation_token=activation_token, email=escape(email), qualified=True)
         host = self.__get_host(trans)
+        custom_message = ''
+        if self.app.config.custom_activation_email_message:
+            custom_message = self.app.config.custom_activation_email_message + '\n\n'
         body = ("Hello %s,\n\n"
-                "In order to complete the activation process for %s begun on %s at %s, please click on the following link to verify your account:\n\n"
-                "%s \n\n"
-                "By clicking on the above link and opening a Galaxy account you are also confirming that you have read and agreed to Galaxy's Terms and Conditions for use of this service (%s). This includes a quota limit of one account per user. Attempts to subvert this limit by creating multiple accounts or through any other method may result in termination of all associated accounts and data.\n\n"
-                "Please contact us if you need help with your account at: %s. You can also browse resources available at: %s. \n\n"
+                "In order to complete the activation process for %s begun on %s at %s, please click "
+                "on the following link to verify your account:\n\n" "%s \n\n"
+                "By clicking on the above link and opening a Galaxy account you are also confirming "
+                "that you have read and agreed to Galaxy's Terms and Conditions for use of this "
+                "service (%s). This includes a quota limit of one account per user. Attempts to "
+                "subvert this limit by creating multiple accounts or through any other method may "
+                "result in termination of all associated accounts and data.\n\n"
+                "Please contact us if you need help with your account at: %s. You can also browse "
+                "resources available" " at: %s. \n\n"
                 "More about the Galaxy Project can be found at galaxyproject.org\n\n"
-                "Your Galaxy Team" % (escape(username), escape(email),
-                                      datetime.utcnow().strftime("%D"),
-                                      trans.request.host, activation_link,
-                                      self.app.config.terms_url,
-                                      self.app.config.error_email_to,
-                                      self.app.config.instance_resource_url))
+                "%s"
+                "Your Galaxy Team" % (
+                    escape(username),
+                    escape(email),
+                    datetime.utcnow().strftime("%D"),
+                    trans.request.host,
+                    activation_link,
+                    self.app.config.terms_url,
+                    self.app.config.error_email_to,
+                    self.app.config.instance_resource_url,
+                    custom_message)
+                )
         to = email
         frm = self.app.config.email_from or 'galaxy-no-reply@' + host
         subject = 'Galaxy Account Activation'

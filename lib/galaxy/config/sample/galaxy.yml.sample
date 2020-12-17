@@ -729,6 +729,10 @@ galaxy:
   # '<galaxy-no-reply@HOSTNAME>' will be used.
   #email_from: null
 
+  # This text will be inserted at the end of the activation email's
+  # message, before the 'Your Galaxy Team' signature.
+  #custom_activation_email_message: null
+
   # URL of the support resource for the galaxy instance.  Used in
   # activation emails.
   # Example value 'https://galaxyproject.org/'
@@ -927,6 +931,9 @@ galaxy:
 
   # The URL linked by the "Wiki" link in the "Help" menu.
   #wiki_url: https://galaxyproject.org/
+
+  # The URL linked for quota information in the UI.
+  #quota_url: https://galaxyproject.org/support/account-quotas/
 
   # The URL linked by the "Support" link in the "Help" menu.
   #support_url: https://galaxyproject.org/support/

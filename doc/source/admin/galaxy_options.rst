@@ -1290,6 +1290,17 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``custom_activation_email_message``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    This text will be inserted at the end of the activation email's
+    message, before the 'Your Galaxy Team' signature.
+:Default: ``None``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 ``instance_resource_url``
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1731,6 +1742,16 @@
 :Description:
     The URL linked by the "Wiki" link in the "Help" menu.
 :Default: ``https://galaxyproject.org/``
+:Type: str
+
+
+~~~~~~~~~~~~~
+``quota_url``
+~~~~~~~~~~~~~
+
+:Description:
+    The URL linked for quota information in the UI.
+:Default: ``https://galaxyproject.org/support/account-quotas/``
 :Type: str
 
 

@@ -927,6 +927,13 @@ mapping:
           Galaxy Project <galaxy-no-reply@example.com>
           If not configured, '<galaxy-no-reply@HOSTNAME>' will be used.
 
+      custom_activation_email_message:
+        type: str
+        required: false
+        desc: |
+          This text will be inserted at the end of the activation email's message, before
+          the 'Your Galaxy Team' signature.
+
       instance_resource_url:
         type: str
         required: false
