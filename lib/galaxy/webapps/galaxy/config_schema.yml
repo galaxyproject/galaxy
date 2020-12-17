@@ -922,9 +922,9 @@ mapping:
         required: false
         desc: |
           Email address to use in the 'From' field when sending emails for
-          account activations, workflow step notifications and password resets.
-          We recommend using string in the following format:
-          Galaxy Project <galaxy-no-reply@example.com>
+          account activations, workflow step notifications, password resets, and
+          tool error reports.  We recommend using a string in the following format:
+          Galaxy Project <galaxy-no-reply@example.com>.
           If not configured, '<galaxy-no-reply@HOSTNAME>' will be used.
 
       instance_resource_url:

@@ -240,7 +240,7 @@ class EmailErrorReporter(ErrorReporter):
         to_address = self.app.config.error_email_to
         assert to_address, ValueError("Error reporting has been disabled for this Galaxy instance")
 
-        frm = to_address
+        frm = self.app.config.email_from
         # Check email a bit
         email = email or ''
         email = email.strip()

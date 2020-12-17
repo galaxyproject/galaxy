@@ -723,10 +723,10 @@ galaxy:
   #error_email_to: null
 
   # Email address to use in the 'From' field when sending emails for
-  # account activations, workflow step notifications and password
-  # resets. We recommend using string in the following format: Galaxy
-  # Project <galaxy-no-reply@example.com> If not configured,
-  # '<galaxy-no-reply@HOSTNAME>' will be used.
+  # account activations, workflow step notifications, password resets,
+  # and tool error reports.  We recommend using a string in the
+  # following format: Galaxy Project <galaxy-no-reply@example.com>. If
+  # not configured, '<galaxy-no-reply@HOSTNAME>' will be used.
   #email_from: null
 
   # URL of the support resource for the galaxy instance.  Used in
@@ -927,6 +927,9 @@ galaxy:
 
   # The URL linked by the "Wiki" link in the "Help" menu.
   #wiki_url: https://galaxyproject.org/
+
+  # The URL linked for quota information in the UI.
+  #quota_url: https://galaxyproject.org/support/account-quotas/
 
   # The URL linked by the "Support" link in the "Help" menu.
   #support_url: https://galaxyproject.org/support/
