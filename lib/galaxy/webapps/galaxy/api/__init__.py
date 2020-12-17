@@ -35,11 +35,11 @@ def get_db(app: UniverseApplication = Depends(get_app)) -> Session:
     return app.model.session
 
 
-def get_user_manager(app: UniverseApplication = Depends(get_app)):
+def get_user_manager(app: UniverseApplication = Depends(get_app)) -> UserManager:
     return UserManager(app)
 
 
-def get_session_manager(app=Depends(get_app)) -> GalaxySessionManager:
+def get_session_manager(app: UniverseApplication = Depends(get_app)) -> GalaxySessionManager:
     # TODO: find out how to adapt dependency for Galaxy/Report/TS
     return GalaxySessionManager(app.model)
 
@@ -70,7 +70,7 @@ def get_user(galaxy_session: Optional[model.GalaxySession] = Depends(get_session
     return api_user
 
 
-def get_trans(app=Depends(get_app), user: Optional[User] = Depends(get_user),
+def get_trans(app: UniverseApplication = Depends(get_app), user: Optional[User] = Depends(get_user),
               galaxy_session: Optional[model.GalaxySession] = Depends(get_session),
               ) -> SessionRequestContext:
     app.model.session.expunge_all()
