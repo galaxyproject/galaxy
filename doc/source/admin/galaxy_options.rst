@@ -1734,6 +1734,16 @@
 :Type: str
 
 
+~~~~~~~~~~~~~
+``quota_url``
+~~~~~~~~~~~~~
+
+:Description:
+    The URL linked for quota information in the UI.
+:Default: ``https://galaxyproject.org/support/account-quotas/``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~
 ``support_url``
 ~~~~~~~~~~~~~~~
@@ -1752,6 +1762,16 @@
     The URL linked by the "How to Cite Galaxy" link in the "Help"
     menu.
 :Default: ``https://galaxyproject.org/citing-galaxy``
+:Type: str
+
+
+~~~~~~~~~~~~~~~
+``release_url``
+~~~~~~~~~~~~~~~
+
+:Description:
+    The URL linked by the "Galaxy Version" link in the "Help" menu.
+:Default: ``https://docs.galaxyproject.org/en/master/releases/``
 :Type: str
 
 

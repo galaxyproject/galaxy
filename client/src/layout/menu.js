@@ -52,7 +52,6 @@ export function userLogoutClient() {
 export function fetchMenu(options = {}) {
     const Galaxy = getGalaxyInstance();
     const menu = [];
-    const version = 
     //
     // Analyze data tab.
     //
