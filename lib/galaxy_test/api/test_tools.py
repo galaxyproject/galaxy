@@ -374,7 +374,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             namelist = contents.namelist()
         assert len(namelist) == 6
         expected_names = {'velveth_test1/Roadmaps', 'velveth_test1/output.html', 'velveth_test1/Sequences', 'velveth_test1/Log', 'velveth_test1/output/', 'velveth_test1/output/1'}
-        assert len(set(namelist).union(expected_names)) == 6
+        assert set(namelist) == expected_names
 
     def test_unzip_collection(self):
         with self.dataset_populator.test_history() as history_id:
