@@ -388,7 +388,7 @@ http {
 }
 ```
 
-The `internal;` statement mean that the location can only be used for internal requests.
+The `internal;` statement means that the location can only be used for internal nginx requests.
 For external requests, the client error 404 (Not Found) is returned, meaning users cannot
 access arbitrary datasets in /galaxy_root/database/files/.
 
