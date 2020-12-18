@@ -2,12 +2,10 @@ import logging
 import os
 from json import dumps, loads
 
-import zipstream
-
 from galaxy import exceptions, managers, util, web
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
 from galaxy.tools import global_tool_errors
-from galaxy.util.path import safe_walk
+from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.web import (
     expose_api,
     expose_api_anonymous,
@@ -158,18 +156,11 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
                 trans.response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
                 return open(path, mode='rb')
             elif os.path.isdir(path):
-                pardir = os.path.join(path, os.pardir)
-                archive = zipstream.ZipFile(allowZip64=True, compression=zipstream.ZIP_STORED)
-                for root, directories, files in safe_walk(path):
-                    for directory in directories:
-                        dir_path = os.path.join(root, directory)
-                        archive.write(dir_path, os.path.relpath(dir_path, pardir))
-                    for file in files:
-                        file_path = os.path.join(root, file)
-                        archive.write(file_path, os.path.relpath(file_path, pardir))
-                trans.response.set_content_type("application/zip")
-                trans.response.headers["Content-Disposition"] = f'attachment; filename="{filename}.zip"'
-                return iter(archive)
+                # Set upstream_zip to false, otherwise tool data must be among allowed internal routes
+                archive = ZipstreamWrapper(upstream_zip=False, archive_name=filename)
+                archive.write(path)
+                trans.response.headers.update(archive.get_headers())
+                return archive.response()
         raise exceptions.ObjectNotFound("Specified test data path not found.")
 
     @expose_api_anonymous_and_sessionless

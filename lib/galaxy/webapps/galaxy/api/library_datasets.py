@@ -6,7 +6,6 @@ import os.path
 import string
 from json import dumps
 
-import zipstream
 from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError
 
 from galaxy import (
@@ -31,6 +30,7 @@ from galaxy.util.path import (
     safe_relpath,
     unsafe_walk,
 )
+from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.web import (
     expose_api,
     expose_api_anonymous,
@@ -583,8 +583,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
             raise exceptions.RequestParameterMissingException('Request has to contain a list of dataset ids or folder ids to download.')
 
         if archive_format == 'zip':
-            archive = zipstream.ZipFile(allowZip64=True, compression=zipstream.ZIP_STORED)
-            # error = False
+            archive = ZipstreamWrapper(upstream_zip=self.app.config.upstream_zip, archive_name="selected_library_files")
             killme = string.punctuation + string.whitespace
             trantab = str.maketrans(killme, '_' * len(killme))
             seen = []
@@ -655,11 +654,8 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                     except Exception as e:
                         log.exception("Unable to add %s to temporary library download archive %s", ldda.dataset.file_name, outfname)
                         raise exceptions.InternalServerError("Unknown error. " + util.unicodify(e))
-            lname = 'selected_dataset'
-            fname = lname.replace(' ', '_') + '_files'
-            trans.response.set_content_type("application/zip")
-            trans.response.headers["Content-Disposition"] = f'attachment; filename="{fname}.zip"'
-            return iter(archive)
+            trans.response.headers.update(archive.get_headers())
+            return archive.response()
         elif archive_format == 'uncompressed':
             if len(library_datasets) != 1:
                 raise exceptions.RequestParameterInvalidException("You can download only one uncompressed file at once.")
@@ -669,7 +665,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                 dataset = ldda.dataset
                 fStat = os.stat(dataset.file_name)
                 trans.response.set_content_type(ldda.get_mime())
-                trans.response.headers['Content-Length'] = fStat.st_size
+                trans.response.headers['Content-Length'] = str(fStat.st_size)
                 fname = f"{ldda.name}.{ldda.extension}"
                 fname = ''.join(c in util.FILENAME_VALID_CHARS and c or '_' for c in fname)[0:150]
                 trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % fname

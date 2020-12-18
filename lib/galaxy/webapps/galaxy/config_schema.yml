@@ -1424,14 +1424,16 @@ mapping:
           should be set to the path defined in the nginx config as an internal redirect
           with access to Galaxy's data files (see documentation linked above).
 
-      upstream_gzip:
+      upstream_zip:
         type: bool
         default: false
         required: false
         desc: |
-          If using compression in the upstream proxy server, use this option to disable
-          gzipping of library .tar.gz and .zip archives, since the proxy server will do
-          it faster on the fly.
+          If using the mod-zip module in nginx, use this option to assemble
+          zip archives in nginx. Requires setting up internal nginx locations
+          to all paths that can be archived.
+          See https://docs.galaxyproject.org/en/master/admin/nginx.html#creating-archives-with-mod-zip
+          for details.
 
       x_frame_options:
         type: str

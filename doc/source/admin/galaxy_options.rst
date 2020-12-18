@@ -1734,6 +1734,16 @@
 :Type: str
 
 
+~~~~~~~~~~~~~
+``quota_url``
+~~~~~~~~~~~~~
+
+:Description:
+    The URL linked for quota information in the UI.
+:Default: ``https://galaxyproject.org/support/account-quotas/``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~
 ``support_url``
 ~~~~~~~~~~~~~~~
@@ -1950,14 +1960,16 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~
-``upstream_gzip``
-~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
+``upstream_zip``
+~~~~~~~~~~~~~~~~
 
 :Description:
-    If using compression in the upstream proxy server, use this option
-    to disable gzipping of library .tar.gz and .zip archives, since
-    the proxy server will do it faster on the fly.
+    If using the mod-zip module in nginx, use this option to assemble
+    zip archives in nginx. Requires setting up internal nginx
+    locations to all paths that can be archived. See
+    https://docs.galaxyproject.org/en/master/admin/nginx.html#creating-archives-with-mod-zip
+    for details.
 :Default: ``false``
 :Type: bool
 

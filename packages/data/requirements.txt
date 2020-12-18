@@ -14,4 +14,3 @@ SQLAlchemy
 sqlalchemy-migrate
 sqlalchemy-utils
 WebOb
-zipstream-new

@@ -9,7 +9,6 @@ from collections import OrderedDict
 from inspect import isclass
 
 import webob.exc
-import zipstream
 from markupsafe import escape
 
 from galaxy import util
@@ -24,6 +23,7 @@ from galaxy.util import (
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.util.zipstream import ZipstreamWrapper
 from . import (
     dataproviders,
     metadata
@@ -275,7 +275,7 @@ class Data(metaclass=DataMeta):
         # save a composite object into a compressed archive for downloading
         outfname = data.name[0:150]
         outfname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in outfname)
-        archive = zipstream.ZipFile(allowZip64=True, compression=zipstream.ZIP_STORED)
+        archive = ZipstreamWrapper(upstream_zip=trans.app.config.upstream_zip, archive_name=outfname)
         error = False
         msg = ''
         ext = data.extension
@@ -299,9 +299,8 @@ class Data(metaclass=DataMeta):
                     msg = "Unable to create archive for download, please report this error"
                     continue
         if not error:
-            trans.response.set_content_type("application/zip")
-            trans.response.headers["Content-Disposition"] = 'attachment; filename="%s.zip"' % outfname
-            return iter(archive)
+            trans.response.headers.update(archive.get_headers())
+            return archive.response()
         return trans.show_error_message(msg)
 
     def __archive_extra_files_path(self, extra_files_path):
@@ -313,7 +312,7 @@ class Data(metaclass=DataMeta):
                 yield fpath, rpath
 
     def _serve_raw(self, trans, dataset, to_ext, **kwd):
-        trans.response.headers['Content-Length'] = int(os.stat(dataset.file_name).st_size)
+        trans.response.headers['Content-Length'] = str(os.stat(dataset.file_name).st_size)
         trans.response.set_content_type("application/octet-stream")  # force octet-stream so Safari doesn't append mime extensions to filename
         filename = self._download_filename(dataset, to_ext, hdca=kwd.get("hdca"), element_identifier=kwd.get("element_identifier"))
         trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename
@@ -404,7 +403,7 @@ class Data(metaclass=DataMeta):
             if data.extension in composite_extensions:
                 return self._archive_composite_dataset(trans, data, do_action=kwd.get('do_action', 'zip'))
             else:
-                trans.response.headers['Content-Length'] = int(os.stat(data.file_name).st_size)
+                trans.response.headers['Content-Length'] = str(os.stat(data.file_name).st_size)
                 filename = self._download_filename(data, to_ext, hdca=kwd.get("hdca"), element_identifier=kwd.get("element_identifier"))
                 trans.response.set_content_type("application/octet-stream")  # force octet-stream so Safari doesn't append mime extensions to filename
                 trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename

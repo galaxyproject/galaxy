@@ -928,6 +928,9 @@ galaxy:
   # The URL linked by the "Wiki" link in the "Help" menu.
   #wiki_url: https://galaxyproject.org/
 
+  # The URL linked for quota information in the UI.
+  #quota_url: https://galaxyproject.org/support/account-quotas/
+
   # The URL linked by the "Support" link in the "Help" menu.
   #support_url: https://galaxyproject.org/support/
 
@@ -1017,10 +1020,12 @@ galaxy:
   # files (see documentation linked above).
   #nginx_x_accel_redirect_base: null
 
-  # If using compression in the upstream proxy server, use this option
-  # to disable gzipping of library .tar.gz and .zip archives, since the
-  # proxy server will do it faster on the fly.
-  #upstream_gzip: false
+  # If using the mod-zip module in nginx, use this option to assemble
+  # zip archives in nginx. Requires setting up internal nginx locations
+  # to all paths that can be archived. See
+  # https://docs.galaxyproject.org/en/master/admin/nginx.html#creating-archives-with-mod-zip
+  # for details.
+  #upstream_zip: false
 
   # The following default adds a header to web request responses that
   # will cause modern web browsers to not allow Galaxy to be embedded in

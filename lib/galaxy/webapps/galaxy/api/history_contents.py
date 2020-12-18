@@ -5,8 +5,6 @@ import logging
 import os
 import re
 
-import zipstream
-
 from galaxy import (
     exceptions,
     util
@@ -24,6 +22,7 @@ from galaxy.managers.collections_util import (
 )
 from galaxy.managers.jobs import fetch_job_states, summarize_jobs_to_dict
 from galaxy.util.json import safe_dumps
+from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.web import (
     expose_api,
     expose_api_anonymous,
@@ -297,10 +296,9 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             return {'error': util.unicodify(e)}
 
     def __stream_dataset_collection(self, trans, dataset_collection_instance):
-        trans.response.set_content_type("application/zip")
-        archive_name, archive = hdcas.stream_dataset_collection(dataset_collection_instance=dataset_collection_instance)
-        trans.response.headers["Content-Disposition"] = f'attachment; filename="{archive_name}"'
-        return iter(archive)
+        archive = hdcas.stream_dataset_collection(dataset_collection_instance=dataset_collection_instance, upstream_zip=trans.app.config.upstream_zip)
+        trans.response.headers.update(archive.get_headers())
+        return archive.response()
 
     @expose_api_anonymous
     def create(self, trans, history_id, payload, **kwd):
@@ -1021,16 +1019,13 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             return safe_dumps(paths_and_files)
 
         # create the archive, add the dataset files, then stream the archive as a download
-        archive_ext = 'zip'
-        archive = zipstream.ZipFile(allowZip64=True, compression=zipstream.ZIP_STORED)
+        archive = ZipstreamWrapper(upstream_zip=self.app.config.upstream_zip, archive_name=archive_base_name)
 
         for file_path, archive_path in paths_and_files:
             archive.write(file_path, archive_path)
 
-        archive_name = '.'.join((archive_base_name, archive_ext))
-        trans.response.set_content_type("application/zip")
-        trans.response.headers["Content-Disposition"] = f'attachment; filename="{archive_name}"'
-        return iter(archive)
+        trans.response.headers.update(archive.get_headers())
+        return archive.response()
 
     @expose_api_anonymous
     def contents_near(self, trans, history_id, hid, limit, **kwd):
