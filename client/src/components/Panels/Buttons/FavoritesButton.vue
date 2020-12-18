@@ -34,7 +34,8 @@ export default {
     data() {
         return {
             searchKey: "#favorites",
-            tooltipText: "Show favorites",
+            tooltipToggle: "Show favorites",
+            tooltipUntoggle: "Clear",
             toggle: false,
         };
     },
@@ -44,6 +45,15 @@ export default {
     watch: {
         query() {
             this.toggle = this.query == this.searchKey;
+        },
+    },
+    computed: {
+        tooltipText() {
+            if (this.toggle) {
+                return this.tooltipUntoggle;
+            } else {
+                return this.tooltipToggle;
+            }
         },
     },
     methods: {
