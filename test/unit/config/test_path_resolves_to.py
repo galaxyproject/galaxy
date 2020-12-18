@@ -209,6 +209,15 @@ def test_kwargs_listify(mock_init, monkeypatch):
     assert config.path4 == ['my-config/new1', 'my-config/new2']
 
 
+def test_kwargs_as_list_listify(mock_init, monkeypatch):
+    # Expected: use values from kwargs; each value resolved and listified
+    new_path4 = ['new1', 'new2']
+    config = BaseAppConfiguration(path4=new_path4)
+
+    assert config._raw_config['path4'] == ['new1', 'new2']
+    assert config.path4 == ['my-config/new1', 'my-config/new2']
+
+
 @pytest.fixture
 def mock_check_against_root(mock_init, monkeypatch):
 

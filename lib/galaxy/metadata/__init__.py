@@ -373,11 +373,9 @@ class JobExternalOutputMetadataWrapper(MetadataCollectionStrategy):
         assert not use_bin
         if include_command:
             # return command required to build
-            fd, fp = tempfile.mkstemp(suffix='.py', dir=tmp_dir, prefix="set_metadata_")
-            metadata_script_file = abspath(fp)
-            with os.fdopen(fd, 'w') as f:
-                f.write(SET_METADATA_SCRIPT)
-            return 'python "{}" {}'.format(metadata_path_on_compute(metadata_script_file), args)
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.py', dir=tmp_dir, prefix="set_metadata_", delete=False) as temp:
+                temp.write(SET_METADATA_SCRIPT)
+            return 'python "{}" {}'.format(metadata_path_on_compute(temp.name), args)
         else:
             # return args to galaxy_ext.metadata.set_metadata required to build
             return args

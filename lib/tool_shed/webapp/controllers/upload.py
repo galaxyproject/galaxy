@@ -79,13 +79,12 @@ class UploadController(BaseUIController):
                     status = 'error'
                     uploaded_file = None
                 if valid_url:
-                    fd, uploaded_file_name = tempfile.mkstemp()
-                    os.close(fd)
-                    uploaded_file = open(uploaded_file_name, 'wb')
-                    for chunk in stream.iter_content(chunk_size=util.CHUNK_SIZE):
-                        if chunk:
-                            uploaded_file.write(chunk)
-                    uploaded_file.flush()
+                    with tempfile.NamedTemporaryFile(mode='wb', delete=False) as uploaded_file:
+                        uploaded_file_name = uploaded_file.name
+                        for chunk in stream.iter_content(chunk_size=util.CHUNK_SIZE):
+                            if chunk:
+                                uploaded_file.write(chunk)
+                        uploaded_file.flush()
                     uploaded_file_filename = url.split('/')[-1]
                     isempty = os.path.getsize(os.path.abspath(uploaded_file_name)) == 0
             elif file_data not in ('', None):

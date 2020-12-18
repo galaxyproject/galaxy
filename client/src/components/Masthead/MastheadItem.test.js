@@ -1,15 +1,15 @@
+import { shallowMount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 import MastheadItem from "./MastheadItem.vue";
-import { mount, createLocalVue } from "@vue/test-utils";
-import { getNewAttachNode } from "jest/helpers";
 
-describe("Masthead.vue", () => {
+describe("MastheadItem.vue", () => {
     let wrapper;
     let localVue;
     let active;
     let menu;
 
     beforeEach(() => {
-        localVue = createLocalVue();
+        localVue = getLocalVue();
     });
 
     function m() {
@@ -18,13 +18,12 @@ describe("Masthead.vue", () => {
             menu: menu,
         };
 
-        return mount(MastheadItem, {
+        return shallowMount(MastheadItem, {
             propsData: {
                 tab,
                 activeTab: active,
             },
             localVue,
-            attachTo: getNewAttachNode(),
         });
     }
 

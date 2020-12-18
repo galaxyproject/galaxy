@@ -3041,11 +3041,6 @@ babel-plugin-jest-hoist@^26.2.0:
     "@types/babel__core" "^7.0.0"
     "@types/babel__traverse" "^7.0.6"
 
-babel-plugin-rewire@^1.2.0:
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/babel-plugin-rewire/-/babel-plugin-rewire-1.2.0.tgz#822562d72ed2c84e47c0f95ee232c920853e9d89"
-  integrity sha512-JBZxczHw3tScS+djy6JPLMjblchGhLI89ep15H3SyjujIzlxo5nr6Yjo7AXotdeVczeBmWs0tF8PgJWDdgzAkQ==
-
 babel-plugin-transform-es2015-modules-commonjs@^6.26.0:
   version "6.26.2"
   resolved "https://registry.yarnpkg.com/babel-plugin-transform-es2015-modules-commonjs/-/babel-plugin-transform-es2015-modules-commonjs-6.26.2.tgz#58a793863a9e7ca870bdc5a881117ffac27db6f3"
@@ -3748,30 +3743,10 @@ caniuse-api@^3.0.0:
     lodash.memoize "^4.1.2"
     lodash.uniq "^4.5.0"
 
-caniuse-lite@^1.0.0, caniuse-lite@^1.0.30000890:
-  version "1.0.30000893"
-  resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30000893.tgz#284b20932bd41b93e21626975f2050cb01561986"
-  integrity sha512-kOddHcTEef+NgN/fs0zmX2brHTNATVOWMEIhlZHCuwQRtXobjSw9pAECc44Op4bTBcavRjkLaPrGomknH7+Jvg==
-
-caniuse-lite@^1.0.30000929:
-  version "1.0.30000953"
-  resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30000953.tgz#8054c4e5c4aa69dc3269353a4a5e102909759dbb"
-  integrity sha512-2stdF/q5MZTDhQ6uC65HWbSgI9UMKbc7+HKvlwH5JBIslKoD/J9dvabP4J4Uiifu3NljbHj3iMpfYflLSNt09A==
-
-caniuse-lite@^1.0.30000989, caniuse-lite@^1.0.30001061:
-  version "1.0.30001062"
-  resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001062.tgz#d814b648338504b315222ace6f1a533d9a55e390"
-  integrity sha512-ei9ZqeOnN7edDrb24QfJ0OZicpEbsWxv7WusOiQGz/f2SfvBgHHbOEwBJ8HKGVSyx8Z6ndPjxzR6m0NQq+0bfw==
-
-caniuse-lite@^1.0.30001022:
-  version "1.0.30001022"
-  resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001022.tgz#9eeffe580c3a8f110b7b1742dcf06a395885e4c6"
-  integrity sha512-FjwPPtt/I07KyLPkBQ0g7/XuZg6oUkYBVnPHNj3VHJbOjmmJ/GdSo/GUY6MwINEQvjhP6WZVbX8Tvms8xh0D5A==
-
-caniuse-lite@^1.0.30001043:
-  version "1.0.30001053"
-  resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001053.tgz#b7ae027567ce2665b965b0437e4512b296ccd20d"
-  integrity sha512-HtV4wwIZl6GA4Oznse8aR274XUOYGZnQLcf/P8vHgmlfqSNelwD+id8CyHOceqLqt9yfKmo7DUZTh1EuS9pukg==
+caniuse-lite@^1.0.0, caniuse-lite@^1.0.30000890, caniuse-lite@^1.0.30000929, caniuse-lite@^1.0.30000989, caniuse-lite@^1.0.30001022, caniuse-lite@^1.0.30001043, caniuse-lite@^1.0.30001061:
+  version "1.0.30001168"
+  resolved "https://registry.npmjs.org/caniuse-lite/-/caniuse-lite-1.0.30001168.tgz"
+  integrity sha512-P2zmX7swIXKu+GMMR01TWa4csIKELTNnZKc+f1CjebmZJQtTAEXmpQSoKVJVVcvPGAA0TEYTOUp3VehavZSFPQ==
 
 capture-exit@^2.0.0:
   version "2.0.0"

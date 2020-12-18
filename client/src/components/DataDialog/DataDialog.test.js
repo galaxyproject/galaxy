@@ -4,7 +4,6 @@ import { Model } from "./model";
 import { UrlTracker } from "./utilities";
 import { Services } from "./services";
 import { shallowMount, createLocalVue } from "@vue/test-utils";
-import { getNewAttachNode } from "jest/helpers";
 
 jest.mock("app");
 
@@ -132,7 +131,6 @@ describe("DataDialog.vue", () => {
         const localVue = createLocalVue();
         wrapper = shallowMount(DataDialog, {
             propsData: mockOptions,
-            attachTo: getNewAttachNode(),
             localVue,
         });
         expect(wrapper.findComponent(SelectionDialog).exists()).toBe(true);
@@ -145,7 +143,7 @@ describe("DataDialog.vue", () => {
 
         // expect(wrapper.find(".fa-spinner").text()).to.equals("");
         // expect(wrapper.contains(".fa-spinner")).to.equals(true);
-        // await Vue.nextTick();
+        // await wrapper.vm.$nextTick();
         // expect(wrapper.findAll(".fa-folder").length).to.equals(2);
         // expect(wrapper.findAll(".fa-file-o").length).to.equals(2);
 

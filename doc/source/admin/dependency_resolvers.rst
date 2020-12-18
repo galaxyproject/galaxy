@@ -200,7 +200,7 @@ Conda Dependency Resolver
 
 The ``conda`` directive can be used to configure a conda dependency resolver.
 This resolver can be configured with the following options. For a very detailed
-discussion of Conda dependency resolution, check out the :ref:`Conda FAQ <conda_faq>`.
+discussion of Conda dependency resolution, check out the :doc:`Conda FAQ <conda_faq>`.
 
 prefix
     The conda_prefix used to locate dependencies in (default: ``<tool_dependency_dir>/_conda``).

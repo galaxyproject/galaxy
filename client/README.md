@@ -115,8 +115,7 @@ framework.
 For testing Vue components, we use the [Vue testing
 utils](https://vue-test-utils.vuejs.org/) to mount individual components in a
 test bed and check them for rendered features.  Please use jest-based mocking
-for isolating test functionality.  Some tests exist using Rewire, but those
-should be updated over time.
+for isolating test functionality.
 
 A set of older qUnit tests also exist which will be phased-out as the code they
 support is replaced with modern component-based implementations. In the

@@ -8,11 +8,9 @@ import os
 import random
 import re
 import sys
-import tempfile
 from contextlib import contextmanager
 from json import loads
 
-import packaging.version
 import pysam
 from bx.bbi.bigbed_file import BigBedFile
 from bx.bbi.bigwig_file import BigWigFile
@@ -30,7 +28,6 @@ from galaxy.visualization.data_providers.cigar import get_ref_based_read_seq_and
 # pysam 0.16.0.1 emits logs containing the word 'Error', this can confuse the stdout/stderr checkers.
 # Can be be removed once https://github.com/pysam-developers/pysam/issues/939 is resolved.
 pysam.set_verbosity(0)
-PYSAM_INDEX_SYMLINK_NECESSARY = packaging.version.parse(pysam.__version__) <= packaging.version.parse('0.13.0')
 
 
 def float_nan(n):
@@ -327,17 +324,9 @@ class TabixDataProvider(GenomeDataProvider, FilterableMixin):
     def open_data_file(self):
         # We create a symlink to the index file. This is
         # required until https://github.com/pysam-developers/pysam/pull/586 is merged.
-        if PYSAM_INDEX_SYMLINK_NECESSARY:
-            fd, index_path = tempfile.mkstemp(suffix='.tbi')
-            os.close(fd)
-            os.unlink(index_path)
-            os.symlink(self.converted_dataset.file_name, index_path)
-        else:
-            index_path = self.converted_dataset.file_name
+        index_path = self.converted_dataset.file_name
         with pysam.TabixFile(self.dependencies['bgzip'].file_name, index=index_path) as f:
             yield f
-        if PYSAM_INDEX_SYMLINK_NECESSARY:
-            os.unlink(index_path)
 
     def get_iterator(self, data_file, chrom, start, end, **kwargs):
         # chrom must be a string, start/end integers.

@@ -1282,10 +1282,10 @@
 
 :Description:
     Email address to use in the 'From' field when sending emails for
-    account activations, workflow step notifications and password
-    resets. We recommend using string in the following format: Galaxy
-    Project <galaxy-no-reply@example.com> If not configured,
-    '<galaxy-no-reply@HOSTNAME>' will be used.
+    account activations, workflow step notifications, password resets,
+    and tool error reports.  We recommend using a string in the
+    following format: Galaxy Project <galaxy-no-reply@example.com>. If
+    not configured, '<galaxy-no-reply@HOSTNAME>' will be used.
 :Default: ``None``
 :Type: str
 
@@ -1731,6 +1731,16 @@
 :Description:
     The URL linked by the "Wiki" link in the "Help" menu.
 :Default: ``https://galaxyproject.org/``
+:Type: str
+
+
+~~~~~~~~~~~~~
+``quota_url``
+~~~~~~~~~~~~~
+
+:Description:
+    The URL linked for quota information in the UI.
+:Default: ``https://galaxyproject.org/support/account-quotas/``
 :Type: str
 
 
