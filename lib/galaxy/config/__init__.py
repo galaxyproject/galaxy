@@ -295,6 +295,10 @@ class BaseAppConfiguration:
                             "to suppress this warning: %s", key, resolves_to, ignore, path
                         )
                         paths[i] = path[len(ignore):]
+
+                # return list or string, depending on type of `value`
+                if isinstance(value, list):
+                    return paths
                 return ','.join(paths)
             return value
 
