@@ -4,7 +4,8 @@
 import { timer } from "rxjs";
 import { take } from "rxjs/operators";
 import { createLocalVue, shallowMount } from "@vue/test-utils";
-import _l from "utils/localization";
+import { localizationPlugin } from "components/plugins";
+
 
 // Creates a watcher on the indicated vm/prop for use in testing
 export function watchForChange({ vm, opts, propName, timeout = 1000, label = "" }) {
@@ -62,7 +63,7 @@ export function getLocalVue() {
     };
     localVue.directive("b-tooltip", mockedDirective);
     localVue.directive("b-popover", mockedDirective);
-    localVue.filter("localize", (value) => _l(value));
+    localVue.use(localizationPlugin);
     return localVue;
 }
 
