@@ -19,7 +19,7 @@ describe("ToolsView/ToolsView.vue", () => {
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
-        wrapper = mount(ToolsView, localVue);
+        wrapper = mount(ToolsView, { localVue });
         axiosMock.onGet("/api/tools?tool_help=True").reply(200, testToolsListResponse);
         axiosMock.onGet(new RegExp(`./*/citations`)).reply(200, testCitation);
         await flushPromises();
