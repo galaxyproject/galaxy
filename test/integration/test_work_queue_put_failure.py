@@ -26,10 +26,9 @@ class WorkQueuePutFailureTestCase(integration_util.IntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config, ):
         # config["jobs_directory"] = cls.jobs_directory
-        fd, path = tempfile.mkstemp(suffix='job_conf.yml')
-        with open(path, 'w') as job_conf:
+        with tempfile.NamedTemporaryFile(mode='w', suffix='job_conf.yml', delete=False) as job_conf:
             job_conf.write(job_conf_yaml)
-        config["job_config_file"] = path
+        config["job_config_file"] = job_conf.name
         # Disable tool dependency resolution.
         config["tool_dependency_dir"] = "none"
 

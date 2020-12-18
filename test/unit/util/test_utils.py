@@ -1,5 +1,4 @@
 import errno
-import os
 import tempfile
 
 import pytest
@@ -76,9 +75,8 @@ def test_xml_to_string_pretty():
 
 
 def test_parse_xml_enoent():
-    fd, path = tempfile.mkstemp()
-    os.close(fd)
-    os.remove(path)
+    with tempfile.NamedTemporaryFile() as temp:
+        path = temp.name
     with pytest.raises(IOError) as excinfo:
         util.parse_xml(path)
     assert excinfo.value.errno == errno.ENOENT

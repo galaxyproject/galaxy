@@ -518,8 +518,8 @@ class ToolEvaluator:
                 directory = os.path.join(self.local_working_directory, "working")
                 config_filename = os.path.join(directory, filename)
             else:
-                fd, config_filename = tempfile.mkstemp(dir=directory)
-                os.close(fd)
+                with tempfile.NamedTemporaryFile(dir=directory, delete=False) as temp:
+                    config_filename = temp.name
             self.__write_workdir_file(config_filename, config_text, param_dict, is_template=is_template)
             self.__register_extra_file(name, config_filename)
             config_filenames.append(config_filename)
@@ -542,8 +542,8 @@ class ToolEvaluator:
                 is_template = False
             else:
                 is_template = True
-            fd, config_filename = tempfile.mkstemp(dir=directory)
-            os.close(fd)
+            with tempfile.NamedTemporaryFile(dir=directory, delete=False) as temp:
+                config_filename = temp.name
             self.__write_workdir_file(config_filename, environment_variable_template, param_dict, is_template=is_template, strip=environment_variable_def.get("strip", False))
             config_file_basename = os.path.basename(config_filename)
             # environment setup in job file template happens before `cd $working_directory`
@@ -571,17 +571,15 @@ class ToolEvaluator:
         directory = self.local_working_directory
         command = self.tool.command
         if self.tool.profile < 16.04 and command and "$param_file" in command:
-            fd, param_filename = tempfile.mkstemp(dir=directory)
-            os.close(fd)
-            with open(param_filename, "w") as f:
+            with tempfile.NamedTemporaryFile(mode='w', dir=directory, delete=False) as param:
                 for key, value in param_dict.items():
                     # parameters can be strings or lists of strings, coerce to list
                     if not isinstance(value, list):
                         value = [value]
                     for elem in value:
-                        f.write(f'{key}={elem}\n')
-            self.__register_extra_file('param_file', param_filename)
-            return param_filename
+                        param.write(f'{key}={elem}\n')
+            self.__register_extra_file('param_file', param.name)
+            return param.name
         else:
             return None
 
