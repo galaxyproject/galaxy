@@ -328,7 +328,8 @@ class GalaxyInteractorApi:
 
         if result is None and local_path is not None and os.path.exists(local_path):
             if mode == 'file':
-                result = open(local_path, mode='rb').read()
+                with open(local_path, mode='rb') as f:
+                    result = f.read()
             elif mode == 'directory':
                 # Make a copy, since we are going to clean up the returned path
                 path = tempfile.mkdtemp()
