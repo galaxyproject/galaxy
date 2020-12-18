@@ -1765,9 +1765,9 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~
-``release_url``
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~
+``release_doc_base_url``
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
     The URL linked by the "Galaxy Version" link in the "Help" menu.

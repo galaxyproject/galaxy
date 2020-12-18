@@ -21,7 +21,7 @@
             'screencasts_url'           : app.config.screencasts_url,
             'wiki_url'                  : app.config.wiki_url,
             'citation_url'              : app.config.citation_url,
-            'release_url'               : app.config.release_url,
+            'release_doc_base_url'      : app.config.release_doc_base_url,
             'terms_url'                 : app.config.terms_url or '',
             'allow_user_creation'       : app.config.allow_user_creation,
             'logo_url'                  : h.url_for(app.config.logo_url),
