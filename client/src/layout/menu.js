@@ -193,7 +193,7 @@ export function fetchMenu(options = {}) {
             },
             {
                 title: _l("Galaxy Version: " + Galaxy.config.version_major),
-                url: options.release_url + Galaxy.config.version_major + "_announce.html",
+                url: options.release_url + Galaxy.config.version_major + "_announce_user.html",
                 target: "_blank",
             },
         ],
