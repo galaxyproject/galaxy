@@ -424,6 +424,8 @@ class WorkflowStepExecutionTracker(ExecutionTracker):
     def record_success(self, execution_slice, job, outputs):
         super().record_success(execution_slice, job, outputs)
         if not self.collection_info:
+            for output_name, output in outputs:
+                self.invocation_step.add_output(output_name, output)
             self.invocation_step.job = job
 
     def new_collection_execution_slices(self):
@@ -447,6 +449,8 @@ class WorkflowStepExecutionTracker(ExecutionTracker):
         history = history or self.tool.get_default_history_by_trans(self.trans)
         if self.invocation_step.is_new:
             self.precreate_output_collections(history, params)
+            for output_name, implicit_collection in self.implicit_collections.items():
+                self.invocation_step.add_output(output_name, implicit_collection)
         else:
             collections = {}
             for output_assoc in self.invocation_step.output_dataset_collections:
