@@ -345,8 +345,9 @@ def populate_state(request_context, inputs, incoming, state, errors=None, contex
                         new_state = {}
                         group_state.append(new_state)
                         new_errors = {}
-                        errors[input.name] = new_errors
                         populate_state(request_context, input.inputs, rep, new_state, new_errors, context=context, check=check, simple_errors=simple_errors, input_format=input_format)
+                        if new_errors:
+                            errors[input.name] = new_errors
 
             elif input.type == 'conditional':
                 test_param_value = incoming.get(input.name, {}).get(input.test_param.name)
@@ -358,8 +359,9 @@ def populate_state(request_context, inputs, incoming, state, errors=None, contex
                         current_case = input.get_current_case(value)
                         group_state = state[input.name] = {}
                         new_errors = {}
-                        errors[input.name] = new_errors
                         populate_state(request_context, input.cases[current_case].inputs, incoming.get(input.name), group_state, new_errors, context=context, check=check, simple_errors=simple_errors, input_format=input_format)
+                        if new_errors:
+                            errors[input.name] = new_errors
                         group_state['__current_case__'] = current_case
                     except Exception:
                         errors[input.test_param.name] = 'The selected case is unavailable/invalid.'
@@ -367,8 +369,9 @@ def populate_state(request_context, inputs, incoming, state, errors=None, contex
 
             elif input.type == 'section':
                 new_errors = {}
-                errors[input.name] = new_errors
                 populate_state(request_context, input.inputs, incoming.get(input.name), group_state, new_errors, context=context, check=check, simple_errors=simple_errors, input_format=input_format)
+                if new_errors:
+                    errors[input.name] = new_errors
 
             elif input.type == 'upload_dataset':
                 raise NotImplementedError
