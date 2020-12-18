@@ -1199,15 +1199,20 @@ class NavigatesGalaxy(HasDriver):
     def click_history_options(self):
         self.components.history_panel.options_button_icon.wait_for_and_click()
 
-    def click_history_option(self, option_label):
+    def click_history_option(self, option_label_or_component):
         # Open menu
         self.click_history_options()
 
-        # Click labelled option
-        self.wait_for_visible(self.navigation.history_panel.options_menu)
-        menu_item_sizzle_selector = f"#history-options-button-menu > a:contains('{option_label}')"
-        menu_selection_element = self.wait_for_sizzle_selector_clickable(menu_item_sizzle_selector)
-        menu_selection_element.click()
+        if isinstance(option_label_or_component, str):
+            option_label = option_label_or_component
+            # Click labelled option
+            self.wait_for_visible(self.navigation.history_panel.options_menu)
+            menu_item_sizzle_selector = f"#history-options-button-menu > a:contains('{option_label}')"
+            menu_selection_element = self.wait_for_sizzle_selector_clickable(menu_item_sizzle_selector)
+            menu_selection_element.click()
+        else:
+            option_component = option_label_or_component
+            option_component.wait_for_and_click()
 
     def history_click_create_new(self):
         self.components.history_panel.new_history_button.wait_for_and_click()
