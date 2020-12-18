@@ -355,10 +355,10 @@ galaxy:
 
 ### Creating archives with mod-zip
 
-Galaxy creates zip archives when downloading mulitple datasets from a history or a dataset library.
+Galaxy creates zip archives when downloading multiple datasets from a history or a dataset library.
 While this works fine for small datasets and few users, nginx can handle the creation of zip archives
 more efficiently using [mod-zip](https://www.nginx.com/resources/wiki/modules/zip/).
-To use this feature install nginx with mod-zip enabled and provide the file locations from which
+To use this feature, install nginx with mod-zip enabled, provide the file locations from which
 nginx should serve files and edit `galaxy.yml` and make the following changes before restarting Galaxy:
 
 ```yaml
@@ -390,7 +390,7 @@ http {
 
 The `internal;` statement means that the location can only be used for internal nginx requests.
 For external requests, the client error 404 (Not Found) is returned, meaning users cannot
-access arbitrary datasets in /galaxy_root/database/files/.
+access arbitrary datasets in `/galaxy_root/database/files/` .
 
 Note that if you allow linking datasets from filesystem locations in your data libraries,
 these paths need to exposed in the same way.
