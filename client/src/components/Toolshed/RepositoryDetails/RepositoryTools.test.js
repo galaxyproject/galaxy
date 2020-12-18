@@ -1,4 +1,3 @@
-import Vue from "vue";
 import { mount } from "@vue/test-utils";
 import RepositoryTools from "./RepositoryTools";
 
@@ -57,7 +56,7 @@ describe("RepositoryTools", () => {
         expect($third.find("td:last-child").text()).toBe("");
         const $link = wrapper.find("a");
         $link.trigger("click");
-        await Vue.nextTick();
+        await wrapper.vm.$nextTick();
 
         const $elExpanded = wrapper.findAll("tr");
         expect($elExpanded.length).toBe(4);
@@ -69,7 +68,7 @@ describe("RepositoryTools", () => {
         expect($forthExpanded.find("td:last-child").text()).toBe("");
         const $linkExpanded = wrapper.find("a");
         $linkExpanded.trigger("click");
-        await Vue.nextTick();
+        await wrapper.vm.$nextTick();
 
         const $elCollapsed = wrapper.findAll("tr");
         expect($elCollapsed.length).toBe(3);

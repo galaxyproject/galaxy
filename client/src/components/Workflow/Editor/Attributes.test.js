@@ -1,20 +1,22 @@
-import Vue from "vue";
-import { mount } from "@vue/test-utils";
+import { mount, createLocalVue } from "@vue/test-utils";
 import Attributes from "./Attributes";
-import { __RewireAPI__ as rewire } from "./Attributes";
+
+jest.mock("app");
+
+import { Services } from "../services";
+jest.mock("../services");
+
+Services.mockImplementation(() => {
+    return {
+        async updateWorkflow() {
+            return {};
+        },
+    };
+});
 
 describe("Attributes", () => {
-    beforeEach(() => {
-        rewire.__Rewire__(
-            "Services",
-            class {
-                async updateWorkflow() {
-                    return {};
-                }
-            }
-        );
-    });
     it("test attributes", async () => {
+        const localVue = createLocalVue();
         const wrapper = mount(Attributes, {
             propsData: {
                 id: "workflow_id",
@@ -26,11 +28,12 @@ describe("Attributes", () => {
             stubs: {
                 LicenseSelector: true,
             },
+            localVue,
         });
         const name = wrapper.find("#workflow-name");
         expect(name.element.value).toBe("workflow_name");
         wrapper.setProps({ name: "new_workflow_name" });
-        await Vue.nextTick();
+        await localVue.nextTick();
         expect(name.element.value).toBe("new_workflow_name");
         const parameters = wrapper.findAll(".list-group-item");
         expect(parameters.length).toBe(2);
