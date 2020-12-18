@@ -256,7 +256,7 @@ export default {
         },
 
         showToolHelp(job_id) {
-            this.emit("toggleToolHelp", job_id);
+            this.eventHub.$emit("toggleToolHelp", job_id);
         },
 
         onDeleteClick() {
