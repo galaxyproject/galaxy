@@ -1284,7 +1284,7 @@ mapping:
 
       release_doc_base_url:
         type: str
-        default: https://docs.galaxyproject.org/en/master/releases/
+        default: https://docs.galaxyproject.org/en/release_
         required: false
         desc: |
           The URL linked by the "Galaxy Version" link in the "Help" menu.

@@ -1771,7 +1771,7 @@
 
 :Description:
     The URL linked by the "Galaxy Version" link in the "Help" menu.
-:Default: ``https://docs.galaxyproject.org/en/master/releases/``
+:Default: ``https://docs.galaxyproject.org/en/release_``
 :Type: str
 
 

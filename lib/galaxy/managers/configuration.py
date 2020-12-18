@@ -87,6 +87,7 @@ class ConfigSerializer(base.ModelSerializer):
             'chunk_upload_size'                 : _use_config,
             'ftp_upload_site'                   : _use_config,
             'version_major'                     : _defaults_to(None),
+            'version_minor'                     : _defaults_to(None),
             'require_login'                     : _use_config,
             'inactivity_box_content'            : _use_config,
             'visualizations_visible'            : _use_config,
