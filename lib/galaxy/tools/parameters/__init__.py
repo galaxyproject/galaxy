@@ -344,7 +344,9 @@ def populate_state(request_context, inputs, incoming, state, errors=None, contex
                     for rep_index, rep in enumerate(incoming[input.name]):
                         new_state = {}
                         group_state.append(new_state)
-                        populate_state(request_context, input.inputs, rep, new_state, errors, context=context, check=check, simple_errors=simple_errors, input_format=input_format)
+                        new_errors = {}
+                        errors[input.name] = new_errors
+                        populate_state(request_context, input.inputs, rep, new_state, new_errors, context=context, check=check, simple_errors=simple_errors, input_format=input_format)
 
             elif input.type == 'conditional':
                 test_param_value = incoming.get(input.name, {}).get(input.test_param.name)
@@ -355,14 +357,18 @@ def populate_state(request_context, inputs, incoming, state, errors=None, contex
                     try:
                         current_case = input.get_current_case(value)
                         group_state = state[input.name] = {}
-                        populate_state(request_context, input.cases[current_case].inputs, incoming.get(input.name), group_state, errors, context=context, check=check, simple_errors=simple_errors, input_format=input_format)
+                        new_errors = {}
+                        errors[input.name] = new_errors
+                        populate_state(request_context, input.cases[current_case].inputs, incoming.get(input.name), group_state, new_errors, context=context, check=check, simple_errors=simple_errors, input_format=input_format)
                         group_state['__current_case__'] = current_case
                     except Exception:
                         errors[input.test_param.name] = 'The selected case is unavailable/invalid.'
                 group_state[input.test_param.name] = value
 
             elif input.type == 'section':
-                populate_state(request_context, input.inputs, incoming.get(input.name), group_state, errors, context=context, check=check, simple_errors=simple_errors, input_format=input_format)
+                new_errors = {}
+                errors[input.name] = new_errors
+                populate_state(request_context, input.inputs, incoming.get(input.name), group_state, new_errors, context=context, check=check, simple_errors=simple_errors, input_format=input_format)
 
             elif input.type == 'upload_dataset':
                 raise NotImplementedError
