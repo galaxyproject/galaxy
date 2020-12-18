@@ -104,7 +104,7 @@ class GalaxyInteractorApi:
         self.download_attempts = kwds.get("download_attempts", 1)
         self.download_sleep = kwds.get("download_sleep", 1)
         # Local test data directories.
-        self.test_data_directories = kwds.get("test_data", [])
+        self.test_data_directories = kwds.get("test_data") or []
 
         self._target_galaxy_version = None
 
@@ -326,9 +326,9 @@ class GalaxyInteractorApi:
                 if os.path.exists(local_path):
                     break
 
-        if result is None and os.path.exists(local_path):
+        if result is None and local_path is not None and os.path.exists(local_path):
             if mode == 'file':
-                result = open(local_path, mode='rb')
+                result = open(local_path, mode='rb').read()
             elif mode == 'directory':
                 # Make a copy, since we are going to clean up the returned path
                 path = tempfile.mkdtemp()
