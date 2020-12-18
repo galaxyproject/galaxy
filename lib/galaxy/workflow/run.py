@@ -426,6 +426,15 @@ class WorkflowProgress:
             outputs[invocation_step.output_value.workflow_output.output_name] = invocation_step.output_value.value
         self.outputs[step.id] = outputs
         if not already_persisted:
+            for output_name, output_object in outputs.items():
+                if hasattr(output_object, "history_content_type"):
+                    invocation_step.add_output(output_name, output_object)
+                else:
+                    # This is a problem, this non-data, non-collection output
+                    # won't be recovered on a subsequent workflow scheduling
+                    # iteration. This seems to have been a pre-existing problem
+                    # prior to #4584 though.
+                    pass
             for workflow_output in step.workflow_outputs:
                 output_name = workflow_output.output_name
                 if output_name not in outputs:
