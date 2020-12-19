@@ -279,23 +279,8 @@ class DefaultToolAction:
                         preserved_tags[tag.value] = tag
         return history, inp_data, inp_dataset_collections, preserved_tags, all_permissions
 
-    def execute(self, tool, trans, incoming=None, return_job=False, set_output_hid=True, history=None, job_params=None, rerun_remap_job_id=None, execution_cache=None, dataset_collection_elements=None, completed_job=None, collection_info=None, flush_job=True):
-        """
-        Executes a tool, creating job and tool outputs, associating them, and
-        submitting the job to the job queue. If history is not specified, use
-        trans.history as destination for tool's output datasets.
-        """
-        trans.check_user_activation()
-        incoming = incoming or {}
-        self._check_access(tool, trans)
-        app = trans.app
-        if execution_cache is None:
-            execution_cache = ToolExecutionCache(trans)
-        current_user_roles = execution_cache.current_user_roles
-        history, inp_data, inp_dataset_collections, preserved_tags, all_permissions = self._collect_inputs(tool, trans, incoming, history, current_user_roles, collection_info)
-        # Build name for output datasets based on tool name and input names
-        on_text = self._get_on_text(inp_data)
-
+    def _legacy_inject_incoming(incoming, tool, inp_data, app, completed_job,
+                                execution_cache):
         # format='input" previously would give you a random extension from
         # the input extensions, now it should just give "input" as the output
         # format.
@@ -328,6 +313,39 @@ class DefaultToolAction:
             inp_data.update({"chromInfo": db_dataset})
         incoming["chromInfo"] = chrom_info
 
+        # Add the dbkey to the incoming parameters
+        incoming["dbkey"] = input_dbkey
+        incoming["__input_ext"] = input_ext
+
+    def execute(self, tool, trans, incoming=None, return_job=False, set_output_hid=True, history=None, job_params=None, rerun_remap_job_id=None, execution_cache=None, dataset_collection_elements=None, completed_job=None, collection_info=None, flush_job=True):
+        """
+        Executes a tool, creating job and tool outputs, associating them, and
+        submitting the job to the job queue. If history is not specified, use
+        trans.history as destination for tool's output datasets.
+        """
+        trans.check_user_activation()
+        incoming = incoming or {}
+        self._check_access(tool, trans)
+        app = trans.app
+        if execution_cache is None:
+            execution_cache = ToolExecutionCache(trans)
+        current_user_roles = execution_cache.current_user_roles
+        history, inp_data, inp_dataset_collections, preserved_tags, all_permissions = self._collect_inputs(tool, trans, incoming, history, current_user_roles, collection_info)
+        # Build name for output datasets based on tool name and input names
+        on_text = self._get_on_text(inp_data)
+
+        if tool.profile <= 21.01:
+            self._legacy_inject_incoming(incoming, tool, inp_data, app,
+                                         completed_job, execution_cache)
+        else:
+            for name, data in reversed(list(inp_data.items())):
+                if not data:
+                    continue
+                # Convert LDDA to an HDA.
+                if isinstance(data, LibraryDatasetDatasetAssociation) and not completed_job:
+                    data = data.to_history_dataset_association(None)
+                    inp_data[name] = data
+
         if not completed_job:
             # Determine output dataset permission/roles list
             if all_permissions:
@@ -336,9 +354,6 @@ class DefaultToolAction:
                 # No valid inputs, we will use history defaults
                 output_permissions = app.security_agent.history_get_default_permissions(history)
 
-        # Add the dbkey to the incoming parameters
-        incoming["dbkey"] = input_dbkey
-        incoming["__input_ext"] = input_ext
         # wrapped params are used by change_format action and by output.label; only perform this wrapping once, as needed
         wrapped_params = self._wrapped_params(trans, tool, incoming, inp_data)
 
