@@ -1,5 +1,6 @@
 import os
 
+import pytest
 from selenium.webdriver.common.keys import Keys
 
 from .framework import (
@@ -110,6 +111,8 @@ class UploadsTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.history_panel_wait_for_hid_hidden(2)
 
     @selenium_test
+    @pytest.mark.gtn_screenshot
+    @pytest.mark.local
     def test_rules_example_1_datasets(self):
         # Test case generated for:
         #   https://www.ebi.ac.uk/ena/data/view/PRJDA60709
@@ -148,6 +151,8 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         # self.screenshot("rules_example_1_6_download_complete")
 
     @selenium_test
+    @pytest.mark.gtn_screenshot
+    @pytest.mark.local
     def test_rules_example_2_list(self):
         self.perform_upload(self.get_filename("rules/PRJDA60709.tsv"))
         self.history_panel_wait_for_hid_ok(1)
@@ -173,6 +178,8 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         # self.screenshot("rules_example_2_5_download_complete")
 
     @selenium_test
+    @pytest.mark.gtn_screenshot
+    @pytest.mark.local
     def test_rules_example_3_list_pairs(self):
         self.perform_upload(self.get_filename("rules/PRJDB3920.tsv"))
         self.history_panel_wait_for_hid_ok(1)
