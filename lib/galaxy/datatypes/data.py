@@ -275,7 +275,11 @@ class Data(metaclass=DataMeta):
         # save a composite object into a compressed archive for downloading
         outfname = data.name[0:150]
         outfname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in outfname)
-        archive = ZipstreamWrapper(upstream_zip=trans.app.config.upstream_zip, archive_name=outfname)
+        archive = ZipstreamWrapper(
+            archive_name=outfname,
+            upstream_mod_zip=trans.app.config.upstream_mod_zip,
+            upstream_gzip=trans.app.config.upstream_gzip
+        )
         error = False
         msg = ''
         ext = data.extension

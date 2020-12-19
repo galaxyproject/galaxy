@@ -8,16 +8,16 @@ from .path import safe_walk
 
 class ZipstreamWrapper:
 
-    def __init__(self, upstream_zip=False, archive_name=None):
-        self.upstream_zip = upstream_zip
+    def __init__(self, archive_name=None, upstream_mod_zip=False, upstream_gzip=False):
+        self.upstream_mod_zip = upstream_mod_zip
         self.archive_name = archive_name
-        if not self.upstream_zip:
-            self.archive = zipstream.ZipFile(allowZip64=True, compression=zipstream.ZIP_DEFLATED)
+        if not self.upstream_mod_zip:
+            self.archive = zipstream.ZipFile(allowZip64=True, compression=zipstream.ZIP_STORED if upstream_gzip else zipstream.ZIP_DEFLATED)
         self.files = []
         self.size = 0
 
     def response(self):
-        if self.upstream_zip:
+        if self.upstream_mod_zip:
             yield "\n".join(self.files).encode()
         else:
             yield iter(self.archive)
@@ -26,7 +26,7 @@ class ZipstreamWrapper:
         headers = {}
         if self.archive_name:
             headers['Content-Disposition'] = f'attachment; filename="{self.archive_name}.zip"'
-        if self.upstream_zip:
+        if self.upstream_mod_zip:
             headers['X-Archive-Files'] = 'zip'
         else:
             headers['Content-Type'] = 'application/x-zip-compressed'
@@ -34,7 +34,7 @@ class ZipstreamWrapper:
 
     def add_path(self, path, archive_name):
         size = int(os.stat(path).st_size)
-        if self.upstream_zip:
+        if self.upstream_mod_zip:
             # calculating crc32 would defeat the point of using mod-zip, but if we ever calculate hashsums we should consider this
             crc32 = "-"
             line = f"{crc32} {size} {quote(path)} {archive_name}"

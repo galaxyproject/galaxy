@@ -156,8 +156,12 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
                 trans.response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
                 return open(path, mode='rb')
             elif os.path.isdir(path):
-                # Set upstream_zip to false, otherwise tool data must be among allowed internal routes
-                archive = ZipstreamWrapper(upstream_zip=False, archive_name=filename)
+                # Set upstream_mod_zip to false, otherwise tool data must be among allowed internal routes
+                archive = ZipstreamWrapper(
+                    upstream_mod_zip=False,
+                    upstream_gzip=self.app.config.upstream_gzip,
+                    archive_name=filename,
+                )
                 archive.write(path)
                 trans.response.headers.update(archive.get_headers())
                 return archive.response()

@@ -22,9 +22,13 @@ from galaxy.util.zipstream import ZipstreamWrapper
 log = logging.getLogger(__name__)
 
 
-def stream_dataset_collection(dataset_collection_instance, upstream_zip=False):
+def stream_dataset_collection(dataset_collection_instance, upstream_mod_zip=False, upstream_gzip=False):
     archive_name = f"{dataset_collection_instance.hid}: {dataset_collection_instance.name}"
-    archive = ZipstreamWrapper(upstream_zip=upstream_zip, archive_name=archive_name)
+    archive = ZipstreamWrapper(
+        archive_name=archive_name,
+        upstream_mod_zip=upstream_mod_zip,
+        upstream_gzip=upstream_gzip,
+    )
     names, hdas = get_hda_and_element_identifiers(dataset_collection_instance)
     for name, hda in zip(names, hdas):
         if hda.state != hda.states.OK:

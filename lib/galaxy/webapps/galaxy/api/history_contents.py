@@ -296,7 +296,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             return {'error': util.unicodify(e)}
 
     def __stream_dataset_collection(self, trans, dataset_collection_instance):
-        archive = hdcas.stream_dataset_collection(dataset_collection_instance=dataset_collection_instance, upstream_zip=trans.app.config.upstream_zip)
+        archive = hdcas.stream_dataset_collection(dataset_collection_instance=dataset_collection_instance, upstream_mod_zip=trans.app.config.upstream_mod_zip)
         trans.response.headers.update(archive.get_headers())
         return archive.response()
 
@@ -1019,8 +1019,11 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             return safe_dumps(paths_and_files)
 
         # create the archive, add the dataset files, then stream the archive as a download
-        archive = ZipstreamWrapper(upstream_zip=self.app.config.upstream_zip, archive_name=archive_base_name)
-
+        archive = ZipstreamWrapper(
+            archive_name=archive_base_name,
+            upstream_mod_zip=self.app.config.upstream_mod_zip,
+            upstream_gzip=self.app.config.upstream_gzip,
+        )
         for file_path, archive_path in paths_and_files:
             archive.write(file_path, archive_path)
 

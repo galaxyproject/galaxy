@@ -1960,14 +1960,30 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~
-``upstream_zip``
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
+``upstream_gzip``
+~~~~~~~~~~~~~~~~~
+
+:Description:
+    If using compression in the upstream proxy server, use this option
+    to disable gzipping of dataset collection and library archives,
+    since the upstream server will do it faster on the fly. To enable
+    compression add ``application/zip`` to the proxy's compressable
+    mimetypes.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~
+``upstream_mod_zip``
+~~~~~~~~~~~~~~~~~~~~
 
 :Description:
     If using the mod-zip module in nginx, use this option to assemble
-    zip archives in nginx. Requires setting up internal nginx
-    locations to all paths that can be archived. See
+    zip archives in nginx. This is preferable over the upstream_gzip
+    option as Galaxy does not need to serve the archive. Requires
+    setting up internal nginx locations to all paths that can be
+    archived. See
     https://docs.galaxyproject.org/en/master/admin/nginx.html#creating-archives-with-mod-zip
     for details.
 :Default: ``false``

@@ -317,7 +317,6 @@ OPTION_ACTIONS = {
     'communication_server_port': _DeprecatedAndDroppedAction(),
     'persistent_communication_rooms': _DeprecatedAndDroppedAction(),
     'legacy_eager_objectstore_initialization': _DeprecatedAndDroppedAction(),
-    'upstream_gzip': _DeprecatedAndDroppedAction(),
 }
 
 

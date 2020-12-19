@@ -583,7 +583,11 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
             raise exceptions.RequestParameterMissingException('Request has to contain a list of dataset ids or folder ids to download.')
 
         if archive_format == 'zip':
-            archive = ZipstreamWrapper(upstream_zip=self.app.config.upstream_zip, archive_name="selected_library_files")
+            archive = ZipstreamWrapper(
+                archive_name="selected_library_files",
+                upstream_mod_zip=self.app.config.upstream_mod_zip,
+                upstream_gzip=self.app.config.upstream_gzip,
+            )
             killme = string.punctuation + string.whitespace
             trantab = str.maketrans(killme, '_' * len(killme))
             seen = []
