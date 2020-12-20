@@ -5,7 +5,7 @@
             :class="['callout-terminal', output.name]"
             @click="onToggle"
             v-b-tooltip
-            title="Unchecked outputs will be hidden."
+            title="Unchecked outputs will be hidden and are not available as subworkflow outputs."
         >
             <i :class="['mark-terminal', activeClass]" />
         </div>
