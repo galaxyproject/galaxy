@@ -279,7 +279,22 @@ class DefaultToolAction:
                         preserved_tags[tag.value] = tag
         return history, inp_data, inp_dataset_collections, preserved_tags, all_permissions
 
-    def execute(self, tool, trans, incoming=None, return_job=False, set_output_hid=True, history=None, job_params=None, rerun_remap_job_id=None, execution_cache=None, dataset_collection_elements=None, completed_job=None, collection_info=None, flush_job=True):
+    def execute(self,
+                tool,
+                trans,
+                incoming=None,
+                return_job=False,
+                set_output_hid=True,
+                history=None,
+                job_params=None,
+                rerun_remap_job_id=None,
+                execution_cache=None,
+                dataset_collection_elements=None,
+                completed_job=None,
+                collection_info=None,
+                job_callback=None,
+                flush_job=True
+                ):
         """
         Executes a tool, creating job and tool outputs, associating them, and
         submitting the job to the job queue. If history is not specified, use
@@ -536,6 +551,9 @@ class DefaultToolAction:
         job, galaxy_session = self._new_job_for_session(trans, tool, history)
         self._record_inputs(trans, tool, job, incoming, inp_data, inp_dataset_collections)
         self._record_outputs(job, out_data, output_collections)
+        # execute immediate post job actions and associate post job actions that are to be executed after the job is complete
+        if job_callback:
+            job_callback(job)
         if job_params:
             job.params = dumps(job_params)
         if completed_job:

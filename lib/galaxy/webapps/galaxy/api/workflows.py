@@ -2,6 +2,7 @@
 API operations for Workflows
 """
 
+import hashlib
 import json
 import logging
 import os
@@ -1212,9 +1213,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         }
 
         bco_dict = {
-            'object_id': url_for(controller="api/invocations/%s" % invocation_id, action='invocation_export_bco', qualified=True),
-            'spec_version': spec_version,
-            'etag': str(model.uuid4().hex),
             'provenance_domain': provenance_domain,
             'usability_domain': usability_domain,
             'extension_domain': extension,
@@ -1232,6 +1230,14 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             },
             'error_domain': error_domain,
         }
+        # Generate etag from the BCO excluding object_id and spec_version, as
+        # specified in https://github.com/biocompute-objects/BCO_Specification/blob/main/docs/top-level.md#203-etag-etag
+        etag = hashlib.sha256(json.dumps(bco_dict, sort_keys=True).encode()).hexdigest()
+        bco_dict.update({
+            'object_id': url_for(controller="api/invocations/%s" % invocation_id, action='biocompute', qualified=True),
+            'spec_version': spec_version,
+            'etag': etag,
+        })
         return bco_dict
 
     @expose_api
