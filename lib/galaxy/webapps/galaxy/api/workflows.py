@@ -473,7 +473,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         style = kwd.get("style", "export")
         download_format = kwd.get('format')
         version = kwd.get('version')
-        ret_dict = self.workflow_contents_manager.workflow_to_dict(trans, stored_workflow, style=style, version=version)
+        history_id = kwd.get('history_id')
+        history = None
+        if history_id:
+            history = self.history_manager.get_accessible(self.decode_id(history_id), trans.user, current_history=trans.history)
+        ret_dict = self.workflow_contents_manager.workflow_to_dict(trans, stored_workflow, style=style, version=version, history=history)
         if download_format == 'json-download':
             sname = stored_workflow.name
             sname = ''.join(c in util.FILENAME_VALID_CHARS and c or '_' for c in sname)[0:150]

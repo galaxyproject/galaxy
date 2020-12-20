@@ -481,7 +481,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
         return workflow, missing_tool_tups
 
-    def workflow_to_dict(self, trans, stored, style="export", version=None):
+    def workflow_to_dict(self, trans, stored, style="export", version=None, history=None):
         """ Export the workflow contents to a dictionary ready for JSON-ification and to be
         sent out via API for instance. There are three styles of export allowed 'export', 'instance', and
         'editor'. The Galaxy team will do its best to preserve the backward compatibility of the
@@ -508,7 +508,7 @@ class WorkflowContentsManager(UsesAnnotations):
         elif style == "instance":
             wf_dict = self._workflow_to_dict_instance(stored, workflow=workflow, legacy=False)
         elif style == "run":
-            wf_dict = self._workflow_to_dict_run(trans, stored, workflow=workflow)
+            wf_dict = self._workflow_to_dict_run(trans, stored, workflow=workflow, history=history or trans.history)
         elif style == "preview":
             wf_dict = self._workflow_to_dict_preview(trans, workflow=workflow)
         elif style == "format2":
@@ -539,7 +539,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 wf_dict = from_galaxy_native(wf_dict, None, json_wrapper=True)
                 f.write(wf_dict["yaml_content"])
 
-    def _workflow_to_dict_run(self, trans, stored, workflow):
+    def _workflow_to_dict_run(self, trans, stored, workflow, history=None):
         """
         Builds workflow dictionary used by run workflow form
         """
@@ -583,7 +583,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 incoming = {}
                 tool = trans.app.toolbox.get_tool(step.tool_id, tool_version=step.tool_version, tool_uuid=step.tool_uuid)
                 params_to_incoming(incoming, tool.inputs, step.state.inputs, trans.app)
-                step_model = tool.to_json(trans, incoming, workflow_building_mode=workflow_building_modes.USE_HISTORY)
+                step_model = tool.to_json(trans, incoming, workflow_building_mode=workflow_building_modes.USE_HISTORY, history=history)
                 step_model['post_job_actions'] = [{
                     'short_str'         : ActionBox.get_short_str(pja),
                     'action_type'       : pja.action_type,
@@ -614,7 +614,7 @@ class WorkflowContentsManager(UsesAnnotations):
             step_models.append(step_model)
         return {
             'id': trans.app.security.encode_id(stored.id),
-            'history_id': trans.app.security.encode_id(trans.history.id) if trans.history else None,
+            'history_id': trans.app.security.encode_id(history.id) if history else None,
             'name': stored.name,
             'steps': step_models,
             'step_version_changes': step_version_changes,

@@ -2112,27 +2112,19 @@ class Tool(Dictifiable):
 
         return tool_dict
 
-    def to_json(self, trans, kwd=None, job=None, workflow_building_mode=False):
+    def to_json(self, trans, kwd=None, job=None, workflow_building_mode=False, history=None):
         """
         Recursively creates a tool dictionary containing repeats, dynamic options and updated states.
         """
         if kwd is None:
             kwd = {}
-        history_id = kwd.get('history_id', None)
-        history = None
         if workflow_building_mode is workflow_building_modes.USE_HISTORY or workflow_building_mode is workflow_building_modes.DISABLED:
             # We don't need a history when exporting a workflow for the workflow editor or when downloading a workflow
-            try:
-                if history_id is not None:
-                    history = self.history_manager.get_owned(trans.security.decode_id(history_id), trans.user, current_history=trans.history)
-                else:
-                    history = trans.get_history()
-                if history is None and job is not None:
-                    history = self.history_manager.get_owned(job.history.id, trans.user, current_history=trans.history)
-                if history is None:
-                    raise exceptions.MessageException('History unavailable. Please specify a valid history id')
-            except Exception as e:
-                raise exceptions.MessageException('[history_id={}] Failed to retrieve history. {}.'.format(history_id, unicodify(e)))
+            history = history or trans.get_history()
+            if history is None and job is not None:
+                history = self.history_manager.get_owned(job.history.id, trans.user, current_history=trans.history)
+            if history is None:
+                raise exceptions.MessageException('History unavailable. Please specify a valid history id')
 
         # build request context
         request_context = WorkRequestContext(app=trans.app, user=trans.user, history=history, workflow_building_mode=workflow_building_mode)
