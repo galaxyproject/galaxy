@@ -4412,6 +4412,30 @@ would appear as ``$options.vcf_output`` having the values ``'--vcf'`` when true 
       </data>
     </outputs>
 ```
+
+Note that variables that correspond to optional select parameters are `None` if nothing is selected. 
+Therefore a filter for such a variable looks like the following example.
+
+### Example
+
+```xml
+    <inputs>
+       <param name="output_type" type="select" optional="true">
+            <option value="save_phase">Phase Movie</option>
+            <option value="save_period">Period Movie</option>
+        </param>
+    </inputs>
+
+    <outputs>
+        <data name="phase_out" format="tiff">
+            <filter>output_type and "save_phase" in output_type</filter>
+        </data>
+        <data name="period_out" format="tiff" label="${movie.name[:-4]}_period">
+            <filter>output_type and "save_period" in output_type</filter>
+        </data>
+    </outputs>
+```
+
 ]]></xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
