@@ -698,8 +698,11 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
                    ERROR='error',
                    FAILED='failed',
                    PAUSED='paused',
+                   DELETING='deleting',
                    DELETED='deleted',
-                   DELETED_NEW='deleted_new')
+                   DELETED_NEW='deleted_new',  # now DELETING, remove after 21.09
+                   STOPPING='stop',
+                   STOPPED='stopped')
     terminal_states = [states.OK,
                        states.ERROR,
                        states.DELETED]
@@ -757,6 +760,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         return self.state in [
             states.OK,
             states.ERROR,
+            states.DELETING,
             states.DELETED,
             states.DELETED_NEW,
         ]
@@ -1009,6 +1013,18 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
                 return False
         return True
 
+    def mark_stopped(self, track_jobs_in_database=False):
+        """
+        Mark this job as stopped
+        """
+        if self.finished:
+            # Do not modify the state/outputs of jobs that are already terminal
+            return
+        if track_jobs_in_database:
+            self.state = Job.states.STOPPING
+        else:
+            self.state = Job.states.STOPPED
+
     def mark_deleted(self, track_jobs_in_database=False):
         """
         Mark this job as deleted, and mark any output datasets as discarded.
@@ -1017,7 +1033,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             # Do not modify the state/outputs of jobs that are already terminal
             return
         if track_jobs_in_database:
-            self.state = Job.states.DELETED_NEW
+            self.state = Job.states.DELETING
         else:
             self.state = Job.states.DELETED
         self.info = "Job output deleted by user before job completed."

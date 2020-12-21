@@ -165,10 +165,10 @@ class ChronosJobRunner(AsynchronousJobRunner):
         ajs.command_line = job.command_line
         ajs.job_wrapper = job_wrapper
         ajs.job_destination = job_wrapper.job_destination
-        if job.state == model.Job.states.RUNNING:
+        if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
             LOGGER.debug(msg.format(
                 name=job.id, runner=job.job_runner_external_id,
-                state='running'))
+                state=job.state))
             ajs.old_state = model.Job.states.RUNNING
             ajs.running = True
             self.monitor_queue.put(ajs)
@@ -184,6 +184,7 @@ class ChronosJobRunner(AsynchronousJobRunner):
     def check_watched_item(self, job_state):
         job_name = job_state.job_id
         job = self._retrieve_job(job_name)
+        # TODO: how can stopped GxIT jobs be handled here?
         if job:
             succeeded = job['successCount']
             errors = job['errorCount']

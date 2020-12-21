@@ -270,7 +270,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         # Delete the second output and make sure the job is cancelled.
         self._raw_update_history_item(history_id, outputs[1]["id"], {"deleted": True})
         final_state = wait_on_state(job_state, assert_ok=False, timeout=15)
-        assert final_state in ["deleted_new", "deleted"], final_state
+        assert final_state in ["deleting", "deleted"], final_state
 
     @uses_test_history(require_new=True)
     def test_purging_output_keep_running_until_all_purged(self, history_id):
@@ -305,7 +305,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         # Purge the second output and make sure the job is cancelled.
         self._raw_update_history_item(history_id, outputs[1]["id"], {"purged": True})
         final_state = wait_on_state(job_state, assert_ok=False, timeout=15)
-        assert final_state in ["deleted_new", "deleted"], final_state
+        assert final_state in ["deleting", "deleted"], final_state
 
         def paths_deleted():
             if not os.path.exists(output_dataset_paths[0]) and not os.path.exists(output_dataset_paths[1]):
