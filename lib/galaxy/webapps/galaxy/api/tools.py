@@ -118,9 +118,13 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         """
         if 'payload' in kwd:
             kwd = kwd.get('payload')
-        tool_version = kwd.get('tool_version', None)
+        tool_version = kwd.get('tool_version')
+        history_id = kwd.pop('history_id', None)
+        history = None
+        if history_id:
+            history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
         tool = self._get_tool(id, tool_version=tool_version, user=trans.user)
-        return tool.to_json(trans, kwd.get('inputs', kwd))
+        return tool.to_json(trans, kwd.get('inputs', kwd), history=history)
 
     @web.require_admin
     @expose_api

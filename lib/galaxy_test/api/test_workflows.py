@@ -195,8 +195,8 @@ class BaseWorkflowsApiTestCase(ApiTestCase):
         jobs = self._history_jobs(history_id)
         self.assertEqual(len(jobs), n)
 
-    def _download_workflow(self, workflow_id, style=None):
-        return self.workflow_populator.download_workflow(workflow_id, style=style)
+    def _download_workflow(self, workflow_id, style=None, history_id=None):
+        return self.workflow_populator.download_workflow(workflow_id, style=style, history_id=history_id)
 
     def wait_for_invocation_and_jobs(self, history_id, workflow_id, invocation_id, assert_ok=True):
         state = self.workflow_populator.wait_for_invocation(workflow_id, invocation_id)
@@ -3562,6 +3562,29 @@ steps:
 """, test_data={"input1": {"type": "File", "file_type": "fastqcssanger", "value": "1.fastqsanger"}}, history_id=history_id)
             hda2 = self.dataset_populator.get_history_dataset_details(history_id, hid=2)
             assert hda2["validated_state"] == "invalid"
+
+    def test_value_restriction_with_select_and_text_param(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  select_text:
+     type: text
+     restrictOnConnections: true
+steps:
+  select:
+    tool_id: multi_select
+    in:
+      select_ex: select_text
+  tool_with_text_input:
+    tool_id: param_text_option
+    in:
+      text_param: select_text
+""")
+        with self.dataset_populator.test_history() as history_id:
+            run_workflow = self._download_workflow(workflow_id, style='run', history_id=history_id)
+        options = run_workflow['steps'][0]['inputs'][0]['options']
+        assert len(options) == 5
+        assert options[0] == ['Ex1', '--ex1', False]
 
     @skip_without_tool("random_lines1")
     def test_run_replace_params_by_tool(self):

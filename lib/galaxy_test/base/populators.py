@@ -882,10 +882,12 @@ class BaseWorkflowPopulator:
         api_asserts.assert_status_code_is(response, 200)
         return response.json()
 
-    def download_workflow(self, workflow_id, style=None):
+    def download_workflow(self, workflow_id, style=None, history_id=None):
         params = {}
         if style is not None:
             params["style"] = style
+        if history_id is not None:
+            params['history_id'] = history_id
         response = self._get("workflows/%s/download" % workflow_id, data=params)
         api_asserts.assert_status_code_is(response, 200)
         if style != "format2":
