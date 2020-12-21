@@ -28,20 +28,28 @@
             <details
                 ><summary><b>Invocation Output Collections</b></summary>
                 <div v-for="(output, key) in invocation.output_collections" v-bind:key="output.id">
-                    <b>{{key}}:</b>
+                    <b>{{ key }}:</b>
                     <workflow-invocation-data-contents :data_item="output" />
                 </div>
             </details>
         </div>
         <div v-if="workflow">
-            <details v-if="workflow"><summary><b>Invocation Steps</b></summary>
-                <workflow-invocation-step v-for="step in Object.values(workflow.steps)" :invocation="invocation" :orderedSteps="orderedSteps" :key="step.id" :workflow="workflow" :workflowStep="step"/>
+            <details v-if="workflow"
+                ><summary><b>Invocation Steps</b></summary>
+                <workflow-invocation-step
+                    v-for="step in Object.values(workflow.steps)"
+                    :invocation="invocation"
+                    :orderedSteps="orderedSteps"
+                    :key="step.id"
+                    :workflow="workflow"
+                    :workflowStep="step"
+                />
             </details>
         </div>
     </div>
 </template>
 <script>
-import ParameterStep from './ParameterStep.vue';
+import ParameterStep from "./ParameterStep.vue";
 import WorkflowInvocationDataContents from "./WorkflowInvocationDataContents";
 import WorkflowInvocationStep from "./WorkflowInvocationStep";
 import ListMixin from "components/History/ListMixin";
@@ -66,33 +74,32 @@ export default {
             required: true,
         },
     },
-    created: function() {
+    created: function () {
         this.fetchWorkflowForInstanceId(this.invocation.workflow_id);
     },
     computed: {
         ...mapGetters(["getWorkflowByInstanceId"]),
         orderedSteps() {
-            return this.invocation.steps.sort((a, b) =>  a.order_index - b.order_index);
+            return this.invocation.steps.sort((a, b) => a.order_index - b.order_index);
         },
         workflow() {
-            return this.getWorkflowByInstanceId(this.invocation.workflow_id)
+            return this.getWorkflowByInstanceId(this.invocation.workflow_id);
         },
-
     },
     methods: {
-        ...mapCacheActions(['fetchWorkflowForInstanceId']),
+        ...mapCacheActions(["fetchWorkflowForInstanceId"]),
         dataInputStepLabel(key, input) {
-            const invocationStep = this.orderedSteps[key]
+            const invocationStep = this.orderedSteps[key];
             let label = invocationStep && invocationStep.workflow_step_label;
             if (!label) {
-                if (input.src === 'hda' || input.src === 'ldda') {
-                    label = 'Input dataset'
-                } else if (input.src === 'hdca') {
-                    label = 'Input dataset collection'
+                if (input.src === "hda" || input.src === "ldda") {
+                    label = "Input dataset";
+                } else if (input.src === "hdca") {
+                    label = "Input dataset collection";
                 }
             }
-            return label
-        }
+            return label;
+        },
     },
 };
 </script>

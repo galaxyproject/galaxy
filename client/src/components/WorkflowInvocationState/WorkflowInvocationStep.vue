@@ -16,36 +16,52 @@
                     -->
                 </div>
                 <div v-else>
-                    <details v-if="Object.values(stepDetails.outputs).length > 0"><summary><b>Step Output Datasets</b></summary>
-                       <div v-for="(value, name) in stepDetails.outputs" v-bind:key="value.id">
-                            <b>{{name}}</b>
-                            <workflow-invocation-data-contents :data_item="value"/>
+                    <details v-if="Object.values(stepDetails.outputs).length > 0"
+                        ><summary><b>Step Output Datasets</b></summary>
+                        <div v-for="(value, name) in stepDetails.outputs" v-bind:key="value.id">
+                            <b>{{ name }}</b>
+                            <workflow-invocation-data-contents :data_item="value" />
                         </div>
                     </details>
-                    <details v-if="Object.values(stepDetails.output_collections).length > 0"><summary><b>Step Output Dataset Collections</b></summary>
-                       <div v-for="(value, name) in stepDetails.output_collections" v-bind:key="value.id">
-                            <b>{{name}}</b>
-                            <workflow-invocation-data-contents :data_item="value"/>
+                    <details v-if="Object.values(stepDetails.output_collections).length > 0"
+                        ><summary><b>Step Output Dataset Collections</b></summary>
+                        <div v-for="(value, name) in stepDetails.output_collections" v-bind:key="value.id">
+                            <b>{{ name }}</b>
+                            <workflow-invocation-data-contents :data_item="value" />
                         </div>
                     </details>
                     <div class="portlet-body" style="width: 100%; overflow-x: auto;">
-                        <job-step v-if="workflowStepType == 'tool'" :jobs="stepDetails.jobs"/>
-                        <parameter-step v-else-if="workflowStepType == 'parameter_input'" :parameters="[invocation.input_step_parameters[stepDetails.workflow_step_label]]"></parameter-step>
-                        <workflow-invocation-data-contents v-else-if="['data_input', 'data_collection_input'].includes(workflowStepType)" :data_item="invocation.inputs[workflowStep.id]"/>
+                        <job-step v-if="workflowStepType == 'tool'" :jobs="stepDetails.jobs" />
+                        <parameter-step
+                            v-else-if="workflowStepType == 'parameter_input'"
+                            :parameters="[invocation.input_step_parameters[stepDetails.workflow_step_label]]"
+                        ></parameter-step>
+                        <workflow-invocation-data-contents
+                            v-else-if="['data_input', 'data_collection_input'].includes(workflowStepType)"
+                            :data_item="invocation.inputs[workflowStep.id]"
+                        />
                         <div v-else-if="workflowStepType == 'subworkflow'">
                             <div v-if="!stepDetails.subworkflow_invocation_id">
                                 Workflow invocation for this step is not yet scheduled.
                                 <p></p>
                                 This step consumes outputs from these steps:
                                 <ul v-if="workflowStep">
-                                    <li v-for="stepInput in Object.values(workflowStep.input_steps)" :key="stepInput.source_step">{{labelForWorkflowStep(stepInput.source_step)}}</li>
+                                    <li
+                                        v-for="stepInput in Object.values(workflowStep.input_steps)"
+                                        :key="stepInput.source_step"
+                                    >
+                                        {{ labelForWorkflowStep(stepInput.source_step) }}
+                                    </li>
                                 </ul>
                             </div>
-                            <workflow-invocation-state :invocationId="stepDetails.subworkflow_invocation_id" v-if="stepDetails && stepDetails.subworkflow_invocation_id"/>
+                            <workflow-invocation-state
+                                :invocationId="stepDetails.subworkflow_invocation_id"
+                                v-if="stepDetails && stepDetails.subworkflow_invocation_id"
+                            />
                         </div>
                     </div>
                 </div>
-                <div style="min-width: 1;"/>
+                <div style="min-width: 1;" />
             </div>
         </div>
     </div>
@@ -55,16 +71,16 @@ import { mapCacheActions } from "vuex-cache";
 import { mapGetters, mapActions } from "vuex";
 import JobStep from "./JobStep";
 import ParameterStep from "./ParameterStep";
-import WorkflowInvocationDataContents from './WorkflowInvocationDataContents.vue';
+import WorkflowInvocationDataContents from "./WorkflowInvocationDataContents.vue";
 
-const TERMINAL_STATES = ['ok', 'error', 'deleted', 'paused'];
+const TERMINAL_STATES = ["ok", "error", "deleted", "paused"];
 
 export default {
     components: {
         JobStep,
         ParameterStep,
         WorkflowInvocationDataContents,
-        WorkflowInvocationState: () => import("components/WorkflowInvocationState/WorkflowInvocationState")
+        WorkflowInvocationState: () => import("components/WorkflowInvocationState/WorkflowInvocationState"),
     },
     props: {
         invocation: Object,
@@ -76,7 +92,6 @@ export default {
         return {
             expanded: false,
             polling: null,
-
         };
     },
     created() {
@@ -91,7 +106,7 @@ export default {
         },
         invocationStepId() {
             if (this.step) {
-                return this.step.id
+                return this.step.id;
             }
         },
         workflowStepType() {
@@ -101,18 +116,18 @@ export default {
             return this.invocationSteps[this.workflowStep.id];
         },
         isDataStep() {
-            return ['data_input', 'data_collection_input'].includes(this.workflowStepType);
+            return ["data_input", "data_collection_input"].includes(this.workflowStepType);
         },
         stepIcon() {
             switch (this.workflowStepType) {
                 case "data_input":
-                    return 'fa-file';
+                    return "fa-file";
                 case "data_collection_input":
-                    return 'fa-folder-o';
+                    return "fa-folder-o";
                 case "parameter_input":
-                    return 'fa-pencil';
+                    return "fa-pencil";
                 default:
-                    return 'fa-wrench';
+                    return "fa-wrench";
             }
         },
         stepDetails() {
@@ -126,20 +141,20 @@ export default {
         stepIsTerminal() {
             return (
                 this.stepDetails &&
-                ['scheduled', 'cancelled', 'failed'].includes(this.stepDetails.state) &&
+                ["scheduled", "cancelled", "failed"].includes(this.stepDetails.state) &&
                 // may seem odd to check for job state, but keeps the StepJobs component up to date.
                 // TODO: refactor StepJobs to listen for job updates?
-                this.stepDetails.jobs.every(job => TERMINAL_STATES.includes(job.state))
-                )
-        }
+                this.stepDetails.jobs.every((job) => TERMINAL_STATES.includes(job.state))
+            );
+        },
     },
     methods: {
-        ...mapCacheActions(["fetchToolForId", 'fetchWorkflowForInstanceId']),
+        ...mapCacheActions(["fetchToolForId", "fetchWorkflowForInstanceId"]),
         ...mapActions(["fetchInvocationStepById"]),
         fetchTool() {
             if (this.workflowStep.tool_id && !this.getToolForId(this.workflowStep.tool_id)) {
-                    this.fetchToolForId(this.workflowStep.tool_id)
-                }
+                this.fetchToolForId(this.workflowStep.tool_id);
+            }
         },
         fetchSubworkflow() {
             if (this.workflowStep.workflow_id) {
@@ -153,15 +168,15 @@ export default {
                 }
             });
         },
-        beforeDestroy () {
-            clearTimeout(this.polling)
+        beforeDestroy() {
+            clearTimeout(this.polling);
         },
         toggleStep() {
             this.expanded = !this.expanded;
         },
         labelForWorkflowStep(stepIndex) {
             const invocationStep = this.invocationSteps[stepIndex];
-            const workflowStep = this.workflow.steps[stepIndex]
+            const workflowStep = this.workflow.steps[stepIndex];
             const oneBasedStepIndex = stepIndex + 1;
             if (invocationStep && invocationStep.workflow_step_label) {
                 return `Step ${oneBasedStepIndex}: ${invocationStep.workflow_step_label}`;
@@ -171,19 +186,19 @@ export default {
                 case "tool":
                     return `Step ${oneBasedStepIndex}: ${this.getToolNameById(workflowStep.tool_id)}`;
                 case "subworkflow":
-                    const subworkflow = this.getWorkflowByInstanceId(workflowStep.workflow_id)
-                    const label = subworkflow ? subworkflow.name : 'Subworkflow'
+                    const subworkflow = this.getWorkflowByInstanceId(workflowStep.workflow_id);
+                    const label = subworkflow ? subworkflow.name : "Subworkflow";
                     return `Step ${oneBasedStepIndex}: ${label}`;
                 case "parameter_input":
                     return `Step ${oneBasedStepIndex}: Parameter input`;
                 case "data_input":
-                    `Step ${oneBasedStepIndex}: Data input`
+                    `Step ${oneBasedStepIndex}: Data input`;
                 case "data_collection_input":
-                    return `Step ${oneBasedStepIndex}: Data collection input`
+                    return `Step ${oneBasedStepIndex}: Data collection input`;
                 default:
                     return `Step ${oneBasedStepIndex}: Unknown step type '${workflowStepType}'`;
             }
         },
-    },    
-}
+    },
+};
 </script>
