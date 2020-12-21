@@ -1252,6 +1252,22 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         for statement in statements:
             sa_session.execute(statement, params)
 
+    def remappable(self):
+        """
+        Check whether job is remappable when rerun
+        """
+        if self.state == self.states.ERROR:
+            try:
+                for jtod in self.output_datasets:
+                    if jtod.dataset.dependent_jobs:
+                        return True
+                if self.output_dataset_collection_instances:
+                    # We'll want to replace this item
+                    return 'job_produced_collection_elements'
+            except Exception:
+                log.exception(f"Error trying to determine if job {self.id} is remappable")
+        return False
+
 
 class Task(JobLike, RepresentById):
     """

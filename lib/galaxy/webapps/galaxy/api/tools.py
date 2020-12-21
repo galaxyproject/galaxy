@@ -465,6 +465,9 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         """
         POST /api/tools
         Execute tool with a given parameter payload
+
+        :param input_format: input format for the payload. Possible values are the default 'legacy' (where inputs nested inside conditionals or repeats are identified with e.g. '<conditional_name>|<input_name>') or '21.01' (where inputs inside conditionals or repeats are nested elements).
+        :type input_format:  string
         """
         tool_id = payload.get("tool_id")
         tool_uuid = payload.get("tool_uuid")
@@ -532,7 +535,10 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         # I think it should be a top-level parameter, but because the selector is implemented
         # as a regular tool parameter we accept both.
         use_cached_job = payload.get('use_cached_job', False) or util.string_as_bool(inputs.get('use_cached_job', 'false'))
-        vars = tool.handle_input(trans, incoming, history=target_history, use_cached_job=use_cached_job)
+
+        input_format = kwd.get('input_format', 'legacy')
+
+        vars = tool.handle_input(trans, incoming, history=target_history, use_cached_job=use_cached_job, input_format=input_format)
 
         # TODO: check for errors and ensure that output dataset(s) are available.
         output_datasets = vars.get('out_data', [])
