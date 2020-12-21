@@ -86,6 +86,7 @@ cloudauthz = "==0.6.0"
 gxformat2 = "*"
 refgenconf = ">=0.7.0"
 future = "*"
+zipstream-new = "*"
 
 [requires]
 python_version = "3.6"

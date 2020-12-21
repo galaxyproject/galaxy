@@ -22,7 +22,7 @@ from galaxy.managers.collections_util import (
 )
 from galaxy.managers.jobs import fetch_job_states, summarize_jobs_to_dict
 from galaxy.util.json import safe_dumps
-from galaxy.util.streamball import StreamBall
+from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.web import (
     expose_api,
     expose_api_anonymous,
@@ -296,12 +296,9 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             return {'error': util.unicodify(e)}
 
     def __stream_dataset_collection(self, trans, dataset_collection_instance):
-        archive_name, archive = hdcas.stream_dataset_collection(dataset_collection_instance=dataset_collection_instance, upstream_gzip=self.app.config.upstream_gzip)
-        trans.response.set_content_type("application/x-tar")
-        trans.response.headers["Content-Disposition"] = f'attachment; filename="{archive_name}"'
-        archive.wsgi_status = trans.response.wsgi_status()
-        archive.wsgi_headeritems = trans.response.wsgi_headeritems()
-        return archive.stream
+        archive = hdcas.stream_dataset_collection(dataset_collection_instance=dataset_collection_instance, upstream_mod_zip=trans.app.config.upstream_mod_zip)
+        trans.response.headers.update(archive.get_headers())
+        return archive.response()
 
     @expose_api_anonymous
     def create(self, trans, history_id, payload, **kwd):
@@ -921,9 +918,9 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         return TYPE_ID_SEP.join((split[0], self.app.security.encode_id(split[1])))
 
     @expose_api_raw
-    def archive(self, trans, history_id, filename='', format='tgz', dry_run=True, **kwd):
+    def archive(self, trans, history_id, filename='', format='zip', dry_run=True, **kwd):
         """
-        archive( self, trans, history_id, filename='', format='tgz', dry_run=True, **kwd )
+        archive( self, trans, history_id, filename='', format='zip', dry_run=True, **kwd )
         * GET /api/histories/{history_id}/contents/archive/{id}
         * GET /api/histories/{history_id}/contents/archive/{filename}.{format}
             build and return a compressed archive of the selected history contents
@@ -1022,22 +1019,16 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             return safe_dumps(paths_and_files)
 
         # create the archive, add the dataset files, then stream the archive as a download
-        archive_type_string = 'w|gz'
-        archive_ext = 'tgz'
-        if self.app.config.upstream_gzip:
-            archive_type_string = 'w|'
-            archive_ext = 'tar'
-        archive = StreamBall(archive_type_string)
-
+        archive = ZipstreamWrapper(
+            archive_name=archive_base_name,
+            upstream_mod_zip=self.app.config.upstream_mod_zip,
+            upstream_gzip=self.app.config.upstream_gzip,
+        )
         for file_path, archive_path in paths_and_files:
-            archive.add(file_path, archive_path)
+            archive.write(file_path, archive_path)
 
-        archive_name = '.'.join((archive_base_name, archive_ext))
-        trans.response.set_content_type("application/x-tar")
-        trans.response.headers["Content-Disposition"] = f'attachment; filename="{archive_name}"'
-        archive.wsgi_status = trans.response.wsgi_status()
-        archive.wsgi_headeritems = trans.response.wsgi_headeritems()
-        return archive.stream
+        trans.response.headers.update(archive.get_headers())
+        return archive.response()
 
     @expose_api_anonymous
     def contents_near(self, trans, history_id, hid, limit, **kwd):

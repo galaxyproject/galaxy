@@ -5,6 +5,7 @@ from json import dumps, loads
 from galaxy import exceptions, managers, util, web
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
 from galaxy.tools import global_tool_errors
+from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.web import (
     expose_api,
     expose_api_anonymous,
@@ -156,10 +157,18 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         path = tool.test_data_path(filename)
         if path:
             if os.path.isfile(path):
-                trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename
+                trans.response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
                 return open(path, mode='rb')
             elif os.path.isdir(path):
-                return util.streamball.stream_archive(trans=trans, path=path, upstream_gzip=self.app.config.upstream_gzip)
+                # Set upstream_mod_zip to false, otherwise tool data must be among allowed internal routes
+                archive = ZipstreamWrapper(
+                    upstream_mod_zip=False,
+                    upstream_gzip=self.app.config.upstream_gzip,
+                    archive_name=filename,
+                )
+                archive.write(path)
+                trans.response.headers.update(archive.get_headers())
+                return archive.response()
         raise exceptions.ObjectNotFound("Specified test data path not found.")
 
     @expose_api_anonymous_and_sessionless

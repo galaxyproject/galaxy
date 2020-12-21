@@ -5,7 +5,6 @@ import os
 import shutil
 import string
 import tempfile
-import zipfile
 from collections import OrderedDict
 from inspect import isclass
 
@@ -24,6 +23,7 @@ from galaxy.util import (
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.util.zipstream import ZipstreamWrapper
 from . import (
     dataproviders,
     metadata
@@ -263,7 +263,7 @@ class Data(metaclass=DataMeta):
         error, msg, messagetype = False, "", ""
         archname = '%s.html' % display_name  # fake the real nature of the html file
         try:
-            archive.add(data_filename, archname)
+            archive.write(data_filename, archname)
         except OSError:
             error = True
             log.exception("Unable to add composite parent %s to temporary library download archive", data_filename)
@@ -275,74 +275,36 @@ class Data(metaclass=DataMeta):
         # save a composite object into a compressed archive for downloading
         outfname = data.name[0:150]
         outfname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in outfname)
+        archive = ZipstreamWrapper(
+            archive_name=outfname,
+            upstream_mod_zip=trans.app.config.upstream_mod_zip,
+            upstream_gzip=trans.app.config.upstream_gzip
+        )
         error = False
         msg = ''
-        try:
-            if do_action == 'zip':
-                # Can't use mkstemp - the file must not exist first
-                tmpd = tempfile.mkdtemp(dir=trans.app.config.new_file_path, prefix='gx_composite_archive_')
-                util.umask_fix_perms(tmpd, trans.app.config.umask, 0o777, trans.app.config.gid)
-                tmpf = os.path.join(tmpd, 'library_download.' + do_action)
-                archive = zipfile.ZipFile(tmpf, 'w', zipfile.ZIP_DEFLATED, True)
+        ext = data.extension
+        path = data.file_name
+        efp = data.extra_files_path
+        # Add any central file to the archive,
 
-                def zipfile_add(fpath, arcname):
-                    encoded_arcname = arcname.encode('CP437')
-                    try:
-                        archive.write(fpath, encoded_arcname)
-                    except TypeError:
-                        # Despite documenting the need for CP437 encoded arcname,
-                        # python 3 actually needs this to be a unicode string ...
-                        # https://bugs.python.org/issue24110
-                        archive.write(fpath, arcname)
+        display_name = os.path.splitext(outfname)[0]
+        if not display_name.endswith(ext):
+            display_name = f'{display_name}_{ext}'
 
-                archive.add = zipfile_add
-
-            elif do_action == 'tgz':
-                archive = util.streamball.StreamBall('w|gz')
-            elif do_action == 'tbz':
-                archive = util.streamball.StreamBall('w|bz2')
-        except (OSError, zipfile.BadZipFile):
-            error = True
-            log.exception("Unable to create archive for download")
-            msg = "Unable to create archive for %s for download, please report this error" % outfname
+        error, msg = self._archive_main_file(archive, display_name, path)[:2]
         if not error:
-            ext = data.extension
-            path = data.file_name
-            efp = data.extra_files_path
-            # Add any central file to the archive,
-
-            display_name = os.path.splitext(outfname)[0]
-            if not display_name.endswith(ext):
-                display_name = f'{display_name}_{ext}'
-
-            error, msg = self._archive_main_file(archive, display_name, path)[:2]
-            if not error:
-                # Add any child files to the archive,
-                for fpath, rpath in self.__archive_extra_files_path(extra_files_path=efp):
-                    try:
-                        archive.add(fpath, rpath)
-                    except OSError:
-                        error = True
-                        log.exception("Unable to add %s to temporary library download archive", rpath)
-                        msg = "Unable to create archive for download, please report this error"
-                        continue
-            if not error:
-                if do_action == 'zip':
-                    archive.close()
-                    tmpfh = open(tmpf, 'rb')
-                    # CANNOT clean up - unlink/rmdir was always failing because file handle retained to return - must rely on a cron job to clean up tmp
-                    trans.response.set_content_type("application/x-zip-compressed")
-                    trans.response.headers["Content-Disposition"] = 'attachment; filename="%s.zip"' % outfname
-                    return tmpfh
-                else:
-                    trans.response.set_content_type("application/x-tar")
-                    outext = 'tgz'
-                    if do_action == 'tbz':
-                        outext = 'tbz'
-                    trans.response.headers["Content-Disposition"] = f'attachment; filename="{outfname}.{outext}"'
-                    archive.wsgi_status = trans.response.wsgi_status()
-                    archive.wsgi_headeritems = trans.response.wsgi_headeritems()
-                    return archive.stream
+            # Add any child files to the archive,
+            for fpath, rpath in self.__archive_extra_files_path(extra_files_path=efp):
+                try:
+                    archive.write(fpath, rpath)
+                except OSError:
+                    error = True
+                    log.exception("Unable to add %s to temporary library download archive", rpath)
+                    msg = "Unable to create archive for download, please report this error"
+                    continue
+        if not error:
+            trans.response.headers.update(archive.get_headers())
+            return archive.response()
         return trans.show_error_message(msg)
 
     def __archive_extra_files_path(self, extra_files_path):
@@ -354,7 +316,7 @@ class Data(metaclass=DataMeta):
                 yield fpath, rpath
 
     def _serve_raw(self, trans, dataset, to_ext, **kwd):
-        trans.response.headers['Content-Length'] = int(os.stat(dataset.file_name).st_size)
+        trans.response.headers['Content-Length'] = str(os.stat(dataset.file_name).st_size)
         trans.response.set_content_type("application/octet-stream")  # force octet-stream so Safari doesn't append mime extensions to filename
         filename = self._download_filename(dataset, to_ext, hdca=kwd.get("hdca"), element_identifier=kwd.get("element_identifier"))
         trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename
@@ -445,7 +407,7 @@ class Data(metaclass=DataMeta):
             if data.extension in composite_extensions:
                 return self._archive_composite_dataset(trans, data, do_action=kwd.get('do_action', 'zip'))
             else:
-                trans.response.headers['Content-Length'] = int(os.stat(data.file_name).st_size)
+                trans.response.headers['Content-Length'] = str(os.stat(data.file_name).st_size)
                 filename = self._download_filename(data, to_ext, hdca=kwd.get("hdca"), element_identifier=kwd.get("element_identifier"))
                 trans.response.set_content_type("application/octet-stream")  # force octet-stream so Safari doesn't append mime extensions to filename
                 trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename

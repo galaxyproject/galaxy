@@ -503,12 +503,9 @@ libraries:
       save_folder_btn: '.save_folder_btn'
       input_folder_name: 'textarea[name="input_folder_name"]'
       input_folder_description: '.input_folder_description'
-      download_dropdown: '#download-dropdown-btn'
+      download_button: '#download-btn'
       delete_btn: '.toolbtn-bulk-delete'
       toast_msg: '.toast-message'
-      download_zip:
-        type: xpath
-        selector: '//a[contains(text(), ".zip")]'
 
     labels:
       from_history: 'from History'
