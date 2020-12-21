@@ -3,7 +3,7 @@
         <div v-if="Object.keys(invocation.input_step_parameters).length > 0">
             <details
                 ><summary><b>Invocation Parameters</b></summary>
-                <b-table small caption-top :fields="['label', 'parameter_value']" :items="Object.values(invocation.input_step_parameters)"/>
+                <parameter-step :parameters="Object.values(invocation.input_step_parameters)"/>
             </details>
         </div>
         <div v-if="Object.keys(invocation.inputs).length > 0">
@@ -41,6 +41,7 @@
     </div>
 </template>
 <script>
+import ParameterStep from './ParameterStep.vue';
 import WorkflowInvocationDataContents from "./WorkflowInvocationDataContents";
 import WorkflowInvocationStep from "./WorkflowInvocationStep";
 import ListMixin from "components/History/ListMixin";
@@ -59,6 +60,7 @@ export default {
     components: {
         WorkflowInvocationDataContents,
         WorkflowInvocationStep,
+        ParameterStep,
     },
     props: {
         invocation: {

@@ -9,7 +9,7 @@
                             loading,
                         }">
                         <div>
-                        <job-information :job="item" v-if="item"/>
+                        <job-information :job_id="item.id" v-if="item"/>
                         <p></p>
                         <job-parameters v-if="item" :jobId="item.id" :includeTitle="false"/>
                         </div>
