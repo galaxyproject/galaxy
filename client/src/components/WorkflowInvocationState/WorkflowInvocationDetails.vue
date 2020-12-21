@@ -47,7 +47,6 @@ import WorkflowInvocationStep from "./WorkflowInvocationStep";
 import ListMixin from "components/History/ListMixin";
 
 import { getAppRoot } from "onload/loadConfig";
-import _ from 'lodash';
 
 import { getRootFromIndexLink } from "onload";
 import { mapCacheActions } from "vuex-cache";
@@ -73,7 +72,7 @@ export default {
     computed: {
         ...mapGetters(["getWorkflowByInstanceId"]),
         orderedSteps() {
-            return _.orderBy(this.invocation.steps, ['order_index']);
+            return this.invocation.steps.sort((a, b) =>  a.order_index - b.order_index);
         },
         workflow() {
             return this.getWorkflowByInstanceId(this.invocation.workflow_id)
