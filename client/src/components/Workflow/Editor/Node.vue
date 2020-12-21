@@ -225,6 +225,9 @@ export default {
         isEnabled() {
             return getGalaxyInstance().config.enable_tool_recommendations;
         },
+        isInput() {
+            return this.type == "data_input" || this.type == "data_collection_input" || this.type == "parameter_input";
+        },
     },
     methods: {
         onChange() {

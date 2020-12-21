@@ -70,6 +70,11 @@ export function showAttributes() {
     $("#edit-attributes").show();
 }
 
+export function showLint() {
+    $(".right-content").hide();
+    $("#lint-panel").show();
+}
+
 export function showForm(workflow, node, datatypes) {
     if (node && node.config_form && Object.keys(node.config_form).length > 0) {
         const cls = "right-content";
@@ -131,20 +136,21 @@ class LegacyParameterReference {
     constructor(parameter, node) {
         //this.node = node;
         parameter.references.push(this);
+        this.nodeId = node.id;
     }
 }
 
 class ToolInputLegacyParameterReference extends LegacyParameterReference {
-    constructor(parameter, node, tool_input) {
+    constructor(parameter, node, tooInput) {
         super(parameter, node);
-        //this.tool_input = tool_input;
+        this.toolInput = tooInput;
     }
 }
 
 class PjaLegacyParameterReference extends LegacyParameterReference {
     constructor(parameter, node, pja) {
         super(parameter, node);
-        //this.pja = pja
+        this.pja = pja;
     }
 }
 
@@ -152,6 +158,13 @@ class LegacyParameter {
     constructor(name) {
         this.name = name;
         this.references = [];
+    }
+
+    canExtract() {
+        // Backend will indicate errors but would be a bit better to pre-check for them
+        // in a future iteration.
+        // return false if mixed input types or if say integers are used in PJA?
+        return true;
     }
 }
 
@@ -212,6 +225,77 @@ export function getLegacyWorkflowParameters(nodes) {
         }
     });
     return legacyParameters;
+}
+
+export function getDisconnectedInputs(nodes) {
+    const inputs = [];
+    Object.entries(nodes).forEach(([k, node]) => {
+        Object.entries(node.inputTerminals).forEach(([inputName, inputTerminal]) => {
+            if (inputTerminal.connectors && inputTerminal.connectors.length > 0) {
+                return;
+            }
+            if (inputTerminal.optional) {
+                return;
+            }
+            const input = {
+                inputName: inputName,
+                stepId: node.id,
+                stepLabel: node.title, // label but falls back to tool title...
+                stepIconClass: node.iconClass,
+                inputLabel: inputTerminal.attributes.input.label,
+                canExtract: !inputTerminal.multiple,
+            };
+            inputs.push(input);
+        });
+    });
+    return inputs;
+}
+
+export function getInputsMissingMetadata(nodes) {
+    const inputs = [];
+    Object.entries(nodes).forEach(([k, node]) => {
+        if (!node.isInput) {
+            return;
+        }
+        const annotation = node.annotation;
+        const label = node.label;
+        const missingLabel = !label;
+        const missingAnnotation = !annotation;
+
+        if (missingLabel || missingAnnotation) {
+            const input = {
+                stepLabel: node.title,
+                stepIconClass: node.iconClass,
+                missingAnnotation: !annotation,
+                missingLabel: !label,
+            };
+            inputs.push(input);
+        }
+    });
+    return inputs;
+}
+
+export function getWorkflowOutputs(nodes) {
+    const outputs = [];
+    Object.entries(nodes).forEach(([k, node]) => {
+        if (node.isInput) {
+            // For now skip these... maybe should push this logic into linting though
+            // since it is fine to have outputs on inputs.
+            return;
+        }
+        const activeOutputs = node.activeOutputs;
+        for (const outputDef of activeOutputs.getAll()) {
+            const output = {
+                outputName: outputDef.output_name,
+                outputLabel: outputDef.label,
+                stepId: node.id,
+                stepLabel: node.title, // label but falls back to tool title...
+                stepIconClass: node.iconClass,
+            };
+            outputs.push(output);
+        }
+    });
+    return outputs;
 }
 
 export function saveAs(workflow) {
