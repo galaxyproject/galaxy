@@ -156,7 +156,6 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
                 stderr=job.stderr,
                 stdout=job.stdout,
                 job_messages=job.job_messages,
-                job_remap=job.remappable()
             ))
 
             if is_admin:
