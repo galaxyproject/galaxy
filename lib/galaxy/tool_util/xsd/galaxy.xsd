@@ -4431,7 +4431,7 @@ Therefore a filter for such a variable looks like the following example.
             <filter>output_type and "save_phase" in output_type</filter>
         </data>
         <data name="period_out" format="tiff" label="${movie.name[:-4]}_period">
-            <filter>outputs and "save_period" in outputs</filter>
+            <filter>output_type and "save_period" in output_type</filter>
         </data>
     </outputs>
 ```
