@@ -5530,14 +5530,14 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
                     src = 'hdca'
                     item = input_item_association.dataset_collection
                 else:
-                    # TODO: what happens to LDDAs ?
-                    raise Exception("Unknown history content type '%s'"% input_item.history_content_type)
+                    # TODO: LDDAs are not implemented in workflow_request_to_input_dataset table
+                    raise Exception(f"Unknown history content type '{input_item_association.history_content_type}'")
                 # Should this maybe also be by label ? Would break backwards compatibility though
                 inputs[str(input_item_association.workflow_step.order_index)] = {
                     'id': item.id,
                     'src': src,
                     'label': input_item_association.workflow_step.label,
-                    'workflow_step_id': input_item_association.workflow_step.id,
+                    'workflow_step_id': input_item_association.workflow_step_id,
                 }
 
             rval['inputs'] = inputs
@@ -5550,7 +5550,7 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
                 input_parameters[label] = {
                     'parameter_value': input_step_parameter.parameter_value,
                     'label': label,
-                    'workflow_step_id': input_item_association.workflow_step.id,
+                    'workflow_step_id': input_step_parameter.workflow_step_id,
                 }
             rval['input_step_parameters'] = input_parameters
 
