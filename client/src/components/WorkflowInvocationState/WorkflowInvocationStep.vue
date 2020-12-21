@@ -142,16 +142,14 @@ export default {
             }
         },
         pollStepDetailsUntilTerminal: function () {
-            clearInterval(this.polling);
-            if (!this.stepIsTerminal) {
-                if (this.step) {
-                    this.fetchInvocationStepById(this.step.id);
+            this.fetchInvocationStepById(this.step.id).then((response) => {
+                if (!this.stepIsTerminal) {
+                    this.polling = setTimeout(this.fetchInvocationStepById, 3000);
                 }
-                this.polling = setInterval(this.pollStepDetailsUntilTerminal, 3000);
-            }
+            });
         },
         beforeDestroy () {
-            clearInterval(this.polling)
+            clearTimeout(this.polling)
         },
         toggleStep() {
             this.expanded = !this.expanded;
