@@ -6,7 +6,8 @@
         v-on:update:expanded="expand"
         :expanded="expanded"
         :dataset="dataset"
-        :showTags="true">
+        :showTags="true"
+    >
     </DatasetUI>
 </template>
 <script>
@@ -19,7 +20,7 @@ export default {
     },
     props: {
         item: { type: Object, required: true },
-        element_identifier: { type: String, required: false, default: '' }
+        element_identifier: { type: String, required: false, default: "" },
     },
     computed: {
         dataset() {

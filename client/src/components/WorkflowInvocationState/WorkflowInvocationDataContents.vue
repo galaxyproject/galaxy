@@ -1,5 +1,6 @@
 <template>
-    <component :is="providerComponent"
+    <component
+        :is="providerComponent"
         :id="data_item.id"
         v-slot="{
             item,
@@ -8,12 +9,7 @@
     >
         <div>
             <loading-span v-if="loading" message="Loading dataset" />
-            <component :is="renderComponent"
-               v-if="item"
-               :item="item"
-               v-bind:index="1"
-               v-bind:showTags="true"
-               >
+            <component :is="renderComponent" v-if="item" :item="item" v-bind:index="1" v-bind:showTags="true">
             </component>
         </div>
     </component>
@@ -22,7 +18,7 @@
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
-import {DatasetProvider, DatasetCollectionProvider} from "components/History/providers/DatasetProvider";
+import { DatasetProvider, DatasetCollectionProvider } from "components/History/providers/DatasetProvider";
 import HistoryContentItem from "components/History/ContentItem/HistoryContentItem";
 import DatasetCollectionUIWrapper from "components/History/ContentItem/DatasetCollection/DatasetCollectionUIWrapper";
 import DatasetUIWrapper from "components/History/ContentItem/Dataset/DatasetUIWrapper";
@@ -55,11 +51,11 @@ export default {
     },
     computed: {
         renderComponent() {
-            return {hda: 'DatasetUIWrapper', hdca: DatasetCollectionUIWrapper}[this.data_item.src];
+            return { hda: "DatasetUIWrapper", hdca: DatasetCollectionUIWrapper }[this.data_item.src];
         },
         providerComponent() {
-            return {hda: 'DatasetProvider', hdca: DatasetCollectionProvider}[this.data_item.src];
-        }
+            return { hda: "DatasetProvider", hdca: DatasetCollectionProvider }[this.data_item.src];
+        },
     },
     provide: {
         STATES,

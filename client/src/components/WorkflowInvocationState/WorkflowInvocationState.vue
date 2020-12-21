@@ -185,7 +185,7 @@ export default {
             console.error(e);
         },
         onCancel() {
-            this.$emit('invocation-cancelled');
+            this.$emit("invocation-cancelled");
         },
         cancelWorkflowScheduling: function () {
             cancelWorkflowScheduling(this.invocationId).then(this.onCancel).catch(this.onError);

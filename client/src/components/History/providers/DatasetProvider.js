@@ -52,8 +52,8 @@ var DatasetProvider = Vue.extend({
         url() {
             return prependPath(`api/datasets/${this.id}`);
         },
-    }
-})
+    },
+});
 
 var DatasetCollectionProvider = Vue.extend({
     mixins: [SimpleProviderMixin],
@@ -61,8 +61,8 @@ var DatasetCollectionProvider = Vue.extend({
         url() {
             return prependPath(`api/dataset_collections/${this.id}?instance_type=history`);
         },
-    }
-})
+    },
+});
 
 var DatasetCollectionContentProvider = Vue.extend({
     mixins: [SimpleProviderMixin],
@@ -70,17 +70,17 @@ var DatasetCollectionContentProvider = Vue.extend({
         url() {
             // ugh ...
             return prependPath(this.id);
-        }
-    }
-})
+        },
+    },
+});
 
 var JobProvider = Vue.extend({
     mixins: [SimpleProviderMixin],
     computed: {
         url() {
-            return prependPath(`api/jobs/${this.id}?full=true`)
-        }
-    }
-})
+            return prependPath(`api/jobs/${this.id}?full=true`);
+        },
+    },
+});
 
 export { DatasetProvider, DatasetCollectionProvider, DatasetCollectionContentProvider, JobProvider };

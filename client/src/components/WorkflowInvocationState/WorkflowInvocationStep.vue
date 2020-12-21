@@ -1,14 +1,14 @@
 <template>
     <div class="d-flex">
-        <div class="ui-portlet-section" style="width: 100%">
+        <div class="ui-portlet-section" style="width: 100%;">
             <div class="portlet-header portlet-title portlet-operations" v-on:click="toggleStep">
                 <i :class="'portlet-title-icon fa mr-1 ' + stepIcon"></i>
                 <span class="portlet-title-text">
-                    <u>{{stepLabel}}</u>
+                    <u>{{ stepLabel }}</u>
                 </span>
             </div>
             <div class="portlet-content" v-if="expanded">
-                <div style="min-width: 1;"/>
+                <div style="min-width: 1;" />
                 <div v-if="!stepDetails">
                     This invocation has not been scheduled yet, step information is unavailable
                     <!-- Probably a subworkflow invocation, could walk back to parent and show

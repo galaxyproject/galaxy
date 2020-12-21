@@ -22,21 +22,21 @@ const getters = {
 
 const actions = {
     fetchToolForId: async ({ commit }, toolId) => {
-        console.log('fetching tool');
+        console.log("fetching tool");
         const { data } = await axios.get(`${getAppRoot()}api/tools/${toolId}`);
         commit("saveToolForId", { toolId, toolData: data });
-    }
+    },
 };
 
 const mutations = {
     saveToolForId: (state, { toolId, toolData }) => {
         Vue.set(state.toolById, toolId, toolData);
-    }
+    },
 };
 
 export const toolStore = {
     state,
     getters,
     actions,
-    mutations
+    mutations,
 };

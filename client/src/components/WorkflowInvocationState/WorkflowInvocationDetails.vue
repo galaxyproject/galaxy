@@ -3,14 +3,14 @@
         <div v-if="Object.keys(invocation.input_step_parameters).length > 0">
             <details
                 ><summary><b>Invocation Parameters</b></summary>
-                <parameter-step :parameters="Object.values(invocation.input_step_parameters)"/>
+                <parameter-step :parameters="Object.values(invocation.input_step_parameters)" />
             </details>
         </div>
         <div v-if="Object.keys(invocation.inputs).length > 0">
             <details
                 ><summary><b>Invocation Inputs</b></summary>
                 <div v-for="(input, key) in invocation.inputs" v-bind:key="input.id">
-                    <b>{{dataInputStepLabel(key, input)}}</b>
+                    <b>{{ dataInputStepLabel(key, input) }}</b>
                     <workflow-invocation-data-contents v-bind:data_item="input" />
                 </div>
             </details>
@@ -19,7 +19,7 @@
             <details
                 ><summary><b>Invocation Outputs</b></summary>
                 <div v-for="(output, key) in invocation.outputs" v-bind:key="output.id">
-                    <b>{{key}}:</b>
+                    <b>{{ key }}:</b>
                     <workflow-invocation-data-contents v-bind:data_item="output" />
                 </div>
             </details>

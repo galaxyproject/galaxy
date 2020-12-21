@@ -8,7 +8,10 @@
         :data-state="dsc.state"
         @keydown.arrow-right.self.stop="eventHub.$emit('selectCollection', dsc)"
         @keydown.space.self.stop.prevent="$emit('update:selected', !selected)"
-        @click.stop="eventHub.$emit('selectCollection', dsc); $emit('update:expanded', dsc)"
+        @click.stop="
+            eventHub.$emit('selectCollection', dsc);
+            $emit('update:expanded', dsc);
+        "
     >
         <nav class="d-flex content-top-menu align-items-center justify-content-between">
             <div class="d-flex mr-1 align-items-center" @click.stop>
