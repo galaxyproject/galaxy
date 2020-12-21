@@ -25,17 +25,16 @@ encoded_history_id = trans.security.encode_id( hda.history_id )
 %>
 
 <div class="dataset-information" hda_id="${encoded_hda_id}"></div>
-<div class="job-information" hda_id="${encoded_hda_id}" job_id="${trans.security.encode_id( job.id )}"></div>
-
-<div class="dataset-storage" dataset_id="${encoded_hda_id}" dataset_type="hda">
-</div>
-
+<p>
 %if job:
 <div class="job-parameters" dataset_id="${encoded_hda_id}" dataset_type="hda">
 </div>
+<p>
 %endif
-
-
+<div class="job-information" hda_id="${encoded_hda_id}" job_id="${trans.security.encode_id( job.id )}"></div>
+<p>
+<div class="dataset-storage" dataset_id="${encoded_hda_id}" dataset_type="hda"></div>
+<p>
 
 <h3>Inheritance Chain</h3>
 <div class="inherit" style="background-color: #fff; font-weight:bold;">${hda.name | h}</div>
@@ -46,24 +45,19 @@ encoded_history_id = trans.security.encode_id( hda.history_id )
         '${dep[0].name | h}' in ${dep[1]}<br/>
     </div>
 % endfor
-
-
-
-%if job and job.command_line and (trans.user_is_admin or trans.app.config.expose_dataset_path):
-<h3>Command Line</h3>
-<pre class="code">
-${ job.command_line | h }</pre>
-%endif
+<p>
 
 %if job and (trans.user_is_admin or trans.app.config.expose_potentially_sensitive_job_metrics):
 <div class="job-metrics" dataset_id="${encoded_hda_id}" aws_estimate="${trans.app.config.aws_estimate}" dataset_type="hda">
 </div>
+<p>
 %endif
 
 %if trans.user_is_admin:
 <h3>Destination Parameters</h3>
 <div class="job-destination-parameters" job_id="${trans.security.encode_id(job.id)}">
 </div>
+<p>
 %endif
 
 %if job and job.dependencies:
@@ -99,6 +93,7 @@ ${ job.command_line | h }</pre>
 
         </tbody>
     </table>
+    <p>
 %endif
 
 %if hda.peek:
