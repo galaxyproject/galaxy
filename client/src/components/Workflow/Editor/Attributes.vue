@@ -19,8 +19,8 @@
         <div v-if="hasParameters" id="workflow-parameters-area" class="mt-2">
             <b>Parameters</b>
             <b-list-group>
-                <b-list-group-item v-for="[key, p] in parameters.entries()" :key="key"
-                    >{{ key + 1 }}: {{ p }}
+                <b-list-group-item v-for="[key, p] in parameters.parameters.entries()" :key="key"
+                    >{{ key + 1 }}: {{ p.name }}
                 </b-list-group-item>
             </b-list-group>
         </div>
@@ -59,6 +59,7 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import moment from "moment";
 import { Services } from "components/Workflow/services";
+import { LegacyParameters } from "components/Workflow/Editor/modules/utilities";
 import Tags from "components/Common/Tags";
 import LicenseSelector from "components/License/LicenseSelector";
 import CreatorEditor from "components/SchemaOrg/CreatorEditor";
@@ -104,7 +105,7 @@ export default {
             default: null,
         },
         parameters: {
-            type: Array,
+            type: LegacyParameters,
             default: null,
         },
     },
@@ -132,7 +133,7 @@ export default {
             return creator;
         },
         hasParameters() {
-            return this.parameters.length > 0;
+            return this.parameters && this.parameters.parameters.length > 0;
         },
         versionOptions() {
             const versions = [];

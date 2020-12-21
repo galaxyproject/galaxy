@@ -127,17 +127,68 @@ export function showUpgradeMessage(data) {
     return hasToolUpgrade;
 }
 
-export function getWorkflowParameters(nodes) {
+class LegacyParameterReference {
+    constructor(parameter, node) {
+        //this.node = node;
+        parameter.references.push(this);
+    }
+}
+
+class ToolInputLegacyParameterReference extends LegacyParameterReference {
+    constructor(parameter, node, tool_input) {
+        super(parameter, node);
+        //this.tool_input = tool_input;
+    }
+}
+
+class PjaLegacyParameterReference extends LegacyParameterReference {
+    constructor(parameter, node, pja) {
+        super(parameter, node);
+        //this.pja = pja
+    }
+}
+
+class LegacyParameter {
+    constructor(name) {
+        this.name = name;
+        this.references = [];
+    }
+}
+
+export class LegacyParameters {
+    constructor() {
+        this.parameters = [];
+    }
+
+    getParameter(name) {
+        for (const parameter of this.parameters) {
+            if (parameter.name == name) {
+                return parameter;
+            }
+        }
+        const legacyParameter = new LegacyParameter(name);
+        this.parameters.push(legacyParameter);
+        return legacyParameter;
+    }
+
+    getParameterFromMatch(match) {
+        return this.getParameter(match.substring(2, match.length - 1));
+    }
+}
+
+export function getLegacyWorkflowParameters(nodes) {
+    const legacyParameters = new LegacyParameters();
     const parameter_re = /\$\{.+?\}/g;
-    const parameters = [];
-    let matches = [];
     Object.entries(nodes).forEach(([k, node]) => {
         if (node.config_form && node.config_form.inputs) {
             Utils.deepeach(node.config_form.inputs, (d) => {
                 if (typeof d.value == "string") {
                     var form_matches = d.value.match(parameter_re);
                     if (form_matches) {
-                        matches = matches.concat(form_matches);
+                        for (const match of form_matches) {
+                            const legacyParameter = legacyParameters.getParameterFromMatch(match);
+                            new ToolInputLegacyParameterReference(legacyParameter, node, d);
+                        }
                     }
                 }
             });
@@ -149,25 +200,18 @@ export function getWorkflowParameters(nodes) {
                         if (typeof action_argument === "string") {
                             const arg_matches = action_argument.match(parameter_re);
                             if (arg_matches) {
-                                matches = matches.concat(arg_matches);
+                                for (const match of arg_matches) {
+                                    const legacyParameter = legacyParameters.getParameterFromMatch(match);
+                                    new PjaLegacyParameterReference(legacyParameter, node, pja);
+                                }
                             }
                         }
                     });
                 }
             });
         }
-        if (matches) {
-            Object.entries(matches).forEach(([k, element]) => {
-                if (parameters.indexOf(element) === -1) {
-                    parameters.push(element);
-                }
-            });
-        }
     });
-    Object.entries(parameters).forEach(([k, element]) => {
-        parameters[k] = element.substring(2, element.length - 1);
-    });
-    return parameters;
+    return legacyParameters;
 }
 
 export function saveAs(workflow) {

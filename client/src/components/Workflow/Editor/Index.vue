@@ -132,7 +132,7 @@ import {
     showWarnings,
     showUpgradeMessage,
     copyIntoWorkflow,
-    getWorkflowParameters,
+    getLegacyWorkflowParameters,
     showAttributes,
     showForm,
     saveAs,
@@ -196,7 +196,7 @@ export default {
             markdownConfig: null,
             markdownText: null,
             versions: [],
-            parameters: [],
+            parameters: null,
             zoomLevel: 7,
             steps: {},
             hasChanges: false,
@@ -319,7 +319,7 @@ export default {
         },
         onAttributes() {
             showAttributes();
-            this.parameters = getWorkflowParameters(this.nodes);
+            this.parameters = getLegacyWorkflowParameters(this.nodes);
         },
         onEdit() {
             this.isCanvas = true;
