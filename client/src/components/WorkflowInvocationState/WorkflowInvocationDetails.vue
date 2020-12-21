@@ -29,7 +29,7 @@
                 ><summary><b>Invocation Output Collections</b></summary>
                 <div v-for="(output, key) in invocation.output_collections" v-bind:key="output.id">
                     <b>{{key}}:</b>
-                    <workflow-invocation-data-contents v-bind:data_item="output" />
+                    <workflow-invocation-data-contents :data_item="output" />
                 </div>
             </details>
         </div>
