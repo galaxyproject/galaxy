@@ -78,7 +78,7 @@ uwsgi:
 """)
 
 DEFAULT_LOCALES = "en"
-USE_UVICORN = True
+USE_UVICORN = asbool(os.environ.get('GALAXY_TEST_USE_UVICORN', True))
 
 log = logging.getLogger("test_driver")
 
