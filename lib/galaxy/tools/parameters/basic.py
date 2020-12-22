@@ -936,11 +936,6 @@ class SelectToolParameter(ToolParameter):
             if is_runtime_value(value):
                 return None
             if value not in legal_values and require_legal_value:
-                if isinstance(self, ColumnListParameter):
-                    hda = other_values.get(self.data_ref)
-                    if hda is not None and hda.dataset.get_size() == 0:
-                        # If dataset is empty, should not invalidate columns not equal to 1
-                        return value
                 raise ParameterValueError("an invalid option ({!r}) was selected (valid options: {})".format(value, ",".join(legal_values)), self.name, value, is_dynamic=self.is_dynamic)
             return value
 
@@ -1303,6 +1298,11 @@ class ColumnListParameter(SelectToolParameter):
                 column_list = this_column_list
             else:
                 column_list = [c for c in column_list if c in this_column_list]
+
+            if dataset.dataset.get_size() == 0:
+                value = other_values.get(self.name)
+                if value is not None:
+                    column_list.append(value)
         return column_list
 
     def get_options(self, trans, other_values):
