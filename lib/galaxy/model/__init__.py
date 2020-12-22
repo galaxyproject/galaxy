@@ -4905,6 +4905,12 @@ class Workflow(Dictifiable, RepresentById):
                 return step
         raise KeyError("Workflow has no step with order_index '%s'" % order_index)
 
+    def step_by_label(self, label):
+        for step in self.steps:
+            if label == step.label:
+                return step
+        raise KeyError("Workflow has no step with label '%s'" % label)
+
     @property
     def input_steps(self):
         for step in self.steps:
@@ -4994,6 +5000,7 @@ class WorkflowStep(RepresentById):
         "data_collection_input": "dataset_collection",
         "parameter_input": "parameter",
     }
+    DEFAULT_POSITION = {"left": 0, "top": 0}
 
     def __init__(self):
         self.id = None

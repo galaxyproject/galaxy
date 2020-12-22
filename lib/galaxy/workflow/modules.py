@@ -776,6 +776,7 @@ class InputDataCollectionModule(InputModule):
 
 
 class InputParameterModule(WorkflowModule):
+    POSSIBLE_PARAMETER_TYPES = ["text", "integer", "float", "boolean", "color"]
     type = "parameter_input"
     name = "Input parameter"
     default_parameter_type = "text"
