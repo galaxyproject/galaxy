@@ -662,6 +662,7 @@ def _replace_file(args, f, app_desc, from_path, to_path):
 
 
 def _build_sample_yaml(args, app_desc):
+    _overwrite_uwsgi_defaults()
     if app_desc.app_name in ["tool_shed"]:
         UWSGI_OPTIONS.update(SHED_ONLY_UWSGI_OPTIONS)
     schema = app_desc.schema
@@ -689,6 +690,14 @@ def _build_sample_yaml(args, app_desc):
     _write_sample_section(args, f, app_desc.app_name, schema)
     destination = os.path.join(args.galaxy_root, app_desc.sample_destination)
     _write_to_file(args, f, destination)
+
+
+def _overwrite_uwsgi_defaults():
+    # Prevents runtime error in logging module under Python 3.7.1+
+    # (see https://github.com/unbit/uwsgi/issues/1978)
+    key = 'py-call-osafterfork'
+    if key in UWSGI_OPTIONS:
+        UWSGI_OPTIONS[key]['default'] = False
 
 
 def _write_to_file(args, f, path):

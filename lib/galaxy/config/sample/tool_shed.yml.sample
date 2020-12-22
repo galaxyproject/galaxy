@@ -75,7 +75,7 @@ uwsgi:
   hook-master-start: unix_signal:15 gracefully_kill_them_all
 
   # Feature necessary for proper mule signal handling
-  py-call-osafterfork: true
+  py-call-osafterfork: false
 
   # Ensure application threads will run if `threads` is unset.
   enable-threads: true
