@@ -56,7 +56,21 @@ class ToolPanelManager:
                 config_elems.append(elem)
             # Add the new elements to the in-memory list of config_elems.
             for elem_entry in elem_list:
-                config_elems.append(elem_entry)
+                section_found = False
+                if elem_entry.tag == 'section':
+                    # See if there is already a section with a matching ID
+                    for existing_elem in config_elems:
+                        if existing_elem.tag == 'section' and existing_elem.attrib.get('id', None) == elem_entry.attrib.get('id', None):
+                            section_found = True
+                            for child in elem_entry:
+                                existing_elem.append(child)
+                                break
+                            if section_found:
+                                break
+                    if not section_found:
+                        config_elems.append(elem_entry)
+                else:
+                    config_elems.append(elem_entry)
             # Persist the altered shed_tool_config file.
             self.config_elems_to_xml_file(config_elems, shed_tool_conf, tool_path, tool_cache_data_dir)
             self.app.wait_for_toolbox_reload(old_toolbox)
