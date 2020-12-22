@@ -19,6 +19,7 @@ from galaxy import (
 )
 from galaxy.app import UniverseApplication
 from galaxy.exceptions import AdminRequiredException
+from galaxy.managers.jobs import JobManager
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.users import UserManager
 from galaxy.model import User
@@ -28,6 +29,10 @@ from galaxy.work.context import SessionRequestContext
 
 def get_app() -> UniverseApplication:
     return galaxy_app.app
+
+
+def get_job_manager(app: UniverseApplication = Depends(get_app)) -> JobManager:
+    return JobManager(app=app)
 
 
 def get_db(app: UniverseApplication = Depends(get_app)) -> Session:

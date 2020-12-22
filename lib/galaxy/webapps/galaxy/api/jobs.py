@@ -7,10 +7,7 @@ API operations on a jobs.
 import logging
 import typing
 
-from fastapi import (
-    Body,
-    Depends,
-)
+from fastapi import Depends
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter as APIRouter
 from sqlalchemy import (
@@ -48,18 +45,14 @@ from galaxy.work.context import (
     WorkRequestContext,
 )
 from . import (
-    get_admin_user,
     get_app,
+    get_job_manager,
     get_trans,
 )
 
 log = logging.getLogger(__name__)
 
 router = APIRouter(tags=["jobs"])
-
-
-def get_job_manager(app: UniverseApplication = Depends(get_app)) -> JobManager:
-    return JobManager(app=app)
 
 
 def get_job_search(app: UniverseApplication = Depends(get_app)) -> JobSearch:
@@ -76,17 +69,7 @@ class FastAPIJobs:
     job_search: JobSearch = Depends(get_job_search)
     hda_manager: hdas.HDAManager = Depends(get_hda_manager)
 
-    @router.get('/job_lock')
-    def job_lock_status(self, admin_user=Depends(get_admin_user)) -> JobLock:
-        """Get job lock status."""
-        return self.job_manager.job_lock()
-
-    @router.put('/job_lock')
-    def update_job_lock(self, admin_user=Depends(get_admin_user), job_lock: JobLock = Body(...)) -> JobLock:
-        """Set job lock status."""
-        return self.job_manager.job_lock(job_lock)
-
-    @router.get("/{id}")
+    @router.get("/api/job/{id}")
     def show(self, id: EncodedDatabaseIdField, trans: SessionRequestContext = Depends(get_trans), full: typing.Optional[bool] = False) -> typing.Dict:
         """
         Return dictionary containing description of job data

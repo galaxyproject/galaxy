@@ -36,9 +36,13 @@ def initialize_fast_app(gx_app, app=None):
 
     add_exception_handler(app)
     wsgi_handler = WSGIMiddleware(gx_app)
-    from galaxy.webapps.galaxy.api import jobs
-    from galaxy.webapps.galaxy.api import roles
-    app.include_router(jobs.router, prefix="/api/jobs")
+    from galaxy.webapps.galaxy.api import (
+        job_lock,
+        jobs,
+        roles,
+    )
+    app.include_router(jobs.router)
+    app.include_router(job_lock.router)
     app.include_router(roles.router)
     app.mount('/', wsgi_handler)
     return app
