@@ -74,7 +74,9 @@ uwsgi:
   # SIGTERM (its default is to brutally kill workers)
   hook-master-start: unix_signal:15 gracefully_kill_them_all
 
-  # Feature necessary for proper mule signal handling
+  # Feature necessary for proper mule signal handling. The default is
+  # set to false to prevent a runtime error under Python 3.7+ (see
+  # https://github.com/unbit/uwsgi/issues/1978).
   py-call-osafterfork: false
 
   # Ensure application threads will run if `threads` is unset.
