@@ -24,7 +24,7 @@ export default {
     },
     computed: {
         dataset() {
-            const element = {...this.item};
+            const element = { ...this.item };
             if (this.element_identifier) {
                 element.name = this.element_identifier;
             }
