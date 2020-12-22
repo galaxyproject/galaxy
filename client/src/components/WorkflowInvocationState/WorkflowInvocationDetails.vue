@@ -54,13 +54,8 @@ import WorkflowInvocationDataContents from "./WorkflowInvocationDataContents";
 import WorkflowInvocationStep from "./WorkflowInvocationStep";
 import ListMixin from "components/History/ListMixin";
 
-import { getAppRoot } from "onload/loadConfig";
-
-import { getRootFromIndexLink } from "onload";
+import { mapGetters } from "vuex";
 import { mapCacheActions } from "vuex-cache";
-import { mapGetters, mapActions } from "vuex";
-
-const getUrl = (path) => getRootFromIndexLink() + path;
 
 export default {
     mixins: [ListMixin],
@@ -80,7 +75,7 @@ export default {
     computed: {
         ...mapGetters(["getWorkflowByInstanceId"]),
         orderedSteps() {
-            return this.invocation.steps.sort((a, b) => a.order_index - b.order_index);
+            return [...this.invocation.steps].sort((a, b) => a.order_index - b.order_index);
         },
         workflow() {
             return this.getWorkflowByInstanceId(this.invocation.workflow_id);

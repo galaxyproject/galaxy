@@ -16,7 +16,8 @@
                         loading,
                     }"
                 >
-                    <div>
+                    <div v-if="loading"><b-spinner label="Loading Job..."></b-spinner></div>
+                    <div v-else>
                         <job-information :job_id="item.id" v-if="item" />
                         <p></p>
                         <job-parameters v-if="item" :jobId="item.id" :includeTitle="false" />
@@ -33,8 +34,6 @@
     </b-card>
 </template>
 <script>
-import { mapCacheActions } from "vuex-cache";
-import { mapGetters, mapActions } from "vuex";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { JobProvider } from "components/History/providers/DatasetProvider";

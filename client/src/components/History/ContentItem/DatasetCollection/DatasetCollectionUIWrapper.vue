@@ -14,7 +14,8 @@
             :id="collection.contents_url"
             v-slot="{ item, loading }"
         >
-            <DatasetCollectionContents :collectionContents="item" v-if="item" />
+            <b-spinner v-if="loading">Loading Dataset Collection...</b-spinner>
+            <DatasetCollectionContents v-else :collectionContents="item" />
         </DatasetCollectionContentProvider>
     </div>
 </template>

@@ -24,10 +24,11 @@ export default {
     },
     computed: {
         dataset() {
+            const element = {...this.item};
             if (this.element_identifier) {
-                this.item.name = this.element_identifier;
+                element.name = this.element_identifier;
             }
-            return new Dataset(this.item);
+            return new Dataset(element);
         },
     },
     data() {
@@ -37,7 +38,6 @@ export default {
     },
     methods: {
         expand(event) {
-            console.log("Exapnding");
             this.expanded = !this.expanded;
         },
     },

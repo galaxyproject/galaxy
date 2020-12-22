@@ -22,16 +22,8 @@ import { DatasetProvider, DatasetCollectionProvider } from "components/History/p
 import HistoryContentItem from "components/History/ContentItem/HistoryContentItem";
 import DatasetCollectionUIWrapper from "components/History/ContentItem/DatasetCollection/DatasetCollectionUIWrapper";
 import DatasetUIWrapper from "components/History/ContentItem/Dataset/DatasetUIWrapper";
-import { Dataset, STATES } from "components/History/model";
+import { STATES } from "components/History/model";
 import LoadingSpan from "components/LoadingSpan";
-
-import { getAppRoot } from "onload/loadConfig";
-import axios from "axios";
-
-import { getRootFromIndexLink } from "onload";
-import { mapGetters, mapActions } from "vuex";
-
-const getUrl = (path) => getRootFromIndexLink() + path;
 
 Vue.use(BootstrapVue);
 

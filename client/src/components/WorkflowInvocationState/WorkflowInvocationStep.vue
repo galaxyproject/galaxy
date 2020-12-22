@@ -105,9 +105,7 @@ export default {
             return this.orderedSteps;
         },
         invocationStepId() {
-            if (this.step) {
-                return this.step.id;
-            }
+            return this.step?.id;
         },
         workflowStepType() {
             return this.workflowStep.type;
@@ -134,6 +132,7 @@ export default {
             if (this.step) {
                 return this.getInvocationStepById(this.step.id);
             }
+            return null;
         },
         stepLabel() {
             return this.labelForWorkflowStep(this.workflowStep.id);
@@ -185,14 +184,15 @@ export default {
             switch (workflowStepType) {
                 case "tool":
                     return `Step ${oneBasedStepIndex}: ${this.getToolNameById(workflowStep.tool_id)}`;
-                case "subworkflow":
+                case "subworkflow": {
                     const subworkflow = this.getWorkflowByInstanceId(workflowStep.workflow_id);
                     const label = subworkflow ? subworkflow.name : "Subworkflow";
                     return `Step ${oneBasedStepIndex}: ${label}`;
+                }
                 case "parameter_input":
                     return `Step ${oneBasedStepIndex}: Parameter input`;
                 case "data_input":
-                    `Step ${oneBasedStepIndex}: Data input`;
+                    return `Step ${oneBasedStepIndex}: Data input`;
                 case "data_collection_input":
                     return `Step ${oneBasedStepIndex}: Data collection input`;
                 default:
