@@ -185,7 +185,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
                 trans.response.set_content_type(data.get_mime())
                 if tofile:
                     fStat = os.stat(data.file_name)
-                    trans.response.headers['Content-Length'] = int(fStat.st_size)
+                    trans.response.headers['Content-Length'] = str(fStat.st_size)
                     if toext[0:1] != ".":
                         toext = "." + toext
                     fname = data.name

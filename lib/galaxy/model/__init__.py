@@ -356,6 +356,7 @@ class JobLike:
 
 class User(Dictifiable, RepresentById):
     use_pbkdf2 = True
+    bootstrap_admin_user = False
     """
     Data for a Galaxy user or admin and relations to their
     histories, credentials, and roles.

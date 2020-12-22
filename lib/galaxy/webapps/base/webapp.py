@@ -1,7 +1,6 @@
 """
 """
 import datetime
-import hashlib
 import inspect
 import logging
 import os
@@ -19,17 +18,20 @@ from babel import Locale
 from babel.support import Translations
 from Cheetah.Template import Template
 from sqlalchemy import and_, true
-from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.exc import NoResultFound
 
 from galaxy import util
-from galaxy.exceptions import ConfigurationError, MessageException
+from galaxy.exceptions import (
+    AuthenticationFailed,
+    ConfigurationError,
+    MessageException,
+)
 from galaxy.managers import context
+from galaxy.managers.session import GalaxySessionManager
+from galaxy.managers.users import UserManager
 from galaxy.util import (
     asbool,
     safe_makedirs,
-    safe_str_cmp,
-    smart_str,
     unicodify
 )
 from galaxy.util.sanitize_html import sanitize_html
@@ -185,6 +187,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         self.app = app
         self.webapp = webapp
         self.security = webapp.security
+        self.user_manager = UserManager(app)
+        self.session_manager = GalaxySessionManager(app.model)
         base.DefaultWebTransaction.__init__(self, environ)
         self.setup_i18n()
         self.expunge_all()
@@ -197,8 +201,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         # that the current history should not be used for parameter values
         # and such).
         self.workflow_building_mode = False
-        # Flag indicating whether this is an API call and the API key user is an administrator
-        self.api_inherit_admin = False
         self.__user = None
         self.galaxy_session = None
         self.error_message = None
@@ -355,9 +357,10 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
     def set_user(self, user):
         """Set the current user."""
         if self.galaxy_session:
-            self.galaxy_session.user = user
-            self.sa_session.add(self.galaxy_session)
-            self.sa_session.flush()
+            if user.bootstrap_admin_user:
+                self.galaxy_session.user = user
+                self.sa_session.add(self.galaxy_session)
+                self.sa_session.flush()
         self.__user = user
 
     user = property(get_user, set_user)
@@ -400,23 +403,13 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         api_key = self.request.params.get('key', None) or self.request.headers.get('x-api-key', None)
         secure_id = self.get_cookie(name=session_cookie)
         api_key_supplied = self.environ.get('is_api_request', False) and api_key
-        if api_key_supplied and self._check_master_api_key(api_key):
-            self.api_inherit_admin = True
-            log.info("Session authenticated using Galaxy master api key")
-            self.user = None
-            self.galaxy_session = None
-        elif api_key_supplied:
+        if api_key_supplied:
             # Sessionless API transaction, we just need to associate a user.
             try:
-                provided_key = self.sa_session.query(self.app.model.APIKeys).filter(self.app.model.APIKeys.table.c.key == api_key).one()
-            except NoResultFound:
-                return 'Provided API key is not valid.'
-            if provided_key.user.deleted:
-                return 'User account is deactivated, please contact an administrator.'
-            newest_key = provided_key.user.api_keys[0]
-            if newest_key.key != provided_key.key:
-                return 'Provided API key has expired.'
-            self.set_user(provided_key.user)
+                user = self.user_manager.by_api_key(api_key)
+            except AuthenticationFailed as e:
+                return str(e)
+            self.set_user(user)
         elif secure_id:
             # API authentication via active session
             # Associate user using existing session
@@ -431,15 +424,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             # Anonymous API interaction -- anything but @expose_api_anonymous will fail past here.
             self.user = None
             self.galaxy_session = None
-
-    def _check_master_api_key(self, api_key):
-        master_api_key = getattr(self.app.config, 'master_api_key', None)
-        if not master_api_key:
-            return False
-        # Hash keys to make them the same size, so we can do safe comparison.
-        master_hash = hashlib.sha256(smart_str(master_api_key)).hexdigest()
-        provided_hash = hashlib.sha256(smart_str(api_key)).hexdigest()
-        return safe_str_cmp(master_hash, provided_hash)
 
     def _ensure_valid_session(self, session_cookie, create=True):
         """
@@ -463,10 +447,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             try:
                 session_key = self.security.decode_guid(secure_id)
                 if session_key:
-                    # Retrieve the galaxy_session id via the unique session_key
-                    galaxy_session = self.sa_session.query(self.app.model.GalaxySession) \
-                                                    .filter(and_(self.app.model.GalaxySession.table.c.session_key == session_key,
-                                                                 self.app.model.GalaxySession.table.c.is_valid == true())).options(joinedload("user")).first()
+                    galaxy_session = self.session_manager.get_session_from_session_key(session_key=session_key)
             except Exception:
                 # We'll end up creating a new galaxy_session
                 session_key = None

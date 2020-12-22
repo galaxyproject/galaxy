@@ -546,17 +546,19 @@ class BaseDatasetPopulator:
         roles = self.get_roles()
         users_roles = [r for r in roles if r["name"] == user_email]
         assert len(users_roles) == 1, f"Did not find exactly one role for email {user_email} - {users_roles}"
-        return users_roles[0]["id"]
+        role = users_roles[0]
+        assert "id" in role, role
+        return role["id"]
 
     def create_role(self, user_ids, description=None):
         payload = {
             "name": self.get_random_name(prefix="testpop"),
             "description": description or "Test Role",
-            "user_ids": json.dumps(user_ids),
+            "user_ids": user_ids,
         }
-        role_response = self.galaxy_interactor.post("roles", data=payload, admin=True)
+        role_response = self.galaxy_interactor.post("roles", data=payload, admin=True, json=True)
         assert role_response.status_code == 200
-        return role_response.json()[0]
+        return role_response.json()
 
     def create_quota(self, quota_payload):
         quota_response = self.galaxy_interactor.post("quotas", data=quota_payload, admin=True)
