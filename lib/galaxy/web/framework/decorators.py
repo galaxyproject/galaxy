@@ -93,7 +93,7 @@ def require_admin(func):
     @wraps(func)
     def decorator(self, trans, *args, **kwargs):
         if not trans.user_is_admin:
-            msg = require_admin_message(trans.app.config, trans.trans.get_user())
+            msg = require_admin_message(trans.app.config, trans.get_user())
             trans.response.status = 403
             if trans.response.get_content_type() == 'application/json':
                 return msg
