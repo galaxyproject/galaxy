@@ -1244,6 +1244,54 @@ outer_input:
             details = self.dataset_populator.get_history_dataset_details(history_id)
             assert details["name"] == "moocow suffix"
 
+    @skip_without_tool("create_2")
+    def test_placements_from_text_inputs(self):
+        with self.dataset_populator.test_history() as history_id:
+            run_def = """
+class: GalaxyWorkflow
+inputs: []
+steps:
+  create_2:
+    tool_id: create_2
+    state:
+      sleep_time: 0
+    outputs:
+      out_file1:
+        rename: "${replaceme} name"
+      out_file2:
+        rename: "${replaceme} name 2"
+test_data:
+  replacement_parameters:
+    replaceme: moocow
+"""
+
+            self._run_jobs(run_def, history_id=history_id)
+            details = self.dataset_populator.get_history_dataset_details(history_id)
+            assert details["name"] == "moocow name 2"
+
+            run_def = """
+class: GalaxyWorkflow
+inputs:
+  replaceme: text
+steps:
+  create_2:
+    tool_id: create_2
+    state:
+      sleep_time: 0
+    outputs:
+      out_file1:
+        rename: "${replaceme} name"
+      out_file2:
+        rename: "${replaceme} name 2"
+test_data:
+  replaceme:
+    value: moocow
+    type: raw
+"""
+            self._run_jobs(run_def, history_id=history_id)
+            details = self.dataset_populator.get_history_dataset_details(history_id)
+            assert details["name"] == "moocow name 2", details["name"]
+
     @skip_without_tool("random_lines1")
     def test_run_runtime_parameters_after_pause(self):
         with self.dataset_populator.test_history() as history_id:
