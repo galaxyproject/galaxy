@@ -154,8 +154,8 @@ UWSGI_OPTIONS = OrderedDict([
         'type': 'str',
     }),
     ('py-call-osafterfork', {
-        'desc': """Feature necessary for proper mule signal handling""",
-        'default': True,
+        'desc': """Feature necessary for proper mule signal handling on Python versions below 3.7.2. The default is set to false to prevent a runtime error under Python 3.7.2 and newer (see https://github.com/unbit/uwsgi/issues/1978).""",
+        'default': False,
         'type': 'bool',
     }),
     ('enable-threads', {
