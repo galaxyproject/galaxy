@@ -86,7 +86,8 @@ describe("JobInformation/JobInformation.vue", () => {
     it("stdout and stderr should be rendered", async () => {
         ["stdout", "stderr"].forEach((std) => {
             const label = jobInfoTable.find("#" + std);
-            expect(label.text().endsWith(std)).toBeTruthy();
+            const value = label.find(".code");
+            expect(value.text()).toBe(std);
         });
     });
 
