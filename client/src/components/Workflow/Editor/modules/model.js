@@ -28,6 +28,13 @@ export function fromSimple(workflow, data, appendData = false) {
         });
         Vue.nextTick(() => {
             // Second pass, connections
+            let using_workflow_outputs = false;
+            Object.entries(data.steps).forEach(([id, step]) => {
+                if (step.workflow_outputs && step.workflow_outputs.length > 0) {
+                    using_workflow_outputs = true;
+                }
+            });
+
             Object.entries(data.steps).forEach(([id, step]) => {
                 const nodeIndex = parseInt(id) + offset;
                 const node = workflow.nodes[nodeIndex];
@@ -46,12 +53,14 @@ export function fromSimple(workflow, data, appendData = false) {
                     }
                 });
 
-                // Older workflows contain HideDatasetActions only, but no active outputs yet.
-                Object.values(node.outputs).forEach((ot) => {
-                    if (!node.postJobActions[`HideDatasetAction${ot.name}`]) {
-                        node.activeOutputs.add(ot.name);
-                    }
-                });
+                if (!using_workflow_outputs) {
+                    // Older workflows contain HideDatasetActions only, but no active outputs yet.
+                    Object.values(node.outputs).forEach((ot) => {
+                        if (!node.postJobActions[`HideDatasetAction${ot.name}`]) {
+                            node.activeOutputs.add(ot.name);
+                        }
+                    });
+                }
             });
         });
     });
