@@ -104,11 +104,13 @@
                                     :parameters="parameters"
                                     :annotation="annotation"
                                     :version="version"
-                                    :license="license"
                                     :versions="versions"
+                                    :license="license"
                                     :creator="creator"
                                     @onVersion="onVersion"
                                     @onRename="onRename"
+                                    @onLicense="onLicense"
+                                    @onCreator="onCreator"
                                 />
                                 <div id="right-content" class="right-content" />
                             </div>
@@ -176,14 +178,6 @@ export default {
             type: String,
             default: "",
         },
-        license: {
-            type: String,
-            default: "",
-        },
-        creator: {
-            type: Object,
-            default: null,
-        },
         moduleSections: {
             type: Array,
             required: true,
@@ -218,6 +212,8 @@ export default {
             report: {},
             activeNode: null,
             labels: {},
+            license: null,
+            creator: null,
         };
     },
     created() {
@@ -405,6 +401,18 @@ export default {
                 .catch((response) => {
                     show_modal("Loading workflow failed...", response, { Ok: hide_modal });
                 });
+        },
+        onLicense(license) {
+            if (this.license != license) {
+                this.hasChanges = true;
+                this.license = license;
+            }
+        },
+        onCreator(creator) {
+            if (this.creator != creator) {
+                this.hasChanges = true;
+                this.creator = creator;
+            }
         },
         getManager() {
             return this;
