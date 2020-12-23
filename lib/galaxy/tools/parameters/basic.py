@@ -1298,11 +1298,6 @@ class ColumnListParameter(SelectToolParameter):
                 column_list = this_column_list
             else:
                 column_list = [c for c in column_list if c in this_column_list]
-
-            if dataset.dataset.get_size() == 0:
-                value = other_values.get(self.name)
-                if value is not None:
-                    column_list.append(value)
         return column_list
 
     def get_options(self, trans, other_values):
@@ -1341,7 +1336,15 @@ class ColumnListParameter(SelectToolParameter):
     def get_legal_values(self, trans, other_values):
         if self.data_ref not in other_values:
             raise ValueError("Value for associated data reference not found (data_ref).")
-        return set(self.get_column_list(trans, other_values))
+        legal_values = self.get_column_list(trans, other_values)
+
+        hda = other_values.get(self.data_ref)
+        if hda is not None and hda.dataset.get_size() == 0:
+            value = other_values.get(self.name)
+            if value is not None:
+                legal_values.append(value)
+
+        return set(legal_values)
 
     def get_dependencies(self):
         return [self.data_ref]
