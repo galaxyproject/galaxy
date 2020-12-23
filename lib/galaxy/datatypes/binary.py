@@ -964,10 +964,10 @@ class Anndata(H5):
     MetadataElement(name="layers_count", default=0, desc="layers_count", readonly=True, visible=True, no_value=0)
     MetadataElement(name="layers_names", desc="layers_names", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
     MetadataElement(name="row_attrs_count", default=0, desc="row_attrs_count", readonly=True, visible=True, no_value=0)
-    ## obs_names: Cell1, Cell2, Cell3,...
-    ## obs_layers: louvain, leidein, isBcell
-    ## obs_count: number of obs_layers
-    ## obs_size: number of obs_names
+    # obs_names: Cell1, Cell2, Cell3,...
+    # obs_layers: louvain, leidein, isBcell
+    # obs_count: number of obs_layers
+    # obs_size: number of obs_names
     MetadataElement(name="obs_names", desc="obs_names", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
     MetadataElement(name="obs_layers", desc="obs_layers", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
     MetadataElement(name="obs_count", default=0, desc="obs_count", readonly=True, visible=True, no_value=0)
@@ -1033,8 +1033,8 @@ class Anndata(H5):
                     dataset.metadata.obs_names = list(tmp[obs_index])
                 elif hasattr(tmp, 'dtype'):
                     if "index" in tmp.dtype.names:
-                        ## Yes, we call tmp["index"], and not tmp.dtype["index"]
-                        ## here, despite the above tests.
+                        # Yes, we call tmp["index"], and not tmp.dtype["index"]
+                        # here, despite the above tests.
                         dataset.metadata.obs_names = list(tmp["index"])
                     elif "_index" in tmp.dtype.names:
                         dataset.metadata.obs_names = list(tmp["_index"])
@@ -1073,8 +1073,8 @@ class Anndata(H5):
                 if var_index:
                     x, y, z = _layercountsize(tmp, len(tmp[var_index]))
                 else:
-                    ## failing to detect a var_index is not an indicator
-                    ## that the dataset is empty
+                    # failing to detect a var_index is not an indicator
+                    # that the dataset is empty
                     x, y, z = _layercountsize(tmp)
 
                 dataset.metadata.var_layers = x
