@@ -65,6 +65,7 @@ export function createStore() {
             store.dispatch("user/loadUser", { store });
             store.dispatch("config/loadConfigs", { store });
             store.dispatch("betaHistory/$init", { store });
+            store.dispatch("datasets/$init", { store });
         });
 
         // Watches for changes in Galaxy and sets those values on Vuex until Galaxy is gone

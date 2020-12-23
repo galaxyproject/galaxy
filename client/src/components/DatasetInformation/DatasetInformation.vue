@@ -63,6 +63,7 @@ import { mapCacheActions } from "vuex-cache";
 import Utils from "utils/utils";
 import UtcDate from "components/UtcDate";
 import DecodedId from "../DecodedId";
+import { mapGetters } from "vuex";
 
 export default {
     props: {
@@ -79,15 +80,16 @@ export default {
         this.fetchDataset(this.hda_id);
     },
     computed: {
+        ...mapGetters("datasets", ["getDatasetById"]),
         dataset: function () {
-            return this.$store.getters.dataset(this.hda_id);
+            return this.getDatasetById(this.hda_id);
         },
     },
     methods: {
         bytesToString(raw_size) {
             return Utils.bytesToString(raw_size);
         },
-        ...mapCacheActions(["fetchDataset"]),
+        ...mapCacheActions("datasets", ["fetchDataset"]),
     },
 };
 </script>

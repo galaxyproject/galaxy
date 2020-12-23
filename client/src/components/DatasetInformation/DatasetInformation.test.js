@@ -16,12 +16,13 @@ localVue.use(Vuex);
 const testStore = new Vuex.Store({
     plugins: [createCache()],
     modules: {
-        datasetsStore: {
+        datasets: {
+            namespaced: true,
             actions: {
                 fetchDataset: jest.fn(),
             },
             getters: {
-                dataset: (state) => (hda_id) => {
+                getDatasetById: (state) => (hda_id) => {
                     return datasetResponse;
                 },
             },

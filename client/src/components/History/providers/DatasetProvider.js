@@ -3,6 +3,9 @@ import Vue from "vue";
 import axios from "axios";
 import { prependPath } from "utils/redirect";
 
+import { mapCacheActions } from "vuex-cache";
+import { mapGetters } from "vuex";
+
 var SimpleProviderMixin = {
     props: {
         id: { type: String, required: true },
@@ -26,14 +29,14 @@ var SimpleProviderMixin = {
     methods: {
         async load() {
             this.loading = true;
-            const result = await axios.get(this.url);
-            this.item = result.data;
+            const { data } = await axios.get(this.url);
+            this.item = data;
             this.loading = false;
         },
         async save(newProps) {
             this.loading = true;
-            const result = await axios.put(this.url, newProps);
-            this.item = result.data;
+            const { data } = await axios.put(this.url, newProps);
+            this.item = data;
             this.loading = false;
         },
     },
@@ -48,9 +51,25 @@ var SimpleProviderMixin = {
 
 var DatasetProvider = Vue.extend({
     mixins: [SimpleProviderMixin],
+    methods: {
+        ...mapCacheActions("datasets", ["fetchDataset"]),
+        async load() {
+            this.loading = true;
+            this.item = await this.fetchDataset(this.id);
+            this.loading = false;
+        },
+    },
+    watch: {
+        dataset: {
+            handler(newState, oldState) {
+                this.item = newState;
+            },
+        },
+    },
     computed: {
-        url() {
-            return prependPath(`api/datasets/${this.id}`);
+        ...mapGetters("datasets", ["getDatasetById"]),
+        dataset() {
+            return this.getDatasetById(this.id);
         },
     },
 });
