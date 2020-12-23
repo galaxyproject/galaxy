@@ -2,7 +2,7 @@
     <div>
         <div v-if="!isSingleParam" class="tool-parameters">
             <h3 v-if="includeTitle">Tool Parameters</h3>
-            <table class="tabletip" id="tool-parameters">
+            <table class="tabletip info_data_table" id="tool-parameters">
                 <thead>
                     <tr>
                         <th>Input Parameter</th>
@@ -130,12 +130,3 @@ export default {
     },
 };
 </script>
-<style scoped>
-table.info_data_table {
-    table-layout: fixed;
-    word-break: break-word;
-}
-table.info_data_table td:nth-child(1) {
-    width: 25%;
-}
-</style>
