@@ -2,13 +2,13 @@
     <tr @click="toggleExpanded">
         <td>
             {{ codeLabel }}
-            <span v-if="codeItem && !expanded"><i>(Click to expand)</i></span>
         </td>
         <td v-if="expanded">
             <pre class="code">{{ codeItem }}</pre>
         </td>
         <td v-else-if="codeItem">
             <pre class="code preview">{{ codeItem }}</pre>
+            <b>(Click to expand)</b>
         </td>
         <td v-else><i>empty</i></td>
     </tr>
