@@ -647,4 +647,7 @@ class ToolEvaluator:
     @property
     def _user(self):
         history = self._history
-        return history and history.user
+        if history:
+            return history.user
+        else:
+            return self.job.user
