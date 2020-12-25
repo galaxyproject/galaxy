@@ -9,7 +9,7 @@ from functools import partial
 try:
     from grp import getgrgid
 except ImportError:
-    getgrgid = None
+    getgrgid = None  # type: ignore
 from itertools import starmap
 from operator import getitem
 from os import (
@@ -35,7 +35,7 @@ from os.path import (
 try:
     from pwd import getpwuid
 except ImportError:
-    getpwuid = None
+    getpwuid = None  # type: ignore
 
 
 import galaxy.util
@@ -204,7 +204,7 @@ def __path_permission_for_user(path, username):
     :type username:     string
     :param username:    a username matching the systems username
     """
-    if getpwuid is None:
+    if getpwuid is None or getgrgid is None:
         raise NotImplementedError("This functionality is not implemented for Windows.")
 
     group_id_of_file = stat(path).st_gid

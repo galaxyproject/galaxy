@@ -40,7 +40,7 @@ try:
     import grp
 except ImportError:
     # For Pulsar on Windows (which does not use the function that uses grp)
-    grp = None
+    grp = None  # type: ignore
 from boltons.iterutils import (
     default_enter,
     remap,
@@ -50,7 +50,7 @@ try:
     from lxml import etree
 except ImportError:
     LXML_AVAILABLE = False
-    import xml.etree.ElementTree as etree
+    import xml.etree.ElementTree as etree  # type: ignore
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
@@ -1551,8 +1551,8 @@ def safe_str_cmp(a, b):
     return rv == 0
 
 
-galaxy_root_path = os.path.join(__path__[0], os.pardir, os.pardir, os.pardir)
-galaxy_samples_path = os.path.join(__path__[0], os.pardir, 'config', 'sample')
+galaxy_root_path = os.path.join(__path__[0], os.pardir, os.pardir, os.pardir)  # type: ignore
+galaxy_samples_path = os.path.join(__path__[0], os.pardir, 'config', 'sample')  # type: ignore
 
 
 def galaxy_directory():

@@ -1,6 +1,7 @@
 import abc
 import itertools
 import re
+from typing import List, Type
 
 import yaml
 from pkg_resources import resource_stream
@@ -567,7 +568,7 @@ class RuleSet:
         return message
 
 
-RULES_DEFINITION_CLASSES = [
+RULES_DEFINITION_CLASSES: List[Type[BaseRuleDefinition]] = [
     AddColumnMetadataRuleDefinition,
     AddColumnGroupTagValueRuleDefinition,
     AddColumnConcatenateRuleDefinition,
