@@ -7,7 +7,6 @@ usage: %prog history_attrs dataset_attrs job_attrs out_file
 """
 
 import optparse
-import os
 import shutil
 import sys
 
@@ -37,30 +36,12 @@ def main(argv=None):
     (options, args) = parser.parse_args(argv)
     galaxy_version = options.galaxy_version
     if galaxy_version is None:
-        galaxy_version = "19.01" if len(args) == 4 else "19.05"
+        galaxy_version = "19.05"
 
     gzip = bool(options.gzip)
-    if galaxy_version == "19.01":
-        # This job was created pre 18.0X with old argument style.
-        out_file = args[3]
-        temp_directory = os.path.dirname(args[0])
-    else:
-        assert len(args) >= 2
-        # We have a 19.0X directory argument instead of individual arguments.
-        temp_directory = args[0]
-        out_file = args[1]
-
-    if galaxy_version == "19.01":
-        history_attrs = os.path.join(temp_directory, 'history_attrs.txt')
-        dataset_attrs = os.path.join(temp_directory, 'datasets_attrs.txt')
-        job_attrs = os.path.join(temp_directory, 'jobs_attrs.txt')
-
-        shutil.move(args[0], history_attrs)
-        shutil.move(args[1], dataset_attrs)
-        provenance_path = args[1] + ".provenance"
-        if os.path.exists(provenance_path):
-            shutil.move(provenance_path, dataset_attrs + ".provenance")
-        shutil.move(args[2], job_attrs)
+    assert len(args) >= 2
+    temp_directory = args[0]
+    out_file = args[1]
 
     # Create archive.
     return create_archive(temp_directory, out_file, gzip=gzip)
