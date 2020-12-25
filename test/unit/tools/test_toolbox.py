@@ -35,10 +35,11 @@ CONFIG_TEST_TOOL_VERSION_TEMPLATE = string.Template(
 CONFIG_TEST_TOOL_VERSION_1 = CONFIG_TEST_TOOL_VERSION_TEMPLATE.safe_substitute(dict(version="1"))
 CONFIG_TEST_TOOL_VERSION_2 = CONFIG_TEST_TOOL_VERSION_TEMPLATE.safe_substitute(dict(version="2"))
 
-DEFAULT_TEST_REPO = collections.namedtuple(
+REPO_TYPE = collections.namedtuple(
     'DEFAULT_TEST_REPO',
     'tool_shed owner name changeset_revision installed_changeset_revision description status',
-)('github.com', 'galaxyproject', 'example', '1', '1', 'description', 'OK')
+)
+DEFAULT_TEST_REPO = REPO_TYPE('github.com', 'galaxyproject', 'example', '1', '1', 'description', 'OK')
 
 
 class BaseToolBoxTestCase(unittest.TestCase, UsesApp, UsesTools):
