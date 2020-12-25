@@ -6,11 +6,7 @@ import os
 import shutil
 from datetime import datetime
 from functools import partial
-try:
-    from pathlib import Path
-except ImportError:
-    # Use backport on python 2
-    from pathlib2 import Path
+from pathlib import Path
 
 try:
     import irods
