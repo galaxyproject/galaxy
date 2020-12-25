@@ -1,13 +1,16 @@
+import datetime
 import logging
 import os
 import tempfile
 from collections import OrderedDict
 
+from galaxy.job_execution.setup import create_working_directory_for_job
 from galaxy.tools.actions import ToolAction
 from galaxy.tools.imp_exp import (
     JobExportHistoryArchiveWrapper,
     JobImportHistoryArchiveWrapper
 )
+from galaxy.util import ready_name_for_url
 
 log = logging.getLogger(__name__)
 
@@ -99,10 +102,7 @@ class ExportHistoryToolAction(ToolAction):
         job.galaxy_version = trans.app.config.version_major
         session = trans.get_galaxy_session()
         job.session_id = session and session.id
-        if history:
-            history_id = history.id
-        else:
-            history_id = trans.history.id
+        history_id = history.id
         job.history_id = history_id
         job.tool_id = tool.id
         if trans.user:
@@ -112,26 +112,32 @@ class ExportHistoryToolAction(ToolAction):
         job.state = job.states.WAITING  # we need to set job state to something other than NEW, or else when tracking jobs in db it will be picked up before we have added input / output parameters
         trans.sa_session.add(job)
 
-        # Create dataset that will serve as archive.
-        archive_dataset = trans.app.model.Dataset()
-        trans.sa_session.add(archive_dataset)
-
-        trans.sa_session.flush()  # ensure job.id and archive_dataset.id are available
-        trans.app.object_store.create(archive_dataset)  # set the object store id, create dataset (if applicable)
+        compressed = incoming['compress']
+        exporting_to_uri = "directory_uri" in incoming
+        if not exporting_to_uri:
+            # see comment below about how this should be transitioned to occuring in a
+            # job handler or detached MQ-driven thread
+            jeha = trans.app.model.JobExportHistoryArchive.create_for_history(
+                history, job, trans.sa_session, trans.app.object_store, compressed
+            )
+            store_directory = jeha.temp_directory
+        else:
+            # creating a job directory in the web thread is bad (it is slow, bypasses
+            # dynamic objectstore assignment, etc..) but it is arguably less bad than
+            # creating a dataset (like above for dataset export case).
+            # ensure job.id is available
+            trans.sa_session.flush()
+            job_directory = create_working_directory_for_job(trans.app.object_store, job)
+            store_directory = os.path.join(job_directory, "working", "_object_export")
+            os.makedirs(store_directory)
 
         #
         # Setup job and job wrapper.
         #
-
-        # Add association for keeping track of job, history, archive relationship.
-        jeha = trans.app.model.JobExportHistoryArchive(job=job, history=history,
-                                                       dataset=archive_dataset,
-                                                       compressed=incoming['compress'])
-        trans.sa_session.add(jeha)
-
         job_wrapper = JobExportHistoryArchiveWrapper(trans.app, job)
-        cmd_line = job_wrapper.setup_job(jeha, include_hidden=incoming['include_hidden'],
-                                         include_deleted=incoming['include_deleted'])
+        cmd_line = job_wrapper.setup_job(history, store_directory, include_hidden=incoming['include_hidden'],
+                                         include_deleted=incoming['include_deleted'],
+                                         compressed=compressed)
 
         #
         # Add parameters to job_parameter table.
@@ -140,6 +146,22 @@ class ExportHistoryToolAction(ToolAction):
         # Set additional parameters.
         incoming['__HISTORY_TO_EXPORT__'] = history.id
         incoming['__EXPORT_HISTORY_COMMAND_INPUTS_OPTIONS__'] = cmd_line
+        if exporting_to_uri:
+            directory_uri = incoming["directory_uri"]
+            file_name = incoming.get("file_name")
+            if file_name is None:
+                hname = ready_name_for_url(history.name)
+                human_timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+                if compressed:
+                    extension = ".tar.gz"
+                else:
+                    extension = ".tar"
+                file_name = f"Galaxy-History-{hname}-{human_timestamp}.{extension}"
+
+            file_name = os.path.basename(os.path.abspath(file_name))
+            sep = "" if directory_uri.endswith("/") else "/"
+            incoming['__EXPORT_TO_URI__'] = f"{directory_uri}{sep}{file_name}"
+
         for name, value in tool.params_to_strings(incoming, trans.app).items():
             job.add_parameter(name, value)
 

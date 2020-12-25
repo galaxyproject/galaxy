@@ -210,12 +210,7 @@ class ImportExportHistoryTestCase(ApiTestCase, BaseHistories):
 
     def test_import_export(self):
         history_name = "for_export_default"
-        history_id = self.dataset_populator.new_history(name=history_name)
-        self.dataset_populator.new_dataset(history_id, content="1 2 3")
-        deleted_hda = self.dataset_populator.new_dataset(history_id, content="1 2 3", wait=True)
-        self.dataset_populator.delete_dataset(history_id, deleted_hda["id"])
-        deleted_details = self.dataset_populator.get_history_dataset_details(history_id, id=deleted_hda["id"])
-        assert deleted_details["deleted"]
+        history_id = self.dataset_populator.setup_history_for_export_testing(history_name)
         imported_history_id = self._reimport_history(history_id, history_name, wait_on_history_length=2)
 
         def upload_job_check(job):

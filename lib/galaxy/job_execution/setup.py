@@ -9,3 +9,11 @@ def ensure_configs_directory(work_dir):
     if not os.path.exists(configs_dir):
         safe_makedirs(configs_dir)
     return configs_dir
+
+
+def create_working_directory_for_job(object_store, job):
+    object_store.create(
+        job, base_dir='job_work', dir_only=True, obj_dir=True)
+    working_directory = object_store.get_filename(
+        job, base_dir='job_work', dir_only=True, obj_dir=True)
+    return working_directory

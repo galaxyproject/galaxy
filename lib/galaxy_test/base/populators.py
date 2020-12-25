@@ -608,19 +608,37 @@ class BaseDatasetPopulator:
             "dataset validation"
         )
 
-    def export_url(self, history_id, data, check_download=True):
+    def setup_history_for_export_testing(self, history_name):
+        history_id = self.new_history(name=history_name)
+        self.new_dataset(history_id, content="1 2 3")
+        deleted_hda = self.new_dataset(history_id, content="1 2 3", wait=True)
+        self.delete_dataset(history_id, deleted_hda["id"])
+        deleted_details = self.get_history_dataset_details(history_id, id=deleted_hda["id"])
+        assert deleted_details["deleted"]
+        return history_id
+
+    def prepare_export(self, history_id, data):
         url = "histories/%s/exports" % history_id
         put_response = self._put(url, data)
-        api_asserts.assert_status_code_is(put_response, 202)
+        put_response.raise_for_status()
 
-        def export_ready_response():
-            put_response = self._put(url)
-            if put_response.status_code == 202:
-                return None
+        if put_response.status_code == 202:
+            def export_ready_response():
+                put_response = self._put(url)
+                if put_response.status_code == 202:
+                    return None
+                return put_response
+
+            put_response = wait_on(export_ready_response, desc="export ready")
+            api_asserts.assert_status_code_is(put_response, 200)
             return put_response
+        else:
+            job_desc = put_response.json()
+            assert "job_id" in job_desc
+            return self.wait_for_job(job_desc["job_id"])
 
-        put_response = wait_on(export_ready_response, desc="export ready")
-        api_asserts.assert_status_code_is(put_response, 200)
+    def export_url(self, history_id, data, check_download=True):
+        put_response = self.prepare_export(history_id, data)
         response = put_response.json()
         api_asserts.assert_has_keys(response, "download_url")
         download_url = response["download_url"]
