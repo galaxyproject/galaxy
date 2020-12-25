@@ -32,6 +32,34 @@ def test_import_export_history_failed_job():
     _assert_simple_cat_job_imported(imported_history, state='error')
 
 
+def test_import_export_history_allow_discarded_data():
+    """Test an export and import without exporting dataset file data.
+
+    Experimental state that should result in 'discarded' datasets that are not
+    deleted.
+    """
+    app = _mock_app()
+
+    u, h, d1, d2, j = _setup_simple_cat_job(app)
+
+    import_options = store.ImportOptions(
+        discarded_data=store.ImportDiscardedDataType.ALLOW,
+    )
+    imported_history = _import_export_history(app, h, export_files=None, import_options=import_options)
+    assert imported_history.name == "imported from archive: Test History"
+
+    datasets = imported_history.datasets
+    assert len(datasets) == 2
+    assert datasets[0].state == datasets[1].state == model.Dataset.states.DISCARDED
+    assert datasets[0].deleted is False
+
+    imported_job = datasets[1].creating_job
+    assert imported_job
+    assert imported_job.state == 'ok'
+    assert imported_job.output_datasets
+    assert imported_job.output_datasets[0].dataset == datasets[1]
+
+
 def test_import_export_bag_archive():
     """Test a simple job import/export using a BagIt archive."""
     dest_parent = mkdtemp()
@@ -460,7 +488,7 @@ def _setup_simple_cat_job(app, state='ok'):
     return u, h, d1, d2, j
 
 
-def _import_export_history(app, h, dest_export=None, export_files=None):
+def _import_export_history(app, h, dest_export=None, export_files=None, import_options=None):
     if dest_export is None:
         dest_parent = mkdtemp()
         dest_export = os.path.join(dest_parent, "moo.tgz")
@@ -468,7 +496,7 @@ def _import_export_history(app, h, dest_export=None, export_files=None):
     with store.TarModelExportStore(dest_export, app=app, export_files=export_files) as export_store:
         export_store.export_history(h)
 
-    imported_history = import_archive(dest_export, app, h.user)
+    imported_history = import_archive(dest_export, app, h.user, import_options=import_options)
     assert imported_history
     return imported_history
 
@@ -479,7 +507,7 @@ def _perform_import_from_directory(directory, app, user, import_history, import_
         import_model_store.perform_import(import_history)
 
 
-def import_archive(archive_path, app, user):
+def import_archive(archive_path, app, user, import_options=None):
     dest_parent = mkdtemp()
     dest_dir = os.path.join(dest_parent, 'dest')
 
@@ -491,8 +519,14 @@ def import_archive(archive_path, app, user):
     args = (archive_path, dest_dir)
     unpack_tar_gz_archive.main(options, args)
 
+    import_options = import_options or store.ImportOptions()
     new_history = None
-    model_store = store.get_import_model_store_for_directory(dest_dir, app=app, user=user)
+    model_store = store.get_import_model_store_for_directory(
+        dest_dir,
+        app=app,
+        user=user,
+        import_options=import_options,
+    )
     with model_store.target_history(default_history=None) as new_history:
         model_store.perform_import(new_history)
 
