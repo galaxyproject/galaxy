@@ -90,6 +90,7 @@ gxformat2 = "*"
 refgenconf = ">=0.7.0"
 future = "*"
 zipstream-new = "*"
+htcondor = "*"
 
 [requires]
 python_version = "3.6"
