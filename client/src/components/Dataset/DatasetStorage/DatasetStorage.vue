@@ -1,18 +1,18 @@
 <template>
     <div>
         <h3 v-if="includeTitle">Dataset Storage</h3>
-        <loading-span v-if="storageInfo == null"> </loading-span>
+        <div v-if="errorMessage" class="error">{{ errorMessage }}</div>
+        <loading-span v-else-if="storageInfo == null"> </loading-span>
         <div v-else>
-            <p v-if="storageInfo.name">
-                This data is stored in a Galaxy ObjectStore named <b>{{ storageInfo.name }}</b
-                >.
-            </p>
-            <p v-else-if="storageInfo.object_store_id">
-                This data is stored in a Galaxy ObjectStore with id <b>{{ storageInfo.object_store_id }}</b
-                >.
-            </p>
-            <p v-else>
-                This data is stored in the default configured Galaxy ObjectStore.
+            <p>
+                This dataset is stored in
+                <span class="display-os-by-name" v-if="storageInfo.name">
+                    a Galaxy object store named <b>{{ storageInfo.name }}</b>
+                </span>
+                <span class="display-os-by-id" v-else-if="storageInfo.object_store_id">
+                    a Galaxy object store with id <b>{{ storageInfo.object_store_id }}</b>
+                </span>
+                <span class="display-os-default" v-else> the default configured Galaxy object store </span>.
             </p>
             <div v-html="descriptionRendered"></div>
         </div>
@@ -24,8 +24,7 @@ import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 import LoadingSpan from "components/LoadingSpan";
 import MarkdownIt from "markdown-it";
-
-const md = MarkdownIt();
+import { errorMessageAsString } from "utils/simple-error";
 
 export default {
     components: {
@@ -48,24 +47,29 @@ export default {
         return {
             storageInfo: null,
             descriptionRendered: null,
+            errorMessage: null,
         };
     },
     created() {
         const datasetId = this.datasetId;
         const datasetType = this.datasetType;
         axios
-            .get(`${getAppRoot()}api/datasets/${datasetId}/storage?hda_ldda=${datasetType}`)
+            .get(`${getAppRoot()}api/datasets/${datasetId}/storage`, { hda_ldda: datasetType })
             .then(this.handleResponse)
-            .catch(this.handleError);
+            .catch((errorMessage) => {
+                this.errorMessage = errorMessageAsString(errorMessage);
+            });
     },
     methods: {
         handleResponse(response) {
-            console.log(response);
-            this.storageInfo = response.data;
-            this.descriptionRendered = md.render(this.storageInfo.description);
-        },
-        handleError(err) {
-            console.log(err);
+            const storageInfo = response.data;
+            const description = storageInfo.description;
+            this.storageInfo = storageInfo;
+            if (description) {
+                this.descriptionRendered = MarkdownIt().render(storageInfo.description);
+            } else {
+                this.descriptionRendered = null;
+            }
         },
     },
 };
