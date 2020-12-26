@@ -57,21 +57,6 @@ class CondorJobRunner(AsynchronousJobRunner):
         self._init_monitor_thread()
         self._init_worker_threads()
 
-    def __old_state_paths(self, cjs):
-        """For recovery of jobs started prior to standardizing the naming of
-        files in the AsychronousJobState object
-        Remove this function in 21.01
-        """
-        if cjs.job_wrapper is not None:
-            job_file = f"{self.app.config.cluster_files_directory}/galaxy_{cjs.job_wrapper.job_id}.sh"
-            if not os.path.exists(cjs.job_file) and os.path.exists(job_file):
-                cluster_files_dir_and_id = (self.app.config.cluster_files_directory, cjs.job_wrapper.get_id_tag())
-                cjs.output_file = "%s/galaxy_%s.o" % cluster_files_dir_and_id
-                cjs.error_file = "%s/galaxy_%s.e" % cluster_files_dir_and_id
-                cjs.exit_code_file = "%s/galaxy_%s.ec" % cluster_files_dir_and_id
-                cjs.user_log = "%s/galaxy_%s.condor.log" % cluster_files_dir_and_id
-                cjs.job_file = job_file
-
     def queue_job(self, job_wrapper):
         """Create job script and submit it to the DRM"""
 
@@ -189,7 +174,6 @@ class CondorJobRunner(AsynchronousJobRunner):
         for cjs in self.watched:
             job_id = cjs.job_id
             galaxy_id_tag = cjs.job_wrapper.get_id_tag()
-            self.__old_state_paths(cjs)  # remove in 21.01
             try:
                 if cjs.job_wrapper.tool.tool_type != 'interactive' and os.stat(cjs.user_log).st_size == cjs.user_log_size:
                     new_watched.append(cjs)
@@ -292,7 +276,6 @@ class CondorJobRunner(AsynchronousJobRunner):
         cjs.job_destination = job_wrapper.job_destination
         cjs.user_log = os.path.join(job_wrapper.working_directory, 'galaxy_%s.condor.log' % galaxy_id_tag)
         cjs.register_cleanup_file_attribute('user_log')
-        self.__old_state_paths(cjs)  # remove in 21.01
         if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
             log.debug(f"({job.id}/{job.get_job_runner_external_id()}) is still in {job.state} state, adding to the DRM queue")
             cjs.running = True
