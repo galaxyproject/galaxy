@@ -17,7 +17,7 @@ try:
     from boto.s3.connection import S3Connection
     from boto.s3.key import Key
 except ImportError:
-    boto = None
+    boto = None  # type: ignore
 
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.util import (
