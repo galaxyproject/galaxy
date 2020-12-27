@@ -468,16 +468,34 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
         # in one object being created.
         history = self.manager.get_accessible(self.decode_id(id), trans.user, current_history=trans.history)
         jeha = history.latest_export
-        up_to_date = jeha and jeha.up_to_date
-        if 'force' in kwds:
-            up_to_date = False  # Temp hack to force rebuild everytime during dev
+        force = 'force' in kwds  # Hack to force rebuild everytime during dev
+        exporting_to_uri = 'directory_uri' in kwds
+        # always just issue a new export when exporting to a URI.
+        up_to_date = not force and not exporting_to_uri and (jeha and jeha.up_to_date)
+        job = None
         if not up_to_date:
             # Need to create new JEHA + job.
             gzip = kwds.get("gzip", True)
             include_hidden = kwds.get("include_hidden", False)
             include_deleted = kwds.get("include_deleted", False)
-            self.queue_history_export(trans, history, gzip=gzip, include_hidden=include_hidden, include_deleted=include_deleted)
+            directory_uri = kwds.get("directory_uri", None)
+            file_name = kwds.get("file_name", None)
+            job = self.queue_history_export(
+                trans,
+                history,
+                gzip=gzip,
+                include_hidden=include_hidden,
+                include_deleted=include_deleted,
+                directory_uri=directory_uri,
+                file_name=file_name,
+            )
 
+        if exporting_to_uri:
+            # we don't have a jeha, there will never be a download_url. Just let
+            # the client poll on the created job_id to determine when the file has been
+            # written.
+            job_id = trans.security.encode_id(job.id)
+            return dict(job_id=job_id)
         if up_to_date and jeha.ready:
             jeha_id = trans.security.encode_id(jeha.id)
             return dict(download_url=url_for("history_archive_download", id=id, jeha_id=jeha_id))

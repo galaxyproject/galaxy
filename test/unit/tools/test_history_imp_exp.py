@@ -621,13 +621,12 @@ def _import_export(app, h, dest_export=None):
         dest_parent = tempfile.mkdtemp()
         dest_export = os.path.join(dest_parent, "moo.tgz")
 
-    dataset = model.Dataset(id=100)
-
-    jeha = model.JobExportHistoryArchive(job=model.Job(), history=h,
-                                         dataset=dataset,
-                                         compressed=True)
-    wrapper = JobExportHistoryArchiveWrapper(app, 1)
-    wrapper.setup_job(jeha)
+    job = model.Job()
+    jeha = model.JobExportHistoryArchive.create_for_history(
+        h, job, app.model.context, app.object_store, compressed=True
+    )
+    wrapper = JobExportHistoryArchiveWrapper(app, job.id)
+    wrapper.setup_job(h, jeha.temp_directory)
 
     from galaxy.tools.imp_exp import export_history
     ret = export_history.main(["--gzip", jeha.temp_directory, dest_export])

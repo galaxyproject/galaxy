@@ -40,7 +40,10 @@ from galaxy.job_execution.datasets import (
     TaskPathRewriter
 )
 from galaxy.job_execution.output_collect import collect_extra_files
-from galaxy.job_execution.setup import ensure_configs_directory
+from galaxy.job_execution.setup import (
+    create_working_directory_for_job,
+    ensure_configs_directory,
+)
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.jobs.mapper import (
     JobMappingException,
@@ -1190,11 +1193,7 @@ class JobWrapper(HasResourceParameters):
         return os.path.join(self.working_directory, "working")
 
     def _create_working_directory(self, job):
-        self.object_store.create(
-            job, base_dir='job_work', dir_only=True, obj_dir=True)
-        working_directory = self.object_store.get_filename(
-            job, base_dir='job_work', dir_only=True, obj_dir=True)
-        return working_directory
+        return create_working_directory_for_job(self.object_store, job)
 
     def clear_working_directory(self):
         job = self.get_job()

@@ -410,7 +410,7 @@ class ExportsHistoryMixin:
         archive = trans.app.object_store.get_filename(jeha.dataset)
         return open(archive, mode='rb')
 
-    def queue_history_export(self, trans, history, gzip=True, include_hidden=False, include_deleted=False):
+    def queue_history_export(self, trans, history, gzip=True, include_hidden=False, include_deleted=False, directory_uri=None, file_name=None):
         # Convert options to booleans.
         if isinstance(gzip, str):
             gzip = (gzip in ['True', 'true', 'T', 't'])
@@ -419,8 +419,6 @@ class ExportsHistoryMixin:
         if isinstance(include_deleted, str):
             include_deleted = (include_deleted in ['True', 'true', 'T', 't'])
 
-        # Run job to do export.
-        history_exp_tool = trans.app.toolbox.get_tool('__EXPORT_HISTORY__')
         params = {
             'history_to_export': history,
             'compress': gzip,
@@ -428,7 +426,17 @@ class ExportsHistoryMixin:
             'include_deleted': include_deleted
         }
 
-        history_exp_tool.execute(trans, incoming=params, history=history, set_output_hid=True)
+        if directory_uri is None:
+            export_tool_id = '__EXPORT_HISTORY__'
+        else:
+            params['directory_uri'] = directory_uri
+            params['file_name'] = file_name or None
+            export_tool_id = '__EXPORT_HISTORY_TO_URI__'
+
+        # Run job to do export.
+        history_exp_tool = trans.app.toolbox.get_tool(export_tool_id)
+        job, _ = history_exp_tool.execute(trans, incoming=params, history=history, set_output_hid=True)
+        return job
 
 
 class ImportsHistoryMixin:

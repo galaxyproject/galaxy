@@ -16,7 +16,7 @@ USERNAME = 'user--bx--psu--edu'
 USER_EMAIL = 'user@bx.psu.edu'
 
 
-class RemoteFilesIntegrationTestCase(integration_util.IntegrationTestCase):
+class ConfiguresRemoteFilesIntegrationTestCase(integration_util.IntegrationTestCase):
 
     framework_tool_and_types = True
 
@@ -45,6 +45,16 @@ class RemoteFilesIntegrationTestCase(integration_util.IntegrationTestCase):
             if os.path.exists(d):
                 shutil.rmtree(d)
             os.mkdir(d)
+
+    @property
+    def user_ftp_dir(self):
+        ftp_dir = os.path.join(self.ftp_upload_dir, USER_EMAIL)
+        if not os.path.exists(ftp_dir):
+            os.mkdir(ftp_dir)
+        return ftp_dir
+
+
+class RemoteFilesIntegrationTestCase(ConfiguresRemoteFilesIntegrationTestCase):
 
     def test_index(self):
         index = self.galaxy_interactor.get("remote_files?target=importdir").json()
@@ -92,7 +102,7 @@ class RemoteFilesIntegrationTestCase(integration_util.IntegrationTestCase):
         assert os.path.exists(os.path.join(self.library_dir, "a"))
 
     def test_fetch_from_ftp(self):
-        ftp_dir = os.path.join(self.ftp_upload_dir, USER_EMAIL)
+        ftp_dir = self.user_ftp_dir
         _write_file_fixtures(self.root, ftp_dir)
         with self.dataset_populator.test_history() as history_id:
             element = dict(src="url", url="gxftp://a")
@@ -113,7 +123,7 @@ class RemoteFilesIntegrationTestCase(integration_util.IntegrationTestCase):
 
     def test_write_to_files(self):
         dataset_populator = self.dataset_populator
-        ftp_dir = os.path.join(self.ftp_upload_dir, USER_EMAIL)
+        ftp_dir = self.user_ftp_dir
         _write_file_fixtures(self.root, ftp_dir)
         with dataset_populator.test_history() as history_id:
             inputs = {

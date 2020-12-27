@@ -1585,6 +1585,8 @@ class FakeDatasetAssociation :
 
 
 class JobExportHistoryArchive(RepresentById):
+    ATTRS_FILENAME_HISTORY = 'history_attrs.txt'
+
     def __init__(self, job=None, history=None, dataset=None, compressed=False,
                  history_attrs_filename=None):
         self.job = job
@@ -1626,6 +1628,31 @@ class JobExportHistoryArchive(RepresentById):
         if self.compressed:
             hname += ".gz"
         return hname
+
+    @staticmethod
+    def create_for_history(history, job, sa_session, object_store, compressed):
+        # Create dataset that will serve as archive.
+        archive_dataset = Dataset()
+        sa_session.add(archive_dataset)
+        sa_session.flush()  # ensure job.id and archive_dataset.id are available
+        object_store.create(archive_dataset)  # set the object store id, create dataset (if applicable)
+        # Add association for keeping track of job, history, archive relationship.
+        jeha = JobExportHistoryArchive(
+            job=job, history=history,
+            dataset=archive_dataset,
+            compressed=compressed
+        )
+        sa_session.add(jeha)
+
+        #
+        # Create attributes/metadata files for export.
+        #
+        jeha.dataset.create_extra_files_path()
+        temp_output_dir = jeha.dataset.extra_files_path
+
+        history_attrs_filename = os.path.join(temp_output_dir, jeha.ATTRS_FILENAME_HISTORY)
+        jeha.history_attrs_filename = history_attrs_filename
+        return jeha
 
 
 class JobImportHistoryArchive(RepresentById):
