@@ -113,7 +113,9 @@ export function toSimple(workflow) {
         nodes[node.id] = node_data;
     });
     const report = workflow.report;
-    return { steps: nodes, report: report };
+    const license = workflow.license;
+    const creator = workflow.creator;
+    return { steps: nodes, report: report, license: license, creator: creator };
 }
 
 function _scaledBoundingClientRect(element, canvasZoom) {

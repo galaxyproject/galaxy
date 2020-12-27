@@ -34,11 +34,11 @@
         </div>
         <div id="workflow-license-area" class="mt-2">
             <b>License</b>
-            <LicenseSelector :inputLicense="licenseCurrent" @onLicense="onLicense" />
+            <LicenseSelector :inputLicense="license" @onLicense="onLicense" />
         </div>
         <div id="workflow-creator-area" class="mt-2">
             <b>Creator</b>
-            <CreatorEditor :creators="creatorCurrent" @onCreators="onCreator" />
+            <CreatorEditor :creators="creatorAsList" @onCreators="onCreator" />
         </div>
         <div class="mt-2">
             <b>Tags</b>
@@ -106,25 +106,26 @@ export default {
         },
     },
     data() {
-        let creator = this.creator;
-        if (!creator) {
-            creator = [];
-        } else if (!(creator instanceof Array)) {
-            creator = [creator];
-        }
         return {
             message: null,
             messageVariant: null,
-            licenseCurrent: this.license,
             tagsCurrent: this.tags,
             versionCurrent: this.version,
-            creatorCurrent: creator,
         };
     },
     created() {
         this.services = new Services();
     },
     computed: {
+        creatorAsList() {
+            let creator = this.creator;
+            if (!creator) {
+                creator = [];
+            } else if (!(creator instanceof Array)) {
+                creator = [creator];
+            }
+            return creator;
+        },
         hasParameters() {
             return this.parameters.length > 0;
         },
@@ -180,14 +181,10 @@ export default {
             this.$emit("onVersion", this.versionCurrent);
         },
         onLicense(license) {
-            this.licenseCurrent = license;
-            this.onAttributes({ license });
-            this.$emit("onLicense", this.licenseCurrent);
+            this.$emit("onLicense", license);
         },
         onCreator(creator) {
-            this.creatorCurrent = creator;
-            this.onAttributes({ creator });
-            this.$emit("onCreator", this.creatorCurrent);
+            this.$emit("onCreator", creator);
         },
         onError(error) {
             this.message = error;
