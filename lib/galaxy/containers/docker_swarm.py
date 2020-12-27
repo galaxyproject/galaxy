@@ -6,6 +6,7 @@ import logging
 import os.path
 import subprocess
 from functools import partial
+from typing import Any, Dict, Optional
 
 try:
     import docker.types
@@ -50,7 +51,7 @@ SWARM_MANAGER_PATH = os.path.abspath(
 class DockerSwarmInterface(DockerInterface):
 
     container_class = DockerService
-    conf_defaults = {
+    conf_defaults: Dict[str, Optional[Any]] = {
         'ignore_volumes': False,
         'node_prefix': None,
         'service_create_image_constraint': False,
@@ -370,7 +371,7 @@ class DockerSwarmAPIInterface(DockerSwarmInterface, DockerAPIInterface):
         'service_mode': {'param': 0, 'default': 'replicated'},
         'replicas': {'default': 1},
     }
-    endpoint_spec_option_map = {
+    endpoint_spec_option_map: Dict[str, Dict] = {
         'ports': {},
     }
     resources_option_map = {
