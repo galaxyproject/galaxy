@@ -72,6 +72,7 @@
     "toastr": "^2.1.4",
     "underscore": "^1.10.2",
     "underscore.string": "^3.3.5",
+    "validator": "^13.5.2",
     "vue": "^2.6.11",
     "vue-infinite-scroll": "^2.0.2",
     "vue-multiselect": "^2.1.0",

@@ -25,7 +25,7 @@ export default {
 };
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .badge {
     padding: 0.2em 0.6em 0.3em;
     border-width: 1px;
