@@ -53,7 +53,7 @@ class LicensesManager:
         if uri in self._by_index:
             return self._by_index[uri]
         else:
-            log.warn("Unknown license URI encountered [%s]" % uri)
+            log.warning("Unknown license URI encountered [%s]" % uri)
         return {
             "url": uri
         }

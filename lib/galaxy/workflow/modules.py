@@ -1170,7 +1170,7 @@ class InputParameterModule(WorkflowModule):
                     suggestion_values = restrictions_cond_values["suggestions"]
                     rval.update({"suggestions": _string_to_parameter_def_option(suggestion_values)})
                 else:
-                    log.warn("Unknown restriction conditional type encountered for workflow parameter.")
+                    log.warning("Unknown restriction conditional type encountered for workflow parameter.")
 
             rval.update({"parameter_type": parameters_def["parameter_type"], "optional": optional})
         else:
