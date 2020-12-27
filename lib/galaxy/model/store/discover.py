@@ -519,7 +519,8 @@ def persist_target_to_export_store(target_dict, export_store, object_store, work
 def persist_elements_to_hdca(model_persistence_context, elements, hdca, collector=None):
     filenames = OrderedDict()
 
-    def add_to_discovered_files(elements, parent_identifiers=[]):
+    def add_to_discovered_files(elements, parent_identifiers=None):
+        parent_identifiers = parent_identifiers or []
         for element in elements:
             if "elements" in element:
                 add_to_discovered_files(element["elements"], parent_identifiers + [element["name"]])
@@ -700,7 +701,8 @@ DiscoveredFileError = namedtuple('DiscoveredFileError', ['error_message', 'colle
 DiscoveredFileError.path = None
 
 
-def discovered_file_for_element(dataset, job_working_directory, parent_identifiers=[], collector=None):
+def discovered_file_for_element(dataset, job_working_directory, parent_identifiers=None, collector=None):
+    parent_identifiers = parent_identifiers or []
     target_directory = discover_target_directory(getattr(collector, "directory", None), job_working_directory)
     filename = dataset.get("filename")
     error_message = dataset.get("error_message")
@@ -730,7 +732,8 @@ def discover_target_directory(dir_name, job_working_directory):
 
 class JsonCollectedDatasetMatch:
 
-    def __init__(self, as_dict, collector, filename, path=None, parent_identifiers=[]):
+    def __init__(self, as_dict, collector, filename, path=None, parent_identifiers=None):
+        parent_identifiers = parent_identifiers or []
         self.as_dict = as_dict
         self.collector = collector
         self.filename = filename

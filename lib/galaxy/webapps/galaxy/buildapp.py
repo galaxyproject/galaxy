@@ -31,10 +31,11 @@ class GalaxyWebApplication(galaxy.webapps.base.webapp.WebApplication):
     pass
 
 
-def app_factory(global_conf, load_app_kwds={}, **kwargs):
+def app_factory(global_conf, load_app_kwds=None, **kwargs):
     """
     Return a wsgi application serving the root object
     """
+    load_app_kwds = load_app_kwds or {}
     kwargs = load_app_properties(
         kwds=kwargs,
         **load_app_kwds

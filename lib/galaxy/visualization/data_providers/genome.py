@@ -677,7 +677,7 @@ class VcfDataProvider(GenomeDataProvider):
                 alleles_seen = {}
                 has_alleles = False
 
-                for i, sample in enumerate(samples_data):
+                for sample in samples_data:
                     # Parse and count alleles.
                     genotype = sample.split(':')[0]
                     has_alleles = False
@@ -839,7 +839,7 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
                     return None
 
             # Write reads in region.
-            for i, read in enumerate(data):
+            for read in data:
                 new_bamfile.write(read)
 
         # Cleanup.
@@ -1404,7 +1404,7 @@ class GtfTabixDataProvider(TabixDataProvider):
         # and then create a generic GFFDataProvider that can be used with both
         # raw and tabix datasets.
         features = {}
-        for count, line in enumerate(iterator):
+        for line in iterator:
             line_attrs = parse_gff_attributes(line.split('\t')[8])
             transcript_id = line_attrs['transcript_id']
             if transcript_id in features:
@@ -1622,8 +1622,9 @@ class ChromatinInteractionsTabixDataProvider(TabixDataProvider, ChromatinInterac
 #
 
 
-def package_gff_feature(feature, no_detail=False, filter_cols=[]):
+def package_gff_feature(feature, no_detail=False, filter_cols=None):
     """ Package a GFF feature in an array for data providers. """
+    filter_cols = filter_cols or []
     feature = convert_gff_coords_to_bed(feature)
 
     # No detail means only start, end.

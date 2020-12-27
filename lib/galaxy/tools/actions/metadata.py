@@ -15,7 +15,7 @@ class SetMetadataToolAction(ToolAction):
     """Tool action used for setting external metadata on an existing dataset"""
     produces_real_jobs = False
 
-    def execute(self, tool, trans, incoming={}, set_output_hid=False, overwrite=True, history=None, job_params=None, **kwargs):
+    def execute(self, tool, trans, incoming=None, set_output_hid=False, overwrite=True, history=None, job_params=None, **kwargs):
         """
         Execute using a web transaction.
         """
@@ -23,6 +23,7 @@ class SetMetadataToolAction(ToolAction):
         session = trans.get_galaxy_session()
         session_id = session and session.id
         history_id = trans.history and trans.history.id
+        incoming = incoming or {}
         job, odict = self.execute_via_app(tool, trans.app, session_id,
                                           history_id, trans.user, incoming, set_output_hid,
                                           overwrite, history, job_params)
@@ -31,12 +32,12 @@ class SetMetadataToolAction(ToolAction):
         return job, odict
 
     def execute_via_app(self, tool, app, session_id, history_id, user=None,
-                        incoming={}, set_output_hid=False, overwrite=True,
+                        incoming=None, set_output_hid=False, overwrite=True,
                         history=None, job_params=None):
         """
         Execute using application.
         """
-
+        incoming = incoming or {}
         for name, value in incoming.items():
             # Why are we looping here and not just using a fixed input name? Needed?
             if not name.startswith("input"):

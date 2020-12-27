@@ -36,7 +36,7 @@ def build_command(
     include_metadata=False,
     include_work_dir_outputs=True,
     create_tool_working_directory=True,
-    remote_command_params={},
+    remote_command_params=None,
     remote_job_directory=None,
     stdout_file=None,
     stderr_file=None,
@@ -50,6 +50,7 @@ def build_command(
         - command line taken from job wrapper
         - commands to set metadata (if include_metadata is True)
     """
+    remote_command_params = remote_command_params or {}
     shell = job_wrapper.shell
     base_command_line = job_wrapper.get_command_line()
     # job_id = job_wrapper.job_id
