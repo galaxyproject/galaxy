@@ -124,7 +124,7 @@ class GitLabPlugin(BaseGitPlugin):
                         self.git_project_cache[gitlab_projecturl] = self.gitlab.projects.get(gitlab_urlencodedpath)
                 except gitlab.GitlabGetError:
                     # Handle scenario where the repository doesn't exist so we can still continue
-                    log.warn("GitLab error reporting - Repository '%s' doesn't exist, using default repository." % gitlab_urlencodedpath)
+                    log.warning("GitLab error reporting - Repository '%s' doesn't exist, using default repository." % gitlab_urlencodedpath)
                     # Redo some of the previous steps to recover from such an issue but continue issue creation
                     gitlab_projecturl = "/".join((self.git_default_repo_owner, self.git_default_repo_name))
                     gitlab_urlencodedpath = urllib.quote_plus(gitlab_projecturl)

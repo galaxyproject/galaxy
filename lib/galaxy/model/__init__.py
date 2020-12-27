@@ -3908,7 +3908,7 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, RepresentById):
             ''').execution_options(autocommit=True)
         ret = object_session(self).execute(sql, {'library_dataset_id': ldda.library_dataset_id, 'ldda_id': ldda.id})
         if ret.rowcount < 1:
-            log.warn(f'Attempt to updated parent folder times failed: {ret.rowcount} records updated.')
+            log.warning(f'Attempt to updated parent folder times failed: {ret.rowcount} records updated.')
 
 
 class ExtendedMetadata(RepresentById):
