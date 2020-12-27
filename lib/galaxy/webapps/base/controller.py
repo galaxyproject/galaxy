@@ -431,7 +431,7 @@ class ExportsHistoryMixin:
         else:
             params['directory_uri'] = directory_uri
             params['file_name'] = file_name or None
-            export_tool_id = '__EXPORT_HISTORY_URI__'
+            export_tool_id = '__EXPORT_HISTORY_TO_URI__'
 
         # Run job to do export.
         history_exp_tool = trans.app.toolbox.get_tool(export_tool_id)

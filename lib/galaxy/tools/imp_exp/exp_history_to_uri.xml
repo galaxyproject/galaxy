@@ -1,4 +1,4 @@
-<tool id="__EXPORT_HISTORY_URI__" name="Export History to URI" version="0.1" tool_type="export_history">
+<tool id="__EXPORT_HISTORY_TO_URI__" name="Export History to URI" version="0.1" tool_type="export_history">
   <type class="ExportHistoryTool" module="galaxy.tools"/>
   <action module="galaxy.tools.actions.history_imp_exp" class="ExportHistoryToolAction"/>
   <command>python '$export_history' --file-sources '$file_sources' $__EXPORT_HISTORY_COMMAND_INPUTS_OPTIONS__ '$__EXPORT_TO_URI__'</command>
