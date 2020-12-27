@@ -243,7 +243,8 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
 
 class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
 
-    def __init__(self, trans, extra_rendering_data={}):
+    def __init__(self, trans, extra_rendering_data=None):
+        extra_rendering_data = extra_rendering_data or {}
         self.trans = trans
         self.extra_rendering_data = extra_rendering_data
 
@@ -543,7 +544,8 @@ def to_html(basic_markdown):
     return html
 
 
-def to_pdf(trans, basic_markdown, css_paths=[]):
+def to_pdf(trans, basic_markdown, css_paths=None):
+    css_paths = css_paths or []
     as_html = to_html(basic_markdown)
     directory = tempfile.mkdtemp('gxmarkdown')
     index = os.path.join(directory, "index.html")

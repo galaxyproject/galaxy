@@ -223,7 +223,7 @@ class GalaxyInteractorApi:
         are assumed to be datatype-specific and mapped with a prefix of `metadata_`.
         """
         metadata = attributes.get('metadata', {}).copy()
-        for key, value in metadata.copy().items():
+        for key in metadata.copy().keys():
             if key not in ['name', 'info', 'tags', 'created_from_basename']:
                 new_key = "metadata_%s" % key
                 metadata[new_key] = metadata[key]
@@ -418,10 +418,10 @@ class GalaxyInteractorApi:
         assert len(jobs) > 0, "Invalid response from server [%s], expecting a job." % submit_response
         return lambda: self.wait_for_job(jobs[0]["id"], history_id, maxseconds=maxseconds)
 
-    def run_tool(self, testdef, history_id, resource_parameters={}):
+    def run_tool(self, testdef, history_id, resource_parameters=None):
         # We need to handle the case where we've uploaded a valid compressed file since the upload
         # tool will have uncompressed it on the fly.
-
+        resource_parameters = resource_parameters or {}
         inputs_tree = testdef.inputs.copy()
         for key, value in inputs_tree.items():
             values = [value] if not isinstance(value, list) else value
@@ -619,7 +619,8 @@ class GalaxyInteractorApi:
             raise Exception(error_msg)
         return None
 
-    def __submit_tool(self, history_id, tool_id, tool_input, extra_data={}, files=None):
+    def __submit_tool(self, history_id, tool_id, tool_input, extra_data=None, files=None):
+        extra_data = extra_data or {}
         data = dict(
             history_id=history_id,
             tool_id=tool_id,
@@ -727,8 +728,8 @@ def ensure_tool_run_response_okay(submit_response_object, request_desc, inputs=N
                     dbkey_err_obj = param_errors["dbkey"]
                     dbkey_val = dbkey_err_obj.get("parameter_value")
                     message = "Invalid dbkey specified [%s]" % dbkey_val
-                for key, val in param_errors.items():
-                    if isinstance(val, dict) and val.get("is_dynamic"):
+                for value in param_errors.values():
+                    if isinstance(value, dict) and value.get("is_dynamic"):
                         dynamic_param_error = True
             if message is None:
                 message = err_response.get("err_msg") or None

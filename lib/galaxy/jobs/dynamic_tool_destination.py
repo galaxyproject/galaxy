@@ -1268,7 +1268,7 @@ def str_to_bytes(size):
             except ValueError:
                 error = "Unable to convert size " + str(size)
                 raise MalformedYMLException(error)
-            except (UnboundLocalError, NameError):
+            except NameError:
                 pass
         else:
             curr_size = -1

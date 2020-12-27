@@ -19,10 +19,11 @@ class ImportHistoryToolAction(ToolAction):
     """Tool action used for importing a history to an archive. """
     produces_real_jobs = True
 
-    def execute(self, tool, trans, incoming={}, set_output_hid=False, overwrite=True, history=None, **kwargs):
+    def execute(self, tool, trans, incoming=None, set_output_hid=False, overwrite=True, history=None, **kwargs):
         #
         # Create job.
         #
+        incoming = incoming or {}
         trans.check_user_activation()
         job = trans.app.model.Job()
         job.galaxy_version = trans.app.config.version_major
@@ -79,11 +80,12 @@ class ExportHistoryToolAction(ToolAction):
     """Tool action used for exporting a history to an archive. """
     produces_real_jobs = True
 
-    def execute(self, tool, trans, incoming={}, set_output_hid=False, overwrite=True, history=None, **kwargs):
+    def execute(self, tool, trans, incoming=None, set_output_hid=False, overwrite=True, history=None, **kwargs):
         trans.check_user_activation()
         #
         # Get history to export.
         #
+        incoming = incoming or {}
         history = None
         for name, value in incoming.items():
             if isinstance(value, trans.app.model.History):

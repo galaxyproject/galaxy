@@ -261,7 +261,7 @@ def update_dataset_ids(input_values, translate_values, src):
         """Exchanges dataset_ids (HDA, LDA, HDCA, not Dataset) in input_values with dataset ids used in job."""
         current_case = input_values
         if key == 'id':
-            for i, p in enumerate(path):
+            for p in path:
                 if isinstance(current_case, (list, dict)):
                     current_case = current_case[p]
             if src == current_case.get('src'):
@@ -341,7 +341,7 @@ def populate_state(request_context, inputs, incoming, state, errors=None, contex
                     errors[input.name] = 'The number of repeat elements is outside the range specified by the tool.'
                 else:
                     del group_state[:]
-                    for rep_index, rep in enumerate(incoming[input.name]):
+                    for rep in incoming[input.name]:
                         new_state = {}
                         group_state.append(new_state)
                         new_errors = {}
@@ -434,7 +434,7 @@ def _populate_state_legacy(request_context, inputs, incoming, state, errors, pre
                 for upload_item in input.inputs.values():
                     new_state[upload_item.name] = upload_item.get_initial_value(request_context, context)
                 group_state.append(new_state)
-            for i, rep_state in enumerate(group_state):
+            for rep_state in group_state:
                 rep_index = rep_state['__index__']
                 rep_prefix = '%s_%d|' % (key, rep_index)
                 _populate_state_legacy(request_context, input.inputs, incoming, rep_state, errors, prefix=rep_prefix, context=context, check=check, simple_errors=simple_errors)

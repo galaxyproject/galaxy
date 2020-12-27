@@ -812,10 +812,11 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         return imported_visualization
 
     def create_visualization(self, trans, type, title="Untitled Visualization", slug=None,
-                             dbkey=None, annotation=None, config={}, save=True):
+                             dbkey=None, annotation=None, config=None, save=True):
         """
         Create visualiation and first revision.
         """
+        config = config or {}
         visualization = self._create_visualization(trans, title, type, dbkey, slug, annotation, save)
         # TODO: handle this error structure better either in _create or here
         if isinstance(visualization, dict):

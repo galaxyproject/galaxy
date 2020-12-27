@@ -12,21 +12,26 @@ LEVEL_WARN = "warn"
 LEVEL_ERROR = "error"
 
 
-def lint_tool_source(tool_source, level=LEVEL_ALL, fail_level=LEVEL_WARN, extra_modules=[], skip_types=[], name=None):
+def lint_tool_source(tool_source, level=LEVEL_ALL, fail_level=LEVEL_WARN, extra_modules=None, skip_types=None, name=None):
+    extra_modules = extra_modules or []
+    skip_types = skip_types or []
     lint_context = LintContext(level=level, skip_types=skip_types, object_name=name)
     lint_tool_source_with(lint_context, tool_source, extra_modules)
 
     return not lint_context.failed(fail_level)
 
 
-def lint_xml(tool_xml, level=LEVEL_ALL, fail_level=LEVEL_WARN, extra_modules=[], skip_types=[], name=None):
+def lint_xml(tool_xml, level=LEVEL_ALL, fail_level=LEVEL_WARN, extra_modules=None, skip_types=None, name=None):
+    extra_modules = extra_modules or []
+    skip_types = skip_types or []
     lint_context = LintContext(level=level, skip_types=skip_types, object_name=name)
     lint_xml_with(lint_context, tool_xml, extra_modules)
 
     return not lint_context.failed(fail_level)
 
 
-def lint_tool_source_with(lint_context, tool_source, extra_modules=[]):
+def lint_tool_source_with(lint_context, tool_source, extra_modules=None):
+    extra_modules = extra_modules or []
     import galaxy.tool_util.linters
     tool_xml = getattr(tool_source, "xml_tree", None)
     linter_modules = submodules.import_submodules(galaxy.tool_util.linters, ordered=True)
@@ -53,7 +58,8 @@ def lint_tool_source_with(lint_context, tool_source, extra_modules=[]):
                     lint_context.lint(name, value, tool_source)
 
 
-def lint_xml_with(lint_context, tool_xml, extra_modules=[]):
+def lint_xml_with(lint_context, tool_xml, extra_modules=None):
+    extra_modules = extra_modules or []
     tool_source = get_tool_source(xml_tree=tool_xml)
     return lint_tool_source_with(lint_context, tool_source, extra_modules=extra_modules)
 
@@ -63,8 +69,8 @@ def lint_xml_with(lint_context, tool_xml, extra_modules=[]):
 # be moved to galaxy.util.lint.
 class LintContext:
 
-    def __init__(self, level, skip_types=[], object_name=None):
-        self.skip_types = skip_types
+    def __init__(self, level, skip_types=None, object_name=None):
+        self.skip_types = skip_types or []
         self.level = level
         self.object_name = object_name
         self.found_errors = False
