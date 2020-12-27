@@ -26,7 +26,7 @@ from .mulled_build import (
     target_str_to_targets,
 )
 KNOWN_FIELDS = ["targets", "image_build", "name_override", "base_image"]
-FALLBACK_LINE_TUPLE = collections.namedtuple("_Line", " ".join(KNOWN_FIELDS))
+FALLBACK_LINE_TUPLE = collections.namedtuple("_Line", "targets image_build name_override base_image")
 
 
 def main(argv=None):

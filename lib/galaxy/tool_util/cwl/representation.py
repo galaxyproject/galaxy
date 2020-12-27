@@ -5,7 +5,7 @@ import collections
 import json
 import logging
 import os
-
+from typing import Any, NamedTuple, Optional
 
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.util import safe_makedirs, string_as_bool
@@ -50,7 +50,18 @@ USE_FIELD_TYPES = True
 #     easier to manage in someways.
 USE_STEP_PARAMETERS = USE_FIELD_TYPES
 
-TypeRepresentation = collections.namedtuple("TypeRepresentation", ["name", "galaxy_param_type", "label", "collection_type"])
+
+class TypeRepresentation(NamedTuple):
+    name: str
+    galaxy_param_type: Any
+    label: str
+    collection_type: Optional[str]
+
+    @property
+    def uses_param(self):
+        return self.galaxy_param_type is not NO_GALAXY_INPUT
+
+
 TYPE_REPRESENTATIONS = [
     TypeRepresentation("null", NO_GALAXY_INPUT, "no input", None),
     TypeRepresentation("integer", INPUT_TYPE.INTEGER, "an integer", None),
@@ -67,7 +78,6 @@ TYPE_REPRESENTATIONS = [
     TypeRepresentation("field", INPUT_TYPE.FIELD, "arbitrary JSON structure", None),
 ]
 FIELD_TYPE_REPRESENTATION = TYPE_REPRESENTATIONS[-1]
-TypeRepresentation.uses_param = lambda self: self.galaxy_param_type is not NO_GALAXY_INPUT
 
 if not USE_FIELD_TYPES:
     CWL_TYPE_TO_REPRESENTATIONS = {
