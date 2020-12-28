@@ -6,7 +6,7 @@
         <div id="workflow-name-area">
             <b>Name</b>
             <meta itemprop="name" :content="name" />
-            <b-input id="workflow-name" :value="name" @change="onRename" />
+            <b-input id="workflow-name" v-model="nameCurrent" @keyup="$emit('update:nameCurrent', nameCurrent)" />
         </div>
         <div id="workflow-version-area" class="mt-2">
             <b>Version</b>
@@ -115,6 +115,7 @@ export default {
             tagsCurrent: this.tags,
             versionCurrent: this.version,
             annotationCurrent: this.annotation,
+            nameCurrent: this.name,
         };
     },
     created() {
@@ -163,18 +164,17 @@ export default {
             }
             this.creatorCurrent = creator;
         },
-        annotation(newAnnotation) {
-            this.annotationCurrent = newAnnotation;
+        annotation() {
+            this.annotationCurrent = this.annotation;
+        },
+        name() {
+            this.nameCurrent = this.name;
         },
     },
     methods: {
         onTags(tags) {
             this.tagsCurrent = tags;
             this.onAttributes({ tags });
-        },
-        onRename(name) {
-            this.onAttributes({ name });
-            this.$emit("onRename", name);
         },
         onVersion() {
             this.$emit("onVersion", this.versionCurrent);

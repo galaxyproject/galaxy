@@ -117,7 +117,8 @@ export function toSimple(workflow) {
     const license = workflow.license;
     const creator = workflow.creator;
     const annotation = workflow.annotation;
-    return { steps: nodes, report, license, creator, annotation };
+    const name = workflow.name;
+    return { steps: nodes, report, license, creator, annotation, name };
 }
 
 function _scaledBoundingClientRect(element, canvasZoom) {

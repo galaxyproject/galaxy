@@ -100,11 +100,12 @@
                             <div class="m-1">
                                 <WorkflowAttributes
                                     :id="id"
-                                    :name="name"
                                     :tags="tags"
                                     :parameters="parameters"
                                     :annotationCurrent.sync="annotation"
                                     :annotation="annotation"
+                                    :nameCurrent.sync="name"
+                                    :name="name"
                                     :version="version"
                                     :versions="versions"
                                     :license="license"
@@ -168,10 +169,6 @@ export default {
             type: Number,
             required: true,
         },
-        name: {
-            type: String,
-            required: true,
-        },
         tags: {
             type: Array,
             required: true,
@@ -213,6 +210,7 @@ export default {
             license: null,
             creator: null,
             annotation: null,
+            name: null,
         };
     },
     created() {
@@ -235,6 +233,11 @@ export default {
     watch: {
         annotation: function (newAnnotation, oldAnnotation) {
             if (newAnnotation != oldAnnotation) {
+                this.hasChanges = true;
+            }
+        },
+        name: function (newName, oldName) {
+            if (newName != oldName) {
                 this.hasChanges = true;
             }
         },
