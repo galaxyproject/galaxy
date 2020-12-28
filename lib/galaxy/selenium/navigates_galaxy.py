@@ -1217,7 +1217,7 @@ class NavigatesGalaxy(HasDriver):
         selector = self.history_panel_wait_for_hid_state(collection_hid, "ok")
         self.click(selector)
         next_level_element_selector = selector
-        for i in range(len(collection_type.split(":")) - 1):
+        for _i in range(len(collection_type.split(":")) - 1):
             next_level_element_selector = next_level_element_selector.descendant(".dataset-collection-element")
             self.wait_for_and_click(next_level_element_selector)
 
@@ -1251,7 +1251,7 @@ class NavigatesGalaxy(HasDriver):
                 element.click()
                 return element
 
-        assert False, "No visualization [%s] found." % visualization_name
+        raise ValueError(f"No visualization [{visualization_name}] found.")
 
     def history_panel_item_selector(self, hid, wait=False):
         current_history_id = self.current_history_id()
