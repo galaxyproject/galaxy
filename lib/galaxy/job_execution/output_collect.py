@@ -600,7 +600,7 @@ def collect_extra_files(object_store, dataset, job_working_directory):
         # automatically creates them.  However, empty directories will
         # not be created in the object store at all, which might be a
         # problem.
-        for root, dirs, files in os.walk(temp_file_path):
+        for root, _dirs, files in os.walk(temp_file_path):
             extra_dir = root.replace(os.path.join(job_working_directory, "working"), '', 1).lstrip(os.path.sep)
             for f in files:
                 object_store.update_from_file(
