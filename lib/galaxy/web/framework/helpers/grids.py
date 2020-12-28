@@ -401,7 +401,7 @@ class PurgedColumn(GridColumn):
 
     def get_accepted_filters(self):
         """ Returns a list of accepted filters for this column. """
-        accepted_filter_labels_and_vals = {"nonpurged" : "False", "purged" : "True", "all": "All"}
+        accepted_filter_labels_and_vals = {"nonpurged": "False", "purged": "True", "all": "All"}
         accepted_filters = []
         for label, val in accepted_filter_labels_and_vals.items():
             args = {self.key: val}
@@ -440,7 +440,7 @@ class StateColumn(GridColumn):
         """Returns a list of accepted filters for this column."""
         all = GridColumnFilter('all', {self.key : 'All'})
         accepted_filters = [all]
-        for k, v in self.model_class.states.items():
+        for v in self.model_class.states.values():
             args = {self.key: v}
             accepted_filters.append(GridColumnFilter(v, args))
         return accepted_filters
@@ -527,7 +527,7 @@ class GridOperation:
 
     def get_url_args(self, item):
         if self.url_args:
-            if hasattr(self.url_args, '__call__'):
+            if callable(self.url_args):
                 url_args = self.url_args(item)
             else:
                 url_args = dict(self.url_args)
@@ -547,7 +547,7 @@ class DisplayByUsernameAndSlugGridOperation(GridOperation):
     """ Operation to display an item by username and slug. """
 
     def get_url_args(self, item):
-        return {'action' : 'display_by_username_and_slug', 'username' : item.user.username, 'slug' : item.slug}
+        return {'action': 'display_by_username_and_slug', 'username': item.user.username, 'slug': item.slug}
 
 
 class GridAction:
