@@ -412,7 +412,7 @@ class ToolMigrationManager:
                     #                   name : <TooSection name>}]}
                     for k, v in tool_panel_dict_for_tool_config.items():
                         tool_panel_dict_for_display[k] = v
-                        for tool_panel_dict in v:
+                        for _tool_panel_dict in v:
                             # Keep track of tool config file names associated with entries that have been made to the
                             # migrated_tools_conf.xml file so they can be eliminated from all non-shed-related tool panel configs.
                             if tool_config not in tool_configs_to_filter:
