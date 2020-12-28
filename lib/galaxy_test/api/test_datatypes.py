@@ -84,7 +84,8 @@ class DatatypesApiTestCase(ApiTestCase):
         self._assert_status_code_is(response, 200)
         assert converters == len(response.json())
 
-    def _index_datatypes(self, data={}):
+    def _index_datatypes(self, data=None):
+        data = data or {}
         response = self._get("datatypes", data=data)
         self._assert_status_code_is(response, 200)
         datatypes = response.json()
