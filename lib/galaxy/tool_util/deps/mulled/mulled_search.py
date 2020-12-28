@@ -6,17 +6,15 @@ import logging
 import sys
 import tempfile
 
+import requests
+
 from .mulled_list import get_singularity_containers
 from .util import build_target, v2_image_name
 
 try:
     from conda.cli.python_api import run_command
 except ImportError:
-    run_command = None
-try:
-    import requests
-except ImportError:
-    requests = None
+    run_command = None  # type: ignore
 
 try:
     from whoosh.fields import Schema
@@ -25,7 +23,7 @@ try:
     from whoosh.index import create_in
     from whoosh.qparser import QueryParser
 except ImportError:
-    Schema = TEXT = STORED = create_in = QueryParser = None
+    Schema = TEXT = STORED = create_in = QueryParser = None  # type: ignore
 
 QUAY_API_URL = 'https://quay.io/api/v1/repository'
 

@@ -6,6 +6,7 @@ from abc import (
     abstractmethod,
     abstractproperty,
 )
+from typing import Any, Dict
 
 import yaml
 
@@ -27,7 +28,7 @@ class DependencyResolver(Dictifiable, metaclass=ABCMeta):
     disabled = False
     resolves_simple_dependencies = True
     can_uninstall_dependencies = False
-    config_options = {}
+    config_options: Dict[str, Any] = {}
 
     @abstractmethod
     def resolve(self, requirement, **kwds):

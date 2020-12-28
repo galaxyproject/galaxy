@@ -15,6 +15,7 @@ from abc import (
     abstractproperty
 )
 from collections import namedtuple
+from typing import Any, Dict, Optional, Type
 
 import yaml
 
@@ -166,13 +167,13 @@ class Container(metaclass=ABCMeta):
 
 class ContainerInterface(metaclass=ABCMeta):
 
-    container_type = None
-    container_class = None
-    volume_class = None
-    conf_defaults = {
+    container_type: Optional[str] = None
+    container_class: Optional[Type[Container]] = None
+    volume_class = Optional[Type[ContainerVolume]]
+    conf_defaults: Dict[str, Optional[Any]] = {
         'name_prefix': 'galaxy_',
     }
-    option_map = {}
+    option_map: Dict[str, Dict] = {}
     publish_port_list_required = False
     supports_volumes = True
 

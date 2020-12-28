@@ -12,16 +12,13 @@ from collections import OrderedDict
 from json import dumps
 from logging import getLogger
 
+import requests
 from packaging.version import parse as parse_version, Version
 try:
     from nose.tools import nottest
 except ImportError:
     def nottest(x):
         return x
-try:
-    import requests
-except ImportError:
-    requests = None
 
 from galaxy import util
 from galaxy.tool_util.parser.interface import TestCollectionDef, TestCollectionOutputDef
