@@ -525,7 +525,7 @@ class JobProxy:
                             if not os.path.exists(staged_loc):
                                 os.symlink(location, staged_loc)
                             value["location"] = staged_loc
-                    for key, dict_value in value.items():
+                    for dict_value in value.values():
                         stage_recursive(dict_value)
                 else:
                     log.info("skipping simple value...")
@@ -654,7 +654,7 @@ class JobProxy:
             generate_mapper = pathmapper.PathMapper(cwl_job.generatefiles["listing"],
                                                     outdir, outdir, separateDirs=False)
             # TODO: figure out what inplace_update should be.
-            inplace_update = getattr(cwl_job, "inplace_update")
+            inplace_update = cwl_job.inplace_update
             process.stage_files(generate_mapper, stageFunc, ignore_writable=inplace_update, symlink=False)
             relink_initialworkdir(generate_mapper, outdir, outdir, inplace_update=inplace_update)
         # else: expression tools do not have a path mapper.
@@ -723,7 +723,7 @@ class WorkflowProxy:
     def cwl_ids_to_index(self, step_proxies):
         index = 0
         cwl_ids_to_index = {}
-        for i, input_dict in enumerate(self._workflow.tool['inputs']):
+        for input_dict in self._workflow.tool['inputs']:
             cwl_ids_to_index[input_dict["id"]] = index
             index += 1
 
@@ -839,7 +839,7 @@ class WorkflowProxy:
                 if isinstance(input_type, list) and "null" in input_type:
                     optional = True
                 if not optional and isinstance(input_type, dict) and "type" in input_type:
-                    assert False
+                    raise ValueError("'type' detected in non-optional input dictionary.")
                 if default_set:
                     tool_state["default"] = {"src": "json", "value": default_value}
                 tool_state["optional"] = optional

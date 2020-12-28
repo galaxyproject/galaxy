@@ -19,7 +19,8 @@ class ToolRequirement:
     optionally assert a specific version.
     """
 
-    def __init__(self, name=None, type=None, version=None, specs=[]):
+    def __init__(self, name=None, type=None, version=None, specs=None):
+        specs = specs or []
         self.name = name
         self.type = type
         self.version = version
