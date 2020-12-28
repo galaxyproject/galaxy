@@ -277,7 +277,7 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
         # The tool_dependencies dictionary looks something like:
         # {'bwa/0.5.9': {'readme': 'some string', 'version': '0.5.9', 'type': 'package', 'name': 'bwa'}}
         if len(ancestor_tool_dependencies) <= len(current_tool_dependencies):
-            for ancestor_td_key, ancestor_requirements_dict in ancestor_tool_dependencies.items():
+            for ancestor_td_key in ancestor_tool_dependencies.keys():
                 if ancestor_td_key in current_tool_dependencies:
                     # The only values that could have changed between the 2 dictionaries are the
                     # "readme" or "type" values.  Changing the readme value makes no difference.
