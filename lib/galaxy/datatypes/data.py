@@ -897,7 +897,8 @@ class Text(Data):
 
             # Computing the length is expensive!
             def _file_len(fname):
-                return sum(1 for _ in open(fname))
+                with open(fname) as f:
+                    return sum(1 for _ in f)
             length = _file_len(input_files[0])
             parts = int(split_params['split_size'])
             if length < parts:
