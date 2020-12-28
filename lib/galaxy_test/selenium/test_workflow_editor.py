@@ -343,16 +343,9 @@ steps:
         # Assert workflow not initially bookmarked.
         assert_workflow_bookmarked_status(False)
 
-        save_button = self.components.workflows.save_button
-        save_button.wait_for_clickable()
-
-        # element is clickable, but still might be behind the modal
+        self.components.workflow_editor.canvas_body.wait_for_visible()
         self.wait_for_selector_absent_or_hidden(self.modal_body_selector())
-        save_button.wait_for_and_click()
-
-        # wait for saving
-        self.wait_for_selector_absent_or_hidden(self.modal_body_selector())
-        self.driver.find_element_by_id("workflow").click()
+        self.components.masthead.workflow.wait_for_and_click()
 
         # parse workflow table
         table_elements = self.workflow_index_table_elements()
