@@ -642,7 +642,7 @@ class ToolMigrationManager:
     def __iscloned(self, clone_dir):
         full_path = os.path.abspath(clone_dir)
         if os.path.exists(full_path):
-            for root, dirs, files in os.walk(full_path):
+            for _root, dirs, _files in os.walk(full_path):
                 if '.hg' in dirs:
                     # Assume that the repository has been installed if we find a .hg directory.
                     return True

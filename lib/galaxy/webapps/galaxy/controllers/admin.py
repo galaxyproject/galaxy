@@ -1501,7 +1501,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     in_groups.append(trans.security.encode_id(group.id))
                 all_groups.append((group.name, trans.security.encode_id(group.id)))
             return {'title': f"Roles and groups for '{user.email}'",
-                    'message': f"User '{user.email}' is currently associated with {len(in_roles) - 1} role(s) and is a member of {len(in_groups)} group(s).", 
+                    'message': f"User '{user.email}' is currently associated with {len(in_roles) - 1} role(s) and is a member of {len(in_groups)} group(s).",
                     'status': 'info',
                     'inputs': [build_select_input('in_roles', 'Roles', all_roles, in_roles),
                               build_select_input('in_groups', 'Groups', all_groups, in_groups)]}
