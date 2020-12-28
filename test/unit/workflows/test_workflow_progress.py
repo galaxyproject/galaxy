@@ -219,7 +219,6 @@ class MockModuleInjector:
         self.progress = progress
 
     def inject(self, step, step_args=None):
-        step_args = step_args or {}
         step.module = MockModule(self.progress)
 
 
