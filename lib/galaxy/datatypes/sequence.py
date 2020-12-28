@@ -147,9 +147,7 @@ class Sequence(data.Text):
             total_sequences = input_datasets[0].metadata.sequences
         else:
             with compression_utils.get_fileobj(input_datasets[0].file_name) as in_file:
-                total_sequences = int(0)
-                for i, line in enumerate(in_file):
-                    total_sequences += 1
+                total_sequences = sum(1 for line in in_file)
             total_sequences /= 4
 
         sequences_per_file = cls.get_sequences_per_file(total_sequences, split_params)
@@ -923,8 +921,9 @@ class Maf(Alignment):
         """Returns formated html of peek"""
         return self.make_html_table(dataset)
 
-    def make_html_table(self, dataset, skipchars=[]):
+    def make_html_table(self, dataset, skipchars=None):
         """Create HTML table, used for displaying peek"""
+        skipchars = skipchars or []
         out = ['<table cellspacing="0" cellpadding="3">']
         try:
             out.append('<tr><th>Species:&nbsp;')
@@ -1288,8 +1287,8 @@ class MemePsp(Sequence):
         >>> MemePsp().sniff(fname)
         False
         """
-        def floats_verified(l):
-            for item in l.split():
+        def floats_verified(line):
+            for item in line.split():
                 try:
                     float(item)
                 except ValueError:

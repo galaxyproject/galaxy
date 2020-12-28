@@ -351,7 +351,7 @@ class DatasetCollectionManager:
         return dataset_collection_instance
 
     def __recursively_create_collections_for_identifiers(self, trans, element_identifiers, hide_source_items, copy_elements, history=None):
-        for index, element_identifier in enumerate(element_identifiers):
+        for element_identifier in element_identifiers:
             try:
                 if element_identifier.get("src", None) != "new_collection":
                     # not a new collection, keep moving...

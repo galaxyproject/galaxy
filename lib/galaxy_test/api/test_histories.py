@@ -348,8 +348,9 @@ class ImportExportHistoryTestCase(ApiTestCase, BaseHistories):
 
         self._check_imported_collection(imported_history_id, hid=1, collection_type="list:paired", elements_checker=check_elements)
 
-    def _reimport_history(self, history_id, history_name, wait_on_history_length=None, assert_ok=True, export_kwds={}):
+    def _reimport_history(self, history_id, history_name, wait_on_history_length=None, assert_ok=True, export_kwds=None):
         # Ensure the history is ready to go...
+        export_kwds = export_kwds or {}
         self.dataset_populator.wait_for_history(history_id, assert_ok=assert_ok)
 
         return self.dataset_populator.reimport_history(

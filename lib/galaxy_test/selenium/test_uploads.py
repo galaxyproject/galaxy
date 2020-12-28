@@ -313,7 +313,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         action_chains = self.action_chains()
         action_chains.move_to_element(first_cell)
         action_chains.click(first_cell)
-        for i in range(15):
+        for _ in range(15):
             action_chains.send_keys(Keys.ARROW_RIGHT)
         action_chains.perform()
 

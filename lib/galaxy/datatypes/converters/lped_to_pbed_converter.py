@@ -46,10 +46,10 @@ def getMissval(inped=''):
     missval = None
     while missval is None:  # doggedly continue until we solve the mystery
         try:
-            l = f.readline()
+            line = f.readline()
         except Exception:
             break
-        ll = l.split()[6:]  # ignore pedigree stuff
+        ll = line.split()[6:]  # ignore pedigree stuff
         for c in ll:
             if commonmissvals.get(c, None):
                 missval = c
@@ -102,7 +102,7 @@ def main():
         s = f'## Rgenetics: http://rgenetics.org Galaxy Tools {prog} {timenow()}'  # becomes info
         print(s)
         f.write('<div>%s\n<ol>' % (s))
-        for i, data in enumerate(flist):
+        for data in flist:
             f.write('<li><a href="{}">{}</a></li>\n'.format(os.path.split(data)[-1], os.path.split(data)[-1]))
         f.write("</ol></div></div></body></html>")
 

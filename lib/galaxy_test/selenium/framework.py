@@ -561,7 +561,8 @@ def get_remote_driver():
 class SeleniumSessionGetPostMixin:
     """Mixin for adapting Galaxy testing populators helpers to Selenium session backed bioblend."""
 
-    def _get(self, route, data={}):
+    def _get(self, route, data=None):
+        data = data or {}
         full_url = self.selenium_test_case.build_url("api/" + route, for_selenium=False)
         response = requests.get(full_url, data=data, cookies=self.selenium_test_case.selenium_to_requests_cookies())
         return response
@@ -579,7 +580,8 @@ class SeleniumSessionGetPostMixin:
         response = requests.post(full_url, data=data, cookies=self.selenium_test_case.selenium_to_requests_cookies(), files=files)
         return response
 
-    def _delete(self, route, data={}):
+    def _delete(self, route, data=None):
+        data = data or {}
         full_url = self.selenium_test_case.build_url("api/" + route, for_selenium=False)
         response = requests.delete(full_url, data=data, cookies=self.selenium_test_case.selenium_to_requests_cookies())
         return response
