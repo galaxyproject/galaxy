@@ -30,9 +30,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         edit_name_element = self.components.workflow_editor.edit_name.wait_for_visible()
         actual_name = edit_name_element.get_attribute("value")
         assert name in actual_name, f"'{name}' unequal name '{actual_name}'"
-        edit_annotation_element = self.components.workflow_editor.edit_annotation.wait_for_visible()
-        actual_annotation = edit_annotation_element.get_attribute("value")
-        assert annotation in actual_annotation, f"'{annotation}' unequal annotation '{actual_annotation}'"
+        self.assert_wf_annotation_is(annotation)
 
         editor.canvas_body.wait_for_visible()
         editor.tool_menu.wait_for_visible()
@@ -52,6 +50,27 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
 
         self.screenshot("workflow_editor_left_and_right_collapsed")
+
+    @selenium_test
+    def test_edit_annotation(self):
+        editor = self.components.workflow_editor
+        annotation = "new_annotation_test"
+        name = self.workflow_create_new(annotation=annotation)
+        edit_annotation = self.components.workflow_editor.edit_annotation
+        self.assert_wf_annotation_is(annotation)
+
+        editor.canvas_body.wait_for_visible()
+
+        save_button = self.components.workflow_editor.save_button
+        save_button.wait_for_visible()
+        assert save_button.has_class("disabled")
+        new_annotation = 'look new annotation'
+        edit_annotation.wait_for_and_send_keys(new_annotation)
+
+        save_button.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.workflow_index_open_with_name(name)
+        self.assert_wf_annotation_is(new_annotation)
 
     @selenium_test
     def test_data_input(self):
@@ -480,6 +499,13 @@ steps:
         inputs[1].send_keys(annotation)
         form_element.click()
         return name
+
+    @retry_assertion_during_transitions
+    def assert_wf_annotation_is(self, expected_annotation):
+        edit_annotation = self.components.workflow_editor.edit_annotation
+        edit_annotation_element = edit_annotation.wait_for_visible()
+        actual_annotation = edit_annotation_element.get_attribute("value")
+        assert expected_annotation in actual_annotation, f"'{expected_annotation}' unequal annotation '{actual_annotation}'"
 
     @retry_assertion_during_transitions
     def assert_modal_has_text(self, expected_text):

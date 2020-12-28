@@ -735,8 +735,8 @@ class WorkflowContentsManager(UsesAnnotations):
         data['upgrade_messages'] = {}
         data['report'] = workflow.reports_config or {}
         data['license'] = workflow.license
-        log.info("creator_metadata is %s" % workflow.creator_metadata)
         data['creator'] = workflow.creator_metadata
+        data['annotation'] = self.get_item_annotation_str(trans.sa_session, trans.user, stored) or ''
 
         output_label_index = set()
         input_step_types = set(workflow.input_step_types)

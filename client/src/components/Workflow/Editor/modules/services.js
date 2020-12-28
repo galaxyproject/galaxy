@@ -43,6 +43,7 @@ export async function saveWorkflow(workflow) {
             workflow.hasChanges = false;
             workflow.stored = true;
             workflow.version = data.version;
+            workflow.annotation = data.annotation;
             return data;
         } catch (e) {
             rethrowSimple(e);

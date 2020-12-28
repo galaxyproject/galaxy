@@ -383,6 +383,7 @@ workflow_editor:
     connector_for: "div[output-handle-id='${source_id}'][input-handle-id='${sink_id}']"
 
     connector_destroy_callout: '.delete-terminal'
+    save_button: '.editor-button-save'
 
 tour:
   popover:

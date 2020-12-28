@@ -103,6 +103,7 @@
                                     :name="name"
                                     :tags="tags"
                                     :parameters="parameters"
+                                    :annotationCurrent.sync="annotation"
                                     :annotation="annotation"
                                     :version="version"
                                     :versions="versions"
@@ -175,10 +176,6 @@ export default {
             type: Array,
             required: true,
         },
-        annotation: {
-            type: String,
-            default: "",
-        },
         moduleSections: {
             type: Array,
             required: true,
@@ -215,6 +212,7 @@ export default {
             labels: {},
             license: null,
             creator: null,
+            annotation: null,
         };
     },
     created() {
@@ -233,6 +231,13 @@ export default {
                 return "There are unsaved changes to your workflow which will be lost.";
             }
         };
+    },
+    watch: {
+        annotation: function (newAnnotation, oldAnnotation) {
+            if (newAnnotation != oldAnnotation) {
+                this.hasChanges = true;
+            }
+        },
     },
     methods: {
         onActivate(node) {

@@ -8,6 +8,7 @@ export function fromSimple(workflow, data, appendData = false) {
     } else {
         workflow.nodeIndex = 0;
         workflow.name = data.name;
+        workflow.annotation = data.annotation;
         Object.values(workflow.nodes).forEach((node) => {
             node.onRemove();
         });
@@ -115,7 +116,8 @@ export function toSimple(workflow) {
     const report = workflow.report;
     const license = workflow.license;
     const creator = workflow.creator;
-    return { steps: nodes, report: report, license: license, creator: creator };
+    const annotation = workflow.annotation;
+    return { steps: nodes, report, license, creator, annotation };
 }
 
 function _scaledBoundingClientRect(element, canvasZoom) {
