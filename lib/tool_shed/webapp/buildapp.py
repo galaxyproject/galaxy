@@ -48,9 +48,10 @@ def add_ui_controllers(webapp, app):
                     webapp.add_ui_controller(name, T(app))
 
 
-def app_factory(global_conf, load_app_kwds={}, **kwargs):
+def app_factory(global_conf, load_app_kwds=None, **kwargs):
     """Return a wsgi application serving the root object"""
     # Create the Galaxy tool shed application unless passed in
+    load_app_kwds = load_app_kwds or {}
     kwargs = load_app_properties(
         kwds=kwargs,
         config_prefix='TOOL_SHED_CONFIG_',
