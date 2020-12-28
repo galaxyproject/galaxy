@@ -412,6 +412,12 @@ class WorkflowContentsManager(UsesAnnotations):
                 errors.append("Step %i: Requires tool '%s'." % (int(missing_tool_tup[3]) + 1, missing_tool_tup[0]))
             raise MissingToolsException(workflow, errors)
 
+        as_dict = raw_workflow_description.as_dict
+        if 'name' in as_dict:
+            sanitized_name = sanitize_html(as_dict['name'])
+            workflow.name = sanitized_name
+            stored_workflow.name = sanitized_name
+
         # Connect up
         workflow.stored_workflow = stored_workflow
         stored_workflow.latest_workflow = workflow

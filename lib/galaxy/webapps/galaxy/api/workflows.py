@@ -578,7 +578,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             new_workflow_name = workflow_dict.get('name')
             old_workflow = stored_workflow.latest_workflow
             name_updated = (new_workflow_name and new_workflow_name != stored_workflow.name)
-            if name_updated:
+            steps_updated = 'steps' in workflow_dict
+            if name_updated and not steps_updated:
                 sanitized_name = sanitize_html(new_workflow_name or old_workflow.name)
                 workflow = old_workflow.copy(user=trans.user)
                 workflow.stored_workflow = stored_workflow
