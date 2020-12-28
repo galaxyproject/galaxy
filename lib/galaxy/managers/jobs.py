@@ -626,7 +626,7 @@ def summarize_job_parameters(trans, job):
 
         rval = []
 
-        for input_index, input in enumerate(input_params.values()):
+        for input in input_params.values():
             if input.name in param_values:
                 if input.type == "repeat":
                     for i in range(len(param_values[input.name])):
@@ -651,7 +651,7 @@ def summarize_job_parameters(trans, job):
                     rval.append(dict(text=input.group_title(param_values), depth=depth, value="%s uploaded datasets" % len(param_values[input.name])))
                 elif input.type == "data":
                     value = []
-                    for i, element in enumerate(listify(param_values[input.name])):
+                    for element in listify(param_values[input.name]):
                         if element.history_content_type == "dataset":
                             hda = element
                             encoded_id = trans.security.encode_id(hda.id)

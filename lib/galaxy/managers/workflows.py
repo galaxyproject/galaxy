@@ -585,15 +585,15 @@ class WorkflowContentsManager(UsesAnnotations):
                 params_to_incoming(incoming, tool.inputs, step.state.inputs, trans.app)
                 step_model = tool.to_json(trans, incoming, workflow_building_mode=workflow_building_modes.USE_HISTORY, history=history)
                 step_model['post_job_actions'] = [{
-                    'short_str'         : ActionBox.get_short_str(pja),
-                    'action_type'       : pja.action_type,
-                    'output_name'       : pja.output_name,
-                    'action_arguments'  : pja.action_arguments
+                    'short_str': ActionBox.get_short_str(pja),
+                    'action_type': pja.action_type,
+                    'output_name': pja.output_name,
+                    'action_arguments': pja.action_arguments
                 } for pja in step.post_job_actions]
             else:
                 inputs = step.module.get_runtime_inputs(connections=step.output_connections)
                 step_model = {
-                    'inputs' : [input.to_dict(trans) for input in inputs.values()]
+                    'inputs': [input.to_dict(trans) for input in inputs.values()]
                 }
             step_model['replacement_parameters'] = step.module.get_replacement_parameters(step)
             step_model['step_type'] = step.type
@@ -602,10 +602,10 @@ class WorkflowContentsManager(UsesAnnotations):
             step_model['step_version'] = step.module.get_version()
             step_model['step_index'] = step.order_index
             step_model['output_connections'] = [{
-                'input_step_index'  : step_order_indices.get(oc.input_step_id),
-                'output_step_index' : step_order_indices.get(oc.output_step_id),
-                'input_name'        : oc.input_name,
-                'output_name'       : oc.output_name
+                'input_step_index': step_order_indices.get(oc.input_step_id),
+                'output_step_index': step_order_indices.get(oc.output_step_id),
+                'input_name': oc.input_name,
+                'output_name': oc.output_name
             } for oc in step.output_connections]
             if step.annotations:
                 step_model['annotation'] = step.annotations[0].annotation
@@ -655,7 +655,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
         def do_inputs(inputs, values, prefix, step, other_values=None):
             input_dicts = []
-            for input_index, input in enumerate(inputs.values()):
+            for input in inputs.values():
                 input_dict = {}
                 input_dict["type"] = input.type
                 if input.type == "repeat":
@@ -687,7 +687,7 @@ class WorkflowContentsManager(UsesAnnotations):
             return input_dicts
 
         step_dicts = []
-        for i, step in enumerate(workflow.steps):
+        for step in workflow.steps:
             module_injector = WorkflowModuleInjector(trans)
             step_dict = {}
             step_dict["order_index"] = step.order_index

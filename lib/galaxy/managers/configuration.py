@@ -97,7 +97,7 @@ class ConfigSerializer(base.ModelSerializer):
             'message_box_class'                 : _use_config,
             'server_startttime'                 : lambda config, key, **context: server_starttime,
             'mailing_join_addr'                 : _defaults_to('galaxy-announce-join@bx.psu.edu'),  # should this be the schema default?
-            'server_mail_configured'            : lambda config, key, **context: bool(getattr(config, 'smtp_server')),
+            'server_mail_configured'            : lambda config, key, **context: bool(config.smtp_server),
             'registration_warning_message'      : _use_config,
             'welcome_url'                       : _use_config,
             'show_welcome_with_login'           : _defaults_to(True),  # schema default is False
