@@ -131,7 +131,7 @@ def get_next_prior_import_or_install_required_dict_entry(prior_required_dict, pr
             return key
     # Return the first key / value pair that is not yet processed.  Hopefully this is all that is necessary
     # at this point.
-    for key, value in prior_required_dict.items():
+    for key in prior_required_dict.keys():
         if key in processed_tsr_ids:
             continue
         return key
