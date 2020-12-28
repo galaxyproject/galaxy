@@ -45,7 +45,7 @@ class BaseGitPlugin(ErrorPlugin, metaclass=ABCMeta):
             return None
         try:
             if tool.tool_shed not in self.ts_urls:
-                ts_url_request = requests.get('http://' + str(tool.tool_shed))
+                ts_url_request = requests.get(f'http://{tool.tool_shed}'))
                 self.ts_urls[tool.tool_shed] = ts_url_request.url
             return self.ts_urls[tool.tool_shed]
         except Exception:
@@ -58,7 +58,7 @@ class BaseGitPlugin(ErrorPlugin, metaclass=ABCMeta):
             if job.tool_id not in self.ts_repo_cache:
                 ts_repo_request_data = requests.get(ts_url + "/api/repositories?tool_ids=" + str(job.tool_id)).json()
 
-                for changeset, repoinfo in ts_repo_request_data.items():
+                for repoinfo in ts_repo_request_data.values():
                     if isinstance(repoinfo, dict):
                         self.ts_repo_cache[job.tool_id] = repoinfo.get('repository', {}).get('remote_repository_url', None)
             return self.ts_repo_cache[job.tool_id]
