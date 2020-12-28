@@ -60,9 +60,9 @@ def get_components_from_key(key):
 def print_folders(pad, folder):
     # For debugging...
     pad_str = ''
-    for i in range(1, pad):
+    for _i in range(1, pad):
         pad_str += ' '
-    print('{}id: {} key: {}'.format(pad_str, str(folder.id), folder.key))
+    print(f'{pad_str} id: {folder.id} key: {folder.key}')
     for repository_dependency in folder.repository_dependencies:
         print(f'    {pad_str}{repository_dependency.listify}')
     for sub_folder in folder.folders:
