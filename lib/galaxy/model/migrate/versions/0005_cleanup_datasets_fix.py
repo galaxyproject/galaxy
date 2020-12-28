@@ -502,8 +502,9 @@ class LibraryDatasetDatasetAssociation(DatasetInstance):
     def clear_associated_files(self, metadata_safe=False, purge=False):
         return
 
-    def get_library_item_info_templates(self, template_list=[], restrict=False):
+    def get_library_item_info_templates(self, template_list=None, restrict=False):
         # If restrict is True, we'll return only those templates directly associated with this LibraryDatasetDatasetAssociation
+        template_list = template_list or []
         if self.library_dataset_dataset_info_template_associations:
             template_list.extend([lddita.library_item_info_template for lddita in self.library_dataset_dataset_info_template_associations if lddita.library_item_info_template not in template_list])
         self.library_dataset.get_library_item_info_templates(template_list, restrict)
@@ -564,7 +565,8 @@ class LibraryDataset:
             raise Exception("Cannot unpurge once purged")
     purged = property(get_purged, set_purged)
 
-    def get_library_item_info_templates(self, template_list=[], restrict=False):
+    def get_library_item_info_templates(self, template_list=None, restrict=False):
+        template_list = template_list or []
         # If restrict is True, we'll return only those templates directly associated with this LibraryDataset
         if self.library_dataset_info_template_associations:
             template_list.extend([ldita.library_item_info_template for ldita in self.library_dataset_info_template_associations if ldita.library_item_info_template not in template_list])

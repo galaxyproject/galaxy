@@ -38,7 +38,7 @@ def is_view_model(o):
 def install_views(engine):
     import galaxy.model.view
     views = getmembers(galaxy.model.view, is_view_model)
-    for (name, ViewModel) in views:
+    for _name, ViewModel in views:
         # adding DropView here because our unit-testing calls this function when
         # it mocks the app and CreateView will attempt to rebuild an existing
         # view in a database that is already made, the right answer is probably
