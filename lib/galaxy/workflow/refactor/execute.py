@@ -211,9 +211,11 @@ class WorkflowRefactorExecutor:
 
     def _apply_extract_legacy_parameter(self, action: ExtractLegacyParameter):
         legacy_parameter_name = action.name
+        new_label = action.label or legacy_parameter_name
         target_value = "${%s}" % legacy_parameter_name
 
         target_tool_inputs = []
+        rename_pjas = []
 
         for step_def, step in self._iterate_over_step_pairs():
             module = step.module
@@ -244,7 +246,12 @@ class WorkflowRefactorExecutor:
             if replace_tool_state:
                 step_def["tool_state"] = step.module.get_tool_state()
 
-        if len(target_tool_inputs) == 0:
+        for post_job_action in self._iterate_over_rename_pjas():
+            newname = post_job_action.get("action_arguments", {}).get("newname")
+            if target_value in newname:
+                rename_pjas.append(post_job_action)
+
+        if len(target_tool_inputs) == 0 and len(rename_pjas) == 0:
             raise RequestParameterInvalidException(f"Failed to find {target_value} in the tool state or any workflow steps.")
 
         as_parameter_type = {
@@ -262,16 +269,29 @@ class WorkflowRefactorExecutor:
             target_parameter_type = as_parameter_type[tool_input_type]
             target_parameter_types.add(target_parameter_type)
 
-        if len(target_parameter_types) != 1:
+        if len(target_parameter_types) > 1:
             raise RequestParameterInvalidException("Extracting inputs for parameters on conflicting tool input types (e.g. numeric and non-numeric) input types is unsupported")
-        (target_parameter_type,) = target_parameter_types
+
+        if len(target_parameter_types) == 1:
+            (target_parameter_type,) = target_parameter_types
+        else:
+            # only used in PJA, hence only used a string
+            target_parameter_type = "text"
+
+        for rename_pja in rename_pjas:
+            # if name != label, got to rewrite this rename with new label.
+            if legacy_parameter_name != new_label:
+                action_arguments = rename_pja.get("action_arguments")
+                old_newname = action_arguments["newname"]
+                new_newname = old_newname.replace(target_value, "${%s}" % new_label)
+                action_arguments["newname"] = new_newname
 
         optional = False
         input_action = AddInputAction(
             action_type="add_input",
             optional=optional,
             type=target_parameter_type,
-            label=action.label or legacy_parameter_name,
+            label=new_label,
             position=action.position,
         )
         new_input_order_index = self._add_input_get_order_index(input_action)
@@ -332,6 +352,15 @@ class WorkflowRefactorExecutor:
             else:
                 step = self._step_with_module(order_index)
                 yield step_def, step
+
+    def _iterate_over_rename_pjas(self):
+        for _, step_def in self._as_dict["steps"].items():
+            if step_def["type"] != "tool":
+                continue
+            post_job_actions = step_def.get("post_job_actions", [])
+            for post_job_action in post_job_actions.values():
+                if post_job_action["action_type"] == "RenameDatasetAction":
+                    yield post_job_action
 
     def _add_input_get_order_index(self, input_action: AddInputAction):
         self._apply_add_input(input_action)

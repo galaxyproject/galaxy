@@ -174,6 +174,55 @@ steps:
         assert expected_exception
         assert "input types" in str(expected_exception)
 
+    def test_refactoring_legacy_parameters_without_tool_state(self):
+        # test parameters used in PJA without being used in tool state.
+        # These will work fine with the simplified workflow UI, but should probably
+        # be formalized and assigned a unique label and informative annotation.
+        self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  test_input: data
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: test_input
+    outputs:
+      out_file1:
+        rename: "${pja_only_param} name"
+""")
+        actions = [
+            {"action_type": "extract_legacy_parameter", "name": "pja_only_param"},
+        ]
+        self._refactor_without_errors(actions)
+        assert self._latest_workflow.step_by_label("pja_only_param").tool_inputs["parameter_type"] == "text"
+
+    def test_refactoring_legacy_parameters_without_tool_state_relabel(self):
+        # same thing as above, but apply relabeling and ensure PJA gets updated.
+        self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  test_input: data
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: test_input
+    outputs:
+      out_file1:
+        rename: "${pja_only_param} name"
+""")
+        actions = [
+            {"action_type": "extract_legacy_parameter", "name": "pja_only_param", "label": "new_label"},
+        ]
+        self._refactor_without_errors(actions)
+        assert self._latest_workflow.step_by_label("new_label").tool_inputs["parameter_type"] == "text"
+        pjas = self._latest_workflow.step_by_label("first_cat").post_job_actions
+        assert len(pjas) == 1
+        pja = pjas[0]
+        assert "newname" in pja.action_arguments
+        assert "${new_label}" in pja.action_arguments["newname"]
+
     def test_removing_unlabeled_workflow_outputs(self):
         wf = self.workflow_populator.load_workflow_from_resource("test_workflow_randomlines_legacy_params")
         self.workflow_populator.create_workflow(wf)
