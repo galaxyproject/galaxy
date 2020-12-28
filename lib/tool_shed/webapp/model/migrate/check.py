@@ -17,7 +17,7 @@ migrate_repository_directory = os.path.dirname(__file__).replace(os.getcwd() + o
 migrate_repository = repository.Repository(migrate_repository_directory)
 
 
-def create_or_verify_database(url, engine_options={}):
+def create_or_verify_database(url, engine_options=None):
     """
     Check that the database is use-able, possibly creating it if empty (this is
     the only time we automatically create tables, otherwise we force the
@@ -29,6 +29,7 @@ def create_or_verify_database(url, engine_options={}):
     4) Database versioned but out of date --> fail with informative message, user must run "sh manage_db.sh upgrade"
 
     """
+    engine_options = engine_options or {}
     # Create engine and metadata
     if not database_exists(url):
         message = "Creating database for URI [%s]" % url
