@@ -93,7 +93,7 @@ class RepositoriesWithReviewsGrid(RepositoryGrid):
                     rval += '<a class="view-info" href="repository_reviews_by_user?id=%s">' % trans.security.encode_id(user.id)
                     rval += '%s</a> | ' % user.username
                 if rval[-3:] == ' | ':
-                    rval = rval[:-3])
+                    rval = rval[:-3]
             return rval
 
     class RatingColumn(grids.TextColumn):

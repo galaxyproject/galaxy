@@ -28,7 +28,7 @@ class DisplayApplicationsController(BaseAPIController):
                 'name': display_app.name,
                 'version': display_app.version,
                 'filename_': display_app._filename,
-                'links': [{'name': _.name} for _ in display_app.links.values()]
+                'links': [{'name': link.name} for link in display_app.links.values()]
             })
         return response
 

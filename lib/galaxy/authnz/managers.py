@@ -313,8 +313,8 @@ class AuthnzManager:
                 return False, message, (None, None)
             return success, message, backend.create_user(token, trans, login_redirect_url)
         except exceptions.AuthenticationFailed as e:
-            log.exception(str(e))
-            raise exceptions.AuthenticationFailed(str(e))
+            log.exception("Error creating user")
+            raise
         except Exception as e:
             msg = 'The following error occurred when handling callback from `{}` identity provider: ' \
                   '{}'.format(provider, str(e))

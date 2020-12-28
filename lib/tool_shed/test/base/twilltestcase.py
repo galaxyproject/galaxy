@@ -536,7 +536,8 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
     def delete_files_from_repository(self, repository, filenames=None, strings_displayed=None, strings_not_displayed=None):
         filenames = filenames or []
         files_to_delete = []
-        strings_displayed = strings_displayed or ['were deleted from the repository']
+        if strings_displayed is None:
+            strings_displayed = ['were deleted from the repository']
         basepath = self.get_repo_path(repository)
         repository_files = self.get_repository_file_list(repository=repository, base_path=basepath, current_path=None)
         # Verify that the files to delete actually exist in the repository.

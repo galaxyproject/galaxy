@@ -1217,7 +1217,7 @@ class NavigatesGalaxy(HasDriver):
         selector = self.history_panel_wait_for_hid_state(collection_hid, "ok")
         self.click(selector)
         next_level_element_selector = selector
-        for _i in range(len(collection_type.split(":")) - 1):
+        for _ in range(len(collection_type.split(":")) - 1):
             next_level_element_selector = next_level_element_selector.descendant(".dataset-collection-element")
             self.wait_for_and_click(next_level_element_selector)
 

@@ -51,7 +51,7 @@ class BrewContext:
     def __init__(self, args=None):
         ensure_brew_on_path(args)
         raw_config = brew_execute(["config"])
-        config_lines = [_.strip().split(":", 1) for _ in raw_config.split("\n") if _]
+        config_lines = [line.strip().split(":", 1) for line in raw_config.split("\n") if line]
         config = {p[0].strip(): p[1].strip() for p in config_lines}
         # unset if "/usr/local" -> https://github.com/Homebrew/homebrew/blob/master/Library/Homebrew/cmd/config.rb
         homebrew_prefix = config.get("HOMEBREW_PREFIX", "/usr/local")
@@ -495,7 +495,7 @@ def brew_versions_info(package, tap_path):
 
     # TODO: Also use tags.
     stdout = brew_execute(["versions", package])
-    version_parts = [_ for _ in stdout.split("\n") if _ and "git checkout" in _]
+    version_parts = [line for line in stdout.split("\n") if line and "git checkout" in line]
     version_parts = map(lambda l: WHITESPACE_PATTERN.split(l), version_parts)
     info = [(p[0], p[3], versioned(p[4])) for p in version_parts]
     return info
