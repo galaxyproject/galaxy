@@ -179,7 +179,7 @@ class FilteredDataProvider(DataProvider):
             return either the (optionally modified) datum or None.
         """
         super().__init__(source, **kwargs)
-        self.filter_fn = filter_fn if hasattr(filter_fn, '__call__') else None
+        self.filter_fn = filter_fn if callable(filter_fn) else None
         # count how many data we got from the source
         self.num_data_read = 0
         # how many valid data have we gotten from the source
@@ -224,7 +224,7 @@ class LimitedOffsetDataProvider(FilteredDataProvider):
     """
     # define the expected types of these __init__ arguments so they can be parsed out from query strings
     settings = {
-        'limit' : 'int',
+        'limit': 'int',
         'offset': 'int'
     }
 

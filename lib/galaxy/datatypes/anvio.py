@@ -41,7 +41,7 @@ class AnvioComposite(Html):
             rval.append("</ul>")
         defined_files = map(lambda x: x[0], defined_files)
         extra_files = []
-        for (dirpath, dirnames, filenames) in os.walk(dataset.extra_files_path, followlinks=True):
+        for dirpath, _dirnames, filenames in os.walk(dataset.extra_files_path, followlinks=True):
             for filename in filenames:
                 rel_path = os.path.relpath(os.path.join(dirpath, filename), dataset.extra_files_path)
                 if rel_path not in defined_files:
