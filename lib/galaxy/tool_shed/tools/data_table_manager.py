@@ -65,7 +65,7 @@ class ShedToolDataTableManager:
         repository is being installed or reinstalled.
         """
         missing_data_table_entry = False
-        for index, repository_tools_tup in enumerate(repository_tools_tups):
+        for repository_tools_tup in repository_tools_tups:
             tup_path, guid, repository_tool = repository_tools_tup
             if repository_tool.params_with_missing_data_table_entry:
                 missing_data_table_entry = True
@@ -145,7 +145,7 @@ class ShedToolDataTableManager:
                 for elem in tree.getroot():
                     # Append individual table elems or other elemes, but not tables elems.
                     if elem.tag == 'tables':
-                        for table_elem in elems:
+                        for _table_elem in elems:
                             elems.append(elem)
                     else:
                         elems.append(elem)
