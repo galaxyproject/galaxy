@@ -64,7 +64,9 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
 
     """Class of FunctionalTestCase geared toward HTML interactions using the Twill library."""
 
-    def check_for_strings(self, strings_displayed=[], strings_not_displayed=[]):
+    def check_for_strings(self, strings_displayed=None, strings_not_displayed=None):
+        strings_displayed = strings_displayed or []
+        strings_not_displayed = strings_not_displayed or []
         if strings_displayed:
             for check_str in strings_displayed:
                 self.check_page_for_string(check_str)
@@ -174,7 +176,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         # TextControl, FileControl, ListControl, RadioControl, CheckboxControl, SelectControl,
         # SubmitControl, ImageControl
         if form is None:
-            for i, form in enumerate(self.showforms()):
+            for i, _form in enumerate(self.showforms()):
                 if i == form_no:
                     break
         assert form, "No form to submit found"
@@ -195,7 +197,9 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
                 pass
         tc.submit(button)
 
-    def visit_url(self, url, params=None, doseq=False, allowed_codes=[200]):
+    def visit_url(self, url, params=None, doseq=False, allowed_codes=None):
+        if allowed_codes is None:
+            allowed_codes = [200]
         if params is None:
             params = dict()
         parsed_url = urlparse(url)
@@ -453,7 +457,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
 
     def create_repository_dependency(self,
                                      repository=None,
-                                     repository_tuples=[],
+                                     repository_tuples=None,
                                      filepath=None,
                                      prior_installation_required=False,
                                      complex=False,
@@ -461,6 +465,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
                                      version=None,
                                      strings_displayed=None,
                                      strings_not_displayed=None):
+        repository_tuples = repository_tuples or []
         repository_names = []
         if complex:
             filename = 'tool_dependencies.xml'
@@ -528,8 +533,10 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         response = requests.delete(self.galaxy_url + "/api/tool_shed_repositories/" + encoded_id, data={'remove_from_disk': False, 'key': api_key})
         assert response.status_code != 403, response.content
 
-    def delete_files_from_repository(self, repository, filenames=[], strings_displayed=['were deleted from the repository'], strings_not_displayed=None):
+    def delete_files_from_repository(self, repository, filenames=None, strings_displayed=None, strings_not_displayed=None):
+        filenames = filenames or []
         files_to_delete = []
+        strings_displayed = strings_displayed or ['were deleted from the repository']
         basepath = self.get_repo_path(repository)
         repository_files = self.get_repository_file_list(repository=repository, base_path=basepath, current_path=None)
         # Verify that the files to delete actually exist in the repository.
@@ -629,7 +636,9 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         self.visit_url('/repository_review/repository_reviews_by_user', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
-    def edit_repository_categories(self, repository, categories_to_add=[], categories_to_remove=[], restore_original=True):
+    def edit_repository_categories(self, repository, categories_to_add=None, categories_to_remove=None, restore_original=True):
+        categories_to_add = categories_to_add or []
+        categories_to_remove = categories_to_remove or []
         params = {
             'id': self.security.encode_id(repository.id)
         }
@@ -796,7 +805,8 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         full_path = os.path.join(filepath, filename)
         open(full_path, 'w').write(repository_dependency_xml)
 
-    def generate_temp_path(self, test_script_path, additional_paths=[]):
+    def generate_temp_path(self, test_script_path, additional_paths=None):
+        additional_paths = additional_paths or []
         temp_path = os.path.join(self.tool_shed_test_tmp_dir, test_script_path, os.sep.join(additional_paths))
         if not os.path.exists(temp_path):
             os.makedirs(temp_path)
@@ -996,11 +1006,12 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
 
     def grant_write_access(self,
                            repository,
-                           usernames=[],
+                           usernames=None,
                            strings_displayed=None,
                            strings_not_displayed=None,
                            post_submit_strings_displayed=None,
                            post_submit_strings_not_displayed=None):
+        usernames = usernames or []
         self.display_manage_repository_page(repository)
         self.check_for_strings(strings_displayed, strings_not_displayed)
         for username in usernames:
@@ -1097,8 +1108,10 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
                          encoded_repository_id,
                          strings_displayed=None,
                          strings_not_displayed=None,
-                         strings_displayed_in_iframe=[],
-                         strings_not_displayed_in_iframe=[]):
+                         strings_displayed_in_iframe=None,
+                         strings_not_displayed_in_iframe=None):
+        strings_displayed_in_iframe = strings_displayed_in_iframe or []
+        strings_not_displayed_in_iframe = strings_not_displayed_in_iframe or []
         url = f'{self.url}/view/{username}'
         # If repository name is passed in, append that to the url.
         if repository_name:
@@ -1286,8 +1299,9 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         }
         self.visit_url('/repository/manage_repository', params=params)
 
-    def search_for_valid_tools(self, search_fields={}, exact_matches=False, strings_displayed=None, strings_not_displayed=None, from_galaxy=False):
+    def search_for_valid_tools(self, search_fields=None, exact_matches=False, strings_displayed=None, strings_not_displayed=None, from_galaxy=False):
         params = {}
+        search_fields = search_fields or {}
         if from_galaxy:
             params['galaxy_url'] = self.galaxy_url
         for field_name, search_string in search_fields.items():
@@ -1491,7 +1505,9 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         tc.submit("upload_button")
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
-    def verify_installed_repositories(self, installed_repositories=[], uninstalled_repositories=[]):
+    def verify_installed_repositories(self, installed_repositories=None, uninstalled_repositories=None):
+        installed_repositories = installed_repositories or []
+        uninstalled_repositories = uninstalled_repositories or []
         for repository_name, repository_owner in installed_repositories:
             galaxy_repository = test_db_util.get_installed_repository_by_name_owner(repository_name, repository_owner)
             if galaxy_repository:
@@ -1602,7 +1618,9 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         # or if the number of keys differs.
         assert old_metadata == new_metadata, 'Metadata changed after reset on repository %s.' % repository.name
 
-    def visit_galaxy_url(self, url, params=None, doseq=False, allowed_codes=[200]):
+    def visit_galaxy_url(self, url, params=None, doseq=False, allowed_codes=None):
+        if allowed_codes is None:
+            allowed_codes = [200]
         url = f'{self.galaxy_url}{url}'
         self.visit_url(url, params=params, doseq=doseq, allowed_codes=allowed_codes)
 
