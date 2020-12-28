@@ -14,6 +14,7 @@ import tempfile
 import zipfile
 from collections import OrderedDict
 from json import dumps
+from typing import Optional
 
 import h5py
 import pysam
@@ -51,7 +52,7 @@ class Binary(data.Data):
     def register_unsniffable_binary_ext(ext):
         """Deprecated method."""
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset, **kwd):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = 'binary data'
@@ -272,7 +273,7 @@ class BamNative(CompressedArchive):
     edam_format = "format_2572"
     edam_data = "data_0863"
     file_ext = "unsorted.bam"
-    sort_flag = None
+    sort_flag: Optional[str] = None
 
     MetadataElement(name="bam_version", default=None, desc="BAM Version", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=None)
     MetadataElement(name="sort_order", default=None, desc="Sort Order", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=None)
@@ -1122,7 +1123,7 @@ class GmxBinary(Binary):
     Base class for GROMACS binary files - xtc, trr, cpt
     """
 
-    magic_number = None  # variables to be overwritten in the child class
+    magic_number: Optional[int] = None  # variables to be overwritten in the child class
     file_ext = ""
 
     def sniff(self, filename):

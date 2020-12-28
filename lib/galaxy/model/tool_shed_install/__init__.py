@@ -1,5 +1,6 @@
 import logging
 import os
+from typing import TYPE_CHECKING
 
 from galaxy.util import asbool
 from galaxy.util.bunch import Bunch
@@ -9,7 +10,16 @@ from galaxy.util.tool_shed import common_util
 log = logging.getLogger(__name__)
 
 
-class ToolShedRepository:
+if TYPE_CHECKING:
+    from sqlalchemy.schema import Table
+
+    class _BaseClass:
+        table: Table
+else:
+    _BaseClass = object
+
+
+class ToolShedRepository(_BaseClass):
     dict_collection_visible_keys = ['id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
                                     'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message', 'description']
     dict_element_visible_keys = ['id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
@@ -469,20 +479,20 @@ class ToolShedRepository:
         return False
 
 
-class RepositoryRepositoryDependencyAssociation:
+class RepositoryRepositoryDependencyAssociation(_BaseClass):
 
     def __init__(self, tool_shed_repository_id=None, repository_dependency_id=None):
         self.tool_shed_repository_id = tool_shed_repository_id
         self.repository_dependency_id = repository_dependency_id
 
 
-class RepositoryDependency:
+class RepositoryDependency(_BaseClass):
 
     def __init__(self, tool_shed_repository_id=None):
         self.tool_shed_repository_id = tool_shed_repository_id
 
 
-class ToolDependency:
+class ToolDependency(_BaseClass):
     installation_status = Bunch(NEVER_INSTALLED='Never installed',
                                 INSTALLING='Installing',
                                 INSTALLED='Installed',
@@ -569,7 +579,7 @@ class ToolVersion(Dictifiable):
         return rval
 
 
-class ToolVersionAssociation:
+class ToolVersionAssociation(_BaseClass):
 
     def __init__(self, id=None, tool_id=None, parent_id=None):
         self.id = id
@@ -577,7 +587,7 @@ class ToolVersionAssociation:
         self.parent_id = parent_id
 
 
-class MigrateTools:
+class MigrateTools(_BaseClass):
 
     def __init__(self, repository_id=None, repository_path=None, version=None):
         self.repository_id = repository_id

@@ -18,6 +18,7 @@ import time
 from collections import defaultdict
 from datetime import datetime, timedelta
 from string import Template
+from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from boltons.iterutils import remap
@@ -89,7 +90,17 @@ JOB_METRIC_SCALE = 7
 AUTO_PROPAGATED_TAGS = ["name"]
 
 
-class RepresentById:
+if TYPE_CHECKING:
+    from sqlalchemy.schema import Table
+
+    class _BaseModel:
+        table: Table = None
+
+else:
+    _BaseModel = object
+
+
+class RepresentById(_BaseModel):
     def __repr__(self):
         try:
             r = '<galaxy.model.{}({}) at {}>'.format(self.__class__.__name__, cached_id(self), hex(id(self)))
@@ -231,7 +242,7 @@ class UsesCreateAndUpdateTime:
         return (galaxy.model.orm.now.now() - create_time).total_seconds()
 
 
-class WorkerProcess(UsesCreateAndUpdateTime):
+class WorkerProcess(UsesCreateAndUpdateTime, _BaseModel):
 
     def __init__(self, server_name, hostname):
         self.server_name = server_name
@@ -624,7 +635,7 @@ class User(Dictifiable, RepresentById):
         session.flush()
 
 
-class PasswordResetToken:
+class PasswordResetToken(_BaseModel):
     def __init__(self, user, token=None):
         if token:
             self.token = token
@@ -634,7 +645,7 @@ class PasswordResetToken:
         self.expiration_time = galaxy.model.orm.now.now() + timedelta(hours=24)
 
 
-class DynamicTool(Dictifiable):
+class DynamicTool(Dictifiable, RepresentById):
     dict_collection_visible_keys = ('id', 'tool_id', 'tool_format', 'tool_version', 'uuid', 'active', 'hidden')
     dict_element_visible_keys = ('id', 'tool_id', 'tool_format', 'tool_version', 'uuid', 'active', 'hidden')
 
@@ -2045,7 +2056,7 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
             rval = 0
         return rval
 
-    @disk_size.expression
+    @disk_size.expression  # type: ignore
     def disk_size(cls):
         """
         Return a query scalar that will get any history's size in bytes by summing
@@ -2351,7 +2362,7 @@ class StorableObject:
             sa_session.flush()
 
 
-class Dataset(StorableObject, RepresentById):
+class Dataset(StorableObject, RepresentById, _BaseModel):
     states = Bunch(NEW='new',
                    UPLOAD='upload',
                    QUEUED='queued',
@@ -3494,7 +3505,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
     def type_id(self):
         return '-'.join((self.content_type, str(self.id)))
 
-    @type_id.expression
+    @type_id.expression  # type: ignore
     def type_id(cls):
         return ((type_coerce(cls.content_type, types.Unicode) + '-'
                  + type_coerce(cls.id, types.Unicode)).label('type_id'))
@@ -4410,7 +4421,7 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
     def type_id(self):
         return '-'.join((self.content_type, str(self.id)))
 
-    @type_id.expression
+    @type_id.expression  # type: ignore
     def type_id(cls):
         return ((type_coerce(cls.content_type, types.Unicode) + '-'
                  + type_coerce(cls.id, types.Unicode)).label('type_id'))
@@ -6104,7 +6115,7 @@ class CustosAuthnzToken(RepresentById):
         self.refresh_expiration_time = refresh_expiration_time
 
 
-class CloudAuthz:
+class CloudAuthz(_BaseModel):
     def __init__(self, user_id, provider, config, authn_id, description=""):
         self.id = None
         self.user_id = user_id

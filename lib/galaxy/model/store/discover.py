@@ -12,7 +12,7 @@ from collections import (
     namedtuple,
     OrderedDict
 )
-
+from typing import Any, NamedTuple, Optional
 
 import galaxy.model
 from galaxy import util
@@ -697,8 +697,6 @@ def replace_request_syntax_sugar(obj):
 
 
 DiscoveredFile = namedtuple('DiscoveredFile', ['path', 'collector', 'match'])
-DiscoveredFileError = namedtuple('DiscoveredFileError', ['error_message', 'collector', 'match'])
-DiscoveredFileError.path = None
 
 
 def discovered_file_for_element(dataset, job_working_directory, parent_identifiers=None, collector=None):
@@ -828,3 +826,10 @@ class RegexCollectedDatasetMatch(JsonCollectedDatasetMatch):
         super().__init__(
             re_match.groupdict(), collector, filename, path=path
         )
+
+
+class DiscoveredFileError(NamedTuple):
+    error_message: str
+    collector: Any   # TODO: setup interface for this
+    match: JsonCollectedDatasetMatch
+    path: Optional[str] = None

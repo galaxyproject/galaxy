@@ -119,7 +119,6 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         and a history may contain multiple objects with the same 'hid'.
         """
 
-    @abc.abstractproperty
     def trust_hid(self, obj_attrs):
         """Trust HID when importing objects into a new History."""
 
