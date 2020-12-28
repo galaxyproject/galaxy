@@ -1216,7 +1216,7 @@ class DirectoryModelExportStore(ModelExportStore):
 
         datasets_attrs = []
         provenance_attrs = []
-        for _dataset_id, (dataset, include_files) in self.included_datasets.items():
+        for dataset, include_files in self.included_datasets.values():
             if include_files:
                 datasets_attrs.append(dataset)
             else:
@@ -1264,7 +1264,7 @@ class DirectoryModelExportStore(ModelExportStore):
                 implicit_collection_jobs = icja.implicit_collection_jobs
                 implicit_collection_jobs_dict[implicit_collection_jobs.id] = implicit_collection_jobs
 
-        for _hda_id, (hda, _include_files) in self.included_datasets.items():
+        for hda, _include_files in self.included_datasets.values():
             # Get the associated job, if any. If this hda was copied from another,
             # we need to find the job that created the origial hda
             job_hda = hda
@@ -1281,7 +1281,7 @@ class DirectoryModelExportStore(ModelExportStore):
 
         # Get jobs' attributes.
         jobs_attrs = []
-        for _id, job in jobs_dict.items():
+        for job in jobs_dict.values():
             # Don't attempt to serialize jobs for editing... yet at least.
             if self.serialization_options.for_edit:
                 continue
@@ -1368,7 +1368,7 @@ class DirectoryModelExportStore(ModelExportStore):
             jobs_attrs.append({"id": job_id, 'output_dataset_mapping': output_dataset_mapping})
 
         icjs_attrs = []
-        for _icj_id, icj in implicit_collection_jobs_dict.items():
+        for icj in implicit_collection_jobs_dict.values():
             icj_attrs = icj.serialize(self.security, self.serialization_options)
             icjs_attrs.append(icj_attrs)
 
