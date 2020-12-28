@@ -9,6 +9,8 @@ export function fromSimple(workflow, data, appendData = false) {
         workflow.nodeIndex = 0;
         workflow.name = data.name;
         workflow.annotation = data.annotation;
+        workflow.license = data.license;
+        workflow.creator = data.creator;
         Object.values(workflow.nodes).forEach((node) => {
             node.onRemove();
         });

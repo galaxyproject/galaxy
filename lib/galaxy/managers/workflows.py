@@ -438,6 +438,8 @@ class WorkflowContentsManager(UsesAnnotations):
 
         if 'report' in data:
             workflow.reports_config = data['report']
+        workflow.license = data.get('license')
+        workflow.creator_metadata = data.get('creator')
 
         # Assume no errors until we find a step that has some
         workflow.has_errors = False
@@ -1153,6 +1155,8 @@ class WorkflowContentsManager(UsesAnnotations):
             inputs[index] = {'label': label, 'value': '', 'uuid': step_uuid}
         item['inputs'] = inputs
         item['annotation'] = self.get_item_annotation_str(sa_session, stored.user, stored)
+        item['license'] = workflow.license
+        item['creator'] = workflow.creator_metadata
         steps = {}
         steps_to_order_index = {}
         for step in workflow.steps:

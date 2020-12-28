@@ -3,17 +3,6 @@ import Attributes from "./Attributes";
 
 jest.mock("app");
 
-import { Services } from "../services";
-jest.mock("../services");
-
-Services.mockImplementation(() => {
-    return {
-        async updateWorkflow() {
-            return {};
-        },
-    };
-});
-
 const TEST_ANNOTATION = "my cool annotation";
 const TEST_NAME = "workflow_name";
 
