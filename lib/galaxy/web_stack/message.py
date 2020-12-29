@@ -47,7 +47,7 @@ class ApplicationStackMessageDispatcher:
 
 
 class ApplicationStackMessage(dict):
-    _target: Optional[str] = None
+    target: Optional[str] = None  # type: ignore
     default_handler = None
     _validate_kwargs = ('target',)
 
@@ -95,13 +95,13 @@ class ApplicationStackMessage(dict):
         log.debug("Bound default message handler '%s.%s' to %s", self.__class__.__name__, self.default_handler.__name__,
                   getattr(obj, name))
 
-    @property
+    @property  # type: ignore
     def target(self):
-        return self['_target']
+        return self['target']
 
-    @target.setter
-    def target(self, target):
-        self['_target'] = target
+    @target.setter  # type: ignore
+    def set_target(self, target):
+        self['target'] = target
 
 
 class ParamMessage(ApplicationStackMessage):
@@ -152,12 +152,12 @@ class TaskMessage(ParamMessage):
 
 
 class JobHandlerMessage(TaskMessage):
-    _target = 'job_handler'
+    target = 'job_handler'
     _validate_params = ('job_id',)
 
 
 class WorkflowSchedulingMessage(TaskMessage):
-    _target = 'workflow_scheduling'
+    target = 'workflow_scheduling'
     _validate_params = ('workflow_invocation_id',)
 
 
