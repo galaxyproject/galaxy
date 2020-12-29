@@ -4,6 +4,7 @@
 import json
 import logging
 import types
+from typing import Optional, Tuple
 
 log = logging.getLogger(__name__)
 
@@ -46,7 +47,7 @@ class ApplicationStackMessageDispatcher:
 
 
 class ApplicationStackMessage(dict):
-    target = None
+    _target: Optional[str] = None
     default_handler = None
     _validate_kwargs = ('target',)
 
@@ -96,17 +97,17 @@ class ApplicationStackMessage(dict):
 
     @property
     def target(self):
-        return self['target']
+        return self['_target']
 
     @target.setter
-    def set_target(self, target):
-        self['target'] = target
+    def target(self, target):
+        self['_target'] = target
 
 
 class ParamMessage(ApplicationStackMessage):
     _validate_kwargs = ('params',)
-    _validate_params = ()
-    _exclude_params = ()
+    _validate_params: Tuple[str, ...] = ()
+    _exclude_params: Tuple[str, ...] = ()
 
     def __init__(self, target=None, params=None, **kwargs):
         super().__init__(target=target)
@@ -126,7 +127,7 @@ class ParamMessage(ApplicationStackMessage):
         return d
 
     @params.setter
-    def set_params(self, params):
+    def params(self, params):
         self['params'] = params
 
 
@@ -151,12 +152,12 @@ class TaskMessage(ParamMessage):
 
 
 class JobHandlerMessage(TaskMessage):
-    target = 'job_handler'
+    _target = 'job_handler'
     _validate_params = ('job_id',)
 
 
 class WorkflowSchedulingMessage(TaskMessage):
-    target = 'workflow_scheduling'
+    _target = 'workflow_scheduling'
     _validate_params = ('workflow_invocation_id',)
 
 
