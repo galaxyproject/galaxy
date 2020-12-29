@@ -4,6 +4,7 @@
 
 // TODO: isn't @babel/polyfill bad now?
 import "@babel/polyfill";
+import config from "config";
 import { expose } from "threads/worker";
 import { asObservable } from "./asObservable";
 import { configure } from "./workerConfig";
@@ -19,16 +20,18 @@ const {
     ...promises
 } = api;
 
-expose({
-    configure,
+if (!config.testBuild) {
+    expose({
+        configure,
 
-    // observables
-    monitorContentQuery: asObservable(monitorContentQuery),
-    monitorDscQuery: asObservable(monitorDscQuery),
-    monitorHistoryContent: asObservable(monitorHistoryContent),
-    loadHistoryContents: asObservable(loadHistoryContents),
-    loadDscContent: asObservable(loadDscContent),
-    pollHistory: asObservable(pollHistory),
+        // observables
+        monitorContentQuery: asObservable(monitorContentQuery),
+        monitorDscQuery: asObservable(monitorDscQuery),
+        monitorHistoryContent: asObservable(monitorHistoryContent),
+        loadHistoryContents: asObservable(loadHistoryContents),
+        loadDscContent: asObservable(loadDscContent),
+        pollHistory: asObservable(pollHistory),
 
-    ...promises,
-});
+        ...promises,
+    });
+}
