@@ -253,7 +253,7 @@ class ToolPanelManager:
                 if tool_section_dict['id']:
                     inside_section = True
                     # Create a new section element only if we haven't already created it.
-                    for index, elem in elem_list:
+                    for index, elem in enumerate(elem_list):
                         if elem.tag == 'section':
                             section_id = elem.get('id', None)
                             if section_id == tool_section_dict['id']:
