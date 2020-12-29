@@ -249,15 +249,15 @@ class ToolPanelManager:
             for tool_section_dict in tool_section_dicts:
                 tool_section = None
                 inside_section = False
-                section_in_elem_list = False
+                section_in_elem_list = None
                 if tool_section_dict['id']:
                     inside_section = True
                     # Create a new section element only if we haven't already created it.
-                    for elem in elem_list:
+                    for index, elem in elem_list:
                         if elem.tag == 'section':
                             section_id = elem.get('id', None)
                             if section_id == tool_section_dict['id']:
-                                section_in_elem_list = True
+                                section_in_elem_list = index
                                 tool_section = elem
                                 break
                     if tool_section is None:
@@ -275,8 +275,8 @@ class ToolPanelManager:
                                                     tool,
                                                     tool_section if inside_section else None)
                 if inside_section:
-                    if section_in_elem_list:
-                        elem_list[index] = tool_section
+                    if section_in_elem_list is not None:
+                        elem_list[section_in_elem_list] = tool_section
                     else:
                         elem_list.append(tool_section)
                 else:
