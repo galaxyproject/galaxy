@@ -49,8 +49,19 @@ var SimpleProviderMixin = {
     },
 };
 
+var StoreProviderMixin = {
+    watch: {
+        storeItem: {
+            handler(newState, oldState) {
+                console.log("Updating item to", newState);
+                this.item = newState;
+            },
+        },
+    },
+};
+
 var DatasetProvider = Vue.extend({
-    mixins: [SimpleProviderMixin],
+    mixins: [SimpleProviderMixin, StoreProviderMixin],
     methods: {
         ...mapCacheActions("datasets", ["fetchDataset"]),
         async load() {
@@ -59,26 +70,28 @@ var DatasetProvider = Vue.extend({
             this.loading = false;
         },
     },
-    watch: {
-        dataset: {
-            handler(newState, oldState) {
-                this.item = newState;
-            },
-        },
-    },
     computed: {
         ...mapGetters("datasets", ["getDatasetById"]),
-        dataset() {
+        storeItem() {
             return this.getDatasetById(this.id);
         },
     },
 });
 
 var DatasetCollectionProvider = Vue.extend({
-    mixins: [SimpleProviderMixin],
+    mixins: [SimpleProviderMixin, StoreProviderMixin],
+    methods: {
+        ...mapCacheActions("datasetCollections", ["fetchDatasetCollection"]),
+        async load() {
+            this.loading = true;
+            this.item = await this.fetchDatasetCollection(this.id);
+            this.loading = false;
+        },
+    },
     computed: {
-        url() {
-            return prependPath(`api/dataset_collections/${this.id}?instance_type=history`);
+        ...mapGetters("datasetCollections", ["getDatasetCollectionById"]),
+        storeItem() {
+            return this.getDatasetCollectionById(this.id);
         },
     },
 });

@@ -50,7 +50,15 @@
                 </span>
             </h5>
 
-            <DscMenu class="content-item-menu" v-on="$listeners" />
+            <DscMenu v-if="!dsc.deleted" class="content-item-menu" v-on="$listeners" />
+            <StateBtn
+                v-if="dsc.deleted"
+                class="px-1"
+                state="deleted"
+                title="Undelete"
+                icon="fas fa-trash-restore"
+                @click.stop="$emit('undeleteCollection')"
+            />
         </nav>
 
         <JobStateProgress class="m-2" v-if="dsc.jobSummary" :summary="dsc.jobSummary" />

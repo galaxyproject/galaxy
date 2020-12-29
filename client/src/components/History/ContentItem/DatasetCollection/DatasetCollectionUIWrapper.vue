@@ -7,6 +7,10 @@
             :dsc="dataset_collection"
             :showTags="true"
             v-on:update:expanded="expandCollection"
+            @hideCollection="onHide(dataset_collection)"
+            @unhideCollection="onUnhide(dataset_collection, $event)"
+            @deleteCollection="onDelete(dataset_collection, $event)"
+            @undeleteCollection="onUndelete(dataset_collection)"
         />
         <DatasetCollectionContentProvider
             v-for="collection in expandedCollections"
@@ -24,6 +28,8 @@ import DscUI from "./DscUI";
 import { DatasetCollection } from "../../model/DatasetCollection";
 import { DatasetCollectionContentProvider } from "components/History/providers/DatasetProvider";
 import DatasetCollectionContents from "components/History/ContentItem/DatasetCollection/DatasetCollectionContents";
+import { cacheContent } from "../../caching/CacheApi";
+import { deleteDatasetCollection, updateContentFields } from "../../model/queries";
 
 export default {
     components: {
@@ -59,6 +65,44 @@ export default {
                 this.expandedCollections.splice(index, 1);
             } else {
                 this.expandedCollections.push(coll);
+            }
+        },
+        async onDelete(collection, flags = {}) {
+            const { recursive = false, purge = false } = flags;
+            const result = await deleteDatasetCollection(collection, recursive, purge);
+            if (result.deleted) {
+                const newFields = Object.assign(collection, {
+                    isDeleted: result.deleted,
+                });
+                await cacheContent(newFields);
+            }
+        },
+
+        async onUndelete(collection) {
+            const result = await updateContentFields(collection, { deleted: false });
+            if (result.deleted === false) {
+                const newFields = Object.assign(collection, {
+                    isDeleted: result.deleted,
+                });
+                await cacheContent(newFields);
+            }
+        },
+        async onHide(collection) {
+            const result = await updateContentFields(collection, { visible: false });
+            if (result.visible === false) {
+                const newFields = Object.assign(collection, {
+                    isVisible: result.visible,
+                });
+                await cacheContent(newFields);
+            }
+        },
+        async onUnhide(collection) {
+            const result = await updateContentFields(collection, { visible: true });
+            if (result.visible) {
+                const newFields = Object.assign(collection, {
+                    isVisible: result.visible,
+                });
+                await cacheContent(newFields);
             }
         },
     },

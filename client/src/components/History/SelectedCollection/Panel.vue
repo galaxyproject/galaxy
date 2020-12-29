@@ -64,7 +64,7 @@
 <script>
 import { History } from "../model";
 import { updateContentFields } from "../model/queries";
-import { cacheContent } from "../caching";
+import { cacheContent } from "../caching/db";
 
 import { DscProvider, CollectionContentProvider } from "../providers";
 import Layout from "../Layout";
