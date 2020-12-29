@@ -1177,7 +1177,7 @@ def read_dbnames(filename):
         name_to_db_base = {}
         if filename is None:
             # Should only be happening with the galaxy.tools.parameters.basic:GenomeBuildParameter docstring unit test
-            filename = os.path.join('tool-data', 'shared', 'ucsc', 'builds.txt.sample')
+            filename = os.path.join(galaxy_directory(), 'tool-data', 'shared', 'ucsc', 'builds.txt.sample')
         for line in open(filename):
             try:
                 if line[0:1] == "#":

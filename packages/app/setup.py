@@ -32,6 +32,8 @@ TEST_DIR = 'tests'
 PACKAGES = [
     'galaxy',
     'galaxy.actions',
+    'galaxy.files',
+    'galaxy.files.sources',
     'galaxy.forms',
     'galaxy.jobs',
     'galaxy.jobs.actions',
@@ -47,6 +49,7 @@ PACKAGES = [
     'galaxy.jobs.splitters',
     'galaxy.managers',
     'galaxy.openid',
+    'galaxy.schema',
     'galaxy.tools',
     'galaxy.tools.actions',
     'galaxy.tools.data',

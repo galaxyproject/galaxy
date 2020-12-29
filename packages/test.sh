@@ -33,7 +33,7 @@ PACKAGE_DIRS=(
 )
 # tool_util not yet working 100%,
 # data has many problems quota, tool shed install database, etc..
-RUN_TESTS=(1 1 1 1 1 1 1 1 1 1 0 0)
+RUN_TESTS=(1 1 1 1 1 1 1 1 1 1 1 0)
 RUN_MYPY=(1 1 1 1 1 1 1 1 1 1 0 0)
 for ((i=0; i<${#PACKAGE_DIRS[@]}; i++)); do
     package_dir=${PACKAGE_DIRS[$i]}
