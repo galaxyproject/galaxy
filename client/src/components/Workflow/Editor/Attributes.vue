@@ -6,7 +6,7 @@
         <div id="workflow-name-area">
             <b>Name</b>
             <meta itemprop="name" :content="name" />
-            <b-input id="workflow-name" :value="name" @change="onRename" />
+            <b-input id="workflow-name" v-model="nameCurrent" @keyup="$emit('update:nameCurrent', nameCurrent)" />
         </div>
         <div id="workflow-version-area" class="mt-2">
             <b>Version</b>
@@ -26,8 +26,12 @@
         </div>
         <div id="workflow-annotation-area" class="mt-2">
             <b>Annotation</b>
-            <meta itemprop="description" :content="annotation" />
-            <b-textarea id="workflow-annotation" :value="annotation" @input="onAnnotation" />
+            <meta itemprop="description" :content="annotationCurrent" />
+            <b-textarea
+                id="workflow-annotation"
+                v-model="annotationCurrent"
+                @keyup="$emit('update:annotationCurrent', annotationCurrent)"
+            />
             <div class="form-text text-muted">
                 These notes will be visible when this workflow is viewed.
             </div>
@@ -83,7 +87,6 @@ export default {
         },
         annotation: {
             type: String,
-            default: "",
         },
         license: {
             type: String,
@@ -111,6 +114,8 @@ export default {
             messageVariant: null,
             tagsCurrent: this.tags,
             versionCurrent: this.version,
+            annotationCurrent: this.annotation,
+            nameCurrent: this.name,
         };
     },
     created() {
@@ -159,23 +164,17 @@ export default {
             }
             this.creatorCurrent = creator;
         },
+        annotation() {
+            this.annotationCurrent = this.annotation;
+        },
+        name() {
+            this.nameCurrent = this.name;
+        },
     },
     methods: {
         onTags(tags) {
             this.tagsCurrent = tags;
             this.onAttributes({ tags });
-        },
-        onAnnotation(annotation) {
-            if (this.annotationTimeout) {
-                clearTimeout(this.annotationTimeout);
-            }
-            this.annotationTimeout = setTimeout(() => {
-                this.onAttributes({ annotation });
-            }, 300);
-        },
-        onRename(name) {
-            this.onAttributes({ name });
-            this.$emit("onRename", name);
         },
         onVersion() {
             this.$emit("onVersion", this.versionCurrent);
@@ -194,9 +193,6 @@ export default {
             this.services.updateWorkflow(this.id, data).catch((error) => {
                 this.onError(error);
             });
-        },
-        beforeDestroy: function () {
-            clearTimeout(this.annotationTimeout);
         },
     },
 };

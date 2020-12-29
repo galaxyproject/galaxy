@@ -576,27 +576,14 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             raw_workflow_description = self.__normalize_workflow(trans, workflow_dict)
             workflow_dict = raw_workflow_description.as_dict
             new_workflow_name = workflow_dict.get('name')
-            license_set = 'license' in workflow_dict
-            creator_set = 'creator' in workflow_dict
             old_workflow = stored_workflow.latest_workflow
             name_updated = (new_workflow_name and new_workflow_name != stored_workflow.name)
-            license_updated = license_set and workflow_dict['license'] != old_workflow.license
-            update_attributes = name_updated or license_updated or creator_set
-            if update_attributes:
+            steps_updated = 'steps' in workflow_dict
+            if name_updated and not steps_updated:
                 sanitized_name = sanitize_html(new_workflow_name or old_workflow.name)
                 workflow = old_workflow.copy(user=trans.user)
                 workflow.stored_workflow = stored_workflow
                 workflow.name = sanitized_name
-                if license_set:
-                    new_workflow_license = workflow_dict.get('license')
-                else:
-                    new_workflow_license = old_workflow.license
-                if creator_set:
-                    new_workflow_creator = workflow_dict.get('creator')
-                else:
-                    new_workflow_creator = old_workflow.creator_metadata
-                workflow.license = new_workflow_license
-                workflow.creator_metadata = new_workflow_creator
                 stored_workflow.name = sanitized_name
                 stored_workflow.latest_workflow = workflow
                 trans.sa_session.add(workflow, stored_workflow)

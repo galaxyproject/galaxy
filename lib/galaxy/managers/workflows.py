@@ -412,6 +412,12 @@ class WorkflowContentsManager(UsesAnnotations):
                 errors.append("Step %i: Requires tool '%s'." % (int(missing_tool_tup[3]) + 1, missing_tool_tup[0]))
             raise MissingToolsException(workflow, errors)
 
+        as_dict = raw_workflow_description.as_dict
+        if 'name' in as_dict:
+            sanitized_name = sanitize_html(as_dict['name'])
+            workflow.name = sanitized_name
+            stored_workflow.name = sanitized_name
+
         # Connect up
         workflow.stored_workflow = stored_workflow
         stored_workflow.latest_workflow = workflow
@@ -438,6 +444,8 @@ class WorkflowContentsManager(UsesAnnotations):
 
         if 'report' in data:
             workflow.reports_config = data['report']
+        workflow.license = data.get('license')
+        workflow.creator_metadata = data.get('creator')
 
         # Assume no errors until we find a step that has some
         workflow.has_errors = False
@@ -735,8 +743,8 @@ class WorkflowContentsManager(UsesAnnotations):
         data['upgrade_messages'] = {}
         data['report'] = workflow.reports_config or {}
         data['license'] = workflow.license
-        log.info("creator_metadata is %s" % workflow.creator_metadata)
         data['creator'] = workflow.creator_metadata
+        data['annotation'] = self.get_item_annotation_str(trans.sa_session, trans.user, stored) or ''
 
         output_label_index = set()
         input_step_types = set(workflow.input_step_types)
@@ -1153,6 +1161,8 @@ class WorkflowContentsManager(UsesAnnotations):
             inputs[index] = {'label': label, 'value': '', 'uuid': step_uuid}
         item['inputs'] = inputs
         item['annotation'] = self.get_item_annotation_str(sa_session, stored.user, stored)
+        item['license'] = workflow.license
+        item['creator'] = workflow.creator_metadata
         steps = {}
         steps_to_order_index = {}
         for step in workflow.steps:
