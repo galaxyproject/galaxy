@@ -2,6 +2,7 @@ import logging
 import math
 from collections import OrderedDict
 from json import dumps, loads
+from typing import Dict, List, Optional
 
 from markupsafe import escape
 from sqlalchemy.sql.expression import and_, false, func, null, or_, true
@@ -13,321 +14,6 @@ from galaxy.web.framework.helpers import iff
 
 
 log = logging.getLogger(__name__)
-
-
-class Grid:
-    """
-    Specifies the content and format of a grid (data table).
-    """
-    title = ""
-    model_class = None
-    show_item_checkboxes = False
-    template = "legacy/grid_base.mako"
-    async_template = "legacy/grid_base_async.mako"
-    use_async = False
-    use_hide_message = True
-    global_actions = []
-    columns = []
-    operations = []
-    standard_filters = []
-    # Any columns that are filterable (either standard or advanced) should have a default value set in the default filter.
-    default_filter = {}
-    default_sort_key = None
-    use_paging = False
-    num_rows_per_page = 25
-    num_page_links = 10
-    allow_fetching_all_results = True
-    # Set preference names.
-    cur_filter_pref_name = ".filter"
-    cur_sort_key_pref_name = ".sort_key"
-    legend = None
-    info_text = None
-
-    def __init__(self):
-        # Determine if any multiple row operations are defined
-        self.has_multiple_item_operations = False
-        for operation in self.operations:
-            if operation.allow_multiple:
-                self.has_multiple_item_operations = True
-                break
-
-        # If a column does not have a model class, set the column's model class
-        # to be the grid's model class.
-        for column in self.columns:
-            if not column.model_class:
-                column.model_class = self.model_class
-
-    def __call__(self, trans, **kwargs):
-        # Get basics.
-        # FIXME: pretty sure this is only here to pass along, can likely be eliminated
-        status = kwargs.get('status', None)
-        message = kwargs.get('message', None)
-        # Build a base filter and sort key that is the combination of the saved state and defaults.
-        # Saved state takes preference over defaults.
-        base_filter = {}
-        if self.default_filter:
-            # default_filter is a dictionary that provides a default set of filters based on the grid's columns.
-            base_filter = self.default_filter.copy()
-        base_sort_key = self.default_sort_key
-        # Build initial query
-        query = self.build_initial_query(trans, **kwargs)
-        query = self.apply_query_filter(trans, query, **kwargs)
-        # Maintain sort state in generated urls
-        extra_url_args = {}
-        # Determine whether use_default_filter flag is set.
-        use_default_filter_str = kwargs.get('use_default_filter')
-        use_default_filter = False
-        if use_default_filter_str:
-            use_default_filter = (use_default_filter_str.lower() == 'true')
-        # Process filtering arguments to (a) build a query that represents the filter and (b) build a
-        # dictionary that denotes the current filter.
-        cur_filter_dict = {}
-        for column in self.columns:
-            if column.key:
-                # Get the filter criterion for the column. Precedence is (a) if using default filter, only look there; otherwise,
-                # (b) look in kwargs; and (c) look in base filter.
-                column_filter = None
-                if use_default_filter:
-                    if self.default_filter:
-                        column_filter = self.default_filter.get(column.key)
-                elif "f-" + column.model_class.__name__ + ".%s" % column.key in kwargs:
-                    # Queries that include table joins cannot guarantee unique column names.  This problem is
-                    # handled by setting the column_filter value to <TableName>.<ColumnName>.
-                    column_filter = kwargs.get("f-" + column.model_class.__name__ + ".%s" % column.key)
-                elif "f-" + column.key in kwargs:
-                    column_filter = kwargs.get("f-" + column.key)
-                elif column.key in base_filter:
-                    column_filter = base_filter.get(column.key)
-
-                # Method (1) combines a mix of strings and lists of strings into a single string and (2) attempts to de-jsonify all strings.
-                def loads_recurse(item):
-                    decoded_list = []
-                    if isinstance(item, str):
-                        try:
-                            # Not clear what we're decoding, so recurse to ensure that we catch everything.
-                            decoded_item = loads(item)
-                            if isinstance(decoded_item, list):
-                                decoded_list = loads_recurse(decoded_item)
-                            else:
-                                decoded_list = [str(decoded_item)]
-                        except ValueError:
-                            decoded_list = [str(item)]
-                    elif isinstance(item, list):
-                        for element in item:
-                            a_list = loads_recurse(element)
-                            decoded_list = decoded_list + a_list
-                    return decoded_list
-                # If column filter found, apply it.
-                if column_filter is not None:
-                    # TextColumns may have a mix of json and strings.
-                    if isinstance(column, TextColumn):
-                        column_filter = loads_recurse(column_filter)
-                        if len(column_filter) == 1:
-                            column_filter = column_filter[0]
-                    # Interpret ',' as a separator for multiple terms.
-                    if isinstance(column_filter, str) and column_filter.find(',') != -1:
-                        column_filter = column_filter.split(',')
-
-                    # Check if filter is empty
-                    if isinstance(column_filter, list):
-                        # Remove empty strings from filter list
-                        column_filter = [x for x in column_filter if x != '']
-                        if len(column_filter) == 0:
-                            continue
-                    elif isinstance(column_filter, str):
-                        # If filter criterion is empty, do nothing.
-                        if column_filter == '':
-                            continue
-
-                    # Update query.
-                    query = column.filter(trans, trans.user, query, column_filter)
-                    # Upate current filter dict.
-                    # Column filters are rendered in various places, sanitize them all here.
-                    cur_filter_dict[column.key] = sanitize_text(column_filter)
-                    # Carry filter along to newly generated urls; make sure filter is a string so
-                    # that we can encode to UTF-8 and thus handle user input to filters.
-                    if isinstance(column_filter, list):
-                        # Filter is a list; process each item.
-                        column_filter = [str(_).encode('utf-8') if not isinstance(_, str) else _ for _ in column_filter]
-                        extra_url_args["f-" + column.key] = dumps(column_filter)
-                    else:
-                        # Process singleton filter.
-                        if not isinstance(column_filter, str):
-                            column_filter = str(column_filter)
-                        extra_url_args["f-" + column.key] = column_filter.encode("utf-8")
-        # Process sort arguments.
-        sort_key = None
-        if 'sort' in kwargs:
-            sort_key = kwargs['sort']
-        elif base_sort_key:
-            sort_key = base_sort_key
-        if sort_key:
-            ascending = not(sort_key.startswith("-"))
-            # Queries that include table joins cannot guarantee unique column names.  This problem is
-            # handled by setting the column_filter value to <TableName>.<ColumnName>.
-            table_name = None
-            if sort_key.find('.') > -1:
-                a_list = sort_key.split('.')
-                if ascending:
-                    table_name = a_list[0]
-                else:
-                    table_name = a_list[0][1:]
-                column_name = a_list[1]
-            elif ascending:
-                column_name = sort_key
-            else:
-                column_name = sort_key[1:]
-            # Sort key is a column key.
-            for column in self.columns:
-                if column.key and column.key.find('.') > -1:
-                    column_key = column.key.split('.')[1]
-                else:
-                    column_key = column.key
-                if (table_name is None or table_name == column.model_class.__name__) and column_key == column_name:
-                    query = column.sort(trans, query, ascending, column_name=column_name)
-                    break
-            extra_url_args['sort'] = sort_key
-        # There might be a current row
-        current_item = self.get_current_item(trans, **kwargs)
-        # Process page number.
-        if self.use_paging:
-            if 'page' in kwargs:
-                if kwargs['page'] == 'all':
-                    page_num = 0
-                    if self.allow_fetching_all_results:
-                        page_num = 0
-                    else:
-                        # Should make it harder to return all results at once
-                        page_num = 1
-                else:
-                    page_num = int(kwargs['page'])
-            else:
-                page_num = 1
-            if page_num == 0:
-                # Show all rows in page.
-                total_num_rows = query.count()
-                page_num = 1
-                num_pages = 1
-            else:
-                # Show a limited number of rows. Before modifying query, get the total number of rows that query
-                # returns so that the total number of pages can be computed.
-                total_num_rows = query.count()
-                query = query.limit(self.num_rows_per_page).offset((page_num - 1) * self.num_rows_per_page)
-                num_pages = int(math.ceil(float(total_num_rows) / self.num_rows_per_page))
-        else:
-            # Defaults.
-            page_num = 1
-            num_pages = 1
-        # There are some places in grid templates where it's useful for a grid
-        # to have its current filter.
-        self.cur_filter_dict = cur_filter_dict
-
-        # Log grid view.
-        context = str(self.__class__.__name__)
-        params = cur_filter_dict.copy()
-        params['sort'] = sort_key
-        params['async'] = ('async' in kwargs)
-
-        # TODO:??
-        # commenting this out; when this fn calls session.add( action ) and session.flush the query from this fn
-        # is effectively 'wiped' out. Nate believes it has something to do with our use of session( autocommit=True )
-        # in mapping.py. If you change that to False, the log_action doesn't affect the query
-        # Below, I'm rendering the template first (that uses query), then calling log_action, then returning the page
-        # trans.log_action( trans.get_user(), text_type( "grid.view" ), context, params )
-
-        # Render grid.
-        def url(*args, **kwargs):
-            route_name = kwargs.pop('__route_name__', None)
-            # Only include sort/filter arguments if not linking to another
-            # page. This is a bit of a hack.
-            if 'action' in kwargs:
-                new_kwargs = dict()
-            else:
-                new_kwargs = dict(extra_url_args)
-            # Extend new_kwargs with first argument if found
-            if len(args) > 0:
-                new_kwargs.update(args[0])
-            new_kwargs.update(kwargs)
-            # We need to encode item ids
-            if 'id' in new_kwargs:
-                id = new_kwargs['id']
-                if isinstance(id, list):
-                    new_kwargs['id'] = [trans.security.encode_id(i) for i in id]
-                else:
-                    new_kwargs['id'] = trans.security.encode_id(id)
-            # The url_for invocation *must* include a controller and action.
-            if 'controller' not in new_kwargs:
-                new_kwargs['controller'] = trans.controller
-            if 'action' not in new_kwargs:
-                new_kwargs['action'] = trans.action
-            if route_name:
-                return url_for(route_name, **new_kwargs)
-            return url_for(**new_kwargs)
-
-        self.use_panels = (kwargs.get('use_panels', False) in [True, 'True', 'true'])
-        self.advanced_search = (kwargs.get('advanced_search', False) in [True, 'True', 'true'])
-        async_request = ((self.use_async) and (kwargs.get('async', False) in [True, 'True', 'true']))
-        # Currently, filling the template returns a str object; this requires decoding the string into a
-        # unicode object within mako templates. What probably should be done is to return the template as
-        # utf-8 unicode; however, this would require encoding the object as utf-8 before returning the grid
-        # results via a controller method, which is require substantial changes. Hence, for now, return grid
-        # as str.
-        page = trans.fill_template(iff(async_request, self.async_template, self.template),
-                                   grid=self,
-                                   query=query,
-                                   cur_page_num=page_num,
-                                   num_pages=num_pages,
-                                   num_page_links=self.num_page_links,
-                                   allow_fetching_all_results=self.allow_fetching_all_results,
-                                   default_filter_dict=self.default_filter,
-                                   cur_filter_dict=cur_filter_dict,
-                                   sort_key=sort_key,
-                                   current_item=current_item,
-                                   ids=kwargs.get('id', []),
-                                   url=url,
-                                   status=status,
-                                   message=message,
-                                   info_text=self.info_text,
-                                   use_panels=self.use_panels,
-                                   use_hide_message=self.use_hide_message,
-                                   advanced_search=self.advanced_search,
-                                   show_item_checkboxes=(self.show_item_checkboxes or
-                                                         kwargs.get('show_item_checkboxes', '') in ['True', 'true']),
-                                   # Pass back kwargs so that grid template can set and use args without
-                                   # grid explicitly having to pass them.
-                                   kwargs=kwargs)
-        trans.log_action(trans.get_user(), "grid.view", context, params)
-        return page
-
-    def get_ids(self, **kwargs):
-        id = []
-        if 'id' in kwargs:
-            id = kwargs['id']
-            # Coerce ids to list
-            if not isinstance(id, list):
-                id = id.split(",")
-            # Ensure ids are integers
-            try:
-                id = list(map(int, id))
-            except Exception:
-                decorators.error("Invalid id")
-        return id
-
-    # ---- Override these ----------------------------------------------------
-    def handle_operation(self, trans, operation, ids, **kwargs):
-        pass
-
-    def get_current_item(self, trans, **kwargs):
-        return None
-
-    def build_initial_query(self, trans, **kwargs):
-        return trans.sa_session.query(self.model_class)
-
-    def apply_query_filter(self, trans, query, **kwargs):
-        # Applies a database filter that holds for all items in the grid.
-        # (gvk) Is this method necessary?  Why not simply build the entire query,
-        # including applying filters in the build_initial_query() method?
-        return query
 
 
 class GridColumn:
@@ -846,3 +532,318 @@ class GridColumnFilter:
         for k, v in self.args.items():
             rval["f-" + k] = v
         return rval
+
+
+class Grid:
+    """
+    Specifies the content and format of a grid (data table).
+    """
+    title = ""
+    model_class = None
+    show_item_checkboxes = False
+    template = "legacy/grid_base.mako"
+    async_template = "legacy/grid_base_async.mako"
+    use_async = False
+    use_hide_message = True
+    global_actions: List[Dict] = []
+    columns: List[GridColumn] = []
+    operations: List[Dict] = []
+    standard_filters: List[GridColumnFilter] = []
+    # Any columns that are filterable (either standard or advanced) should have a default value set in the default filter.
+    default_filter: Dict[str, str] = {}
+    default_sort_key: Optional[str] = None
+    use_paging = False
+    num_rows_per_page = 25
+    num_page_links = 10
+    allow_fetching_all_results = True
+    # Set preference names.
+    cur_filter_pref_name = ".filter"
+    cur_sort_key_pref_name = ".sort_key"
+    legend = None
+    info_text = None
+
+    def __init__(self):
+        # Determine if any multiple row operations are defined
+        self.has_multiple_item_operations = False
+        for operation in self.operations:
+            if operation.allow_multiple:
+                self.has_multiple_item_operations = True
+                break
+
+        # If a column does not have a model class, set the column's model class
+        # to be the grid's model class.
+        for column in self.columns:
+            if not column.model_class:
+                column.model_class = self.model_class
+
+    def __call__(self, trans, **kwargs):
+        # Get basics.
+        # FIXME: pretty sure this is only here to pass along, can likely be eliminated
+        status = kwargs.get('status', None)
+        message = kwargs.get('message', None)
+        # Build a base filter and sort key that is the combination of the saved state and defaults.
+        # Saved state takes preference over defaults.
+        base_filter = {}
+        if self.default_filter:
+            # default_filter is a dictionary that provides a default set of filters based on the grid's columns.
+            base_filter = self.default_filter.copy()
+        base_sort_key = self.default_sort_key
+        # Build initial query
+        query = self.build_initial_query(trans, **kwargs)
+        query = self.apply_query_filter(trans, query, **kwargs)
+        # Maintain sort state in generated urls
+        extra_url_args = {}
+        # Determine whether use_default_filter flag is set.
+        use_default_filter_str = kwargs.get('use_default_filter')
+        use_default_filter = False
+        if use_default_filter_str:
+            use_default_filter = (use_default_filter_str.lower() == 'true')
+        # Process filtering arguments to (a) build a query that represents the filter and (b) build a
+        # dictionary that denotes the current filter.
+        cur_filter_dict = {}
+        for column in self.columns:
+            if column.key:
+                # Get the filter criterion for the column. Precedence is (a) if using default filter, only look there; otherwise,
+                # (b) look in kwargs; and (c) look in base filter.
+                column_filter = None
+                if use_default_filter:
+                    if self.default_filter:
+                        column_filter = self.default_filter.get(column.key)
+                elif "f-" + column.model_class.__name__ + ".%s" % column.key in kwargs:
+                    # Queries that include table joins cannot guarantee unique column names.  This problem is
+                    # handled by setting the column_filter value to <TableName>.<ColumnName>.
+                    column_filter = kwargs.get("f-" + column.model_class.__name__ + ".%s" % column.key)
+                elif "f-" + column.key in kwargs:
+                    column_filter = kwargs.get("f-" + column.key)
+                elif column.key in base_filter:
+                    column_filter = base_filter.get(column.key)
+
+                # Method (1) combines a mix of strings and lists of strings into a single string and (2) attempts to de-jsonify all strings.
+                def loads_recurse(item):
+                    decoded_list = []
+                    if isinstance(item, str):
+                        try:
+                            # Not clear what we're decoding, so recurse to ensure that we catch everything.
+                            decoded_item = loads(item)
+                            if isinstance(decoded_item, list):
+                                decoded_list = loads_recurse(decoded_item)
+                            else:
+                                decoded_list = [str(decoded_item)]
+                        except ValueError:
+                            decoded_list = [str(item)]
+                    elif isinstance(item, list):
+                        for element in item:
+                            a_list = loads_recurse(element)
+                            decoded_list = decoded_list + a_list
+                    return decoded_list
+                # If column filter found, apply it.
+                if column_filter is not None:
+                    # TextColumns may have a mix of json and strings.
+                    if isinstance(column, TextColumn):
+                        column_filter = loads_recurse(column_filter)
+                        if len(column_filter) == 1:
+                            column_filter = column_filter[0]
+                    # Interpret ',' as a separator for multiple terms.
+                    if isinstance(column_filter, str) and column_filter.find(',') != -1:
+                        column_filter = column_filter.split(',')
+
+                    # Check if filter is empty
+                    if isinstance(column_filter, list):
+                        # Remove empty strings from filter list
+                        column_filter = [x for x in column_filter if x != '']
+                        if len(column_filter) == 0:
+                            continue
+                    elif isinstance(column_filter, str):
+                        # If filter criterion is empty, do nothing.
+                        if column_filter == '':
+                            continue
+
+                    # Update query.
+                    query = column.filter(trans, trans.user, query, column_filter)
+                    # Upate current filter dict.
+                    # Column filters are rendered in various places, sanitize them all here.
+                    cur_filter_dict[column.key] = sanitize_text(column_filter)
+                    # Carry filter along to newly generated urls; make sure filter is a string so
+                    # that we can encode to UTF-8 and thus handle user input to filters.
+                    if isinstance(column_filter, list):
+                        # Filter is a list; process each item.
+                        column_filter = [str(_).encode('utf-8') if not isinstance(_, str) else _ for _ in column_filter]
+                        extra_url_args["f-" + column.key] = dumps(column_filter)
+                    else:
+                        # Process singleton filter.
+                        if not isinstance(column_filter, str):
+                            column_filter = str(column_filter)
+                        extra_url_args["f-" + column.key] = column_filter.encode("utf-8")
+        # Process sort arguments.
+        sort_key = None
+        if 'sort' in kwargs:
+            sort_key = kwargs['sort']
+        elif base_sort_key:
+            sort_key = base_sort_key
+        if sort_key:
+            ascending = not(sort_key.startswith("-"))
+            # Queries that include table joins cannot guarantee unique column names.  This problem is
+            # handled by setting the column_filter value to <TableName>.<ColumnName>.
+            table_name = None
+            if sort_key.find('.') > -1:
+                a_list = sort_key.split('.')
+                if ascending:
+                    table_name = a_list[0]
+                else:
+                    table_name = a_list[0][1:]
+                column_name = a_list[1]
+            elif ascending:
+                column_name = sort_key
+            else:
+                column_name = sort_key[1:]
+            # Sort key is a column key.
+            for column in self.columns:
+                if column.key and column.key.find('.') > -1:
+                    column_key = column.key.split('.')[1]
+                else:
+                    column_key = column.key
+                if (table_name is None or table_name == column.model_class.__name__) and column_key == column_name:
+                    query = column.sort(trans, query, ascending, column_name=column_name)
+                    break
+            extra_url_args['sort'] = sort_key
+        # There might be a current row
+        current_item = self.get_current_item(trans, **kwargs)
+        # Process page number.
+        if self.use_paging:
+            if 'page' in kwargs:
+                if kwargs['page'] == 'all':
+                    page_num = 0
+                    if self.allow_fetching_all_results:
+                        page_num = 0
+                    else:
+                        # Should make it harder to return all results at once
+                        page_num = 1
+                else:
+                    page_num = int(kwargs['page'])
+            else:
+                page_num = 1
+            if page_num == 0:
+                # Show all rows in page.
+                total_num_rows = query.count()
+                page_num = 1
+                num_pages = 1
+            else:
+                # Show a limited number of rows. Before modifying query, get the total number of rows that query
+                # returns so that the total number of pages can be computed.
+                total_num_rows = query.count()
+                query = query.limit(self.num_rows_per_page).offset((page_num - 1) * self.num_rows_per_page)
+                num_pages = int(math.ceil(float(total_num_rows) / self.num_rows_per_page))
+        else:
+            # Defaults.
+            page_num = 1
+            num_pages = 1
+        # There are some places in grid templates where it's useful for a grid
+        # to have its current filter.
+        self.cur_filter_dict = cur_filter_dict
+
+        # Log grid view.
+        context = str(self.__class__.__name__)
+        params = cur_filter_dict.copy()
+        params['sort'] = sort_key
+        params['async'] = ('async' in kwargs)
+
+        # TODO:??
+        # commenting this out; when this fn calls session.add( action ) and session.flush the query from this fn
+        # is effectively 'wiped' out. Nate believes it has something to do with our use of session( autocommit=True )
+        # in mapping.py. If you change that to False, the log_action doesn't affect the query
+        # Below, I'm rendering the template first (that uses query), then calling log_action, then returning the page
+        # trans.log_action( trans.get_user(), text_type( "grid.view" ), context, params )
+
+        # Render grid.
+        def url(*args, **kwargs):
+            route_name = kwargs.pop('__route_name__', None)
+            # Only include sort/filter arguments if not linking to another
+            # page. This is a bit of a hack.
+            if 'action' in kwargs:
+                new_kwargs = dict()
+            else:
+                new_kwargs = dict(extra_url_args)
+            # Extend new_kwargs with first argument if found
+            if len(args) > 0:
+                new_kwargs.update(args[0])
+            new_kwargs.update(kwargs)
+            # We need to encode item ids
+            if 'id' in new_kwargs:
+                id = new_kwargs['id']
+                if isinstance(id, list):
+                    new_kwargs['id'] = [trans.security.encode_id(i) for i in id]
+                else:
+                    new_kwargs['id'] = trans.security.encode_id(id)
+            # The url_for invocation *must* include a controller and action.
+            if 'controller' not in new_kwargs:
+                new_kwargs['controller'] = trans.controller
+            if 'action' not in new_kwargs:
+                new_kwargs['action'] = trans.action
+            if route_name:
+                return url_for(route_name, **new_kwargs)
+            return url_for(**new_kwargs)
+
+        self.use_panels = (kwargs.get('use_panels', False) in [True, 'True', 'true'])
+        self.advanced_search = (kwargs.get('advanced_search', False) in [True, 'True', 'true'])
+        async_request = ((self.use_async) and (kwargs.get('async', False) in [True, 'True', 'true']))
+        # Currently, filling the template returns a str object; this requires decoding the string into a
+        # unicode object within mako templates. What probably should be done is to return the template as
+        # utf-8 unicode; however, this would require encoding the object as utf-8 before returning the grid
+        # results via a controller method, which is require substantial changes. Hence, for now, return grid
+        # as str.
+        page = trans.fill_template(iff(async_request, self.async_template, self.template),
+                                   grid=self,
+                                   query=query,
+                                   cur_page_num=page_num,
+                                   num_pages=num_pages,
+                                   num_page_links=self.num_page_links,
+                                   allow_fetching_all_results=self.allow_fetching_all_results,
+                                   default_filter_dict=self.default_filter,
+                                   cur_filter_dict=cur_filter_dict,
+                                   sort_key=sort_key,
+                                   current_item=current_item,
+                                   ids=kwargs.get('id', []),
+                                   url=url,
+                                   status=status,
+                                   message=message,
+                                   info_text=self.info_text,
+                                   use_panels=self.use_panels,
+                                   use_hide_message=self.use_hide_message,
+                                   advanced_search=self.advanced_search,
+                                   show_item_checkboxes=(self.show_item_checkboxes or
+                                                         kwargs.get('show_item_checkboxes', '') in ['True', 'true']),
+                                   # Pass back kwargs so that grid template can set and use args without
+                                   # grid explicitly having to pass them.
+                                   kwargs=kwargs)
+        trans.log_action(trans.get_user(), "grid.view", context, params)
+        return page
+
+    def get_ids(self, **kwargs):
+        id = []
+        if 'id' in kwargs:
+            id = kwargs['id']
+            # Coerce ids to list
+            if not isinstance(id, list):
+                id = id.split(",")
+            # Ensure ids are integers
+            try:
+                id = list(map(int, id))
+            except Exception:
+                decorators.error("Invalid id")
+        return id
+
+    # ---- Override these ----------------------------------------------------
+    def handle_operation(self, trans, operation, ids, **kwargs):
+        pass
+
+    def get_current_item(self, trans, **kwargs):
+        return None
+
+    def build_initial_query(self, trans, **kwargs):
+        return trans.sa_session.query(self.model_class)
+
+    def apply_query_filter(self, trans, query, **kwargs):
+        # Applies a database filter that holds for all items in the grid.
+        # (gvk) Is this method necessary?  Why not simply build the entire query,
+        # including applying filters in the build_initial_query() method?
+        return query

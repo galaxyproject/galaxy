@@ -498,10 +498,6 @@ class ToolVersionListGrid(grids.Grid):
                                               key="free-text-search",
                                               visible=False,
                                               filterable="standard"))
-    global_actions = []
-    operations = []
-    standard_filters = []
-    default_filter = {}
     num_rows_per_page = 50
     use_paging = True
 
