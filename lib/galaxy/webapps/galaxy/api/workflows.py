@@ -7,6 +7,7 @@ import json
 import logging
 import os
 
+import yaml
 import requests
 from gxformat2._yaml import ordered_dump
 from markupsafe import escape
@@ -490,6 +491,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         if style == "format2" and download_format != 'json-download':
             return ordered_dump(ret_dict)
+        elif style == "cwl_abstract":
+            noalias_dumper = yaml.dumper.SafeDumper
+            noalias_dumper.ignore_aliases = lambda self, data: True
+            return yaml.dump(ret_dict, default_flow_style=False, Dumper=noalias_dumper)
         else:
             return format_return_as_json(ret_dict, pretty=True)
 

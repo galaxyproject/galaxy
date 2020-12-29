@@ -662,6 +662,11 @@ steps:
         downloaded_workflow = self._download_workflow(uploaded_workflow_id, style="format2")
         assert downloaded_workflow["class"] == "GalaxyWorkflow"
 
+    def test_export_cwl_abstract(self):
+        uploaded_workflow_id = self.workflow_populator.simple_workflow("test_for_export_format2")  #should i use a different test wf
+        downloaded_workflow = self._download_workflow(uploaded_workflow_id, style="cwl_abstract")
+        assert downloaded_workflow["class"] == "Workflow"
+
     def test_export_editor(self):
         uploaded_workflow_id = self.workflow_populator.simple_workflow("test_for_export")
         downloaded_workflow = self._download_workflow(uploaded_workflow_id, style="editor")
