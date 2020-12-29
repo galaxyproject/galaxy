@@ -7,6 +7,7 @@ import string
 import tempfile
 from collections import OrderedDict
 from inspect import isclass
+from typing import Any, Dict, Optional
 
 import webob.exc
 from markupsafe import escape
@@ -116,27 +117,27 @@ class Data(metaclass=DataMeta):
     # Add metadata elements
     MetadataElement(name="dbkey", desc="Database/Build", default="?", param=metadata.DBKeyParameter, multiple=False, no_value="?")
     # Stores the set of display applications, and viewing methods, supported by this datatype
-    supported_display_apps = {}
+    supported_display_apps: Dict[str, Any] = {}
     # If False, the peek is regenerated whenever a dataset of this type is copied
     copy_safe_peek = True
     # The dataset contains binary data --> do not space_to_tab or convert newlines, etc.
     # Allow binary file uploads of this type when True.
     is_binary = True
     # Composite datatypes
-    composite_type = None
-    composite_files = OrderedDict()
+    composite_type: Optional[str] = None
+    composite_files: Dict[str, Any] = OrderedDict()
     primary_file_name = 'index'
     # Allow user to change between this datatype and others. If left to None,
     # datatype change is allowed if the datatype is not composite.
-    allow_datatype_change = None
+    allow_datatype_change: Optional[bool] = None
     # A per datatype setting (inherited): max file size (in bytes) for setting optional metadata
     _max_optional_metadata_filesize = None
 
     # Trackster track type.
-    track_type = None
+    track_type: Optional[str] = None
 
     # Data sources.
-    data_sources = {}
+    data_sources: Dict[str, str] = {}
 
     def __init__(self, **kwd):
         """Initialize the datatype"""
@@ -180,7 +181,7 @@ class Data(metaclass=DataMeta):
         if copy_from:
             dataset.metadata = copy_from.metadata
 
-    def set_meta(self, dataset, overwrite=True, **kwd):
+    def set_meta(self, dataset: Any, overwrite=True, **kwd):
         """Unimplemented method, allows guessing of metadata from contents of file"""
         return True
 
@@ -681,11 +682,11 @@ class Data(metaclass=DataMeta):
         return key
 
     @property
-    def writable_files(self, dataset=None):
+    def writable_files(self):
         files = OrderedDict()
         if self.composite_type != 'auto_primary_file':
             files[self.primary_file_name] = self.__new_composite_file(self.primary_file_name)
-        for key, value in self.get_composite_files(dataset=dataset).items():
+        for key, value in self.get_composite_files().items():
             files[key] = value
         return files
 
@@ -718,6 +719,7 @@ class Data(metaclass=DataMeta):
         datatype_classes = tuple(datatype if isclass(datatype) else datatype.__class__ for datatype in target_datatypes)
         return isinstance(self, datatype_classes)
 
+    @staticmethod
     def merge(split_files, output_file):
         """
             Merge files with copy.copyfileobj() will not hit the
@@ -731,8 +733,6 @@ class Data(metaclass=DataMeta):
             with open(output_file, 'wb') as fdst:
                 for fsrc in split_files:
                     shutil.copyfileobj(open(fsrc, 'rb'), fdst)
-
-    merge = staticmethod(merge)
 
     def get_visualizations(self, dataset):
         """
@@ -844,7 +844,7 @@ class Text(Data):
                 data_lines = None
         return data_lines
 
-    def set_peek(self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None, line_wrap=True):
+    def set_peek(self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None, line_wrap=True, **kwd):
         """
         Set the peek.  This method is used by various subclasses of Text.
         """
@@ -879,6 +879,7 @@ class Text(Data):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
+    @classmethod
     def split(cls, input_datasets, subdir_generator_function, split_params):
         """
         Split the input files by line.
@@ -947,7 +948,6 @@ class Text(Data):
             f.close()
             if part_file:
                 part_file.close()
-    split = classmethod(split)
 
     # ------------- Dataproviders
     @dataproviders.decorators.dataprovider_factory('line', dataproviders.line.FilteredLineDataProvider.settings)

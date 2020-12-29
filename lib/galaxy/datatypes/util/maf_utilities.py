@@ -17,10 +17,7 @@ import bx.align.maf
 import bx.interval_index_file
 import bx.intervals
 
-try:
-    maketrans = str.maketrans
-except AttributeError:
-    from string import maketrans
+maketrans = str.maketrans
 
 log = logging.getLogger(__name__)
 

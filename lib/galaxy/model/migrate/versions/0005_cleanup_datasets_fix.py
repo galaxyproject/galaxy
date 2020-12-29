@@ -60,6 +60,8 @@ def directory_hash_id(id):
 
 
 class Dataset:
+    table: Table = None
+
     states = Bunch(NEW='new',
                    UPLOAD='upload',
                    QUEUED='queued',
@@ -338,6 +340,8 @@ class DatasetInstance:
 
 
 class HistoryDatasetAssociation(DatasetInstance):
+    table: Table = None
+
     def __init__(self,
                  hid=None,
                  history=None,
@@ -430,6 +434,8 @@ class HistoryDatasetAssociation(DatasetInstance):
 
 
 class LibraryDatasetDatasetAssociation(DatasetInstance):
+    table: Table = None
+
     def __init__(self,
                  copied_from_history_dataset_association=None,
                  copied_from_library_dataset_dataset_association=None,
@@ -505,6 +511,8 @@ class LibraryDatasetDatasetAssociation(DatasetInstance):
 
 
 class LibraryDataset:
+    table: Table = None
+
     # This class acts as a proxy to the currently selected LDDA
     def __init__(self, folder=None, order_id=None, name=None, info=None, library_dataset_dataset_association=None, **kwd):
         self.folder = folder

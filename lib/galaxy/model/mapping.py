@@ -2697,7 +2697,7 @@ mapper(model.Visualization, model.Visualization.table, properties=dict(
 # Set up proxy so that
 #   Visualization.users_shared_with
 # returns a list of users that visualization is shared with.
-model.Visualization.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')
+model.Visualization.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')  # type: ignore
 
 mapper(model.VisualizationUserShareAssociation, model.VisualizationUserShareAssociation.table, properties=dict(
     user=relation(model.User,
@@ -2850,7 +2850,7 @@ def db_next_hid(self, n=1):
         raise
 
 
-model.History._next_hid = db_next_hid
+model.History._next_hid = db_next_hid  # type: ignore
 
 
 def _workflow_invocation_update(self):

@@ -6,6 +6,7 @@ import glob
 import logging
 import os
 import sys
+from typing import Optional
 
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.text import Html
@@ -79,7 +80,7 @@ class AnvioComposite(Html):
 
 class AnvioDB(AnvioComposite):
     """Class for AnvioDB database files."""
-    _anvio_basename = None
+    _anvio_basename: Optional[str] = None
     MetadataElement(name="anvio_basename", default=_anvio_basename, desc="Basename", readonly=True)
     file_ext = 'anvio_db'
 

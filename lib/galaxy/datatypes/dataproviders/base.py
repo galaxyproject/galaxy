@@ -9,7 +9,7 @@ Base class(es) for all DataProviders.
 
 import logging
 from collections import deque
-
+from typing import Dict
 
 from . import exceptions
 
@@ -74,7 +74,7 @@ class DataProvider(metaclass=HasSettings):
     # a definition of expected types for keyword arguments sent to __init__
     #   useful for controlling how query string dictionaries can be parsed into correct types for __init__
     #   empty in this base class
-    settings = {}
+    settings: Dict[str, str] = {}
 
     def __init__(self, source, **kwargs):
         """
