@@ -109,7 +109,6 @@ class SpecifiedDateListGrid(grids.Grid):
                                               key="free-text-search",
                                               visible=False,
                                               filterable="standard"))
-    standard_filters = []
     default_filter = {'specified_date': 'All'}
     num_rows_per_page = 50
     use_paging = True

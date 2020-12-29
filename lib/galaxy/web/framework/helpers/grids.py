@@ -2,7 +2,7 @@ import logging
 import math
 from collections import OrderedDict
 from json import dumps, loads
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from markupsafe import escape
 from sqlalchemy.sql.expression import and_, false, func, null, or_, true
@@ -583,7 +583,7 @@ class Grid:
     standard_filters: List[GridColumnFilter] = []
     # Any columns that are filterable (either standard or advanced) should have a default value set in the default filter.
     default_filter: Dict[str, str] = {}
-    default_sort_key = None
+    default_sort_key: Optional[str] = None
     use_paging = False
     num_rows_per_page = 25
     num_page_links = 10
