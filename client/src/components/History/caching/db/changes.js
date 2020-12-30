@@ -31,7 +31,6 @@ const buildFeed = (db, cfg = {}) => {
     const { live = true, returnDocs = true, include_docs = true, since = "now", timeout = false } = cfg;
 
     const feed$ = new Observable((obs) => {
-        // console.log("CREATING FEED", db.name);
         const changeOpts = { live, include_docs, returnDocs, since, timeout };
         const feed = db.changes(changeOpts);
         feed.on("change", (update) => obs.next(update));
