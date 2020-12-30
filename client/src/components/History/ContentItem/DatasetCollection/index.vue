@@ -16,7 +16,7 @@
 import DscUI from "./DscUI";
 import { DatasetCollection } from "../../model";
 import { deleteDatasetCollection } from "../../model/queries";
-import { cacheContent } from "../../caching/db";
+import { cacheContent } from "../../caching";
 
 export default {
     components: {

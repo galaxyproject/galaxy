@@ -28,7 +28,7 @@ import DscUI from "./DscUI";
 import { DatasetCollection } from "../../model/DatasetCollection";
 import { DatasetCollectionContentProvider } from "components/History/providers/DatasetProvider";
 import DatasetCollectionContents from "components/History/ContentItem/DatasetCollection/DatasetCollectionContents";
-import { cacheContent } from "../../caching/CacheApi";
+import { cacheContent } from "../../caching";
 import { deleteDatasetCollection, updateContentFields } from "../../model/queries";
 
 export default {

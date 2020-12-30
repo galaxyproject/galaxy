@@ -18,7 +18,7 @@
 import DatasetUI from "./DatasetUI";
 import { Dataset } from "../../model/Dataset";
 import { deleteContent, updateContentFields } from "../../model/queries";
-import { cacheContent } from "../../caching/CacheApi";
+import { cacheContent } from "../../caching";
 
 export default {
     components: {
