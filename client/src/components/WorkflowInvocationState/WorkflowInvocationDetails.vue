@@ -9,25 +9,25 @@
         <div v-if="Object.keys(invocation.inputs).length > 0">
             <details
                 ><summary><b>Invocation Inputs</b></summary>
-                <div v-for="(input, key) in invocation.inputs" v-bind:key="input.id">
+                <div v-for="(input, key) in invocation.inputs" :key="input.id">
                     <b>{{ dataInputStepLabel(key, input) }}</b>
-                    <workflow-invocation-data-contents v-bind:data_item="input" />
+                    <workflow-invocation-data-contents :data_item="input" />
                 </div>
             </details>
         </div>
         <div v-if="Object.keys(invocation.outputs).length > 0">
             <details
                 ><summary><b>Invocation Outputs</b></summary>
-                <div v-for="(output, key) in invocation.outputs" v-bind:key="output.id">
+                <div v-for="(output, key) in invocation.outputs" :key="output.id">
                     <b>{{ key }}:</b>
-                    <workflow-invocation-data-contents v-bind:data_item="output" />
+                    <workflow-invocation-data-contents :data_item="output" />
                 </div>
             </details>
         </div>
         <div v-if="Object.keys(invocation.output_collections).length > 0">
             <details
                 ><summary><b>Invocation Output Collections</b></summary>
-                <div v-for="(output, key) in invocation.output_collections" v-bind:key="output.id">
+                <div v-for="(output, key) in invocation.output_collections" :key="output.id">
                     <b>{{ key }}:</b>
                     <workflow-invocation-data-contents :data_item="output" />
                 </div>

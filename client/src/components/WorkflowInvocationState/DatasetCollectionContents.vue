@@ -15,8 +15,8 @@
                         v-if="item"
                         :item="item"
                         :element_identifier="contentItem.element_identifier"
-                        v-bind:index="1"
-                        v-bind:showTags="true"
+                        :index="1"
+                        :showTags="true"
                     >
                     </DatasetUIWrapper>
                 </div>
@@ -25,8 +25,8 @@
                 v-if="contentItem.element_type === 'dataset_collection'"
                 :item="contentItem"
                 :element_count="collectionContents.length + 1"
-                v-bind:index="1"
-                v-bind:showTags="true"
+                :index="1"
+                :showTags="true"
             >
             </DatasetCollectionUIWrapper>
         </div>

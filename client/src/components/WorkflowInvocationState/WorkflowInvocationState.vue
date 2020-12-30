@@ -48,7 +48,6 @@
     </div>
 </template>
 <script>
-
 import { cancelWorkflowScheduling } from "./services";
 import { getRootFromIndexLink } from "onload";
 import WorkflowInvocationDetails from "./WorkflowInvocationDetails";
@@ -60,7 +59,6 @@ import ProgressBar from "components/ProgressBar";
 import { mapGetters, mapActions } from "vuex";
 
 const getUrl = (path) => getRootFromIndexLink() + path;
-
 
 export default {
     components: {

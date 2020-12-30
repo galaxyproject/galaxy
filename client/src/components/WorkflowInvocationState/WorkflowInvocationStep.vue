@@ -18,14 +18,14 @@
                 <div v-else>
                     <details v-if="Object.values(stepDetails.outputs).length > 0"
                         ><summary><b>Step Output Datasets</b></summary>
-                        <div v-for="(value, name) in stepDetails.outputs" v-bind:key="value.id">
+                        <div v-for="(value, name) in stepDetails.outputs" :key="value.id">
                             <b>{{ name }}</b>
                             <workflow-invocation-data-contents :data_item="value" />
                         </div>
                     </details>
                     <details v-if="Object.values(stepDetails.output_collections).length > 0"
                         ><summary><b>Step Output Dataset Collections</b></summary>
-                        <div v-for="(value, name) in stepDetails.output_collections" v-bind:key="value.id">
+                        <div v-for="(value, name) in stepDetails.output_collections" :key="value.id">
                             <b>{{ name }}</b>
                             <workflow-invocation-data-contents :data_item="value" />
                         </div>

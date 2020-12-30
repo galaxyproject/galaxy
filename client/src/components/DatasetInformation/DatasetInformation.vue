@@ -1,6 +1,5 @@
 <template>
     <div>
-        
         <!-- why not this?
         <DatasetProvider :id="hda_id" v-slot="{ dataset }">
         </DatasetProvider> -->
