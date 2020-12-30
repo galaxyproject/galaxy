@@ -37,7 +37,6 @@ const buildFeed = (db, cfg = {}) => {
         feed.on("change", (update) => obs.next(update));
         feed.on("error", (err) => obs.error(err));
         return () => {
-            // console.log("CANCELLING FEED", db.name);
             feed.cancel();
             feeds.delete(db);
         };
