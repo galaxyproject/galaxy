@@ -8,22 +8,24 @@ export default {
     },
     data() {
         return {
-            loading: true,
             item: undefined,
         };
     },
+    computed: {
+        loading() {
+            return this.item === undefined;
+        }
+    },
     // prettier-ignore
     created() {
-        const monitor$ = this.watch$("id").pipe(
-            datasetMonitor()
-        );
+        const id$ = this.watch$("id");
+        const monitor$ = id$.pipe(datasetMonitor());
+        
         this.listenTo(monitor$, {
             next: (ds) => {
-                this.loading = false;
                 this.item = ds;
             },
             error: (err) => {
-                this.loading = false;
                 console.warn("error in dataset monitor", err);
             },
             complete: () => {
