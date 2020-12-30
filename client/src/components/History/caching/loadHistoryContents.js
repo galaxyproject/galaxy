@@ -93,7 +93,6 @@ export const loadHistoryContents = (cfg = {}) => (rawInputs$) => {
 // TODO: method in history model maybe? Or maybe Searchparams?
 export const buildHistoryContentsUrl = (windowSize) => (inputs) => {
     const [historyId, filters, hid] = inputs;
-    // console.log("buildHistoryContentsUrl", windowSize, hid);
 
     // Filtering
     const { showDeleted, showHidden } = filters;
