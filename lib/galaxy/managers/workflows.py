@@ -1419,7 +1419,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 trans,
                 stored_workflow,
                 raw_workflow_description,
-                fill_defaults=True,
+                fill_defaults=False,
             )
 
 
