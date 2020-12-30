@@ -124,12 +124,10 @@ describe("changes operator", () => {
     });
 
     describe("change feed should be shared", () => {
-
         const lifeTime = 300;
         const spinUpTime = 100;
 
         test("subscriging should show 1 feed, unsubscribing should show 0", async () => {
-
             // subscribe to changes onece
             const feed$ = content$.pipe(changes(), takeUntil(timer(lifeTime)));
             const spy = new ObserverSpy();
@@ -142,10 +140,9 @@ describe("changes operator", () => {
             // complete, share() should now remove instance
             await spy.onComplete();
             expect(feeds.size).toEqual(0);
-        })
+        });
 
         test("subscribing 2 times should result in one feed if it's the same DB", async () => {
-
             // subscribe to changes onece
             const feed$ = content$.pipe(changes(), takeUntil(timer(2 * lifeTime)));
             const spy = new ObserverSpy();
@@ -162,7 +159,7 @@ describe("changes operator", () => {
 
             await wait(spinUpTime);
             expect(feeds.size).toEqual(1);
-            
+
             // unsub from 2nd feed
             await spy2.onComplete();
             expect(feeds.size).toEqual(1);
@@ -170,7 +167,6 @@ describe("changes operator", () => {
             // unsub from 1st feed
             await spy.onComplete();
             expect(feeds.size).toEqual(0);
-
         });
-    })
+    });
 });
