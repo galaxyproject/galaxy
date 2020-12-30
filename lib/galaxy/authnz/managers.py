@@ -312,7 +312,7 @@ class AuthnzManager:
             if success is False:
                 return False, message, (None, None)
             return success, message, backend.create_user(token, trans, login_redirect_url)
-        except exceptions.AuthenticationFailed as e:
+        except exceptions.AuthenticationFailed:
             log.exception("Error creating user")
             raise
         except Exception as e:
