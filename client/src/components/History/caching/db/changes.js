@@ -12,7 +12,6 @@ export const feeds = new Map();
 export const changes = (cfg = {}) => {
     return pipe(
         switchMap((db) => {
-            // console.log("SUBSCRIBING TO FEED", db.name);
             if (!feeds.has(db)) {
                 feeds.set(db, buildFeed(db, cfg));
             }
