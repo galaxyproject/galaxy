@@ -13,7 +13,6 @@ from functools import partial, wraps
 import requests
 import yaml
 
-from galaxy.util.bunch import Bunch
 from . import sizzle
 from .data import (
     NAVIGATION,
@@ -34,26 +33,27 @@ RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAULT = 10
 
 WaitType = collections.namedtuple("WaitType", ["name", "default_length"])
 
+
 # Default wait times should make sense for a development server under low
 # load. Wait times for production servers can be scaled up with a multiplier.
-WAIT_TYPES = Bunch(
+class WAIT_TYPES:
     # Rendering a form and registering callbacks, etc...
-    UX_RENDER=WaitType("ux_render", 1),
+    UX_RENDER = WaitType("ux_render", 1)
     # Fade in, fade out, etc...
-    UX_TRANSITION=WaitType("ux_transition", 5),
+    UX_TRANSITION = WaitType("ux_transition", 5)
     # Toastr popup and dismissal, etc...
-    UX_POPUP=WaitType("ux_popup", 15),
+    UX_POPUP = WaitType("ux_popup", 15)
     # Creating a new history and loading it into the panel.
-    DATABASE_OPERATION=WaitType("database_operation", 10),
+    DATABASE_OPERATION = WaitType("database_operation", 10)
     # Wait time for jobs to complete in default environment.
-    JOB_COMPLETION=WaitType("job_completion", 30),
+    JOB_COMPLETION = WaitType("job_completion", 30)
     # Wait time for a GIE to spawn.
-    GIE_SPAWN=WaitType("gie_spawn", 30),
+    GIE_SPAWN = WaitType("gie_spawn", 30)
     # Wait time for toolshed search
-    SHED_SEARCH=WaitType('shed_search', 30),
+    SHED_SEARCH = WaitType('shed_search', 30)
     # Wait time for repository installation
-    REPO_INSTALL=WaitType('repo_install', 60),
-)
+    REPO_INSTALL = WaitType('repo_install', 60)
+
 
 # Choose a moderate wait type for operations that don't specify a type.
 DEFAULT_WAIT_TYPE = WAIT_TYPES.DATABASE_OPERATION
