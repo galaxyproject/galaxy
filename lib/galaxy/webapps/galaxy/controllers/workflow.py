@@ -14,7 +14,7 @@ from galaxy import (
     util,
     web
 )
-from galaxy.managers.workflows import MissingToolsException
+from galaxy.managers.workflows import MissingToolsException, WorkflowUpdateOptions
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.model.mapping import desc
 from galaxy.security.validate_user_input import validate_publicname
@@ -602,14 +602,16 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             session = trans.sa_session
             session.add(stored_workflow)
             session.flush()
-
+            workflow_update_options = WorkflowUpdateOptions(
+                update_stored_workflow_attributes=False,  # taken care of above
+                from_tool_form=from_tool_form,
+            )
             try:
                 workflow, errors = workflow_contents_manager.update_workflow_from_raw_description(
                     trans,
                     stored_workflow,
                     workflow_data,
-                    from_tool_form=from_tool_form,
-                    update_stored_workflow_attributes=False,  # taken care of above
+                    workflow_update_options,
                 )
             except MissingToolsException as e:
                 return dict(

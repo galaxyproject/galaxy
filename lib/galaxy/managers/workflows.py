@@ -10,6 +10,7 @@ from gxformat2 import (
     ImportOptions,
     python_to_workflow,
 )
+from pydantic import BaseModel
 from sqlalchemy import and_
 from sqlalchemy.orm import joinedload, subqueryload
 
@@ -334,13 +335,11 @@ class WorkflowContentsManager(UsesAnnotations):
         self,
         trans,
         raw_workflow_description,
+        workflow_create_options,
         source=None,
         add_to_menu=False,
         publish=False,
         hidden=False,
-        exact_tools=True,
-        fill_defaults=False,
-        from_tool_form=False,
     ):
         data = raw_workflow_description.as_dict
         # Put parameters in workflow mode
@@ -353,10 +352,8 @@ class WorkflowContentsManager(UsesAnnotations):
         workflow, missing_tool_tups = self._workflow_from_raw_description(
             trans,
             raw_workflow_description,
+            workflow_create_options,
             name=name,
-            exact_tools=exact_tools,
-            fill_defaults=fill_defaults,
-            from_tool_form=from_tool_form,
         )
         if 'uuid' in data:
             workflow.uuid = data['uuid']
@@ -394,7 +391,7 @@ class WorkflowContentsManager(UsesAnnotations):
             missing_tools=missing_tool_tups
         )
 
-    def update_workflow_from_raw_description(self, trans, stored_workflow, raw_workflow_description, **kwds):
+    def update_workflow_from_raw_description(self, trans, stored_workflow, raw_workflow_description, workflow_update_options):
         raw_workflow_description = self.ensure_raw_description(raw_workflow_description)
 
         # Put parameters in workflow mode
@@ -403,8 +400,8 @@ class WorkflowContentsManager(UsesAnnotations):
         workflow, missing_tool_tups = self._workflow_from_raw_description(
             trans,
             raw_workflow_description,
+            workflow_update_options,
             name=stored_workflow.name,
-            **kwds
         )
 
         if missing_tool_tups:
@@ -417,7 +414,7 @@ class WorkflowContentsManager(UsesAnnotations):
         workflow.stored_workflow = stored_workflow
         stored_workflow.latest_workflow = workflow
 
-        if kwds.get("update_stored_workflow_attributes", True):
+        if workflow_update_options.update_stored_workflow_attributes:
             update_dict = raw_workflow_description.as_dict
             if 'name' in update_dict:
                 sanitized_name = sanitize_html(update_dict['name'])
@@ -439,7 +436,7 @@ class WorkflowContentsManager(UsesAnnotations):
             errors.append("This workflow contains cycles")
         return workflow, errors
 
-    def _workflow_from_raw_description(self, trans, raw_workflow_description, name, **kwds):
+    def _workflow_from_raw_description(self, trans, raw_workflow_description, workflow_state_resolution_options, name, **kwds):
         data = raw_workflow_description.as_dict
         if isinstance(data, str):
             data = json.loads(data)
@@ -473,7 +470,7 @@ class WorkflowContentsManager(UsesAnnotations):
         if subworkflows:
             subworkflow_id_map = {}
             for key, subworkflow_dict in subworkflows.items():
-                subworkflow = self.__build_embedded_subworkflow(trans, subworkflow_dict, **kwds)
+                subworkflow = self.__build_embedded_subworkflow(trans, subworkflow_dict, workflow_state_resolution_options)
                 subworkflow_id_map[key] = subworkflow
 
         # Keep track of tools required by the workflow that are not available in
@@ -481,10 +478,12 @@ class WorkflowContentsManager(UsesAnnotations):
         # will be ( tool_id, tool_name, tool_version ).
         missing_tool_tups = []
         for step_dict in self.__walk_step_dicts(data):
-            self.__load_subworkflows(trans, step_dict, subworkflow_id_map, **kwds)
+            self.__load_subworkflows(trans, step_dict, subworkflow_id_map, workflow_state_resolution_options)
 
+        module_kwds = workflow_state_resolution_options.dict()
+        module_kwds.update(kwds)  # TODO: maybe drop this?
         for step_dict in self.__walk_step_dicts(data):
-            module, step = self.__module_from_dict(trans, steps, steps_by_external_id, step_dict, **kwds)
+            module, step = self.__module_from_dict(trans, steps, steps_by_external_id, step_dict, **module_kwds)
             is_tool = is_tool_module_type(module.type)
             if is_tool and module.tool is None:
                 missing_tool_tup = (module.tool_id, module.get_name(), module.tool_version, step_dict['id'])
@@ -1263,11 +1262,11 @@ class WorkflowContentsManager(UsesAnnotations):
 
             yield step_dict
 
-    def __load_subworkflows(self, trans, step_dict, subworkflow_id_map, **kwds):
+    def __load_subworkflows(self, trans, step_dict, subworkflow_id_map, workflow_state_resolution_options):
         step_type = step_dict.get("type", None)
         if step_type == "subworkflow":
             subworkflow = self.__load_subworkflow_from_step_dict(
-                trans, step_dict, subworkflow_id_map, **kwds
+                trans, step_dict, subworkflow_id_map, workflow_state_resolution_options
             )
             step_dict["subworkflow"] = subworkflow
 
@@ -1331,7 +1330,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
         return module, step
 
-    def __load_subworkflow_from_step_dict(self, trans, step_dict, subworkflow_id_map, **kwds):
+    def __load_subworkflow_from_step_dict(self, trans, step_dict, subworkflow_id_map, workflow_state_resolution_options):
         embedded_subworkflow = step_dict.get("subworkflow", None)
         subworkflow_id = step_dict.get("content_id", None)
         if embedded_subworkflow and subworkflow_id:
@@ -1341,7 +1340,7 @@ class WorkflowContentsManager(UsesAnnotations):
             raise Exception("Subworkflow step must define either subworkflow or content_id.")
 
         if embedded_subworkflow:
-            subworkflow = self.__build_embedded_subworkflow(trans, embedded_subworkflow, **kwds)
+            subworkflow = self.__build_embedded_subworkflow(trans, embedded_subworkflow, workflow_state_resolution_options)
         elif subworkflow_id_map is not None:
             # Interpret content_id as a workflow local thing.
             subworkflow = subworkflow_id_map[subworkflow_id[1:]]
@@ -1353,10 +1352,10 @@ class WorkflowContentsManager(UsesAnnotations):
 
         return subworkflow
 
-    def __build_embedded_subworkflow(self, trans, data, **kwds):
+    def __build_embedded_subworkflow(self, trans, data, workflow_state_resolution_options):
         raw_workflow_description = self.ensure_raw_description(data)
         subworkflow = self.build_workflow_from_raw_description(
-            trans, raw_workflow_description, hidden=True, fill_defaults=kwds.get("fill_defaults", False)
+            trans, raw_workflow_description, workflow_state_resolution_options, hidden=True
         ).workflow
         return subworkflow
 
@@ -1407,6 +1406,9 @@ class WorkflowContentsManager(UsesAnnotations):
         workflow = stored_workflow.latest_workflow
         as_dict = self.workflow_to_dict(trans, stored_workflow, style="ga")
         raw_workflow_description = self.normalize_workflow_format(trans, as_dict)
+        workflow_update_options = WorkflowUpdateOptions()
+        workflow_update_options.fill_defaults = False
+
         module_injector = WorkflowModuleInjector(trans)
         WorkflowRefactorExecutor(raw_workflow_description, workflow, module_injector).refactor(refactor_request)
         if refactor_request.dry_run:
@@ -1419,8 +1421,32 @@ class WorkflowContentsManager(UsesAnnotations):
                 trans,
                 stored_workflow,
                 raw_workflow_description,
-                fill_defaults=False,
+                workflow_update_options,
             )
+
+
+class WorkflowStateResolutionOptions(BaseModel):
+    # fill in default tool state when updating, may change tool_state
+    fill_defaults: bool = False
+    # If True, assume all tool state coming from generated form instead of potentially simpler json stored in DB/exported
+    from_tool_form: bool = False
+    # If False, allow running with less exact tool versions
+    exact_tools: bool = True
+    # If True, allow workflow update with missing tools.
+    allow_missing_tools: bool = False
+
+
+class WorkflowUpdateOptions(WorkflowStateResolutionOptions):
+    # Only used internally, don't set. If using the API assume updating the workflows
+    # representation with name or annotation for instance, updates the corresponding
+    # stored workflow
+    update_stored_workflow_attributes: bool = True
+
+
+# Workflow update options but with some different defaults - we allow creating
+# workflows with missing tools by default but not updating.
+class WorkflowCreateOptions(WorkflowStateResolutionOptions):
+    allow_missing_tools: bool = True
 
 
 class MissingToolsException(exceptions.MessageException):

@@ -22,7 +22,11 @@ from galaxy.managers import (
     histories,
 )
 from galaxy.managers.jobs import fetch_job_states, invocation_job_source_iter, summarize_job_metrics
-from galaxy.managers.workflows import MissingToolsException
+from galaxy.managers.workflows import (
+    MissingToolsException,
+    WorkflowCreateOptions,
+    WorkflowUpdateOptions,
+)
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 from galaxy.tools import recommendations
@@ -619,12 +623,12 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
             if 'steps' in workflow_dict:
                 try:
-                    from_dict_kwds = self.__import_or_update_kwds(payload)
+                    workflow_update_options = WorkflowUpdateOptions(**payload)
                     workflow, errors = self.workflow_contents_manager.update_workflow_from_raw_description(
                         trans,
                         stored_workflow,
                         raw_workflow_description,
-                        **from_dict_kwds
+                        workflow_update_options,
                     )
                 except MissingToolsException:
                     raise exceptions.MessageException("This workflow contains missing tools. It cannot be saved until they have been removed from the workflow or installed.")
@@ -719,7 +723,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         if not data:
             raise exceptions.MessageException("The data content is missing.")
         raw_workflow_description = self.__normalize_workflow(trans, data)
-        workflow, missing_tool_tups = self._workflow_from_dict(trans, raw_workflow_description, source=source)
+        # TODO: pass more options into here for consistency
+        # TODO: for consistency, find a way to prevent this operation on missing_tool_tups
+        #       if options.allow_missing_tools is false
+        workflow_create_options = WorkflowCreateOptions()
+        workflow, missing_tool_tups = self._workflow_from_dict(trans, raw_workflow_description, workflow_create_options, source=source)
         workflow_id = workflow.id
         workflow = workflow.latest_workflow
 
@@ -744,8 +752,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         if import_tools and not trans.user_is_admin:
             raise exceptions.AdminRequiredException()
 
-        from_dict_kwds = self.__import_or_update_kwds(payload)
-
+        workflow_create_options = WorkflowCreateOptions(**payload)
         publish = util.string_as_bool(payload.get("publish", False))
         # If 'publish' set, default to importable.
         importable = util.string_as_bool(payload.get("importable", publish))
@@ -753,8 +760,12 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         if publish and not importable:
             raise exceptions.RequestParameterInvalidException("Published workflow must be importable.")
 
-        from_dict_kwds["publish"] = publish
-        workflow, missing_tool_tups = self._workflow_from_dict(trans, raw_workflow_description, **from_dict_kwds)
+        workflow, missing_tool_tups = self._workflow_from_dict(
+            trans,
+            raw_workflow_description,
+            workflow_create_options,
+            publish=publish
+        )
         if importable:
             self._make_item_accessible(trans.sa_session, workflow)
             trans.sa_session.flush()
@@ -793,21 +804,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                             changeset_revision,
                             payload)
         return item
-
-    def __import_or_update_kwds(self, payload):
-        # Galaxy will try to upgrade tool versions that don't match exactly during import,
-        # this prevents that.
-        exact_tools = util.string_as_bool(payload.get("exact_tools", True))
-
-        # Fill in missing tool state for hand built so the workflow can run, default of this
-        # should become True at some point in the future I imagine.
-        fill_defaults = util.string_as_bool(payload.get("fill_defaults", False))
-        from_tool_form = payload.get("from_tool_form", False)
-        return {
-            'exact_tools': exact_tools,
-            'fill_defaults': fill_defaults,
-            'from_tool_form': from_tool_form,
-        }
 
     def __normalize_workflow(self, trans, as_dict):
         return self.workflow_contents_manager.normalize_workflow_format(trans, as_dict)
@@ -1389,7 +1385,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         )
         return self.__encode_invocation_step(trans, invocation_step)
 
-    def _workflow_from_dict(self, trans, data, source=None, add_to_menu=False, publish=False, exact_tools=True, fill_defaults=False, from_tool_form=False):
+    def _workflow_from_dict(self, trans, data, workflow_create_options, source=None, add_to_menu=False, publish=False):
         """Creates a workflow from a dict.
 
         Created workflow is stored in the database and returned.
@@ -1399,12 +1395,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         created_workflow = workflow_contents_manager.build_workflow_from_raw_description(
             trans,
             raw_workflow_description,
+            workflow_create_options,
             source=source,
             add_to_menu=add_to_menu,
             publish=publish,
-            exact_tools=exact_tools,
-            fill_defaults=fill_defaults,
-            from_tool_form=from_tool_form,
         )
         return created_workflow.stored_workflow, created_workflow.missing_tools
 
