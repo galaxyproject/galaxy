@@ -14,7 +14,7 @@ from galaxy import (
     util,
     web
 )
-from galaxy.managers import workflows
+from galaxy.managers.workflows import MissingToolsException
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.model.mapping import desc
 from galaxy.security.validate_user_input import validate_publicname
@@ -585,7 +585,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         """
         user = trans.get_user()
         if workflow_name is not None:
-            workflow_contents_manager = workflows.WorkflowContentsManager(trans.app)
+            workflow_contents_manager = self.app.workflow_contents_manager
             stored_workflow = model.StoredWorkflow()
             stored_workflow.name = workflow_name
             stored_workflow.user = user
@@ -611,7 +611,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
                     from_tool_form=from_tool_form,
                     update_stored_workflow_attributes=False,  # taken care of above
                 )
-            except workflows.MissingToolsException as e:
+            except MissingToolsException as e:
                 return dict(
                     name=e.workflow.name,
                     message=("This workflow includes missing or invalid tools. "
@@ -729,7 +729,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         """
         trans.workflow_building_mode = workflow_building_modes.ENABLED
         stored = self.get_stored_workflow(trans, id, check_ownership=True, check_accessible=False)
-        workflow_contents_manager = workflows.WorkflowContentsManager(trans.app)
+        workflow_contents_manager = self.app.workflow_contents_manager
         return workflow_contents_manager.workflow_to_dict(trans, stored, style="editor", version=version)
 
     @web.expose

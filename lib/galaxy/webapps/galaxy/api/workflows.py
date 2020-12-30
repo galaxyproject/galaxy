@@ -20,9 +20,9 @@ from galaxy import (
 )
 from galaxy.managers import (
     histories,
-    workflows
 )
 from galaxy.managers.jobs import fetch_job_states, invocation_job_source_iter, summarize_job_metrics
+from galaxy.managers.workflows import MissingToolsException
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 from galaxy.tools import recommendations
@@ -57,8 +57,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     def __init__(self, app):
         super().__init__(app)
         self.history_manager = histories.HistoryManager(app)
-        self.workflow_manager = workflows.WorkflowsManager(app)
-        self.workflow_contents_manager = workflows.WorkflowContentsManager(app)
+        self.workflow_manager = app.workflow_manager
+        self.workflow_contents_manager = app.workflow_contents_manager
         self.tool_recommendations = recommendations.ToolRecommendations()
 
     def __get_full_shed_url(self, url):
@@ -626,7 +626,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                         raw_workflow_description,
                         **from_dict_kwds
                     )
-                except workflows.MissingToolsException:
+                except MissingToolsException:
                     raise exceptions.MessageException("This workflow contains missing tools. It cannot be saved until they have been removed from the workflow or installed.")
 
         else:
