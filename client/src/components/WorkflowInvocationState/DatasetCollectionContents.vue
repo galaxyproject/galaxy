@@ -33,16 +33,15 @@
     </div>
 </template>
 <script>
-import { DatasetProvider } from "components/History/providers/DatasetProvider";
-import DatasetUIWrapper from "components/History/ContentItem/Dataset/DatasetUIWrapper";
-
+import { DatasetProvider } from "./providers";
+import DatasetUIWrapper from "./DatasetUIWrapper";
+import DatasetCollectionUIWrapper from "./DatasetCollectionUIWrapper";
 import LoadingSpan from "components/LoadingSpan";
 
 export default {
     components: {
         DatasetProvider,
-        DatasetCollectionUIWrapper: () =>
-            import("components/History/ContentItem/DatasetCollection/DatasetCollectionUIWrapper"),
+        DatasetCollectionUIWrapper,
         DatasetUIWrapper,
         LoadingSpan,
     },

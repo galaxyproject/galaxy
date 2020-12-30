@@ -1,5 +1,10 @@
 <template>
     <div>
+        
+        <!-- why not this?
+        <DatasetProvider :id="hda_id" v-slot="{ dataset }">
+        </DatasetProvider> -->
+
         <h3>Dataset Information</h3>
         <table id="dataset-details" class="tabletip info_data_table">
             <tbody>

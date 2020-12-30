@@ -18,10 +18,10 @@
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
-import { DatasetProvider, DatasetCollectionProvider } from "components/History/providers/DatasetProvider";
-import HistoryContentItem from "components/History/ContentItem/HistoryContentItem";
-import DatasetCollectionUIWrapper from "components/History/ContentItem/DatasetCollection/DatasetCollectionUIWrapper";
-import DatasetUIWrapper from "components/History/ContentItem/Dataset/DatasetUIWrapper";
+import { DatasetProvider, DatasetCollectionProvider } from "./providers";
+import HistoryContentItem from "components/History/ContentItem";
+import DatasetCollectionUIWrapper from "./DatasetCollectionUIWrapper";
+import DatasetUIWrapper from "./DatasetUIWrapper";
 import { STATES } from "components/History/model";
 import LoadingSpan from "components/LoadingSpan";
 

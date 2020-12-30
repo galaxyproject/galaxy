@@ -21,8 +21,8 @@ const actions = {
         // we could skip the fetch.
 
         const { data } = await axios.get(`${getAppRoot()}api/dataset_collections/${hdca_id}?instance_type=history`);
-        await cacheContent(data);
-        commit("saveCollectionForHDCAId", { hdca_id, dataset_collection: data });
+        const cachedData = await cacheContent(data, true);
+        commit("saveCollectionForHDCAId", { hdca_id, dataset_collection: cachedData });
         return state.datasetCollectionByHDCAId[hdca_id];
     },
     async $init({ dispatch }, { store }) {

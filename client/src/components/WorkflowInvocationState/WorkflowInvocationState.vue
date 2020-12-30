@@ -48,8 +48,6 @@
     </div>
 </template>
 <script>
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
 
 import { cancelWorkflowScheduling } from "./services";
 import { getRootFromIndexLink } from "onload";
@@ -63,7 +61,6 @@ import { mapGetters, mapActions } from "vuex";
 
 const getUrl = (path) => getRootFromIndexLink() + path;
 
-Vue.use(BootstrapVue);
 
 export default {
     components: {

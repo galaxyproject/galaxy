@@ -21,8 +21,8 @@ const actions = {
         // if we're certain that the store is always up to date
         // we could skip the fetch.
         const { data } = await axios.get(`${getAppRoot()}api/datasets/${hda_id}`);
-        await cacheContent(data);
-        commit("saveDatasetForHDAId", { hda_id, dataset: data });
+        const cachedData = await cacheContent(data, true);
+        commit("saveDatasetForHDAId", { hda_id, dataset: cachedData });
         return state.datasetByHDAId[hda_id];
     },
     async $init({ dispatch }, { store }) {

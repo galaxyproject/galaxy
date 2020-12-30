@@ -48,11 +48,16 @@ export const SimpleProviderMixin = {
 };
 
 export const StoreProviderMixin = {
+    computed: {
+        storeItem() {
+            throw new Error("define me");
+        },
+    },
     watch: {
         storeItem: {
-            handler(newState, oldState) {
-                console.log("Updating item to", newState);
-                this.item = newState;
+            handler(newItem, oldItem) {
+                console.log("Updating item to", newItem);
+                this.item = newItem;
             },
         },
     },

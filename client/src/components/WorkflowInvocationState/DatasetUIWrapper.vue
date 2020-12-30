@@ -3,10 +3,10 @@
         v-if="dataset"
         v-bind="$attrs"
         v-on="$listeners"
-        v-on:update:expanded="expand"
+        @update:expanded="expand"
         :expanded="expanded"
         :dataset="dataset"
-        :showTags="true"
+        :show-tags="true"
         @deleteDataset="onDelete(dataset, $event)"
         @undeleteDataset="onUndelete(dataset, $event)"
         @unhideDataset="onUnhide(dataset, $event)"
@@ -15,10 +15,10 @@
     </DatasetUI>
 </template>
 <script>
-import DatasetUI from "./DatasetUI";
-import { Dataset } from "../../model/Dataset";
-import { deleteContent, updateContentFields } from "../../model/queries";
-import { cacheContent } from "../../caching";
+import DatasetUI from "../History/ContentItem/Dataset/DatasetUI";
+import { Dataset } from "../History/model";
+import { deleteContent, updateContentFields } from "../History/model/queries";
+import { cacheContent } from "../History/caching";
 
 export default {
     components: {

@@ -24,12 +24,12 @@
     </div>
 </template>
 <script>
-import DscUI from "./DscUI";
-import { DatasetCollection } from "../../model/DatasetCollection";
-import { DatasetCollectionContentProvider } from "components/History/providers/DatasetProvider";
-import DatasetCollectionContents from "components/History/ContentItem/DatasetCollection/DatasetCollectionContents";
-import { cacheContent } from "../../caching";
-import { deleteDatasetCollection, updateContentFields } from "../../model/queries";
+import { deleteDatasetCollection, updateContentFields } from "../History/model/queries";
+import { cacheContent } from "../History/caching";
+import { DatasetCollection } from "../History/model/DatasetCollection";
+import DscUI from "../History/ContentItem/DatasetCollection/DscUI";
+import { DatasetCollectionContentProvider } from "./providers";
+import DatasetCollectionContents from "./DatasetCollectionContents";
 
 export default {
     components: {
