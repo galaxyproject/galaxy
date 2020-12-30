@@ -128,7 +128,7 @@ describe("changes operator", () => {
         const spinUpTime = 100;
 
         test("subscriging should show 1 feed, unsubscribing should show 0", async () => {
-            // subscribe to changes onece
+            // subscribe to changes once
             const feed$ = content$.pipe(changes(), takeUntil(timer(lifeTime)));
             const spy = new ObserverSpy();
             feed$.subscribe(spy);
