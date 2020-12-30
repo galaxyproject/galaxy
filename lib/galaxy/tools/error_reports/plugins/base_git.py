@@ -45,7 +45,7 @@ class BaseGitPlugin(ErrorPlugin, metaclass=ABCMeta):
             return None
         try:
             if tool.tool_shed not in self.ts_urls:
-                ts_url_request = requests.get(f'http://{tool.tool_shed}'))
+                ts_url_request = requests.get(f"http://{tool.tool_shed}")
                 self.ts_urls[tool.tool_shed] = ts_url_request.url
             return self.ts_urls[tool.tool_shed]
         except Exception:
