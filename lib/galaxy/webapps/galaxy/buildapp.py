@@ -445,6 +445,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/workflows/build_module', action='build_module', controller="workflows")
     webapp.mapper.connect('/api/workflows/menu', action='get_workflow_menu', controller="workflows", conditions=dict(method=["GET"]))
     webapp.mapper.connect('/api/workflows/menu', action='set_workflow_menu', controller="workflows", conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/workflows/{id}/refactor', action='refactor', controller="workflows", conditions=dict(method=["PUT"]))
     webapp.mapper.resource('workflow', 'workflows', path_prefix='/api')
     webapp.mapper.connect('/api/licenses', controller='licenses', action='index')
     webapp.mapper.connect('/api/licenses/{id}', controller='licenses', action='get')

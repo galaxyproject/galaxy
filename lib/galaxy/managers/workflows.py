@@ -39,6 +39,7 @@ from galaxy.workflow.modules import (
     ToolModule,
     WorkflowModuleInjector
 )
+from galaxy.workflow.refactor.execute import WorkflowRefactorExecutor
 from galaxy.workflow.reports import generate_report
 from galaxy.workflow.resources import get_resource_mapper_function
 from galaxy.workflow.steps import attach_ordered_steps
@@ -305,7 +306,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
         Currently this mostly means converting format 2 workflows into standard Galaxy
         workflow JSON for consumption for the rest of this module. In the future we will
-        want to be a lot more percise about this - preserve the original description along
+        want to be a lot more precise about this - preserve the original description along
         side the data model and apply updates in a way that largely preserves YAML structure
         so workflows can be extracted.
         """
@@ -421,6 +422,16 @@ class WorkflowContentsManager(UsesAnnotations):
         # Connect up
         workflow.stored_workflow = stored_workflow
         stored_workflow.latest_workflow = workflow
+
+        # I'm not sure we can't just default this to True.
+        if kwds.get("update_stored_workflow_attributes", False):
+            update_dict = raw_workflow_description.as_dict
+            if 'name' in update_dict:
+                stored_workflow.name = update_dict['name']
+            if 'annotation' in update_dict:
+                newAnnotation = sanitize_html(update_dict['annotation'])
+                self.add_item_annotation(trans.sa_session, stored_workflow.user, stored_workflow, newAnnotation)
+
         # Persist
         trans.sa_session.flush()
         if stored_workflow.from_path:
@@ -446,6 +457,12 @@ class WorkflowContentsManager(UsesAnnotations):
             workflow.reports_config = data['report']
         workflow.license = data.get('license')
         workflow.creator_metadata = data.get('creator')
+
+        if 'license' in data:
+            workflow.license = data['license']
+
+        if 'creator' in data:
+            workflow.creator_metadata = data['creator']
 
         # Assume no errors until we find a step that has some
         workflow.has_errors = False
@@ -528,7 +545,7 @@ class WorkflowContentsManager(UsesAnnotations):
         elif style == "ga":
             wf_dict = self._workflow_to_dict_export(trans, stored, workflow=workflow)
         else:
-            raise exceptions.RequestParameterInvalidException('Unknown workflow style [%s]' % style)
+            raise exceptions.RequestParameterInvalidException(f'Unknown workflow style {style}')
         if version is not None:
             wf_dict['version'] = version
         else:
@@ -1264,8 +1281,7 @@ class WorkflowContentsManager(UsesAnnotations):
         representing type-specific functionality from the incoming dictionary.
         """
         step = model.WorkflowStep()
-        # TODO: Consider handling position inside module.
-        step.position = step_dict['position']
+        step.position = step_dict.get('position', model.WorkflowStep.DEFAULT_POSITION)
         if step_dict.get("uuid", None) and step_dict['uuid'] != "None":
             step.uuid = step_dict["uuid"]
         if "label" in step_dict:
@@ -1275,13 +1291,13 @@ class WorkflowContentsManager(UsesAnnotations):
         self.__set_default_label(step, module, step_dict.get('tool_state'))
         module.save_to_step(step)
 
-        annotation = step_dict['annotation']
+        annotation = step_dict.get('annotation')
         if annotation:
             annotation = sanitize_html(annotation)
             self.add_item_annotation(trans.sa_session, trans.get_user(), step, annotation)
 
         # Stick this in the step temporarily
-        step.temp_input_connections = step_dict['input_connections']
+        step.temp_input_connections = step_dict.get('input_connections', {})
 
         # Create the model class for the step
         steps.append(step)
@@ -1389,6 +1405,28 @@ class WorkflowContentsManager(UsesAnnotations):
             default_label = new_state.get('name')
             if default_label and util.unicodify(default_label).lower() not in ['input dataset', 'input dataset collection']:
                 step.label = module.label = default_label
+
+    def refactor(self, trans, stored_workflow, refactor_request):
+        """Apply supplied actions to stored_workflow.latest_workflow to build a new version.
+        """
+        workflow = stored_workflow.latest_workflow
+        as_dict = self.workflow_to_dict(trans, stored_workflow, style="ga")
+        raw_workflow_description = self.normalize_workflow_format(trans, as_dict)
+        module_injector = WorkflowModuleInjector(trans)
+        WorkflowRefactorExecutor(raw_workflow_description, workflow, module_injector).refactor(refactor_request)
+        if refactor_request.dry_run:
+            # TODO: go a bit further with dry run, try to re-populate a workflow just
+            # don't flush it or tie it to the stored_workflow. Still for now, there is
+            # a lot of things that would be caught with just what is done here.
+            return None, []
+        else:
+            return self.update_workflow_from_raw_description(
+                trans,
+                stored_workflow,
+                raw_workflow_description,
+                fill_defaults=True,
+                update_stored_workflow_attributes=True,
+            )
 
 
 class MissingToolsException(exceptions.MessageException):

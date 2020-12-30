@@ -472,6 +472,35 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
         update_response = self._update_workflow(workflow['id'], workflow).json()
         assert update_response['tags'] == []
 
+    def test_refactor(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  test_input: data
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: test_input
+""")
+        actions = [
+            {"action_type": "update_step_label", "step": {"order_index": 0}, "label": "new_label"},
+        ]
+        refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions, dry_run=True)
+        refactor_response.raise_for_status()
+        # it was with dry_run=True - so the result is unchanged...
+        refactor_response.json()["steps"]["0"]["label"] == "test_input"
+
+        refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions, dry_run=True, style="editor")
+        refactor_response.raise_for_status()
+        # it was with dry_run=True - so the result is unchanged...
+        refactor_response.json()["steps"]["0"]["label"] == "test_input"
+
+        refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions)
+        refactor_response.raise_for_status()
+        # this time dry_run was default of False, so the label is indeed changed
+        refactor_response.json()["steps"]["0"]["label"] == "new_label"
+
     def test_update_no_tool_id(self):
         workflow_object = self.workflow_populator.load_workflow(name="test_import")
         upload_response = self.__test_upload(workflow=workflow_object)
@@ -1243,6 +1272,54 @@ outer_input:
             self._run_jobs(WORKFLOW_NESTED_REPLACEMENT_PARAMETER, test_data=test_data, history_id=history_id)
             details = self.dataset_populator.get_history_dataset_details(history_id)
             assert details["name"] == "moocow suffix"
+
+    @skip_without_tool("create_2")
+    def test_placements_from_text_inputs(self):
+        with self.dataset_populator.test_history() as history_id:
+            run_def = """
+class: GalaxyWorkflow
+inputs: []
+steps:
+  create_2:
+    tool_id: create_2
+    state:
+      sleep_time: 0
+    outputs:
+      out_file1:
+        rename: "${replaceme} name"
+      out_file2:
+        rename: "${replaceme} name 2"
+test_data:
+  replacement_parameters:
+    replaceme: moocow
+"""
+
+            self._run_jobs(run_def, history_id=history_id)
+            details = self.dataset_populator.get_history_dataset_details(history_id)
+            assert details["name"] == "moocow name 2"
+
+            run_def = """
+class: GalaxyWorkflow
+inputs:
+  replaceme: text
+steps:
+  create_2:
+    tool_id: create_2
+    state:
+      sleep_time: 0
+    outputs:
+      out_file1:
+        rename: "${replaceme} name"
+      out_file2:
+        rename: "${replaceme} name 2"
+test_data:
+  replaceme:
+    value: moocow
+    type: raw
+"""
+            self._run_jobs(run_def, history_id=history_id)
+            details = self.dataset_populator.get_history_dataset_details(history_id)
+            assert details["name"] == "moocow name 2", details["name"]
 
     @skip_without_tool("random_lines1")
     def test_run_runtime_parameters_after_pause(self):

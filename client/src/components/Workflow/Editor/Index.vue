@@ -93,6 +93,7 @@
                                     @onLayout="onLayout"
                                     @onEdit="onEdit"
                                     @onAttributes="onAttributes"
+                                    @onLint="onLint"
                                 />
                             </div>
                         </div>
@@ -115,6 +116,19 @@
                                     @onLicense="onLicense"
                                     @onCreator="onCreator"
                                 />
+                                <WorkflowLint
+                                    id="lint-panel"
+                                    class="right-content"
+                                    ref="lint"
+                                    style="display: none;"
+                                    :legacy-parameters="parameters"
+                                    :annotation="annotation"
+                                    :creator="creator"
+                                    :license="license"
+                                    :nodes="nodes"
+                                    @onAttributes="onAttributes"
+                                    @refactor="_prepareForRefactor"
+                                />
                                 <div id="right-content" class="right-content" />
                             </div>
                         </div>
@@ -127,14 +141,15 @@
 
 <script>
 import { getDatatypesMapper } from "components/Datatypes";
-import { getModule, getVersions, saveWorkflow, loadWorkflow } from "./modules/services";
+import { getModule, getVersions, saveWorkflow, loadWorkflow, refactor } from "./modules/services";
 import {
     showWarnings,
     showUpgradeMessage,
     copyIntoWorkflow,
-    getWorkflowParameters,
+    getLegacyWorkflowParameters,
     showAttributes,
     showForm,
+    showLint,
     saveAs,
 } from "./modules/utilities";
 import WorkflowCanvas from "./modules/canvas";
@@ -144,6 +159,7 @@ import ToolBoxWorkflow from "components/Panels/ToolBoxWorkflow";
 import SidePanel from "components/Panels/SidePanel";
 import { getAppRoot } from "onload/loadConfig";
 import reportDefault from "./reportDefault";
+import WorkflowLint from "./Lint";
 import { hide_modal, show_message, show_modal } from "layout/modal";
 import WorkflowAttributes from "./Attributes";
 import ZoomControl from "./ZoomControl";
@@ -159,6 +175,7 @@ export default {
         WorkflowAttributes,
         ZoomControl,
         WorkflowNode,
+        WorkflowLint,
     },
     props: {
         id: {
@@ -196,7 +213,7 @@ export default {
             markdownConfig: null,
             markdownText: null,
             versions: [],
-            parameters: [],
+            parameters: null,
             zoomLevel: 7,
             steps: {},
             hasChanges: false,
@@ -254,6 +271,45 @@ export default {
             }
             showForm(this, node, this.datatypes);
             this.canvasManager.drawOverview();
+        },
+        _prepareForRefactor(actions) {
+            if (this.hasChanges) {
+                const r = window.confirm(
+                    "You've made changes to your workflow that need to be saved before attempting the requested action. Save those changes and continue?"
+                );
+                if (r == false) {
+                    return;
+                }
+                show_message("Saving workflow...", "progress");
+                return saveWorkflow(this)
+                    .then((data) => {
+                        this._refactor(actions);
+                    })
+                    .catch((response) => {
+                        show_modal("Saving workflow failed, cannot apply requested changes...", response, {
+                            Ok: hide_modal,
+                        });
+                    });
+            } else {
+                this._refactor(actions);
+            }
+        },
+        _refactor(actions) {
+            show_message("Pre-checking requested workflow changes (dry run)...", "progress");
+            refactor(this, this.id, actions, true) // dry run
+                .then((data) => {
+                    show_message("Applying requested workflow changes...", "progress");
+                    refactor(this, this.id, actions)
+                        .then((data) => {
+                            this._loadEditorData(data);
+                        })
+                        .catch((response) => {
+                            show_modal("Reworking workflow failed...", response, { Ok: hide_modal });
+                        });
+                })
+                .catch((response) => {
+                    show_modal("Reworking workflow failed...", response, { Ok: hide_modal });
+                });
         },
         onAdd(node) {
             this.nodes[node.id] = node;
@@ -319,7 +375,13 @@ export default {
         },
         onAttributes() {
             showAttributes();
-            this.parameters = getWorkflowParameters(this.nodes);
+            this._ensureParametersSet();
+        },
+        onLint() {
+            this._ensureParametersSet();
+            // See notes in Lint.vue about why refresh is needed.
+            this.$refs.lint.refresh();
+            showLint();
         },
         onEdit() {
             this.isCanvas = true;
@@ -376,36 +438,42 @@ export default {
                 this._loadCurrent(this.id, version);
             }
         },
-        _insertStep(conentId, name, type) {
+        _ensureParametersSet() {
+            this.parameters = getLegacyWorkflowParameters(this.nodes);
+        },
+        _insertStep(contentId, name, type) {
             if (!this.isCanvas) {
                 this.isCanvas = true;
                 return;
             }
             Vue.set(this.steps, this.nodeIndex++, {
                 name: name,
-                content_id: conentId,
+                content_id: contentId,
                 type: type,
+            });
+        },
+        _loadEditorData(data) {
+            const report = data.report || {};
+            const markdown = report.markdown || reportDefault;
+            this.markdownText = markdown;
+            this.markdownConfig = report;
+            const has_changes = showUpgradeMessage(data);
+            this.license = data.license;
+            this.creator = data.creator;
+            getVersions(this.id).then((versions) => {
+                this.versions = versions;
+            });
+            Vue.nextTick(() => {
+                this.canvasManager.drawOverview();
+                this.canvasManager.scrollToNodes();
+                this.hasChanges = has_changes;
             });
         },
         _loadCurrent(id, version) {
             show_message("Loading workflow...", "progress");
             loadWorkflow(this, id, version)
                 .then((data) => {
-                    const report = data.report || {};
-                    const markdown = report.markdown || reportDefault;
-                    this.markdownText = markdown;
-                    this.markdownConfig = report;
-                    const has_changes = showUpgradeMessage(data);
-                    this.license = data.license;
-                    this.creator = data.creator;
-                    getVersions(this.id).then((versions) => {
-                        this.versions = versions;
-                    });
-                    Vue.nextTick(() => {
-                        this.canvasManager.drawOverview();
-                        this.canvasManager.scrollToNodes();
-                        this.hasChanges = has_changes;
-                    });
+                    this._loadEditorData(data);
                 })
                 .catch((response) => {
                     show_modal("Loading workflow failed...", response, { Ok: hide_modal });

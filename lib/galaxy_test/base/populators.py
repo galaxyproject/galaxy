@@ -927,6 +927,18 @@ class BaseWorkflowPopulator:
         put_response = self.galaxy_interactor._put(raw_url, data=json.dumps(data))
         return put_response
 
+    def refactor_workflow(self, workflow_id, actions, dry_run=None, style=None):
+        data = dict(
+            actions=actions,
+        )
+        if style is not None:
+            data["style"] = style
+        if dry_run is not None:
+            data["dry_run"] = dry_run
+        raw_url = 'workflows/%s/refactor' % workflow_id
+        put_response = self.galaxy_interactor._put(raw_url, data=json.dumps(data))
+        return put_response
+
     @contextlib.contextmanager
     def export_for_update(self, workflow_id):
         workflow_object = self.download_workflow(workflow_id)

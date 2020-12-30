@@ -482,7 +482,11 @@ def workflow_request_to_run_config(work_request_context, workflow_invocation):
     for input_association in workflow_invocation.input_dataset_collections:
         inputs[input_association.workflow_step_id] = input_association.dataset_collection
     for input_association in workflow_invocation.input_step_parameters:
-        inputs[input_association.workflow_step_id] = input_association.parameter_value
+        parameter_value = input_association.parameter_value
+        inputs[input_association.workflow_step_id] = parameter_value
+        step_label = input_association.workflow_step.label
+        if step_label and step_label not in replacement_dict:
+            replacement_dict[step_label] = str(parameter_value)
     if copy_inputs_to_history is None:
         raise exceptions.InconsistentDatabase("Failed to find copy_inputs_to_history parameter loading workflow_invocation from database.")
     workflow_run_config = WorkflowRunConfig(
