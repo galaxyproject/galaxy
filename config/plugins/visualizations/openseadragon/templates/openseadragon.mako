@@ -29,8 +29,9 @@
             const prefixUrl = "//openseadragon.github.io/openseadragon/images/";
             const simple_image_url = "${h.url_for(controller='/datasets', action='index')}/" + hda_id + "/display";
             const xmlns = "http://schemas.microsoft.com/deepzoom/2008";
+            const image_types = ["gif", "jpg", "png", "tiff"];
 
-            if (hda_ext == 'jpg' || hda_ext == 'png') {
+            if (image_types.indexOf(hda_ext) >= 0) {
                 var viewer = OpenSeadragon({
                     id: viewer_id,
                     prefixUrl: prefixUrl,
