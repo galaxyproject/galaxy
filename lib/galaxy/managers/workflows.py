@@ -339,7 +339,6 @@ class WorkflowContentsManager(UsesAnnotations):
         workflow_create_options,
         source=None,
         add_to_menu=False,
-        publish=False,
         hidden=False,
     ):
         data = raw_workflow_description.as_dict
@@ -366,7 +365,7 @@ class WorkflowContentsManager(UsesAnnotations):
         workflow.stored_workflow = stored
         stored.latest_workflow = workflow
         stored.user = trans.user
-        stored.published = publish
+        stored.published = workflow_create_options.publish
         stored.hidden = hidden
         if data['annotation']:
             annotation = sanitize_html(data['annotation'])
@@ -1451,6 +1450,10 @@ class WorkflowCreateOptions(WorkflowStateResolutionOptions):
 
     import_tools: bool = False
 
+    publish: bool = False
+    # true or false, effectively defaults to ``publish`` if None/unset
+    importable: Optional[bool] = None
+
     # following are install options, only used if import_tools is true
     install_repository_dependencies: bool = False
     install_resolver_dependencies: bool = False
@@ -1459,6 +1462,14 @@ class WorkflowCreateOptions(WorkflowStateResolutionOptions):
     tool_panel_section_id: str = ''
     tool_panel_section_mapping: Dict = {}
     shed_tool_conf: Optional[str] = None
+
+    @property
+    def is_importable(self):
+        # if self.importable is None, use self.publish that has a default.
+        if self.importable is None:
+            return self.publish
+        else:
+            return self.importable
 
     @property
     def install_options(self):

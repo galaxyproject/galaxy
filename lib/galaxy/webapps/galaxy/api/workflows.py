@@ -750,22 +750,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         data = raw_workflow_description.as_dict
         workflow_create_options = WorkflowCreateOptions(**payload)
 
-        publish = util.string_as_bool(payload.get("publish", False))
-        # If 'publish' set, default to importable.
-        importable = util.string_as_bool(payload.get("importable", publish))
-
-        if publish and not importable:
-            raise exceptions.RequestParameterInvalidException("Published workflow must be importable.")
-
         workflow, missing_tool_tups = self._workflow_from_dict(
             trans,
             raw_workflow_description,
             workflow_create_options,
-            publish=publish
         )
-        if importable:
-            self._make_item_accessible(trans.sa_session, workflow)
-            trans.sa_session.flush()
         # galaxy workflow newly created id
         workflow_id = workflow.id
         # api encoded, id
@@ -1357,11 +1346,16 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         )
         return self.__encode_invocation_step(trans, invocation_step)
 
-    def _workflow_from_dict(self, trans, data, workflow_create_options, source=None, add_to_menu=False, publish=False):
+    def _workflow_from_dict(self, trans, data, workflow_create_options, source=None, add_to_menu=False):
         """Creates a workflow from a dict.
 
         Created workflow is stored in the database and returned.
         """
+        publish = workflow_create_options.publish
+        importable = workflow_create_options.is_importable
+        if publish and not importable:
+            raise exceptions.RequestParameterInvalidException("Published workflow must be importable.")
+
         workflow_contents_manager = self.app.workflow_contents_manager
         raw_workflow_description = workflow_contents_manager.ensure_raw_description(data)
         created_workflow = workflow_contents_manager.build_workflow_from_raw_description(
@@ -1370,8 +1364,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             workflow_create_options,
             source=source,
             add_to_menu=add_to_menu,
-            publish=publish,
         )
+        if importable:
+            self._make_item_accessible(trans.sa_session, created_workflow.stored_workflow)
+            trans.sa_session.flush()
+
         self._import_tools_if_needed(trans, workflow_create_options, raw_workflow_description)
         return created_workflow.stored_workflow, created_workflow.missing_tools
 
