@@ -336,7 +336,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             elif os.path.getsize(os.path.abspath(installed_repository_file)) > 0:
                 with open(installed_repository_file, encoding='utf-8') as f:
                     workflow_data = f.read()
-                return self.__api_import_from_archive(trans, workflow_data)
+                return self.__api_import_from_archive(trans, workflow_data, payload=payload)
             else:
                 raise exceptions.MessageException("You attempted to open an empty file.")
 
@@ -370,7 +370,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                     raise exceptions.MessageException("You attempted to upload an empty file.")
             else:
                 raise exceptions.MessageException("Please provide a URL or file.")
-            return self.__api_import_from_archive(trans, archive_data, "uploaded file")
+            return self.__api_import_from_archive(trans, archive_data, "uploaded file", payload=payload)
 
         if 'from_history_id' in payload:
             from_history_id = payload.get('from_history_id')
@@ -712,7 +712,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     #
     # -- Helper methods --
     #
-    def __api_import_from_archive(self, trans, archive_data, source=None):
+    def __api_import_from_archive(self, trans, archive_data, source=None, payload={}):
         try:
             data = json.loads(archive_data)
         except Exception:
@@ -726,7 +726,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         # TODO: pass more options into here for consistency
         # TODO: for consistency, find a way to prevent this operation on missing_tool_tups
         #       if options.allow_missing_tools is false
-        workflow_create_options = WorkflowCreateOptions()
+        workflow_create_options = WorkflowCreateOptions(**payload)
         workflow, missing_tool_tups = self._workflow_from_dict(trans, raw_workflow_description, workflow_create_options, source=source)
         workflow_id = workflow.id
         workflow = workflow.latest_workflow
@@ -748,11 +748,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         data = payload['workflow']
         raw_workflow_description = self.__normalize_workflow(trans, data)
         data = raw_workflow_description.as_dict
-        import_tools = util.string_as_bool(payload.get("import_tools", False))
-        if import_tools and not trans.user_is_admin:
-            raise exceptions.AdminRequiredException()
-
         workflow_create_options = WorkflowCreateOptions(**payload)
+
         publish = util.string_as_bool(payload.get("publish", False))
         # If 'publish' set, default to importable.
         importable = util.string_as_bool(payload.get("importable", publish))
@@ -778,31 +775,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         item['url'] = url_for('workflow', id=encoded_id)
         item['owner'] = workflow.user.username
         item['number_of_steps'] = len(workflow.latest_workflow.steps)
-        if import_tools:
-            tools = {}
-            for key in data['steps']:
-                item = data['steps'][key]
-                if item is not None:
-                    if 'tool_shed_repository' in item:
-                        tool_shed_repository = item['tool_shed_repository']
-                        if 'owner' in tool_shed_repository and 'changeset_revision' in tool_shed_repository and 'name' in tool_shed_repository and 'tool_shed' in tool_shed_repository:
-                            toolstr = tool_shed_repository['owner'] \
-                                + tool_shed_repository['changeset_revision'] \
-                                + tool_shed_repository['name'] \
-                                + tool_shed_repository['tool_shed']
-                            tools[toolstr] = tool_shed_repository
-            irm = InstallRepositoryManager(self.app)
-            for k in tools:
-                item = tools[k]
-                tool_shed_url = 'https://' + item['tool_shed'] + '/'
-                name = item['name']
-                owner = item['owner']
-                changeset_revision = item['changeset_revision']
-                irm.install(tool_shed_url,
-                            name,
-                            owner,
-                            changeset_revision,
-                            payload)
         return item
 
     def __normalize_workflow(self, trans, as_dict):
@@ -1400,7 +1372,44 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             add_to_menu=add_to_menu,
             publish=publish,
         )
+        self._import_tools_if_needed(trans, workflow_create_options, raw_workflow_description)
         return created_workflow.stored_workflow, created_workflow.missing_tools
+
+    def _import_tools_if_needed(self, trans, workflow_create_options, raw_workflow_description):
+        if not workflow_create_options.import_tools:
+            return
+
+        if not trans.user_is_admin:
+            raise exceptions.AdminRequiredException()
+
+        data = raw_workflow_description.as_dict
+
+        tools = {}
+        for key in data['steps']:
+            item = data['steps'][key]
+            if item is not None:
+                if 'tool_shed_repository' in item:
+                    tool_shed_repository = item['tool_shed_repository']
+                    if 'owner' in tool_shed_repository and 'changeset_revision' in tool_shed_repository and 'name' in tool_shed_repository and 'tool_shed' in tool_shed_repository:
+                        toolstr = tool_shed_repository['owner'] \
+                            + tool_shed_repository['changeset_revision'] \
+                            + tool_shed_repository['name'] \
+                            + tool_shed_repository['tool_shed']
+                        tools[toolstr] = tool_shed_repository
+
+        irm = InstallRepositoryManager(self.app)
+        install_options = workflow_create_options.install_options
+        for k in tools:
+            item = tools[k]
+            tool_shed_url = 'https://' + item['tool_shed'] + '/'
+            name = item['name']
+            owner = item['owner']
+            changeset_revision = item['changeset_revision']
+            irm.install(tool_shed_url,
+                        name,
+                        owner,
+                        changeset_revision,
+                        install_options)
 
     def __encode_invocation_step(self, trans, invocation_step):
         return self.encode_all_ids(

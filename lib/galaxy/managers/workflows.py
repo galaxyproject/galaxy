@@ -3,6 +3,7 @@ import logging
 import os
 import uuid
 from collections import namedtuple
+from typing import Dict, Optional
 
 from gxformat2 import (
     from_galaxy_native,
@@ -1447,6 +1448,29 @@ class WorkflowUpdateOptions(WorkflowStateResolutionOptions):
 # workflows with missing tools by default but not updating.
 class WorkflowCreateOptions(WorkflowStateResolutionOptions):
     allow_missing_tools: bool = True
+
+    import_tools: bool = False
+
+    # following are install options, only used if import_tools is true
+    install_repository_dependencies: bool = False
+    install_resolver_dependencies: bool = False
+    install_tool_dependencies: bool = False
+    new_tool_panel_section_label: str = ''
+    tool_panel_section_id: str = ''
+    tool_panel_section_mapping: Dict = {}
+    shed_tool_conf: Optional[str] = None
+
+    @property
+    def install_options(self):
+        return {
+            'install_repository_dependencies': self.install_repository_dependencies,
+            'install_resolver_dependencies': self.install_resolver_dependencies,
+            'install_tool_dependencies': self.install_tool_dependencies,
+            'new_tool_panel_section_label': self.new_tool_panel_section_label,
+            'tool_panel_section_id': self.tool_panel_section_id,
+            'tool_panel_section_mapping': self.tool_panel_section_mapping,
+            'shed_tool_conf': self.shed_tool_conf
+        }
 
 
 class MissingToolsException(exceptions.MessageException):
