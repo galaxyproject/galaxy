@@ -410,6 +410,7 @@ class ToolMigrationManager:
                     #                   id: <ToolSection id>,
                     #                   version : <ToolSection version>,
                     #                   name : <TooSection name>}]}
+                    # TODO: this code need to be revised
                     for k, v in tool_panel_dict_for_tool_config.items():
                         tool_panel_dict_for_display[k] = v
                         for _tool_panel_dict in v:
