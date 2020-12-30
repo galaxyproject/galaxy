@@ -609,6 +609,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
                     stored_workflow,
                     workflow_data,
                     from_tool_form=from_tool_form,
+                    update_stored_workflow_attributes=False,  # taken care of above
                 )
             except workflows.MissingToolsException as e:
                 return dict(
