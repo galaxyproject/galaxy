@@ -178,6 +178,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         if form is None:
             for i, _form in enumerate(self.showforms()):
                 if i == form_no:
+                    form = _form
                     break
         assert form, "No form to submit found"
         controls = {c.name: c for c in form.inputs}
