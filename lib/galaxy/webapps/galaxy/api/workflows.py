@@ -723,9 +723,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         if not data:
             raise exceptions.MessageException("The data content is missing.")
         raw_workflow_description = self.__normalize_workflow(trans, data)
-        # TODO: pass more options into here for consistency
-        # TODO: for consistency, find a way to prevent this operation on missing_tool_tups
-        #       if options.allow_missing_tools is false
         workflow_create_options = WorkflowCreateOptions(**payload)
         workflow, missing_tool_tups = self._workflow_from_dict(trans, raw_workflow_description, workflow_create_options, source=source)
         workflow_id = workflow.id
@@ -747,9 +744,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     def __api_import_new_workflow(self, trans, payload, **kwd):
         data = payload['workflow']
         raw_workflow_description = self.__normalize_workflow(trans, data)
-        data = raw_workflow_description.as_dict
         workflow_create_options = WorkflowCreateOptions(**payload)
-
         workflow, missing_tool_tups = self._workflow_from_dict(
             trans,
             raw_workflow_description,
@@ -1346,7 +1341,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         )
         return self.__encode_invocation_step(trans, invocation_step)
 
-    def _workflow_from_dict(self, trans, data, workflow_create_options, source=None, add_to_menu=False):
+    def _workflow_from_dict(self, trans, data, workflow_create_options, source=None):
         """Creates a workflow from a dict.
 
         Created workflow is stored in the database and returned.
@@ -1363,7 +1358,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             raw_workflow_description,
             workflow_create_options,
             source=source,
-            add_to_menu=add_to_menu,
         )
         if importable:
             self._make_item_accessible(trans.sa_session, created_workflow.stored_workflow)

@@ -1432,8 +1432,6 @@ class WorkflowStateResolutionOptions(BaseModel):
     from_tool_form: bool = False
     # If False, allow running with less exact tool versions
     exact_tools: bool = True
-    # If True, allow workflow update with missing tools.
-    allow_missing_tools: bool = False
 
 
 class WorkflowUpdateOptions(WorkflowStateResolutionOptions):
@@ -1446,8 +1444,6 @@ class WorkflowUpdateOptions(WorkflowStateResolutionOptions):
 # Workflow update options but with some different defaults - we allow creating
 # workflows with missing tools by default but not updating.
 class WorkflowCreateOptions(WorkflowStateResolutionOptions):
-    allow_missing_tools: bool = True
-
     import_tools: bool = False
 
     publish: bool = False
