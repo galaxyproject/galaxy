@@ -2,7 +2,7 @@ import { of, timer } from "rxjs";
 import { take, takeUntil } from "rxjs/operators";
 import { ObserverSpy } from "@hirez_io/observer-spy";
 import { wait } from "jest/helpers";
-import { wipeDatabase } from "./pouch";
+import { wipeDatabase } from "./wipeDatabase";
 
 import { monitorQuery, ACTIONS } from "./monitorQuery";
 import { content$, dscContent$ } from "./observables";

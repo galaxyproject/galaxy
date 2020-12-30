@@ -1,5 +1,5 @@
 export default {
-    name: "production configs",
+    name: "production",
     debug: false,
     rxjsDebug: false,
     caching: {

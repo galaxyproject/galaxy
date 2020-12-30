@@ -6,6 +6,7 @@ import { shallowMount, createLocalVue } from "@vue/test-utils";
 import BootstrapVue from "bootstrap-vue";
 
 jest.mock("app");
+jest.mock("../History/caching");
 
 const propsData = {
     chunkUploadSize: 1024,

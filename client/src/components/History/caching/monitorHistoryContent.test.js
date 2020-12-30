@@ -1,7 +1,7 @@
 import { timer, of } from "rxjs";
 import { take, pluck, takeUntil } from "rxjs/operators";
 import { firstValueFrom } from "utils/observable/firstValueFrom";
-import { wipeDatabase } from "../caching/db/pouch";
+import { wipeDatabase } from "./db/wipeDatabase";
 import { wait } from "jest/helpers";
 import { ObserverSpy } from "@hirez_io/observer-spy";
 

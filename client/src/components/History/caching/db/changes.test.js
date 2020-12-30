@@ -1,6 +1,6 @@
 import { takeWhile, share } from "rxjs/operators";
 import { content$, dscContent$ } from "./observables";
-import { wipeDatabase } from "./pouch";
+import { wipeDatabase } from "./wipeDatabase";
 import {
     bulkCacheContent,
     cacheContent,
