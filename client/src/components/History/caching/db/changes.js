@@ -40,6 +40,7 @@ const buildFeed = (db, cfg = {}) => {
         return () => {
             // console.log("CANCELLING FEED", db.name);
             feed.cancel();
+            feeds.delete(db);
         };
     });
 
