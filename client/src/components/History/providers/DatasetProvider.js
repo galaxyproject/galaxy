@@ -1,12 +1,10 @@
 // Simple dataset provider, looks at api for result, renders to slot prop
-import Vue from "vue";
 import axios from "axios";
 import { prependPath } from "utils/redirect";
-
 import { mapCacheActions } from "vuex-cache";
 import { mapGetters } from "vuex";
 
-var SimpleProviderMixin = {
+export const SimpleProviderMixin = {
     props: {
         id: { type: String, required: true },
     },
@@ -49,7 +47,7 @@ var SimpleProviderMixin = {
     },
 };
 
-var StoreProviderMixin = {
+export const StoreProviderMixin = {
     watch: {
         storeItem: {
             handler(newState, oldState) {
@@ -60,7 +58,7 @@ var StoreProviderMixin = {
     },
 };
 
-var DatasetProvider = Vue.extend({
+export const DatasetProvider = {
     mixins: [SimpleProviderMixin, StoreProviderMixin],
     methods: {
         ...mapCacheActions("datasets", ["fetchDataset"]),
@@ -76,9 +74,9 @@ var DatasetProvider = Vue.extend({
             return this.getDatasetById(this.id);
         },
     },
-});
+};
 
-var DatasetCollectionProvider = Vue.extend({
+export const DatasetCollectionProvider = {
     mixins: [SimpleProviderMixin, StoreProviderMixin],
     methods: {
         ...mapCacheActions("datasetCollections", ["fetchDatasetCollection"]),
@@ -94,9 +92,9 @@ var DatasetCollectionProvider = Vue.extend({
             return this.getDatasetCollectionById(this.id);
         },
     },
-});
+};
 
-var DatasetCollectionContentProvider = Vue.extend({
+export const DatasetCollectionContentProvider = {
     mixins: [SimpleProviderMixin],
     computed: {
         url() {
@@ -104,15 +102,13 @@ var DatasetCollectionContentProvider = Vue.extend({
             return prependPath(this.id);
         },
     },
-});
+};
 
-var JobProvider = Vue.extend({
+export const JobProvider = {
     mixins: [SimpleProviderMixin],
     computed: {
         url() {
             return prependPath(`api/jobs/${this.id}?full=true`);
         },
     },
-});
-
-export { DatasetProvider, DatasetCollectionProvider, DatasetCollectionContentProvider, JobProvider };
+};
