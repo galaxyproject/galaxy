@@ -8,6 +8,7 @@ from abc import (
     ABCMeta,
     abstractmethod
 )
+from typing import Dict
 
 import requests
 if sys.version_info[0] < 3:
@@ -27,12 +28,12 @@ log = logging.getLogger(__name__)
 class BaseGitPlugin(ErrorPlugin, metaclass=ABCMeta):
     """Base definition to send error reports to a Git repository provider
     """
-    issue_cache = {}
-    ts_urls = {}
-    ts_repo_cache = {}
-    git_project_cache = {}
-    label_cache = {}
-    git_username_id_cache = {}
+    issue_cache: Dict[str, Dict] = {}
+    ts_urls: Dict[str, str] = {}
+    ts_repo_cache: Dict[str, Dict] = {}
+    git_project_cache: Dict[str, Dict] = {}
+    label_cache: Dict[str, Dict] = {}
+    git_username_id_cache: Dict[str, str] = {}
 
     # Git variables
     git_default_repo_owner = False

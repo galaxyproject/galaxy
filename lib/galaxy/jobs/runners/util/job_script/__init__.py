@@ -3,6 +3,7 @@ import os
 import subprocess
 import time
 from string import Template
+from typing import Any, Dict
 
 from pkg_resources import resource_string
 
@@ -42,7 +43,7 @@ DEFAULT_INTEGRITY_CHECK = True
 DEFAULT_INTEGRITY_COUNT = 35
 DEFAULT_INTEGRITY_SLEEP = .25
 REQUIRED_TEMPLATE_PARAMS = ['working_directory', 'command', 'exit_code_path']
-OPTIONAL_TEMPLATE_PARAMS = {
+OPTIONAL_TEMPLATE_PARAMS: Dict[str, Any] = {
     'galaxy_lib': None,
     'galaxy_virtual_env': None,
     'headers': '',

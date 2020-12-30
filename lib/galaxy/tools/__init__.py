@@ -13,6 +13,7 @@ import threading
 from collections import OrderedDict
 from datetime import datetime
 from pathlib import Path
+from typing import List, Type
 from urllib.parse import unquote_plus
 
 import packaging.version
@@ -3287,11 +3288,25 @@ class FilterFromFileTool(DatabaseOperationTool):
 
 # Populate tool_type to ToolClass mappings
 tool_types = {}
-for tool_class in [Tool, SetMetadataTool, OutputParameterJSONTool, ExpressionTool, InteractiveTool,
-                   DataManagerTool, DataSourceTool, AsyncDataSourceTool,
-                   UnzipCollectionTool, ZipCollectionTool, MergeCollectionTool, RelabelFromFileTool, FilterFromFileTool,
-                   BuildListCollectionTool, ExtractDatasetCollectionTool,
-                   DataDestinationTool]:
+TOOL_CLASSES: List[Type[Tool]] = [
+    Tool,
+    SetMetadataTool,
+    OutputParameterJSONTool,
+    ExpressionTool,
+    InteractiveTool,
+    DataManagerTool,
+    DataSourceTool,
+    AsyncDataSourceTool,
+    UnzipCollectionTool,
+    ZipCollectionTool,
+    MergeCollectionTool,
+    RelabelFromFileTool,
+    FilterFromFileTool,
+    BuildListCollectionTool,
+    ExtractDatasetCollectionTool,
+    DataDestinationTool
+]
+for tool_class in TOOL_CLASSES:
     tool_types[tool_class.tool_type] = tool_class
 
 

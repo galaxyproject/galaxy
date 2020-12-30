@@ -11,6 +11,7 @@ A sharable Galaxy object:
 """
 import logging
 import re
+from typing import Optional
 
 from sqlalchemy import true
 
@@ -36,7 +37,7 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
     user_share_model = None
 
     #: the single character abbreviation used in username_and_slug: e.g. 'h' for histories: u/user/h/slug
-    SINGLE_CHAR_ABBR = None
+    SINGLE_CHAR_ABBR: Optional[str] = None
 
     def __init__(self, app):
         super().__init__(app)
@@ -316,7 +317,7 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
 class SharableModelSerializer(base.ModelSerializer,
        taggable.TaggableSerializerMixin, annotatable.AnnotatableSerializerMixin, ratable.RatableSerializerMixin):
     # TODO: stub
-    SINGLE_CHAR_ABBR = None
+    SINGLE_CHAR_ABBR: Optional[str] = None
 
     def __init__(self, app, **kwargs):
         super().__init__(app, **kwargs)
