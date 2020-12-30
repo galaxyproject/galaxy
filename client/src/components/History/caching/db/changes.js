@@ -1,5 +1,5 @@
 import { pipe, Observable } from "rxjs";
-import { switchMap, filter, share, shareReplay } from "rxjs/operators";
+import { switchMap, filter, share } from "rxjs/operators";
 
 // feed observables, keyed by underlying database instance
 export const feeds = new Map();
@@ -12,7 +12,7 @@ export const feeds = new Map();
 export const changes = (cfg = {}) => {
     return pipe(
         switchMap((db) => {
-            // console.log("subscribing to changes", db.name);
+            // console.log("SUBSCRIBING TO FEED", db.name);
             if (!feeds.has(db)) {
                 feeds.set(db, buildFeed(db, cfg));
             }
@@ -32,15 +32,15 @@ const buildFeed = (db, cfg = {}) => {
     const { live = true, returnDocs = true, include_docs = true, since = "now", timeout = false } = cfg;
 
     const feed$ = new Observable((obs) => {
-        // console.log("creating feed", db.name);
+        // console.log("CREATING FEED", db.name);
         const changeOpts = { live, include_docs, returnDocs, since, timeout };
         const feed = db.changes(changeOpts);
         feed.on("change", (update) => obs.next(update));
         feed.on("error", (err) => obs.error(err));
         return () => {
-            // console.log("cancelling feed", db.name);
+            // console.log("CANCELLING FEED", db.name);
             feed.cancel();
-        }
+        };
     });
 
     return feed$.pipe(share());

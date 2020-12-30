@@ -231,4 +231,3 @@ export async function deleteIndexes(db) {
     const promises = doomedIndexes.map((idx) => db.deleteIndex(idx));
     return await Promise.all(promises);
 }
-
