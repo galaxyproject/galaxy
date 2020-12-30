@@ -1,17 +1,13 @@
-export const state = {
-    datasetCollectionByHDCAId: {},
-};
-
 import Vue from "vue";
 import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
-
 import { of } from "rxjs";
 import { map } from "rxjs/operators";
+import { monitorContentQuery, cacheContent } from "../components/History/caching";
 
-import { cacheContent } from "../components/History/caching";
-import { content$ } from "../components/History/caching/db/observables";
-import { monitorContentQuery } from "../components/History/caching/CacheApi";
+const state = {
+    datasetCollectionByHDCAId: {},
+};
 
 const getters = {
     getDatasetCollectionById: (state) => (hdca_id) => {
@@ -25,8 +21,8 @@ const actions = {
         // we could skip the fetch.
 
         const { data } = await axios.get(`${getAppRoot()}api/dataset_collections/${hdca_id}?instance_type=history`);
-        cacheContent(data);
-        await commit("saveCollectionForHDCAId", { hdca_id, dataset_collection: data });
+        await cacheContent(data);
+        commit("saveCollectionForHDCAId", { hdca_id, dataset_collection: data });
         return state.datasetCollectionByHDCAId[hdca_id];
     },
     async $init({ dispatch }, { store }) {
@@ -34,7 +30,7 @@ const actions = {
         // if that becomes too expensive we could just monitor state.datasetCollectionByHDCAId
         const selector = { selector: { history_content_type: { $eq: "dataset_collection" } } };
         const monitorUpdate$ = of(selector).pipe(
-            monitorContentQuery({ db$: content$ }),
+            monitorContentQuery(),
             map((update) => {
                 const { initialMatches = [], doc = null, deleted } = update;
                 if (deleted) {
