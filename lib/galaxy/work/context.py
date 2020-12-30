@@ -29,7 +29,7 @@ class WorkRequestContext(ProvidesAppContext, ProvidesUserContext, ProvidesHistor
     def get_history(self, create=False):
         return self.__history
 
-    def set_history(self):
+    def set_history(self, history):
         raise NotImplementedError("Cannot change histories from a work request context.")
 
     history = property(get_history, set_history)

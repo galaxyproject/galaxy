@@ -28,6 +28,7 @@ attribute change to a model object.
 import datetime
 import logging
 import re
+from typing import Type
 
 import routes
 import sqlalchemy
@@ -156,7 +157,7 @@ class ModelManager:
     over the ORM.
     """
     model_class = object
-    foreign_key_name = None
+    foreign_key_name: str
 
     def __init__(self, app):
         self.app = app
@@ -480,7 +481,7 @@ class HasAModelManager:
     """
 
     #: the class used to create this serializer's generically accessible model_manager
-    model_manager_class = None
+    model_manager_class: Type[object]
     # examples where this doesn't really work are ConfigurationSerializer (no manager)
     # and contents (2 managers)
 

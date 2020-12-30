@@ -8,6 +8,7 @@ and other (nested) containers.
 # Libraries should be DatasetCollections.
 import logging
 import operator
+from typing import Optional
 
 import galaxy.exceptions
 import galaxy.util
@@ -33,7 +34,7 @@ class ContainerManagerMixin:
     contained_class = None
     subcontainer_class = None
     #: how any contents lists produced are ordered - (string) attribute name to sort on or tuple of attribute names
-    default_order_by = None
+    default_order_by: Optional[str] = None
 
     # ---- interface
     def contents(self, container):

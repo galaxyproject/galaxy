@@ -45,12 +45,13 @@ except ImportError:
 log = logging.getLogger(__name__)
 
 real_file = os.path.realpath(__file__)
-GALAXY_ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(real_file), os.pardir))
-if not os.path.exists(os.path.join(GALAXY_ROOT_DIR, 'run.sh')):
+GALAXY_ROOT_DIR_ = os.path.abspath(os.path.join(os.path.dirname(real_file), os.pardir))
+if not os.path.exists(os.path.join(GALAXY_ROOT_DIR_, 'run.sh')):
     # Galaxy is installed
     GALAXY_ROOT_DIR = None
 else:
-    GALAXY_LIB_DIR = os.path.join(GALAXY_ROOT_DIR, "lib")
+    GALAXY_ROOT_DIR = GALAXY_ROOT_DIR_
+    GALAXY_LIB_DIR = os.path.join(GALAXY_ROOT_DIR_, "lib")
     try:
         sys.path.insert(1, GALAXY_LIB_DIR)
     except Exception:

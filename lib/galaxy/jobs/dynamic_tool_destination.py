@@ -7,6 +7,7 @@ import os
 import re
 import sys
 from functools import reduce
+from typing import Set
 
 import numpy as np
 import yaml
@@ -25,7 +26,7 @@ verbose = True
 list of all valid priorities, inferred from the global
 default_desinations section of the config
 """
-priority_list = set()
+priority_list: Set[str] = set()
 
 """
 Instantiated to a list of all valid destinations in the job configuration file
@@ -33,7 +34,7 @@ if run directly to validate configs. Otherwise, remains None. We often check
 to see if app is None, because if it is then we'll try using the
 destination_list instead.
 -"""
-destination_list = set()
+destination_list: Set[str] = set()
 
 """
 The largest the edit distance can be for a word to be considered

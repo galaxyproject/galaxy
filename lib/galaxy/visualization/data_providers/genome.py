@@ -10,6 +10,7 @@ import re
 import sys
 from contextlib import contextmanager
 from json import loads
+from typing import Dict, Union
 
 import pysam
 from bx.bbi.bigbed_file import BigBedFile
@@ -126,7 +127,7 @@ class GenomeDataProvider(BaseDataProvider):
     format (0-based, half-open coordinates) for both queries and returned data.
     """
 
-    dataset_type = None
+    dataset_type: str
 
     """
     Mapping from column name to payload data; this mapping is used to create
@@ -135,7 +136,7 @@ class GenomeDataProvider(BaseDataProvider):
 
     col_name_data_attr_mapping = {4 : { index: 5, name: 'Score' } }
     """
-    col_name_data_attr_mapping = {}
+    col_name_data_attr_mapping: Dict[Union[str, int], Dict] = {}
 
     def __init__(self, converted_dataset=None, original_dataset=None, dependencies=None,
                  error_max_vals="Only the first %i %s in this region are displayed."):
@@ -318,7 +319,7 @@ class TabixDataProvider(GenomeDataProvider, FilterableMixin):
     Tabix index data provider for the Galaxy track browser.
     """
 
-    col_name_data_attr_mapping = {4: {'index': 4, 'name': 'Score'}}
+    col_name_data_attr_mapping: Dict[Union[str, int], Dict] = {4: {'index': 4, 'name': 'Score'}}
 
     @contextmanager
     def open_data_file(self):
@@ -596,7 +597,7 @@ class VcfDataProvider(GenomeDataProvider):
         8-end: allele counts for each alternative
     """
 
-    col_name_data_attr_mapping = {'Qual': {'index': 6, 'name': 'Qual'}}
+    col_name_data_attr_mapping: Dict[Union[str, int], Dict] = {'Qual': {'index': 6, 'name': 'Qual'}}
 
     dataset_type = 'variant'
 

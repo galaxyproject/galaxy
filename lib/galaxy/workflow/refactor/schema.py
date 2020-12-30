@@ -54,6 +54,7 @@ class BaseAction(BaseModel):
 
 
 class Action:
+    action_type: str
 
     @classmethod
     def __get_validators__(cls):
@@ -184,7 +185,7 @@ union_action_classes = Union[
 
 
 ACTION_CLASSES_BY_TYPE = {}
-for action_class in union_action_classes.__args__:
+for action_class in union_action_classes.__args__:  # type: ignore
     action_type = action_class.schema()["properties"]["action_type"]["const"]
     ACTION_CLASSES_BY_TYPE[action_type] = action_class
 

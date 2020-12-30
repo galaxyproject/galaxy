@@ -5,11 +5,11 @@ import string
 import sys
 import tempfile
 from collections import (
-    namedtuple,
     OrderedDict
 )
 from io import StringIO
 from textwrap import TextWrapper
+from typing import Any, List, NamedTuple
 
 import requests
 import yaml
@@ -51,11 +51,6 @@ NO_APP_MAIN_MESSAGE = "No app:main section found, using application defaults thr
 YAML_COMMENT_WRAPPER = TextWrapper(initial_indent="# ", subsequent_indent="# ", break_long_words=False, break_on_hyphens=False)
 RST_DESCRIPTION_WRAPPER = TextWrapper(initial_indent="    ", subsequent_indent="    ", break_long_words=False, break_on_hyphens=False)
 UWSGI_SCHEMA_PATH = "lib/galaxy/webapps/uwsgi_schema.yml"
-
-App = namedtuple(
-    "App",
-    ["config_paths", "default_port", "expected_app_factories", "destination", "schema_path", "uwsgi_module"]
-)
 
 UWSGI_OPTIONS = OrderedDict([
     ('http', {
@@ -320,23 +315,31 @@ OPTION_ACTIONS = {
 }
 
 
-def _app_name(self):
-    return os.path.splitext(os.path.basename(self.destination))[0]
+class App(NamedTuple):
+    config_paths: List[str]
+    default_port: str
+    expected_app_factories: List[str]
+    destination: str
+    schema_path: str
+    uwsgi_module: str
+
+    @property
+    def app_name(self):
+        return os.path.splitext(os.path.basename(self.destination))[0]
+
+    @property
+    def sample_destination(self):
+        return self.destination + ".sample"
+
+    @property
+    def schema(self):
+        return AppSchema(self.schema_path, self.app_name)
 
 
-def _sample_destination(self):
-    return self.destination + ".sample"
-
-
-def _schema(self):
-    return AppSchema(self.schema_path, self.app_name)
-
-
-App.app_name = property(_app_name)
-App.sample_destination = property(_sample_destination)
-App.schema = property(_schema)
-
-OptionValue = namedtuple("OptionValue", ["name", "value", "option"])
+class OptionValue(NamedTuple):
+    name: str
+    value: Any
+    option: Any
 
 
 GALAXY_APP = App(

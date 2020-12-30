@@ -7,10 +7,11 @@ import galaxy.model
 import galaxy.model.security
 import galaxy.queues
 import galaxy.security
-from galaxy import config, job_metrics, jobs
+from galaxy import config, jobs
 from galaxy.config_watchers import ConfigWatchers
 from galaxy.containers import build_container_interfaces
 from galaxy.files import ConfiguredFileSources
+from galaxy.job_metrics import JobMetrics
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.hdas import HDAManager
@@ -131,7 +132,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
 
         # Initialize job metrics manager, needs to be in place before
         # config so per-destination modifications can be made.
-        self.job_metrics = job_metrics.JobMetrics(self.config.job_metrics_config_file, app=self)
+        self.job_metrics = JobMetrics(self.config.job_metrics_config_file, app=self)
 
         # Initialize error report plugins.
         self.error_reports = ErrorReports(self.config.error_report_file, app=self)
