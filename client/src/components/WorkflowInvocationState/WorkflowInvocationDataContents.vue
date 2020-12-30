@@ -2,30 +2,23 @@
     <component
         :is="providerComponent"
         :id="data_item.id"
-        v-slot="{
-            item,
-            loading,
-        }"
+        v-slot="{ item, loading }"
     >
         <div>
             <loading-span v-if="loading" message="Loading dataset" />
-            <component :is="renderComponent" v-if="item" :item="item" v-bind:index="1" v-bind:showTags="true">
+            <component :is="renderComponent" v-if="item" :item="item" :index="1">
             </component>
         </div>
     </component>
 </template>
-<script>
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
 
+<script>
 import { DatasetProvider, DatasetCollectionProvider } from "./providers";
 import HistoryContentItem from "components/History/ContentItem";
 import DatasetCollectionUIWrapper from "./DatasetCollectionUIWrapper";
 import DatasetUIWrapper from "./DatasetUIWrapper";
 import { STATES } from "components/History/model";
 import LoadingSpan from "components/LoadingSpan";
-
-Vue.use(BootstrapVue);
 
 export default {
     components: {
