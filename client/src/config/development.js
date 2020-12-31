@@ -1,5 +1,5 @@
 export default {
-    name: "development configs",
+    name: "development",
     debug: true,
     rxjsDebug: true,
     caching: {

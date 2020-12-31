@@ -8,6 +8,7 @@ import { loadWebhookMenuItems } from "./_webhooks";
 jest.mock("app");
 jest.mock("layout/menu");
 jest.mock("./_webhooks");
+jest.mock("../History/caching");
 
 describe("Masthead.vue", () => {
     let wrapper;
