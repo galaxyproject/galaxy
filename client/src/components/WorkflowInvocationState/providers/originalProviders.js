@@ -56,27 +56,8 @@ export const StoreProviderMixin = {
     watch: {
         storeItem: {
             handler(newItem, oldItem) {
-                console.log("Updating item to", newItem);
                 this.item = newItem;
             },
-        },
-    },
-};
-
-export const DatasetProvider = {
-    mixins: [SimpleProviderMixin, StoreProviderMixin],
-    methods: {
-        ...mapCacheActions("datasets", ["fetchDataset"]),
-        async load() {
-            this.loading = true;
-            this.item = await this.fetchDataset(this.id);
-            this.loading = false;
-        },
-    },
-    computed: {
-        ...mapGetters("datasets", ["getDatasetById"]),
-        storeItem() {
-            return this.getDatasetById(this.id);
         },
     },
 };

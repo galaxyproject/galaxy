@@ -1,7 +1,7 @@
 <template>
     <!-- why not this?  -->
-    <DatasetProvider :id="hda_id" v-slot="{ dataset }">
-        <div>
+    <DatasetProvider :id="hda_id" v-slot="{ item: dataset, loading }">
+        <div v-if="!loading">
 
             <h3>Dataset Information</h3>
             <table id="dataset-details" class="tabletip info_data_table">
@@ -64,12 +64,10 @@
 </template>
 
 <script>
-// import { mapCacheActions } from "vuex-cache";
 import Utils from "utils/utils";
 import UtcDate from "components/UtcDate";
 import DecodedId from "../DecodedId";
-// import { mapGetters } from "vuex";
-import { DatasetProvider } from "../WorkflowInvocationState";
+import { DatasetProvider } from "../WorkflowInvocationState/providers";
 
 export default {
     props: {
@@ -83,20 +81,10 @@ export default {
         DecodedId,
         UtcDate,
     },
-    // created: function () {
-    //     this.fetchDataset(this.hda_id);
-    // },
-    // computed: {
-    //     ...mapGetters("datasets", ["getDatasetById"]),
-    //     dataset: function () {
-    //         return this.getDatasetById(this.hda_id);
-    //     },
-    // },
     methods: {
         bytesToString(raw_size) {
             return Utils.bytesToString(raw_size);
         },
-        // ...mapCacheActions("datasets", ["fetchDataset"]),
     },
 };
 </script>

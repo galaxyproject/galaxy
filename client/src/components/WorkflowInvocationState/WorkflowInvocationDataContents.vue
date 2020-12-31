@@ -31,10 +31,10 @@ export default {
     },
     computed: {
         renderComponent() {
-            return { hda: "DatasetUIWrapper", hdca: DatasetCollectionUIWrapper }[this.data_item.src];
+            return { hda: "DatasetUIWrapper", hdca: "DatasetCollectionUIWrapper" }[this.data_item.src];
         },
         providerComponent() {
-            return { hda: "DatasetProvider", hdca: DatasetCollectionProvider }[this.data_item.src];
+            return { hda: "DatasetProvider", hdca: "DatasetCollectionProvider" }[this.data_item.src];
         },
     },
     provide: {
