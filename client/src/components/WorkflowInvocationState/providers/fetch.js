@@ -9,3 +9,10 @@ export const fetchDatasetById = () => {
         mergeMap((url) => ajax.getJSON(url))
     );
 };
+
+export const fetchDatasetCollectionById = () => {
+    return pipe(
+        map((id) => prependPath(`/api/dataset_collections/${id}?instance_type=history`)),
+        mergeMap((url) => ajax.getJSON(url))
+    );
+};

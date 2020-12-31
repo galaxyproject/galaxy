@@ -1,8 +1,6 @@
 <template>
-    <!-- why not this?  -->
     <DatasetProvider :id="hda_id" v-slot="{ item: dataset, loading }">
         <div v-if="!loading">
-
             <h3>Dataset Information</h3>
             <table id="dataset-details" class="tabletip info_data_table">
                 <tbody>
@@ -59,7 +57,6 @@
                 </tbody>
             </table>
         </div>
-
     </DatasetProvider>
 </template>
 

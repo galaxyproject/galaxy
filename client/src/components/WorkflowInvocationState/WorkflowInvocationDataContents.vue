@@ -8,8 +8,7 @@
 </template>
 
 <script>
-import { DatasetProvider, DatasetCollectionProvider } from "./providers";
-import HistoryContentItem from "components/History/ContentItem";
+import { DatasetProvider, DatasetCollectionProvider } from "./providers/index";
 import DatasetCollectionUIWrapper from "./DatasetCollectionUIWrapper";
 import DatasetUIWrapper from "./DatasetUIWrapper";
 import { STATES } from "components/History/model";
@@ -22,7 +21,6 @@ export default {
         DatasetUIWrapper,
         DatasetCollectionUIWrapper,
         LoadingSpan,
-        HistoryContentItem,
     },
     props: {
         data_item: {

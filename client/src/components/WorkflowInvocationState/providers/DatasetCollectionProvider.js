@@ -1,11 +1,11 @@
 import { default as RxProviderMixin } from "./rxProviders";
-import { datasetMonitor } from "./monitors";
+import { datasetCollectionMonitor } from "./monitors";
 
 export default {
     mixins: [RxProviderMixin],
     methods: {
         buildMonitor() {
-            return datasetMonitor();
+            return datasetCollectionMonitor();
         },
     },
 };
