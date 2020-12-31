@@ -574,10 +574,10 @@ class Grid:
     Specifies the content and format of a grid (data table).
     """
     title = ""
-    model_class = None
+    model_class: Optional[type] = None
     show_item_checkboxes = False
     use_hide_message = True
-    global_actions: List[Dict] = []
+    global_actions: List[GridAction] = []
     columns: List[GridColumn] = []
     operations: List[GridOperation] = []
     standard_filters: List[GridColumnFilter] = []
@@ -591,7 +591,7 @@ class Grid:
     cur_filter_pref_name = ".filter"
     cur_sort_key_pref_name = ".sort_key"
     legend = None
-    info_text = None
+    info_text: Optional[str] = None
 
     def __init__(self):
         # Determine if any multiple row operations are defined

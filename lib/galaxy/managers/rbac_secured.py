@@ -21,7 +21,7 @@ class RBACPermission:
     (Libraries, Datasets).
     """
 
-    permissions_class = None
+    permissions_class: type
     permission_failed_error_class = RBACPermissionFailedException
 
     def __init__(self, app):

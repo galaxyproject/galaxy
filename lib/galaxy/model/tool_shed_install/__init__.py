@@ -560,7 +560,7 @@ class ToolDependency(_HasTable):
         return self.status == self.installation_status.INSTALLED
 
 
-class ToolVersion(Dictifiable):
+class ToolVersion(Dictifiable, _HasTable):
     dict_element_visible_keys = ['id', 'tool_shed_repository']
 
     def __init__(self, id=None, create_time=None, tool_id=None, tool_shed_repository=None):

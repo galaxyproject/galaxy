@@ -894,9 +894,7 @@ class ModelFilterParser(HasAModelManager):
     # (as the model informs how the filter params are parsed)
     # I have no great idea where this 'belongs', so it's here for now
 
-    #: model class
-    model_class = None
-    subcontainer_model_class = None
+    model_class: type
     parsed_filter = parsed_filter
 
     def __init__(self, app, **kwargs):

@@ -473,7 +473,6 @@ class HistoryContentsFilters(base.ModelFilterParser,
                              tools.ToolFilterMixin):
     # surprisingly (but ominously), this works for both content classes in the union that's filtered
     model_class = model.HistoryDatasetAssociation
-    subcontainer_model_class = model.HistoryDatasetCollectionAssociation
 
     def _parse_orm_filter(self, attr, op, val):
 

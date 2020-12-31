@@ -539,7 +539,7 @@ class Grid:
     Specifies the content and format of a grid (data table).
     """
     title = ""
-    model_class = None
+    model_class: Optional[type] = None
     show_item_checkboxes = False
     template = "legacy/grid_base.mako"
     async_template = "legacy/grid_base_async.mako"

@@ -80,7 +80,7 @@ class FastAPIJobs:
         """
         id = trans.app.security.decode_id(id)
         job = self.job_manager.get_accessible_job(trans, id)
-        return view_show_job(trans, job, full)
+        return view_show_job(trans, job, bool(full))
 
 
 class JobController(BaseAPIController, UsesVisualizationMixin):

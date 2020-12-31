@@ -2,6 +2,7 @@
 This module *does not* contain API routes. It exclusively contains dependencies to be used in FastAPI routes
 """
 from typing import (
+    cast,
     Optional,
 )
 
@@ -28,7 +29,7 @@ from galaxy.work.context import SessionRequestContext
 
 
 def get_app() -> UniverseApplication:
-    return galaxy_app.app
+    return cast(UniverseApplication, galaxy_app.app)
 
 
 def get_job_manager(app: UniverseApplication = Depends(get_app)) -> JobManager:
