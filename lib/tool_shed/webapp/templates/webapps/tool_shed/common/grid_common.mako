@@ -1,5 +1,5 @@
 <%!
-    from galaxy.webapps.reports.framework.grids import TextColumn, StateColumn, GridColumnFilter
+    from galaxy.web.legacy_framework.grids import TextColumn, StateColumn, GridColumnFilter
     from galaxy.web.framework.helpers import iff
 %>
 

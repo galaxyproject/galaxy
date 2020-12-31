@@ -14,9 +14,9 @@ from markupsafe import escape
 from sqlalchemy import and_, not_, or_
 
 from galaxy import model, util
+from galaxy.web.legacy_framework import grids
 from galaxy.webapps.base.controller import BaseUIController, web
 from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
-from galaxy.webapps.reports.framework import grids
 
 log = logging.getLogger(__name__)
 
