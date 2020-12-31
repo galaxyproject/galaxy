@@ -1,4 +1,4 @@
-name: API tests (legacy paste)
+name: API (legacy paste) tests
 on: [push, pull_request]
 env:
   GALAXY_TEST_DBURI: 'postgres://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
@@ -37,5 +37,5 @@ jobs:
       - uses: actions/upload-artifact@v2
         if: failure()
         with:
-          name: API test results
+          name: API (legacy paste) test results (${{ matrix.python-version }})
           path: 'galaxy root/run_api_tests.html'
