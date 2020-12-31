@@ -145,6 +145,7 @@ class ShedToolDataTableManager:
                 for elem in tree.getroot():
                     # Append individual table elems or other elemes, but not tables elems.
                     if elem.tag == 'tables':
+                        # TODO: this code need to be revised
                         for _table_elem in elems:
                             elems.append(elem)
                     else:
