@@ -257,6 +257,42 @@ steps:
         assert "num_lines" in first_step.tool_inputs
         assert json.loads(first_step.tool_inputs["num_lines"]) == 1
 
+    def test_refactor_works_with_incomplete_state(self):
+        # populating a workflow with incomplete state...
+        wf = self.workflow_populator.load_workflow_from_resource("test_workflow_two_random_lines")
+        ts = json.loads(wf["steps"]["0"]["tool_state"])
+        del ts["num_lines"]
+        wf["steps"]["0"]["tool_state"] = json.dumps(ts)
+        self.workflow_populator.create_workflow(wf, fill_defaults=False)
+
+        assert self._latest_workflow.step_by_index(0).label == "random1"
+        actions = [
+            {"action_type": "update_step_label", "step": {"order_index": 0}, "label": "random1_new"},
+        ]
+        self._refactor_without_errors(actions)
+        first_step = self._latest_workflow.step_by_label("random1_new")
+        assert "num_lines" not in first_step.tool_inputs
+
+    def test_refactor_works_with_missing_tools(self):
+        # populating a workflow with incomplete state...
+        wf = self.workflow_populator.load_workflow_from_resource("test_workflow_two_random_lines")
+        wf["steps"]["1"]["tool_id"] = "random-missing"
+        wf["steps"]["1"]["content_id"] = "random-missing"
+        self.workflow_populator.create_workflow(wf, fill_defaults=False)
+
+        assert self._latest_workflow.step_by_index(1).label == "random2"
+        assert self._latest_workflow.step_by_index(1).tool_id == "random-missing"
+        assert "num_lines" in self._latest_workflow.step_by_index(1).tool_inputs
+
+        actions = [
+            {"action_type": "update_step_label", "step": {"order_index": 1}, "label": "random2_new"},
+        ]
+        updated, errors = self._refactor(actions)
+        assert updated
+        assert errors  # we have a "message" about the un-validated state, but I is fine as long as it was preserved
+        assert self._latest_workflow.step_by_index(1).label == "random2_new"
+        assert "num_lines" in self._latest_workflow.step_by_index(1).tool_inputs
+
     def _refactor_without_errors(self, actions):
         updated, errors = self._refactor(actions)
         assert updated

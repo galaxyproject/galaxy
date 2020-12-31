@@ -411,7 +411,7 @@ class WorkflowContentsManager(UsesAnnotations):
             name=stored_workflow.name,
         )
 
-        if missing_tool_tups:
+        if missing_tool_tups and not workflow_update_options.allow_missing_tools:
             errors = []
             for missing_tool_tup in missing_tool_tups:
                 errors.append("Step %i: Requires tool '%s'." % (int(missing_tool_tup[3]) + 1, missing_tool_tup[0]))
@@ -1414,8 +1414,10 @@ class WorkflowContentsManager(UsesAnnotations):
         workflow = stored_workflow.latest_workflow
         as_dict = self.workflow_to_dict(trans, stored_workflow, style="ga")
         raw_workflow_description = self.normalize_workflow_format(trans, as_dict)
-        workflow_update_options = WorkflowUpdateOptions()
-        workflow_update_options.fill_defaults = False
+        workflow_update_options = WorkflowUpdateOptions(
+            fill_defaults=False,
+            allow_missing_tools=True,
+        )
 
         module_injector = WorkflowModuleInjector(trans)
         WorkflowRefactorExecutor(raw_workflow_description, workflow, module_injector).refactor(refactor_request)
@@ -1447,6 +1449,7 @@ class WorkflowUpdateOptions(WorkflowStateResolutionOptions):
     # representation with name or annotation for instance, updates the corresponding
     # stored workflow
     update_stored_workflow_attributes: bool = True
+    allow_missing_tools: bool = False
 
 
 # Workflow update options but with some different defaults - we allow creating
