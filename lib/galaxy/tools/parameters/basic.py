@@ -58,8 +58,8 @@ def contains_workflow_parameter(value, search=False):
 
 
 def is_runtime_value(value):
-    return isinstance(value, RuntimeValue) or (isinstance(value, dict)
-        and value.get("__class__") in ["RuntimeValue", "ConnectedValue"])
+    return isinstance(value, RuntimeValue) or (isinstance(value, dict) and
+        value.get("__class__") in ["RuntimeValue", "ConnectedValue"])
 
 
 def is_runtime_context(trans, other_values):
