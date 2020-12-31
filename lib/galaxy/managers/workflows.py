@@ -413,21 +413,16 @@ class WorkflowContentsManager(UsesAnnotations):
                 errors.append("Step %i: Requires tool '%s'." % (int(missing_tool_tup[3]) + 1, missing_tool_tup[0]))
             raise MissingToolsException(workflow, errors)
 
-        as_dict = raw_workflow_description.as_dict
-        if 'name' in as_dict:
-            sanitized_name = sanitize_html(as_dict['name'])
-            workflow.name = sanitized_name
-            stored_workflow.name = sanitized_name
-
         # Connect up
         workflow.stored_workflow = stored_workflow
         stored_workflow.latest_workflow = workflow
 
-        # I'm not sure we can't just default this to True.
-        if kwds.get("update_stored_workflow_attributes", False):
+        if kwds.get("update_stored_workflow_attributes", True):
             update_dict = raw_workflow_description.as_dict
             if 'name' in update_dict:
-                stored_workflow.name = update_dict['name']
+                sanitized_name = sanitize_html(update_dict['name'])
+                workflow.name = sanitized_name
+                stored_workflow.name = sanitized_name
             if 'annotation' in update_dict:
                 newAnnotation = sanitize_html(update_dict['annotation'])
                 self.add_item_annotation(trans.sa_session, stored_workflow.user, stored_workflow, newAnnotation)
@@ -1425,7 +1420,6 @@ class WorkflowContentsManager(UsesAnnotations):
                 stored_workflow,
                 raw_workflow_description,
                 fill_defaults=True,
-                update_stored_workflow_attributes=True,
             )
 
 

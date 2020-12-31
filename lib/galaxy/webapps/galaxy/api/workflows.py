@@ -598,7 +598,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 stored_workflow.published = workflow_dict['published']
                 trans.sa_session.flush()
 
-            if 'annotation' in workflow_dict:
+            if 'annotation' in workflow_dict and not steps_updated:
                 newAnnotation = sanitize_html(workflow_dict['annotation'])
                 self.add_item_annotation(trans.sa_session, trans.get_user(), stored_workflow, newAnnotation)
                 trans.sa_session.flush()
