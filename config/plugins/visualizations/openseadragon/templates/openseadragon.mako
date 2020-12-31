@@ -31,7 +31,7 @@
             const xmlns = "http://schemas.microsoft.com/deepzoom/2008";
             const image_types = ["gif", "jpg", "png", "tiff"];
 
-            if (image_types.indexOf(hda_ext) >= 0) {
+            if (image_types.includes(hda_ext)) {
                 var viewer = OpenSeadragon({
                     id: viewer_id,
                     prefixUrl: prefixUrl,
