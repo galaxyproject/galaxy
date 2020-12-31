@@ -93,14 +93,14 @@ AUTO_PROPAGATED_TAGS = ["name"]
 if TYPE_CHECKING:
     from sqlalchemy.schema import Table
 
-    class _BaseModel:
+    class _HasTable:
         table: Table = None
 
 else:
-    _BaseModel = object
+    _HasTable = object
 
 
-class RepresentById(_BaseModel):
+class RepresentById(_HasTable):
     def __repr__(self):
         try:
             r = '<galaxy.model.{}({}) at {}>'.format(self.__class__.__name__, cached_id(self), hex(id(self)))
@@ -242,7 +242,7 @@ class UsesCreateAndUpdateTime:
         return (galaxy.model.orm.now.now() - create_time).total_seconds()
 
 
-class WorkerProcess(UsesCreateAndUpdateTime, _BaseModel):
+class WorkerProcess(UsesCreateAndUpdateTime, _HasTable):
 
     def __init__(self, server_name, hostname):
         self.server_name = server_name
@@ -635,7 +635,7 @@ class User(Dictifiable, RepresentById):
         session.flush()
 
 
-class PasswordResetToken(_BaseModel):
+class PasswordResetToken(_HasTable):
     def __init__(self, user, token=None):
         if token:
             self.token = token
@@ -2362,7 +2362,7 @@ class StorableObject:
             sa_session.flush()
 
 
-class Dataset(StorableObject, RepresentById, _BaseModel):
+class Dataset(StorableObject, RepresentById, _HasTable):
     states = Bunch(NEW='new',
                    UPLOAD='upload',
                    QUEUED='queued',
@@ -6122,7 +6122,7 @@ class CustosAuthnzToken(RepresentById):
         self.refresh_expiration_time = refresh_expiration_time
 
 
-class CloudAuthz(_BaseModel):
+class CloudAuthz(_HasTable):
     def __init__(self, user_id, provider, config, authn_id, description=""):
         self.id = None
         self.user_id = user_id

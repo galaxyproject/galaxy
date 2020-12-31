@@ -13,13 +13,13 @@ log = logging.getLogger(__name__)
 if TYPE_CHECKING:
     from sqlalchemy.schema import Table
 
-    class _BaseClass:
+    class _HasTable:
         table: Table
 else:
-    _BaseClass = object
+    _HasTable = object
 
 
-class ToolShedRepository(_BaseClass):
+class ToolShedRepository(_HasTable):
     dict_collection_visible_keys = ['id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
                                     'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message', 'description']
     dict_element_visible_keys = ['id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
@@ -479,20 +479,20 @@ class ToolShedRepository(_BaseClass):
         return False
 
 
-class RepositoryRepositoryDependencyAssociation(_BaseClass):
+class RepositoryRepositoryDependencyAssociation(_HasTable):
 
     def __init__(self, tool_shed_repository_id=None, repository_dependency_id=None):
         self.tool_shed_repository_id = tool_shed_repository_id
         self.repository_dependency_id = repository_dependency_id
 
 
-class RepositoryDependency(_BaseClass):
+class RepositoryDependency(_HasTable):
 
     def __init__(self, tool_shed_repository_id=None):
         self.tool_shed_repository_id = tool_shed_repository_id
 
 
-class ToolDependency(_BaseClass):
+class ToolDependency(_HasTable):
     installation_status = Bunch(NEVER_INSTALLED='Never installed',
                                 INSTALLING='Installing',
                                 INSTALLED='Installed',
@@ -579,7 +579,7 @@ class ToolVersion(Dictifiable):
         return rval
 
 
-class ToolVersionAssociation(_BaseClass):
+class ToolVersionAssociation(_HasTable):
 
     def __init__(self, id=None, tool_id=None, parent_id=None):
         self.id = id
@@ -587,7 +587,7 @@ class ToolVersionAssociation(_BaseClass):
         self.parent_id = parent_id
 
 
-class MigrateTools(_BaseClass):
+class MigrateTools(_HasTable):
 
     def __init__(self, repository_id=None, repository_path=None, version=None):
         self.repository_id = repository_id
