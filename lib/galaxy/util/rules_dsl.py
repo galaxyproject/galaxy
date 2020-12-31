@@ -140,7 +140,7 @@ class AddColumnConcatenateRuleDefinition(BaseRuleDefinition):
         column_1 = rule["target_column_1"]
 
         new_rows = []
-        for index, row in enumerate(data):
+        for row in data:
             new_rows.append(row + [row[column_0] + row[column_1]])
 
         return new_rows, sources
@@ -200,7 +200,7 @@ class AddColumnValueRuleDefinition(BaseRuleDefinition):
         value = rule["value"]
 
         new_rows = []
-        for index, row in enumerate(data):
+        for row in data:
             new_rows.append(row + [str(value)])
 
         return new_rows, sources

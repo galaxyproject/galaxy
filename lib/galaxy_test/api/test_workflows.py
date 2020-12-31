@@ -1498,7 +1498,7 @@ steps:
             invocation_id = summary.invocation_id
             report_json = self.workflow_populator.workflow_report_json(workflow_id, invocation_id)
             assert "markdown" in report_json
-            self._assert_has_keys(report_json , "markdown", "render_format")
+            self._assert_has_keys(report_json, "markdown", "render_format")
             assert report_json["render_format"] == "markdown"
             markdown_content = report_json["markdown"]
             assert "## Workflow Outputs" in markdown_content
@@ -1521,7 +1521,7 @@ steps:
             assert "markdown" in report_config
             report_json = self.workflow_populator.workflow_report_json(workflow_id, invocation_id)
             assert "markdown" in report_json, "markdown not in report json %s" % report_json
-            self._assert_has_keys(report_json , "markdown", "render_format")
+            self._assert_has_keys(report_json, "markdown", "render_format")
             assert report_json["render_format"] == "markdown"
             markdown_content = report_json["markdown"]
             assert "## Workflow Outputs" in markdown_content
@@ -1610,7 +1610,7 @@ input_c:
             invocation_response = self._get(f"workflows/{workflow_id}/invocations/{invocation_id}")
             self._assert_status_code_is(invocation_response, 200)
             invocation = invocation_response.json()
-            self._assert_has_keys(invocation , "id", "outputs", "output_collections")
+            self._assert_has_keys(invocation, "id", "outputs", "output_collections")
             assert len(invocation["output_collections"]) == 0
             assert len(invocation["outputs"]) == 1
             output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset_id=invocation["outputs"]["wf_output_1"]["id"])
@@ -1647,11 +1647,11 @@ input1:
             invocation_response = self._get(f"workflows/{workflow_id}/invocations/{invocation_id}")
             self._assert_status_code_is(invocation_response, 200)
             invocation = invocation_response.json()
-            self._assert_has_keys(invocation , "id", "outputs", "output_collections")
+            self._assert_has_keys(invocation, "id", "outputs", "output_collections")
             assert len(invocation["output_collections"]) == 1
             assert len(invocation["outputs"]) == 0
             output_content = self.dataset_populator.get_history_collection_details(history_id, content_id=invocation["output_collections"]["wf_output_1"]["id"])
-            self._assert_has_keys(output_content , "id", "elements")
+            self._assert_has_keys(output_content, "id", "elements")
             assert output_content["collection_type"] == "list"
             elements = output_content["elements"]
             assert len(elements) == 1
@@ -1677,7 +1677,7 @@ steps: []
             invocation_response = self._get(f"workflows/{workflow_id}/invocations/{invocation_id}")
             self._assert_status_code_is(invocation_response, 200)
             invocation = invocation_response.json()
-            self._assert_has_keys(invocation , "id", "outputs", "output_collections")
+            self._assert_has_keys(invocation, "id", "outputs", "output_collections")
             assert len(invocation["output_collections"]) == 0
             assert len(invocation["outputs"]) == 1
             assert len(invocation["output_values"]) == 1
@@ -1713,7 +1713,7 @@ steps:
             invocation_response = self._get(f"workflows/{workflow_id}/invocations/{invocation_id}")
             self._assert_status_code_is(invocation_response, 200)
             invocation = invocation_response.json()
-            self._assert_has_keys(invocation , "id", "outputs", "output_collections")
+            self._assert_has_keys(invocation, "id", "outputs", "output_collections")
             assert len(invocation["output_collections"]) == 0
             assert len(invocation["outputs"]) == 1
             output_content = self.dataset_populator.get_history_dataset_content(history_id, content_id=invocation["outputs"]["wf_output_1"]["id"])
@@ -1751,11 +1751,11 @@ input1:
             invocation_response = self._get(f"workflows/{workflow_id}/invocations/{invocation_id}")
             self._assert_status_code_is(invocation_response, 200)
             invocation = invocation_response.json()
-            self._assert_has_keys(invocation , "id", "outputs", "output_collections")
+            self._assert_has_keys(invocation, "id", "outputs", "output_collections")
             assert len(invocation["output_collections"]) == 1
             assert len(invocation["outputs"]) == 0
             output_content = self.dataset_populator.get_history_collection_details(history_id, content_id=invocation["output_collections"]["wf_output_1"]["id"])
-            self._assert_has_keys(output_content , "id", "elements")
+            self._assert_has_keys(output_content, "id", "elements")
             elements = output_content["elements"]
             assert len(elements) == 2
             elements0 = elements[0]
@@ -1793,11 +1793,11 @@ text_input:
             invocation_response = self._get(f"workflows/{workflow_id}/invocations/{invocation_id}")
             self._assert_status_code_is(invocation_response, 200)
             invocation = invocation_response.json()
-            self._assert_has_keys(invocation , "id", "outputs", "output_collections")
+            self._assert_has_keys(invocation, "id", "outputs", "output_collections")
             assert len(invocation["output_collections"]) == 1
             assert len(invocation["outputs"]) == 0
             output_content = self.dataset_populator.get_history_collection_details(history_id, content_id=invocation["output_collections"]["wf_output_1"]["id"])
-            self._assert_has_keys(output_content , "id", "elements")
+            self._assert_has_keys(output_content, "id", "elements")
             assert output_content["collection_type"] == "list:paired", output_content
             elements = output_content["elements"]
             assert len(elements) == 2
@@ -1850,11 +1850,11 @@ outer_input:
             invocation_response = self._get(f"workflows/{workflow_id}/invocations/{invocation_id}")
             self._assert_status_code_is(invocation_response, 200)
             invocation = invocation_response.json()
-            self._assert_has_keys(invocation , "id", "outputs", "output_collections")
+            self._assert_has_keys(invocation, "id", "outputs", "output_collections")
             assert len(invocation["output_collections"]) == 1, invocation
             assert len(invocation["outputs"]) == 0
             output_content = self.dataset_populator.get_history_collection_details(history_id, content_id=invocation["output_collections"]["outer_output"]["id"])
-            self._assert_has_keys(output_content , "id", "elements")
+            self._assert_has_keys(output_content, "id", "elements")
             assert output_content["collection_type"] == "list", output_content
             elements = output_content["elements"]
             assert len(elements) == 2
@@ -3699,16 +3699,16 @@ steps:
             hda3 = self.dataset_populator.new_dataset(history_id, content="7 8 9")
             hda4 = self.dataset_populator.new_dataset(history_id, content="10 11 12")
             parameters = {
-                "0": {"input": {"batch": True, "values": [{"id" : hda1.get("id"), "hid": hda1.get("hid"), "src": "hda"},
-                                                          {"id" : hda2.get("id"), "hid": hda2.get("hid"), "src": "hda"},
-                                                          {"id" : hda3.get("id"), "hid": hda2.get("hid"), "src": "hda"},
-                                                          {"id" : hda4.get("id"), "hid": hda2.get("hid"), "src": "hda"}]}},
-                "1": {"input": {"batch": False, "values": [{"id" : hda1.get("id"), "hid": hda1.get("hid"), "src": "hda"}]}, "exp": "2"}}
+                "0": {"input": {"batch": True, "values": [{"id": hda1.get("id"), "hid": hda1.get("hid"), "src": "hda"},
+                                                          {"id": hda2.get("id"), "hid": hda2.get("hid"), "src": "hda"},
+                                                          {"id": hda3.get("id"), "hid": hda2.get("hid"), "src": "hda"},
+                                                          {"id": hda4.get("id"), "hid": hda2.get("hid"), "src": "hda"}]}},
+                "1": {"input": {"batch": False, "values": [{"id": hda1.get("id"), "hid": hda1.get("hid"), "src": "hda"}]}, "exp": "2"}}
             workflow_request = {
-                "history_id" : history_id,
-                "batch"      : True,
+                "history_id": history_id,
+                "batch": True,
                 "parameters_normalized": True,
-                "parameters" : dumps(parameters),
+                "parameters": dumps(parameters),
             }
             invocation_response = self._post("workflows/%s/usage" % workflow_id, data=workflow_request)
             self._assert_status_code_is(invocation_response, 200)
@@ -3738,21 +3738,21 @@ steps:
             hda3 = self.dataset_populator.new_dataset(history_id, content="7 8 9")
             hda4 = self.dataset_populator.new_dataset(history_id, content="10 11 12")
             inputs = {
-                "coolinput": {"batch": True, "values": [{"id" : hda1.get("id"), "hid": hda1.get("hid"), "src": "hda"},
-                                                        {"id" : hda2.get("id"), "hid": hda2.get("hid"), "src": "hda"},
-                                                        {"id" : hda3.get("id"), "hid": hda2.get("hid"), "src": "hda"},
-                                                        {"id" : hda4.get("id"), "hid": hda2.get("hid"), "src": "hda"}]}
+                "coolinput": {"batch": True, "values": [{"id": hda1.get("id"), "hid": hda1.get("hid"), "src": "hda"},
+                                                        {"id": hda2.get("id"), "hid": hda2.get("hid"), "src": "hda"},
+                                                        {"id": hda3.get("id"), "hid": hda2.get("hid"), "src": "hda"},
+                                                        {"id": hda4.get("id"), "hid": hda2.get("hid"), "src": "hda"}]}
             }
             parameters = {
-                "1": {"input": {"batch": False, "values": [{"id" : hda1.get("id"), "hid": hda1.get("hid"), "src": "hda"}]}, "exp": "2"}
+                "1": {"input": {"batch": False, "values": [{"id": hda1.get("id"), "hid": hda1.get("hid"), "src": "hda"}]}, "exp": "2"}
             }
             workflow_request = {
-                "history_id" : history_id,
-                "batch"      : True,
-                "inputs"     : dumps(inputs),
-                "inputs_by"  : "name",
+                "history_id": history_id,
+                "batch": True,
+                "inputs": dumps(inputs),
+                "inputs_by": "name",
                 "parameters_normalized": True,
-                "parameters" : dumps(parameters),
+                "parameters": dumps(parameters),
             }
             invocation_response = self._post("workflows/%s/usage" % workflow_id, data=workflow_request)
             self._assert_status_code_is(invocation_response, 200)

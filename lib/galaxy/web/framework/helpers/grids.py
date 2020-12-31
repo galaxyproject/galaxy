@@ -380,7 +380,7 @@ class DeletedColumn(GridColumn):
 
     def get_accepted_filters(self):
         """ Returns a list of accepted filters for this column. """
-        accepted_filter_labels_and_vals = {"active" : "False", "deleted" : "True", "all": "All"}
+        accepted_filter_labels_and_vals = {"active": "False", "deleted": "True", "all": "All"}
         accepted_filters = []
         for label, val in accepted_filter_labels_and_vals.items():
             args = {self.key: val}
@@ -438,7 +438,7 @@ class StateColumn(GridColumn):
 
     def get_accepted_filters(self):
         """Returns a list of accepted filters for this column."""
-        all = GridColumnFilter('all', {self.key : 'All'})
+        all = GridColumnFilter('all', {self.key: 'All'})
         accepted_filters = [all]
         for v in self.model_class.states.values():
             args = {self.key: v}
@@ -839,27 +839,27 @@ class Grid:
                     else:
                         extra = "&uarr;"
             grid_config['columns'].append({
-                'key'               : column.key,
-                'visible'           : column.visible,
-                'nowrap'            : column.nowrap,
-                'attach_popup'      : column.attach_popup,
-                'label_id_prefix'   : column.label_id_prefix,
-                'sortable'          : column.sortable,
-                'label'             : column.label,
-                'filterable'        : column.filterable,
-                'delayed'           : column.delayed,
-                'is_text'           : isinstance(column, TextColumn),
-                'extra'             : extra
+                'key': column.key,
+                'visible': column.visible,
+                'nowrap': column.nowrap,
+                'attach_popup': column.attach_popup,
+                'label_id_prefix': column.label_id_prefix,
+                'sortable': column.sortable,
+                'label': column.label,
+                'filterable': column.filterable,
+                'delayed': column.delayed,
+                'is_text': isinstance(column, TextColumn),
+                'extra': extra
             })
         for operation in self.operations:
             grid_config['operations'].append({
-                'allow_multiple'        : operation.allow_multiple,
-                'allow_popup'           : operation.allow_popup,
-                'target'                : operation.target,
-                'label'                 : operation.label,
-                'confirm'               : operation.confirm,
-                'href'                  : url(**operation.url_args) if isinstance(operation.url_args, dict) else None,
-                'global_operation'      : False
+                'allow_multiple': operation.allow_multiple,
+                'allow_popup': operation.allow_popup,
+                'target': operation.target,
+                'label': operation.label,
+                'confirm': operation.confirm,
+                'href': url(**operation.url_args) if isinstance(operation.url_args, dict) else None,
+                'global_operation': False
             })
             if operation.allow_multiple:
                 grid_config['show_item_checkboxes'] = True
@@ -867,9 +867,9 @@ class Grid:
                 grid_config['global_operation'] = url(** (operation.global_operation()))
         for action in self.global_actions:
             grid_config['global_actions'].append({
-                'url_args'  : url(**action.url_args),
-                'label'     : action.label,
-                'target'    : action.target
+                'url_args': url(**action.url_args),
+                'label': action.label,
+                'target': action.target
             })
         for operation in [op for op in self.operations if op.async_compatible]:
             grid_config['async_ops'].append(operation.label.lower())
@@ -878,11 +878,11 @@ class Grid:
                 grid_config['categorical_filters'][column.key] = {filter.label: filter.args for filter in column.get_accepted_filters()}
         for item in query:
             item_dict = {
-                'id'                    : item.id,
-                'encode_id'             : trans.security.encode_id(item.id),
-                'link'                  : [],
-                'operation_config'      : {},
-                'column_config'         : {}
+                'id': item.id,
+                'encode_id': trans.security.encode_id(item.id),
+                'link': [],
+                'operation_config': {},
+                'column_config': {}
             }
             for column in self.columns:
                 if column.visible:
@@ -896,15 +896,15 @@ class Grid:
                     if value:
                         value = value.replace('/', '//')
                     item_dict['column_config'][column.label] = {
-                        'link'      : link,
-                        'value'     : value,
-                        'target'    : target
+                        'link': link,
+                        'value': value,
+                        'target': target
                     }
             for operation in self.operations:
                 item_dict['operation_config'][operation.label] = {
-                    'allowed'   : operation.allowed(item),
-                    'url_args'  : url(**operation.get_url_args(item)),
-                    'target'    : operation.target
+                    'allowed': operation.allowed(item),
+                    'url_args': url(**operation.get_url_args(item)),
+                    'target': operation.target
                 }
             grid_config['items'].append(item_dict)
 
