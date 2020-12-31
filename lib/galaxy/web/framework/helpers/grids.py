@@ -876,7 +876,7 @@ class Grid:
         for column in self.columns:
             if column.filterable is not None and not isinstance(column, TextColumn):
                 grid_config['categorical_filters'][column.key] = {filter.label: filter.args for filter in column.get_accepted_filters()}
-        for i, item in enumerate(query):
+        for item in query:
             item_dict = {
                 'id'                    : item.id,
                 'encode_id'             : trans.security.encode_id(item.id),
