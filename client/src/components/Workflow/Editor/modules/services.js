@@ -31,7 +31,8 @@ export async function refactor(workflow, id, actions, dryRun = false) {
         };
         const { data } = await axios.put(`${getAppRoot()}api/workflows/${id}/refactor`, requestData);
         if (!dryRun) {
-            fromSimple(workflow, data);
+            // TODO: display messages (if any...)
+            fromSimple(workflow, data.workflow);
         }
         return data;
     } catch (e) {

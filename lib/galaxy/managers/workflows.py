@@ -5,6 +5,7 @@ import uuid
 from collections import namedtuple
 from typing import (
     Dict,
+    List,
     Optional,
 )
 
@@ -45,7 +46,10 @@ from galaxy.workflow.modules import (
     WorkflowModuleInjector
 )
 from galaxy.workflow.refactor.execute import WorkflowRefactorExecutor
-from galaxy.workflow.refactor.schema import RefactorActions
+from galaxy.workflow.refactor.schema import (
+    RefactorActionExecution,
+    RefactorActions,
+)
 from galaxy.workflow.reports import generate_report
 from galaxy.workflow.resources import get_resource_mapper_function
 from galaxy.workflow.steps import attach_ordered_steps
@@ -1421,28 +1425,45 @@ class WorkflowContentsManager(UsesAnnotations):
         )
 
         module_injector = WorkflowModuleInjector(trans)
-        WorkflowRefactorExecutor(raw_workflow_description, workflow, module_injector).refactor(refactor_request)
+        refactor_executor = WorkflowRefactorExecutor(raw_workflow_description, workflow, module_injector)
+        actions_executed = refactor_executor.refactor(refactor_request)
         if refactor_request.dry_run:
             # TODO: go a bit further with dry run, try to re-populate a workflow just
             # don't flush it or tie it to the stored_workflow. Still for now, there is
             # a lot of things that would be caught with just what is done here.
-            return None, []
+            pass
         else:
-            return self.update_workflow_from_raw_description(
+            stored_workflow, errors = self.update_workflow_from_raw_description(
                 trans,
                 stored_workflow,
                 raw_workflow_description,
                 workflow_update_options,
             )
+            # errors could be three things:
+            # - we allow missing tools so it won't be that.
+            # - might have cycles or might have state validation issues, but it still saved...
+            #   so this is really more of a warning - we disregard it the other two places
+            #   it is used also. These same messages will appear in the dictified version we
+            #   we send back anyway
+        return actions_executed
 
     def refactor(self, trans, stored_workflow, refactor_request):
-        stored_workflow, errors = self.do_refactor(trans, stored_workflow, refactor_request)
-        # TODO: handle errors...
-        return self.workflow_to_dict(trans, stored_workflow, style=refactor_request.style)
+        actions_executed = self.do_refactor(trans, stored_workflow, refactor_request)
+        return RefactorResponse(
+            actions_executed=actions_executed,
+            workflow=self.workflow_to_dict(trans, stored_workflow, style=refactor_request.style),
+            dry_run=refactor_request.dry_run,
+        )
 
 
 class RefactorRequest(RefactorActions):
     style: str = "export"
+
+
+class RefactorResponse(BaseModel):
+    actions_executed: List[RefactorActionExecution]
+    workflow: dict
+    dry_run: bool
 
 
 class WorkflowStateResolutionOptions(BaseModel):

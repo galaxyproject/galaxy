@@ -489,17 +489,17 @@ steps:
         refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions, dry_run=True)
         refactor_response.raise_for_status()
         # it was with dry_run=True - so the result is unchanged...
-        assert refactor_response.json()["steps"]["0"]["label"] == "test_input"
+        assert refactor_response.json()["workflow"]["steps"]["0"]["label"] == "test_input"
 
         refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions, dry_run=True, style="editor")
         refactor_response.raise_for_status()
         # it was with dry_run=True - so the result is unchanged...
-        assert refactor_response.json()["steps"]["0"]["label"] == "test_input"
+        assert refactor_response.json()["workflow"]["steps"]["0"]["label"] == "test_input"
 
         refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions)
         refactor_response.raise_for_status()
         # this time dry_run was default of False, so the label is indeed changed
-        assert refactor_response.json()["steps"]["0"]["label"] == "new_label"
+        assert refactor_response.json()["workflow"]["steps"]["0"]["label"] == "new_label"
 
     def test_update_no_tool_id(self):
         workflow_object = self.workflow_populator.load_workflow(name="test_import")

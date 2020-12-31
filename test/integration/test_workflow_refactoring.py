@@ -31,45 +31,45 @@ steps:
         actions = [
             {"action_type": "update_name", "name": "my cool new name"},
         ]
-        self._refactor_without_errors(actions)
+        self._refactor(actions)
         assert self._latest_workflow.stored_workflow.name == "my cool new name"
 
         actions = [
             {"action_type": "update_annotation", "annotation": "my cool new annotation"},
         ]
-        self._refactor_without_errors(actions)
+        self._refactor(actions)
         # TODO: test annotation change...
 
         actions = [
             {"action_type": "update_license", "license": "AFL-3.0"},
         ]
-        self._refactor_without_errors(actions)
+        self._refactor(actions)
         assert self._latest_workflow.license == "AFL-3.0"
 
         actions = [
             {"action_type": "update_creator", "creator": [{"class": "Person", "name": "Mary"}]},
         ]
-        self._refactor_without_errors(actions)
+        self._refactor(actions)
         assert self._latest_workflow.creator_metadata[0]["class"] == "Person"
         assert self._latest_workflow.creator_metadata[0]["name"] == "Mary"
 
         actions = [
             {"action_type": "update_report", "report": {"markdown": "my report..."}}
         ]
-        self._refactor_without_errors(actions)
+        self._refactor(actions)
         assert self._latest_workflow.reports_config["markdown"] == "my report..."
 
         assert self._latest_workflow.step_by_index(0).label == "test_input"
         actions = [
             {"action_type": "update_step_label", "step": {"order_index": 0}, "label": "new_label"},
         ]
-        self._refactor_without_errors(actions)
+        self._refactor(actions)
         assert self._latest_workflow.step_by_index(0).label == "new_label"
 
         actions = [
             {"action_type": "update_step_position", "step": {"order_index": 0}, "position": {"left": 3, "top": 5}},
         ]
-        self._refactor_without_errors(actions)
+        self._refactor(actions)
         assert self._latest_workflow.step_by_index(0).label == "new_label"
         assert self._latest_workflow.step_by_index(0).position["left"] == 3
         assert self._latest_workflow.step_by_index(0).position["top"] == 5
@@ -78,7 +78,7 @@ steps:
         actions = [
             {"action_type": "add_step", "type": "parameter_input", "label": "new_param", "tool_state": {"parameter_type": "text"}, "position": {"left": 10, "top": 50}},
         ]
-        self._refactor_without_errors(actions)
+        self._refactor(actions)
         assert self._latest_workflow.step_by_label("new_param").label == "new_param"
         assert self._latest_workflow.step_by_label("new_param").tool_inputs.get("optional", False) is False
         assert self._latest_workflow.step_by_label("new_param").position["left"] == 10
@@ -88,7 +88,7 @@ steps:
         actions = [
             {"action_type": "add_input", "type": "text", "label": "new_param2", "optional": True, "position": {"top": 1, "left": 2}},
         ]
-        self._refactor_without_errors(actions)
+        self._refactor(actions)
         assert self._latest_workflow.step_by_label("new_param2").label == "new_param2"
         assert self._latest_workflow.step_by_label("new_param2").tool_inputs.get("optional", False) is True
         assert self._latest_workflow.step_by_label("new_param2").position["top"] == 1
@@ -102,7 +102,7 @@ steps:
                 "output": {"label": "new_label"},
             }
         ]
-        self._refactor_without_errors(actions)
+        self._refactor(actions)
         assert len(self._latest_workflow.step_by_label("first_cat").inputs) == 0
 
         actions = [
@@ -112,7 +112,7 @@ steps:
                 "output": {"label": "new_label"},
             }
         ]
-        self._refactor_without_errors(actions)
+        self._refactor(actions)
         assert len(self._latest_workflow.step_by_label("first_cat").inputs) == 1
 
         # Re-disconnect so we can test extract_input
@@ -123,7 +123,7 @@ steps:
                 "output": {"label": "new_label"},
             }
         ]
-        self._refactor_without_errors(actions)
+        self._refactor(actions)
 
         # try to create an input for first_cat/input1 automatically
         actions = [
@@ -133,7 +133,7 @@ steps:
                 "label": "extracted_input",
             }
         ]
-        self._refactor_without_errors(actions)
+        self._refactor(actions)
         assert self._latest_workflow.step_by_label("extracted_input")
         assert len(self._latest_workflow.step_by_label("first_cat").inputs) == 1
 
@@ -144,7 +144,7 @@ steps:
             {"action_type": "extract_legacy_parameter", "name": "seed"},
             {"action_type": "extract_legacy_parameter", "name": "num", "label": "renamed_num"},
         ]
-        self._refactor_without_errors(actions)
+        self._refactor(actions)
         assert self._latest_workflow.step_by_label("seed").tool_inputs["parameter_type"] == "text"
         assert self._latest_workflow.step_by_label("renamed_num").tool_inputs["parameter_type"] == "integer"
         random_lines_state = self._latest_workflow.step_by_index(2).tool_inputs
@@ -196,7 +196,7 @@ steps:
         actions = [
             {"action_type": "extract_legacy_parameter", "name": "pja_only_param"},
         ]
-        self._refactor_without_errors(actions)
+        self._refactor(actions)
         assert self._latest_workflow.step_by_label("pja_only_param").tool_inputs["parameter_type"] == "text"
 
     def test_refactoring_legacy_parameters_without_tool_state_relabel(self):
@@ -217,7 +217,7 @@ steps:
         actions = [
             {"action_type": "extract_legacy_parameter", "name": "pja_only_param", "label": "new_label"},
         ]
-        self._refactor_without_errors(actions)
+        self._refactor(actions)
         assert self._latest_workflow.step_by_label("new_label").tool_inputs["parameter_type"] == "text"
         pjas = self._latest_workflow.step_by_label("first_cat").post_job_actions
         assert len(pjas) == 1
@@ -233,7 +233,7 @@ steps:
         actions = [
             {"action_type": "remove_unlabeled_workflow_outputs"},
         ]
-        self._refactor_without_errors(actions)
+        self._refactor(actions)
         only_step = self._latest_workflow.step_by_index(0)
         assert len(only_step.workflow_outputs) == 0
 
@@ -269,7 +269,7 @@ steps:
         actions = [
             {"action_type": "update_step_label", "step": {"order_index": 0}, "label": "random1_new"},
         ]
-        self._refactor_without_errors(actions)
+        self._refactor(actions)
         first_step = self._latest_workflow.step_by_label("random1_new")
         assert "num_lines" not in first_step.tool_inputs
 
@@ -287,9 +287,7 @@ steps:
         actions = [
             {"action_type": "update_step_label", "step": {"order_index": 1}, "label": "random2_new"},
         ]
-        updated, errors = self._refactor(actions)
-        assert updated
-        assert errors  # we have a "message" about the un-validated state, but I is fine as long as it was preserved
+        self._refactor(actions)
         assert self._latest_workflow.step_by_index(1).label == "random2_new"
         assert "num_lines" in self._latest_workflow.step_by_index(1).tool_inputs
 
@@ -307,15 +305,16 @@ steps:
         actions = [
             {"action_type": "fill_step_defaults", "step": {"order_index": 0}},
         ]
-        self._refactor_without_errors(actions)
+        action_executions = self._refactor(actions)
         first_step = self._latest_workflow.step_by_label("random1")
         assert "num_lines" in first_step.tool_inputs
-
-    def _refactor_without_errors(self, actions):
-        updated, errors = self._refactor(actions)
-        assert updated
-        assert not errors
-        return updated
+        assert len(action_executions) == 1
+        action_execution = action_executions[0]
+        assert len(action_execution.messages) == 1
+        message = action_execution.messages[0]
+        assert message.order_index == 0
+        assert message.step_label == "random1"
+        assert message.input_name == "num_lines"
 
     def _refactor(self, actions):
         user = self._app.model.session.query(self._app.model.User).order_by(self._app.model.User.id.desc()).limit(1).one()

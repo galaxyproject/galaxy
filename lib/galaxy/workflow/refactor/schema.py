@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel
@@ -53,7 +54,7 @@ class BaseAction(BaseModel):
     """Refactoring actions."""
 
 
-class Action:
+class Action(BaseAction):
     action_type: str
 
     @classmethod
@@ -199,3 +200,28 @@ for action_class in union_action_classes.__args__:  # type: ignore
 class RefactorActions(BaseModel):
     actions: List[Action]
     dry_run: bool = False
+
+
+class RefactorActionExecutionMessageTypeEnum(str, Enum):
+    tool_version_change = 'tool_version_change'
+    tool_state_adjustment = 'tool_state_adjustment'
+
+
+class RefactorActionExecutionMessage(BaseModel):
+    message: str
+    message_type: RefactorActionExecutionMessageTypeEnum
+    # messages don't have to be bound to a step, but if they are should
+    # specify step_label and order_index below - these are the label and
+    # order_index before applying the refactoring.
+    step_label: Optional[str]
+    order_index: Optional[int]
+
+    # messages don't have to be bound to a step with inputs, but if they are
+    # the input name should be specified here. Should be a prefixed name
+    # in the case of tool inputs (e.g. 'cond|repeat_0|input')
+    input_name: Optional[str]
+
+
+class RefactorActionExecution(BaseModel):
+    action: Action
+    messages: List[RefactorActionExecutionMessage]

@@ -22,6 +22,9 @@ from .schema import (
     FillStepDefaultsAction,
     InputReferenceByOrderIndex,
     OutputReferenceByOrderIndex,
+    RefactorActionExecution,
+    RefactorActionExecutionMessage,
+    RefactorActionExecutionMessageTypeEnum,
     RefactorActions,
     RemoveUnlabeledWorkflowOutputs,
     step_reference_union,
@@ -52,6 +55,7 @@ class WorkflowRefactorExecutor:
         self.module_injector = module_injector
 
     def refactor(self, refactor_request: RefactorActions):
+        action_executions = []
         for action in refactor_request.actions:
             action_type = action.action_type
             refactor_method_name = "_apply_%s" % action_type
@@ -60,32 +64,38 @@ class WorkflowRefactorExecutor:
                 raise RequestParameterInvalidException(
                     f"Unknown workflow editing action encountered [{action_type}]"
                 )
-            refactor_method(action)
+            execution = RefactorActionExecution(
+                action=action.dict(),
+                messages=[],
+            )
+            refactor_method(action, execution)
+            action_executions.append(execution)
+        return action_executions
 
-    def _apply_update_step_label(self, action: UpdateStepLabelAction):
+    def _apply_update_step_label(self, action: UpdateStepLabelAction, execution: RefactorActionExecution):
         step = self._find_step_for_action(action)
         step["label"] = action.label
 
-    def _apply_update_step_position(self, action: UpdateStepPositionAction):
+    def _apply_update_step_position(self, action: UpdateStepPositionAction, execution: RefactorActionExecution):
         step = self._find_step_for_action(action)
         step["position"] = action.position.to_dict()
 
-    def _apply_update_name(self, action: UpdateNameAction):
+    def _apply_update_name(self, action: UpdateNameAction, execution: RefactorActionExecution):
         self._as_dict["name"] = action.name
 
-    def _apply_update_annotation(self, action: UpdateAnnotationAction):
+    def _apply_update_annotation(self, action: UpdateAnnotationAction, execution: RefactorActionExecution):
         self._as_dict["annotation"] = action.annotation
 
-    def _apply_update_license(self, action: UpdateLicenseAction):
+    def _apply_update_license(self, action: UpdateLicenseAction, execution: RefactorActionExecution):
         self._as_dict["license"] = action.license
 
-    def _apply_update_creator(self, action: UpdateCreatorAction):
+    def _apply_update_creator(self, action: UpdateCreatorAction, execution: RefactorActionExecution):
         self._as_dict["creator"] = action.creator
 
-    def _apply_update_report(self, action: UpdateReportAction):
+    def _apply_update_report(self, action: UpdateReportAction, execution: RefactorActionExecution):
         self._as_dict["report"] = {"markdown": action.report.markdown}
 
-    def _apply_add_step(self, action: AddStepAction):
+    def _apply_add_step(self, action: AddStepAction, execution: RefactorActionExecution):
         steps = self._as_dict["steps"]
         order_index = len(steps)
         step_dict = {
@@ -101,7 +111,7 @@ class WorkflowRefactorExecutor:
             step_dict["position"] = action.position.to_dict()
         steps[order_index] = step_dict
 
-    def _apply_add_input(self, action: AddInputAction):
+    def _apply_add_input(self, action: AddInputAction, execution: RefactorActionExecution):
         input_type = action.type
         module_type = None
 
@@ -136,9 +146,9 @@ class WorkflowRefactorExecutor:
             position=action.position,
             **add_step_kwds
         )
-        self._apply_add_step(add_step_action)
+        self._apply_add_step(add_step_action, execution)
 
-    def _apply_disconnect(self, action: DisconnectAction):
+    def _apply_disconnect(self, action: DisconnectAction, execution: RefactorActionExecution):
         input_step_dict, input_name, output_step_dict, output_name = self._connection(action)
         output_order_index = output_step_dict["id"]  # wish this was order_index...
         # default name is name used for input's output terminal - following
@@ -159,7 +169,7 @@ class WorkflowRefactorExecutor:
             raise RequestParameterInvalidException("Failed to locate connection to disconnect")
         del input_connections[delete_index]
 
-    def _apply_connect(self, action: ConnectAction):
+    def _apply_connect(self, action: ConnectAction, execution: RefactorActionExecution):
         input_step_dict, input_name, output_step_dict, output_name = self._connection(action)
         output_order_index = output_step_dict["id"]  # wish this was order_index...
         all_input_connections = input_step_dict.get("input_connections")
@@ -170,13 +180,13 @@ class WorkflowRefactorExecutor:
             'output_name': output_name,
         })
 
-    def _apply_fill_step_defaults(self, action: FillStepDefaultsAction):
-        step = self._find_step_with_module_for_action(action)
+    def _apply_fill_step_defaults(self, action: FillStepDefaultsAction, execution: RefactorActionExecution):
+        step = self._find_step_with_module_for_action(action, execution)
         self._as_dict["steps"][step.order_index]["tool_state"] = step.module.get_tool_state()
 
-    def _apply_extract_input(self, action: ExtractInputAction):
+    def _apply_extract_input(self, action: ExtractInputAction, execution: RefactorActionExecution):
         input_step_dict, input_name = self._input_from_action(action)
-        step = self._step_with_module(input_step_dict["id"])
+        step = self._step_with_module(input_step_dict["id"], execution)
         module = step.module
         inputs = module.get_all_inputs()
 
@@ -207,15 +217,15 @@ class WorkflowRefactorExecutor:
             label=action.label,
             position=action.position,
         )
-        new_input_order_index = self._add_input_get_order_index(input_action)
+        new_input_order_index = self._add_input_get_order_index(input_action, execution)
         connect_action = ConnectAction(
             action_type="connect",
             input=action.input,
             output=OutputReferenceByOrderIndex(order_index=new_input_order_index),
         )
-        self._apply_connect(connect_action)
+        self._apply_connect(connect_action, execution)
 
-    def _apply_extract_legacy_parameter(self, action: ExtractLegacyParameter):
+    def _apply_extract_legacy_parameter(self, action: ExtractLegacyParameter, execution: RefactorActionExecution):
         legacy_parameter_name = action.name
         new_label = action.label or legacy_parameter_name
         target_value = "${%s}" % legacy_parameter_name
@@ -223,11 +233,12 @@ class WorkflowRefactorExecutor:
         target_tool_inputs = []
         rename_pjas = []
 
-        for step_def, step in self._iterate_over_step_pairs():
+        for step_def, step in self._iterate_over_step_pairs(execution):
             module = step.module
             if module.type != "tool":
                 continue
 
+            # TODO: require a clean tool state for all tools to do this.
             tool = module.tool
             tool_inputs = module.state
 
@@ -300,7 +311,7 @@ class WorkflowRefactorExecutor:
             label=new_label,
             position=action.position,
         )
-        new_input_order_index = self._add_input_get_order_index(input_action)
+        new_input_order_index = self._add_input_get_order_index(input_action, execution)
 
         for order_index, tool_input, prefixed_name in target_tool_inputs:
             connect_input = InputReferenceByOrderIndex(order_index=order_index, input_name=prefixed_name)
@@ -309,9 +320,9 @@ class WorkflowRefactorExecutor:
                 input=connect_input,
                 output=OutputReferenceByOrderIndex(order_index=new_input_order_index),
             )
-            self._apply_connect(connect_action)
+            self._apply_connect(connect_action, execution)
 
-    def _apply_remove_unlabeled_workflow_outputs(self, action: RemoveUnlabeledWorkflowOutputs):
+    def _apply_remove_unlabeled_workflow_outputs(self, action: RemoveUnlabeledWorkflowOutputs, execution: RefactorActionExecution):
         for step in self._as_dict["steps"].values():
             new_outputs = []
             for workflow_output in step.get("workflow_outputs", []):
@@ -342,21 +353,17 @@ class WorkflowRefactorExecutor:
         step_reference = action.step
         return self._find_step(step_reference)
 
-    def _find_step_with_module_for_action(self, action):
+    def _find_step_with_module_for_action(self, action, execution):
         step_reference = action.step
         step_def = self._find_step(step_reference)
         step = self.workflow.steps[step_def["id"]]
-        if not hasattr(step, "module"):
-            self.module_injector.inject(step)
-        return step
+        return self._inject(step, execution)
 
-    def _step_with_module(self, order_index):
+    def _step_with_module(self, order_index, execution):
         step = self.workflow.steps[order_index]
-        if not hasattr(step, "module"):
-            self.module_injector.inject(step)
-        return step
+        return self._inject(step, execution)
 
-    def _iterate_over_step_pairs(self):
+    def _iterate_over_step_pairs(self, execution):
         # walk over both the dict-ified steps and the model steps (ensuring)
         # module is attached.
         for order_index, step_def in self._as_dict["steps"].items():
@@ -364,8 +371,38 @@ class WorkflowRefactorExecutor:
                 # newly added step during refactoring, don't iterate over it...
                 continue
             else:
-                step = self._step_with_module(order_index)
+                step = self._step_with_module(order_index, execution)
                 yield step_def, step
+
+    def _inject(self, step, execution):
+        # inject tool state into module, capture upgrade messages that result
+        if not hasattr(step, "module"):
+            self.module_injector.inject(step)
+            if getattr(step, "upgrade_messages", None):
+                for key, value in step.upgrade_messages.items():
+                    message = RefactorActionExecutionMessage(
+                        message=value,
+                        message_type=RefactorActionExecutionMessageTypeEnum.tool_state_adjustment,
+                        input_name=key,
+                        step_label=step.label,
+                        order_index=step.order_index,
+                    )
+                    execution.messages.append(
+                        message
+                    )
+            if getattr(step.module, "version_changes", None):
+                for version_change in step.module.version_changes:
+                    message = RefactorActionExecutionMessage(
+                        message=version_change,
+                        message_type=RefactorActionExecutionMessageTypeEnum.tool_version_change,
+                        step_label=step.label,
+                        order_index=step.order_index,
+                    )
+                    execution.messages.append(
+                        message
+                    )
+
+        return step
 
     def _iterate_over_rename_pjas(self):
         for _, step_def in self._as_dict["steps"].items():
@@ -376,8 +413,8 @@ class WorkflowRefactorExecutor:
                 if post_job_action["action_type"] == "RenameDatasetAction":
                     yield post_job_action
 
-    def _add_input_get_order_index(self, input_action: AddInputAction):
-        self._apply_add_input(input_action)
+    def _add_input_get_order_index(self, input_action: AddInputAction, execution: RefactorActionExecution):
+        self._apply_add_input(input_action, execution)
         return len(self._as_dict["steps"]) - 1
 
     def _input_from_action(self, action):
