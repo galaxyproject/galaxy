@@ -22,7 +22,7 @@ from .schema import (
     FillStepDefaultsAction,
     InputReferenceByOrderIndex,
     OutputReferenceByOrderIndex,
-    RefactorRequest,
+    RefactorActions,
     RemoveUnlabeledWorkflowOutputs,
     step_reference_union,
     StepReferenceByLabel,
@@ -51,7 +51,7 @@ class WorkflowRefactorExecutor:
         self.workflow = workflow
         self.module_injector = module_injector
 
-    def refactor(self, refactor_request: RefactorRequest):
+    def refactor(self, refactor_request: RefactorActions):
         for action in refactor_request.actions:
             action_type = action.action_type
             refactor_method_name = "_apply_%s" % action_type

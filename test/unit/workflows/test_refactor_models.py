@@ -1,4 +1,4 @@
-from galaxy.workflow.refactor.schema import RefactorRequest
+from galaxy.workflow.refactor.schema import RefactorActions
 
 
 def test_root_list():
@@ -16,7 +16,7 @@ def test_root_list():
             {"action_type": "extract_legacy_parameter", "name": "foo", "label": "new_foo"},
         ],
     }
-    ar = RefactorRequest(**request)
+    ar = RefactorActions(**request)
     actions = ar.actions
 
     a0 = actions[0]

@@ -45,6 +45,7 @@ from galaxy.workflow.modules import (
     WorkflowModuleInjector
 )
 from galaxy.workflow.refactor.execute import WorkflowRefactorExecutor
+from galaxy.workflow.refactor.schema import RefactorActions
 from galaxy.workflow.reports import generate_report
 from galaxy.workflow.resources import get_resource_mapper_function
 from galaxy.workflow.steps import attach_ordered_steps
@@ -1408,7 +1409,7 @@ class WorkflowContentsManager(UsesAnnotations):
             if default_label and util.unicodify(default_label).lower() not in ['input dataset', 'input dataset collection']:
                 step.label = module.label = default_label
 
-    def refactor(self, trans, stored_workflow, refactor_request):
+    def do_refactor(self, trans, stored_workflow, refactor_request):
         """Apply supplied actions to stored_workflow.latest_workflow to build a new version.
         """
         workflow = stored_workflow.latest_workflow
@@ -1433,6 +1434,15 @@ class WorkflowContentsManager(UsesAnnotations):
                 raw_workflow_description,
                 workflow_update_options,
             )
+
+    def refactor(self, trans, stored_workflow, refactor_request):
+        stored_workflow, errors = self.do_refactor(trans, stored_workflow, refactor_request)
+        # TODO: handle errors...
+        return self.workflow_to_dict(trans, stored_workflow, style=refactor_request.style)
+
+
+class RefactorRequest(RefactorActions):
+    style: str = "export"
 
 
 class WorkflowStateResolutionOptions(BaseModel):

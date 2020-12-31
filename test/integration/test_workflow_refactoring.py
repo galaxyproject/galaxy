@@ -1,7 +1,7 @@
 import json
 
 from galaxy.managers.context import ProvidesAppContext
-from galaxy.workflow.refactor.schema import RefactorRequest
+from galaxy.workflow.refactor.schema import RefactorActions
 from galaxy_test.base.populators import (
     WorkflowPopulator,
 )
@@ -320,10 +320,10 @@ steps:
     def _refactor(self, actions):
         user = self._app.model.session.query(self._app.model.User).order_by(self._app.model.User.id.desc()).limit(1).one()
         mock_trans = MockTrans(self._app, user)
-        return self._manager.refactor(
+        return self._manager.do_refactor(
             mock_trans,
             self._most_recent_stored_workflow,
-            RefactorRequest(**{"actions": actions})
+            RefactorActions(**{"actions": actions})
         )
 
     @property

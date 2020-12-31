@@ -196,6 +196,6 @@ for action_class in union_action_classes.__args__:  # type: ignore
     ACTION_CLASSES_BY_TYPE[action_type] = action_class
 
 
-class RefactorRequest(BaseModel):
+class RefactorActions(BaseModel):
     actions: List[Action]
     dry_run: bool = False
