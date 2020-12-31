@@ -293,6 +293,24 @@ steps:
         assert self._latest_workflow.step_by_index(1).label == "random2_new"
         assert "num_lines" in self._latest_workflow.step_by_index(1).tool_inputs
 
+    def test_refactor_fill_step_defaults(self):
+        # populating a workflow with incomplete state...
+        wf = self.workflow_populator.load_workflow_from_resource("test_workflow_two_random_lines")
+        ts = json.loads(wf["steps"]["0"]["tool_state"])
+        del ts["num_lines"]
+        wf["steps"]["0"]["tool_state"] = json.dumps(ts)
+        self.workflow_populator.create_workflow(wf, fill_defaults=False)
+
+        first_step = self._latest_workflow.step_by_label("random1")
+        assert "num_lines" not in first_step.tool_inputs
+
+        actions = [
+            {"action_type": "fill_step_defaults", "step": {"order_index": 0}},
+        ]
+        self._refactor_without_errors(actions)
+        first_step = self._latest_workflow.step_by_label("random1")
+        assert "num_lines" in first_step.tool_inputs
+
     def _refactor_without_errors(self, actions):
         updated, errors = self._refactor(actions)
         assert updated

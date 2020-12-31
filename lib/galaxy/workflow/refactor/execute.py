@@ -19,6 +19,7 @@ from .schema import (
     DisconnectAction,
     ExtractInputAction,
     ExtractLegacyParameter,
+    FillStepDefaultsAction,
     InputReferenceByOrderIndex,
     OutputReferenceByOrderIndex,
     RefactorRequest,
@@ -168,6 +169,10 @@ class WorkflowRefactorExecutor:
             'id': output_order_index,
             'output_name': output_name,
         })
+
+    def _apply_fill_step_defaults(self, action: FillStepDefaultsAction):
+        step = self._find_step_with_module_for_action(action)
+        self._as_dict["steps"][step.order_index]["tool_state"] = step.module.get_tool_state()
 
     def _apply_extract_input(self, action: ExtractInputAction):
         input_step_dict, input_name = self._input_from_action(action)
@@ -336,6 +341,14 @@ class WorkflowRefactorExecutor:
     def _find_step_for_action(self, action):
         step_reference = action.step
         return self._find_step(step_reference)
+
+    def _find_step_with_module_for_action(self, action):
+        step_reference = action.step
+        step_def = self._find_step(step_reference)
+        step = self.workflow.steps[step_def["id"]]
+        if not hasattr(step, "module"):
+            self.module_injector.inject(step)
+        return step
 
     def _step_with_module(self, order_index):
         step = self.workflow.steps[order_index]

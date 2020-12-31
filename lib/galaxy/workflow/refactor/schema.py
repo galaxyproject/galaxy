@@ -166,6 +166,11 @@ class UpdateReportAction(BaseAction):
     report: Report
 
 
+class FillStepDefaultsAction(BaseAction):
+    action_type: Literal['fill_step_defaults']
+    step: step_reference_union
+
+
 union_action_classes = Union[
     AddInputAction,
     AddStepAction,
@@ -173,6 +178,7 @@ union_action_classes = Union[
     DisconnectAction,
     ExtractInputAction,
     ExtractLegacyParameter,
+    FillStepDefaultsAction,
     UpdateAnnotationAction,
     UpdateCreatorAction,
     UpdateNameAction,
