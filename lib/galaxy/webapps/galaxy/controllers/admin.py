@@ -555,7 +555,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             trans.app.tool_data_tables.get_tables().items()
         )
 
-        for data_table_elem_name, data_table in sorted_data_tables:
+        for _data_table_elem_name, data_table in sorted_data_tables:
             for filename, file_dict in data_table.filenames.items():
                 file_missing = ['file missing'] \
                     if not file_dict.get('found') else []
@@ -679,27 +679,27 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             default_options = [('No', 'no')]
             for typ in trans.app.model.DefaultQuotaAssociation.types.__dict__.values():
                 default_options.append(('Yes, ' + typ, typ))
-            return {'title'  : 'Create Quota',
-                    'inputs' : [
+            return {'title': 'Create Quota',
+                    'inputs': [
                         {
-                            'name'    : 'name',
-                            'label'   : 'Name'
+                            'name': 'name',
+                            'label': 'Name'
                         }, {
-                            'name'    : 'description',
-                            'label'   : 'Description'
+                            'name': 'description',
+                            'label': 'Description'
                         }, {
-                            'name'    : 'amount',
-                            'label'   : 'Amount',
-                            'help'    : 'Examples: "10000MB", "99 gb", "0.2T", "unlimited"'
+                            'name': 'amount',
+                            'label': 'Amount',
+                            'help': 'Examples: "10000MB", "99 gb", "0.2T", "unlimited"'
                         }, {
-                            'name'    : 'operation',
-                            'label'   : 'Assign, increase by amount, or decrease by amount?',
-                            'options' : [('=', '='), ('+', '+'), ('-', '-')]
+                            'name': 'operation',
+                            'label': 'Assign, increase by amount, or decrease by amount?',
+                            'options': [('=', '='), ('+', '+'), ('-', '-')]
                         }, {
-                            'name'    : 'default',
-                            'label'   : 'Is this quota a default for a class of users (if yes, what type)?',
-                            'options' : default_options,
-                            'help'    : 'Warning: Any users or groups associated with this quota will be disassociated.'
+                            'name': 'default',
+                            'label': 'Is this quota a default for a class of users (if yes, what type)?',
+                            'options': default_options,
+                            'help': 'Warning: Any users or groups associated with this quota will be disassociated.'
                         },
                         build_select_input('in_groups', 'Groups', all_groups, []),
                         build_select_input('in_users', 'Users', all_users, [])]}
@@ -719,15 +719,15 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         quota = get_quota(trans, id)
         if trans.request.method == 'GET':
             return {
-                'title'  : 'Change quota name and description for \'%s\'' % util.sanitize_text(quota.name),
-                'inputs' : [{
-                    'name'  : 'name',
-                    'label' : 'Name',
-                    'value' : quota.name
+                'title': 'Change quota name and description for \'%s\'' % util.sanitize_text(quota.name),
+                'inputs': [{
+                    'name': 'name',
+                    'label': 'Name',
+                    'value': quota.name
                 }, {
-                    'name'  : 'description',
-                    'label' : 'Description',
-                    'value' : quota.description
+                    'name': 'description',
+                    'label': 'Description',
+                    'value': quota.description
                 }]
             }
         else:
@@ -760,12 +760,12 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 if group in [x.group for x in quota.groups]:
                     in_groups.append(trans.security.encode_id(group.id))
                 all_groups.append((group.name, trans.security.encode_id(group.id)))
-            return {'title'  : 'Quota \'%s\'' % quota.name,
+            return {'title': 'Quota \'%s\'' % quota.name,
                     'message': 'Quota \'%s\' is currently associated with %d user(s) and %d group(s).' %
                     (quota.name, len(in_users), len(in_groups)),
-                    'status' : 'info',
-                    'inputs' : [build_select_input('in_groups', 'Groups', all_groups, in_groups),
-                                build_select_input('in_users', 'Users', all_users, in_users)]}
+                    'status': 'info',
+                    'inputs': [build_select_input('in_groups', 'Groups', all_groups, in_groups),
+                              build_select_input('in_users', 'Users', all_users, in_users)]}
         else:
             try:
                 return {'message': self._manage_users_and_groups_for_quota(quota, util.Params(payload), decode_id=trans.security.decode_id)}
@@ -781,17 +781,17 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         quota = get_quota(trans, id)
         if trans.request.method == 'GET':
             return {
-                'title'  : 'Edit quota size for \'%s\'' % util.sanitize_text(quota.name),
-                'inputs' : [{
-                    'name'    : 'amount',
-                    'label'   : 'Amount',
-                    'value'   : quota.display_amount,
-                    'help'    : 'Examples: "10000MB", "99 gb", "0.2T", "unlimited"'
+                'title': 'Edit quota size for \'%s\'' % util.sanitize_text(quota.name),
+                'inputs': [{
+                    'name': 'amount',
+                    'label': 'Amount',
+                    'value': quota.display_amount,
+                    'help': 'Examples: "10000MB", "99 gb", "0.2T", "unlimited"'
                 }, {
-                    'name'    : 'operation',
-                    'label'   : 'Assign, increase by amount, or decrease by amount?',
-                    'options' : [('=', '='), ('+', '+'), ('-', '-')],
-                    'value'   : quota.operation
+                    'name': 'operation',
+                    'label': 'Assign, increase by amount, or decrease by amount?',
+                    'options': [('=', '='), ('+', '+'), ('-', '-')],
+                    'value': quota.operation
                 }]
             }
         else:
@@ -813,13 +813,13 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             for typ in trans.app.model.DefaultQuotaAssociation.types.__dict__.values():
                 default_options.append(('Yes, ' + typ, typ))
             return {
-                'title'  : 'Set quota default for \'%s\'' % util.sanitize_text(quota.name),
-                'inputs' : [{
-                    'name'    : 'default',
-                    'label'   : 'Assign, increase by amount, or decrease by amount?',
-                    'options' : default_options,
-                    'value'   : default_value,
-                    'help'    : 'Warning: Any users or groups associated with this quota will be disassociated.'
+                'title': 'Set quota default for \'%s\'' % util.sanitize_text(quota.name),
+                'inputs': [{
+                    'name': 'default',
+                    'label': 'Assign, increase by amount, or decrease by amount?',
+                    'options': default_options,
+                    'value': default_value,
+                    'help': 'Warning: Any users or groups associated with this quota will be disassociated.'
                 }]
             }
         else:
@@ -868,7 +868,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     text = url_get(shed_url, auth=self.app.tool_shed_registry.url_auth(shed_url), pathspec=pathspec, params=params)
                     if text:
                         tool_dependencies_dict = encoding_util.tool_shed_decode(text)
-                        for dependency_key, requirements_dict in tool_dependencies_dict.items():
+                        for requirements_dict in tool_dependencies_dict.values():
                             tool_dependency_name = requirements_dict['name']
                             tool_dependency_version = requirements_dict['version']
                             tool_dependency_type = requirements_dict['type']
@@ -947,19 +947,19 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                                          .order_by(trans.app.model.Group.table.c.name):
                 all_groups.append((group.name, trans.security.encode_id(group.id)))
             return {
-                'title'  : 'Create Role',
-                'inputs' : [{
-                    'name'  : 'name',
-                    'label' : 'Name'
+                'title': 'Create Role',
+                'inputs': [{
+                    'name': 'name',
+                    'label': 'Name'
                 }, {
-                    'name'  : 'description',
-                    'label' : 'Description'
+                    'name': 'description',
+                    'label': 'Description'
                 },
                     build_select_input('in_groups', 'Groups', all_groups, []),
                     build_select_input('in_users', 'Users', all_users, []), {
-                    'name'  : 'auto_create',
-                    'label' : 'Create a new group of the same name for this role:',
-                    'type'  : 'boolean'
+                    'name': 'auto_create',
+                    'label': 'Create a new group of the same name for this role:',
+                    'type': 'boolean'
                 }]}
         else:
             name = util.restore_text(payload.get('name', ''))
@@ -999,10 +999,10 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 else:
                     num_in_groups = len(in_groups)
                 trans.sa_session.flush()
-                message = 'Role \'%s\' has been created with %d associated users and %d associated groups.' % (role.name, len(in_users), num_in_groups)
+                message = f"Role '{role.name}' has been created with {len(in_users)} associated users and {num_in_groups} associated groups."
                 if auto_create_checked:
                     message += 'One of the groups associated with this role is the newly created group with the same name.'
-                return {'message' : message}
+                return {'message': message}
 
     @web.legacy_expose_api
     @web.require_admin
@@ -1013,15 +1013,15 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         role = get_role(trans, id)
         if trans.request.method == 'GET':
             return {
-                'title'  : 'Change role name and description for \'%s\'' % util.sanitize_text(role.name),
-                'inputs' : [{
-                    'name'  : 'name',
-                    'label' : 'Name',
-                    'value' : role.name
+                'title': 'Change role name and description for \'%s\'' % util.sanitize_text(role.name),
+                'inputs': [{
+                    'name': 'name',
+                    'label': 'Name',
+                    'value': role.name
                 }, {
-                    'name'  : 'description',
-                    'label' : 'Description',
-                    'value' : role.description
+                    'name': 'description',
+                    'label': 'Description',
+                    'value': role.description
                 }]
             }
         else:
@@ -1066,12 +1066,12 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 if group in [x.group for x in role.groups]:
                     in_groups.append(trans.security.encode_id(group.id))
                 all_groups.append((group.name, trans.security.encode_id(group.id)))
-            return {'title'  : 'Role \'%s\'' % role.name,
+            return {'title': 'Role \'%s\'' % role.name,
                     'message': 'Role \'%s\' is currently associated with %d user(s) and %d group(s).' %
                     (role.name, len(in_users), len(in_groups)),
-                    'status' : 'info',
-                    'inputs' : [build_select_input('in_groups', 'Groups', all_groups, in_groups),
-                                build_select_input('in_users', 'Users', all_users, in_users)]}
+                    'status': 'info',
+                    'inputs': [build_select_input('in_groups', 'Groups', all_groups, in_groups),
+                              build_select_input('in_users', 'Users', all_users, in_users)]}
         else:
             in_users = [trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(x)) for x in util.listify(payload.get('in_users'))]
             in_groups = [trans.sa_session.query(trans.app.model.Group).get(trans.security.decode_id(x)) for x in util.listify(payload.get('in_groups'))]
@@ -1092,7 +1092,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     trans.sa_session.flush()
             trans.app.security_agent.set_entity_role_associations(roles=[role], users=in_users, groups=in_groups)
             trans.sa_session.refresh(role)
-            return {'message' : 'Role \'%s\' has been updated with %d associated users and %d associated groups.' % (role.name, len(in_users), len(in_groups))}
+            return {'message': f"Role '{role.name}' has been updated with {len(in_users)} associated users and {len(in_groups)} associated groups."}
 
     def _delete_role(self, trans, ids):
         message = 'Deleted %d roles: ' % len(ids)
@@ -1185,11 +1185,11 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         group = get_group(trans, id)
         if trans.request.method == 'GET':
             return {
-                'title'  : 'Change group name for \'%s\'' % util.sanitize_text(group.name),
-                'inputs' : [{
-                    'name'  : 'name',
-                    'label' : 'Name',
-                    'value' : group.name
+                'title': 'Change group name for \'%s\'' % util.sanitize_text(group.name),
+                'inputs': [{
+                    'name': 'name',
+                    'label': 'Name',
+                    'value': group.name
                 }]
             }
         else:
@@ -1232,12 +1232,12 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 if role in [x.role for x in group.roles]:
                     in_roles.append(trans.security.encode_id(role.id))
                 all_roles.append((role.name, trans.security.encode_id(role.id)))
-            return {'title'  : 'Group \'%s\'' % group.name,
+            return {'title': 'Group \'%s\'' % group.name,
                     'message': 'Group \'%s\' is currently associated with %d user(s) and %d role(s).' %
                     (group.name, len(in_users), len(in_roles)),
-                    'status' : 'info',
-                    'inputs' : [build_select_input('in_roles', 'Roles', all_roles, in_roles),
-                                build_select_input('in_users', 'Users', all_users, in_users)]}
+                    'status': 'info',
+                    'inputs': [build_select_input('in_roles', 'Roles', all_roles, in_roles),
+                              build_select_input('in_users', 'Users', all_users, in_users)]}
         else:
             in_users = [trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(x)) for x in util.listify(payload.get('in_users'))]
             in_roles = [trans.sa_session.query(trans.app.model.Role).get(trans.security.decode_id(x)) for x in util.listify(payload.get('in_roles'))]
@@ -1245,7 +1245,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 return self.message_exception(trans, 'One or more invalid user/role id has been provided.')
             trans.app.security_agent.set_entity_group_associations(groups=[group], users=in_users, roles=in_roles)
             trans.sa_session.refresh(group)
-            return {'message' : 'Group \'%s\' has been updated with %d associated users and %d associated roles.' % (group.name, len(in_users), len(in_roles))}
+            return {'message': f"Group '{group.name}' has been updated with {len(in_users)} associated users and {len(in_roles)} associated roles."}
 
     @web.legacy_expose_api
     @web.require_admin
@@ -1262,17 +1262,17 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                                         .order_by(trans.app.model.Role.table.c.name):
                 all_roles.append((role.name, trans.security.encode_id(role.id)))
             return {
-                'title'    : 'Create Group',
-                'title_id' : 'create-group',
-                'inputs' : [{
-                    'name'  : 'name',
-                    'label' : 'Name'
+                'title': 'Create Group',
+                'title_id': 'create-group',
+                'inputs': [{
+                    'name': 'name',
+                    'label': 'Name'
                 },
                     build_select_input('in_roles', 'Roles', all_roles, []),
                     build_select_input('in_users', 'Users', all_users, []), {
-                    'name'  : 'auto_create',
-                    'label' : 'Create a new role of the same name for this group:',
-                    'type'  : 'boolean'
+                    'name': 'auto_create',
+                    'label': 'Create a new role of the same name for this group:',
+                    'type': 'boolean'
                 }]
             }
         else:
@@ -1315,7 +1315,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 message = 'Group \'%s\' has been created with %d associated users and %d associated roles.' % (group.name, len(in_users), num_in_roles)
                 if auto_create_checked:
                     message += 'One of the roles associated with this group is the newly created role with the same name.'
-                return {'message' : message}
+                return {'message': message}
 
     def _delete_group(self, trans, ids):
         message = 'Deleted %d groups: ' % len(ids)
@@ -1372,9 +1372,9 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             if trans.request.method == 'GET':
                 return {
                     'message': 'Changes password(s) for: %s.' % ', '.join(user.email for user in users.values()),
-                    'status' : 'info',
-                    'inputs' : [{'name' : 'password', 'label' : 'New password', 'type' : 'password'},
-                                {'name' : 'confirm', 'label' : 'Confirm password', 'type' : 'password'}]
+                    'status': 'info',
+                    'inputs': [{'name': 'password', 'label': 'New password', 'type': 'password'},
+                              {'name': 'confirm', 'label': 'Confirm password', 'type': 'password'}]
                 }
             else:
                 password = payload.get('password')
@@ -1500,12 +1500,11 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 if group in [x.group for x in user.groups]:
                     in_groups.append(trans.security.encode_id(group.id))
                 all_groups.append((group.name, trans.security.encode_id(group.id)))
-            return {'title'  : 'Roles and groups for \'%s\'' % user.email,
-                    'message': 'User \'%s\' is currently associated with %d role(s) and is a member of %d group(s).' %
-                    (user.email, len(in_roles) - 1, len(in_groups)),
-                    'status' : 'info',
-                    'inputs' : [build_select_input('in_roles', 'Roles', all_roles, in_roles),
-                                build_select_input('in_groups', 'Groups', all_groups, in_groups)]}
+            return {'title': f"Roles and groups for '{user.email}'",
+                    'message': f"User '{user.email}' is currently associated with {len(in_roles) - 1} role(s) and is a member of {len(in_groups)} group(s).", 
+                    'status': 'info',
+                    'inputs': [build_select_input('in_roles', 'Roles', all_roles, in_roles),
+                              build_select_input('in_groups', 'Groups', all_groups, in_groups)]}
         else:
             in_roles = [trans.sa_session.query(trans.app.model.Role).get(trans.security.decode_id(x)) for x in util.listify(payload.get('in_roles'))]
             in_groups = [trans.sa_session.query(trans.app.model.Group).get(trans.security.decode_id(x)) for x in util.listify(payload.get('in_groups'))]
@@ -1519,7 +1518,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
 
             trans.app.security_agent.set_entity_user_associations(users=[user], roles=in_roles, groups=in_groups)
             trans.sa_session.refresh(user)
-            return {'message' : 'User \'%s\' has been updated with %d associated roles and %d associated groups (private roles are not displayed).' % (user.email, len(in_roles) - 1, len(in_groups))}
+            return {'message': f"User '{user.email}' has been updated with {len(in_roles) - 1} associated roles and {len(in_groups)} associated groups (private roles are not displayed)."}
 
     @web.expose
     @web.json
@@ -1611,7 +1610,8 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
 
     @web.expose
     @web.require_admin
-    def sanitize_allowlist(self, trans, submit_allowlist=False, tools_to_allowlist=[]):
+    def sanitize_allowlist(self, trans, submit_allowlist=False, tools_to_allowlist=None):
+        tools_to_allowlist = tools_to_allowlist or []
         if submit_allowlist:
             # write the configured sanitize_allowlist_file with new allowlist
             # and update in-memory list.
@@ -1631,14 +1631,14 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
 # ---- Utility methods -------------------------------------------------------
 
 def build_select_input(name, label, options, value):
-    return {'type'      : 'select',
-            'multiple'  : True,
-            'optional'  : True,
+    return {'type': 'select',
+            'multiple': True,
+            'optional': True,
             'individual': True,
-            'name'      : name,
-            'label'     : label,
-            'options'   : options,
-            'value'     : value}
+            'name': name,
+            'label': label,
+            'options': options,
+            'value': value}
 
 
 def get_user(trans, user_id):
