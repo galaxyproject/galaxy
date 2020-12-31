@@ -134,7 +134,7 @@ def dump_test_information(self, name_prefix):
         for log_type in ["browser", "driver"]:
             try:
                 full_log = self.driver.get_log(log_type)
-                trimmed_log = [l for l in full_log if l["level"] not in ["DEBUG", "INFO"]]
+                trimmed_log = [log for log in full_log if log["level"] not in ["DEBUG", "INFO"]]
                 write_file("%s.log.json" % log_type, json.dumps(trimmed_log, indent=True))
                 write_file("%s.log.verbose.json" % log_type, json.dumps(full_log, indent=True))
             except Exception:
