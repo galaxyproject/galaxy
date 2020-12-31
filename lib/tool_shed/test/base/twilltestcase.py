@@ -176,11 +176,10 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         # TextControl, FileControl, ListControl, RadioControl, CheckboxControl, SelectControl,
         # SubmitControl, ImageControl
         if form is None:
-            for i, _form in enumerate(self.showforms()):
-                if i == form_no:
-                    form = _form
-                    break
-        assert form, "No form to submit found"
+            try:
+                form = self.showforms()[form_no]
+            except IndexError:
+                raise ValueError("No form to submit found")
         controls = {c.name: c for c in form.inputs}
         form_name = form.get('name')
         for control_name, control_value in kwd.items():
