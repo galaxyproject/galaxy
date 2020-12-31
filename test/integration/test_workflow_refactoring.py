@@ -1,3 +1,5 @@
+import json
+
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.workflow.refactor.schema import RefactorRequest
 from galaxy_test.base.populators import (
@@ -234,6 +236,26 @@ steps:
         self._refactor_without_errors(actions)
         only_step = self._latest_workflow.step_by_index(0)
         assert len(only_step.workflow_outputs) == 0
+
+    def test_fill_defaults_option(self):
+        # this is a prereq for other state filling refactoring tests that
+        # would be better in API tests for workflow import options but fill
+        # defaults happens automatically on export, so this might only be
+        # testable in an integration test currently.
+
+        # populating a workflow with incomplete state...
+        wf = self.workflow_populator.load_workflow_from_resource("test_workflow_two_random_lines")
+        ts = json.loads(wf["steps"]["0"]["tool_state"])
+        del ts["num_lines"]
+        wf["steps"]["0"]["tool_state"] = json.dumps(ts)
+        self.workflow_populator.create_workflow(wf, fill_defaults=False)
+        first_step = self._latest_workflow.step_by_label("random1")
+        assert "num_lines" not in first_step.tool_inputs
+
+        self.workflow_populator.create_workflow(wf, fill_defaults=True)
+        first_step = self._latest_workflow.step_by_label("random1")
+        assert "num_lines" in first_step.tool_inputs
+        assert json.loads(first_step.tool_inputs["num_lines"]) == 1
 
     def _refactor_without_errors(self, actions):
         updated, errors = self._refactor(actions)
