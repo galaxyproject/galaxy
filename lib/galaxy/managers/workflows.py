@@ -3,7 +3,10 @@ import logging
 import os
 import uuid
 from collections import namedtuple
-from typing import Dict, Optional
+from typing import (
+    Dict,
+    Optional,
+)
 
 from gxformat2 import (
     from_galaxy_native,

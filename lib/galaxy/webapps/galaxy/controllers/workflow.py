@@ -14,7 +14,10 @@ from galaxy import (
     util,
     web
 )
-from galaxy.managers.workflows import MissingToolsException, WorkflowUpdateOptions
+from galaxy.managers.workflows import (
+    MissingToolsException,
+    WorkflowUpdateOptions,
+)
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.model.mapping import desc
 from galaxy.security.validate_user_input import validate_publicname

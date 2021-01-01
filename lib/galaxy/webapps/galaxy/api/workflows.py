@@ -712,7 +712,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     #
     # -- Helper methods --
     #
-    def __api_import_from_archive(self, trans, archive_data, source=None, payload={}):
+    def __api_import_from_archive(self, trans, archive_data, source=None, payload=None):
+        payload = payload or {}
         try:
             data = json.loads(archive_data)
         except Exception:
