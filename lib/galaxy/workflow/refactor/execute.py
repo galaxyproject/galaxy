@@ -37,6 +37,7 @@ from .schema import (
     UpdateReportAction,
     UpdateStepLabelAction,
     UpdateStepPositionAction,
+    UpgradeSubworkflow,
 )
 from ..modules import (
     InputParameterModule,
@@ -338,6 +339,21 @@ class WorkflowRefactorExecutor:
                     continue
                 new_outputs.append(workflow_output)
             step["workflow_outputs"] = new_outputs
+
+    def _apply_upgrade_subworkflow(self, action: UpgradeSubworkflow, execution: RefactorActionExecution):
+        step_def = self._find_step(action.step)
+        assert step_def["content_id"] is not None
+        content_id = step_def["content_id"]
+        trans = self.module_injector.trans
+        old_workflow = trans.app.workflow_manager.get_owned_workflow(
+            trans, content_id
+        )
+        stored_workflow = old_workflow.stored_workflow
+        content_id = action.content_id
+        if content_id is None:
+            content_id = trans.security.encode_id(stored_workflow.latest_workflow.id)
+        step_def["content_id"] = content_id
+        # TODO: recalculate connections...
 
     def _find_step(self, step_reference: step_reference_union):
         order_index = None

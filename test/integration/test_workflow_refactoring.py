@@ -1,3 +1,4 @@
+import contextlib
 import json
 
 from galaxy.managers.context import ProvidesAppContext
@@ -5,6 +6,7 @@ from galaxy.workflow.refactor.schema import RefactorActions
 from galaxy_test.base.populators import (
     WorkflowPopulator,
 )
+from galaxy_test.base.workflow_fixtures import WORKFLOW_NESTED_SIMPLE
 from galaxy_test.driver import integration_util
 
 
@@ -257,6 +259,14 @@ steps:
         assert "num_lines" in first_step.tool_inputs
         assert json.loads(first_step.tool_inputs["num_lines"]) == 1
 
+    def test_refactor_works_with_subworkflows(self):
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)
+        actions = [
+            {"action_type": "update_step_label", "step": {"label": "nested_workflow"}, "label": "new_nested_workflow"},
+        ]
+        self._refactor(actions)
+        self._latest_workflow.step_by_label("new_nested_workflow")
+
     def test_refactor_works_with_incomplete_state(self):
         # populating a workflow with incomplete state...
         wf = self.workflow_populator.load_workflow_from_resource("test_workflow_two_random_lines")
@@ -335,6 +345,79 @@ steps:
         assert message.step_label == "random2"
         assert message.input_name == "num_lines"
 
+    def test_subworkflow_upgrade_simplest(self):
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)
+        # second oldest workflow will be the nested workflow, grab it and update...
+        nested_stored_workflow = self._recent_stored_workflow(2)
+        assert len(nested_stored_workflow.workflows) == 1
+
+        self._increment_nested_workflow_version(
+            nested_stored_workflow,
+            num_lines_from="1",
+            num_lines_to="2"
+        )
+        self._app.model.session.expunge(nested_stored_workflow)
+        # ensure subworkflow updated properly...
+        nested_stored_workflow = self._recent_stored_workflow(2)
+        assert len(nested_stored_workflow.workflows) == 2
+        updated_nested_step = nested_stored_workflow.latest_workflow.step_by_label("random_lines")
+        assert updated_nested_step.tool_inputs["num_lines"] == "2"
+
+        # we now have an nested workflow with a simple update, download
+        # the target workflow and ensure it is pointing at the old version
+        pre_upgrade_native = self._download_native(self._most_recent_stored_workflow)
+        self._assert_nested_workflow_num_lines_is(pre_upgrade_native, "1")
+
+        actions = [
+            {"action_type": "upgrade_subworkflow", "step": {"order_index": 2}},
+        ]
+        action_executions = self._refactor(actions)
+        assert len(action_executions) == 1
+        assert len(action_executions[0].messages) == 0
+
+        post_upgrade_native = self._download_native(self._most_recent_stored_workflow)
+        self._assert_nested_workflow_num_lines_is(post_upgrade_native, "2")
+
+    def test_subworkflow_upgrade_specified(self):
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)
+        # second oldest workflow will be the nested workflow, grab it and update...
+        nested_stored_workflow = self._recent_stored_workflow(2)
+
+        # create two versions so we can test jumping to the middle one...
+        self._increment_nested_workflow_version(
+            nested_stored_workflow,
+            num_lines_from="1",
+            num_lines_to="20"
+        )
+        self._increment_nested_workflow_version(
+            nested_stored_workflow,
+            num_lines_from="20",
+            num_lines_to="30"
+        )
+        self._app.model.session.expunge(nested_stored_workflow)
+        # ensure subworkflow updated properly...
+        nested_stored_workflow = self._recent_stored_workflow(2)
+        assert len(nested_stored_workflow.workflows) == 3
+        middle_workflow_id = self._app.security.encode_id(nested_stored_workflow.workflows[1].id)
+        actions = [
+            {"action_type": "upgrade_subworkflow", "step": {"order_index": 2}, "content_id": middle_workflow_id},
+        ]
+        action_executions = self._refactor(actions)
+        assert len(action_executions) == 1
+        assert len(action_executions[0].messages) == 0
+        post_upgrade_native = self._download_native(self._most_recent_stored_workflow)
+        self._assert_nested_workflow_num_lines_is(post_upgrade_native, "20")
+
+    def _download_native(self, workflow):
+        workflow_id = self._app.security.encode_id(workflow.id)
+        return self.workflow_populator.download_workflow(workflow_id)
+
+    @contextlib.contextmanager
+    def _export_for_update(self, workflow):
+        workflow_id = self._app.security.encode_id(workflow.id)
+        with self.workflow_populator.export_for_update(workflow_id) as workflow_object:
+            yield workflow_object
+
     def _refactor(self, actions):
         user = self._app.model.session.query(self._app.model.User).order_by(self._app.model.User.id.desc()).limit(1).one()
         mock_trans = MockTrans(self._app, user)
@@ -350,13 +433,40 @@ steps:
 
     @property
     def _most_recent_stored_workflow(self):
+        return self._recent_stored_workflow(1)
+
+    def _recent_stored_workflow(self, n=1):
         app = self._app
         model = app.model
-        return app.model.session.query(app.model.StoredWorkflow).order_by(model.StoredWorkflow.id.desc()).limit(1).one()
+        return app.model.session.query(app.model.StoredWorkflow).order_by(model.StoredWorkflow.id.desc()).limit(n).all()[-1]
 
     @property
     def _latest_workflow(self):
         return self._most_recent_stored_workflow.latest_workflow
+
+    def _increment_nested_workflow_version(self, nested_stored_workflow, num_lines_from="1", num_lines_to="2"):
+        # increment nested workflow from WORKFLOW_NESTED_SIMPLE with
+        # new num_lines in the tool state of the random_lines1 step.
+        with self._export_for_update(nested_stored_workflow) as native_workflow_dict:
+            tool_step = native_workflow_dict["steps"]["1"]
+            assert tool_step["type"] == "tool"
+            assert tool_step["tool_id"] == "random_lines1"
+            tool_state_json = tool_step["tool_state"]
+            tool_state = json.loads(tool_state_json)
+            assert tool_state["num_lines"] == num_lines_from
+            tool_state["num_lines"] = num_lines_to
+            tool_step["tool_state"] = json.dumps(tool_state)
+
+    def _assert_nested_workflow_num_lines_is(self, native_dict, num_lines):
+        # assuming native_dict is the .ga representation of WORKFLOW_NESTED_SIMPLE,
+        # or some update created with _increment_nested_workflow_version, assert
+        # the nested num_lines step is as specified
+        target_out_step = native_dict["steps"]["2"]
+        assert "subworkflow" in target_out_step
+        target_subworkflow = target_out_step["subworkflow"]
+        target_state_json = target_subworkflow["steps"]["1"]["tool_state"]
+        target_state = json.loads(target_state_json)
+        assert target_state["num_lines"] == num_lines
 
     def _load_two_random_lines_wf_with_missing_state(self):
         wf = self.workflow_populator.load_workflow_from_resource("test_workflow_two_random_lines")
@@ -378,3 +488,7 @@ class MockTrans(ProvidesAppContext):
         self.app = app
         self.user = user
         self.history = None
+
+    @property
+    def security(self):
+        return self.app.security

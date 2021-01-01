@@ -943,7 +943,8 @@ class BaseWorkflowPopulator:
     def export_for_update(self, workflow_id):
         workflow_object = self.download_workflow(workflow_id)
         yield workflow_object
-        self.update_workflow(workflow_id, workflow_object)
+        put_respose = self.update_workflow(workflow_id, workflow_object)
+        put_respose.raise_for_status()
 
     def run_workflow(self, has_workflow, test_data=None, history_id=None, wait=True, source_type=None, jobs_descriptions=None, expected_response=200, assert_ok=True, client_convert=None, round_trip_format_conversion=False, raw_yaml=False):
         """High-level wrapper around workflow API, etc. to invoke format 2 workflows."""
