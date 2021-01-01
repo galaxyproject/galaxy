@@ -17,6 +17,7 @@ import string
 import time
 from collections import defaultdict
 from datetime import datetime, timedelta
+from enum import Enum
 from string import Template
 from typing import Optional, TYPE_CHECKING
 from uuid import UUID, uuid4
@@ -62,7 +63,6 @@ from galaxy.util import (
     unicodify,
     unique_id,
 )
-from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import dict_for, Dictifiable
 from galaxy.util.form_builder import (AddressField, CheckboxField, HistoryField,
                                       PasswordField, SelectField, TextArea, TextField, WorkflowField,
@@ -700,21 +700,23 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
     _numeric_metric = JobMetricNumeric
     _text_metric = JobMetricText
 
-    states = Bunch(NEW='new',
-                   RESUBMITTED='resubmitted',
-                   UPLOAD='upload',
-                   WAITING='waiting',
-                   QUEUED='queued',
-                   RUNNING='running',
-                   OK='ok',
-                   ERROR='error',
-                   FAILED='failed',
-                   PAUSED='paused',
-                   DELETING='deleting',
-                   DELETED='deleted',
-                   DELETED_NEW='deleted_new',  # now DELETING, remove after 21.09
-                   STOPPING='stop',
-                   STOPPED='stopped')
+    class states(str, Enum):
+        NEW = 'new'
+        RESUBMITTED = 'resubmitted'
+        UPLOAD = 'upload'
+        WAITING = 'waiting'
+        QUEUED = 'queued'
+        RUNNING = 'running'
+        OK = 'ok'
+        ERROR = 'error'
+        FAILED = 'failed'
+        PAUSED = 'paused'
+        DELETING = 'deleting'
+        DELETED = 'deleted'
+        DELETED_NEW = 'deleted_new'  # now DELETING, remove after 21.0
+        STOPPING = 'stop'
+        STOPPED = 'stopped'
+
     terminal_states = [states.OK,
                        states.ERROR,
                        states.DELETED]
@@ -1288,13 +1290,14 @@ class Task(JobLike, RepresentById):
     _numeric_metric = TaskMetricNumeric
     _text_metric = TaskMetricText
 
-    states = Bunch(NEW='new',
-                   WAITING='waiting',
-                   QUEUED='queued',
-                   RUNNING='running',
-                   OK='ok',
-                   ERROR='error',
-                   DELETED='deleted')
+    class states(str, Enum):
+        NEW = 'new'
+        WAITING = 'waiting'
+        QUEUED = 'queued'
+        RUNNING = 'running'
+        OK = 'ok'
+        ERROR = 'error'
+        DELETED = 'deleted'
 
     # Please include an accessor (get/set pair) for any new columns/members.
     def __init__(self, job, working_directory, prepare_files_cmd):
@@ -1509,11 +1512,10 @@ class ImplicitlyCreatedDatasetCollectionInput(RepresentById):
 
 class ImplicitCollectionJobs(RepresentById):
 
-    populated_states = Bunch(
-        NEW='new',  # New implicit jobs object, unpopulated job associations
-        OK='ok',  # Job associations are set and fixed.
-        FAILED='failed',  # There were issues populating job associations, object is in error.
-    )
+    class populated_states(str, Enum):
+        NEW = 'new'  # New implicit jobs object, unpopulated job associations
+        OK = 'ok'  # Job associations are set and fixed.
+        FAILED = 'failed'  # There were issues populating job associations, object is in error.
 
     def __init__(
         self,
@@ -1725,12 +1727,14 @@ class GenomeIndexToolData(RepresentById):
 
 
 class DeferredJob(RepresentById):
-    states = Bunch(NEW='new',
-                   WAITING='waiting',
-                   QUEUED='queued',
-                   RUNNING='running',
-                   OK='ok',
-                   ERROR='error')
+
+    class states(str, Enum):
+        NEW = 'new'
+        WAITING = 'waiting'
+        QUEUED = 'queued'
+        RUNNING = 'running'
+        OK = 'ok'
+        ERROR = 'error'
 
     def __init__(self, state=None, plugin=None, params=None):
         self.state = state
@@ -2209,13 +2213,13 @@ class Role(Dictifiable, RepresentById):
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name', 'description', 'type']
     private_id = None
-    types = Bunch(
-        PRIVATE='private',
-        SYSTEM='system',
-        USER='user',
-        ADMIN='admin',
-        SHARING='sharing'
-    )
+
+    class types(str, Enum):
+        PRIVATE = 'private'
+        SYSTEM = 'system'
+        USER = 'user'
+        ADMIN = 'admin'
+        SHARING = 'sharing'
 
     def __init__(self, name="", description="", type="system", deleted=False):
         self.name = name
@@ -2276,10 +2280,10 @@ class Quota(Dictifiable, RepresentById):
 
 class DefaultQuotaAssociation(Quota, Dictifiable, RepresentById):
     dict_element_visible_keys = ['type']
-    types = Bunch(
-        UNREGISTERED='unregistered',
-        REGISTERED='registered'
-    )
+
+    class types(str, Enum):
+        UNREGISTERED = 'unregistered'
+        REGISTERED = 'registered'
 
     def __init__(self, type, quota):
         assert type in self.types.__dict__.values(), 'Invalid type'
@@ -2367,17 +2371,23 @@ class StorableObject:
 
 
 class Dataset(StorableObject, RepresentById, _HasTable):
-    states = Bunch(NEW='new',
-                   UPLOAD='upload',
-                   QUEUED='queued',
-                   RUNNING='running',
-                   OK='ok',
-                   EMPTY='empty',
-                   ERROR='error',
-                   DISCARDED='discarded',
-                   PAUSED='paused',
-                   SETTING_METADATA='setting_metadata',
-                   FAILED_METADATA='failed_metadata')
+
+    class states(str, Enum):
+        NEW = 'new'
+        UPLOAD = 'upload'
+        QUEUED = 'queued'
+        RUNNING = 'running'
+        OK = 'ok'
+        EMPTY = 'empty'
+        ERROR = 'error'
+        DISCARDED = 'discarded'
+        PAUSED = 'paused'
+        SETTING_METADATA = 'setting_metadata'
+        FAILED_METADATA = 'failed_metadata'
+
+        @classmethod
+        def values(self):
+            return self.__members__.values()
     # failed_metadata is only valid as DatasetInstance state currently
 
     non_ready_states = (
@@ -2387,9 +2397,9 @@ class Dataset(StorableObject, RepresentById, _HasTable):
         states.RUNNING,
         states.SETTING_METADATA
     )
-    ready_states = tuple(set(states.__dict__.values()) - set(non_ready_states))
+    ready_states = tuple(set(states.__members__.values()) - set(non_ready_states))
     valid_input_states = tuple(
-        set(states.__dict__.values()) - {states.ERROR, states.DISCARDED}
+        set(states.__members__.values()) - {states.ERROR, states.DISCARDED}
     )
     terminal_states = (
         states.OK,
@@ -2399,14 +2409,15 @@ class Dataset(StorableObject, RepresentById, _HasTable):
         states.FAILED_METADATA,
     )
 
-    conversion_messages = Bunch(PENDING="pending",
-                                NO_DATA="no data",
-                                NO_CHROMOSOME="no chromosome",
-                                NO_CONVERTER="no converter",
-                                NO_TOOL="no tool",
-                                DATA="data",
-                                ERROR="error",
-                                OK="ok")
+    class conversion_messages(str, Enum):
+        PENDING = "pending"
+        NO_DATA = "no data"
+        NO_CHROMOSOME = "no chromosome"
+        NO_CONVERTER = "no converter"
+        NO_TOOL = "no tool"
+        DATA = "data"
+        ERROR = "error"
+        OK = "ok"
 
     permitted_actions = get_permitted_actions(filter='DATASET')
     file_path = "/tmp/"
@@ -2670,11 +2681,11 @@ class DatasetInstance:
     states = Dataset.states
     conversion_messages = Dataset.conversion_messages
     permitted_actions = Dataset.permitted_actions
-    validated_states = Bunch(
-        UNKNOWN='unknown',
-        INVALID='invalid',
-        OK='ok',
-    )
+
+    class validated_states(str, Enum):
+        UNKNOWN = 'unknown'
+        INVALID = 'invalid'
+        OK = 'ok'
 
     def __init__(self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, tool_version=None, extension=None,
                  dbkey=None, metadata=None, history=None, dataset=None, deleted=False, designation=None,
@@ -4037,11 +4048,11 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
     """
     dict_collection_visible_keys = ['id', 'collection_type']
     dict_element_visible_keys = ['id', 'collection_type']
-    populated_states = Bunch(
-        NEW='new',  # New dataset collection, unpopulated elements
-        OK='ok',  # Collection elements populated (HDAs may or may not have errors)
-        FAILED='failed',  # some problem populating state, won't be populated
-    )
+
+    class populated_states(str, Enum):
+        NEW = 'new'  # New dataset collection, unpopulated elements
+        OK = 'ok'  # Collection elements populated (HDAs may or may not have errors)
+        FAILED = 'failed'  # some problem populating state, won't be populated
 
     def __init__(
         self,
@@ -5279,13 +5290,14 @@ class StoredWorkflowMenuEntry(RepresentById):
 class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
     dict_collection_visible_keys = ['id', 'update_time', 'create_time', 'workflow_id', 'history_id', 'uuid', 'state']
     dict_element_visible_keys = ['id', 'update_time', 'create_time', 'workflow_id', 'history_id', 'uuid', 'state']
-    states = Bunch(
-        NEW='new',  # Brand new workflow invocation... maybe this should be same as READY
-        READY='ready',  # Workflow ready for another iteration of scheduling.
-        SCHEDULED='scheduled',  # Workflow has been scheduled.
-        CANCELLED='cancelled',
-        FAILED='failed',
-    )
+
+    class states(str, Enum):
+        NEW = 'new'  # Brand new workflow invocation... maybe this should be same as READY
+        READY = 'ready'  # Workflow ready for another iteration of scheduling.
+        SCHEDULED = 'scheduled'  # Workflow has been scheduled.
+        CANCELLED = 'cancelled'
+        FAILED = 'failed'
+
     non_terminal_states = [states.NEW, states.READY]
 
     def __init__(self):
@@ -5620,13 +5632,13 @@ class WorkflowInvocationToSubworkflowInvocationAssociation(Dictifiable, Represen
 class WorkflowInvocationStep(Dictifiable, RepresentById):
     dict_collection_visible_keys = ['id', 'update_time', 'job_id', 'workflow_step_id', 'subworkflow_invocation_id', 'state', 'action']
     dict_element_visible_keys = ['id', 'update_time', 'job_id', 'workflow_step_id', 'subworkflow_invocation_id', 'state', 'action']
-    states = Bunch(
-        NEW='new',  # Brand new workflow invocation step
-        READY='ready',  # Workflow invocation step ready for another iteration of scheduling.
-        SCHEDULED='scheduled',  # Workflow invocation step has been scheduled.
-        # CANCELLED='cancelled',  TODO: implement and expose
-        # FAILED='failed',  TODO: implement and expose
-    )
+
+    class states(str, Enum):
+        NEW = 'new'  # Brand new workflow invocation step
+        READY = 'ready'  # Workflow invocation step ready for another iteration of scheduling.
+        SCHEDULED = 'scheduled'  # Workflow invocation step has been scheduled.
+        # CANCELLED = 'cancelled',  TODO: implement and expose
+        # FAILED = 'failed',  TODO: implement and expose
 
     @property
     def is_new(self):
@@ -5696,12 +5708,12 @@ class WorkflowRequestInputParameter(Dictifiable, RepresentById):
     """ Workflow-related parameters not tied to steps or inputs.
     """
     dict_collection_visible_keys = ['id', 'name', 'value', 'type']
-    types = Bunch(
-        REPLACEMENT_PARAMETERS='replacements',
-        STEP_PARAMETERS='step',
-        META_PARAMETERS='meta',
-        RESOURCE_PARAMETERS='resource',
-    )
+
+    class types(str, Enum):
+        REPLACEMENT_PARAMETERS = 'replacements'
+        STEP_PARAMETERS = 'step'
+        META_PARAMETERS = 'meta'
+        RESOURCE_PARAMETERS = 'resource'
 
     def __init__(self, name=None, value=None, type=None):
         self.name = name
@@ -5819,7 +5831,10 @@ class MetadataFile(StorableObject, RepresentById):
 class FormDefinition(Dictifiable, RepresentById):
     # The following form_builder classes are supported by the FormDefinition class.
     supported_field_types = [AddressField, CheckboxField, PasswordField, SelectField, TextArea, TextField, WorkflowField, WorkflowMappingField, HistoryField]
-    types = Bunch(USER_INFO='User Information')
+
+    class types(str, Enum):
+        USER_INFO = 'User Information'
+
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name', 'desc', 'form_definition_current_id', 'fields', 'layout']
 
@@ -6265,12 +6280,13 @@ class VisualizationUserShareAssociation(UserShareAssociation):
 class TransferJob(RepresentById):
     # These states are used both by the transfer manager's IPC and the object
     # state in the database.  Not all states are used by both.
-    states = Bunch(NEW='new',
-                   UNKNOWN='unknown',
-                   PROGRESS='progress',
-                   RUNNING='running',
-                   ERROR='error',
-                   DONE='done')
+    class states(str, Enum):
+        NEW = 'new'
+        UNKNOWN = 'unknown'
+        PROGRESS = 'progress'
+        RUNNING = 'running'
+        ERROR = 'error'
+        DONE = 'done'
     terminal_states = [states.ERROR,
                        states.DONE]
 

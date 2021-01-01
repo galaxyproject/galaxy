@@ -5,6 +5,19 @@ from abc import (
     ABCMeta,
     abstractmethod
 )
+from enum import Enum
+
+try:
+    from galaxy.model import Job
+    job_states = Job.states
+except ImportError:
+
+    # Not in Galaxy, map Galaxy job states to Pulsar ones.
+    class job_states(str, Enum):  # type: ignore
+        RUNNING = 'running'
+        OK = 'complete'
+        QUEUED = 'queued'
+        ERROR = "failed"
 
 
 class BaseJobExec(metaclass=ABCMeta):
@@ -70,3 +83,9 @@ class BaseJobExec(metaclass=ABCMeta):
         Parses the failure reason, assigning it against a
         """
         return None
+
+
+__all__ = (
+    'BaseJobExec',
+    'job_states',
+)

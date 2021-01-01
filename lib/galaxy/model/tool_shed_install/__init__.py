@@ -1,5 +1,6 @@
 import logging
 import os
+from enum import Enum
 from typing import TYPE_CHECKING
 
 from galaxy.util import asbool
@@ -24,21 +25,25 @@ class ToolShedRepository(_HasTable):
                                     'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message', 'description']
     dict_element_visible_keys = ['id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
                                  'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message', 'description']
-    installation_status = Bunch(NEW='New',
-                                CLONING='Cloning',
-                                SETTING_TOOL_VERSIONS='Setting tool versions',
-                                INSTALLING_REPOSITORY_DEPENDENCIES='Installing repository dependencies',
-                                INSTALLING_TOOL_DEPENDENCIES='Installing tool dependencies',
-                                LOADING_PROPRIETARY_DATATYPES='Loading proprietary datatypes',
-                                INSTALLED='Installed',
-                                DEACTIVATED='Deactivated',
-                                ERROR='Error',
-                                UNINSTALLED='Uninstalled')
-    states = Bunch(INSTALLING='running',
-                   OK='ok',
-                   WARNING='queued',
-                   ERROR='error',
-                   UNINSTALLED='deleted_new')
+
+    class installation_status(str, Enum):
+        NEW = 'New'
+        CLONING = 'Cloning'
+        SETTING_TOOL_VERSIONS = 'Setting tool versions'
+        INSTALLING_REPOSITORY_DEPENDENCIES = 'Installing repository dependencies'
+        INSTALLING_TOOL_DEPENDENCIES = 'Installing tool dependencies'
+        LOADING_PROPRIETARY_DATATYPES = 'Loading proprietary datatypes'
+        INSTALLED = 'Installed'
+        DEACTIVATED = 'Deactivated'
+        ERROR = 'Error'
+        UNINSTALLED = 'Uninstalled'
+
+    class states(str, Enum):
+        INSTALLING = 'running'
+        OK = 'ok'
+        WARNING = 'queued'
+        ERROR = 'error'
+        UNINSTALLED = 'deleted_new'
 
     def __init__(self, id=None, create_time=None, tool_shed=None, name=None, description=None, owner=None, installed_changeset_revision=None,
                  changeset_revision=None, ctx_rev=None, metadata=None, includes_datatypes=False, tool_shed_status=None, deleted=False,
@@ -493,17 +498,20 @@ class RepositoryDependency(_HasTable):
 
 
 class ToolDependency(_HasTable):
+    # converting this one to Enum breaks the tool shed tests,
+    # don't know why though -John
     installation_status = Bunch(NEVER_INSTALLED='Never installed',
                                 INSTALLING='Installing',
                                 INSTALLED='Installed',
                                 ERROR='Error',
                                 UNINSTALLED='Uninstalled')
 
-    states = Bunch(INSTALLING='running',
-                   OK='ok',
-                   WARNING='queued',
-                   ERROR='error',
-                   UNINSTALLED='deleted_new')
+    class states(str, Enum):
+        INSTALLING = 'running'
+        OK = 'ok'
+        WARNING = 'queued'
+        ERROR = 'error'
+        UNINSTALLED = 'deleted_new'
 
     def __init__(self, tool_shed_repository_id=None, name=None, version=None, type=None, status=None, error_message=None):
         self.tool_shed_repository_id = tool_shed_repository_id
