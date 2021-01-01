@@ -19,6 +19,7 @@ from .schema import (
     DisconnectAction,
     ExtractInputAction,
     ExtractLegacyParameter,
+    FileDefaultsAction,
     FillStepDefaultsAction,
     InputReferenceByOrderIndex,
     OutputReferenceByOrderIndex,
@@ -179,6 +180,13 @@ class WorkflowRefactorExecutor:
             'id': output_order_index,
             'output_name': output_name,
         })
+
+    def _apply_fill_defaults(self, action: FileDefaultsAction, execution: RefactorActionExecution):
+        for _, step in self._iterate_over_step_pairs(execution):
+            module = step.module
+            if module.type != "tool":
+                continue
+            self._as_dict["steps"][step.order_index]["tool_state"] = step.module.get_tool_state()
 
     def _apply_fill_step_defaults(self, action: FillStepDefaultsAction, execution: RefactorActionExecution):
         step = self._find_step_with_module_for_action(action, execution)

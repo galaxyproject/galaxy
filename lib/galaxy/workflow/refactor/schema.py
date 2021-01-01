@@ -172,6 +172,10 @@ class FillStepDefaultsAction(BaseAction):
     step: step_reference_union
 
 
+class FileDefaultsAction(BaseAction):
+    action_type: Literal['fill_defaults']
+
+
 union_action_classes = Union[
     AddInputAction,
     AddStepAction,
@@ -179,6 +183,7 @@ union_action_classes = Union[
     DisconnectAction,
     ExtractInputAction,
     ExtractLegacyParameter,
+    FileDefaultsAction,
     FillStepDefaultsAction,
     UpdateAnnotationAction,
     UpdateCreatorAction,

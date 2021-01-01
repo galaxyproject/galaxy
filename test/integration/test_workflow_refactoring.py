@@ -292,16 +292,7 @@ steps:
         assert "num_lines" in self._latest_workflow.step_by_index(1).tool_inputs
 
     def test_refactor_fill_step_defaults(self):
-        # populating a workflow with incomplete state...
-        wf = self.workflow_populator.load_workflow_from_resource("test_workflow_two_random_lines")
-        ts = json.loads(wf["steps"]["0"]["tool_state"])
-        del ts["num_lines"]
-        wf["steps"]["0"]["tool_state"] = json.dumps(ts)
-        self.workflow_populator.create_workflow(wf, fill_defaults=False)
-
-        first_step = self._latest_workflow.step_by_label("random1")
-        assert "num_lines" not in first_step.tool_inputs
-
+        self._load_two_random_lines_wf_with_missing_state()
         actions = [
             {"action_type": "fill_step_defaults", "step": {"order_index": 0}},
         ]
@@ -314,6 +305,34 @@ steps:
         message = action_execution.messages[0]
         assert message.order_index == 0
         assert message.step_label == "random1"
+        assert message.input_name == "num_lines"
+
+        # ensure other step untouched...
+        second_step = self._latest_workflow.step_by_label("random2")
+        assert "num_lines" not in second_step.tool_inputs
+
+    def test_refactor_fill_defaults(self):
+        self._load_two_random_lines_wf_with_missing_state()
+        actions = [
+            {"action_type": "fill_defaults"},
+        ]
+        action_executions = self._refactor(actions)
+
+        first_step = self._latest_workflow.step_by_label("random1")
+        assert "num_lines" in first_step.tool_inputs
+        second_step = self._latest_workflow.step_by_label("random2")
+        assert "num_lines" in second_step.tool_inputs
+
+        assert len(action_executions) == 1
+        action_execution = action_executions[0]
+        assert len(action_execution.messages) == 2
+        message = action_execution.messages[0]
+        assert message.order_index == 0
+        assert message.step_label == "random1"
+        assert message.input_name == "num_lines"
+        message = action_execution.messages[1]
+        assert message.order_index == 1
+        assert message.step_label == "random2"
         assert message.input_name == "num_lines"
 
     def _refactor(self, actions):
@@ -338,6 +357,19 @@ steps:
     @property
     def _latest_workflow(self):
         return self._most_recent_stored_workflow.latest_workflow
+
+    def _load_two_random_lines_wf_with_missing_state(self):
+        wf = self.workflow_populator.load_workflow_from_resource("test_workflow_two_random_lines")
+        ts = json.loads(wf["steps"]["0"]["tool_state"])
+        del ts["num_lines"]
+        wf["steps"]["0"]["tool_state"] = json.dumps(ts)
+        wf["steps"]["1"]["tool_state"] = json.dumps(ts)
+        self.workflow_populator.create_workflow(wf, fill_defaults=False)
+
+        first_step = self._latest_workflow.step_by_label("random1")
+        assert "num_lines" not in first_step.tool_inputs
+        second_step = self._latest_workflow.step_by_label("random2")
+        assert "num_lines" not in second_step.tool_inputs
 
 
 class MockTrans(ProvidesAppContext):
