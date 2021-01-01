@@ -112,7 +112,6 @@
                                     :license="license"
                                     :creator="creator"
                                     @onVersion="onVersion"
-                                    @onRename="onRename"
                                     @onLicense="onLicense"
                                     @onCreator="onCreator"
                                 />
@@ -388,9 +387,6 @@ export default {
         },
         onReport() {
             this.isCanvas = false;
-        },
-        onRename(name) {
-            this.name = name;
         },
         onReportUpdate(markdown) {
             this.hasChanges = true;
