@@ -31,8 +31,8 @@ class ContainerManagerMixin:
     # TODO: terminology is getting a bit convoluted and silly at this point: rename three public below?
     # TODO: this should be an open mapping (not just 2)
     #: the classes that can be contained
-    contained_class = None
-    subcontainer_class = None
+    contained_class: type
+    subcontainer_class: type
     #: how any contents lists produced are ordered - (string) attribute name to sort on or tuple of attribute names
     default_order_by: Optional[str] = None
 

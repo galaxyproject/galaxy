@@ -11,7 +11,7 @@ A sharable Galaxy object:
 """
 import logging
 import re
-from typing import Optional
+from typing import Optional, Type
 
 from sqlalchemy import true
 
@@ -24,6 +24,7 @@ from galaxy.managers import (
     taggable,
     users
 )
+from galaxy.model import UserShareAssociation
 
 log = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
     # base.DeleteableModelMixin? (all four are deletable)
 
     #: the model used for UserShareAssociations with this model
-    user_share_model = None
+    user_share_model: Type[UserShareAssociation]
 
     #: the single character abbreviation used in username_and_slug: e.g. 'h' for histories: u/user/h/slug
     SINGLE_CHAR_ABBR: Optional[str] = None

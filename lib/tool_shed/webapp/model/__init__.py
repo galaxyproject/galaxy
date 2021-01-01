@@ -5,7 +5,7 @@ from datetime import (
     datetime,
     timedelta
 )
-from typing import TYPE_CHECKING
+from typing import Any, Mapping, TYPE_CHECKING
 
 import tool_shed.repository_types.util as rt_util
 from galaxy import util
@@ -24,7 +24,7 @@ from tool_shed.util.hgweb_config import hgweb_config_manager
 
 log = logging.getLogger(__name__)
 
-WEAK_HG_REPO_CACHE = weakref.WeakKeyDictionary()
+WEAK_HG_REPO_CACHE: Mapping['Repository', Any] = weakref.WeakKeyDictionary()
 
 if TYPE_CHECKING:
     from sqlalchemy.schema import Table

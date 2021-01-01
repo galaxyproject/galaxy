@@ -18,7 +18,7 @@ import time
 from collections import defaultdict
 from datetime import datetime, timedelta
 from string import Template
-from typing import TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from boltons.iterutils import remap
@@ -2183,7 +2183,11 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
         return self.__filter_contents(HistoryDatasetCollectionAssociation, **kwds)
 
 
-class HistoryUserShareAssociation(RepresentById):
+class UserShareAssociation(RepresentById):
+    user: Optional[User]
+
+
+class HistoryUserShareAssociation(UserShareAssociation):
     def __init__(self):
         self.history = None
         self.user = None
@@ -4867,6 +4871,7 @@ class Workflow(Dictifiable, RepresentById):
     input_step_types = ['data_input', 'data_collection_input', 'parameter_input']
 
     def __init__(self, uuid=None):
+        self.id = None
         self.user = None
         self.name = None
         self.has_cycles = None
@@ -5256,7 +5261,7 @@ class WorkflowOutput(RepresentById):
         return copied_output
 
 
-class StoredWorkflowUserShareAssociation(RepresentById):
+class StoredWorkflowUserShareAssociation(UserShareAssociation):
 
     def __init__(self):
         self.stored_workflow = None
@@ -6187,7 +6192,7 @@ class PageRevision(Dictifiable, RepresentById):
         return rval
 
 
-class PageUserShareAssociation(RepresentById):
+class PageUserShareAssociation(UserShareAssociation):
     def __init__(self):
         self.page = None
         self.user = None
@@ -6251,7 +6256,7 @@ class VisualizationRevision(RepresentById):
         )
 
 
-class VisualizationUserShareAssociation(RepresentById):
+class VisualizationUserShareAssociation(UserShareAssociation):
     def __init__(self):
         self.visualization = None
         self.user = None
