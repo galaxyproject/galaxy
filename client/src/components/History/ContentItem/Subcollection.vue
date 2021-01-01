@@ -7,11 +7,11 @@
         v-on="$listeners"
         class="collapsed"
         :data-state="state"
-        @keydown.arrow-right.self.stop.prevent="eventHub.$emit('selectCollection', dsc)"
+        @keydown.arrow-right.self.stop.prevent="$emit('select-collection', dsc)"
     >
         <nav
             class="content-top-menu d-flex align-items-center justify-content-between p-1"
-            @click.stop="eventHub.$emit('selectCollection', dsc)"
+            @click.stop="$emit('select-collection', dsc)"
         >
             <h5 class="flex-grow-1 overflow-hidden mr-auto text-nowrap text-truncate">
                 <span class="name">{{ dsc.name }}</span>

@@ -6,10 +6,10 @@
         class="dataset dataset-collection collapsed"
         :class="{ selected }"
         :data-state="dsc.state"
-        @keydown.arrow-right.self.stop="eventHub.$emit('selectCollection', dsc)"
+        @keydown.arrow-right.self.stop="$emit('select-collection', dsc)"
         @keydown.space.self.stop.prevent="$emit('update:selected', !selected)"
         @click.stop="
-            eventHub.$emit('selectCollection', dsc);
+            $emit('select-collection', dsc);
             $emit('update:expanded', dsc);
         "
     >
@@ -38,7 +38,7 @@
                     state="ok"
                     title="Collection"
                     icon="fas fa-folder"
-                    @click.stop="$emit('selectCollection', dsc)"
+                    @click.stop="$emit('select-collection', dsc)"
                 />
             </div>
 
