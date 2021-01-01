@@ -2383,8 +2383,8 @@ The XML configuration is relatively trivial for sections:
 
 ```xml
 <inputs>
-    <section name="adv" title="Advanced Options" expanded="false">
-        <param name="plot_color" type="color" label="Track color" />
+    <section name="section_name" ... >
+        <param name="parameter_name" ... />
     </section>
 </inputs>
 ```
@@ -2393,8 +2393,24 @@ In your command template, you'll need to include the section name to access the
 variable:
 
 ```
---color $adv.plot_color
+$section_name.parameter_name
 ```
+
+In output filters sections are represented as dictionary with the same name as the section:
+
+```
+<filter>section_name['parameter_name']</filter>
+```
+
+In order to reference parameters in sections from tags in the `<outputs>` section, e.g. in the `format_source` attribute of `<data>` tags, the syntax is:
+
+```
+section_name|parameter_name
+```
+
+Until profile 21.01 `parameter_name` was sufficient (https://github.com/galaxyproject/galaxy/pull/9493/files).
+
+Note that references to other parameters in the `<inputs>` section are only possible if the reference is in the same section or its parents, therefor only `parameter_name` is used. 
 
 Further examples can be found in the [test case](https://github.com/galaxyproject/galaxy/blob/master/test/functional/tools/section.xml) from [pull request #35](https://github.com/galaxyproject/galaxy/pull/35).
 ]]></xs:documentation>
@@ -4386,6 +4402,7 @@ parameters appear as booleans, not the value of their ``truevalue`` and
 appear as ``$options.selection_mode`` in Cheetah. Similarly ``options["vcf_output"]``
 would appear as ``$options.vcf_output`` having the values ``'--vcf'`` when true and
 ``''`` when false in Cheetah.
+Note that also parameters in sections are accessed via a dictionary.
 
 ### Example
 
