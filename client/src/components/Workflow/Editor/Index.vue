@@ -128,6 +128,7 @@
                                     :nodes="nodes"
                                     @onAttributes="onAttributes"
                                     @refactor="_prepareForRefactor"
+                                    @scrollTo="scrollTo"
                                 />
                                 <div id="right-content" class="right-content" />
                             </div>
@@ -376,6 +377,10 @@ export default {
         onAttributes() {
             showAttributes();
             this._ensureParametersSet();
+        },
+        scrollTo(node) {
+            this.canvasManager.scrollToNode(node);
+            node.onScrollTo();
         },
         onLint() {
             this._ensureParametersSet();
