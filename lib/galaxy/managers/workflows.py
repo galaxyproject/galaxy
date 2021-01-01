@@ -970,8 +970,10 @@ class WorkflowContentsManager(UsesAnnotations):
                         step_data_output['collection_type'] = collection_type
         return steps
 
-    def _workflow_to_dict_export(self, trans, stored=None, workflow=None):
+    def _workflow_to_dict_export(self, trans, stored=None, workflow=None, internal=False):
         """ Export the workflow contents to a dictionary ready for JSON-ification and export.
+
+        If internal, use content_ids instead subworkflow definitions.
         """
         annotation_str = ""
         tag_str = ""
@@ -1047,7 +1049,7 @@ class WorkflowContentsManager(UsesAnnotations):
                         action_arguments=pja.action_arguments)
                 step_dict['post_job_actions'] = pja_dict
 
-            if module.type == 'subworkflow':
+            if module.type == 'subworkflow' and not internal:
                 del step_dict['content_id']
                 del step_dict['errors']
                 del step_dict['tool_version']
@@ -1417,7 +1419,7 @@ class WorkflowContentsManager(UsesAnnotations):
         """Apply supplied actions to stored_workflow.latest_workflow to build a new version.
         """
         workflow = stored_workflow.latest_workflow
-        as_dict = self.workflow_to_dict(trans, stored_workflow, style="ga")
+        as_dict = self._workflow_to_dict_export(trans, stored_workflow, workflow=workflow, internal=True)
         raw_workflow_description = self.normalize_workflow_format(trans, as_dict)
         workflow_update_options = WorkflowUpdateOptions(
             fill_defaults=False,
