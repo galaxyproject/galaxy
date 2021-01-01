@@ -298,9 +298,6 @@ export default {
         };
     },
     methods: {
-        doReturn() {
-            this.$emit("onDone");
-        },
         refresh() {
             this.forceRefresh += 1;
         },
