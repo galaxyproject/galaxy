@@ -264,6 +264,7 @@ export function getInputsMissingMetadata(nodes) {
 
         if (missingLabel || missingAnnotation) {
             const input = {
+                stepId: node.id,
                 stepLabel: node.title,
                 stepIconClass: node.iconClass,
                 missingAnnotation: !annotation,

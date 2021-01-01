@@ -55,11 +55,14 @@
                         </div>
                         <div else>
                             <ul>
-                                <li v-for="(input, idx) in disconnectedInputs" :key="idx">
-                                    <b
-                                        ><i :class="input.stepIconClass" style="cursor: default;" />{{
-                                            input.stepLabel
-                                        }}</b
+                                <li
+                                    v-for="(input, idx) in disconnectedInputs"
+                                    :key="idx"
+                                    @mouseover="highlight(input.stepId)"
+                                    @mouseleave="unhighlight(input.stepId)"
+                                >
+                                    <b @click="scrollTo(input.stepId)" class="scrolls"
+                                        ><i :class="input.stepIconClass" />{{ input.stepLabel }}</b
                                     >
                                     <span class="disconnected-input-name">
                                         {{ input.inputLabel }}
@@ -96,11 +99,14 @@
                                 Some workflow inputs are missing labels and/or annotations.
                             </p>
                             <ul>
-                                <li v-for="(input, idx) in inputsMissingMetadata" :key="idx">
-                                    <b
-                                        ><i :class="input.stepIconClass" style="cursor: default;" />{{
-                                            input.stepLabel
-                                        }}</b
+                                <li
+                                    v-for="(input, idx) in inputsMissingMetadata"
+                                    :key="idx"
+                                    @mouseover="highlight(input.stepId)"
+                                    @mouseleave="unhighlight(input.stepId)"
+                                >
+                                    <b @click="scrollTo(input.stepId)" class="scrolls"
+                                        ><i :class="input.stepIconClass" />{{ input.stepLabel }}</b
                                     >
                                     <em class="small">
                                         <span class="input-missing-metadata-summary">
@@ -138,11 +144,14 @@
                                 to remove these all as workflow outputs.
                             </p>
                             <ul>
-                                <li v-for="(output, idx) in unlabeledOutputs" :key="idx">
-                                    <b
-                                        ><i :class="output.stepIconClass" style="cursor: default;" />{{
-                                            output.stepLabel
-                                        }}</b
+                                <li
+                                    v-for="(output, idx) in unlabeledOutputs"
+                                    :key="idx"
+                                    @mouseover="highlight(output.stepId)"
+                                    @mouseleave="unhighlight(output.stepId)"
+                                >
+                                    <b @click="scrollTo(output.stepId)" class="scrolls"
+                                        ><i :class="output.stepIconClass" />{{ output.stepLabel }}</b
                                     >
                                     <span class="unlabeled-output-name">
                                         {{ output.outputName }}
@@ -339,6 +348,15 @@ export default {
                 return "missing an annotation";
             }
         },
+        scrollTo(stepId) {
+            this.$emit("scrollTo", this.nodes[parseInt(stepId)]);
+        },
+        highlight(stepId) {
+            this.nodes[parseInt(stepId)].onHighlight();
+        },
+        unhighlight(stepId) {
+            this.nodes[parseInt(stepId)].onUnhighlight();
+        },
         autoFixAll() {
             const actions = [];
             if (!this.parametersOkay) {
@@ -445,5 +463,8 @@ export default {
 .input-missing-metadata-summary {
     display: block;
     padding-left: 5px;
+}
+.scrolls {
+    cursor: pointer;
 }
 </style>
