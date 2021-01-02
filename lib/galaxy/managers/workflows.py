@@ -408,12 +408,13 @@ class WorkflowContentsManager(UsesAnnotations):
 
         # Put parameters in workflow mode
         trans.workflow_building_mode = workflow_building_modes.ENABLED
-
+        dry_run = workflow_update_options.dry_run
         workflow, missing_tool_tups = self._workflow_from_raw_description(
             trans,
             raw_workflow_description,
             workflow_update_options,
             name=stored_workflow.name,
+            dry_run=dry_run,
         )
 
         if missing_tool_tups and not workflow_update_options.allow_missing_tools:
@@ -423,8 +424,13 @@ class WorkflowContentsManager(UsesAnnotations):
             raise MissingToolsException(workflow, errors)
 
         # Connect up
-        workflow.stored_workflow = stored_workflow
-        stored_workflow.latest_workflow = workflow
+        if not dry_run:
+            workflow.stored_workflow = stored_workflow
+            stored_workflow.latest_workflow = workflow
+        else:
+            stored_workflow = model.StoredWorkflow()  # detached
+            stored_workflow.latest_workflow = workflow
+            workflow.stored_workflow = stored_workflow
 
         if workflow_update_options.update_stored_workflow_attributes:
             update_dict = raw_workflow_description.as_dict
@@ -434,12 +440,14 @@ class WorkflowContentsManager(UsesAnnotations):
                 stored_workflow.name = sanitized_name
             if 'annotation' in update_dict:
                 newAnnotation = sanitize_html(update_dict['annotation'])
-                self.add_item_annotation(trans.sa_session, stored_workflow.user, stored_workflow, newAnnotation)
+                sa_session = None if dry_run else trans.sa_session
+                self.add_item_annotation(sa_session, stored_workflow.user, stored_workflow, newAnnotation)
 
         # Persist
-        trans.sa_session.flush()
-        if stored_workflow.from_path:
-            self._sync_stored_workflow(trans, stored_workflow)
+        if not dry_run:
+            trans.sa_session.flush()
+            if stored_workflow.from_path:
+                self._sync_stored_workflow(trans, stored_workflow)
         # Return something informative
         errors = []
         if workflow.has_errors:
@@ -449,6 +457,10 @@ class WorkflowContentsManager(UsesAnnotations):
         return workflow, errors
 
     def _workflow_from_raw_description(self, trans, raw_workflow_description, workflow_state_resolution_options, name, **kwds):
+        # don't commit the workflow or attach its part to the sa session - just build a
+        # a transient model to operate on or render.
+        dry_run = kwds.pop("dry_run", False)
+
         data = raw_workflow_description.as_dict
         if isinstance(data, str):
             data = json.loads(data)
@@ -490,7 +502,7 @@ class WorkflowContentsManager(UsesAnnotations):
         # will be ( tool_id, tool_name, tool_version ).
         missing_tool_tups = []
         for step_dict in self.__walk_step_dicts(data):
-            self.__load_subworkflows(trans, step_dict, subworkflow_id_map, workflow_state_resolution_options)
+            self.__load_subworkflows(trans, step_dict, subworkflow_id_map, workflow_state_resolution_options, dry_run=dry_run)
 
         module_kwds = workflow_state_resolution_options.dict()
         module_kwds.update(kwds)  # TODO: maybe drop this?
@@ -978,8 +990,15 @@ class WorkflowContentsManager(UsesAnnotations):
         annotation_str = ""
         tag_str = ""
         if stored is not None:
-            annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, stored) or ''
-            tag_str = stored.make_tag_string_list()
+            if stored.id:
+                annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, stored) or ''
+                tag_str = stored.make_tag_string_list()
+            else:
+                # dry run with flushed workflow objects, just use the annotation
+                annotations = stored.annotations
+                if annotations and len(annotations) > 0:
+                    annotation_str = util.unicodify(annotations[0].annotation)
+
         # Pack workflow data into a dictionary and return
         data = {}
         data['a_galaxy_workflow'] = 'true'  # Placeholder for identifying galaxy workflow
@@ -1278,11 +1297,11 @@ class WorkflowContentsManager(UsesAnnotations):
 
             yield step_dict
 
-    def __load_subworkflows(self, trans, step_dict, subworkflow_id_map, workflow_state_resolution_options):
+    def __load_subworkflows(self, trans, step_dict, subworkflow_id_map, workflow_state_resolution_options, dry_run=False):
         step_type = step_dict.get("type", None)
         if step_type == "subworkflow":
             subworkflow = self.__load_subworkflow_from_step_dict(
-                trans, step_dict, subworkflow_id_map, workflow_state_resolution_options
+                trans, step_dict, subworkflow_id_map, workflow_state_resolution_options, dry_run=dry_run
             )
             step_dict["subworkflow"] = subworkflow
 
@@ -1290,6 +1309,7 @@ class WorkflowContentsManager(UsesAnnotations):
         """ Create a WorkflowStep model object and corresponding module
         representing type-specific functionality from the incoming dictionary.
         """
+        dry_run = kwds.get("dry_run", False)
         step = model.WorkflowStep()
         step.position = step_dict.get('position', model.WorkflowStep.DEFAULT_POSITION)
         if step_dict.get("uuid", None) and step_dict['uuid'] != "None":
@@ -1297,14 +1317,15 @@ class WorkflowContentsManager(UsesAnnotations):
         if "label" in step_dict:
             step.label = step_dict["label"]
 
-        module = module_factory.from_dict(trans, step_dict, **kwds)
+        module = module_factory.from_dict(trans, step_dict, detached=dry_run, **kwds)
         self.__set_default_label(step, module, step_dict.get('tool_state'))
-        module.save_to_step(step)
+        module.save_to_step(step, detached=dry_run)
 
         annotation = step_dict.get('annotation')
         if annotation:
             annotation = sanitize_html(annotation)
-            self.add_item_annotation(trans.sa_session, trans.get_user(), step, annotation)
+            sa_session = None if dry_run else trans.sa_session
+            self.add_item_annotation(sa_session, trans.get_user(), step, annotation)
 
         # Stick this in the step temporarily
         step.temp_input_connections = step_dict.get('input_connections', {})
@@ -1333,7 +1354,8 @@ class WorkflowContentsManager(UsesAnnotations):
                     uuid=uuid,
                     label=label,
                 )
-                trans.sa_session.add(m)
+                if not dry_run:
+                    trans.sa_session.add(m)
 
         if "in" in step_dict:
             for input_name, input_dict in step_dict["in"].items():
@@ -1346,7 +1368,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
         return module, step
 
-    def __load_subworkflow_from_step_dict(self, trans, step_dict, subworkflow_id_map, workflow_state_resolution_options):
+    def __load_subworkflow_from_step_dict(self, trans, step_dict, subworkflow_id_map, workflow_state_resolution_options, dry_run=False):
         embedded_subworkflow = step_dict.get("subworkflow", None)
         subworkflow_id = step_dict.get("content_id", None)
         if embedded_subworkflow and subworkflow_id:
@@ -1356,8 +1378,10 @@ class WorkflowContentsManager(UsesAnnotations):
             raise Exception("Subworkflow step must define either subworkflow or content_id.")
 
         if embedded_subworkflow:
+            assert not dry_run
             subworkflow = self.__build_embedded_subworkflow(trans, embedded_subworkflow, workflow_state_resolution_options)
         elif subworkflow_id_map is not None:
+            assert not dry_run
             # Interpret content_id as a workflow local thing.
             subworkflow = subworkflow_id_map[subworkflow_id[1:]]
         else:
@@ -1424,36 +1448,31 @@ class WorkflowContentsManager(UsesAnnotations):
         workflow_update_options = WorkflowUpdateOptions(
             fill_defaults=False,
             allow_missing_tools=True,
+            dry_run=refactor_request.dry_run,
         )
 
         module_injector = WorkflowModuleInjector(trans)
         refactor_executor = WorkflowRefactorExecutor(raw_workflow_description, workflow, module_injector)
         actions_executed = refactor_executor.refactor(refactor_request)
-        if refactor_request.dry_run:
-            # TODO: go a bit further with dry run, try to re-populate a workflow just
-            # don't flush it or tie it to the stored_workflow. Still for now, there is
-            # a lot of things that would be caught with just what is done here.
-            pass
-        else:
-            stored_workflow, errors = self.update_workflow_from_raw_description(
-                trans,
-                stored_workflow,
-                raw_workflow_description,
-                workflow_update_options,
-            )
-            # errors could be three things:
-            # - we allow missing tools so it won't be that.
-            # - might have cycles or might have state validation issues, but it still saved...
-            #   so this is really more of a warning - we disregard it the other two places
-            #   it is used also. These same messages will appear in the dictified version we
-            #   we send back anyway
-        return actions_executed
+        refactored_workflow, errors = self.update_workflow_from_raw_description(
+            trans,
+            stored_workflow,
+            raw_workflow_description,
+            workflow_update_options,
+        )
+        # errors could be three things:
+        # - we allow missing tools so it won't be that.
+        # - might have cycles or might have state validation issues, but it still saved...
+        #   so this is really more of a warning - we disregard it the other two places
+        #   it is used also. These same messages will appear in the dictified version we
+        #   we send back anyway
+        return refactored_workflow, actions_executed
 
     def refactor(self, trans, stored_workflow, refactor_request):
-        actions_executed = self.do_refactor(trans, stored_workflow, refactor_request)
+        refactored_workflow, actions_executed = self.do_refactor(trans, stored_workflow, refactor_request)
         return RefactorResponse(
             actions_executed=actions_executed,
-            workflow=self.workflow_to_dict(trans, stored_workflow, style=refactor_request.style),
+            workflow=self.workflow_to_dict(trans, refactored_workflow.stored_workflow, style=refactor_request.style),
             dry_run=refactor_request.dry_run,
         )
 
@@ -1483,6 +1502,7 @@ class WorkflowUpdateOptions(WorkflowStateResolutionOptions):
     # stored workflow
     update_stored_workflow_attributes: bool = True
     allow_missing_tools: bool = False
+    dry_run: bool = False
 
 
 # Workflow update options but with some different defaults - we allow creating

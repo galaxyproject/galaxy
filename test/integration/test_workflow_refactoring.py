@@ -2,9 +2,19 @@ import contextlib
 import json
 
 from galaxy.managers.context import ProvidesAppContext
+from galaxy.managers.workflows import RefactorRequest
+from galaxy.model import (
+    PostJobAction,
+    PostJobActionAssociation,
+    StoredWorkflow,
+    User,
+    Workflow,
+    WorkflowOutput,
+    WorkflowStep,
+    WorkflowStepConnection,
+)
 from galaxy.workflow.refactor.schema import (
     RefactorActionExecutionMessageTypeEnum,
-    RefactorActions,
 )
 from galaxy_test.base.populators import (
     WorkflowPopulator,
@@ -42,8 +52,8 @@ steps:
         actions = [
             {"action_type": "update_annotation", "annotation": "my cool new annotation"},
         ]
-        self._refactor(actions)
-        # TODO: test annotation change...
+        response = self._refactor(actions)
+        assert response.workflow["annotation"] == "my cool new annotation"
 
         actions = [
             {"action_type": "update_license", "license": "AFL-3.0"},
@@ -142,6 +152,58 @@ steps:
         assert self._latest_workflow.step_by_label("extracted_input")
         assert len(self._latest_workflow.step_by_label("first_cat").inputs) == 1
 
+    def test_basic_refactoring_types_dry_run(self):
+        self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  test_input: data
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: test_input
+""")
+        actions = [
+            {"action_type": "update_name", "name": "my cool new name"},
+        ]
+        response = self._dry_run(actions)
+        assert response.workflow["name"] == "my cool new name"
+
+        actions = [
+            {"action_type": "update_annotation", "annotation": "my cool new annotation"},
+        ]
+        response = self._dry_run(actions)
+        assert response.workflow["annotation"] == "my cool new annotation"
+
+        actions = [
+            {"action_type": "update_license", "license": "AFL-3.0"},
+        ]
+        response = self._dry_run(actions)
+        assert response.workflow["license"] == "AFL-3.0"
+
+        actions = [
+            {"action_type": "update_creator", "creator": [{"class": "Person", "name": "Mary"}]},
+        ]
+        response = self._dry_run(actions)
+        creator_list = response.workflow["creator"]
+        assert isinstance(creator_list, list)
+        creator = creator_list[0]
+        assert creator["class"] == "Person"
+        assert creator["name"] == "Mary"
+
+        actions = [
+            {"action_type": "update_report", "report": {"markdown": "my report..."}}
+        ]
+        response = self._dry_run(actions)
+        assert response.workflow["report"]["markdown"] == "my report..."
+
+        actions = [
+            {"action_type": "add_step", "type": "parameter_input", "label": "new_param", "tool_state": {"parameter_type": "text"}, "position": {"left": 10, "top": 50}},
+        ]
+        response = self._dry_run(actions)
+        workflow_dict = response.workflow
+        assert _step_with_label(workflow_dict, "new_param")
+
     def test_refactoring_legacy_parameters(self):
         wf = self.workflow_populator.load_workflow_from_resource("test_workflow_randomlines_legacy_params")
         self.workflow_populator.create_workflow(wf)
@@ -203,6 +265,30 @@ steps:
         ]
         self._refactor(actions)
         assert self._latest_workflow.step_by_label("pja_only_param").tool_inputs["parameter_type"] == "text"
+
+    def test_refactoring_legacy_parameters_without_tool_state_dry_run(self):
+        # same as above but dry run...
+        self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  test_input: data
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: test_input
+    outputs:
+      out_file1:
+        rename: "${pja_only_param} name"
+""")
+        actions = [
+            {"action_type": "extract_legacy_parameter", "name": "pja_only_param"},
+        ]
+        response = self._dry_run(actions)
+        new_step = _step_with_label(response.workflow, "pja_only_param")
+        state_str = new_step["tool_state"]
+        state = json.loads(state_str)
+        assert state["parameter_type"] == "text"
 
     def test_refactoring_legacy_parameters_without_tool_state_relabel(self):
         # same thing as above, but apply relabeling and ensure PJA gets updated.
@@ -309,7 +395,7 @@ steps:
         actions = [
             {"action_type": "fill_step_defaults", "step": {"order_index": 0}},
         ]
-        action_executions = self._refactor(actions)
+        action_executions = self._refactor(actions).actions_executed
         first_step = self._latest_workflow.step_by_label("random1")
         assert "num_lines" in first_step.tool_inputs
         assert len(action_executions) == 1
@@ -324,12 +410,35 @@ steps:
         second_step = self._latest_workflow.step_by_label("random2")
         assert "num_lines" not in second_step.tool_inputs
 
+    def test_refactor_fill_step_defaults_dry_run(self):
+        self._load_two_random_lines_wf_with_missing_state()
+        actions = [
+            {"action_type": "fill_step_defaults", "step": {"order_index": 0}},
+        ]
+        response = self._dry_run(actions)
+        actions_executed = response.actions_executed
+        assert len(actions_executed) == 1
+        action_execution = actions_executed[0]
+        assert len(action_execution.messages) == 1
+        message = action_execution.messages[0]
+        assert message.order_index == 0
+        assert message.step_label == "random1"
+        assert message.input_name == "num_lines"
+
+        # TODO:
+        # first_step = self._latest_workflow.step_by_label("random1")
+        # assert "num_lines" in first_step.tool_inputs
+
+        # ensure other step untouched...
+        # second_step = self._latest_workflow.step_by_label("random2")
+        # assert "num_lines" not in second_step.tool_inputs
+
     def test_refactor_fill_defaults(self):
         self._load_two_random_lines_wf_with_missing_state()
         actions = [
             {"action_type": "fill_defaults"},
         ]
-        action_executions = self._refactor(actions)
+        action_executions = self._refactor(actions).actions_executed
 
         first_step = self._latest_workflow.step_by_label("random1")
         assert "num_lines" in first_step.tool_inputs
@@ -365,7 +474,7 @@ steps:
         # t = self._app.toolbox.get_tool("multiple_versions", tool_version="0.1")
         # assert t is not None
         # assert t.version == "0.1"
-        action_executions = self._refactor(actions)
+        action_executions = self._refactor(actions).actions_executed
         assert len(action_executions) == 1
         assert len(action_executions[0].messages) == 0
         assert self._latest_workflow.step_by_label("the_step").tool_version == "0.2"
@@ -384,7 +493,7 @@ steps:
         actions = [
             {"action_type": "upgrade_tool", "step": {"label": "the_step"}, "tool_version": "0.2"},
         ]
-        action_executions = self._refactor(actions)
+        action_executions = self._refactor(actions).actions_executed
 
         assert self._latest_workflow.step_by_label("the_step").tool_version == "0.2"
 
@@ -423,7 +532,7 @@ steps:
         actions = [
             {"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}},
         ]
-        action_executions = self._refactor(actions)
+        action_executions = self._refactor(actions).actions_executed
         assert len(action_executions) == 1
         assert len(action_executions[0].messages) == 0
 
@@ -454,7 +563,7 @@ steps:
         actions = [
             {"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}, "content_id": middle_workflow_id},
         ]
-        action_executions = self._refactor(actions)
+        action_executions = self._refactor(actions).actions_executed
         assert len(action_executions) == 1
         assert len(action_executions[0].messages) == 0
         post_upgrade_native = self._download_native(self._most_recent_stored_workflow)
@@ -472,11 +581,12 @@ steps:
         actions = [
             {"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}},
         ]
-        action_executions = self._refactor(actions)
+        action_executions = self._refactor(actions).actions_executed
         native_dict = self._download_native()
+        nested_step = _step_with_label(native_dict, "nested_workflow")
         # order_index of subworkflow shifts down from "2" because it has no
         # inbound inputs
-        assert native_dict["steps"]["1"]["subworkflow"]["steps"]["0"]["label"] == "renamed_inner_input"
+        assert nested_step["subworkflow"]["steps"]["0"]["label"] == "renamed_inner_input"
         assert len(action_executions) == 1
         messages = action_executions[0].messages
         assert len(messages) == 1
@@ -498,14 +608,54 @@ steps:
         with self.workflow_populator.export_for_update(workflow_id) as workflow_object:
             yield workflow_object
 
-    def _refactor(self, actions, stored_workflow=None):
-        user = self._app.model.session.query(self._app.model.User).order_by(self._app.model.User.id.desc()).limit(1).one()
+    def _refactor(self, actions, stored_workflow=None, dry_run=False, style="ga"):
+        user = self._app.model.session.query(User).order_by(User.id.desc()).limit(1).one()
         mock_trans = MockTrans(self._app, user)
-        return self._manager.do_refactor(
+        return self._manager.refactor(
             mock_trans,
             stored_workflow or self._most_recent_stored_workflow,
-            RefactorActions(**{"actions": actions})
+            RefactorRequest(
+                actions=actions, dry_run=dry_run, style=style
+            )
         )
+
+    def _dry_run(self, actions, stored_workflow=None):
+        # Do a bunch of checks to ensure nothing workflow related was written to the database
+        # or even added to the sa_session.
+        sa_session = self._app.model.session
+        sa_session.flush()
+
+        sw_update_time = self._model_last_time(StoredWorkflow)
+        assert sw_update_time
+        w_update_time = self._model_last_time(Workflow)
+        assert w_update_time
+        ws_last_id = self._model_last_id(WorkflowStep)
+        assert ws_last_id
+        wsc_last_id = self._model_last_id(WorkflowStepConnection)
+        pja_last_id = self._model_last_id(PostJobAction)
+        pjaa_last_id = self._model_last_id(PostJobActionAssociation)
+        wo_last_id = self._model_last_id(WorkflowOutput)
+
+        response = self._refactor(actions, stored_workflow=stored_workflow, dry_run=True)
+        sa_session.flush()
+        sa_session.expunge_all()
+        assert sw_update_time == self._model_last_time(StoredWorkflow)
+        assert w_update_time == self._model_last_time(Workflow)
+        assert ws_last_id == self._model_last_id(WorkflowStep)
+        assert wsc_last_id == self._model_last_id(WorkflowStepConnection)
+        assert pja_last_id == self._model_last_id(PostJobAction)
+        assert pjaa_last_id == self._model_last_id(PostJobActionAssociation)
+        assert wo_last_id == self._model_last_id(WorkflowOutput)
+
+        return response
+
+    def _model_last_time(self, clazz):
+        obj = self._app.model.session.query(clazz).order_by(clazz.update_time.desc()).limit(1).one()
+        return obj.update_time
+
+    def _model_last_id(self, clazz):
+        obj = self._app.model.session.query(clazz).order_by(clazz.id.desc()).limit(1).one_or_none()
+        return obj.id if obj else None
 
     @property
     def _manager(self):
@@ -517,8 +667,7 @@ steps:
 
     def _recent_stored_workflow(self, n=1):
         app = self._app
-        model = app.model
-        return app.model.session.query(app.model.StoredWorkflow).order_by(model.StoredWorkflow.id.desc()).limit(n).all()[-1]
+        return app.model.session.query(StoredWorkflow).order_by(StoredWorkflow.id.desc()).limit(n).all()[-1]
 
     @property
     def _latest_workflow(self):
@@ -560,6 +709,13 @@ steps:
         assert "num_lines" not in first_step.tool_inputs
         second_step = self._latest_workflow.step_by_label("random2")
         assert "num_lines" not in second_step.tool_inputs
+
+
+def _step_with_label(native_dict, label):
+    for step_dict in native_dict["steps"].values():
+        if step_dict.get("label") == label:
+            return step_dict
+    raise AssertionError(f'Failed to find step with label {label}')
 
 
 class MockTrans(ProvidesAppContext):

@@ -61,6 +61,10 @@ class WorkflowRefactorExecutor:
     def refactor(self, refactor_request: RefactorActions):
         action_executions = []
         for action in refactor_request.actions:
+            # TODO: we need to regenerate a detached workflow from as_dict after
+            # after each iteration here. Otherwise one set of changes might render
+            # the workflow state out of sync. It is fine if you're just executing one
+            # action at a time or just performing actions that use raw_workflow_description.
             action_type = action.action_type
             refactor_method_name = "_apply_%s" % action_type
             refactor_method = getattr(self, refactor_method_name, None)
