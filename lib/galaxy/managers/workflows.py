@@ -987,6 +987,8 @@ class WorkflowContentsManager(UsesAnnotations):
             data['report'] = workflow.reports_config
         if workflow.creator_metadata:
             data['creator'] = workflow.creator_metadata
+        if workflow.license:
+            data['license'] = workflow.license
         # For each step, rebuild the form and encode the state
         for step in workflow.steps:
             # Load from database representation
