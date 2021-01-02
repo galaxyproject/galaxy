@@ -965,6 +965,10 @@ class Anndata(H5):
     MetadataElement(name="layers_count", default=0, desc="layers_count", readonly=True, visible=True, no_value=0)
     MetadataElement(name="layers_names", desc="layers_names", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
     MetadataElement(name="row_attrs_count", default=0, desc="row_attrs_count", readonly=True, visible=True, no_value=0)
+    # obs_names: Cell1, Cell2, Cell3,...
+    # obs_layers: louvain, leidein, isBcell
+    # obs_count: number of obs_layers
+    # obs_size: number of obs_names
     MetadataElement(name="obs_names", desc="obs_names", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
     MetadataElement(name="obs_layers", desc="obs_layers", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
     MetadataElement(name="obs_count", default=0, desc="obs_count", readonly=True, visible=True, no_value=0)
@@ -1001,10 +1005,8 @@ class Anndata(H5):
             dataset.metadata.doi = anndata_file.attrs.get('doi')
             dataset.creation_date = anndata_file.attrs.get('creation_date')
             dataset.metadata.shape = anndata_file.attrs.get('shape', dataset.metadata.shape)
-            # none of the above appear to work in any dataset tested, but could be useful for future
-            # AnnData datasets
-
-            # all possible keys
+            # none of the above appear to work in any dataset tested, but could be useful for
+            # future AnnData datasets
             dataset.metadata.layers_count = len(anndata_file)
             dataset.metadata.layers_names = list(anndata_file.keys())
 
@@ -1027,13 +1029,25 @@ class Anndata(H5):
                     obs_index = "index"
                 elif "_index" in tmp:
                     obs_index = "_index"
-                # do not attempt to parse beyond these
+                # Determine cell labels
                 if obs_index:
                     dataset.metadata.obs_names = list(tmp[obs_index])
-                    x, y, z = _layercountsize(tmp, len(dataset.metadata.obs_names))
-                    dataset.metadata.obs_layers = x
-                    dataset.metadata.obs_count = y
-                    dataset.metadata.obs_size = z
+                elif hasattr(tmp, 'dtype'):
+                    if "index" in tmp.dtype.names:
+                        # Yes, we call tmp["index"], and not tmp.dtype["index"]
+                        # here, despite the above tests.
+                        dataset.metadata.obs_names = list(tmp["index"])
+                    elif "_index" in tmp.dtype.names:
+                        dataset.metadata.obs_names = list(tmp["_index"])
+                    else:
+                        log.warning("Could not determine cell labels for %s", self)
+                else:
+                    log.warning("Could not determine observation index for %s", self)
+
+                x, y, z = _layercountsize(tmp, len(dataset.metadata.obs_names))
+                dataset.metadata.obs_layers = x
+                dataset.metadata.obs_count = y
+                dataset.metadata.obs_size = z
 
             if 'obsm' in dataset.metadata.layers_names:
                 tmp = anndata_file["obsm"]
@@ -1059,9 +1073,14 @@ class Anndata(H5):
                 # dataset.metadata.var_names = tmp[var_index]
                 if var_index:
                     x, y, z = _layercountsize(tmp, len(tmp[var_index]))
-                    dataset.metadata.var_layers = x
-                    dataset.metadata.var_count = y
-                    dataset.metadata.var_size = z
+                else:
+                    # failing to detect a var_index is not an indicator
+                    # that the dataset is empty
+                    x, y, z = _layercountsize(tmp)
+
+                dataset.metadata.var_layers = x
+                dataset.metadata.var_count = y
+                dataset.metadata.var_size = z
 
             if 'varm' in dataset.metadata.layers_names:
                 tmp = anndata_file["varm"]
