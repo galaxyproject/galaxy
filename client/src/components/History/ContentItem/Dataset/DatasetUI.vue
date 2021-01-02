@@ -44,7 +44,7 @@ either through the props, and make updates through the events -->
 
             <h5 class="flex-grow-1 overflow-hidden mr-auto text-nowrap text-truncate">
                 <span class="hid">{{ dataset.hid }}</span>
-                <span v-if="collapsed" class="name">{{ dataset.title }}</span>
+                <span v-if="collapsed || !dataset.canEditName" class="name">{{ dataset.title }}</span>
             </h5>
             <!-- <div v-if="collapsed && dataset.tags.length" class="nametags mt-1">
                 <nametag v-for="tag in dataset.tags" :key="tag" :tag="tag" />
@@ -61,6 +61,7 @@ either through the props, and make updates through the events -->
 
         <header v-if="expanded" class="p-2">
             <ClickToEdit
+                v-if="dataset.canEditName"
                 tag-name="h4"
                 :value="dataset.name"
                 @input="$emit('updateDataset', { name: $event })"

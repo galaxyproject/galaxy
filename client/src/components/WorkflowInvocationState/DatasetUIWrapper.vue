@@ -30,10 +30,7 @@ export default {
     },
     computed: {
         dataset() {
-            const element = { ...this.item };
-            if (this.element_identifier) {
-                element.name = this.element_identifier;
-            }
+            const element = { ...this.item, element_identifier: this.element_identifier };
             return new Dataset(element);
         },
     },
