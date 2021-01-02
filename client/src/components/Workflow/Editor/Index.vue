@@ -132,7 +132,7 @@
                                     :license="license"
                                     :nodes="nodes"
                                     @onAttributes="onAttributes"
-                                    @refactor="_prepareForRefactor"
+                                    @refactor="attemptRefactor"
                                     @scrollTo="scrollTo"
                                 />
                                 <div id="right-content" class="right-content" />
@@ -282,7 +282,7 @@ export default {
             showForm(this, node, this.datatypes);
             this.canvasManager.drawOverview();
         },
-        _prepareForRefactor(actions) {
+        attemptRefactor(actions) {
             if (this.hasChanges) {
                 const r = window.confirm(
                     "You've made changes to your workflow that need to be saved before attempting the requested action. Save those changes and continue?"
@@ -344,6 +344,10 @@ export default {
             this.activeNode = null;
             this.hasChanges = true;
             showAttributes();
+        },
+        onEditSubworkflow(contentId) {
+            const editUrl = `${getAppRoot()}workflow/editor?workflow_id=${contentId}`;
+            this.onNavigate(editUrl);
         },
         onClone(node) {
             Vue.set(this.steps, this.nodeIndex++, {
@@ -410,12 +414,15 @@ export default {
         },
         onRun() {
             const runUrl = `${getAppRoot()}workflows/run?id=${this.id}`;
+            this.onNavigate(runUrl);
+        },
+        onNavigate(url) {
             if (this.hasChanges) {
                 this.onSave(true).then(() => {
-                    window.location = runUrl;
+                    window.location = url;
                 });
             } else {
-                window.location = runUrl;
+                window.location = url;
             }
         },
         onZoom(zoomLevel) {
