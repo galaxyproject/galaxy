@@ -405,8 +405,7 @@ class SubWorkflowModule(WorkflowModule):
         if "subworkflow" in d:
             module.subworkflow = d["subworkflow"]
         elif "content_id" in d:
-            from galaxy.managers.workflows import WorkflowsManager
-            module.subworkflow = WorkflowsManager(trans.app).get_owned_workflow(trans, d["content_id"])
+            module.subworkflow = trans.app.workflow_manager.get_owned_workflow(trans, d["content_id"])
         else:
             raise Exception("Step associated subworkflow could not be found.")
         return module

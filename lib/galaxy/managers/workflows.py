@@ -1354,8 +1354,7 @@ class WorkflowContentsManager(UsesAnnotations):
             # Interpret content_id as a workflow local thing.
             subworkflow = subworkflow_id_map[subworkflow_id[1:]]
         else:
-            workflow_manager = WorkflowsManager(self.app)
-            subworkflow = workflow_manager.get_owned_workflow(
+            subworkflow = self.app.workflow_manager.get_owned_workflow(
                 trans, subworkflow_id
             )
 
