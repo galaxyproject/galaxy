@@ -347,7 +347,7 @@ class WorkflowContentsManager(UsesAnnotations):
         trans.workflow_building_mode = workflow_building_modes.ENABLED
         # If there's a source, put it in the workflow name.
         if 'name' not in data:
-            raise Exception(f"Invalid workflow format detected [{data}]")
+            raise exceptions.RequestParameterInvalidException(f"Invalid workflow format detected [{data}]")
 
         workflow_input_name = data['name']
         if source:
