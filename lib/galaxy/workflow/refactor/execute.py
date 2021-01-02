@@ -1,6 +1,7 @@
 import logging
 from typing import Any, Dict
 
+from galaxy import model
 from galaxy.exceptions import (
     RequestParameterInvalidException,
 )
@@ -37,7 +38,8 @@ from .schema import (
     UpdateReportAction,
     UpdateStepLabelAction,
     UpdateStepPositionAction,
-    UpgradeSubworkflow,
+    UpgradeSubworkflowAction,
+    UpgradeToolAction,
 )
 from ..modules import (
     InputParameterModule,
@@ -340,7 +342,7 @@ class WorkflowRefactorExecutor:
                 new_outputs.append(workflow_output)
             step["workflow_outputs"] = new_outputs
 
-    def _apply_upgrade_subworkflow(self, action: UpgradeSubworkflow, execution: RefactorActionExecution):
+    def _apply_upgrade_subworkflow(self, action: UpgradeSubworkflowAction, execution: RefactorActionExecution):
         step_def = self._find_step(action.step)
         assert step_def["content_id"] is not None
         content_id = step_def["content_id"]
@@ -354,6 +356,28 @@ class WorkflowRefactorExecutor:
             content_id = trans.security.encode_id(stored_workflow.latest_workflow.id)
         step_def["content_id"] = content_id
         # TODO: recalculate connections...
+
+    def _apply_upgrade_tool(self, action: UpgradeToolAction, execution: RefactorActionExecutionMessage):
+        step_def = self._find_step(action.step)
+        tool_id = step_def["content_id"]
+        trans = self.module_injector.trans
+        tool_version = action.tool_version
+        if tool_version is None:
+            latest_tool = trans.app.toolbox.get_tool(tool_id, get_all_versions=True)[-1]
+            tool_version = latest_tool.version
+            tool_id = latest_tool.id
+        step = self.workflow.steps[step_def["id"]]
+        temp_step = model.WorkflowStep()
+        temp_step.tool_id = tool_id
+        temp_step.tool_inputs = step.tool_inputs
+        temp_step.tool_version = tool_version
+        temp_step.label = step.label
+        temp_step.order_index = step.order_index
+        temp_step.type = step.type
+        self._inject(temp_step, execution)
+        step_def["tool_version"] = tool_version
+        step_def["tool_state"] = temp_step.module.get_tool_state()
+        # TODO: recalculate connections and record messages...
 
     def _find_step(self, step_reference: step_reference_union):
         order_index = None

@@ -176,11 +176,17 @@ class FileDefaultsAction(BaseAction):
     action_type: Literal['fill_defaults']
 
 
-class UpgradeSubworkflow(BaseAction):
+class UpgradeSubworkflowAction(BaseAction):
     action_type: Literal['upgrade_subworkflow']
     step: step_reference_union
     # should be decoded before stuffing it into the database...
     content_id: Optional[str]
+
+
+class UpgradeToolAction(BaseAction):
+    action_type: Literal['upgrade_tool']
+    step: step_reference_union
+    tool_version: Optional[str]
 
 
 union_action_classes = Union[
@@ -199,7 +205,8 @@ union_action_classes = Union[
     UpdateReportAction,
     UpdateStepLabelAction,
     UpdateStepPositionAction,
-    UpgradeSubworkflow,
+    UpgradeSubworkflowAction,
+    UpgradeToolAction,
     RemoveUnlabeledWorkflowOutputs,
 ]
 

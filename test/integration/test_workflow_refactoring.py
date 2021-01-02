@@ -2,7 +2,10 @@ import contextlib
 import json
 
 from galaxy.managers.context import ProvidesAppContext
-from galaxy.workflow.refactor.schema import RefactorActions
+from galaxy.workflow.refactor.schema import (
+    RefactorActionExecutionMessageTypeEnum,
+    RefactorActions,
+)
 from galaxy_test.base.populators import (
     WorkflowPopulator,
 )
@@ -344,6 +347,55 @@ steps:
         assert message.order_index == 1
         assert message.step_label == "random2"
         assert message.input_name == "num_lines"
+
+    def test_tool_version_upgrade_no_state_change(self):
+        self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+  the_step:
+    tool_id: multiple_versions
+    tool_version: '0.1'
+    state:
+      inttest: 0
+""")
+        assert self._latest_workflow.step_by_label("the_step").tool_version == "0.1"
+        actions = [
+            {"action_type": "upgrade_tool", "step": {"label": "the_step"}},
+        ]
+        # t = self._app.toolbox.get_tool("multiple_versions", tool_version="0.1")
+        # assert t is not None
+        # assert t.version == "0.1"
+        action_executions = self._refactor(actions)
+        assert len(action_executions) == 1
+        assert len(action_executions[0].messages) == 0
+        assert self._latest_workflow.step_by_label("the_step").tool_version == "0.2"
+
+    def test_tool_version_upgrade_state_added(self):
+        self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+  the_step:
+    tool_id: multiple_versions_changes
+    tool_version: '0.1'
+    state:
+      inttest: 0
+""")
+        assert self._latest_workflow.step_by_label("the_step").tool_version == "0.1"
+        actions = [
+            {"action_type": "upgrade_tool", "step": {"label": "the_step"}, "tool_version": "0.2"},
+        ]
+        action_executions = self._refactor(actions)
+
+        assert self._latest_workflow.step_by_label("the_step").tool_version == "0.2"
+
+        assert len(action_executions) == 1
+        messages = action_executions[0].messages
+        assert len(messages) == 1
+        message = messages[0]
+        assert message.message_type == RefactorActionExecutionMessageTypeEnum.tool_state_adjustment
+        assert message.order_index == 0
+        assert message.step_label == "the_step"
+        assert message.input_name == "floattest"
 
     def test_subworkflow_upgrade_simplest(self):
         self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)
