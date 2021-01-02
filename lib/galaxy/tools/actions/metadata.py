@@ -103,8 +103,9 @@ class SetMetadataToolAction(ToolAction):
                                                                      datatypes_config=datatypes_config,
                                                                      job_metadata=os.path.join(job_working_dir, 'working', tool.provided_metadata_file),
                                                                      include_command=False,
-                                                                     validate_outputs=validate_outputs,
                                                                      max_metadata_value_size=app.config.max_metadata_value_size,
+                                                                     validate_outputs=validate_outputs,
+                                                                     job=job,
                                                                      kwds={'overwrite': overwrite})
         incoming['__SET_EXTERNAL_METADATA_COMMAND_LINE__'] = cmd_line
         for name, value in tool.params_to_strings(incoming, app).items():
