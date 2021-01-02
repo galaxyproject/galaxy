@@ -524,7 +524,7 @@ class BaseDatasetPopulator:
         return dict(src=src, id=history_content["id"])
 
     def dataset_storage_info(self, dataset_id):
-        storage_response = self.galaxy_interactor.get("datasets/{}/storage".format(dataset_id))
+        storage_response = self.galaxy_interactor.get(f"datasets/{dataset_id}/storage")
         storage_response.raise_for_status()
         return storage_response.json()
 

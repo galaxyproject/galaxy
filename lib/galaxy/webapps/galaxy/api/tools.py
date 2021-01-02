@@ -491,14 +491,14 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         return self._create(trans, payload, **kwd)
 
     def _create(self, trans, payload, **kwd):
-        action = payload.get('action', None)
+        action = payload.get('action')
         if action == 'rerun':
             raise Exception("'rerun' action has been deprecated")
 
         # Get tool.
-        tool_version = payload.get('tool_version', None)
-        tool_id = payload.get('tool_id', None)
-        tool_uuid = payload.get('tool_uuid', None)
+        tool_version = payload.get('tool_version')
+        tool_id = payload.get('tool_id')
+        tool_uuid = payload.get('tool_uuid')
         get_kwds = dict(
             tool_id=tool_id,
             tool_uuid=tool_uuid,
@@ -508,8 +508,11 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             raise exceptions.RequestParameterMissingException("Must specify either a tool_id or a tool_uuid.")
 
         tool = trans.app.toolbox.get_tool(**get_kwds)
-        if not tool or not tool.allow_user_access(trans.user):
-            raise exceptions.MessageException('Tool not found or not accessible.')
+        if not tool:
+            log.debug(f"Not found tool with kwds [{get_kwds}]")
+            raise exceptions.ToolMissingException('Tool not found.')
+        if not tool.allow_user_access(trans.user):
+            raise exceptions.ItemAccessibilityException('Tool not accessible.')
         if trans.app.config.user_activation_on:
             if not trans.user:
                 log.warning("Anonymous user attempts to execute tool, but account activation is turned on.")
@@ -519,7 +522,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         # Set running history from payload parameters.
         # History not set correctly as part of this API call for
         # dataset upload.
-        history_id = payload.get('history_id', None)
+        history_id = payload.get('history_id')
         if history_id:
             decoded_id = self.decode_id(history_id)
             target_history = self.history_manager.get_owned(decoded_id, trans.user, current_history=trans.history)

@@ -1139,7 +1139,7 @@ def _outer_field_to_input_instance(field):
     for type_description in type_descriptions:
         select_options.append({"value": type_description.name, "label": type_description.label})
         input_instances = []
-        if type_description.uses_param():
+        if type_description.uses_param:
             input_instances.append(value_input(type_description))
         case_options.append((type_description.name, input_instances))
 
