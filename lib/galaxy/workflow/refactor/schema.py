@@ -225,6 +225,7 @@ class RefactorActions(BaseModel):
 class RefactorActionExecutionMessageTypeEnum(str, Enum):
     tool_version_change = 'tool_version_change'
     tool_state_adjustment = 'tool_state_adjustment'
+    connection_dropped_forced = 'connection_dropped_forced'
 
 
 class RefactorActionExecutionMessage(BaseModel):

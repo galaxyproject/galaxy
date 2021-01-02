@@ -421,7 +421,7 @@ steps:
         self._assert_nested_workflow_num_lines_is(pre_upgrade_native, "1")
 
         actions = [
-            {"action_type": "upgrade_subworkflow", "step": {"order_index": 2}},
+            {"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}},
         ]
         action_executions = self._refactor(actions)
         assert len(action_executions) == 1
@@ -452,7 +452,7 @@ steps:
         assert len(nested_stored_workflow.workflows) == 3
         middle_workflow_id = self._app.security.encode_id(nested_stored_workflow.workflows[1].id)
         actions = [
-            {"action_type": "upgrade_subworkflow", "step": {"order_index": 2}, "content_id": middle_workflow_id},
+            {"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}, "content_id": middle_workflow_id},
         ]
         action_executions = self._refactor(actions)
         assert len(action_executions) == 1
@@ -460,7 +460,35 @@ steps:
         post_upgrade_native = self._download_native(self._most_recent_stored_workflow)
         self._assert_nested_workflow_num_lines_is(post_upgrade_native, "20")
 
-    def _download_native(self, workflow):
+    def test_subworkflow_upgrade_connection_input_dropped(self):
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)
+
+        nested_stored_workflow = self._recent_stored_workflow(2)
+        actions = [
+            {"action_type": "update_step_label", "step": {"label": "inner_input"}, "label": "renamed_inner_input"},
+        ]
+        self._refactor(actions, stored_workflow=nested_stored_workflow)
+
+        actions = [
+            {"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}},
+        ]
+        action_executions = self._refactor(actions)
+        native_dict = self._download_native()
+        # order_index of subworkflow shifts down from "2" because it has no
+        # inbound inputs
+        assert native_dict["steps"]["1"]["subworkflow"]["steps"]["0"]["label"] == "renamed_inner_input"
+        assert len(action_executions) == 1
+        messages = action_executions[0].messages
+        assert len(messages) == 1
+
+        message = messages[0]
+        assert message.message_type == RefactorActionExecutionMessageTypeEnum.connection_dropped_forced
+        assert message.order_index == 2
+        assert message.step_label == "nested_workflow"
+        assert message.input_name == "inner_input"
+
+    def _download_native(self, workflow=None):
+        workflow = workflow or self._most_recent_stored_workflow
         workflow_id = self._app.security.encode_id(workflow.id)
         return self.workflow_populator.download_workflow(workflow_id)
 
@@ -470,12 +498,12 @@ steps:
         with self.workflow_populator.export_for_update(workflow_id) as workflow_object:
             yield workflow_object
 
-    def _refactor(self, actions):
+    def _refactor(self, actions, stored_workflow=None):
         user = self._app.model.session.query(self._app.model.User).order_by(self._app.model.User.id.desc()).limit(1).one()
         mock_trans = MockTrans(self._app, user)
         return self._manager.do_refactor(
             mock_trans,
-            self._most_recent_stored_workflow,
+            stored_workflow or self._most_recent_stored_workflow,
             RefactorActions(**{"actions": actions})
         )
 

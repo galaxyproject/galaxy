@@ -345,16 +345,47 @@ class WorkflowRefactorExecutor:
     def _apply_upgrade_subworkflow(self, action: UpgradeSubworkflowAction, execution: RefactorActionExecution):
         step_def = self._find_step(action.step)
         assert step_def["content_id"] is not None
-        content_id = step_def["content_id"]
         trans = self.module_injector.trans
-        old_workflow = trans.app.workflow_manager.get_owned_workflow(
-            trans, content_id
-        )
-        stored_workflow = old_workflow.stored_workflow
         content_id = action.content_id
         if content_id is None:
+            old_workflow = trans.app.workflow_manager.get_owned_workflow(
+                trans, step_def["content_id"]
+            )
+            stored_workflow = old_workflow.stored_workflow
             content_id = trans.security.encode_id(stored_workflow.latest_workflow.id)
         step_def["content_id"] = content_id
+        step = self.workflow.steps[step_def["id"]]
+        new_workflow = trans.app.workflow_manager.get_owned_workflow(
+            trans, content_id
+        )
+        step.subworkflow = new_workflow
+        self._inject_for_updated_step(step, execution)
+        upgrade_inputs = step.module.get_all_inputs()
+        all_input_connections = step_def.get("input_connections")
+        inputs_to_delete = []
+        for input_name, input_connections in all_input_connections.items():
+            matching_input = None
+            for upgrade_input in upgrade_inputs:
+                if upgrade_input["label"] == input_name:
+                    matching_input = upgrade_input
+
+            # In the future check parameter type, format, mapping status...
+            if matching_input is None:
+                inputs_to_delete.append(input_name)
+                count = len(_listify_connections(input_connections))
+                message_text = f"Subworkflow input '{input_name}' no longer available, dropping {count} connection(s) to it."
+                message = RefactorActionExecutionMessage(
+                    message=message_text,
+                    message_type=RefactorActionExecutionMessageTypeEnum.connection_dropped_forced,
+                    input_name=input_name,
+                    step_label=step.label,
+                    order_index=step.order_index,
+                )
+                execution.messages.append(
+                    message
+                )
+        for input_name in inputs_to_delete:
+            del all_input_connections[input_name]
         # TODO: recalculate connections...
 
     def _apply_upgrade_tool(self, action: UpgradeToolAction, execution: RefactorActionExecutionMessage):
@@ -367,16 +398,11 @@ class WorkflowRefactorExecutor:
             tool_version = latest_tool.version
             tool_id = latest_tool.id
         step = self.workflow.steps[step_def["id"]]
-        temp_step = model.WorkflowStep()
-        temp_step.tool_id = tool_id
-        temp_step.tool_inputs = step.tool_inputs
-        temp_step.tool_version = tool_version
-        temp_step.label = step.label
-        temp_step.order_index = step.order_index
-        temp_step.type = step.type
-        self._inject(temp_step, execution)
+        step.tool_id = tool_id
+        step.tool_version = tool_version
+        self._inject_for_updated_step(step, execution)
         step_def["tool_version"] = tool_version
-        step_def["tool_state"] = temp_step.module.get_tool_state()
+        step_def["tool_state"] = step.module.get_tool_state()
         # TODO: recalculate connections and record messages...
 
     def _find_step(self, step_reference: step_reference_union):
@@ -421,6 +447,10 @@ class WorkflowRefactorExecutor:
             else:
                 step = self._step_with_module(order_index, execution)
                 yield step_def, step
+
+    def _inject_for_updated_step(self, step, execution):
+        step.clear_module_extras()
+        return self._inject(step, execution)
 
     def _inject(self, step, execution):
         # inject tool state into module, capture upgrade messages that result
@@ -483,9 +513,14 @@ class WorkflowRefactorExecutor:
         if add_if_missing and input_name not in all_input_connections:
             all_input_connections[input_name] = []
         input_connections = all_input_connections[input_name]
-        if not isinstance(input_connections, list):
-            all_input_connections[input_name] = [input_connections]
+        all_input_connections[input_name] = _listify_connections(input_connections)
 
     @property
     def _as_dict(self):
         return self.raw_workflow_description.as_dict
+
+
+def _listify_connections(input_connections):
+    if not isinstance(input_connections, list):
+        return [input_connections]
+    return input_connections
