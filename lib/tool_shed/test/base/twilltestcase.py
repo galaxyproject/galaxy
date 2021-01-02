@@ -160,7 +160,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
                 'use_panels': False
             }
             self.visit_url('/user/login', params=params)
-            self.submit_form('login', 'login_button', login=email, redirect=redirect, password=password)
+            self.submit_form(button='login_button', login=email, redirect=redirect, password=password)
 
     def logout(self):
         self.visit_url("/user/logout")
@@ -170,7 +170,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         """Shows form, helpful for debugging new tests"""
         return tc.browser.forms
 
-    def submit_form(self, form_no=0, button="runtool_btn", form=None, **kwd):
+    def submit_form(self, form_no=-1, button="runtool_btn", form=None, **kwd):
         """Populates and submits a form from the keyword arguments."""
         # An HTMLForm contains a sequence of Controls.  Supported control classes are:
         # TextControl, FileControl, ListControl, RadioControl, CheckboxControl, SelectControl,
@@ -229,7 +229,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
             'operation': 'create'
         }
         self.visit_url('/repository_review/create_component', params=params)
-        self.submit_form(1, 'create_component_button', **kwd)
+        self.submit_form(button='create_component_button', **kwd)
 
     def assign_admin_role(self, repository, user):
         # As elsewhere, twill limits the possibility of submitting the form, this time due to not executing the javascript
@@ -451,7 +451,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
                 'operation': 'create'
             }
             self.visit_url('/admin/manage_categories', params=params)
-            self.submit_form(form_no=1, button="create_category_button", **kwd)
+            self.submit_form(button="create_category_button", **kwd)
             category = test_db_util.get_category_by_name(kwd['name'])
         return category
 
@@ -727,7 +727,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
             else:
                 kwd['%s__ESEP__approved' % label] = 'not_applicable'
         self.check_for_strings(strings_displayed, strings_not_displayed)
-        self.submit_form(1, 'Workflows__ESEP__review_button', **kwd)
+        self.submit_form(button='Workflows__ESEP__review_button', **kwd)
         if changed:
             strings_displayed.append('Reviews were saved')
         self.check_for_strings(strings_displayed, strings_not_displayed)
@@ -871,7 +871,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         repository = test_db_util.get_repository_by_name_and_owner(kwd['name'], owner)
         if repository is None:
             self.visit_url('/repository/create_repository')
-            self.submit_form(1, 'create_repository_button', **kwd)
+            self.submit_form(button='create_repository_button', **kwd)
             self.check_for_strings(strings_displayed, strings_not_displayed)
             repository = test_db_util.get_repository_by_name_and_owner(kwd['name'], owner)
         return repository
@@ -1265,7 +1265,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
     def reset_metadata_on_selected_repositories(self, repository_ids):
         self.visit_url('/admin/reset_metadata_on_selected_repositories_in_tool_shed')
         kwd = dict(repository_ids=repository_ids)
-        self.submit_form(form_no=1, button="reset_metadata_on_selected_repositories_button", **kwd)
+        self.submit_form(button="reset_metadata_on_selected_repositories_button", **kwd)
 
     def reset_metadata_on_selected_installed_repositories(self, repository_ids):
         api_key = get_master_api_key()
@@ -1358,27 +1358,6 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         tc.fv("malicious", "malicious", set_malicious)
         tc.submit("malicious_button")
         self.check_for_strings(strings_displayed, strings_not_displayed)
-
-    def set_skip_tool_tsts_flag(self, repository, flag_value, reason, changeset_revision=None):
-        if changeset_revision is None:
-            changeset_revision = self.get_repository_tip(repository)
-        self.display_manage_repository_page(repository, changeset_revision=changeset_revision)
-        form = tc.browser.form('skip_tool_tests')
-        assert form is not None, 'Could not find form skip_tool_tests.'
-        for control in form.inputs:
-            control_name = str(control.name)
-            if control_name == 'skip_tool_tests' and control.type == 'checkbox':
-                checkbox = control.get()
-                checkbox.selected = flag_value
-            elif control_name == 'skip_tool_tests_comment':
-                tc.browser.clicked(form, control)
-                tc.formvalue('skip_tool_tests', control_name, reason)
-        kwd = dict()
-        self.submit_form('skip_tool_tests', 'skip_tool_tests_button', **kwd)
-        if flag_value is True:
-            self.check_for_strings(strings_displayed=['Tools in this revision will not be tested by the automated test framework'])
-        else:
-            self.check_for_strings(strings_displayed=['Tools in this revision will be tested by the automated test framework'])
 
     def tip_has_metadata(self, repository):
         tip = self.get_repository_tip(repository)
