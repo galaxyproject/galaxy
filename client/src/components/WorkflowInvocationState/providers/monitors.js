@@ -1,8 +1,8 @@
-import { of, race, pipe, concat } from "rxjs";
-import { filter, mergeMap, switchMap, delay, share, take } from "rxjs/operators";
+import { of, race, pipe, concat, iif } from "rxjs";
+import { filter, mergeMap, switchMap, delay, share, repeat, take, takeWhile } from "rxjs/operators";
 import { cacheContent, monitorContentQuery } from "components/History/caching";
 import { singleUpdateResult } from "components/History/caching/db/monitorQuery";
-import { fetchDatasetById, fetchDatasetCollectionById } from "./fetch";
+import { fetchDatasetById, fetchDatasetCollectionById, fetchInvocationStepById } from "./fetch";
 
 // prettier-ignore
 export const datasetMonitor = (cfg = {}) => {
@@ -73,3 +73,25 @@ const createMonitor = (id, contentType, fetcher, spinUpDelay = 250) => {
 
     return concat(firstValue$, changes$);
 };
+
+const TERMINAL_JOB_STATES = ["ok", "error", "deleted", "paused"];
+const stepIsTerminal = (step) =>
+    ["scheduled", "cancelled", "failed"].includes(step.state) &&
+    step.jobs.every((job) => TERMINAL_JOB_STATES.includes(job.state));
+
+const createInvocationStepMonitor = (id) => {
+    const initialFetch$ = of(id).pipe(fetchInvocationStepById());
+    const pollingFetch$ = of(id).pipe(
+        delay(3000),
+        fetchInvocationStepById(),
+        repeat(),
+        // takeWhile cancels source on true, so also cancels repeat
+        takeWhile((val) => !stepIsTerminal(val), true)
+    );
+    return initialFetch$.pipe(
+        // poll only if initial status is non-terminal
+        mergeMap((val) => iif(() => stepIsTerminal(val), of(val), pollingFetch$))
+    );
+};
+
+export const invocationStepMonitor = () => pipe(switchMap((id) => createInvocationStepMonitor(id)));

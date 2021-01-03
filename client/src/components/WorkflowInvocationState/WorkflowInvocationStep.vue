@@ -8,60 +8,69 @@
                 </span>
             </div>
             <div class="portlet-content" v-if="expanded">
-                <div style="min-width: 1;" />
-                <div v-if="!stepDetails">
-                    This invocation has not been scheduled yet, step information is unavailable
+                <InvocationStepProvider
+                    v-if="isReady && invocationStepId !== undefined"
+                    :id="invocationStepId"
+                    v-slot="{ item: stepDetails, loading }"
+                >
+                    <div style="min-width: 1;">
+                        <loading-span v-if="loading" :message="`Loading invocation step details`"> </loading-span>
+                        <div v-else>
+                            <details v-if="Object.values(stepDetails.outputs).length > 0"
+                                ><summary><b>Step Output Datasets</b></summary>
+                                <div v-for="(value, name) in stepDetails.outputs" :key="value.id">
+                                    <b>{{ name }}</b>
+                                    <workflow-invocation-data-contents :data_item="value" />
+                                </div>
+                            </details>
+                            <details v-if="Object.values(stepDetails.output_collections).length > 0"
+                                ><summary><b>Step Output Dataset Collections</b></summary>
+                                <div v-for="(value, name) in stepDetails.output_collections" :key="value.id">
+                                    <b>{{ name }}</b>
+                                    <workflow-invocation-data-contents :data_item="value" />
+                                </div>
+                            </details>
+                            <div class="portlet-body" style="width: 100%; overflow-x: auto;">
+                                <job-step v-if="workflowStepType == 'tool'" :jobs="stepDetails.jobs" />
+                                <parameter-step
+                                    v-else-if="workflowStepType == 'parameter_input'"
+                                    :parameters="[invocation.input_step_parameters[stepDetails.workflow_step_label]]"
+                                ></parameter-step>
+                                <workflow-invocation-data-contents
+                                    v-else-if="['data_input', 'data_collection_input'].includes(workflowStepType)"
+                                    :data_item="invocation.inputs[workflowStep.id]"
+                                />
+                                <div v-else-if="workflowStepType == 'subworkflow'">
+                                    <div v-if="!stepDetails.subworkflow_invocation_id">
+                                        Workflow invocation for this step is not yet scheduled.
+                                        <p></p>
+                                        This step consumes outputs from these steps:
+                                        <ul v-if="workflowStep">
+                                            <li
+                                                v-for="stepInput in Object.values(workflowStep.input_steps)"
+                                                :key="stepInput.source_step"
+                                            >
+                                                {{ labelForWorkflowStep(stepInput.source_step) }}
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <workflow-invocation-state
+                                        v-else
+                                        :invocationId="stepDetails.subworkflow_invocation_id"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </InvocationStepProvider>
+                <loading-span
+                    v-else
+                    :message="`This invocation has not been scheduled yet, step information is unavailable`"
+                >
                     <!-- Probably a subworkflow invocation, could walk back to parent and show
                          why step is not scheduled, but that's not necessary for a first pass, I think
                     -->
-                </div>
-                <div v-else>
-                    <details v-if="Object.values(stepDetails.outputs).length > 0"
-                        ><summary><b>Step Output Datasets</b></summary>
-                        <div v-for="(value, name) in stepDetails.outputs" :key="value.id">
-                            <b>{{ name }}</b>
-                            <workflow-invocation-data-contents :data_item="value" />
-                        </div>
-                    </details>
-                    <details v-if="Object.values(stepDetails.output_collections).length > 0"
-                        ><summary><b>Step Output Dataset Collections</b></summary>
-                        <div v-for="(value, name) in stepDetails.output_collections" :key="value.id">
-                            <b>{{ name }}</b>
-                            <workflow-invocation-data-contents :data_item="value" />
-                        </div>
-                    </details>
-                    <div class="portlet-body" style="width: 100%; overflow-x: auto;">
-                        <job-step v-if="workflowStepType == 'tool'" :jobs="stepDetails.jobs" />
-                        <parameter-step
-                            v-else-if="workflowStepType == 'parameter_input'"
-                            :parameters="[invocation.input_step_parameters[stepDetails.workflow_step_label]]"
-                        ></parameter-step>
-                        <workflow-invocation-data-contents
-                            v-else-if="['data_input', 'data_collection_input'].includes(workflowStepType)"
-                            :data_item="invocation.inputs[workflowStep.id]"
-                        />
-                        <div v-else-if="workflowStepType == 'subworkflow'">
-                            <div v-if="!stepDetails.subworkflow_invocation_id">
-                                Workflow invocation for this step is not yet scheduled.
-                                <p></p>
-                                This step consumes outputs from these steps:
-                                <ul v-if="workflowStep">
-                                    <li
-                                        v-for="stepInput in Object.values(workflowStep.input_steps)"
-                                        :key="stepInput.source_step"
-                                    >
-                                        {{ labelForWorkflowStep(stepInput.source_step) }}
-                                    </li>
-                                </ul>
-                            </div>
-                            <workflow-invocation-state
-                                :invocationId="stepDetails.subworkflow_invocation_id"
-                                v-if="stepDetails && stepDetails.subworkflow_invocation_id"
-                            />
-                        </div>
-                    </div>
-                </div>
-                <div style="min-width: 1;" />
+                </loading-span>
             </div>
         </div>
     </div>
@@ -72,13 +81,15 @@ import { mapGetters, mapActions } from "vuex";
 import JobStep from "./JobStep";
 import ParameterStep from "./ParameterStep";
 import WorkflowInvocationDataContents from "./WorkflowInvocationDataContents.vue";
-
-const TERMINAL_STATES = ["ok", "error", "deleted", "paused"];
+import { InvocationStepProvider } from "./providers";
+import LoadingSpan from "../LoadingSpan";
 
 export default {
     components: {
+        LoadingSpan,
         JobStep,
         ParameterStep,
+        InvocationStepProvider,
         WorkflowInvocationDataContents,
         WorkflowInvocationState: () => import("components/WorkflowInvocationState/WorkflowInvocationState"),
     },
@@ -97,10 +108,12 @@ export default {
     created() {
         this.fetchTool();
         this.fetchSubworkflow();
-        this.pollStepDetailsUntilTerminal();
     },
     computed: {
         ...mapGetters(["getToolForId", "getToolNameById", "getWorkflowByInstanceId", "getInvocationStepById"]),
+        isReady() {
+            return this.invocationSteps.length > 0;
+        },
         invocationSteps() {
             return this.orderedSteps;
         },
@@ -128,23 +141,8 @@ export default {
                     return "fa-wrench";
             }
         },
-        stepDetails() {
-            if (this.step) {
-                return this.getInvocationStepById(this.step.id);
-            }
-            return null;
-        },
         stepLabel() {
             return this.labelForWorkflowStep(this.workflowStep.id);
-        },
-        stepIsTerminal() {
-            return (
-                this.stepDetails &&
-                ["scheduled", "cancelled", "failed"].includes(this.stepDetails.state) &&
-                // may seem odd to check for job state, but keeps the StepJobs component up to date.
-                // TODO: refactor StepJobs to listen for job updates?
-                this.stepDetails.jobs.every((job) => TERMINAL_STATES.includes(job.state))
-            );
         },
     },
     methods: {
@@ -159,16 +157,6 @@ export default {
             if (this.workflowStep.workflow_id) {
                 this.fetchWorkflowForInstanceId(this.workflowStep.workflow_id);
             }
-        },
-        pollStepDetailsUntilTerminal: function () {
-            this.fetchInvocationStepById(this.step.id).then((response) => {
-                if (!this.stepIsTerminal) {
-                    this.polling = setTimeout(this.fetchInvocationStepById, 3000);
-                }
-            });
-        },
-        beforeDestroy() {
-            clearTimeout(this.polling);
         },
         toggleStep() {
             this.expanded = !this.expanded;
