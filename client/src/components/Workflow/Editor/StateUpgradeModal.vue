@@ -1,12 +1,12 @@
 <template>
-    <b-modal v-model="show" title="Issues loading this workflow" scrollable ok-only ok-title="Continue">
+    <b-modal v-model="show" :title="title" scrollable ok-only ok-title="Continue">
         <div class="state-upgrade-modal">
-            Please review the following issues, possibly resulting from tool upgrades or changes.
+            {{ message }}
             <ul class="workflow-state-upgrade-step-summaries">
                 <li v-for="(stateMessage, index) in stateMessages" :key="index">
                     <b>
                         <i :class="iconClass(stateMessage)" />
-                        Step {{ humanIndex(stateMessage) }}: {{ title(stateMessage) }}
+                        Step {{ humanIndex(stateMessage) }}: {{ nodeTitle(stateMessage) }}
                     </b>
                     <ul class="workflow-state-upgrade-step-details">
                         <li v-for="(detail, detailIndex) in stateMessage.details" :key="detailIndex">
@@ -29,6 +29,14 @@ export default {
             type: Array,
             requierd: true,
         },
+        title: {
+            type: String,
+            default: "Issues loading this workflow",
+        },
+        message: {
+            type: String,
+            default: "Please review the following issues, possibly resulting from tool upgrades or changes.",
+        },
     },
     data() {
         return {
@@ -39,7 +47,7 @@ export default {
         humanIndex(stateMessage) {
             return `${parseInt(stateMessage.stepIndex, 10) + 1}`;
         },
-        title(stateMessage) {
+        nodeTitle(stateMessage) {
             return stateMessage.label ? stateMessage.label : stateMessage.name;
         },
         iconClass(stateMessage) {
