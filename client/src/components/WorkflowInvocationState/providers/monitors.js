@@ -3,6 +3,7 @@ import { filter, mergeMap, switchMap, delay, share, repeat, take, takeWhile } fr
 import { cacheContent, monitorContentQuery } from "components/History/caching";
 import { singleUpdateResult } from "components/History/caching/db/monitorQuery";
 import { fetchDatasetById, fetchDatasetCollectionById, fetchInvocationStepById } from "./fetch";
+import { loadHistoryContents } from "components/History/caching";
 
 // prettier-ignore
 export const datasetMonitor = (cfg = {}) => {
@@ -89,9 +90,28 @@ const createInvocationStepMonitor = (id) => {
         takeWhile((val) => !stepIsTerminal(val), true)
     );
     return initialFetch$.pipe(
-        // poll only if initial status is non-terminal
-        mergeMap((val) => iif(() => stepIsTerminal(val), of(val), pollingFetch$))
+        // poll only if initial status is non-terminal. If polling, concat the initial result we already have
+        // with pollingFetch$ which emits after the delay
+        mergeMap((val) => iif(() => stepIsTerminal(val), of(val), concat(of(val), pollingFetch$)))
     );
 };
 
 export const invocationStepMonitor = () => pipe(switchMap((id) => createInvocationStepMonitor(id)));
+
+// feed observables, keyed by history id. Keeps just one historyMonitor around.
+const historyFeeds = new Map();
+
+export const getHistoryMonitor = (historyId) => {
+    if (!historyFeeds.has(historyId)) {
+        historyFeeds.set(historyId, buildHistoryMonitor(historyId));
+    }
+    return historyFeeds.get(historyId);
+};
+
+const buildHistoryMonitor = (historyId) => {
+    // temporary hack until we can subscribe to invocations and their outputs.
+    // set large windowSize around which to monitor (could we just monitor all updates?)
+    const windowSize = 100000;
+    const monitorEvery = 50000;
+    return of([historyId, {}, 1]).pipe(loadHistoryContents(windowSize), delay(monitorEvery), repeat(), share());
+};

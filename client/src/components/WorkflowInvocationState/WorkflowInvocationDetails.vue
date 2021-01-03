@@ -53,12 +53,15 @@ import ParameterStep from "./ParameterStep.vue";
 import WorkflowInvocationDataContents from "./WorkflowInvocationDataContents";
 import WorkflowInvocationStep from "./WorkflowInvocationStep";
 import ListMixin from "components/History/ListMixin";
+import { getHistoryMonitor } from "./providers/monitors";
 
 import { mapGetters } from "vuex";
 import { mapCacheActions } from "vuex-cache";
+import { filter, takeUntil } from "rxjs/operators";
+import { vueRxShortcuts } from "components/plugins";
 
 export default {
-    mixins: [ListMixin],
+    mixins: [ListMixin, vueRxShortcuts],
     components: {
         WorkflowInvocationDataContents,
         WorkflowInvocationStep,
@@ -68,9 +71,14 @@ export default {
         invocation: {
             required: true,
         },
+        jobStatesTerminal: {
+            required: true,
+            type: Boolean,
+        },
     },
     created: function () {
         this.fetchWorkflowForInstanceId(this.invocation.workflow_id);
+        this.monitorHistory();
     },
     computed: {
         ...mapGetters(["getWorkflowByInstanceId"]),
@@ -94,6 +102,22 @@ export default {
                 }
             }
             return label;
+        },
+        monitorHistory() {
+            /* rework this into history or invocation subscription in the future ...
+               currently stops monitoring early on subworkflow invocations.
+            */
+            if (!this.jobStatesTerminal) {
+                const pollHistory$ = this.watch$("jobStatesTerminal");
+                const stopPolling$ = pollHistory$.pipe(
+                    filter((val) => val === true),
+                );
+                const historyMonitor$ = getHistoryMonitor(this.invocation.history_id).pipe(takeUntil(stopPolling$));
+                this.listenTo(historyMonitor$, {
+                    error: (err) => console.error("An error occured while monitoring history for datasets", err),
+                    complete: () => console.log("Invocation finished, stopping history dataset monitor"),
+                });
+            }
         },
     },
 };
