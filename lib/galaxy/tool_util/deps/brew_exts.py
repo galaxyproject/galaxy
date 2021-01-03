@@ -164,7 +164,8 @@ class CommandLineException(Exception):
 
 
 def versioned_install(recipe_context, package=None, version=None, installed_deps=None):
-    installed_deps = installed_deps or []
+    if installed_deps is None:
+        installed_deps = []
     if package is None:
         package = recipe_context.recipe
         version = recipe_context.version

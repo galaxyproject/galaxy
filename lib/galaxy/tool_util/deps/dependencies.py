@@ -83,8 +83,10 @@ class DependenciesDescription:
     """
 
     def __init__(self, requirements=None, installed_tool_dependencies=None):
-        requirements = requirements or []
-        installed_tool_dependencies = installed_tool_dependencies or []
+        if requirements is None:
+            requirements = []
+        if installed_tool_dependencies is None:
+            installed_tool_dependencies = []
         self.requirements = requirements
         # tool shed installed tool dependencies...
         self.installed_tool_dependencies = installed_tool_dependencies
