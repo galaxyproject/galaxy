@@ -43,8 +43,7 @@ from galaxy.workflow.extract import (
 )
 from galaxy.workflow.modules import (
     load_module_sections,
-    module_factory,
-    WorkflowModuleInjector
+    module_factory
 )
 from galaxy.workflow.render import (
     STANDALONE_SVG_TEMPLATE,
@@ -872,69 +871,6 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
 
     def get_item(self, trans, id):
         return self.get_stored_workflow(trans, id)
-
-    @web.expose
-    def tag_outputs(self, trans, id, **kwargs):
-        stored = self.get_stored_workflow(trans, id, check_ownership=False)
-        user = trans.get_user()
-        if stored.user != user:
-            if trans.sa_session.query(model.StoredWorkflowUserShareAssociation) \
-                    .filter_by(user=user, stored_workflow=stored).count() == 0:
-                error("Workflow is not owned by or shared with current user")
-        # Get the latest revision
-        workflow = stored.latest_workflow
-        # It is possible for a workflow to have 0 steps
-        if len(workflow.steps) == 0:
-            error("Workflow cannot be tagged for outputs because it does not have any steps")
-        if workflow.has_cycles:
-            error("Workflow cannot be tagged for outputs because it contains cycles")
-        if workflow.has_errors:
-            error("Workflow cannot be tagged for outputs because of validation errors in some steps")
-        # Build the state for each step
-        errors = {}
-        has_upgrade_messages = False
-        # has_errors is never used
-        # has_errors = False
-        if kwargs:
-            # If kwargs were provided, the states for each step should have
-            # been POSTed
-            for step in workflow.steps:
-                if step.type == 'tool':
-                    # Extract just the output flags for this step.
-                    p = "%s|otag|" % step.id
-                    l = len(p)
-                    outputs = [k[l:] for (k, v) in kwargs.items() if k.startswith(p)]
-                    if step.workflow_outputs:
-                        for existing_output in step.workflow_outputs:
-                            if existing_output.output_name not in outputs:
-                                trans.sa_session.delete(existing_output)
-                            else:
-                                outputs.remove(existing_output.output_name)
-                    for outputname in outputs:
-                        m = model.WorkflowOutput(workflow_step_id=int(step.id), output_name=outputname)
-                        trans.sa_session.add(m)
-        # Prepare each step
-        trans.sa_session.flush()
-        module_injector = WorkflowModuleInjector(trans)
-        for step in workflow.steps:
-            step.upgrade_messages = {}
-            # Contruct modules
-            module_injector.inject(step)
-            if step.upgrade_messages:
-                has_upgrade_messages = True
-            if step.type == 'tool' or step.type is None:
-                # Error dict
-                if step.tool_errors:
-                    errors[step.id] = step.tool_errors
-        # Render the form
-        return trans.fill_template(
-            "workflow/tag_outputs.mako",
-            steps=workflow.steps,
-            workflow=stored,
-            has_upgrade_messages=has_upgrade_messages,
-            errors=errors,
-            incoming=kwargs
-        )
 
     def _workflow_to_svg_canvas(self, trans, stored):
         workflow = stored.latest_workflow
