@@ -1,5 +1,5 @@
 <template>
-    <span v-if="this.decoded_id">({{ decoded_id }})</span>
+    <span v-if="decoded_id">({{ decoded_id }})</span>
 </template>
 <script>
 import axios from "axios";
@@ -29,12 +29,14 @@ export default {
     },
     methods: {
         decodeId: async function (id) {
-            const url = `${getAppRoot()}api/configuration/decode/${id}`;
-            try {
-                const response = await axios.get(url);
-                this.decoded_id = response.data.decoded_id;
-            } catch (e) {
-                rethrowSimple(e);
+            if (this.isAdmin) {
+                const url = `${getAppRoot()}api/configuration/decode/${id}`;
+                try {
+                    const response = await axios.get(url);
+                    this.decoded_id = response.data.decoded_id;
+                } catch (e) {
+                    rethrowSimple(e);
+                }
             }
         },
     },
