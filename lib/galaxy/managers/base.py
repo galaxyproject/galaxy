@@ -156,7 +156,7 @@ class ModelManager:
     Provides common queries and CRUD operations as a (hopefully) light layer
     over the ORM.
     """
-    model_class = object
+    model_class: type = object
     foreign_key_name: str
 
     def __init__(self, app):
