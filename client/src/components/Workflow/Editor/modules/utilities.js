@@ -7,6 +7,7 @@ import { DefaultForm, ToolForm } from "./forms";
 import { loadWorkflow } from "./services";
 import { toSimple } from "./model";
 import { hide_modal, show_message, show_modal } from "layout/modal";
+import WorkflowIcons from "components/Workflow/icons";
 
 export function copyIntoWorkflow(workflow, id = null, stepCount = null) {
     const _copy_into_workflow_ajax = () => {
@@ -103,33 +104,30 @@ export function showForm(workflow, node, datatypes) {
     }
 }
 
-export function showUpgradeMessage(data) {
+export function getStateUpgradeMessages(data) {
     // Determine if any parameters were 'upgraded' and provide message
-    var upgrade_message = "";
-    let hasToolUpgrade = false;
+    const messages = [];
     _.each(data.steps, (step, step_id) => {
-        var details = "";
+        const details = [];
         if (step.errors) {
-            details += `<li>${step.errors}</li>`;
+            details.push(step.errors);
         }
         _.each(data.upgrade_messages[step_id], (m) => {
-            hasToolUpgrade = true;
-            details += `<li>${m}</li>`;
+            details.push(m);
         });
-        if (details) {
-            upgrade_message += `<li>Step ${parseInt(step_id, 10) + 1}: ${step.name}<ul>${details}</ul></li>`;
+        if (details.length) {
+            const iconType = WorkflowIcons[step.type];
+            const message = {
+                stepIndex: step_id,
+                name: step.name,
+                details: details,
+                iconType: iconType,
+                label: step.label,
+            };
+            messages.push(message);
         }
     });
-    if (upgrade_message) {
-        show_modal(
-            "Issues loading this workflow",
-            `Please review the following issues, possibly resulting from tool upgrades or changes.<p><ul>${upgrade_message}</ul></p>`,
-            { Continue: hide_modal }
-        );
-    } else {
-        hide_modal();
-    }
-    return hasToolUpgrade;
+    return messages;
 }
 
 class LegacyParameterReference {

@@ -535,6 +535,6 @@ steps:
 
     @retry_assertion_during_transitions
     def assert_modal_has_text(self, expected_text):
-        modal_element = self.wait_for_selector_visible(self.modal_body_selector())
+        modal_element = self.components.workflow_editor.state_modal_body.wait_for_visible()
         text = modal_element.text
         assert expected_text in text, f"Failed to find expected text [{expected_text}] in modal text [{text}]"

@@ -1,5 +1,6 @@
 <template>
     <div id="columns" class="workflow-client">
+        <StateUpgradeModal :stateMessages="stateMessages" />
         <MarkdownEditor
             v-if="!isCanvas"
             :markdown-text="markdownText"
@@ -144,7 +145,7 @@ import { getDatatypesMapper } from "components/Datatypes";
 import { getModule, getVersions, saveWorkflow, loadWorkflow, refactor } from "./modules/services";
 import {
     showWarnings,
-    showUpgradeMessage,
+    getStateUpgradeMessages,
     copyIntoWorkflow,
     getLegacyWorkflowParameters,
     showAttributes,
@@ -160,6 +161,7 @@ import SidePanel from "components/Panels/SidePanel";
 import { getAppRoot } from "onload/loadConfig";
 import reportDefault from "./reportDefault";
 import WorkflowLint from "./Lint";
+import StateUpgradeModal from "./StateUpgradeModal";
 import { hide_modal, show_message, show_modal } from "layout/modal";
 import WorkflowAttributes from "./Attributes";
 import ZoomControl from "./ZoomControl";
@@ -170,6 +172,7 @@ export default {
     components: {
         MarkdownEditor,
         SidePanel,
+        StateUpgradeModal,
         ToolBoxWorkflow,
         WorkflowOptions,
         WorkflowAttributes,
@@ -228,6 +231,7 @@ export default {
             creator: null,
             annotation: null,
             name: null,
+            stateMessages: [],
         };
     },
     created() {
@@ -458,7 +462,9 @@ export default {
             const markdown = report.markdown || reportDefault;
             this.markdownText = markdown;
             this.markdownConfig = report;
-            const has_changes = showUpgradeMessage(data);
+            hide_modal();
+            this.stateMessages = getStateUpgradeMessages(data);
+            const has_changes = this.stateMessages.length > 0;
             this.license = data.license;
             this.creator = data.creator;
             getVersions(this.id).then((versions) => {
