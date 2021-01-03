@@ -43,8 +43,7 @@ from galaxy.workflow.extract import (
 )
 from galaxy.workflow.modules import (
     load_module_sections,
-    module_factory,
-    WorkflowModuleInjector
+    module_factory
 )
 from galaxy.workflow.render import (
     STANDALONE_SVG_TEMPLATE,
