@@ -19,7 +19,10 @@ from galaxy.workflow.refactor.schema import (
 from galaxy_test.base.populators import (
     WorkflowPopulator,
 )
-from galaxy_test.base.workflow_fixtures import WORKFLOW_NESTED_SIMPLE
+from galaxy_test.base.workflow_fixtures import (
+    WORKFLOW_NESTED_RUNTIME_PARAMETER,
+    WORKFLOW_NESTED_SIMPLE,
+)
 from galaxy_test.driver import integration_util
 
 
@@ -650,6 +653,34 @@ steps:
             assert message.from_step_label == "nested_workflow"
             assert message.from_order_index == 2
             assert message.output_name == "workflow_output"
+
+    def test_subworkflow_upgrade_output_label_dropped(self):
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_RUNTIME_PARAMETER)
+
+        nested_stored_workflow = self._recent_stored_workflow(2)
+        actions = [
+            {
+                "action_type": "update_output_label",
+                "output": {"label": "random_lines", "output_name": "out_file1"},
+                "output_label": "renamed_output",
+            }
+        ]
+        self._refactor(actions, stored_workflow=nested_stored_workflow)
+
+        actions = [
+            {"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}},
+        ]
+        action_executions = self._refactor(actions).actions_executed
+        assert len(action_executions) == 1
+        messages = action_executions[0].messages
+        assert len(messages) == 1
+
+        message = messages[0]
+        assert message.message_type == RefactorActionExecutionMessageTypeEnum.workflow_output_drop_forced
+        assert message.order_index == 1
+        assert message.step_label == "nested_workflow"
+        assert message.output_name == "workflow_output"
+        assert message.output_label == "outer_output"
 
     def _download_native(self, workflow=None):
         workflow = workflow or self._most_recent_stored_workflow

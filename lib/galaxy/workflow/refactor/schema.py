@@ -233,6 +233,7 @@ class RefactorActionExecutionMessageTypeEnum(str, Enum):
     tool_version_change = 'tool_version_change'
     tool_state_adjustment = 'tool_state_adjustment'
     connection_drop_forced = 'connection_drop_forced'
+    workflow_output_drop_forced = 'workflow_output_drop_forced'
 
 
 class RefactorActionExecutionMessage(BaseModel):
@@ -259,6 +260,9 @@ class RefactorActionExecutionMessage(BaseModel):
     # side of the connection that was dropped.
     from_step_label: Optional[str]
     from_order_index: Optional[int]
+
+    # For workflow_output_drop_forced, this is the output label dropped.
+    output_label: Optional[str]
 
 
 class RefactorActionExecution(BaseModel):

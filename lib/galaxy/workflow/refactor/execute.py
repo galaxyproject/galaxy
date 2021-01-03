@@ -444,6 +444,28 @@ class WorkflowRefactorExecutor:
                         rebuilt_valid_connections.append(input_connection)
                 all_input_connections[input_name] = rebuilt_valid_connections
 
+        workflow_outputs_to_delete = []
+        for workflow_output in step_def.get("workflow_outputs", []):
+            output_label = workflow_output.get("label")
+            output_name = workflow_output["output_name"]
+            if not output_label:
+                continue
+
+            if output_name not in upgrade_output_names:
+                workflow_outputs_to_delete.append(workflow_output)
+                message_text = f"Subworkflow output '{output_name}' no longer available, dropping corresponding workflow output label {output_label}."
+                message = RefactorActionExecutionMessage(
+                    message=message_text,
+                    message_type=RefactorActionExecutionMessageTypeEnum.workflow_output_drop_forced,
+                    step_label=upgrade_label,
+                    order_index=upgrade_order_index,
+                    output_name=workflow_output.get("output_name"),
+                    output_label=output_label,
+                )
+                execution.messages.append(
+                    message
+                )
+
     def _apply_upgrade_tool(self, action: UpgradeToolAction, execution: RefactorActionExecutionMessage):
         step_def = self._find_step(action.step)
         tool_id = step_def["content_id"]
