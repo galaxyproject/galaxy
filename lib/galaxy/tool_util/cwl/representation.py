@@ -5,11 +5,11 @@ import collections
 import json
 import logging
 import os
+from enum import Enum
 from typing import Any, NamedTuple, Optional
 
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.util import safe_makedirs, string_as_bool
-from galaxy.util.bunch import Bunch
 from .util import set_basename_and_derived_properties
 
 
@@ -19,17 +19,18 @@ NOT_PRESENT = object()
 
 NO_GALAXY_INPUT = object()
 
-INPUT_TYPE = Bunch(
-    DATA="data",
-    INTEGER="integer",
-    FLOAT="float",
-    TEXT="text",
-    BOOLEAN="boolean",
-    SELECT="select",
-    FIELD="field",
-    CONDITIONAL="conditional",
-    DATA_COLLECTON="data_collection",
-)
+
+class INPUT_TYPE(str, Enum):
+    DATA = "data"
+    INTEGER = "integer"
+    FLOAT = "float"
+    TEXT = "text"
+    BOOLEAN = "boolean"
+    SELECT = "select"
+    FIELD = "field"
+    CONDITIONAL = "conditional"
+    DATA_COLLECTON = "data_collection"
+
 
 # There are two approaches to mapping CWL tool state to Galaxy tool state
 # one is to map CWL types to compound Galaxy tool parameters combinations

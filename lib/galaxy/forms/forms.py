@@ -9,7 +9,7 @@ from galaxy.model import (
 )
 from galaxy.util import string_as_bool
 
-FORM_TYPES = {f_type.lower(): f_descript for f_type, f_descript in FormDefinition.types.items()}
+FORM_TYPES = {f_type.lower(): f_descript for f_type, f_descript in FormDefinition.types.__members__.items()}
 
 
 class FormDefinitionFactory:
