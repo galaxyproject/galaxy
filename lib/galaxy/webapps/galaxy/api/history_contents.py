@@ -767,7 +767,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
                 recursive = util.string_as_bool(kwd['payload'].get('recursive', recursive))
 
             trans.app.dataset_collections_service.delete(trans, "history", id, recursive=recursive, purge=purge)
-            return {'id' : id, "deleted": True}
+            return {'id': id, "deleted": True}
         else:
             return self.__handle_unknown_contents_type(trans, contents_type)
 
@@ -1153,7 +1153,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             serialization_params=extrema_params)
         min_row = min_row_result.pop() if len(min_row_result) else None
 
-        max_hid = getattr(max_row, 'hid') if max_row else None
-        min_hid = getattr(min_row, 'hid') if min_row else None
+        max_hid = max_row.hid if max_row else None
+        min_hid = min_row.hid if min_row else None
 
         return min_hid, max_hid

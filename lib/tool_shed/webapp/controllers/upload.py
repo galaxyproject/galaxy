@@ -340,7 +340,7 @@ class UploadController(BaseUIController):
         else:
             full_path = os.path.abspath(repo_dir)
         filenames_in_archive = []
-        for root, dirs, files in os.walk(uploaded_directory):
+        for root, _dirs, files in os.walk(uploaded_directory):
             for uploaded_file in files:
                 relative_path = os.path.normpath(os.path.join(os.path.relpath(root, uploaded_directory), uploaded_file))
                 if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION:

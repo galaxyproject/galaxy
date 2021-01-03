@@ -183,7 +183,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         Fetch complete test data for each tool with /api/tools/{tool_id}/test_data?tool_version=<tool_version>
         """
         test_counts_by_tool = {}
-        for id, tool in self.app.toolbox.tools():
+        for _id, tool in self.app.toolbox.tools():
             if not tool.is_datatype_converter:
                 tests = tool.tests
                 if tests:

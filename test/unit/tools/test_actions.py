@@ -117,7 +117,7 @@ class DefaultToolActionTestCase(unittest.TestCase, tools_support.UsesApp, tools_
             self._simple_execute()
         except UserActivationRequiredException:
             return
-        assert False, "Tool execution succeeded for inactive user!"
+        raise AssertionError("Tool execution succeeded for inactive user!")
 
     def __add_dataset(self, state='ok'):
         hda = model.HistoryDatasetAssociation()
@@ -193,7 +193,9 @@ def test_determine_output_format():
     __assert_output_format_is("fastqsolexa", change_on_metadata_output, [("i1", "txt"), ("i2", "txt")])
 
 
-def __assert_output_format_is(expected, output, input_extensions=[], param_context=[], add_collection=False):
+def __assert_output_format_is(expected, output, input_extensions=None, param_context=None, add_collection=False):
+    input_extensions = input_extensions or {}
+    param_context = param_context or {}
     inputs = {}
     last_ext = "data"
     i = 1

@@ -1261,25 +1261,6 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
         session.flush()
         return imported_stored
 
-    def _workflow_from_dict(self, trans, data, source=None, add_to_menu=False, publish=False, exact_tools=True, fill_defaults=False, from_tool_form=False):
-        """
-        Creates a workflow from a dict. Created workflow is stored in the database and returned.
-        """
-        # TODO: replace this method with direct access to manager.
-        workflow_contents_manager = workflows.WorkflowContentsManager(self.app)
-        raw_workflow_description = workflow_contents_manager.ensure_raw_description(data)
-        created_workflow = workflow_contents_manager.build_workflow_from_raw_description(
-            trans,
-            raw_workflow_description,
-            source=source,
-            add_to_menu=add_to_menu,
-            publish=publish,
-            exact_tools=exact_tools,
-            fill_defaults=fill_defaults,
-            from_tool_form=from_tool_form,
-        )
-        return created_workflow.stored_workflow, created_workflow.missing_tools
-
     def _workflow_to_dict(self, trans, stored):
         """
         Converts a workflow to a dict of attributes suitable for exporting.

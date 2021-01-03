@@ -262,7 +262,7 @@ metadata_pickler = AliasPickleModule({
 })
 
 
-def total_size(o, handlers={}, verbose=False):
+def total_size(o, handlers=None, verbose=False):
     """ Returns the approximate memory footprint an object and all of its contents.
 
     Automatically finds the contents of the following builtin containers and
@@ -274,6 +274,8 @@ def total_size(o, handlers={}, verbose=False):
 
     Recipe from:  https://code.activestate.com/recipes/577504-compute-memory-footprint-of-an-object-and-its-cont/
     """
+    handlers = handlers or {}
+
     def dict_handler(d):
         return chain.from_iterable(d.items())
 

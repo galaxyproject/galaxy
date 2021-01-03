@@ -58,8 +58,8 @@ def contains_workflow_parameter(value, search=False):
 
 
 def is_runtime_value(value):
-    return isinstance(value, RuntimeValue) or (isinstance(value, dict)
-        and value.get("__class__") in ["RuntimeValue", "ConnectedValue"])
+    return isinstance(value, RuntimeValue) or (isinstance(value, dict) and
+        value.get("__class__") in ["RuntimeValue", "ConnectedValue"])
 
 
 def is_runtime_context(trans, other_values):
@@ -338,7 +338,7 @@ class TextToolParameter(SimpleTextToolParameter):
         super().__init__(tool, input_source)
         self.datalist = []
         for (title, value, _) in input_source.parse_static_options():
-            self.datalist.append({'label' : title, 'value': value})
+            self.datalist.append({'label': title, 'value': value})
         self.value = input_source.get('value')
         self.area = input_source.get_bool('area', False)
 
@@ -762,7 +762,7 @@ class ColorToolParameter(ToolParameter):
     def to_param_dict_string(self, value, other_values=None):
         if self.rgb:
             try:
-                return str(tuple(int(value.lstrip('#')[i : i + 2], 16) for i in (0, 2, 4)))
+                return str(tuple(int(value.lstrip('#')[i: i + 2], 16) for i in (0, 2, 4)))
             except Exception:
                 raise ParameterValueError("Failed to convert \'%s\' to RGB." % value, self.name)
         return str(value)
@@ -1072,10 +1072,10 @@ class GenomeBuildParameter(SelectToolParameter):
                 value = option[1]
 
         d.update({
-            'options'   : options,
-            'value'     : value,
-            'display'   : self.display,
-            'multiple'  : self.multiple,
+            'options': options,
+            'value': value,
+            'display': self.display,
+            'multiple': self.multiple,
         })
 
         return d
@@ -1700,7 +1700,7 @@ class BaseDataToolParameter(ToolParameter):
                 src = 'hda'
             if src is not None:
                 object_id = galaxy.model.cached_id(value)
-                return {'id' : app.security.encode_id(object_id) if use_security else object_id, 'src' : src}
+                return {'id': app.security.encode_id(object_id) if use_security else object_id, 'src': src}
 
         if value not in [None, '', 'None']:
             if isinstance(value, list) and len(value) > 0:
@@ -2015,12 +2015,12 @@ class DataToolParameter(BaseDataToolParameter):
         # build and append a new select option
         def append(list, hda, name, src, keep=False, subcollection_type=None):
             value = {
-                'id'   : trans.security.encode_id(hda.id),
-                'hid'  : hda.hid if hda.hid is not None else -1,
-                'name' : name,
-                'tags' : [t.user_tname if not t.value else f"{t.user_tname}:{t.value}" for t in hda.tags],
-                'src'  : src,
-                'keep' : keep
+                'id': trans.security.encode_id(hda.id),
+                'hid': hda.hid if hda.hid is not None else -1,
+                'name': name,
+                'tags': [t.user_tname if not t.value else f"{t.user_tname}:{t.value}" for t in hda.tags],
+                'src': src,
+                'keep': keep
             }
             if subcollection_type:
                 value["map_over_type"] = subcollection_type
@@ -2200,11 +2200,11 @@ class DataCollectionToolParameter(BaseDataToolParameter):
         if isinstance(other_values.get(self.name), galaxy.model.DatasetCollectionElement):
             dce = other_values[self.name]
             d['options']['dce'].append({
-                'id'   : trans.security.encode_id(dce.id),
-                'hid'  : None,
-                'name' : dce.element_identifier,
-                'src'  : 'dce',
-                'tags' : []
+                'id': trans.security.encode_id(dce.id),
+                'hid': None,
+                'name': dce.element_identifier,
+                'src': 'dce',
+                'tags': []
             })
 
         # append directly matched collections
@@ -2213,11 +2213,11 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             if implicit_conversion:
                 name = "%s (with implicit datatype conversion)" % name
             d['options']['hdca'].append({
-                'id'   : trans.security.encode_id(hdca.id),
-                'hid'  : hdca.hid,
-                'name' : name,
-                'src'  : 'hdca',
-                'tags' : [t.user_tname if not t.value else f"{t.user_tname}:{t.value}" for t in hdca.tags]
+                'id': trans.security.encode_id(hdca.id),
+                'hid': hdca.hid,
+                'name': name,
+                'src': 'hdca',
+                'tags': [t.user_tname if not t.value else f"{t.user_tname}:{t.value}" for t in hdca.tags]
             })
 
         # append matching subcollections
@@ -2227,11 +2227,11 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             if implicit_conversion:
                 name = "%s (with implicit datatype conversion)" % name
             d['options']['hdca'].append({
-                'id'   : trans.security.encode_id(hdca.id),
-                'hid'  : hdca.hid,
-                'name' : name,
-                'src'  : 'hdca',
-                'tags' : [t.user_tname if not t.value else f"{t.user_tname}:{t.value}" for t in hdca.tags],
+                'id': trans.security.encode_id(hdca.id),
+                'hid': hdca.hid,
+                'name': name,
+                'src': 'hdca',
+                'tags': [t.user_tname if not t.value else f"{t.user_tname}:{t.value}" for t in hdca.tags],
                 'map_over_type': subcollection_type
             })
 
@@ -2296,9 +2296,9 @@ class LibraryDatasetToolParameter(ToolParameter):
                 break
             if lda_id is not None:
                 lst.append({
-                    'id'   : lda_id,
-                    'name' : lda_name,
-                    'src'  : 'ldda'
+                    'id': lda_id,
+                    'name': lda_name,
+                    'src': 'ldda'
                 })
         if len(lst) == 0:
             return None

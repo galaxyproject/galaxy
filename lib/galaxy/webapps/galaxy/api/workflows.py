@@ -20,9 +20,13 @@ from galaxy import (
 )
 from galaxy.managers import (
     histories,
-    workflows
 )
 from galaxy.managers.jobs import fetch_job_states, invocation_job_source_iter, summarize_job_metrics
+from galaxy.managers.workflows import (
+    MissingToolsException,
+    WorkflowCreateOptions,
+    WorkflowUpdateOptions,
+)
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 from galaxy.tools import recommendations
@@ -57,8 +61,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     def __init__(self, app):
         super().__init__(app)
         self.history_manager = histories.HistoryManager(app)
-        self.workflow_manager = workflows.WorkflowsManager(app)
-        self.workflow_contents_manager = workflows.WorkflowContentsManager(app)
+        self.workflow_manager = app.workflow_manager
+        self.workflow_contents_manager = app.workflow_contents_manager
         self.tool_recommendations = recommendations.ToolRecommendations()
 
     def __get_full_shed_url(self, url):
@@ -332,7 +336,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             elif os.path.getsize(os.path.abspath(installed_repository_file)) > 0:
                 with open(installed_repository_file, encoding='utf-8') as f:
                     workflow_data = f.read()
-                return self.__api_import_from_archive(trans, workflow_data)
+                return self.__api_import_from_archive(trans, workflow_data, payload=payload)
             else:
                 raise exceptions.MessageException("You attempted to open an empty file.")
 
@@ -366,7 +370,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                     raise exceptions.MessageException("You attempted to upload an empty file.")
             else:
                 raise exceptions.MessageException("Please provide a URL or file.")
-            return self.__api_import_from_archive(trans, archive_data, "uploaded file")
+            return self.__api_import_from_archive(trans, archive_data, "uploaded file", payload=payload)
 
         if 'from_history_id' in payload:
             from_history_id = payload.get('from_history_id')
@@ -619,14 +623,14 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
             if 'steps' in workflow_dict:
                 try:
-                    from_dict_kwds = self.__import_or_update_kwds(payload)
+                    workflow_update_options = WorkflowUpdateOptions(**payload)
                     workflow, errors = self.workflow_contents_manager.update_workflow_from_raw_description(
                         trans,
                         stored_workflow,
                         raw_workflow_description,
-                        **from_dict_kwds
+                        workflow_update_options,
                     )
-                except workflows.MissingToolsException:
+                except MissingToolsException:
                     raise exceptions.MessageException("This workflow contains missing tools. It cannot be saved until they have been removed from the workflow or installed.")
 
         else:
@@ -708,7 +712,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     #
     # -- Helper methods --
     #
-    def __api_import_from_archive(self, trans, archive_data, source=None):
+    def __api_import_from_archive(self, trans, archive_data, source=None, payload=None):
+        payload = payload or {}
         try:
             data = json.loads(archive_data)
         except Exception:
@@ -719,7 +724,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         if not data:
             raise exceptions.MessageException("The data content is missing.")
         raw_workflow_description = self.__normalize_workflow(trans, data)
-        workflow, missing_tool_tups = self._workflow_from_dict(trans, raw_workflow_description, source=source)
+        workflow_create_options = WorkflowCreateOptions(**payload)
+        workflow, missing_tool_tups = self._workflow_from_dict(trans, raw_workflow_description, workflow_create_options, source=source)
         workflow_id = workflow.id
         workflow = workflow.latest_workflow
 
@@ -739,25 +745,12 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     def __api_import_new_workflow(self, trans, payload, **kwd):
         data = payload['workflow']
         raw_workflow_description = self.__normalize_workflow(trans, data)
-        data = raw_workflow_description.as_dict
-        import_tools = util.string_as_bool(payload.get("import_tools", False))
-        if import_tools and not trans.user_is_admin:
-            raise exceptions.AdminRequiredException()
-
-        from_dict_kwds = self.__import_or_update_kwds(payload)
-
-        publish = util.string_as_bool(payload.get("publish", False))
-        # If 'publish' set, default to importable.
-        importable = util.string_as_bool(payload.get("importable", publish))
-
-        if publish and not importable:
-            raise exceptions.RequestParameterInvalidException("Published workflow must be importable.")
-
-        from_dict_kwds["publish"] = publish
-        workflow, missing_tool_tups = self._workflow_from_dict(trans, raw_workflow_description, **from_dict_kwds)
-        if importable:
-            self._make_item_accessible(trans.sa_session, workflow)
-            trans.sa_session.flush()
+        workflow_create_options = WorkflowCreateOptions(**payload)
+        workflow, missing_tool_tups = self._workflow_from_dict(
+            trans,
+            raw_workflow_description,
+            workflow_create_options,
+        )
         # galaxy workflow newly created id
         workflow_id = workflow.id
         # api encoded, id
@@ -767,47 +760,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         item['url'] = url_for('workflow', id=encoded_id)
         item['owner'] = workflow.user.username
         item['number_of_steps'] = len(workflow.latest_workflow.steps)
-        if import_tools:
-            tools = {}
-            for key in data['steps']:
-                item = data['steps'][key]
-                if item is not None:
-                    if 'tool_shed_repository' in item:
-                        tool_shed_repository = item['tool_shed_repository']
-                        if 'owner' in tool_shed_repository and 'changeset_revision' in tool_shed_repository and 'name' in tool_shed_repository and 'tool_shed' in tool_shed_repository:
-                            toolstr = tool_shed_repository['owner'] \
-                                + tool_shed_repository['changeset_revision'] \
-                                + tool_shed_repository['name'] \
-                                + tool_shed_repository['tool_shed']
-                            tools[toolstr] = tool_shed_repository
-            irm = InstallRepositoryManager(self.app)
-            for k in tools:
-                item = tools[k]
-                tool_shed_url = 'https://' + item['tool_shed'] + '/'
-                name = item['name']
-                owner = item['owner']
-                changeset_revision = item['changeset_revision']
-                irm.install(tool_shed_url,
-                            name,
-                            owner,
-                            changeset_revision,
-                            payload)
         return item
-
-    def __import_or_update_kwds(self, payload):
-        # Galaxy will try to upgrade tool versions that don't match exactly during import,
-        # this prevents that.
-        exact_tools = util.string_as_bool(payload.get("exact_tools", True))
-
-        # Fill in missing tool state for hand built so the workflow can run, default of this
-        # should become True at some point in the future I imagine.
-        fill_defaults = util.string_as_bool(payload.get("fill_defaults", False))
-        from_tool_form = payload.get("from_tool_form", False)
-        return {
-            'exact_tools': exact_tools,
-            'fill_defaults': fill_defaults,
-            'from_tool_form': from_tool_form,
-        }
 
     def __normalize_workflow(self, trans, as_dict):
         return self.workflow_contents_manager.normalize_workflow_format(trans, as_dict)
@@ -1388,6 +1341,67 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             action=action,
         )
         return self.__encode_invocation_step(trans, invocation_step)
+
+    def _workflow_from_dict(self, trans, data, workflow_create_options, source=None):
+        """Creates a workflow from a dict.
+
+        Created workflow is stored in the database and returned.
+        """
+        publish = workflow_create_options.publish
+        importable = workflow_create_options.is_importable
+        if publish and not importable:
+            raise exceptions.RequestParameterInvalidException("Published workflow must be importable.")
+
+        workflow_contents_manager = self.app.workflow_contents_manager
+        raw_workflow_description = workflow_contents_manager.ensure_raw_description(data)
+        created_workflow = workflow_contents_manager.build_workflow_from_raw_description(
+            trans,
+            raw_workflow_description,
+            workflow_create_options,
+            source=source,
+        )
+        if importable:
+            self._make_item_accessible(trans.sa_session, created_workflow.stored_workflow)
+            trans.sa_session.flush()
+
+        self._import_tools_if_needed(trans, workflow_create_options, raw_workflow_description)
+        return created_workflow.stored_workflow, created_workflow.missing_tools
+
+    def _import_tools_if_needed(self, trans, workflow_create_options, raw_workflow_description):
+        if not workflow_create_options.import_tools:
+            return
+
+        if not trans.user_is_admin:
+            raise exceptions.AdminRequiredException()
+
+        data = raw_workflow_description.as_dict
+
+        tools = {}
+        for key in data['steps']:
+            item = data['steps'][key]
+            if item is not None:
+                if 'tool_shed_repository' in item:
+                    tool_shed_repository = item['tool_shed_repository']
+                    if 'owner' in tool_shed_repository and 'changeset_revision' in tool_shed_repository and 'name' in tool_shed_repository and 'tool_shed' in tool_shed_repository:
+                        toolstr = tool_shed_repository['owner'] \
+                            + tool_shed_repository['changeset_revision'] \
+                            + tool_shed_repository['name'] \
+                            + tool_shed_repository['tool_shed']
+                        tools[toolstr] = tool_shed_repository
+
+        irm = InstallRepositoryManager(self.app)
+        install_options = workflow_create_options.install_options
+        for k in tools:
+            item = tools[k]
+            tool_shed_url = 'https://' + item['tool_shed'] + '/'
+            name = item['name']
+            owner = item['owner']
+            changeset_revision = item['changeset_revision']
+            irm.install(tool_shed_url,
+                        name,
+                        owner,
+                        changeset_revision,
+                        install_options)
 
     def __encode_invocation_step(self, trans, invocation_step):
         return self.encode_all_ids(

@@ -94,7 +94,7 @@ if TYPE_CHECKING:
     from sqlalchemy.schema import Table
 
     class _HasTable:
-        table: Table = None
+        table: Table
 
 else:
     _HasTable = object
