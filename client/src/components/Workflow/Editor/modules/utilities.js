@@ -15,23 +15,9 @@ export function copyIntoWorkflow(workflow, id = null, stepCount = null) {
         show_message("Importing workflow", "progress");
         loadWorkflow(workflow, id, null, true).then((data) => {
             // Determine if any parameters were 'upgraded' and provide message
-            var upgrade_message = "";
-            $.each(data.upgrade_messages, (k, v) => {
-                upgrade_message += `<li>Step ${parseInt(k, 10) + 1}: ${workflow.steps[k].name}<ul>`;
-                $.each(v, (i, vv) => {
-                    upgrade_message += `<li>${vv}</li>`;
-                });
-                upgrade_message += "</ul></li>";
-            });
-            if (upgrade_message) {
-                show_modal(
-                    "Subworkflow embedded with changes",
-                    `Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save.<ul>${upgrade_message}</ul>`,
-                    { Continue: hide_modal }
-                );
-            } else {
-                hide_modal();
-            }
+            const insertedStateMessages = getStateUpgradeMessages(data);
+            workflow.onInsertedStateMessages(insertedStateMessages);
+            hide_modal();
         });
     };
     if (stepCount < 2) {

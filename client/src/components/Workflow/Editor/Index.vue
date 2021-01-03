@@ -1,6 +1,11 @@
 <template>
     <div id="columns" class="workflow-client">
         <StateUpgradeModal :stateMessages="stateMessages" />
+        <StateUpgradeModal
+            :stateMessages="insertedStateMessages"
+            title="Subworkflow embedded with changes"
+            message="Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save."
+        />
         <MarkdownEditor
             v-if="!isCanvas"
             :markdown-text="markdownText"
@@ -232,6 +237,7 @@ export default {
             annotation: null,
             name: null,
             stateMessages: [],
+            insertedStateMessages: [],
         };
     },
     created() {
@@ -503,6 +509,9 @@ export default {
         },
         getCanvasManager() {
             return this.canvasManager;
+        },
+        onInsertedStateMessages(insertedStateMessages) {
+            this.insertedStateMessages = insertedStateMessages;
         },
     },
 };
