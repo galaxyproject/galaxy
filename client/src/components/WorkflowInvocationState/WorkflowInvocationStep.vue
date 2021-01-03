@@ -17,27 +17,30 @@
                         <loading-span v-if="loading" :message="`Loading invocation step details`"> </loading-span>
                         <div v-else>
                             <details v-if="Object.values(stepDetails.outputs).length > 0"
-                                ><summary><b>Step Output Datasets</b></summary>
+                                ><summary><b>Output Datasets</b></summary>
                                 <div v-for="(value, name) in stepDetails.outputs" :key="value.id">
                                     <b>{{ name }}</b>
                                     <workflow-invocation-data-contents :data_item="value" />
                                 </div>
                             </details>
                             <details v-if="Object.values(stepDetails.output_collections).length > 0"
-                                ><summary><b>Step Output Dataset Collections</b></summary>
+                                ><summary><b>Output Dataset Collections</b></summary>
                                 <div v-for="(value, name) in stepDetails.output_collections" :key="value.id">
                                     <b>{{ name }}</b>
                                     <workflow-invocation-data-contents :data_item="value" />
                                 </div>
                             </details>
                             <div class="portlet-body" style="width: 100%; overflow-x: auto;">
-                                <job-step v-if="workflowStepType == 'tool'" :jobs="stepDetails.jobs" />
+                                <details v-if="workflowStepType == 'tool'">
+                                    <summary><b>Jobs</b></summary>
+                                    <job-step :jobs="stepDetails.jobs" />
+                                </details>
                                 <parameter-step
                                     v-else-if="workflowStepType == 'parameter_input'"
                                     :parameters="[invocation.input_step_parameters[stepDetails.workflow_step_label]]"
                                 ></parameter-step>
                                 <workflow-invocation-data-contents
-                                    v-else-if="['data_input', 'data_collection_input'].includes(workflowStepType)"
+                                    v-else-if="isDataStep && invocation.inputs[workflowStep.id]"
                                     :data_item="invocation.inputs[workflowStep.id]"
                                 />
                                 <div v-else-if="workflowStepType == 'subworkflow'">
@@ -137,6 +140,8 @@ export default {
                     return "fa-folder-o";
                 case "parameter_input":
                     return "fa-pencil";
+                case "subworkflow":
+                    return "fa-tasks";
                 default:
                     return "fa-wrench";
             }
