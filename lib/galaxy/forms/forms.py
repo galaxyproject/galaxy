@@ -286,10 +286,11 @@ class FormDefinitionSelectFieldFactory(FormDefinitionFieldFactory):
         else:
             return 'SelectField'
 
-    def new(self, name=None, label=None, required=False, helptext=None, default=None, visible=True, layout=None, options=[], checkboxes=False):
+    def new(self, name=None, label=None, required=False, helptext=None, default=None, visible=True, layout=None, options=None, checkboxes=False):
         """
         Return new FormDefinition field.
         """
+        options = options or []
         rval = super().new(name=name, label=label,
                            required=required, helptext=helptext,
                            default=default, visible=visible,

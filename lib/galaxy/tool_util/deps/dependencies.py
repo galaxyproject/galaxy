@@ -40,7 +40,9 @@ class ToolInfo:
     # variables they can consume (e.g. JVM options, license keys, etc..)
     # and add these to env_path_through
 
-    def __init__(self, container_descriptions=None, requirements=None, requires_galaxy_python_environment=False, env_pass_through=["GALAXY_SLOTS"], guest_ports=None, tool_id=None, tool_version=None, profile=-1):
+    def __init__(self, container_descriptions=None, requirements=None, requires_galaxy_python_environment=False, env_pass_through=None, guest_ports=None, tool_id=None, tool_version=None, profile=-1):
+        if env_pass_through is None:
+            env_pass_through = ["GALAXY_SLOTS"]
         if container_descriptions is None:
             container_descriptions = []
         if requirements is None:
@@ -80,7 +82,11 @@ class DependenciesDescription:
     other potential remote execution mechanisms.
     """
 
-    def __init__(self, requirements=[], installed_tool_dependencies=[]):
+    def __init__(self, requirements=None, installed_tool_dependencies=None):
+        if requirements is None:
+            requirements = []
+        if installed_tool_dependencies is None:
+            installed_tool_dependencies = []
         self.requirements = requirements
         # tool shed installed tool dependencies...
         self.installed_tool_dependencies = installed_tool_dependencies

@@ -151,7 +151,7 @@ def handle_missing_index_file(app, tool_path, sample_files, repository_tools_tup
     generated select lists that depend on a .loc file.  This method is not called
     from the tool shed, but from Galaxy when a repository is being installed.
     """
-    for index, repository_tools_tup in enumerate(repository_tools_tups):
+    for repository_tools_tup in repository_tools_tups:
         tup_path, guid, repository_tool = repository_tools_tup
         params_with_missing_index_file = repository_tool.params_with_missing_index_file
         for param in params_with_missing_index_file:

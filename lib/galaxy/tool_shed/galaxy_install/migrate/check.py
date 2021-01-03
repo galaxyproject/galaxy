@@ -17,10 +17,11 @@ migrate_repository_directory = os.path.abspath(os.path.dirname(__file__)).replac
 migrate_repository = repository.Repository(migrate_repository_directory)
 
 
-def verify_tools(app, url, galaxy_config_file=None, engine_options={}):
+def verify_tools(app, url, galaxy_config_file=None, engine_options=None):
     # Check the value in the migrate_tools.version database table column to verify that the number is in
     # sync with the number of version scripts in ~/lib/galaxy/tools/migrate/versions.
     # Create engine and metadata
+    engine_options = engine_options or {}
     engine = create_engine(url, **engine_options)
     meta = MetaData(bind=engine)
     # The migrate_tools table was created in database version script 0092_add_migrate_tools_table.py.
@@ -49,7 +50,7 @@ def verify_tools(app, url, galaxy_config_file=None, engine_options={}):
                 tool_shed_accessible = True
                 missing_tool_configs_dict = OrderedDict()
         have_tool_dependencies = False
-        for k, v in missing_tool_configs_dict.items():
+        for v in missing_tool_configs_dict.values():
             if v:
                 have_tool_dependencies = True
                 break
@@ -95,7 +96,7 @@ def verify_tools(app, url, galaxy_config_file=None, engine_options={}):
                         msg += "choose to install them (recommended), they will be installed within the location specified by the 'tool_dependency_dir'\n"
                         msg += "setting in your main Galaxy configuration file (e.g., uninverse_wsgi.ini).\n"
                         processed_tool_dependencies = []
-                        for missing_tool_config, tool_dependencies in missing_tool_configs_dict.items():
+                        for missing_tool_config in missing_tool_configs_dict.keys():
                             for tool_dependencies_tup in missing_tool_configs_dict[missing_tool_config]['tool_dependencies']:
                                 if tool_dependencies_tup not in processed_tool_dependencies:
                                     msg += "------------------------------------\n"
@@ -127,7 +128,7 @@ def verify_tools(app, url, galaxy_config_file=None, engine_options={}):
                     msg += "entries for each of the following tool config files will be added to the file named ./migrated_tool_conf.xml, so these\n"
                     msg += "tools will continue to be loaded into your tool panel.  Because of this, existing entries for these tools have been\n"
                     msg += f"removed from your file{plural} named {tool_panel_config_file_names}.\n\n"
-                    for missing_tool_config, tool_dependencies in missing_tool_configs_dict.items():
+                    for missing_tool_config in missing_tool_configs_dict.keys():
                         msg += "%s\n" % missing_tool_config
                     msg += "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n"
                     raise Exception(msg)

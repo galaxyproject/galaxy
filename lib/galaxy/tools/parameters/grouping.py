@@ -427,7 +427,7 @@ class UploadDataset(Group):
             elif ftp_files is not None and trans.user is not None:  # look for files uploaded via FTP
                 user_ftp_dir = trans.user_ftp_dir
                 assert not os.path.islink(user_ftp_dir), "User FTP directory cannot be a symbolic link"
-                for (dirpath, dirnames, filenames) in os.walk(user_ftp_dir):
+                for dirpath, _dirnames, filenames in os.walk(user_ftp_dir):
                     for filename in filenames:
                         for ftp_filename in ftp_files:
                             if ftp_filename == filename:
@@ -513,7 +513,7 @@ class UploadDataset(Group):
                 else:
                     user_ftp_dir = trans.user_ftp_dir
                     assert not os.path.islink(user_ftp_dir), "User FTP directory cannot be a symbolic link"
-                    for (dirpath, dirnames, filenames) in os.walk(user_ftp_dir):
+                    for dirpath, _dirnames, filenames in os.walk(user_ftp_dir):
                         for filename in filenames:
                             path = relpath(os.path.join(dirpath, filename), user_ftp_dir)
                             if not os.path.islink(os.path.join(dirpath, filename)):

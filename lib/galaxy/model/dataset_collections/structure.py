@@ -86,7 +86,7 @@ class Tree(BaseTree):
         return self._walk_collections(dict_map(lambda hdca: hdca.collection, hdca_dict))
 
     def _walk_collections(self, collection_dict):
-        for index, (identifier, substructure) in enumerate(self.children):
+        for index, (_identifier, substructure) in enumerate(self.children):
             def element(collection):
                 return collection[index]
 
