@@ -1,12 +1,12 @@
 <template>
     <div v-if="invocation">
-        <div v-if="Object.keys(invocation.input_step_parameters).length > 0">
+        <div v-if="Object.keys(invocation.input_step_parameters).length">
             <details
                 ><summary><b>Invocation Parameters</b></summary>
                 <parameter-step :parameters="Object.values(invocation.input_step_parameters)" />
             </details>
         </div>
-        <div v-if="Object.keys(invocation.inputs).length > 0">
+        <div v-if="Object.keys(invocation.inputs).length">
             <details
                 ><summary><b>Invocation Inputs</b></summary>
                 <div v-for="(input, key) in invocation.inputs" :key="input.id">
@@ -15,7 +15,7 @@
                 </div>
             </details>
         </div>
-        <div v-if="Object.keys(invocation.outputs).length > 0">
+        <div v-if="Object.keys(invocation.outputs).length">
             <details
                 ><summary><b>Invocation Outputs</b></summary>
                 <div v-for="(output, key) in invocation.outputs" :key="output.id">
@@ -24,7 +24,7 @@
                 </div>
             </details>
         </div>
-        <div v-if="Object.keys(invocation.output_collections).length > 0">
+        <div v-if="Object.keys(invocation.output_collections).length">
             <details
                 ><summary><b>Invocation Output Collections</b></summary>
                 <div v-for="(output, key) in invocation.output_collections" :key="output.id">
