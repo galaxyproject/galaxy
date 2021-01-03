@@ -37,15 +37,11 @@ class ComponentGrid(grids.Grid):
                           key="Component.description",
                           attach_popup=False)
     ]
-    default_filter = {}
     global_actions = [
         grids.GridAction("Add new component",
                          dict(controller='repository_review', action='manage_components', operation='create'))
     ]
-    operations = []
-    standard_filters = []
     num_rows_per_page = 50
-    use_paging = False
 
 
 class RepositoriesWithReviewsGrid(RepositoryGrid):
@@ -338,18 +334,13 @@ class RepositoryReviewsByUserGrid(grids.Grid):
         RevisionColumn("Revision", attach_popup=False),
         RatingColumn("Rating", attach_popup=False),
     ]
-    # Override these
-    default_filter = {}
-    global_actions = []
     operations = [
         grids.GridOperation("Inspect repository revisions",
                             allow_multiple=False,
                             condition=(lambda item: not item.deleted),
                             async_compatible=False)
     ]
-    standard_filters = []
     num_rows_per_page = 50
-    use_paging = False
 
     def build_initial_query(self, trans, **kwd):
         user_id = trans.security.decode_id(kwd['id'])

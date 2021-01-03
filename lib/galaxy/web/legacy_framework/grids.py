@@ -545,9 +545,9 @@ class Grid:
     async_template = "legacy/grid_base_async.mako"
     use_async = False
     use_hide_message = True
-    global_actions: List[Dict] = []
+    global_actions: List[GridAction] = []
     columns: List[GridColumn] = []
-    operations: List[Dict] = []
+    operations: List[GridOperation] = []
     standard_filters: List[GridColumnFilter] = []
     # Any columns that are filterable (either standard or advanced) should have a default value set in the default filter.
     default_filter: Dict[str, str] = {}
