@@ -23,6 +23,21 @@ from galaxy_test.base.workflow_fixtures import WORKFLOW_NESTED_SIMPLE
 from galaxy_test.driver import integration_util
 
 
+REFACTORING_SIMPLE_TEST = """
+class: GalaxyWorkflow
+inputs:
+  test_input: data
+outputs:
+  wf_out:
+    outputSource: first_cat/out_file1
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: test_input
+"""
+
+
 class WorkflowRefactoringIntegrationTestCase(integration_util.IntegrationTestCase):
 
     framework_tool_and_types = True
@@ -32,16 +47,7 @@ class WorkflowRefactoringIntegrationTestCase(integration_util.IntegrationTestCas
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
 
     def test_basic_refactoring_types(self):
-        self.workflow_populator.upload_yaml_workflow("""
-class: GalaxyWorkflow
-inputs:
-  test_input: data
-steps:
-  first_cat:
-    tool_id: cat
-    in:
-      input1: test_input
-""")
+        self.workflow_populator.upload_yaml_workflow(REFACTORING_SIMPLE_TEST)
 
         actions = [
             {"action_type": "update_name", "name": "my cool new name"},
@@ -152,17 +158,19 @@ steps:
         assert self._latest_workflow.step_by_label("extracted_input")
         assert len(self._latest_workflow.step_by_label("first_cat").inputs) == 1
 
+        actions = [
+            {
+                "action_type": "update_output_label",
+                "output": {"label": "first_cat", "output_name": "out_file1"},
+                "output_label": "new_wf_out",
+            }
+        ]
+        self._refactor(actions)
+        assert self._latest_workflow.step_by_label("first_cat").workflow_outputs[0].label == "new_wf_out"
+
     def test_basic_refactoring_types_dry_run(self):
-        self.workflow_populator.upload_yaml_workflow("""
-class: GalaxyWorkflow
-inputs:
-  test_input: data
-steps:
-  first_cat:
-    tool_id: cat
-    in:
-      input1: test_input
-""")
+        self.workflow_populator.upload_yaml_workflow(REFACTORING_SIMPLE_TEST)
+
         actions = [
             {"action_type": "update_name", "name": "my cool new name"},
         ]
@@ -203,6 +211,18 @@ steps:
         response = self._dry_run(actions)
         workflow_dict = response.workflow
         assert _step_with_label(workflow_dict, "new_param")
+
+        actions = [
+            {
+                "action_type": "update_output_label",
+                "output": {"label": "first_cat", "output_name": "out_file1"},
+                "output_label": "new_wf_out",
+            }
+        ]
+        response = self._dry_run(actions)
+        workflow_dict = response.workflow
+        first_cat_step = _step_with_label(workflow_dict, "first_cat")
+        assert first_cat_step["workflow_outputs"][0]["label"] == "new_wf_out"
 
     def test_refactoring_legacy_parameters(self):
         wf = self.workflow_populator.load_workflow_from_resource("test_workflow_randomlines_legacy_params")

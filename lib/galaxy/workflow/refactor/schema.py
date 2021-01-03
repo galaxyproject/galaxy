@@ -167,6 +167,12 @@ class UpdateReportAction(BaseAction):
     report: Report
 
 
+class UpdateOutputLabelAction(BaseAction):
+    action_type: Literal['update_output_label']
+    output: output_reference_union  # TODO: allow reference by output_label
+    output_label: str
+
+
 class FillStepDefaultsAction(BaseAction):
     action_type: Literal['fill_step_defaults']
     step: step_reference_union
@@ -202,6 +208,7 @@ union_action_classes = Union[
     UpdateCreatorAction,
     UpdateNameAction,
     UpdateLicenseAction,
+    UpdateOutputLabelAction,
     UpdateReportAction,
     UpdateStepLabelAction,
     UpdateStepPositionAction,

@@ -1,7 +1,6 @@
 import logging
 from typing import Any, Dict
 
-from galaxy import model
 from galaxy.exceptions import (
     RequestParameterInvalidException,
 )
@@ -35,6 +34,7 @@ from .schema import (
     UpdateCreatorAction,
     UpdateLicenseAction,
     UpdateNameAction,
+    UpdateOutputLabelAction,
     UpdateReportAction,
     UpdateStepLabelAction,
     UpdateStepPositionAction,
@@ -87,6 +87,14 @@ class WorkflowRefactorExecutor:
     def _apply_update_step_position(self, action: UpdateStepPositionAction, execution: RefactorActionExecution):
         step = self._find_step_for_action(action)
         step["position"] = action.position.to_dict()
+
+    def _apply_update_output_label(self, action: UpdateOutputLabelAction, execution: RefactorActionExecution):
+        output_reference = action.output
+        output_step_dict = self._find_step(output_reference)
+        output_name = output_reference.output_name
+        for workflow_output_def in output_step_dict.get("workflow_outputs", []):
+            if workflow_output_def["output_name"] == output_name:
+                workflow_output_def["label"] = action.output_label
 
     def _apply_update_name(self, action: UpdateNameAction, execution: RefactorActionExecution):
         self._as_dict["name"] = action.name
