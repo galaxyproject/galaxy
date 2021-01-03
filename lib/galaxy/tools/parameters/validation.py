@@ -35,9 +35,9 @@ class Validator:
         param elem the validator element
         return an object of a Validator subclass that corresponds to the type attribute of the validator element
         """
-        type = elem.get('type', None)
-        assert type is not None, "Required 'type' attribute missing from validator"
-        return validator_types[type].from_element(param, elem)
+        _type = elem.get('type', None)
+        assert _type is not None, "Required 'type' attribute missing from validator"
+        return validator_types[_type].from_element(param, elem)
 
     def validate(self, value, trans=None):
         """
@@ -74,19 +74,21 @@ class RegexValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
-        return cls(elem.get('message'), elem.text)
+        return cls(elem.get('message'), elem.text, elem.get('negate', 'false'))
 
-    def __init__(self, message, expression):
+    def __init__(self, message, expression, negate):
         self.message = message
         # Compile later. RE objects used to not be thread safe. Not sure about
         # the sre module.
         self.expression = expression
+        self.invert = util.asbool(negate)
 
     def validate(self, value, trans=None):
         if not isinstance(value, list):
             value = [value]
         for val in value:
-            if re.match(self.expression, val or '') is None:
+            match = re.match(self.expression, val or '')
+            if (not self.invert and match is None) or (self.invert and match is not None):
                 raise ValueError(self.message)
 
 
