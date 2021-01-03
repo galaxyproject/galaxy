@@ -232,7 +232,7 @@ class RefactorActions(BaseModel):
 class RefactorActionExecutionMessageTypeEnum(str, Enum):
     tool_version_change = 'tool_version_change'
     tool_state_adjustment = 'tool_state_adjustment'
-    connection_dropped_forced = 'connection_dropped_forced'
+    connection_drop_forced = 'connection_drop_forced'
 
 
 class RefactorActionExecutionMessage(BaseModel):
@@ -240,7 +240,9 @@ class RefactorActionExecutionMessage(BaseModel):
     message_type: RefactorActionExecutionMessageTypeEnum
     # messages don't have to be bound to a step, but if they are should
     # specify step_label and order_index below - these are the label and
-    # order_index before applying the refactoring.
+    # order_index before applying the refactoring. If connections are
+    # dropped this step reference should refer to the step with the
+    # previously connected input.
     step_label: Optional[str]
     order_index: Optional[int]
 
@@ -248,6 +250,15 @@ class RefactorActionExecutionMessage(BaseModel):
     # the input name should be specified here. Should be a prefixed name
     # in the case of tool inputs (e.g. 'cond|repeat_0|input')
     input_name: Optional[str]
+
+    # messages don't have to be bound to a step with inputs, but if they are
+    # the output name should be specified here.
+    output_name: Optional[str]
+
+    # For dropped connections these optional attributes refer to the output
+    # side of the connection that was dropped.
+    from_step_label: Optional[str]
+    from_order_index: Optional[int]
 
 
 class RefactorActionExecution(BaseModel):

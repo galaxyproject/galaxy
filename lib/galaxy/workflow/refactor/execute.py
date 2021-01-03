@@ -366,13 +366,20 @@ class WorkflowRefactorExecutor:
             stored_workflow = old_workflow.stored_workflow
             content_id = trans.security.encode_id(stored_workflow.latest_workflow.id)
         step_def["content_id"] = content_id
-        step = self.workflow.steps[step_def["id"]]
+        upgrade_order_index = step_def["id"]
+        upgrade_label = step_def.get("label")
+        step = self.workflow.steps[upgrade_order_index]
         new_workflow = trans.app.workflow_manager.get_owned_workflow(
             trans, content_id
         )
         step.subworkflow = new_workflow
         self._inject_for_updated_step(step, execution)
+
+        # TODO: rework this logic to work with tool upgrade also.
+        # TODO: find workflow outputs that need to be dropped and report them
         upgrade_inputs = step.module.get_all_inputs()
+        upgrade_outputs = step.module.get_all_outputs()
+        upgrade_output_names = [u["name"] for u in upgrade_outputs]
         all_input_connections = step_def.get("input_connections")
         inputs_to_delete = []
         for input_name, input_connections in all_input_connections.items():
@@ -384,21 +391,58 @@ class WorkflowRefactorExecutor:
             # In the future check parameter type, format, mapping status...
             if matching_input is None:
                 inputs_to_delete.append(input_name)
-                count = len(_listify_connections(input_connections))
-                message_text = f"Subworkflow input '{input_name}' no longer available, dropping {count} connection(s) to it."
-                message = RefactorActionExecutionMessage(
-                    message=message_text,
-                    message_type=RefactorActionExecutionMessageTypeEnum.connection_dropped_forced,
-                    input_name=input_name,
-                    step_label=step.label,
-                    order_index=step.order_index,
-                )
-                execution.messages.append(
-                    message
-                )
+                for input_connection in _listify_connections(input_connections):
+                    message_text = f"Subworkflow input '{input_name}' no longer available, dropping connection to it."
+                    from_order_index = input_connection["id"]
+                    from_step_label = self._as_dict["steps"].get(from_order_index, {}).get("label")
+                    message = RefactorActionExecutionMessage(
+                        message=message_text,
+                        message_type=RefactorActionExecutionMessageTypeEnum.connection_drop_forced,
+                        input_name=input_name,
+                        step_label=upgrade_label,
+                        order_index=upgrade_order_index,
+                        output_name=input_connection["output_name"],
+                        from_order_index=from_order_index,
+                        from_step_label=from_step_label,
+                    )
+                    execution.messages.append(
+                        message
+                    )
+
         for input_name in inputs_to_delete:
             del all_input_connections[input_name]
-        # TODO: recalculate connections...
+
+        for _, step in self._as_dict["steps"].items():
+            all_input_connections = step.get("input_connections")
+            for input_name, input_connections in all_input_connections.items():
+                rebuilt_valid_connections = []
+                for input_connection in _listify_connections(input_connections):
+                    include = False
+                    if input_connection["id"] != upgrade_order_index:
+                        include = True
+                    else:
+                        output_name = input_connection["output_name"]
+                        if output_name in upgrade_output_names:
+                            include = True
+                        else:
+                            # dropped outputs
+                            message_text = f"Subworkflow output '{output_name}' no longer available, dropping connection from it."
+                            message = RefactorActionExecutionMessage(
+                                message=message_text,
+                                message_type=RefactorActionExecutionMessageTypeEnum.connection_drop_forced,
+                                input_name=input_name,
+                                step_label=step.get("label"),
+                                order_index=step["id"],
+                                output_name=output_name,
+                                from_step_label=upgrade_label,
+                                from_order_index=upgrade_order_index,
+                            )
+                            execution.messages.append(
+                                message
+                            )
+                    if include:
+                        rebuilt_valid_connections.append(input_connection)
+                all_input_connections[input_name] = rebuilt_valid_connections
 
     def _apply_upgrade_tool(self, action: UpgradeToolAction, execution: RefactorActionExecutionMessage):
         step_def = self._find_step(action.step)
