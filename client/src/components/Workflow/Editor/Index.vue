@@ -14,6 +14,7 @@
             @onRefactor="onRefactor"
             @onShow="hideModal()"
         />
+        <MessagesModal :title="messageTitle" :message="messageBody" :error="messageIsError" @onHidden="resetMessage" />
         <MarkdownEditor
             v-if="!isCanvas"
             :markdown-text="markdownText"
@@ -176,7 +177,8 @@ import reportDefault from "./reportDefault";
 import WorkflowLint from "./Lint";
 import StateUpgradeModal from "./StateUpgradeModal";
 import RefactorConfirmationModal from "./RefactorConfirmationModal";
-import { hide_modal, show_message, show_modal } from "layout/modal";
+import MessagesModal from "./MessagesModal";
+import { hide_modal } from "layout/modal";
 import WorkflowAttributes from "./Attributes";
 import ZoomControl from "./ZoomControl";
 import WorkflowNode from "./Node";
@@ -194,6 +196,7 @@ export default {
         WorkflowNode,
         WorkflowLint,
         RefactorConfirmationModal,
+        MessagesModal,
     },
     props: {
         id: {
@@ -249,6 +252,9 @@ export default {
             stateMessages: [],
             insertedStateMessages: [],
             refactorActions: [],
+            messageTitle: null,
+            messageBody: null,
+            messageIsError: false,
         };
     },
     created() {
@@ -267,6 +273,7 @@ export default {
                 return "There are unsaved changes to your workflow which will be lost.";
             }
         };
+        hide_modal();
     },
     watch: {
         annotation: function (newAnnotation, oldAnnotation) {
@@ -316,13 +323,20 @@ export default {
         // synchronize modal handling through this object so we can convert it to be
         // be reactive at some point.
         onWorkflowError(message, response) {
-            show_modal(message, response, { Ok: hide_modal });
+            this.messageTitle = message;
+            this.messageBody = response.toString();
+            this.messageIsError = true;
         },
         onWorkflowMessage(title, body) {
-            show_message(title, body);
+            this.messageTitle = title;
+            this.messageBody = body;
+            this.messageIsError = false;
         },
         hideModal() {
-            hide_modal();
+            this.messageTitle = null;
+            this.messageBody = null;
+            this.messageIsError = false;
+            hide_modal(); // hide other modals created in utilities also...
         },
         async onRefactor(response) {
             await fromSimple(this, response.workflow);
@@ -449,7 +463,11 @@ export default {
                     });
                 })
                 .catch((response) => {
-                    this.onWorkflowError("Saving workflow failed...", response, { Ok: hide_modal });
+                    this.onWorkflowError("Saving workflow failed...", response, {
+                        Ok: () => {
+                            this.hideModal();
+                        },
+                    });
                 });
         },
         onVersion(version) {
@@ -530,6 +548,11 @@ export default {
         onInsertedStateMessages(insertedStateMessages) {
             this.insertedStateMessages = insertedStateMessages;
             this.hideModal();
+        },
+        resetMessage() {
+            this.messageTitle = null;
+            this.messageBody = null;
+            this.messageError = false;
         },
     },
 };
