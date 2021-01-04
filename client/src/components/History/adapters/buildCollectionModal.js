@@ -9,9 +9,9 @@
  */
 
 import jQuery from "jquery";
-import LIST_COLLECTION_CREATOR from "mvc/collection/list-collection-creator";
-import PAIR_COLLECTION_CREATOR from "mvc/collection/pair-collection-creator";
-import LIST_OF_PAIRS_COLLECTION_CREATOR from "mvc/collection/list-of-pairs-collection-creator";
+import LIST_COLLECTION_CREATOR from "Collections/ListCollectionCreator";
+import PAIR_COLLECTION_CREATOR from "Collections/PairCollectionCreator";
+import LIST_OF_PAIRS_COLLECTION_CREATOR from "Collections/PairedListCollectionCreator";
 
 // stand-in for buildCollection from history-view-edit.js
 export async function buildCollectionModal(collectionType, history_id, selectedContent, hideSourceItems = false) {
