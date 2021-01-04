@@ -2405,7 +2405,7 @@ In output filters sections are represented as dictionary with the same name as t
 In order to reference parameters in sections from tags in the `<outputs>` section, e.g. in the `format_source` attribute of `<data>` tags, the syntax is:
 
 ```
-section_name|parameter_name
+<data name="output" format_source="section_name|parameter_name" metadata_source="section_name|parameter_name"/>
 ```
 
 Until profile 21.01 `parameter_name` was sufficient (https://github.com/galaxyproject/galaxy/pull/9493/files).
