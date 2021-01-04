@@ -6,6 +6,13 @@
             title="Subworkflow embedded with changes"
             message="Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save."
         />
+        <RefactorConfirmationModal
+            :workflowId="id"
+            :refactorActions="refactorActions"
+            @onWorkflowError="onWorkflowError"
+            @onWorkflowMessage="onWorkflowMessage"
+            @onRefactor="onRefactor"
+        />
         <MarkdownEditor
             v-if="!isCanvas"
             :markdown-text="markdownText"
@@ -147,7 +154,8 @@
 
 <script>
 import { getDatatypesMapper } from "components/Datatypes";
-import { getModule, getVersions, saveWorkflow, loadWorkflow, refactor } from "./modules/services";
+import { fromSimple } from "./modules/model";
+import { getModule, getVersions, saveWorkflow, loadWorkflow } from "./modules/services";
 import {
     getStateUpgradeMessages,
     copyIntoWorkflow,
@@ -166,6 +174,7 @@ import { getAppRoot } from "onload/loadConfig";
 import reportDefault from "./reportDefault";
 import WorkflowLint from "./Lint";
 import StateUpgradeModal from "./StateUpgradeModal";
+import RefactorConfirmationModal from "./RefactorConfirmationModal";
 import { hide_modal, show_message, show_modal } from "layout/modal";
 import WorkflowAttributes from "./Attributes";
 import ZoomControl from "./ZoomControl";
@@ -183,6 +192,7 @@ export default {
         ZoomControl,
         WorkflowNode,
         WorkflowLint,
+        RefactorConfirmationModal,
     },
     props: {
         id: {
@@ -237,6 +247,7 @@ export default {
             name: null,
             stateMessages: [],
             insertedStateMessages: [],
+            refactorActions: [],
         };
     },
     created() {
@@ -289,36 +300,29 @@ export default {
                 if (r == false) {
                     return;
                 }
-                show_message("Saving workflow...", "progress");
+                this.onWorkflowMessage("Saving workflow...", "progress");
                 return saveWorkflow(this)
                     .then((data) => {
-                        this._refactor(actions);
+                        this.refactorActions = actions;
                     })
                     .catch((response) => {
-                        show_modal("Saving workflow failed, cannot apply requested changes...", response, {
-                            Ok: hide_modal,
-                        });
+                        this.onWorkflowError("Saving workflow failed, cannot apply requested changes...");
                     });
             } else {
-                this._refactor(actions);
+                this.refactorActions = actions;
             }
         },
-        _refactor(actions) {
-            show_message("Pre-checking requested workflow changes (dry run)...", "progress");
-            refactor(this, this.id, actions, true) // dry run
-                .then((data) => {
-                    show_message("Applying requested workflow changes...", "progress");
-                    refactor(this, this.id, actions)
-                        .then((data) => {
-                            this._loadEditorData(data);
-                        })
-                        .catch((response) => {
-                            show_modal("Reworking workflow failed...", response, { Ok: hide_modal });
-                        });
-                })
-                .catch((response) => {
-                    show_modal("Reworking workflow failed...", response, { Ok: hide_modal });
-                });
+        // synchronize modal handling through this object so we can convert it to be
+        // be reactive at some point.
+        onWorkflowError(message, response) {
+            show_modal(message, response, { Ok: hide_modal });
+        },
+        onWorkflowMessage(title, body) {
+            show_message(title, body);
+        },
+        async onRefactor(response) {
+            await fromSimple(this, response.workflow);
+            this._loadEditorData(response);
         },
         onAdd(node) {
             this.nodes[node.id] = node;
@@ -428,7 +432,7 @@ export default {
             this.zoomLevel = this.canvasManager.setZoom(zoomLevel);
         },
         onSave(hideProgress = false) {
-            !hideProgress && show_message("Saving workflow...", "progress");
+            !hideProgress && this.onWorkflowMessage("Saving workflow...", "progress");
             return saveWorkflow(this)
                 .then((data) => {
                     getVersions(this.id).then((versions) => {
@@ -437,7 +441,7 @@ export default {
                     });
                 })
                 .catch((response) => {
-                    show_modal("Saving workflow failed...", response, { Ok: hide_modal });
+                    this.onWorkflowError("Saving workflow failed...", response, { Ok: hide_modal });
                 });
         },
         onVersion(version) {
@@ -488,13 +492,13 @@ export default {
             });
         },
         _loadCurrent(id, version) {
-            show_message("Loading workflow...", "progress");
+            this.onWorkflowMessage("Loading workflow...", "progress");
             loadWorkflow(this, id, version)
                 .then((data) => {
                     this._loadEditorData(data);
                 })
                 .catch((response) => {
-                    show_modal("Loading workflow failed...", response, { Ok: hide_modal });
+                    this.onWorkflowError("Loading workflow failed...", response);
                 });
         },
         onLicense(license) {
