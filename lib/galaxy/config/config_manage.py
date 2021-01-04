@@ -5,15 +5,15 @@ import string
 import sys
 import tempfile
 from collections import (
-    namedtuple,
     OrderedDict
 )
+from io import StringIO
 from textwrap import TextWrapper
+from typing import Any, List, NamedTuple
 
 import requests
 import yaml
 from boltons.iterutils import remap
-from six import StringIO
 
 try:
     from pykwalify.core import Core
@@ -51,11 +51,6 @@ NO_APP_MAIN_MESSAGE = "No app:main section found, using application defaults thr
 YAML_COMMENT_WRAPPER = TextWrapper(initial_indent="# ", subsequent_indent="# ", break_long_words=False, break_on_hyphens=False)
 RST_DESCRIPTION_WRAPPER = TextWrapper(initial_indent="    ", subsequent_indent="    ", break_long_words=False, break_on_hyphens=False)
 UWSGI_SCHEMA_PATH = "lib/galaxy/webapps/uwsgi_schema.yml"
-
-App = namedtuple(
-    "App",
-    ["config_paths", "default_port", "expected_app_factories", "destination", "schema_path", "uwsgi_module"]
-)
 
 UWSGI_OPTIONS = OrderedDict([
     ('http', {
@@ -154,8 +149,8 @@ UWSGI_OPTIONS = OrderedDict([
         'type': 'str',
     }),
     ('py-call-osafterfork', {
-        'desc': """Feature necessary for proper mule signal handling""",
-        'default': True,
+        'desc': """Feature necessary for proper mule signal handling on Python versions below 3.7.2. The default is set to false to prevent a runtime error under Python 3.7.2 and newer (see https://github.com/unbit/uwsgi/issues/1978).""",
+        'default': False,
         'type': 'bool',
     }),
     ('enable-threads', {
@@ -312,26 +307,39 @@ OPTION_ACTIONS = {
     'tool_submission_burst_at': _DeprecatedAndDroppedAction(),
     'toolform_upgrade': _DeprecatedAndDroppedAction(),
     'enable_beta_mulled_containers': _DeprecatedAndDroppedAction(),
+    'enable_communication_server': _DeprecatedAndDroppedAction(),
+    'communication_server_host': _DeprecatedAndDroppedAction(),
+    'communication_server_port': _DeprecatedAndDroppedAction(),
+    'persistent_communication_rooms': _DeprecatedAndDroppedAction(),
+    'legacy_eager_objectstore_initialization': _DeprecatedAndDroppedAction(),
 }
 
 
-def _app_name(self):
-    return os.path.splitext(os.path.basename(self.destination))[0]
+class App(NamedTuple):
+    config_paths: List[str]
+    default_port: str
+    expected_app_factories: List[str]
+    destination: str
+    schema_path: str
+    uwsgi_module: str
+
+    @property
+    def app_name(self):
+        return os.path.splitext(os.path.basename(self.destination))[0]
+
+    @property
+    def sample_destination(self):
+        return self.destination + ".sample"
+
+    @property
+    def schema(self):
+        return AppSchema(self.schema_path, self.app_name)
 
 
-def _sample_destination(self):
-    return self.destination + ".sample"
-
-
-def _schema(self):
-    return AppSchema(self.schema_path, self.app_name)
-
-
-App.app_name = property(_app_name)
-App.sample_destination = property(_sample_destination)
-App.schema = property(_schema)
-
-OptionValue = namedtuple("OptionValue", ["name", "value", "option"])
+class OptionValue(NamedTuple):
+    name: str
+    value: Any
+    option: Any
 
 
 GALAXY_APP = App(
@@ -405,9 +413,9 @@ def _to_rst(args, app_desc, heading_level="~"):
 def _write_option_rst(args, rst, key, heading_level, option_value):
     title = "``%s``" % key
     heading = heading_level * len(title)
-    rst.write("{}\n{}\n{}\n\n".format(heading, title, heading))
+    rst.write(f"{heading}\n{title}\n{heading}\n\n")
     option, value = _parse_option_value(option_value)
-    desc = option["desc"]
+    desc = _get_option_desc(option)
     rst.write(":Description:\n")
     # Wrap and indent desc, replacing whitespaces with a space, except
     # for double newlines which are replaced with a single newline.
@@ -649,7 +657,7 @@ def _is_ini(path):
 def _replace_file(args, f, app_desc, from_path, to_path):
     _write_to_file(args, f, to_path)
     backup_path = "%s.backup" % from_path
-    print("Moving [{}] to [{}]".format(from_path, backup_path))
+    print(f"Moving [{from_path}] to [{backup_path}]")
     if args.dry_run:
         print("... skipping because --dry-run is enabled.")
     else:
@@ -661,7 +669,7 @@ def _build_sample_yaml(args, app_desc):
         UWSGI_OPTIONS.update(SHED_ONLY_UWSGI_OPTIONS)
     schema = app_desc.schema
     f = StringIO()
-    for key, value in UWSGI_OPTIONS.items():
+    for value in UWSGI_OPTIONS.values():
         for field in ["desc", "default"]:
             if field not in value:
                 continue
@@ -693,7 +701,7 @@ def _write_to_file(args, f, path):
         contents = f
     if args.dry_run:
         contents_indented = "\n".join(" |%s" % l for l in contents.splitlines())
-        print("Overwriting {} with the following contents:\n{}".format(path, contents_indented))
+        print(f"Overwriting {path} with the following contents:\n{contents_indented}")
         print("... skipping because --dry-run is enabled.")
     else:
         print("Overwriting %s" % path)
@@ -733,7 +741,7 @@ def _write_header(f, section_header):
 
 def _write_option(args, f, key, option_value, as_comment=False, uwsgi_hack=False):
     option, value = _parse_option_value(option_value)
-    desc = option["desc"]
+    desc = _get_option_desc(option)
     comment = ""
     if desc and args.add_comments:
         # Wrap and comment desc, replacing whitespaces with a space, except
@@ -743,10 +751,10 @@ def _write_option(args, f, key, option_value, as_comment=False, uwsgi_hack=False
     if uwsgi_hack:
         if option.get("type", "str") == "bool":
             value = str(value).lower()
-        key_val_str = "{}: {}".format(key, value)
+        key_val_str = f"{key}: {value}"
     else:
         key_val_str = yaml.dump({key: value}, width=float("inf")).lstrip("{").rstrip("\n}")
-    lines = "{}{}{}".format(comment, as_comment_str, key_val_str)
+    lines = f"{comment}{as_comment_str}{key_val_str}"
     lines_idented = "\n".join("  %s" % l for l in lines.split("\n"))
     f.write("%s\n\n" % lines_idented)
 
@@ -774,7 +782,7 @@ def _server_paste_to_uwsgi(app_desc, server_config, applied_filters):
     if server_config.get("use", "egg:Paste#http") != "egg:Paste#http":
         raise Exception("Unhandled paste server 'use' value [%s], file must be manually migrate.")
 
-    uwsgi_dict["http"] = "{}:{}".format(host, port)
+    uwsgi_dict["http"] = f"{host}:{port}"
     # default changing from 10 to 8
     uwsgi_dict["threads"] = int(server_config.get("threadpool_workers", 8))
     # required for static...
@@ -791,7 +799,7 @@ def _server_paste_to_uwsgi(app_desc, server_config, applied_filters):
             uwsgi_dict["http-auto-gzip"] = True
 
     if prefix:
-        uwsgi_dict["mount"] = "{}={}".format(prefix, app_desc.uwsgi_module)
+        uwsgi_dict["mount"] = f"{prefix}={app_desc.uwsgi_module}"
         uwsgi_dict["manage-script-name"] = True
     else:
         uwsgi_dict["module"] = app_desc.uwsgi_module
@@ -800,6 +808,15 @@ def _server_paste_to_uwsgi(app_desc, server_config, applied_filters):
 
 def _warn(message):
     print("WARNING: %s" % message)
+
+
+def _get_option_desc(option):
+    desc = option["desc"]
+    parent_dir = option.get("path_resolves_to")
+    if parent_dir:
+        path_resolves = f"The value of this option will be resolved with respect to <{parent_dir}>."
+        return f"{desc}\n{path_resolves}" if desc else path_resolves
+    return desc
 
 
 ACTIONS = {

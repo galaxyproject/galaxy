@@ -1,15 +1,7 @@
 from logging import getLogger
 
-try:
-    from galaxy.model import Job
-    job_states = Job.states
-except ImportError:
-    # Not in Galaxy, map Galaxy job states to Pulsar ones.
-    from pulsar.util import enum
-    job_states = enum(RUNNING='running', OK='complete', QUEUED='queued')
-
 from galaxy.util import parse_xml_string
-from ..job import BaseJobExec
+from ..job import BaseJobExec, job_states
 
 log = getLogger(__name__)
 
@@ -59,7 +51,7 @@ class Torque(BaseJobExec):
                 log.warning(ERROR_MESSAGE_UNRECOGNIZED_ARG % k)
         template_pbsargs = ''
         for k, v in pbsargs.items():
-            template_pbsargs += '#PBS {} {}\n'.format(k, v)
+            template_pbsargs += f'#PBS {k} {v}\n'
         return dict(headers=template_pbsargs)
 
     def submit(self, script_file):

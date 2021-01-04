@@ -1,14 +1,8 @@
 <template>
-    <b-navbar
-        id="masthead"
-        toggleable="lg"
-        type="dark"
-        role="navigation"
-        aria-label="Main"
-        class="justify-content-center"
-    >
+    <b-navbar id="masthead" type="dark" role="navigation" aria-label="Main" class="justify-content-center">
         <b-navbar-brand :href="brandLink" aria-label="homepage">
             <img alt="logo" class="navbar-brand-image" :src="brandImage" />
+            <img alt="logo" class="navbar-brand-image" :src="brandImageSecondary" v-if="brandImageSecondary" />
             <span class="navbar-brand-title">{{ brandTitle }}</span>
         </b-navbar-brand>
 
@@ -44,27 +38,39 @@ export default {
         },
         brand: {
             type: String,
+            default: null,
         },
         brandLink: {
             type: String,
+            default: null,
         },
         brandImage: {
             type: String,
+            default: null,
+        },
+        brandImageSecondary: {
+            type: String,
+            default: null,
         },
         activeTab: {
             type: String,
+            default: null,
         },
         mastheadState: {
             type: Object,
+            default: null,
         },
         appRoot: {
             type: String,
+            default: null,
         },
         galaxy: {
             type: Object,
+            default: null,
         },
         menuOptions: {
             type: Object,
+            default: null,
         },
     },
     components: {
@@ -116,7 +122,7 @@ export default {
         },
         tabs() {
             const scratchbookTabs = [this.mastheadState.frame.buttonActive, this.mastheadState.frame.buttonLoad];
-            const tabs = [].concat(this.baseTabs, scratchbookTabs, this.extensionTabs);
+            const tabs = [].concat(this.baseTabs, this.extensionTabs, scratchbookTabs);
             return tabs.map(this._tabToJson);
         },
     },
@@ -141,5 +147,3 @@ export default {
     },
 };
 </script>
-
-<style scoped></style>

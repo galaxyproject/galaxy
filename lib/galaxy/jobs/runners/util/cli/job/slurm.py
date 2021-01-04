@@ -2,15 +2,7 @@
 # non-submit host and using a Slurm cluster.
 from logging import getLogger
 
-try:
-    from galaxy.model import Job
-    job_states = Job.states
-except ImportError:
-    # Not in Galaxy, map Galaxy job states to Pulsar ones.
-    from pulsar.util import enum
-    job_states = enum(RUNNING='running', OK='complete', QUEUED='queued', ERROR="failed")
-
-from ..job import BaseJobExec
+from ..job import BaseJobExec, job_states
 
 log = getLogger(__name__)
 
@@ -47,7 +39,7 @@ class Slurm(BaseJobExec):
         # Generated template.
         template_scriptargs = ''
         for k, v in scriptargs.items():
-            template_scriptargs += '#SBATCH {} {}\n'.format(k, v)
+            template_scriptargs += f'#SBATCH {k} {v}\n'
         return dict(headers=template_scriptargs)
 
     def submit(self, script_file):

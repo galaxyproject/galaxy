@@ -635,12 +635,13 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
             var self = this;
 
             var url = `${getAppRoot()}api/histories/${this.historyId}/contents/dataset_collections`;
+            const hideSourceItems = !!self.hideOriginals;
 
             var ajaxData = {
                 type: "dataset_collection",
                 collection_type: "list:paired",
-                hide_source_items: self.hideOriginals || false,
-                copy_elements: self.copyElements,
+                hide_source_items: hideSourceItems,
+                copy_elements: !hideSourceItems,
                 name: _.escape(name || self.$(".collection-name").val()),
                 element_identifiers: self.paired.map((pair) => self._pairToJSON(pair)),
             };
@@ -1811,7 +1812,6 @@ function createListOfPairsCollection(collection, defaultHideSourceItems) {
     return pairedCollectionCreatorModal(elements, {
         historyId: collection.historyId,
         defaultHideSourceItems: defaultHideSourceItems,
-        copyElements: !defaultHideSourceItems,
     });
 }
 

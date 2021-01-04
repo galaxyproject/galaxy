@@ -21,7 +21,7 @@ def __main__():
             suffix = 're_match_multiline'
         else:
             suffix = 're_match'
-        output = open("%s.%s" % (args[0], suffix), 'wb')
+        output = open("{}.{}".format(args[0], suffix), 'wb')
     if options.multiline:
         lines = [re.escape(input.read())]
     else:

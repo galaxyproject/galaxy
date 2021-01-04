@@ -62,13 +62,13 @@ def parse_config_xml(config_xml):
         tag, attrs = 'extra_dir', ('type', 'path')
         extra_dirs = config_xml.findall(tag)
         if not extra_dirs:
-            msg = 'No {tag} element in XML tree'.format(tag=tag)
+            msg = f'No {tag} element in XML tree'
             log.error(msg)
             raise Exception(msg)
         r['extra_dirs'] = [
             {k: e.get(k) for k in attrs} for e in extra_dirs]
         if 'job_work' not in (d['type'] for d in r['extra_dirs']):
-            msg = 'No value for {}:type="job_work" in XML tree'.format(tag)
+            msg = f'No value for {tag}:type="job_work" in XML tree'
             log.error(msg)
             raise Exception(msg)
     except Exception:
@@ -150,7 +150,7 @@ class PithosObjectStore(ConcreteObjectStore):
         # param extra_dir: should never be constructed from provided data but
         # just make sure there are no shenannigans afoot
         if extra_dir and extra_dir != os.path.normpath(extra_dir):
-            log.warning('extra_dir is not normalized: {}'.format(extra_dir))
+            log.warning(f'extra_dir is not normalized: {extra_dir}')
             raise ObjectInvalid("The requested object is invalid")
         # ensure that any parent directory references in alt_name would not
         # result in a path not contained in the directory path constructed here
@@ -178,7 +178,7 @@ class PithosObjectStore(ConcreteObjectStore):
             return os.path.join(base, rel_path)
 
         # Pithos+ folders are marked by having trailing '/' so add it now
-        rel_path = '{}/'.format(rel_path)
+        rel_path = f'{rel_path}/'
 
         if not dir_only:
             an = alt_name if alt_name else 'dataset_{}.dat'.format(self._get_object_id(obj))
@@ -339,7 +339,7 @@ class PithosObjectStore(ConcreteObjectStore):
             extra_dir = kwargs.get('extra_dir', False)
             if entire_dir and extra_dir:
                 shutil.rmtree(cache_path)
-                log.debug('On Pithos: delete -r {path}/'.format(path=path))
+                log.debug(f'On Pithos: delete -r {path}/')
                 self.pithos.del_object(path, delimiter='/')
                 return True
             else:
@@ -430,8 +430,8 @@ class PithosObjectStore(ConcreteObjectStore):
                 return self.pithos.publish_object(path)
             except ClientError as ce:
                 log.exception(
-                    'Trouble generating URL for dataset "{}"'.format(path))
-                log.exception('Kamaki: {}'.format(ce))
+                    f'Trouble generating URL for dataset "{path}"')
+                log.exception(f'Kamaki: {ce}')
         return None
 
     def _get_store_usage_percent(self):

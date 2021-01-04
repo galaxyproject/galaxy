@@ -31,10 +31,11 @@ class GalaxyWebApplication(galaxy.webapps.base.webapp.WebApplication):
     pass
 
 
-def app_factory(global_conf, load_app_kwds={}, **kwargs):
+def app_factory(global_conf, load_app_kwds=None, **kwargs):
     """
     Return a wsgi application serving the root object
     """
+    load_app_kwds = load_app_kwds or {}
     kwargs = load_app_properties(
         kwds=kwargs,
         **load_app_kwds
@@ -71,8 +72,9 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_route('/authnz/', controller='authnz', action='index', provider=None)
     webapp.add_route('/authnz/{provider}/login', controller='authnz', action='login', provider=None)
     webapp.add_route('/authnz/{provider}/callback', controller='authnz', action='callback', provider=None)
-    webapp.add_route('/authnz/{provider}/disconnect', controller='authnz', action='disconnect', provider=None)
+    webapp.add_route('/authnz/{provider}/disconnect/{email}', controller='authnz', action='disconnect', provider=None, email=None)
     webapp.add_route('/authnz/{provider}/logout', controller='authnz', action='logout', provider=None)
+    webapp.add_route('/authnz/{provider}/create_user', controller='authnz', action='create_user')
     # Returns the provider specific logout url for currently logged in provider
     webapp.add_route('/authnz/logout', controller='authnz', action='get_logout_url')
     webapp.add_route('/authnz/get_cilogon_idps', controller='authnz', action='get_cilogon_idps')
@@ -124,6 +126,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/admin/quotas', 'admin')
     webapp.add_client_route('/admin/form/{form_id}', 'admin')
     webapp.add_client_route('/admin/api_keys', 'admin')
+    webapp.add_client_route('/login/confirm')
     webapp.add_client_route('/tools/view')
     webapp.add_client_route('/tools/json')
     webapp.add_client_route('/tours')
@@ -165,6 +168,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     # webapp.add_client_route('/workflows/invocations/view_bco')
     webapp.add_client_route('/custom_builds')
     webapp.add_client_route('/interactivetool_entry_points/list')
+    webapp.add_client_route('/library/folders/{folder_id}')
 
     # ==== Done
     # Indicate that all configuration settings have been provided
@@ -263,10 +267,19 @@ def populate_api_routes(webapp, app):
                           controller="datasets",
                           action="get_content_as_text",
                           conditions=dict(method=["GET"]))
+    webapp.mapper.connect('dataset_storage',
+                          '/api/datasets/{dataset_id}/storage',
+                          controller='datasets',
+                          action='show_storage',
+                          conditions=dict(method=["GET"]))
     webapp.mapper.connect("history_contents_metadata_file",
                           "/api/histories/{history_id}/contents/{history_content_id}/metadata_file",
                           controller="datasets",
                           action="get_metadata_file",
+                          conditions=dict(method=["GET"]))
+    webapp.mapper.connect("/api/histories/{history_id}/contents/near/{hid}/{limit}",
+                          action="contents_near",
+                          controller='history_contents',
                           conditions=dict(method=["GET"]))
     webapp.mapper.resource('user',
                            'users',
@@ -394,6 +407,7 @@ def populate_api_routes(webapp, app):
 
     webapp.mapper.connect('/api/entry_points', action='index', controller="tool_entry_points")
     webapp.mapper.connect('/api/entry_points/{id:.+?}/access', action='access_entry_point', controller="tool_entry_points")
+    webapp.mapper.connect('/api/entry_points/{id:.+?}', action='stop_entry_point', controller="tool_entry_points", conditions={'method': ['DELETE']})
 
     webapp.mapper.connect('/api/dependency_resolvers/clean', action="clean", controller="tool_dependencies", conditions=dict(method=["POST"]))
     webapp.mapper.connect('/api/dependency_resolvers/dependency', action="manager_dependency", controller="tool_dependencies", conditions=dict(method=["GET"]))
@@ -431,7 +445,10 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/workflows/build_module', action='build_module', controller="workflows")
     webapp.mapper.connect('/api/workflows/menu', action='get_workflow_menu', controller="workflows", conditions=dict(method=["GET"]))
     webapp.mapper.connect('/api/workflows/menu', action='set_workflow_menu', controller="workflows", conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/workflows/{id}/refactor', action='refactor', controller="workflows", conditions=dict(method=["PUT"]))
     webapp.mapper.resource('workflow', 'workflows', path_prefix='/api')
+    webapp.mapper.connect('/api/licenses', controller='licenses', action='index')
+    webapp.mapper.connect('/api/licenses/{id}', controller='licenses', action='get')
     webapp.mapper.resource_with_deleted('history', 'histories', path_prefix='/api')
     webapp.mapper.connect('/api/histories/{history_id}/citations', action='citations', controller="histories")
     webapp.mapper.connect('/api/histories/{id}/sharing', action='sharing', controller="histories", conditions=dict(method=["GET", "POST"]))
@@ -616,7 +633,7 @@ def populate_api_routes(webapp, app):
         "usage": "_deprecated",
     }
     for noun, suffix in invoke_names.items():
-        name = "{}{}".format(noun, suffix)
+        name = f"{noun}{suffix}"
         webapp.mapper.connect(
             'list_workflow_%s' % name,
             '/api/workflows/{workflow_id}/%s' % noun,

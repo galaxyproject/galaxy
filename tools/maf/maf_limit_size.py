@@ -19,7 +19,7 @@ def __main__():
         max_size = sys.maxsize
     maf_writer = bx.align.maf.Writer(open(output_filename1, 'w'))
     try:
-        maf_reader = bx.align.maf.Reader(open(input_maf_filename, 'r'))
+        maf_reader = bx.align.maf.Reader(open(input_maf_filename))
     except Exception:
         print("Your MAF file appears to be malformed.", file=sys.stderr)
         sys.exit()

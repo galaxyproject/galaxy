@@ -23,14 +23,16 @@ BACKENDS = {
     'google': 'social_core.backends.google_openidconnect.GoogleOpenIdConnect',
     'globus': 'social_core.backends.globus.GlobusOpenIdConnect',
     'elixir': 'social_core.backends.elixir.ElixirOpenIdConnect',
-    'okta': 'social_core.backends.okta_openidconnect.OktaOpenIdConnect'
+    'okta': 'social_core.backends.okta_openidconnect.OktaOpenIdConnect',
+    'azure': 'social_core.backends.azuread_tenant.AzureADTenantOAuth2'
 }
 
 BACKENDS_NAME = {
     'google': 'google-openidconnect',
     'globus': 'globus',
     'elixir': 'elixir',
-    'okta': 'okta-openidconnect'
+    'okta': 'okta-openidconnect',
+    'azure': 'azuread-tenant-oauth2'
 }
 
 AUTH_PIPELINE = (
@@ -316,11 +318,11 @@ def contains_required_data(response=None, is_new=False, **kwargs):
         # sent back from the identity provider. PSA internally handles such
         # scenarios; however, this case is implemented to prevent uncaught
         # server-side errors.
-        raise MalformedContents(err_msg="`response` not found. {}".format(hint_msg))
+        raise MalformedContents(err_msg=f"`response` not found. {hint_msg}")
     if not response.get("id_token"):
         # This can happen if a non-OIDC compliant backend is used;
         # e.g., an OAuth2.0-based backend that only generates access token.
-        raise MalformedContents(err_msg="Missing identity token. {}".format(hint_msg))
+        raise MalformedContents(err_msg=f"Missing identity token. {hint_msg}")
     if is_new and not response.get("refresh_token"):
         # An identity provider (e.g., Google) sends a refresh token the first
         # time user consents Galaxy's access (i.e., the first time user logs in
@@ -331,7 +333,7 @@ def contains_required_data(response=None, is_new=False, **kwargs):
         # user has provided consent. This can also happen under dev efforts.
         # The solution is to revoke the consent by visiting the identity provider's
         # website, and then retry the login process.
-        raise MalformedContents(err_msg="Missing refresh token. {}".format(hint_msg))
+        raise MalformedContents(err_msg=f"Missing refresh token. {hint_msg}")
 
 
 def verify(strategy=None, response=None, details=None, **kwargs):
@@ -344,7 +346,7 @@ def verify(strategy=None, response=None, details=None, **kwargs):
 
     if provider.lower() == "gcp":
         result = requests.post(
-            "https://iam.googleapis.com/v1/projects/-/serviceAccounts/{}:getIamPolicy".format(endpoint),
+            f"https://iam.googleapis.com/v1/projects/-/serviceAccounts/{endpoint}:getIamPolicy",
             headers={
                 'Authorization': 'Bearer {}'.format(response.get("access_token")),
                 'Accept': 'application/json'})
@@ -364,7 +366,7 @@ def verify(strategy=None, response=None, details=None, **kwargs):
             # sensitive information that should not be exposed to users.
             raise Exception(res["error"]["message"])
     else:
-        raise Exception("`{}` is an unsupported secondary authorization provider, contact admin.".format(provider))
+        raise Exception(f"`{provider}` is an unsupported secondary authorization provider, contact admin.")
 
 
 def allowed_to_disconnect(name=None, user=None, user_storage=None, strategy=None,
@@ -414,7 +416,7 @@ def disconnect(name=None, user=None, user_storage=None, strategy=None,
     if user_authnz is None:
         return {'success': False, 'message': 'Not authenticated by any identity providers.'}
     # option A
-    strategy.trans.sa_session.delete(user_authnz)
+    sa_session.delete(user_authnz)
     # option B
     # user_authnz.extra_data = None
-    strategy.trans.sa_session.flush()
+    sa_session.flush()

@@ -60,7 +60,7 @@ def test_expunge_all():
     assert trans.sa_session.query(model.User).first().password == "bar2"
 
 
-class TestApp(object):
+class TestApp:
 
     def __init__(self):
         self.config = bunch.Bunch(

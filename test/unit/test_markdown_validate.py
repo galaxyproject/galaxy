@@ -212,3 +212,14 @@ history_dataset_link(  output = moo, pathx ="cow.png", label= "my label" )
 history_dataset_link(  output = moo, path ="cow.png", labelx= "my label" )
 ```
 """, at_line=2)
+
+    assert_markdown_valid("""
+```galaxy
+visualization(id=1)
+```
+""")
+    assert_markdown_valid("""
+```galaxy
+visualization(foo|bar=hello)
+```
+""")

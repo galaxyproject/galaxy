@@ -60,6 +60,10 @@ export default {
             default: "file",
             validator: (prop) => ["file", "directory"].includes(prop),
         },
+        requireWritable: {
+            type: Boolean,
+            default: false,
+        },
     },
     data() {
         return {
@@ -129,16 +133,19 @@ export default {
                 this.services
                     .getFileSources()
                     .then((items) => {
-                        this.items = items.map((item) => {
-                            return {
-                                id: item.id,
-                                label: item.label,
-                                details: item.doc,
-                                isLeaf: false,
-                                url: item.uri_root,
-                                labelTitle: item.uri_root,
-                            };
-                        });
+                        items = items
+                            .filter((item) => !this.requireWritable || item.writable)
+                            .map((item) => {
+                                return {
+                                    id: item.id,
+                                    label: item.label,
+                                    details: item.doc,
+                                    isLeaf: false,
+                                    url: item.uri_root,
+                                    labelTitle: item.uri_root,
+                                };
+                            });
+                        this.items = items;
                         this.formatRows();
                         this.optionsShow = true;
                         this.showTime = false;

@@ -6,7 +6,11 @@ from paste.httpexceptions import (
     HTTPBadRequest,
     HTTPForbidden
 )
-from sqlalchemy import and_
+from sqlalchemy import (
+    and_,
+    cast,
+    Integer,
+)
 
 from galaxy import (
     exceptions,
@@ -82,7 +86,8 @@ class ToolShedRepositoriesController(BaseAPIController):
             clause_list.append(self.app.install_model.ToolShedRepository.table.c.uninstalled == util.asbool(kwd.get('uninstalled')))
         tool_shed_repository_dicts = []
         query = trans.install_model.context.query(self.app.install_model.ToolShedRepository) \
-                                           .order_by(self.app.install_model.ToolShedRepository.table.c.name)
+                                           .order_by(self.app.install_model.ToolShedRepository.table.c.name) \
+                                           .order_by(cast(self.app.install_model.ToolShedRepository.ctx_rev, Integer).desc())
         if len(clause_list) > 0:
             query = query.filter(and_(*clause_list))
         for tool_shed_repository in query.all():
@@ -267,9 +272,9 @@ class ToolShedRepositoriesController(BaseAPIController):
         errors = irm.uninstall_repository(repository=repository, remove_from_disk=remove_from_disk)
         if not errors:
             action = 'removed' if remove_from_disk else 'deactivated'
-            return {'message': 'The repository named {} has been {}.'.format(repository.name, action)}
+            return {'message': f'The repository named {repository.name} has been {action}.'}
         else:
-            raise Exception('Attempting to uninstall tool dependencies for repository named {} resulted in errors: {}'.format(repository.name, errors))
+            raise Exception(f'Attempting to uninstall tool dependencies for repository named {repository.name} resulted in errors: {errors}')
 
     def __parse_repository_from_payload(self, payload, include_changeset=False):
         # Get the information about the repository to be installed from the payload.
@@ -382,7 +387,31 @@ class ToolShedRepositoriesController(BaseAPIController):
     def show(self, trans, id, **kwd):
         """
         GET /api/tool_shed_repositories/{encoded_tool_shed_repsository_id}
-        Display a dictionary containing information about a specified tool_shed_repository.
+        Display a dictionary containing information about a specified tool_shed_repository:
+        ```
+        {
+            id: (string) Galaxy ID
+            status: (string) Installation status
+            name: (string) Repository name
+            deleted: (bool) Repository deleted
+            ctx_rev: (int) Changeset revision number (0, 1, 2...)
+            error_message: (string) Installation error message
+            installed_changeset_revision: (string) Initially installed changeset revision. Used to construct path to repository within Galaxies filesystem. Does not change if a repository is updated.
+            tool_shed: (string) Repository toolshed hostname
+            dist_to_shed: (bool)
+            url: (string) API url of repository
+            uninstalled: (bool) Tool has been uninstalled
+            owner: (string) Repository owner within toolshed
+            changeset_revision: (string) Changeset revision of repository
+            include_datatypes: (bool) Repository includes installed datatypes
+            tool_shed_status: (dict) See https://github.com/galaxyproject/galaxy/issues/10453
+                latest_installable_revision: (string) Most recent version available on toolshed
+                revision_update: (string)
+                revision_upgrade: (string)
+                repository_deprecated: (string) Repository has been depreciated
+        }
+        ```
+
 
         :param id: the encoded id of the ToolShedRepository object
         """

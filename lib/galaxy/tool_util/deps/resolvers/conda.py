@@ -39,9 +39,8 @@ from ..conda_util import (
 DEFAULT_BASE_PATH_DIRECTORY = "_conda"
 DEFAULT_CONDARC_OVERRIDE = "_condarc"
 # Conda channel order from highest to lowest, following the one used in
-# https://github.com/bioconda/bioconda-recipes/blob/master/config.yml , but
-# adding `iuc` as first channel (for Galaxy-specific packages)
-DEFAULT_ENSURE_CHANNELS = "iuc,conda-forge,bioconda,defaults"
+# https://github.com/bioconda/bioconda-recipes/blob/master/config.yml
+DEFAULT_ENSURE_CHANNELS = "conda-forge,bioconda,defaults"
 CONDA_SOURCE_CMD = """[ "$(basename "$CONDA_DEFAULT_ENV")" = "$(basename '{environment_path}')" ] || {{
 MAX_TRIES=3
 COUNT=0
@@ -363,7 +362,7 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
                 conda_target, conda_context=self.conda_context
             )
         if not is_installed:
-            log.debug("Removing failed conda install of {}, version '{}'".format(name, version))
+            log.debug(f"Removing failed conda install of {name}, version '{version}'")
             cleanup_failed_install(conda_target, conda_context=self.conda_context)
 
         return is_installed

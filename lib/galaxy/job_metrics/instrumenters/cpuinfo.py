@@ -51,7 +51,7 @@ class CpuInfoPlugin(InstrumentPlugin):
                     # If verbose, dump information about each processor
                     # into database...
                     key, value = line.split(":", 1)
-                    key = "processor_{}_{}".format(current_processor, key.strip())
+                    key = f"processor_{current_processor}_{key.strip()}"
                     value = value
         properties["processor_count"] = processor_count
         return properties

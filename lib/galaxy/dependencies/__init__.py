@@ -3,7 +3,7 @@ Determine what optional dependencies are needed.
 """
 
 import sys
-from os.path import dirname, join
+from os.path import dirname, exists, join
 
 import pkg_resources
 import yaml
@@ -22,21 +22,24 @@ from galaxy.util.properties import (
 
 
 class ConditionalDependencies:
-    def __init__(self, config_file):
+    def __init__(self, config_file, config=None):
         self.config_file = config_file
-        self.config = None
         self.job_runners = []
         self.authenticators = []
         self.object_stores = []
+        self.file_sources = []
         self.conditional_reqs = []
         self.container_interface_types = []
         self.job_rule_modules = []
         self.error_report_modules = []
+        if config is None:
+            self.config = load_app_properties(config_file=self.config_file)
+        else:
+            self.config = config
         self.parse_configs()
         self.get_conditional_requirements()
 
     def parse_configs(self):
-        self.config = load_app_properties(config_file=self.config_file)
 
         def load_job_config_dict(job_conf_dict):
             for runner in job_conf_dict.get("runners"):
@@ -78,13 +81,34 @@ class ConditionalDependencies:
                 except OSError:
                     pass
 
-        object_store_conf_xml = self.config.get(
+        object_store_conf_path = self.config.get(
             "object_store_config_file",
             join(dirname(self.config_file), 'object_store_conf.xml'))
         try:
-            for store in parse_xml(object_store_conf_xml).iter('object_store'):
-                if 'type' in store.attrib:
-                    self.object_stores.append(store.attrib['type'])
+            if '.xml' in object_store_conf_path:
+                for store in parse_xml(object_store_conf_path).iter('object_store'):
+                    if 'type' in store.attrib:
+                        self.object_stores.append(store.attrib['type'])
+            else:
+                with open(object_store_conf_path) as f:
+                    job_conf_dict = yaml.safe_load(f)
+
+                def collect_types(from_dict):
+                    if not isinstance(from_dict, dict):
+                        return
+
+                    if 'type' in from_dict:
+                        self.object_stores.append(from_dict['type'])
+
+                    for value in from_dict.values():
+                        if isinstance(value, list):
+                            for val in value:
+                                collect_types(val)
+                        else:
+                            collect_types(value)
+
+                collect_types(job_conf_dict)
+
         except OSError:
             pass
 
@@ -117,6 +141,17 @@ class ConditionalDependencies:
                 self.error_report_modules = [er.get('type', None) for er in error_reporters]
         except OSError:
             pass
+
+        # Parse file sources config
+        file_sources_conf_yml = self.config.get(
+            "file_sources_config_file",
+            join(dirname(self.config_file), 'file_sources_conf.yml'))
+        if exists(file_sources_conf_yml):
+            with open(file_sources_conf_yml) as f:
+                file_sources_conf = yaml.safe_load(f)
+        else:
+            file_sources_conf = []
+        self.file_sources = [c.get('type', None) for c in file_sources_conf]
 
     def get_conditional_requirements(self):
         crfile = join(dirname(__file__), 'conditional-requirements.txt')
@@ -177,6 +212,12 @@ class ConditionalDependencies:
 
     def check_python_irodsclient(self):
         return 'irods' in self.object_stores
+
+    def check_fs_dropboxfs(self):
+        return 'dropbox' in self.file_sources
+
+    def check_fs_webdavfs(self):
+        return 'webdav' in self.file_sources
 
     def check_watchdog(self):
         install_set = {'auto', 'True', 'true', 'polling'}

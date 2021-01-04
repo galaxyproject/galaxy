@@ -147,7 +147,7 @@ export default {
             return `${this.stepStates.scheduled || 0} of ${this.stepCount} steps successfully scheduled.`;
         },
         jobStatesStr: function () {
-            let jobStr = `${this.jobStatesSummary.states()["ok"] || 0} of ${this.jobCount} jobs complete`;
+            let jobStr = `${this.jobStatesSummary.numTerminal()} of ${this.jobCount} jobs complete`;
             if (!this.invocationSchedulingTerminal) {
                 jobStr += " (total number of jobs will change until all steps fully scheduled)";
             }
@@ -161,18 +161,18 @@ export default {
     methods: {
         ...mapActions(["fetchInvocationForId", "fetchInvocationJobsSummaryForId"]),
         pollStepStatesUntilTerminal: function () {
-            clearInterval(this.stepStatesInterval);
-            if (!this.invocationSchedulingTerminal) {
-                this.fetchInvocationForId(this.invocationId);
-                this.stepStatesInterval = setInterval(this.pollStepStatesUntilTerminal, 3000);
-            }
+            this.fetchInvocationForId(this.invocationId).then((response) => {
+                if (!this.invocationSchedulingTerminal) {
+                    this.stepStatesInterval = setTimeout(this.pollStepStatesUntilTerminal, 3000);
+                }
+            });
         },
         pollJobStatesUntilTerminal: function () {
-            clearInterval(this.jobStatesInterval);
-            if (!this.jobStatesTerminal) {
-                this.fetchInvocationJobsSummaryForId(this.invocationId);
-                this.jobStatesInterval = setInterval(this.pollJobStatesUntilTerminal, 3000);
-            }
+            this.fetchInvocationJobsSummaryForId(this.invocationId).then((response) => {
+                if (!this.jobStatesTerminal) {
+                    this.jobStatesInterval = setTimeout(this.pollJobStatesUntilTerminal, 3000);
+                }
+            });
         },
         onError: function (e) {
             console.error(e);
@@ -182,8 +182,8 @@ export default {
         },
     },
     beforeDestroy: function () {
-        clearInterval(this.jobStatesInterval);
-        clearInterval(this.stepStatesInterval);
+        clearTimeout(this.jobStatesInterval);
+        clearTimeout(this.stepStatesInterval);
     },
 };
 </script>

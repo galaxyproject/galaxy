@@ -22,7 +22,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         self.unset_filter('free-text-search', self.history1_name)
         self.published_grid_search_for(self.history4_name)
 
-        self.assert_grid_histories_are(['No Items'])
+        self.assert_grid_histories_are([])
 
     @selenium_test
     def test_history_grid_search_advanced(self):
@@ -42,7 +42,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         self.unset_filter('name', self.history1_name)
 
         self.set_filter(name_filter_selector, self.history4_name)
-        self.assert_grid_histories_are(['No Items'])
+        self.assert_grid_histories_are([])
         self.unset_filter('name', self.history4_name)
 
         # Search by annotation
@@ -132,7 +132,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         actual_histories = self.get_histories()
 
         # Filter out histories created by other tests
-        all_histories = self.all_histories + ['No Items']
+        all_histories = self.all_histories + ['No items']
         actual_histories = [x for x in actual_histories if x in all_histories]
 
         if not sort_matters:
@@ -199,8 +199,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
 
     def publish_current_history(self):
         self.click_history_option('Share or Publish')
-        self.components.histories.sharing.make_accessible_and_publish.wait_for_and_click()
-        self.wait_for_selector_clickable('#disable_link_access_and_unpublish')
+        self.make_accessible_and_publishable()
 
     def navigate_to_published_histories_page(self):
         self.home()

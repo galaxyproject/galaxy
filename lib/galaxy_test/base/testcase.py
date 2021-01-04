@@ -1,8 +1,7 @@
-from __future__ import print_function
-
 import logging
 import os
 import unittest
+from typing import Optional
 
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy_test.base.env import setup_keep_outdir, target_url_parts
@@ -17,7 +16,7 @@ class FunctionalTestCase(unittest.TestCase):
     needs to be launched to run the test, this base class assumes a
     server is already running.
     """
-    galaxy_driver_class = None
+    galaxy_driver_class: Optional[type] = None
 
     def setUp(self):
         self.history_id = os.environ.get('GALAXY_TEST_HISTORY_ID', None)

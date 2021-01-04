@@ -18,7 +18,7 @@ class DataToolParameterTestCase(BaseParameterTestCase):
     def test_to_python_multi_hdas(self):
         hda1 = self._new_hda()
         hda2 = self._new_hda()
-        as_python = self.param.to_python("%s,%s" % (hda1.id, hda2.id), self.app)
+        as_python = self.param.to_python(f"{hda1.id},{hda2.id}", self.app)
         assert as_python == [hda1, hda2]
 
     def test_to_python_multi_none(self):
@@ -39,6 +39,7 @@ class DataToolParameterTestCase(BaseParameterTestCase):
         assert field['options']['hda'][1]['name'] == "hda1"
 
         hda2.extension = 'data'
+        hda2.conversion_destination = (False, None, None)
         field = self._simple_field()
         assert len(field['options']['hda']) == 1, field
         assert field['options']['hda'][0]['name'] == "hda1"
@@ -66,7 +67,7 @@ class DataToolParameterTestCase(BaseParameterTestCase):
     def test_field_implicit_conversion_new(self):
         hda1 = MockHistoryDatasetAssociation(name="hda1", id=1)
         hda1.extension = 'data'
-        hda1.conversion_destination = ("tabular", None)
+        hda1.conversion_destination = (False, "tabular", None)
         self.stub_active_datasets(hda1)
         field = self._simple_field()
         assert len(field['options']['hda']) == 1
@@ -76,7 +77,7 @@ class DataToolParameterTestCase(BaseParameterTestCase):
     def test_field_implicit_conversion_existing(self):
         hda1 = MockHistoryDatasetAssociation(name="hda1", id=1)
         hda1.extension = 'data'
-        hda1.conversion_destination = ("tabular", MockHistoryDatasetAssociation(name="hda1converted", id=2))
+        hda1.conversion_destination = (False, "tabular", MockHistoryDatasetAssociation(name="hda1converted", id=2))
         self.stub_active_datasets(hda1)
         field = self._simple_field()
         assert len(field['options']['hda']) == 1
@@ -125,14 +126,14 @@ class DataToolParameterTestCase(BaseParameterTestCase):
         hda1 = MockHistoryDatasetAssociation(name="hda1", id=1)
         hda1.extension = 'data'
         converted = MockHistoryDatasetAssociation(name="hda1converted", id=2)
-        hda1.conversion_destination = ("tabular", converted)
+        hda1.conversion_destination = (False, "tabular", converted)
         self.stub_active_datasets(hda1)
         assert converted == self.param.get_initial_value(self.trans, {})
 
     def test_get_initial_with_to_be_converted_data(self):
         hda1 = MockHistoryDatasetAssociation(name="hda1", id=1)
         hda1.extension = 'data'
-        hda1.conversion_destination = ("tabular", None)
+        hda1.conversion_destination = (False, "tabular", None)
         self.stub_active_datasets(hda1)
         assert hda1 == self.param.get_initial_value(self.trans, {}), hda1
 
@@ -145,7 +146,7 @@ class DataToolParameterTestCase(BaseParameterTestCase):
         return hda
 
     def setUp(self):
-        super(DataToolParameterTestCase, self).setUp()
+        super().setUp()
         self.test_history = model.History()
         self.app.model.context.add(self.test_history)
         self.app.model.context.flush()
@@ -177,7 +178,7 @@ class DataToolParameterTestCase(BaseParameterTestCase):
         return self._param
 
 
-class MockHistoryDatasetAssociation(object):
+class MockHistoryDatasetAssociation:
     """ Fake HistoryDatasetAssociation stubbed out for testing matching and
     stuff like that.
     """
@@ -190,7 +191,7 @@ class MockHistoryDatasetAssociation(object):
         self.deleted = False
         self.dataset = test_dataset
         self.visible = True
-        self.conversion_destination = (None, None)
+        self.conversion_destination = (True, None, None)
         self.extension = "txt"
         self.dbkey = "hg19"
         self.implicitly_converted_parent_datasets = False

@@ -180,6 +180,9 @@ class YamlToolSource(ToolSource):
     def parse_profile(self):
         return self.root_dict.get("profile", "16.04")
 
+    def parse_license(self):
+        return self.root_dict.get("license")
+
     def parse_interactivetool(self):
         return self.root_dict.get("entry_points", [])
 
@@ -339,7 +342,7 @@ class YamlInputSource(InputSource):
     def parse_static_options(self):
         static_options = list()
         input_dict = self.input_dict
-        for index, option in enumerate(input_dict.get("options", {})):
+        for option in input_dict.get("options", {}):
             value = option.get("value")
             label = option.get("label", value)
             selected = option.get("selected", False)

@@ -22,22 +22,22 @@
                     @onClick="onInsertModule"
                 />
                 <tool-section
+                    v-if="hasDataManagerSection"
                     :category="dataManagerSection"
                     :key="dataManagerSection.id"
                     :query-filter="query"
                     :disable-filter="true"
                     @onClick="onInsertTool"
                 />
-                <div class="toolMenu" id="workflow-tool-menu">
-                    <tool-section
-                        v-for="section in sections"
-                        :category="section"
-                        :query-filter="query"
-                        :key="section.id"
-                        @onClick="onInsertTool"
-                    />
-                </div>
                 <tool-section
+                    v-for="section in sections"
+                    :category="section"
+                    :query-filter="query"
+                    :key="section.id"
+                    @onClick="onInsertTool"
+                />
+                <tool-section
+                    v-if="hasWorkflowSection"
                     :category="workflowSection"
                     :key="workflowSection.name"
                     operation-icon="fa fa-files-o"
@@ -89,11 +89,17 @@ export default {
         },
     },
     computed: {
+        hasWorkflowSection() {
+            return this.workflows.length > 0;
+        },
         workflowSection() {
             return {
                 name: _l("Workflows"),
                 elems: this.workflows,
             };
+        },
+        hasDataManagerSection() {
+            return this.dataManagers.length > 0;
         },
         dataManagerSection() {
             return {

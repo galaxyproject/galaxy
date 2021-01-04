@@ -57,10 +57,10 @@ def in_workflow_dict(workflow_dict, exact_matches_checked, workflow_name):
 def make_same_length(list1, list2):
     # If either list is 1 item, we'll append to it until its length is the same as the other.
     if len(list1) == 1:
-        for i in range(1, len(list2)):
+        for _ in range(1, len(list2)):
             list1.append(list1[0])
     elif len(list2) == 1:
-        for i in range(1, len(list1)):
+        for _ in range(1, len(list1)):
             list2.append(list2[0])
     return list1, list2
 

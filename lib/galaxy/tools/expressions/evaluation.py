@@ -35,4 +35,5 @@ def evaluate(config, input):
         message = "Expression engine returned non-zero exit code on evaluation of\n%s%s%s" % args
         raise Exception(message)
 
-    return json.loads(stdoutdata.decode("utf-8"))
+    rval_raw = stdoutdata.decode("utf-8")
+    return json.loads(rval_raw)

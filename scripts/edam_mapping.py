@@ -11,8 +11,6 @@ run from the Galaxy root.
 
  % python script/edam_mapping.py > edam_mapping.tsv
 """
-from __future__ import absolute_import
-from __future__ import print_function
 
 import os
 import sys
@@ -59,4 +57,4 @@ for ext, edam_format in sorted(datatypes_registry.edam_formats.items()):
     edam_info = format_info[edam_format]
     edam_label = edam_info["label"]
     edam_definition = edam_info["definition"]
-    print("%s\t%s\t%s\t%s" % (ext, edam_format, edam_label, edam_definition))
+    print(f"{ext}\t{edam_format}\t{edam_label}\t{edam_definition}")

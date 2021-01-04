@@ -85,7 +85,7 @@ def _resource_parameters_by_group(trans, **kwds):
 # returns an array of parameters that a users set of permissions can access.
 def get_workflow_parameter_list(params, user_permissions):
     param_list = []
-    for param_name, param_elem in params.items():
+    for param_elem in params.values():
         attr = deepcopy(param_elem.attrib)
         if attr['name'] in user_permissions:
             # Allow 'select' type parameters to be used
@@ -168,7 +168,7 @@ def _import_resource_mapping_function(qualified_function_path):
     if hasattr(module, function_name):
         return getattr(module, function_name)
     else:
-        raise Exception("Failed to find workflow resource mapper function {}.{}".format(full_module_name, function_name))
+        raise Exception(f"Failed to find workflow resource mapper function {full_module_name}.{function_name}")
 
 
 def _null_mapper_function(*args, **kwds):

@@ -51,7 +51,7 @@ class BrewContext:
     def __init__(self, args=None):
         ensure_brew_on_path(args)
         raw_config = brew_execute(["config"])
-        config_lines = [l.strip().split(":", 1) for l in raw_config.split("\n") if l]
+        config_lines = [line.strip().split(":", 1) for line in raw_config.split("\n") if line]
         config = {p[0].strip(): p[1].strip() for p in config_lines}
         # unset if "/usr/local" -> https://github.com/Homebrew/homebrew/blob/master/Library/Homebrew/cmd/config.rb
         homebrew_prefix = config.get("HOMEBREW_PREFIX", "/usr/local")
@@ -163,7 +163,9 @@ class CommandLineException(Exception):
         return self.message
 
 
-def versioned_install(recipe_context, package=None, version=None, installed_deps=[]):
+def versioned_install(recipe_context, package=None, version=None, installed_deps=None):
+    if installed_deps is None:
+        installed_deps = []
     if package is None:
         package = recipe_context.recipe
         version = recipe_context.version
@@ -266,7 +268,7 @@ def load_versioned_deps(cellar_path, relaxed=None):
         if RELAXED:
             return []
         else:
-            raise OSError("Could not locate versioned receipt file: {}".format(v_metadata_path))
+            raise OSError(f"Could not locate versioned receipt file: {v_metadata_path}")
     with open(v_metadata_path) as f:
         metadata = json.load(f)
     return metadata['deps']
@@ -494,7 +496,7 @@ def brew_versions_info(package, tap_path):
 
     # TODO: Also use tags.
     stdout = brew_execute(["versions", package])
-    version_parts = [l for l in stdout.split("\n") if l and "git checkout" in l]
+    version_parts = [line for line in stdout.split("\n") if line and "git checkout" in line]
     version_parts = map(lambda l: WHITESPACE_PATTERN.split(l), version_parts)
     info = [(p[0], p[3], versioned(p[4])) for p in version_parts]
     return info

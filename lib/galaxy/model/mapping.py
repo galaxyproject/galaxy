@@ -42,7 +42,7 @@ from galaxy.model.custom_types import JSONType, MetadataType, TrimmedString, UUI
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
 from galaxy.model.security import GalaxyRBACAgent
-from galaxy.model.triggers import install_timestamp_triggers
+from galaxy.model.triggers import drop_timestamp_triggers
 from galaxy.model.view import HistoryDatasetCollectionJobStateSummary
 from galaxy.model.view.utils import install_views
 
@@ -76,6 +76,7 @@ model.User.table = Table(
     Column("deleted", Boolean, index=True, default=False),
     Column("purged", Boolean, index=True, default=False),
     Column("disk_usage", Numeric(15, 0), index=True),
+    # Column("person_metadata", JSONType),  # TODO: add persistent, configurable metadata rep for workflow creator
     Column("active", Boolean, index=True, default=True, nullable=False),
     Column("activation_token", TrimmedString(64), nullable=True, index=True))
 
@@ -332,14 +333,6 @@ model.ImplicitlyConvertedDatasetAssociation.table = Table(
     Column("deleted", Boolean, index=True, default=False),
     Column("metadata_safe", Boolean, index=True, default=True),
     Column("type", TrimmedString(255)))
-
-model.ValidationError.table = Table(
-    "validation_error", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("dataset_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
-    Column("message", TrimmedString(255)),
-    Column("err_type", TrimmedString(64)),
-    Column("attributes", TEXT))
 
 model.Group.table = Table(
     "galaxy_group", metadata,
@@ -1007,6 +1000,8 @@ model.Workflow.table = Table(
     Column("has_cycles", Boolean),
     Column("has_errors", Boolean),
     Column("reports_config", JSONType),
+    Column("creator_metadata", JSONType),
+    Column("license", TEXT),
     Column("uuid", UUIDType, nullable=True))
 
 model.WorkflowStep.table = Table(
@@ -1133,18 +1128,18 @@ model.WorkflowInvocationOutputDatasetAssociation.table = Table(
     "workflow_invocation_output_dataset_association", metadata,
     Column("id", Integer, primary_key=True),
     Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id"), index=True),
-    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id")),
+    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True),
     Column("dataset_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
-    Column("workflow_output_id", Integer, ForeignKey("workflow_output.id")),
+    Column("workflow_output_id", Integer, ForeignKey("workflow_output.id"), index=True),
 )
 
 model.WorkflowInvocationOutputDatasetCollectionAssociation.table = Table(
     "workflow_invocation_output_dataset_collection_association", metadata,
     Column("id", Integer, primary_key=True),
     Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id", name='fk_wiodca_wii'), index=True),
-    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id", name='fk_wiodca_wsi')),
+    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id", name='fk_wiodca_wsi'), index=True),
     Column("dataset_collection_id", Integer, ForeignKey("history_dataset_collection_association.id", name='fk_wiodca_dci'), index=True),
-    Column("workflow_output_id", Integer, ForeignKey("workflow_output.id", name='fk_wiodca_woi')),
+    Column("workflow_output_id", Integer, ForeignKey("workflow_output.id", name='fk_wiodca_woi'), index=True),
 )
 
 model.WorkflowInvocationOutputValue.table = Table(
@@ -1168,7 +1163,7 @@ model.WorkflowInvocationStepOutputDatasetCollectionAssociation.table = Table(
     "workflow_invocation_step_output_dataset_collection_association", metadata,
     Column("id", Integer, primary_key=True),
     Column("workflow_invocation_step_id", Integer, ForeignKey("workflow_invocation_step.id", name='fk_wisodca_wisi'), index=True),
-    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id", name='fk_wisodca_wsi')),
+    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id", name='fk_wisodca_wsi'), index=True),
     Column("dataset_collection_id", Integer, ForeignKey("history_dataset_collection_association.id", name='fk_wisodca_dci'), index=True),
     Column("output_name", String(255), nullable=True),
 )
@@ -1336,16 +1331,6 @@ model.HistoryTagAssociation.table = Table(
     "history_tag_association", metadata,
     Column("id", Integer, primary_key=True),
     Column("history_id", Integer, ForeignKey("history.id"), index=True),
-    Column("tag_id", Integer, ForeignKey("tag.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("user_tname", TrimmedString(255), index=True),
-    Column("value", TrimmedString(255), index=True),
-    Column("user_value", TrimmedString(255), index=True))
-
-model.DatasetTagAssociation.table = Table(
-    "dataset_tag_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("dataset_id", Integer, ForeignKey("dataset.id"), index=True),
     Column("tag_id", Integer, ForeignKey("tag.id"), index=True),
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
     Column("user_tname", TrimmedString(255), index=True),
@@ -1664,6 +1649,16 @@ def simple_mapping(model, **kwds):
 
 simple_mapping(model.WorkerProcess)
 
+
+# User tables.
+mapper(model.UserPreference, model.UserPreference.table, properties={})
+mapper(model.UserAction, model.UserAction.table, properties=dict(
+    # user=relation( model.User.mapper )
+    user=relation(model.User)
+))
+mapper(model.APIKeys, model.APIKeys.table, properties={})
+
+
 mapper(model.FormValues, model.FormValues.table, properties=dict(
     form_definition=relation(model.FormDefinition,
         primaryjoin=(model.FormValues.table.c.form_definition_id == model.FormDefinition.table.c.id))
@@ -1719,8 +1714,6 @@ mapper(model.CloudAuthz, model.CloudAuthz.table, properties=dict(
                    primaryjoin=(model.CloudAuthz.table.c.authn_id == model.UserAuthnzToken.table.c.id),
                    backref='cloudauthz')
 ))
-
-mapper(model.ValidationError, model.ValidationError.table)
 
 simple_mapping(model.DynamicTool)
 
@@ -1785,9 +1778,6 @@ simple_mapping(model.Dataset,
         primaryjoin=(
             (model.Dataset.table.c.id == model.LibraryDatasetDatasetAssociation.table.c.dataset_id) &
             (model.LibraryDatasetDatasetAssociation.table.c.deleted == false()))),
-    tags=relation(model.DatasetTagAssociation,
-        order_by=model.DatasetTagAssociation.table.c.id,
-        backref='datasets')
 )
 
 mapper(model.DatasetHash, model.DatasetHash.table, properties=dict(
@@ -1895,7 +1885,7 @@ mapper(model.History, model.History.table, properties=dict(
 # Set up proxy so that
 #   History.users_shared_with
 # returns a list of users that history is shared with.
-model.History.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')
+model.History.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')  # type: ignore
 
 mapper(model.HistoryUserShareAssociation, model.HistoryUserShareAssociation.table, properties=dict(
     user=relation(model.User, backref='histories_shared_by_others'),
@@ -1944,7 +1934,7 @@ mapper(model.PasswordResetToken, model.PasswordResetToken.table,
 
 # Set up proxy so that this syntax is possible:
 # <user_obj>.preferences[pref_name] = pref_value
-model.User.preferences = association_proxy('_preferences', 'value', creator=model.UserPreference)
+model.User.preferences = association_proxy('_preferences', 'value', creator=model.UserPreference)  # type: ignore
 
 mapper(model.Group, model.Group.table, properties=dict(
     users=relation(model.UserGroupAssociation)
@@ -2111,8 +2101,8 @@ mapper(model.LibraryFolderInfoAssociation, model.LibraryFolderInfoAssociation.ta
 mapper(model.LibraryDataset, model.LibraryDataset.table, properties=dict(
     folder=relation(model.LibraryFolder),
     library_dataset_dataset_association=relation(model.LibraryDatasetDatasetAssociation,
-        primaryjoin=(model.LibraryDataset.table.c.library_dataset_dataset_association_id ==
-                     model.LibraryDatasetDatasetAssociation.table.c.id)),
+        foreign_keys=model.LibraryDataset.table.c.library_dataset_dataset_association_id,
+        post_update=True),
     expired_datasets=relation(model.LibraryDatasetDatasetAssociation,
         foreign_keys=[model.LibraryDataset.table.c.id, model.LibraryDataset.table.c.library_dataset_dataset_association_id],
         primaryjoin=(
@@ -2127,7 +2117,7 @@ mapper(model.LibraryDataset, model.LibraryDataset.table, properties=dict(
 mapper(model.LibraryDatasetDatasetAssociation, model.LibraryDatasetDatasetAssociation.table, properties=dict(
     dataset=relation(model.Dataset),
     library_dataset=relation(model.LibraryDataset,
-    primaryjoin=(model.LibraryDatasetDatasetAssociation.table.c.library_dataset_id == model.LibraryDataset.table.c.id)),
+        foreign_keys=model.LibraryDatasetDatasetAssociation.table.c.library_dataset_id),
     # user=relation( model.User.mapper ),
     user=relation(model.User),
     copied_from_library_dataset_dataset_association=relation(model.LibraryDatasetDatasetAssociation,
@@ -2314,40 +2304,6 @@ mapper(model.PostJobAction, model.PostJobAction.table, properties=dict(
 mapper(model.PostJobActionAssociation, model.PostJobActionAssociation.table, properties=dict(
     job=relation(model.Job),
     post_job_action=relation(model.PostJobAction)
-))
-
-mapper(model.Job, model.Job.table, properties=dict(
-    # user=relation( model.User.mapper ),
-    user=relation(model.User),
-    galaxy_session=relation(model.GalaxySession),
-    history=relation(model.History, backref="jobs"),
-    library_folder=relation(model.LibraryFolder, lazy=True),
-    parameters=relation(model.JobParameter, lazy=True),
-    input_datasets=relation(model.JobToInputDatasetAssociation),
-    input_dataset_collections=relation(model.JobToInputDatasetCollectionAssociation, lazy=True),
-    input_dataset_collection_elements=relation(model.JobToInputDatasetCollectionElementAssociation, lazy=True),
-    output_datasets=relation(model.JobToOutputDatasetAssociation, lazy=True),
-    any_output_dataset_deleted=column_property(
-        exists([model.HistoryDatasetAssociation],
-               and_(model.Job.table.c.id == model.JobToOutputDatasetAssociation.table.c.job_id,
-                    model.HistoryDatasetAssociation.table.c.id == model.JobToOutputDatasetAssociation.table.c.dataset_id,
-                    model.HistoryDatasetAssociation.table.c.deleted == true())
-               )
-    ),
-    any_output_dataset_collection_instances_deleted=column_property(
-        exists([model.HistoryDatasetCollectionAssociation.table.c.id],
-               and_(model.Job.table.c.id == model.JobToOutputDatasetCollectionAssociation.table.c.job_id,
-                    model.HistoryDatasetCollectionAssociation.table.c.id == model.JobToOutputDatasetCollectionAssociation.table.c.dataset_collection_id,
-                    model.HistoryDatasetCollectionAssociation.table.c.deleted == true())
-               )
-    ),
-    output_dataset_collection_instances=relation(model.JobToOutputDatasetCollectionAssociation, lazy=True),
-    output_dataset_collections=relation(model.JobToImplicitOutputDatasetCollectionAssociation, lazy=True),
-    post_job_actions=relation(model.PostJobActionAssociation, lazy=False),
-    input_library_datasets=relation(model.JobToInputLibraryDatasetAssociation),
-    output_library_datasets=relation(model.JobToOutputLibraryDatasetAssociation, lazy=True),
-    external_output_metadata=relation(model.JobExternalOutputMetadata, lazy=True),
-    tasks=relation(model.Task)
 ))
 
 mapper(model.Task, model.Task.table, properties=dict(
@@ -2546,7 +2502,7 @@ mapper(model.StoredWorkflow, model.StoredWorkflow.table, properties=dict(
 # Set up proxy so that
 #   StoredWorkflow.users_shared_with
 # returns a list of users that workflow is shared with.
-model.StoredWorkflow.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')
+model.StoredWorkflow.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')  # type: ignore
 
 mapper(model.StoredWorkflowUserShareAssociation, model.StoredWorkflowUserShareAssociation.table, properties=dict(
     user=relation(model.User,
@@ -2648,6 +2604,14 @@ simple_mapping(
 simple_mapping(
     model.WorkflowInvocationOutputValue,
     workflow_invocation=relation(model.WorkflowInvocation, backref="output_values"),
+    workflow_invocation_step=relation(model.WorkflowInvocationStep,
+        foreign_keys=[model.WorkflowInvocationStep.table.c.workflow_invocation_id, model.WorkflowInvocationStep.table.c.workflow_step_id],
+        primaryjoin=and_(
+            model.WorkflowInvocationStep.table.c.workflow_invocation_id == model.WorkflowInvocationOutputValue.table.c.workflow_invocation_id,
+            model.WorkflowInvocationStep.table.c.workflow_step_id == model.WorkflowInvocationOutputValue.table.c.workflow_step_id,
+        ),
+        backref='output_value'
+    ),
     workflow_step=relation(model.WorkflowStep),
     workflow_output=relation(model.WorkflowOutput),
 )
@@ -2697,7 +2661,7 @@ mapper(model.Page, model.Page.table, properties=dict(
 # Set up proxy so that
 #   Page.users_shared_with
 # returns a list of users that page is shared with.
-model.Page.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')
+model.Page.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')  # type: ignore
 
 mapper(model.PageUserShareAssociation, model.PageUserShareAssociation.table,
        properties=dict(user=relation(model.User, backref='pages_shared_by_others'),
@@ -2733,7 +2697,7 @@ mapper(model.Visualization, model.Visualization.table, properties=dict(
 # Set up proxy so that
 #   Visualization.users_shared_with
 # returns a list of users that visualization is shared with.
-model.Visualization.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')
+model.Visualization.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')  # type: ignore
 
 mapper(model.VisualizationUserShareAssociation, model.VisualizationUserShareAssociation.table, properties=dict(
     user=relation(model.User,
@@ -2752,7 +2716,6 @@ def tag_mapping(tag_association_class, backref_name):
 
 
 tag_mapping(model.HistoryTagAssociation, "tagged_histories")
-tag_mapping(model.DatasetTagAssociation, "tagged_datasets")
 tag_mapping(model.HistoryDatasetAssociationTagAssociation, "tagged_history_dataset_associations")
 tag_mapping(model.LibraryDatasetDatasetAssociationTagAssociation, "tagged_library_dataset_dataset_associations")
 tag_mapping(model.PageTagAssociation, "tagged_pages")
@@ -2798,6 +2761,41 @@ rating_mapping(model.HistoryDatasetCollectionRatingAssociation,
 rating_mapping(model.LibraryDatasetCollectionRatingAssociation,
     libary_dataset_collection=model.LibraryDatasetCollectionAssociation)
 
+
+mapper(model.Job, model.Job.table, properties=dict(
+    # user=relation( model.User.mapper ),
+    user=relation(model.User),
+    galaxy_session=relation(model.GalaxySession),
+    history=relation(model.History, backref="jobs"),
+    library_folder=relation(model.LibraryFolder, lazy=True),
+    parameters=relation(model.JobParameter, lazy=True),
+    input_datasets=relation(model.JobToInputDatasetAssociation),
+    input_dataset_collections=relation(model.JobToInputDatasetCollectionAssociation, lazy=True),
+    input_dataset_collection_elements=relation(model.JobToInputDatasetCollectionElementAssociation, lazy=True),
+    output_datasets=relation(model.JobToOutputDatasetAssociation, lazy=True),
+    output_dataset_collection_instances=relation(model.JobToOutputDatasetCollectionAssociation, lazy=True),
+    output_dataset_collections=relation(model.JobToImplicitOutputDatasetCollectionAssociation, lazy=True),
+    post_job_actions=relation(model.PostJobActionAssociation, lazy=False),
+    input_library_datasets=relation(model.JobToInputLibraryDatasetAssociation),
+    output_library_datasets=relation(model.JobToOutputLibraryDatasetAssociation, lazy=True),
+    external_output_metadata=relation(model.JobExternalOutputMetadata, lazy=True),
+    tasks=relation(model.Task)
+))
+model.Job.any_output_dataset_deleted = column_property(  # type: ignore
+    exists([model.HistoryDatasetAssociation],
+           and_(model.Job.table.c.id == model.JobToOutputDatasetAssociation.table.c.job_id,
+                model.HistoryDatasetAssociation.table.c.id == model.JobToOutputDatasetAssociation.table.c.dataset_id,
+                model.HistoryDatasetAssociation.table.c.deleted == true())
+           )
+)
+model.Job.any_output_dataset_collection_instances_deleted = column_property(  # type: ignore
+    exists([model.HistoryDatasetCollectionAssociation.table.c.id],
+           and_(model.Job.table.c.id == model.JobToOutputDatasetCollectionAssociation.table.c.job_id,
+                model.HistoryDatasetCollectionAssociation.table.c.id == model.JobToOutputDatasetCollectionAssociation.table.c.dataset_collection_id,
+                model.HistoryDatasetCollectionAssociation.table.c.deleted == true())
+           )
+)
+
 # Data Manager tables
 mapper(model.DataManagerHistoryAssociation, model.DataManagerHistoryAssociation.table, properties=dict(
     history=relation(model.History),
@@ -2810,14 +2808,6 @@ mapper(model.DataManagerJobAssociation, model.DataManagerJobAssociation.table, p
         backref=backref('data_manager_association', uselist=False),
         uselist=False)
 ))
-
-# User tables.
-mapper(model.UserPreference, model.UserPreference.table, properties={})
-mapper(model.UserAction, model.UserAction.table, properties=dict(
-    # user=relation( model.User.mapper )
-    user=relation(model.User)
-))
-mapper(model.APIKeys, model.APIKeys.table, properties={})
 
 # model.HistoryDatasetAssociation.mapper.add_property( "creating_job_associations",
 #     relation( model.JobToOutputDatasetAssociation ) )
@@ -2860,7 +2850,7 @@ def db_next_hid(self, n=1):
         raise
 
 
-model.History._next_hid = db_next_hid
+model.History._next_hid = db_next_hid  # type: ignore
 
 
 def _workflow_invocation_update(self):
@@ -2871,7 +2861,7 @@ def _workflow_invocation_update(self):
     session.execute(stmt)
 
 
-model.WorkflowInvocation.update = _workflow_invocation_update
+model.WorkflowInvocation.update = _workflow_invocation_update  # type: ignore
 
 
 def init(file_path, url, engine_options=None, create_tables=False, map_install_models=False,
@@ -2904,9 +2894,11 @@ def init(file_path, url, engine_options=None, create_tables=False, map_install_m
     # Create tables if needed
     if create_tables:
         metadata.create_all()
-        install_timestamp_triggers(engine)
         install_views(engine)
         # metadata.engine.commit()
+    else:
+        # TODO: replace this in 21.01 with a migration.
+        drop_timestamp_triggers(engine)
 
     result.create_tables = create_tables
     # load local galaxy security policy

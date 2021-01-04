@@ -4,7 +4,9 @@ Unit tests for base DataProviders.
 """
 import logging
 import unittest
+from typing import Type
 
+from galaxy.datatypes.dataproviders import base
 from galaxy.datatypes.dataproviders import line
 from . import test_base_dataproviders
 
@@ -13,7 +15,7 @@ log = logging.getLogger(__name__)
 
 # TODO: TestCase hierarchy is a bit of mess here.
 class Test_FilteredLineDataProvider(test_base_dataproviders.Test_FilteredDataProvider):
-    provider_class = line.FilteredLineDataProvider
+    provider_class: Type[base.DataProvider] = line.FilteredLineDataProvider
     default_file_contents = """
             # this should be stripped out
             One

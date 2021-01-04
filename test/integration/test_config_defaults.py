@@ -147,7 +147,6 @@ CUSTOM = {
     'tool_filters': listify,
     'tool_label_filters': listify,
     'tool_section_filters': listify,
-    'persistent_communication_rooms': listify,
 }
 
 
@@ -260,8 +259,9 @@ def get_config_data():
 
     create_driver()  # create + setup DRIVER
     parent_dirs = load_parent_dirs()  # called after DRIVER is setup
-    items = ((k, v) for k, v in DRIVER.app.config.schema.app_schema.items() if k not in DO_NOT_TEST)
-    for key, data in items:
+    for key, data in DRIVER.app.config.schema.app_schema.items():
+        if key in DO_NOT_TEST:
+            continue
         expected_value = get_expected(key, data, parent_dirs)
         loaded_value = getattr(DRIVER.app.config, key)
         data = OptionData(key=key, expected=expected_value, loaded=loaded_value)  # passed to test
@@ -269,8 +269,7 @@ def get_config_data():
 
 
 def get_path_data():
-    for key in PATH_CONFIG_PROPERTIES:
-        yield key
+    yield from PATH_CONFIG_PROPERTIES
 
 
 def get_key(option_data):

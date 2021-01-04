@@ -1,13 +1,12 @@
 import flushPromises from "flush-promises";
-import { shallowMount, createLocalVue } from "@vue/test-utils";
+import { shallowMount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 
 import { default as CloudAuth } from "./CloudAuth";
 import CloudAuthItem from "./CloudAuthItem";
 
 import _l from "utils/localization";
 import BootstrapVue from "bootstrap-vue";
-
-import { getNewAttachNode } from "jest/helpers";
 
 jest.mock("./model/service", () => ({
     listCredentials: async () => {
@@ -17,7 +16,7 @@ jest.mock("./model/service", () => ({
     },
 }));
 
-const localVue = createLocalVue();
+const localVue = getLocalVue();
 localVue.use(BootstrapVue);
 localVue.filter("localize", (value) => _l(value));
 
@@ -25,7 +24,7 @@ describe("CloudAuth component", () => {
     let wrapper;
 
     beforeEach(async () => {
-        wrapper = shallowMount(CloudAuth, { localVue, attachTo: getNewAttachNode() });
+        wrapper = shallowMount(CloudAuth, { localVue });
         await flushPromises();
     });
 

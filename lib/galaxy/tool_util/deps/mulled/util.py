@@ -32,9 +32,9 @@ def create_repository(namespace, repo_name, oauth_token):
     requests.post("https://quay.io/api/v1/repository", json=data, headers=headers, timeout=QUAY_IO_TIMEOUT)
 
 
-def quay_versions(namespace, pkg_name):
+def quay_versions(namespace, pkg_name, session=None):
     """Get all version tags for a Docker image stored on quay.io for supplied package name."""
-    data = quay_repository(namespace, pkg_name)
+    data = quay_repository(namespace, pkg_name, session=session)
 
     if 'error_type' in data and data['error_type'] == "invalid_token":
         return []
@@ -45,11 +45,13 @@ def quay_versions(namespace, pkg_name):
     return [tag for tag in data['tags'].keys() if tag != 'latest']
 
 
-def quay_repository(namespace, pkg_name):
+def quay_repository(namespace, pkg_name, session=None):
     assert namespace is not None
     assert pkg_name is not None
-    url = 'https://quay.io/api/v1/repository/{}/{}'.format(namespace, pkg_name)
-    response = requests.get(url, timeout=QUAY_IO_TIMEOUT)
+    url = f'https://quay.io/api/v1/repository/{namespace}/{pkg_name}'
+    if not session:
+        session = requests.session()
+    response = session.get(url, timeout=QUAY_IO_TIMEOUT)
     data = response.json()
     return data
 
@@ -74,7 +76,7 @@ def _namespace_has_repo_name(namespace, repo_name, resolution_cache):
     return repo_name in repo_names
 
 
-def mulled_tags_for(namespace, image, tag_prefix=None, resolution_cache=None):
+def mulled_tags_for(namespace, image, tag_prefix=None, resolution_cache=None, session=None):
     """Fetch remote tags available for supplied image name.
 
     The result will be sorted so newest tags are first.
@@ -83,7 +85,7 @@ def mulled_tags_for(namespace, image, tag_prefix=None, resolution_cache=None):
         # Following check is pretty expensive against biocontainers... don't even bother doing it
         # if can't cache the response.
         if not _namespace_has_repo_name(namespace, image, resolution_cache):
-            log.debug("skipping mulled_tags_for [%s] no repository" % image)
+            log.info("skipping mulled_tags_for [%s] no repository" % image)
             return []
 
     cache_key = "galaxy.tool_util.deps.container_resolvers.mulled.util:tag_cache"
@@ -101,7 +103,7 @@ def mulled_tags_for(namespace, image, tag_prefix=None, resolution_cache=None):
             tags_cached = True
 
     if not tags_cached:
-        tags = quay_versions(namespace, image)
+        tags = quay_versions(namespace, image, session)
         tag_cache[namespace][image] = tags
 
     if tag_prefix is not None:
@@ -117,14 +119,22 @@ def split_tag(tag):
 
 def parse_tag(tag):
     """Decompose tag of mulled images into version, build string and build number."""
-    version = tag
+    version = tag.rsplit(':')[-1]
     build_string = "-1"
-    if '--' in tag:
-        version, build_string = tag.rsplit('--', 1)
-    elif '-' in tag:
+    build_number = -1
+    match = BUILD_NUMBER_REGEX.search(version)
+    if match:
+        build_number = int(match.group(0))
+    if '--' in version:
+        version, build_string = version.rsplit('--', 1)
+    elif '-' in version:
         # Should be mulled multi-container image tag
-        version, build_string = tag.rsplit('-', 1)
-    build_number = int(BUILD_NUMBER_REGEX.search(tag).group(0))
+        version, build_string = version.rsplit('-', 1)
+    else:
+        # We don't have a build number, and the BUILD_NUMBER_REGEX above is only accurate for build strings,
+        # so set build number to -1. Any matching image:version combination with a build number
+        # will be considered newer.
+        build_number = -1
     return PARSED_TAG(tag=tag,
                       version=packaging.version.parse(version),
                       build_string=packaging.version.parse(build_string),
@@ -136,7 +146,7 @@ def version_sorted(elements):
     elements = (parse_tag(tag) for tag in elements)
     elements = sorted(elements, key=lambda tag: tag.build_string, reverse=True)
     elements = sorted(elements, key=lambda tag: tag.build_number, reverse=True)
-    elements = sorted(elements, key=lambda tag: tag.version)
+    elements = sorted(elements, key=lambda tag: tag.version, reverse=True)
     return [e.tag for e in elements]
 
 
@@ -150,7 +160,8 @@ def build_target(package_name, version=None, build=None, tag=None):
         assert build is None
         version, build = split_tag(tag)
 
-    return Target(package_name, version, build, package_name)
+    # conda package and quay image names are lowercase
+    return Target(package_name.lower(), version, build, package_name)
 
 
 def conda_build_target_str(target):
@@ -176,7 +187,7 @@ def _simple_image_name(targets, image_build=None):
         suffix += ":%s" % target.version
         if build is not None:
             suffix += "--%s" % build
-    return "{}{}".format(target.package_name, suffix)
+    return f"{target.package_name}{suffix}"
 
 
 def v1_image_name(targets, image_build=None, name_override=None):
@@ -213,7 +224,7 @@ def v1_image_name(targets, image_build=None, name_override=None):
         m = hashlib.sha1()
         m.update(requirements_buffer.encode())
         suffix = "" if not image_build else ":%s" % image_build
-        return "mulled-v1-{}{}".format(m.hexdigest(), suffix)
+        return f"mulled-v1-{m.hexdigest()}{suffix}"
 
 
 def v2_image_name(targets, image_build=None, name_override=None):
@@ -279,8 +290,8 @@ def v2_image_name(targets, image_build=None, name_override=None):
             build_suffix = image_build
         suffix = ""
         if version_hash_str or build_suffix:
-            suffix = ":{}{}".format(version_hash_str, build_suffix)
-        return "mulled-v2-{}{}".format(package_hash.hexdigest(), suffix)
+            suffix = f":{version_hash_str}{build_suffix}"
+        return f"mulled-v2-{package_hash.hexdigest()}{suffix}"
 
 
 def get_file_from_recipe_url(url):

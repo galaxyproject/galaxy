@@ -1,6 +1,35 @@
 <template>
-    <div class="unified-panel-body">
-        <textarea name="page_content" :val="content"></textarea>
+    <div>
+        <div class="unified-panel-header" unselectable="on">
+            <div class="unified-panel-header-inner">
+                <div class="panel-header-buttons">
+                    <b-button
+                        id="save-button"
+                        title="Save"
+                        variant="link"
+                        role="button"
+                        v-b-tooltip.hover.bottom
+                        @click="saveContent(false)"
+                    >
+                        <span class="fa fa-save" />
+                    </b-button>
+                    <b-button
+                        id="view-button"
+                        title="Save & View"
+                        variant="link"
+                        role="button"
+                        v-b-tooltip.hover.bottom
+                        @click="saveContent(true)"
+                    >
+                        <span class="fa fa-eye" />
+                    </b-button>
+                </div>
+                {{ title }}
+            </div>
+        </div>
+        <div class="unified-panel-body">
+            <textarea name="page_content" :val="content"></textarea>
+        </div>
     </div>
 </template>
 
@@ -9,6 +38,7 @@ import $ from "jquery";
 import _l from "utils/localization";
 
 import GridView from "mvc/grid/grid-view";
+import { Toast } from "ui/toast";
 import { show_modal, hide_modal } from "layout/modal";
 import { make_popupmenu } from "ui/popupmenu";
 import { getGalaxyInstance } from "app";
@@ -647,8 +677,17 @@ export default {
             required: true,
             type: String,
         },
+        publicUrl: {
+            required: true,
+            type: String,
+        },
+        title: {
+            type: String,
+            default: null,
+        },
         content: {
             type: String,
+            default: null,
         },
     },
     created: function () {
@@ -657,8 +696,16 @@ export default {
         });
     },
     methods: {
-        saveContent: function () {
-            save(this.pageId, editor.xhtml());
+        saveContent(showResult) {
+            save(this.pageId, editor.xhtml(), !showResult)
+                .then(() => {
+                    if (showResult) {
+                        window.location = `${getAppRoot()}${this.publicUrl}`;
+                    }
+                })
+                .catch((error) => {
+                    Toast.error(`Failed to save page: ${error}`);
+                });
         },
     },
 };

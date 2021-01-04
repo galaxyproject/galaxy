@@ -259,7 +259,7 @@ export default {
             return $(this.$refs.uploadTable);
         },
         extensionDetails(extension) {
-            return findExtension(this.effectiveExtensions, extension);
+            return findExtension(this.app.effectiveExtensions, extension);
         },
         initExtensionInfo() {
             $(this.$refs.footerExtensionInfo)

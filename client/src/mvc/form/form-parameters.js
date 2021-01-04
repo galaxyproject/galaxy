@@ -10,6 +10,7 @@ import SelectContent from "mvc/ui/ui-select-content";
 import SelectLibrary from "mvc/ui/ui-select-library";
 import SelectFtp from "mvc/ui/ui-select-ftp";
 import RulesEdit from "mvc/ui/ui-rules-edit";
+import FileSource from "mvc/ui/ui-file-source";
 import ColorPicker from "mvc/ui/ui-color-picker";
 import DataPicker from "mvc/ui/ui-data-picker";
 
@@ -37,6 +38,7 @@ export default Backbone.Model.extend({
         ftpfile: "_fieldFtp",
         upload: "_fieldUpload",
         rules: "_fieldRulesEdit",
+        directory_uri: "_fieldDirectoryUri",
         data_dialog: "_fieldDialog",
     },
 
@@ -191,12 +193,8 @@ export default Backbone.Model.extend({
 
     /** Boolean field */
     _fieldBoolean: function (input_def) {
-        return new Ui.RadioButton.View({
+        return new Ui.Switch({
             id: `field-${input_def.id}`,
-            data: [
-                { label: "Yes", value: "true" },
-                { label: "No", value: "false" },
-            ],
             onchange: input_def.onchange,
         });
     },
@@ -235,6 +233,14 @@ export default Backbone.Model.extend({
             optional: input_def.optional,
             multiple: input_def.multiple,
             onchange: input_def.onchange,
+        });
+    },
+
+    _fieldDirectoryUri: function (input_def) {
+        return new FileSource.View({
+            id: `field-${input_def.id}`,
+            onchange: input_def.onchange,
+            target: input_def.target,
         });
     },
 

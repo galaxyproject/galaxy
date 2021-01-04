@@ -5,10 +5,15 @@ into Galaxy from the Tool Shed.
 import json
 import logging
 import os
-
-from six.moves.urllib.error import HTTPError
-from six.moves.urllib.parse import urlencode, urlparse
-from six.moves.urllib.request import Request, urlopen
+from urllib.error import HTTPError
+from urllib.parse import (
+    urlencode,
+    urlparse,
+)
+from urllib.request import (
+    Request,
+    urlopen,
+)
 
 from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
 from galaxy.tool_shed.util import repository_util
@@ -43,7 +48,7 @@ class RepositoryDependencyInstallManager:
         install_model = self.app.install_model
         log.debug("Building repository dependency relationships...")
         for repo_info_dict in repo_info_dicts:
-            for name, repo_info_tuple in repo_info_dict.items():
+            for repo_info_tuple in repo_info_dict.values():
                 description, \
                     repository_clone_url, \
                     changeset_revision, \

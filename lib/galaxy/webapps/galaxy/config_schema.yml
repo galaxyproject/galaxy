@@ -195,7 +195,9 @@ mapping:
         required: false
         desc: |
           Where dataset files are stored. It must be accessible at the same path on any cluster
-          nodes that will run Galaxy jobs, unless using Pulsar.
+          nodes that will run Galaxy jobs, unless using Pulsar. The default value has been changed
+          from 'files' to 'objects' as of 20.05; however, Galaxy will first check if the 'files'
+          directory exists before using 'objects' as the default.
 
       new_file_path:
         type: str
@@ -329,7 +331,7 @@ mapping:
 
       conda_ensure_channels:
         type: str
-        default: iuc,conda-forge,bioconda,defaults
+        default: conda-forge,bioconda,defaults
         required: false
         desc: |
           conda channels to enable by default
@@ -468,21 +470,6 @@ mapping:
           Monitor the interactive tours directory specified in the 'tour_config_dir' option. If
           changes are found, modified tours are automatically reloaded. Takes the same values as the
           'watch_tools' option.
-
-      legacy_eager_objectstore_initialization:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          As of 18.09, Galaxy defaults to setting up the object store configuration
-          for output datasets during the job queue step in job handlers. This should generally
-          provide for more robust job submission, more configurability, and a better
-          user experience but may in some cases slightly slow down the job handler job
-          setup process. On the off chance that an admin would like to or need to optimize job
-          handlers at the expense of user experience and web handling this option will remain
-          for some time by setting this option to true. This behavior however should be
-          considered deprecated and this option will likely be removed in future versions of
-          Galaxy. For more information see https://github.com/galaxyproject/galaxy/issues/6513.
 
       file_sources_config_file:
         type: str
@@ -874,7 +861,9 @@ mapping:
           What Dataset attribute is used to reference files in an ObjectStore implementation,
           this can be 'uuid' or 'id'. The default will depend on how the object store is configured,
           starting with 20.05 Galaxy will try to default to 'uuid' if it can be sure this
-          is a new Galaxy instance - but the default will be 'id' in many cases.
+          is a new Galaxy instance - but the default will be 'id' in many cases. In particular,
+          if the name of the directory set in <file_path> is `objects`, the default will be set
+          to 'uuid', otherwise it will be 'id'.
 
       smtp_server:
         type: str
@@ -933,9 +922,9 @@ mapping:
         required: false
         desc: |
           Email address to use in the 'From' field when sending emails for
-          account activations, workflow step notifications and password resets.
-          We recommend using string in the following format:
-          Galaxy Project <galaxy-no-reply@example.com>
+          account activations, workflow step notifications, password resets, and
+          tool error reports.  We recommend using a string in the following format:
+          Galaxy Project <galaxy-no-reply@example.com>.
           If not configured, '<galaxy-no-reply@HOSTNAME>' will be used.
 
       instance_resource_url:
@@ -1082,13 +1071,6 @@ mapping:
           Galaxy server, but contains a redirect to a third-party server, tricking a
           Galaxy user to access said site.
 
-      interactivetools_enable:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Enable InteractiveTools.
-
       aws_estimate:
         type: bool
         default: false
@@ -1097,6 +1079,13 @@ mapping:
           This flag enables an AWS cost estimate for every job based on their runtime matrices.
           CPU, RAM and runtime usage is mapped against AWS pricing table.
           Please note, that those numbers are only estimates.
+
+      interactivetools_enable:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enable InteractiveTools.
 
       interactivetools_proxy_host:
         type: str
@@ -1110,6 +1099,17 @@ mapping:
         path_resolves_to: data_dir
         desc: |
           Map for interactivetool proxy.
+
+      retry_interactivetool_metadata_internally:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          Galaxy Interactive Tools (GxITs) can be stopped from within the Galaxy
+          interface, killing the GxIT job without completing its metadata setting post-job
+          steps. In such a case it may be desirable to set metadata on job outputs
+          internally (in the Galaxy job handler process). The default is is the value of
+          `retry_metadata_internally`, which defaults to `true`.
 
       visualizations_visible:
         type: bool
@@ -1246,6 +1246,19 @@ mapping:
         desc: |
           The URL linked by the "Galaxy/brand" text.
 
+      logo_src:
+        type: str
+        default: /static/favicon.png
+        required: false
+        desc: |
+          The brand image source.
+
+      logo_src_secondary:
+        type: str
+        required: false
+        desc: |
+          The custom brand image source.
+
       helpsite_url:
         type: str
         required: false
@@ -1258,6 +1271,13 @@ mapping:
         required: false
         desc: |
           The URL linked by the "Wiki" link in the "Help" menu.
+
+      quota_url:
+        type: str
+        default: https://galaxyproject.org/support/account-quotas/
+        required: false
+        desc: |
+          The URL linked for quota information in the UI.
 
       support_url:
         type: str
@@ -1421,8 +1441,21 @@ mapping:
         required: false
         desc: |
           If using compression in the upstream proxy server, use this option to disable
-          gzipping of library .tar.gz and .zip archives, since the proxy server will do
-          it faster on the fly.
+          gzipping of dataset collection and library archives, since the upstream server
+          will do it faster on the fly. To enable compression add ``application/zip``
+          to the proxy's compressable mimetypes.
+
+      upstream_mod_zip:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          If using the mod-zip module in nginx, use this option to assemble
+          zip archives in nginx. This is preferable over the upstream_gzip option
+          as Galaxy does not need to serve the archive.
+          Requires setting up internal nginx locations to all paths that can be archived.
+          See https://docs.galaxyproject.org/en/master/admin/nginx.html#creating-archives-with-mod-zip
+          for details.
 
       x_frame_options:
         type: str
@@ -1731,6 +1764,12 @@ mapping:
           causes the files used by PBS/SGE (submission script, output, and error)
           to remain on disk after the job is complete.
 
+          In addition, this will set uWSGI's `honour-stdin` option to `true`;
+          thus, preventing uWSGI from remapping stdin to `/dev/null` and
+          enabling debugging with tools like pdb. To keep uWSGI's default
+          setting, set `honor-stdin` to `false` in the `uwsgi` section of this
+          configuration file.
+
       use_lint:
         type: bool
         default: false
@@ -1936,6 +1975,17 @@ mapping:
           communicate with this manager over the port specified here.
 
       tool_name_boost:
+        type: float
+        default: 9.0
+        required: false
+        reloadable: true
+        desc: |
+          Boosts are used to customize this instance's toolbox search.
+          The higher the boost, the more importance the scoring algorithm gives to the
+          given field.  Section refers to the tool group in the tool panel.  Rest of
+          the fields are tool's attributes.
+
+      tool_id_boost:
         type: float
         default: 9.0
         required: false
@@ -2357,7 +2407,7 @@ mapping:
 
       maximum_workflow_jobs_per_scheduling_iteration:
         type: int
-        default: -1
+        default: 1000
         required: false
         desc: |
           Specify a maximum number of jobs that any given workflow scheduling iteration can create.
@@ -2365,7 +2415,7 @@ mapping:
           preventing other jobs from executing. This may also mitigate memory issues associated with
           scheduling workflows at the expense of increased total DB traffic because model objects
           are expunged from the SQL alchemy session between workflow invocation scheduling iterations.
-          Set to -1 to disable any such maximum (the default).
+          Set to -1 to disable any such maximum.
 
       history_local_serial_workflow_scheduling:
         type: bool
@@ -3073,33 +3123,6 @@ mapping:
           specified database_connection above.  If that's not specified either, Galaxy
           will automatically create and use a separate sqlite database located in your
           <galaxy>/database folder (indicated in the commented out line below).
-
-      enable_communication_server:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Galaxy real time communication server settings
-
-      communication_server_host:
-        type: str
-        default: http://localhost
-        required: false
-        desc: |
-          Galaxy real time communication server settings
-
-      communication_server_port:
-        type: int
-        default: 7070
-        required: false
-        desc: |
-          Galaxy real time communication server settings
-
-      persistent_communication_rooms:
-        type: str
-        required: false
-        desc: |
-          persistent_communication_rooms is a comma-separated list of rooms that should be always available.
 
       use_pbkdf2:
         type: bool

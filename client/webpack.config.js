@@ -88,11 +88,9 @@ module.exports = (env = {}, argv = {}) => {
                     use: [
                         {
                             loader: "expose-loader",
-                            options: "jQuery",
-                        },
-                        {
-                            loader: "expose-loader",
-                            options: "$",
+                            options: {
+                                exposes: ["jQuery", "$"],
+                            },
                         },
                     ],
                 },
@@ -101,11 +99,9 @@ module.exports = (env = {}, argv = {}) => {
                     use: [
                         {
                             loader: "expose-loader",
-                            options: "_",
-                        },
-                        {
-                            loader: "expose-loader",
-                            options: "underscore",
+                            options: {
+                                exposes: ["underscore", "_"],
+                            },
                         },
                     ],
                 },
@@ -128,7 +124,9 @@ module.exports = (env = {}, argv = {}) => {
                     use: [
                         {
                             loader: "expose-loader",
-                            options: "bundleEntries",
+                            options: {
+                                exposes: "bundleEntries",
+                            },
                         },
                     ],
                 },
@@ -137,7 +135,7 @@ module.exports = (env = {}, argv = {}) => {
                     use: [
                         {
                             loader: "expose-loader",
-                            options: "config",
+                            options: { exposes: "config" },
                         },
                     ],
                 },
@@ -179,6 +177,10 @@ module.exports = (env = {}, argv = {}) => {
                 {
                     test: /\.(txt|tmpl)$/,
                     loader: "raw-loader",
+                },
+                {
+                    test: /\.worker\.js$/,
+                    use: { loader: 'worker-loader' },
                 },
             ],
         },

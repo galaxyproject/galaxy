@@ -24,7 +24,7 @@ from galaxy.web_stack import ApplicationStack
 
 
 # =============================================================================
-class OpenObject(object):
+class OpenObject:
     pass
 
 
@@ -56,7 +56,7 @@ def buildMockEnviron(**kwargs):
     return environ
 
 
-class MockApp(object):
+class MockApp:
 
     def __init__(self, config=None, **kwargs):
         self.config = config or MockAppConfig(**kwargs)
@@ -67,7 +67,7 @@ class MockApp(object):
         self.security_agent = self.model.security_agent
         self.visualizations_registry = MockVisualizationsRegistry()
         self.tag_handler = tags.GalaxyTagHandler(self.model.context)
-        self.quota_agent = quota.QuotaAgent(self.model)
+        self.quota_agent = quota.DatabaseQuotaAgent(self.model)
         self.init_datatypes()
         self.job_config = Bunch(
             dynamic_params=None,
@@ -101,7 +101,7 @@ class MockApp(object):
         return True
 
 
-class MockLock(object):
+class MockLock:
     def __enter__(self):
         pass
 
@@ -164,7 +164,6 @@ class MockAppConfig(Bunch):
         self.shed_tool_config_file_set = False
         self.preserve_python_environment = "always"
         self.enable_beta_gdpr = False
-        self.legacy_eager_objectstore_initialization = True
 
         self.version_major = "19.09"
 
@@ -172,6 +171,7 @@ class MockAppConfig(Bunch):
         self.root = root
         self.tool_cache_data_dir = os.path.join(root, 'tool_cache')
         self.delay_tool_initialization = True
+        self.external_chown_script = None
 
         self.config_file = None
 
@@ -193,14 +193,14 @@ class MockAppConfig(Bunch):
             shutil.rmtree(self.root)
 
 
-class MockWebapp(object):
+class MockWebapp:
 
     def __init__(self, **kwargs):
         self.name = kwargs.get('name', 'galaxy')
         self.security = idencoding.IdEncodingHelper(id_secret='6e46ed6483a833c100e68cc3f1d0dd76')
 
 
-class MockTrans(object):
+class MockTrans:
 
     def __init__(self, app=None, user=None, history=None, **kwargs):
         self.app = app or MockApp(**kwargs)
@@ -211,6 +211,7 @@ class MockTrans(object):
         self.error_message = None
         self.anonymous = False
         self.debug = True
+        self.user_is_admin = True
 
         self.galaxy_session = None
         self.__user = user
@@ -257,14 +258,14 @@ class MockTrans(object):
         return template.render(**kwargs)
 
 
-class MockVisualizationsRegistry(object):
+class MockVisualizationsRegistry:
     BUILT_IN_VISUALIZATIONS = ['trackster']
 
     def get_visualizations(self, trans, target):
         return []
 
 
-class MockDir(object):
+class MockDir:
 
     def __init__(self, structure_dict, where=None):
         self.structure_dict = structure_dict
@@ -293,7 +294,7 @@ class MockDir(object):
         shutil.rmtree(self.root_path)
 
 
-class MockTemplateHelpers(object):
+class MockTemplateHelpers:
     def js(*js_files):
         pass
 

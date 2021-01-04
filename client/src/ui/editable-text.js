@@ -74,16 +74,17 @@ $.fn.make_text_editable = function (config_dict) {
         } else {
             input_elt = $("<input type='text'/>")
                 .attr({ value: $.trim(cur_text), size: num_cols })
-                .blur(() => {
-                    set_text(cur_text);
+                .blur((e) => {
+                    const new_text = $(e.currentTarget).val();
+                    set_text(new_text);
                 })
-                .keyup(function (e) {
+                .keyup((e) => {
                     if (e.keyCode === 27) {
                         // Escape key.
-                        $(this).trigger("blur");
+                        set_text(cur_text);
                     } else if (e.keyCode === 13) {
                         // Enter key.
-                        set_text($(this).val());
+                        $(e.currentTarget).trigger("blur");
                     }
 
                     // Do not propogate event to avoid unwanted side effects.

@@ -1,10 +1,9 @@
 """This module describes the :class:`MulledContainerResolver` ContainerResolver plugin."""
 
-import collections
 import logging
 import os
 import subprocess
-
+from typing import NamedTuple, Optional
 
 from galaxy.util import (
     string_as_bool,
@@ -28,6 +27,7 @@ from ..mulled.util import (
     split_tag,
     v1_image_name,
     v2_image_name,
+    version_sorted,
 )
 from ..requirements import (
     ContainerDescription,
@@ -37,27 +37,40 @@ from ..requirements import (
 log = logging.getLogger(__name__)
 
 
-CachedMulledImageSingleTarget = collections.namedtuple("CachedMulledImageSingleTarget", ["package_name", "version", "build", "image_identifier"])
-CachedV1MulledImageMultiTarget = collections.namedtuple("CachedV1MulledImageMultiTarget", ["hash", "build", "image_identifier"])
-CachedV2MulledImageMultiTarget = collections.namedtuple("CachedV2MulledImageMultiTarget", ["image_name", "version_hash", "build", "image_identifier"])
+class CachedMulledImageSingleTarget(NamedTuple):
+    package_name: str
+    version: str
+    build: str
+    image_identifier: str
 
-CachedMulledImageSingleTarget.multi_target = False
-CachedV1MulledImageMultiTarget.multi_target = "v1"
-CachedV2MulledImageMultiTarget.multi_target = "v2"
-
-
-@property
-def _package_hash(target):
-    # Make this work for Singularity file name or fully qualified Docker repository
-    # image names.
-    image_name = target.image_name
-    if "/" not in image_name:
-        return image_name
-    else:
-        return image_name.rsplit("/")[-1]
+    multi_target: bool = False
 
 
-CachedV2MulledImageMultiTarget.package_hash = _package_hash
+class CachedV1MulledImageMultiTarget(NamedTuple):
+    hash: str
+    build: str
+    image_identifier: str
+
+    multi_target: str = "v1"
+
+
+class CachedV2MulledImageMultiTarget(NamedTuple):
+    image_name: str
+    version_hash: str
+    build: str
+    image_identifier: str
+
+    multi_target: str = "v2"
+
+    @property
+    def package_hash(target):
+        # Make this work for Singularity file name or fully qualified Docker repository
+        # image names.
+        image_name = target.image_name
+        if "/" not in image_name:
+            return image_name
+        else:
+            return image_name.rsplit("/")[-1]
 
 
 def list_docker_cached_mulled_images(namespace=None, hash_func="v2", resolution_cache=None):
@@ -71,19 +84,17 @@ def list_docker_cached_mulled_images(namespace=None, hash_func="v2", resolution_
         except subprocess.CalledProcessError:
             log.info("Call to `docker images` failed, configured container resolution may be broken")
             return []
-        images_and_versions = [l.split()[0:2] for l in images_and_versions[1:]]
+        images_and_versions = [":".join(l.split()[0:2]) for l in images_and_versions[1:]]
         if resolution_cache is not None:
             resolution_cache[cache_key] = images_and_versions
 
-    name_filter = get_filter(namespace)
-
     def output_line_to_image(line):
-        image_name, version = line[0], line[1]
-        identifier = "{}:{}".format(image_name, version)
-        image = identifier_to_cached_target(identifier, hash_func, namespace=namespace)
+        image = identifier_to_cached_target(line, hash_func, namespace=namespace)
         return image
 
-    raw_images = [output_line_to_image(_) for _ in filter(name_filter, images_and_versions)]
+    name_filter = get_filter(namespace)
+    sorted_images = version_sorted([_ for _ in filter(name_filter, images_and_versions)])
+    raw_images = (output_line_to_image(_) for _ in sorted_images)
     return [i for i in raw_images if i is not None]
 
 
@@ -137,13 +148,14 @@ def identifier_to_cached_target(identifier, hash_func, namespace=None):
 
 def list_cached_mulled_images_from_path(directory, hash_func="v2"):
     contents = os.listdir(directory)
-    raw_images = map(lambda name: identifier_to_cached_target(name, hash_func), contents)
+    sorted_images = version_sorted(contents)
+    raw_images = map(lambda name: identifier_to_cached_target(name, hash_func), sorted_images)
     return [i for i in raw_images if i is not None]
 
 
 def get_filter(namespace):
     prefix = "quay.io/" if namespace is None else "quay.io/%s" % namespace
-    return lambda name: name[0].startswith(prefix) and name[0].count("/") == 2
+    return lambda name: name.startswith(prefix) and name.count("/") == 2
 
 
 def find_best_matching_cached_image(targets, cached_images, hash_func):
@@ -234,7 +246,7 @@ def singularity_cached_container_description(targets, cache_directory, hash_func
     return container
 
 
-def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None):
+def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None, session=None):
     unresolved_cache_key = "galaxy.tool_util.deps.container_resolvers.mulled:unresolved"
     if resolution_cache is not None:
         if unresolved_cache_key not in resolution_cache:
@@ -258,31 +270,24 @@ def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None)
     if len(targets) == 1:
         target = targets[0]
         target_version = target.version
-        cache_key = "ns[{}]__single__{}__@__{}".format(namespace, target.package_name, target_version)
+        cache_key = f"ns[{namespace}]__single__{target.package_name}__@__{target_version}"
         if cache_key in unresolved_cache:
             return None
         name = cached_name(cache_key)
         if name:
             return name
 
-        tags = mulled_tags_for(namespace, target.package_name, resolution_cache=resolution_cache)
+        tags = mulled_tags_for(namespace, target.package_name, resolution_cache=resolution_cache, session=session)
 
         if tags:
-            if target_version:
-                for tag in tags:
-                    if '--' in tag:
-                        version, build = split_tag(tag)
-                    else:
-                        version = tag
-                        build = None
-                    if version == target_version:
-                        name = "{}:{}".format(target.package_name, version)
-                        if build:
-                            name = "{}--{}".format(name, build)
-                        break
-            else:
-                version, build = split_tag(tags[0])
-                name = "{}:{}--{}".format(target.package_name, version, build)
+            for tag in tags:
+                if '--' in tag:
+                    version, _ = split_tag(tag)
+                else:
+                    version = tag
+                if target_version and version == target_version:
+                    name = f"{target.package_name}:{tag}"
+                    break
 
     else:
         def first_tag_if_available(image_name):
@@ -291,7 +296,7 @@ def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None)
             else:
                 repo_name = image_name
                 tag_prefix = None
-            tags = mulled_tags_for(namespace, repo_name, tag_prefix=tag_prefix, resolution_cache=resolution_cache)
+            tags = mulled_tags_for(namespace, repo_name, tag_prefix=tag_prefix, resolution_cache=resolution_cache, session=session)
             return tags[0] if tags else None
 
         if hash_func == "v2":
@@ -301,7 +306,7 @@ def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None)
         else:
             raise Exception("Unimplemented mulled hash_func [%s]" % hash_func)
 
-        cache_key = "ns[{}]__{}__{}".format(namespace, hash_func, base_image_name)
+        cache_key = f"ns[{namespace}]__{hash_func}__{base_image_name}"
         if cache_key in unresolved_cache:
             return None
         name = cached_name(cache_key)
@@ -318,7 +323,7 @@ def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None)
             else:
                 # base_image_name of form <package_hash>, simply add build number
                 # as tag to fully qualify image.
-                name = "{}:{}".format(base_image_name, tag)
+                name = f"{base_image_name}:{tag}"
 
     if name and mulled_resolution_cache:
         mulled_resolution_cache.put(cache_key, name)
@@ -380,7 +385,7 @@ class MulledDockerContainerResolver(ContainerResolver):
     resolver_type = "mulled"
     container_type = "docker"
     shell = '/bin/bash'
-    protocol = None
+    protocol: Optional[str] = None
 
     def __init__(self, app_info=None, namespace="biocontainers", hash_func="v2", auto_install=True, **kwds):
         super().__init__(app_info)
@@ -395,7 +400,7 @@ class MulledDockerContainerResolver(ContainerResolver):
         command = container.build_pull_command()
         shell(command)
 
-    def resolve(self, enabled_container_types, tool_info, install=False, **kwds):
+    def resolve(self, enabled_container_types, tool_info, install=False, session=None, **kwds):
         resolution_cache = kwds.get("resolution_cache")
         if tool_info.requires_galaxy_python_environment or self.container_type not in enabled_container_types:
             return None
@@ -404,27 +409,30 @@ class MulledDockerContainerResolver(ContainerResolver):
         if len(targets) == 0:
             return None
 
-        name = targets_to_mulled_name(targets=targets, hash_func=self.hash_func, namespace=self.namespace, resolution_cache=resolution_cache)
+        name = targets_to_mulled_name(targets=targets, hash_func=self.hash_func, namespace=self.namespace, resolution_cache=resolution_cache, session=session)
         if name:
-            container_id = "quay.io/{}/{}".format(self.namespace, name)
+            container_id = f"quay.io/{self.namespace}/{name}"
             if self.protocol:
-                container_id = "{}{}".format(self.protocol, container_id)
+                container_id = f"{self.protocol}{container_id}"
             container_description = ContainerDescription(
                 container_id,
                 type=self.container_type,
                 shell=self.shell,
             )
-            destination_for_container_type = kwds.get('destination_for_container_type')
-            if install and destination_for_container_type and not self.cached_container_description(
+            if install and not self.cached_container_description(
                     targets,
                     namespace=self.namespace,
                     hash_func=self.hash_func,
                     resolution_cache=resolution_cache,
             ):
+                destination_info = {}
+                destination_for_container_type = kwds.get('destination_for_container_type')
+                if destination_for_container_type:
+                    destination_info = destination_for_container_type(self.container_type)
                 container = CONTAINER_CLASSES[self.container_type](container_description.identifier,
                                                                    self.app_info,
                                                                    tool_info,
-                                                                   destination_for_container_type(self.container_type),
+                                                                   destination_info,
                                                                    {},
                                                                    container_description)
                 self.pull(container)
@@ -454,7 +462,7 @@ class MulledSingularityContainerResolver(MulledDockerContainerResolver):
         self.hash_func = hash_func
         self.auto_install = string_as_bool(auto_install)
 
-    def cached_container_description(self, targets, namespace, hash_func):
+    def cached_container_description(self, targets, namespace, hash_func, resolution_cache):
         return singularity_cached_container_description(targets,
                                                         cache_directory=self.cache_directory,
                                                         hash_func=hash_func)

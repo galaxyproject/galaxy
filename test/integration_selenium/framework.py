@@ -9,12 +9,12 @@ selenium_test = framework.selenium_test
 class SeleniumIntegrationTestCase(integration_util.IntegrationTestCase, framework.TestWithSeleniumMixin):
 
     def setUp(self):
-        super(SeleniumIntegrationTestCase, self).setUp()
+        super().setUp()
         self.setup_selenium()
 
     def tearDown(self):
         self.tear_down_selenium()
-        super(SeleniumIntegrationTestCase, self).tearDown()
+        super().tearDown()
 
 
 __all__ = (

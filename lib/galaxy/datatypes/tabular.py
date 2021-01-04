@@ -51,8 +51,8 @@ class TabularData(data.Text):
     def set_meta(self, dataset, **kwd):
         raise NotImplementedError
 
-    def set_peek(self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None):
-        super().set_peek(dataset, line_count=line_count, WIDTH=WIDTH, skipchars=skipchars, line_wrap=False)
+    def set_peek(self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None, line_wrap=False, **kwd):
+        super().set_peek(dataset, line_count=line_count, WIDTH=WIDTH, skipchars=skipchars, line_wrap=line_wrap)
         if dataset.metadata.comment_lines:
             dataset.blurb = "{}, {} comments".format(dataset.blurb, util.commaify(str(dataset.metadata.comment_lines)))
 
@@ -305,7 +305,7 @@ class Tabular(TabularData):
                 if column_type2 == column_type:
                     return False
             # neither column type was found in our ordered list, this cannot happen
-            raise ValueError("Tried to compare unknown column types: {} and {}".format(column_type1, column_type2))
+            raise ValueError(f"Tried to compare unknown column types: {column_type1} and {column_type2}")
 
         def is_int(column_text):
             # Don't allow underscores in numeric literals (PEP 515)
@@ -337,6 +337,7 @@ class Tabular(TabularData):
             if column_text == "":
                 return False
             return True
+
         is_column_type = {}  # Dict to store column type string to checking function
         for column_type in column_type_set_order:
             is_column_type[column_type] = locals()["is_%s" % (column_type)]
@@ -346,6 +347,7 @@ class Tabular(TabularData):
                 if is_column_type[column_type](column_text):
                     return column_type
             return None
+
         data_lines = 0
         comment_lines = 0
         column_names = None
@@ -536,11 +538,11 @@ class Sam(Tabular):
                 comment_lines = 0
                 if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
                     # If the dataset is larger than optional_metadata, just count comment lines.
-                    for i, l in enumerate(dataset_fh):
-                        if l.startswith('@'):
+                    for line in dataset_fh:
+                        if line.startswith('@'):
                             comment_lines += 1
                         else:
-                            # No more comments, and the file is too big to look at the whole thing.  Give up.
+                            # No more comments, and the file is too big to look at the whole thing. Give up.
                             dataset.metadata.data_lines = None
                             break
                 else:
@@ -553,6 +555,7 @@ class Sam(Tabular):
             dataset.metadata.columns = 12
             dataset.metadata.column_types = ['str', 'int', 'str', 'int', 'int', 'str', 'str', 'int', 'int', 'str', 'str', 'str']
 
+    @staticmethod
     def merge(split_files, output_file):
         """
         Multiple SAM files may each have headers. Since the headers should all be the same, remove
@@ -563,8 +566,6 @@ class Sam(Tabular):
         if len(split_files) > 1:
             cmd = ['egrep', '-v', '-h', '^@'] + split_files[1:] + ['>>', output_file]
             subprocess.check_call(cmd, shell=True)
-
-    merge = staticmethod(merge)
 
     # Dataproviders
     # sam does not use '#' to indicate comments/headers - we need to strip out those headers from the std. providers
@@ -1034,7 +1035,7 @@ class BaseCSV(TabularData):
                     # No columns so not separated by this dialect.
                     return False
                 # ignore the length in the rest
-                for data_row in reader:
+                for _ in reader:
                     pass
 
         # Optional: Check Python's csv comes up with a similar dialect
@@ -1071,7 +1072,7 @@ class BaseCSV(TabularData):
                 try:
                     header_row = next(reader)
                     data_row = next(reader)
-                    for row in reader:
+                    for _ in reader:
                         pass
                 except StopIteration:
                     pass
@@ -1140,8 +1141,9 @@ class ConnectivityTable(Tabular):
     def set_meta(self, dataset, **kwd):
         data_lines = 0
 
-        for line in open(dataset.file_name):
-            data_lines += 1
+        with open(dataset.file_name) as fh:
+            for _ in fh:
+                data_lines += 1
 
         dataset.metadata.data_lines = data_lines
 
@@ -1271,22 +1273,27 @@ class MatrixMarket(TabularData):
 
     def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=5, **kwd):
         if dataset.has_data():
+            # If the dataset is larger than optional_metadata, just count comment lines.
             with open(dataset.file_name) as dataset_fh:
                 comment_lines = 0
-                for i, l in enumerate(dataset_fh):
-                    if l.startswith('%'):
-                        comment_lines += 1
-                    elif self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
-                        # If the dataset is larger than optional_metadata, just count comment lines.
-                        # No more comments, and the file is too big to look at the whole thing. Give up.
-                        dataset.metadata.data_lines = None
-                        break
+                if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
+                    # If the dataset is larger than optional_metadata, just count comment lines.
+                    for line in dataset_fh:
+                        if line.startswith('%'):
+                            comment_lines += 1
+                        else:
+                            # No more comments, and the file is too big to look at the whole thing. Give up.
+                            dataset.metadata.data_lines = None
+                            break
+                else:
+                    for i, l in enumerate(dataset_fh):
+                        if l.startswith('%'):
+                            comment_lines += 1
+                    dataset.metadata.data_lines = i + 1 - comment_lines
                 if ' ' in l:
                     dataset.metadata.delimiter = ' '
                 else:
                     dataset.metadata.delimiter = '\t'
-                if not (self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize):
-                    dataset.metadata.data_lines = i + 1 - comment_lines
             dataset.metadata.comment_lines = comment_lines
             dataset.metadata.columns = 3
             dataset.metadata.column_types = ['int', 'int', 'float']

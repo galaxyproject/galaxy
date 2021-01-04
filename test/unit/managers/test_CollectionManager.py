@@ -20,7 +20,7 @@ user3_data = dict(email='user3@user3.user3', username='user3', password=default_
 class DatasetCollectionManagerTestCase(BaseTestCase, CreatesCollectionsMixin):
 
     def set_up_managers(self):
-        super(DatasetCollectionManagerTestCase, self).set_up_managers()
+        super().set_up_managers()
         self.dataset_manager = DatasetManager(self.app)
         self.hda_manager = HDAManager(self.app)
         self.history_manager = HistoryManager(self.app)

@@ -185,12 +185,12 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
                 trans.response.set_content_type(data.get_mime())
                 if tofile:
                     fStat = os.stat(data.file_name)
-                    trans.response.headers['Content-Length'] = int(fStat.st_size)
+                    trans.response.headers['Content-Length'] = str(fStat.st_size)
                     if toext[0:1] != ".":
                         toext = "." + toext
                     fname = data.name
                     fname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in fname)[0:150]
-                    trans.response.headers["Content-Disposition"] = 'attachment; filename="GalaxyHistoryItem-{}-[{}]{}"'.format(data.hid, fname, toext)
+                    trans.response.headers["Content-Disposition"] = f'attachment; filename="GalaxyHistoryItem-{data.hid}-[{fname}]{toext}"'
                 trans.log_event("Display dataset id: %s" % str(id))
                 try:
                     return open(data.file_name, 'rb')

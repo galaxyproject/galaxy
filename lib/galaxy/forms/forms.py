@@ -9,7 +9,7 @@ from galaxy.model import (
 )
 from galaxy.util import string_as_bool
 
-FORM_TYPES = {f_type.lower(): f_descript for f_type, f_descript in FormDefinition.types.items()}
+FORM_TYPES = {f_type.lower(): f_descript for f_type, f_descript in FormDefinition.types.__members__.items()}
 
 
 class FormDefinitionFactory:
@@ -21,7 +21,7 @@ class FormDefinitionFactory:
         """
         Return new FormDefinition.
         """
-        assert form_type in self.form_types, 'Invalid FormDefinition type ( {} not in {} )'.format(form_type, self.form_types.keys())
+        assert form_type in self.form_types, f'Invalid FormDefinition type ( {form_type} not in {self.form_types.keys()} )'
         assert name, 'FormDefinition requires a name'
         if description is None:
             description = ''
@@ -69,7 +69,7 @@ class FormDefinitionFactory:
 
 
 class FormDefinitionFieldFactory:
-    type = None
+    type: str
 
     def __get_stored_field_type(self, **kwds):
         raise Exception('not implemented')
@@ -113,7 +113,7 @@ class FormDefinitionFieldFactory:
         visible = string_as_bool(elem.get('visible', 'true'))
         field_layout = elem.get('layout', None)
         if field_layout:
-            assert layout and field_layout in layout, 'Invalid layout specified: {} not in {}'.format(field_layout, layout)
+            assert layout and field_layout in layout, f'Invalid layout specified: {field_layout} not in {layout}'
             field_layout = str(layout.index(field_layout))  # existing behavior: integer indexes are stored as strings. why?
         return self.new(name=name, label=label, required=required, helptext=helptext, default=default, visible=visible, layout=field_layout)
 
@@ -286,10 +286,11 @@ class FormDefinitionSelectFieldFactory(FormDefinitionFieldFactory):
         else:
             return 'SelectField'
 
-    def new(self, name=None, label=None, required=False, helptext=None, default=None, visible=True, layout=None, options=[], checkboxes=False):
+    def new(self, name=None, label=None, required=False, helptext=None, default=None, visible=True, layout=None, options=None, checkboxes=False):
         """
         Return new FormDefinition field.
         """
+        options = options or []
         rval = super().new(name=name, label=label,
                            required=required, helptext=helptext,
                            default=default, visible=visible,

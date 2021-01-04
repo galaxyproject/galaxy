@@ -183,7 +183,7 @@ class InRangeValidator(Validator):
             op1 = '>'
         if self.exclude_max:
             op2 = '<'
-        self.message = message or "Value must be {} {} and {} {}".format(op1, self_min_str, op2, self_max_str)
+        self.message = message or f"Value must be {op1} {self_min_str} and {op2} {self_max_str}"
 
     def validate(self, value, trans=None):
         if self.exclude_min:
@@ -393,13 +393,13 @@ class MetadataInFileColumnValidator(Validator):
     def from_element(cls, param, elem):
         filename = elem.get("filename", None)
         if filename:
-            filename = "{}/{}".format(param.tool.app.config.tool_data_path, filename.strip())
+            filename = f"{param.tool.app.config.tool_data_path}/{filename.strip()}"
         metadata_name = elem.get("metadata_name", None)
         if metadata_name:
             metadata_name = metadata_name.strip()
         metadata_column = int(elem.get("metadata_column", 0))
         split = elem.get("split", "\t")
-        message = elem.get("message", "Value for metadata {} was not found in {}.".format(metadata_name, filename))
+        message = elem.get("message", f"Value for metadata {metadata_name} was not found in {filename}.")
         line_startswith = elem.get("line_startswith", None)
         if line_startswith:
             line_startswith = line_startswith.strip()
@@ -509,7 +509,7 @@ class MetadataInDataTableColumnValidator(Validator):
             metadata_column = int(metadata_column)
         except ValueError:
             pass
-        message = elem.get("message", "Value for metadata {} was not found in {}.".format(metadata_name, table_name))
+        message = elem.get("message", f"Value for metadata {metadata_name} was not found in {table_name}.")
         line_startswith = elem.get("line_startswith", None)
         if line_startswith:
             line_startswith = line_startswith.strip()
@@ -590,9 +590,9 @@ class MetadataInRangeValidator(InRangeValidator):
             try:
                 value_to_check = float(value.metadata.spec[self.metadata_name].param.to_string(value.metadata.get(self.metadata_name)))
             except KeyError:
-                raise ValueError('{} Metadata missing'.format(self.metadata_name))
+                raise ValueError(f'{self.metadata_name} Metadata missing')
             except ValueError:
-                raise ValueError('{} must be a float or an integer'.format(self.metadata_name))
+                raise ValueError(f'{self.metadata_name} must be a float or an integer')
             super().validate(value_to_check, trans)
 
 

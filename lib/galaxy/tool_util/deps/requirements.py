@@ -19,7 +19,9 @@ class ToolRequirement:
     optionally assert a specific version.
     """
 
-    def __init__(self, name=None, type=None, version=None, specs=[]):
+    def __init__(self, name=None, type=None, version=None, specs=None):
+        if specs is None:
+            specs = []
         self.name = name
         self.type = type
         self.version = version
@@ -33,11 +35,11 @@ class ToolRequirement:
         return copy.deepcopy(self)
 
     @staticmethod
-    def from_dict(dict):
-        version = dict.get("version", None)
-        name = dict.get("name", None)
-        type = dict.get("type", None)
-        specs = [RequirementSpecification.from_dict(s) for s in dict.get("specs", [])]
+    def from_dict(d):
+        version = d.get("version")
+        name = d.get("name")
+        type = d.get("type")
+        specs = [RequirementSpecification.from_dict(s) for s in d.get("specs", [])]
         return ToolRequirement(name=name, type=type, version=version, specs=specs)
 
     def __eq__(self, other):
@@ -50,7 +52,7 @@ class ToolRequirement:
         return hash((self.name, self.type, self.version, frozenset(self.specs)))
 
     def __str__(self):
-        return "ToolRequirement[{},version={},type={},specs={}]".format(self.name, self.version, self.type, self.specs)
+        return f"ToolRequirement[{self.name},version={self.version},type={self.type},specs={self.specs}]"
 
     __repr__ = __str__
 
@@ -191,7 +193,7 @@ class ContainerDescription:
         )
 
     def __str__(self):
-        return "ContainerDescription[identifier={},type={}]".format(self.identifier, self.type)
+        return f"ContainerDescription[identifier={self.identifier},type={self.type}]"
 
 
 def parse_requirements_from_dict(root_dict):

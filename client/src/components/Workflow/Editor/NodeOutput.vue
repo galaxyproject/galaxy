@@ -1,6 +1,12 @@
 <template>
     <div class="form-row dataRow output-data-row">
-        <div v-if="showCallout" :class="['callout-terminal', output.name]" @click="onToggle">
+        <div
+            v-if="showCallout"
+            :class="['callout-terminal', output.name]"
+            @click="onToggle"
+            v-b-tooltip
+            title="Unchecked outputs will be hidden and are not available as subworkflow outputs."
+        >
             <i :class="['mark-terminal', activeClass]" />
         </div>
         {{ label }}
@@ -74,7 +80,6 @@ export default {
                 collection_type: collection_type,
                 collection_type_source: collection_type_source,
                 datatypes: output.extensions,
-                force_datatype: output.force_datatype,
                 optional: output.optional,
             });
         } else if (output.parameter) {
@@ -91,7 +96,6 @@ export default {
                 name: output.name,
                 element: this.$refs.terminal,
                 datatypes: output.extensions,
-                force_datatype: output.force_datatype,
                 optional: output.optional,
             });
         }

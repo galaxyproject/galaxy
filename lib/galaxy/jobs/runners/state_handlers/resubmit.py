@@ -93,7 +93,7 @@ def _handle_resubmit_definitions(resubmit_definitions, app, job_runner, job_stat
 
         external_id = getattr(job_state, "job_id", None)
         if external_id:
-            job_log_prefix = "({}/{})".format(job_state.job_wrapper.job_id, job_state.job_id)
+            job_log_prefix = f"({job_state.job_wrapper.job_id}/{job_state.job_id})"
         else:
             job_log_prefix = "(%s)" % (job_state.job_wrapper.job_id)
 

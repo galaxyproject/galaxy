@@ -11,7 +11,7 @@ class SelectToolParameterTestCase(BaseParameterTestCase):
         try:
             self.param.from_json("42", self.trans, {"input_bam": model.HistoryDatasetAssociation()})
         except ValueError as err:
-            assert str(err) == "parameter 'my_name': an invalid option ('42') was selected (valid options: ?)"
+            assert str(err) == "parameter 'my_name': requires a value, but no legal values defined"
             return
         assert False
 
@@ -59,7 +59,7 @@ class SelectToolParameterTestCase(BaseParameterTestCase):
     # TODO: Good deal of overlap here with DataToolParameterTestCase,
     # refactor.
     def setUp(self):
-        super(SelectToolParameterTestCase, self).setUp()
+        super().setUp()
         self.test_history = model.History()
         self.app.model.context.add(self.test_history)
         self.app.model.context.flush()
@@ -98,7 +98,7 @@ class SelectToolParameterTestCase(BaseParameterTestCase):
         return self._param
 
 
-class MockToolDataTable(object):
+class MockToolDataTable:
 
     def __init__(self):
         self.columns = dict(

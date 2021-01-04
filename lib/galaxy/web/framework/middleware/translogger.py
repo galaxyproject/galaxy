@@ -5,8 +5,7 @@ Middleware for logging requests, using Apache combined log format
 """
 import logging
 import time
-
-from six.moves.urllib.parse import quote
+from urllib.parse import quote
 
 
 class TransLogger:

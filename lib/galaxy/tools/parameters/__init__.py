@@ -120,7 +120,7 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
             'input'             : input,
             'parent'            : input_values,
             'value'             : value,
-            'prefixed_name'     : '{}{}'.format(name_prefix, input.name),
+            'prefixed_name'     : f'{name_prefix}{input.name}',
             'prefixed_label'    : '{}{}'.format(label_prefix, input.label or input.name),
             'prefix'            : parent_prefix,
             'context'           : context,
@@ -261,7 +261,7 @@ def update_dataset_ids(input_values, translate_values, src):
         """Exchanges dataset_ids (HDA, LDA, HDCA, not Dataset) in input_values with dataset ids used in job."""
         current_case = input_values
         if key == 'id':
-            for i, p in enumerate(path):
+            for p in path:
                 if isinstance(current_case, (list, dict)):
                     current_case = current_case[p]
             if src == current_case.get('src'):
@@ -271,7 +271,7 @@ def update_dataset_ids(input_values, translate_values, src):
     return remap(input_values, visit=replace_dataset_ids)
 
 
-def populate_state(request_context, inputs, incoming, state, errors={}, prefix='', context=None, check=True, simple_errors=True):
+def populate_state(request_context, inputs, incoming, state, errors=None, context=None, check=True, simple_errors=True, input_format='legacy'):
     """
     Populates nested state dict from incoming parameter values.
     >>> from collections import OrderedDict
@@ -312,7 +312,81 @@ def populate_state(request_context, inputs, incoming, state, errors={}, prefix='
     3
     >>> print(state['b'][0]['d'][0]['f']['h'])
     4
+    >>> # now test with input_format='21.01'
+    >>> nested = {'a': 1, 'b': [{'c': 2, 'd': [{'e': 3, 'f': {'h': 4, 'g': True}}]}]}
+    >>> state_new = OrderedDict()
+    >>> populate_state(trans, inputs, nested, state_new, check=False, input_format='21.01')
+    >>> print(state_new['a'])
+    1
+    >>> print(state_new['b'][0]['c'])
+    2
+    >>> print(state_new['b'][0]['d'][0]['e'])
+    3
+    >>> print(state_new['b'][0]['d'][0]['f']['h'])
+    4
+
     """
+    if errors is None:
+        errors = {}
+    if input_format == 'legacy':
+        _populate_state_legacy(request_context, inputs, incoming, state, errors=errors, context=context, check=check, simple_errors=simple_errors)
+        return
+    elif input_format == '21.01':
+        context = ExpressionContext(state, context)
+        for input in inputs.values():
+            state[input.name] = input.get_initial_value(request_context, context)
+            group_state = state[input.name]
+            if input.type == 'repeat':
+                if len(incoming[input.name]) > input.max or len(incoming[input.name]) < input.min:
+                    errors[input.name] = 'The number of repeat elements is outside the range specified by the tool.'
+                else:
+                    del group_state[:]
+                    for rep in incoming[input.name]:
+                        new_state = {}
+                        group_state.append(new_state)
+                        new_errors = {}
+                        populate_state(request_context, input.inputs, rep, new_state, new_errors, context=context, check=check, simple_errors=simple_errors, input_format=input_format)
+                        if new_errors:
+                            errors[input.name] = new_errors
+
+            elif input.type == 'conditional':
+                test_param_value = incoming.get(input.name, {}).get(input.test_param.name)
+                value, error = check_param(request_context, input.test_param, test_param_value, context, simple_errors=simple_errors) if check else [test_param_value, None]
+                if error:
+                    errors[input.test_param.name] = error
+                else:
+                    try:
+                        current_case = input.get_current_case(value)
+                        group_state = state[input.name] = {}
+                        new_errors = {}
+                        populate_state(request_context, input.cases[current_case].inputs, incoming.get(input.name), group_state, new_errors, context=context, check=check, simple_errors=simple_errors, input_format=input_format)
+                        if new_errors:
+                            errors[input.name] = new_errors
+                        group_state['__current_case__'] = current_case
+                    except Exception:
+                        errors[input.test_param.name] = 'The selected case is unavailable/invalid.'
+                group_state[input.test_param.name] = value
+
+            elif input.type == 'section':
+                new_errors = {}
+                populate_state(request_context, input.inputs, incoming.get(input.name), group_state, new_errors, context=context, check=check, simple_errors=simple_errors, input_format=input_format)
+                if new_errors:
+                    errors[input.name] = new_errors
+
+            elif input.type == 'upload_dataset':
+                raise NotImplementedError
+
+            else:
+                param_value = _get_incoming_value(incoming, input.name, state.get(input.name))
+                value, error = check_param(request_context, input, param_value, context, simple_errors=simple_errors) if check else [param_value, None]
+                if error:
+                    errors[input.name] = error
+                state[input.name] = value
+    else:
+        raise Exception(f'Input format {input_format} not recognized; input_format must be either legacy or 21.01.')
+
+
+def _populate_state_legacy(request_context, inputs, incoming, state, errors, prefix='', context=None, check=True, simple_errors=True):
     context = ExpressionContext(state, context)
     for input in inputs.values():
         state[input.name] = input.get_initial_value(request_context, context)
@@ -329,7 +403,7 @@ def populate_state(request_context, inputs, incoming, state, errors={}, prefix='
                 if rep_index < input.max:
                     new_state = {'__index__' : rep_index}
                     group_state.append(new_state)
-                    populate_state(request_context, input.inputs, incoming, new_state, errors, prefix=rep_prefix + '|', context=context, check=check, simple_errors=simple_errors)
+                    _populate_state_legacy(request_context, input.inputs, incoming, new_state, errors, prefix=rep_prefix + '|', context=context, check=check, simple_errors=simple_errors)
                 rep_index += 1
         elif input.type == 'conditional':
             if input.value_ref and not input.value_ref_in_group:
@@ -344,13 +418,13 @@ def populate_state(request_context, inputs, incoming, state, errors={}, prefix='
                 try:
                     current_case = input.get_current_case(value)
                     group_state = state[input.name] = {}
-                    populate_state(request_context, input.cases[current_case].inputs, incoming, group_state, errors, prefix=group_prefix, context=context, check=check, simple_errors=simple_errors)
+                    _populate_state_legacy(request_context, input.cases[current_case].inputs, incoming, group_state, errors, prefix=group_prefix, context=context, check=check, simple_errors=simple_errors)
                     group_state['__current_case__'] = current_case
                 except Exception:
                     errors[test_param_key] = 'The selected case is unavailable/invalid.'
             group_state[input.test_param.name] = value
         elif input.type == 'section':
-            populate_state(request_context, input.inputs, incoming, group_state, errors, prefix=group_prefix, context=context, check=check, simple_errors=simple_errors)
+            _populate_state_legacy(request_context, input.inputs, incoming, group_state, errors, prefix=group_prefix, context=context, check=check, simple_errors=simple_errors)
         elif input.type == 'upload_dataset':
             file_count = input.get_file_count(request_context, context)
             while len(group_state) > file_count:
@@ -360,10 +434,10 @@ def populate_state(request_context, inputs, incoming, state, errors={}, prefix='
                 for upload_item in input.inputs.values():
                     new_state[upload_item.name] = upload_item.get_initial_value(request_context, context)
                 group_state.append(new_state)
-            for i, rep_state in enumerate(group_state):
+            for rep_state in group_state:
                 rep_index = rep_state['__index__']
                 rep_prefix = '%s_%d|' % (key, rep_index)
-                populate_state(request_context, input.inputs, incoming, rep_state, errors, prefix=rep_prefix, context=context, check=check, simple_errors=simple_errors)
+                _populate_state_legacy(request_context, input.inputs, incoming, rep_state, errors, prefix=rep_prefix, context=context, check=check, simple_errors=simple_errors)
         else:
             param_value = _get_incoming_value(incoming, key, state.get(input.name))
             value, error = check_param(request_context, input, param_value, context, simple_errors=simple_errors) if check else [param_value, None]

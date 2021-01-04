@@ -6,6 +6,7 @@ import os
 import traceback
 import unittest
 from functools import partial, wraps
+from urllib.parse import urljoin
 
 import requests
 from gxformat2 import (
@@ -16,7 +17,6 @@ try:
     from pyvirtualdisplay import Display
 except ImportError:
     Display = None
-from six.moves.urllib.parse import urljoin
 
 from galaxy.selenium import (
     driver_factory,
@@ -33,7 +33,7 @@ from galaxy_test.base.testcase import FunctionalTestCase
 try:
     from galaxy_test.driver.driver_util import GalaxyTestDriver
 except ImportError:
-    GalaxyTestDriver = None
+    GalaxyTestDriver = None  # type: ignore
 
 DEFAULT_TIMEOUT_MULTIPLIER = 1
 DEFAULT_TEST_ERRORS_DIRECTORY = os.path.abspath("database/test_errors")
@@ -134,7 +134,7 @@ def dump_test_information(self, name_prefix):
         for log_type in ["browser", "driver"]:
             try:
                 full_log = self.driver.get_log(log_type)
-                trimmed_log = [l for l in full_log if l["level"] not in ["DEBUG", "INFO"]]
+                trimmed_log = [entry for entry in full_log if entry["level"] not in ["DEBUG", "INFO"]]
                 write_file("%s.log.json" % log_type, json.dumps(trimmed_log, indent=True))
                 write_file("%s.log.verbose.json" % log_type, json.dumps(full_log, indent=True))
             except Exception:
@@ -161,7 +161,7 @@ def selenium_test(f):
                 dump_test_information(self, test_name)
                 if retry_attempts < GALAXY_TEST_SELENIUM_RETRIES:
                     retry_attempts += 1
-                    print("Test function [{}] threw an exception, retrying. Failed attempts - {}.".format(test_name, retry_attempts))
+                    print(f"Test function [{test_name}] threw an exception, retrying. Failed attempts - {retry_attempts}.")
                 else:
                     raise
 
@@ -370,7 +370,7 @@ class TestWithSeleniumMixin(NavigatesGalaxy, UsesApiTestCaseMixin):
         initial_size_str = self.components.history_panel.new_size.text
         size_selector = self.components.history_panel.size
         size_text = size_selector.wait_for_text()
-        assert initial_size_str in size_text, "{} not in {}".format(initial_size_str, size_text)
+        assert initial_size_str in size_text, f"{initial_size_str} not in {size_text}"
 
         self.components.history_panel.empty_message.wait_for_visible()
 
@@ -475,7 +475,7 @@ class UsesHistoryItemAssertions:
     def assert_item_info_includes(self, hid, expected):
         item_body = self.history_panel_item_component(hid=hid)
         info_text = item_body.info.wait_for_text()
-        assert expected in info_text, "Failed to find expected info text [{}] in info [{}]".format(expected, info_text)
+        assert expected in info_text, f"Failed to find expected info text [{expected}] in info [{info_text}]"
 
     def assert_item_dbkey_displayed_as(self, hid, dbkey):
         item_body = self.history_panel_item_component(hid=hid)
@@ -485,7 +485,7 @@ class UsesHistoryItemAssertions:
     def assert_item_summary_includes(self, hid, expected_text):
         item_body = self.history_panel_item_component(hid=hid)
         summary_text = item_body.summary.wait_for_text()
-        assert expected_text in summary_text, "Expected summary [{}] not found in [{}].".format(expected_text, summary_text)
+        assert expected_text in summary_text, f"Expected summary [{expected_text}] not found in [{summary_text}]."
 
     def assert_item_name(self, hid, expected_name):
         item_body = self.history_panel_item_component(hid=hid)
@@ -561,7 +561,8 @@ def get_remote_driver():
 class SeleniumSessionGetPostMixin:
     """Mixin for adapting Galaxy testing populators helpers to Selenium session backed bioblend."""
 
-    def _get(self, route, data={}):
+    def _get(self, route, data=None):
+        data = data or {}
         full_url = self.selenium_test_case.build_url("api/" + route, for_selenium=False)
         response = requests.get(full_url, data=data, cookies=self.selenium_test_case.selenium_to_requests_cookies())
         return response
@@ -579,7 +580,8 @@ class SeleniumSessionGetPostMixin:
         response = requests.post(full_url, data=data, cookies=self.selenium_test_case.selenium_to_requests_cookies(), files=files)
         return response
 
-    def _delete(self, route, data={}):
+    def _delete(self, route, data=None):
+        data = data or {}
         full_url = self.selenium_test_case.build_url("api/" + route, for_selenium=False)
         response = requests.delete(full_url, data=data, cookies=self.selenium_test_case.selenium_to_requests_cookies())
         return response

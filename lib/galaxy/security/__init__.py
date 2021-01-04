@@ -35,9 +35,10 @@ class RBACAgent:
         return list(self.permitted_actions.__dict__.values())
 
     def get_item_actions(self, action, item):
-        raise Exception('No valid method of retrieving action ({}) for item {}.'.format(action, item))
+        raise Exception(f'No valid method of retrieving action ({action}) for item {item}.')
 
-    def guess_derived_permissions_for_datasets(self, datasets=[]):
+    def guess_derived_permissions_for_datasets(self, datasets=None):
+        datasets = datasets or []
         raise Exception("Unimplemented Method")
 
     def can_access_dataset(self, roles, dataset):
@@ -67,7 +68,8 @@ class RBACAgent:
     def get_private_user_role(self, user):
         raise Exception("Unimplemented Method")
 
-    def user_set_default_permissions(self, user, permissions={}, history=False, dataset=False):
+    def user_set_default_permissions(self, user, permissions=None, history=False, dataset=False):
+        permissions = permissions or {}
         raise Exception("Unimplemented Method")
 
     def history_set_default_permissions(self, history, permissions=None, dataset=False, bypass_manage_permission=False):

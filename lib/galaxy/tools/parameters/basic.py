@@ -17,6 +17,7 @@ from galaxy.tool_util.parser import get_input_source as ensure_input_source
 from galaxy.util import (
     sanitize_param,
     string_as_bool,
+    string_as_bool_or_none,
     unicodify,
     XML,
 )
@@ -57,8 +58,8 @@ def contains_workflow_parameter(value, search=False):
 
 
 def is_runtime_value(value):
-    return isinstance(value, RuntimeValue) or (isinstance(value, dict)
-        and value.get("__class__") in ["RuntimeValue", "ConnectedValue"])
+    return isinstance(value, RuntimeValue) or (isinstance(value, dict) and
+        value.get("__class__") in ["RuntimeValue", "ConnectedValue"])
 
 
 def is_runtime_context(trans, other_values):
@@ -101,8 +102,8 @@ def assert_throws_param_value_error(message):
 class ParameterValueError(ValueError):
 
     def __init__(self, message_suffix, parameter_name, parameter_value=NO_PARAMETER_VALUE, is_dynamic=None):
-        message = "parameter '%s': %s" % (parameter_name, message_suffix)
-        super(ParameterValueError, self).__init__(message)
+        message = f"parameter '{parameter_name}': {message_suffix}"
+        super().__init__(message)
         self.message_suffix = message_suffix
         self.parameter_name = parameter_name
         self.parameter_value = parameter_value
@@ -164,7 +165,7 @@ class ToolParameter(Dictifiable):
         """Return user friendly name for the parameter"""
         return self.label if self.label else self.name
 
-    def from_json(self, value, trans=None, other_values={}):
+    def from_json(self, value, trans=None, other_values=None):
         """
         Convert a value from an HTML POST into the parameters preferred value
         format.
@@ -249,7 +250,7 @@ class ToolParameter(Dictifiable):
             return str_value
         return "Not available."
 
-    def to_param_dict_string(self, value, other_values={}):
+    def to_param_dict_string(self, value, other_values=None):
         """Called via __str__ when used in the Cheetah template"""
         if value is None:
             value = ""
@@ -268,8 +269,9 @@ class ToolParameter(Dictifiable):
         for validator in self.validators:
             validator.validate(value, trans)
 
-    def to_dict(self, trans, other_values={}):
+    def to_dict(self, trans, other_values=None):
         """ to_dict tool parameter. This can be overridden by subclasses. """
+        other_values = other_values or {}
         tool_dict = super().to_dict()
         tool_dict['model_class'] = self.__class__.__name__
         tool_dict['optional'] = self.optional
@@ -287,7 +289,7 @@ class ToolParameter(Dictifiable):
         if not param_type:
             raise ValueError("parameter '%s' requires a 'type'" % (param_name))
         elif param_type not in parameter_types:
-            raise ValueError("parameter '{}' uses an unknown type '{}'".format(param_name, param_type))
+            raise ValueError(f"parameter '{param_name}' uses an unknown type '{param_type}'")
         else:
             return parameter_types[param_type](tool, input_source)
 
@@ -296,7 +298,30 @@ class ToolParameter(Dictifiable):
         return input_source.parse_name()
 
 
-class TextToolParameter(ToolParameter):
+class SimpleTextToolParameter(ToolParameter):
+
+    def __init__(self, tool, input_source):
+        input_source = ensure_input_source(input_source)
+        super().__init__(tool, input_source)
+        self.optional = input_source.get_bool('optional', False)
+        if self.optional:
+            self.value = None
+        else:
+            self.value = ''
+
+    def to_json(self, value, app, use_security):
+        """Convert a value to a string representation suitable for persisting"""
+        if value is None:
+            rval = '' if not self.optional else None
+        else:
+            rval = unicodify(value)
+        return rval
+
+    def get_initial_value(self, trans, other_values):
+        return self.value
+
+
+class TextToolParameter(SimpleTextToolParameter):
     """
     Parameter that can take on any text value.
 
@@ -312,31 +337,22 @@ class TextToolParameter(ToolParameter):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source)
         self.datalist = []
-        for (title, value, selected) in input_source.parse_static_options():
-            self.datalist.append({'label' : title, 'value': value})
+        for (title, value, _) in input_source.parse_static_options():
+            self.datalist.append({'label': title, 'value': value})
         self.value = input_source.get('value')
         self.area = input_source.get_bool('area', False)
-
-    def to_json(self, value, app, use_security):
-        """Convert a value to a string representation suitable for persisting"""
-        if value is None:
-            rval = ''
-        else:
-            rval = unicodify(value)
-        return rval
 
     def validate(self, value, trans=None):
         search = self.type == "text"
         if not (trans and trans.workflow_building_mode is workflow_building_modes.ENABLED and contains_workflow_parameter(value, search=search)):
             return super().validate(value, trans)
 
-    def get_initial_value(self, trans, other_values):
-        return self.value
-
-    def to_dict(self, trans, other_values={}):
+    def to_dict(self, trans, other_values=None):
         d = super().to_dict(trans)
+        other_values = other_values or {}
         d['area'] = self.area
         d['datalist'] = self.datalist
+        d['optional'] = self.optional
         return d
 
 
@@ -381,7 +397,8 @@ class IntegerToolParameter(TextToolParameter):
         if self.min is not None or self.max is not None:
             self.validators.append(validation.InRangeValidator(None, self.min, self.max))
 
-    def from_json(self, value, trans, other_values={}):
+    def from_json(self, value, trans, other_values=None):
+        other_values = other_values or {}
         try:
             return int(value)
         except (TypeError, ValueError):
@@ -452,7 +469,8 @@ class FloatToolParameter(TextToolParameter):
         if self.min is not None or self.max is not None:
             self.validators.append(validation.InRangeValidator(None, self.min, self.max))
 
-    def from_json(self, value, trans, other_values={}):
+    def from_json(self, value, trans, other_values=None):
+        other_values = other_values or {}
         try:
             return float(value)
         except (TypeError, ValueError):
@@ -507,33 +525,38 @@ class BooleanToolParameter(ToolParameter):
         super().__init__(tool, input_source)
         self.truevalue = input_source.get('truevalue', 'true')
         self.falsevalue = input_source.get('falsevalue', 'false')
-        self.checked = input_source.get_bool('checked', False)
+        nullable = input_source.get_bool('optional', False)
+        self.optional = nullable
+        self.checked = input_source.get_bool('checked', None if nullable else False)
 
-    def from_json(self, value, trans=None, other_values={}):
+    def from_json(self, value, trans=None, other_values=None):
         return self.to_python(value)
 
     def to_python(self, value, app=None):
-        return (value in [True, 'True', 'true'])
+        if not self.optional:
+            ret_val = string_as_bool(value)
+        else:
+            ret_val = string_as_bool_or_none(value)
+        return ret_val
 
     def to_json(self, value, app, use_security):
-        if self.to_python(value, app):
-            return 'true'
-        else:
-            return 'false'
+        rval = json.dumps(self.to_python(value, app))
+        return rval
 
     def get_initial_value(self, trans, other_values):
         return self.checked
 
-    def to_param_dict_string(self, value, other_values={}):
+    def to_param_dict_string(self, value, other_values=None):
         if self.to_python(value):
             return self.truevalue
         else:
             return self.falsevalue
 
-    def to_dict(self, trans, other_values={}):
+    def to_dict(self, trans, other_values=None):
         d = super().to_dict(trans)
         d['truevalue'] = self.truevalue
         d['falsevalue'] = self.falsevalue
+        d['optional'] = self.optional
         return d
 
     @property
@@ -557,7 +580,7 @@ class FileToolParameter(ToolParameter):
     def __init__(self, tool, input_source):
         super().__init__(tool, input_source)
 
-    def from_json(self, value, trans=None, other_values={}):
+    def from_json(self, value, trans=None, other_values=None):
         # Middleware or proxies may encode files in special ways (TODO: this
         # should be pluggable)
         if type(value) == dict:
@@ -573,7 +596,7 @@ class FileToolParameter(ToolParameter):
                 upload_store = trans.app.config.nginx_upload_store
                 assert upload_store, "Request appears to have been processed by nginx_upload_module but Galaxy is not configured to recognize it."
                 local_filename = os.path.abspath(value['path'])
-                assert local_filename.startswith(upload_store), "Filename provided by nginx ({}) is not in correct directory ({}).".format(local_filename, upload_store)
+                assert local_filename.startswith(upload_store), f"Filename provided by nginx ({local_filename}) is not in correct directory ({upload_store})."
             value = dict(filename=value["name"], local_filename=local_filename)
         return value
 
@@ -639,16 +662,16 @@ class FTPFileToolParameter(ToolParameter):
             return False
         return True
 
-    def to_param_dict_string(self, value, other_values={}):
+    def to_param_dict_string(self, value, other_values=None):
         if value == '':
             return 'None'
-        lst = ['{}{}'.format(self.user_ftp_dir, dataset) for dataset in value]
+        lst = [f'{self.user_ftp_dir}{dataset}' for dataset in value]
         if self.multiple:
             return lst
         else:
             return lst[0]
 
-    def from_json(self, value, trans=None, other_values={}):
+    def from_json(self, value, trans=None, other_values=None):
         return self.to_python(value, trans.app, validate=True)
 
     def to_json(self, value, app, use_security):
@@ -736,10 +759,10 @@ class ColorToolParameter(ToolParameter):
         if self.value is not None:
             return self.value.lower()
 
-    def to_param_dict_string(self, value, other_values={}):
+    def to_param_dict_string(self, value, other_values=None):
         if self.rgb:
             try:
-                return str(tuple(int(value.lstrip('#')[i : i + 2], 16) for i in (0, 2, 4)))
+                return str(tuple(int(value.lstrip('#')[i: i + 2], 16) for i in (0, 2, 4)))
             except Exception:
                 raise ParameterValueError("Failed to convert \'%s\' to RGB." % value, self.name)
         return str(value)
@@ -765,7 +788,7 @@ class BaseURLToolParameter(HiddenToolParameter):
     def get_initial_value(self, trans, other_values):
         return self._get_value()
 
-    def from_json(self, value=None, trans=None, other_values={}):
+    def from_json(self, value=None, trans=None, other_values=None):
         return self._get_value()
 
     def _get_value(self):
@@ -775,7 +798,7 @@ class BaseURLToolParameter(HiddenToolParameter):
             log.debug('Url creation failed for "%s": %s', self.name, unicodify(e))
             return self.value
 
-    def to_dict(self, trans, other_values={}):
+    def to_dict(self, trans, other_values=None):
         d = super().to_dict(trans)
         return d
 
@@ -830,7 +853,7 @@ class SelectToolParameter(ToolParameter):
                 self.validators.append(validator)
         if self.dynamic_options is None and self.options is None:
             self.static_options = input_source.parse_static_options()
-            for (title, value, selected) in self.static_options:
+            for (_, value, _) in self.static_options:
                 self.legal_values.add(value)
         self.is_dynamic = ((self.dynamic_options is not None) or (self.options is not None))
 
@@ -867,7 +890,8 @@ class SelectToolParameter(ToolParameter):
         else:
             return self.legal_values
 
-    def from_json(self, value, trans, other_values={}, require_legal_value=True):
+    def from_json(self, value, trans, other_values=None, require_legal_value=True):
+        other_values = other_values or {}
         try:
             legal_values = self.get_legal_values(trans, other_values)
         except ImplicitConversionRequired:
@@ -920,7 +944,7 @@ class SelectToolParameter(ToolParameter):
                 raise ParameterValueError("an invalid option ({!r}) was selected (valid options: {})".format(value, ",".join(legal_values)), self.name, value, is_dynamic=self.is_dynamic)
             return value
 
-    def to_param_dict_string(self, value, other_values={}):
+    def to_param_dict_string(self, value, other_values=None):
         if value in (None, []):
             return "None"
         if isinstance(value, list):
@@ -970,7 +994,7 @@ class SelectToolParameter(ToolParameter):
         else:
             options = list(self.static_options)
             rval = []
-            for t, v, s in options:
+            for t, v, _ in options:
                 if v in value:
                     rval.append(t)
         if rval:
@@ -986,7 +1010,8 @@ class SelectToolParameter(ToolParameter):
         else:
             return []
 
-    def to_dict(self, trans, other_values={}):
+    def to_dict(self, trans, other_values=None):
+        other_values = other_values or {}
         d = super().to_dict(trans, other_values)
 
         # Get options, value.
@@ -1034,7 +1059,7 @@ class GenomeBuildParameter(SelectToolParameter):
     def get_legal_values(self, trans, other_values):
         return {dbkey for dbkey, _ in self._get_dbkey_names(trans=trans)}
 
-    def to_dict(self, trans, other_values={}):
+    def to_dict(self, trans, other_values=None):
         # skip SelectToolParameter (the immediate parent) bc we need to get options in a different way here
         d = ToolParameter.to_dict(self, trans)
 
@@ -1047,10 +1072,10 @@ class GenomeBuildParameter(SelectToolParameter):
                 value = option[1]
 
         d.update({
-            'options'   : options,
-            'value'     : value,
-            'display'   : self.display,
-            'multiple'  : self.multiple,
+            'options': options,
+            'value': value,
+            'display': self.display,
+            'multiple': self.multiple,
         })
 
         return d
@@ -1085,7 +1110,8 @@ class SelectTagParameter(SelectToolParameter):
             self.default_value = input_source.get("value", None)
         self.is_dynamic = True
 
-    def from_json(self, value, trans, other_values={}):
+    def from_json(self, value, trans, other_values=None):
+        other_values = other_values or {}
         if self.multiple:
             tag_list = []
             # split on newline and ,
@@ -1151,7 +1177,8 @@ class SelectTagParameter(SelectToolParameter):
     def get_dependencies(self):
         return [self.data_ref]
 
-    def to_dict(self, trans, other_values={}):
+    def to_dict(self, trans, other_values=None):
+        other_values = other_values or {}
         d = super().to_dict(trans, other_values=other_values)
         d['data_ref'] = self.data_ref
         return d
@@ -1202,11 +1229,12 @@ class ColumnListParameter(SelectToolParameter):
         self.is_dynamic = True
         self.usecolnames = input_source.get_bool("use_header_names", False)
 
-    def from_json(self, value, trans, other_values={}):
+    def from_json(self, value, trans, other_values=None):
         """
         Label convention prepends column number with a 'c', but tool uses the integer. This
         removes the 'c' when entered into a workflow.
         """
+        other_values = other_values or {}
         if self.multiple:
             # split on newline and ,
             if isinstance(value, list) or isinstance(value, str):
@@ -1254,8 +1282,8 @@ class ColumnListParameter(SelectToolParameter):
             if isinstance(dataset, trans.app.model.HistoryDatasetCollectionAssociation):
                 dataset = dataset.to_hda_representative()
             if isinstance(dataset, trans.app.model.HistoryDatasetAssociation) and self.ref_input and self.ref_input.formats:
-                target_ext, converted_dataset = dataset.find_conversion_destination(self.ref_input.formats)
-                if target_ext:
+                direct_match, target_ext, converted_dataset = dataset.find_conversion_destination(self.ref_input.formats)
+                if not direct_match and target_ext:
                     if not converted_dataset:
                         raise ImplicitConversionRequired
                     else:
@@ -1322,7 +1350,8 @@ class ColumnListParameter(SelectToolParameter):
     def get_dependencies(self):
         return [self.data_ref]
 
-    def to_dict(self, trans, other_values={}):
+    def to_dict(self, trans, other_values=None):
+        other_values = other_values or {}
         d = super().to_dict(trans, other_values=other_values)
         d['data_ref'] = self.data_ref
         d['numerical'] = self.numerical
@@ -1425,7 +1454,8 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         except Exception:
             return []
 
-    def get_options(self, trans=None, value=None, other_values={}):
+    def get_options(self, trans=None, value=None, other_values=None):
+        other_values = other_values or {}
         if self.is_dynamic:
             if self.dynamic_options:
                 options = self._get_options_from_code(trans=trans, value=value, other_values=other_values)
@@ -1453,7 +1483,8 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         recurse_options(legal_values, self.get_options(trans=trans, other_values=other_values))
         return legal_values
 
-    def from_json(self, value, trans, other_values={}):
+    def from_json(self, value, trans, other_values=None):
+        other_values = other_values or {}
         legal_values = self.get_legal_values(trans, other_values)
         if not legal_values and trans.workflow_building_mode:
             if self.multiple:
@@ -1465,7 +1496,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         elif value is None:
             if self.optional:
                 return None
-            raise ParameterValueError("an invalid option ({!r}) was selected".format(value), self.name, value)
+            raise ParameterValueError(f"an invalid option ({value!r}) was selected", self.name, value)
         elif not legal_values:
             raise ParameterValueError("requires a value, but no legal values defined", self.name)
         if not isinstance(value, list):
@@ -1479,7 +1510,9 @@ class DrillDownSelectToolParameter(SelectToolParameter):
             rval.append(val)
         return rval
 
-    def to_param_dict_string(self, value, other_values={}):
+    def to_param_dict_string(self, value, other_values=None):
+        other_values = other_values or {}
+
         def get_options_list(value):
             def get_base_option(value, options):
                 for option in options:
@@ -1572,7 +1605,8 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         """
         return list(self.filtered.keys())
 
-    def to_dict(self, trans, other_values={}):
+    def to_dict(self, trans, other_values=None):
+        other_values = other_values or {}
         # skip SelectToolParameter (the immediate parent) bc we need to get options in a different way here
         d = ToolParameter.to_dict(self, trans)
         d['options'] = self.get_options(trans=trans, other_values=other_values)
@@ -1613,7 +1647,7 @@ class BaseDataToolParameter(ToolParameter):
                 if datatype is not None:
                     formats.append(datatype)
                 else:
-                    log.warning("Datatype class not found for extension '{}', which is used in the 'format' attribute of parameter '{}'".format(extension, self.name))
+                    log.warning(f"Datatype class not found for extension '{extension}', which is used in the 'format' attribute of parameter '{self.name}'")
         self.formats = formats
 
     def _parse_options(self, input_source):
@@ -1666,7 +1700,7 @@ class BaseDataToolParameter(ToolParameter):
                 src = 'hda'
             if src is not None:
                 object_id = galaxy.model.cached_id(value)
-                return {'id' : app.security.encode_id(object_id) if use_security else object_id, 'src' : src}
+                return {'id': app.security.encode_id(object_id) if use_security else object_id, 'src': src}
 
         if value not in [None, '', 'None']:
             if isinstance(value, list) and len(value) > 0:
@@ -1757,14 +1791,15 @@ class DataToolParameter(BaseDataToolParameter):
         # Load conversions required for the dataset input
         self.conversions = []
         for name, conv_extension in input_source.parse_conversion_tuples():
-            assert None not in [name, conv_extension], 'A name ({}) and type ({}) are required for explicit conversion'.format(name, conv_extension)
+            assert None not in [name, conv_extension], f'A name ({name}) and type ({conv_extension}) are required for explicit conversion'
             if self.datatypes_registry:
                 conv_type = self.datatypes_registry.get_datatype_by_extension(conv_extension.lower())
                 if conv_type is None:
-                    raise ParameterValueError("datatype class not found for extension '{}', which is used as 'type' attribute in conversion of data parameter".format(conv_type), self.name)
+                    raise ParameterValueError(f"datatype class not found for extension '{conv_type}', which is used as 'type' attribute in conversion of data parameter", self.name)
                 self.conversions.append((name, conv_extension, [conv_type]))
 
-    def from_json(self, value, trans, other_values={}):
+    def from_json(self, value, trans, other_values=None):
+        other_values = other_values or {}
         if trans.workflow_building_mode is workflow_building_modes.ENABLED or is_runtime_value(value):
             return None
         if not value and not self.optional:
@@ -1855,7 +1890,7 @@ class DataToolParameter(BaseDataToolParameter):
                 raise ParameterValueError("invalid dataset supplied to single input dataset parameter", self.name)
         return rval
 
-    def to_param_dict_string(self, value, other_values={}):
+    def to_param_dict_string(self, value, other_values=None):
         if value is None:
             return "None"
         return value.file_name
@@ -1865,7 +1900,7 @@ class DataToolParameter(BaseDataToolParameter):
             value = [value]
         if value:
             try:
-                return ", ".join("{}: {}".format(item.hid, item.name) for item in value)
+                return ", ".join(f"{item.hid}: {item.name}" for item in value)
             except Exception:
                 pass
         return "No dataset."
@@ -1948,7 +1983,8 @@ class DataToolParameter(BaseDataToolParameter):
             ref = ref()
         return str(ref)
 
-    def to_dict(self, trans, other_values={}):
+    def to_dict(self, trans, other_values=None):
+        other_values = other_values or {}
         # create dictionary and fill default parameters
         d = super().to_dict(trans)
         extensions = self.extensions
@@ -1979,12 +2015,12 @@ class DataToolParameter(BaseDataToolParameter):
         # build and append a new select option
         def append(list, hda, name, src, keep=False, subcollection_type=None):
             value = {
-                'id'   : trans.security.encode_id(hda.id),
-                'hid'  : hda.hid if hda.hid is not None else -1,
-                'name' : name,
-                'tags' : [t.user_tname if not t.value else "{}:{}".format(t.user_tname, t.value) for t in hda.tags],
-                'src'  : src,
-                'keep' : keep
+                'id': trans.security.encode_id(hda.id),
+                'hid': hda.hid if hda.hid is not None else -1,
+                'name': name,
+                'tags': [t.user_tname if not t.value else f"{t.user_tname}:{t.value}" for t in hda.tags],
+                'src': src,
+                'keep': keep
             }
             if subcollection_type:
                 value["map_over_type"] = subcollection_type
@@ -1998,7 +2034,7 @@ class DataToolParameter(BaseDataToolParameter):
             if match:
                 m = match.hda
                 hda_list = [h for h in hda_list if h != m and h != hda]
-                m_name = '{} (as {})'.format(match.original_hda.name, match.target_ext) if match.implicit_conversion else m.name
+                m_name = f'{match.original_hda.name} (as {match.target_ext})' if match.implicit_conversion else m.name
                 append(d['options']['hda'], m, m_name, 'hda')
         for hda in hda_list:
             if hasattr(hda, 'hid'):
@@ -2008,7 +2044,7 @@ class DataToolParameter(BaseDataToolParameter):
                     hda_state = 'hidden'
                 else:
                     hda_state = 'unavailable'
-                append(d['options']['hda'], hda, '({}) {}'.format(hda_state, hda.name), 'hda', True)
+                append(d['options']['hda'], hda, f'({hda_state}) {hda.name}', 'hda', True)
 
         # add dataset collections
         dataset_collection_matcher = dataset_matcher_factory.dataset_collection_matcher(dataset_matcher)
@@ -2085,7 +2121,8 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             if match:
                 yield history_dataset_collection, match.implicit_conversion
 
-    def from_json(self, value, trans, other_values={}):
+    def from_json(self, value, trans, other_values=None):
+        other_values = other_values or {}
         rval = None
         if trans.workflow_building_mode is workflow_building_modes.ENABLED:
             return None
@@ -2131,7 +2168,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
     def to_text(self, value):
         try:
             if isinstance(value, galaxy.model.HistoryDatasetCollectionAssociation):
-                display_text = "{}: {}".format(value.hid, value.name)
+                display_text = f"{value.hid}: {value.name}"
             else:
                 display_text = "Element %d:%s" % (value.identifier_index, value.identifier_name)
         except AttributeError:
@@ -2163,11 +2200,11 @@ class DataCollectionToolParameter(BaseDataToolParameter):
         if isinstance(other_values.get(self.name), galaxy.model.DatasetCollectionElement):
             dce = other_values[self.name]
             d['options']['dce'].append({
-                'id'   : trans.security.encode_id(dce.id),
-                'hid'  : None,
-                'name' : dce.element_identifier,
-                'src'  : 'dce',
-                'tags' : []
+                'id': trans.security.encode_id(dce.id),
+                'hid': None,
+                'name': dce.element_identifier,
+                'src': 'dce',
+                'tags': []
             })
 
         # append directly matched collections
@@ -2176,11 +2213,11 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             if implicit_conversion:
                 name = "%s (with implicit datatype conversion)" % name
             d['options']['hdca'].append({
-                'id'   : trans.security.encode_id(hdca.id),
-                'hid'  : hdca.hid,
-                'name' : name,
-                'src'  : 'hdca',
-                'tags' : [t.user_tname if not t.value else "{}:{}".format(t.user_tname, t.value) for t in hdca.tags]
+                'id': trans.security.encode_id(hdca.id),
+                'hid': hdca.hid,
+                'name': name,
+                'src': 'hdca',
+                'tags': [t.user_tname if not t.value else f"{t.user_tname}:{t.value}" for t in hdca.tags]
             })
 
         # append matching subcollections
@@ -2190,11 +2227,11 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             if implicit_conversion:
                 name = "%s (with implicit datatype conversion)" % name
             d['options']['hdca'].append({
-                'id'   : trans.security.encode_id(hdca.id),
-                'hid'  : hdca.hid,
-                'name' : name,
-                'src'  : 'hdca',
-                'tags' : [t.user_tname if not t.value else "{}:{}".format(t.user_tname, t.value) for t in hdca.tags],
+                'id': trans.security.encode_id(hdca.id),
+                'hid': hdca.hid,
+                'name': name,
+                'src': 'hdca',
+                'tags': [t.user_tname if not t.value else f"{t.user_tname}:{t.value}" for t in hdca.tags],
                 'map_over_type': subcollection_type
             })
 
@@ -2228,10 +2265,11 @@ class LibraryDatasetToolParameter(ToolParameter):
         super().__init__(tool, input_source)
         self.multiple = input_source.get_bool('multiple', True)
 
-    def from_json(self, value, trans, other_values={}):
+    def from_json(self, value, trans, other_values=None):
+        other_values = other_values or {}
         return self.to_python(value, trans.app, other_values=other_values, validate=True)
 
-    def to_param_dict_string(self, value, other_values={}):
+    def to_param_dict_string(self, value, other_values=None):
         if value is None:
             return 'None'
         elif self.multiple:
@@ -2258,9 +2296,9 @@ class LibraryDatasetToolParameter(ToolParameter):
                 break
             if lda_id is not None:
                 lst.append({
-                    'id'   : lda_id,
-                    'name' : lda_name,
-                    'src'  : 'ldda'
+                    'id': lda_id,
+                    'name': lda_name,
+                    'src': 'ldda'
                 })
         if len(lst) == 0:
             return None
@@ -2273,7 +2311,8 @@ class LibraryDatasetToolParameter(ToolParameter):
     #   1. LibraryDatasetDatasetAssociation
     #   2. LibraryDatasetDatasetAssociation.id
     #   3. { id: LibraryDatasetDatasetAssociation.id, ... }
-    def to_python(self, value, app, other_values={}, validate=False):
+    def to_python(self, value, app, other_values=None, validate=False):
+        other_values = other_values or {}
         if not isinstance(value, list):
             value = [value]
         lst = []
@@ -2328,6 +2367,14 @@ class BaseJsonToolParameter(ToolParameter):
         return json.loads(value)
 
 
+class DirectoryUriToolParameter(SimpleTextToolParameter):
+    """galaxy.files URIs for directories."""
+
+    def __init__(self, tool, input_source, context=None):
+        input_source = ensure_input_source(input_source)
+        SimpleTextToolParameter.__init__(self, tool, input_source)
+
+
 class RulesListToolParameter(BaseJsonToolParameter):
     """
     Parameter that allows for the creation of a list of rules using the Galaxy rules DSL.
@@ -2338,7 +2385,8 @@ class RulesListToolParameter(BaseJsonToolParameter):
         BaseJsonToolParameter.__init__(self, tool, input_source)
         self.data_ref = input_source.get("data_ref", None)
 
-    def to_dict(self, trans, other_values={}):
+    def to_dict(self, trans, other_values=None):
+        other_values = other_values or {}
         d = ToolParameter.to_dict(self, trans)
         target_name = self.data_ref
         if target_name in other_values:
@@ -2388,6 +2436,7 @@ parameter_types = dict(
     data_collection=DataCollectionToolParameter,
     library_data=LibraryDatasetToolParameter,
     rules=RulesListToolParameter,
+    directory_uri=DirectoryUriToolParameter,
     drill_down=DrillDownSelectToolParameter
 )
 

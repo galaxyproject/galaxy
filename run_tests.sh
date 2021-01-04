@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 cd "$(dirname "$0")"
 
@@ -323,7 +323,7 @@ then
     DOCKER_PIP_CACHE_DIR="$HOME"/.cache/docker_galaxy_pip
     mkdir -p "$DOCKER_PIP_CACHE_DIR"
     _on_exit() {
-        docker kill $name
+        docker kill "$name"
     }
     trap _on_exit 0
     docker $DOCKER_EXTRA_ARGS run $DOCKER_RUN_EXTRA_ARGS \
@@ -332,7 +332,7 @@ then
         -e "LC_ALL=C" \
         -e "PIP_CACHE_DIR=/pip_cache_dir" \
         --rm \
-        --name=$name \
+        --name="$name" \
         -v "$DOCKER_PIP_CACHE_DIR":/pip_cache_dir \
         -v "$(pwd)":/galaxy \
         -v "$(pwd)"/test/docker/base/run_test_wrapper.sh:/usr/local/bin/run_test_wrapper.sh "$DOCKER_IMAGE" "$@"
@@ -393,10 +393,9 @@ do
           ;;
       -selenium|--selenium)
           GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
-          test_script="./scripts/functional_tests.py"
+          test_script="pytest"
           report_file="./run_selenium_tests.html"
           skip_client_build=""
-          selenium_test=1;
           if [ $# -gt 1 ]; then
               selenium_script=$2
               shift 2
@@ -440,7 +439,7 @@ do
           ;;
       -f|-framework|--framework)
           GALAXY_TEST_TOOL_CONF="test/functional/tools/samples_tool_conf.xml"
-          marker="-m tool"
+          marker="tool"
           test_script="pytest"
           report_file="run_framework_tests.html"
           framework_test=1;
@@ -448,14 +447,14 @@ do
           ;;
       -main|-main_tools|--main_tools)
           GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,config/tool_conf.xml.main"
-          marker="-m tool"
+          marker="tool"
           test_script="pytest"
           report_file="run_framework_tests.html"
           framework_test=1;
           shift 1
           ;;
       -d|-data_managers|--data_managers)
-          marker="-m data_manager"
+          marker="data_manager"
           test_script="pytest"
           report_file="run_data_managers_tests.html"
           data_managers_test=1;
@@ -463,15 +462,15 @@ do
           ;;
       -m|-migrated|--migrated)
           GALAXY_TEST_TOOL_CONF="config/migrated_tools_conf.xml"
-          marker="-m tool"
+          marker="tool"
           test_script="pytest"
           report_file="run_migrated_tests.html"
           migrated_test=1;
           shift
           ;;
-      -i|-installed|--installed)
+      -installed|--installed)
           GALAXY_TEST_TOOL_CONF="config/shed_tool_conf.xml"
-          marker="-m tool"
+          marker="tool"
           test_script="pytest"
           report_file="run_installed_tests.html"
           installed_test=1;
@@ -614,11 +613,15 @@ fi
 
 setup_python
 
-if [ -n "$framework_test" -o -n "$installed_test" -o -n "$migrated_test" -o -n "$data_managers_test" ] ; then
-    [ -n "$test_id" ] && selector="-k $test_id" || selector=""
-    extra_args="test/functional/test_toolbox_pytest.py $selector $marker"
-elif [ -n "$selenium_test" ] ; then
-    extra_args="$selenium_script -selenium"
+if [ -n "$framework_test" ] || [ -n "$installed_test" ] || [ -n "$migrated_test" ] || [ -n "$data_managers_test" ] ; then
+    if [ -n "$test_id" ]; then
+        selector="-k $test_id"
+    else
+        selector=""
+    fi
+    extra_args="test/functional/test_toolbox_pytest.py $selector"
+elif [ -n "$selenium_script" ]; then
+    extra_args="$selenium_script"
 elif [ -n "$toolshed_script" ]; then
     extra_args="$toolshed_script"
 elif [ -n "$api_script" ]; then
@@ -656,11 +659,16 @@ if [ "$test_script" = 'pytest' ]; then
     if [ "$coverage_arg" = '--with-coverage' ]; then
         coverage_arg="--cov-report term --cov=lib"
     fi
-    "$test_script" -v --html "$report_file" $coverage_arg  $xunit_args $extra_args "$@"
+    if [ -n "$marker" ]; then
+        marker_args=(-m "$marker")
+    else
+        marker_args=()
+    fi
+    args=(-v --html "$report_file" --self-contained-html $coverage_arg $xunit_args $extra_args "${marker_args[@]}" "$@")
+    "$test_script" "${args[@]}"
 else
-    python $test_script $coverage_arg -v --with-nosehtml --html-report-file $report_file $xunit_args $structured_data_args $extra_args "$@"
+    python "$test_script" $coverage_arg -v --with-nosehtml --html-report-file $report_file $xunit_args $structured_data_args $extra_args "$@"
 fi
 exit_status=$?
 echo "Testing complete. HTML report is in \"$report_file\"." 1>&2
 exit ${exit_status}
-

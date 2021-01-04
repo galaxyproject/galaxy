@@ -63,7 +63,7 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool=None, stdout=No
             int(data.metadata.startCol)
             int(data.metadata.strandCol)
 
-            for line in open(data.file_name, 'r'):
+            for line in open(data.file_name):
                 line_ctr += 1
 
                 fields = line.strip().split('\t')

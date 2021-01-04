@@ -1,7 +1,6 @@
 import os
 from contextlib import contextmanager
-
-from six.moves.urllib.parse import urlencode
+from urllib.parse import urlencode
 
 from .api_asserts import (
     assert_error_code_is,
@@ -31,14 +30,14 @@ class UsesApiTestCaseMixin:
     def _api_url(self, path, params=None, use_key=None, use_admin_key=None):
         if not params:
             params = {}
-        url = "{}/api/{}".format(self.url, path)
+        url = f"{self.url}/api/{path}"
         if use_key:
             params["key"] = self.galaxy_interactor.api_key
         if use_admin_key:
             params["key"] = self.galaxy_interactor.master_api_key
         query = urlencode(params)
         if query:
-            url = "{}?{}".format(url, query)
+            url = f"{url}?{query}"
         return url
 
     def _setup_interactor(self):
@@ -63,8 +62,8 @@ class UsesApiTestCaseMixin:
     def _different_user(self, email=OTHER_USER):
         """ Use in test cases to switch get/post operations to act as new user,
 
-            with self._different_user( "other_user@bx.psu.edu" ):
-                self._get( "histories" )  # Gets other_user@bx.psu.edu histories.
+            with self._different_user("other_user@bx.psu.edu"):
+                self._get("histories")  # Gets other_user@bx.psu.edu histories.
         """
         original_api_key = self.user_api_key
         original_interactor_key = self.galaxy_interactor.api_key

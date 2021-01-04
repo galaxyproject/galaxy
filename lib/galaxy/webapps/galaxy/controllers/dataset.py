@@ -1,12 +1,12 @@
 import logging
 import os
+from urllib.parse import (
+    quote_plus,
+    unquote_plus,
+)
 
 import paste.httpexceptions
 from markupsafe import escape
-from six.moves.urllib.parse import (
-    quote_plus,
-    unquote_plus
-)
 
 from galaxy import (
     datatypes,
@@ -17,7 +17,7 @@ from galaxy import (
 )
 from galaxy.datatypes import sniff
 from galaxy.datatypes.display_applications.util import decode_dataset_user, encode_dataset_user
-from galaxy.exceptions import MessageException, RequestParameterInvalidException
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.util import (
     inflector,
@@ -47,6 +47,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         super().__init__(app)
         self.history_manager = managers.histories.HistoryManager(app)
         self.hda_manager = managers.hdas.HDAManager(app)
+        self.hda_deserializer = managers.hdas.HDADeserializer(app)
 
     def _get_job_for_dataset(self, trans, dataset_id):
         '''
@@ -120,7 +121,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
 
         file_ext = data.metadata.spec.get(metadata_name).get("file_ext", metadata_name)
         trans.response.headers["Content-Type"] = "application/octet-stream"
-        trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy{}-[{}].{}"'.format(data.hid, fname, file_ext)
+        trans.response.headers["Content-Disposition"] = f'attachment; filename="Galaxy{data.hid}-[{fname}].{file_ext}"'
         return open(data.metadata.get(metadata_name).file_name, 'rb')
 
     def _check_dataset(self, trans, hda_id):
@@ -198,7 +199,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 return self.message_exception(trans, 'Please wait until this dataset finishes uploading before attempting to edit its metadata.')
             # let's not overwrite the imported datatypes module with the variable datatypes?
             # the built-in 'id' is overwritten in lots of places as well
-            ldatatypes = [(dtype_name, dtype_name) for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.items() if dtype_value.allow_datatype_change]
+            ldatatypes = [(dtype_name, dtype_name) for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.items() if dtype_value.is_datatype_change_allowed()]
             ldatatypes.sort()
             all_roles = [(r.name, trans.security.encode_id(r.id)) for r in trans.app.security_agent.get_legitimate_roles(trans, data.dataset, 'root')]
             data_metadata = [(name, spec) for name, spec in data.metadata.spec.items()]
@@ -258,7 +259,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 'help'      : 'This will create a new dataset with the contents of this dataset converted to a new format.',
                 'options'   : conversion_options
             }]
-            # datatype changeing
+            # datatype changing
             datatype_options = [(ext_name, ext_id) for ext_id, ext_name in ldatatypes]
             datatype_disable = len(datatype_options) == 0
             datatype_inputs = [{
@@ -324,12 +325,9 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         else:
             return self.message_exception(trans, 'You do not have permission to edit this dataset\'s ( id: %s ) information.' % str(dataset_id))
 
-    @web.legacy_expose_api_anonymous
+    @web.expose_api_anonymous
     def set_edit(self, trans, payload=None, **kwd):
         """Allows user to modify parameters of an HDA."""
-        def __ok_to_edit_metadata(dataset_id):
-            return self.hda_manager.ok_to_edit_metadata(dataset_id)
-
         status = 'success'
         operation = payload.get('operation')
         dataset_id = payload.get('dataset_id')
@@ -341,7 +339,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             # The user clicked the Save button on the 'Edit Attributes' form
             data.name = payload.get('name')
             data.info = payload.get('info')
-            if __ok_to_edit_metadata(data.id):
+            if data.ok_to_edit_metadata():
                 # The following for loop will save all metadata_spec items
                 for name, spec in data.datatype.metadata_spec.items():
                     if not spec.get('readonly'):
@@ -362,22 +360,13 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         elif operation == 'datatype':
             # The user clicked the Save button on the 'Change data type' form
             datatype = payload.get('datatype')
-            if data.datatype.allow_datatype_change and trans.app.datatypes_registry.get_datatype_by_extension(datatype).allow_datatype_change:
-                # prevent modifying datatype when dataset is queued or running as input/output
-                if not __ok_to_edit_metadata(data.id):
-                    return self.message_exception(trans, 'This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them.')
-                else:
-                    trans.app.datatypes_registry.change_datatype(data, datatype)
-                    trans.sa_session.flush()
-                    trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data}, overwrite=False)  # overwrite is False as per existing behavior
-                    message = 'Changed the type to %s.' % datatype
-            else:
-                return self.message_exception(trans, 'You are unable to change datatypes in this manner. Changing {} to {} is not allowed.'.format(data.extension, datatype))
+            self.hda_deserializer.deserialize(data, {'datatype': datatype}, trans=trans)
+            message = 'Changed the type to %s.' % datatype
         elif operation == 'datatype_detect':
             # The user clicked the 'Detect datatype' button on the 'Change data type' form
-            if data.datatype.allow_datatype_change:
+            if data.datatype.is_datatype_change_allowed():
                 # prevent modifying datatype when dataset is queued or running as input/output
-                if not __ok_to_edit_metadata(data.id):
+                if not data.ok_to_edit_metadata():
                     return self.message_exception(trans, 'This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them.')
                 else:
                     path = data.dataset.file_name
@@ -393,43 +382,25 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 return self.message_exception(trans, 'Changing datatype "%s" is not allowed.' % (data.extension))
         elif operation == 'autodetect':
             # The user clicked the Auto-detect button on the 'Edit Attributes' form
-            try:
-                self.hda_manager.set_metadata(trans, data, overwrite=True)
-            except MessageException as e:
-                return self.message_exception(trans, e.err_msg)
+            self.hda_manager.set_metadata(trans, data, overwrite=True)
         elif operation == 'conversion':
             target_type = payload.get('target_type')
             if target_type:
-                try:
-                    message = data.datatype.convert_dataset(trans, data, target_type)
-                except Exception as e:
-                    return self.message_exception(trans, util.unicodify(e))
+                message = data.datatype.convert_dataset(trans, data, target_type)
         elif operation == 'permission':
-            if not trans.user:
-                return self.message_exception(trans, 'You must be logged in if you want to change permissions.')
-            if trans.app.security_agent.can_manage_dataset(trans.get_current_user_roles(), data.dataset):
-                payload_permissions = {}
-                for action in trans.app.model.Dataset.permitted_actions.keys():
-                    payload_permissions[action] = [trans.security.decode_id(role_id) for role_id in util.listify(payload.get(action))]
-                # The user associated the DATASET_ACCESS permission on the dataset with 1 or more roles.  We
-                # need to ensure that they did not associate roles that would cause accessibility problems.
-                permissions, in_roles, error, message = \
-                    trans.app.security_agent.derive_roles_from_access(trans, data.dataset.id, 'root', **payload_permissions)
-                if error:
-                    # Keep the original role associations for the DATASET_ACCESS permission on the dataset.
-                    access_action = trans.app.security_agent.get_action(trans.app.security_agent.permitted_actions.DATASET_ACCESS.action)
-                    permissions[access_action] = data.dataset.get_access_roles(trans)
-                    trans.sa_session.refresh(data.dataset)
-                    return self.message_exception(trans, message)
-                else:
-                    error = trans.app.security_agent.set_all_dataset_permissions(data.dataset, permissions)
-                    trans.sa_session.refresh(data.dataset)
-                    if error:
-                        return self.message_exception(trans, error)
-                    else:
-                        message = 'Your changes completed successfully.'
-            else:
-                return self.message_exception(trans, 'You are not authorized to change this dataset\'s permissions.')
+            # Adapt form request to API - style.
+            payload_permissions = {}
+            for key, value in {"DATASET_MANAGE_PERMISSIONS": "manage_ids", "DATASET_ACCESS": "access_ids"}.items():
+                role_ids = util.listify(payload.get(key))
+                payload_permissions[f"{value}[]"] = role_ids
+
+            self.hda_manager.update_permissions(
+                trans,
+                data,
+                action='set_permissions',
+                **payload_permissions,
+            )
+            message = 'Your changes completed successfully.'
         else:
             return self.message_exception(trans, 'Invalid operation identifier (%s).' % operation)
         return {'status': status, 'message': sanitize_text(message)}
@@ -445,9 +416,9 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             trans.log_event("Problem retrieving dataset id (%s)." % dataset_id)
             return None, self.message_exception(trans, 'The dataset id is invalid.')
         if dataset_id is not None and data.history.user is not None and data.history.user != trans.user:
-            trans.log_event("User attempted to edit a dataset they do not own (encoded: {}, decoded: {}).".format(dataset_id, id))
+            trans.log_event(f"User attempted to edit a dataset they do not own (encoded: {dataset_id}, decoded: {id}).")
             return None, self.message_exception(trans, 'The dataset id is invalid.')
-        if data.history.user and not data.dataset.has_manage_permissions_roles(trans):
+        if data.history.user and not data.dataset.has_manage_permissions_roles(trans.app.security_agent):
             # Permission setting related to DATASET_MANAGE_PERMISSIONS was broken for a period of time,
             # so it is possible that some Datasets have no roles associated with the DATASET_MANAGE_PERMISSIONS
             # permission.  In this case, we'll reset this permission to the hda user's private role.
@@ -711,8 +682,9 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                         # Set Access-Control-Allow-Origin as specified in GEDA
                         if value.parameter.allow_cors:
                             trans.set_cors_origin()
+                            trans.set_cors_allow()
                         trans.response.set_content_type(value.mime_type(action_param_extra=action_param_extra))
-                        trans.response.headers['Content-Length'] = content_length
+                        trans.response.headers['Content-Length'] = str(content_length)
                         return rval
                     elif app_action is None:
                         # redirect user to url generated by display link
@@ -759,7 +731,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             self.hda_manager.stop_creating_job(hda)
             trans.sa_session.flush()
         except Exception:
-            msg = 'HDA deletion failed (encoded: {}, decoded: {})'.format(dataset_id, id)
+            msg = f'HDA deletion failed (encoded: {dataset_id}, decoded: {id})'
             log.exception(msg)
             trans.log_event(msg)
             message = 'Dataset deletion failed'
@@ -785,7 +757,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             trans.sa_session.flush()
             trans.log_event("Dataset id %s has been undeleted" % str(id))
         except Exception:
-            msg = 'HDA undeletion failed (encoded: {}, decoded: {})'.format(dataset_id, id)
+            msg = f'HDA undeletion failed (encoded: {dataset_id}, decoded: {id})'
             log.exception(msg)
             trans.log_event(msg)
             message = 'Dataset undeletion failed'
@@ -846,13 +818,13 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             if hda.dataset.user_can_purge:
                 try:
                     hda.dataset.full_delete()
-                    trans.log_event("Dataset id {} has been purged upon the the purge of HDA id {}".format(hda.dataset.id, hda.id))
+                    trans.log_event(f"Dataset id {hda.dataset.id} has been purged upon the the purge of HDA id {hda.id}")
                     trans.sa_session.add(hda.dataset)
                 except Exception:
-                    log.exception('Unable to purge dataset ({}) on purge of HDA ({}):'.format(hda.dataset.id, hda.id))
+                    log.exception(f'Unable to purge dataset ({hda.dataset.id}) on purge of HDA ({hda.id}):')
             trans.sa_session.flush()
         except Exception:
-            msg = 'HDA purge failed (encoded: {}, decoded: {})'.format(dataset_id, id)
+            msg = f'HDA purge failed (encoded: {dataset_id}, decoded: {id})'
             log.exception(msg)
             trans.log_event(msg)
             message = 'Dataset removal from disk failed'
@@ -1036,20 +1008,17 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     else:
                         for hist in target_histories:
                             if content.history_content_type == "dataset":
-                                copy = content.copy()
-                                hist.add_dataset(copy)
+                                copy = content.copy(flush=False)
+                                hist.stage_addition(copy)
                             else:
-                                copy_collected_datasets = True
-                                copy_kwds = {}
-                                if copy_collected_datasets:
-                                    copy_kwds["element_destination"] = hist
-                                copy = content.copy(**copy_kwds)
-                                hist.add_dataset_collection(copy)
+                                copy = content.copy(element_destination=hist)
                             if user:
                                 copy.copy_tags_from(user, content)
+                        for hist in target_histories:
+                            hist.add_pending_items()
+                trans.sa_session.flush()
                 if current_history in target_histories:
                     refresh_frames = ['history']
-                trans.sa_session.flush()
                 hist_names_str = ", ".join('<a href="%s" target="_top">%s</a>' %
                                            (url_for(controller="history", action="switch_to_history",
                                                     hist_id=trans.security.encode_id(hist.id)), escape(hist.name))

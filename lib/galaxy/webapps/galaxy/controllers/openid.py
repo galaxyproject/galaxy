@@ -70,4 +70,4 @@ class OpenID(BaseUIController):
             openid_provider_obj.post_authentication(trans, self.openid_manager, info)
             return trans.show_message("Processed OpenID authentication. %s" % return_link)
         else:
-            return trans.show_error_message("Authentication via OpenID failed: {}. {}".format(info.message, return_link))
+            return trans.show_error_message(f"Authentication via OpenID failed: {info.message}. {return_link}")

@@ -440,7 +440,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                 session.flush()
                 viz_title = escape(visualization.title)
                 other_email = escape(other.email)
-                trans.set_message("Visualization '{}' shared with user '{}'".format(viz_title, other_email))
+                trans.set_message(f"Visualization '{viz_title}' shared with user '{other_email}'")
                 return trans.response.send_redirect(web.url_for("/visualizations/sharing?id=%s" % id))
         return trans.fill_template("/ind_share_base.mako",
                                    message=msg,

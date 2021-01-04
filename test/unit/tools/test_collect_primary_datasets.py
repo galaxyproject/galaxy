@@ -302,7 +302,7 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesApp, t
         # While name is also used for designation, designation is not the name -
         # it is used in the calculation of the name however...
         assert name_output.name == "example1"
-        assert designation_output.name == "%s (%s)" % (self.hda.name, "example2")
+        assert designation_output.name == "{} ({})".format(self.hda.name, "example2")
 
     def test_cannot_read_files_outside_job_directory(self):
         self._replace_output_collectors('''<output>
@@ -317,7 +317,7 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesApp, t
 
     def _collect_default_extra(self, **kwargs):
         collected = self._collect(**kwargs)
-        assert DEFAULT_TOOL_OUTPUT in collected, "No such key [%s], in %s" % (DEFAULT_TOOL_OUTPUT, collected)
+        assert DEFAULT_TOOL_OUTPUT in collected, f"No such key [{DEFAULT_TOOL_OUTPUT}], in {collected}"
         output_files = collected[DEFAULT_TOOL_OUTPUT]
         assert DEFAULT_EXTRA_NAME in output_files, "No such key [%s]" % DEFAULT_EXTRA_NAME
         return output_files[DEFAULT_EXTRA_NAME]
@@ -362,7 +362,7 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesApp, t
             directory = kwargs.get("directory", self.test_directory)
             path = os.path.join(directory, "primary_%s_%s_%s_%s" % template_args)
             if "dbkey" in kwargs:
-                path = "%s_%s" % (path, kwargs["dbkey"])
+                path = "{}_{}".format(path, kwargs["dbkey"])
         if not path:
             assert filename
             subdir = kwargs.get("subdir", ".")
@@ -386,7 +386,8 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesApp, t
         self.job.history = self.history
         self.outputs = {DEFAULT_TOOL_OUTPUT: self.hda}
 
-    def _new_history(self, hdas=[], flush=True):
+    def _new_history(self, hdas=None, flush=True):
+        hdas = hdas or []
         history = model.History()
         self.app.model.context.add(history)
         for hda in hdas:
@@ -395,7 +396,7 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesApp, t
         return history
 
 
-class MockObjectStore(object):
+class MockObjectStore:
 
     def __init__(self):
         self.created_datasets = {}

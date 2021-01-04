@@ -17,7 +17,6 @@ available in the test public Tool Shed and create each of them in a local develo
 
 ./create_categories.py -a <api key> -f http://testtoolshed.g2.bx.psu.edu -t http://localhost:9009
 """
-from __future__ import print_function
 
 import argparse
 

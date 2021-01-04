@@ -1,9 +1,9 @@
+import configparser
 import logging
 import os
 import re
 
 from markupsafe import escape
-from six.moves import configparser
 from sqlalchemy import false
 from sqlalchemy.sql import select
 
@@ -145,8 +145,9 @@ def create_repository_admin_role(app, repository):
     return role
 
 
-def create_repository(app, name, type, description, long_description, user_id, category_ids=[], remote_repository_url=None, homepage_url=None):
+def create_repository(app, name, type, description, long_description, user_id, category_ids=None, remote_repository_url=None, homepage_url=None):
     """Create a new ToolShed repository"""
+    category_ids = category_ids or []
     sa_session = app.model.context.current
     # Add the repository record to the database.
     repository = app.model.Repository(name=name,
@@ -174,7 +175,7 @@ def create_repository(app, name, type, description, long_description, user_id, c
     # Create the local repository.
     init_repository(repo_path=repository_path)
     # Add an entry in the hgweb.config file for the local repository.
-    lhs = "repos/{}/{}".format(repository.user.username, repository.name)
+    lhs = f"repos/{repository.user.username}/{repository.name}"
     app.hgweb_config_manager.add_entry(lhs, repository_path)
     # Create a .hg/hgrc file for the local repository.
     create_hgrc_file(app, repository)
@@ -198,7 +199,7 @@ def create_repository(app, name, type, description, long_description, user_id, c
 def generate_sharable_link_for_repository_in_tool_shed(repository, changeset_revision=None):
     """Generate the URL for sharing a repository that is in the tool shed."""
     base_url = web.url_for('/', qualified=True).rstrip('/')
-    sharable_url = '{}/view/{}/{}'.format(base_url, repository.user.username, repository.name)
+    sharable_url = f'{base_url}/view/{repository.user.username}/{repository.name}'
     if changeset_revision:
         sharable_url += '/%s' % changeset_revision
     return sharable_url
@@ -288,7 +289,7 @@ def get_repositories_by_category(app, category_id, installable=False, sort_order
         for changeset, changehash in repository.installable_revisions(app):
             encoded_id = app.security.encode_id(repository.id)
             metadata = get_repository_metadata_by_changeset_revision(app, encoded_id, changehash)
-            repository_dict['metadata']['{}:{}'.format(changeset, changehash)] = metadata.to_dict(value_mapper=default_value_mapper)
+            repository_dict['metadata'][f'{changeset}:{changehash}'] = metadata.to_dict(value_mapper=default_value_mapper)
         if installable:
             if len(repository.installable_revisions(app)):
                 repositories.append(repository_dict)
@@ -344,7 +345,7 @@ def get_tool_shed_repository_status_label(app, tool_shed_repository=None, name=N
     else:
         bgcolor = app.install_model.ToolShedRepository.states.WARNING
         status_label = 'unknown status'
-    return '<div class="count-box state-color-{}">{}</div>'.format(bgcolor, status_label)
+    return f'<div class="count-box state-color-{bgcolor}">{status_label}</div>'
 
 
 def handle_role_associations(app, role, repository, **kwd):
@@ -461,7 +462,7 @@ def update_repository(app, trans, id, **kwds):
 
         repo_dir = repository.repo_path(app)
         # Change the entry in the hgweb.config file for the repository.
-        old_lhs = "repos/{}/{}".format(repository.user.username, repository.name)
+        old_lhs = f"repos/{repository.user.username}/{repository.name}"
         new_lhs = "repos/{}/{}".format(repository.user.username, kwds['name'])
         trans.app.hgweb_config_manager.change_entry(old_lhs, new_lhs, repo_dir)
 

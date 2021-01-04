@@ -22,8 +22,8 @@ from galaxy import (
 )
 from galaxy.tools.repositories import ValidationContext
 from galaxy.web.form_builder import CheckboxField, SelectField
+from galaxy.web.legacy_framework import grids
 from galaxy.webapps.base.controller import BaseUIController
-from galaxy.webapps.reports.framework import grids
 from tool_shed.dependencies.repository import relation_builder
 from tool_shed.galaxy_install import dependency_display
 from tool_shed.metadata import repository_metadata_manager
@@ -735,7 +735,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     string.Template(template).safe_substitute(tool_shed_url=tool_shed_url,
                                                               repository_owner=str(repository.user.username),
                                                               repository_name=str(repository.name))
-                repository_string = '{}\n{}'.format(repository_string, repository_template)
+                repository_string = f'{repository_string}\n{repository_template}'
             template = basic_util.DOCKER_IMAGE_TEMPLATE
             docker_image_template = \
                 string.Template(template).safe_substitute(selected_repositories=repository_string)
@@ -1440,7 +1440,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         has_repository_dependencies = False
         has_repository_dependencies_only_if_compiling_contained_td = False
         includes_tool_dependencies = False
-        for name, repo_info_tuple in repo_info_dict.items():
+        for repo_info_tuple in repo_info_dict.values():
             if not has_repository_dependencies or not has_repository_dependencies_only_if_compiling_contained_td or not includes_tool_dependencies:
                 description, reposectory_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
                     repository_util.get_repo_info_tuple_contents(repo_info_tuple)
@@ -1741,7 +1741,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             if user.username not in current_allow_push_list:
                 options.append(user)
         for obj in options:
-            label = getattr(obj, 'username')
+            label = obj.username
             allow_push_select_field.add_option(label, trans.security.encode_id(obj.id))
         checked = alerts_checked or user.email in email_alerts
         alerts_check_box = CheckboxField('alerts', value=checked)
@@ -2506,13 +2506,13 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             if ctx_parent_rev < 0:
                 prev = None
             else:
-                prev = "<b>{}:{}</b> <i>({})</i>".format(ctx_parent_rev, ctx_parent, ctx_parent_date)
+                prev = f"<b>{ctx_parent_rev}:{ctx_parent}</b> <i>({ctx_parent_date})</i>"
         else:
             prev = None
         if ctx_child:
             ctx_child_date = hg_util.get_readable_ctx_date(ctx_child)
             ctx_child_rev = ctx_child.rev()
-            next = "<b>{}:{}</b> <i>({})</i>".format(ctx_child_rev, ctx_child, ctx_child_date)
+            next = f"<b>{ctx_child_rev}:{ctx_child}</b> <i>({ctx_child_date})</i>"
         else:
             next = None
         return trans.fill_template('/webapps/tool_shed/repository/view_changeset.mako',

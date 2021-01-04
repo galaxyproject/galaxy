@@ -1,4 +1,17 @@
-<tool id="bibtex" name="bibtex" version="0.1.0">
+<tool id="bibtex" name="bibtex" version="0.1.0" license="AFL-3.0">
+    <creator>
+        <person
+            givenName="Björn"
+            familyName="Grüning"
+            url="https://github.com/bgruening"
+            identifier="http://orcid.org/0000-0002-3079-6586" />
+        <organization
+            url="https://galaxyproject.org/iuc/"
+            name="Galaxy IUC" />
+    </creator>
+    <xrefs>
+      <xref type="bio.tools">Citation.js</xref>
+    </xrefs>
     <command><![CDATA[
       echo "$input1" > "$out_file1"
    ]]></command>

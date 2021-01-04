@@ -1,7 +1,12 @@
 import json
 import logging
+import typing
 
 from boltons.iterutils import remap
+from pydantic import (
+    BaseModel,
+    Field,
+)
 from sqlalchemy import and_, false, func, or_
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql import select
@@ -25,6 +30,10 @@ from galaxy.util import (
 log = logging.getLogger(__name__)
 
 
+class JobLock(BaseModel):
+    active: bool = Field(title="Job lock status", description="If active, jobs will not dispatch")
+
+
 def get_path_key(path_tuple):
     path_key = ""
     tuple_elements = len(path_tuple)
@@ -38,7 +47,7 @@ def get_path_key(path_tuple):
             # we remove the last 2 items of the path tuple (values and list index)
             return path_key
         if path_key:
-            path_key = "{}{}{}".format(path_key, sep, p)
+            path_key = f"{path_key}{sep}{p}"
         else:
             path_key = p
     return path_key
@@ -50,11 +59,18 @@ class JobManager:
         self.app = app
         self.dataset_manager = DatasetManager(app)
 
+    def job_lock(self):
+        return JobLock(active=self.app.job_manager.job_lock)
+
+    def update_job_lock(self, job_lock: JobLock):
+        self.app.queue_worker.send_control_task('admin_job_lock', kwargs={'job_lock': job_lock.active}, get_response=True)
+        return self.job_lock()
+
     def get_accessible_job(self, trans, decoded_job_id):
         job = trans.sa_session.query(trans.app.model.Job).filter(trans.app.model.Job.id == decoded_job_id).first()
         if job is None:
             raise ObjectNotFound()
-        belongs_to_user = (job.user == trans.user) if job.user else (job.session_id == trans.get_galaxy_session().id)
+        belongs_to_user = (job.user_id == trans.user.id) if job.user_id and trans.user else (job.session_id == trans.get_galaxy_session().id)
         if not trans.user_is_admin and not belongs_to_user:
             # Check access granted via output datasets.
             if not job.output_datasets:
@@ -368,6 +384,30 @@ class JobSearch:
         return None
 
 
+def view_show_job(trans, job, full: bool) -> typing.Dict:
+    is_admin = trans.user_is_admin
+    job_dict = trans.app.security.encode_all_ids(job.to_dict('element', system_details=is_admin), True)
+    if full:
+        job_dict.update(dict(
+            tool_stdout=job.tool_stdout,
+            tool_stderr=job.tool_stderr,
+            job_stdout=job.job_stdout,
+            job_stderr=job.job_stderr,
+            stderr=job.stderr,
+            stdout=job.stdout,
+            job_messages=job.job_messages
+        ))
+
+        if is_admin:
+            if job.user:
+                job_dict['user_email'] = job.user.email
+            else:
+                job_dict['user_email'] = None
+
+            job_dict['job_metrics'] = summarize_job_metrics(trans, job)
+    return job_dict
+
+
 def invocation_job_source_iter(sa_session, invocation_id):
     # TODO: Handle subworkflows.
     join = model.WorkflowInvocationStep.table.join(
@@ -586,7 +626,7 @@ def summarize_job_parameters(trans, job):
 
         rval = []
 
-        for input_index, input in enumerate(input_params.values()):
+        for input in input_params.values():
             if input.name in param_values:
                 if input.type == "repeat":
                     for i in range(len(param_values[input.name])):
@@ -611,7 +651,7 @@ def summarize_job_parameters(trans, job):
                     rval.append(dict(text=input.group_title(param_values), depth=depth, value="%s uploaded datasets" % len(param_values[input.name])))
                 elif input.type == "data":
                     value = []
-                    for i, element in enumerate(listify(param_values[input.name])):
+                    for element in listify(param_values[input.name]):
                         if element.history_content_type == "dataset":
                             hda = element
                             encoded_id = trans.security.encode_id(hda.id)

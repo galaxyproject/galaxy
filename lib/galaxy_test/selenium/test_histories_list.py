@@ -43,7 +43,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
         # Publish the history
         self.click_grid_popup_option(self.history2_name, 'Share or Publish')
-        self.components.histories.sharing.make_accessible_and_publish.wait_for_and_click()
+        self.make_accessible_and_publishable()
 
         self.navigate_to_histories_page()
 
@@ -168,12 +168,16 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         search_input.send_keys(self.history2_name)
         self.send_enter(search_input)
 
+        self.sleep_for(self.wait_types.UX_RENDER)
+
         self.assert_grid_histories_are([self.history2_name])
 
         self.unset_filter('free-text-search', self.history2_name)
         search_input = self.components.grids.free_text_search.wait_for_visible()
         search_input.send_keys(self.history4_name)
         self.send_enter(search_input)
+
+        self.sleep_for(self.wait_types.UX_RENDER)
 
         self.assert_grid_histories_are([])
 
@@ -217,6 +221,8 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         tag_area.send_keys(self.history2_tags[0])
         self.send_enter(tag_area)
 
+        self.sleep_for(self.wait_types.UX_RENDER)
+
         # Search by tag
         tags_cell = self.get_history_tags_cell(self.history2_name)
         tag = tags_cell.find_element_by_css_selector('.ti-tag-center')
@@ -253,7 +259,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         for row in grid.find_elements_by_tag_name('tr'):
             td = row.find_elements_by_tag_name('td')
             name = td[1].text if td[0].text == '' else td[0].text
-            if name != "No Items":
+            if name != "No items" and not name.startswith("No matching entries found"):
                 names.append(name)
         return names
 
@@ -261,6 +267,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         filter_input = self.wait_for_selector_clickable(selector)
         filter_input.send_keys(value)
         self.send_enter(filter_input)
+        self.sleep_for(self.wait_types.UX_RENDER)
 
     def unset_filter(self, filter_key, filter_value):
         close_button_selector = 'a[filter_key="%s"][filter_val="%s"]' % \

@@ -1,10 +1,8 @@
-# -*- coding: utf-8 -*-
 """
 """
 import unittest
 
 import sqlalchemy
-from six import string_types
 
 from galaxy import (
     exceptions,
@@ -28,7 +26,7 @@ user3_data = dict(email='user3@user3.user3', username='user3', password=default_
 class DatasetManagerTestCase(BaseTestCase):
 
     def set_up_managers(self):
-        super(DatasetManagerTestCase, self).set_up_managers()
+        super().set_up_managers()
         self.dataset_manager = DatasetManager(self.app)
 
     def test_create(self):
@@ -193,7 +191,7 @@ class DatasetManagerTestCase(BaseTestCase):
 class DatasetRBACPermissionsTestCase(BaseTestCase):
 
     def set_up_managers(self):
-        super(DatasetRBACPermissionsTestCase, self).set_up_managers()
+        super().set_up_managers()
         self.dataset_manager = DatasetManager(self.app)
 
     # def test_manage( self ):
@@ -207,7 +205,7 @@ class DatasetRBACPermissionsTestCase(BaseTestCase):
 # =============================================================================
 # web.url_for doesn't work well in the framework
 def testable_url_for(*a, **k):
-    return '(fake url): %s, %s' % (a, k)
+    return f'(fake url): {a}, {k}'
 
 
 DatasetSerializer.url_for = staticmethod(testable_url_for)
@@ -216,7 +214,7 @@ DatasetSerializer.url_for = staticmethod(testable_url_for)
 class DatasetSerializerTestCase(BaseTestCase):
 
     def set_up_managers(self):
-        super(DatasetSerializerTestCase, self).set_up_managers()
+        super().set_up_managers()
         self.dataset_manager = DatasetManager(self.app)
         self.dataset_serializer = DatasetSerializer(self.app)
         self.role_manager = RoleManager(self.app)
@@ -237,7 +235,7 @@ class DatasetSerializerTestCase(BaseTestCase):
             instantiated_attribute = getattr(dataset, key, None)
             if not ((key in self.dataset_serializer.serializers) or
                     (isinstance(instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS))):
-                self.fail('no serializer for: %s (%s)' % (key, instantiated_attribute))
+                self.fail(f'no serializer for: {key} ({instantiated_attribute})')
         else:
             self.assertTrue(True, 'all serializable keys have a serializer')
 
@@ -302,7 +300,7 @@ class DatasetSerializerTestCase(BaseTestCase):
         self.assertDate(serialized['update_time'])
 
         self.assertUUID(serialized['uuid'])
-        self.assertIsInstance(serialized['state'], string_types)
+        self.assertIsInstance(serialized['state'], str)
         self.assertIsInstance(serialized['deleted'], bool)
         self.assertIsInstance(serialized['purged'], bool)
         self.assertIsInstance(serialized['purgable'], bool)

@@ -23,10 +23,10 @@ import io
 import json
 import logging
 import re
+from urllib.parse import urlparse
 
 import routes
 import webob.exc
-from six.moves.urllib.parse import urlparse
 
 from galaxy.util import (
     smart_str,
@@ -99,7 +99,7 @@ class BatchMiddleware:
 
         batch_response_body = smart_str(json.dumps(responses))
         start_response('200 OK', [
-            ('Content-Length', len(batch_response_body)),
+            ('Content-Length', str(len(batch_response_body))),
             ('Content-Type', 'application/json'),
         ])
         return [batch_response_body]

@@ -36,7 +36,7 @@ def main():
 
     # Open input and output MAF files
     try:
-        maf_reader = bx.align.maf.Reader(open(maf_file, 'r'))
+        maf_reader = bx.align.maf.Reader(open(maf_file))
         maf_writer = bx.align.maf.Writer(open(out_file, 'w'))
     except Exception:
         print("Your MAF file appears to be malformed.", file=sys.stderr)

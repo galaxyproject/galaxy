@@ -63,7 +63,7 @@ class OIDC(JSAppLauncher):
     def callback(self, trans, provider, idphint=None, **kwargs):
         user = trans.user.username if trans.user is not None else 'anonymous'
         if not bool(kwargs):
-            log.error("OIDC callback received no data for provider `{}` and user `{}`".format(provider, user))
+            log.error(f"OIDC callback received no data for provider `{provider}` and user `{user}`")
             return trans.show_error_message(
                 'Did not receive any information from the `{}` identity provider to complete user `{}` authentication '
                 'flow. Please try again, and if the problem persists, contact the Galaxy instance admin. Also note '
@@ -82,8 +82,35 @@ class OIDC(JSAppLauncher):
                                                                                 trans,
                                                                                 login_redirect_url=url_for('/'),
                                                                                 idphint=idphint)
+        except exceptions.AuthenticationFailed:
+            raise
+        if success is False:
+            return trans.show_error_message(message)
+        if "?confirm" in redirect_url:
+            return trans.response.send_redirect(url_for(redirect_url))
+        elif redirect_url is None:
+            redirect_url = url_for('/')
+
+        user = user if user is not None else trans.user
+        if user is None:
+            return trans.show_error_message("An unknown error occurred when handling the callback from `{}` "
+                                            "identity provider. Please try again, and if the problem persists, "
+                                            "contact the Galaxy instance admin.".format(provider))
+        trans.handle_user_login(user)
+        # Record which idp provider was logged into, so we can logout of it later
+        trans.set_cookie(value=provider, name=PROVIDER_COOKIE_NAME)
+        return trans.response.send_redirect(url_for(redirect_url))
+
+    @web.expose
+    def create_user(self, trans, provider, **kwargs):
+        try:
+            success, message, (redirect_url, user) = trans.app.authnz_manager.create_user(provider,
+                                                                                          token=kwargs.get('token', ' '),
+                                                                                          trans=trans,
+                                                                                          login_redirect_url=url_for('/'))
         except exceptions.AuthenticationFailed as e:
-            return trans.response.send_redirect(trans.request.base + url_for('/') + 'root/login?message=' + (e.message or "Duplicate Email"))
+            return trans.response.send_redirect(trans.request.base + url_for('/') + 'root/login?message=' + (str(e) or "Duplicate Email"))
+
         if success is False:
             return trans.show_error_message(message)
         user = user if user is not None else trans.user
@@ -94,16 +121,19 @@ class OIDC(JSAppLauncher):
         trans.handle_user_login(user)
         # Record which idp provider was logged into, so we can logout of it later
         trans.set_cookie(value=provider, name=PROVIDER_COOKIE_NAME)
-        return trans.response.send_redirect(url_for('/'))
+        if redirect_url is None:
+            redirect_url = url_for('/')
+        return trans.response.send_redirect(url_for(redirect_url))
 
     @web.expose
     @web.require_login("authenticate against the selected identity provider")
-    def disconnect(self, trans, provider, **kwargs):
+    def disconnect(self, trans, provider, email=None, **kwargs):
         if trans.user is None:
             # Only logged in users are allowed here.
             return
         success, message, redirect_url = trans.app.authnz_manager.disconnect(provider,
                                                                              trans,
+                                                                             email,
                                                                              disconnect_redirect_url=url_for('/'))
         if success is False:
             return trans.show_error_message(message)
@@ -131,7 +161,22 @@ class OIDC(JSAppLauncher):
     @web.expose
     @web.json
     def get_cilogon_idps(self, trans, **kwargs):
+        allowed_idps = trans.app.authnz_manager.get_allowed_idps()
         try:
-            return json.loads(url_get('https://cilogon.org/idplist/', params=dict(kwargs)))
+            cilogon_idps = json.loads(url_get('https://cilogon.org/idplist/', params=dict(kwargs)))
         except Exception as e:
             raise Exception("Invalid server response. %s." % str(e))
+
+        if (allowed_idps):
+            validated_idps = list(filter(lambda idp: idp['EntityID'] in allowed_idps, cilogon_idps))
+
+            if not (len(validated_idps) == len(allowed_idps)):
+                validated_entity_ids = [entity['EntityID'] for entity in validated_idps]
+
+                for idp in allowed_idps:
+                    if (idp not in validated_entity_ids):
+                        log.debug("Invalid EntityID entered: %s. Use https://cilogon.org/idplist/ to find desired institution's EntityID.", idp)
+
+            return validated_idps
+        else:
+            return cilogon_idps

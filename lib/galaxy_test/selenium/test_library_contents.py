@@ -48,8 +48,9 @@ class LibraryContentsTestCase(SeleniumTestCase):
         change_description(long_description)
 
         # assert shrinked description
-        shrinked_description = long_description[0:40] + "..."
-        assert shrinked_description == self.components.libraries.folder.description_field.wait_for_text()
+
+        shrinked_description = long_description[0:40]
+        assert shrinked_description == self.components.libraries.folder.description_field_shrinked.wait_for_text()
 
     @selenium_test
     def test_import_dataset_from_history(self):
@@ -82,8 +83,7 @@ class LibraryContentsTestCase(SeleniumTestCase):
         self.test_import_dataset_from_history()
 
         self.components.libraries.folder.select_one.wait_for_and_click()
-        self.components.libraries.folder.download_dropdown.wait_for_and_click()
-        self.components.libraries.folder.download_zip.wait_for_and_click()
+        self.components.libraries.folder.download_button.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         folder_files = os.listdir(self.get_download_path())
 

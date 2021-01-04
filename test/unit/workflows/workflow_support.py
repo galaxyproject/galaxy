@@ -6,9 +6,10 @@ from galaxy import model
 from galaxy.model import mapping
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import bunch
+from galaxy.workflow.modules import module_factory
 
 
-class MockTrans(object):
+class MockTrans:
 
     def __init__(self):
         self.app = TestApp()
@@ -34,7 +35,7 @@ class MockTrans(object):
         return self._user
 
 
-class TestApp(object):
+class TestApp:
 
     def __init__(self):
         self.config = bunch.Bunch(
@@ -50,7 +51,7 @@ class TestApp(object):
         self.security = IdEncodingHelper(id_secret="testing")
 
 
-class TestDatatypesRegistry(object):
+class TestDatatypesRegistry:
 
     def __init__(self):
         pass
@@ -63,7 +64,7 @@ class TestDatatypesRegistry(object):
         return {"fasta": object(), "fastqsanger": object(), "txt": object()}
 
 
-class TestToolbox(object):
+class TestToolbox:
 
     def __init__(self):
         self.tools = {}
@@ -80,6 +81,8 @@ class TestToolbox(object):
 def yaml_to_model(has_dict, id_offset=100):
     if isinstance(has_dict, str):
         has_dict = yaml.safe_load(has_dict)
+
+    trans = MockTrans()
 
     workflow = model.Workflow()
     workflow.steps = []
@@ -131,6 +134,9 @@ def yaml_to_model(has_dict, id_offset=100):
                 key = 'tool_inputs'
                 value = {'collection_type': value}
             setattr(workflow_step, key, value)
+        if workflow_step.type != 'tool':
+            module = module_factory.from_workflow_step(trans, workflow_step)
+            module.save_to_step(workflow_step)
         workflow.steps.append(workflow_step)
 
     return workflow

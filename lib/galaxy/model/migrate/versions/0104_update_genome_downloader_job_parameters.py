@@ -29,6 +29,7 @@ context = scoped_session(sessionmaker(autoflush=False, autocommit=True))
 
 
 class DeferredJob:
+    table: Table = None
     states = Bunch(NEW='new',
                    WAITING='waiting',
                    QUEUED='queued',

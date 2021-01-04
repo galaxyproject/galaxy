@@ -7,9 +7,8 @@ from within Galaxy.
 """
 import logging
 import re
-
-from six.moves.html_entities import name2codepoint
-from six.moves.html_parser import HTMLParser
+from html.entities import name2codepoint
+from html.parser import HTMLParser
 
 from galaxy import exceptions, model
 from galaxy.managers import base, sharable
@@ -18,6 +17,7 @@ from galaxy.managers.markdown_util import (
     ready_galaxy_markdown_for_export,
     ready_galaxy_markdown_for_import,
 )
+from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.util import unicodify
 from galaxy.util.sanitize_html import sanitize_html
@@ -72,6 +72,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         """
         """
         super().__init__(app, *args, **kwargs)
+        self.workflow_manager = WorkflowsManager(app)
 
     def copy(self, trans, page, user, **kwargs):
         """
@@ -80,17 +81,23 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
     def create(self, trans, payload):
         user = trans.get_user()
 
-        if not payload.get("title", None):
+        if not payload.get("title"):
             raise exceptions.ObjectAttributeMissingException("Page name is required")
-        elif not payload.get("slug", None):
+        elif not payload.get("slug"):
             raise exceptions.ObjectAttributeMissingException("Page id is required")
         elif not base.is_valid_slug(payload["slug"]):
             raise exceptions.ObjectAttributeInvalidException("Page identifier must consist of only lowercase letters, numbers, and the '-' character")
         elif trans.sa_session.query(trans.app.model.Page).filter_by(user=user, slug=payload["slug"], deleted=False).first():
             raise exceptions.DuplicatedSlugException("Page identifier must be unique")
 
-        content = payload.get("content", "")
-        content_format = payload.get("content_format", "html")
+        if payload.get("invocation_id"):
+            invocation_id = payload.get("invocation_id")
+            invocation_report = self.workflow_manager.get_invocation_report(trans, invocation_id)
+            content = invocation_report.get("markdown")
+            content_format = "markdown"
+        else:
+            content = payload.get("content", "")
+            content_format = payload.get("content_format", "html")
         content = self.rewrite_content_for_import(trans, content, content_format)
 
         # Create the new stored page
@@ -302,11 +309,11 @@ class PageContentProcessor(HTMLParser):
                 value = value.replace('>', '&gt;').replace('<', '&lt;').replace('"', '&quot;')
                 value = self.bare_ampersand.sub("&amp;", value)
                 uattrs.append((key, value))
-            strattrs = ''.join(' {}="{}"'.format(k, v) for k, v in uattrs)
+            strattrs = ''.join(f' {k}="{v}"' for k, v in uattrs)
         if tag in self.elements_no_end_tag:
-            self.pieces.append('<{}{} />'.format(tag, strattrs))
+            self.pieces.append(f'<{tag}{strattrs} />')
         else:
-            self.pieces.append('<{}{}>'.format(tag, strattrs))
+            self.pieces.append(f'<{tag}{strattrs}>')
 
     def handle_endtag(self, tag):
         """

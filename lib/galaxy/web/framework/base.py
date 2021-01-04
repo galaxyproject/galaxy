@@ -20,11 +20,6 @@ from paste.response import HeaderDict
 
 from galaxy.util import smart_str
 
-try:
-    file_types = (file, io.IOBase)
-except NameError:
-    file_types = (io.IOBase, )
-
 log = logging.getLogger(__name__)
 
 #: time of the most recent server startup
@@ -237,7 +232,7 @@ class WebApplication:
             start_response(trans.response.wsgi_status(),
                            trans.response.wsgi_headeritems())
             return body
-        elif isinstance(body, file_types):
+        elif isinstance(body, io.IOBase):
             # Stream the file back to the browser
             return send_file(start_response, trans, body)
         else:
@@ -344,7 +339,7 @@ def _read_lines(self):
     # Adapt `self.__file = None` to Python name mangling of class-private attributes.
     # We need to patch the original FieldStorage class attribute, not the cgi_FieldStorage
     # class.
-    setattr(self, '_FieldStorage__file', None)
+    self._FieldStorage__file = None
     if self.outerboundary:
         self.read_lines_to_outerboundary()
     else:
@@ -464,7 +459,7 @@ class Response:
         """
         result = self.headers.headeritems()
         # Add cookie to header
-        for name, crumb in self.cookies.items():
+        for crumb in self.cookies.values():
             header, value = str(crumb).split(': ', 1)
             result.append((header, value))
         return result
@@ -492,10 +487,10 @@ def send_file(start_response, trans, body):
     if base:
         trans.response.headers['X-Accel-Redirect'] = \
             base + os.path.abspath(body.name)
-        body = [""]
+        body = [b""]
     elif apache_xsendfile:
         trans.response.headers['X-Sendfile'] = os.path.abspath(body.name)
-        body = [""]
+        body = [b""]
     # Fall back on sending the file in chunks
     else:
         body = iterate_file(body)

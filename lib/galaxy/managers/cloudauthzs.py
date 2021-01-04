@@ -20,9 +20,6 @@ class CloudAuthzManager(sharable.SharableModelManager):
     model_class = model.CloudAuthz
     foreign_key_name = 'cloudauthz'
 
-    def __init__(self, app, *args, **kwargs):
-        super().__init__(app, *args, **kwargs)
-
 
 class CloudAuthzsSerializer(base.ModelSerializer):
     """
@@ -61,7 +58,7 @@ class CloudAuthzsSerializer(base.ModelSerializer):
             'user_id'      : lambda i, k, **c: self.app.security.encode_id(i.user_id),
             'provider'     : lambda i, k, **c: str(i.provider),
             'config'       : lambda i, k, **c: i.config,
-            'authn_id'     : lambda i, k, **c: self.app.security.encode_id(i.authn_id),
+            'authn_id'     : lambda i, k, **c: self.app.security.encode_id(i.authn_id) if i.authn_id else None,
             'last_update'  : lambda i, k, **c: str(i.last_update),
             'last_activity': lambda i, k, **c: str(i.last_activity),
             'create_time'  : lambda i, k, **c: str(i.create_time),
@@ -110,7 +107,7 @@ class CloudAuthzsDeserializer(base.ModelDeserializer):
             decoded_authn_id = self.app.security.decode_id(val)
         except Exception:
             log.debug("cannot decode authz_id `" + str(val) + "`")
-            raise MalformedId("Invalid `authz_id` {}!".format(val))
+            raise MalformedId(f"Invalid `authz_id` {val}!")
 
         trans = context.get("trans")
         if trans is None:

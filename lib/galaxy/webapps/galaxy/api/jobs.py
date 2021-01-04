@@ -5,22 +5,32 @@ API operations on a jobs.
 """
 
 import logging
+import typing
 
-from sqlalchemy import or_
+from fastapi import Depends
+from fastapi_utils.cbv import cbv
+from fastapi_utils.inferring_router import InferringRouter as APIRouter
+from sqlalchemy import (
+    or_,
+)
 
 from galaxy import (
     exceptions,
     model,
     util,
 )
+from galaxy.app import UniverseApplication
 from galaxy.managers import hdas
 from galaxy.managers.jobs import (
+    JobLock,
     JobManager,
     JobSearch,
     summarize_destination_params,
     summarize_job_metrics,
     summarize_job_parameters,
+    view_show_job,
 )
+from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.web import (
     expose_api,
     expose_api_anonymous,
@@ -30,9 +40,47 @@ from galaxy.webapps.base.controller import (
     BaseAPIController,
     UsesVisualizationMixin
 )
-from galaxy.work.context import WorkRequestContext
+from galaxy.work.context import (
+    SessionRequestContext,
+    WorkRequestContext,
+)
+from . import (
+    get_app,
+    get_job_manager,
+    get_trans,
+)
 
 log = logging.getLogger(__name__)
+
+router = APIRouter(tags=["jobs"])
+
+
+def get_job_search(app: UniverseApplication = Depends(get_app)) -> JobSearch:
+    return JobSearch(app=app)
+
+
+def get_hda_manager(app: UniverseApplication = Depends(get_app)) -> hdas.HDAManager:
+    return app.hda_manager
+
+
+@cbv(router)
+class FastAPIJobs:
+    job_manager: JobManager = Depends(get_job_manager)
+    job_search: JobSearch = Depends(get_job_search)
+    hda_manager: hdas.HDAManager = Depends(get_hda_manager)
+
+    @router.get("/api/job/{id}")
+    def show(self, id: EncodedDatabaseIdField, trans: SessionRequestContext = Depends(get_trans), full: typing.Optional[bool] = False) -> typing.Dict:
+        """
+        Return dictionary containing description of job data
+
+        Parameters
+        - id: ID of job to return
+        - full: Return extra information ?
+        """
+        id = trans.app.security.decode_id(id)
+        job = self.job_manager.get_accessible_job(trans, id)
+        return view_show_job(trans, job, bool(full))
 
 
 class JobController(BaseAPIController, UsesVisualizationMixin):
@@ -143,29 +191,8 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
         :returns:   dictionary containing full description of job data
         """
         job = self.__get_job(trans, id)
-        is_admin = trans.user_is_admin
-        job_dict = self.encode_all_ids(trans, job.to_dict('element', system_details=is_admin), True)
         full_output = util.asbool(kwd.get('full', 'false'))
-        if full_output:
-
-            job_dict.update(dict(
-                tool_stdout=job.tool_stdout,
-                tool_stderr=job.tool_stderr,
-                job_stdout=job.job_stdout,
-                job_stderr=job.job_stderr,
-                stderr=job.stderr,
-                stdout=job.stdout,
-                job_messages=job.job_messages
-            ))
-
-            if is_admin:
-                if job.user:
-                    job_dict['user_email'] = job.user.email
-                else:
-                    job_dict['user_email'] = None
-
-                job_dict['job_metrics'] = summarize_job_metrics(trans, job)
-        return job_dict
+        return view_show_job(trans, job, full_output)
 
     @expose_api
     def common_problems(self, trans, id, **kwd):
@@ -485,7 +512,7 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
         * GET /api/job_lock
             return boolean indicating if job lock active.
         """
-        return {"active": self.app.job_manager.job_lock}
+        return self.job_manager.job_lock()
 
     @require_admin
     @expose_api
@@ -494,6 +521,6 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
         * PUT /api/job_lock
             return boolean indicating if job lock active.
         """
-        job_lock = payload.get("active")
-        self.app.queue_worker.send_control_task('admin_job_lock', kwargs={'job_lock': job_lock}, get_response=True)
-        return {"active": self.app.job_manager.job_lock}
+        active = payload.get("active")
+        job_lock = JobLock(active=active)
+        return self.job_manager.update_job_lock(job_lock)

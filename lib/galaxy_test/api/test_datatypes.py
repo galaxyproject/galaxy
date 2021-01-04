@@ -12,7 +12,7 @@ class DatatypesApiTestCase(ApiTestCase):
     def test_index(self):
         datatypes = self._index_datatypes()
         for common_type in ["tabular", "fasta"]:
-            assert common_type in datatypes, "{} not in {}".format(common_type, datatypes)
+            assert common_type in datatypes, f"{common_type} not in {datatypes}"
 
     def test_index_upload_only(self):
         # fli is not displayed in upload - so only show it if upload_only
@@ -48,7 +48,7 @@ class DatatypesApiTestCase(ApiTestCase):
 
         datatypes = response_dict["datatypes"]
         for common_type in ["tabular", "fasta"]:
-            assert common_type in datatypes, "{} not in {}".format(common_type, datatypes)
+            assert common_type in datatypes, f"{common_type} not in {datatypes}"
 
     def test_sniffers(self):
         response = self._get("datatypes/sniffers")
@@ -84,7 +84,8 @@ class DatatypesApiTestCase(ApiTestCase):
         self._assert_status_code_is(response, 200)
         assert converters == len(response.json())
 
-    def _index_datatypes(self, data={}):
+    def _index_datatypes(self, data=None):
+        data = data or {}
         response = self._get("datatypes", data=data)
         self._assert_status_code_is(response, 200)
         datatypes = response.json()

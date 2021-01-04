@@ -1,7 +1,6 @@
 """
 """
 import datetime
-import hashlib
 import inspect
 import logging
 import os
@@ -9,27 +8,30 @@ import random
 import socket
 import string
 import time
+from http.cookies import CookieError
 from importlib import import_module
+from urllib.parse import urlparse
 
 import mako.lookup
 import mako.runtime
 from babel import Locale
 from babel.support import Translations
 from Cheetah.Template import Template
-from six.moves.http_cookies import CookieError
-from six.moves.urllib.parse import urlparse
 from sqlalchemy import and_, true
-from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.exc import NoResultFound
 
 from galaxy import util
-from galaxy.exceptions import ConfigurationError, MessageException
+from galaxy.exceptions import (
+    AuthenticationFailed,
+    ConfigurationError,
+    MessageException,
+)
 from galaxy.managers import context
+from galaxy.managers.session import GalaxySessionManager
+from galaxy.managers.users import UserManager
 from galaxy.util import (
     asbool,
     safe_makedirs,
-    safe_str_cmp,
-    smart_str,
     unicodify
 )
 from galaxy.util.sanitize_html import sanitize_html
@@ -185,6 +187,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         self.app = app
         self.webapp = webapp
         self.security = webapp.security
+        self.user_manager = UserManager(app)
+        self.session_manager = GalaxySessionManager(app.model)
         base.DefaultWebTransaction.__init__(self, environ)
         self.setup_i18n()
         self.expunge_all()
@@ -197,8 +201,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         # that the current history should not be used for parameter values
         # and such).
         self.workflow_building_mode = False
-        # Flag indicating whether this is an API call and the API key user is an administrator
-        self.api_inherit_admin = False
         self.__user = None
         self.galaxy_session = None
         self.error_message = None
@@ -277,6 +279,21 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         t = Translations.load(dirname='locale', locales=locales, domain='ginga')
         self.template_context.update(dict(_=t.ugettext, n_=t.ugettext, N_=t.ungettext))
 
+    def set_cors_allow(self, name=None, value=None):
+        acr = 'Access-Control-Request-'
+        if name is None:
+            for key in self.request.headers.keys():
+                if key.startswith(acr):
+                    self.set_cors_allow(name=key[len(acr):], value=value)
+        else:
+            resp_name = f'Access-Control-Allow-{name}'
+            if value is None:
+                value = self.request.headers.get(acr + name, None)
+            if value:
+                self.response.headers[resp_name] = value
+            elif resp_name in self.response.headers:
+                del self.response.headers[resp_name]
+
     def set_cors_origin(self, origin=None):
         if origin is None:
             origin = self.request.headers.get("Origin", None)
@@ -340,9 +357,10 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
     def set_user(self, user):
         """Set the current user."""
         if self.galaxy_session:
-            self.galaxy_session.user = user
-            self.sa_session.add(self.galaxy_session)
-            self.sa_session.flush()
+            if user.bootstrap_admin_user:
+                self.galaxy_session.user = user
+                self.sa_session.add(self.galaxy_session)
+                self.sa_session.flush()
         self.__user = user
 
     user = property(get_user, set_user)
@@ -374,7 +392,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         try:
             self.response.cookies[name]['httponly'] = True
         except CookieError as e:
-            log.warning("Error setting httponly attribute in cookie '{}': {}".format(name, e))
+            log.warning(f"Error setting httponly attribute in cookie '{name}': {e}")
         if self.app.config.cookie_domain is not None:
             self.response.cookies[name]['domain'] = self.app.config.cookie_domain
 
@@ -385,23 +403,13 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         api_key = self.request.params.get('key', None) or self.request.headers.get('x-api-key', None)
         secure_id = self.get_cookie(name=session_cookie)
         api_key_supplied = self.environ.get('is_api_request', False) and api_key
-        if api_key_supplied and self._check_master_api_key(api_key):
-            self.api_inherit_admin = True
-            log.info("Session authenticated using Galaxy master api key")
-            self.user = None
-            self.galaxy_session = None
-        elif api_key_supplied:
+        if api_key_supplied:
             # Sessionless API transaction, we just need to associate a user.
             try:
-                provided_key = self.sa_session.query(self.app.model.APIKeys).filter(self.app.model.APIKeys.table.c.key == api_key).one()
-            except NoResultFound:
-                return 'Provided API key is not valid.'
-            if provided_key.user.deleted:
-                return 'User account is deactivated, please contact an administrator.'
-            newest_key = provided_key.user.api_keys[0]
-            if newest_key.key != provided_key.key:
-                return 'Provided API key has expired.'
-            self.set_user(provided_key.user)
+                user = self.user_manager.by_api_key(api_key)
+            except AuthenticationFailed as e:
+                return str(e)
+            self.set_user(user)
         elif secure_id:
             # API authentication via active session
             # Associate user using existing session
@@ -416,15 +424,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             # Anonymous API interaction -- anything but @expose_api_anonymous will fail past here.
             self.user = None
             self.galaxy_session = None
-
-    def _check_master_api_key(self, api_key):
-        master_api_key = getattr(self.app.config, 'master_api_key', None)
-        if not master_api_key:
-            return False
-        # Hash keys to make them the same size, so we can do safe comparison.
-        master_hash = hashlib.sha256(smart_str(master_api_key)).hexdigest()
-        provided_hash = hashlib.sha256(smart_str(api_key)).hexdigest()
-        return safe_str_cmp(master_hash, provided_hash)
 
     def _ensure_valid_session(self, session_cookie, create=True):
         """
@@ -448,10 +447,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             try:
                 session_key = self.security.decode_guid(secure_id)
                 if session_key:
-                    # Retrieve the galaxy_session id via the unique session_key
-                    galaxy_session = self.sa_session.query(self.app.model.GalaxySession) \
-                                                    .filter(and_(self.app.model.GalaxySession.table.c.session_key == session_key,
-                                                                 self.app.model.GalaxySession.table.c.is_valid == true())).options(joinedload("user")).first()
+                    galaxy_session = self.session_manager.get_session_from_session_key(session_key=session_key)
             except Exception:
                 # We'll end up creating a new galaxy_session
                 session_key = None
@@ -887,7 +883,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         """
         return self.template_context['message']
 
-    def show_message(self, message, type='info', refresh_frames=[], cont=None, use_panels=False, active_view=""):
+    def show_message(self, message, type='info', refresh_frames=None, cont=None, use_panels=False, active_view=""):
         """
         Convenience method for displaying a simple page with a single message.
 
@@ -897,24 +893,28 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         `refresh_frames`: names of frames in the interface that should be
                           refreshed when the message is displayed
         """
+        refresh_frames = refresh_frames or []
         return self.fill_template("message.mako", status=type, message=message, refresh_frames=refresh_frames, cont=cont, use_panels=use_panels, active_view=active_view)
 
-    def show_error_message(self, message, refresh_frames=[], use_panels=False, active_view=""):
+    def show_error_message(self, message, refresh_frames=None, use_panels=False, active_view=""):
         """
         Convenience method for displaying an error message. See `show_message`.
         """
+        refresh_frames = refresh_frames or []
         return self.show_message(message, 'error', refresh_frames, use_panels=use_panels, active_view=active_view)
 
-    def show_ok_message(self, message, refresh_frames=[], use_panels=False, active_view=""):
+    def show_ok_message(self, message, refresh_frames=None, use_panels=False, active_view=""):
         """
         Convenience method for displaying an ok message. See `show_message`.
         """
+        refresh_frames = refresh_frames or []
         return self.show_message(message, 'done', refresh_frames, use_panels=use_panels, active_view=active_view)
 
-    def show_warn_message(self, message, refresh_frames=[], use_panels=False, active_view=""):
+    def show_warn_message(self, message, refresh_frames=None, use_panels=False, active_view=""):
         """
         Convenience method for displaying an warn message. See `show_message`.
         """
+        refresh_frames = refresh_frames or []
         return self.show_message(message, 'warning', refresh_frames, use_panels=use_panels, active_view=active_view)
 
     @property

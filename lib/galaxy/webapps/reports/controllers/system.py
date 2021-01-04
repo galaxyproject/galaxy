@@ -1,6 +1,5 @@
 import logging
-import os
-import subprocess
+import shutil
 from datetime import datetime, timedelta
 from decimal import Decimal
 
@@ -8,7 +7,6 @@ from sqlalchemy import and_, desc, false, null, true
 from sqlalchemy.orm import eagerload
 
 from galaxy import model, util
-from galaxy.util import unicodify
 from galaxy.webapps.base.controller import BaseUIController, web
 
 log = logging.getLogger(__name__)
@@ -150,34 +148,9 @@ class System(BaseUIController):
                                    message=message)
 
     def get_disk_usage(self, file_path):
-        is_sym_link = os.path.islink(file_path)
-        file_system = disk_size = disk_used = disk_avail = disk_cap_pct = mount = None
-        df_output = unicodify(subprocess.check_output(['df', '-h', file_path]))
-
-        for df_line in df_output.splitlines():
-            df_line = df_line.strip()
-            if df_line:
-                df_line = df_line.lower()
-                if 'filesystem' in df_line or 'proc' in df_line:
-                    continue
-                elif is_sym_link:
-                    if ':' in df_line and '/' in df_line:
-                        mount = df_line
-                    else:
-                        try:
-                            disk_size, disk_used, disk_avail, disk_cap_pct, file_system = df_line.split()
-                            break
-                        except Exception:
-                            pass
-                else:
-                    try:
-                        file_system, disk_size, disk_used, disk_avail, disk_cap_pct, mount = df_line.split()
-                        break
-                    except Exception:
-                        pass
-            else:
-                break  # EOF
-        return (file_system, disk_size, disk_used, disk_avail, disk_cap_pct, mount)
+        disk_usage = shutil.disk_usage(file_path)
+        pct_used = round(disk_usage.used / disk_usage.total * 100, 2)
+        return (nice_size(disk_usage.total), nice_size(disk_usage.used), nice_size(disk_usage.free), pct_used)
 
     @web.expose
     def disk_usage(self, trans, **kwd):
@@ -200,7 +173,7 @@ def nice_size(size, include_bytes=False):
         nsize = Decimal(size)
         for x in ['bytes', 'KB', 'MB', 'GB']:
             if nsize.compare(Decimal("1024.0")) == Decimal("-1"):
-                nice_string = "{:3.1f} {}".format(nsize, x)
+                nice_string = f"{nsize:3.1f} {x}"
                 niced = True
                 break
             nsize /= Decimal("1024.0")
@@ -208,7 +181,7 @@ def nice_size(size, include_bytes=False):
             nice_string = "{:3.1f} {}".format(nsize, 'TB')
             niced = True
         if include_bytes and x != 'bytes':
-            nice_string = "{} ({} bytes)".format(nice_string, size)
+            nice_string = f"{nice_string} ({size} bytes)"
     except Exception:
         pass
     return nice_string

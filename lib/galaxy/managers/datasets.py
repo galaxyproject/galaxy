@@ -4,9 +4,8 @@ Manager and Serializer for Datasets.
 import glob
 import logging
 import os
+from typing import Type
 
-
-import galaxy.datatypes.metadata
 from galaxy import (
     exceptions,
     model
@@ -55,7 +54,7 @@ class DatasetManager(base.ModelManager, secured.AccessibleManagerMixin, deletabl
         return dataset
 
     def copy(self, dataset, **kwargs):
-        raise galaxy.exceptions.NotImplemented('Datasets cannot be copied')
+        raise exceptions.NotImplemented('Datasets cannot be copied')
 
     def purge(self, dataset, flush=True):
         """
@@ -87,7 +86,7 @@ class DatasetManager(base.ModelManager, secured.AccessibleManagerMixin, deletabl
         """
         Is this dataset readable/viewable to user?
         """
-        if self.user_manager.is_admin(user, trans=kwargs.get("trans", None)):
+        if self.user_manager.is_admin(user, trans=kwargs.get("trans")):
             return True
         if self.has_access_permission(dataset, user):
             return True
@@ -189,7 +188,7 @@ class DatasetSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin)
         If the config allows or the user is admin, return the file name
         of the file that contains this dataset's data.
         """
-        is_admin = self.user_manager.is_admin(user, trans=context.get("trans", None))
+        is_admin = self.user_manager.is_admin(user, trans=context.get("trans"))
         # expensive: allow config option due to cost of operation
         if is_admin or self.app.config.expose_dataset_path:
             if not dataset.purged:
@@ -200,7 +199,7 @@ class DatasetSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin)
         """
         If the config allows or the user is admin, return the file path.
         """
-        is_admin = self.user_manager.is_admin(user, trans=context.get("trans", None))
+        is_admin = self.user_manager.is_admin(user, trans=context.get("trans"))
         # expensive: allow config option due to cost of operation
         if is_admin or self.app.config.expose_dataset_path:
             if not dataset.purged:
@@ -210,7 +209,7 @@ class DatasetSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin)
     def serialize_permissions(self, dataset, key, user=None, **context):
         """
         """
-        trans = context.get("trans", None)
+        trans = context.get("trans")
         if not self.dataset_manager.permissions.manage.is_permitted(dataset, user, trans=trans):
             self.skip()
 
@@ -234,7 +233,7 @@ class DatasetAssociationManager(base.ModelManager,
     """
     # DA's were meant to be proxies - but were never fully implemented as them
     # Instead, a dataset association HAS a dataset but contains metadata specific to a library (lda) or user (hda)
-    model_class = model.DatasetInstance
+    model_class: Type[model.DatasetInstance] = model.DatasetInstance
 
     # NOTE: model_manager_class should be set in HDA/LDA subclasses
 
@@ -271,7 +270,7 @@ class DatasetAssociationManager(base.ModelManager,
         return dataset_assoc
 
     def by_user(self, user):
-        raise galaxy.exceptions.NotImplemented('Abstract Method')
+        raise exceptions.NotImplemented('Abstract Method')
 
     # .... associated job
     def creating_job(self, dataset_assoc):
@@ -330,34 +329,24 @@ class DatasetAssociationManager(base.ModelManager,
             dataset = dataset_assoc.dataset
 
         # Omit duplicated roles by converting to set
-        access_roles = set(dataset.get_access_roles(trans))
-        manage_roles = set(dataset.get_manage_permissions_roles(trans))
+        security_agent = trans.app.security_agent
+        access_roles = set(dataset.get_access_roles(security_agent))
+        manage_roles = set(dataset.get_manage_permissions_roles(security_agent))
 
         access_dataset_role_list = [(access_role.name, trans.security.encode_id(access_role.id)) for access_role in access_roles]
         manage_dataset_role_list = [(manage_role.name, trans.security.encode_id(manage_role.id)) for manage_role in manage_roles]
         rval = dict(access_dataset_roles=access_dataset_role_list, manage_dataset_roles=manage_dataset_role_list)
         if library_dataset is not None:
-            modify_roles = set(trans.app.security_agent.get_roles_for_action(library_dataset, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY))
+            modify_roles = set(security_agent.get_roles_for_action(library_dataset, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY))
             modify_item_role_list = [(modify_role.name, trans.security.encode_id(modify_role.id)) for modify_role in modify_roles]
             rval["modify_item_roles"] = modify_item_role_list
         return rval
 
-    def ok_to_edit_metadata(self, dataset_id):
-        # prevent modifying metadata when dataset is queued or running as input/output
-        # This code could be more efficient, i.e. by using mappers, but to prevent slowing down loading a History panel, we'll leave the code here for now
-        sa_session = self.app.model.context
-        for job_to_dataset_association in sa_session.query(
-                self.app.model.JobToInputDatasetAssociation).filter_by(dataset_id=dataset_id).all() \
-                + sa_session.query(self.app.model.JobToOutputDatasetAssociation).filter_by(dataset_id=dataset_id).all():
-            if job_to_dataset_association.job.state not in [job_to_dataset_association.job.states.OK, job_to_dataset_association.job.states.ERROR, job_to_dataset_association.job.states.DELETED]:
-                return False
-        return True
-
     def detect_datatype(self, trans, dataset_assoc):
         """Sniff and assign the datatype to a given dataset association (ldda or hda)"""
         data = trans.sa_session.query(self.model_class).get(dataset_assoc.id)
-        if data.datatype.allow_datatype_change:
-            if not self.ok_to_edit_metadata(data.id):
+        if data.datatype.is_datatype_change_allowed():
+            if not data.ok_to_edit_metadata():
                 raise exceptions.ItemAccessibilityException('This dataset is currently being used as input or output. You cannot change datatype until the jobs have completed or you have canceled them.')
             else:
                 path = data.dataset.file_name
@@ -372,7 +361,7 @@ class DatasetAssociationManager(base.ModelManager,
     def set_metadata(self, trans, dataset_assoc, overwrite=False, validate=True):
         """Trigger a job that detects and sets metadata on a given dataset association (ldda or hda)"""
         data = trans.sa_session.query(self.model_class).get(dataset_assoc.id)
-        if not self.ok_to_edit_metadata(data.id):
+        if not data.ok_to_edit_metadata():
             raise exceptions.ItemAccessibilityException('This dataset is currently being used as input or output. You cannot edit metadata until the jobs have completed or you have canceled them.')
         else:
             if overwrite:
@@ -442,7 +431,7 @@ class DatasetAssociationManager(base.ModelManager,
             self._set_permissions(trans, dataset_assoc, role_ids_dict)
 
     def _set_permissions(self, trans, dataset_assoc, roles_dict):
-        raise galaxy.exceptions.NotImplemented()
+        raise exceptions.NotImplemented()
 
 
 class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer,
@@ -658,6 +647,7 @@ class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableD
         self.deserializers.update({
             'name' : self.deserialize_basestring,
             'info' : self.deserialize_basestring,
+            'datatype' : self.deserialize_datatype,
         })
         self.deserializable_keyset.update(self.deserializers.keys())
 
@@ -683,6 +673,23 @@ class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableD
         setattr(dataset_assoc.metadata, key, unwrapped_val)
         # ...?
         return unwrapped_val
+
+    def deserialize_datatype(self, item, key, val, **context):
+        if not item.datatype.is_datatype_change_allowed():
+            raise exceptions.RequestParameterInvalidException("The current datatype does not allow datatype changes.")
+        target_datatype = self.app.datatypes_registry.get_datatype_by_extension(val)
+        if not target_datatype:
+            raise exceptions.RequestParameterInvalidException("The target datatype does not exist.")
+        if not target_datatype.is_datatype_change_allowed():
+            raise exceptions.RequestParameterInvalidException("The target datatype does not allow datatype changes.")
+        if not item.ok_to_edit_metadata():
+            raise exceptions.RequestParameterInvalidException("Dataset metadata could not be updated because it is used as input or output of a running job.")
+        item.change_datatype(val)
+        sa_session = self.app.model.context
+        sa_session.flush()
+        trans = context.get("trans")
+        self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(self.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': item}, overwrite=False)  # overwrite is False as per existing behavior
+        return item.datatype
 
 
 class DatasetAssociationFilterParser(base.ModelFilterParser, deletable.PurgableFiltersMixin):

@@ -116,7 +116,7 @@ class ToolPanelManagerTestCase(BaseToolBoxTestCase):
         self._setup_two_versions_remove_one(section=True, uninstall=True)
         self._verify_version_2_removed_from_panel()
         # Not in tool conf because it was uninstalled.
-        assert "github.com/galaxyproject/example/test_tool/0.2" not in open(os.path.join(self.test_directory, "tool_conf.xml"), "r").read()
+        assert "github.com/galaxyproject/example/test_tool/0.2" not in open(os.path.join(self.test_directory, "tool_conf.xml")).read()
         new_toolbox = self.get_new_toolbox()
         assert "tool_github.com/galaxyproject/example/test_tool/0.2" not in new_toolbox._integrated_tool_panel["tid"].elems
         self._verify_tool_confs()
@@ -125,7 +125,7 @@ class ToolPanelManagerTestCase(BaseToolBoxTestCase):
         self._setup_two_versions_remove_one(section=False, uninstall=True)
         self._verify_version_2_removed_from_panel(section=False)
         # Still in tool conf since not uninstalled only deactivated...
-        assert "github.com/galaxyproject/example/test_tool/0.2" not in open(os.path.join(self.test_directory, "tool_conf.xml"), "r").read()
+        assert "github.com/galaxyproject/example/test_tool/0.2" not in open(os.path.join(self.test_directory, "tool_conf.xml")).read()
         self._verify_tool_confs()
 
         self._remove_repository_contents("github.com/galaxyproject/example/test_tool/0.1", uninstall=True)
@@ -182,7 +182,7 @@ class ToolPanelManagerTestCase(BaseToolBoxTestCase):
             parse_xml(filename)
         except Exception:
             message_template = "file %s does not contain valid XML, content %s"
-            message = message_template % (filename, open(filename, "r").read())
+            message = message_template % (filename, open(filename).read())
             raise AssertionError(message)
 
     def _init_ts_tool(self, guid=DEFAULT_GUID, **kwds):

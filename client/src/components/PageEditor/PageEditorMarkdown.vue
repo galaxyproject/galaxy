@@ -1,29 +1,59 @@
 <template>
-    <div class="unified-panel-body editor-body">
+    <div id="columns">
         <markdown-editor
-            :initial-markdown="initialContent"
-            :onupdate="onUpdate"
-            ref="markdownEditor"
-            :toolbar="true"
-            :show-markdown-help="showMarkdownHelp"
+            :title="title"
+            :markdown-text="markdownText"
+            :markdown-config="contentData"
+            @onUpdate="onUpdate"
         >
+            <template v-slot:buttons>
+                <b-button
+                    id="save-button"
+                    title="Save"
+                    variant="link"
+                    role="button"
+                    v-b-tooltip.hover.bottom
+                    @click="saveContent(false)"
+                >
+                    <font-awesome-icon icon="save" />
+                </b-button>
+                <b-button
+                    id="view-button"
+                    title="Save & View"
+                    variant="link"
+                    role="button"
+                    v-b-tooltip.hover.bottom
+                    @click="saveContent(true)"
+                >
+                    <font-awesome-icon icon="eye" />
+                </b-button>
+            </template>
         </markdown-editor>
     </div>
 </template>
 
 <script>
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faEye, faSave } from "@fortawesome/free-solid-svg-icons";
 import MarkdownEditor from "components/Markdown/MarkdownEditor";
-import { showMarkdownHelp } from "./markdownHelp";
+import { Toast } from "ui/toast";
 import { save } from "./util";
+
+Vue.use(BootstrapVue);
+
+library.add(faEye, faSave);
 
 export default {
     components: {
         MarkdownEditor,
+        FontAwesomeIcon,
     },
     data: function () {
         return {
-            content: "",
-            showMarkdownHelp: showMarkdownHelp,
+            markdownText: this.content,
         };
     },
     props: {
@@ -31,23 +61,38 @@ export default {
             required: true,
             type: String,
         },
-        initialContent: {
+        publicUrl: {
+            required: true,
             type: String,
+        },
+        title: {
+            type: String,
+            default: null,
+        },
+        content: {
+            type: String,
+            default: null,
+        },
+        contentData: {
+            type: Object,
+            default: null,
         },
     },
     methods: {
-        onUpdate: function (content) {
-            this.content = content;
+        onUpdate(newContent) {
+            this.markdownText = newContent;
         },
-        saveContent: function () {
-            save(this.pageId, this.content);
+        saveContent(showResult) {
+            save(this.pageId, this.markdownText, !showResult)
+                .then(() => {
+                    if (showResult) {
+                        window.location = this.publicUrl;
+                    }
+                })
+                .catch((error) => {
+                    Toast.error(`Failed to save page: ${error}`);
+                });
         },
     },
 };
 </script>
-
-<style scoped>
-.editor-body {
-    display: flex;
-}
-</style>

@@ -1,14 +1,28 @@
-// Generic Vue component mount for use in transitional
-// mount functions
+// Generic Vue component mount for use in transitional mount functions, Please
+// use this instead of your own mount function so that all vue components get
+// the same plugins and events.
 
 import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
 import store from "../store";
-import _l from "utils/localization";
 
-// make localization filter available to all components
-Vue.filter("localize", (value) => _l(value));
+import { eventHubPlugin, localizationPlugin, vueRxShortcutPlugin } from "components/plugins";
 
-export const mountVueComponent = (ComponentDefinition) => (propsData, el) => {
+// Bootstrap components
+Vue.use(BootstrapVue);
+
+// Add a global event bus. We could just use root but I don't think that will
+// work right when we have more than one root, which we often will until the
+// application has been completely converted to Vue.
+Vue.use(eventHubPlugin);
+
+// localization filters and directives
+Vue.use(localizationPlugin);
+
+// rxjs utilities
+Vue.use(vueRxShortcutPlugin);
+
+export const mountVueComponent = (ComponentDefinition) => {
     const component = Vue.extend(ComponentDefinition);
-    return new component({ store, propsData, el });
+    return (propsData, el) => new component({ store, propsData, el });
 };

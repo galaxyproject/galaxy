@@ -4,13 +4,14 @@ Image classes
 import base64
 import logging
 import zipfile
-
-from six.moves.urllib.parse import quote_plus
+from urllib.parse import quote_plus
 
 from galaxy.datatypes.text import Html as HtmlFromText
 from galaxy.util import nice_size
 from galaxy.util.image_util import check_image_type
 from . import data
+from .sniff import build_sniff_from_prefix
+from .xml import GenericXml
 
 log = logging.getLogger(__name__)
 
@@ -52,7 +53,7 @@ class Image(data.Data):
         name = hda.name or ''
         with open(dataset.file_name, "rb") as f:
             base64_image_data = base64.b64encode(f.read()).decode("utf-8")
-        return "![{}](data:image/{};base64,{})".format(name, self.file_ext, base64_image_data)
+        return f"![{name}](data:image/{self.file_ext};base64,{base64_image_data})"
 
 
 class Jpg(Image):
@@ -177,14 +178,14 @@ def create_applet_tag_peek(class_name, archive, params):
       height="30" width="200" align="center" >
       <param name="archive" value="{}"/>""".format(class_name, archive)
     for name, value in params.items():
-        text += """<param name="{}" value="{}"/>""".format(name, value)
+        text += f"""<param name="{name}" value="{value}"/>"""
     text += """
 <object classid="clsid:8AD9C840-044E-11D1-B3E9-00805F499D93"
         height="30" width="200" >
         <param name="code" value="{}" />
         <param name="archive" value="{}"/>""".format(class_name, archive)
     for name, value in params.items():
-        text += """<param name="{}" value="{}"/>""".format(name, value)
+        text += f"""<param name="{name}" value="{value}"/>"""
     text += """<div class="errormessage">You must install and enable Java in your browser in order to access this applet.<div></object>
 </object>
 """
@@ -248,6 +249,41 @@ class Gmaj(data.Data):
         return True
 
 
+@build_sniff_from_prefix
+class Gifti(GenericXml):
+    """Class describing a Gifti format"""
+    file_ext = "gii"
+
+    def sniff_prefix(self, file_prefix):
+        """Determines whether the file is a Gifti file
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('Human.colin.R.activations.label.gii')
+        >>> Gifti().sniff(fname)
+        True
+        >>> fname = get_test_fname('interval.interval')
+        >>> Gifti().sniff(fname)
+        False
+        >>> fname = get_test_fname('megablast_xml_parser_test1.blastxml')
+        >>> Gifti().sniff(fname)
+        False
+        >>> fname = get_test_fname('tblastn_four_human_vs_rhodopsin.blastxml')
+        >>> Gifti().sniff(fname)
+        False
+        """
+        handle = file_prefix.string_io()
+        line = handle.readline()
+        if not line.strip().startswith('<?xml version="1.0"'):
+            return False
+        line = handle.readline()
+        if line.strip() == '<!DOCTYPE GIFTI SYSTEM "http://www.nitrc.org/frs/download.php/1594/gifti.dtd">':
+            return True
+        line = handle.readline()
+        if line.strip().startswith('<GIFTI'):
+            return True
+        return False
+
+
 class Html(HtmlFromText):
     """Deprecated class. This class should not be used anymore, but the galaxy.datatypes.text:Html one.
     This is for backwards compatibilities only."""
@@ -265,7 +301,7 @@ class Laj(data.Text):
                     "alignfile1": "display?id=%s" % dataset.id,
                     "buttonlabel": "Launch LAJ",
                     "title": "LAJ in Galaxy",
-                    "posturl": quote_plus("history_add_to?%s" % "&".join("{}={}".format(key, value) for key, value in {'history_id': dataset.history_id, 'ext': 'lav', 'name': 'LAJ Output', 'info': 'Added by LAJ', 'dbkey': dataset.dbkey, 'copy_access_from': dataset.id}.items())),
+                    "posturl": quote_plus("history_add_to?%s" % "&".join(f"{key}={value}" for key, value in {'history_id': dataset.history_id, 'ext': 'lav', 'name': 'LAJ Output', 'info': 'Added by LAJ', 'dbkey': dataset.dbkey, 'copy_access_from': dataset.id}.items())),
                     "noseq": "true"
                 }
                 class_name = "edu.psu.cse.bio.laj.LajApplet.class"

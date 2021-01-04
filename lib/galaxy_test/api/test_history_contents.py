@@ -67,7 +67,7 @@ class HistoryContentsApiTestCase(ApiTestCase, TestsDatasets):
         hda1 = self._wait_for_new_hda()
         hda_id = hda1["id"]
         if api_endpoint == "history_contents":
-            update_url = "histories/{}/contents/{}/permissions".format(self.history_id, hda_id)
+            update_url = f"histories/{self.history_id}/contents/{hda_id}/permissions"
         else:
             update_url = "datasets/%s/permissions" % hda_id
 
@@ -94,7 +94,7 @@ class HistoryContentsApiTestCase(ApiTestCase, TestsDatasets):
         self._assert_other_user_cannot_access(hda_id)
 
         # But they do for the original user.
-        contents_response = self._get("histories/{}/contents/{}".format(self.history_id, hda_id)).json()
+        contents_response = self._get(f"histories/{self.history_id}/contents/{hda_id}").json()
         assert "name" in contents_response
 
         update_response = self._update_permissions(update_url, payload)
@@ -128,13 +128,18 @@ class HistoryContentsApiTestCase(ApiTestCase, TestsDatasets):
 
     def _assert_other_user_cannot_access(self, history_content_id):
         with self._different_user():
-            contents_response = self._get("histories/{}/contents/{}".format(self.history_id, history_content_id)).json()
-            assert "name" not in contents_response
+            contents_response = self.dataset_populator.get_history_dataset_details_raw(
+                history_id=self.history_id, dataset_id=history_content_id
+            )
+            assert contents_response.status_code == 403
 
     def _assert_other_user_can_access(self, history_content_id):
         with self._different_user():
-            contents_response = self._get("histories/{}/contents/{}".format(self.history_id, history_content_id)).json()
-            assert "name" in contents_response
+            contents_response = self.dataset_populator.get_history_dataset_details_raw(
+                history_id=self.history_id, dataset_id=history_content_id
+            )
+            contents_response.raise_for_status()
+            assert "name" in contents_response.json()
 
     def test_index_hda_all_details(self):
         hda1 = self._new_dataset(self.history_id)
@@ -242,7 +247,7 @@ class HistoryContentsApiTestCase(ApiTestCase, TestsDatasets):
     def _raw_update(self, item_id, data, admin=False, history_id=None):
         history_id = history_id or self.history_id
         key_param = "use_admin_key" if admin else "use_key"
-        update_url = self._api_url("histories/{}/contents/{}".format(history_id, item_id), **{key_param: True})
+        update_url = self._api_url(f"histories/{history_id}/contents/{item_id}", **{key_param: True})
         update_response = put(update_url, json=data)
         return update_response
 

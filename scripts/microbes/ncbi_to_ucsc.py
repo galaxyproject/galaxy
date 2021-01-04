@@ -3,14 +3,12 @@
 Walk downloaded Genome Projects and Convert, in place, IDs to match the UCSC Archaea browser, where applicable.
 Uses UCSC Archaea DSN.
 """
-from __future__ import print_function
 
 import os
 import sys
 from shutil import move
+from urllib.request import urlopen
 from xml.etree import ElementTree
-
-from six.moves.urllib.request import urlopen
 
 
 def __main__():
@@ -26,7 +24,7 @@ def __main__():
         for file in files:
             if file[-5:] == ".info":
                 tmp_dict = {}
-                info_file = open(os.path.join(this_base_dir, file), 'r')
+                info_file = open(os.path.join(this_base_dir, file))
                 info = info_file.readlines()
                 info_file.close()
                 for line in info:

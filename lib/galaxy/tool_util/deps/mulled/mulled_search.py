@@ -6,17 +6,15 @@ import logging
 import sys
 import tempfile
 
+import requests
+
 from .mulled_list import get_singularity_containers
 from .util import build_target, v2_image_name
 
 try:
     from conda.cli.python_api import run_command
 except ImportError:
-    run_command = None
-try:
-    import requests
-except ImportError:
-    requests = None
+    run_command = None  # type: ignore
 
 try:
     from whoosh.fields import Schema
@@ -25,7 +23,7 @@ try:
     from whoosh.index import create_in
     from whoosh.qparser import QueryParser
 except ImportError:
-    Schema = TEXT = STORED = create_in = QueryParser = None
+    Schema = TEXT = STORED = create_in = QueryParser = None  # type: ignore
 
 QUAY_API_URL = 'https://quay.io/api/v1/repository'
 
@@ -99,7 +97,7 @@ class QuaySearch():
         Function downloads additional information from quay.io to
         get the tag-field which includes the version number.
         """
-        url = "{}/{}/{}".format(QUAY_API_URL, self.organization, repository_string)
+        url = f"{QUAY_API_URL}/{self.organization}/{repository_string}"
         r = requests.get(url, headers={'Accept-encoding': 'gzip'})
 
         json_decoder = json.JSONDecoder()
@@ -120,6 +118,8 @@ class CondaSearch():
         Function takes search_string variable and returns results from the bioconda channel in JSON format
 
         """
+        if run_command is None:
+            raise Exception("Invalid search destination. " + deps_error_message("conda"))
         raw_out, err, exit_code = run_command(
             'search', '-c',
             self.channel,
@@ -283,15 +283,22 @@ def readable_output(json, organization='biocontainers', channel='bioconda'):
                 (line[0].ljust(col_width0), line[1].ljust(col_width1), line[2])))  # output
 
 
+def deps_error_message(package):
+    return "Required dependency [%s] is not installed. Run 'pip install galaxy-tool-util[mulled]'." % package
+
+
 def main(argv=None):
     if Schema is None:
-        sys.stdout.write(
-            "Required dependencies are not installed. Run 'pip install Whoosh'.\n")
+        sys.stdout.write(deps_error_message("Whoosh"))
         return
+
+    destination_defaults = ['quay', 'singularity', 'github']
+    if run_command is not None:
+        destination_defaults.append('conda')
 
     parser = argparse.ArgumentParser(
         description='Searches in a given quay organization for a repository')
-    parser.add_argument('-d', '--destination', dest='search_dest', nargs='+', default=['quay', 'conda', 'singularity'],
+    parser.add_argument('-d', '--destination', dest='search_dest', nargs='+', default=destination_defaults,
                         help="Choose where to search. Options are 'conda', 'quay', 'singularity' and 'github'. If no option are given, all will be searched.")
     parser.add_argument('-o', '--organization', dest='organization_string', default="biocontainers",
                         help='Change quay organization to search; default is biocontainers.')

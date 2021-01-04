@@ -1,12 +1,17 @@
 import axios from "axios";
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
-import { CommunicationServerView } from "layout/communication-server-view";
 
-export function logoutClick() {
+const POST_LOGOUT_URL = "root/login?is_logout_redirect=true";
+
+/**
+ * Handles user logout.  Invalidates the current session, checks to see if we
+ * need to log out of OIDC too, and goes to our POST_LOGOUT_URL (or some other
+ * configured redirect). */
+export function userLogout(logoutAll = false) {
     const galaxy = getGalaxyInstance();
     const session_csrf_token = galaxy.session_csrf_token;
-    const url = `${galaxy.root}user/logout?session_csrf_token=${session_csrf_token}`;
+    const url = `${galaxy.root}user/logout?session_csrf_token=${session_csrf_token}&logout_all=${logoutAll}`;
     axios
         .get(url)
         .then(() => {
@@ -21,23 +26,32 @@ export function logoutClick() {
             }
         })
         .then((response) => {
-            if (response.data && response.data.redirect_uri) {
+            if (response.data?.redirect_uri) {
                 window.top.location.href = response.data.redirect_uri;
             } else {
-                window.top.location.href = `${galaxy.root}root/login?is_logout_redirect=true`;
+                window.top.location.href = `${galaxy.root}${POST_LOGOUT_URL}`;
             }
         });
+}
+
+/** User logout with 'log out all sessions' flag set.  This will invalidate all
+ * active sessions a user might have. */
+export function userLogoutAll() {
+    return userLogout(true);
+}
+
+/** Purely clientside logout, dumps session and redirects without invalidating
+ * serverside. Currently only used when marking an account deleted -- any
+ * subsequent navigation after the deletion API request would fail otherwise */
+export function userLogoutClient() {
+    const galaxy = getGalaxyInstance();
+    galaxy.user?.clearSessionStorage();
+    window.top.location.href = `${galaxy.root}${POST_LOGOUT_URL}`;
 }
 
 export function fetchMenu(options = {}) {
     const Galaxy = getGalaxyInstance();
     const menu = [];
-
-    //
-    // Chat server tab
-    //
-    const extendedNavItem = new CommunicationServerView();
-    menu.push(extendedNavItem.render());
 
     //
     // Analyze data tab.
@@ -244,7 +258,7 @@ export function fetchMenu(options = {}) {
                 {
                     title: _l("Logout"),
                     divider: true,
-                    onclick: logoutClick,
+                    onclick: userLogout,
                 },
                 {
                     title: _l("Datasets"),

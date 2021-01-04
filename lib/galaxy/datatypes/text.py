@@ -6,10 +6,9 @@ import json
 import logging
 import os
 import re
+import shlex
 import subprocess
 import tempfile
-
-from six.moves import shlex_quote
 
 from galaxy.datatypes.data import get_file_peek, Text
 from galaxy.datatypes.metadata import MetadataElement, MetadataParameter
@@ -118,19 +117,25 @@ class ExpressionJson(Json):
     def set_meta(self, dataset, **kwd):
         """
         """
-        json_type = "null"
-        with open(dataset.file_name) as f:
-            obj = json.load(f)
-            if isinstance(obj, int):
-                json_type = "int"
-            elif isinstance(obj, float):
-                json_type = "float"
-            elif isinstance(obj, list):
-                json_type = "list"
-            elif isinstance(obj, dict):
-                json_type = "object"
-
-        dataset.metadata.json_type = json_type
+        if dataset.has_data():
+            json_type = "null"
+            file_path = dataset.file_name
+            try:
+                with open(file_path) as f:
+                    obj = json.load(f)
+                    if isinstance(obj, int):
+                        json_type = "int"
+                    elif isinstance(obj, float):
+                        json_type = "float"
+                    elif isinstance(obj, list):
+                        json_type = "list"
+                    elif isinstance(obj, dict):
+                        json_type = "object"
+            except json.decoder.JSONDecodeError:
+                with open(file_path) as f:
+                    contents = f.read(512)
+                raise Exception(f"Invalid JSON encountered {contents}")
+            dataset.metadata.json_type = json_type
 
 
 @build_sniff_from_prefix
@@ -181,7 +186,7 @@ class Ipynb(Json):
                 ofilename = '%s.html' % ofilename
             except subprocess.CalledProcessError:
                 ofilename = dataset.file_name
-                log.exception('Command "%s" failed. Could not convert the Jupyter Notebook to HTML, defaulting to plain text.', ' '.join(map(shlex_quote, cmd)))
+                log.exception('Command "%s" failed. Could not convert the Jupyter Notebook to HTML, defaulting to plain text.', ' '.join(map(shlex.quote, cmd)))
             return open(ofilename, mode='rb')
 
     def set_meta(self, dataset, **kwd):
@@ -465,7 +470,7 @@ class Arff(Text):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "Attribute-Relation File Format (ARFF)"
-            dataset.blurb += ", {} comments, {} attributes".format(dataset.metadata.comment_lines, dataset.metadata.columns)
+            dataset.blurb += f", {dataset.metadata.comment_lines} comments, {dataset.metadata.columns} attributes"
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
@@ -561,7 +566,7 @@ class SnpEffDb(Text):
     MetadataElement(name="annotation", default=[], desc="Annotation Names", readonly=True, visible=True, no_value=[], optional=True)
 
     def __init__(self, **kwd):
-        Text.__init__(self, **kwd)
+        super().__init__(**kwd)
 
     # The SnpEff version line was added in SnpEff version 4.1
     def getSnpeffVersionFromFile(self, path):
@@ -578,7 +583,7 @@ class SnpEffDb(Text):
         return snpeff_version
 
     def set_meta(self, dataset, **kwd):
-        Text.set_meta(self, dataset, **kwd)
+        super().set_meta(dataset, **kwd)
         data_dir = dataset.extra_files_path
         # search data_dir/genome_version for files
         regulation_pattern = 'regulation_(.+).bin'
@@ -630,7 +635,6 @@ class SnpSiftDbNSFP(Text):
     MetadataElement(name="annotation", default=[], desc="Annotation Names", readonly=True, visible=True, no_value=[])
     file_ext = "snpsiftdbnsfp"
     composite_type = 'auto_primary_file'
-    allow_datatype_change = False
     """
     ## The dbNSFP file is a tabular file with 1 header line
     ## The first 4 columns are required to be: chrom	pos	ref	alt
@@ -644,12 +648,9 @@ class SnpSiftDbNSFP(Text):
     """
 
     def __init__(self, **kwd):
-        Text.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.add_composite_file('%s.gz', description='dbNSFP bgzip', substitute_name_with_metadata='reference_name', is_binary=True)
         self.add_composite_file('%s.gz.tbi', description='Tabix Index File', substitute_name_with_metadata='reference_name', is_binary=True)
-
-    def init_meta(self, dataset, copy_from=None):
-        Text.init_meta(self, dataset, copy_from=copy_from)
 
     def generate_primary_file(self, dataset=None):
         """

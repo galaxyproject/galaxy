@@ -6,6 +6,7 @@ from abc import (
     abstractmethod,
     abstractproperty,
 )
+from typing import Any, Dict
 
 import yaml
 
@@ -27,7 +28,7 @@ class DependencyResolver(Dictifiable, metaclass=ABCMeta):
     disabled = False
     resolves_simple_dependencies = True
     can_uninstall_dependencies = False
-    config_options = {}
+    config_options: Dict[str, Any] = {}
 
     @abstractmethod
     def resolve(self, requirement, **kwds):
@@ -269,7 +270,7 @@ class Dependency(Dictifiable, metaclass=ABCMeta):
         """
         Return a message describing this dependency
         """
-        return "Using dependency {} version {} of type {}".format(self.name, self.version, self.dependency_type)
+        return f"Using dependency {self.name} version {self.version} of type {self.dependency_type}"
 
 
 class ContainerDependency(Dependency):

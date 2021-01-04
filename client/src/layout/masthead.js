@@ -19,6 +19,7 @@ export class MastheadState {
         // add quota meter to masthead
         Galaxy.quotaMeter = this.quotaMeter = new QuotaMeter.UserQuotaMeter({
             model: Galaxy.user,
+            quotaUrl: Galaxy.config.quota_url,
         });
 
         // loop through beforeunload functions if the user attempts to unload the page
@@ -51,6 +52,7 @@ export function mountMasthead(el, options, mastheadState) {
             brand: options.brand,
             brandLink: options.logo_url,
             brandImage: options.logo_src,
+            brandImageSecondary: options.logo_src_secondary,
             appRoot: getAppRoot(),
             galaxy: getGalaxyInstance(),
             menuOptions: options,

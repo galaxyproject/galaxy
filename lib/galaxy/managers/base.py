@@ -28,6 +28,7 @@ attribute change to a model object.
 import datetime
 import logging
 import re
+from typing import Type
 
 import routes
 import sqlalchemy
@@ -114,8 +115,8 @@ def get_object(trans, id, class_name, check_ownership=False, check_accessible=Fa
         item = trans.sa_session.query(item_class).get(decoded_id)
         assert item is not None
     except Exception:
-        log.exception("Invalid {} id ( {} ) specified.".format(class_name, id))
-        raise exceptions.MessageException("Invalid {} id ( {} ) specified".format(class_name, id), type="error")
+        log.exception(f"Invalid {class_name} id ( {id} ) specified.")
+        raise exceptions.MessageException(f"Invalid {class_name} id ( {id} ) specified", type="error")
 
     if check_ownership or check_accessible:
         security_check(trans, item, check_ownership, check_accessible)
@@ -155,8 +156,8 @@ class ModelManager:
     Provides common queries and CRUD operations as a (hopefully) light layer
     over the ORM.
     """
-    model_class = object
-    foreign_key_name = None
+    model_class: type = object
+    foreign_key_name: str
 
     def __init__(self, app):
         self.app = app
@@ -480,7 +481,7 @@ class HasAModelManager:
     """
 
     #: the class used to create this serializer's generically accessible model_manager
-    model_manager_class = None
+    model_manager_class: Type[object]
     # examples where this doesn't really work are ConfigurationSerializer (no manager)
     # and contents (2 managers)
 
@@ -893,9 +894,7 @@ class ModelFilterParser(HasAModelManager):
     # (as the model informs how the filter params are parsed)
     # I have no great idea where this 'belongs', so it's here for now
 
-    #: model class
-    model_class = None
-    subcontainer_model_class = None
+    model_class: type
     parsed_filter = parsed_filter
 
     def __init__(self, app, **kwargs):
