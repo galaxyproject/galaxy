@@ -768,8 +768,8 @@ class PulsarJobRunner(AsynchronousJobRunner):
         remote_dependency_resolution = dependency_resolution == "remote"
         if not remote_dependency_resolution:
             return None
-        requirements = job_wrapper.tool.requirements or []
-        installed_tool_dependencies = job_wrapper.tool.installed_tool_dependencies or []
+        requirements = job_wrapper.tool.requirements
+        installed_tool_dependencies = job_wrapper.tool.installed_tool_dependencies
         return dependencies.DependenciesDescription(
             requirements=requirements,
             installed_tool_dependencies=installed_tool_dependencies,
