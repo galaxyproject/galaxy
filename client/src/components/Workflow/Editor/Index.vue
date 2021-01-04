@@ -12,6 +12,7 @@
             @onWorkflowError="onWorkflowError"
             @onWorkflowMessage="onWorkflowMessage"
             @onRefactor="onRefactor"
+            @onShow="hideModal()"
         />
         <MarkdownEditor
             v-if="!isCanvas"
@@ -319,6 +320,9 @@ export default {
         },
         onWorkflowMessage(title, body) {
             show_message(title, body);
+        },
+        hideModal() {
+            hide_modal();
         },
         async onRefactor(response) {
             await fromSimple(this, response.workflow);

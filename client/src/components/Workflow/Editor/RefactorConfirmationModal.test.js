@@ -7,6 +7,7 @@ import flushPromises from "flush-promises";
 
 const localVue = createLocalVue();
 const TEST_WORKFLOW_ID = "test123";
+const TEST_ACTION_TYPE = "upgrade_subworkflow";
 
 describe("RefactorConfirmationModal.vue", () => {
     let wrapper;
@@ -36,7 +37,7 @@ describe("RefactorConfirmationModal.vue", () => {
             })
         );
         wrapper.setProps({
-            refactorActions: [{ action_type: "type1" }],
+            refactorActions: [{ action_type: TEST_ACTION_TYPE }],
         });
         await flushPromises();
         expect(wrapper.emitted().onWorkflowError.length).toBe(1);
@@ -50,11 +51,13 @@ describe("RefactorConfirmationModal.vue", () => {
     it("should call refactor on dryRun and run without dryRun if all fine", async () => {
         refactor.mockReturnValue(
             new Promise((then, error) => {
-                then({});
+                then({
+                    action_executions: [],
+                });
             })
         );
         wrapper.setProps({
-            refactorActions: [{ action_type: "type1" }],
+            refactorActions: [{ action_type: TEST_ACTION_TYPE }],
         });
         await flushPromises();
         expect(wrapper.emitted().onWorkflowError).toBeFalsy();
@@ -67,5 +70,38 @@ describe("RefactorConfirmationModal.vue", () => {
 
         // second time onRefactor emitted with the final response
         expect(wrapper.emitted().onRefactor.length).toBe(1);
+    });
+
+    it("should show confirmation dialog if there are messages from the server", async () => {
+        refactor.mockReturnValue(
+            new Promise((then, error) => {
+                then({
+                    action_executions: [
+                        {
+                            action_type: TEST_ACTION_TYPE,
+                            messages: [
+                                {
+                                    message_type: "connection_drop_forced",
+                                    message: "hey, a connection was dropped - better respond",
+                                },
+                            ],
+                        },
+                    ],
+                });
+            })
+        );
+        wrapper.setProps({
+            refactorActions: [{ action_type: TEST_ACTION_TYPE }],
+        });
+        await flushPromises();
+        expect(wrapper.emitted().onWorkflowError).toBeFalsy();
+
+        // called with dry run...
+        expect(refactor.mock.calls[0][0]).toEqual(TEST_WORKFLOW_ID);
+        expect(refactor.mock.calls[0][2]).toBeTruthy();
+        // but didn't follow up with executing the action because we need to confirm
+        expect(refactor.mock.calls.length).toBe(1);
+
+        expect(wrapper.vm.show).toBeTruthy();
     });
 });
