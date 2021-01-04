@@ -28,7 +28,7 @@ export class DefaultForm {
                 },
             });
             operations.upgrade_subworkflow = new Ui.Button({
-                tooltip: _l("Attempted automated upgrade of subworkflow."),
+                tooltip: _l("Attempt to upgrade this step to latest version of this subworkflow."),
                 icon: "fa-cubes",
                 onclick: function () {
                     workflow.attemptRefactor([
