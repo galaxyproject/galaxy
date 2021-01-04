@@ -2410,7 +2410,28 @@ In order to reference parameters in sections from tags in the `<outputs>` sectio
 
 Until profile 21.01 `parameter_name` was sufficient (https://github.com/galaxyproject/galaxy/pull/9493/files).
 
-Note that references to other parameters in the `<inputs>` section are only possible if the reference is in the same section or its parents, therefor only `parameter_name` is used. 
+Note that references to other parameters in the `<inputs>` section are only possible if the reference is in the same section or its parents (and is defined earlier), therefore only `parameter_name` is used.
+
+```
+    <param name="foo" type="data" format="tabular"/>
+    <param name="bar" type="data_column" data_ref="foo"/>
+    <section>
+        <param name="qux" type="data_column" data_ref="foo"/>
+        <param name="foo" type="data" format="tabular"/>
+        <param name="baz" type="data_column" data_ref="foo"/>
+    </section>
+```
+
+In the above example `bar` and `qux` will refer to the first foo outside of the section and `baz` to the `foo` inside the section. This illustrates why non-unique parameter names are strongly discouraged. 
+
+The following will not work:
+
+```
+    <section>
+        <param name="foo" type="data" format="tabular"/>
+    </section>
+    <param name="bar" type="data_column" data_ref="foo"/>
+```
 
 Further examples can be found in the [test case](https://github.com/galaxyproject/galaxy/blob/master/test/functional/tools/section.xml) from [pull request #35](https://github.com/galaxyproject/galaxy/pull/35).
 ]]></xs:documentation>
