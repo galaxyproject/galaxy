@@ -423,12 +423,16 @@ export default {
             const runUrl = `${getAppRoot()}workflows/run?id=${this.id}`;
             this.onNavigate(runUrl);
         },
-        onNavigate(url) {
-            if (this.hasChanges) {
+        onNavigate(url, force = false) {
+            if (!force && this.hasChanges) {
                 this.onSave(true).then(() => {
                     window.location = url;
                 });
             } else {
+                if (this.hasChanges) {
+                    window.onbeforeunload = false;
+                    this.hideModal();
+                }
                 window.location = url;
             }
         },
@@ -441,7 +445,7 @@ export default {
                 .then((data) => {
                     getVersions(this.id).then((versions) => {
                         this.versions = versions;
-                        hide_modal();
+                        this.hideModal();
                     });
                 })
                 .catch((response) => {
@@ -481,7 +485,7 @@ export default {
             const markdown = report.markdown || reportDefault;
             this.markdownText = markdown;
             this.markdownConfig = report;
-            hide_modal();
+            this.hideModal();
             this.stateMessages = getStateUpgradeMessages(data);
             const has_changes = this.stateMessages.length > 0;
             this.license = data.license;
@@ -525,6 +529,7 @@ export default {
         },
         onInsertedStateMessages(insertedStateMessages) {
             this.insertedStateMessages = insertedStateMessages;
+            this.hideModal();
         },
     },
 };
