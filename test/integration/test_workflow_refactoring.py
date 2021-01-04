@@ -418,7 +418,7 @@ steps:
         actions = [
             {"action_type": "fill_step_defaults", "step": {"order_index": 0}},
         ]
-        action_executions = self._refactor(actions).actions_executed
+        action_executions = self._refactor(actions).action_executions
         first_step = self._latest_workflow.step_by_label("random1")
         assert "num_lines" in first_step.tool_inputs
         assert len(action_executions) == 1
@@ -439,9 +439,9 @@ steps:
             {"action_type": "fill_step_defaults", "step": {"order_index": 0}},
         ]
         response = self._dry_run(actions)
-        actions_executed = response.actions_executed
-        assert len(actions_executed) == 1
-        action_execution = actions_executed[0]
+        action_executions = response.action_executions
+        assert len(action_executions) == 1
+        action_execution = action_executions[0]
         assert len(action_execution.messages) == 1
         message = action_execution.messages[0]
         assert message.order_index == 0
@@ -461,7 +461,7 @@ steps:
         actions = [
             {"action_type": "fill_defaults"},
         ]
-        action_executions = self._refactor(actions).actions_executed
+        action_executions = self._refactor(actions).action_executions
 
         first_step = self._latest_workflow.step_by_label("random1")
         assert "num_lines" in first_step.tool_inputs
@@ -497,7 +497,7 @@ steps:
         # t = self._app.toolbox.get_tool("multiple_versions", tool_version="0.1")
         # assert t is not None
         # assert t.version == "0.1"
-        action_executions = self._refactor(actions).actions_executed
+        action_executions = self._refactor(actions).action_executions
         assert len(action_executions) == 1
         assert len(action_executions[0].messages) == 0
         assert self._latest_workflow.step_by_label("the_step").tool_version == "0.2"
@@ -516,7 +516,7 @@ steps:
         actions = [
             {"action_type": "upgrade_tool", "step": {"label": "the_step"}, "tool_version": "0.2"},
         ]
-        action_executions = self._refactor(actions).actions_executed
+        action_executions = self._refactor(actions).action_executions
 
         assert self._latest_workflow.step_by_label("the_step").tool_version == "0.2"
 
@@ -556,13 +556,13 @@ steps:
             {"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}},
         ]
         response = self._dry_run(actions)
-        actions_executed = response.actions_executed
-        assert len(actions_executed) == 1
-        assert len(actions_executed[0].messages) == 0
+        action_executions = response.action_executions
+        assert len(action_executions) == 1
+        assert len(action_executions[0].messages) == 0
 
-        actions_executed = self._refactor(actions).actions_executed
-        assert len(actions_executed) == 1
-        assert len(actions_executed[0].messages) == 0
+        action_executions = self._refactor(actions).action_executions
+        assert len(action_executions) == 1
+        assert len(action_executions[0].messages) == 0
 
         post_upgrade_native = self._download_native(self._most_recent_stored_workflow)
         self._assert_nested_workflow_num_lines_is(post_upgrade_native, "2")
@@ -591,7 +591,11 @@ steps:
         actions = [
             {"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}, "content_id": middle_workflow_id},
         ]
-        action_executions = self._refactor(actions).actions_executed
+        action_executions = self._dry_run(actions).action_executions
+        assert len(action_executions) == 1
+        assert len(action_executions[0].messages) == 0
+
+        action_executions = self._refactor(actions).action_executions
         assert len(action_executions) == 1
         assert len(action_executions[0].messages) == 0
         post_upgrade_native = self._download_native(self._most_recent_stored_workflow)
@@ -609,7 +613,7 @@ steps:
         actions = [
             {"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}},
         ]
-        action_executions = self._refactor(actions).actions_executed
+        action_executions = self._refactor(actions).action_executions
         native_dict = self._download_native()
         nested_step = _step_with_label(native_dict, "nested_workflow")
         # order_index of subworkflow shifts down from "2" because it has no
@@ -644,7 +648,7 @@ steps:
         actions = [
             {"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}},
         ]
-        action_executions = self._refactor(actions).actions_executed
+        action_executions = self._refactor(actions).action_executions
         assert len(action_executions) == 1
         messages = action_executions[0].messages
 
@@ -675,7 +679,7 @@ steps:
         actions = [
             {"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}},
         ]
-        action_executions = self._refactor(actions).actions_executed
+        action_executions = self._refactor(actions).action_executions
         assert len(action_executions) == 1
         messages = action_executions[0].messages
         assert len(messages) == 1

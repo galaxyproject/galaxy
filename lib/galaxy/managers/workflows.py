@@ -1458,7 +1458,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
         module_injector = WorkflowModuleInjector(trans)
         refactor_executor = WorkflowRefactorExecutor(raw_workflow_description, workflow, module_injector)
-        actions_executed = refactor_executor.refactor(refactor_request)
+        action_executions = refactor_executor.refactor(refactor_request)
         refactored_workflow, errors = self.update_workflow_from_raw_description(
             trans,
             stored_workflow,
@@ -1471,12 +1471,12 @@ class WorkflowContentsManager(UsesAnnotations):
         #   so this is really more of a warning - we disregard it the other two places
         #   it is used also. These same messages will appear in the dictified version we
         #   we send back anyway
-        return refactored_workflow, actions_executed
+        return refactored_workflow, action_executions
 
     def refactor(self, trans, stored_workflow, refactor_request):
-        refactored_workflow, actions_executed = self.do_refactor(trans, stored_workflow, refactor_request)
+        refactored_workflow, action_executions = self.do_refactor(trans, stored_workflow, refactor_request)
         return RefactorResponse(
-            actions_executed=actions_executed,
+            action_executions=action_executions,
             workflow=self.workflow_to_dict(trans, refactored_workflow.stored_workflow, style=refactor_request.style),
             dry_run=refactor_request.dry_run,
         )
@@ -1487,7 +1487,7 @@ class RefactorRequest(RefactorActions):
 
 
 class RefactorResponse(BaseModel):
-    actions_executed: List[RefactorActionExecution]
+    action_executions: List[RefactorActionExecution]
     workflow: dict
     dry_run: bool
 
