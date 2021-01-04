@@ -502,7 +502,8 @@ class WorkflowContentsManager(UsesAnnotations):
         # will be ( tool_id, tool_name, tool_version ).
         missing_tool_tups = []
         for step_dict in self.__walk_step_dicts(data):
-            self.__load_subworkflows(trans, step_dict, subworkflow_id_map, workflow_state_resolution_options, dry_run=dry_run)
+            if not dry_run:
+                self.__load_subworkflows(trans, step_dict, subworkflow_id_map, workflow_state_resolution_options, dry_run=dry_run)
 
         module_kwds = workflow_state_resolution_options.dict()
         module_kwds.update(kwds)  # TODO: maybe drop this?
@@ -517,7 +518,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 workflow.has_errors = True
 
         # Second pass to deal with connections between steps
-        self.__connect_workflow_steps(steps, steps_by_external_id)
+        self.__connect_workflow_steps(steps, steps_by_external_id, dry_run)
 
         # Order the steps if possible
         attach_ordered_steps(workflow, steps)
@@ -1366,6 +1367,8 @@ class WorkflowContentsManager(UsesAnnotations):
                     step_input.default_value = default
                     step_input.default_value_set = True
 
+        if dry_run and step in trans.sa_session:
+            trans.sa_session.expunge(step)
         return module, step
 
     def __load_subworkflow_from_step_dict(self, trans, step_dict, subworkflow_id_map, workflow_state_resolution_options, dry_run=False):
@@ -1398,7 +1401,7 @@ class WorkflowContentsManager(UsesAnnotations):
         ).workflow
         return subworkflow
 
-    def __connect_workflow_steps(self, steps, steps_by_external_id):
+    def __connect_workflow_steps(self, steps, steps_by_external_id, dry_run):
         """ Second pass to deal with connections between steps.
 
         Create workflow connection objects using externally specified ids
@@ -1425,6 +1428,8 @@ class WorkflowContentsManager(UsesAnnotations):
                     output_name = conn_dict["output_name"]
                     input_subworkflow_step_index = conn_dict.get('input_subworkflow_step_id', None)
 
+                    if dry_run:
+                        input_subworkflow_step_index = None
                     step.add_connection(input_name, output_name, output_step, input_subworkflow_step_index)
 
             del step.temp_input_connections

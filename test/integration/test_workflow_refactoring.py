@@ -555,9 +555,14 @@ steps:
         actions = [
             {"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}},
         ]
-        action_executions = self._refactor(actions).actions_executed
-        assert len(action_executions) == 1
-        assert len(action_executions[0].messages) == 0
+        response = self._dry_run(actions)
+        actions_executed = response.actions_executed
+        assert len(actions_executed) == 1
+        assert len(actions_executed[0].messages) == 0
+
+        actions_executed = self._refactor(actions).actions_executed
+        assert len(actions_executed) == 1
+        assert len(actions_executed[0].messages) == 0
 
         post_upgrade_native = self._download_native(self._most_recent_stored_workflow)
         self._assert_nested_workflow_num_lines_is(post_upgrade_native, "2")
