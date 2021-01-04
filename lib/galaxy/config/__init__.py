@@ -1235,8 +1235,8 @@ class ConfiguresGalaxyMixin:
         if check_migrate_databases:
             # Initialize database / check for appropriate schema version.  # If this
             # is a new installation, we'll restrict the tool migration messaging.
-            from galaxy.model.migrate.check import create_or_verify_database
-            create_or_verify_database(db_url, config_file, self.config.database_engine_options, app=self, map_install_models=combined_install_database)
+            from galaxy.model.migrations import run
+            run(db_url, mapping.metadata, self.config.database_engine_options, app=self, map_install_models=combined_install_database)
             if not combined_install_database:
                 tsi_create_or_verify_database(install_db_url, install_database_options, app=self)
 
