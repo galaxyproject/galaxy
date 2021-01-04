@@ -2770,6 +2770,28 @@ class ICM(Binary):
         return False
 
 
+class Parquet(Binary):
+    """
+    Class describing Apache Parquet file (https://parquet.apache.org/)
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('example.parquet')
+    >>> Parquet().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.mz5')
+    >>> Parquet().sniff(fname)
+    False
+    """
+    file_ext = "parquet"
+
+    def __init__(self, **kwd):
+        super().__init__(**kwd)
+        self._magic = b"PAR1"  # Defined at https://parquet.apache.org/documentation/latest/
+
+    def sniff(self, filename):
+        with open(filename, 'rb') as f:
+            return f.read(4) == self._magic
+
+
 class BafTar(CompressedArchive):
     """
     Base class for common behavior of tar files of directory-based raw file formats
