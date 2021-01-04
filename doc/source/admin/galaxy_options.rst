@@ -1290,6 +1290,17 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``custom_activation_email_message``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    This text will be inserted at the end of the activation email's
+    message, before the 'Your Galaxy Team' signature.
+:Default: ``None``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 ``instance_resource_url``
 ~~~~~~~~~~~~~~~~~~~~~~~~~
