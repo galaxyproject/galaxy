@@ -367,6 +367,7 @@ class ExecutionTimerFactory:
                 getattr(config, 'statsd_port', 8125),
                 getattr(config, 'statsd_prefix', 'galaxy'),
                 getattr(config, 'statsd_influxdb', False),
+                getattr(config, 'statsd_mock_calls', False),
             )
         else:
             self.galaxy_statsd_client = None
