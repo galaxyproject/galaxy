@@ -109,9 +109,7 @@ export default {
             */
             if (!this.jobStatesTerminal) {
                 const pollHistory$ = this.watch$("jobStatesTerminal");
-                const stopPolling$ = pollHistory$.pipe(
-                    filter((val) => val === true),
-                );
+                const stopPolling$ = pollHistory$.pipe(filter((val) => val === true));
                 const historyMonitor$ = getHistoryMonitor(this.invocation.history_id).pipe(takeUntil(stopPolling$));
                 this.listenTo(historyMonitor$, {
                     error: (err) => console.error("An error occured while monitoring history for datasets", err),
