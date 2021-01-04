@@ -7,20 +7,18 @@ import sys
 import tarfile
 import tempfile
 import time
+import zipfile
 from collections import OrderedDict
 from json import dumps
 from logging import getLogger
 
+import requests
 from packaging.version import parse as parse_version, Version
 try:
     from nose.tools import nottest
 except ImportError:
     def nottest(x):
         return x
-try:
-    import requests
-except ImportError:
-    requests = None
 
 from galaxy import util
 from galaxy.tool_util.parser.interface import TestCollectionDef, TestCollectionOutputDef
@@ -104,7 +102,7 @@ class GalaxyInteractorApi:
         self.download_attempts = kwds.get("download_attempts", 1)
         self.download_sleep = kwds.get("download_sleep", 1)
         # Local test data directories.
-        self.test_data_directories = kwds.get("test_data", [])
+        self.test_data_directories = kwds.get("test_data") or []
 
         self._target_galaxy_version = None
 
@@ -222,7 +220,7 @@ class GalaxyInteractorApi:
         are assumed to be datatype-specific and mapped with a prefix of `metadata_`.
         """
         metadata = attributes.get('metadata', {}).copy()
-        for key, value in metadata.copy().items():
+        for key in metadata.copy().keys():
             if key not in ['name', 'info', 'tags', 'created_from_basename']:
                 new_key = "metadata_%s" % key
                 metadata[new_key] = metadata[key]
@@ -313,8 +311,14 @@ class GalaxyInteractorApi:
                 elif mode == 'directory':
                     prefix = os.path.basename(filename)
                     path = tempfile.mkdtemp(prefix=prefix)
-                    with tarfile.open(fileobj=io.BytesIO(response.content)) as tar_contents:
-                        tar_contents.extractall(path=path)
+                    fileobj = io.BytesIO(response.content)
+                    if zipfile.is_zipfile(fileobj):
+                        with zipfile.ZipFile(fileobj) as contents:
+                            contents.extractall(path=path)
+                    else:
+                        # Galaxy < 21.01
+                        with tarfile.open(fileobj=fileobj) as tar_contents:
+                            tar_contents.extractall(path=path)
                     result = path
         else:
             # We can only use local data
@@ -326,9 +330,10 @@ class GalaxyInteractorApi:
                 if os.path.exists(local_path):
                     break
 
-        if result is None and os.path.exists(local_path):
+        if result is None and local_path is not None and os.path.exists(local_path):
             if mode == 'file':
-                result = open(local_path, mode='rb')
+                with open(local_path, mode='rb') as f:
+                    result = f.read()
             elif mode == 'directory':
                 # Make a copy, since we are going to clean up the returned path
                 path = tempfile.mkdtemp()
@@ -410,10 +415,10 @@ class GalaxyInteractorApi:
         assert len(jobs) > 0, "Invalid response from server [%s], expecting a job." % submit_response
         return lambda: self.wait_for_job(jobs[0]["id"], history_id, maxseconds=maxseconds)
 
-    def run_tool(self, testdef, history_id, resource_parameters={}):
+    def run_tool(self, testdef, history_id, resource_parameters=None):
         # We need to handle the case where we've uploaded a valid compressed file since the upload
         # tool will have uncompressed it on the fly.
-
+        resource_parameters = resource_parameters or {}
         inputs_tree = testdef.inputs.copy()
         for key, value in inputs_tree.items():
             values = [value] if not isinstance(value, list) else value
@@ -439,7 +444,7 @@ class GalaxyInteractorApi:
                 inputs_tree[key] = value[0]
 
         submit_response = None
-        for _ in range(30):
+        for _ in range(DEFAULT_TOOL_TEST_WAIT):
             submit_response = self.__submit_tool(history_id, tool_id=testdef.tool_id, tool_input=inputs_tree)
             if _are_tool_inputs_not_ready(submit_response):
                 print("Tool inputs not ready yet")
@@ -611,7 +616,8 @@ class GalaxyInteractorApi:
             raise Exception(error_msg)
         return None
 
-    def __submit_tool(self, history_id, tool_id, tool_input, extra_data={}, files=None):
+    def __submit_tool(self, history_id, tool_id, tool_input, extra_data=None, files=None):
+        extra_data = extra_data or {}
         data = dict(
             history_id=history_id,
             tool_id=tool_id,
@@ -719,8 +725,8 @@ def ensure_tool_run_response_okay(submit_response_object, request_desc, inputs=N
                     dbkey_err_obj = param_errors["dbkey"]
                     dbkey_val = dbkey_err_obj.get("parameter_value")
                     message = "Invalid dbkey specified [%s]" % dbkey_val
-                for key, val in param_errors.items():
-                    if isinstance(val, dict) and val.get("is_dynamic"):
+                for value in param_errors.values():
+                    if isinstance(value, dict) and value.get("is_dynamic"):
                         dynamic_param_error = True
             if message is None:
                 message = err_response.get("err_msg") or None

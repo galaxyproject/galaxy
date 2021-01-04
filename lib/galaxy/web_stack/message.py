@@ -4,6 +4,7 @@
 import json
 import logging
 import types
+from typing import Optional, Tuple
 
 log = logging.getLogger(__name__)
 
@@ -46,7 +47,7 @@ class ApplicationStackMessageDispatcher:
 
 
 class ApplicationStackMessage(dict):
-    target = None
+    target: Optional[str] = None  # type: ignore
     default_handler = None
     _validate_kwargs = ('target',)
 
@@ -94,19 +95,19 @@ class ApplicationStackMessage(dict):
         log.debug("Bound default message handler '%s.%s' to %s", self.__class__.__name__, self.default_handler.__name__,
                   getattr(obj, name))
 
-    @property
+    @property  # type: ignore
     def target(self):
         return self['target']
 
-    @target.setter
+    @target.setter  # type: ignore
     def set_target(self, target):
         self['target'] = target
 
 
 class ParamMessage(ApplicationStackMessage):
     _validate_kwargs = ('params',)
-    _validate_params = ()
-    _exclude_params = ()
+    _validate_params: Tuple[str, ...] = ()
+    _exclude_params: Tuple[str, ...] = ()
 
     def __init__(self, target=None, params=None, **kwargs):
         super().__init__(target=target)
@@ -126,7 +127,7 @@ class ParamMessage(ApplicationStackMessage):
         return d
 
     @params.setter
-    def set_params(self, params):
+    def params(self, params):
         self['params'] = params
 
 

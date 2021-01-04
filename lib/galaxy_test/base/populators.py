@@ -285,6 +285,10 @@ class BaseDatasetPopulator:
     def cancel_job(self, job_id):
         return self._delete("jobs/%s" % job_id)
 
+    def delete_history(self, history_id):
+        delete_response = self._delete(f"histories/{history_id}")
+        delete_response.raise_for_status()
+
     def delete_dataset(self, history_id, content_id):
         delete_response = self._delete(f"histories/{history_id}/contents/{content_id}")
         return delete_response
@@ -520,7 +524,7 @@ class BaseDatasetPopulator:
         return dict(src=src, id=history_content["id"])
 
     def dataset_storage_info(self, dataset_id):
-        storage_response = self.galaxy_interactor.get("datasets/{}/storage".format(dataset_id))
+        storage_response = self.galaxy_interactor.get(f"datasets/{dataset_id}/storage")
         storage_response.raise_for_status()
         return storage_response.json()
 
@@ -546,17 +550,19 @@ class BaseDatasetPopulator:
         roles = self.get_roles()
         users_roles = [r for r in roles if r["name"] == user_email]
         assert len(users_roles) == 1, f"Did not find exactly one role for email {user_email} - {users_roles}"
-        return users_roles[0]["id"]
+        role = users_roles[0]
+        assert "id" in role, role
+        return role["id"]
 
     def create_role(self, user_ids, description=None):
         payload = {
             "name": self.get_random_name(prefix="testpop"),
             "description": description or "Test Role",
-            "user_ids": json.dumps(user_ids),
+            "user_ids": user_ids,
         }
-        role_response = self.galaxy_interactor.post("roles", data=payload, admin=True)
+        role_response = self.galaxy_interactor.post("roles", data=payload, admin=True, json=True)
         assert role_response.status_code == 200
-        return role_response.json()[0]
+        return role_response.json()
 
     def create_quota(self, quota_payload):
         quota_response = self.galaxy_interactor.post("quotas", data=quota_payload, admin=True)
@@ -602,19 +608,37 @@ class BaseDatasetPopulator:
             "dataset validation"
         )
 
-    def export_url(self, history_id, data, check_download=True):
+    def setup_history_for_export_testing(self, history_name):
+        history_id = self.new_history(name=history_name)
+        self.new_dataset(history_id, content="1 2 3")
+        deleted_hda = self.new_dataset(history_id, content="1 2 3", wait=True)
+        self.delete_dataset(history_id, deleted_hda["id"])
+        deleted_details = self.get_history_dataset_details(history_id, id=deleted_hda["id"])
+        assert deleted_details["deleted"]
+        return history_id
+
+    def prepare_export(self, history_id, data):
         url = "histories/%s/exports" % history_id
         put_response = self._put(url, data)
-        api_asserts.assert_status_code_is(put_response, 202)
+        put_response.raise_for_status()
 
-        def export_ready_response():
-            put_response = self._put(url)
-            if put_response.status_code == 202:
-                return None
+        if put_response.status_code == 202:
+            def export_ready_response():
+                put_response = self._put(url)
+                if put_response.status_code == 202:
+                    return None
+                return put_response
+
+            put_response = wait_on(export_ready_response, desc="export ready")
+            api_asserts.assert_status_code_is(put_response, 200)
             return put_response
+        else:
+            job_desc = put_response.json()
+            assert "job_id" in job_desc
+            return self.wait_for_job(job_desc["job_id"])
 
-        put_response = wait_on(export_ready_response, desc="export ready")
-        api_asserts.assert_status_code_is(put_response, 200)
+    def export_url(self, history_id, data, check_download=True):
+        put_response = self.prepare_export(history_id, data)
         response = put_response.json()
         api_asserts.assert_has_keys(response, "download_url")
         download_url = response["download_url"]
@@ -882,10 +906,12 @@ class BaseWorkflowPopulator:
         api_asserts.assert_status_code_is(response, 200)
         return response.json()
 
-    def download_workflow(self, workflow_id, style=None):
+    def download_workflow(self, workflow_id, style=None, history_id=None):
         params = {}
         if style is not None:
             params["style"] = style
+        if history_id is not None:
+            params['history_id'] = history_id
         response = self._get("workflows/%s/download" % workflow_id, data=params)
         api_asserts.assert_status_code_is(response, 200)
         if style != "format2":
@@ -898,6 +924,18 @@ class BaseWorkflowPopulator:
             workflow=workflow_object
         )
         raw_url = 'workflows/%s' % workflow_id
+        put_response = self.galaxy_interactor._put(raw_url, data=json.dumps(data))
+        return put_response
+
+    def refactor_workflow(self, workflow_id, actions, dry_run=None, style=None):
+        data = dict(
+            actions=actions,
+        )
+        if style is not None:
+            data["style"] = style
+        if dry_run is not None:
+            data["dry_run"] = dry_run
+        raw_url = 'workflows/%s/refactor' % workflow_id
         put_response = self.galaxy_interactor._put(raw_url, data=json.dumps(data))
         return put_response
 
@@ -1530,7 +1568,7 @@ def wait_on_state(state_func, desc="state", skip_states=None, ok_states=None, as
             return state
 
     if skip_states is None:
-        skip_states = ["running", "queued", "new", "ready"]
+        skip_states = ["running", "queued", "new", "ready", "stop", "stopped"]
     if ok_states is None:
         ok_states = ["ok", "scheduled"]
     try:

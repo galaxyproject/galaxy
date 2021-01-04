@@ -24,13 +24,12 @@ class WorkRequestContext(ProvidesAppContext, ProvidesUserContext, ProvidesHistor
         self.__user = user
         self.__user_current_roles = None
         self.__history = history
-        self.api_inherit_admin = False
         self.workflow_building_mode = workflow_building_mode
 
     def get_history(self, create=False):
         return self.__history
 
-    def set_history(self):
+    def set_history(self, history):
         raise NotImplementedError("Cannot change histories from a work request context.")
 
     history = property(get_history, set_history)
@@ -49,3 +48,13 @@ class WorkRequestContext(ProvidesAppContext, ProvidesUserContext, ProvidesHistor
         raise NotImplementedError("Cannot change users from a work request context.")
 
     user = property(get_user, set_user)
+
+
+class SessionRequestContext(WorkRequestContext):
+    """Like WorkRequestContext, but provides access to galaxy session and session."""
+    def __init__(self, **kwargs):
+        self.galaxy_session = kwargs.pop('galaxy_session', None)
+        super().__init__(**kwargs)
+
+    def get_galaxy_session(self):
+        return self.galaxy_session

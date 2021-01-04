@@ -3,6 +3,7 @@
 
 import logging
 import threading
+from typing import List
 
 from galaxy.util import unicodify
 
@@ -70,7 +71,7 @@ class UWSGIFarmMessageTransport(ApplicationStackTransport):
     """ Communication via uWSGI Mule Farm messages. Communication is unidirectional (workers -> mules).
     """
     # Define any static lock names here, additional locks will be appended for each configured farm's message handler
-    _locks = []
+    _locks: List[str] = []
 
     def init_late_prefork(self):
         num = int(uwsgi.opt.get('locks', 0)) + 1

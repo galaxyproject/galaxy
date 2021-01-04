@@ -168,7 +168,6 @@ class SharedHistoryListGrid(grids.Grid):
     title = "Histories shared with you by others"
     model_class = model.History
     default_sort_key = "-update_time"
-    default_filter = {}
     columns = [
         grids.GridColumn("Name", key="name", attach_popup=True),
         DatasetsByStateColumn("Datasets", sortable=False),
@@ -181,7 +180,6 @@ class SharedHistoryListGrid(grids.Grid):
         grids.GridOperation("Copy", allow_multiple=False),
         grids.GridOperation("Unshare", allow_multiple=False)
     ]
-    standard_filters = []
 
     def build_initial_query(self, trans, **kwargs):
         return trans.sa_session.query(self.model_class).join('users_shared_with')
@@ -214,7 +212,6 @@ class HistoryAllPublishedGrid(grids.Grid):
             cols_to_filter=[columns[0], columns[1], columns[2], columns[4]],
             key="free-text-search", visible=False, filterable="standard")
     )
-    operations = []
 
     def build_initial_query(self, trans, **kwargs):
         # TODO: Tags are still loaded one at a time, consider doing this all at once:

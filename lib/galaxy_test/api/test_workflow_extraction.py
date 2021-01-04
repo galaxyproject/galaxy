@@ -378,7 +378,7 @@ test_data:
     def _job_for_tool(self, jobs, tool_id):
         tool_jobs = [j for j in jobs if j["tool_id"] == tool_id]
         if not tool_jobs:
-            assert False, "Failed to find job for tool %s" % tool_id
+            raise ValueError(f"Failed to find job for tool {tool_id}")
         # if len( tool_jobs ) > 1:
         #     assert False, "Found multiple jobs for tool %s" % tool_id
         return tool_jobs[-1]
@@ -610,7 +610,7 @@ test_data:
     def __assert_connected(self, workflow, steps):
         disconnected_inputs = []
 
-        for key, value in steps.items():
+        for value in steps.values():
             if value['type'] == "tool":
                 input_connections = value["input_connections"]
                 if not input_connections:

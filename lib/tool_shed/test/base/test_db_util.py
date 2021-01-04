@@ -133,7 +133,7 @@ def get_repository_reviews(repository_id, reviewer_user_id=None, changeset_revis
 def get_reviews_ordered_by_changeset_revision(repository_id, changelog_tuples, reviewer_user_id=None):
     reviews = get_repository_reviews(repository_id, reviewer_user_id=reviewer_user_id)
     ordered_reviews = []
-    for ctx_rev, changeset_hash in changelog_tuples:
+    for _ctx_rev, changeset_hash in changelog_tuples:
         for review in reviews:
             if str(review.changeset_revision) == str(changeset_hash):
                 ordered_reviews.append(review)

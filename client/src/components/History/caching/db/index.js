@@ -13,4 +13,4 @@ export { changes } from "./changes";
 export { monitorQuery } from "./monitorQuery";
 
 // utility function
-export { wipeDatabase } from "./pouch";
+export { wipeDatabase } from "./wipeDatabase";

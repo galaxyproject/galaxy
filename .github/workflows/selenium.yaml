@@ -41,5 +41,5 @@ jobs:
       - uses: actions/upload-artifact@v2
         if: failure()
         with:
-          name: Selenium test results
+          name: Selenium test results (${{ matrix.python-version }}, ${{ matrix.chunk }})
           path: 'galaxy root/database/test_errors'

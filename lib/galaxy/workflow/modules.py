@@ -776,6 +776,7 @@ class InputDataCollectionModule(InputModule):
 
 
 class InputParameterModule(WorkflowModule):
+    POSSIBLE_PARAMETER_TYPES = ["text", "integer", "float", "boolean", "color"]
     type = "parameter_input"
     name = "Input parameter"
     default_parameter_type = "text"
@@ -901,7 +902,6 @@ class InputParameterModule(WorkflowModule):
                     restrict_how_value = "staticSuggestions"
                 else:
                     restrict_how_value = "none"
-                log.info(f"parameter_def [{parameter_def}], how [{restrict_how_value}]")
                 restrict_how_source["options"] = [
                     {"value": "none", "label": "Do not specify restrictions (default).", "selected": restrict_how_value == "none"},
                     {"value": "onConnections", "label": "Attempt restriction based on connections.", "selected": restrict_how_value == "onConnections"},
@@ -980,7 +980,7 @@ class InputParameterModule(WorkflowModule):
                     tool_inputs = module.tool.inputs  # may not be set, but we're catching the Exception below.
 
                     def callback(input, prefixed_name, context, **kwargs):
-                        if prefixed_name == connection.input_name:
+                        if prefixed_name == connection.input_name and hasattr(input, 'get_options'):
                             static_options.append(input.get_options(self.trans, {}))
                     visit_input_values(tool_inputs, module.state.inputs, callback)
 
@@ -1170,7 +1170,7 @@ class InputParameterModule(WorkflowModule):
                     suggestion_values = restrictions_cond_values["suggestions"]
                     rval.update({"suggestions": _string_to_parameter_def_option(suggestion_values)})
                 else:
-                    log.warn("Unknown restriction conditional type encountered for workflow parameter.")
+                    log.warning("Unknown restriction conditional type encountered for workflow parameter.")
 
             rval.update({"parameter_type": parameters_def["parameter_type"], "optional": optional})
         else:

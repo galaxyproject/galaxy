@@ -60,6 +60,8 @@ def directory_hash_id(id):
 
 
 class Dataset:
+    table: Table = None
+
     states = Bunch(NEW='new',
                    UPLOAD='upload',
                    QUEUED='queued',
@@ -338,6 +340,8 @@ class DatasetInstance:
 
 
 class HistoryDatasetAssociation(DatasetInstance):
+    table: Table = None
+
     def __init__(self,
                  hid=None,
                  history=None,
@@ -430,6 +434,8 @@ class HistoryDatasetAssociation(DatasetInstance):
 
 
 class LibraryDatasetDatasetAssociation(DatasetInstance):
+    table: Table = None
+
     def __init__(self,
                  copied_from_history_dataset_association=None,
                  copied_from_library_dataset_dataset_association=None,
@@ -496,8 +502,9 @@ class LibraryDatasetDatasetAssociation(DatasetInstance):
     def clear_associated_files(self, metadata_safe=False, purge=False):
         return
 
-    def get_library_item_info_templates(self, template_list=[], restrict=False):
+    def get_library_item_info_templates(self, template_list=None, restrict=False):
         # If restrict is True, we'll return only those templates directly associated with this LibraryDatasetDatasetAssociation
+        template_list = template_list or []
         if self.library_dataset_dataset_info_template_associations:
             template_list.extend([lddita.library_item_info_template for lddita in self.library_dataset_dataset_info_template_associations if lddita.library_item_info_template not in template_list])
         self.library_dataset.get_library_item_info_templates(template_list, restrict)
@@ -505,6 +512,8 @@ class LibraryDatasetDatasetAssociation(DatasetInstance):
 
 
 class LibraryDataset:
+    table: Table = None
+
     # This class acts as a proxy to the currently selected LDDA
     def __init__(self, folder=None, order_id=None, name=None, info=None, library_dataset_dataset_association=None, **kwd):
         self.folder = folder
@@ -556,7 +565,8 @@ class LibraryDataset:
             raise Exception("Cannot unpurge once purged")
     purged = property(get_purged, set_purged)
 
-    def get_library_item_info_templates(self, template_list=[], restrict=False):
+    def get_library_item_info_templates(self, template_list=None, restrict=False):
+        template_list = template_list or []
         # If restrict is True, we'll return only those templates directly associated with this LibraryDataset
         if self.library_dataset_info_template_associations:
             template_list.extend([ldita.library_item_info_template for ldita in self.library_dataset_info_template_associations if ldita.library_item_info_template not in template_list])

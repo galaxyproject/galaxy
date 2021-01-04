@@ -9,7 +9,7 @@ from functools import partial
 try:
     from grp import getgrgid
 except ImportError:
-    getgrgid = None
+    getgrgid = None  # type: ignore
 from itertools import starmap
 from operator import getitem
 from os import (
@@ -35,7 +35,7 @@ from os.path import (
 try:
     from pwd import getpwuid
 except ImportError:
-    getpwuid = None
+    getpwuid = None  # type: ignore
 
 
 import galaxy.util
@@ -155,7 +155,7 @@ def safe_walk(path, allowlist=None):
         _prefix = partial(join, dirpath)
 
         prune = False
-        for index, dname in enumerate(dirnames):
+        for dname in dirnames:
             if not _check(join(dirpath, dname)):
                 prune = True
                 break
@@ -163,7 +163,7 @@ def safe_walk(path, allowlist=None):
             dirnames = map(basename, filter(_check, map(_prefix, dirnames)))
 
         prune = False
-        for index, filename in enumerate(filenames):
+        for filename in filenames:
             if not _check(join(dirpath, filename)):
                 prune = True
                 break
@@ -204,7 +204,7 @@ def __path_permission_for_user(path, username):
     :type username:     string
     :param username:    a username matching the systems username
     """
-    if getpwuid is None:
+    if getpwuid is None or getgrgid is None:
         raise NotImplementedError("This functionality is not implemented for Windows.")
 
     group_id_of_file = stat(path).st_gid
@@ -323,7 +323,7 @@ class Extensions(dict):
     The first item in the sequence should match the key and is the "canonicalization".
     """
     def __missing__(self, key):
-        for k, v in self.items():
+        for v in self.values():
             if key in v:
                 self[key] = v
                 return v

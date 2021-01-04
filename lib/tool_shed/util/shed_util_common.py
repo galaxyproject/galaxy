@@ -204,7 +204,7 @@ def get_repository_file_contents(app, file_path, repository_id, is_admin=False):
     elif checkers.check_binary(file_path):
         return '<br/>Binary file<br/>'
     else:
-        for i, line in enumerate(open(file_path)):
+        for line in open(file_path):
             safe_str = '{}{}'.format(safe_str, basic_util.to_html_string(line))
             # Stop reading after string is larger than MAX_CONTENT_SIZE.
             if len(safe_str) > MAX_CONTENT_SIZE:

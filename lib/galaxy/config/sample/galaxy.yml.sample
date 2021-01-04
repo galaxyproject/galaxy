@@ -92,8 +92,11 @@ uwsgi:
   # SIGTERM (its default is to brutally kill workers)
   hook-master-start: unix_signal:15 gracefully_kill_them_all
 
-  # Feature necessary for proper mule signal handling
-  py-call-osafterfork: true
+  # Feature necessary for proper mule signal handling on Python versions
+  # below 3.7.2. The default is set to false to prevent a runtime error
+  # under Python 3.7.2 and newer (see
+  # https://github.com/unbit/uwsgi/issues/1978).
+  py-call-osafterfork: false
 
   # Ensure application threads will run if `threads` is unset.
   enable-threads: true
@@ -822,13 +825,13 @@ galaxy:
   # third-party server, tricking a Galaxy user to access said site.
   #enable_old_display_applications: true
 
-  # Enable InteractiveTools.
-  #interactivetools_enable: false
-
   # This flag enables an AWS cost estimate for every job based on their
   # runtime matrices. CPU, RAM and runtime usage is mapped against AWS
   # pricing table. Please note, that those numbers are only estimates.
   #aws_estimate: false
+
+  # Enable InteractiveTools.
+  #interactivetools_enable: false
 
   # Proxy host - assumed to just be hosted on the same hostname and port
   # as Galaxy by default.
@@ -838,6 +841,14 @@ galaxy:
   # The value of this option will be resolved with respect to
   # <data_dir>.
   #interactivetools_map: interactivetools_map.sqlite
+
+  # Galaxy Interactive Tools (GxITs) can be stopped from within the
+  # Galaxy interface, killing the GxIT job without completing its
+  # metadata setting post-job steps. In such a case it may be desirable
+  # to set metadata on job outputs internally (in the Galaxy job handler
+  # process). The default is is the value of
+  # `retry_metadata_internally`, which defaults to `true`.
+  #retry_interactivetool_metadata_internally: true
 
   # Show visualization tab and list in masthead.
   #visualizations_visible: true
@@ -1021,9 +1032,20 @@ galaxy:
   #nginx_x_accel_redirect_base: null
 
   # If using compression in the upstream proxy server, use this option
-  # to disable gzipping of library .tar.gz and .zip archives, since the
-  # proxy server will do it faster on the fly.
+  # to disable gzipping of dataset collection and library archives,
+  # since the upstream server will do it faster on the fly. To enable
+  # compression add ``application/zip`` to the proxy's compressable
+  # mimetypes.
   #upstream_gzip: false
+
+  # If using the mod-zip module in nginx, use this option to assemble
+  # zip archives in nginx. This is preferable over the upstream_gzip
+  # option as Galaxy does not need to serve the archive. Requires
+  # setting up internal nginx locations to all paths that can be
+  # archived. See
+  # https://docs.galaxyproject.org/en/master/admin/nginx.html#creating-archives-with-mod-zip
+  # for details.
+  #upstream_mod_zip: false
 
   # The following default adds a header to web request responses that
   # will cause modern web browsers to not allow Galaxy to be embedded in

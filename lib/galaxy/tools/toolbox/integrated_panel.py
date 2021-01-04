@@ -74,7 +74,7 @@ $INTEGRATED_TOOL_PANEL
 </toolbox>
 """)
         integrated_tool_panel = []
-        for key, item_type, item in self._integrated_tool_panel.panel_items_iter():
+        for _, item_type, item in self._integrated_tool_panel.panel_items_iter():
             if item:
                 if item_type == panel_item_types.TOOL:
                     integrated_tool_panel.append('    <tool id="%s" />\n' % item.id)

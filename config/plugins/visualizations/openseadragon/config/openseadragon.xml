@@ -5,8 +5,10 @@
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
+            <test type="isinstance" test_attr="datatype" result_type="datatype">images.Gif</test>
             <test type="isinstance" test_attr="datatype" result_type="datatype">images.Jpg</test>
             <test type="isinstance" test_attr="datatype" result_type="datatype">images.Png</test>
+            <test type="isinstance" test_attr="datatype" result_type="datatype">images.Tiff</test>
             <test type="isinstance" test_attr="datatype" result_type="datatype">xml.Dzi</test>
             <to_param param_attr="id">dataset_id</to_param>
         </data_source>

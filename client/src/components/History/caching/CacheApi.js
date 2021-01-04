@@ -17,7 +17,7 @@ export * from "./db/promises";
 export { loadDscContent } from "./loadDscContent";
 export { loadHistoryContents, clearHistoryDateStore } from "./loadHistoryContents";
 export { monitorHistoryContent } from "./monitorHistoryContent";
-export { wipeDatabase } from "./db/pouch";
+export { wipeDatabase } from "./db/wipeDatabase";
 
 // generic content query monitor
 export const monitorContentQuery = (cfg = {}) => {

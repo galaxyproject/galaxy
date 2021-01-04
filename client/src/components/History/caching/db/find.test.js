@@ -2,7 +2,7 @@ import { Subject } from "rxjs";
 import { take } from "rxjs/operators";
 import { ObserverSpy } from "@hirez_io/observer-spy";
 
-import { wipeDatabase } from "./pouch";
+import { wipeDatabase } from "./wipeDatabase";
 import { bulkCacheContent, bulkCacheDscContent } from "./promises";
 import { content$, dscContent$, buildContentId } from "./observables";
 import { find } from "./find";

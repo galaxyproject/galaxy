@@ -1,6 +1,6 @@
 import isPromise from "is-promise";
 import { isObservable } from "rxjs";
-import { wipeDatabase } from "./pouch";
+import { wipeDatabase } from "./wipeDatabase";
 import { content$, dscContent$, buildContentId, buildCollectionId, prepContent, prepDscContent } from "./observables";
 import { firstValueFrom } from "utils/observable/firstValueFrom";
 

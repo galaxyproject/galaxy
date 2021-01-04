@@ -6,11 +6,7 @@ import os
 import shutil
 from datetime import datetime
 from functools import partial
-try:
-    from pathlib import Path
-except ImportError:
-    # Use backport on python 2
-    from pathlib2 import Path
+from pathlib import Path
 
 try:
     import irods
@@ -307,7 +303,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             data_obj = self.session.data_objects.get(data_object_path)
             return data_obj.__sizeof__()
         except (DataObjectDoesNotExist, CollectionDoesNotExist):
-            log.warn("Collection or data object (%s) does not exist", data_object_path)
+            log.warning("Collection or data object (%s) does not exist", data_object_path)
             return -1
         except NetworkException as e:
             log.exception(e)
@@ -369,7 +365,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         try:
             data_obj = self.session.data_objects.get(data_object_path)
         except (DataObjectDoesNotExist, CollectionDoesNotExist):
-            log.warn("Collection or data object (%s) does not exist", data_object_path)
+            log.warning("Collection or data object (%s) does not exist", data_object_path)
             return False
         except NetworkException as e:
             log.exception(e)
@@ -566,7 +562,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                 try:
                     col = self.session.collections.get(col_path)
                 except CollectionDoesNotExist:
-                    log.warn("Collection (%s) does not exist!", col_path)
+                    log.warning("Collection (%s) does not exist!", col_path)
                     return False
                 except NetworkException as e:
                     log.exception(e)

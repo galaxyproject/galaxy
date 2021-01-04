@@ -1,9 +1,6 @@
 from urllib.parse import quote
 
-try:
-    import requests
-except ImportError:
-    requests = None
+import requests
 import yaml
 
 from ..locations import (

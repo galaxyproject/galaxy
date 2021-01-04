@@ -1071,13 +1071,6 @@ mapping:
           Galaxy server, but contains a redirect to a third-party server, tricking a
           Galaxy user to access said site.
 
-      interactivetools_enable:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Enable InteractiveTools.
-
       aws_estimate:
         type: bool
         default: false
@@ -1086,6 +1079,13 @@ mapping:
           This flag enables an AWS cost estimate for every job based on their runtime matrices.
           CPU, RAM and runtime usage is mapped against AWS pricing table.
           Please note, that those numbers are only estimates.
+
+      interactivetools_enable:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enable InteractiveTools.
 
       interactivetools_proxy_host:
         type: str
@@ -1099,6 +1099,17 @@ mapping:
         path_resolves_to: data_dir
         desc: |
           Map for interactivetool proxy.
+
+      retry_interactivetool_metadata_internally:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          Galaxy Interactive Tools (GxITs) can be stopped from within the Galaxy
+          interface, killing the GxIT job without completing its metadata setting post-job
+          steps. In such a case it may be desirable to set metadata on job outputs
+          internally (in the Galaxy job handler process). The default is is the value of
+          `retry_metadata_internally`, which defaults to `true`.
 
       visualizations_visible:
         type: bool
@@ -1430,8 +1441,21 @@ mapping:
         required: false
         desc: |
           If using compression in the upstream proxy server, use this option to disable
-          gzipping of library .tar.gz and .zip archives, since the proxy server will do
-          it faster on the fly.
+          gzipping of dataset collection and library archives, since the upstream server
+          will do it faster on the fly. To enable compression add ``application/zip``
+          to the proxy's compressable mimetypes.
+
+      upstream_mod_zip:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          If using the mod-zip module in nginx, use this option to assemble
+          zip archives in nginx. This is preferable over the upstream_gzip option
+          as Galaxy does not need to serve the archive.
+          Requires setting up internal nginx locations to all paths that can be archived.
+          See https://docs.galaxyproject.org/en/master/admin/nginx.html#creating-archives-with-mod-zip
+          for details.
 
       x_frame_options:
         type: str

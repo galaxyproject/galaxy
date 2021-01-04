@@ -10,6 +10,8 @@ from galaxy.datatypes.text import Html as HtmlFromText
 from galaxy.util import nice_size
 from galaxy.util.image_util import check_image_type
 from . import data
+from .sniff import build_sniff_from_prefix
+from .xml import GenericXml
 
 log = logging.getLogger(__name__)
 
@@ -245,6 +247,41 @@ class Gmaj(data.Data):
         if not contains_gmaj_file:
             return False
         return True
+
+
+@build_sniff_from_prefix
+class Gifti(GenericXml):
+    """Class describing a Gifti format"""
+    file_ext = "gii"
+
+    def sniff_prefix(self, file_prefix):
+        """Determines whether the file is a Gifti file
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('Human.colin.R.activations.label.gii')
+        >>> Gifti().sniff(fname)
+        True
+        >>> fname = get_test_fname('interval.interval')
+        >>> Gifti().sniff(fname)
+        False
+        >>> fname = get_test_fname('megablast_xml_parser_test1.blastxml')
+        >>> Gifti().sniff(fname)
+        False
+        >>> fname = get_test_fname('tblastn_four_human_vs_rhodopsin.blastxml')
+        >>> Gifti().sniff(fname)
+        False
+        """
+        handle = file_prefix.string_io()
+        line = handle.readline()
+        if not line.strip().startswith('<?xml version="1.0"'):
+            return False
+        line = handle.readline()
+        if line.strip() == '<!DOCTYPE GIFTI SYSTEM "http://www.nitrc.org/frs/download.php/1594/gifti.dtd">':
+            return True
+        line = handle.readline()
+        if line.strip().startswith('<GIFTI'):
+            return True
+        return False
 
 
 class Html(HtmlFromText):

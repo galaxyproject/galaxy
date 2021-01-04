@@ -57,21 +57,6 @@ class CondorJobRunner(AsynchronousJobRunner):
         self._init_monitor_thread()
         self._init_worker_threads()
 
-    def __old_state_paths(self, cjs):
-        """For recovery of jobs started prior to standardizing the naming of
-        files in the AsychronousJobState object
-        Remove this function in 21.01
-        """
-        if cjs.job_wrapper is not None:
-            job_file = f"{self.app.config.cluster_files_directory}/galaxy_{cjs.job_wrapper.job_id}.sh"
-            if not os.path.exists(cjs.job_file) and os.path.exists(job_file):
-                cluster_files_dir_and_id = (self.app.config.cluster_files_directory, cjs.job_wrapper.get_id_tag())
-                cjs.output_file = "%s/galaxy_%s.o" % cluster_files_dir_and_id
-                cjs.error_file = "%s/galaxy_%s.e" % cluster_files_dir_and_id
-                cjs.exit_code_file = "%s/galaxy_%s.ec" % cluster_files_dir_and_id
-                cjs.user_log = "%s/galaxy_%s.condor.log" % cluster_files_dir_and_id
-                cjs.job_file = job_file
-
     def queue_job(self, job_wrapper):
         """Create job script and submit it to the DRM"""
 
@@ -147,8 +132,8 @@ class CondorJobRunner(AsynchronousJobRunner):
             return
 
         # job was deleted while we were preparing it
-        if job_wrapper.get_state() == model.Job.states.DELETED:
-            log.debug("Job %s deleted by user before it entered the queue" % galaxy_id_tag)
+        if job_wrapper.get_state() in (model.Job.states.DELETED, model.Job.states.STOPPED):
+            log.debug("(%s) Job deleted/stopped by user before it entered the queue", galaxy_id_tag)
             if cleanup_job in ("always", "onsuccess"):
                 os.unlink(submit_file)
                 cjs.cleanup()
@@ -189,7 +174,6 @@ class CondorJobRunner(AsynchronousJobRunner):
         for cjs in self.watched:
             job_id = cjs.job_id
             galaxy_id_tag = cjs.job_wrapper.get_id_tag()
-            self.__old_state_paths(cjs)  # remove in 21.01
             try:
                 if cjs.job_wrapper.tool.tool_type != 'interactive' and os.stat(cjs.user_log).st_size == cjs.user_log_size:
                     new_watched.append(cjs)
@@ -218,8 +202,9 @@ class CondorJobRunner(AsynchronousJobRunner):
                 log.debug(f"({galaxy_id_tag}/{job_id}) job has stopped running")
                 # Will switching from RUNNING to QUEUED confuse Galaxy?
                 # cjs.job_wrapper.change_state( model.Job.states.QUEUED )
-            if job_complete:
-                if cjs.job_wrapper.get_state() != model.Job.states.DELETED:
+            job_state = cjs.job_wrapper.get_state()
+            if job_complete or job_state == model.Job.states.STOPPED:
+                if job_state != model.Job.states.DELETED:
                     external_metadata = not asbool(cjs.job_wrapper.job_destination.params.get("embed_metadata_in_job", True))
                     if external_metadata:
                         self._handle_metadata_externally(cjs.job_wrapper, resolve_requirements=True)
@@ -291,9 +276,8 @@ class CondorJobRunner(AsynchronousJobRunner):
         cjs.job_destination = job_wrapper.job_destination
         cjs.user_log = os.path.join(job_wrapper.working_directory, 'galaxy_%s.condor.log' % galaxy_id_tag)
         cjs.register_cleanup_file_attribute('user_log')
-        self.__old_state_paths(cjs)  # remove in 21.01
-        if job.state == model.Job.states.RUNNING:
-            log.debug(f"({job.id}/{job.job_runner_external_id}) is still in running state, adding to the DRM queue")
+        if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
+            log.debug(f"({job.id}/{job.get_job_runner_external_id()}) is still in {job.state} state, adding to the DRM queue")
             cjs.running = True
             self.monitor_queue.put(cjs)
         elif job.state == model.Job.states.QUEUED:

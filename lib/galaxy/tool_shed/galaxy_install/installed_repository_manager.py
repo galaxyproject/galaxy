@@ -296,7 +296,7 @@ class InstalledRepositoryManager:
             if required_repo_info_dicts:
                 required_tool_dependencies = {}
                 for rid in required_repo_info_dicts:
-                    for name, repo_info_tuple in rid.items():
+                    for repo_info_tuple in rid.values():
                         description, repository_clone_url, changeset_revision, ctx_rev, \
                             repository_owner, rid_repository_dependencies, rid_tool_dependencies = \
                             repository_util.get_repo_info_tuple_contents(repo_info_tuple)
@@ -1024,7 +1024,7 @@ class InstalledRepositoryManager:
                 new_dependency_name = None
                 new_dependency_type = None
                 new_dependency_version = None
-                for new_dependency_key, new_dependency_val_dict in new_dependencies_dict.items():
+                for new_dependency_val_dict in new_dependencies_dict.values():
                     # Match on name only, hopefully this will be enough!
                     if original_name == new_dependency_val_dict['name']:
                         new_dependency_name = new_dependency_val_dict['name']

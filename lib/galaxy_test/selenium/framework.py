@@ -33,7 +33,7 @@ from galaxy_test.base.testcase import FunctionalTestCase
 try:
     from galaxy_test.driver.driver_util import GalaxyTestDriver
 except ImportError:
-    GalaxyTestDriver = None
+    GalaxyTestDriver = None  # type: ignore
 
 DEFAULT_TIMEOUT_MULTIPLIER = 1
 DEFAULT_TEST_ERRORS_DIRECTORY = os.path.abspath("database/test_errors")
@@ -134,7 +134,7 @@ def dump_test_information(self, name_prefix):
         for log_type in ["browser", "driver"]:
             try:
                 full_log = self.driver.get_log(log_type)
-                trimmed_log = [l for l in full_log if l["level"] not in ["DEBUG", "INFO"]]
+                trimmed_log = [entry for entry in full_log if entry["level"] not in ["DEBUG", "INFO"]]
                 write_file("%s.log.json" % log_type, json.dumps(trimmed_log, indent=True))
                 write_file("%s.log.verbose.json" % log_type, json.dumps(full_log, indent=True))
             except Exception:
@@ -561,7 +561,8 @@ def get_remote_driver():
 class SeleniumSessionGetPostMixin:
     """Mixin for adapting Galaxy testing populators helpers to Selenium session backed bioblend."""
 
-    def _get(self, route, data={}):
+    def _get(self, route, data=None):
+        data = data or {}
         full_url = self.selenium_test_case.build_url("api/" + route, for_selenium=False)
         response = requests.get(full_url, data=data, cookies=self.selenium_test_case.selenium_to_requests_cookies())
         return response
@@ -579,7 +580,8 @@ class SeleniumSessionGetPostMixin:
         response = requests.post(full_url, data=data, cookies=self.selenium_test_case.selenium_to_requests_cookies(), files=files)
         return response
 
-    def _delete(self, route, data={}):
+    def _delete(self, route, data=None):
+        data = data or {}
         full_url = self.selenium_test_case.build_url("api/" + route, for_selenium=False)
         response = requests.delete(full_url, data=data, cookies=self.selenium_test_case.selenium_to_requests_cookies())
         return response

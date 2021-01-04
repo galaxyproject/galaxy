@@ -1,6 +1,7 @@
-import { takeWhile, share } from "rxjs/operators";
+import { timer } from "rxjs";
+import { takeWhile, share, takeUntil } from "rxjs/operators";
 import { content$, dscContent$ } from "./observables";
-import { wipeDatabase } from "./pouch";
+import { wipeDatabase } from "./wipeDatabase";
 import {
     bulkCacheContent,
     cacheContent,
@@ -9,7 +10,8 @@ import {
     getCachedCollectionContent,
     cacheCollectionContent,
 } from "./promises";
-import { changes } from "./changes";
+import { changes, feeds } from "./changes";
+import { wait } from "jest/helpers";
 
 // test data
 import historyContent from "../../test/json/historyContent.json";
@@ -118,6 +120,53 @@ describe("changes operator", () => {
             // only one should have the "floobar" field
             const floobars = emits.filter((update) => update.doc.floobar !== undefined);
             expect(floobars.length).toEqual(1);
+        });
+    });
+
+    describe("change feed should be shared", () => {
+        const lifeTime = 300;
+        const spinUpTime = 100;
+
+        test("subscriging should show 1 feed, unsubscribing should show 0", async () => {
+            // subscribe to changes once
+            const feed$ = content$.pipe(changes(), takeUntil(timer(lifeTime)));
+            const spy = new ObserverSpy();
+            feed$.subscribe(spy);
+
+            // give it a little time to put itself together
+            await wait(spinUpTime);
+            expect(feeds.size).toEqual(1);
+
+            // complete, share() should now remove instance
+            await spy.onComplete();
+            expect(feeds.size).toEqual(0);
+        });
+
+        test("subscribing 2 times should result in one feed if it's the same DB", async () => {
+            // subscribe to changes onece
+            const feed$ = content$.pipe(changes(), takeUntil(timer(2 * lifeTime)));
+            const spy = new ObserverSpy();
+            feed$.subscribe(spy);
+
+            // give it a little time to put itself together
+            await wait(spinUpTime);
+            expect(feeds.size).toEqual(1);
+
+            // subscribe again
+            const feed2$ = content$.pipe(changes(), takeUntil(timer(lifeTime)));
+            const spy2 = new ObserverSpy();
+            feed2$.subscribe(spy2);
+
+            await wait(spinUpTime);
+            expect(feeds.size).toEqual(1);
+
+            // unsub from 2nd feed
+            await spy2.onComplete();
+            expect(feeds.size).toEqual(1);
+
+            // unsub from 1st feed
+            await spy.onComplete();
+            expect(feeds.size).toEqual(0);
         });
     });
 });

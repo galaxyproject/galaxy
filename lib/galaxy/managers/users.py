@@ -1,6 +1,7 @@
 """
 Manager and Serializer for Users.
 """
+import hashlib
 import logging
 import random
 import socket
@@ -9,11 +10,13 @@ from datetime import datetime
 
 from markupsafe import escape
 from sqlalchemy import and_, desc, exc, func, true
+from sqlalchemy.orm.exc import NoResultFound
 
 from galaxy import (
     exceptions,
     model,
-    util
+    schema,
+    util,
 )
 from galaxy.managers import (
     api_keys,
@@ -229,6 +232,34 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         filters = self._munge_filters(self.model_class.email.like(email_with_wildcards), filters)
         order_by = order_by or (model.User.email, )
         return super().list(filters=filters, order_by=order_by, **kwargs)
+
+    def by_api_key(self, api_key, sa_session=None):
+        """
+        Find a user by API key.
+        """
+        if self.check_master_api_key(api_key=api_key):
+            return schema.BoostrapAdminUser()
+        sa_session = sa_session or self.app.model.session
+        try:
+            provided_key = sa_session.query(self.app.model.APIKeys).filter(self.app.model.APIKeys.table.c.key == api_key).one()
+        except NoResultFound:
+            raise exceptions.AuthenticationFailed('Provided API key is not valid.')
+        if provided_key.user.deleted:
+            raise exceptions.AuthenticationFailed('User account is deactivated, please contact an administrator.')
+        sa_session.refresh(provided_key.user)
+        newest_key = provided_key.user.api_keys[0]
+        if newest_key.key != provided_key.key:
+            raise exceptions.AuthenticationFailed('Provided API key has expired.')
+        return provided_key.user
+
+    def check_master_api_key(self, api_key):
+        master_api_key = getattr(self.app.config, 'master_api_key', None)
+        if not master_api_key:
+            return False
+        # Hash keys to make them the same size, so we can do safe comparison.
+        master_hash = hashlib.sha256(util.smart_str(master_api_key)).hexdigest()
+        provided_hash = hashlib.sha256(util.smart_str(api_key)).hexdigest()
+        return util.safe_str_cmp(master_hash, provided_hash)
 
     # ---- admin
     def is_admin(self, user, trans=None):

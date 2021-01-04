@@ -1885,7 +1885,7 @@ mapper(model.History, model.History.table, properties=dict(
 # Set up proxy so that
 #   History.users_shared_with
 # returns a list of users that history is shared with.
-model.History.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')
+model.History.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')  # type: ignore
 
 mapper(model.HistoryUserShareAssociation, model.HistoryUserShareAssociation.table, properties=dict(
     user=relation(model.User, backref='histories_shared_by_others'),
@@ -1934,7 +1934,7 @@ mapper(model.PasswordResetToken, model.PasswordResetToken.table,
 
 # Set up proxy so that this syntax is possible:
 # <user_obj>.preferences[pref_name] = pref_value
-model.User.preferences = association_proxy('_preferences', 'value', creator=model.UserPreference)
+model.User.preferences = association_proxy('_preferences', 'value', creator=model.UserPreference)  # type: ignore
 
 mapper(model.Group, model.Group.table, properties=dict(
     users=relation(model.UserGroupAssociation)
@@ -2502,7 +2502,7 @@ mapper(model.StoredWorkflow, model.StoredWorkflow.table, properties=dict(
 # Set up proxy so that
 #   StoredWorkflow.users_shared_with
 # returns a list of users that workflow is shared with.
-model.StoredWorkflow.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')
+model.StoredWorkflow.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')  # type: ignore
 
 mapper(model.StoredWorkflowUserShareAssociation, model.StoredWorkflowUserShareAssociation.table, properties=dict(
     user=relation(model.User,
@@ -2661,7 +2661,7 @@ mapper(model.Page, model.Page.table, properties=dict(
 # Set up proxy so that
 #   Page.users_shared_with
 # returns a list of users that page is shared with.
-model.Page.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')
+model.Page.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')  # type: ignore
 
 mapper(model.PageUserShareAssociation, model.PageUserShareAssociation.table,
        properties=dict(user=relation(model.User, backref='pages_shared_by_others'),
@@ -2697,7 +2697,7 @@ mapper(model.Visualization, model.Visualization.table, properties=dict(
 # Set up proxy so that
 #   Visualization.users_shared_with
 # returns a list of users that visualization is shared with.
-model.Visualization.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')
+model.Visualization.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')  # type: ignore
 
 mapper(model.VisualizationUserShareAssociation, model.VisualizationUserShareAssociation.table, properties=dict(
     user=relation(model.User,
@@ -2781,14 +2781,14 @@ mapper(model.Job, model.Job.table, properties=dict(
     external_output_metadata=relation(model.JobExternalOutputMetadata, lazy=True),
     tasks=relation(model.Task)
 ))
-model.Job.any_output_dataset_deleted = column_property(
+model.Job.any_output_dataset_deleted = column_property(  # type: ignore
     exists([model.HistoryDatasetAssociation],
            and_(model.Job.table.c.id == model.JobToOutputDatasetAssociation.table.c.job_id,
                 model.HistoryDatasetAssociation.table.c.id == model.JobToOutputDatasetAssociation.table.c.dataset_id,
                 model.HistoryDatasetAssociation.table.c.deleted == true())
            )
 )
-model.Job.any_output_dataset_collection_instances_deleted = column_property(
+model.Job.any_output_dataset_collection_instances_deleted = column_property(  # type: ignore
     exists([model.HistoryDatasetCollectionAssociation.table.c.id],
            and_(model.Job.table.c.id == model.JobToOutputDatasetCollectionAssociation.table.c.job_id,
                 model.HistoryDatasetCollectionAssociation.table.c.id == model.JobToOutputDatasetCollectionAssociation.table.c.dataset_collection_id,
@@ -2850,7 +2850,7 @@ def db_next_hid(self, n=1):
         raise
 
 
-model.History._next_hid = db_next_hid
+model.History._next_hid = db_next_hid  # type: ignore
 
 
 def _workflow_invocation_update(self):
@@ -2861,7 +2861,7 @@ def _workflow_invocation_update(self):
     session.execute(stmt)
 
 
-model.WorkflowInvocation.update = _workflow_invocation_update
+model.WorkflowInvocation.update = _workflow_invocation_update  # type: ignore
 
 
 def init(file_path, url, engine_options=None, create_tables=False, map_install_models=False,

@@ -174,7 +174,8 @@ class ToolOutputCollection(ToolOutputBase):
         else:
             collection_prototype = self.structure.collection_prototype(inputs, type_registry)
 
-            def prototype_dataset_element_to_output(element, parent_ids=[]):
+            def prototype_dataset_element_to_output(element, parent_ids=None):
+                parent_ids = parent_ids or []
                 name = element.element_identifier
                 format = self.default_format
                 if self.inherit_format:
@@ -195,7 +196,8 @@ class ToolOutputCollection(ToolOutputBase):
                     parent_ids=parent_ids,
                 )
 
-            def prototype_collection_to_output(collection_prototype, parent_ids=[]):
+            def prototype_collection_to_output(collection_prototype, parent_ids=None):
+                parent_ids = parent_ids or []
                 output_parts = []
                 for element in collection_prototype.elements:
                     element_parts = []
@@ -302,7 +304,8 @@ class ToolOutputCollectionStructure:
 
 class ToolOutputCollectionPart:
 
-    def __init__(self, output_collection_def, element_identifier, output_def, parent_ids=[]):
+    def __init__(self, output_collection_def, element_identifier, output_def, parent_ids=None):
+        parent_ids = parent_ids or []
         self.output_collection_def = output_collection_def
         self.element_identifier = element_identifier
         self.output_def = output_def

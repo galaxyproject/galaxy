@@ -165,8 +165,8 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             return
 
         # job was deleted while we were preparing it
-        if job_wrapper.get_state() == model.Job.states.DELETED:
-            log.debug("(%s) Job deleted by user before it entered the queue" % galaxy_id_tag)
+        if job_wrapper.get_state() in (model.Job.states.DELETED, model.Job.states.STOPPED):
+            log.debug("(%s) Job deleted/stopped by user before it entered the queue", galaxy_id_tag)
             if job_wrapper.cleanup_job in ("always", "onsuccess"):
                 job_wrapper.cleanup()
             return
@@ -241,17 +241,18 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         does not determine if a job was terminal, but the implementation
         in the subclasses is supposed to do this.)
         """
-        if drmaa_state == drmaa.JobState.FAILED:
-            if ajs.job_wrapper.get_state() != model.Job.states.DELETED:
+        job_state = ajs.job_wrapper.get_state()
+        if drmaa_state == drmaa.JobState.FAILED and job_state != model.Job.states.STOPPED:
+            if job_state != model.Job.states.DELETED:
                 ajs.stop_job = False
                 ajs.fail_message = "The cluster DRM system terminated this job"
                 self.work_queue.put((self.fail_job, ajs))
-        elif drmaa_state == drmaa.JobState.DONE:
+        elif drmaa_state == drmaa.JobState.DONE or job_state == model.Job.states.STOPPED:
             # External metadata processing for external runjobs
             external_metadata = not asbool(ajs.job_wrapper.job_destination.params.get("embed_metadata_in_job", True))
             if external_metadata:
                 self._handle_metadata_externally(ajs.job_wrapper, resolve_requirements=True)
-            if ajs.job_wrapper.get_state() != model.Job.states.DELETED:
+            if job_state != model.Job.states.DELETED:
                 self.work_queue.put((self.finish_job, ajs))
 
     def check_watched_item(self, ajs, new_watched):
@@ -380,8 +381,8 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         ajs.command_line = job.get_command_line()
         ajs.job_wrapper = job_wrapper
         ajs.job_destination = job_wrapper.job_destination
-        if job.state == model.Job.states.RUNNING:
-            log.debug(f"({job.id}/{job.get_job_runner_external_id()}) is still in running state, adding to the DRM queue")
+        if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
+            log.debug(f"({job.id}/{job.get_job_runner_external_id()}) is still in {job.state} state, adding to the DRM queue")
             ajs.old_state = drmaa.JobState.RUNNING
             ajs.running = True
             self.monitor_queue.put(ajs)

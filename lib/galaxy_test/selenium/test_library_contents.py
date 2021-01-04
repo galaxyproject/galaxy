@@ -83,8 +83,7 @@ class LibraryContentsTestCase(SeleniumTestCase):
         self.test_import_dataset_from_history()
 
         self.components.libraries.folder.select_one.wait_for_and_click()
-        self.components.libraries.folder.download_dropdown.wait_for_and_click()
-        self.components.libraries.folder.download_zip.wait_for_and_click()
+        self.components.libraries.folder.download_button.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         folder_files = os.listdir(self.get_download_path())
 

@@ -121,7 +121,7 @@ def is_tool_load_error(obj):
     return obj is TOOL_LOAD_ERROR
 
 
-def looks_like_a_tool(path_or_uri_like, invalid_names=[], enable_beta_formats=False):
+def looks_like_a_tool(path_or_uri_like, invalid_names=None, enable_beta_formats=False):
     """Quick check to see if a file looks like it may be a tool file.
 
     Whether true in a strict sense or not, lets say the intention and
@@ -132,6 +132,7 @@ def looks_like_a_tool(path_or_uri_like, invalid_names=[], enable_beta_formats=Fa
     invalid_names may be supplied in the context of the tool shed to quickly
     rule common tool shed XML files.
     """
+    invalid_names = invalid_names or []
     path = resolved_path(path_or_uri_like)
     if path is UNRESOLVED_URI:
         # Assume the path maps to a real tool.

@@ -6,6 +6,7 @@
             title="Edit Attributes"
             variant="link"
             aria-label="Edit Attributes"
+            class="editor-button-attributes"
             v-b-tooltip.hover
             @click="$emit('onAttributes')"
         >
@@ -17,6 +18,8 @@
             title="Save Workflow"
             variant="link"
             aria-label="Save Workflow"
+            class="editor-button-save"
+            :disabled="!hasChanges"
             v-b-tooltip.hover
             @click="$emit('onSave')"
         >
@@ -28,6 +31,7 @@
             title="Edit Report"
             variant="link"
             aria-label="Edit Report"
+            class="editor-button-report"
             v-b-tooltip.hover
             @click="$emit('onReport')"
         >
@@ -41,6 +45,7 @@
             title="Workflow Options"
             variant="link"
             aria-label="Workflow Options"
+            class="editor-button-options"
             v-b-tooltip.hover
         >
             <template v-slot:button-content>
@@ -48,6 +53,9 @@
             </template>
             <b-dropdown-item href="#" @click="$emit('onSaveAs')"
                 ><span class="fa fa-floppy-o mr-1" />Save As...</b-dropdown-item
+            >
+            <b-dropdown-item href="#" @click="$emit('onLint')"
+                ><span class="fa fa-magic mr-1" />Check for Best Practices</b-dropdown-item
             >
             <b-dropdown-item href="#" @click="$emit('onLayout')"
                 ><span class="fa fa-align-left mr-1" />Auto Layout</b-dropdown-item
@@ -62,6 +70,7 @@
             title="Run Workflow"
             variant="link"
             aria-label="Run Workflow"
+            class="editor-button-run"
             v-b-tooltip.hover
             @click="$emit('onRun')"
         >
@@ -69,3 +78,13 @@
         </b-button>
     </div>
 </template>
+
+<script>
+export default {
+    props: {
+        hasChanges: {
+            type: Boolean,
+        },
+    },
+};
+</script>

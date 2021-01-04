@@ -126,7 +126,7 @@ class TestRepositoryAdminRole(ShedTwillTestCase):
         strings_not_displayed = ['Manage repository']
         strings_displayed = ['View repository']
         self.display_manage_repository_page(repository, strings_not_displayed=strings_not_displayed)
-        self.submit_form(button='edit_repository_button', description='This description has been modified.')
+        self.submit_form(form_no=0, button='edit_repository_button', description='This description has been modified.')
         strings_displayed = ['You are not the owner of this repository, so you cannot administer it.']
         strings_not_displayed = ['The repository information has been updated.']
         self.check_for_strings(strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed)

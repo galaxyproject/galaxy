@@ -27,6 +27,7 @@ select * from history where name='Unnamed history'
 import logging
 import re
 from json import dumps
+from typing import Dict
 
 import parsley
 from sqlalchemy import and_
@@ -89,7 +90,7 @@ class ViewField:
 
 
 class ViewQueryBaseClass:
-    FIELDS = {}
+    FIELDS: Dict[str, ViewField] = {}
     VIEW_NAME = "undefined"
 
     def __init__(self):

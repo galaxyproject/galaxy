@@ -1,4 +1,6 @@
 import Vuex from "vuex";
+import axios from "axios";
+import MockAdapter from "axios-mock-adapter";
 import { mount, createLocalVue } from "@vue/test-utils";
 import JobInformation from "./JobInformation";
 import datasetResponse from "components/DatasetInformation/testData/datasetResponse";
@@ -9,7 +11,6 @@ import createCache from "vuex-cache";
 
 jest.mock("app");
 
-const HDA_ID = "FOO_HDA_ID";
 const JOB_ID = "test_id";
 
 const localVue = createLocalVue();
@@ -38,6 +39,16 @@ const jobStore = new Vuex.Store({
 describe("JobInformation/JobInformation.vue", () => {
     let wrapper;
     let jobInfoTable;
+    let axiosMock;
+
+    beforeEach(() => {
+        axiosMock = new MockAdapter(axios);
+        axiosMock.onGet(new RegExp(`api/configuration/decode/*`)).reply(200, { decoded_id: 123 });
+    });
+
+    afterEach(() => {
+        axiosMock.restore();
+    });
 
     const verifyValues = (rendered_entries, infoTable, backendResponse) => {
         rendered_entries.forEach((entry) => {
@@ -45,13 +56,13 @@ describe("JobInformation/JobInformation.vue", () => {
             const backendText = entry.wrapped_in_brackets
                 ? `(${backendResponse[entry.backend_key]})`
                 : backendResponse[entry.backend_key];
-            expect(renderedText).toBe(backendText.toString());
+            // use includes because we append the decoded id
+            expect(renderedText.includes(backendText.toString())).toBeTruthy();
         });
     };
 
     beforeEach(async () => {
         const propsData = {
-            hda_id: HDA_ID,
             job_id: JOB_ID,
         };
 
@@ -69,14 +80,14 @@ describe("JobInformation/JobInformation.vue", () => {
         expect(jobInfoTable).toBeTruthy();
         const rows = jobInfoTable.findAll("tr");
         // should contain 9 rows
-        expect(rows.length).toBe(12);
+        expect(rows.length).toBe(9);
     });
 
-    it("stdout, stderr links", async () => {
-        ["stderr", "stdout"].forEach((std) => {
-            const rendered_link = jobInfoTable.find(`#${std} > a`);
-            expect(rendered_link.text()).toBe(std);
-            expect(rendered_link.attributes("href")).toBe(`/datasets/${HDA_ID}/${std}`);
+    it("stdout and stderr should be rendered", async () => {
+        ["stdout", "stderr"].forEach((std) => {
+            const label = jobInfoTable.find("#" + std);
+            const value = label.find(".code");
+            expect(value.text()).toBe(std);
         });
     });
 
@@ -97,16 +108,5 @@ describe("JobInformation/JobInformation.vue", () => {
             { id: "encoded-copied-from-job-id", backend_key: "copied_from_job_id" },
         ];
         verifyValues(rendered_entries, jobInfoTable, jobResponse);
-    });
-
-    it("dataset API content", async () => {
-        const rendered_entries = [
-            { id: "file_name", backend_key: "file_name" },
-            { id: "dataset-uuid", backend_key: "uuid" },
-            { id: "history_id", backend_key: "history_id" },
-            { id: "history-dataset-id", backend_key: "dataset_id", wrapped_in_brackets: true },
-            { id: "dataset-id", backend_key: "id" },
-        ];
-        verifyValues(rendered_entries, jobInfoTable, datasetResponse);
     });
 });

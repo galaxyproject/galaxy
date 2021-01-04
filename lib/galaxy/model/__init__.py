@@ -17,7 +17,9 @@ import string
 import time
 from collections import defaultdict
 from datetime import datetime, timedelta
+from enum import Enum
 from string import Template
+from typing import Optional, TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from boltons.iterutils import remap
@@ -61,7 +63,6 @@ from galaxy.util import (
     unicodify,
     unique_id,
 )
-from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import dict_for, Dictifiable
 from galaxy.util.form_builder import (AddressField, CheckboxField, HistoryField,
                                       PasswordField, SelectField, TextArea, TextField, WorkflowField,
@@ -89,7 +90,17 @@ JOB_METRIC_SCALE = 7
 AUTO_PROPAGATED_TAGS = ["name"]
 
 
-class RepresentById:
+if TYPE_CHECKING:
+    from sqlalchemy.schema import Table
+
+    class _HasTable:
+        table: Table
+
+else:
+    _HasTable = object
+
+
+class RepresentById(_HasTable):
     def __repr__(self):
         try:
             r = '<galaxy.model.{}({}) at {}>'.format(self.__class__.__name__, cached_id(self), hex(id(self)))
@@ -231,7 +242,7 @@ class UsesCreateAndUpdateTime:
         return (galaxy.model.orm.now.now() - create_time).total_seconds()
 
 
-class WorkerProcess(UsesCreateAndUpdateTime):
+class WorkerProcess(UsesCreateAndUpdateTime, _HasTable):
 
     def __init__(self, server_name, hostname):
         self.server_name = server_name
@@ -356,6 +367,7 @@ class JobLike:
 
 class User(Dictifiable, RepresentById):
     use_pbkdf2 = True
+    bootstrap_admin_user = False
     """
     Data for a Galaxy user or admin and relations to their
     histories, credentials, and roles.
@@ -623,7 +635,7 @@ class User(Dictifiable, RepresentById):
         session.flush()
 
 
-class PasswordResetToken:
+class PasswordResetToken(_HasTable):
     def __init__(self, user, token=None):
         if token:
             self.token = token
@@ -633,7 +645,7 @@ class PasswordResetToken:
         self.expiration_time = galaxy.model.orm.now.now() + timedelta(hours=24)
 
 
-class DynamicTool(Dictifiable):
+class DynamicTool(Dictifiable, RepresentById):
     dict_collection_visible_keys = ('id', 'tool_id', 'tool_format', 'tool_version', 'uuid', 'active', 'hidden')
     dict_element_visible_keys = ('id', 'tool_id', 'tool_format', 'tool_version', 'uuid', 'active', 'hidden')
 
@@ -688,18 +700,23 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
     _numeric_metric = JobMetricNumeric
     _text_metric = JobMetricText
 
-    states = Bunch(NEW='new',
-                   RESUBMITTED='resubmitted',
-                   UPLOAD='upload',
-                   WAITING='waiting',
-                   QUEUED='queued',
-                   RUNNING='running',
-                   OK='ok',
-                   ERROR='error',
-                   FAILED='failed',
-                   PAUSED='paused',
-                   DELETED='deleted',
-                   DELETED_NEW='deleted_new')
+    class states(str, Enum):
+        NEW = 'new'
+        RESUBMITTED = 'resubmitted'
+        UPLOAD = 'upload'
+        WAITING = 'waiting'
+        QUEUED = 'queued'
+        RUNNING = 'running'
+        OK = 'ok'
+        ERROR = 'error'
+        FAILED = 'failed'
+        PAUSED = 'paused'
+        DELETING = 'deleting'
+        DELETED = 'deleted'
+        DELETED_NEW = 'deleted_new'  # now DELETING, remove after 21.0
+        STOPPING = 'stop'
+        STOPPED = 'stopped'
+
     terminal_states = [states.OK,
                        states.ERROR,
                        states.DELETED]
@@ -757,6 +774,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         return self.state in [
             states.OK,
             states.ERROR,
+            states.DELETING,
             states.DELETED,
             states.DELETED_NEW,
         ]
@@ -1009,6 +1027,18 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
                 return False
         return True
 
+    def mark_stopped(self, track_jobs_in_database=False):
+        """
+        Mark this job as stopped
+        """
+        if self.finished:
+            # Do not modify the state/outputs of jobs that are already terminal
+            return
+        if track_jobs_in_database:
+            self.state = Job.states.STOPPING
+        else:
+            self.state = Job.states.STOPPED
+
     def mark_deleted(self, track_jobs_in_database=False):
         """
         Mark this job as deleted, and mark any output datasets as discarded.
@@ -1017,7 +1047,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             # Do not modify the state/outputs of jobs that are already terminal
             return
         if track_jobs_in_database:
-            self.state = Job.states.DELETED_NEW
+            self.state = Job.states.DELETING
         else:
             self.state = Job.states.DELETED
         self.info = "Job output deleted by user before job completed."
@@ -1236,6 +1266,22 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         for statement in statements:
             sa_session.execute(statement, params)
 
+    def remappable(self):
+        """
+        Check whether job is remappable when rerun
+        """
+        if self.state == self.states.ERROR:
+            try:
+                for jtod in self.output_datasets:
+                    if jtod.dataset.dependent_jobs:
+                        return True
+                if self.output_dataset_collection_instances:
+                    # We'll want to replace this item
+                    return 'job_produced_collection_elements'
+            except Exception:
+                log.exception(f"Error trying to determine if job {self.id} is remappable")
+        return False
+
 
 class Task(JobLike, RepresentById):
     """
@@ -1244,13 +1290,14 @@ class Task(JobLike, RepresentById):
     _numeric_metric = TaskMetricNumeric
     _text_metric = TaskMetricText
 
-    states = Bunch(NEW='new',
-                   WAITING='waiting',
-                   QUEUED='queued',
-                   RUNNING='running',
-                   OK='ok',
-                   ERROR='error',
-                   DELETED='deleted')
+    class states(str, Enum):
+        NEW = 'new'
+        WAITING = 'waiting'
+        QUEUED = 'queued'
+        RUNNING = 'running'
+        OK = 'ok'
+        ERROR = 'error'
+        DELETED = 'deleted'
 
     # Please include an accessor (get/set pair) for any new columns/members.
     def __init__(self, job, working_directory, prepare_files_cmd):
@@ -1465,11 +1512,10 @@ class ImplicitlyCreatedDatasetCollectionInput(RepresentById):
 
 class ImplicitCollectionJobs(RepresentById):
 
-    populated_states = Bunch(
-        NEW='new',  # New implicit jobs object, unpopulated job associations
-        OK='ok',  # Job associations are set and fixed.
-        FAILED='failed',  # There were issues populating job associations, object is in error.
-    )
+    class populated_states(str, Enum):
+        NEW = 'new'  # New implicit jobs object, unpopulated job associations
+        OK = 'ok'  # Job associations are set and fixed.
+        FAILED = 'failed'  # There were issues populating job associations, object is in error.
 
     def __init__(
         self,
@@ -1552,6 +1598,8 @@ class FakeDatasetAssociation :
 
 
 class JobExportHistoryArchive(RepresentById):
+    ATTRS_FILENAME_HISTORY = 'history_attrs.txt'
+
     def __init__(self, job=None, history=None, dataset=None, compressed=False,
                  history_attrs_filename=None):
         self.job = job
@@ -1593,6 +1641,31 @@ class JobExportHistoryArchive(RepresentById):
         if self.compressed:
             hname += ".gz"
         return hname
+
+    @staticmethod
+    def create_for_history(history, job, sa_session, object_store, compressed):
+        # Create dataset that will serve as archive.
+        archive_dataset = Dataset()
+        sa_session.add(archive_dataset)
+        sa_session.flush()  # ensure job.id and archive_dataset.id are available
+        object_store.create(archive_dataset)  # set the object store id, create dataset (if applicable)
+        # Add association for keeping track of job, history, archive relationship.
+        jeha = JobExportHistoryArchive(
+            job=job, history=history,
+            dataset=archive_dataset,
+            compressed=compressed
+        )
+        sa_session.add(jeha)
+
+        #
+        # Create attributes/metadata files for export.
+        #
+        jeha.dataset.create_extra_files_path()
+        temp_output_dir = jeha.dataset.extra_files_path
+
+        history_attrs_filename = os.path.join(temp_output_dir, jeha.ATTRS_FILENAME_HISTORY)
+        jeha.history_attrs_filename = history_attrs_filename
+        return jeha
 
 
 class JobImportHistoryArchive(RepresentById):
@@ -1654,12 +1727,14 @@ class GenomeIndexToolData(RepresentById):
 
 
 class DeferredJob(RepresentById):
-    states = Bunch(NEW='new',
-                   WAITING='waiting',
-                   QUEUED='queued',
-                   RUNNING='running',
-                   OK='ok',
-                   ERROR='error')
+
+    class states(str, Enum):
+        NEW = 'new'
+        WAITING = 'waiting'
+        QUEUED = 'queued'
+        RUNNING = 'running'
+        OK = 'ok'
+        ERROR = 'error'
 
     def __init__(self, state=None, plugin=None, params=None):
         self.state = state
@@ -1985,7 +2060,7 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
             rval = 0
         return rval
 
-    @disk_size.expression
+    @disk_size.expression  # type: ignore
     def disk_size(cls):
         """
         Return a query scalar that will get any history's size in bytes by summing
@@ -2112,7 +2187,11 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
         return self.__filter_contents(HistoryDatasetCollectionAssociation, **kwds)
 
 
-class HistoryUserShareAssociation(RepresentById):
+class UserShareAssociation(RepresentById):
+    user: Optional[User]
+
+
+class HistoryUserShareAssociation(UserShareAssociation):
     def __init__(self):
         self.history = None
         self.user = None
@@ -2134,13 +2213,13 @@ class Role(Dictifiable, RepresentById):
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name', 'description', 'type']
     private_id = None
-    types = Bunch(
-        PRIVATE='private',
-        SYSTEM='system',
-        USER='user',
-        ADMIN='admin',
-        SHARING='sharing'
-    )
+
+    class types(str, Enum):
+        PRIVATE = 'private'
+        SYSTEM = 'system'
+        USER = 'user'
+        ADMIN = 'admin'
+        SHARING = 'sharing'
 
     def __init__(self, name="", description="", type="system", deleted=False):
         self.name = name
@@ -2201,10 +2280,10 @@ class Quota(Dictifiable, RepresentById):
 
 class DefaultQuotaAssociation(Quota, Dictifiable, RepresentById):
     dict_element_visible_keys = ['type']
-    types = Bunch(
-        UNREGISTERED='unregistered',
-        REGISTERED='registered'
-    )
+
+    class types(str, Enum):
+        UNREGISTERED = 'unregistered'
+        REGISTERED = 'registered'
 
     def __init__(self, type, quota):
         assert type in self.types.__dict__.values(), 'Invalid type'
@@ -2291,18 +2370,24 @@ class StorableObject:
             sa_session.flush()
 
 
-class Dataset(StorableObject, RepresentById):
-    states = Bunch(NEW='new',
-                   UPLOAD='upload',
-                   QUEUED='queued',
-                   RUNNING='running',
-                   OK='ok',
-                   EMPTY='empty',
-                   ERROR='error',
-                   DISCARDED='discarded',
-                   PAUSED='paused',
-                   SETTING_METADATA='setting_metadata',
-                   FAILED_METADATA='failed_metadata')
+class Dataset(StorableObject, RepresentById, _HasTable):
+
+    class states(str, Enum):
+        NEW = 'new'
+        UPLOAD = 'upload'
+        QUEUED = 'queued'
+        RUNNING = 'running'
+        OK = 'ok'
+        EMPTY = 'empty'
+        ERROR = 'error'
+        DISCARDED = 'discarded'
+        PAUSED = 'paused'
+        SETTING_METADATA = 'setting_metadata'
+        FAILED_METADATA = 'failed_metadata'
+
+        @classmethod
+        def values(self):
+            return self.__members__.values()
     # failed_metadata is only valid as DatasetInstance state currently
 
     non_ready_states = (
@@ -2312,9 +2397,9 @@ class Dataset(StorableObject, RepresentById):
         states.RUNNING,
         states.SETTING_METADATA
     )
-    ready_states = tuple(set(states.__dict__.values()) - set(non_ready_states))
+    ready_states = tuple(set(states.__members__.values()) - set(non_ready_states))
     valid_input_states = tuple(
-        set(states.__dict__.values()) - {states.ERROR, states.DISCARDED}
+        set(states.__members__.values()) - {states.ERROR, states.DISCARDED}
     )
     terminal_states = (
         states.OK,
@@ -2324,14 +2409,15 @@ class Dataset(StorableObject, RepresentById):
         states.FAILED_METADATA,
     )
 
-    conversion_messages = Bunch(PENDING="pending",
-                                NO_DATA="no data",
-                                NO_CHROMOSOME="no chromosome",
-                                NO_CONVERTER="no converter",
-                                NO_TOOL="no tool",
-                                DATA="data",
-                                ERROR="error",
-                                OK="ok")
+    class conversion_messages(str, Enum):
+        PENDING = "pending"
+        NO_DATA = "no data"
+        NO_CHROMOSOME = "no chromosome"
+        NO_CONVERTER = "no converter"
+        NO_TOOL = "no tool"
+        DATA = "data"
+        ERROR = "error"
+        OK = "ok"
 
     permitted_actions = get_permitted_actions(filter='DATASET')
     file_path = "/tmp/"
@@ -2595,11 +2681,11 @@ class DatasetInstance:
     states = Dataset.states
     conversion_messages = Dataset.conversion_messages
     permitted_actions = Dataset.permitted_actions
-    validated_states = Bunch(
-        UNKNOWN='unknown',
-        INVALID='invalid',
-        OK='ok',
-    )
+
+    class validated_states(str, Enum):
+        UNKNOWN = 'unknown'
+        INVALID = 'invalid'
+        OK = 'ok'
 
     def __init__(self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, tool_version=None, extension=None,
                  dbkey=None, metadata=None, history=None, dataset=None, deleted=False, designation=None,
@@ -3434,7 +3520,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
     def type_id(self):
         return '-'.join((self.content_type, str(self.id)))
 
-    @type_id.expression
+    @type_id.expression  # type: ignore
     def type_id(cls):
         return ((type_coerce(cls.content_type, types.Unicode) + '-'
                  + type_coerce(cls.id, types.Unicode)).label('type_id'))
@@ -3875,7 +3961,7 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, RepresentById):
             ''').execution_options(autocommit=True)
         ret = object_session(self).execute(sql, {'library_dataset_id': ldda.library_dataset_id, 'ldda_id': ldda.id})
         if ret.rowcount < 1:
-            log.warn(f'Attempt to updated parent folder times failed: {ret.rowcount} records updated.')
+            log.warning(f'Attempt to updated parent folder times failed: {ret.rowcount} records updated.')
 
 
 class ExtendedMetadata(RepresentById):
@@ -3962,11 +4048,11 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
     """
     dict_collection_visible_keys = ['id', 'collection_type']
     dict_element_visible_keys = ['id', 'collection_type']
-    populated_states = Bunch(
-        NEW='new',  # New dataset collection, unpopulated elements
-        OK='ok',  # Collection elements populated (HDAs may or may not have errors)
-        FAILED='failed',  # some problem populating state, won't be populated
-    )
+
+    class populated_states(str, Enum):
+        NEW = 'new'  # New dataset collection, unpopulated elements
+        OK = 'ok'  # Collection elements populated (HDAs may or may not have errors)
+        FAILED = 'failed'  # some problem populating state, won't be populated
 
     def __init__(
         self,
@@ -4350,7 +4436,7 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
     def type_id(self):
         return '-'.join((self.content_type, str(self.id)))
 
-    @type_id.expression
+    @type_id.expression  # type: ignore
     def type_id(cls):
         return ((type_coerce(cls.content_type, types.Unicode) + '-'
                  + type_coerce(cls.id, types.Unicode)).label('type_id'))
@@ -4796,6 +4882,7 @@ class Workflow(Dictifiable, RepresentById):
     input_step_types = ['data_input', 'data_collection_input', 'parameter_input']
 
     def __init__(self, uuid=None):
+        self.id = None
         self.user = None
         self.name = None
         self.has_cycles = None
@@ -4833,6 +4920,12 @@ class Workflow(Dictifiable, RepresentById):
             if order_index == step.order_index:
                 return step
         raise KeyError("Workflow has no step with order_index '%s'" % order_index)
+
+    def step_by_label(self, label):
+        for step in self.steps:
+            if label == step.label:
+                return step
+        raise KeyError("Workflow has no step with label '%s'" % label)
 
     @property
     def input_steps(self):
@@ -4923,6 +5016,7 @@ class WorkflowStep(RepresentById):
         "data_collection_input": "dataset_collection",
         "parameter_input": "parameter",
     }
+    DEFAULT_POSITION = {"left": 0, "top": 0}
 
     def __init__(self):
         self.id = None
@@ -5178,7 +5272,7 @@ class WorkflowOutput(RepresentById):
         return copied_output
 
 
-class StoredWorkflowUserShareAssociation(RepresentById):
+class StoredWorkflowUserShareAssociation(UserShareAssociation):
 
     def __init__(self):
         self.stored_workflow = None
@@ -5196,13 +5290,14 @@ class StoredWorkflowMenuEntry(RepresentById):
 class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
     dict_collection_visible_keys = ['id', 'update_time', 'create_time', 'workflow_id', 'history_id', 'uuid', 'state']
     dict_element_visible_keys = ['id', 'update_time', 'create_time', 'workflow_id', 'history_id', 'uuid', 'state']
-    states = Bunch(
-        NEW='new',  # Brand new workflow invocation... maybe this should be same as READY
-        READY='ready',  # Workflow ready for another iteration of scheduling.
-        SCHEDULED='scheduled',  # Workflow has been scheduled.
-        CANCELLED='cancelled',
-        FAILED='failed',
-    )
+
+    class states(str, Enum):
+        NEW = 'new'  # Brand new workflow invocation... maybe this should be same as READY
+        READY = 'ready'  # Workflow ready for another iteration of scheduling.
+        SCHEDULED = 'scheduled'  # Workflow has been scheduled.
+        CANCELLED = 'cancelled'
+        FAILED = 'failed'
+
     non_terminal_states = [states.NEW, states.READY]
 
     def __init__(self):
@@ -5537,13 +5632,13 @@ class WorkflowInvocationToSubworkflowInvocationAssociation(Dictifiable, Represen
 class WorkflowInvocationStep(Dictifiable, RepresentById):
     dict_collection_visible_keys = ['id', 'update_time', 'job_id', 'workflow_step_id', 'subworkflow_invocation_id', 'state', 'action']
     dict_element_visible_keys = ['id', 'update_time', 'job_id', 'workflow_step_id', 'subworkflow_invocation_id', 'state', 'action']
-    states = Bunch(
-        NEW='new',  # Brand new workflow invocation step
-        READY='ready',  # Workflow invocation step ready for another iteration of scheduling.
-        SCHEDULED='scheduled',  # Workflow invocation step has been scheduled.
-        # CANCELLED='cancelled',  TODO: implement and expose
-        # FAILED='failed',  TODO: implement and expose
-    )
+
+    class states(str, Enum):
+        NEW = 'new'  # Brand new workflow invocation step
+        READY = 'ready'  # Workflow invocation step ready for another iteration of scheduling.
+        SCHEDULED = 'scheduled'  # Workflow invocation step has been scheduled.
+        # CANCELLED = 'cancelled',  TODO: implement and expose
+        # FAILED = 'failed',  TODO: implement and expose
 
     @property
     def is_new(self):
@@ -5613,12 +5708,12 @@ class WorkflowRequestInputParameter(Dictifiable, RepresentById):
     """ Workflow-related parameters not tied to steps or inputs.
     """
     dict_collection_visible_keys = ['id', 'name', 'value', 'type']
-    types = Bunch(
-        REPLACEMENT_PARAMETERS='replacements',
-        STEP_PARAMETERS='step',
-        META_PARAMETERS='meta',
-        RESOURCE_PARAMETERS='resource',
-    )
+
+    class types(str, Enum):
+        REPLACEMENT_PARAMETERS = 'replacements'
+        STEP_PARAMETERS = 'step'
+        META_PARAMETERS = 'meta'
+        RESOURCE_PARAMETERS = 'resource'
 
     def __init__(self, name=None, value=None, type=None):
         self.name = name
@@ -5736,7 +5831,10 @@ class MetadataFile(StorableObject, RepresentById):
 class FormDefinition(Dictifiable, RepresentById):
     # The following form_builder classes are supported by the FormDefinition class.
     supported_field_types = [AddressField, CheckboxField, PasswordField, SelectField, TextArea, TextField, WorkflowField, WorkflowMappingField, HistoryField]
-    types = Bunch(USER_INFO='User Information')
+
+    class types(str, Enum):
+        USER_INFO = 'User Information'
+
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name', 'desc', 'form_definition_current_id', 'fields', 'layout']
 
@@ -6044,7 +6142,7 @@ class CustosAuthnzToken(RepresentById):
         self.refresh_expiration_time = refresh_expiration_time
 
 
-class CloudAuthz:
+class CloudAuthz(_HasTable):
     def __init__(self, user_id, provider, config, authn_id, description=""):
         self.id = None
         self.user_id = user_id
@@ -6109,7 +6207,7 @@ class PageRevision(Dictifiable, RepresentById):
         return rval
 
 
-class PageUserShareAssociation(RepresentById):
+class PageUserShareAssociation(UserShareAssociation):
     def __init__(self):
         self.page = None
         self.user = None
@@ -6173,7 +6271,7 @@ class VisualizationRevision(RepresentById):
         )
 
 
-class VisualizationUserShareAssociation(RepresentById):
+class VisualizationUserShareAssociation(UserShareAssociation):
     def __init__(self):
         self.visualization = None
         self.user = None
@@ -6182,12 +6280,13 @@ class VisualizationUserShareAssociation(RepresentById):
 class TransferJob(RepresentById):
     # These states are used both by the transfer manager's IPC and the object
     # state in the database.  Not all states are used by both.
-    states = Bunch(NEW='new',
-                   UNKNOWN='unknown',
-                   PROGRESS='progress',
-                   RUNNING='running',
-                   ERROR='error',
-                   DONE='done')
+    class states(str, Enum):
+        NEW = 'new'
+        UNKNOWN = 'unknown'
+        PROGRESS = 'progress'
+        RUNNING = 'running'
+        ERROR = 'error'
+        DONE = 'done'
     terminal_states = [states.ERROR,
                        states.DONE]
 

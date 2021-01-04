@@ -1471,16 +1471,6 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``interactivetools_enable``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable InteractiveTools.
-:Default: ``false``
-:Type: bool
-
-
 ~~~~~~~~~~~~~~~~
 ``aws_estimate``
 ~~~~~~~~~~~~~~~~
@@ -1490,6 +1480,16 @@
     their runtime matrices. CPU, RAM and runtime usage is mapped
     against AWS pricing table. Please note, that those numbers are
     only estimates.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``interactivetools_enable``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable InteractiveTools.
 :Default: ``false``
 :Type: bool
 
@@ -1515,6 +1515,21 @@
     <data_dir>.
 :Default: ``interactivetools_map.sqlite``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``retry_interactivetool_metadata_internally``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Galaxy Interactive Tools (GxITs) can be stopped from within the
+    Galaxy interface, killing the GxIT job without completing its
+    metadata setting post-job steps. In such a case it may be
+    desirable to set metadata on job outputs internally (in the Galaxy
+    job handler process). The default is is the value of
+    `retry_metadata_internally`, which defaults to `true`.
+:Default: ``true``
+:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1966,8 +1981,26 @@
 
 :Description:
     If using compression in the upstream proxy server, use this option
-    to disable gzipping of library .tar.gz and .zip archives, since
-    the proxy server will do it faster on the fly.
+    to disable gzipping of dataset collection and library archives,
+    since the upstream server will do it faster on the fly. To enable
+    compression add ``application/zip`` to the proxy's compressable
+    mimetypes.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~
+``upstream_mod_zip``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    If using the mod-zip module in nginx, use this option to assemble
+    zip archives in nginx. This is preferable over the upstream_gzip
+    option as Galaxy does not need to serve the archive. Requires
+    setting up internal nginx locations to all paths that can be
+    archived. See
+    https://docs.galaxyproject.org/en/master/admin/nginx.html#creating-archives-with-mod-zip
+    for details.
 :Default: ``false``
 :Type: bool
 

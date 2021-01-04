@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 import { createLocalVue } from "@vue/test-utils";
 import { wait, mountRenderless } from "jest/helpers";
-import { wipeDatabase } from "../../caching/db/pouch";
+import { wipeDatabase } from "../../caching";
 import { cacheContent, getCachedContent, cacheCollectionContent, getCachedCollectionContent } from "../../caching";
 import { DatasetCollection } from "../../model/DatasetCollection";
 import DscProvider from "./DscProvider";

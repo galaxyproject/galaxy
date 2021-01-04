@@ -22,6 +22,23 @@ export async function getModule(request_data) {
     }
 }
 
+export async function refactor(workflow, id, actions, dryRun = false) {
+    try {
+        const requestData = {
+            actions: actions,
+            style: "editor",
+            dry_run: dryRun,
+        };
+        const { data } = await axios.put(`${getAppRoot()}api/workflows/${id}/refactor`, requestData);
+        if (!dryRun) {
+            fromSimple(workflow, data);
+        }
+        return data;
+    } catch (e) {
+        rethrowSimple(e);
+    }
+}
+
 export async function loadWorkflow(workflow, id, version, appendData) {
     try {
         const versionQuery = Number.isInteger(version) ? `version=${version}` : "";
@@ -43,6 +60,7 @@ export async function saveWorkflow(workflow) {
             workflow.hasChanges = false;
             workflow.stored = true;
             workflow.version = data.version;
+            workflow.annotation = data.annotation;
             return data;
         } catch (e) {
             rethrowSimple(e);

@@ -66,10 +66,10 @@ class InputValueWrapper(ToolParameterValueWrapper):
     Wraps an input so that __str__ gives the "param_dict" representation.
     """
 
-    def __init__(self, input, value, other_values={}):
+    def __init__(self, input, value, other_values=None):
         self.input = input
         self.value = value
-        self._other_values = other_values
+        self._other_values = other_values or {}
 
     def _get_cast_value(self, other):
         if self.input.type == 'boolean' and isinstance(other, str):
@@ -158,11 +158,11 @@ class SelectToolParameterWrapper(ToolParameterValueWrapper):
 
             return self._input.separator.join(values)
 
-    def __init__(self, input, value, other_values={}, compute_environment=None):
+    def __init__(self, input, value, other_values=None, compute_environment=None):
         self.input = input
         self.value = value
         self.input.value_label = input.value_to_display_text(value)
-        self._other_values = other_values
+        self._other_values = other_values or {}
         self.compute_environment = compute_environment
         self.fields = self.SelectToolParameterFieldWrapper(input, value, other_values, self.compute_environment)
 

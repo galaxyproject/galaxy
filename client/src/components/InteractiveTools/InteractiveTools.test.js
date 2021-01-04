@@ -27,7 +27,7 @@ describe("InteractiveTools/InteractiveTools.vue", () => {
             localVue,
         });
         axiosMock.onGet("/api/entry_points?running=true").reply(200, testInteractiveToolsResponse);
-        axiosMock.onPost("/interactivetool/list").reply(200, { status: "ok", message: "ok" });
+        axiosMock.onDelete(new RegExp("/api/entry_points/*")).reply(200, { status: "ok", message: "ok" });
         await flushPromises();
     });
 
@@ -36,7 +36,7 @@ describe("InteractiveTools/InteractiveTools.vue", () => {
     });
 
     it("Interactive Tool Table renders", async () => {
-        const table = wrapper.find("#workflow-table");
+        const table = wrapper.find("#interactive-tool-table");
         expect(table.exists() === true).toBeTruthy();
     });
 
