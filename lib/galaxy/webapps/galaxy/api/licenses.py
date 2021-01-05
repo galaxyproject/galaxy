@@ -1,9 +1,10 @@
 from typing import List
 
-from fastapi import Depends, HTTPException, Path
+from fastapi import Depends, Path
 from fastapi.routing import APIRouter
 from fastapi_utils.cbv import cbv
 
+from galaxy import exceptions
 from galaxy.managers.licenses import LicenseModel, LicensesManager
 from galaxy.web import expose_api_anonymous_and_sessionless
 from galaxy.webapps.base.controller import BaseAPIController
@@ -34,9 +35,9 @@ class FastAPILicenses:
     async def get(self, id: str = LicenseIdPath) -> LicenseModel:
         """Returns the license with the matching SPDX short identifier."""
         license = self.licenses_manager.get_license_by_id(id)
-        if license:
-            return license
-        raise HTTPException(status_code=404, detail="License not found")
+        if license is None:
+            raise exceptions.ObjectNotFound("License not found")
+        return license
 
 
 class LicensesController(BaseAPIController):
