@@ -1338,25 +1338,30 @@ class ColumnListParameter(SelectToolParameter):
             raise ValueError("Value for associated data reference not found (data_ref).")
         legal_values = self.get_column_list(trans, other_values)
 
-        hda = other_values.get(self.data_ref)
-        if isinstance(hda, list):
-            # hda is a list of HistoryDatasetCollectionAssociation
-            for idx1 in range(len(hda)):
-                # dataset_instances is a list of HistoryDatasetAssociation
-                dataset_instances = hda[idx1].dataset_instances
-                for idx2 in range(len(dataset_instances)):
-                    if dataset_instances[idx2] is not None and dataset_instances[idx2].get_size() == 0:
-                        value = other_values.get(self.name)
-                        if value is not None:
-                            legal_values.append(value)
-        else:
-            # hda is a HistoryDatasetAssociation
-            if hda.dataset.get_size() == 0:
-                value = other_values.get(self.name)
-                if value is not None:
-                    legal_values.append(value)
+        value = other_values.get(self.name)
+        if value not in legal_values:
+            legal_values.extend(self.get_empty_file_columns(trans, other_values))
 
         return set(legal_values)
+
+    def get_empty_file_columns(self, trans, other_values):
+        # Get the value of the associated data reference (a dataset)
+        dataset = other_values.get(self.data_ref)
+
+        # Check if a dataset is selected
+        if not dataset:
+            return []
+
+        column_list = []
+        for dataset in util.listify(dataset):
+            # Use representative dataset if a dataset collection is parsed
+            if isinstance(dataset, trans.app.model.HistoryDatasetCollectionAssociation):
+                dataset = dataset.to_hda_representative()
+            if dataset.get_size() == 0:
+                value = other_values.get(self.name)
+                if value is not None:
+                    column_list.append(value)
+        return column_list
 
     def get_dependencies(self):
         return [self.data_ref]
