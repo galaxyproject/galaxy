@@ -40,9 +40,11 @@ def initialize_fast_app(gx_app, app=None):
         job_lock,
         jobs,
         roles,
+        licenses
     )
     app.include_router(jobs.router)
     app.include_router(job_lock.router)
     app.include_router(roles.router)
+    app.include_router(licenses.router)
     app.mount('/', wsgi_handler)
     return app
