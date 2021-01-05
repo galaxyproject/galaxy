@@ -2770,6 +2770,7 @@ class ICM(Binary):
         return False
 
 
+@build_sniff_from_prefix
 class Parquet(Binary):
     """
     Class describing Apache Parquet file (https://parquet.apache.org/)
@@ -2787,9 +2788,8 @@ class Parquet(Binary):
         super().__init__(**kwd)
         self._magic = b"PAR1"  # Defined at https://parquet.apache.org/documentation/latest/
 
-    def sniff(self, filename):
-        with open(filename, 'rb') as f:
-            return f.read(4) == self._magic
+    def sniff_prefix(self, sniff_prefix):
+        return sniff_prefix.startswith_bytes(self._magic)
 
 
 class BafTar(CompressedArchive):
