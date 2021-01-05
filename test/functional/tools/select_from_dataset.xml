@@ -1,39 +1,39 @@
 <tool id="select_from_dataset" name="select_from_dataset" version="0.1.0">
     <description>Create dynamic options from data sets</description>
     <command><![CDATA[
-        echo select_single $select_single > '$output' && 
-        echo select_multiple $select_multiple >> '$output' &&
-        echo select_collection $select_collection >> '$output'
+echo select_single '$select_single' > '$output' && 
+echo select_multiple '$select_multiple' >> '$output' &&
+echo select_collection '$select_collection' >> '$output'
     ]]></command>
 	<inputs>
         <param name="single" type="data" format="tabular" label="single"/>
         <param name="select_single" type="select" label="select_single">
-          <options from_dataset="single">
-              <column name="name" index="0"/>
-              <column name="value" index="0"/>
-              <validator type="no_options" message="No data is available in single" />
-          </options>
+            <options from_dataset="single">
+                <column name="name" index="0"/>
+                <column name="value" index="0"/>
+                <validator type="no_options" message="No data is available in single" />
+            </options>
         </param>
         <param name="multiple" type="data" format="tabular" multiple="true" label="multiple"/>
         <param name="select_multiple" type="select" multiple="true" label="select_multiple">
-          <options from_dataset="multiple">
-              <column name="name" index="0"/>
-              <column name="value" index="0"/>
-            <validator type="no_options" message="No data is available in single" />
-          </options>
+            <options from_dataset="multiple">
+                <column name="name" index="0"/>
+                <column name="value" index="0"/>
+                <validator type="no_options" message="No data is available in single" />
+            </options>
         </param>
 		<param name="collection" type="data_collection" format="tabular" collection_type="list" label="collection"/>
         <param name="select_collection" type="select" multiple="true" label="select_collection">
-          <options from_dataset="collection">
-              <column name="name" index="0"/>
-              <column name="value" index="0"/>
-            <validator type="no_options" message="No data is available in single" />
-          </options>
+            <options from_dataset="collection">
+                <column name="name" index="0"/>
+                <column name="value" index="0"/>
+                <validator type="no_options" message="No data is available in single" />
+            </options>
 		</param>
     </inputs>
 
     <outputs>
-        <data format="txt" name="output" />
+        <data name="output" format="txt" />
     </outputs>
 
     <tests>
@@ -58,7 +58,6 @@
             </output>
         </test>
     </tests>
-
     <help>
     </help>
 </tool>

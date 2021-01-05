@@ -111,19 +111,20 @@ def skip_without_datatype(extension):
     return method_wrapper
 
 
-def skip_if_site_down(url):
+def is_site_up(url):
+    try:
+        response = requests.get(url, timeout=10)
+        return response.status_code == 200
+    except Exception:
+        return False
 
-    def site_down():
-        try:
-            response = requests.get(url, timeout=10)
-            return response.status_code != 200
-        except Exception:
-            return False
+
+def skip_if_site_down(url):
 
     def method_wrapper(method):
         @wraps(method)
         def wrapped_method(api_test_case, *args, **kwargs):
-            _raise_skip_if(site_down(), "Test depends on [%s] being up and it appears to be down." % url)
+            _raise_skip_if(not is_site_up(url), f"Test depends on [{url}] being up and it appears to be down.")
             method(api_test_case, *args, **kwargs)
 
         return wrapped_method

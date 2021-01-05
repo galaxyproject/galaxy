@@ -198,7 +198,7 @@ steps:
         # Also the connector should disappear
         tool_input.wait_for_absent_or_hidden()
 
-        # Now make it connected again and watch the requestss
+        # Now make it connected again and watch the requests
         connect_icon.wait_for_and_click()
 
         tool_input.wait_for_visible()
