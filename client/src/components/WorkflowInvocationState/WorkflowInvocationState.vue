@@ -2,16 +2,23 @@
     <div class="mb-3">
         <div v-if="invocationAndJobTerminal">
             <span>
-                <a :href="invocationLink"
+                <a id="invocation-link" :href="invocationLink"
                     ><b>View Report {{ index + 1 }}</b></a
                 >
-                <a class="fa fa-print ml-1" :href="invocationPdfLink" v-b-tooltip title="Download PDF" />
+                <a
+                    id="invocation-pdf-link"
+                    class="fa fa-print ml-1"
+                    :href="invocationPdfLink"
+                    v-b-tooltip
+                    title="Download PDF"
+                />
             </span>
         </div>
         <div v-else>
             <span class="fa fa-spinner fa-spin" />
             <span>Invocation {{ index + 1 }}...</span>
             <span
+                id="cancel-workflow-scheduling"
                 v-if="!invocationSchedulingTerminal"
                 v-b-tooltip.hover
                 title="Cancel scheduling of workflow invocation"
@@ -47,7 +54,7 @@
             :loading="!invocationAndJobTerminal"
         />
         <span v-if="invocationAndJobTerminal">
-            <a :href="bcoJSON"><b>Download BioCompute Object</b></a>
+            <a id="bco-json" :href="bcoJSON"><b>Download BioCompute Object</b></a>
         </span>
         <workflow-invocation-details
             v-if="invocation"
@@ -101,29 +108,20 @@ export default {
             return this.getInvocationById(this.invocationId);
         },
         invocationState: function () {
-            const invocation = this.getInvocationById(this.invocationId);
-            const state = invocation ? invocation.state : "new";
-            return state;
+            return this.invocation?.state || "new";
         },
         createdTime: function () {
-            const invocation = this.getInvocationById(this.invocationId);
-            return invocation ? this.getInvocationById(this.invocationId).create_time : null;
+            return this.invocation?.create_time || null;
         },
         stepCount: function () {
-            const invocation = this.getInvocationById(this.invocationId);
-            if (invocation) {
-                return invocation.steps.length;
-            } else {
-                return null;
-            }
+            return this.invocation?.steps.length;
         },
         stepStates: function () {
             const stepStates = {};
-            const invocation = this.getInvocationById(this.invocationId);
-            if (!invocation) {
+            if (!this.invocation) {
                 return {};
             }
-            for (const step of invocation.steps) {
+            for (const step of this.invocation.steps) {
                 if (!stepStates[step.state]) {
                     stepStates[step.state] = 1;
                 } else {
@@ -176,18 +174,18 @@ export default {
     methods: {
         ...mapActions(["fetchInvocationForId", "fetchInvocationJobsSummaryForId"]),
         pollStepStatesUntilTerminal: function () {
-            this.fetchInvocationForId(this.invocationId).then((response) => {
-                if (!this.invocationSchedulingTerminal) {
+            if (!this.invocation || !this.invocationSchedulingTerminal) {
+                this.fetchInvocationForId(this.invocationId).then((response) => {
                     this.stepStatesInterval = setTimeout(this.pollStepStatesUntilTerminal, 3000);
-                }
-            });
+                });
+            }
         },
         pollJobStatesUntilTerminal: function () {
-            this.fetchInvocationJobsSummaryForId(this.invocationId).then((response) => {
-                if (!this.jobStatesTerminal) {
+            if (!this.jobStatesTerminal) {
+                this.fetchInvocationJobsSummaryForId(this.invocationId).then((response) => {
                     this.jobStatesInterval = setTimeout(this.pollJobStatesUntilTerminal, 3000);
-                }
-            });
+                });
+            }
         },
         onError: function (e) {
             console.error(e);
