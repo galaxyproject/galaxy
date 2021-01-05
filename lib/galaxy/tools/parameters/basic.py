@@ -1339,29 +1339,19 @@ class ColumnListParameter(SelectToolParameter):
         legal_values = self.get_column_list(trans, other_values)
 
         value = other_values.get(self.name)
-        if value not in legal_values:
-            legal_values.extend(self.get_empty_file_columns(trans, other_values))
+        if value not in legal_values and self.is_file_empty(trans, other_values):
+            legal_values.extend(value)
 
         return set(legal_values)
 
-    def get_empty_file_columns(self, trans, other_values):
-        # Get the value of the associated data reference (a dataset)
-        dataset = other_values.get(self.data_ref)
-
-        # Check if a dataset is selected
-        if not dataset:
-            return []
-
-        column_list = []
-        for dataset in util.listify(dataset):
+    def is_file_empty(self, trans, other_values):
+        for dataset in util.listify(other_values.get(self.data_ref)):
             # Use representative dataset if a dataset collection is parsed
             if isinstance(dataset, trans.app.model.HistoryDatasetCollectionAssociation):
                 dataset = dataset.to_hda_representative()
-            if dataset.get_size() == 0:
-                value = other_values.get(self.name)
-                if value is not None:
-                    column_list.append(value)
-        return column_list
+            if not dataset.has_data():
+                return True
+        return False
 
     def get_dependencies(self):
         return [self.data_ref]
