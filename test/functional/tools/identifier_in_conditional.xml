@@ -1,4 +1,4 @@
-<tool id="identifier_in_conditional" name="identifier_in_conditional">
+<tool id="identifier_in_conditional" name="identifier_in_conditional" version="1.0.0">
     <command><![CDATA[
 #if str($outer_cond.multi_input) == 'true':
     #for $input in $input1#
@@ -12,10 +12,10 @@
         <conditional name="outer_cond">
             <param name="multi_input" type="boolean" checked="true" />
             <when value="true">
-                <param type="data" name="input1" label="multi input" multiple="true" />
+                <param name="input1" type="data" multiple="true" label="multi input" />
             </when>
             <when value="false">
-                <param type="data" name="input1" label="single input" multiple="false" />
+                <param name="input1" type="data" multiple="false" label="single input" />
             </when>
         </conditional>
     </inputs>
