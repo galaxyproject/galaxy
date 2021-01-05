@@ -1,10 +1,10 @@
-<tool id="kaldi_carbonate" name="Kaldi on Carbonate" version="1.0.2">
+<tool id="kaldi_hpc" name="Kaldi on HPC" version="1.0.0">
   <description>Kaldi Speech-to-Text transcription on IU's HPC</description>
     <requirements>
         <requirement type="package" version="8.30">coreutils</requirement>
     </requirements>
   <command detect_errors="exit_code">
-    $__tool_directory__/kaldi_carbonate.py '$__root_dir__/config/inaspeech_carbonate.ini' '$input_audio' '$kaldi_transcript_json' '$kaldi_transcript_text' '$amp_transcript'
+    '$__tool_directory__/amp_stt/kaldi_hpc.py' '/srv/amp/hpc_batch/hpc_submitter.ini '$input_audio' '$kaldi_transcript_json' '$kaldi_transcript_text' '$amp_transcript'
   </command>
    <inputs>
    <!-- should be wave data type -->
