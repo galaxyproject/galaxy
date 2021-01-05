@@ -1,23 +1,18 @@
 <template>
     <div>
         <DscUI
-            v-if="dataset_collection"
+            v-if="datasetCollection"
             v-bind="$attrs"
             v-on="$listeners"
-            :dsc="dataset_collection"
+            :dsc="datasetCollection"
             :showTags="true"
-            v-on:update:expanded="expandCollection"
-            @hideCollection="onHide(dataset_collection)"
-            @unhideCollection="onUnhide(dataset_collection, $event)"
-            @deleteCollection="onDelete(dataset_collection, $event)"
-            @undeleteCollection="onUndelete(dataset_collection)"
+            @update:expanded="toggleExpand"
+            @hideCollection="onHide(datasetCollection)"
+            @unhideCollection="onUnhide(datasetCollection)"
+            @deleteCollection="onDelete(datasetCollection, $event)"
+            @undeleteCollection="onUndelete(datasetCollection)"
         />
-        <DatasetCollectionContentProvider
-            v-for="collection in expandedCollections"
-            :key="collection.id"
-            :id="collection.contents_url"
-            v-slot="{ item, loading }"
-        >
+        <DatasetCollectionContentProvider v-if="expand" :id="datasetCollection.contents_url" v-slot="{ item, loading }">
             <b-spinner v-if="loading">Loading Dataset Collection...</b-spinner>
             <DatasetCollectionContents v-else :collectionContents="item" />
         </DatasetCollectionContentProvider>
@@ -42,30 +37,24 @@ export default {
         element_count: { type: Number, required: false },
     },
     data() {
-        return { expandedCollections: [] };
+        return { expand: false };
     },
     computed: {
-        dataset_collection() {
+        datasetCollection() {
             var rawObject = this.item;
             if (rawObject.model_class === "DatasetCollectionElement") {
                 rawObject = this.item.object;
                 rawObject.name = this.item.element_identifier;
                 rawObject.contents_url = this.item.contents_url || rawObject.contents_url;
                 rawObject.element_count = this.element_count;
-                // TODO: dataset collections should probably be able to determine their own state?
                 rawObject.populated_state = "ok";
             }
             return new DatasetCollection(rawObject);
         },
     },
     methods: {
-        expandCollection(coll) {
-            const index = this.expandedCollections.indexOf(coll);
-            if (index > -1) {
-                this.expandedCollections.splice(index, 1);
-            } else {
-                this.expandedCollections.push(coll);
-            }
+        toggleExpand() {
+            this.expand = !this.expand;
         },
         async onDelete(collection, flags = {}) {
             const { recursive = false, purge = false } = flags;
