@@ -1,9 +1,27 @@
 import json
 import logging
+from typing import List
 
 from pkg_resources import resource_string
+from pydantic import BaseModel, Field, HttpUrl
 
 log = logging.getLogger(__name__)
+
+
+# https://github.com/spdx/license-list-data/blob/master/accessingLicenses.md#license-list-table-of-contents
+class LicenseModel(BaseModel):
+    licenseId: str = Field(title="Identifier", description="SPDX Identifier", example="MIT")
+    name: str = Field(title="Name", description="Full name of the license")
+    reference: str = Field(title="Reference", description="Reference to the HTML format for the license file")
+    referenceNumber: int = Field(title="Reference number", description="Deprecated - this field is generated and is no longer in use")
+    isDeprecatedLicenseId: bool = Field(title="Deprecated", description="True if the entire license is deprecated")
+    isOsiApproved: bool = Field(title="OSI approved", description="Indicates if the [OSI](https://opensource.org/) has approved the license")
+    seeAlso: List[HttpUrl] = Field(title="Reference URLs", description="Cross reference URL pointing to additional copies of the license")
+    detailsUrl: HttpUrl = Field(title="Details URL", description="URL to the SPDX json details for this license")
+    recommended: bool = Field(title="Recommended", description="True if this license is recommended to be used")
+    url: HttpUrl = Field(title="URL")
+    spdxUrl: HttpUrl = Field(title="SPDX URL")
+
 
 # https://docs.google.com/document/d/16vnRtDjrx5eHSl4jXs2vMaDTI6luyyLzU6xMvRHsnbI/edit#heading=h.1pihjj16olz2
 RECOMMENDED_LICENSES = [
@@ -57,3 +75,10 @@ class LicensesManager:
         return {
             "url": uri
         }
+
+    def get_licenses(self) -> List[LicenseModel]:
+        return SPDX_LICENSES["licenses"]
+
+    def get_license_by_id(self, id: str) -> LicenseModel:
+        license = self.get(id)
+        return LicenseModel(**license)
