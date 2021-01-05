@@ -1,3 +1,4 @@
+<!-- controls display of DisplayUI and delegates modifications -->
 <template>
     <DatasetUI
         v-if="dataset"
