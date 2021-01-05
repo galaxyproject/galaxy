@@ -11,13 +11,7 @@
             >
                 <div>
                     <loading-span v-if="loading" message="Loading datasets" />
-                    <DatasetUIWrapper
-                        v-if="item"
-                        :item="item"
-                        :element_identifier="contentItem.element_identifier"
-                        :index="1"
-                        :showTags="true"
-                    >
+                    <DatasetUIWrapper v-else :item="item" :element_identifier="contentItem.element_identifier">
                     </DatasetUIWrapper>
                 </div>
             </DatasetProvider>
@@ -25,8 +19,6 @@
                 v-if="contentItem.element_type === 'dataset_collection'"
                 :item="contentItem"
                 :element_count="collectionContents.length + 1"
-                :index="1"
-                :showTags="true"
             >
             </DatasetCollectionUIWrapper>
         </div>
