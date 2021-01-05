@@ -1,4 +1,4 @@
-<tool id="ina_speech_segmenter_hpc" name="INA Speech Segmenter on HPC" version="1.0.2">
+<tool id="ina_speech_segmenter_hpc" name="INA Speech Segmenter on HPC" version="1.0.0">
   <description>INA Speech Segmenter on IU's HPC</description>
     <requirements>
         <requirement type="package" version="8.30">coreutils</requirement>
