@@ -30,17 +30,22 @@
             note="Invocation scheduling failed - Galaxy administrator may have additional details in logs."
             :error-count="1"
         />
-        <progress-bar v-else :note="stepStatesStr" :total="stepCount" :ok-count="stepStates.scheduled" />
         <progress-bar
-            v-if="jobCount"
+            v-else
+            :note="stepStatesStr"
+            :total="stepCount"
+            :ok-count="stepStates.scheduled"
+            :loading="!invocationSchedulingTerminal"
+        />
+        <progress-bar
             :note="jobStatesStr"
             :total="jobCount"
             :ok-count="okCount"
             :running-count="runningCount"
             :new-count="newCount"
             :error-count="errorCount"
+            :loading="!invocationAndJobTerminal"
         />
-        <progress-bar v-else note="Loading job summary..." :loading="true" />
         <span v-if="invocationAndJobTerminal">
             <a :href="bcoJSON"><b>Download BioCompute Object</b></a>
         </span>
@@ -147,13 +152,17 @@ export default {
             );
         },
         jobStatesTerminal: function () {
+            if (this.invocationSchedulingTerminal && !this.JobStatesSummary) {
+                // no jobs for this invocation (think subworkflow or just inputs)
+                return true;
+            }
             return this.jobStatesSummary && this.jobStatesSummary.terminal();
         },
         stepStatesStr: function () {
             return `${this.stepStates.scheduled || 0} of ${this.stepCount} steps successfully scheduled.`;
         },
         jobStatesStr: function () {
-            let jobStr = `${this.jobStatesSummary.numTerminal()} of ${this.jobCount} jobs complete`;
+            let jobStr = `${this.jobStatesSummary?.numTerminal() || 0} of ${this.jobCount} jobs complete`;
             if (!this.invocationSchedulingTerminal) {
                 jobStr += " (total number of jobs will change until all steps fully scheduled)";
             }
