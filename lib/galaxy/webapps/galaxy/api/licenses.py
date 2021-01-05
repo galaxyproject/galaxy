@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import Depends, Path
+from fastapi import Depends, HTTPException, Path
 from fastapi.routing import APIRouter
 from fastapi_utils.cbv import cbv
 
@@ -33,7 +33,10 @@ class FastAPILicenses:
         response_model=LicenseModel)
     async def get(self, id: str = LicenseIdPath) -> LicenseModel:
         """Returns the license with the matching SPDX short identifier."""
-        return self.licenses_manager.get_license_by_id(id)
+        license = self.licenses_manager.get_license_by_id(id)
+        if license:
+            return license
+        raise HTTPException(status_code=404, detail="License not found")
 
 
 class LicensesController(BaseAPIController):

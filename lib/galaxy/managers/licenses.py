@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import List
+from typing import List, Optional
 
 from pkg_resources import resource_string
 from pydantic import BaseModel, Field, HttpUrl
@@ -79,6 +79,8 @@ class LicensesManager:
     def get_licenses(self) -> List[LicenseModel]:
         return SPDX_LICENSES["licenses"]
 
-    def get_license_by_id(self, id: str) -> LicenseModel:
+    def get_license_by_id(self, id: str) -> Optional[LicenseModel]:
         license = self.get(id)
+        if license.get("licenseId", None) is None:
+            return None
         return LicenseModel(**license)
