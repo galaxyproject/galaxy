@@ -1,9 +1,16 @@
 import json
 import logging
-from typing import List, Optional
+from typing import (
+    List,
+    Optional
+)
 
 from pkg_resources import resource_string
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import (
+    BaseModel,
+    Field,
+    HttpUrl
+)
 
 log = logging.getLogger(__name__)
 
