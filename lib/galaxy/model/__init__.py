@@ -1667,6 +1667,15 @@ class JobExportHistoryArchive(RepresentById):
         jeha.history_attrs_filename = history_attrs_filename
         return jeha
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'job_id': self.job.id,
+            'ready': self.ready,
+            'preparing': self.preparing,
+            'up_to_date': self.up_to_date,
+        }
+
 
 class JobImportHistoryArchive(RepresentById):
     def __init__(self, job=None, history=None, archive_dir=None):

@@ -146,6 +146,7 @@ def app_factory(global_conf, load_app_kwds=None, **kwargs):
     webapp.add_client_route('/histories/citations')
     webapp.add_client_route('/histories/list')
     webapp.add_client_route('/histories/import')
+    webapp.add_client_route('/histories/{history_id}/export')
     webapp.add_client_route('/histories/list_published')
     webapp.add_client_route('/histories/list_shared')
     webapp.add_client_route('/histories/rename')
@@ -496,6 +497,9 @@ def populate_api_routes(webapp, app):
                            controller='page_revisions',
                            parent_resources=dict(member_name='page', collection_name='pages'))
 
+    webapp.mapper.connect("history_exports",
+                          "/api/histories/{id}/exports", controller="histories",
+                          action="index_exports", conditions=dict(method=["GET"]))
     webapp.mapper.connect("history_archive_export",
                           "/api/histories/{id}/exports", controller="histories",
                           action="archive_export", conditions=dict(method=["PUT"]))
