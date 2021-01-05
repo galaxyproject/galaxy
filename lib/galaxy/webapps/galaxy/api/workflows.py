@@ -237,6 +237,13 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         else:
             style = "instance"
         version = kwd.get('version')
+        if version is None and util.string_as_bool(kwd.get("instance", "false")):
+            # A Workflow instance may not be the latest workflow version attached to StoredWorkflow.
+            # This figures out the correct version so that we return the correct Workflow and version.
+            workflow_id = self.decode_id(id)
+            for version, workflow in enumerate(reversed(stored_workflow.workflows)):
+                if workflow.id == workflow_id:
+                    break
         return self.workflow_contents_manager.workflow_to_dict(trans, stored_workflow, style=style, version=version)
 
     @expose_api
