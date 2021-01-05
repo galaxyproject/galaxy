@@ -53,9 +53,10 @@ export function fetchMenu(options = {}) {
     const Galaxy = getGalaxyInstance();
     const { version_minor, version_major } = Galaxy.config;
     const { release_doc_base_url } = options;
-    const versionUserDocumentationUrl = (version_minor == "dev") 
-        ? "https://docs.galaxyproject.org/en/latest/releases/index.html"
-        : `${release_doc_base_url}${version_major}/releases/${version_major}_announce_user.html`
+    const versionUserDocumentationUrl =
+        version_minor == "dev"
+            ? "https://docs.galaxyproject.org/en/latest/releases/index.html"
+            : `${release_doc_base_url}${version_major}/releases/${version_major}_announce_user.html`;
 
     const menu = [];
     //
@@ -199,7 +200,7 @@ export function fetchMenu(options = {}) {
             },
             {
                 title: _l("Galaxy Version: " + Galaxy.config.version_major),
-                url:  versionUserDocumentationUrl,
+                url: versionUserDocumentationUrl,
                 target: "_blank",
             },
         ],
