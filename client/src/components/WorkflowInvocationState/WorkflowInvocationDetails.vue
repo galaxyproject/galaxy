@@ -2,13 +2,13 @@
     <div v-if="invocation">
         <div v-if="Object.keys(invocation.input_step_parameters).length">
             <details
-                ><summary><b>Invocation Parameters</b></summary>
+                ><summary><b>Parameters</b></summary>
                 <parameter-step :parameters="Object.values(invocation.input_step_parameters)" />
             </details>
         </div>
         <div v-if="Object.keys(invocation.inputs).length">
             <details
-                ><summary><b>Invocation Inputs</b></summary>
+                ><summary><b>Inputs</b></summary>
                 <div v-for="(input, key) in invocation.inputs" :key="input.id">
                     <b>{{ dataInputStepLabel(key, input) }}</b>
                     <workflow-invocation-data-contents :data_item="input" />
@@ -17,7 +17,7 @@
         </div>
         <div v-if="Object.keys(invocation.outputs).length">
             <details
-                ><summary><b>Invocation Outputs</b></summary>
+                ><summary><b>Outputs</b></summary>
                 <div v-for="(output, key) in invocation.outputs" :key="output.id">
                     <b>{{ key }}:</b>
                     <workflow-invocation-data-contents :data_item="output" />
@@ -26,7 +26,7 @@
         </div>
         <div v-if="Object.keys(invocation.output_collections).length">
             <details
-                ><summary><b>Invocation Output Collections</b></summary>
+                ><summary><b>Output Collections</b></summary>
                 <div v-for="(output, key) in invocation.output_collections" :key="output.id">
                     <b>{{ key }}:</b>
                     <workflow-invocation-data-contents :data_item="output" />
@@ -35,7 +35,7 @@
         </div>
         <div v-if="workflow">
             <details v-if="workflow"
-                ><summary><b>Invocation Steps</b></summary>
+                ><summary><b>Steps</b></summary>
                 <workflow-invocation-step
                     v-for="step in Object.values(workflow.steps)"
                     :invocation="invocation"
@@ -104,9 +104,7 @@ export default {
             return label;
         },
         monitorHistory() {
-            /* rework this into history or invocation subscription in the future ...
-               currently stops monitoring early on subworkflow invocations.
-            */
+            // rework this into history or invocation subscription in the future ...
             if (!this.jobStatesTerminal) {
                 const pollHistory$ = this.watch$("jobStatesTerminal");
                 const stopPolling$ = pollHistory$.pipe(filter((val) => val === true));
