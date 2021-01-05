@@ -1,9 +1,6 @@
 import json
 import logging
-from typing import (
-    List,
-    Optional
-)
+from typing import List
 
 from pkg_resources import resource_string
 from pydantic import (
@@ -11,6 +8,8 @@ from pydantic import (
     Field,
     HttpUrl
 )
+
+from galaxy import exceptions
 
 log = logging.getLogger(__name__)
 

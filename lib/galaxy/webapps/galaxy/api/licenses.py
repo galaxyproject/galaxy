@@ -4,8 +4,11 @@ from fastapi import Depends, Path
 from fastapi.routing import APIRouter
 from fastapi_utils.cbv import cbv
 
-from galaxy import exceptions
-from galaxy.managers.licenses import LicenseModel, LicensesManager
+
+from galaxy.managers.licenses import (
+    LicenseModel,
+    LicensesManager
+)
 from galaxy.web import expose_api_anonymous_and_sessionless
 from galaxy.webapps.base.controller import BaseAPIController
 
