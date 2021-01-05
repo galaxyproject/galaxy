@@ -58,13 +58,14 @@ class ToolPanelManager:
             for elem_entry in elem_list:
                 section_found = False
                 if elem_entry.tag == 'section':
-                    # See if there is already a section with a matching ID
+                    # See if there is already a section with a matching ID.
                     for existing_elem in config_elems:
                         if existing_elem.tag == 'section' and existing_elem.attrib.get('id', None) == elem_entry.attrib.get('id', None):
                             section_found = True
+                            # We've found a section, append everything from this <section> tag to the one in memory.
                             for child in elem_entry:
                                 existing_elem.append(child)
-                                break
+                            # And jump to the next incoming section.
                             if section_found:
                                 break
                     if not section_found:
