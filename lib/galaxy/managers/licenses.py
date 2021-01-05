@@ -85,8 +85,8 @@ class LicensesManager:
     def get_licenses(self) -> List[LicenseModel]:
         return SPDX_LICENSES["licenses"]
 
-    def get_license_by_id(self, id: str) -> Optional[LicenseModel]:
+    def get_license_by_id(self, id: str) -> LicenseModel:
         license = self.get(id)
         if license.get("licenseId", None) is None:
-            return None
+            raise exceptions.ObjectNotFound(f"License '{id}' not found")
         return LicenseModel(**license)

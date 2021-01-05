@@ -37,10 +37,7 @@ class FastAPILicenses:
         response_model=LicenseModel)
     async def get(self, id: str = LicenseIdPath) -> LicenseModel:
         """Returns the license with the matching SPDX short identifier."""
-        license = self.licenses_manager.get_license_by_id(id)
-        if license is None:
-            raise exceptions.ObjectNotFound("License not found")
-        return license
+        return self.licenses_manager.get_license_by_id(id)
 
 
 class LicensesController(BaseAPIController):
