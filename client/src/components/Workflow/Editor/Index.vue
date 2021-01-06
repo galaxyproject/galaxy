@@ -149,7 +149,6 @@
 import { getDatatypesMapper } from "components/Datatypes";
 import { getModule, getVersions, saveWorkflow, loadWorkflow, refactor } from "./modules/services";
 import {
-    showWarnings,
     getStateUpgradeMessages,
     copyIntoWorkflow,
     getLegacyWorkflowParameters,
@@ -425,7 +424,6 @@ export default {
             !hideProgress && show_message("Saving workflow...", "progress");
             return saveWorkflow(this)
                 .then((data) => {
-                    showWarnings(data);
                     getVersions(this.id).then((versions) => {
                         this.versions = versions;
                         hide_modal();

@@ -31,27 +31,6 @@ export function copyIntoWorkflow(workflow, id = null, stepCount = null) {
     }
 }
 
-export function showWarnings(data) {
-    const body = $("<div/>").text(data.message);
-    if (data.errors) {
-        body.addClass("warningmark");
-        var errlist = $("<ul/>");
-        $.each(data.errors, (i, v) => {
-            $("<li/>").text(v).appendTo(errlist);
-        });
-        body.append(errlist);
-    } else {
-        body.addClass("donemark");
-    }
-    if (data.errors) {
-        show_modal("Saving workflow", body, {
-            Ok: hide_modal,
-        });
-    } else {
-        hide_modal();
-    }
-}
-
 export function showAttributes() {
     $(".right-content").hide();
     $("#edit-attributes").show();
