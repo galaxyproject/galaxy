@@ -1,7 +1,8 @@
 <tool id="__UNZIP_COLLECTION__"
-      name="Unzip Collection"
+      name="Unzip"
       version="1.0.1"
       tool_type="unzip_collection">
+  <description>collection into multiple ones</description>
   <type class="UnzipCollectionTool" module="galaxy.tools" />
   <action module="galaxy.tools.actions.model_operations"
           class="ModelOperationToolAction"/>
@@ -22,39 +23,13 @@ This tool takes a paired collection and "unzips" it into two simple dataset coll
 
 **Example**:
 
-Given a paired collection of forward and reverse reads this tool will "unzip" it into two collections containing forward and reverse reads, respectively::
-                                        
-                 Paired Collection      
-               +-------------------+    
-               | +---------------+ |    
-               | | +-----------+ | |    
-               | | |  forward  | | |    
-               | | +-----------+ | |    
-               | | +-----------+ | |    
-               | | |  reverse  | | |    
-         +---- | | +-----------+ | | ----+
-         |     | +---------------+ |     |
-         |     | +---------------+ |     |
-         |     | | +-----------+ | |     |
-         |     | | |  forward  | | |     |
-         |     | | +-----------+ | |     |
-         |     | | +-----------+ | |     |
-         |     | | |  reverse  | | |     |
-         |     | | +-----------+ | |     |
-         |     | +---------------+ |     |
-         |     +-------------------+     |
-         ↓                               ↓
+Given a paired collection of forward and reverse reads this tool will "unzip" it into two collections containing forward and reverse reads, respectively:
 
-   Collection 1                    Collection 2
- +---------------+              +---------------+
- | +-----------+ |              | +-----------+ |
- | |  forward  | |              | |  reverse  | |
- | +-----------+ |              | +-----------+ |
- | +-----------+ |              | +-----------+ |
- | |  forward  | |              | |  reverse  | |
- | +-----------+ |              | +-----------+ |
- +---------------+              +---------------+
+.. image:: ${static_path}/images/tools/collection_ops/unzip.png
+  :width: 800
+  :alt: Unzipping operation
 
+-----
 
 .. class:: infomark
 

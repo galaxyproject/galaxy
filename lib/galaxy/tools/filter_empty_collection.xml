@@ -1,6 +1,6 @@
 <tool id="__FILTER_EMPTY_DATASETS__"
       name="Filter empty"
-      version="1.0.0"
+      version="1.0.1"
       tool_type="filter_empty_datasets_collection">
     <description>datasets from a collection</description>
     <type class="FilterEmptyDatasetsTool" module="galaxy.tools" />
@@ -31,7 +31,15 @@
     </tests>
     <help><![CDATA[
 
+**What it does**:
+
 This tool takes a dataset collection and filters out empty datasets. This is useful for continuing a multi-sample analysis when downstream tools require datasets to have content.
+
+.. image:: ${static_path}/images/tools/collection_ops/filter_empty.png
+  :width: 800
+  :alt: Filtering empty datasets
+
+-----
 
 .. class:: infomark
 

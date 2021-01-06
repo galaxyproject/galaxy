@@ -1,7 +1,8 @@
 <tool id="__ZIP_COLLECTION__"
-      name="Zip Collection"
+      name="Zip"
       version="1.0.1"
       tool_type="zip_collection">
+  <description>two collections into one</description>
   <type class="ZipCollectionTool" module="galaxy.tools" />
   <action module="galaxy.tools.actions.model_operations"
           class="ModelOperationToolAction"/>
@@ -25,41 +26,13 @@ This tool takes two collections and creates a paired collection from them.
 
 **Example**:
 
-If you have one collection containing only forward reads and one containing only reverse, this tools will "zip" them together into a simple paired collection. For example, given two collections with `forward` and `reverse` reads they can be "zipped" into a single paired collection::
+If you have one collection containing only forward reads and one containing only reverse, this tools will "zip" them together into a simple paired collection. For example, given two collections with `forward` and `reverse` reads they can be "zipped" into a single paired collection:
 
-   Collection 1                    Collection 2
- +---------------+              +---------------+
- | +-----------+ |              | +-----------+ |
- | |  forward  | |              | |  reverse  | |
- | +-----------+ |              | +-----------+ |
- | +-----------+ |              | +-----------+ |
- | |  forward  | |              | |  reverse  | |
- | +-----------+ |              | +-----------+ |
- +---------------+              +---------------+
-         |                              |
-         |                              |
-         |       Paired Collection      |
-         |     +-------------------+    |
-         |     | +---------------+ |    |
-         |     | | +-----------+ | |    |
-         |     | | |  forward  | | |    |
-         |     | | +-----------+ | |    |
-         |     | | +-----------+ | |    |
-         |     | | |  reverse  | | |    |
-         +-->  | | +-----------+ | | <--+
-               | +---------------+ |
-               | +---------------+ |
-               | | +-----------+ | |
-               | | |  forward  | | |
-               | | +-----------+ | |
-               | | +-----------+ | |
-               | | |  reverse  | | |
-               | | +-----------+ | |
-               | +---------------+ |
-               +-------------------+
+.. image:: ${static_path}/images/tools/collection_ops/zip.png
+  :width: 800
+  :alt: Zipping operation
 
-
-
+-----
     
 .. class:: infomark
 

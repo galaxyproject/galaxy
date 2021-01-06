@@ -1,6 +1,6 @@
 <tool id="__FLATTEN__"
       name="Flatten Collection"
-      version="1.0.0"
+      version="1.0.1"
       tool_type="filter_collection">
     <description>into a flat list of datasets</description>
     <type class="FlattenTool" module="galaxy.tools" />
@@ -46,7 +46,15 @@
     </tests>
     <help><![CDATA[
 
-This tool takes nested collections such as a list of lists or a list of dataset pairs - and produces a flat list from the inputs. The collection identifiers are merged together to create new collection identifiers in the flattened result.
+**What is does**
+
+This tool takes nested collections such as a list of lists or a list of dataset pairs and produces a flat list from the inputs. It effectively "flattens" the hierarchy. The collection identifiers are merged together to create new collection identifiers in the flattened result:
+
+.. image:: ${static_path}/images/tools/collection_ops/flatten.png
+  :width: 800
+  :alt: Flattening operation
+
+----
 
 .. class:: infomark
 
