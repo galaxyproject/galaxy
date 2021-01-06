@@ -881,8 +881,7 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
         return False
 
     def verify_elements(element_objects, element_tests):
-        # sorted_test_ids = [None] * len(element_tests)
-        expected_sort_order = []
+        expected_sort_order = {}
 
         eo_ids = [_["element_identifier"] for _ in element_objects]
         for element_identifier, element_test in element_tests.items():
@@ -891,7 +890,7 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
             else:
                 element_outfile, element_attrib = element_test
             if 'expected_sort_order' in element_attrib:
-                expected_sort_order.append(element_identifier)
+                expected_sort_order[element_attrib['expected_sort_order']] = element_identifier
 
             element = get_element(element_objects, element_identifier)
             if not element:
@@ -906,16 +905,13 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
                 verify_elements(elements, element_attrib.get("elements", {}))
 
         if len(expected_sort_order) > 0:
+            generated_sort_order = [_["element_identifier"] for _ in element_objects]
             i = 0
-            for element_identifier in expected_sort_order:
-                element = None
-                while i < len(element_objects):
-                    if element_objects[i]["element_identifier"] == element_identifier:
-                        element = element_objects[i]
-                        i += 1
-                        break
-                    i += 1
-                if element is None:
+            for element_index in sorted(expected_sort_order.keys()):
+                identifier = expected_sort_order[element_index]
+                try:
+                    i = generated_sort_order[i:].index(identifier) + 1
+                except ValueError:
                     message = f"Output collection '{name}': identifier '{element_identifier}' found out of order, expected order of {expected_sort_order} for the tool generated collection elements {eo_ids}"
                     raise AssertionError(message)
 
@@ -1192,9 +1188,9 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
                     print(_format_stream(job_stdio[stream], stream=stream, format=True), file=sys.stderr)
         found_exceptions.append(e)
 
-    if testdef.expect_failure:
-        if testdef.outputs:
-            raise Exception("Cannot specify outputs in a test expecting failure.")
+    # if testdef.expect_failure:
+    #     if testdef.outputs:
+    #         raise Exception("Cannot specify outputs in a test expecting failure.")
 
     # Wait for the job to complete and register expections if the final
     # status was not what test was expecting.
@@ -1297,7 +1293,7 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
         except Exception as e:
             register_exception(e)
 
-    if found_exceptions:
+    if found_exceptions and not testdef.expect_failure:
         raise JobOutputsError(found_exceptions, job_stdio)
     else:
         return job_stdio
