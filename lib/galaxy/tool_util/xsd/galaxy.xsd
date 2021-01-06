@@ -2550,7 +2550,7 @@ Additionally, a detailed discussion of handling multiple homogenous files can be
 the [Planemo Documentation](https://planemo.readthedocs.io/en/latest/writing_advanced.html#consuming-collections)
 on this topic.
 
-$attribute_list:format,multiple:5
+$attribute_list:format,multiple,optional,min,max:5
 
 #### ``group_tag``
 
@@ -2746,13 +2746,13 @@ it will be a RGB value e.g. 0,0,255. This attribute is only valid when ``type`` 
         <xs:attribute name="min" type="xs:float">
           <xs:annotation>
             <xs:documentation xml:lang="en">Minimum valid parameter value - only
-valid when ``type`` is ``integer`` or ``float``.</xs:documentation>
+valid when ``type`` is ``integer``, ``float``, or ``data``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="max" type="xs:float">
           <xs:annotation>
             <xs:documentation xml:lang="en">Maximum valid parameter value - only
-valid when ``type`` is ``integer`` or ``float``.</xs:documentation>
+valid when ``type`` is ``integer``, ``float``, or ``data``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="format" type="xs:string">
