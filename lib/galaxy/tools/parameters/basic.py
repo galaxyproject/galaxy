@@ -1619,6 +1619,18 @@ class BaseDataToolParameter(ToolParameter):
 
     def __init__(self, tool, input_source, trans):
         super().__init__(tool, input_source)
+        self.min = input_source.get('min')
+        self.max = input_source.get('max')
+        if self.min:
+            try:
+                self.min = int(self.min)
+            except ValueError:
+                raise ParameterValueError("attribute 'min' must be an integer", self.name)
+        if self.max:
+            try:
+                self.max = int(self.max)
+            except ValueError:
+                raise ParameterValueError("attribute 'max' must be an integer", self.name)
         self.refresh_on_change = True
         # Find datatypes_registry
         if self.tool is None:
@@ -1770,18 +1782,6 @@ class DataToolParameter(BaseDataToolParameter):
             self.validators.append(validation.MetadataValidator())
         self._parse_formats(trans, input_source)
         self.multiple = input_source.get_bool('multiple', False)
-        self.min = input_source.get('min')
-        self.max = input_source.get('max')
-        if self.min:
-            try:
-                self.min = int(self.min)
-            except ValueError:
-                raise ParameterValueError("attribute 'min' must be an integer", self.name)
-        if self.max:
-            try:
-                self.max = int(self.max)
-            except ValueError:
-                raise ParameterValueError("attribute 'max' must be an integer", self.name)
         if not self.multiple and (self.min is not None):
             raise ParameterValueError("cannot specify 'min' property on single data parameter. Set multiple=\"true\" to enable this option", self.name)
         if not self.multiple and (self.max is not None):
@@ -2176,6 +2176,44 @@ class DataCollectionToolParameter(BaseDataToolParameter):
         return display_text
 
     def validate(self, value, trans=None):
+        dataset_count = 0
+        log.error("DataCollectionToolParameter validate %s %s" % (self.name, value))
+        for validator in self.validators:
+            def do_validate(v):
+                if validator.requires_dataset_metadata and v and hasattr(v, 'dataset') and v.dataset.state != galaxy.model.Dataset.states.OK:
+                    return
+                else:
+                    validator.validate(v, trans)
+
+            if not isinstance(value, list):
+                value = [value]
+            # TODO this code would be needed instead if multiple = true is possible
+            # if value and self.multiple:
+            #     if not isinstance(value, list):
+            #         value = [value]
+            # else:
+            #     value = [value]
+
+            for v in value:
+                if isinstance(v, galaxy.model.HistoryDatasetCollectionAssociation):
+                    for dataset_instance in v.collection.dataset_instances:
+                        dataset_count += 1
+                        do_validate(dataset_instance)
+                elif isinstance(v, galaxy.model.DatasetCollectionElement):
+                    for dataset_instance in v.child_collection.dataset_instances:
+                        dataset_count += 1
+                        do_validate(dataset_instance)
+                else:
+                    if value:  # this covers the case of optional="true"
+                        dataset_count += 1
+                    do_validate(v)
+
+        if self.min is not None:
+            if self.min > dataset_count:
+                raise ValueError("At least %d datasets are required for %s" % (self.min, self.name))
+        if self.max is not None:
+            if self.max < dataset_count:
+                raise ValueError("At most %d datasets are required for %s" % (self.max, self.name))
         return True  # TODO
 
     def to_dict(self, trans, other_values=None):
