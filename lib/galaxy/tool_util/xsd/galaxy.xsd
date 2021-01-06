@@ -2503,11 +2503,6 @@ $attribute_list:checked,truevalue,falsevalue:5
 
 A dataset from the current history. Multiple types might be used for the param form.
 
-#### ``group_tag``
-
-$attribute_list:multiple,date_ref:5
-
-
 ##### Examples
 
 The following will find all "coordinate interval files" contained within the
@@ -2556,6 +2551,10 @@ the [Planemo Documentation](https://planemo.readthedocs.io/en/latest/writing_adv
 on this topic.
 
 $attribute_list:format,multiple:5
+
+#### ``group_tag``
+
+$attribute_list:multiple,date_ref:5
 
 #### ``select``
 
