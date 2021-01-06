@@ -1,6 +1,7 @@
 """
 Classes related to parameter validation.
 """
+import abc
 import logging
 import re
 
@@ -13,7 +14,7 @@ from galaxy import (
 log = logging.getLogger(__name__)
 
 
-class Validator:
+class Validator(abc.ABC):
     """
     A validator checks that a value meets some conditions OR raises ValueError
     """
@@ -39,13 +40,26 @@ class Validator:
         assert _type is not None, "Required 'type' attribute missing from validator"
         return validator_types[_type].from_element(param, elem)
 
-    def validate(self, value, trans=None):
+    def __init__(self, message, negate=False):
+        self.message = message
+        self.negate = util.asbool(negate)
+        super().__init__()
+
+    @abc.abstractmethod
+    def validate(self, value, trans=None, message=None):
         """
         validate a value
 
         return None if positive validation, otherwise a ValueError is raised
         """
-        raise TypeError("Abstract Method")
+        if message is None:
+            message = self.message
+        log.error("validate %s %s" % (value, self.negate))
+        if (not self.negate and value) or (self.negate and not value):
+            return
+        else:
+            raise ValueError(message)
+        pass
 
 
 class RegexValidator(Validator):
@@ -77,7 +91,7 @@ class RegexValidator(Validator):
         return cls(elem.get('message'), elem.text, elem.get('negate', 'false'))
 
     def __init__(self, message, expression, negate):
-        self.message = message
+        super().__init__(message, negate)
         # Compile later. RE objects used to not be thread safe. Not sure about
         # the sre module.
         self.expression = expression
@@ -88,8 +102,7 @@ class RegexValidator(Validator):
             value = [value]
         for val in value:
             match = re.match(self.expression, val or '')
-            if (not self.invert and match is None) or (self.invert and match is not None):
-                raise ValueError(self.message)
+            super().validate(match is not None, trans)
 
 
 class ExpressionValidator(Validator):
@@ -116,7 +129,8 @@ class ExpressionValidator(Validator):
         return cls(elem.get('message'), elem.text, elem.get('substitute_value_in_message'))
 
     def __init__(self, message, expression, substitute_value_in_message):
-        self.message = message
+        super().__init__(message)
+        # TODO 
         self.substitute_value_in_message = substitute_value_in_message
         # Save compiled expression, code objects are thread safe (right?)
         self.expression = compile(expression, '<string>', 'eval')
@@ -129,9 +143,11 @@ class ExpressionValidator(Validator):
             evalresult = eval(self.expression, dict(value=value))
         except Exception:
             log.debug("Validator {} could not be evaluated on {}".format(self.expression, str(value)), exc_info=True)
-            raise ValueError(message)
+            super().validate(false, trans, message)
         if not(evalresult):
-            raise ValueError(message)
+            super().validate(false, trans, message)
+        else:
+            super().validate(true, trans, message)
 
 
 class InRangeValidator(Validator):
@@ -159,11 +175,12 @@ class InRangeValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
-        return cls(elem.get('message', None), elem.get('min'),
-                   elem.get('max'), elem.get('exclude_min', 'false'),
-                   elem.get('exclude_max', 'false'))
+        return cls(elem.get('message', None), elem.get('min', '-inf'),
+                   elem.get('max', 'inf'), elem.get('exclude_min', 'false'),
+                   elem.get('exclude_max', 'false'),
+                   elem.get('negate', 'false'))
 
-    def __init__(self, message, range_min, range_max, exclude_min=False, exclude_max=False):
+    def __init__(self, message, range_min, range_max, exclude_min, exclude_max, negate):
         """
         When the optional exclude_min and exclude_max attributes are set
         to true, the range excludes the end points (i.e., min < value < max),
@@ -171,9 +188,11 @@ class InRangeValidator(Validator):
         (1.e., min <= value <= max).  Combinations of exclude_min and exclude_max
         values are allowed.
         """
-        self.min = float(range_min if range_min is not None else '-inf')
+        super().__init__(message or f"Value must be {op1} {self_min_str} and {op2} {self_max_str}", negate)
+
+        self.min = float(range_min)
         self.exclude_min = util.asbool(exclude_min)
-        self.max = float(range_max if range_max is not None else 'inf')
+        self.max = float(range_max)
         self.exclude_max = util.asbool(exclude_max)
         assert self.min <= self.max, 'min must be less than or equal to max'
         # Remove unneeded 0s and decimal from floats to make message pretty.
@@ -185,21 +204,16 @@ class InRangeValidator(Validator):
             op1 = '>'
         if self.exclude_max:
             op2 = '<'
-        self.message = message or f"Value must be {op1} {self_min_str} and {op2} {self_max_str}"
 
     def validate(self, value, trans=None):
         if self.exclude_min:
-            if not self.min < float(value):
-                raise ValueError(self.message)
+            super().validate(self.min < float(value), trans)
         else:
-            if not self.min <= float(value):
-                raise ValueError(self.message)
+            super().validate(self.min <= float(value), trans)
         if self.exclude_max:
-            if not float(value) < self.max:
-                raise ValueError(self.message)
+            super().validate(float(value) < self.max, trans)
         else:
-            if not float(value) <= self.max:
-                raise ValueError(self.message)
+            super().validate(float(value) <= self.max, trans)
 
 
 class LengthValidator(Validator):
@@ -230,7 +244,7 @@ class LengthValidator(Validator):
         return cls(elem.get('message', None), elem.get('min', None), elem.get('max', None))
 
     def __init__(self, message, length_min, length_max):
-        self.message = message
+        super().__init__(message)
         if length_min is not None:
             length_min = int(length_min)
         if length_max is not None:
@@ -240,18 +254,17 @@ class LengthValidator(Validator):
 
     def validate(self, value, trans=None):
         if self.min is not None and len(value) < self.min:
-            raise ValueError(self.message or ("Must have length of at least %d" % self.min))
-        if self.max is not None and len(value) > self.max:
-            raise ValueError(self.message or ("Must have length no more than %d" % self.max))
+            super().validate(false, trans, self.message or ("Must have length of at least %d" % self.min))
+        elif self.max is not None and len(value) > self.max:
+            super().validate(false, trans, self.message or ("Must have length no more than %d" % self.max))
+        else:
+            super().validate(true, trans)
 
 
 class DatasetOkValidator(Validator):
     """
     Validator that checks if a dataset is in an 'ok' state
     """
-
-    def __init__(self, message=None):
-        self.message = message
 
     @classmethod
     def from_element(cls, param, elem):
@@ -267,9 +280,6 @@ class DatasetOkValidator(Validator):
 class DatasetEmptyValidator(Validator):
     """Validator that checks if a dataset has a positive file size."""
 
-    def __init__(self, message=None):
-        self.message = message
-
     @classmethod
     def from_element(cls, param, elem):
         return cls(elem.get('message', None))
@@ -284,9 +294,6 @@ class DatasetEmptyValidator(Validator):
 
 class DatasetExtraFilesPathEmptyValidator(Validator):
     """Validator that checks if a dataset's extra_files_path exists and is not empty."""
-
-    def __init__(self, message=None):
-        self.message = message
 
     @classmethod
     def from_element(cls, param, elem):
@@ -306,14 +313,14 @@ class MetadataValidator(Validator):
     """
     requires_dataset_metadata = True
 
-    def __init__(self, message=None, check="", skip=""):
-        self.message = message
-        self.check = check.split(",")
-        self.skip = skip.split(",")
-
     @classmethod
     def from_element(cls, param, elem):
         return cls(message=elem.get('message', None), check=elem.get('check', ""), skip=elem.get('skip', ""))
+
+    def __init__(self, message=None, check="", skip=""):
+        super().__init__(message)
+        self.check = check.split(",")
+        self.skip = skip.split(",")
 
     def validate(self, value, trans=None):
         if value:
@@ -331,15 +338,9 @@ class UnspecifiedBuildValidator(Validator):
     """
     requires_dataset_metadata = True
 
-    def __init__(self, message=None):
-        if message is None:
-            self.message = "Unspecified genome build, click the pencil icon in the history item to set the genome build"
-        else:
-            self.message = message
-
     @classmethod
     def from_element(cls, param, elem):
-        return cls(elem.get('message', None))
+        return cls(elem.get('message', "Unspecified genome build, click the pencil icon in the history item to set the genome build"))
 
     def validate(self, value, trans=None):
         # if value is None, we cannot validate
@@ -354,34 +355,26 @@ class UnspecifiedBuildValidator(Validator):
 class NoOptionsValidator(Validator):
     """Validator that checks for empty select list"""
 
-    def __init__(self, message=None):
-        self.message = message
-
     @classmethod
     def from_element(cls, param, elem):
-        return cls(elem.get('message', None))
+        return cls(elem.get('message', "No options available for selection"))
 
     def validate(self, value, trans=None):
         if value is None:
-            if self.message is None:
-                self.message = "No options available for selection"
             raise ValueError(self.message)
 
 
 class EmptyTextfieldValidator(Validator):
     """Validator that checks for empty text field"""
 
-    def __init__(self, message=None):
-        self.message = message
-
     @classmethod
     def from_element(cls, param, elem):
-        return cls(elem.get('message', None))
+        return cls(elem.get('message', "Field requires a value"))
 
     def validate(self, value, trans=None):
         if value == '':
             if self.message is None:
-                self.message = "Field requires a value"
+                self.message = "
             raise ValueError(self.message)
 
 
@@ -408,8 +401,8 @@ class MetadataInFileColumnValidator(Validator):
         return cls(filename, metadata_name, metadata_column, message, line_startswith, split)
 
     def __init__(self, filename, metadata_name, metadata_column, message="Value for metadata not found.", line_startswith=None, split="\t"):
+        super().__init__(message)
         self.metadata_name = metadata_name
-        self.message = message
         self.valid_values = []
         for line in open(filename):
             if line_startswith is None or line.startswith(line_startswith):
@@ -448,7 +441,7 @@ class ValueInDataTableColumnValidator(Validator):
         return cls(tool_data_table, column, message, line_startswith)
 
     def __init__(self, tool_data_table, column, message="Value not found.", line_startswith=None):
-        self.message = message
+        super().__init__(message)
         self.valid_values = []
         self._data_table_content_version = None
         self._tool_data_table = tool_data_table
@@ -518,8 +511,8 @@ class MetadataInDataTableColumnValidator(Validator):
         return cls(tool_data_table, metadata_name, metadata_column, message, line_startswith)
 
     def __init__(self, tool_data_table, metadata_name, metadata_column, message="Value for metadata not found.", line_startswith=None):
+        super().__init__(message)
         self.metadata_name = metadata_name
-        self.message = message
         self.valid_values = []
         self._data_table_content_version = None
         self._tool_data_table = tool_data_table
@@ -567,23 +560,23 @@ class MetadataNotInDataTableColumnValidator(MetadataInDataTableColumnValidator):
 
 class MetadataInRangeValidator(InRangeValidator):
     """
-    Validator that ensures metadata is in a specified range
+    validator that ensures metadata is in a specified range
     """
-    requires_dataset_metadata = True
+    requires_dataset_metadata = true
 
     @classmethod
     def from_element(cls, param, elem):
-        metadata_name = elem.get('metadata_name', None)
+        metadata_name = elem.get('metadata_name', none)
         assert metadata_name, "dataset_metadata_in_range validator requires metadata_name attribute."
         metadata_name = metadata_name.strip()
-        return cls(metadata_name,
-                   elem.get('message', None), elem.get('min'),
-                   elem.get('max'), elem.get('exclude_min', 'false'),
-                   elem.get('exclude_max', 'false'))
+        return cls(metadata_name, elem.get('message', None),
+                   elem.get('min'), elem.get('max'),
+                   elem.get('exclude_min', 'false'), elem.get('exclude_max', 'false'),
+                   elem.get('negate', 'false'))
 
-    def __init__(self, metadata_name, message, range_min, range_max, exclude_min=False, exclude_max=False):
+    def __init__(self, metadata_name, message, range_min, range_max, exclude_min, exclude_max, negate):
         self.metadata_name = metadata_name
-        super().__init__(message, range_min, range_max, exclude_min, exclude_max)
+        super().__init__(message, range_min, range_max, exclude_min, exclude_max, negate)
 
     def validate(self, value, trans=None):
         if value:
@@ -596,6 +589,7 @@ class MetadataInRangeValidator(InRangeValidator):
             except ValueError:
                 raise ValueError(f'{self.metadata_name} must be a float or an integer')
             super().validate(value_to_check, trans)
+        super().validate(true, trans)
 
 
 validator_types = dict(
