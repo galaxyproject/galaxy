@@ -36,7 +36,10 @@ from galaxy.tools.parameters.basic import (
     RuntimeValue,
     workflow_building_modes
 )
-from galaxy.util.json import safe_loads
+from galaxy.util.json import (
+    safe_dumps,
+    safe_loads,
+)
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import url_for
 from galaxy.workflow.modules import (
@@ -1490,6 +1493,11 @@ class RefactorResponse(BaseModel):
     action_executions: List[RefactorActionExecution]
     workflow: dict
     dry_run: bool
+
+    class Config:
+        # Workflows have dictionaries with integer keys, which pydantic doesn't coerce to strings.
+        # Integer object keys aren't valid JSON, so the client fails.
+        json_dumps = safe_dumps
 
 
 class WorkflowStateResolutionOptions(BaseModel):
