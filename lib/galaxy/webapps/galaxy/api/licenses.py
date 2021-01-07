@@ -72,4 +72,4 @@ class LicensesController(BaseAPIController):
         Return license metadata by URI or SPDX id.
         """
         license_id = id
-        return self.licenses_manager.get(license_id)
+        return self.licenses_manager.get_license_by_id(license_id)
