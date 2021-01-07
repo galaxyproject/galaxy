@@ -825,7 +825,7 @@ class Gfa2(Text):
     def sniff_prefix(self, file_prefix):
         """
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('big.gfa2')
+        >>> fname = get_test_fname('sample.gfa2')
         >>> Gfa2().sniff(fname)
         True
         >>> Gfa1().sniff(fname)
