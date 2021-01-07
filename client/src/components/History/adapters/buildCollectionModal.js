@@ -3,15 +3,16 @@
  * the collection assembly modals. i.e. With selected..... create dataset collection,
  * create paired collection, etc.
  *
- * The goal is to use the existing "crateListCollection", etc. functions but doctor
+ * The goal is to use the existing "createListCollection", etc. functions but doctor
  * the content parameter to have the API of a backbone model which requires a
  * deprecated jquery Deferred object.
  */
 
 import jQuery from "jquery";
-import LIST_COLLECTION_CREATOR from "../../Collections/ListCollectionCreator";
-import PAIR_COLLECTION_CREATOR from "../../Collections/PairCollectionCreator";
-import LIST_OF_PAIRS_COLLECTION_CREATOR from "../../Collections/PairedListCollectionCreator";
+import LIST_COLLECTION_CREATOR from "../../Collections/ListCollectionCreatorModal";
+import PAIR_COLLECTION_CREATOR from "../../Collections/PairCollectionCreatorModal";
+import LIST_OF_PAIRS_COLLECTION_CREATOR from "../../Collections/PairedListCollectionCreatorModal";
+import RULE_BASED_COLLECTION_CREATOR from "../../Collections/RuleBasedCollectionCreatorModal";
 
 // stand-in for buildCollection from history-view-edit.js
 export async function buildCollectionModal(collectionType, history_id, selectedContent, hideSourceItems = false) {
@@ -24,7 +25,7 @@ export async function buildCollectionModal(collectionType, history_id, selectedC
     } else if (collectionType == "list:paired") {
         createFunc = LIST_OF_PAIRS_COLLECTION_CREATOR.createListOfPairsCollection;
     } else if (collectionType.startsWith("rules")) {
-        createFunc = LIST_COLLECTION_CREATOR.createCollectionViaRules;
+        createFunc = RULE_BASED_COLLECTION_CREATOR.createCollectionViaRules;
     } else {
         throw new Error(`Unknown collectionType encountered ${collectionType}`);
     }

@@ -7,7 +7,6 @@ import HDA_LI_EDIT from "mvc/history/hda-li-edit";
 import HDCA_LI_EDIT from "mvc/history/hdca-li-edit";
 import { mountModelTags } from "components/Tags";
 import ANNOTATIONS from "mvc/annotation";
-import Vue from "vue";
 import ListCollectionCreatorModal from "components/Collections/ListCollectionCreatorModal";
 import RuleBasedCollectionCreatorModal from "components/Collections/RuleBasedCollectionCreatorModal";
 import PairCollectionCreatorModal from "components/Collections/PairCollectionCreatorModal";
@@ -374,25 +373,13 @@ var HistoryViewEdit = _super.extend(
             hideSourceItems = hideSourceItems || false;
             var createFunc;
             if (collectionType == "list") {
-                const ListCollectionCreatorModalClass = Vue.extend(ListCollectionCreatorModal);
-                const inst = new ListCollectionCreatorModalClass();
-                inst.$mount();
-                createFunc = inst.createListCollection;
+                createFunc = ListCollectionCreatorModal.createListCollection;
             } else if (collectionType == "paired") {
-                const PairCollectionCreatorModalClass = Vue.extend(PairCollectionCreatorModal);
-                const inst = new PairCollectionCreatorModalClass();
-                inst.$mount();
-                createFunc = inst.createPairCollection;
+                createFunc = PairCollectionCreatorModal.createPairCollection;
             } else if (collectionType == "list:paired") {
-                const PairedListCollectionCreatorModalClass = Vue.extend(PairedListCollectionCreatorModal);
-                const inst = new PairedListCollectionCreatorModalClass();
-                inst.$mount();
-                createFunc = inst.createPairedListCollection;
+                createFunc = PairedListCollectionCreatorModal.createPairedListCollection;
             } else if (collectionType.startsWith("rules")) {
-                const RuleBasedCollectionCreatorModalClass = Vue.extend(RuleBasedCollectionCreatorModal);
-                const inst = new RuleBasedCollectionCreatorModalClass();
-                inst.$mount();
-                createFunc = inst.createCollectionViaRules;
+                createFunc = RuleBasedCollectionCreatorModal.createCollectionViaRules;
             } else {
                 console.warn(`Unknown collectionType encountered ${collectionType}`);
             }
